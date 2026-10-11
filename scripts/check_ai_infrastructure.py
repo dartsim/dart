@@ -3749,7 +3749,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     changelog = root / "CHANGELOG.md"
     headings = (
         re.findall(
-            r"^### \[DART (6\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
+            r"^### \[DART ([0-9]+\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
             changelog.read_text(encoding="utf-8"),
             re.MULTILINE,
         )
@@ -3762,7 +3762,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         or sum(heading[0] == version for heading in headings) != 1
     ):
         errors.append(
-            f"CHANGELOG.md: Release Target `{version}` must be the leading DART 6 release heading and appear exactly once"
+            f"CHANGELOG.md: Release Target `{version}` must be the leading DART release heading and appear exactly once"
         )
         return
     target_numbers = tuple(int(number) for number in version.split("."))
@@ -3771,7 +3771,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         for heading in headings[1:]
     ):
         errors.append(
-            f"CHANGELOG.md: Release Target `{version}` cannot precede a newer retained DART 6 release heading"
+            f"CHANGELOG.md: Release Target `{version}` cannot precede a newer retained DART release heading"
         )
         return
     _, state, link = headings[0]
@@ -3834,7 +3834,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         ):
             parsed = (
                 re.fullmatch(
-                    r"(6)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
+                    r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
                     source,
                 )
                 if isinstance(source, str)
@@ -3843,7 +3843,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
             if not parsed:
                 errors.append(
                     f"CHANGELOG.md: Release Target `{version}` cannot compare {relative} version; "
-                    "expected a DART 6 version (numeric for package.xml; "
+                    "expected a DART version (numeric for package.xml; "
                     "optional .devN/.alphaN/.betaN/.rcN suffix for Pixi)"
                 )
                 return
@@ -3865,13 +3865,13 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     )
 
 
-def check_release_target(root: Path, errors: list[str]) -> None:
-    """Validate the branch-local owner, using CI/base checkout identity if known."""
+def read_release_target(root: Path, errors: list[str]) -> tuple[str, str, str] | None:
+    """Read and validate the branch-local release target row."""
     relative = "docs/onboarding/release-management.md"
     path = root / relative
     if not path.is_file():
         errors.append(f"{relative}: missing Release Target owner")
-        return
+        return None
     sections = re.findall(
         r"^## Release Target\s*\n(.*?)(?=^## |\Z)",
         path.read_text(encoding="utf-8"),
@@ -3898,27 +3898,37 @@ def check_release_target(root: Path, errors: list[str]) -> None:
         errors.append(
             f"{relative}: Release Target must have exactly one three-column table row"
         )
-        return
+        return None
     branch, phase, version = [cell.strip().strip("`") for cell in cells[2]]
-    branch_match = re.fullmatch(r"main|release-6\.(\d+)", branch)
-    version_match = re.fullmatch(r"6\.(\d+)\.(\d+)", version)
+    branch_match = re.fullmatch(r"main|release-(\d+)\.(\d+)", branch)
+    version_match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
     if (
         not branch_match
         or not version_match
         or (branch == "main" and phase != "Development")
         or (branch != "main" and phase not in {"Stabilization", "Maintenance"})
-        or (branch != "main" and branch_match[1] != version_match[1])
+        or (branch != "main" and branch_match.groups() != version_match.groups()[:2])
         or (
             branch != "main"
             and phase
-            != ("Stabilization" if int(version_match[2]) == 0 else "Maintenance")
+            != ("Stabilization" if int(version_match[3]) == 0 else "Maintenance")
         )
     ):
         errors.append(
-            f"{relative}: Release Target has an invalid branch, phase, or full DART 6 version"
+            f"{relative}: Release Target has an invalid branch, phase, or full DART version"
         )
-        return
+        return None
 
+    return branch, phase, version
+
+
+def check_release_target(root: Path, errors: list[str]) -> None:
+    """Validate the branch-local owner, using CI/base checkout identity if known."""
+    target = read_release_target(root, errors)
+    if target is None:
+        return
+    branch, _, version = target
+    relative = "docs/onboarding/release-management.md"
     check_release_changelog(root, version, errors)
 
     expected_branch = os.environ.get("GITHUB_BASE_REF")
@@ -3930,7 +3940,7 @@ def check_release_target(root: Path, errors: list[str]) -> None:
             text=True,
         ).stdout.strip()
         for candidate in (checkout, os.environ.get("GITHUB_REF_NAME", "")):
-            if re.fullmatch(r"main|release-6\.\d+", candidate):
+            if re.fullmatch(r"main|release-\d+\.\d+", candidate):
                 expected_branch = candidate
                 break
     if expected_branch and branch != expected_branch:

@@ -12,7 +12,7 @@ its next release. Reusable skills and docs link here instead of copying values.
 
 | Branch         | Phase         | Next release |
 | -------------- | ------------- | ------------ |
-| `main`         | Development   | `6.21.0`     |
+| `main`         | Development   | `7.0.0`      |
 
 Use `Development` on `main`. Release branches use `Stabilization` for their
 initial `.0` target and `Maintenance` for later patch targets.
@@ -55,10 +55,10 @@ The version sources serve different purposes:
 At a rollover, update this branch's row and start its changelog section. Leave
 other branches' rows, reusable skills, pointer docs, and translated landing
 text alone. Update package versions only as part of release packaging.
-The target must be the leading DART 6 release heading in `CHANGELOG.md` and
-appear exactly once. No retained DART 6 heading may be newer than the target.
+The target must be the leading release heading in `CHANGELOG.md` and
+appear exactly once. No retained heading may be newer than the target.
 Its `Unreleased` source versions must precede the target.
-`package.xml` uses the literal numeric `<version>6.x.y</version>` format consumed
+`package.xml` uses the literal numeric `<version>X.Y.Z</version>` format consumed
 by CMake. The Pixi workspace may also use `.devN`, `.alphaN`, `.betaN`, or `.rcN`
 suffixes; an equal numeric version with one of these suffixes precedes the final
 release. Packaging may date that heading when `package.xml` and the

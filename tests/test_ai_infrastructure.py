@@ -248,8 +248,8 @@ def test_release_references_allow_history_and_dependency_floors(
     "rows",
     [
         (
-            "| `main` | Development | `6.21.0` |",
-            "| `main` | Development | `6.22.0` |",
+            "| `main` | Development | `7.0.0` |",
+            "| `main` | Development | `7.1.0` |",
         ),
         (
             "| `release-6.20` | Stabilization | `6.20.0` |",
@@ -285,8 +285,11 @@ def test_release_references_accept_release_metadata_only_rollover(
         rf"^### \[DART {re.escape(initial_version)} ", history, re.MULTILINE
     )
     assert initial_heading is not None
+    major = f"## DART {initial_version.split('.')[0]}\n"
     changelog.write_text(
-        history.split("### [DART ", 1)[0] + history[initial_heading.start() :],
+        history.split("## DART ", 1)[0]
+        + f"{major}\n"
+        + history[initial_heading.start() :],
         encoding="utf-8",
     )
     for row in rows:
@@ -309,7 +312,7 @@ def test_release_references_accept_release_metadata_only_rollover(
         if section:
             history = history[: section.start()] + history[section.end() :]
         changelog.write_text(
-            history.replace("## DART 6\n", f"## DART 6\n\n{heading}\n", 1),
+            history.replace(major, f"{major}\n{heading}\n", 1),
             encoding="utf-8",
         )
         errors = []
@@ -439,6 +442,9 @@ def release_target_owner(tmp_path, monkeypatch):
     "row",
     [
         "| `main` | Development | `6.22.0` |",
+        "| `main` | Development | `7.0.0` |",
+        "| `release-7.0` | Stabilization | `7.0.0` |",
+        "| `release-7.0` | Maintenance | `7.0.1` |",
         "| `release-6.20` | Stabilization | `6.20.0` |",
         "| `release-6.20` | Maintenance | `6.20.1` |",
     ],
@@ -496,6 +502,9 @@ def test_release_target_rejects_owner_row_without_leading_changelog_update(
         ("6.21.9", "6.21.10", False),
         ("6.21.10", "6.21.9", True),
         ("6.21.0", "6.19.5", True),
+        ("7.0.0", "6.100.0", True),
+        ("6.22.0", "7.0.0", False),
+        ("7.0.0", "12.0.0", False),
     ],
 )
 def test_release_target_orders_retained_changelog_versions_numerically(
@@ -542,6 +551,17 @@ def test_release_target_orders_retained_changelog_versions_numerically(
         ("6.20.0", "6.20.1", "6.20.1", False),
         ("6.9.0", "6.22.0", "6.8.0", False),
         ("6.22.0", "6.19.5", "6.23.0.rc1", False),
+        ("6.22.0", "5.19.5", "5.19.5", True),
+        ("7.0.0", "6.19.5", "6.19.5", True),
+        ("7.0.1", "7.0.0", "7.0.0", True),
+        ("7.0.0", "7.0.0", "6.19.5", False),
+        ("7.0.0", "6.19.5", "7.0.0", False),
+        ("7.0.0", "7.1.0", "6.19.5", False),
+        ("7.0.0", "6.19.5", "7.1.0.rc1", False),
+        ("7.0.0", "6.19.5", "7.0.0.dev1", True),
+        ("7.0.0", "6.19.5", "7.0.0.alpha2", True),
+        ("7.0.0", "6.19.5", "7.0.0.beta3", True),
+        ("7.0.0", "6.19.5", "7.0.0.rc4", True),
     ],
 )
 def test_release_target_orders_unreleased_source_versions_numerically(
@@ -638,9 +658,7 @@ def test_release_target_rejects_package_versions_outside_cmake_grammar(
 
 
 @pytest.mark.parametrize("relative", ["package.xml", "pixi.toml"])
-@pytest.mark.parametrize(
-    "version", ["invalid", "6.21", "6.21.0.preview1", "5.19.5", "7.0.0"]
-)
+@pytest.mark.parametrize("version", ["invalid", "6.21", "6.21.0.preview1", "7.0.0"])
 def test_release_target_rejects_invalid_unreleased_source_versions(
     release_target_owner, tmp_path, relative, version
 ):
@@ -721,6 +739,9 @@ def test_release_target_requires_unreleased_source_metadata(
     ("branch", "phase", "version"),
     [
         ("main", "Development", "6.22.0"),
+        ("main", "Development", "7.0.0"),
+        ("release-7.0", "Stabilization", "7.0.0"),
+        ("release-7.0", "Maintenance", "7.0.1"),
         ("release-6.20", "Stabilization", "6.20.0"),
         ("release-6.20", "Maintenance", "6.20.1"),
     ],
@@ -1208,7 +1229,6 @@ def test_release_target_rejects_invalid_changelog(
         "| release-6.20 | Stabilization | 6.20.1 |",
         "| release-6.20 | Maintenance | 6.20.0 |",
         "| main | Development | 6.22 |",
-        "| main | Development | 7.0.0 |",
         "| release-6.20 | Maintenance | 6.21.1 |",
         "| main | Development | 6.22.0 | extra |",
         "| main | Development | 6.22.0 ||",
@@ -1223,6 +1243,30 @@ def test_release_target_rejects_invalid_rows(release_target_owner, tmp_path, row
 
     assert len(errors) == 1
     assert "Release Target" in errors[0]
+
+
+@pytest.mark.parametrize(
+    ("branch", "version"),
+    [("release-7.0", "7.1.0"), ("release-6.20", "7.0.0")],
+)
+def test_release_target_rejects_major_or_minor_mismatch(
+    release_target_owner, tmp_path, branch, version
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + f"| {branch} | Stabilization | {version} |\n"
+    )
+    (tmp_path / "CHANGELOG.md").write_text(
+        f"### [DART {version} (Unreleased)](https://github.com/dartsim/dart/milestones)\n"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == [
+        "docs/onboarding/release-management.md: Release Target has an invalid "
+        "branch, phase, or full DART version"
+    ]
 
 
 @pytest.mark.parametrize("mutation", ["missing", "duplicate", "header", "separator"])
@@ -1255,8 +1299,10 @@ def test_release_target_rejects_invalid_tables(
         ("docs/topic", "release-6.20", "123/merge", False),
         ("main", "", "", True),
         ("release-6.20", "", "", False),
+        ("release-7.0", "", "", False),
         ("", "", "main", True),
         ("", "", "release-6.20", False),
+        ("", "", "release-7.0", False),
         ("docs/topic", "", "docs/topic", True),
         ("", "", "", True),
         ("release-6.20", "main", "", True),
@@ -1286,7 +1332,7 @@ def test_release_target_checks_known_base_branch(
         assert errors == []
     else:
         assert len(errors) == 1
-        assert "but the base branch is `release-6.20`" in errors[0]
+        assert f"but the base branch is `{base or checkout or ref}`" in errors[0]
 
 
 def test_release_scenarios_reject_structural_only_ai_completion_gate():
