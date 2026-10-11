@@ -81,5 +81,15 @@ void bind_gui_probe(nb::module_& m)
         viewer->removeEventHandler(handler);
         dartnb::gui::retire(viewer, handler.get());
       });
+  sm.def(
+      "release_gui_ownership_without_thread_state",
+      [](dart::gui::Viewer* viewer) {
+        auto retired = std::make_unique<dartnb::gui::Ownership>(nullptr);
+        retired->active = std::move(dartnb::gui::ownership(viewer)->active);
+        for (const auto& edge : retired->active)
+          edge.detach();
+        nb::gil_scoped_release release;
+        retired.reset();
+      });
 }
 } // namespace dart::python
