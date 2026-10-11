@@ -3946,15 +3946,19 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         return
     # Where releases are grouped under `## DART <major>` sections, each release
     # heading must sit under its own major's section.
+    grouped = re.search(r"^## DART [0-9]+[ \t]*$", text, re.MULTILINE)
     section = None
     for line in text.splitlines():
         if match := re.fullmatch(r"## DART ([0-9]+)[ \t]*", line):
             section = match[1]
         elif (
-            match := re.match(r"### \[DART (([0-9]+)\.[0-9]+\.[0-9]+) ", line)
-        ) and section not in (None, match[2]):
+            grouped
+            and (match := re.match(r"### \[DART (([0-9]+)\.[0-9]+\.[0-9]+) ", line))
+            and section != match[2]
+        ):
+            placement = f", not `## DART {section}`" if section else ""
             errors.append(
-                f"CHANGELOG.md: DART {match[1]} must be listed under `## DART {match[2]}`, not `## DART {section}`"
+                f"CHANGELOG.md: DART {match[1]} must be listed under `## DART {match[2]}`{placement}"
             )
             return
     _, state, link = headings[0]
