@@ -4622,22 +4622,39 @@ def exercise_scenarios(
         prompt_class = scenario.get("prompt_class")
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
-        elif any(
-            # DART/dartpy (optional label/operator/v) and release- qualify any major.
-            # Bare/v exclude dependency versions and unqualified '=' or ':' parameters.
-            re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
-            or not (
-                re.search(
-                    rf"{DEPENDENCY_NAME_PATTERN} $",
+        elif (
+            any(
+                # DART/dartpy (optional label/operator/v) and release- qualify any major.
+                # Bare/v exclude dependency versions and unqualified '=' or ':' parameters.
+                re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
+                or not (
+                    re.search(
+                        rf"{DEPENDENCY_NAME_PATTERN}\s+(?:to\s+)?$",
+                        prompt_class[: match.start()],
+                        re.IGNORECASE,
+                    )
+                    or dependency_next_version(prompt_class[: match.start()])
+                )
+                for match in re.finditer(
+                    rf"{release_version}\b", prompt_class, re.IGNORECASE
+                )
+            )
+            or names_next_release(root, prompt_class)
+            or any(
+                # A labeled version ("version: 7.0.0") is a pin, not a parameter,
+                # unless a dependency name owns the label.
+                not re.search(
+                    rf"{DEPENDENCY_NAME_PATTERN}\s+$",
                     prompt_class[: match.start()],
                     re.IGNORECASE,
                 )
-                or dependency_next_version(prompt_class[: match.start()])
+                for match in re.finditer(
+                    r"(?<![-\w])(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])\s*v?\d+\.\d+",
+                    prompt_class,
+                    re.IGNORECASE,
+                )
             )
-            for match in re.finditer(
-                rf"{release_version}\b", prompt_class, re.IGNORECASE
-            )
-        ) or names_next_release(root, prompt_class):
+        ):
             local_errors.append("prompt_class must be release-neutral; use DART")
         start_dir = scenario.get("start_dir")
         start_relative = repository_relative_path(root, start_dir)
