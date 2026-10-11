@@ -96,6 +96,7 @@ public:
   using CouplerConstraint::getVelocityChange;
   using CouplerConstraint::isActive;
   using CouplerConstraint::unexcite;
+  using CouplerConstraint::uniteSkeletons;
   using CouplerConstraint::update;
 };
 
@@ -1614,6 +1615,36 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
   constraint.getInformation(&info);
   EXPECT_NEAR(b, 0.1 - 1.0, 1e-9);
 
+  // Limits that exclude zero still leave a satisfied row alone.
+  follower->setPosition(0, -0.2);
+  follower->setVelocity(0, -1.4);
+  follower->setVelocityLowerLimit(0, 20.0);
+  follower->setVelocityUpperLimit(0, 30.0);
+  constraint.update();
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b, 0.0, 1e-9);
+
+  // A reactive leader shares the follower's island.
+  leaderSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  constraint.uniteSkeletons();
+  EXPECT_EQ(
+      dart::constraint::ConstraintBase::compressPath(leaderSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
+
+  // A zero multiplier leaves the leader out of the row, and so of the island.
+  follower->setMimicJoint(leader, 0.0, 0.0);
+  CouplerConstraintTestHelper unscaledConstraint(
+      follower, follower->getMimicDofProperties());
+  unscaledConstraint.update();
+  leaderSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  unscaledConstraint.uniteSkeletons();
+  EXPECT_NE(
+      dart::constraint::ConstraintBase::compressPath(leaderSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
+  follower->setMimicJoint(leader, multiplier, 0.0);
+
   double response = 0.0;
   constraint.excite();
   constraint.applyUnitImpulse(0);
@@ -1669,6 +1700,14 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
   ASSERT_EQ(floatingConstraint.getDimension(), 1u);
   floatingConstraint.getInformation(&info);
   EXPECT_NEAR(b, 1.0, 1e-9);
+
+  // Nor does it join the follower's island, so its own island can sleep.
+  floatingSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  floatingConstraint.uniteSkeletons();
+  EXPECT_NE(
+      dart::constraint::ConstraintBase::compressPath(floatingSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
 }
 
 //==============================================================================
