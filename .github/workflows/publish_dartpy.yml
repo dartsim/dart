@@ -137,7 +137,7 @@ jobs:
           case "${DARTPY_REF}" in
             v*|refs/tags/v*) ;;
             *)
-              echo "::error::When publish=true, ref must be a version tag (e.g. v6.17.0). Got '${DARTPY_REF}'."
+              echo "::error::When publish=true, ref must be a version tag in vX.Y.Z format. Got '${DARTPY_REF}'."
               exit 1
               ;;
           esac
@@ -195,6 +195,12 @@ jobs:
         run: |
           tag="${PYTHON_TAG#py}"
           python3 scripts/wheel_linux.py "cp${tag%-wheel}"
+
+      # The abi3 wheel must import and step without graphics libraries, and
+      # rendering without a backend must raise the typed error.
+      - name: Check headless import in a slim container
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os == 'linux' && matrix.abi3 }}
+        run: python3 scripts/check_headless_wheel.py dist/dartpy-*-cp312-abi3-manylinux_2_28_*.whl
 
       - name: Install Pixi wheel environment
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}

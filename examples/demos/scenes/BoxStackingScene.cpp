@@ -45,9 +45,8 @@
 // stdout) is also dropped: it only wrote to the console and changed no
 // simulation state, and dart-demos has no user-facing console.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -174,9 +173,9 @@ DemoScene makeBoxStackingScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(12.0, 12.0, 9.0),
-        ::osg::Vec3d(0.0, 0.0, 2.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(12.0, 12.0, 9.0),
+        GuiVector3(0.0, 0.0, 2.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.renderPanel = [world, state] {
       ImGui::Text("Time: %.3f", world->getTime());

@@ -13,7 +13,7 @@ import dartpy as dart
 from ..registry import SceneHandle
 
 
-class ContactsPointCloudNode(dart.gui.osg.RealTimeWorldNode):
+class ContactsPointCloudNode:
     def __init__(self, world, point_cloud_shape):
         super().__init__(world)
         self._point_cloud_shape = point_cloud_shape
@@ -23,7 +23,9 @@ class ContactsPointCloudNode(dart.gui.osg.RealTimeWorldNode):
         self._point_cloud_shape.setPoint([c.point for c in contacts])
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.simulation.World()
 
     urdf_parser = dart.utils.DartLoader()
@@ -45,7 +47,10 @@ def build() -> SceneHandle:
     point_cloud_frame.createVisualAspect().setRGBA([0.7, 0, 0, 1])
     world.addSimpleFrame(point_cloud_frame)
 
-    node = ContactsPointCloudNode(world, point_cloud_shape)
+    class WorldNode(ContactsPointCloudNode, gui.RealTimeWorldNode):
+        pass
+
+    node = WorldNode(world, point_cloud_shape)
 
     return SceneHandle(
         node=node,

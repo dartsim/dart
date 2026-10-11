@@ -92,10 +92,10 @@ evidence ledger first, not as cleanup inventory:
 - Run relevant tests; use `pixi run test-all` before done when feasible, and
   `pixi run -e gazebo test-gz` when package or downstream Gazebo/gz-physics
   compatibility could be affected.
-- For model/scene, simulation, dynamics, collision/contact, OSG, or visual
+- For model/scene, simulation, dynamics, collision/contact, Filament, or visual
   behavior, route through `dart-verify-sim`: establish a text correctness
   oracle first, then capture assessed claim-tied images/debug layers or record
-  a DISPLAY/Xvfb unavailable/not-applicable reason. A screenshot alone is not
+  a graphics unavailable/not-applicable reason. A screenshot alone is not
   proof.
 - Before finalizing a resumed task that changes behavior, public API,
   packaging, CI, docs workflow, AI-infra workflow, or user-visible docs, run

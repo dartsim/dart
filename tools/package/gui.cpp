@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/ImGuiViewer.hpp>
-#include <dart/gui/osg/WorldNode.hpp>
+#include <dart/gui/Viewer.hpp>
+#include <dart/gui/WorldNode.hpp>
 
 #include <dart/simulation/World.hpp>
 
 #include <dart/external/imgui/imgui.h>
+
+#include <memory>
 
 int main()
 {
@@ -44,10 +46,8 @@ int main()
     return 1;
   ImGui::DestroyContext(context);
   auto world = dart::simulation::World::create();
-  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
-  ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-      = new dart::gui::osg::WorldNode(world);
-  viewer->addWorldNode(node);
-  return 0;
+  dart::gui::Viewer viewer;
+  auto node = std::make_shared<dart::gui::WorldNode>(world);
+  viewer.addWorldNode(node);
+  return node->getWorld() == world ? 0 : 1;
 }

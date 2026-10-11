@@ -1,6 +1,6 @@
 # docs/
 
-Agent entry point for DART 6 documentation.
+Agent entry point for DART documentation.
 
 ## Required Reading
 
@@ -22,10 +22,10 @@ For AI workflow docs, also read `docs/ai/principles.md`,
 | `ai/`          | Release-branch AI workflow policy, terminology, gates, sessions, map    |
 | `assets/`      | Durable repository documentation assets outside RTD `_static/`          |
 | `background/`  | Theory, paper, and reference foundations                                |
-| `design/`      | Durable DART 6 technical decisions and compatibility rationale          |
+| `design/`      | Durable DART technical decisions and compatibility rationale          |
 | `dev_tasks/`   | Temporary active multi-session task tracking                            |
 | `doxygen/`     | C++ API Doxygen inputs                                                  |
-| `onboarding/`  | Durable DART 6 contributor, maintainer, build/test guidance               |
+| `onboarding/`  | Durable DART contributor, maintainer, build/test guidance               |
 | `plans/`       | Living release-branch roadmap state, priority, gates, and sequencing    |
 | `readthedocs/` | Published user documentation source                                     |
 
@@ -45,7 +45,8 @@ For AI workflow docs, also read `docs/ai/principles.md`,
   in `doxygen/`.
 - Put durable reusable docs media in `assets/`; put RTD-only static assets in
   `readthedocs/_static/`.
-- Prove release-branch claims directly against the DART 6 compatibility lane.
+- Prove compatibility claims directly against the base branch's rules in
+  `AGENTS.md`.
 
 See `docs/information-architecture.md` for the full release-branch placement
 matrix.

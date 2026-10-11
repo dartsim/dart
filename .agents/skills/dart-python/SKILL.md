@@ -12,9 +12,9 @@ description: "DART Python: dartpy bindings, nanobind, wheels, and API patterns"
 Load this skill when working with Python bindings or dartpy.
 
 When a binding exposes or changes model/scene loading, dynamics,
-collision/contact/constraints, simulation stepping, GUI/OSG output, or a visual example, also
+collision/contact/constraints, simulation stepping, GUI/Filament output, or a visual example, also
 load `dart-verify-sim`. Pair a focused Python text/behavior oracle with an
-assessed, claim-tied OSG capture; document a visual exception when capture is
+assessed, claim-tied Filament capture; document a visual exception when capture is
 unavailable or not applicable.
 
 ## Quick Start
@@ -41,7 +41,8 @@ For current examples and test patterns: `python/examples/` and `python/tests/`
 
 ```bash
 pixi run build-py-dev    # Build for development
-pixi run test-py         # Run Python tests
+pixi run test-py         # Run Python tests that need no graphics device
+pixi run test-gui        # Run dartpy.gui rendering and integration tests
 ```
 
 ## Wheel Building
@@ -59,10 +60,14 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 - nanobind is dartpy's only binder on `main`, under `python/dartpy/`.
   Use the DART 6.20 compatibility notes in the owner guide.
-- Follow the existing DART 6 camelCase binding names used in `python/examples`
-  and `python/tests`.
+- Until the PLAN-624 rename lands, follow the current binding names in
+  `python/examples` and `python/tests`; bind new DART 7 APIs directly in the
+  DART 7 Python style (snake_case, properties, keyword-only options) from the
+  PLAN-624 design doc.
 - NumPy arrays auto-convert to Eigen types
-- The GUI module uses OSG when `DART_BUILD_GUI_OSG` is enabled.
+- `dartpy.gui` always exists: dartpy requires `DART_BUILD_IO` and
+  `DART_BUILD_GUI`. GUI callers use the Filament-backed `dart.gui.Viewer` and
+  related neutral classes; import and viewer construction need no display.
 
 ## Key Files
 

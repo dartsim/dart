@@ -41,7 +41,7 @@
 // Y-up .skel worlds. The held-key axis-constraint feature needs both
 // KEYDOWN and KEYUP, which DemoScene's KeyAction (key-down only, mirrored as
 // a panel button) cannot express; this is ported via a small
-// osgGA::GUIEventHandler registered through DemoHostContext::addEventHandler,
+// GUIEventHandler registered through DemoHostContext::addEventHandler,
 // exactly like the original's ConstraintEventHandler, so the interaction is
 // unchanged (hold 1/2/3, alone or combined, to constrain the drag to a line
 // or plane). The original's setNumStepsPerCycle(10) (a fixed number of
@@ -54,9 +54,8 @@
 // public member set later, avoiding the original's documented
 // construct-before-attach portRisk.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
@@ -86,14 +85,14 @@ struct OscState
   Eigen::Matrix3d kp = Eigen::Matrix3d::Zero();
   Eigen::MatrixXd kd;
 
-  dart::gui::osg::DragAndDrop* dnd = nullptr;
+  demo_gui::DragAndDrop* dnd = nullptr;
   bool constrained[3] = {false, false, false};
 
   // Set from onActivate (see the file comment on why key actions -- built at
   // factory time, before the world node exists -- must read these lazily
   // instead of capturing them directly).
-  dart::gui::osg::WorldNode* worldNode = nullptr;
-  dart::gui::osg::Viewer* viewer = nullptr;
+  demo_gui::WorldNode* worldNode = nullptr;
+  demo_gui::Viewer* viewer = nullptr;
 };
 
 //==============================================================================
@@ -101,11 +100,8 @@ void toggleShadows(OscState& state)
 {
   if (!state.worldNode || !state.viewer)
     return;
-  if (state.worldNode->isShadowed())
-    state.worldNode->setShadowTechnique(nullptr);
-  else
-    state.worldNode->setShadowTechnique(
-        dart::gui::osg::WorldNode::createDefaultShadowTechnique(state.viewer));
+  setGuiShadows(
+      *state.worldNode, *state.viewer, !state.worldNode->isShadowed());
 }
 
 //==============================================================================
@@ -140,7 +136,7 @@ void applyDndConstraint(OscState& state)
 /// Ported from the original's ConstraintEventHandler: holds keys 1/2/3
 /// (KEYDOWN sets, KEYUP clears) constrain the target's drag to the
 /// corresponding world axis/axes.
-class OscConstraintHandler : public ::osgGA::GUIEventHandler
+class OscConstraintHandler : public demo_events::GUIEventHandler
 {
 public:
   explicit OscConstraintHandler(std::shared_ptr<OscState> state)
@@ -149,9 +145,10 @@ public:
   }
 
   bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+      const demo_events::GUIEventAdapter& ea,
+      demo_events::GUIActionAdapter&) override
   {
-    if (ea.getHandled())
+    if (guiEventHandled(ea))
       return false;
 
     int axis = -1;
@@ -170,14 +167,13 @@ public:
     }
 
     // Don't let typing 1/2/3 in an ImGui field (e.g. the host's "Search
-    // demos..." box) constrain the drag axis -- osgGA delivers key events to
-    // every handler regardless of ImGui focus.
+    // demos..." box) constrain the drag axis.
     if (ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
-    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+    if (ea.getEventType() == demo_events::GUIEventAdapter::KEYDOWN) {
       mState->constrained[axis] = true;
-    } else if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYUP) {
+    } else if (ea.getEventType() == demo_events::GUIEventAdapter::KEYUP) {
       mState->constrained[axis] = false;
     } else {
       return false;
@@ -263,9 +259,9 @@ DemoScene makeOperationalSpaceControlScene()
     // 's' key action below toggles.
     setup.enableShadows = false;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.57, 3.14, 1.64),
-        ::osg::Vec3d(0.00, 0.00, 0.00),
-        ::osg::Vec3d(-0.24, -0.25, 0.94)};
+        GuiVector3(2.57, 3.14, 1.64),
+        GuiVector3(0.00, 0.00, 0.00),
+        GuiVector3(-0.24, -0.25, 0.94)};
 
     setup.preStep = [state] {
       auto* robot = state->robot.get();
@@ -308,7 +304,7 @@ DemoScene makeOperationalSpaceControlScene()
             [viewer, dnd = state->dnd] { viewer->disableDragAndDrop(dnd); });
       }
 
-      ctx.addEventHandler(new OscConstraintHandler(state));
+      ctx.addEventHandler(std::make_shared<OscConstraintHandler>(state));
     };
 
     // Keys 1/2/3 (held, not pressed) are handled directly by

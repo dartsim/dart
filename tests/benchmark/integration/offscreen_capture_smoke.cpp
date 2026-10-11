@@ -30,302 +30,189 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Off-screen GLX-pbuffer capture smoke for the dart-gui-osg helper
-// (dart/gui/osg/OffscreenViewer). Dependency-free (no GoogleTest / Pillow): it
-// renders a trivial one-body scene headless via setUpOffscreenViewer and via
-// the captureOffscreen sugar, reads each PNG back with osgDB, and asserts a
-// valid image with non-blank content (luminance variance above a small
-// epsilon). Opt-in (DART_ENABLE_GUI_OSG_SMOKE_TESTS); returns the ctest skip
-// code (77) when no DISPLAY is available.
+// Display-free capture smoke through the public Filament Viewer API. Every
+// successful path reads the full RGBA PNG and verifies dimensions and visible
+// box content. Graphics or write failures fail the test; there is no skip arm.
 
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/gui/osg/ImGuiViewer.hpp"
-#include "dart/gui/osg/OffscreenViewer.hpp"
-#include "dart/gui/osg/Viewer.hpp"
-#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/Viewer.hpp"
+#include "dart/gui/WorldNode.hpp"
 #include "dart/simulation/World.hpp"
 
-#include <osg/BoundingSphere>
-#include <osg/Image>
-#include <osgDB/ReadFile>
+#include <png.h>
 
+#include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <string>
-
-#include <cstdlib>
+#include <vector>
 
 namespace {
-
-// Skip code understood by ctest's SKIP_RETURN_CODE property.
-constexpr int kSkip = 77;
-
-// Builds a trivial one-body world: a single colored box at the origin. Enough
-// geometry (plus the viewer's default lighting) that any correct render is
-// clearly non-blank.
 dart::simulation::WorldPtr buildBoxWorld()
 {
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-
   auto skeleton = dart::dynamics::Skeleton::create("box");
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
       nullptr);
-  auto* body = pair.second;
   auto shape = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(1.0, 1.0, 1.0));
-  auto shapeNode = body->createShapeNodeWith<
+  auto* shapeNode = pair.second->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
   shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.2, 0.2));
-
   world->addSkeleton(skeleton);
   return world;
 }
 
-// Reads a PNG back and asserts it is a valid image of the expected size with
-// non-blank content (luminance variance above epsilon). A blank frame has
-// variance 0.
-bool checkNonBlank(
-    const std::string& label,
-    const std::string& path,
-    int expectedWidth,
-    int expectedHeight)
+void checkImage(const std::filesystem::path& path, int width, int height)
 {
-  ::osg::ref_ptr<::osg::Image> image = osgDB::readImageFile(path);
-  if (!image) {
-    std::cerr << "[offscreen_capture_smoke] " << label
-              << ": failed to read image back from " << path << "\n";
-    return false;
+  if (!std::filesystem::is_regular_file(path)
+      || std::filesystem::file_size(path) == 0)
+    throw std::runtime_error("Capture did not produce a nonempty PNG");
+  png_image image{};
+  image.version = PNG_IMAGE_VERSION;
+  if (!png_image_begin_read_from_file(&image, path.string().c_str())) {
+    const std::string error = image.message;
+    png_image_free(&image);
+    throw std::runtime_error("Cannot read capture: " + error);
   }
-  if (image->s() != expectedWidth || image->t() != expectedHeight) {
-    std::cerr << "[offscreen_capture_smoke] " << label << ": unexpected size "
-              << image->s() << "x" << image->t() << " (expected "
-              << expectedWidth << "x" << expectedHeight << ")\n";
-    return false;
+  if (image.width != static_cast<png_uint_32>(width)
+      || image.height != static_cast<png_uint_32>(height)) {
+    png_image_free(&image);
+    throw std::runtime_error("Capture has incorrect dimensions");
   }
-
-  double sum = 0.0;
-  double sumSq = 0.0;
-  const long count = static_cast<long>(image->s()) * image->t();
-  for (int t = 0; t < image->t(); ++t) {
-    for (int s = 0; s < image->s(); ++s) {
-      const ::osg::Vec4 c = image->getColor(s, t);
-      const double lum = 0.299 * c.r() + 0.587 * c.g() + 0.114 * c.b();
-      sum += lum;
-      sumSq += lum * lum;
-    }
+  image.format = PNG_FORMAT_RGBA;
+  std::vector<unsigned char> pixels(PNG_IMAGE_SIZE(image));
+  if (!png_image_finish_read(&image, nullptr, pixels.data(), 0, nullptr)) {
+    const std::string error = image.message;
+    png_image_free(&image);
+    throw std::runtime_error("Cannot decode capture: " + error);
   }
+  png_image_free(&image);
+  std::size_t red = 0;
+  double sum = 0, squares = 0;
+  for (std::size_t i = 0; i < pixels.size(); i += 4) {
+    const double r = pixels[i] / 255.0;
+    const double g = pixels[i + 1] / 255.0;
+    const double b = pixels[i + 2] / 255.0;
+    red += pixels[i] > 40 && pixels[i] > pixels[i + 1] * 1.5
+           && pixels[i] > pixels[i + 2] * 1.5;
+    const double luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    sum += luminance;
+    squares += luminance * luminance;
+  }
+  const double count = static_cast<double>(width) * height;
   const double mean = sum / count;
-  const double variance = sumSq / count - mean * mean;
-
-  constexpr double kMinVariance = 1e-4;
-  std::cout << "[offscreen_capture_smoke] " << label << ": " << image->s()
-            << "x" << image->t() << " lum mean=" << mean << " var=" << variance
-            << " (min " << kMinVariance << ")\n";
-  if (variance <= kMinVariance) {
-    std::cerr << "[offscreen_capture_smoke] " << label
-              << ": image is blank (variance below epsilon)\n";
-    return false;
-  }
-  return true;
+  const double variance = squares / count - mean * mean;
+  if (variance <= 1e-4 || red < 50)
+    throw std::runtime_error("Capture has no visible red box");
+  std::cout << "[offscreen_capture_smoke] " << path.filename().string() << ": "
+            << width << 'x' << height << " red=" << red
+            << " variance=" << variance << '\n';
 }
 
+void prepare(dart::gui::Viewer& viewer)
+{
+  viewer.addWorldNode(std::make_shared<dart::gui::WorldNode>(buildBoxWorld()));
+  viewer.simulate(false);
+  viewer.allowSimulation(false);
+  viewer.setCameraHome(
+      Eigen::Vector3d(2.5, -3, 2),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ());
+  viewer.setBackgroundColor(Eigen::Vector4d(0.12, 0.14, 0.18, 1));
+  viewer.setUpViewForCapture(320, 240);
+}
+
+void capture(dart::gui::Viewer& viewer, const std::filesystem::path& path)
+{
+  viewer.captureScreen(path.string());
+  viewer.frame();
+}
+
+void rejectCapture(dart::gui::Viewer& viewer, const std::filesystem::path& path)
+{
+  try {
+    capture(viewer, path);
+  } catch (const std::runtime_error& error) {
+    if (std::string(error.what()).find("Cannot write capture '") != 0)
+      throw;
+    return;
+  }
+  throw std::runtime_error("Capture unexpectedly accepted an invalid path");
+}
+
+struct TemporaryDirectory
+{
+  std::filesystem::path path;
+  TemporaryDirectory()
+    : path(
+        std::filesystem::temp_directory_path()
+        / ("dart-offscreen-smoke-"
+           + std::to_string(
+               std::chrono::steady_clock::now().time_since_epoch().count())))
+  {
+    if (!std::filesystem::create_directory(path))
+      throw std::runtime_error("Cannot create isolated capture directory");
+  }
+  ~TemporaryDirectory()
+  {
+    std::error_code ignored;
+    std::filesystem::remove_all(path, ignored);
+  }
+};
 } // namespace
 
 int main()
 {
-  const char* display = std::getenv("DISPLAY");
-  if (display == nullptr || display[0] == '\0') {
-    std::cout << "[offscreen_capture_smoke] SKIP: no DISPLAY set. Run under a "
-                 "headless X server, e.g. xvfb-run -a -s '-screen 0 "
-                 "1280x1024x24'.\n";
-    return kSkip;
+  try {
+    TemporaryDirectory temporary;
+    // Explicit frame loop followed by queued capture.
+    {
+      dart::gui::Viewer viewer;
+      prepare(viewer);
+      for (int i = 0; i < 10; ++i)
+        viewer.frame();
+      const auto path = temporary.path / "warmed.png";
+      capture(viewer, path);
+      checkImage(path, 320, 240);
+    }
+    // A fresh context must apply the requested view without warm-up frames.
+    {
+      dart::gui::Viewer viewer;
+      prepare(viewer);
+      const auto path = temporary.path / "immediate.png";
+      capture(viewer, path);
+      checkImage(path, 320, 240);
+      // Replacing a capture context must retain the scene and requested view.
+      viewer.setUpViewForCapture(320, 240);
+      const auto recreated = temporary.path / "recreated.png";
+      capture(viewer, recreated);
+      checkImage(recreated, 320, 240);
+    }
+    // Missing parents and directory targets must fail without deleting them.
+    {
+      dart::gui::Viewer viewer;
+      prepare(viewer);
+      rejectCapture(viewer, temporary.path / "missing" / "capture.png");
+      const auto directory = temporary.path / "directory.png";
+      std::filesystem::create_directory(directory);
+      rejectCapture(viewer, directory);
+      if (!std::filesystem::is_directory(directory))
+        throw std::runtime_error("Capture removed its directory target");
+    }
+    std::cout << "[offscreen_capture_smoke] PASS\n";
+    return 0;
+  } catch (const std::exception& error) {
+    std::cerr << "[offscreen_capture_smoke] " << error.what() << '\n';
+    return 1;
   }
-
-  dart::gui::osg::OffscreenSetup setup;
-  setup.width = 320;
-  setup.height = 240;
-
-  // Agent-friendly default framing from the scene bounding sphere (a 1m box at
-  // the origin -> radius ~0.87).
-  const dart::gui::osg::OffscreenCamera camera
-      = dart::gui::osg::defaultAgentCamera(
-          ::osg::BoundingSphere(::osg::Vec3(0.0f, 0.0f, 0.0f), 0.87f));
-
-  const std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
-  const std::string pathSetup
-      = (tmpDir / "dart_offscreen_smoke_setup.png").string();
-  const std::string pathSugar
-      = (tmpDir / "dart_offscreen_smoke_sugar.png").string();
-  const std::string pathZeroWarmup
-      = (tmpDir / "dart_offscreen_smoke_sugar_zero.png").string();
-  const std::filesystem::path missingDir
-      = tmpDir / "dart_offscreen_smoke_missing_dir";
-  const std::string pathMissingDir = (missingDir / "capture.png").string();
-  const std::filesystem::path staleTargetDir
-      = tmpDir / "dart_offscreen_smoke_stale_target";
-
-  // Path 1: setUpOffscreenViewer + explicit frame loop + captureScreen.
-  {
-    auto world = buildBoxWorld();
-    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-        = new dart::gui::osg::ImGuiViewer();
-    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-        = new dart::gui::osg::WorldNode(world);
-    viewer->addWorldNode(node);
-
-    if (!dart::gui::osg::setUpOffscreenViewer(*viewer, setup)) {
-      std::cerr << "[offscreen_capture_smoke] setUpOffscreenViewer failed with "
-                   "DISPLAY="
-                << display << "\n";
-      return 1;
-    }
-
-    auto* cam = viewer->getCamera();
-    for (int i = 0; i < 10; ++i) {
-      cam->setViewMatrixAsLookAt(camera.eye, camera.center, camera.up);
-      viewer->frame();
-    }
-    viewer->captureScreen(pathSetup);
-    viewer->frame(); // SaveScreen writes the PNG during this frame.
-
-    if (!checkNonBlank(
-            "setUpOffscreenViewer", pathSetup, setup.width, setup.height))
-      return 1;
-  }
-
-  // Path 2: captureOffscreen one-shot sugar on a fresh viewer/world.
-  {
-    auto world = buildBoxWorld();
-    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-        = new dart::gui::osg::ImGuiViewer();
-    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-        = new dart::gui::osg::WorldNode(world);
-    viewer->addWorldNode(node);
-
-    if (!dart::gui::osg::captureOffscreen(
-            *viewer,
-            pathSugar,
-            camera.eye,
-            camera.center,
-            camera.up,
-            setup,
-            10)) {
-      std::cerr << "[offscreen_capture_smoke] captureOffscreen failed with "
-                   "DISPLAY="
-                << display << "\n";
-      return 1;
-    }
-
-    if (!checkNonBlank(
-            "captureOffscreen", pathSugar, setup.width, setup.height))
-      return 1;
-  }
-
-  // Path 3: captureOffscreen must still apply the requested view when callers
-  // intentionally skip warm-up frames for already-initialized scenes.
-  {
-    auto world = buildBoxWorld();
-    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-        = new dart::gui::osg::ImGuiViewer();
-    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-        = new dart::gui::osg::WorldNode(world);
-    viewer->addWorldNode(node);
-
-    if (!dart::gui::osg::captureOffscreen(
-            *viewer,
-            pathZeroWarmup,
-            camera.eye,
-            camera.center,
-            camera.up,
-            setup,
-            0)) {
-      std::cerr << "[offscreen_capture_smoke] captureOffscreen zero warm-up "
-                   "failed with DISPLAY="
-                << display << "\n";
-      return 1;
-    }
-
-    if (!checkNonBlank(
-            "captureOffscreen zero warm-up",
-            pathZeroWarmup,
-            setup.width,
-            setup.height))
-      return 1;
-  }
-
-  // Path 4: captureOffscreen reports write failures instead of returning true
-  // when SaveScreen cannot create the requested file.
-  {
-    std::filesystem::remove_all(missingDir);
-
-    auto world = buildBoxWorld();
-    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-        = new dart::gui::osg::ImGuiViewer();
-    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-        = new dart::gui::osg::WorldNode(world);
-    viewer->addWorldNode(node);
-
-    if (dart::gui::osg::captureOffscreen(
-            *viewer,
-            pathMissingDir,
-            camera.eye,
-            camera.center,
-            camera.up,
-            setup,
-            0)) {
-      std::cerr
-          << "[offscreen_capture_smoke] captureOffscreen unexpectedly "
-             "succeeded for missing directory "
-          << pathMissingDir << "\n";
-      return 1;
-    }
-  }
-
-  // Path 5: captureOffscreen must reject a directory target before trying to
-  // remove it, even when that directory is empty and POSIX remove would
-  // otherwise delete it.
-  {
-    std::filesystem::remove_all(staleTargetDir);
-    std::filesystem::create_directory(staleTargetDir);
-
-    auto world = buildBoxWorld();
-    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-        = new dart::gui::osg::ImGuiViewer();
-    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
-        = new dart::gui::osg::WorldNode(world);
-    viewer->addWorldNode(node);
-
-    if (dart::gui::osg::captureOffscreen(
-            *viewer,
-            staleTargetDir.string(),
-            camera.eye,
-            camera.center,
-            camera.up,
-            setup,
-            0)) {
-      std::cerr
-          << "[offscreen_capture_smoke] captureOffscreen unexpectedly "
-             "succeeded for stale target directory "
-          << staleTargetDir << "\n";
-      return 1;
-    }
-    if (!std::filesystem::is_directory(staleTargetDir)) {
-      std::cerr << "[offscreen_capture_smoke] captureOffscreen removed target "
-                   "directory "
-                << staleTargetDir << "\n";
-      return 1;
-    }
-    std::filesystem::remove_all(staleTargetDir);
-  }
-
-  std::cout << "[offscreen_capture_smoke] PASS\n";
-  return 0;
 }

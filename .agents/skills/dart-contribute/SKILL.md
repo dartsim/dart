@@ -101,7 +101,7 @@ gh pr edit <PR#> --milestone "<milestone>"
 ## Bug Fixes
 
 After explicit maintainer/user approval, open bug-fix PRs against `main`.
-Backports to a maintained `release-6.*` branch use `dart-backport-pr`.
+Backports to a maintained `release-*` branch use `dart-backport-pr`.
 Release-specific packaging, CI, and branch guidance may target that branch
 directly. Release branches may be cut from approved stabilization commits
 before the first release tag or from published release tags.

@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; OR
+ *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ *   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ *   USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ *   DAMAGE.
+ */
+
+#pragma once
+
+#include <dart/gui/detail/backend_fwd.hpp>
+
+#include <utils/Entity.h>
+struct ImTextureData;
+
+#include <unordered_map>
+#include <vector>
+
+#include <cstddef>
+#include <cstdint>
+
+namespace dart::gui::detail {
+
+struct OverlayMesh
+{
+  utils::Entity entity;
+  ::filament::VertexBuffer* vertexBuffer = nullptr;
+  ::filament::IndexBuffer* indexBuffer = nullptr;
+  /// One material instance per visible draw command beyond the first, so each
+  /// command can carry its own scissor rectangle.
+  std::vector<::filament::MaterialInstance*> clipMaterialInstances;
+  /// Vertex and index buffers grow monotonically and are replaced only when a
+  /// frame needs more room than the current allocation.
+  std::size_t vertexCapacity = 0;
+  std::size_t indexCapacity = 0;
+};
+
+struct ImGuiOverlay
+{
+  ::filament::View* view = nullptr;
+  ::filament::Scene* scene = nullptr;
+  ::filament::Camera* camera = nullptr;
+  utils::Entity cameraEntity;
+  ::filament::Material* material = nullptr;
+  ::filament::MaterialInstance* materialInstance = nullptr;
+  ::filament::Texture* fontTexture = nullptr;
+  OverlayMesh mesh;
+  std::unordered_map<ImTextureData*, ::filament::Texture*> textures;
+};
+
+ImGuiOverlay createImGuiOverlay(::filament::Engine& engine);
+
+void updateImGuiOverlay(
+    ::filament::Engine& engine,
+    ImGuiOverlay& overlay,
+    const ImDrawData* drawData,
+    std::uint32_t width,
+    std::uint32_t height);
+
+void destroyImGuiOverlay(::filament::Engine& engine, ImGuiOverlay& overlay);
+
+} // namespace dart::gui::detail

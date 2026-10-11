@@ -8,7 +8,6 @@ name: DART 6 Performance Dashboard
 on:
   push:
     branches:
-      - "main"
       - "release-6.*"
     paths:
       - ".github/workflows/performance_dashboard_dart6.yml"
@@ -27,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       release_branch:
-        description: "Branch to benchmark (main or release-6.x); defaults to main"
+        description: "Branch to benchmark (a release-6.x branch); defaults to release-6.20"
         required: false
         type: string
 
@@ -43,7 +42,7 @@ concurrency:
   # Keep non-push dashboard entrypoints serialized because they are ad-hoc
   # publishers for the same gh-pages dashboard path.
   group: >-
-    ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-6.'))
+    ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-6.')
         && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
         || 'dart6-performance-dashboard' }}
   cancel-in-progress: false
@@ -67,19 +66,19 @@ jobs:
 
           if [ -n "${REQUESTED_BRANCH:-}" ]; then
             release_branch="${REQUESTED_BRANCH}"
-          elif [[ "${GITHUB_EVENT_NAME}" == "push" && ( "${GITHUB_REF_NAME}" == main || "${GITHUB_REF_NAME}" == release-6.* ) ]]; then
+          elif [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_NAME}" == release-6.* ]]; then
             release_branch="${GITHUB_REF_NAME}"
           else
-            # main is the active DART 6 development line.
-            release_branch=main
+            # The DART 6 series tracks the maintenance line; main is the DART 7 line.
+            release_branch=release-6.20
           fi
 
-          if [[ ! "${release_branch}" =~ ^(main|release-6\.[0-9]+)$ ]]; then
+          if [[ ! "${release_branch}" =~ ^release-6\.[0-9]+$ ]]; then
             echo "Invalid DART 6 release branch: ${release_branch}" >&2
             exit 1
           fi
 
-          if [[ "${GITHUB_EVENT_NAME}" == "push" && ( "${GITHUB_REF_NAME}" == main || "${GITHUB_REF_NAME}" == release-6.* ) ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_NAME}" == release-6.* ]]; then
             checkout_ref="${GITHUB_SHA}"
             benchmark_ref="${GITHUB_SHA}"
           else
@@ -110,13 +109,13 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
-          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          cache-write: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-6.') }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev
           version: "2"
 
       - name: Configure build
@@ -149,7 +148,7 @@ jobs:
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: performance/dart6
           ref: ${{ steps.dart6-branch.outputs.benchmark_ref }}
-          auto-push: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-6.') }}
+          auto-push: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/release-6.') }}
           # Keep the default explicit: release push validations rely on the
           # action fetching gh-pages before writing and retrying remote-rejected
           # pushes when another release validation publishes first.

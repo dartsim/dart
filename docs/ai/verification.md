@@ -9,6 +9,11 @@ surface affects shared behavior.
 - Before every commit, run `pixi run lint`.
 - For C++ or Python code changes, run `pixi run build` and the focused tests for
   the touched module.
+- For GUI, Filament, `dartpy.gui`, or GUI example changes, also run
+  `pixi run test-gui`; `pixi run test`, `test-py`, and `test-all` build the GUI
+  but skip the CTest tests labeled `gui-device` and Python rendering tests.
+  Device-free GUI tests remain in the default gates; `gui` selects all GUI
+  CTests, and `test-gui` excludes only `filament-native` native-window tests.
 - For behavior-bearing physics or simulation changes, include a high-quality,
   self-contained GUI example or durable demo artifact unless the task explicitly
   records why a different user-level visual artifact is the right evidence.
@@ -106,20 +111,22 @@ notice and skip scanning; findings and lookup or scan errors block the push.
 ## Simulation Verification Route
 
 Use `dart-verify-sim` whenever a claim depends on model/scene structure,
-dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
+dynamics, collision/contact/constraints, simulation stepping, Filament rendering,
 or a visual example. Pair a focused text correctness oracle with an assessed,
 claim-tied capture, semantic inspection by an image-capable reviewer, and core
-`DebugOverlay` layers. If DISPLAY/Xvfb, the required renderer, or native image
-review is unavailable, record that limitation. Name the replacement evidence;
-never use a screenshot as the sole correctness oracle.
+`DebugOverlay` layers. If the required renderer, graphics device or driver, or
+native image review is unavailable, record that limitation. Name the replacement
+evidence; never use a screenshot as the sole correctness oracle.
 
 PRs fixing or changing dynamics, collision/contact, constraint, simulation,
 or rendering behavior include a before/after visual pair by default, supported
 by the text oracle. Capture the base revision and PR head using the same scene,
 camera, steps, dimensions, and renderer, compose side by side with
-`pixi run image-compose`, and publish with `pixi run evidence-publish` after
-explicit maintainer approval for uploads. Magnify small effects with a closer
-camera, side view, contrasting colors, or contact/debug layers; interpenetration
+`pixi run image-compose`, and follow the [publication procedure below](#visual-verification-headless-capture)
+after explicit maintainer/user approval. Attachments use the same store as
+drag-and-drop, never release assets or tags; `--body-file` replaces the whole
+PR body. Magnify small effects with a
+closer camera, side view, contrasting colors, or contact/debug layers; interpenetration
 and penetration depth need a close side view because a distant still hides
 them. If the pair looks identical, check the text oracle on both revisions and
 reframe until any visible effect shows. Skip only with a stated reason, such as
@@ -136,13 +143,18 @@ media stays out of the repository and uploads require explicit approval.
 
 ## Visual Verification (Headless Capture)
 
-DART 6 renders off-screen through the `dart::gui::osg` helper
-(`dart/gui/osg/OffscreenViewer.hpp`). The GLX pbuffer path needs an X server:
-use the workstation display, or wrap headless hosts in
-`xvfb-run -a -s '-screen 0 1280x1024x24' <command>`. conda-forge has no
-linux-64 Xvfb build, so install Xvfb from the system package manager (or run on
-a host with a real X server); the capture path skips cleanly when no `DISPLAY`
-is set.
+DART renders off-screen through `dart::gui::Viewer` with
+`setUpViewForCapture`. Linux capture uses Vulkan without an X11 or Wayland
+display; a suitable Vulkan GPU driver or Mesa Lavapipe software driver is
+required. To force Lavapipe, set `VK_DRIVER_FILES` to the Pixi environment's
+`$CONDA_PREFIX/share/vulkan/icd.d/lvp_icd.x86_64.json`. Native-window tests
+(`ctest --test-dir build/<env>/cpp/Release -L filament-native`, or
+`ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows)
+still need a desktop session or Xvfb on Linux, where windows use X11 (XWayland
+on Wayland desktops). Windows uses native OpenGL and macOS uses Metal for
+native graphics tests. Capture errors fail the visual gate; an
+unavailable graphics host must be recorded as a limitation with replacement
+evidence.
 
 - Capture a still from a GUI example:
 
@@ -151,15 +163,17 @@ is set.
   pixi run capture ssik_ik_gui arm.png
   ```
 
-- Or capture from dartpy (DART 6 offscreen bindings):
+- Or capture from dartpy:
 
   ```python
   import dartpy as dart
 
-  viewer = dart.gui.osg.ImGuiViewer()
-  viewer.addWorldNode(dart.gui.osg.WorldNode(world))
-  eye, center, up = dart.gui.osg.defaultAgentCamera([0, 0, 0], radius)
-  viewer.captureOffscreen("out.png", eye, center, up, width=640, height=480)
+  viewer = dart.gui.Viewer()
+  viewer.addWorldNode(dart.gui.WorldNode(world))
+  viewer.setUpViewForCapture(640, 480)
+  viewer.setCameraHome([2, -3, 2], [0, 0, 0], [0, 0, 1])
+  viewer.captureScreen("out.png")
+  viewer.frame()
   ```
 
 - Turn a capture into a machine-readable verdict, or compare against a golden:
@@ -176,15 +190,18 @@ non-blank check plus any golden diff. Contrast is scene-dependent, so it is
 reported but only gates when you pass `--require-contrast`. This is a machine
 pixel-integrity/reference-diff result, not semantic visual review.
 
-The Release Linux CI job runs a settled-contact `agent-capture` under Xvfb with
-contacts, collision bounds, and labels, requires `image-verdict` to accept the
-emitted frame, and runs the engine-rendered overlay on/off pixel regression
-under Xvfb. A second A/B runs through `agent-capture` itself with identical
-cameras and requires the contact/bounds/label layers to change at least 128
+The Release Linux CI job unsets `DISPLAY` and `WAYLAND_DISPLAY` and points
+`VK_DRIVER_FILES` at the Pixi environment's Mesa Lavapipe ICD (no Xvfb). It
+runs a settled-contact `agent-capture` with contacts, collision bounds, and
+labels, requires `image-verdict` to accept the emitted frame, and runs the
+engine-rendered overlay on/off pixel regression
+(`pixi run test-agent-debug-overlay`). A second A/B runs through
+`agent-capture` itself with identical cameras and requires the
+contact/bounds/label layers to change at least 128
 pixels; it also requires rendered contact-marker color pixels, while retaining
-the sidecar's count of any filtered DART 6 sentinel contacts, then proves
+the sidecar's count of any filtered DART sentinel contacts, then proves
 contacts, collision bounds, and labels each change pixels independently. This
-keeps the camera assessment, core OSG debug overlay, off-screen
+keeps the camera assessment, Filament debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end
 to end without a display-dependent skip. The consolidated `dart` detector's
 multi-shape smoke uses an x-orthogonal camera selected by native semantic image
@@ -196,7 +213,7 @@ readable alongside their contact markers and collision bounds.
   ```bash
   # Deterministic capture: auto-selected viewpoints (view-quality scored),
   # focus framing, turntable/motion video, debug layers rendered through the
-  # core OSG pipeline, and a sidecar JSON with the exact reproduce command.
+  # Filament pipeline, and a sidecar JSON with the exact reproduce command.
   pixi run agent-capture -- --scene box_stack --steps 150 \
       --layers contacts body_frames collision_bounds labels --focus stack1 \
       --auto-views 2 --out /tmp/evidence
@@ -236,18 +253,18 @@ readable alongside their contact markers and collision bounds.
   view, and a world without bounded renderables fails explicitly rather than
   inventing a radius. Body bounds come from the core `Shape.getBoundingBox()`
   (now bound in dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
-  the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: a ground
+  the engine* via a `dart.gui.DebugOverlay` viewer attachment: a ground
   grid, the world frame, contacts (implausible sentinel contact points are
   skipped and counted), body frames, velocity arrows, centers of mass,
   inertia-equivalent boxes (eigendecomposed moment of inertia), collision
   bounding boxes (world-transformed local AABBs), and trajectory polylines
-  become always-on-top overlay lines and labels become world-anchored osgText
+  become always-on-top overlay lines and labels become world-anchored text
   — all drawn unlit, with depth
-  testing disabled, in a late render bin, so the debug primitives stay legible
+  testing disabled, after the scene, so the debug primitives stay legible
   on top of the geometry they annotate instead of being buried in depth or
   composited in image space. The harness populates the overlay, renders through
-  `captureOffscreen`, then clears it. No GL context is needed for assessment
-  itself.
+  `captureScreen` and a completed `frame`, then clears it. No graphics context
+  is needed for assessment itself.
 
 - Select a small claim-tied evidence set and generate the PR section:
 
@@ -260,38 +277,42 @@ readable alongside their contact markers and collision bounds.
       --visible-observation "what was seen after opening the selected PNGs" \
       --reconciliation "how image and text agree or disagree" \
       --semantic-verdict pass --not-proven "explicit claim boundary" \
-      --out pr_section.md   # manual placeholders; gh-release needs --yes
+      --out pr_section.md   # local references for gh --body-file and --attach
   ```
 
   Every artifact must support an explicit claim (`evidence-select` rejects
   unclaimed ones and records per-artifact rationale). Publication passes only
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
-  A `gh-release --yes` run does not upload anything when either gate fails.
-  Before GitHub access, it validates the complete selection contract (claims,
-  artifact kinds and metadata, coverage, rejected entries, byte totals, and
-  pass state), revalidates local sizes and SHA-256 digests, then stages
-  every selected file under its immutable content-addressed name. Duplicate
-  local basenames are safe; duplicate source paths are rejected.
-  A retry accepts an existing asset only
-  when GitHub reports the exact size and SHA-256 digest with state `uploaded`;
-  missing integrity metadata fails closed. After create/upload it re-queries
-  GitHub, verifies every selected asset, and uses only the final remote download
-  URLs validated against the repository, tag, and content-addressed name.
-  Missing or invalid URL metadata fails closed. Retries upload absent names or
-  reuse exact uploaded assets; a same-name incomplete, mismatched, or
-  unverifiable asset blocks publication. It is never deleted or clobbered
-  automatically: recovery requires explicit maintainer approval to delete that
-  exact asset or use a new tag.
-  Output paths are preflighted before GitHub access. A mutating attempt
-  atomically invalidates previous local success with a non-passing `publishing`
-  record; later failure records `partial_or_unverified`, observed remote state,
-  and bounded recovery guidance without publishable URLs. Final section and
-  manifest writes are atomic, with the authoritative manifest written last.
-  The manifest binds attempt and selection identity, repository, release tag,
-  source path, size, digest, asset name, final URL, and URL provenance. Dry-run
-  URLs are explicitly `predicted`, never remote attestations.
-  Media is GitHub-hosted, never committed to the repository.
+  The helper validates local media, records source sizes and hashes, and stages
+  hash-verified copies without network access in the manifest's absolute
+  `attach_dir`: `<out>.attach/` beside the section, refilled on each run.
+  References use the staged names in its `attach` list. Splice the
+  section into the complete PR body: `gh pr edit --body-file` replaces the
+  whole body. Alternatively, post the section as a separate `gh pr comment`.
+  After explicit maintainer/user approval, run GitHub CLI 2.99+ from
+  `attach_dir` with an explicit PR URL (or a number plus `-R owner/repo`),
+  passing the complete body's absolute path to `--body-file` (the manifest's
+  `section` path is absolute) and `--attach` for each `attach` name.
+  `gh pr create` also needs `-R owner/repo` and `--head <branch>`
+  (`<owner>:<branch>` for a fork branch).
+  Each command accepts at most 50 files; gh validates their types and sizes.
+  If gh exits nonzero after some uploads, it has still created or updated the
+  PR or posted the comment with them: inspect that result and, after explicit
+  maintainer/user approval, attach only the missing files to that PR body
+  (`gh pr edit`) or comment (`gh pr comment --edit-last`) instead of rerunning
+  the command. gh does not write the uploaded URLs back to `--body-file`, so
+  refresh the local body from the PR
+  (`gh pr view <PR URL> --json body --jq .body > <body file>`)
+  before any later body edit. Attaching needs write access to the
+  repository; without it, open the PR without `--attach` and, after explicit
+  maintainer/user approval, have a maintainer attach the evidence.
+  GitHub CLI uploads to the same user-attachments store as the PR/issue editor's
+  drag-and-drop flow and rewrites the local references. If CLI attachment upload
+  is unavailable, ask a maintainer to drag and drop the media into the PR editor
+  and replace each staged reference with the URL the editor inserts. Host
+  transient evidence as attachments, never release assets or tags, and keep
+  it out of Git.
 
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step

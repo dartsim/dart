@@ -1,4 +1,4 @@
-"""Geometry tests for the DART 6 agent view-quality helpers (no GL needed)."""
+"""Geometry tests for the DART agent view-quality helpers (no graphics device needed)."""
 
 import math
 import sys
@@ -291,16 +291,12 @@ def test_select_viewpoints_rejects_world_without_bounded_renderables():
         avq.select_viewpoints(dart.simulation.World())
 
 
-def test_default_agent_camera_parity():
-    # frame_region's distance law matches dart.gui.osg.defaultAgentCamera.
-    eye, center, up = dart.gui.osg.defaultAgentCamera(
-        [0.0, 0.0, 0.0], 1.0, fovYDeg=30.0
-    )
-    theirs = float(np.linalg.norm(np.asarray(eye) - np.asarray(center)))
-    ours = avq.frame_region([0.0, 0.0, 0.0], 1.0, fovy_deg=30.0, margin=1.0)
-    assert float(np.linalg.norm(ours.eye - ours.center)) == pytest.approx(
-        theirs, rel=1e-6
-    )
+def test_frame_region_fits_sphere_to_vertical_field_of_view():
+    camera = avq.frame_region([0.0, 0.0, 0.0], 1.0, fovy_deg=30.0, margin=1.0)
+    expected = 1.0 / np.sin(np.radians(30.0) / 2.0)
+    assert float(np.linalg.norm(camera.eye - camera.center)) == pytest.approx(expected)
+    assert np.allclose(camera.center, [0.0, 0.0, 0.0])
+    assert np.allclose(camera.up, [0.0, 0.0, 1.0])
 
 
 def test_project_points_puts_target_at_image_center():

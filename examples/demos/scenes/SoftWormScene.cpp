@@ -32,10 +32,9 @@
 // model/controller stays GUI-free so the locomotion and determinism contract
 // can be exercised directly by an integration test.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "SoftWormModel.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <memory>
 
@@ -72,9 +71,9 @@ DemoScene makeSoftWormScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(6.6, -6.8, 3.6),
-        ::osg::Vec3d(2.4, 0.0, 0.25),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(6.6, -6.8, 3.6),
+        GuiVector3(2.4, 0.0, 0.25),
+        GuiVector3(0.0, 0.0, 1.0)};
     setup.preStep = [world, worm, state] {
       soft_worm_model::applyGait(
           worm, world->getTime(), state->gaitEnabled && state->finite);

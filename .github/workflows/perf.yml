@@ -44,7 +44,7 @@ on:
         description: "Revision to measure: a merged main revision (merge, nightly) or the release candidate (release; defaults to the tag)"
         type: string
       base:
-        description: "Expected first parent (merge) or the previous release tag (release; defaults to the newest earlier v6 tag)"
+        description: "Expected first parent (merge) or the previous release tag (release; defaults to the newest earlier release tag)"
         type: string
       tag:
         description: "Release tag: must match v<package.xml version> at head; with no head, selects an existing tag's commit"
@@ -117,7 +117,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Build and measure
         run: |
@@ -459,7 +459,7 @@ jobs:
         if: ${{ steps.scope.outputs.mode == 'ab' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Measure and apply the parent rules
         if: ${{ steps.scope.outputs.mode == 'ab' }}
@@ -765,7 +765,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Measure HEAD and nightly diagnostics
         id: measure
@@ -902,7 +902,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Measure the candidate against the previous release
         run: |

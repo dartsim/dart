@@ -1,10 +1,10 @@
 ---
-description: debug and fix CI failures on DART 6 development and release branches
+description: debug and fix CI failures on DART development and release branches
 argument-hint: "<pr-number|run-id> [target-branch=main]"
 agent: build
 ---
 
-Fix DART 6 CI: $ARGUMENTS
+Fix DART CI: $ARGUMENTS
 
 ## Required Reading
 
@@ -14,9 +14,9 @@ Fix DART 6 CI: $ARGUMENTS
 
 ## Workflow
 
-For a failure involving model/scene structure, physics behavior, or OSG output,
+For a failure involving model/scene structure, physics behavior, or Filament output,
 use `dart-verify-sim` to reproduce the claim with text and assessed visual
-evidence. Document a visual exception when OSG/Xvfb is unavailable or not
+evidence. Document a visual exception when graphics support is unavailable or not
 applicable.
 
 1. Inspect the failing run:
@@ -43,9 +43,11 @@ applicable.
    fi
    ```
 4. If a proven fix exists in a named reference, adapt it only when its
-   assumptions exist here. Preserve C++17, nanobind, `dart::utils`, OSG, and
-   downstream Gazebo/gz-physics behavior; otherwise make the smallest
-   release-scoped fix.
+   assumptions exist here; otherwise make the smallest branch-scoped fix.
+   Follow the resolved branch's compatibility rules in `AGENTS.md`,
+   preserving C++17, its dartpy binder and GUI backend (nanobind and Filament
+   on `main` and DART 7 release branches; pybind11 and OSG on `release-6.20`),
+   `dart::utils`, and downstream Gazebo/gz-physics behavior.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
 7. Ask for explicit maintainer/user approval before pushing, creating, or

@@ -3,11 +3,11 @@
 Build
 =====
 
-This page describes the DART 6 LTS source-build paths. The source version is
-read from ``package.xml`` and may retain a previously published version until
-release packaging. For the planned release, read the target branch's
-``docs/onboarding/release-management.md``; published versions are listed in
-`GitHub Releases <https://github.com/dartsim/dart/releases>`_.
+This page describes the DART development branch's source-build paths. The
+source version is read from ``package.xml`` and may retain a previously
+published version until release packaging. For the planned release, read the
+target branch's ``docs/onboarding/release-management.md``; published versions
+are listed in `GitHub Releases <https://github.com/dartsim/dart/releases>`_.
 
 Recommended Pixi build
 ----------------------
@@ -36,10 +36,17 @@ configuration enables testing, so that aggregate also runs CTest and the
 Python tests through the CMake graph. Run lint separately, and use the focused
 test tasks when you need clearer failure output.
 
+``pixi run config`` also builds the Filament GUI, but these gates skip GUI tests
+that need a graphics device (CTest label ``gui-device`` and Python rendering
+tests). Device-free GUI tests still run. Run ``pixi run test-gui`` for GUI
+changes; it selects ``-L gui -LE filament-native``. The
+:doc:`visualization guide </dart/user_guide/visualization>` describes the GUI
+tasks.
+
 Platform and tool requirements
 ------------------------------
 
-DART 6.20 requires C++17 and the following source-build baselines:
+The development branch requires C++17 and the following source-build baselines:
 
 .. list-table::
    :header-rows: 1
@@ -117,12 +124,21 @@ Optional components remain optional.
    * - spdlog
      - 1.9.2
      - Logging support
-   * - OpenSceneGraph
-     - 3.6.5
-     - OSG GUI
-   * - ImGui
-     - 1.91.9
-     - OSG GUI controls
+   * - Filament
+     - 1.77.3 (pinned SDK)
+     - GUI rendering
+   * - GLFW
+     - 3.4
+     - Native GUI windows
+   * - libpng
+     - 1.6
+     - GUI textures and PNG captures
+   * - libjpeg or libjpeg-turbo
+     - Any
+     - GUI JPEG textures
+   * - Dear ImGui
+     - 1.92.8
+     - GUI controls (bundled by default)
    * - Python
      - 3.10
      - dartpy
@@ -139,6 +155,16 @@ Optional components remain optional.
 FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
+
+On Linux, an installed Filament SDK must use libstdc++, as the conda-forge
+``filament`` package does. With ``DART_USE_SYSTEM_FILAMENT=OFF``, Linux builds
+download and compile the pinned Filament sources, which requires Clang 20 or
+newer and Ninja; macOS arm64 and 64-bit Windows builds download the pinned
+prebuilt SDK. An installed SDK without a ``notices`` directory, such as the
+conda-forge package, makes configuration download the Filament 1.77.3 license
+notices, so the first GUI configure needs network access. A static
+``dart-gui`` built with the private SDK does not install it; its consumers set
+``Filament_ROOT`` to that SDK.
 
 These source-build requirements differ from the runtime requirements of
 published :doc:`dartpy wheels </dartpy/user_guide/installation>`.
@@ -162,7 +188,9 @@ environment as the dependency prefix. Then configure and build:
    cmake --build build/default/cpp/Release -j
 
 Use ``-DCMAKE_PREFIX_PATH=<prefix>`` when dependencies are installed outside the
-compiler's default search paths.
+compiler's default search paths. Add ``-DDART_BUILD_GUI=OFF`` and
+``-DDART_BUILD_DARTPY=OFF`` to build without the GUI and its graphics
+dependencies.
 
 Important CMake options
 -----------------------
@@ -179,14 +207,23 @@ include:
      - Purpose
    * - ``DART_BUILD_DARTPY``
      - ``OFF``
-     - Build the Python bindings.
-   * - ``DART_BUILD_GUI_OSG``
+     - Build the Python bindings; requires ``DART_BUILD_IO`` and
+       ``DART_BUILD_GUI``.
+   * - ``DART_BUILD_IO``
      - ``ON``
-     - Build the OpenSceneGraph GUI component.
-   * - ``DART_ENABLE_GUI_OSG_SMOKE_TESTS``
+     - Build the ``io`` component (``dart-io``) with the model parsers.
+   * - ``DART_BUILD_GUI``
+     - ``ON``
+     - Build the Filament GUI and ImGui (``gui`` component, ``dart-gui``);
+       ``OFF`` skips the whole GUI directory.
+   * - ``DART_ENABLE_GUI_SMOKE_TESTS``
      - ``OFF``
-     - Build off-screen GUI capture smoke tests when a display or Xvfb is
-       available.
+     - Build the offscreen GUI capture smoke test; needs a graphics device.
+       Replaces ``DART_ENABLE_GUI_OSG_SMOKE_TESTS``.
+   * - ``DART_USE_SYSTEM_FILAMENT``
+     - ``ON``
+     - Use an installed Filament 1.77.3 SDK; ``OFF`` uses a pinned private
+       SDK.
    * - ``DART_ENABLE_SIMD``
      - ``OFF``
      - Add local-machine SIMD compiler flags such as ``-march=native``.

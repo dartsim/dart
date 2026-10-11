@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/gil.hpp"
 #include "detail/ik_properties.hpp"
 #include "detail/optimizer_properties.hpp"
 // clang-format on
@@ -102,14 +103,17 @@ public:
   ~PythonAnalyticalIk() override
   {
     if (mSolve) {
-      nb::gil_scoped_acquire gil;
-      mSolve.reset();
+      if (nb::detail::cleanup_guard guard{})
+        mSolve.reset();
+      else
+        // The interpreter is finalizing; intentionally leak the Python handle.
+        mSolve.release();
     }
   }
 
   std::unique_ptr<GradientMethod> clone(IK* newIK) const override
   {
-    nb::gil_scoped_acquire gil;
+    dartnb::GilScopedAcquire gil;
     return std::unique_ptr<GradientMethod>(new PythonAnalyticalIk(
         newIK, mDofs, *mSolve, mMethodName, getAnalyticalProperties()));
   }
@@ -119,7 +123,7 @@ public:
   {
     mSolutions.clear();
 
-    nb::gil_scoped_acquire gil;
+    dartnb::GilScopedAcquire gil;
     nb::object rawSolutions = (*mSolve)(desiredBodyTf.matrix());
 
     if (rawSolutions.is_none()) {

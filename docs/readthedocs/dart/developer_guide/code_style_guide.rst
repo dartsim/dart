@@ -9,7 +9,7 @@ C++ Style Guide
 Macro Definitions
 ~~~~~~~~~~~~~~~~~
 
-DART 6 uses all-caps macro names. The generated ``dart/config.hpp`` defines
+DART uses all-caps macro names. The generated ``dart/config.hpp`` defines
 optional dependency flags such as ``HAVE_BULLET``, ``HAVE_ODE``, and
 ``HAVE_OCTOMAP``, and feature flags such as ``DART_ENABLE_SIMD``. These flags
 have values of 0 or 1. Follow the existing names when checking build features.
@@ -27,9 +27,10 @@ Python Style Guide
 Naming Conventions
 ~~~~~~~~~~~~~~~~~~
 
-DART 6's dartpy bindings generally retain the C++ method names, including
-camelCase. C++ namespaces are exposed as Python modules, such as
-``dartpy.simulation`` and ``dartpy.utils``.
+Existing bindings retain their current names until PLAN-624's rename; new
+DART 7 APIs follow the Python API design's snake_case and property conventions.
+C++ namespaces are exposed as Python modules, such as ``dartpy.simulation``
+and ``dartpy.utils``.
 
 For example, these C++ methods keep the same names in Python:
 

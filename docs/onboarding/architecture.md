@@ -1,9 +1,10 @@
-# DART 6 Architecture
+# DART Architecture
 
 This document owns the development branch's component map and change-routing
-boundaries. DART 6 is a compatibility lane: architecture changes must
-preserve C++17, installed APIs, package components, ABI-sensitive interfaces,
-and downstream Gazebo/gz-physics behavior unless explicitly approved.
+boundaries. Architecture changes on `main` follow the compatibility rules in
+`AGENTS.md`: preserve C++17, installed APIs, package components, and the C++
+API and behavior that Gazebo/gz-physics and gz-sim use. ABI-sensitive
+interfaces and default behavior change only with maintainer approval.
 
 ## Component Layers
 
@@ -16,15 +17,15 @@ and downstream Gazebo/gz-physics behavior unless explicitly approved.
 | Constraints | `dart/constraint/`, `dart/lcpsolver/` | Contact and joint constraints, LCP-based solving (Lemke/Dantzig in `dart/lcpsolver/`), and solver-owned per-step state |
 | Optimization | `dart/optimizer/` | The retained gradient-based optimizer interfaces used by dynamics and IK |
 | Simulation | `dart/simulation/` | `World` ownership, stepping, time integration, and orchestration of collision and constraints |
-| Model loading | `dart/utils/` | DART 6 loaders and URDF/SDF/SKEL/MJCF parsing; public loading remains under `dart::utils` |
-| GUI | `dart/gui/osg/` | OSG viewers, world nodes, ImGui integration, and offscreen capture |
-| Python | `python/dartpy/` | nanobind bindings that expose the supported DART 6 API to `dartpy` |
+| Model loading | `dart/utils/` | DART loaders and URDF/SDF/SKEL/MJCF parsing; public loading remains under `dart::utils` |
+| GUI | `dart/gui/` | Filament viewers, world nodes, ImGui integration, and offscreen capture |
+| Python | `python/dartpy/` | nanobind bindings that expose the supported DART API to `dartpy` |
 | Downstream integration | package exports and Gazebo Pixi environment | Installed headers/targets and pinned gz-physics/gz-sim compatibility gates |
 
 The usual runtime flow is: a `dart::utils` loader creates `Skeleton` objects;
 a `simulation::World` owns and steps them; collision detectors produce contacts;
 the constraint solver resolves contacts and joint constraints; dynamics state is
-integrated; OSG or dartpy presents the result. Keep ownership at these existing
+integrated; Filament or dartpy presents the result. Keep ownership at these existing
 boundaries instead of adding task-local bypasses.
 
 ## Compatibility Boundaries
@@ -33,10 +34,11 @@ boundaries instead of adding task-local bypasses.
   implementation does not authorize removing its installed compatibility path.
 - Collision, constraint, and `World::step` changes can alter default physics and
   downstream Gazebo behavior even when focused unit tests pass.
-- Parser changes must preserve DART 6 file formats, `dart::utils` names, resource
+- Parser changes must preserve supported file formats, `dart::utils` names, resource
   retrieval, and installed dependencies.
-- Python changes use nanobind and the existing camelCase DART 6 surface.
-- GUI changes use the OSG path and require artifact inspection when rendering,
+- Python changes use nanobind; new APIs follow the DART 7 Python style while
+  the PLAN-624 rename is in progress.
+- GUI changes use the Filament path and require artifact inspection when rendering,
   interaction, or capture behavior changes.
 
 ### Performance compatibility
@@ -67,5 +69,5 @@ when alignment changes. Do not add `-march` flags to exported targets.
 | Collision or constraints | [`testing.md`](testing.md), [`ci-cd.md`](ci-cd.md) | Focused tests plus `pixi run -e gazebo test-gz` when downstream behavior can change |
 | Parser or model loading | [`io-parsing.md`](io-parsing.md) | Focused loader tests and downstream/package evidence as applicable |
 | dartpy binding | [`python-bindings.md`](python-bindings.md) | `pixi run build-py-dev` and `pixi run test-py` |
-| OSG GUI or capture | [`testing.md`](testing.md), [`../ai/verification.md`](../ai/verification.md) | Runnable scene, captured artifact, and image/text verdict appropriate to the claim |
+| Filament GUI or capture | [`testing.md`](testing.md), [`../ai/verification.md`](../ai/verification.md) | Runnable scene, captured artifact, and image/text verdict appropriate to the claim |
 | Release workflow | [`release-management.md`](release-management.md) | Release-target gates |

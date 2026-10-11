@@ -1,7 +1,7 @@
 # Deformable-body paper targets
 
 This document preserves the paper-derived reference models and measurements
-used to evaluate DART 6 deformable-body work. It is a reference foundation,
+used to evaluate DART deformable-body work. It is a reference foundation,
 not a claim that DART implements every scene or reaches parity. Current
 roadmap state belongs in `docs/plans/dashboard.md`; DART-specific compatibility
 decisions belong in `docs/design/dart6_deformable_body.md`.

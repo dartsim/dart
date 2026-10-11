@@ -49,7 +49,7 @@ evidence, and gates named before execution starts. An executor who finds
 the real scope materially different stops and reports back.
 
 1. **Session start and current reality** - Locate the project home. For
-   DART 6 autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
+   DART autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
    project directory. If it exists, read its `README.md`, `RESUME.md`, and any
    autonomous sidecars such as `decisions.md`, `verification.md`, or
    `progress-log.md`; then verify checkout state, current branch, and any
@@ -91,7 +91,7 @@ the real scope materially different stops and reports back.
 4. **Create or refresh the tracking surface** - Populate the project home with
    value, north star, deliverable, scope, non-goals, assumptions, risks,
    acceptance evidence, gates, dependencies, milestone, next actions, and
-   blockers. Claim-dependent physics/simulation, collision/contact, model, OSG,
+   blockers. Claim-dependent physics/simulation, collision/contact, model, Filament,
    and visual-example work routes through `dart-verify-sim`: require a text
    oracle plus assessed visual/debug evidence, or a justified replacement. Keep `RESUME.md`
    as the handoff; add `decisions.md`, `verification.md`, and

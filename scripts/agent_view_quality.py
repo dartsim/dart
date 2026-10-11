@@ -1,10 +1,9 @@
-"""View-quality assessment and adaptive viewpoint selection for DART 6.
+"""View-quality assessment and adaptive viewpoint selection for DART.
 
 Geometry-first checks that let a headless agent detect inadequate captures —
 cropped, too far/close, occluded, or ambiguous views — and deterministically
-pick better ones, via an assess-view / `select_viewpoints` workflow over this
-branch's OSG offscreen path
-(`Viewer.captureOffscreen(eye, center, up, fovYDeg, ...)` from WP-ASV).
+pick better ones, via an assess-view / `select_viewpoints` workflow over
+Filament's display-free capture path.
 
 Body bounds come from the core ``Shape.getBoundingBox()`` local AABB and
 occlusion from core raycasts against the world's real collision geometry (the
@@ -31,7 +30,7 @@ MAX_SUBJECT_FRACTION = 0.75
 MIN_CORNER_COVERAGE = 0.999
 MAX_OCCLUSION_FRACTION = 0.35
 MAX_AMBIGUITY_IOU = 0.55
-# Contact bias as a fraction of the eye->sample ray: DART 6's contact solver
+# Contact bias as a fraction of the eye->sample ray: DART's contact solver
 # leaves millimetre-scale penetration at rest, so a sampled corner can sit just
 # inside a neighbor's surface. A nearest hit within this last stretch of the ray
 # counts as contact, not occlusion; real occluders sit far closer to the eye.
@@ -42,7 +41,7 @@ DEFAULT_FOVY_DEG = 30.0
 
 @dataclass
 class AgentCamera:
-    """Look-at camera matching Viewer.captureOffscreen's parameters."""
+    """Look-at camera matching Viewer.setCameraHome and its vertical field of view."""
 
     eye: np.ndarray
     center: np.ndarray

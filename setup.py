@@ -4,17 +4,19 @@
 import distutils.log
 import json
 import os
+import platform
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
-from codecs import open  # To use a consistent encoding
 from glob import glob
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, cast
 
 from setuptools import Extension, find_packages, setup
+from setuptools.command.bdist_wheel import bdist_wheel
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -87,9 +89,22 @@ def _cmake_args_from_env() -> List[str]:
     return shlex.split(cmake_args)
 
 
+def _has_pinned_filament_sdk() -> bool:
+    """Whether DARTFilamentProvider.cmake pins a private Filament SDK here."""
+    if sys.platform.startswith("linux"):
+        return True
+    if sys.platform == "darwin":
+        return platform.machine() == "arm64" and "x86_64" not in os.environ.get(
+            "ARCHFLAGS", ""
+        )
+    return sys.platform == "win32" and sys.maxsize > 2**32
+
+
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
 # If you need multiple extensions, see scikit-build.
+
+
 class CMakeExtension(Extension):
     def __init__(self, name: str, sourcedir: str = "", sources=[]) -> None:
         super().__init__(name, sources=sources)
@@ -127,6 +142,8 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
             f"-DBUILD_SHARED_LIBS=OFF",
             f"-DDART_BUILD_DARTPY=ON",
+            f"-DDART_BUILD_GUI=ON",
+            f"-DDART_USE_SYSTEM_FILAMENT={'OFF' if _has_pinned_filament_sdk() else 'ON'}",
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
             f"-DDART_USE_SYSTEM_IMGUI=OFF",
@@ -227,6 +244,58 @@ class CMakeBuild(build_ext):
         )
 
 
+class CMakeWheel(bdist_wheel):
+    """Include the license of the SDK actually linked into the wheel."""
+
+    def write_wheelfile(
+        self, wheelfile_base: str, generator: str = "dartpy CMake"
+    ) -> None:
+        super().write_wheelfile(wheelfile_base, generator)
+        command = cast(CMakeBuild, self.get_finalized_command("build_ext"))
+        build_temp = Path(os.environ.get("DARTPY_BUILD_TEMP") or command.build_temp)
+        for ext in self.distribution.ext_modules or []:
+            manifest = build_temp / ext.name / "dartpy-filament-license.txt"
+            if not manifest.is_file():
+                continue
+            license_path = manifest.read_text(encoding="utf-8").strip()
+            if not license_path:
+                continue
+            license_file = Path(license_path)
+            if not license_file.is_file():
+                raise RuntimeError(
+                    f"Fetched Filament license is missing: {license_file}"
+                )
+            dist_info = Path(wheelfile_base)
+            destination = dist_info / "licenses" / "filament" / "LICENSE"
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(license_file, destination)
+            license_headers = ["License-File: filament/LICENSE"]
+            notices = license_file.parent / "notices"
+            if notices.is_dir():
+                for notice in sorted(notices.rglob("*")):
+                    if not notice.is_file():
+                        continue
+                    relative = Path("filament/notices") / notice.relative_to(notices)
+                    destination = dist_info / "licenses" / relative
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(notice, destination)
+                    license_headers.append(f"License-File: {relative.as_posix()}")
+            metadata_file = dist_info / "METADATA"
+            headers, _, body = metadata_file.read_text(encoding="utf-8").partition(
+                "\n\n"
+            )
+            missing_headers = [
+                header
+                for header in license_headers
+                if header not in headers.splitlines()
+            ]
+            if missing_headers:
+                additions = "\n".join(missing_headers)
+                metadata_file.write_text(
+                    f"{headers.rstrip()}\n{additions}\n\n{body}", encoding="utf-8"
+                )
+
+
 sources = ["CMakeLists.txt", "package.xml"]
 sources.extend(glob("cmake/**/*", recursive=True))
 sources.extend(glob("dart/**/*", recursive=True))
@@ -295,7 +364,7 @@ setup(
     ],
     ext_modules=[CMakeExtension("dartpy_math", sources=sources)],
     url="https://github.com/dartsim/dart.git",
-    cmdclass={"build_ext": CMakeBuild},
+    cmdclass={"build_ext": CMakeBuild, "bdist_wheel": CMakeWheel},
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},
     python_requires=">=3.10",

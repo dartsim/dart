@@ -1,6 +1,6 @@
 # .codex/
 
-Maintained Codex runtime configuration for DART 6.
+Maintained Codex runtime configuration for DART.
 
 - Do not pin a model in project config; inherit the maintainer's session model.
 - Keep custom agents few, bounded, read-only, and explicit about inputs/output.

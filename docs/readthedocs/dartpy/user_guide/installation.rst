@@ -4,7 +4,7 @@ Installation
 Quick install commands
 ----------------------
 
-For the DART 6 Python bindings, use one of the package channels below:
+For packaged dartpy bindings, use one of the package channels below:
 
 .. code-block:: bash
 
@@ -54,3 +54,9 @@ The DART 6.20 ``setup.py`` package requires Python 3.10 or newer and NumPy
 toolchain, CMake, Ninja, and the DART dependencies described in the
 :doc:`DART build guide </dart/developer_guide/build>`. Isolated ``pip`` builds
 use the newer tool requirements from ``pyproject.toml``.
+
+dartpy always includes ``dartpy.gui``. ``setup.py`` builds it against DART's
+pinned private Filament SDK on Linux, macOS arm64, and 64-bit Windows.
+Configuring downloads that SDK; on Linux it is compiled from source, which also
+needs Clang 20 or newer. Other platforms need an installed Filament 1.77.3 SDK,
+found through ``Filament_ROOT`` or the CMake prefix path.

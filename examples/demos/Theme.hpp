@@ -33,11 +33,7 @@
 #ifndef DART_EXAMPLES_DEMOS_THEME_HPP_
 #define DART_EXAMPLES_DEMOS_THEME_HPP_
 
-#include <dart/gui/osg/IncludeImGui.hpp>
-
-namespace dart::gui::osg {
-class ImGuiHandler;
-}
+#include "GuiBackend.hpp"
 
 namespace dart_demos {
 
@@ -52,7 +48,7 @@ void applyModernDarkColors();
 /// preview colors) apply when the build uses the bundled docking-branch ImGui
 /// (IMGUI_HAS_DOCK) and are skipped on vanilla system ImGui. Sets base
 /// (unscaled) style metrics; per-frame GUI scaling is applied on top of these
-/// by dart::gui::osg::ImGuiHandler::setGuiScale() via
+/// by GuiScaleSource::setGuiScale() via
 /// ImGuiStyle::ScaleAllSizes, so callers should not pre-multiply these values
 /// by the GUI scale. Call once before the first frame, after
 /// applyModernDarkColors().
@@ -62,13 +58,13 @@ void applyModernDarkMetrics();
 class GuiScaleTheme
 {
 public:
-  explicit GuiScaleTheme(const dart::gui::osg::ImGuiHandler& handler);
+  explicit GuiScaleTheme(const GuiScaleSource& handler);
   ~GuiScaleTheme();
   GuiScaleTheme(const GuiScaleTheme&) = delete;
   GuiScaleTheme& operator=(const GuiScaleTheme&) = delete;
 
 private:
-  const dart::gui::osg::ImGuiHandler& mHandler;
+  const GuiScaleSource& mHandler;
   ImGuiContext* mContext;
   ImGuiStyle mBaseStyle;
   ImGuiID mHookId;

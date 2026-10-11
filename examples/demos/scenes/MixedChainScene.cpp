@@ -57,10 +57,9 @@
 //    clears all key actions on scene switch), so despite sharing letters with
 //    other scenes' bindings there is no actual collision.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -134,9 +133,9 @@ DemoScene makeMixedChainScene()
     // The chain is anchored high (its base sits at z~5 after reorientation)
     // and hangs down, so frame the vertical span rather than the ground plane.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(7.5, -7.5, 3.2),
-        ::osg::Vec3d(0.0, 0.0, 2.2),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(7.5, -7.5, 3.2),
+        GuiVector3(0.0, 0.0, 2.2),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.preStep = [world, state] {
       if (state->impulseDuration <= 0)

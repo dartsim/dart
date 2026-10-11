@@ -58,8 +58,7 @@
 // unaffected.
 
 #include "../Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -116,7 +115,7 @@ std::string ikFastLibraryName()
 struct WamIkFastState
 {
   SkeletonPtr wam;
-  dart::gui::osg::InteractiveFramePtr target;
+  demo_gui::InteractiveFramePtr target;
 
   Eigen::VectorXd restConfig;
 
@@ -223,7 +222,7 @@ DemoScene makeWamIkFastScene()
     auto* ee = wam7->createEndEffector("ee");
     ee->setDefaultRelativeTransform(tfHand, true);
 
-    auto target = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    auto target = std::make_shared<demo_gui::InteractiveFrame>(
         dart::dynamics::Frame::World(), "lh_target");
     ee->getIK(true)->setTarget(target);
 
@@ -255,9 +254,9 @@ DemoScene makeWamIkFastScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.34, 3.00, 1.91),
-        ::osg::Vec3d(0.00, 0.00, 0.50),
-        ::osg::Vec3d(0.00, 0.00, 0.98)};
+        GuiVector3(5.34, 3.00, 1.91),
+        GuiVector3(0.00, 0.00, 0.50),
+        GuiVector3(0.00, 0.00, 0.98)};
 
     setup.onActivate = [state](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();

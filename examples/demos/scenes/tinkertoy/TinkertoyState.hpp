@@ -38,7 +38,7 @@
 #ifndef DART_EXAMPLES_DEMOS_SCENES_TINKERTOY_TINKERTOYSTATE_HPP_
 #define DART_EXAMPLES_DEMOS_SCENES_TINKERTOY_TINKERTOYSTATE_HPP_
 
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/dart.hpp>
 
@@ -75,7 +75,7 @@ constexpr float kForceIncrement = 10.0f;
 struct TinkertoyState
 {
   dart::simulation::WorldPtr world;
-  dart::gui::osg::ImGuiViewer* viewer = nullptr;
+  GuiViewer* viewer = nullptr;
 
   dart::dynamics::ShapePtr weldJointShape;
   dart::dynamics::ShapePtr revoluteJointShape;
@@ -90,7 +90,7 @@ struct TinkertoyState
   dart::dynamics::BodyNode* pickedNode = nullptr;
   Eigen::Vector3d pickedPoint = Eigen::Vector3d::Zero();
 
-  dart::gui::osg::InteractiveFramePtr target;
+  demo_gui::InteractiveFramePtr target;
   dart::dynamics::LineSegmentShapePtr forceLine;
 
   float forceCoeff = kDefaultForceCoeff;
@@ -102,7 +102,7 @@ struct TinkertoyState
 
   /// Moves the drag target to the pick location (offset outward along the
   /// picked surface normal) and records the picked body + local pick point.
-  void handlePick(const dart::gui::osg::PickInfo& pick);
+  void handlePick(const demo_gui::PickInfo& pick);
 
   /// Clears the current pick and resets the target to identity, as in the
   /// original's clearPick().
@@ -131,18 +131,15 @@ struct TinkertoyState
 /// addMouseEventHandler observes the handler (addSubject(handler)), so the
 /// handler's Subject destructor notifies the DefaultEventHandler, whose
 /// handleDestructionNotification erases it from mMouseEventHandlers -- no
-/// dangling pointer is left for the next mouse event. (That observer wiring was
-/// added in the accompanying gui-osg library fix; before it, the header's
-/// documented "removed automatically upon deletion" contract was unimplemented,
-/// leaving a use-after-free after a scene switch.) The host destroys the
+/// dangling pointer is left for the next mouse event. The host destroys the
 /// teardown list before the viewer (DemoHost member order), so the handler
 /// never outlives the DefaultEventHandler and the MouseEventHandler suicide
 /// path (delete-on-DefaultEventHandler-death) never races the shared_ptr.
-class TinkertoyMouseHandler : public dart::gui::osg::MouseEventHandler
+class TinkertoyMouseHandler : public demo_gui::MouseEventHandler
 {
 public:
   TinkertoyMouseHandler(
-      dart::gui::osg::Viewer* viewer, std::shared_ptr<TinkertoyState> state)
+      demo_gui::Viewer* viewer, std::shared_ptr<TinkertoyState> state)
     : mViewer(viewer), mState(std::move(state))
   {
   }
@@ -150,7 +147,7 @@ public:
   void update() override;
 
 private:
-  dart::gui::osg::Viewer* mViewer;
+  demo_gui::Viewer* mViewer;
   std::shared_ptr<TinkertoyState> mState;
 };
 

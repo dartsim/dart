@@ -10,14 +10,14 @@
 
 #include "../memory_diagnostics.hpp"
 
-#include <dart/gui/osg/IncludeImGui.hpp>
-
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/WeldJointConstraint.hpp>
 
 #include <dart/collision/CollisionGroup.hpp>
 
 #include <dart/dynamics/dynamics.hpp>
+
+#include <dart/external/imgui/imgui.h>
 
 #include <gtest/gtest.h>
 
@@ -326,7 +326,7 @@ TEST(MemoryDiagnostics, MissingWorldKeepsUnavailableValuesDistinctFromZero)
 }
 
 //==============================================================================
-TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
+TEST(MemoryDiagnostics, DenseMapStaysBelowTheSixteenBitDrawIndexLimit)
 {
   constexpr std::size_t kRegionBytes = 4096u;
   constexpr std::size_t kObservationCount = 512u;

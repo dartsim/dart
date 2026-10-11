@@ -30,15 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../GuiOptions.hpp"
 #include "ContactContainerScene.hpp"
 #include "GazeboPreset.hpp"
 
-#include <dart/gui/osg/ImGuiHandler.hpp>
-#include <dart/gui/osg/ImGuiViewer.hpp>
-#include <dart/gui/osg/ImGuiWidget.hpp>
-#include <dart/gui/osg/IncludeImGui.hpp>
-#include <dart/gui/osg/Utils.hpp>
-#include <dart/gui/osg/osg.hpp>
+#if DART_CONTACT_BENCHMARK_HAS_GUI
+  #include <dart/gui/GUIEventHandler.hpp>
+  #include <dart/gui/ImGuiWidget.hpp>
+  #include <dart/gui/RealTimeWorldNode.hpp>
+  #include <dart/gui/Viewer.hpp>
+#endif
 
 #include <dart/utils/sdf/SdfParser.hpp>
 
@@ -66,12 +67,10 @@
 #include <dart/common/Profile.hpp>
 
 #include <dart/dart.hpp>
+#if DART_CONTACT_BENCHMARK_HAS_GUI
+  #include <dart/external/imgui/imgui.h>
+#endif
 
-#include <osg/Camera>
-#include <osgGA/GUIActionAdapter>
-#include <osgGA/GUIEventAdapter>
-#include <osgGA/GUIEventHandler>
-#include <osgViewer/ViewerBase>
 #include <tinyxml2.h>
 
 #include <algorithm>
@@ -158,7 +157,8 @@ struct Options
   bool guiStart = false;
   bool guiCaptureExerciseWidget = false;
   double guiTargetRtf = 1.0;
-  double guiScale = dart::gui::osg::getDefaultGuiScale();
+  double guiScale = 1.0;
+  bool guiScaleSpecified = false;
   std::optional<std::string> guiCapturePath;
   std::size_t guiCaptureSteps = 0;
   std::size_t worldThreads = 1;
@@ -307,7 +307,7 @@ void printUsage(const std::string& programName)
       << "  --checkpoint N            Diagnostic print interval; 0 disables.\n"
       << "  --quiet, --headless       Print only setup and final results.\n"
       << "  --help, -h                Print this help text.\n"
-      << "  --gui                     Open an OSG viewer instead of "
+      << "  --gui                     Open a Filament viewer instead of "
          "benchmarking.\n"
       << "  --profile                 Dump DART text profiler summary.\n"
       << "  --collision default|dart|fcl|bullet|ode\n"
@@ -376,7 +376,8 @@ void printUsage(const std::string& programName)
          "is also honored.\n"
       << "  --gui-start               Start GUI simulation immediately; "
          "default is paused.\n"
-      << "  --gui-capture PATH        Run the OSG GUI path, save a PNG, and "
+      << "  --gui-capture PATH        Run the Filament GUI path, save a PNG, "
+         "and "
          "exit.\n"
       << "  --gui-capture-steps N     Simulation steps before --gui-capture; "
          "default uses --steps.\n"
@@ -609,8 +610,8 @@ Options parseOptions(int argc, char* argv[])
 {
   Options options;
   if (const char* envScale = std::getenv("DART_GUI_SCALE")) {
-    options.guiScale = dart::gui::osg::parseGuiScale(
-        envScale, dart::gui::osg::getDefaultGuiScale(), &std::cerr);
+    options.guiScale = dart_examples::parseGuiScale(envScale, 1.0, &std::cerr);
+    options.guiScaleSpecified = true;
   }
 
   bool consumedPositionalSteps = false;
@@ -661,11 +662,13 @@ Options parseOptions(int argc, char* argv[])
     } else if (arg == "--gui-target-rtf") {
       options.guiTargetRtf = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--gui-scale") {
-      options.guiScale = dart::gui::osg::parseGuiScale(
+      options.guiScale = dart_examples::parseGuiScale(
           needValue(arg), options.guiScale, &std::cerr);
+      options.guiScaleSpecified = true;
     } else if (arg.compare(0, guiScalePrefix.size(), guiScalePrefix) == 0) {
-      options.guiScale = dart::gui::osg::parseGuiScale(
+      options.guiScale = dart_examples::parseGuiScale(
           arg.substr(guiScalePrefix.size()), options.guiScale, &std::cerr);
+      options.guiScaleSpecified = true;
     } else if (arg == "--gui-start") {
       options.guiStart = true;
     } else if (arg == "--gui-capture") {
@@ -776,7 +779,8 @@ Options parseOptions(int argc, char* argv[])
     options.sleepStateColors = true;
     if (!options.dropHeightSpecified)
       options.dropHeight = kDefaultDropHeight;
-    if (!options.quiet && !options.guiCapturePath.has_value())
+    if (DART_CONTACT_BENCHMARK_HAS_GUI && !options.quiet
+        && !options.guiCapturePath.has_value())
       options.gui = true;
   }
 
@@ -1541,12 +1545,15 @@ void setDynamicVisualColors(
   }
 }
 
-void enableDynamicVisualColors(const dart::simulation::WorldPtr& world)
+// Used only by --gui and --gui-capture builds.
+[[maybe_unused]] void enableDynamicVisualColors(
+    const dart::simulation::WorldPtr& world)
 {
   setDynamicVisualColors(world, true);
 }
 
-void applySleepStateVisualColors(const dart::simulation::WorldPtr& world)
+[[maybe_unused]] void applySleepStateVisualColors(
+    const dart::simulation::WorldPtr& world)
 {
   if (!world)
     return;
@@ -1585,7 +1592,7 @@ void applySleepStateVisualColors(const dart::simulation::WorldPtr& world)
   }
 }
 
-std::size_t replaceGuiPlaneVisualsWithFloorBoxes(
+[[maybe_unused]] std::size_t replaceGuiPlaneVisualsWithFloorBoxes(
     const dart::simulation::WorldPtr& world)
 {
   if (!world)
@@ -1898,20 +1905,52 @@ void printWorldSummary(
   std::cout << "  Total Degrees of Freedom (DOFs): " << totalDofs << "\n";
 }
 
+#if DART_CONTACT_BENCHMARK_HAS_GUI
 void applyCameraPose(
-    dart::gui::osg::Viewer& viewer, const dart::simulation::WorldPtr& world)
+    dart::gui::Viewer& viewer, const dart::simulation::WorldPtr& world)
 {
-  dart::gui::osg::applyDefaultCameraPose(viewer, world);
+  Eigen::Vector3d eye(0.0, -20.0, 10.0);
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+  bool hasMobileBody = false;
+  if (world) {
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      const auto skeleton = world->getSkeleton(i);
+      if (!skeleton || !skeleton->isMobile())
+        continue;
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+        const Eigen::Vector3d position
+            = skeleton->getBodyNode(j)->getTransform().translation();
+        if (!hasMobileBody) {
+          min = max = position;
+          hasMobileBody = true;
+        } else {
+          min = min.cwiseMin(position);
+          max = max.cwiseMax(position);
+        }
+      }
+    }
+  }
+  if (hasMobileBody) {
+    center = 0.5 * (min + max);
+    const Eigen::Vector3d extent = max - min;
+    const double span = std::max({extent.x(), extent.y(), extent.z() * 1.2});
+    const double distance = std::max(10.0, span * 0.9 + 8.0);
+    center.z() = std::clamp(0.6 * center.z(), 0.0, 5.0);
+    eye = center
+          + Eigen::Vector3d(0.0, -distance, std::max(6.0, distance * 0.55));
+  }
+  viewer.setCameraHome(eye, center, Eigen::Vector3d::UnitZ());
+  viewer.home();
 }
 
-class ContactBenchmarkGuiWorldNode final
-  : public dart::gui::osg::RealTimeWorldNode
+class ContactBenchmarkGuiWorldNode final : public dart::gui::RealTimeWorldNode
 {
 public:
   ContactBenchmarkGuiWorldNode(
       const dart::simulation::WorldPtr& world, const Options& options)
-    : dart::gui::osg::RealTimeWorldNode(
-        world, nullptr, 60.0, options.guiTargetRtf),
+    : dart::gui::RealTimeWorldNode(world, 60.0, options.guiTargetRtf),
       mInitialStates(captureInitialStates(world)),
       mOptions(options),
       mSleepStateColors(options.sleepStateColors)
@@ -1969,11 +2008,6 @@ public:
       enableDynamicVisualColors(world);
 
     resetTimingStats();
-    clearChildUtilizationFlags();
-    refreshSkeletons();
-    refreshSimpleFrames();
-    clearUnusedNodes();
-    dirtyBound();
     refreshVisualAids();
   }
 
@@ -2002,7 +2036,6 @@ public:
     world->reset();
     resetTimingStats();
 
-    refreshSkeletons();
     refreshVisualAids();
     std::cout
         << "GUI reset in-place to t=0/drop state; mobile objects awake.\n";
@@ -2081,7 +2114,7 @@ private:
     mLastRealTimeFactor = 0.0;
     mLowestRealTimeFactor = std::numeric_limits<double>::infinity();
     mHighestRealTimeFactor = 0.0;
-    mRefreshTimer.setStartTick();
+    mRefreshStart = std::chrono::steady_clock::now();
     mSmoothedRealTimeFactor = 0.0;
     mHasSmoothedRealTimeFactor = false;
     mHasSmoothedStats = false;
@@ -2171,7 +2204,7 @@ bool collisionEngineAllowsPrimitiveShapes(int index)
   return index == 0 || index == 2;
 }
 
-class ContactBenchmarkGuiEventHandler final : public ::osgGA::GUIEventHandler
+class ContactBenchmarkGuiEventHandler final : public dart::gui::GUIEventHandler
 {
 public:
   explicit ContactBenchmarkGuiEventHandler(ContactBenchmarkGuiWorldNode* node)
@@ -2185,13 +2218,14 @@ public:
   }
 
   bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+      const dart::gui::GUIEventAdapter& ea,
+      dart::gui::GUIActionAdapter&) override
   {
-    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN || !mNode)
+    if (ea.getEventType() != dart::gui::GUIEventAdapter::KEYDOWN || !mNode)
       return false;
 
-    switch (ea.getUnmodifiedKey()) {
-      case ::osgGA::GUIEventAdapter::KEY_R:
+    switch (ea.getKey()) {
+      case 'r':
       case 'R':
         mNode->resetWorld();
         return true;
@@ -2204,18 +2238,18 @@ private:
   ContactBenchmarkGuiWorldNode* mNode;
 };
 
-class ContactBenchmarkGuiWidget final : public dart::gui::osg::ImGuiWidget
+class ContactBenchmarkGuiWidget final : public dart::gui::ImGuiWidget
 {
 public:
   ContactBenchmarkGuiWidget(
-      dart::gui::osg::ImGuiViewer* viewer,
+      dart::gui::Viewer* viewer,
       ContactBenchmarkGuiWorldNode* node,
       ContactBenchmarkGuiEventHandler* eventHandler,
       double guiScale)
     : mViewer(viewer),
       mNode(node),
       mEventHandler(eventHandler),
-      mGuiScale(static_cast<float>(dart::gui::osg::sanitizeGuiScale(guiScale)))
+      mGuiScale(static_cast<float>(dart_examples::sanitizeGuiScale(guiScale)))
   {
     syncFromNode();
   }
@@ -2226,6 +2260,8 @@ public:
       return;
 
     const ImGuiIO& io = ImGui::GetIO();
+    mGuiScale = static_cast<float>(mViewer->getGuiScale())
+                / std::max(0.001f, io.DisplayFramebufferScale.y);
     const float margin = 12.0f * mGuiScale;
     ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_FirstUseEver);
     // Auto-size the window to its content so no label is clipped and no
@@ -2578,7 +2614,7 @@ private:
     }
   }
 
-  dart::gui::osg::ImGuiViewer* mViewer = nullptr;
+  dart::gui::Viewer* mViewer = nullptr;
   ContactBenchmarkGuiWorldNode* mNode = nullptr;
   ContactBenchmarkGuiEventHandler* mEventHandler = nullptr;
   int mGeneratedObjects = static_cast<int>(kDefaultGeneratedObjects);
@@ -2609,8 +2645,7 @@ void runGui(const dart::simulation::WorldPtr& world, const Options& options)
         << replacedPlaneVisuals << "\n";
   }
 
-  ::osg::ref_ptr<ContactBenchmarkGuiWorldNode> node
-      = new ContactBenchmarkGuiWorldNode(world, options);
+  auto node = std::make_shared<ContactBenchmarkGuiWorldNode>(world, options);
 
   std::cout << "GUI status panel: RTF, simulation time, contacts, and sleep "
                "state. Press r to reset to t=0/drop state.\n";
@@ -2623,22 +2658,21 @@ void runGui(const dart::simulation::WorldPtr& world, const Options& options)
                  "resting=blue, static=gray.\n";
   }
 
-  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
-  ::osg::ref_ptr<ContactBenchmarkGuiEventHandler> eventHandler
-      = new ContactBenchmarkGuiEventHandler(node.get());
+  auto viewer = std::make_shared<dart::gui::Viewer>();
+  auto eventHandler
+      = std::make_shared<ContactBenchmarkGuiEventHandler>(node.get());
   viewer->addWorldNode(node);
-  viewer->getImGuiHandler()->setGuiScale(options.guiScale);
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<ContactBenchmarkGuiWidget>(
-          viewer.get(), node.get(), eventHandler.get(), options.guiScale));
+  if (options.guiScaleSpecified)
+    viewer->setGuiScale(options.guiScale);
+  viewer->addWidget(std::make_shared<ContactBenchmarkGuiWidget>(
+      viewer.get(), node.get(), eventHandler.get(), options.guiScale));
   viewer->addEventHandler(eventHandler);
   viewer->simulate(options.guiStart);
   viewer->setUpViewInWindow(
       0,
       0,
-      dart::gui::osg::scaleWindowExtent(1360, options.guiScale),
-      dart::gui::osg::scaleWindowExtent(768, options.guiScale));
+      dart_examples::scaleWindowExtent(1360, options.guiScale),
+      dart_examples::scaleWindowExtent(768, options.guiScale));
   applyCameraPose(*viewer, world);
   viewer->run();
 }
@@ -2664,33 +2698,23 @@ int runGuiCapture(
   // dynamic sleep-state recoloring.
   Options captureNodeOptions = options;
   captureNodeOptions.sleepStateColors = false;
-  ::osg::ref_ptr<ContactBenchmarkGuiWorldNode> node
-      = new ContactBenchmarkGuiWorldNode(world, captureNodeOptions);
+  auto node = std::make_shared<ContactBenchmarkGuiWorldNode>(
+      world, captureNodeOptions);
 
-  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
-      = new dart::gui::osg::ImGuiViewer();
-  ::osg::ref_ptr<ContactBenchmarkGuiEventHandler> eventHandler
-      = new ContactBenchmarkGuiEventHandler(node.get());
+  auto viewer = std::make_shared<dart::gui::Viewer>();
+  auto eventHandler
+      = std::make_shared<ContactBenchmarkGuiEventHandler>(node.get());
   auto widget = std::make_shared<ContactBenchmarkGuiWidget>(
       viewer.get(), node.get(), eventHandler.get(), options.guiScale);
-  viewer->setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
   viewer->addWorldNode(node);
-  viewer->getImGuiHandler()->setGuiScale(options.guiScale);
-  viewer->getImGuiHandler()->addWidget(widget);
+  if (options.guiScaleSpecified)
+    viewer->setGuiScale(options.guiScale);
+  viewer->addWidget(widget);
   viewer->addEventHandler(eventHandler);
   viewer->simulate(false);
-  viewer->setUpViewInWindow(
-      0,
-      0,
-      dart::gui::osg::scaleWindowExtent(1360, options.guiScale),
-      dart::gui::osg::scaleWindowExtent(768, options.guiScale));
-  applyCameraPose(*viewer, world);
-  viewer->realize();
-  if (!viewer->isRealized()) {
-    std::cerr << "GUI capture failed: viewer was not realized.\n";
-    return 1;
-  }
-
+  viewer->setUpViewForCapture(
+      dart_examples::scaleWindowExtent(1360, options.guiScale),
+      dart_examples::scaleWindowExtent(768, options.guiScale));
   applyCameraPose(*viewer, world);
   viewer->frame();
   if (options.guiCaptureExerciseWidget) {
@@ -2699,8 +2723,6 @@ int runGuiCapture(
       std::cerr << "GUI capture widget exercise failed: " << error << "\n";
       return 1;
     }
-    if (auto* currentNode = widget->getNode())
-      node = currentNode;
     applyCameraPose(*viewer, node->getWorld());
     for (int i = 0; i < 3; ++i)
       viewer->frame();
@@ -2767,6 +2789,7 @@ int runGuiCapture(
 
   return 0;
 }
+#endif // DART_CONTACT_BENCHMARK_HAS_GUI
 
 int runHeadless(
     const dart::simulation::WorldPtr& world,
@@ -3051,6 +3074,7 @@ int main(int argc, char* argv[])
   wakeMobileObjects(world);
   printWorldSummary(world, options);
 
+#if DART_CONTACT_BENCHMARK_HAS_GUI
   if (options.guiCapturePath.has_value())
     return runGuiCapture(world, options);
 
@@ -3058,6 +3082,13 @@ int main(int argc, char* argv[])
     runGui(world, options);
     return 0;
   }
+#else
+  if (options.gui || options.guiCapturePath.has_value()) {
+    std::cerr << "This contact_benchmark was built without dart-gui; "
+                 "configure DART with DART_BUILD_GUI=ON for --gui.\n";
+    return 1;
+  }
+#endif
 
   return runHeadless(world, options, groundTop);
 }

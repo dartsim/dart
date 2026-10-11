@@ -1,9 +1,9 @@
 # Paper parity matrix
 
-This file converts the requested papers into tracked DART 6 acceptance targets.
+This file converts the requested papers into tracked DART 7.0 acceptance targets.
 The paper models and published numbers are also preserved in the durable
-reference `docs/background/deformable_body_paper_targets.md`; approved DART 6
-scope decisions live in `docs/design/dart6_deformable_body.md`.
+reference `docs/background/deformable_body_paper_targets.md`; approved
+branch-specific scope decisions live in `docs/design/dart6_deformable_body.md`.
 
 Sources:
 
@@ -14,7 +14,7 @@ Sources:
 - Jain and Liu ACM DOI:
   <https://dl.acm.org/doi/10.1145/2024156.2024197>
 
-## Kim and Pollard 2011 — not DART 6 scope
+## Kim and Pollard 2011 — outside this task's scope
 
 Kim and Pollard's volumetric FEM characters are not DART 6 work (decided
 2026-07-29; see `decisions.md`). Their paper numbers remain in the
@@ -24,11 +24,11 @@ and they are excluded from the acceptance rule below.
 
 ## Jain and Liu 2011
 
-The paper target is closer to DART 6 `SoftBodyNode`: surface point masses
+The paper target is closer to DART's `SoftBodyNode`: surface point masses
 attached to rigid bodies, vertex and edge springs, adaptive active vertices near
 contact, and mixed LCP/friction soft contact.
 
-| Representative target | Paper number or feature to replicate | Current DART 6 evidence | Acceptance gate |
+| Representative target | Paper number or feature to replicate | Current DART evidence | Acceptance gate |
 | --- | --- | --- | --- |
 | Adaptive active vertices | Only vertices in a contact-local p-ring are simulated until they leave contact and return to rest; inactive point masses still contribute their rest-pose mass and inertia to the parent rigid body. | **Implemented**: opt-in per-soft-body activation with constraint-time seeding, ring expansion, rest-gated linger, and rigid-lump frozen points contributing full rest mass/inertia to the parent body. Deterministic active-DOF counts (`getNumActivePointMasses`), thread-invariant hashes, activation-enabled zero-allocation gates, and contact-behavior tolerance tests landed in `578ea17a049` + `2382b971244`; the `adaptive_soft_contact` demo visualizes the active region. | Met: contact-local activation with deterministic active-DOF counts, contact behavior within tolerance (`adaptiveContactActivationMatchesSoftDropBehavior`, CoP gate with activation on), and no post-warmup heap growth. |
 | Biped push recovery | Same SIMBICON-style controller with rigid contact vs soft contact; soft contact withstands larger perturbations and motor noise while maintaining more ground contact points. | PR #3408 added the soft-foot SIMBICON regression with the models normalized to equal mass, one foot collision surface, and the same rest-pose collision tessellation; the follow-up matched the control's rest inertia (the unmatched tensor was worth 4000 N of its threshold) and re-tuned the asset's under-damped feet (<damp> 1000 -> 4000, kv unchanged, chosen from the interior of a measured 18000 N basin). **Both claims reproduce and are gate-asserted**: contacts 51.2 soft vs 15.64 rigid (3.3x, enforced at 1.5x); recoverable push 18000 N soft vs 8000 N rigid (soft >= rigid). | Both decisions (plus a review-found third confound: the SIMBICON COM signal was blind to point masses, fixed in State) resolved 2026-08-01 with A/B evidence; `decisions.md` records them under the soft-foot comparison, and the push comparison is re-asserted. Motor-noise variant still unbuilt. |
@@ -44,12 +44,12 @@ contact, and mixed LCP/friction soft contact.
 ## Deferral mapping — retracted
 
 The 2026-07-11 maintainer-approved deferral list is **retracted**. Nothing in
-this matrix is deferred any more; each row is either active DART 6 work or out of
-DART 6 scope:
+this matrix is deferred any more. Each row is either active DART 7.0 work or
+outside this task's scope:
 
 - **Kim/Pollard rows are out of DART 6 scope** (decided 2026-07-29) and are
   excluded from the DART 6 completion rule.
-- **Every Jain/Liu row is active DART 6 work**, including the SIMBICON and
+- **Every Jain/Liu row is active DART 7.0 work**, including the SIMBICON and
   controller rows (biped push recovery, noisy floor, biped walk), the hand scenes
   (finger flick, arm fold, pinch grasp), and the four-link flexible-rigid-foot
   versus deformable-foot comparison. Their deferrals were retracted on
@@ -63,13 +63,14 @@ survives the retirement of this temporary task folder.
 
 ## Acceptance rule
 
-This rule applies to the **Jain/Liu rows only**. The Kim/Pollard rows are out of
-DART 6 scope and are not acceptance targets here; do not apply the rule to them.
+This rule applies to the **Jain/Liu rows only**. The Kim/Pollard rows are outside
+this DART 7.0 task's scope and are not acceptance targets here; do not apply the
+rule to them.
 Deferral is no longer an available outcome for any row.
 
 Parity is not satisfied by matching API names. Each active Jain/Liu row needs:
 
-- a runnable DART 6 scene or benchmark,
+- a runnable DART 7.0 scene or benchmark,
 - correctness/stability evidence with deterministic state or metric thresholds,
 - `dart`-versus-FCL contact and performance evidence for any row that depends on
   deformable collision,

@@ -41,24 +41,18 @@
 // same precedent SleepingScene documents). The Menu bar (Exit / Help > About
 // DART) is dropped too: no other ported scene recreates that chrome, since it
 // duplicates functionality the host itself doesn't yet expose per-scene. The
-// on-screen osgText labels (title + BALL/CYLINDRICAL/WELD captions) are kept.
+// on-screen labels (title + BALL/CYLINDRICAL/WELD captions) are kept.
 // Because dart-demos is a single long-lived window where scenes come and go,
-// the label group is added to the viewer's root group from onActivate and
-// explicitly removed on teardown (the original added it once in main() for
+// the labels are an owned DebugOverlay attachment added from onActivate and
+// explicitly removed on teardown (the original added them once in main() for
 // the process lifetime, since it never tore anything down); the group is
 // still sized from the gui scale once at construction, matching the
 // original's own one-shot (non-reactive) sizing.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
 #include <dart/dart.hpp>
-
-#include <osg/Geode>
-#include <osg/Group>
-#include <osg/StateSet>
-#include <osgText/Text>
 
 #include <memory>
 
@@ -186,58 +180,31 @@ dart::dynamics::SimpleFramePtr createAxisMarker(
   return frame;
 }
 
-::osg::ref_ptr<::osg::Geode> createTextLabel(
-    const std::string& text,
-    const Eigen::Vector3d& position,
-    const Eigen::Vector3d& color,
-    float characterSize)
+GuiPtr<demo_gui::DebugOverlay> createSceneLabels(double scale)
 {
-  ::osg::ref_ptr<::osgText::Text> label = new ::osgText::Text();
-  label->setText(text);
-  label->setPosition(::osg::Vec3(position.x(), position.y(), position.z()));
-  label->setColor(::osg::Vec4(color.x(), color.y(), color.z(), 1.0));
-  label->setCharacterSizeMode(::osgText::TextBase::SCREEN_COORDS);
-  label->setCharacterSize(characterSize);
-  label->setAxisAlignment(::osgText::TextBase::SCREEN);
-  label->setAlignment(::osgText::TextBase::CENTER_CENTER);
-  label->setBackdropType(::osgText::Text::OUTLINE);
-  label->setBackdropColor(::osg::Vec4(1.0, 1.0, 1.0, 1.0));
-  label->setEnableDepthWrites(false);
-
-  ::osg::ref_ptr<::osg::Geode> geode = new ::osg::Geode();
-  geode->addDrawable(label);
-  geode->getOrCreateStateSet()->setMode(
-      GL_DEPTH_TEST, ::osg::StateAttribute::OFF);
-  return geode;
-}
-
-::osg::ref_ptr<::osg::Group> createSceneLabels(double guiScale)
-{
-  const float baseSize = static_cast<float>(18.0 * guiScale);
-  const float titleSize = static_cast<float>(22.0 * guiScale);
-
-  ::osg::ref_ptr<::osg::Group> labels = new ::osg::Group();
-  labels->addChild(createTextLabel(
-      "DART 6 DynamicJointConstraint catalog",
+  auto labels = makeGui<demo_gui::DebugOverlay>();
+  labels->setTextOutlineWidth(1.0);
+  labels->setTextOutlineColor(Eigen::Vector4d::Ones());
+  labels->addLabelPixels(
       Eigen::Vector3d(0.0, -1.25, 3.35),
-      Eigen::Vector3d(0.08, 0.08, 0.08),
-      titleSize));
-  labels->addChild(createTextLabel(
-      "BALL\nfixed point\nfree rotation",
+      "DART 6 DynamicJointConstraint catalog",
+      Eigen::Vector4d(0.08, 0.08, 0.08, 1.0),
+      22.0 * scale);
+  labels->addLabelPixels(
       Eigen::Vector3d(-3.0, -1.05, 2.55),
-      Eigen::Vector3d(0.75, 0.12, 0.08),
-      baseSize));
-  labels->addChild(createTextLabel(
-      "CYLINDRICAL\nrail fixed\nslide + spin",
+      "BALL\nfixed point\nfree rotation",
+      Eigen::Vector4d(0.75, 0.12, 0.08, 1.0),
+      18.0 * scale);
+  labels->addLabelPixels(
       Eigen::Vector3d(0.0, -1.05, 2.75),
-      Eigen::Vector3d(0.0, 0.45, 0.70),
-      baseSize));
-  labels->addChild(createTextLabel(
-      "WELD\npose fixed\nno free DOF",
+      "CYLINDRICAL\nrail fixed\nslide + spin",
+      Eigen::Vector4d(0.0, 0.45, 0.70, 1.0),
+      18.0 * scale);
+  labels->addLabelPixels(
       Eigen::Vector3d(3.0, -1.05, 2.55),
-      Eigen::Vector3d(0.12, 0.45, 0.12),
-      baseSize));
-
+      "WELD\npose fixed\nno free DOF",
+      Eigen::Vector4d(0.12, 0.45, 0.12, 1.0),
+      18.0 * scale);
   return labels;
 }
 
@@ -390,17 +357,14 @@ DemoScene makeDynamicJointConstraintsScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.0, -7.0, 4.0),
-        ::osg::Vec3d(0.0, 0.0, 0.9),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(5.0, -7.0, 4.0),
+        GuiVector3(0.0, 0.0, 0.9),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.onActivate = [](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
-      const double guiScale = viewer->getImGuiHandler()->getGuiScale();
-      ::osg::ref_ptr<::osg::Group> labels = createSceneLabels(guiScale);
-      viewer->getRootGroup()->addChild(labels);
-      ctx.addTeardown(
-          [viewer, labels] { viewer->getRootGroup()->removeChild(labels); });
+      const double scale = guiScale(*viewer);
+      ctx.addOwnedAttachment(createSceneLabels(scale));
     };
 
     setup.renderPanel = [world] {

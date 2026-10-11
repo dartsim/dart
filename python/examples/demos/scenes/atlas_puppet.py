@@ -26,9 +26,8 @@ relaxed pose.
 Dropped entirely (needs EndEffector, unreachable from Python): per-hand/foot
 contact-offset transforms (targets track the raw body frame instead), the
 foot Support polygons, the 'x'/'c' foot-support toggle, the
-``BalanceConstraint``, and ``SupportPolygonVisual`` (the one gap the
-standalone example already hits at ``main.py:552``, which is why it's broken
-today).
+``BalanceConstraint``, and ``SupportPolygonVisual`` (it draws EndEffector
+supports).
 
 Also dropped: the original's ``RelaxedPosture`` objective + 'r'-key
 hold-to-tighten-posture. That objective was installed on
@@ -65,7 +64,7 @@ import numpy as np
 from ..registry import SceneHandle
 
 
-class AtlasPuppetNode(dart.gui.osg.WorldNode):
+class AtlasPuppetNode:
     MOVE_Q, MOVE_W, MOVE_E, MOVE_A, MOVE_S, MOVE_D, MOVE_F, MOVE_Z = range(8)
     NUM_MOVE = 8
 
@@ -149,18 +148,17 @@ class AtlasPuppetNode(dart.gui.osg.WorldNode):
             print("Failing!")
 
 
-class AtlasPuppetInputHandler(dart.gui.osg.GUIEventHandler):
+class AtlasPuppetInputHandler:
     """Handles atlas_puppet's own keyboard layout. Not registered with the
-    OSG event system: the runner calls ``handle(ea, aa)`` on this instance
-    directly whenever atlas_puppet is the active scene (dartpy has no
-    ``Viewer.removeEventHandler`` binding to un-register a real handler on
-    scene switch, so per-scene handlers are plain Python objects instead).
+    viewer event system: the runner calls ``handle(ea, aa)`` on this instance
+    directly whenever atlas_puppet is the active scene.
     """
 
-    def __init__(self, atlas, world, teleop, targets):
+    def __init__(self, atlas, world, teleop, targets, gui):
         super().__init__()
         self.atlas = atlas
         self.world = world
+        self.gui = gui
         self.teleop = teleop
         self.targets = targets  # ordered [(bodynode, ik, frame), ...]
         self._initialize()
@@ -177,7 +175,7 @@ class AtlasPuppetInputHandler(dart.gui.osg.GUIEventHandler):
 
     def handle(self, ea, aa):
         event_type = ea.getEventType()
-        ea_cls = dart.gui.osg.GUIEventAdapter
+        ea_cls = self.gui.GUIEventAdapter
 
         if event_type == ea_cls.KEYDOWN:
             key = ea.getKey()
@@ -318,7 +316,7 @@ def _setup_start_configuration(atlas):
     atlas.getDof("l_leg_kny").setPositionLowerLimit(10 * np.pi / 180.0)
 
 
-def _setup_ik_targets(atlas):
+def _setup_ik_targets(atlas, gui):
     """Whole-body IK on four BodyNodes directly (l_hand, r_hand, l_foot,
     r_foot). See the module docstring for why this targets the raw bodies
     instead of EndEffectors (unbound) -- the per-limb contact-offset
@@ -338,7 +336,7 @@ def _setup_ik_targets(atlas):
         ("r_foot", "rf_target"),
     ):
         body = atlas.getBodyNode(body_name)
-        frame = dart.gui.osg.InteractiveFrame(dart.dynamics.Frame.World(), frame_name)
+        frame = gui.InteractiveFrame(dart.dynamics.Frame.World(), frame_name)
 
         ik = body.getIK(True)
         ik.setTarget(frame)
@@ -356,7 +354,9 @@ def _setup_ik_targets(atlas):
     return targets
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.simulation.World()
 
     atlas = _create_atlas()
@@ -364,10 +364,13 @@ def build() -> SceneHandle:
     world.addSkeleton(_create_ground())
 
     _setup_start_configuration(atlas)
-    targets = _setup_ik_targets(atlas)
+    targets = _setup_ik_targets(atlas, gui)
 
-    node = AtlasPuppetNode(world, atlas, targets)
-    handler = AtlasPuppetInputHandler(atlas, world, node, targets)
+    class WorldNode(AtlasPuppetNode, gui.WorldNode):
+        pass
+
+    node = WorldNode(world, atlas, targets)
+    handler = AtlasPuppetInputHandler(atlas, world, node, targets, gui)
 
     drag_and_drop = [
         (atlas.getBodyNode(i), False, False) for i in range(atlas.getNumBodyNodes())
@@ -405,8 +408,8 @@ def build() -> SceneHandle:
             "objective and 'r'/hold-to-tighten-posture feature are dropped "
             "too; each of the 4 targets solves independently via its own "
             "per-BodyNode InverseKinematics instead of one joint whole-body "
-            "solve. SupportPolygonVisual dropped too (unbound; the original "
-            "standalone example crashes with AttributeError at that call). "
+            "solve. SupportPolygonVisual is dropped too (it draws EndEffector "
+            "supports). "
             "Keys remapped: 1-4 -> F1-F4, p -> v; o/x/c removed with the "
             "features they drove."
         ),

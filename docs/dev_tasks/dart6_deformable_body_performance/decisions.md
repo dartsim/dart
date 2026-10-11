@@ -1,5 +1,8 @@
 # Deformable-body decisions
 
+- **2026-10-11 release line:** There is no 6.21 release; the unmet full-parity
+  goal targets DART 7.0. Core changes outside the parity rows pause during the
+  DART 7.0 program's step-path quiet window.
 - **2026-10-10 release closeout:** Retarget the unmet 6.20 full-parity goal to
   6.21. This changes the release target, not the per-row evidence requirement.
 - **2026-07-29 scope:** Keep one DART 6 deformable model, Jain/Liu surface

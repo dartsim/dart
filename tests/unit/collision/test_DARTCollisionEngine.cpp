@@ -405,8 +405,9 @@ MixedPrimitiveScene makeMixedPrimitiveScene()
 {
   MixedPrimitiveScene scene;
 
-  // DART 6 FCL does not support CapsuleShape, so this scene covers the
-  // primitive subset shared by FCL and the native-backed DARTCollisionDetector.
+  // The current FCL backend does not support CapsuleShape, so this scene
+  // covers the primitive subset shared by FCL and the native-backed
+  // DARTCollisionDetector.
   auto addFrame = [&](const dynamics::ShapePtr& shape,
                       const Eigen::Vector3d& translation) {
     auto frame = makeFrame(shape, translation);

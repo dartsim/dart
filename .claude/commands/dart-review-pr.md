@@ -23,7 +23,7 @@ gh pr view $1 && gh pr diff $1
 
 Check code style, tests, docs, and focused commits. For claims involving 3D
 structure or behavior, require the `dart-verify-sim` text oracle plus assessed
-claim-tied OSG/debug-overlay evidence, or a justified replacement; a screenshot
+claim-tied Filament/debug-overlay evidence, or a justified replacement; a screenshot
 alone is not correctness evidence.
 
 ### To Address Feedback

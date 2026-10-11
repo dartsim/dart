@@ -1,10 +1,33 @@
 # DART Changelog
 
-## DART 6
+## DART 7
 
-### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
+### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
 * Breaking Changes
+
+  * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
+    viewer, including world-node callbacks, widgets, manipulation, DPI
+    scaling, and display-free Linux capture. The `gui-osg` component
+    (`dart-gui-osg` target), its installed `dart/gui/osg` headers, the
+    `dartpy.gui.osg` namespace, and the OpenSceneGraph dependency are removed;
+    migrate C++ code to the `gui` component (`dart-gui` target,
+    `dart/gui/gui.hpp`) using the
+    [visualization migration guide](https://dart.readthedocs.io/en/latest/dart/user_guide/visualization.html).
+    Requesting `gui-osg` now reports this migration, and
+    `DART_BUILD_GUI_OSG=ON` stops configuration; `DART_BUILD_GUI_OSG=OFF` still
+    selects a headless build. These `gui` names previously belonged to the
+    GLUT-based GUI shipped through DART 6.19. `DART_BUILD_GUI` (default `ON`)
+    builds the Filament GUI and ImGui, which require Filament 1.77.3, GLFW 3.4,
+    libpng, libjpeg, and Dear ImGui 1.92.8 or newer. Rendering without a usable
+    graphics backend raises `dart::gui::RenderingUnavailableError`
+    (`dartpy.gui.RenderingUnavailableError`) naming the missing system
+    packages. The `dartpy.gui` bindings are interim; DART 7's Python rendering
+    API replaces them before release.
+    `DART_ENABLE_GUI_SMOKE_TESTS` (default `OFF`) replaces
+    `DART_ENABLE_GUI_OSG_SMOKE_TESTS`; enable it to build the capture smoke test
+    on a host with a graphics device.
+    [#3696](https://github.com/dartsim/dart/pull/3696)
 
   * dartpy now uses nanobind 3.1 or newer and requires Python 3.10 or newer.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
@@ -38,9 +61,10 @@
   * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
     legacy CMake names and public `dart::utils` headers for rebuilt consumers.
     Enabling IO now requires both tinyxml2 and urdfdom.
-  * Combine the OSG GUI and ImGui integration into `dart-gui`, preserving
-    `dart-gui-osg` and `dart-external-imgui` as CMake forwarding targets.
-    Applications linked to the former GUI shared libraries must rebuild.
+  * Compile ImGui into `dart-gui`, preserving the `external-imgui` component
+    and `dart-external-imgui` target as CMake forwarding names. They no longer
+    provide the OpenGL2 backend (`imgui_impl_opengl2.h`) or depend on OpenGL,
+    and applications linked to the former ImGui shared library must rebuild.
 
 * API
 
@@ -71,14 +95,19 @@
 
 * Python
 
+  * Avoid crashes when native code releases Python objects, or calls Python
+    collision filters, analytical IK solvers or optimizer overrides, while
+    Python 3.15 or newer shuts down. Builds against the full Python API were
+    affected; the stable-ABI wheels attach through an API that cannot fail
+    this way.
+
   * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
     and world-recording access for Python simulation tutorials.
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
   * Python overrides stay alive while C++ uses them, graph-object wrappers
     retain their skeleton, and GUI nodes and handlers retain Python overrides
-    while native code uses them. Removed GUI wrappers may live until their
-    viewer is destroyed.
+    while native code uses them.
 
   * Reject a null node when constructing inverse kinematics in dartpy,
     preventing an invalid-input crash.
@@ -125,6 +154,13 @@
   * Add `DART_USE_SYSTEM_NANOBIND` (default `OFF`); the bundled build fetches
     nanobind 3.1.0 and its robin_map submodule. With `ON`, CMake uses
     `nanobind_DIR` when set and otherwise asks the build's Python.
+
+  * Add `DART_USE_SYSTEM_FILAMENT` (default `ON`) to build the GUI against an
+    installed Filament 1.77.3 SDK. `OFF` uses DART's pinned private SDK, built
+    from source on Linux (Clang 20 or newer and Ninja) and downloaded prebuilt
+    on macOS arm64 and 64-bit Windows.
+
+## DART 6
 
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 

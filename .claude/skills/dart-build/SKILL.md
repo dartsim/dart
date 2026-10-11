@@ -35,7 +35,7 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 
 ## Development Branch Notes
 
-- The DART 6 support line prioritizes compatibility with installed
+- The development branch prioritizes compatibility with installed
   headers, package exports, and downstream Gazebo/gz-physics behavior.
 - For package, collision, constraint, or dependency changes that could affect
   downstream users, run the Gazebo gate: `pixi run -e gazebo test-gz`.
@@ -51,7 +51,7 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 
 ## GUI Visual Checks
 
-- For OSG GUI, scene, or simulation rendering changes, load `dart-verify-sim`.
+- For Filament GUI, scene, or simulation rendering changes, load `dart-verify-sim`.
   Pair a focused text correctness oracle with `agent-capture`, view assessment,
   and claim-relevant core `DebugOverlay` layers; inspect the artifact and
   sidecar instead of relying only on command success.

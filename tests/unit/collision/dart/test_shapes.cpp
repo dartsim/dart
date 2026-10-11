@@ -617,7 +617,7 @@ TEST(MeshShape, BvhDegenerateTriangles)
   EXPECT_TRUE(rootBox.max.allFinite());
 }
 
-// DART 6 supplementary coverage tests
+// Supplementary coverage tests
 namespace {
 
 class FakeSdfField final : public SignedDistanceField

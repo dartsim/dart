@@ -9,8 +9,7 @@ from pathlib import Path
 import dartpy as dart
 
 
-
-def run_isolated(script):
+def run_isolated(script, allow_leaks=False):
     # Native lifetime failures must not prevent the remaining tests from running.
     source = "import gc\nimport dartpy as dart\nimport numpy as np\ndef main():\n"
     source += textwrap.indent(textwrap.dedent(script).strip(), "    ")
@@ -31,6 +30,8 @@ def run_isolated(script):
         f"stdout: {result.stdout[-2000:]}\nstderr: {result.stderr[-4000:]}"
     )
     assert "done" in result.stdout
-    assert "nanobind: leaked" not in result.stderr, result.stderr[-4000:]
+    if not allow_leaks:
+        assert "nanobind: leaked" not in result.stderr, result.stderr[-4000:]
     if result.stderr:
         print(result.stderr[-4000:])
+    return result

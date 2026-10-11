@@ -42,9 +42,8 @@
 // own instruction-text addition are host chrome now; the "Ctrl + Left-click:
 // Rotate the box" hint is folded into this scene's panel text instead.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -91,7 +90,7 @@ DemoScene makeDragAndDropScene()
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translation() = Eigen::Vector3d(4, -4, 0);
-    auto frame = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    auto frame = std::make_shared<demo_gui::InteractiveFrame>(
         Frame::World(), "interactive frame", tf, 2.0);
     world->addSimpleFrame(frame);
 
@@ -114,9 +113,9 @@ DemoScene makeDragAndDropScene()
     // The original uses a plain Viewer/WorldNode with no shadow technique.
     setup.enableShadows = false;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(20.0, 17.0, 17.0),
-        ::osg::Vec3d(0.0, 0.0, 0.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(20.0, 17.0, 17.0),
+        GuiVector3(0.0, 0.0, 0.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     // The red box is a plain SimpleFrame free-drag -- the host's dragFrames
     // path (SimpleFrameDnD) is the right tool for it. The InteractiveFrame's

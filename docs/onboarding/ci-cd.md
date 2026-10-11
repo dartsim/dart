@@ -1,4 +1,4 @@
-# CI And DART 6 Checks
+# CI And DART Checks
 
 Use GitHub Actions as the hosted source of truth after a PR is opened. Locally,
 run the smallest gate that proves the touched surface, then broaden when shared
@@ -15,9 +15,10 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 
 | Workflow file                     | Workflow name                | Runs                            | Purpose |
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
-| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, GUI-disabled assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
 | `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
-| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and Python tests with both binders; unity builds |
+| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and nanobind Python tests; unity builds |
+| `ci_filament.yml`                 | CI Filament                  | PR, push, dispatch              | GUI test lane: `ubuntu-24.04-Filament-functional`, `windows-2022-Filament-functional`, and `macos-15-Filament-functional` configure with `pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui-device`-labeled CTest tests and the Python rendering modules; device-free GUI tests still run. CI Linux also runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
@@ -25,8 +26,8 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Newest gcc/clang build + test |
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
-| `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above on `main`; files `nightly-failure` issues |
-| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
+| `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above except CI Filament, on `main`; files `nightly-failure` issues |
+| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory `release-6.*` wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
@@ -38,8 +39,9 @@ Required checks on `main`: `Release` and
 `Asserts enabled (no -DNDEBUG)` (CI Linux), `arm64-Release` (CI macOS),
 `windows-Release-cpp` and `windows-Release-python` (CI Windows),
 `ubuntu-latest` (CI gz-physics),
-`API Documentation`, and the two Read the Docs builds. Never require a
-nightly-only job: it never reports on PRs, so it would block every merge.
+`API Documentation`, and the two Read the Docs builds. `CI Filament` jobs
+are not yet required. Never require a nightly-only job: it never reports on
+PRs, so it would block every merge.
 
 Once the PR Text workflow is on `main`, the maintainer should add
 `No local paths in PR text` to the `main` ruleset's required checks. The
@@ -75,15 +77,15 @@ repository ruleset is configured by the maintainer, not in code.
 - The release tier is dispatched with
   `gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
   Candidates must belong to the first-parent history of `main` or a
-  `release-6.x` branch. The tag is `v<package.xml version>` at the candidate;
-  a supplied tag must match. With no `head`, `-f tag=v6.x.y` selects an existing
+  `release-X.Y` branch. The tag is `v<package.xml version>` at the candidate;
+  a supplied tag must match. With no `head`, `-f tag=vX.Y.Z` selects an existing
   tag's commit. An existing tag must name the selected candidate.
-  The base is the newest earlier `v6` tag merged into the candidate's parent;
-  `-f base=v6.x.y` selects another eligible baseline. Both arms use `main`'s
+  The base is the newest earlier release tag merged into the candidate's parent;
+  `-f base=vX.Y.Z` selects another eligible baseline. Both arms use `main`'s
   harness and Pixi environment. Comparisons involving a 6.19.x tag run the
   portable `gzb/ode` and `robot/dart` rows. A policy FAIL is published and the
   writer stays green; an ERROR publishes nothing. Only `main` candidates include
-  a change ledger; `release-6.x` candidates carry the tag comparison only.
+  a change ledger; `release-X.Y` candidates carry the tag comparison only.
   Hosted records take precedence over local tag records even when their
   environment fingerprints match. Identical-or-refuse checks apply only within
   the same `runner.environment`.
@@ -97,7 +99,7 @@ These tiers publish in this repository's `gh-pages` branch:
 | Path | Content |
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
-| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points |
+| `performance/dart7-ir/` | Merge-only Ir and allocation chart for main's DART 7 line, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points. `performance/dart6-ir/` keeps the frozen pre-7.0 history |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
 | `performance/records/main/<yyyy>/<date>-<sha12>-backfill.json` | Local A/B record with `runner.environment: local`, pushed once by a maintainer after review; never charted |
 | `performance/releases/<tag>.{json,md}` and `index.md` | Comparison with the previous tag; main candidates include a ledger of changes; per-row release index; JSON and markdown attached by hand to the GitHub release |
@@ -232,13 +234,14 @@ Every write fetches `origin/gh-pages`, resets to and regenerates against it and
 pushes with bounded retries after rejection; it never force-pushes. The
 repository ruleset also blocks force-push and branch deletion.
 
-The existing wall-time dashboard continues at `performance/dart6/`, pinned
+The existing wall-time dashboard continues at `performance/dart6/` for the
+`release-6.*` maintenance line only (main is the DART 7 line), pinned
 to `ubuntu-24.04`, with `DART_BUILD_PROFILE=OFF`, alerts and alert comments
 disabled. Removing profiler overhead intentionally introduces a one-time
 level shift; historical points across that shift are not directly comparable.
 CI has no quiet hardware: wall time and estimated cycles are advisory.
 Cache, prefetch, SIMD and threading claims require hand-run `perf stat`
-evidence. `release-6.x` branches are tracked by release records only.
+evidence. `release-X.Y` branches are tracked by release records only.
 
 After merging workflow changes, verify the hosted behavior: dispatch the
 merge tier twice for the same `main` SHA and check identical Ir or different
@@ -253,7 +256,7 @@ For the repeated-SHA check, use
 Manual dispatches can name an ancestor of `main` that provides the selected
 tier's harness; the merge base, when supplied, must be that commit's first
 parent. For an existing release tag, use
-`gh workflow run perf.yml --ref main -f tier=release -f tag=v6.x.y`.
+`gh workflow run perf.yml --ref main -f tier=release -f tag=vX.Y.Z`.
 Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
 
 Measurements stage every arm under one fixed path with a minimal environment,
@@ -273,19 +276,19 @@ After publishing the GitHub release, attach its performance record manually:
 (
 set -e
 git fetch origin gh-pages
-git show origin/gh-pages:performance/releases/v6.x.y.json > dart-perf-v6.x.y.json
-tag_commit=$(git rev-parse --verify 'v6.x.y^{commit}')
-record_commit=$(jq -er .run.commit dart-perf-v6.x.y.json)
+git show origin/gh-pages:performance/releases/vX.Y.Z.json > dart-perf-vX.Y.Z.json
+tag_commit=$(git rev-parse --verify 'vX.Y.Z^{commit}')
+record_commit=$(jq -er .run.commit dart-perf-vX.Y.Z.json)
 if [ "$record_commit" != "$tag_commit" ]; then
-  echo 'record names another candidate; dispatch -f tag=v6.x.y first' >&2
+  echo 'record names another candidate; dispatch -f tag=vX.Y.Z first' >&2
   exit 1
 fi
-git show origin/gh-pages:performance/releases/v6.x.y.md > dart-perf-v6.x.y.md
-gh release upload v6.x.y dart-perf-v6.x.y.json dart-perf-v6.x.y.md
+git show origin/gh-pages:performance/releases/vX.Y.Z.md > dart-perf-vX.Y.Z.md
+gh release upload vX.Y.Z dart-perf-vX.Y.Z.json dart-perf-vX.Y.Z.md
 )
 ```
 
-If the commit check fails, dispatch again with `-f tag=v6.x.y` and no `head`
+If the commit check fails, dispatch again with `-f tag=vX.Y.Z` and no `head`
 before uploading; the tagged commit's record replaces the stored candidate
 even if that candidate is newer or diverged. A FAIL needs an explanation of
 its changed guards or gated regressions; it does not block release by itself.
@@ -322,12 +325,11 @@ gate does.
 
 ## Nightly
 
-`nightly.yml` runs every workflow in the index except the wall-time performance
-dashboard, lockfile refresh, maintainer approval, and PR text against `main`
-each night at 08:17 UTC, including the nightly-only jobs. It is scheduled
-directly on `main`, the default branch, with no dispatcher. Run it on demand
-with
-`gh workflow run nightly.yml --ref main`.
+`nightly.yml` runs every workflow in the index except CI Filament, the
+wall-time performance dashboard, lockfile refresh, maintainer approval, and PR
+text against `main` each night at 08:17 UTC, including the nightly-only jobs.
+It is scheduled directly on `main`, the default branch, with no dispatcher. Run
+it on demand with `gh workflow run nightly.yml --ref main`.
 
 Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their
 `nightly.yml` caller (`linux`, `macos`, `freebsd`, `perf`, ...) and keeps at most one
@@ -347,8 +349,16 @@ pixi run lint
 pixi run build
 pixi run test
 pixi run test-py
+pixi run test-gui
 pixi run -e gazebo test-gz
 ```
+
+To reproduce the `CI Filament` capture smoke test, run
+`pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` before
+`pixi run test-gui`. This option defaults to `OFF`, needs a graphics device,
+and replaces `DART_ENABLE_GUI_OSG_SMOKE_TESTS`. The GUI task selects
+`-L gui -LE filament-native`; run native-window tests separately as described
+in [testing guidance](testing.md).
 
 `ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
 testing and configures it once, so gz-physics' contact-callback test
