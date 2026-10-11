@@ -76,10 +76,13 @@ mandatory. User approval to replace OSG does not establish those results.
 1. Qualify the aarch64, Windows and macOS wheels. The merged evidence records
    only the x86_64 stable-ABI wheel's repair, audit and fresh cp312/cp313 smoke
    checks; native GUI CI is already green on all three operating systems.
-2. Run the C22 headless-import acceptance with the qualified Linux wheels.
-   `Publish dartpy` already invokes `scripts/check_headless_wheel.py` for its
-   Linux stable-ABI rows: no eager graphics-library links, import and world
-   stepping in `python:3.12-slim`, and typed backend errors.
+2. C22 headless import already passed locally on the x86_64 cp312 stable-ABI
+   manylinux_2_28 wheel: no graphics libraries among the NEEDED entries of its
+   14 ELF objects, import plus ten `World.step()` calls in `python:3.12-slim`,
+   and the typed `RenderingUnavailableError` for capture, window and default
+   window. What remains is the aarch64 wheel and the `Publish dartpy` runs
+   themselves, which invoke `scripts/check_headless_wheel.py` for the Linux
+   stable-ABI rows.
 3. Packaging: a separately cached Filament SDK stage for x86_64 and aarch64
    in the manylinux image, keeping the wheel job under 120 minutes, with the
    existing wheel license notices retained.

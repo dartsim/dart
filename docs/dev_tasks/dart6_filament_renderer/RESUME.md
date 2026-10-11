@@ -25,8 +25,9 @@ The merged PR's `CI Filament` functional lanes passed on ubuntu-24.04,
 windows-2022 and macos-15. Linux x86_64 cp312 stable-ABI wheel repair, audit,
 and fresh cp312/cp313 smoke tests passed locally. The merged Dockerfile still
 builds the SDK during the wheel build, and the merged evidence does not
-qualify aarch64, Windows or macOS wheels. The Linux stable-ABI headless-import
-check is already wired into `Publish dartpy`.
+qualify aarch64, Windows or macOS wheels. The C22 headless-import check passed
+locally on the x86_64 stable-ABI wheel and is wired into `Publish dartpy`; the
+aarch64 wheel and the publish runs themselves remain.
 
 ## Next steps
 
@@ -78,8 +79,9 @@ check is already wired into `Publish dartpy`.
   configure download the 1.77.3 notices; offline configures fail, and
   `FindFilament` does not enforce the SDK version (only matc/runtime
   agreement).
-- Windows `/MT` CRT selection in `FindFilament` has no separate qualification
-  recorded; Windows GUI and Python tasks passed in the merged PR's CI.
+- Windows `/MT` CRT selection in `FindFilament` and the Windows `test-gui` pixi
+  task override have no recorded qualification; `CI Filament`'s Windows GUI
+  ctest and Python GUI suites passed.
 
 ## Recovery notes
 
