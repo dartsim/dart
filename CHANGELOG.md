@@ -4,6 +4,16 @@
 
 ### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestone/106)
 
+* Constraint
+
+  * Fix mimic joints enforced by the coupler constraint
+    (`Joint::setUseCouplerConstraint(true)`). Coupled joints no longer gain
+    energy, or diverge when the follower has more inertia than the leader;
+    per-DoF couplers on multi-DoF joints no longer crash; and a joint that
+    mimics only a later DoF now gets its constraint:
+    [#3702](https://github.com/dartsim/dart/pull/3702),
+    [#3700](https://github.com/dartsim/dart/pull/3700)
+
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
