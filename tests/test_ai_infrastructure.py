@@ -154,6 +154,11 @@ def release_reference_target(tmp_path):
         ("docs/README.md", "Planned version = **DART 6.22.0**\n"),
         ("docs/plans/dashboard.md", "The upcoming version will be DART 6.22.0.\n"),
         ("docs/ai/README.md", "Next DART version: `6.22.0`\n"),
+        ("docs/ai/README.md", "Next DART version: 8.0.0\n"),
+        ("docs/ai/README.md", "Next DART release: v8.0.0\n"),
+        ("docs/ai/README.md", "Next DART version: **v8.0.0**\n"),
+        ("docs/ai/README.md", "Next DART version: DART 8.0.0\n"),
+        ("docs/ai/README.md", "다음 DART 버전: 8.0.0\n"),
         ("AGENTS.md", "Next version: 6.22.0\n"),
         ("AGENTS.md", "Next version: 6.22.0rc1\n"),
         ("AGENTS.md", "Next version: 7.0.0rc1\n"),
@@ -5632,6 +5637,22 @@ def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
 @pytest.mark.parametrize(
     "prompt",
     [
+        "Inspect DART version: 7.0.0",
+        "Inspect dartpy==7.0.0 compatibility",
+        "Pin dartpy>=8.1 in a DART checkout",
+    ],
+)
+def test_scenario_rejects_qualified_version_prompts(scenario_data, prompt):
+    scenario_data["scenarios"][0]["prompt_class"] = prompt
+
+    assert infra.exercise_scenarios(ROOT, scenario_data, emit=False) == [
+        "scenario `orientation`: prompt_class must be release-neutral; use DART"
+    ]
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
         "Orient to the current DART checkout",
         "Inspect DART compatibility",
         "Inspect DART 6 compatibility",
@@ -5706,6 +5727,15 @@ def test_release_detectors_follow_target_major(
         ("DART 12.0", True),
         ("DART7.0", True),
         ("release-7.0", True),
+        ("DART version: 8.0.0", True),
+        ("dartpy release = v8.0.0", True),
+        ("dartpy==8.0.0", True),
+        ("dartpy>=8.1", True),
+        ("DART<=8.1", True),
+        ("dartpy~=8.1", True),
+        ("DART!=8.1", True),
+        ("dartpy<8.1", True),
+        ("DART>8.1", True),
     ],
 )
 def test_release_detectors_require_target_for_bare_versions(

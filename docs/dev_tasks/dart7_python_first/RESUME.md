@@ -30,8 +30,11 @@ reports its branch and revisions to this program.
 3. After WP-7.0.3 merges, backport it to `release-6.20` with
    `dart-backport-pr`. WP-7.0.4 applies only to the nanobind bindings.
 4. Open the follow-up packets: WP-7.0.1b (changelog reconciliation),
-   WP-7.0.3b (SDF pose attributes), the ODE callback exception fix and the
-   analytical-IK clone crash. Then start WP-7.0.5 to WP-7.0.8.
+   WP-7.0.3b (SDF pose attributes), the ODE callback exception fix, the
+   analytical-IK clone crash, and a tokenized release-reference check (the
+   regular-expression matcher misreads Markdown inside tokens, unusual
+   parameter separators and version suffixes, as its 6.x predecessor did).
+   Then start WP-7.0.5 to WP-7.0.8.
 
 ## Risks and recovery
 

@@ -187,6 +187,10 @@ APPROVED_CTEST_SELECTIONS = {
     },
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
+DART_RELEASE_VERSION_PREFIX = (
+    r"(?:DART(?:py)?(?:\s+(?:version|release))?\s*"
+    r"(?:==|[<>~!]=|[:=<>])?\s*v?|release-)"
+)
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
     "SKIP_REGULAR_EXPRESSION",
@@ -4013,12 +4017,14 @@ def release_reference_paths(root: Path) -> list[Path]:
 
 
 def dart_release_version_pattern(root: Path) -> str:
-    """Match DART/release- versions of any major and bare/v active lines.
+    """Match any major with DART/dartpy (optional label/operator/v) or release-.
 
-    Bare/v versions need a valid target and use its major or the previous major,
-    excluding tokens preceded by '=' or ':' with zero or one space.
+    Bare/v use target/prior majors, except after '=' or ':' plus up to one space.
+    This is a heuristic, like the earlier 6.x matcher: Markdown inside a token,
+    other separators before parameter values, and version suffixes can still be
+    misclassified.
     """
-    prefixes = r"(?:DART\s*v?|release-)\d+"
+    prefixes = rf"{DART_RELEASE_VERSION_PREFIX}\d+"
     target = read_release_target(root, [])
     if target is not None:
         major = int(target[2].split(".")[0])
@@ -4030,7 +4036,7 @@ def dart_release_version_pattern(root: Path) -> str:
 def check_release_references(root: Path, errors: list[str]) -> None:
     """Keep reusable guidance independent of the branch's next release."""
     version = (
-        r"[`*]*(?<![\w.])(?:DART\s*v?|release-)\d+\.\d+"
+        rf"[`*]*(?<![\w.]){DART_RELEASE_VERSION_PREFIX}\d+\.\d+"
         r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
     )
     next_version = rf"[`*]*{dart_release_version_pattern(root)}[`*]*"
@@ -4082,6 +4088,14 @@ def check_release_references(root: Path, errors: list[str]) -> None:
                     or translated_target.search(normalized)
                     or any(
                         re.match(next_version, normalized[match.end() :], re.IGNORECASE)
+                        or (
+                            "dart" in match.group().lower()
+                            and re.match(
+                                version,
+                                "DART " + normalized[match.end() :].lstrip("`*"),
+                                re.IGNORECASE,
+                            )
+                        )
                         for match in next_target.finditer(normalized)
                     )
                 ):
@@ -4546,7 +4560,8 @@ def exercise_scenarios(
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
         elif re.search(
-            # DART/release- match any major; bare/v use target/prior, excluding parameters.
+            # DART/dartpy (optional label/operator/v) and release- qualify any major.
+            # Bare/v use target/prior majors; unqualified '=' or ':' parameters are exempt.
             rf"{release_version}\b",
             prompt_class,
             re.IGNORECASE,
