@@ -228,6 +228,15 @@ DEPENDENCY_NAMES = (
     "CURL",
 )
 DEPENDENCY_NAME_PATTERN = rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|lib(?!rar(?:y|ies)(?![-\w])|dart)[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
+VERSION_LABEL = r"(?:versions?|releases?)"
+VERSION_LIST = r"v?\d+(?:\.\d+)*(?:\s*(?:,|and|or|to)\s*v?\d+(?:\.\d+)*)*"
+# Text before a version that a dependency owns: "gz-physics ", "gz-physics to ",
+# "gz-math versions 7.4.0 and ", "gz-physics from version 7.7.0 to version ".
+DEPENDENCY_VERSION_CONTEXT = (
+    rf"{DEPENDENCY_NAME_PATTERN}\s+(?:(?:from|to)\s+)?(?:{VERSION_LABEL}\s+)?"
+    rf"(?:{VERSION_LIST}\s*(?:,|and|or|to)\s*(?:{VERSION_LABEL}\s+)?)?"
+    rf"(?:{VERSION_LABEL}\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$"
+)
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
     "SKIP_REGULAR_EXPRESSION",
@@ -4090,7 +4099,7 @@ def dependency_next_version(prefix: str) -> bool:
         re.search(
             rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
             rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}"
-            rf"(?:\s+(?:from\s+|to\s+)?v?\d+(?:\.\d+)*(?:\s*(?:,|and|or|to)\s*v?\d+(?:\.\d+)*)*)?"
+            rf"(?:\s+(?:(?:from|to)\s+)?(?:{VERSION_LABEL}\s+)?{VERSION_LIST})?"
             rf"[\s,]*(?:the\s+)?$",
             sentence_prefix,
             re.IGNORECASE,
@@ -4642,10 +4651,7 @@ def exercise_scenarios(
                 re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
                 or not (
                     re.search(
-                        rf"{DEPENDENCY_NAME_PATTERN}\s+"
-                        rf"(?:(?:from\s+)?(?:(?:version|release)\s+)?"
-                        rf"(?:v?\d+(?:\.\d+)*(?:\s*(?:,|and|or|to)\s*v?\d+(?:\.\d+)*)*\s*(?:,|and|or|to)\s*)?|to\s+)?"
-                        rf"(?:(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$",
+                        DEPENDENCY_VERSION_CONTEXT,
                         prompt_class[: match.start()],
                         re.IGNORECASE,
                     )
@@ -4660,8 +4666,8 @@ def exercise_scenarios(
                 # A labeled version ("version: 7.0.0") is a pin, not a parameter,
                 # unless a dependency name or dependency update owns the label.
                 not re.search(
-                    rf"{DEPENDENCY_NAME_PATTERN}\s+$",
-                    prompt_class[: match.start()],
+                    DEPENDENCY_VERSION_CONTEXT,
+                    prompt_class[: match.start("version")],
                     re.IGNORECASE,
                 )
                 and not dependency_next_version(prompt_class[: match.start("version")])
