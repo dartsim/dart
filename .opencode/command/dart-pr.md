@@ -59,14 +59,13 @@ Use these practices:
     solely as PR evidence. Commit visual files only when they are durable
     documentation, fixtures, or source assets that should live in the
     repository.
-  - The official GitHub attachment flow is the web PR/issue editor drag/drop or
-    file picker. `gh pr edit`, `gh pr comment`, and the public REST API do not
-    provide a supported generic attachment upload command; any command or action
-    that edits or comments on a PR still requires explicit maintainer/user
-    approval. Use a maintainer-approved upload helper only when it produces
-    GitHub attachment URLs without committing files to the branch; helpers that
-    mimic the web upload may require a browser session cookie and must not be
-    used unless the maintainer has explicitly approved that credential handling.
+  - Use `pixi run evidence-publish` with
+    `--backend attachments --repo owner/repo --yes` after explicit
+    maintainer/user approval for uploads. The helper uses the `gh` token,
+    without a browser cookie, to upload to the same user-attachments store as
+    the web PR/issue editor's drag-and-drop or file picker. Never host transient
+    evidence as release assets or tags. Any action that edits or comments on a
+    PR still requires explicit maintainer/user approval.
   - If the current tool cannot upload PR attachments, keep the local artifact
     paths in the working note, ask a maintainer to upload them through the PR
     editor, and then update the PR body with the returned GitHub attachment

@@ -117,9 +117,10 @@ PRs fixing or changing dynamics, collision/contact, constraint, simulation,
 or rendering behavior include a before/after visual pair by default, supported
 by the text oracle. Capture the base revision and PR head using the same scene,
 camera, steps, dimensions, and renderer, compose side by side with
-`pixi run image-compose`, and publish with `pixi run evidence-publish` after
-explicit maintainer approval for uploads. Magnify small effects with a closer
-camera, side view, contrasting colors, or contact/debug layers; interpenetration
+`pixi run image-compose`, and publish with `pixi run evidence-publish` using
+`--backend attachments --repo owner/repo --yes` after explicit maintainer
+approval for uploads. Magnify small effects with a closer camera, side view,
+contrasting colors, or contact/debug layers; interpenetration
 and penetration depth need a close side view because a distant still hides
 them. If the pair looks identical, check the text oracle on both revisions and
 reframe until any visible effect shows. Skip only with a stated reason, such as
@@ -260,38 +261,23 @@ readable alongside their contact markers and collision bounds.
       --visible-observation "what was seen after opening the selected PNGs" \
       --reconciliation "how image and text agree or disagree" \
       --semantic-verdict pass --not-proven "explicit claim boundary" \
-      --out pr_section.md   # manual placeholders; gh-release needs --yes
+      --out pr_section.md   # manual placeholders; attachments needs --repo and --yes
   ```
 
   Every artifact must support an explicit claim (`evidence-select` rejects
   unclaimed ones and records per-artifact rationale). Publication passes only
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
-  A `gh-release --yes` run does not upload anything when either gate fails.
-  Before GitHub access, it validates the complete selection contract (claims,
-  artifact kinds and metadata, coverage, rejected entries, byte totals, and
-  pass state), revalidates local sizes and SHA-256 digests, then stages
-  every selected file under its immutable content-addressed name. Duplicate
-  local basenames are safe; duplicate source paths are rejected.
-  A retry accepts an existing asset only
-  when GitHub reports the exact size and SHA-256 digest with state `uploaded`;
-  missing integrity metadata fails closed. After create/upload it re-queries
-  GitHub, verifies every selected asset, and uses only the final remote download
-  URLs validated against the repository, tag, and content-addressed name.
-  Missing or invalid URL metadata fails closed. Retries upload absent names or
-  reuse exact uploaded assets; a same-name incomplete, mismatched, or
-  unverifiable asset blocks publication. It is never deleted or clobbered
-  automatically: recovery requires explicit maintainer approval to delete that
-  exact asset or use a new tag.
-  Output paths are preflighted before GitHub access. A mutating attempt
-  atomically invalidates previous local success with a non-passing `publishing`
-  record; later failure records `partial_or_unverified`, observed remote state,
-  and bounded recovery guidance without publishable URLs. Final section and
-  manifest writes are atomic, with the authoritative manifest written last.
-  The manifest binds attempt and selection identity, repository, release tag,
-  source path, size, digest, asset name, final URL, and URL provenance. Dry-run
-  URLs are explicitly `predicted`, never remote attestations.
-  Media is GitHub-hosted, never committed to the repository.
+  The `attachments` backend requires `--repo owner/repo` and explicit upload
+  approval before `--yes`. It uses the `gh` token to upload to the same GitHub
+  user-attachments store as the PR/issue editor's drag-and-drop flow. Without
+  `--yes` it renders manual placeholders without GitHub access; failing gates
+  also prevent uploads. It validates local media and upload-response URLs,
+  records source sizes and hashes in the manifest, and keeps failed attempts
+  non-passing. If the helper cannot upload, ask a maintainer to drag and drop
+  the media into the PR editor and use the returned attachment URLs. Host
+  transient evidence as attachments, never release assets or tags, and keep
+  it out of Git.
 
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step

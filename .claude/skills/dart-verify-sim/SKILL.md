@@ -106,8 +106,10 @@ optional reference differences; it does not inspect meaning.
 `pixi run evidence-select` keeps a bounded claim-covering artifact set.
 `pixi run evidence-publish` requires the text oracle, visible observation,
 text/image reconciliation, semantic verdict, and at least one explicit
-not-proven boundary before it marks the PR visual section ready. Upload or PR
-mutations still require explicit maintainer approval.
+not-proven boundary before it marks the PR visual section ready. Use
+`--backend attachments --repo owner/repo --yes` after explicit maintainer
+upload approval; use PR-editor drag-and-drop if the helper cannot upload.
+PR mutations still require explicit maintainer approval.
 `pixi run verification-bundle` packages primary text evidence, a still, and an
 optional grid with hashes and a semantic-review prompt for an image-capable
 handoff; producing the bundle does not itself complete semantic review.

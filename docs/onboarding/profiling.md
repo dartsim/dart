@@ -87,7 +87,7 @@ DART repository and its GitHub content. Model-format compatibility support
 remains in scope. Use the existing
 [visual-evidence selection and publication flow](../ai/verification.md#visual-verification-headless-capture)
 for plots and claim-tied simulation highlights; publish images through its
-prerelease backend after upload approval, and keep transient media out of Git.
+attachments backend after upload approval, and keep transient media out of Git.
 For visible physics changes, follow the
 [simulation verification route](../ai/verification.md#simulation-verification-route).
 

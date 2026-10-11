@@ -98,10 +98,10 @@ gh pr checks <PR_NUMBER>
      and mechanism, method, and full data afterward.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub PR/issue Markdown attachments
-     (`https://github.com/user-attachments/assets/...`), never committed to
-     the branch; if evidence files were committed only for the PR body, remove
-     them and link an attachment URL instead (ask a maintainer to upload when
-     tooling cannot).
+     (`https://github.com/user-attachments/assets/...`), never as release assets
+     or tags or committed to the branch; if evidence files were committed only
+     for the PR body, remove them and link an attachment URL instead (ask a
+     maintainer to upload when tooling cannot).
    - For claim-dependent 3D behavior, verify an optional `Visual verification`
      subsection agrees with the text oracle and records claims, limitations,
      view/debug layers, and reproduce commands.
