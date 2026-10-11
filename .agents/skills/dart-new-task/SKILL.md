@@ -55,7 +55,7 @@ Read these files first:
    silently choosing.
 3. **Setup** - Resolve the target from the live PR base, or use `main` for
    new development and fixes. Release-specific packaging, CI, branch guidance,
-   and backports use the selected maintained `release-6.*` branch; backports
+   and backports use the selected maintained `release-*` branch; backports
    of merged `main` fixes use `dart-backport-pr`. Fetch the target and read its
    `docs/onboarding/release-management.md` § "Release target" before creating
    a topic branch. Verify the exact `DART <Next release>` milestone is open on

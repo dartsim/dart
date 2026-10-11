@@ -125,7 +125,7 @@ git push -u origin "HEAD:${branch}"
 
 ## PR Lifecycle
 
-Agent-authored PRs on `main` and `release-6.*` follow these steps. Each GitHub
+Agent-authored PRs on `main` and `release-*` follow these steps. Each GitHub
 mutation still needs explicit maintainer/user approval: a `manage <PR>` request
 covers the routine ones (see `dart-manage-pr`), and step 4 defines merge
 approval.

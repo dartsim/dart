@@ -75,7 +75,7 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 Target `main` for new features and fixes. Backport merged fixes to a
-`release-6.*` branch using `dart-backport-pr`. Release-specific packaging,
+`release-*` branch using `dart-backport-pr`. Release-specific packaging,
 CI, and branch guidance may target that release branch directly. Start those
 topic branches from its fetched remote ref without tracking it, as in the
 `main` example above. Resolve the next release and exact open milestone using

@@ -93,7 +93,7 @@ Use these practices:
    that exact title is open on GitHub. For an explicit rollover, follow the
    owner's proposed-target rule. Publishing or updating the PR requires
    explicit maintainer/user approval.
-4. New fixes target `main`; backports to a maintained `release-6.*` branch use
+4. New fixes target `main`; backports to a maintained `release-*` branch use
    `dart-backport-pr`. Release-specific packaging, CI, and branch guidance may
    target the resolved release branch directly.
 5. Before every commit, run:
