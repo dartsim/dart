@@ -24,12 +24,16 @@ else()
   find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 if(DART_USE_SYSTEM_NANOBIND)
-  execute_process(
-    COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
-    OUTPUT_VARIABLE nanobind_cmake_dir
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    COMMAND_ERROR_IS_FATAL ANY
-  )
+  # An explicit nanobind_DIR serves builds whose Python cannot import
+  # nanobind, such as cross builds and isolated pip builds.
+  if(NOT nanobind_DIR)
+    execute_process(
+      COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+      OUTPUT_VARIABLE nanobind_cmake_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      COMMAND_ERROR_IS_FATAL ANY
+    )
+  endif()
   find_package(nanobind 3.1 CONFIG REQUIRED HINTS "${nanobind_cmake_dir}")
 else()
   include(FetchContent)

@@ -56,8 +56,12 @@ and overloads, including `dartpy.gui.osg` in the all-in-one module.
 
 Python 3.10 or newer and nanobind 3.1 or newer are required.
 `DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
-`robin_map` submodule. With `ON`, CMake locates its CMake directory using
-`python -m nanobind --cmake_dir`. The build output remains
+`robin_map` submodule. With `ON`, CMake uses `nanobind_DIR` when it is set and
+otherwise locates nanobind's CMake directory using
+`python -m nanobind --cmake_dir`. Set `nanobind_DIR` when the build's Python
+cannot import nanobind, as in cross builds and isolated pip builds. Source
+builds through `setup.py` place the CMake build tree under `DARTPY_BUILD_TEMP`
+when that environment variable is set. The build output remains
 `${DART_PYTHON_BUILD_DIR}/dartpy`; tests and examples use the generated target
 runtime path. The `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options
 are removed. Passing the legacy binder value `pybind11` fails configure;

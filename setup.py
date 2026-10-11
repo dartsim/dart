@@ -151,7 +151,9 @@ class CMakeBuild(build_ext):
             # if not single_config and not contains_arch:
             #     cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
 
-            if sys.maxsize > 2**32:
+            # Only Visual Studio generators accept a platform; Ninja and NMake
+            # reject -A.
+            if sys.maxsize > 2**32 and not single_config:
                 cmake_args += ["-A", "x64"]
 
             # Multi-config generators have a different way to specify configs
@@ -185,7 +187,10 @@ class CMakeBuild(build_ext):
         else:
             build_args += [f"-j{os.environ['CMAKE_BUILD_PARALLEL_LEVEL']}"]
 
-        build_temp = Path(self.build_temp) / ext.name
+        # DARTPY_BUILD_TEMP lets packagers move the CMake build tree, for
+        # example to a larger disk.
+        build_temp = Path(os.environ.get("DARTPY_BUILD_TEMP") or self.build_temp)
+        build_temp /= ext.name
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
 
