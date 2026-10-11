@@ -12,7 +12,7 @@ its next release. Reusable skills and docs link here instead of copying values.
 
 | Branch         | Phase         | Next release |
 | -------------- | ------------- | ------------ |
-| `release-6.20` | Stabilization | `6.20.0`     |
+| `release-6.20` | Maintenance   | `6.20.1`     |
 
 Before creating or updating a PR, resolve its target from the live PR base
 (`main` by default for new work), fetch that branch, and read this file from
