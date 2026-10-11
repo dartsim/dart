@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791683566054,
+  "lastUpdate": 1791685061163,
   "repoUrl": "https://github.com/dartsim/dart",
   "entries": {
     "DART 6 deterministic counts": [
@@ -108065,6 +108065,3019 @@ window.BENCHMARK_DATA = {
             "value": 0.0,
             "unit": "allocations / step",
             "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3685",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "2cdefb04255a6b55395bd93a46736a7ab51ae314978a8fbbdf5f35371fe4f8ef",
+            "threads": 4,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "native",
+            "collection_signature": null
+          }
+        ]
+      },
+      {
+        "commit": {
+          "id": "3d31d5687944a9013398a5ed34d23c4e3dc1c9a7",
+          "message": "v6.19.5-373-g3d31d5687",
+          "timestamp": "2026-10-11T02:17:41.163254+00:00",
+          "committer": {
+            "username": "github-actions[bot]"
+          },
+          "url": "https://github.com/dartsim/dart/commit/3d31d5687944a9013398a5ed34d23c4e3dc1c9a7"
+        },
+        "date": 1791685061163,
+        "tool": "customSmallerIsBetter",
+        "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+        "head_fingerprints": {},
+        "measurement": {
+          "s3w/dart": {
+            "version": 1,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 92990864.0,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0xbd65cadfdfbc8eb7",
+                "finite": true,
+                "contacts": 3003,
+                "cap_hit": false,
+                "resting": "0/3003",
+                "pairs": 3003
+              },
+              "max_penetration": 8.48395e-10,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s3w/ode": {
+            "version": 1,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfd39a7f4ed106476",
+                  "finite": true,
+                  "contacts": 9009,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 78750,
+                "bytes": 12271952,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 150932395.2,
+              "allocs_per_step": 15750.0,
+              "bytes_per_step": 2454390.4,
+              "guards": {
+                "hash": "0xfd39a7f4ed106476",
+                "finite": true,
+                "contacts": 9009,
+                "cap_hit": false,
+                "resting": "0/3003",
+                "pairs": 3003
+              },
+              "max_penetration": 8.48395e-10,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 78750,
+              "bytes": 12271952,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s2r/dart": {
+            "version": 1,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 1000,
+              "steps": 200
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x8b01e88923a385c",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 1607.0,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0x8b01e88923a385c",
+                "finite": true,
+                "contacts": 0,
+                "cap_hit": false,
+                "resting": "3003/3003",
+                "pairs": 0
+              },
+              "max_penetration": 0.0,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s2r/ode": {
+            "version": 1,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 1000,
+              "steps": 200
+            },
+            "method": "native",
+            "collection_signature": null,
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xad6647b622395f5d",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "3003/3003",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": null,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0xad6647b622395f5d",
+                "finite": true,
+                "contacts": 0,
+                "cap_hit": false,
+                "resting": "3003/3003",
+                "pairs": 0
+              },
+              "max_penetration": 0.0,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s1p/dart": {
+            "version": 1,
+            "input_sha": "37b88d54a32c75a4e51fe00765a262881bff5f3971207a1e269ce293293a8eca",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 11836236.88,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0x3f41cf22f5a9f2ff",
+                "finite": true,
+                "contacts": 92,
+                "cap_hit": false,
+                "resting": "0/60",
+                "pairs": 78
+              },
+              "max_penetration": 0.18712,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s1p/ode": {
+            "version": 1,
+            "input_sha": "37b88d54a32c75a4e51fe00765a262881bff5f3971207a1e269ce293293a8eca",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4840d43f1b43c877",
+                  "finite": true,
+                  "contacts": 150,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 79
+                },
+                "max_penetration": 0.197723,
+                "checkpoints": null,
+                "allocs": 16764,
+                "bytes": 1595716,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 15634298.36,
+              "allocs_per_step": 335.28,
+              "bytes_per_step": 31914.32,
+              "guards": {
+                "hash": "0x4840d43f1b43c877",
+                "finite": true,
+                "contacts": 150,
+                "cap_hit": false,
+                "resting": "0/60",
+                "pairs": 79
+              },
+              "max_penetration": 0.197723,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 16764,
+              "bytes": 1595716,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s5a/dart": {
+            "version": 1,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xfa5f6b7a91e0df5e",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 8.48238e-09,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 5082249.94,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0xfa5f6b7a91e0df5e",
+                "finite": true,
+                "contacts": 270,
+                "cap_hit": false,
+                "resting": "0/90",
+                "pairs": 90
+              },
+              "max_penetration": 8.48238e-09,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s5a/fcl": {
+            "version": 1,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xeea3ab6aa3f85419",
+                  "finite": true,
+                  "contacts": 180,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000536389,
+                "checkpoints": null,
+                "allocs": 59400,
+                "bytes": 6052800,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 4128397.03,
+              "allocs_per_step": 594.0,
+              "bytes_per_step": 60528.0,
+              "guards": {
+                "hash": "0xeea3ab6aa3f85419",
+                "finite": true,
+                "contacts": 180,
+                "cap_hit": false,
+                "resting": "0/90",
+                "pairs": 90
+              },
+              "max_penetration": 0.000536389,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 59400,
+              "bytes": 6052800,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s5a/bullet": {
+            "version": 1,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xcef699981debcdd9",
+                  "finite": true,
+                  "contacts": 268,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 2.10181e-05,
+                "checkpoints": null,
+                "allocs": 25,
+                "bytes": 1248,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 5327868.95,
+              "allocs_per_step": 0.25,
+              "bytes_per_step": 12.48,
+              "guards": {
+                "hash": "0xcef699981debcdd9",
+                "finite": true,
+                "contacts": 268,
+                "cap_hit": false,
+                "resting": "0/90",
+                "pairs": 90
+              },
+              "max_penetration": 2.10181e-05,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 25,
+              "bytes": 1248,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "s5a/ode": {
+            "version": 1,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xd2fc4b3d63700bb",
+                  "finite": true,
+                  "contacts": 270,
+                  "cap_hit": false,
+                  "resting": "0/90",
+                  "pairs": 90
+                },
+                "max_penetration": 0.000105695,
+                "checkpoints": null,
+                "allocs": 39443,
+                "bytes": 3692816,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 4862224.26,
+              "allocs_per_step": 394.43,
+              "bytes_per_step": 36928.16,
+              "guards": {
+                "hash": "0xd2fc4b3d63700bb",
+                "finite": true,
+                "contacts": 270,
+                "cap_hit": false,
+                "resting": "0/90",
+                "pairs": 90
+              },
+              "max_penetration": 0.000105695,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 39443,
+              "bytes": 3692816,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "pend/dart": {
+            "version": 1,
+            "input_sha": "8e0024a9144b8c1e6e40a87680c98f5c604e3cd87dd5d0d3493c0d3962f126c0",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 1000
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x4d0cffc02a6ceb19",
+                  "finite": true,
+                  "contacts": 0,
+                  "cap_hit": false,
+                  "resting": "0/22",
+                  "pairs": 0
+                },
+                "max_penetration": 0.0,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 361655.15,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0x4d0cffc02a6ceb19",
+                "finite": true,
+                "contacts": 0,
+                "cap_hit": false,
+                "resting": "0/22",
+                "pairs": 0
+              },
+              "max_penetration": 0.0,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "gzb/ode": {
+            "version": 1,
+            "input_sha": "9c5a64498b78952b8d532441489d434491c3397e127bbfc455e60e6e5480eee5",
+            "threads": 1,
+            "window": {
+              "warmup": 2,
+              "steps": 3
+            },
+            "method": "slope",
+            "collection_signature": "stepAndRead(dart::simulation::World*)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xb72854800aade88b",
+                  "finite": true,
+                  "contacts": 10000,
+                  "cap_hit": true,
+                  "resting": "2002/3003"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 50123,
+                "bytes": 7217520,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 174072376.0,
+              "allocs_per_step": 16707.666666666668,
+              "bytes_per_step": 2405840.0,
+              "guards": {
+                "hash": "0xb72854800aade88b",
+                "finite": true,
+                "contacts": 10000,
+                "cap_hit": true,
+                "resting": "2002/3003"
+              },
+              "max_penetration": null,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 50123,
+              "bytes": 7217520,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "robot/dart": {
+            "version": 1,
+            "input_sha": "343fc4cb6879164ccfe46f5d0b0a41657fd0cc303217912551c7dbaed41c4afc",
+            "threads": 1,
+            "window": {
+              "warmup": 300,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "stepAndRead(dart::simulation::World*)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xf3016c0eb10fdb15",
+                  "finite": true,
+                  "contacts": 8,
+                  "cap_hit": false,
+                  "resting": "0/2"
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 1600,
+                "bytes": 22310400,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": 12630894.55,
+              "allocs_per_step": 16.0,
+              "bytes_per_step": 223104.0,
+              "guards": {
+                "hash": "0xf3016c0eb10fdb15",
+                "finite": true,
+                "contacts": 8,
+                "cap_hit": false,
+                "resting": "0/2"
+              },
+              "max_penetration": null,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 1600,
+              "bytes": 22310400,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "dyn": {
+            "version": 1,
+            "input_sha": "474e2e5ead89a9b427d5569d099016591c234cc6a69085dc1943ab870f0ab402",
+            "threads": 1,
+            "window": {
+              "warmup": 20,
+              "steps": 20
+            },
+            "method": "slope",
+            "collection_signature": "BM_Dynamics(benchmark::State&)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "BM_Dynamics/10": "0x28b48987064eb5de"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              }
+            },
+            "head": {
+              "ir_per_step": 12320997.8,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": {
+                  "BM_Dynamics/10": "0x28b48987064eb5de"
+                },
+                "finite": true
+              },
+              "max_penetration": null,
+              "checkpoints": null,
+              "time_advanced": null,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": [
+                "BM_Dynamics/10"
+              ],
+              "micro_instrumented": true,
+              "est_cycles_per_step": null
+            }
+          },
+          "lcp": {
+            "version": 1,
+            "input_sha": "449e0b2f49ee644d60c4dbaece4bffb0bd9761e503575c6111a06bc6e996bd4b",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "(anonymous namespace)::solveNative(benchmark::State&, int)",
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": {
+                    "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                    "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                  },
+                  "finite": true
+                },
+                "max_penetration": null,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": null
+              }
+            },
+            "head": {
+              "ir_per_step": 1566397.0,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": {
+                  "solveNative/boxed_coupled_96": "0x7bd94fa4ccbc20e8",
+                  "solveNative/friction_32": "0xcacc7e802fd71fc7"
+                },
+                "finite": true
+              },
+              "max_penetration": null,
+              "checkpoints": null,
+              "time_advanced": null,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": [
+                "solveNative/boxed_coupled_96",
+                "solveNative/friction_32"
+              ],
+              "micro_instrumented": true,
+              "est_cycles_per_step": null
+            }
+          },
+          "mt4-s3w/dart": {
+            "version": 1,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 4,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "native",
+            "collection_signature": null,
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0xbd65cadfdfbc8eb7",
+                  "finite": true,
+                  "contacts": 3003,
+                  "cap_hit": false,
+                  "resting": "0/3003",
+                  "pairs": 3003
+                },
+                "max_penetration": 8.48395e-10,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": null,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0xbd65cadfdfbc8eb7",
+                "finite": true,
+                "contacts": 3003,
+                "cap_hit": false,
+                "resting": "0/3003",
+                "pairs": 3003
+              },
+              "max_penetration": 8.48395e-10,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          },
+          "mt4-s1p/dart": {
+            "version": 1,
+            "input_sha": "2cdefb04255a6b55395bd93a46736a7ab51ae314978a8fbbdf5f35371fe4f8ef",
+            "threads": 4,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "native",
+            "collection_signature": null,
+            "status": "ok",
+            "gated": true,
+            "qualification_required": true,
+            "perturbations": {
+              "start4k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "start100k": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size16": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "size48": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random1": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "random2": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              },
+              "tcache0": {
+                "stable": true,
+                "guards": {
+                  "hash": "0x3f41cf22f5a9f2ff",
+                  "finite": true,
+                  "contacts": 92,
+                  "cap_hit": false,
+                  "resting": "0/60",
+                  "pairs": 78
+                },
+                "max_penetration": 0.18712,
+                "checkpoints": null,
+                "allocs": 0,
+                "bytes": 0,
+                "time_advanced": true
+              }
+            },
+            "head": {
+              "ir_per_step": null,
+              "allocs_per_step": 0.0,
+              "bytes_per_step": 0.0,
+              "guards": {
+                "hash": "0x3f41cf22f5a9f2ff",
+                "finite": true,
+                "contacts": 92,
+                "cap_hit": false,
+                "resting": "0/60",
+                "pairs": 78
+              },
+              "max_penetration": 0.18712,
+              "checkpoints": null,
+              "time_advanced": true,
+              "allocs": 0,
+              "bytes": 0,
+              "cases": null,
+              "micro_instrumented": null,
+              "est_cycles_per_step": null
+            }
+          }
+        },
+        "benches": [
+          {
+            "name": "s3w/dart@1:33a96823 Ir",
+            "value": 92990864.0,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s3w/dart@1:33a96823 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s3w/ode@1:33a96823 Ir",
+            "value": 150932395.2,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s3w/ode@1:33a96823 allocations",
+            "value": 15750.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s2r/dart@1:33a96823 Ir",
+            "value": 1607.0,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 1000,
+              "steps": 200
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s2r/dart@1:33a96823 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 1000,
+              "steps": 200
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s2r/ode@1:33a96823 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 1,
+            "window": {
+              "warmup": 1000,
+              "steps": 200
+            },
+            "method": "native",
+            "collection_signature": null
+          },
+          {
+            "name": "s1p/dart@1:37b88d54 Ir",
+            "value": 11836236.88,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "37b88d54a32c75a4e51fe00765a262881bff5f3971207a1e269ce293293a8eca",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s1p/dart@1:37b88d54 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "37b88d54a32c75a4e51fe00765a262881bff5f3971207a1e269ce293293a8eca",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s1p/ode@1:37b88d54 Ir",
+            "value": 15634298.36,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "37b88d54a32c75a4e51fe00765a262881bff5f3971207a1e269ce293293a8eca",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s1p/ode@1:37b88d54 allocations",
+            "value": 335.28,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "37b88d54a32c75a4e51fe00765a262881bff5f3971207a1e269ce293293a8eca",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 50
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/dart@1:87d8b69b Ir",
+            "value": 5082249.94,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/dart@1:87d8b69b allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/fcl@1:87d8b69b Ir",
+            "value": 4128397.03,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/fcl@1:87d8b69b allocations",
+            "value": 594.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/bullet@1:87d8b69b Ir",
+            "value": 5327868.95,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/bullet@1:87d8b69b allocations",
+            "value": 0.25,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/ode@1:87d8b69b Ir",
+            "value": 4862224.26,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "s5a/ode@1:87d8b69b allocations",
+            "value": 394.43,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "87d8b69bee95dd1697317df607b81e139c3c8e04bb6a91ed54a27c62f0615ce2",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "pend/dart@1:8e0024a9 Ir",
+            "value": 361655.15,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "8e0024a9144b8c1e6e40a87680c98f5c604e3cd87dd5d0d3493c0d3962f126c0",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 1000
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "pend/dart@1:8e0024a9 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "8e0024a9144b8c1e6e40a87680c98f5c604e3cd87dd5d0d3493c0d3962f126c0",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 1000
+            },
+            "method": "slope",
+            "collection_signature": "dart::simulation::World::step(bool)"
+          },
+          {
+            "name": "gzb/ode@1:9c5a6449 Ir",
+            "value": 174072376.0,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "9c5a64498b78952b8d532441489d434491c3397e127bbfc455e60e6e5480eee5",
+            "threads": 1,
+            "window": {
+              "warmup": 2,
+              "steps": 3
+            },
+            "method": "slope",
+            "collection_signature": "stepAndRead(dart::simulation::World*)"
+          },
+          {
+            "name": "gzb/ode@1:9c5a6449 allocations",
+            "value": 16707.666666666668,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "9c5a64498b78952b8d532441489d434491c3397e127bbfc455e60e6e5480eee5",
+            "threads": 1,
+            "window": {
+              "warmup": 2,
+              "steps": 3
+            },
+            "method": "slope",
+            "collection_signature": "stepAndRead(dart::simulation::World*)"
+          },
+          {
+            "name": "robot/dart@1:343fc4cb Ir",
+            "value": 12630894.55,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "343fc4cb6879164ccfe46f5d0b0a41657fd0cc303217912551c7dbaed41c4afc",
+            "threads": 1,
+            "window": {
+              "warmup": 300,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "stepAndRead(dart::simulation::World*)"
+          },
+          {
+            "name": "robot/dart@1:343fc4cb allocations",
+            "value": 16.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "343fc4cb6879164ccfe46f5d0b0a41657fd0cc303217912551c7dbaed41c4afc",
+            "threads": 1,
+            "window": {
+              "warmup": 300,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "stepAndRead(dart::simulation::World*)"
+          },
+          {
+            "name": "dyn@1:474e2e5e Ir",
+            "value": 12320997.8,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": true,
+            "input_sha": "474e2e5ead89a9b427d5569d099016591c234cc6a69085dc1943ab870f0ab402",
+            "threads": 1,
+            "window": {
+              "warmup": 20,
+              "steps": 20
+            },
+            "method": "slope",
+            "collection_signature": "BM_Dynamics(benchmark::State&)"
+          },
+          {
+            "name": "dyn@1:474e2e5e allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": true,
+            "input_sha": "474e2e5ead89a9b427d5569d099016591c234cc6a69085dc1943ab870f0ab402",
+            "threads": 1,
+            "window": {
+              "warmup": 20,
+              "steps": 20
+            },
+            "method": "slope",
+            "collection_signature": "BM_Dynamics(benchmark::State&)"
+          },
+          {
+            "name": "lcp@1:449e0b2f Ir",
+            "value": 1566397.0,
+            "unit": "instructions / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": true,
+            "input_sha": "449e0b2f49ee644d60c4dbaece4bffb0bd9761e503575c6111a06bc6e996bd4b",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "(anonymous namespace)::solveNative(benchmark::State&, int)"
+          },
+          {
+            "name": "lcp@1:449e0b2f allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": true,
+            "input_sha": "449e0b2f49ee644d60c4dbaece4bffb0bd9761e503575c6111a06bc6e996bd4b",
+            "threads": 1,
+            "window": {
+              "warmup": 100,
+              "steps": 100
+            },
+            "method": "slope",
+            "collection_signature": "(anonymous namespace)::solveNative(benchmark::State&, int)"
+          },
+          {
+            "name": "mt4-s3w/dart@1:33a96823 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
+            "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
+            "micro_instrumented": null,
+            "input_sha": "33a9682398fad26cdab6de9bfdda66d8eeefc834ddd98c5afd0e63ff9b0f97a1",
+            "threads": 4,
+            "window": {
+              "warmup": 5,
+              "steps": 5
+            },
+            "method": "native",
+            "collection_signature": null
+          },
+          {
+            "name": "mt4-s1p/dart@1:2cdefb04 allocations",
+            "value": 0.0,
+            "unit": "allocations / step",
+            "extra": "fingerprint: a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778\nPR #3688",
             "fingerprint": "a6168168ce18eec566826d590201906e3cf2c0e5026a23a8522c411f10ce3778",
             "micro_instrumented": null,
             "input_sha": "2cdefb04255a6b55395bd93a46736a7ab51ae314978a8fbbdf5f35371fe4f8ef",
