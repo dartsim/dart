@@ -151,11 +151,11 @@ taxonomy.
 
 Development and release branches preserve C++17, `dart::utils`, and
 Gazebo/gz-physics compatibility, and each keeps the dartpy binder it ships
-with: nanobind under `python/dartpy/` on `main`, pybind11 on earlier release
-branches. Each release branch also preserves the GUI backend it ships (OSG
-on `release-6.20`); on `main`, OSG stays transitional until the Filament
-renderer replaces it under PLAN-624. See
-[`python-bindings.md`](../onboarding/python-bindings.md). The DART component
+with: nanobind under `python/dartpy/` on `main` and DART 7 release branches;
+pybind11 on `release-6.20`. Each release branch also preserves the GUI backend
+it ships: OSG on `release-6.20`, Filament on DART 7 release branches. On `main`,
+OSG stays transitional until the Filament renderer replaces it under PLAN-624.
+See [`python-bindings.md`](../onboarding/python-bindings.md). The DART component
 map is [`architecture.md`](../onboarding/architecture.md). Release and backport
 policy and the branch-local next release live in
 [`release-management.md`](../onboarding/release-management.md).

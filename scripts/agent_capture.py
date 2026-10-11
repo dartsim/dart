@@ -1,6 +1,6 @@
-"""Deterministic headless capture harness for DART 6 agent visual evidence.
+"""Deterministic headless capture harness for DART agent visual evidence.
 
-Drives a DART 6 world through the OSG offscreen path (WP-ASV
+Drives a DART world through the transitional pre-M6 OSG offscreen path (WP-ASV
 `Viewer.captureOffscreen`) with active camera control: explicit orbit
 parameters, focus-framed reframing, view-quality-scored auto viewpoints,
 turntables, and motion sequences with optional camera sweep. Debug layers

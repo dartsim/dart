@@ -38,14 +38,16 @@ Priority order is document order. Active implementation handoff remains in
 - Gate: Same-host DART revision comparisons, detector-specific behavior guards,
   and Gazebo-path compatibility evidence under the performance methodology.
 
-### PLAN-622: DART 6 Deformable Body Feature And Performance
+<a id="plan-622-dart-6-deformable-body-feature-and-performance"></a>
+
+### PLAN-622: DART 7.0 Deformable Body Feature And Performance
 
 - Owner doc: [deformable body performance](../dev_tasks/dart6_deformable_body_performance/README.md)
 - Status: Active
 - Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
-- Scope: Jain/Liu point-mass surface flesh only; do not restart volumetric FEM
-  on the DART 6 line. See the
+- Scope: Jain/Liu point-mass surface flesh only. Volumetric FEM is outside this
+  DART 7.0 plan's scope. See the
   [deformable-body design](../design/dart6_deformable_body.md).
 - Evidence: Adaptive active vertices, CoP/force variance, and the LCP
   initial-point reset proxy have representative gates. Reduced demos do not

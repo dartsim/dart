@@ -57,7 +57,7 @@ TEST(BodyNodeCollisionSignals, FiresOnCreateAndRemove)
   // Keep the pair (its first element owns the Skeleton) alive for the test;
   // bind bn to a plain variable so the lambdas below capture a regular variable
   // rather than a structured binding (capturing a structured binding is a
-  // C++20 extension and DART 6 builds as C++17).
+  // C++20 extension and DART builds as C++17).
   auto skelAndBn = makeBodyNode();
   BodyNode* const bn = skelAndBn.second;
 
@@ -101,7 +101,7 @@ TEST(BodyNodeCollisionSignals, FiresOnCollidableToggle)
   // Keep the pair (its first element owns the Skeleton) alive for the test;
   // bind bn to a plain variable so the lambdas below capture a regular variable
   // rather than a structured binding (capturing a structured binding is a
-  // C++20 extension and DART 6 builds as C++17).
+  // C++20 extension and DART builds as C++17).
   auto skelAndBn = makeBodyNode();
   BodyNode* const bn = skelAndBn.second;
 
@@ -151,7 +151,7 @@ TEST(BodyNodeCollisionSignals, FiresOnAspectLifecycle)
   // Keep the pair (its first element owns the Skeleton) alive for the test;
   // bind bn to a plain variable so the lambdas below capture a regular variable
   // rather than a structured binding (capturing a structured binding is a
-  // C++20 extension and DART 6 builds as C++17).
+  // C++20 extension and DART builds as C++17).
   auto skelAndBn = makeBodyNode();
   BodyNode* const bn = skelAndBn.second;
 
@@ -194,7 +194,7 @@ TEST(BodyNodeCollisionSignals, FiresOnShapeReplacement)
   // Keep the pair (its first element owns the Skeleton) alive for the test;
   // bind bn to a plain variable so the lambdas below capture a regular variable
   // rather than a structured binding (capturing a structured binding is a
-  // C++20 extension and DART 6 builds as C++17).
+  // C++20 extension and DART builds as C++17).
   auto skelAndBn = makeBodyNode();
   BodyNode* const bn = skelAndBn.second;
 

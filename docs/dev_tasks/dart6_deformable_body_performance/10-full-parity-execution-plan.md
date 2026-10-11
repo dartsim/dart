@@ -1,4 +1,4 @@
-# DART 6 deformable parity — execution plan
+# DART 7.0 deformable parity — execution plan
 
 Status: **active for the Jain/Liu lane.** The Kim/Pollard volumetric-FEM lane
 was removed from DART 6 on 2026-07-29 (`decisions.md`). Its design notes and
@@ -17,23 +17,23 @@ performance-acceptance evidence it defines (§8).
 
 ## 1. North star & success definition
 
-DART 6 reproduces every **Jain/Liu 2011** demo/example, each
+DART 7.0 reproduces every **Jain/Liu 2011** demo/example, each
 with (a) a runnable DART scene, (b) deterministic correctness/stability evidence,
 (c) CPU performance matching the paper's real-time/near-real-time character on a
 normalized target, and (d) `dart`-versus-FCL parity for collision-dependent rows —
-while adding **zero overhead to pure rigid-body simulation** and preserving
-DART 6 public API/ABI (new behavior is opt-in, layout-neutral).
+while adding **zero overhead to pure rigid-body simulation** and following
+main's AGENTS.md compatibility contract.
 
 Done = every **Jain/Liu** row of `02-paper-parity-matrix.md` meets the matrix's
 acceptance rule with at least two clean independent review passes and a durable
 demo artifact, and none relies on a deferral. The Kim/Pollard rows in that matrix
-are **not** part of this completion rule: they are out of DART 6 scope and
-marked accordingly in the matrix itself.
+are **not** part of this completion rule: they are outside this DART 7.0 task's
+scope and marked accordingly in the matrix itself.
 
-## 2. Constraint: additive and ABI-safe on DART 6
+## 2. Constraint: main's compatibility contract
 
-DART 6 work stays additive and ABI-safe: new behavior is opt-in, and existing
-public class layouts, vtables, and default semantics are unchanged. The Jain/Liu
+This DART 7.0 parity work follows main's AGENTS.md compatibility contract;
+unrelated API, layout, or default-behavior changes require approval. The Jain/Liu
 lane fits that comfortably, because it builds controllers, models, and scenes on
 the point-mass `SoftBodyNode` that already ships rather than adding a new
 dynamics subsystem.
@@ -109,7 +109,7 @@ keeps runs bit-identical), so that evidence needs its own configuration.
 
 PR-3 reuses the point-mass `SoftBodyNode` and the adaptive activation already
 shipped, so the remaining work is controllers, models, and scenes rather than new
-dynamics. It is the whole of the active DART 6 lane.
+dynamics. It is the whole of the active DART 7.0 parity lane.
 
 ## 7. Jain/Liu architecture — controllers, models, scenes (grounded)
 
@@ -167,8 +167,8 @@ What must be **built/authored** for PR-3:
   registry removal).
 - **Multi-core scaling**: still-open acceptance. The contact-heavy
   Jain/Liu scenes — noisy-floor locomotion and the hand/manipulation rows, which
-  carry many simultaneous soft contacts — are the DART 6 place to demonstrate a
-  real threads>1 speedup.
+  carry many simultaneous soft contacts — are the DART 7.0 workload to demonstrate
+  a real threads>1 speedup.
 - **Competitive envelope**: settled. The 2026-07-23 acceptance decision in
   `decisions.md` (in-tree backends + normalized paper metrics; external engines
   out of scope) is the maintainer-confirmed definition of "beat competing
@@ -194,7 +194,7 @@ What must be **built/authored** for PR-3:
 5. **Scope realism**: this is a multi-month, multi-PR research reproduction;
    milestones are independently shippable and gated so value lands incrementally.
 
-## 10. Sequencing (DART 6)
+## 10. Sequencing (DART 7.0)
 
 1. **PR-3a soft-foot SIMBICON** — shipped 2026-08-01 via #3408/#3423
    (`decisions.md` records the resolved decisions); the

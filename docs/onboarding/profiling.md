@@ -376,7 +376,7 @@ summary. Otherwise, allocation-count or requested-byte decreases, or Ir
 improvements of at least 1%, count as improved.
 
 Use `pixi run perf-backfill --revs <file>` for a resumable local history run.
-The file contains one commit, ref or `v6.x.y` tag per line, with blank lines
+The file contains one commit, ref or `vX.Y.Z` tag per line, with blank lines
 and `#` comments ignored. Put tags after commits. For the historical window,
 generate the commit list with
 `git rev-list --first-parent --reverse --since=2026-07-01T00:00:00Z 789d3662c59 -- dart`,

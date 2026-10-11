@@ -6,11 +6,11 @@
 Welcome to DART documentation!
 ==============================
 
-.. admonition:: You are reading the DART 6 LTS documentation
+.. admonition:: You are reading the DART 7 development documentation
    :class: important
 
-   This site documents the **DART 6** compatibility line. New development
-   happens on ``main``; release branches provide stabilization and maintenance.
+   This site documents ``main``'s **DART 7** development line; ``release-6.20``
+   provides DART 6 maintenance documentation.
    Find published versions and release notes in `GitHub Releases
    <https://github.com/dartsim/dart/releases>`_.
 

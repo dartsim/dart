@@ -4,7 +4,7 @@ Installation
 Quick install commands
 ----------------------
 
-For the DART 6 Python bindings, use one of the package channels below:
+For packaged dartpy bindings, use one of the package channels below:
 
 .. code-block:: bash
 

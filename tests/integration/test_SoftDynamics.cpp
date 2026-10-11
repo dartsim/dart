@@ -708,8 +708,9 @@ double computeSoftMechanicalEnergy(
   DART_ASSERT(skeleton != nullptr);
 
   // Skeleton energy covers the rigid parent bodies and joints. Point masses
-  // are not Skeleton DOFs in DART 6, so add their kinetic, gravitational, and
-  // spring energies explicitly through the public soft-body API.
+  // are not Skeleton DOFs in the current soft-body model, so add their
+  // kinetic, gravitational, and spring energies explicitly through the public
+  // soft-body API.
   double energy
       = skeleton->computeKineticEnergy() + skeleton->computePotentialEnergy();
   for (std::size_t i = 0; i < skeleton->getNumSoftBodyNodes(); ++i) {

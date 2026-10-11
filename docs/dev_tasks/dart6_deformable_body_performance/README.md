@@ -1,4 +1,4 @@
-# DART 6 deformable-body parity and performance
+# DART 7.0 deformable-body parity and performance
 
 The unmet DART 6.20 full-parity goal targets **DART 7.0**: the maintainer's
 release-closeout decision retargeted it to 6.21, and the 2026-10-11 decision
@@ -7,7 +7,7 @@ verification recipes, and the [acceptance gates](#acceptance) for the
 remaining work; [PLAN-622](../../plans/dashboard.md#plan-622-dart-6-deformable-body-feature-and-performance)
 tracks its status.
 
-DART 6 carries the Jain/Liu point-mass surface-flesh model implemented by
+DART carries the Jain/Liu point-mass surface-flesh model implemented by
 `SoftBodyNode`. Volumetric FEM remains out of scope. Representative soft-body
 and soft-foot slices shipped through #3382, #3408, and #3423; they do not
 establish full paper parity or robust push-recovery superiority.
@@ -19,8 +19,9 @@ establish full paper parity or robust push-recovery superiority.
 - [Paper targets](../../background/deformable_body_paper_targets.md): normalized
   research targets.
 
-Preserve DART 6 public APIs, class layouts, vtables, default behavior, and
-Gazebo compatibility. Work remains CPU-first. New GUI examples use `dart-demos`.
+Follow main's AGENTS.md compatibility rules, preserving the Gazebo-facing C++
+API and behavior and keeping unrelated changes out of this parity task.
+Work remains CPU-first. New GUI examples use `dart-demos`.
 Promote any new durable findings before deleting this folder at completion.
 
 ## Acceptance

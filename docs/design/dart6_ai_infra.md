@@ -78,8 +78,10 @@ cannot be averaged into a pass. The capture sidecar identifies deterministic
 static or start/middle/end inspection targets so future image-capable models can
 exercise the same contract without prompt-specific frame selection.
 
-The DART 6 implementation stays on its existing C++17, nanobind, OSG
-`OffscreenViewer`, core `DebugOverlay`, and release camera-assessment path.
+Main's current C++17/nanobind visual stack uses transitional OSG until M6;
+`release-6.20` retains its pybind11/OSG stack. The current path includes
+`OffscreenViewer`, core `DebugOverlay`, and camera assessment. DART 7 releases
+ship nanobind and Filament.
 
 ### Capability Lineage And Release Verdicts
 
@@ -110,10 +112,11 @@ SHA-256 digest plus claim coverage and pass state before any GitHub call, then
 uses content-addressed assets and records path/size/digest/URL bindings without
 cross-content clobber.
 
-The visual evidence contract runs on the established DART 6 C++17, nanobind,
-OSG `OffscreenViewer`, `agent_capture.py`, `agent_view_quality.py`, and core
-`DebugOverlay` path. The visual fixtures and raycast fallback use the
-consolidated `DARTCollisionDetector`; the owned contact snapshots and
+The visual evidence contract currently runs on main's C++17/nanobind stack
+with transitional OSG until M6; `release-6.20` retains its pybind11/OSG stack.
+The current path includes `OffscreenViewer`, `agent_capture.py`,
+`agent_view_quality.py`, and core `DebugOverlay`. The visual fixtures and
+raycast fallback use the consolidated `DARTCollisionDetector`; the owned contact snapshots and
 same-camera overlay checks strengthen that path, and semantic image inspection
 pins the multi-shape smoke to an orthogonal camera where its labels and contact
 markers remain readable. None depends on the removed temporary

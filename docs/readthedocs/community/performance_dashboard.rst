@@ -31,8 +31,9 @@ publication to GitHub Pages.
 Scope
 -----
 
-The DART 6 dashboard tracks bounded, CPU-only Google Benchmark rows that exist
-on ``main``, the development branch for the next DART 6 release:
+The DART 6 dashboard tracks bounded, CPU-only Google Benchmark rows on
+maintained ``release-6.*`` branches. These benchmark surfaces are shared with
+``main``, the DART 7 development branch:
 
 * **Benchmark baseline** - the empty Google Benchmark target, used as runner
   overhead context.
@@ -43,10 +44,10 @@ on ``main``, the development branch for the next DART 6 release:
 * **Contact and collision** - stacked-box world-step rows when the Bullet
   collision target is available.
 * **Contact-rich container** - active ``dart`` and ODE detector
-  ``BM_ContactContainerActive`` rows from the DART 6 contact-container
+  ``BM_ContactContainerActive`` rows from the shared contact-container
   benchmark.
 * **Deformable bodies** - steady-state ``BM_SoftBodyStep`` rows for the
-  maintained DART 6 soft-body scenes, including one-thread and sixteen-thread
+  maintained DART soft-body scenes, including one-thread and sixteen-thread
   CPU rows.
 
 Readable labels
@@ -64,10 +65,10 @@ How it works
 
 The ``DART 6 Performance Dashboard`` workflow
 (``.github/workflows/performance_dashboard_dart6.yml``) runs on pushes to
-``main`` and maintained ``release-6.*`` branches that touch benchmark-relevant
+maintained ``release-6.*`` branches that touch benchmark-relevant
 paths, and on manual dispatch. Push runs benchmark the pushed branch; manual
 runs may optionally name a maintained DART 6 branch, otherwise they use
-``main``.
+``release-6.20``.
 Each run:
 
 #. configures the release build with Pixi;
@@ -117,7 +118,7 @@ Add a benchmark to the dashboard
 --------------------------------
 
 The dashboard reuses DART's existing Google Benchmark targets. To track a new
-DART 6 surface, add a ``BenchmarkSpec`` entry to
+DART benchmark surface, add a ``BenchmarkSpec`` entry to
 ``scripts/run_performance_dashboard_benchmarks.py`` with a bounded
 ``--benchmark_filter`` and add a matching readable label in
 ``scripts/benchmark_display_names.py``. Prefer stable, CPU-only rows that can

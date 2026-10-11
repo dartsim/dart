@@ -17,7 +17,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
 | `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
 | `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
-| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and Python tests with both binders; unity builds |
+| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and nanobind Python tests; unity builds |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
@@ -254,7 +254,7 @@ For the repeated-SHA check, use
 Manual dispatches can name an ancestor of `main` that provides the selected
 tier's harness; the merge base, when supplied, must be that commit's first
 parent. For an existing release tag, use
-`gh workflow run perf.yml --ref main -f tier=release -f tag=v6.x.y`.
+`gh workflow run perf.yml --ref main -f tier=release -f tag=vX.Y.Z`.
 Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
 
 Measurements stage every arm under one fixed path with a minimal environment,
@@ -274,19 +274,19 @@ After publishing the GitHub release, attach its performance record manually:
 (
 set -e
 git fetch origin gh-pages
-git show origin/gh-pages:performance/releases/v6.x.y.json > dart-perf-v6.x.y.json
-tag_commit=$(git rev-parse --verify 'v6.x.y^{commit}')
-record_commit=$(jq -er .run.commit dart-perf-v6.x.y.json)
+git show origin/gh-pages:performance/releases/vX.Y.Z.json > dart-perf-vX.Y.Z.json
+tag_commit=$(git rev-parse --verify 'vX.Y.Z^{commit}')
+record_commit=$(jq -er .run.commit dart-perf-vX.Y.Z.json)
 if [ "$record_commit" != "$tag_commit" ]; then
-  echo 'record names another candidate; dispatch -f tag=v6.x.y first' >&2
+  echo 'record names another candidate; dispatch -f tag=vX.Y.Z first' >&2
   exit 1
 fi
-git show origin/gh-pages:performance/releases/v6.x.y.md > dart-perf-v6.x.y.md
-gh release upload v6.x.y dart-perf-v6.x.y.json dart-perf-v6.x.y.md
+git show origin/gh-pages:performance/releases/vX.Y.Z.md > dart-perf-vX.Y.Z.md
+gh release upload vX.Y.Z dart-perf-vX.Y.Z.json dart-perf-vX.Y.Z.md
 )
 ```
 
-If the commit check fails, dispatch again with `-f tag=v6.x.y` and no `head`
+If the commit check fails, dispatch again with `-f tag=vX.Y.Z` and no `head`
 before uploading; the tagged commit's record replaces the stored candidate
 even if that candidate is newer or diverged. A FAIL needs an explanation of
 its changed guards or gated regressions; it does not block release by itself.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install a dartpy wheel in a temporary venv and run DART 6 smoke tests."""
+"""Install a dartpy wheel in a temporary venv and run dartpy smoke tests."""
 
 from __future__ import annotations
 

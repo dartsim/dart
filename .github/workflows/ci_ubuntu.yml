@@ -326,9 +326,10 @@ jobs:
             set -euo pipefail
             BUILD_TYPE=None
             DART_VERBOSE=ON
-            # DART 6 dartpy requires dart-gui-osg, so this required variant
-            # runs the C++ tests with assertions and validates the no-OSG
-            # contract. -O2 keeps NDEBUG undefined; at -O0 the tests take hours.
+            # Before M6, main's dartpy requires the transitional OSG GUI, so
+            # this required variant runs the C++ tests with assertions and
+            # validates the no-OSG contract. -O2 keeps NDEBUG undefined; at -O0
+            # the tests take hours.
             # Unity builds catch file-local name collisions on Linux too;
             # see code-style.md.
             cmake \
