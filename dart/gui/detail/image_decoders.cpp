@@ -114,16 +114,16 @@ std::optional<ImageData> loadBmpImage(const std::filesystem::path& path)
   if (headerSize < 40 || headerSize > bytes.size() - 14)
     return std::nullopt;
   const auto width = static_cast<std::int32_t>(littleEndian(bytes, 18, 4));
-  const auto signedHeight
-      = static_cast<std::int32_t>(littleEndian(bytes, 22, 4));
+  // A negative two's-complement height stores rows top-down. Read the sign
+  // bit directly instead of relying on an unsigned-to-signed conversion.
+  const auto rawHeight = littleEndian(bytes, 22, 4);
+  const bool topDown = (rawHeight & 0x80000000u) != 0;
+  const auto height = topDown ? 0u - rawHeight : rawHeight;
   const auto bits = littleEndian(bytes, 28, 2);
-  if (width <= 0 || signedHeight == 0
-      || signedHeight == std::numeric_limits<std::int32_t>::min()
+  if (width <= 0 || height == 0 || height > 0x7fffffffu
       || littleEndian(bytes, 26, 2) != 1 || (bits != 24 && bits != 32)
       || littleEndian(bytes, 30, 4) != 0)
     return std::nullopt;
-  const auto height = static_cast<std::uint32_t>(
-      signedHeight < 0 ? -signedHeight : signedHeight);
   const std::uint64_t rowBytes
       = ((static_cast<std::uint64_t>(width) * bits + 31) / 32) * 4;
   const auto offset = littleEndian(bytes, 10, 4);
@@ -135,7 +135,7 @@ std::optional<ImageData> loadBmpImage(const std::filesystem::path& path)
     return std::nullopt;
   bool alphaPresent = false;
   for (std::uint32_t y = 0; y < height; ++y) {
-    const auto targetY = signedHeight < 0 ? y : height - 1 - y;
+    const auto targetY = topDown ? y : height - 1 - y;
     for (std::uint32_t x = 0; x < image->width; ++x) {
       const auto source = offset + y * rowBytes + x * (bits / 8);
       const auto target

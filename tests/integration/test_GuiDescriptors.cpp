@@ -339,9 +339,11 @@ TEST(GuiDescriptors, AssimpHierarchyUvMaterialsColorsAndAlphaModes)
   EXPECT_EQ(geometry->meshParts[1].materialIndex, 1u);
   ASSERT_EQ(geometry->meshMaterials.size(), 2u);
   EXPECT_NEAR(geometry->meshMaterials[0].diffuse.w(), 0.25, 1e-6);
+  // Windows joins texture paths with its preferred separator.
   EXPECT_EQ(
-      geometry->meshMaterials[0].baseColorTexturePath,
-      std::filesystem::path("/tmp/gui-model/textures/diffuse.png").string());
+      std::filesystem::path(geometry->meshMaterials[0].baseColorTexturePath)
+          .generic_string(),
+      "/tmp/gui-model/textures/diffuse.png");
   ASSERT_EQ(geometry->meshTextureCoordinates.size(), 6u);
   EXPECT_EQ(geometry->meshTextureCoordinates[4], Eigen::Vector3d::UnitX());
   EXPECT_TRUE(geometry->meshUsesMaterialColors);
