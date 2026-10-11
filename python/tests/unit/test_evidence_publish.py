@@ -70,9 +70,9 @@ def _mock_gh(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
 
     def fake_gh(args: list[str]) -> _Completed:
         calls.append(list(args))
-        if args == ["auth", "token"]:
+        if args == ["auth", "token", "--hostname", "github.com"]:
             return _Completed(stdout="test-token\n")
-        assert args == ["api", "repos/dartsim/dart", "--jq", ".id"]
+        assert args == ["api", "--hostname", "github.com", "repos/dartsim/dart", "--jq", ".id"]
         return _Completed(stdout="1234\n")
 
     monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
@@ -659,8 +659,8 @@ def test_attachments_success_embeds_upload_response_urls(
     monkeypatch.setattr(evidence_publish, "urlopen", upload)
     assert evidence_publish.main(_attachments_args(selection, out, manifest_out)) == 0
     assert gh_calls == [
-        ["auth", "token"],
-        ["api", "repos/dartsim/dart", "--jq", ".id"],
+        ["auth", "token", "--hostname", "github.com"],
+        ["api", "--hostname", "github.com", "repos/dartsim/dart", "--jq", ".id"],
     ]
     assert len(requests) == 2
     text = out.read_text(encoding="utf-8")

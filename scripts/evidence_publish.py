@@ -245,10 +245,14 @@ def _publish_attachments(
         if suffix not in _MEDIA_TYPES:
             raise ValueError(f"unsupported media suffix for {artifact['path']!r}")
 
-    token = _gh(["auth", "token"]).stdout.strip()
+    # The upload host is fixed, so pin gh too: an ambient GH_HOST must not
+    # hand another server's token to uploads.github.com.
+    token = _gh(["auth", "token", "--hostname", "github.com"]).stdout.strip()
     if not token:
         raise ValueError("gh auth token returned an empty token")
-    repository_id = _gh(["api", f"repos/{repo}", "--jq", ".id"]).stdout.strip()
+    repository_id = _gh(
+        ["api", "--hostname", "github.com", f"repos/{repo}", "--jq", ".id"]
+    ).stdout.strip()
     if not re.fullmatch(r"[1-9][0-9]*", repository_id):
         raise ValueError("gh api returned an invalid repository ID")
 
