@@ -184,8 +184,8 @@ public:
   /// world nodes). Without `render` no window or GPU context is required;
   /// with it, every step also renders a display-free `width` x `height`
   /// frame, so scene replacement exercises renderer resource churn. Returns 0
-  /// if every scene's factory (and render) succeeded and the world-node
-  /// bookkeeping stayed balanced, nonzero otherwise.
+  /// if every scene's factory (and render) succeeded or lacked prefetched
+  /// assets and the world-node bookkeeping stayed balanced, nonzero otherwise.
   int cycleScenes(
       int framesPerScene, bool render = false, int width = 0, int height = 0);
 
@@ -344,6 +344,7 @@ private:
   std::string mCurrentSceneTitle;
   std::optional<std::string> mPendingSceneId;
   bool mLastSwitchFailed = false;
+  std::string mLastSwitchSkipReason;
   std::size_t mActiveWorldNodeCount = 0;
 
   std::string mStatusLine = "No demo loaded yet.";

@@ -75,14 +75,12 @@ DemoScene makeModelScene(
     auto model
         = std::make_shared<dart::utils::ModelResourceRetriever>("", true);
     const dart::common::Uri uri(root + entrypoint);
-    try {
-      if (model->getFilePath(uri).empty())
-        throw std::runtime_error("Verified model cache is unavailable.");
-    } catch (const std::exception& error) {
-      throw std::runtime_error(
-          std::string(error.what())
-          + " Prefetch with: pixi run fetch-robot-assets " + modelId);
-    }
+    // The offline retriever logs why the verified cache is unusable.
+    if (model->getFilePath(uri).empty())
+      throw AssetsNotPrefetched(
+          "Verified model cache is unavailable. Prefetch with: pixi run "
+          "fetch-robot-assets "
+          + modelId);
 
     auto package
         = std::make_shared<dart::utils::PackageResourceRetriever>(model);

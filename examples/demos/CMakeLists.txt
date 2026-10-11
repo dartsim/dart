@@ -518,6 +518,29 @@ else()
 endif()
 
 if(BUILD_TESTING AND TARGET dart-demos)
+  if(COMMAND dart_add_test)
+    set(demos_host_test_srcs ${srcs})
+    list(FILTER demos_host_test_srcs EXCLUDE REGEX "(main|Registry)\\.cpp$")
+    dart_add_test(
+      "unit"
+      UNIT_examples_demos_SceneCycle
+      tests/test_scene_cycle.cpp
+      ${demos_host_test_srcs}
+    )
+    target_link_libraries(UNIT_examples_demos_SceneCycle dart-demos-scenes)
+    dart_demos_link_optional_collision_backends(UNIT_examples_demos_SceneCycle)
+    dart_demos_configure_memory_diagnostics(UNIT_examples_demos_SceneCycle)
+    set_tests_properties(
+      UNIT_examples_demos_SceneCycle
+      PROPERTIES LABELS "examples;gui"
+    )
+    if(TARGET tests)
+      add_dependencies(tests UNIT_examples_demos_SceneCycle)
+    endif()
+    if(TARGET tests_and_run)
+      add_dependencies(tests_and_run UNIT_examples_demos_SceneCycle)
+    endif()
+  endif()
   if(TARGET tests)
     add_dependencies(tests dart-demos)
   endif()

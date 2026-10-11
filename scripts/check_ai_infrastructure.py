@@ -3581,6 +3581,7 @@ def check_cmake_test_graph(
                     "dart-demos",
                     "UNIT_examples_demos_GuiScaling",
                     "UNIT_examples_demos_MemoryDiagnostics",
+                    "UNIT_examples_demos_SceneCycle",
                 }
             )
         ):

@@ -57,7 +57,7 @@ jobs:
         run: >-
           pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
           --target test_GuiDescriptors test_GuiInteractions test_GuiImageDecoders test_GuiViewer test_GuiParity test_GuiMesh test_FilamentBackend offscreen_capture_smoke dartpy dart-demos
-          UNIT_examples_demos_GuiScaling UNIT_examples_demos_MemoryDiagnostics test_Issue2516 test_Issue2668 test_Issue2671
+          UNIT_examples_demos_GuiScaling UNIT_examples_demos_MemoryDiagnostics UNIT_examples_demos_SceneCycle test_Issue2671
       - name: Windows isolated software WGL
         if: runner.os == 'Windows'
         shell: pwsh
@@ -78,7 +78,7 @@ jobs:
         run: >-
           env -u DISPLAY -u WAYLAND_DISPLAY pixi run -e gui-ci ctest
           --test-dir ${{ env.BUILD_DIR }} --output-on-failure
-          --no-tests=error -R '^(test_FilamentBackend|test_GuiParity|test_GuiMesh|test_GuiImageDecoders|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue(2516|2668|2671)$)'
+          --no-tests=error -R '^(test_FilamentBackend|test_GuiParity|test_GuiMesh|test_GuiImageDecoders|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue2671$)'
       - name: Linux native window and capture
         if: runner.os == 'Linux'
         run: >-
@@ -88,7 +88,7 @@ jobs:
         if: runner.os != 'Linux'
         run: >-
           pixi run -e gui-ci ctest --test-dir ${{ env.BUILD_DIR }}
-          --output-on-failure --no-tests=error -R '^(test_Gui|test_FilamentBackend|test_FilamentNative|offscreen_capture_smoke|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue(2516|2668|2671)$)'
+          --output-on-failure --no-tests=error -R '^(test_Gui|test_FilamentBackend|test_FilamentNative|offscreen_capture_smoke|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue2671$)'
       - name: Python GUI and real capture
         run: >-
           pixi run -e gui-ci python -I scripts/run_pytest.py

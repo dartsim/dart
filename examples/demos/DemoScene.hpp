@@ -39,12 +39,21 @@
 
 #include <functional>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace dart_demos {
 
 class DemoHost;
+
+//==============================================================================
+/// Optional model assets have not been prefetched; scene cycling may skip them.
+class AssetsNotPrefetched : public std::runtime_error
+{
+public:
+  using std::runtime_error::runtime_error;
+};
 
 //==============================================================================
 /// A single keyboard shortcut a scene wants to expose. The host wires this up

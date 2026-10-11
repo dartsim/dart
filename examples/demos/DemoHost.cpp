@@ -758,6 +758,7 @@ void DemoHost::processPendingSwitch()
 
   const std::string requestedId = *mPendingSceneId;
   mPendingSceneId.reset();
+  mLastSwitchSkipReason.clear();
 
   const DemoScene* scene = findScene(requestedId);
   if (!scene) {
@@ -776,6 +777,10 @@ void DemoHost::processPendingSwitch()
     setup = scene->factory();
     if (!setup.world)
       throw std::runtime_error("factory returned a null world");
+  } catch (const AssetsNotPrefetched& e) {
+    ok = false;
+    failureReason = e.what();
+    mLastSwitchSkipReason = failureReason;
   } catch (const std::exception& e) {
     ok = false;
     failureReason = e.what();
@@ -1052,6 +1057,7 @@ int DemoHost::cycleScenes(
     int framesPerScene, bool render, int width, int height)
 {
   bool anyFailure = false;
+  std::size_t skipped = 0;
   if (render) {
     ensureViewerConfigured();
     const CameraHome home{
@@ -1069,7 +1075,11 @@ int DemoHost::cycleScenes(
       requestSceneSwitch(scene.id);
       processPendingSwitch();
 
-      if (mLastSwitchFailed) {
+      if (!mLastSwitchSkipReason.empty()) {
+        std::cout << "[cycle-scenes] demo '" << scene.id
+                  << "' skipped: " << mLastSwitchSkipReason << "\n";
+        ++skipped;
+      } else if (mLastSwitchFailed) {
         std::cerr << "[cycle-scenes] demo '" << scene.id
                   << "' failed to start.\n";
         anyFailure = true;
@@ -1096,7 +1106,7 @@ int DemoHost::cycleScenes(
   }
 
   std::cout << "[cycle-scenes] cycled " << mScenes.size() << " demo(s) x2, "
-            << framesPerScene << " frame(s) each. "
+            << framesPerScene << " frame(s) each, " << skipped << " skipped. "
             << (anyFailure ? "FAILED" : "OK") << "\n";
   return anyFailure ? 1 : 0;
 }
