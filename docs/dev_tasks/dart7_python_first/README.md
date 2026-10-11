@@ -202,7 +202,8 @@ M5a starts when M0 exits, in this order:
    --snapshot` and approved by the maintainer in one PR. It gates everything
    else.
 2. The package layout: private extension, pure-Python helpers, scikit-build-core,
-   one stable-ABI wheel.
+   one stable-ABI wheel for Python 3.12+. It also updates the 7.0 changelog's
+   Python-support entries.
 3. The array casters: read-only copies.
 4. Errors and logging.
 5. `Transform` and `Rotation`.

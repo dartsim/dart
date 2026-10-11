@@ -4430,11 +4430,30 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
             )
 
 
+def check_release_target_profile(root: Path, errors: list[str]) -> None:
+    """Keep main's release-target major on the branch profile's line."""
+    target = read_release_target(root, [])
+    profile_path = root / "docs" / "ai" / "branch-profile.json"
+    if target is None or target[0] != "main" or not profile_path.is_file():
+        return
+    try:
+        profile = read_json(profile_path).get("profile")
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return
+    major = target[2].split(".")[0]
+    if profile != f"dart{major}":
+        errors.append(
+            "docs/onboarding/release-management.md: main's Release Target "
+            f"`{target[2]}` does not match the branch profile `{profile}`"
+        )
+
+
 def run_checks(root: Path) -> list[str]:
     errors: list[str] = []
     check_required_files(root, errors)
     check_required_files_are_not_ignored(root, errors)
     check_branch_profile(root, errors)
+    check_release_target_profile(root, errors)
     check_codex_config(root, errors)
     check_hooks(root, errors)
     check_pixi_references(root, errors)

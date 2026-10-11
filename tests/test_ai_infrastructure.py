@@ -5919,3 +5919,26 @@ def test_full_infrastructure_check_rejects_pinned_scenario_prompt(
         "scenario `orientation`: prompt_class must be release-neutral; use DART"
         in errors
     )
+
+
+@pytest.mark.parametrize(("version", "expected"), [("7.0.0", []), ("8.0.0", 1)])
+def test_main_release_target_matches_branch_profile(tmp_path, version, expected):
+    owner = tmp_path / "docs/onboarding/release-management.md"
+    owner.parent.mkdir(parents=True)
+    owner.write_text(
+        (ROOT / "docs/onboarding/release-management.md")
+        .read_text(encoding="utf-8")
+        .replace("`7.0.0`", f"`{version}`", 1),
+        encoding="utf-8",
+    )
+    profile = tmp_path / "docs/ai/branch-profile.json"
+    profile.parent.mkdir(parents=True)
+    profile.write_text(json.dumps({"profile": "dart7"}), encoding="utf-8")
+    errors = []
+
+    infra.check_release_target_profile(tmp_path, errors)
+
+    if expected == []:
+        assert errors == []
+    else:
+        assert len(errors) == 1 and "branch profile `dart7`" in errors[0]

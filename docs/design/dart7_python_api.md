@@ -14,7 +14,8 @@ character/biomechanics and soft-body research, and education alike. Conflicts
 between those audiences are resolved by layering, not by dropping one of them.
 
 The C++ API stays source- and behavior-compatible for the subset that
-gz-physics and gz-sim use. The rest of the C++ API is best effort. No
+gz-physics and gz-sim use. Other C++ APIs are best effort: they may change,
+but each public-API or ABI-layout change needs maintainer approval. No
 deprecated C++ API is removed during 7.x.
 
 DART 7.0 is a **clean break for Python**:
@@ -434,7 +435,9 @@ libraries.
 
 - Wheels target Python 3.12 and newer, as one stable-ABI wheel per platform:
   Linux x86_64 and aarch64, macOS arm64, Windows x64. There is no source
-  distribution.
+  distribution. This replaces the Python 3.10+ support and `cp310`/`cp311`
+  wheels that main's unreleased changelog entries describe; M5's packaging
+  PR updates those entries.
 - The C++ package uses `AnyNewerVersion` compatibility: DART N.x accepts
   requests for any earlier version until a release removes APIs downstreams
   use.
