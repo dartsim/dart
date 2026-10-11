@@ -91,6 +91,13 @@
   * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
     `BodyNode::copyAs()`, preventing invalid mesh updates.
 
+  * Fix mimic joints enforced by the coupler constraint
+    (`Joint::setUseCouplerConstraint(true)`). Coupled joints no longer gain
+    energy, or diverge when the follower has more inertia than the leader;
+    per-DoF couplers on multi-DoF joints no longer crash; and a joint that
+    mimics only a later DoF now gets its constraint.
+    [#3700](https://github.com/dartsim/dart/pull/3700)
+
 * Python
 
   * Avoid crashes when native code releases Python objects, or calls Python

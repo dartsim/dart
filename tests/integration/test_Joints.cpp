@@ -67,8 +67,10 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <iostream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -87,7 +89,14 @@ class CouplerConstraintTestHelper : public dart::constraint::CouplerConstraint
 {
 public:
   using CouplerConstraint::applyImpulse;
+  using CouplerConstraint::applyUnitImpulse;
   using CouplerConstraint::CouplerConstraint;
+  using CouplerConstraint::excite;
+  using CouplerConstraint::getInformation;
+  using CouplerConstraint::getVelocityChange;
+  using CouplerConstraint::isActive;
+  using CouplerConstraint::unexcite;
+  using CouplerConstraint::uniteSkeletons;
   using CouplerConstraint::update;
 };
 
@@ -1433,6 +1442,368 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_APPLY_IMPULSE)
       referenceJoint->getConstraintImpulse(0),
       -lambda[0] * followerJoint->getMimicMultiplier(0),
       1e-12);
+}
+
+//==============================================================================
+// Adds a 1 kg rod hinged about the x-axis that hangs along -z at zero angle.
+Joint* addRod(
+    const SkeletonPtr& skeleton,
+    BodyNode* parent,
+    double length,
+    double inertiaAboutCom)
+{
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(parent);
+  pair.first->setAxis(Eigen::Vector3d::UnitX());
+  pair.second->setInertia(dynamics::Inertia(
+      1.0,
+      Eigen::Vector3d(0.0, 0.0, -0.5 * length),
+      Eigen::Matrix3d(Eigen::Vector3d(inertiaAboutCom, inertiaAboutCom, 0.006)
+                          .asDiagonal())));
+  return pair.first;
+}
+
+//==============================================================================
+// Two passive rods sized like gz-physics' mimic_fast_slow_pendulums_world are
+// released from horizontal with one mimicking the other, so neither may swing
+// above horizontal. Following the fast rod, the slow rod's 3.9 times larger
+// hinge inertia made the previous follower-only coupler row diverge; following
+// the slow rod, the fast rod slowly gained energy (gazebosim/gz-physics#432).
+void testMimicCouplerConservesEnergy(
+    bool slowFollowsFast, bool separateSkeletons)
+{
+  using namespace dart::math::suffixes;
+
+  auto world = simulation::World::create();
+  world->setTimeStep(1e-3);
+
+  const SkeletonPtr first = Skeleton::create("first");
+  const SkeletonPtr second
+      = separateSkeletons ? Skeleton::create("second") : first;
+  auto* firstBase = first->createJointAndBodyNodePair<WeldJoint>().second;
+  auto* secondBase
+      = separateSkeletons
+            ? second->createJointAndBodyNodePair<WeldJoint>().second
+            : firstBase;
+  Joint* slow = addRod(first, firstBase, 1.0, 0.087);
+  Joint* fast = addRod(second, secondBase, 0.5, 0.024);
+  Joint* leader = slowFollowsFast ? fast : slow;
+  Joint* follower = slowFollowsFast ? slow : fast;
+
+  slow->setPosition(0, 90.0_deg);
+  fast->setPosition(0, 90.0_deg);
+  follower->setActuatorType(Joint::MIMIC);
+  follower->setMimicJoint(leader, 1.0, 0.0);
+  follower->setUseCouplerConstraint(true);
+
+  world->addSkeleton(first);
+  if (separateSkeletons)
+    world->addSkeleton(second);
+
+  const auto energy = [&] {
+    double total
+        = first->computeKineticEnergy() + first->computePotentialEnergy();
+    if (separateSkeletons)
+      total
+          += second->computeKineticEnergy() + second->computePotentialEnergy();
+    return total;
+  };
+  const double initialEnergy = energy();
+  // Potential energy both rods release when swinging down from horizontal.
+  const double energyScale = 9.81 * (0.5 * 1.0 + 0.5 * 0.5);
+
+  double maxAngle = 0.0;
+  double maxCouplingError = 0.0;
+  double maxEnergyChange = 0.0;
+  for (int i = 0; i < 10000; ++i) {
+    world->step();
+
+    const double leaderAngle = leader->getPosition(0);
+    const double followerAngle = follower->getPosition(0);
+    if (!std::isfinite(leaderAngle) || !std::isfinite(followerAngle)) {
+      ADD_FAILURE() << "Non-finite joint position at step " << i;
+      return;
+    }
+
+    maxAngle
+        = std::max({maxAngle, std::abs(leaderAngle), std::abs(followerAngle)});
+    maxCouplingError
+        = std::max(maxCouplingError, std::abs(followerAngle - leaderAngle));
+    maxEnergyChange
+        = std::max(maxEnergyChange, std::abs(energy() - initialEnergy));
+  }
+
+  EXPECT_LT(maxAngle, 90.0_deg + 1e-3);
+  EXPECT_LT(maxCouplingError, 1e-6);
+  EXPECT_LT(maxEnergyChange, 5e-3 * energyScale);
+}
+
+//==============================================================================
+TEST_F(JOINTS, MIMIC_COUPLER_CONSERVES_ENERGY)
+{
+  for (const bool separateSkeletons : {false, true}) {
+    for (const bool slowFollowsFast : {true, false}) {
+      SCOPED_TRACE(
+          std::string(
+              slowFollowsFast ? "slow follows fast" : "fast follows slow")
+          + (separateSkeletons ? ", separate skeletons" : ", same skeleton"));
+      testMimicCouplerConservesEnergy(slowFollowsFast, separateSkeletons);
+    }
+  }
+}
+
+//==============================================================================
+// Creates a rod hinged at its center of mass, so its hinge inertia is inertia.
+SkeletonPtr createHingedRod(const std::string& name, double inertia)
+{
+  auto skeleton = Skeleton::create(name);
+  skeleton->setTimeStep(1e-3);
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitX());
+  pair.second->setInertia(dynamics::Inertia(
+      1.0, Eigen::Vector3d::Zero(), inertia * Eigen::Matrix3d::Identity()));
+  return skeleton;
+}
+
+//==============================================================================
+// The coupler row is the bilateral constraint J v = v_f - m v_r: a unit
+// impulse along it changes J v by J M^-1 J^T, and its bias drives J v toward
+// the scaled position error (gazebosim/gz-physics#432).
+TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
+{
+  const double leaderInertia = 2.0;
+  const double followerInertia = 5.0;
+  const double multiplier = -2.0;
+  const SkeletonPtr leaderSkeleton = createHingedRod("leader", leaderInertia);
+  const SkeletonPtr followerSkeleton
+      = createHingedRod("follower", followerInertia);
+  Joint* leader = leaderSkeleton->getJoint(0);
+  Joint* follower = followerSkeleton->getJoint(0);
+  follower->setActuatorType(Joint::MIMIC);
+  follower->setMimicJoint(leader, multiplier, 0.0);
+  follower->setUseCouplerConstraint(true);
+
+  // The follower lags the mimicked position by 0.5 mrad, and J v is 1.0.
+  leader->setPosition(0, 0.1);
+  follower->setPosition(0, -0.2005);
+  leader->setVelocity(0, 0.7);
+  follower->setVelocity(0, -0.4);
+  leaderSkeleton->computeForwardDynamics();
+  followerSkeleton->computeForwardDynamics();
+
+  CouplerConstraintTestHelper constraint(
+      follower, follower->getMimicDofProperties());
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 1u);
+  EXPECT_TRUE(constraint.isActive());
+
+  double x = 0.0;
+  double lo = 0.0;
+  double hi = 0.0;
+  double b = 0.0;
+  double w = 0.0;
+  int findex = -1;
+  dart::constraint::ConstraintInfo info{&x, &lo, &hi, &b, &w, &findex, 1e3};
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b, 0.4 * 0.5e-3 / 1e-3 - 1.0, 1e-9);
+
+  // The correction never outpaces the follower's velocity limits. With a
+  // reactive leader, the limits cap only the correction; clipping the coupled
+  // velocity too would make the row push the leader.
+  follower->setVelocityLowerLimit(0, -0.1);
+  follower->setVelocityUpperLimit(0, 0.1);
+  constraint.update();
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b, 0.1 - 1.0, 1e-9);
+
+  // Limits that exclude zero still leave a satisfied row alone.
+  follower->setPosition(0, -0.2);
+  follower->setVelocity(0, -1.4);
+  follower->setVelocityLowerLimit(0, 20.0);
+  follower->setVelocityUpperLimit(0, 30.0);
+  constraint.update();
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b, 0.0, 1e-9);
+
+  // A reactive leader shares the follower's island.
+  leaderSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  constraint.uniteSkeletons();
+  EXPECT_EQ(
+      dart::constraint::ConstraintBase::compressPath(leaderSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
+
+  // A zero multiplier leaves the leader out of the row, and so of the island.
+  follower->setMimicJoint(leader, 0.0, 0.0);
+  CouplerConstraintTestHelper unscaledConstraint(
+      follower, follower->getMimicDofProperties());
+  unscaledConstraint.update();
+  leaderSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  unscaledConstraint.uniteSkeletons();
+  EXPECT_NE(
+      dart::constraint::ConstraintBase::compressPath(leaderSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
+  follower->setMimicJoint(leader, multiplier, 0.0);
+
+  double response = 0.0;
+  constraint.excite();
+  constraint.applyUnitImpulse(0);
+  constraint.getVelocityChange(&response, false);
+  constraint.unexcite();
+  EXPECT_NEAR(
+      response,
+      1.0 / followerInertia + multiplier * multiplier / leaderInertia,
+      1e-10);
+
+  // An immobile leader cannot respond, leaving only the follower's response.
+  leaderSkeleton->setMobile(false);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 1u);
+  constraint.excite();
+  constraint.applyUnitImpulse(0);
+  constraint.getVelocityChange(&response, false);
+  constraint.unexcite();
+  EXPECT_NEAR(response, 1.0 / followerInertia, 1e-10);
+
+  // A motion-prescribed leader takes no impulse either, so the row servos the
+  // follower within its velocity limits: on the mimicked position, a leader
+  // driven at -1 rad/s asks for m * -1 = 2 rad/s, clipped to 1 rad/s.
+  leaderSkeleton->setMobile(true);
+  leader->setActuatorType(Joint::VELOCITY);
+  leader->setPosition(0, 0.1);
+  follower->setPosition(0, -0.2);
+  leader->setVelocity(0, -1.0);
+  follower->setVelocity(0, 0.0);
+  follower->setVelocityLowerLimit(0, -1.0);
+  follower->setVelocityUpperLimit(0, 1.0);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 1u);
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b, 1.0, 1e-9);
+
+  // The same prescribed joint on a floating base has a reactive child body,
+  // but its DoF still takes no impulse, so the same clip applies.
+  const SkeletonPtr floatingSkeleton = Skeleton::create("floating_leader");
+  floatingSkeleton->setTimeStep(1e-3);
+  auto base = floatingSkeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto arm = floatingSkeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      base.second);
+  arm.first->setAxis(Eigen::Vector3d::UnitX());
+  arm.first->setActuatorType(Joint::VELOCITY);
+  arm.first->setPosition(0, 0.1);
+  arm.first->setVelocity(0, -1.0);
+  ASSERT_TRUE(arm.second->isReactive());
+  follower->setMimicJoint(arm.first, multiplier, 0.0);
+  CouplerConstraintTestHelper floatingConstraint(
+      follower, follower->getMimicDofProperties());
+  floatingConstraint.update();
+  ASSERT_EQ(floatingConstraint.getDimension(), 1u);
+  floatingConstraint.getInformation(&info);
+  EXPECT_NEAR(b, 1.0, 1e-9);
+
+  // Nor does it join the follower's island, so its own island can sleep.
+  floatingSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  floatingConstraint.uniteSkeletons();
+  EXPECT_NE(
+      dart::constraint::ConstraintBase::compressPath(floatingSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
+}
+
+//==============================================================================
+// Each DoF of the follower mimics a rod in its own skeleton. A row's response
+// to a unit impulse on the other row must not include a leader response left
+// over from an earlier probe.
+TEST_F(JOINTS, COUPLER_CONSTRAINT_ROWS_WITH_SEPARATE_LEADERS)
+{
+  const std::array<double, 2> leaderInertias = {2.0, 3.0};
+  const std::array<double, 2> multipliers = {1.5, -0.5};
+  const std::array<SkeletonPtr, 2> leaderSkeletons
+      = {createHingedRod("leader0", leaderInertias[0]),
+         createHingedRod("leader1", leaderInertias[1])};
+
+  const SkeletonPtr followerSkeleton = Skeleton::create("follower");
+  followerSkeleton->setTimeStep(1e-3);
+  auto pair = followerSkeleton->createJointAndBodyNodePair<UniversalJoint>();
+  Joint* follower = pair.first;
+  pair.second->setInertia(dynamics::Inertia(
+      1.0,
+      Eigen::Vector3d(0.0, 0.0, -0.5),
+      Eigen::Matrix3d(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal())));
+  follower->setPositions(Eigen::Vector2d(0.3, -0.2));
+  follower->setActuatorType(Joint::MIMIC);
+  for (std::size_t i = 0; i < 2; ++i) {
+    follower->setMimicJointDof(
+        i,
+        MimicDofProperties{
+            leaderSkeletons[i]->getJoint(0),
+            0,
+            multipliers[i],
+            0.0,
+            MimicConstraintType::Coupler});
+  }
+  for (const auto& skeleton : leaderSkeletons)
+    skeleton->computeForwardDynamics();
+  followerSkeleton->computeForwardDynamics();
+
+  CouplerConstraintTestHelper constraint(
+      follower, follower->getMimicDofProperties());
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 2u);
+
+  std::array<double, 2> responseTo0 = {};
+  std::array<double, 2> responseTo1 = {};
+  constraint.excite();
+  constraint.applyUnitImpulse(1);
+  constraint.getVelocityChange(responseTo1.data(), false);
+  constraint.applyUnitImpulse(0);
+  constraint.getVelocityChange(responseTo0.data(), false);
+  constraint.unexcite();
+
+  const Eigen::MatrixXd invMass = followerSkeleton->getInvMassMatrix();
+  EXPECT_NEAR(
+      responseTo0[0],
+      invMass(0, 0) + multipliers[0] * multipliers[0] / leaderInertias[0],
+      1e-10);
+  EXPECT_NEAR(responseTo0[1], invMass(1, 0), 1e-10);
+  EXPECT_NEAR(responseTo1[0], invMass(0, 1), 1e-10);
+  EXPECT_NEAR(
+      responseTo1[1],
+      invMass(1, 1) + multipliers[1] * multipliers[1] / leaderInertias[1],
+      1e-10);
+}
+
+//==============================================================================
+// Only DoF 1 of a passive universal joint mimics the leader, and nothing else
+// (limits, friction, servo) makes the joint need automatic constraints. The
+// coupler must still be created, and it must skip DoF 0, which has no leader.
+TEST_F(JOINTS, PARTIAL_MIMIC_COUPLER_ON_PASSIVE_JOINT)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(1e-3);
+
+  auto skeleton = Skeleton::create("partial_coupler");
+  auto leaderPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto followerPair
+      = skeleton->createJointAndBodyNodePair<UniversalJoint>(leaderPair.second);
+  Joint* leader = leaderPair.first;
+  Joint* follower = followerPair.first;
+
+  const double offset = 0.1;
+  follower->setActuatorType(Joint::PASSIVE);
+  follower->setMimicJointDof(
+      1,
+      MimicDofProperties{leader, 0, 1.0, offset, MimicConstraintType::Coupler});
+  follower->setActuatorType(1, Joint::MIMIC);
+  follower->setUseCouplerConstraint(true);
+  world->addSkeleton(skeleton);
+
+  for (int i = 0; i < 1000; ++i)
+    world->step();
+
+  EXPECT_TRUE(std::isfinite(follower->getPosition(0)));
+  EXPECT_NEAR(follower->getPosition(1), leader->getPosition(0) + offset, 1e-6);
 }
 
 //==============================================================================

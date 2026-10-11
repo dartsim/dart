@@ -760,6 +760,22 @@ bool collideWithContactBudget(
   return demand < bound;
 }
 
+//==============================================================================
+// Returns true if any DoF of the joint mimics a reference joint. Mimicking
+// only a later DoF, such as the second axis of a UniversalJoint, counts too.
+bool jointHasMimicReference(const dynamics::Joint* joint)
+{
+  const auto& mimicProps = joint->getMimicDofProperties();
+  const std::size_t numDofs = std::min(joint->getNumDofs(), mimicProps.size());
+  for (std::size_t i = 0; i < numDofs; ++i) {
+    if (joint->getActuatorType(i) == dynamics::Joint::MIMIC
+        && mimicProps[i].mReferenceJoint != nullptr) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace
 
 //==============================================================================
@@ -1618,8 +1634,7 @@ bool ConstraintSolver::canJointCreateAutomaticConstraint(
 
   return joint->hasCoulombFriction() || joint->areLimitsEnforced()
          || joint->hasActuatorType(dynamics::Joint::SERVO)
-         || (joint->hasActuatorType(dynamics::Joint::MIMIC)
-             && joint->getMimicJoint());
+         || jointHasMimicReference(joint);
 }
 
 //==============================================================================
