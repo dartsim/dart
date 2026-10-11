@@ -753,6 +753,9 @@ protected:
   Vector mInvMassMatrixSegment;
 
 private:
+  // Callers have already checked the index or are iterating over valid DoFs.
+  Joint::ActuatorType getActuatorTypeForValidIndex(std::size_t index) const;
+
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------

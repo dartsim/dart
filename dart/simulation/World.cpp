@@ -2691,8 +2691,6 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 {
   auto& deactivationState = *mDeactivationState;
   deactivationState.mReplayVerified = false;
-  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
-  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
   // Classify once per step. The default filter needs only the same exact-type
@@ -2718,9 +2716,18 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   }
   // A sleep candidate is checked like a resting body: the next solve may
   // freeze it on evidence gathered before the change.
+  const bool hasRestingOrCandidate
+      = hasRestingOrCandidateMobileSkeleton(mSkeletons);
+  // No sleep evidence exists to invalidate in a moving, contact-free world.
+  if (!hasRestingOrCandidate && !hasDwellingMobileSkeleton(mSkeletons)
+      && mLastStepRestingWorldSkeletonStates.empty()
+      && mInitialRestSpeedLimits.empty()) {
+    return;
+  }
   const bool restingOrCandidate
-      = mLastStepRestingWorldStateValid
-        && hasRestingOrCandidateMobileSkeleton(mSkeletons);
+      = mLastStepRestingWorldStateValid && hasRestingOrCandidate;
+  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   // Before the no-contact kinematic snapshot exists, this guard is the only
   // place that can notice support pose edits made between the sleep transition
   // and the next step. Once the full snapshot exists, let its exact

@@ -1081,9 +1081,10 @@ void Joint::notifyAccelerationUpdated()
 //==============================================================================
 void Joint::notifyExternalDisturbanceUpdated()
 {
-  SkeletonPtr skel = getSkeleton();
-  if (skel)
-    skel->incrementExternalDisturbanceVersion();
+  if (mChildBodyNode) {
+    if (auto* skel = mChildBodyNode->getSkeletonRawPtr())
+      skel->incrementExternalDisturbanceVersion();
+  }
 }
 
 //==============================================================================
