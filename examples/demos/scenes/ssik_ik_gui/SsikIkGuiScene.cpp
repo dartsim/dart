@@ -65,8 +65,7 @@
 // clang-format on
 #include "../Scenes.hpp"
 #include "ArmSkeleton.hpp"
-
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/dart.hpp>
 
@@ -148,7 +147,7 @@ Eigen::Isometry3d offsetPose(
 /// app chrome dropped per the file comment).
 struct SsikState
 {
-  dart::gui::osg::InteractiveFramePtr target;
+  demo_gui::InteractiveFramePtr target;
   dart::dynamics::SimpleFramePtr solvedFrame;
   ArmSkeleton arm;
 
@@ -333,7 +332,7 @@ void renderTargetControls(SsikState& state)
 
   // Commit each drag only when every component is finite: a ctrl+click-typed
   // 'nan'/'inf' would otherwise flow through makeTransform into the gizmo's
-  // OSG transform (corrupting its bounds) and make appliedTargetTf NaN, so
+  // transform (corrupting its bounds) and make appliedTargetTf NaN, so
   // the drag-detection check never settles and Auto solve fails every frame.
   std::array<float, 3> xyz = state.targetXyz;
   if (ImGui::DragFloat3("Position", xyz.data(), 0.005f) && std::isfinite(xyz[0])
@@ -509,7 +508,7 @@ DemoScene makeSsikIkGuiScene()
     defaultTarget.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
 
     auto state = std::make_shared<SsikState>();
-    state->target = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    state->target = std::make_shared<demo_gui::InteractiveFrame>(
         dart::dynamics::Frame::World(), "ssik_target", defaultTarget, 0.25);
     world->addSimpleFrame(state->target);
 
@@ -525,16 +524,15 @@ DemoScene makeSsikIkGuiScene()
 
     state->arm.setWorld(world);
 
-    ::osg::ref_ptr<dart::gui::osg::GridVisual> grid
-        = new dart::gui::osg::GridVisual();
-    grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
+    GuiPtr<demo_gui::GridVisual> grid = makeGui<demo_gui::GridVisual>();
+    grid->setPlaneType(demo_gui::GridVisual::PlaneType::XY);
 
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.6, -3.0, 1.6),
-        ::osg::Vec3d(0.1, 0.0, 0.55),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(2.6, -3.0, 1.6),
+        GuiVector3(0.1, 0.0, 0.55),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.onActivate = [state, grid](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
@@ -549,7 +547,7 @@ DemoScene makeSsikIkGuiScene()
           viewer->simulate(true);
       });
 
-      ctx.addAttachment(grid.get());
+      ctx.addOwnedAttachment(grid);
 
       if (auto* dnd = viewer->enableDragAndDrop(state->target.get()))
         ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });

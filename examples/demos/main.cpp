@@ -34,9 +34,8 @@
 // scenes. See examples/demos/README.md for the host architecture.
 
 #include "DemoHost.hpp"
+#include "GuiBackend.hpp"
 #include "Registry.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <charconv>
 #include <iostream>
@@ -100,7 +99,8 @@ void printUsage(const char* prog)
       << "  --scene <id>    Select the initial demo (default: first in the "
          "catalog).\n"
       << "  --cycle-scenes  Advance through every demo without opening a "
-         "window; smoke test.\n"
+         "window; smoke test. With --headless, also render each step\n"
+         "                  off-screen (--width/--height, default 320x240).\n"
       << "  --frames <n>    Steps per demo with --cycle-scenes (default "
          "30).\n"
       << "  --headless      Render one frame off-screen to a PNG and exit "
@@ -163,11 +163,11 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     opt.collisionDetectorName = detectorEnv;
   if (const char* threadsEnv = std::getenv("THREADS"))
     opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
-  // Same environment seed as the shared dart::gui::osg helpers; the
+  // Use the shared GUI scale environment override; the
   // --gui-scale flag below overrides it.
   if (const char* guiScaleEnv = std::getenv("DART_GUI_SCALE");
       guiScaleEnv != nullptr && guiScaleEnv[0] != '\0') {
-    opt.guiScale = dart::gui::osg::parseGuiScale(guiScaleEnv, 1.0, &std::cerr);
+    opt.guiScale = dart_demos::parseGuiScale(guiScaleEnv, 1.0, &std::cerr);
   }
 
   auto needsValue = [&](int i) {
@@ -215,10 +215,10 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     } else if (std::strcmp(a, "--gui-scale") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.guiScale = dart::gui::osg::parseGuiScale(
+      opt.guiScale = dart_demos::parseGuiScale(
           argv[++i], opt.guiScale.value_or(1.0), &std::cerr);
     } else if (std::strncmp(a, "--gui-scale=", 12) == 0) {
-      opt.guiScale = dart::gui::osg::parseGuiScale(
+      opt.guiScale = dart_demos::parseGuiScale(
           a + 12, opt.guiScale.value_or(1.0), &std::cerr);
     } else if (std::strcmp(a, "--collision-detector") == 0) {
       if (needsValue(i) == ParseResult::Error)
@@ -286,7 +286,11 @@ int main(int argc, char** argv)
     return host.listScenes();
 
   if (opt.cycleScenes)
-    return host.cycleScenes(opt.cycleFrames);
+    return host.cycleScenes(
+        opt.cycleFrames,
+        opt.headless,
+        opt.width.value_or(320),
+        opt.height.value_or(240));
 
   if (opt.headless) {
     return host.runHeadlessShot(

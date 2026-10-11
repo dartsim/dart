@@ -17,14 +17,14 @@ and downstream Gazebo/gz-physics behavior unless explicitly approved.
 | Optimization | `dart/optimizer/` | The retained gradient-based optimizer interfaces used by dynamics and IK |
 | Simulation | `dart/simulation/` | `World` ownership, stepping, time integration, and orchestration of collision and constraints |
 | Model loading | `dart/utils/` | DART 6 loaders and URDF/SDF/SKEL/MJCF parsing; public loading remains under `dart::utils` |
-| GUI | `dart/gui/osg/` | OSG viewers, world nodes, ImGui integration, and offscreen capture |
+| GUI | `dart/gui/` | Filament viewers, world nodes, ImGui integration, and offscreen capture |
 | Python | `python/dartpy/` | nanobind bindings that expose the supported DART 6 API to `dartpy` |
 | Downstream integration | package exports and Gazebo Pixi environment | Installed headers/targets and pinned gz-physics/gz-sim compatibility gates |
 
 The usual runtime flow is: a `dart::utils` loader creates `Skeleton` objects;
 a `simulation::World` owns and steps them; collision detectors produce contacts;
 the constraint solver resolves contacts and joint constraints; dynamics state is
-integrated; OSG or dartpy presents the result. Keep ownership at these existing
+integrated; Filament or dartpy presents the result. Keep ownership at these existing
 boundaries instead of adding task-local bypasses.
 
 ## Compatibility Boundaries
@@ -36,7 +36,7 @@ boundaries instead of adding task-local bypasses.
 - Parser changes must preserve DART 6 file formats, `dart::utils` names, resource
   retrieval, and installed dependencies.
 - Python changes use nanobind and the existing camelCase DART 6 surface.
-- GUI changes use the OSG path and require artifact inspection when rendering,
+- GUI changes use the Filament path and require artifact inspection when rendering,
   interaction, or capture behavior changes.
 
 ### Performance compatibility
@@ -67,5 +67,5 @@ when alignment changes. Do not add `-march` flags to exported targets.
 | Collision or constraints | [`testing.md`](testing.md), [`ci-cd.md`](ci-cd.md) | Focused tests plus `pixi run -e gazebo test-gz` when downstream behavior can change |
 | Parser or model loading | [`io-parsing.md`](io-parsing.md) | Focused loader tests and downstream/package evidence as applicable |
 | dartpy binding | [`python-bindings.md`](python-bindings.md) | `pixi run build-py-dev` and `pixi run test-py` |
-| OSG GUI or capture | [`testing.md`](testing.md), [`../ai/verification.md`](../ai/verification.md) | Runnable scene, captured artifact, and image/text verdict appropriate to the claim |
+| Filament GUI or capture | [`testing.md`](testing.md), [`../ai/verification.md`](../ai/verification.md) | Runnable scene, captured artifact, and image/text verdict appropriate to the claim |
 | Release workflow | [`release-management.md`](release-management.md) | Release-target gates |

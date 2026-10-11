@@ -48,7 +48,7 @@ Read these files first:
    feasible, and `pixi run -e gazebo test-gz` for package, collision,
    constraint, or downstream Gazebo/gz-physics compatibility work. If the
    claim depends on scene structure, simulation, dynamics, collision/contact,
-   OSG output, or a visual example, route through `dart-verify-sim`: prove
+   Filament output, or a visual example, route through `dart-verify-sim`: prove
    correctness with text first, then add assessed claim-tied visual/debug
    evidence or record why it is unavailable or not applicable.
 6. **PR** - After explicit maintainer/user approval, push with the same local

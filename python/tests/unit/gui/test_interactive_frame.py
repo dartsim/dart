@@ -1,14 +1,9 @@
 import subprocess
 import sys
 import textwrap
+from pathlib import Path
 
 import dartpy as dart
-import pytest
-
-pytestmark = pytest.mark.skipif(
-    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
-)
-
 
 
 def test_interactive_frame_shape_frames_keep_owner_alive():
@@ -17,7 +12,7 @@ def test_interactive_frame_shape_frames_keep_owner_alive():
         import gc
         import dartpy as dart
 
-        frame = dart.gui.osg.InteractiveFrame(dart.dynamics.Frame.World())
+        frame = dart.gui.InteractiveFrame(dart.dynamics.Frame.World())
         shapes = frame.getShapeFrames()
         assert isinstance(shapes, list)
         assert shapes
@@ -27,7 +22,13 @@ def test_interactive_frame_shape_frames_keep_owner_alive():
         """
     )
     result = subprocess.run(
-        [sys.executable, "-c", script],
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            "import sys; sys.path.insert(0, sys.argv[1]);\n" + script,
+            str(Path(dart.__file__).resolve().parent),
+        ],
         capture_output=True,
         text=True,
         timeout=30,

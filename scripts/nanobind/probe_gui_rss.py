@@ -14,12 +14,16 @@ def rss():
     )
 
 
+class Handler(dart.gui.GUIEventHandler):
+    def handle(self, event, action):
+        return False
+
+
 def cycle():
-    viewer = dart.gui.osg.Viewer()
-    node = dart.gui.osg.WorldNode(dart.simulation.World())
-    handler = dart.gui.osg.GUIEventHandler()
+    viewer = dart.gui.Viewer()
+    node = dart.gui.WorldNode(dart.simulation.World())
     viewer.addWorldNode(node)
-    viewer.addEventHandler(handler)
+    viewer.addEventHandler(Handler())
 
 
 def main():

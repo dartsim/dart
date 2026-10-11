@@ -79,7 +79,7 @@ dev-task folder, never in a separate tracking system. Every packet records:
   before execution.
 
 When a claim depends on 3D structure or behavior — model/scene loading,
-dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
+dynamics, collision/contact/constraints, simulation stepping, Filament rendering,
 or a visual example — route verification through `dart-verify-sim`. Acceptance
 evidence pairs a text correctness oracle with an assessed claim-tied capture
 using core bounds/raycast view selection and only the `DebugOverlay` layers

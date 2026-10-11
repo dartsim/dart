@@ -1,6 +1,5 @@
 """Tests for DART 6 debug-overlay composition and engine injection."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -13,14 +12,9 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
+import _image_tools
 import agent_debug_overlay as ado
 import agent_view_quality as avq
-
-requires_display = pytest.mark.skipif(
-    not os.environ.get("DISPLAY"),
-    reason="off-screen GLX capture needs a DISPLAY (run under xvfb-run on "
-    "headless hosts)",
-)
 
 
 def _settled_world():
@@ -325,7 +319,7 @@ def test_collision_bounds_layer_skips_visual_only_shapes():
 def test_populate_overlay_loads_lines_and_labels():
     world = _settled_world()
     scene = ado.build_overlay(world, layers=("body_frames", "labels"))
-    overlay = dart.gui.osg.DebugOverlay()
+    overlay = dart.gui.DebugOverlay()
     lines, labels = ado.populate_overlay(overlay, scene)
     assert lines == len(scene.segments)
     assert labels == len(scene.labels) == 2
@@ -340,7 +334,7 @@ def test_populate_overlay_loads_lines_and_labels():
 
 def test_populate_overlay_empty_scene_clears_overlay():
     world = _settled_world()
-    overlay = dart.gui.osg.DebugOverlay()
+    overlay = dart.gui.DebugOverlay()
     ado.populate_overlay(overlay, ado.build_overlay(world, layers=("body_frames",)))
     assert overlay.getNumLines() > 0
     empty = ado.build_overlay(world, layers=("contacts",), contacts=[])
@@ -350,41 +344,38 @@ def test_populate_overlay_empty_scene_clears_overlay():
     assert overlay.getNumLabels() == 0
 
 
-@requires_display
 def test_engine_rendered_overlay_changes_pixels(tmp_path):
     world = _settled_world()
-    viewer = dart.gui.osg.ImGuiViewer()
-    viewer.addWorldNode(dart.gui.osg.WorldNode(world))
-    overlay = dart.gui.osg.DebugOverlay()
+    viewer = dart.gui.Viewer()
+    viewer.addWorldNode(dart.gui.WorldNode(world))
+    overlay = dart.gui.DebugOverlay()
     font = ado.find_default_font()
     if font:
         overlay.setFont(font)
     viewer.addAttachment(overlay)
     camera = avq.frame_body(world, "box", margin=2.8)
+    viewer.setUpViewForCapture(240, 180)
+    viewer.setCameraHome(camera.eye, camera.center, camera.up)
+    viewer.setVerticalFieldOfView(camera.fovy_deg)
 
     def shoot(name):
         path = tmp_path / name
-        ok = viewer.captureOffscreen(
-            str(path),
-            camera.eye,
-            camera.center,
-            camera.up,
-            width=240,
-            height=180,
-            fovYDeg=camera.fovy_deg,
-            warmupFrames=10,
-        )
-        if not ok:
-            pytest.fail("no off-screen GL context despite a configured DISPLAY")
-        return path.read_bytes()
+        for _ in range(10):
+            viewer.frame()
+        viewer.captureScreen(str(path))
+        viewer.frame()
+        pixels = _image_tools.read_image(path).pixels
+        return np.frombuffer(pixels, dtype=np.uint8).astype(int)
 
     base = shoot("base.png")
 
     # Lines and labels render through the engine and revert cleanly on clear.
+    # Temporal dithering may move any independently rendered frame by two
+    # display units, the same bound the C++ capture fixtures use.
     scene = ado.build_overlay(world, layers=("contacts", "body_frames", "labels"))
     ado.populate_overlay(overlay, scene, character_size=0.05)
     with_overlay = shoot("overlay.png")
     overlay.clear()
     after_clear = shoot("after_clear.png")
-    assert with_overlay != base, "engine-rendered overlay must change pixels"
-    assert after_clear == base, "clearing the overlay must restore the scene"
+    assert np.abs(with_overlay - base).max() > 2, "overlay must change pixels"
+    assert np.abs(after_clear - base).max() <= 2, "clear must restore the scene"

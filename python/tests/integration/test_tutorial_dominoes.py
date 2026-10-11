@@ -7,11 +7,6 @@ import dartpy as dart
 import numpy as np
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
-)
-
-
 
 def load_tutorial(finished=True):
     filename = "main_finished.py" if finished else "main.py"
@@ -31,7 +26,7 @@ def scene():
 def press(handler, key):
     class KeyEvent:
         def getEventType(self):
-            return dart.gui.osg.GUIEventAdapter.KEYDOWN
+            return dart.gui.GUIEventAdapter.KEYDOWN
 
         def getKey(self):
             return ord(key)

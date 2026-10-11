@@ -13,7 +13,7 @@ Load this skill when working with robot model files or parsers.
 
 When the claim depends on the loaded hierarchy, transforms, collision geometry,
 or simulated behavior, also load `dart-verify-sim` for a text scene/behavior
-oracle plus claim-tied OSG visual corroboration.
+oracle plus claim-tied Filament visual corroboration.
 
 ## Quick Start
 

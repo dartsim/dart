@@ -38,9 +38,8 @@
 // detector instead, defaulting to the same backend as the rest of DART;
 // box-drop behavior is otherwise unchanged.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -127,9 +126,9 @@ DemoScene makeBoxesScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(20.0, 20.0, 15.0),
-        ::osg::Vec3d(0.00, 0.00, 3.00),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(20.0, 20.0, 15.0),
+        GuiVector3(0.00, 0.00, 3.00),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.renderPanel = [world] {
       const std::size_t numBoxes

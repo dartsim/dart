@@ -5,12 +5,12 @@
   "python_binding": "nanobind",
   "optional_python_bindings": [],
   "io_namespace": "dart::utils",
-  "gui_backend": "OSG",
+  "gui_backend": "Filament",
   "required_markers": [
     "C++17",
     "nanobind",
     "dart::utils",
-    "OSG",
+    "Filament",
     "Gazebo/gz-physics"
   ],
   "required_paths": [
@@ -19,11 +19,15 @@
     ".claude/skills/dart-verify-sim/SKILL.md",
     ".codex/agents",
     "dart/utils",
-    "dart/gui/osg",
-    "dart/gui/osg/DebugOverlay.hpp",
     "docs/onboarding/architecture.md",
     "python/dartpy",
-    "scripts/agent_capture.py"
+    "scripts/agent_capture.py",
+    "dart/gui/Viewer.hpp",
+    "dart/gui/DebugOverlay.hpp",
+    "python/dartpy/gui/Viewer.cpp",
+    "python/dartpy/gui/interactions.cpp",
+    "python/tests/unit/gui/test_gui_import.py",
+    "python/tests/unit/gui/test_gui_offscreen.py"
   ],
   "forbidden_markers": [
     "C++23 as the release default",
@@ -34,7 +38,9 @@
     "dart/io",
     "python/dartpy/nanobind",
     "python/dartpy_nanobind",
-    "docs/design/simulation_solver_architecture.md"
+    "docs/design/simulation_solver_architecture.md",
+    "dart/gui/osg",
+    "python/dartpy/gui/osg"
   ],
   "downstream_gates": [
     "pixi run -e gazebo test-gz"

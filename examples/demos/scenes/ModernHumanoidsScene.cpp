@@ -75,14 +75,12 @@ DemoScene makeModelScene(
     auto model
         = std::make_shared<dart::utils::ModelResourceRetriever>("", true);
     const dart::common::Uri uri(root + entrypoint);
-    try {
-      if (model->getFilePath(uri).empty())
-        throw std::runtime_error("Verified model cache is unavailable.");
-    } catch (const std::exception& error) {
-      throw std::runtime_error(
-          std::string(error.what())
-          + " Prefetch with: pixi run fetch-robot-assets " + modelId);
-    }
+    // The offline retriever logs why the verified cache is unusable.
+    if (model->getFilePath(uri).empty())
+      throw AssetsNotPrefetched(
+          "Verified model cache is unavailable. Prefetch with: pixi run "
+          "fetch-robot-assets "
+          + modelId);
 
     auto package
         = std::make_shared<dart::utils::PackageResourceRetriever>(model);
@@ -111,9 +109,9 @@ DemoScene makeModelScene(
     setup.enableShadows = false;
     // Frame the full robot above the diagnostics panel and between side panels.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(6.0, 5.0, 3.0),
-        ::osg::Vec3d(0.0, 0.0, rootHeight - 0.6),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(6.0, 5.0, 3.0),
+        GuiVector3(0.0, 0.0, rootHeight - 0.6),
+        GuiVector3(0.0, 0.0, 1.0)};
     auto edits = std::make_shared<PoseEdits>();
     setup.preRefresh = [robot, edits, initialPose] {
       if (edits->reset) {

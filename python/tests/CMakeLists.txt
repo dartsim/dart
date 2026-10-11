@@ -26,7 +26,15 @@ set(DARTPY_PYTEST_FOUND ${DARTPY_PYTEST_FOUND} PARENT_SCOPE)
 
 set(dartpy_test_utils util.py)
 
-file(GLOB_RECURSE dartpy_test_files "test_*.py")
+file(GLOB_RECURSE dartpy_test_files CONFIGURE_DEPENDS "test_*.py")
+# Rendering needs a graphics device; test-gui runs these modules explicitly.
+# Lazy GUI construction, ownership, geometry, and tutorial tests stay here.
+list(
+  FILTER dartpy_test_files
+  EXCLUDE
+  REGEX
+    "/unit/gui/test_(filament|gui_offscreen|agent_capture|agent_debug_overlay)\\.py$"
+)
 
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)

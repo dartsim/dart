@@ -62,10 +62,9 @@
 // are dropped in favor of the host's generic --cycle-scenes/--headless/
 // --gui-scale equivalents.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -490,9 +489,9 @@ DemoScene makeContactInverseDynamicsScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(3.0, -3.0, 1.5),
-        ::osg::Vec3d(0.0, 0.0, 0.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(3.0, -3.0, 1.5),
+        GuiVector3(0.0, 0.0, 0.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.renderPanel = [state] {
       updateFrame(*state);

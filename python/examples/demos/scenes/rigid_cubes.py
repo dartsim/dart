@@ -14,11 +14,13 @@ import dartpy as dart
 from ..registry import SceneHandle
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/cubes.skel")
     world.setGravity([0, -9.81, 0])
 
-    node = dart.gui.osg.RealTimeWorldNode(world)
+    node = gui.RealTimeWorldNode(world)
 
     return SceneHandle(
         node=node,

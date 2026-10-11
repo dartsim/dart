@@ -226,11 +226,11 @@ def apply_best_solution(skel, analytical, target_tf):
     return bool(valid)
 
 
-class SsikWorldNode(dart.gui.osg.WorldNode):
+class SsikWorldNode:
     """Re-solves the analytical IK every frame so the arm tracks the target."""
 
     def __init__(self, world, skel, ik, analytical):
-        super(SsikWorldNode, self).__init__(world)
+        super().__init__(world)
         self.skel = skel
         self.ik = ik
         self.analytical = analytical
@@ -305,6 +305,10 @@ def run_viewer(module_name):
     module = load_ssik_module(module_name)
     if module is None:
         return 1
+    gui = dart.gui
+
+    class WorldNode(SsikWorldNode, gui.WorldNode):
+        pass
 
     world = dart.simulation.World()
     skel, ee_body = build_arm_skeleton(module_name, module)
@@ -312,14 +316,14 @@ def run_viewer(module_name):
     ik, analytical = setup_ik(skel, ee_body, module)
 
     # A draggable target, initialized at the arm's current end-effector pose.
-    target = dart.gui.osg.InteractiveFrame(dart.dynamics.Frame.World(), "ssik_target")
+    target = gui.InteractiveFrame(dart.dynamics.Frame.World(), "ssik_target")
     target.setTransform(ee_body.getWorldTransform())
     world.addSimpleFrame(target)
     ik.setTarget(target)
 
-    node = SsikWorldNode(world, skel, ik, analytical)
+    node = WorldNode(world, skel, ik, analytical)
 
-    viewer = dart.gui.osg.ImGuiViewer()
+    viewer = gui.Viewer()
     viewer.addWorldNode(node)
     viewer.enableDragAndDrop(target)
     viewer.addInstructionText(
@@ -328,13 +332,13 @@ def run_viewer(module_name):
     print(viewer.getInstructions())
     print(f"Arm: {module_name} (DOF={skel.getNumDofs()})")
 
-    viewer.setUpViewInWindow(0, 0, 1280, 960)
+    viewer.setUpViewInWindow()
     viewer.setCameraHomePosition([1.6, 1.6, 1.2], [0, 0, 0.3], [0, 0, 1])
     viewer.run()
     return 0
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--arm",
@@ -349,7 +353,7 @@ def main():
         action="store_true",
         help="run a headless IK smoke test over all arms and exit",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.list:
         for label, module_name in ARMS:

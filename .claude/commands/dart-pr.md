@@ -39,7 +39,7 @@ Use these practices:
   expected.
 - For model/scene, dynamics, collision/contact, simulation, rendering, mesh,
   texture, GUI, or visual-example changes, use `dart-verify-sim`: report the
-  text correctness oracle and include assessed, claim-tied OSG/debug-overlay
+  text correctness oracle and include assessed, claim-tied Filament/debug-overlay
   evidence when applicable (an image alone is not correctness proof):
   - Prefer an existing headless example path such as `--headless`,
     `--frames`, `--width`, `--height`, and `--shot` over manual

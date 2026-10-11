@@ -3760,6 +3760,17 @@ def _build_arm(
     harness,
     env,
 ):
+    contact_cmake = Path(source) / "examples/contact_benchmark/CMakeLists.txt"
+    if (
+        CB in drivers
+        and contact_cmake.is_file()
+        and "gui-osg" in contact_cmake.read_text(encoding="utf-8")
+        and not (Path(dependency) / "lib/libosgDB.so").is_file()
+    ):
+        raise ValueError(
+            "historical contact_benchmark requires OpenSceneGraph; "
+            "use --rows gzb,robot or an environment providing OpenSceneGraph"
+        )
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
@@ -3772,7 +3783,15 @@ def _build_arm(
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_ENABLE_SIMD=OFF",
-        "-DDART_BUILD_GUI_OSG=ON",
+        # Historical OSG sources (including DART 7 trees before Filament) build
+        # their GUI only while the environment still provides OSG; DART 7
+        # rejects DART_BUILD_GUI_OSG=ON, and current arms build no GUI.
+        *(
+            ("-DDART_BUILD_GUI_OSG=ON", "-DDART_BUILD_GUI=ON")
+            if (Path(source) / "dart/gui/osg").is_dir()
+            and (Path(dependency) / "lib/libosgDB.so").is_file()
+            else ("-DDART_BUILD_GUI_OSG=OFF", "-DDART_BUILD_GUI=OFF")
+        ),
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",

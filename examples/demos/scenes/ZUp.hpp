@@ -41,7 +41,7 @@ namespace dart_demos {
 // Many bundled .skel worlds (chain.skel, cubes.skel, shapes.skel,
 // ground.skel, ...) are authored Y-up (ground normal +Y; the .skel files
 // embed <gravity>0 -9.81 0</gravity>), matching the convention their original
-// osg examples used. dart-demos uses one Z-up convention across every scene
+// examples used. dart-demos uses one Z-up convention across every scene
 // (matching DemoScene::cameraHome eye/center/up throughout examples/demos),
 // so such worlds are reoriented here instead: premultiply every root joint's
 // transform-from-parent by RotX(+90deg) (+Y -> +Z), then rotate gravity by the

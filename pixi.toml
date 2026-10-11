@@ -38,13 +38,12 @@ console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
-imgui = ">=1.91.9,<2"
+imgui = ">=1.92.8,<2"
 libboost-devel = ">=1.86.0,<2"
 libcurl = ">=7.85.0,<9"
 libode = ">=0.16.5,<0.17"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
-openscenegraph = ">=3.6.5,<4"
 openssl = ">=1.1.1,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
@@ -244,6 +243,8 @@ test-build-requirements = { cmd = [
   "tests/test_compiler_requirements.py",
   "tests/test_dependency_requirements.py",
   "tests/test_minimum_requirement_metadata.py",
+  "tests/test_wheel_runtime_environment.py",
+  "tests/test_wheel_filament_license.py",
   "tests/test_setup_cmake_args.py",
   "tests/test_wheel_linux.py",
   "-q",
@@ -267,6 +268,7 @@ test-perf-regression = { cmd = [
   "-I",
   "scripts/run_pytest.py",
   "tests/test_perf_regression.py",
+  "tests/test_gui_renderer_measurement.py",
   "-q",
 ] }
 
@@ -290,7 +292,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_FILAMENT=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
 
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
   { arg = "use_system_imgui", default = "ON" },
@@ -425,9 +427,8 @@ config-asan = { cmd = """
         -DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
         -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
         -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
-        -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=TRUE \
         -DDART_BUILD_DARTPY=OFF \
-        -DDART_BUILD_GUI_OSG=OFF \
+        -DDART_BUILD_GUI=OFF \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -459,6 +460,7 @@ config-coverage = { cmd = """
         -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
+        -DDART_BUILD_GUI=OFF \
         -DDART_CODECOV=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -525,19 +527,6 @@ ex-hello-world = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-# demos: the consolidated dart-demos scene catalog (examples/demos). Builds
-# against the bundled ImGui docking branch (config-demos) so the workspace
-# panels can be docked and rearranged; system-ImGui builds keep the fixed
-# panel layout. Alternating with plain `pixi run build` reconfigures the
-# shared tree between the two ImGui variants.
-demos = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target dart-demos \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos
-""", depends-on = ["config-demos"], env = { BUILD_TYPE = "Release" } }
-
 bm = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -568,12 +557,8 @@ bm-boxes-headless = { cmd = """
   { arg = "checkpoint", default = "500" },
 ], env = { BUILD_TYPE = "Release" } }
 
-# Off-screen still capture of a dart-demos scene via the dart-gui-osg
-# OffscreenViewer helper. On a headless host (no X server) prefix with
-# xvfb-run, e.g. `xvfb-run -a -s '-screen 0 1280x1024x24' pixi run capture`.
-# width/height set the off-screen render size. Uses the same docking-ImGui
-# configuration as `pixi run demos` so captures show the workspace users
-# actually get (config-demos), not the fixed-layout fallback.
+# Headless Filament capture uses the same docking workspace as demos.
+# Linux capture requires Vulkan, with no display server needed.
 capture = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -609,8 +594,8 @@ verification-bundle = { cmd = ["python", "scripts/verification_bundle.py"] }
 
 # Deterministic headless capture with active camera control (view-quality
 # scored auto viewpoints, focus framing, turntable/motion) and engine-rendered
-# core OSG debug layers (contacts, frames, velocities, trajectories, labels).
-# Needs a GLX-capable X server; see docs/ai/verification.md.
+# core GUI debug layers (contacts, frames, velocities, trajectories, labels).
+# Linux uses Vulkan without a display server; see docs/ai/verification.md.
 agent-capture = { cmd = [
   "python",
   "scripts/agent_capture.py",
@@ -619,7 +604,7 @@ agent-capture = { cmd = [
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts:$PIXI_PROJECT_ROOT/python" } }
 
 # Claim-tied text/geometry and engine-rendered DebugOverlay regressions. The
-# rendered case is non-skippable whenever DISPLAY is set; CI runs it under Xvfb.
+# rendered cases exercise the same Filament capture path as the viewer.
 test-agent-debug-overlay = { cmd = [
   "python",
   "-I",
@@ -748,6 +733,7 @@ config-install = { cmd = """
         -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
+        -DDART_BUILD_GUI=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
@@ -782,7 +768,6 @@ docs-clean = { cmd = """
 [target.linux-64.dependencies]
 lcov = ">=1.16,<2"
 libgl-devel = ">=1.7.0,<2"
-libglu = ">=9.0.3,<10"
 
 ################################################################################
 # osx-64
@@ -791,74 +776,12 @@ libglu = ">=9.0.3,<10"
 [target.osx-64.dependencies]
 git = ">=2.40.0"
 
-[target.osx-64.tasks]
-download-osg = { cmd = """
-    rm -rf .deps/OpenSceneGraph/ && \
-    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
-    cd .deps/OpenSceneGraph && \
-    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [
-  ".deps/OpenSceneGraph/README.md",
-] }
-
-config-osg = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/OpenSceneGraph \
-        -B .deps/OpenSceneGraph/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_OSG_APPLICATIONS=OFF \
-        -DBUILD_OSG_EXAMPLES=OFF
-""", depends-on = ["download-osg"] }
-
-build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = [
-  "config-osg",
-] }
-
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
-  "build-osg",
-] }
-
 ################################################################################
 # osx-arm64
 ################################################################################
 
 [target.osx-arm64.dependencies]
 git = ">=2.40.0"
-
-[target.osx-arm64.tasks]
-download-osg = { cmd = """
-    rm -rf .deps/OpenSceneGraph/ && \
-    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
-    cd .deps/OpenSceneGraph && \
-    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [
-  ".deps/OpenSceneGraph/README.md",
-] }
-
-config-osg = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/OpenSceneGraph \
-        -B .deps/OpenSceneGraph/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_OSG_APPLICATIONS=OFF \
-        -DBUILD_OSG_EXAMPLES=OFF
-""", depends-on = ["download-osg"] }
-
-build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = [
-  "config-osg",
-] }
-
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
-  "build-osg",
-] }
 
 ################################################################################
 # win-64
@@ -928,7 +851,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_FILAMENT=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
 
 build-py-dev = { cmd = """
     cmake \
@@ -1017,6 +940,7 @@ config-install = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
+        -DDART_BUILD_GUI=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
@@ -1053,6 +977,19 @@ bullet-cpp = ">=3.25"
 backward-cpp = ">=1.6"
 
 [feature.gazebo.tasks]
+config-dart-gz = { cmd = """
+    cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DDART_BUILD_GUI=OFF \
+        -DDART_BUILD_DARTPY=OFF -DDART_BUILD_PROFILE=OFF \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON
+""" }
+install-dart-gz = { cmd = "cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp --parallel 4 --target install", depends-on = [
+  "config-dart-gz",
+] }
 download-gz = { cmd = """
     rm -rf .deps/gz-physics/ \
     && git clone --branch gz-physics8_8.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
@@ -1118,7 +1055,7 @@ config-gz = { cmd = """
         -DBUILD_TESTING=ON
 """, depends-on = [
   "patch-gz-physics",
-  "install",
+  "install-dart-gz",
 ] }
 
 build-gz = { cmd = "bash scripts/run_gz_physics_task.sh build", depends-on = [
@@ -1134,7 +1071,7 @@ config-gz-install = { cmd = """
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DBUILD_TESTING=OFF
-""", depends-on = ["patch-gz-physics", "install"] }
+""", depends-on = ["patch-gz-physics", "install-dart-gz"] }
 
 install-gz-physics = { cmd = "GZ_PHYSICS_BUILD_DIR=.deps/gz-physics/build-install bash scripts/run_gz_physics_task.sh install", depends-on = [
   "config-gz-install",
@@ -1290,6 +1227,94 @@ tracy = { cmd = "tracy-profiler" }
 
 [feature.profile.target.win-64.tasks]
 tracy = { cmd = "tracy-profiler.exe" }
+
+# Filament is isolated from Gazebo and wheel build environments. Exact SDK
+# builds keep the runtime and material compiler in agreement.
+[feature.filament.dependencies]
+glfw = "3.4.*"
+libpng = ">=1.6.47,<2"
+libjpeg-turbo = ">=3.0,<4"
+
+[feature.filament.tasks]
+demos = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos
+""", depends-on = ["config-demos"], env = { BUILD_TYPE = "Release" } }
+cycle-demos = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos --cycle-scenes --frames 2
+""", depends-on = [
+  "config-demos",
+], env = { BUILD_TYPE = "Release" } }
+# Display-free GUI gate, which `test` leaves out: headless Filament C++ tests
+# and the dartpy GUI, tutorial and example tests. Native-window tests need a
+# window system: `ctest --test-dir build/<env>/cpp/Release -L filament-native`.
+test-gui = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target tests dartpy dart-demos \
+        --parallel \
+    && ctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -L gui \
+        -LE filament-native --output-on-failure \
+    && python -I scripts/run_pytest.py \
+        --pythonpath $PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
+        --pythonpath $PIXI_PROJECT_ROOT/scripts \
+        python/tests/unit/gui python/tests/integration -q
+""", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
+
+[feature.filament.target.win-64.tasks]
+test-gui = { cmd = """
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        --target tests dartpy dart-demos \
+        --parallel \
+    && ctest --test-dir "build/$PIXI_ENVIRONMENT_NAME/cpp" -C "$BUILD_TYPE" -L gui \
+        -LE filament-native --output-on-failure \
+    && python -I scripts/run_pytest.py \
+        --pythonpath "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" \
+        --pythonpath "$PIXI_PROJECT_ROOT/scripts" \
+        python/tests/unit/gui python/tests/integration -q
+""", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
+
+[feature.filament.target.linux-64.dependencies]
+filament = { version = "==1.77.3", build = "x11_ha25ca8e_0" }
+libvulkan-loader = "1.4.*"
+libvulkan-headers = "1.4.*"
+mesa-lavapipe = "26.2.*"
+
+[feature.filament.target.win-64.dependencies]
+filament = { version = "==1.77.3", build = "native_h7d849e6_0" }
+
+# Software WGL belongs only to CI, never to the development/wheel runtime.
+[feature.filament-ci.target.win-64.dependencies]
+mesa-llvmpipe = { version = "==26.2.4", build = "hca91ad9_0" }
+
+[feature.filament.target.osx-64.dependencies]
+filament = { version = "==1.77.3", build = "native_he955f10_0" }
+
+[feature.filament.target.osx-arm64.dependencies]
+filament = { version = "==1.77.3", build = "native_h52ee6e9_0" }
+
+# Wheels link the separately built static SDK, not conda's shared Filament.
+[feature.filament-wheel.dependencies]
+glfw = "3.4.*"
+libpng = ">=1.6.47,<2"
+libjpeg-turbo = ">=3.0,<4"
+
+[feature.filament-wheel.target.linux-64.dependencies]
+clangxx = ">=22.1.7,<23"
+libvulkan-headers = "1.4.*"
 
 #====================================
 # Feature: Default development Python
@@ -1573,7 +1598,8 @@ wheel-test-abi3 = { depends-on = [
 #==============
 
 [environments]
-default = ["assimp6", "default-python"]
+default = ["assimp6", "default-python", "filament"]
+gui-ci = ["assimp6", "default-python", "filament", "filament-ci"]
 gazebo = ["gazebo"]
 gazebo-harmonic = { features = [
   "gz-compat-base",
@@ -1583,8 +1609,8 @@ gazebo-jetty = { features = [
   "gz-compat-base",
   "gazebo-jetty",
 ], no-default-feature = true }
-py310-wheel = ["assimp6", "py310-wheel"]
-py311-wheel = ["assimp6", "py311-wheel"]
-py312-wheel = ["assimp6", "py312-wheel"]
-py313-wheel = ["assimp6", "py313-wheel"]
-profile = ["profile", "assimp6", "default-python"]
+py310-wheel = ["assimp6", "py310-wheel", "filament-wheel"]
+py311-wheel = ["assimp6", "py311-wheel", "filament-wheel"]
+py312-wheel = ["assimp6", "py312-wheel", "filament-wheel"]
+py313-wheel = ["assimp6", "py313-wheel", "filament-wheel"]
+profile = ["profile", "assimp6", "default-python", "filament"]

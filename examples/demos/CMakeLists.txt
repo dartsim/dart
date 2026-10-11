@@ -4,40 +4,6 @@ set(example_name dart-demos)
 
 project(${example_name})
 
-if(APPLE)
-  enable_language(OBJCXX)
-elseif(UNIX)
-  find_package(X11 QUIET)
-endif()
-
-function(dart_demos_configure_display target)
-  if(APPLE)
-    target_sources(${target} PRIVATE DisplaySettingsCocoa.mm)
-    set_target_properties(${target} PROPERTIES OBJCXX_STANDARD 17)
-    target_link_libraries(${target} "-framework Cocoa")
-  elseif(WIN32)
-    target_link_libraries(${target} user32)
-  elseif(X11_FOUND)
-    target_compile_definitions(${target} PRIVATE DART_DEMOS_HAVE_X11=1)
-    target_link_libraries(${target} X11::X11)
-    if(TARGET X11::Xrandr)
-      target_compile_definitions(${target} PRIVATE DART_DEMOS_HAVE_XRANDR=1)
-      target_link_libraries(${target} X11::Xrandr)
-    endif()
-  endif()
-endfunction()
-
-# Native X11/Windows headers define macros that must not enter unity files.
-set_source_files_properties(
-  DisplaySettings.cpp
-  tests/test_display_settings.cpp
-  PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON
-)
-
-if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
-  dart_format_add(DisplaySettingsCocoa.mm)
-endif()
-
 option(
   DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   "Build memory diagnostics into the consolidated GUI demos"
@@ -100,32 +66,84 @@ function(dart_demos_configure_memory_diagnostics target)
   endif()
 endfunction()
 
-set(required_components utils-urdf gui-osg)
+set(required_components utils-urdf gui)
 set(
   required_libraries
   dart
   dart-utils
   dart-utils-urdf
-  dart-gui-osg
+  dart-gui
   dart_demos_wam_ikfast
 )
 
-if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
-  dart_build_example_in_source(
-    ${example_name}
-    LINK_LIBRARIES ${required_libraries}
-  )
-  if(TARGET ${example_name})
-    dart_demos_configure_memory_diagnostics(${example_name})
+function(dart_demos_collect_scene_srcs out_var)
+  file(GLOB _srcs "scenes/*.cpp" "scenes/*.hpp")
+  if(NOT DART_DEMOS_HAVE_MODEL_ASSETS)
+    list(FILTER _srcs EXCLUDE REGEX "ModernHumanoidsScene\\.cpp$")
   endif()
+  file(GLOB _tinkertoy_srcs "scenes/tinkertoy/*.cpp" "scenes/tinkertoy/*.hpp")
+  list(APPEND _srcs ${_tinkertoy_srcs})
+  file(
+    GLOB _wam_ikfast_srcs
+    "scenes/wam_ikfast/*.cpp"
+    "scenes/wam_ikfast/*.hpp"
+  )
+  list(APPEND _srcs ${_wam_ikfast_srcs})
+  file(
+    GLOB _atlas_simbicon_srcs
+    "scenes/atlas_simbicon/*.cpp"
+    "scenes/atlas_simbicon/*.hpp"
+  )
+  file(
+    GLOB _soft_foot_simbicon_srcs
+    "scenes/soft_foot_simbicon/*.cpp"
+    "scenes/soft_foot_simbicon/*.hpp"
+  )
+  list(APPEND _srcs ${_atlas_simbicon_srcs})
+  list(APPEND _srcs ${_soft_foot_simbicon_srcs})
+  if(DART_DEMOS_HAVE_TINY_DNN)
+    file(
+      GLOB _human_joint_limits_srcs
+      "scenes/human_joint_limits/*.cpp"
+      "scenes/human_joint_limits/*.hpp"
+    )
+    list(APPEND _srcs ${_human_joint_limits_srcs})
+  endif()
+  if(DART_DEMOS_HAVE_PYTHON)
+    file(
+      GLOB _ssik_ik_gui_srcs
+      "scenes/ssik_ik_gui/*.cpp"
+      "scenes/ssik_ik_gui/*.hpp"
+    )
+    list(APPEND _srcs ${_ssik_ik_gui_srcs})
+  endif()
+  set(${out_var} ${_srcs} PARENT_SCOPE)
+endfunction()
+
+if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui)
+  # Without the GUI, lint still formats the demos and their tests, including
+  # optional scenes whose dependencies formatting does not need.
+  file(GLOB _demos_format_files "*.cpp" "*.hpp" "tests/*.cpp" "tests/*.hpp")
+  set(DART_DEMOS_HAVE_MODEL_ASSETS TRUE)
+  set(DART_DEMOS_HAVE_TINY_DNN TRUE)
+  set(DART_DEMOS_HAVE_PYTHON TRUE)
+  dart_demos_collect_scene_srcs(_demos_scene_format_files)
+  dart_format_add(${_demos_format_files} ${_demos_scene_format_files})
   return()
 endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
-  find_package(DART 6.20 REQUIRED COMPONENTS ${required_components} CONFIG)
+  find_package(DART 6.19 REQUIRED COMPONENTS ${required_components} CONFIG)
+  include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
+  if(NOT DART_EXAMPLES_HAVE_FILAMENT_GUI)
+    message(
+      FATAL_ERROR
+      "dart-demos requires the Filament gui component (dart/gui/Viewer.hpp)"
+    )
+  endif()
   find_package(
     DART
-    6.20
+    6.19
     QUIET
     COMPONENTS collision-bullet collision-ode utils-assets
     CONFIG
@@ -186,30 +204,6 @@ set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
 # scenes/wam_ikfast/ikfast/CMakeLists.txt for why it is a standalone copy
 # rather than a dependency on that example.
 add_subdirectory(scenes/wam_ikfast/ikfast)
-
-# DynamicJointConstraintsScene.cpp draws its on-screen catalog labels with
-# osgText::Text directly (ported from examples/dynamic_joint_constraints,
-# which links osgText the same way -- dart-gui-osg only links the core
-# osg::osg component, not osgText). Mirrors that example's own CMake pattern
-# for locating/wrapping the osgText library as an imported target.
-find_package(OpenSceneGraph 3.6.5 REQUIRED COMPONENTS osgText)
-set(dart_demos_osg_text_library ${OSGTEXT_LIBRARY})
-if(NOT dart_demos_osg_text_library)
-  set(dart_demos_osg_text_library ${OSGTEXT_LIBRARY_RELEASE})
-endif()
-if(NOT dart_demos_osg_text_library)
-  message(FATAL_ERROR "Could NOT find osgText")
-endif()
-if(NOT TARGET osgText::osgText)
-  add_library(osgText::osgText UNKNOWN IMPORTED)
-  set_target_properties(
-    osgText::osgText
-    PROPERTIES
-      IMPORTED_LOCATION "${dart_demos_osg_text_library}"
-      INTERFACE_INCLUDE_DIRECTORIES "${OSGTEXT_INCLUDE_DIR}"
-  )
-endif()
-list(APPEND required_libraries osgText::osgText)
 
 # Link the Bullet collision backend when it is available so the scenes that opt
 # into it at runtime (canCreate("bullet"): AddDeleteSkelsScene,
@@ -292,49 +286,6 @@ endif()
 # multi-file scenes, e.g. scenes/tinkertoy/), and conditionally adds
 # scenes/human_joint_limits/ only when TinyDNN + Threads were found. Shared by
 # both the in-source and standalone build paths below.
-function(dart_demos_collect_scene_srcs out_var)
-  file(GLOB _srcs "scenes/*.cpp" "scenes/*.hpp")
-  if(NOT DART_DEMOS_HAVE_MODEL_ASSETS)
-    list(FILTER _srcs EXCLUDE REGEX "ModernHumanoidsScene\\.cpp$")
-  endif()
-  file(GLOB _tinkertoy_srcs "scenes/tinkertoy/*.cpp" "scenes/tinkertoy/*.hpp")
-  list(APPEND _srcs ${_tinkertoy_srcs})
-  file(
-    GLOB _wam_ikfast_srcs
-    "scenes/wam_ikfast/*.cpp"
-    "scenes/wam_ikfast/*.hpp"
-  )
-  list(APPEND _srcs ${_wam_ikfast_srcs})
-  file(
-    GLOB _atlas_simbicon_srcs
-    "scenes/atlas_simbicon/*.cpp"
-    "scenes/atlas_simbicon/*.hpp"
-  )
-  file(
-    GLOB _soft_foot_simbicon_srcs
-    "scenes/soft_foot_simbicon/*.cpp"
-    "scenes/soft_foot_simbicon/*.hpp"
-  )
-  list(APPEND _srcs ${_atlas_simbicon_srcs})
-  list(APPEND _srcs ${_soft_foot_simbicon_srcs})
-  if(DART_DEMOS_HAVE_TINY_DNN)
-    file(
-      GLOB _human_joint_limits_srcs
-      "scenes/human_joint_limits/*.cpp"
-      "scenes/human_joint_limits/*.hpp"
-    )
-    list(APPEND _srcs ${_human_joint_limits_srcs})
-  endif()
-  if(DART_DEMOS_HAVE_PYTHON)
-    file(
-      GLOB _ssik_ik_gui_srcs
-      "scenes/ssik_ik_gui/*.cpp"
-      "scenes/ssik_ik_gui/*.hpp"
-    )
-    list(APPEND _srcs ${_ssik_ik_gui_srcs})
-  endif()
-  set(${out_var} ${_srcs} PARENT_SCOPE)
-endfunction()
 
 # Links the optional TinyDNN + Threads and Python3 dependencies and defines
 # DART_DEMOS_HAVE_TINY_DNN / DART_DEMOS_HAVE_PYTHON when found. Shared by both
@@ -385,9 +336,9 @@ if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
   )
 endif()
 
-# The app feature remains default-OFF, but ordinary test builds still compile
+# The app feature remains default-OFF, but GUI test builds still compile
 # and exercise the collector/model through this test-only library.
-if(BUILD_TESTING)
+if(BUILD_TESTING AND TARGET dart-gui)
   add_library(
     demos_memory_diagnostics
     STATIC
@@ -398,7 +349,7 @@ if(BUILD_TESTING)
     demos_memory_diagnostics
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
   )
-  target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui-osg)
+  target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui)
   dart_demos_configure_memory_diagnostics_library(
     demos_memory_diagnostics
     PRIVATE
@@ -441,35 +392,32 @@ if(BUILD_TESTING)
   endif()
 endif()
 
-if(BUILD_TESTING AND COMMAND dart_add_test)
+if(BUILD_TESTING AND TARGET dart-gui AND COMMAND dart_add_test)
   if(NOT TARGET GTest::gtest)
     find_package(GTest MODULE REQUIRED)
   endif()
   dart_add_test(
     "unit"
-    UNIT_examples_demos_DisplaySettings
-    tests/test_display_settings.cpp
+    UNIT_examples_demos_GuiScaling
     tests/test_gui_scaling.cpp
-    DisplaySettings.cpp
     Theme.cpp
   )
   target_include_directories(
-    UNIT_examples_demos_DisplaySettings
+    UNIT_examples_demos_GuiScaling
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}"
   )
-  target_link_libraries(UNIT_examples_demos_DisplaySettings dart-gui-osg)
-  dart_demos_configure_display(UNIT_examples_demos_DisplaySettings)
+  target_link_libraries(UNIT_examples_demos_GuiScaling dart-gui)
   set_tests_properties(
-    UNIT_examples_demos_DisplaySettings
+    UNIT_examples_demos_GuiScaling
     PROPERTIES
       LABELS "examples;gui;dpi"
       FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
   )
   if(TARGET tests)
-    add_dependencies(tests UNIT_examples_demos_DisplaySettings)
+    add_dependencies(tests UNIT_examples_demos_GuiScaling)
   endif()
   if(TARGET tests_and_run)
-    add_dependencies(tests_and_run UNIT_examples_demos_DisplaySettings)
+    add_dependencies(tests_and_run UNIT_examples_demos_GuiScaling)
   endif()
 endif()
 
@@ -495,6 +443,10 @@ if(DART_IN_SOURCE_BUILD)
   dart_demos_collect_scene_srcs(demos_scene_srcs)
   add_library(dart-demos-scenes STATIC ${demos_scene_srcs})
   target_link_libraries(dart-demos-scenes PUBLIC ${required_libraries})
+  target_include_directories(
+    dart-demos-scenes
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
+  )
   dart_demos_configure_scenes_target(dart-demos-scenes)
   dart_format_add(${demos_scene_srcs})
 
@@ -504,7 +456,6 @@ if(DART_IN_SOURCE_BUILD)
   )
 
   if(TARGET ${example_name})
-    dart_demos_configure_display(${example_name})
     dart_demos_link_optional_collision_backends(${example_name})
     dart_demos_configure_memory_diagnostics(${example_name})
   endif()
@@ -525,39 +476,96 @@ if(DART_IN_SOURCE_BUILD)
       dart-demos-scenes
     )
     dart_demos_link_optional_collision_backends(${alias_scene})
-    dart_demos_configure_display(${alias_scene})
     dart_demos_configure_memory_diagnostics(${alias_scene})
   endforeach()
 
   if(TARGET examples)
     add_dependencies(examples soft_bodies soft_cubes soft_open_chain)
   endif()
-  return()
+else()
+  dart_demos_collect_scene_srcs(demos_scene_srcs)
+  add_library(dart-demos-scenes STATIC ${demos_scene_srcs})
+  target_link_libraries(dart-demos-scenes PUBLIC ${required_libraries})
+  target_include_directories(
+    dart-demos-scenes
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
+  )
+  dart_demos_configure_scenes_target(dart-demos-scenes)
+
+  add_executable(${example_name} ${srcs})
+  target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
+  dart_demos_link_optional_collision_backends(${example_name})
+  dart_demos_configure_memory_diagnostics(${example_name})
+
+  foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
+    add_executable(${alias_scene} ${srcs})
+    set_target_properties(
+      ${alias_scene}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    target_compile_definitions(
+      ${alias_scene}
+      PRIVATE DART_DEMOS_DEFAULT_SCENE="${alias_scene}"
+    )
+    target_link_libraries(
+      ${alias_scene}
+      ${required_libraries}
+      dart-demos-scenes
+    )
+    dart_demos_link_optional_collision_backends(${alias_scene})
+    dart_demos_configure_memory_diagnostics(${alias_scene})
+  endforeach()
 endif()
 
-dart_demos_collect_scene_srcs(demos_scene_srcs)
-add_library(dart-demos-scenes STATIC ${demos_scene_srcs})
-target_link_libraries(dart-demos-scenes PUBLIC ${required_libraries})
-dart_demos_configure_scenes_target(dart-demos-scenes)
-
-add_executable(${example_name} ${srcs})
-target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
-dart_demos_configure_display(${example_name})
-dart_demos_link_optional_collision_backends(${example_name})
-dart_demos_configure_memory_diagnostics(${example_name})
-
-foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
-  add_executable(${alias_scene} ${srcs})
-  set_target_properties(
-    ${alias_scene}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+if(BUILD_TESTING AND TARGET dart-demos)
+  if(COMMAND dart_add_test)
+    set(demos_host_test_srcs ${srcs})
+    list(FILTER demos_host_test_srcs EXCLUDE REGEX "(main|Registry)\\.cpp$")
+    dart_add_test(
+      "unit"
+      UNIT_examples_demos_SceneCycle
+      tests/test_scene_cycle.cpp
+      ${demos_host_test_srcs}
+    )
+    target_link_libraries(UNIT_examples_demos_SceneCycle dart-demos-scenes)
+    dart_demos_link_optional_collision_backends(UNIT_examples_demos_SceneCycle)
+    dart_demos_configure_memory_diagnostics(UNIT_examples_demos_SceneCycle)
+    set_tests_properties(
+      UNIT_examples_demos_SceneCycle
+      PROPERTIES LABELS "examples;gui"
+    )
+    if(TARGET tests)
+      add_dependencies(tests UNIT_examples_demos_SceneCycle)
+    endif()
+    if(TARGET tests_and_run)
+      add_dependencies(tests_and_run UNIT_examples_demos_SceneCycle)
+    endif()
+  endif()
+  if(TARGET tests)
+    add_dependencies(tests dart-demos)
+  endif()
+  if(TARGET tests_and_run)
+    add_dependencies(tests_and_run dart-demos)
+  endif()
+  add_test(
+    NAME examples_demos_cycle
+    COMMAND dart-demos --cycle-scenes --frames 2
   )
-  target_compile_definitions(
-    ${alias_scene}
-    PRIVATE DART_DEMOS_DEFAULT_SCENE="${alias_scene}"
+  add_test(
+    NAME examples_demos_cycle_render
+    COMMAND
+      dart-demos --cycle-scenes --headless --frames 2 --width 160 --height 120
   )
-  target_link_libraries(${alias_scene} ${required_libraries} dart-demos-scenes)
-  dart_demos_link_optional_collision_backends(${alias_scene})
-  dart_demos_configure_display(${alias_scene})
-  dart_demos_configure_memory_diagnostics(${alias_scene})
-endforeach()
+  add_test(
+    NAME examples_demos_capture
+    COMMAND
+      dart-demos --headless --scene hello_world --steps 5 --width 320 --height
+      240 --shot "${CMAKE_CURRENT_BINARY_DIR}/hello-world.png"
+  )
+  set_tests_properties(examples_demos_cycle PROPERTIES LABELS "examples;gui")
+  set_tests_properties(
+    examples_demos_capture
+    examples_demos_cycle_render
+    PROPERTIES LABELS "examples;gui;gui-device;headless"
+  )
+endif()

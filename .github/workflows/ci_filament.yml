@@ -1,0 +1,114 @@
+name: CI Filament
+
+on:
+  push:
+    branches: [main, "release-*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-filament-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.run_id || '' }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+jobs:
+  functional:
+    name: ${{ matrix.runner }}-Filament-functional
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, windows-2022, macos-15]
+    env:
+      CMAKE_GENERATOR: Ninja
+      # MSVC single-config builds otherwise default to Debug.
+      CMAKE_BUILD_TYPE: Release
+      DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      # `pixi run config` builds the GUI and dartpy; Windows uses its own task.
+      BUILD_DIR: ${{ matrix.runner == 'windows-2022' && 'build/gui-ci/cpp' || 'build/gui-ci/cpp/Release' }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set parity output directory
+        shell: bash
+        run: echo "DART_FILAMENT_PARITY_DIR=$RUNNER_TEMP/filament-parity" >> "$GITHUB_ENV"
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: x64
+          vsversion: "2022"
+      - name: Setup Pixi
+        uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: gui-ci
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      - name: Linux software graphics
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libegl1
+          echo "VK_DRIVER_FILES=$GITHUB_WORKSPACE/.pixi/envs/gui-ci/share/vulkan/icd.d/lvp_icd.x86_64.json" >> "$GITHUB_ENV"
+      # As in CI Windows, default MSVC options drop DART's /Zi so parallel
+      # sccache compiles do not share a program database.
+      - name: Configure Filament
+        run: >-
+          pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON
+          ${{ runner.os == 'Windows' && '-DDART_MSVC_DEFAULT_OPTIONS=ON' || '' }}
+      - name: Build GUI tests and bindings
+        run: >-
+          pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
+          --target test_GuiDescriptors test_GuiInteractions test_GuiImageDecoders test_GuiViewer test_GuiParity test_GuiMesh test_FilamentBackend offscreen_capture_smoke dartpy dart-demos
+          UNIT_examples_demos_GuiScaling UNIT_examples_demos_MemoryDiagnostics UNIT_examples_demos_SceneCycle test_Issue2671
+      - name: Windows isolated software WGL
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $prefix = Join-Path $env:GITHUB_WORKSPACE '.pixi/envs/gui-ci'
+          $runtime = Join-Path $prefix 'Library/bin'
+          $directories = @($prefix,
+            (Join-Path $env:GITHUB_WORKSPACE "$env:BUILD_DIR/bin"),
+            (Join-Path $env:GITHUB_WORKSPACE "$env:BUILD_DIR/tests/integration"),
+            (Join-Path $env:GITHUB_WORKSPACE "$env:BUILD_DIR/tests/benchmark/integration"))
+          foreach ($directory in $directories) {
+            foreach ($library in @('opengl32.dll', 'libgallium_wgl.dll')) {
+              Copy-Item (Join-Path $runtime $library) (Join-Path $directory $library) -Force -ErrorAction Stop
+            }
+          }
+      - name: Linux display-free Vulkan capture
+        if: runner.os == 'Linux'
+        run: >-
+          env -u DISPLAY -u WAYLAND_DISPLAY pixi run -e gui-ci ctest
+          --test-dir ${{ env.BUILD_DIR }} --output-on-failure
+          --no-tests=error -R '^(test_FilamentBackend|test_GuiParity|test_GuiMesh|test_GuiImageDecoders|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue2671$)'
+      - name: Linux native window and capture
+        if: runner.os == 'Linux'
+        run: >-
+          xvfb-run -a -s '-screen 0 1280x1024x24' pixi run -e gui-ci ctest --test-dir ${{ env.BUILD_DIR }}
+          --output-on-failure --no-tests=error -R '^(test_Gui(Descriptors|Interactions|Viewer)$|test_FilamentNative|offscreen_capture_smoke)'
+      - name: Windows and macOS native GUI tests
+        if: runner.os != 'Linux'
+        run: >-
+          pixi run -e gui-ci ctest --test-dir ${{ env.BUILD_DIR }}
+          --output-on-failure --no-tests=error -R '^(test_Gui|test_FilamentBackend|test_FilamentNative|offscreen_capture_smoke|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue2671$)'
+      - name: Python GUI and real capture
+        run: >-
+          pixi run -e gui-ci python -I scripts/run_pytest.py
+          --pythonpath ${{ env.BUILD_DIR }}/python/dartpy
+          python/tests/unit/gui python/tests/integration -q
+      - name: Relocated C++17 GUI consumer
+        run: pixi run -e gui-ci python scripts/test_gui_install.py ${{ env.BUILD_DIR }}
+      - name: Preserve graphics diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: filament-${{ matrix.runner }}
+          path: |
+            ${{ env.BUILD_DIR }}/Testing/Temporary/LastTest.log
+            ${{ env.BUILD_DIR }}/CMakeCache.txt
+            ${{ env.BUILD_DIR }}/dart/gui/filament_generated/*.filamat
+            ${{ runner.temp }}/filament-parity
