@@ -35,8 +35,10 @@ struct PythonPin
   template <class T>
   void operator()(T*) const noexcept
   {
-    nanobind::gil_scoped_acquire guard;
-    Py_DECREF(object);
+    // Skip the release, leaking the reference, once Python can no longer be
+    // entered.
+    if (nanobind::detail::cleanup_guard guard{})
+      Py_DECREF(object);
   }
 };
 
