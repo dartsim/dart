@@ -11,7 +11,7 @@ push-recovery row reproduces and is gate-asserted; its motor-noise clause
 stays open in §5. Goal: fully complete this plan, bundling the remaining rows
 into as few PRs as review quality allows. The maintainer's 2026-08-01 goal
 targeted DART 6.20; the 2026-10-10 release closeout retargeted the unmet rows
-to DART 6.21. The competitive-envelope definition is settled (the 2026-07-23
+to DART 6.21, and the 2026-10-11 release-line decision moved them to DART 7.0. The competitive-envelope definition is settled (the 2026-07-23
 acceptance decision in `decisions.md`); what remains of it is the
 performance-acceptance evidence it defines (§8).
 

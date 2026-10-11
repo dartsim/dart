@@ -6,6 +6,23 @@ the owner documents that hold detailed packet boards and evidence.
 Priority order is document order. Active implementation handoff remains in
 `docs/dev_tasks/`; this dashboard only records the DART 6 roadmap view.
 
+### PLAN-624: DART 7.0 Python-first Program
+
+- Owner doc: [DART 7.0 project home](../dev_tasks/dart7_python_first/README.md);
+  durable rules in the [DART 7 Python API design](../design/dart7_python_api.md).
+- Status: Active
+- Horizon: Now
+- Dimension: Python-first API, core readiness for multi-physics, batching and
+  replay, and Gazebo/gz-physics compatibility.
+- Scope: Main's next release becomes DART 7.0. That release is a clean Python
+  API break; the C++ API stays compatible for the gz-used subset. Main's
+  unreleased work ships in 7.0, and `release-6.20` is the 6.x maintenance line.
+- Next step: Complete M0: release-line rollover, project home, baseline pin,
+  compatibility shim and bug-fix packets.
+- Gate: Per-packet gates and two clean reviews; bit-identical refactors per
+  detector; zero new steady-state allocations; Gazebo lanes for every core
+  change.
+
 ### PLAN-623: Active Contact Performance Generalization
 
 - Owner doc: [performance methodology](../onboarding/profiling.md#performance-methodology)
@@ -13,10 +30,11 @@ Priority order is document order. Active implementation handoff remains in
 - Horizon: Next
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
 - Predecessor: [PLAN-621: DART 6.20.0 performance closeout](archive.md#plan-621-dart-6200-performance-closeout).
-- Next step: Continuing [#3056](https://github.com/dartsim/dart/issues/3056)
-  performance work targets 6.21, including representative same-host workload
-  evidence, small-scene overhead, and time outside `World::step`. Open a new
-  task home only when bounded follow-up needs multi-session tracking.
+- Next step: Fold the continuing [#3056](https://github.com/dartsim/dart/issues/3056)
+  performance work into PLAN-624's executor and dense-data milestones. That
+  covers representative same-host workload evidence, small-scene overhead, and
+  time outside `World::step`. Fixes needed on the maintenance line are backported
+  to `release-6.20`.
 - Gate: Same-host DART revision comparisons, detector-specific behavior guards,
   and Gazebo-path compatibility evidence under the performance methodology.
 
@@ -32,10 +50,11 @@ Priority order is document order. Active implementation handoff remains in
 - Evidence: Adaptive active vertices, CoP/force variance, and the LCP
   initial-point reset proxy have representative gates. Reduced demos do not
   establish full paper parity.
-- Next step: The unmet full-parity 6.20 goal is retargeted to 6.21 by maintainer
-  decision. Remaining rows are motor-noise push recovery, noisy-floor biped,
-  soft-contact walking, four-link flexible-foot comparison, and hand/arm
-  scenes (finger flick, arm fold, pinch grasp). Push recovery remains partial:
+- Next step: The unmet full-parity 6.20 goal now targets DART 7.0, since there is
+  no 6.21 release. Core changes outside the parity rows pause during PLAN-624's
+  step-path quiet window. Remaining rows are motor-noise push recovery,
+  noisy-floor biped, soft-contact walking, four-link flexible-foot comparison,
+  and hand/arm scenes (finger flick, arm fold, pinch grasp). Push recovery remains partial:
   single-trajectory thresholds do not establish robust parity (see #3431).
   Also complete normalized performance acceptance, multicore scaling evidence
   or an approved negative disposition, pre-default detector coverage gates,
@@ -52,13 +71,19 @@ Priority order is document order. Active implementation handoff remains in
 ### PLAN-620: Dependency Minimization And Collision Backends
 
 - Owner doc: [DART 6 collision backends](../design/dart6_collision_backends.md)
-- Status: Parked
-- Horizon: Parked
+- Status: Active
+- Horizon: Next
 - Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Wait for an explicitly authorized future release line and
-  milestone before proposing the default flip. DART 6.20 stops with
-  `DARTCollisionDetector` selected by `"dart"` while FCL remains the default
-  and a core dependency.
+- Next step: DART 7.0 is the authorized release line for the default flip,
+  under PLAN-624's capability gate. Prerequisites:
+  - a published shape and query capability matrix;
+  - strict rejection of shapes the native detector cannot handle (heightmaps
+    today);
+  - representative behavior comparisons;
+  - the deformable-body pre-default coverage gate.
+
+  If the gate does not pass by the M0 decision date, FCL stays the 7.0 default and
+  the flip moves to a later 7.x release. FCL remains a core dependency.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.

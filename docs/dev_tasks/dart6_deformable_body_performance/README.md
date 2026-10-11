@@ -1,7 +1,8 @@
 # DART 6 deformable-body parity and performance
 
-The unmet DART 6.20 full-parity goal targets **DART 6.21**, per the maintainer's
-release-closeout decision. This task retains reusable decisions,
+The unmet DART 6.20 full-parity goal targets **DART 7.0**: the maintainer's
+release-closeout decision retargeted it to 6.21, and the 2026-10-11 decision
+that there is no 6.21 release moved it to 7.0. This task retains reusable decisions,
 verification recipes, and the [acceptance gates](#acceptance) for the
 remaining work; [PLAN-622](../../plans/dashboard.md#plan-622-dart-6-deformable-body-feature-and-performance)
 tracks its status.
