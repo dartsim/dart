@@ -187,10 +187,11 @@ APPROVED_CTEST_SELECTIONS = {
     },
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
-DART_RELEASE_VERSION_PREFIX = (
-    r"(?:DART(?:py)?(?:\.__version__|[\s_]+(?:version|release))?\s*"
-    r"(?:===|==|[<>~!]=|[:=<>])?\s*v?|release-)"
+DART_VERSION_QUALIFIER = (
+    r"DART(?:py)?(?:\.__version__|[\s_]+(?:version|release))?\s*"
+    r"(?:===|==|[<>~!]=|[:=<>])?\s*v?"
 )
+DART_RELEASE_VERSION_PREFIX = rf"(?:{DART_VERSION_QUALIFIER}|release-)"
 NEXT_RELEASE_VERSION_PREFIX = (
     r"\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
     r"(?:release(?:\s+version)?|version)[`*]*"
@@ -226,7 +227,7 @@ DEPENDENCY_NAMES = (
     "MSVC",
     "CURL",
 )
-DEPENDENCY_NAME_PATTERN = rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|lib(?!rar(?:y|ies)(?![-\w]))[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
+DEPENDENCY_NAME_PATTERN = rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|lib(?!rar(?:y|ies)(?![-\w])|dart)[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
     "SKIP_REGULAR_EXPRESSION",
@@ -4128,15 +4129,20 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         rf"[`*]*(?<![\w.]){DART_RELEASE_VERSION_PREFIX}\d+\.\d+"
         r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
     )
+    # Milestones take DART versions; release-X.Y names a maintenance line.
+    milestone_version = (
+        rf"[`*]*(?<![\w.])(?:{DART_VERSION_QUALIFIER})\d+\.\d+"
+        r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
+    )
     current_target = re.compile(
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
         rf"|\b(?:current stable|develops|developing|stabilizes)\b"
         rf".{{0,80}}{version}"
         rf"|{version}\s+(?:development|stabilization)\s+branch"
-        rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
+        rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{milestone_version}"
         rf".{{0,80}}\bmilestone\b"
         rf"|(?:\b(?:use|set|select|assign)\b.{{0,80}}\bmilestone\b"
-        rf"|--milestone|\bmilestone\s*(?:set|[:=])).{{0,80}}{version}"
+        rf"|--milestone|\bmilestone\s*(?:set|[:=])).{{0,80}}{milestone_version}"
         r"|\|\s*`?(?:main|release-\d+\.\d+)`?\s*\|"
         r"[^|]*\bDART\s+\d+\.\d+\.\d+[^|]*\|"
         r"|\|\s*`?(?:main|release-\d+\.\d+)`?\s*\|\s*"
@@ -4636,8 +4642,9 @@ def exercise_scenarios(
                 or not (
                     re.search(
                         rf"{DEPENDENCY_NAME_PATTERN}\s+"
-                        rf"(?:from\s+(?:v?\d+(?:\.\d+)*\s+to\s+)?|to\s+)?"
-                        rf"(?:version\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$",
+                        rf"(?:from\s+(?:(?:(?:version|release)\s+)?v?\d+(?:\.\d+)*"
+                        rf"\s+to\s+)?|to\s+)?"
+                        rf"(?:(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$",
                         prompt_class[: match.start()],
                         re.IGNORECASE,
                     )
