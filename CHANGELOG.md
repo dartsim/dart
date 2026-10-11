@@ -77,6 +77,15 @@
     resource retriever and root-joint options.
     [#3653](https://github.com/dartsim/dart/pull/3653)
 
+* Constraint
+
+  * Fix simulations blowing up when no joint motion can resolve a contact
+    along its normal, such as overlapping links of a self-colliding skeleton
+    on revolute joints whose shared axis is the contact normal. Such a contact
+    now gets no normal impulse, and with the Dantzig solver alone it no longer
+    zeroes the other contacts in its group.
+    [#3707](https://github.com/dartsim/dart/pull/3707)
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning
