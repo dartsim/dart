@@ -279,6 +279,11 @@ def test_release_references_reject_copied_routing(
         ),
         (
             "docs/ai/README.md",
+            "When upgrading gz-physics from version 7.7.0 to version 7.8.0, the next "
+            "version is 7.9.0.\n",
+        ),
+        (
+            "docs/ai/README.md",
             "Use the release-6.20 pybind11 binder and select the milestone from the "
             "base branch.\n",
         ),
@@ -5708,6 +5713,7 @@ def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
         "Inspect libdart 6.20.0 compatibility in a DART checkout",
         "Inspect -DDARTPY_VERSION_INFO=6.20.0 in a DART checkout",
         "Pin libdart-dev=6.20.0 for the DART checkout",
+        "Inspect -DDARTPY_VERSION_INFO:STRING=6.20.0 in the current DART checkout",
         "When updating Python, prepare DART for the next release: 7.0.0",
         "Pin dartpy_version=7.0.0 in a DART checkout",
         "Inspect DaRt_ReLeAsE=v12.0.0 compatibility",
@@ -5771,6 +5777,9 @@ def test_scenario_rejects_qualified_version_prompts(scenario_data, prompt):
         "Check compatibility with gz-math 7.4.0 and 7.5.0",
         "Update gz-physics to version: 7.8.0 in a DART checkout",
         "Check gz-math versions 7.4.0 and 7.5.0 compatibility in a DART checkout",
+        "Check that the gz-physics version is 7.8.0 before building DART",
+        "Check gz-math versions 7.3.0, 7.4.0, and 7.5.0 compatibility in the current DART checkout",
+        "When upgrading gz-physics from version 7.7.0 to version 7.8.0, the next version is 7.9.0.",
         "When updating gz-physics from version 7.7.0, the next version is 7.8.0.",
         "When updating libcurl from 7.85.0, the next version is 7.86.0.",
         "Inspect libcurl 7.85.0 compatibility in a DART checkout",

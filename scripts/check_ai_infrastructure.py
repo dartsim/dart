@@ -188,7 +188,8 @@ APPROVED_CTEST_SELECTIONS = {
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_VERSION_QUALIFIER = (
-    r"(?:(?:-D)?DART(?:py)?(?:\.__version__|[\s_]+(?:version|release)(?:_info)?)?"
+    r"(?:(?:-D)?DART(?:py)?(?:\.__version__|[\s_]+(?:version|release)(?:_info)?"
+    r"(?::[A-Z]+)?)?"
     r"|libdart[\w.+-]*)\s*(?:===|==|[<>~!]=|[:=<>])?\s*v?"
 )
 DART_RELEASE_VERSION_PREFIX = rf"(?:{DART_VERSION_QUALIFIER}|release-)"
@@ -229,13 +230,17 @@ DEPENDENCY_NAMES = (
 )
 DEPENDENCY_NAME_PATTERN = rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|lib(?!rar(?:y|ies)(?![-\w])|dart)[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
 VERSION_LABEL = r"(?:versions?|releases?)"
-VERSION_LIST = r"v?\d+(?:\.\d+)*(?:\s*(?:,|and|or|to)\s*v?\d+(?:\.\d+)*)*"
+VERSION_SEPARATOR = r"\s*(?:,\s*(?:and|or)?|and|or|to)\s*"
+VERSION_LIST = (
+    rf"v?\d+(?:\.\d+)*"
+    rf"(?:{VERSION_SEPARATOR}(?:(?:versions?|releases?)\s+)?v?\d+(?:\.\d+)*)*"
+)
 # Text before a version that a dependency owns: "gz-physics ", "gz-physics to ",
 # "gz-math versions 7.4.0 and ", "gz-physics from version 7.7.0 to version ".
 DEPENDENCY_VERSION_CONTEXT = (
     rf"{DEPENDENCY_NAME_PATTERN}\s+(?:(?:from|to)\s+)?(?:{VERSION_LABEL}\s+)?"
-    rf"(?:{VERSION_LIST}\s*(?:,|and|or|to)\s*(?:{VERSION_LABEL}\s+)?)?"
-    rf"(?:{VERSION_LABEL}\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$"
+    rf"(?:{VERSION_LIST}{VERSION_SEPARATOR}(?:{VERSION_LABEL}\s+)?)?"
+    rf"(?:{VERSION_LABEL}\s*(?:===|==|[<>~!]=|[:=<>]|\s(?:is|are|was|were))?\s*)?$"
 )
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
