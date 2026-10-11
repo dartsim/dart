@@ -86,7 +86,9 @@ or GUI behavior.
 
 ## GUI Visual Checks
 
-The Linux wheel C22 headless gate runs separately from CI:
+The Linux wheel C22 headless gate runs in the `Publish dartpy` workflow
+(nightly, release tags, and manual dispatch) for the abi3 wheels; to run
+it locally:
 
 ```bash
 python3 scripts/wheel_linux.py cp312

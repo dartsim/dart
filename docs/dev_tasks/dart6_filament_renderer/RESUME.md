@@ -37,10 +37,11 @@ interim module before 7.0 rc.
    widen only with captured per-backend evidence.
 3. After the DART 7.0 GIL finalization fix lands on `main`, apply its guard
    rules to the GUI binding callbacks and destruction notifications.
-4. M6a gates before the C2 checkpoint: wire `scripts/check_headless_wheel.py`
-   into wheel CI, a separately cached Filament SDK stage for x86_64 and
-   aarch64 in `docker/wheels/Dockerfile.manylinux_2_28`, native
-   Windows/macOS wheels, and quiet-host performance on GPU and Lavapipe.
+4. M6a gates before the C2 checkpoint: a separately cached Filament SDK stage
+   for x86_64 and aarch64 in `docker/wheels/Dockerfile.manylinux_2_28`, native
+   Windows/macOS wheels (the `Publish dartpy` rows have not yet run with
+   Filament), and quiet-host performance on GPU and Lavapipe. The C22 slim
+   import check runs in `Publish dartpy` for the abi3 Linux wheels.
 5. On a quiet host, run the OSG-baseline comparison with
    `scripts/compare_gui_renderers.py` for completed frames, setup, full RGBA,
    RSS and GPU memory on RTX and Lavapipe. Never stop other sessions' work;
