@@ -277,6 +277,73 @@ bool isExactBoxedLcpDynamicType(const DynamicT* object)
   return isExact;
 }
 
+//==============================================================================
+// A contact's normal row is singular when the contact normal is orthogonal,
+// to within round-off, to every motion the contact's bodies can make, as with
+// overlapping links on revolute joints whose shared axis is the normal. Its
+// diagonal, the squared projection of that motion onto the normal, is then
+// pure round-off. Dantzig would pivot on it and return a finite but enormous
+// impulse whose round-off leaks into the bodies' other directions, which
+// blows the simulation up. The row counts as singular when the normal sees
+// less than 1e-12 of the motion along directions the bodies can move in.
+// Round-off alone already makes exactly aligned joints of a deep skeleton
+// look misaligned by about 1e-13, so a smaller projection cannot be told
+// apart from none. Accurate stiff responses, such as a joint axis 1e-9 rad
+// off the contact plane, stay far above that.
+constexpr double kSingularContactRatio = 1e-24;
+
+//==============================================================================
+// Returns the normal velocity change of `body` for a unit impulse along
+// `spatialNormal` applied to `body` alone.
+double computeOwnNormalResponse(
+    dynamics::Skeleton* skeleton,
+    dynamics::BodyNode* body,
+    const Eigen::Vector6d& spatialNormal)
+{
+  skeleton->clearConstraintImpulses();
+  skeleton->updateBiasImpulse(body, spatialNormal);
+  skeleton->updateVelocityChange();
+  return spatialNormal.dot(body->getBodyVelocityChange());
+}
+
+//==============================================================================
+// Returns whether a contact's normal row is singular; see
+// kSingularContactRatio. `tangentResponse` is the sum of the contact's
+// friction-row diagonals without CFM or slip compliance, or 0 without friction.
+// For a self-contact between two moving bodies, `selfSkeleton` is their
+// skeleton and each body's response to an impulse on that body alone, which a
+// shared ancestor cannot cancel, also sets the scale. That covers rows whose
+// friction rows cancel as well, or that have none.
+bool isSingularContactNormalRow(
+    double diagonal,
+    double tangentResponse,
+    dynamics::Skeleton* selfSkeleton,
+    dynamics::BodyNode* bodyA,
+    const Eigen::Vector6d& spatialNormalA,
+    dynamics::BodyNode* bodyB,
+    const Eigen::Vector6d& spatialNormalB)
+{
+  if (std::isfinite(tangentResponse)
+      && diagonal <= kSingularContactRatio * tangentResponse)
+    return true;
+
+  // Bodies in different trees of the skeleton share no ancestor.
+  if (!selfSkeleton || bodyA->getTreeIndex() != bodyB->getTreeIndex())
+    return false;
+
+  // Most rows are far above round-off; skip the extra impulse tests for them.
+  if (!(diagonal <= 1e-12 * (1.0 / bodyA->getMass() + 1.0 / bodyB->getMass())))
+    return false;
+
+  // Scale each response before adding so that large ones cannot overflow.
+  const double threshold
+      = kSingularContactRatio
+            * computeOwnNormalResponse(selfSkeleton, bodyA, spatialNormalA)
+        + kSingularContactRatio
+              * computeOwnNormalResponse(selfSkeleton, bodyB, spatialNormalB);
+  return std::isfinite(threshold) && diagonal <= threshold;
+}
+
 } // namespace
 
 //==============================================================================
@@ -1043,6 +1110,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         // Fill vectors: lo, hi, b, w
         constraint->getInformation(&constInfo);
 
+        const auto* contact
+            = isExactBoxedLcpDynamicType<ContactConstraint>(constraint)
+                  ? static_cast<const ContactConstraint*>(constraint)
+                  : nullptr;
+        double tangentResponse = 0.0;
+
         // Fill a matrix by impulse tests: A
         constraint->excite();
         for (std::size_t j = 0; j < dim; ++j) {
@@ -1057,6 +1130,11 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
           // Fill upper triangle blocks of A matrix
           std::size_t index = nSkip * row + offset;
           constraint->getVelocityChange(a + index, true);
+          if (contact && j > 0u) {
+            double response[3];
+            constraint->getVelocityChange(response, false);
+            tangentResponse += response[j];
+          }
           for (std::size_t k = i + 1; k < numConstraints; ++k) {
             index = nSkip * row + constraintOffsets[k];
             constraintPtrs[k]->getVelocityChange(a + index, false);
@@ -1064,6 +1142,25 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         }
 
         constraint->unexcite();
+
+        // Pin a singular contact normal row to a zero impulse. With
+        // lo = hi = 0, Dantzig never pivots on the row and its friction rows
+        // get zero bounds.
+        if (contact
+            && isSingularContactNormalRow(
+                a[nSkip * offset + offset],
+                tangentResponse,
+                contact->mIsSelfCollision && contact->mIsReactiveA
+                        && contact->mIsReactiveB
+                    ? contact->mSkeletonA
+                    : nullptr,
+                contact->mBodyNodeA,
+                contact->mSpatialNormalA.col(0),
+                contact->mBodyNodeB,
+                contact->mSpatialNormalB.col(0))) {
+          lo[offset] = 0.0;
+          hi[offset] = 0.0;
+        }
       }
     }
 
@@ -1366,6 +1463,7 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
 
       constraint->getInformation(&constInfo);
 
+      double tangentResponse = 0.0;
       constraint->excite();
       for (std::size_t j = 0; j < dim; ++j) {
         const std::size_t row = offset + j;
@@ -1376,12 +1474,33 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
 
         std::size_t index = nSkip * row + offset;
         constraint->getVelocityChange(A.data() + index, true);
+        if (j > 0u) {
+          double response[3];
+          constraint->getVelocityChange(response, false);
+          tangentResponse += response[j];
+        }
         for (std::size_t k = i + 1; k < numConstraints; ++k) {
           index = nSkip * row + offsets[k];
           contacts[k]->getVelocityChange(A.data() + index, false);
         }
       }
       constraint->unexcite();
+
+      // Pin a singular contact normal row, as in solveConstrainedGroup().
+      if (isSingularContactNormalRow(
+              A.data()[nSkip * offset + offset],
+              tangentResponse,
+              constraint->mIsSelfCollision && constraint->mIsReactiveA
+                      && constraint->mIsReactiveB
+                  ? constraint->mSkeletonA
+                  : nullptr,
+              constraint->mBodyNodeA,
+              constraint->mSpatialNormalA.col(0),
+              constraint->mBodyNodeB,
+              constraint->mSpatialNormalB.col(0))) {
+        lo[static_cast<Eigen::Index>(offset)] = 0.0;
+        hi[static_cast<Eigen::Index>(offset)] = 0.0;
+      }
     }
 
     // Fill lower triangle blocks of A matrix.
