@@ -236,6 +236,7 @@ def test_release_references_reject_copied_routing(
         ("docs/ai/README.md", "release-7.0 is the maintenance line.\n"),
         ("docs/ai/README.md", "When updating nanobind, the next version is 3.1.0.\n"),
         ("docs/ai/README.md", "When updating gz-physics, the next version is 9.0.0.\n"),
+        ("docs/ai/README.md", "When updating gz-sim, the next version is 8.0.0.\n"),
         ("docs/ai/README.md", "The next version is 16.0.\n"),
         (
             "docs/readthedocs/dart/developer_guide/build.rst",
@@ -5634,9 +5635,14 @@ def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
         "Inspect DART 6 compatibility",
         "Inspect Python 3.12 support in the current DART checkout",
         "Tune time_step=0.001 in a DART checkout",
+        "Tune friction=7.0 in a DART checkout",
+        "Tune friction= 7.0 in a DART checkout",
+        "Tune friction:7.0 in a DART checkout",
+        "Tune friction: 7.0 in a DART checkout",
         "Update nanobind to 3.1.0 in a DART checkout",
         "Update nanobind to v3.1.0 in a DART checkout",
         "Update gz-physics to 9.0.0 in a DART checkout",
+        "Inspect gz-sim 8.0.0 compatibility in the current DART checkout",
         "Check gravity 9.81 in a DART checkout",
         "Inspect 12.0.0 checkout",
         "Inspect 16.0 checkout",
@@ -5651,7 +5657,13 @@ def test_scenario_accepts_release_neutral_prompt(scenario_data, prompt):
 
 @pytest.mark.parametrize(
     ("version", "pinned"),
-    [("9.0.0", True), ("v9.0.0", True), ("6.22", False), ("v6.22", False)],
+    [
+        ("7.1", True),
+        ("9.0.0", False),
+        ("v9.0.0", False),
+        ("6.22", False),
+        ("v6.22", False),
+    ],
 )
 def test_release_detectors_follow_target_major(
     release_reference_target, tmp_path, scenario_data, monkeypatch, version, pinned

@@ -4013,13 +4013,17 @@ def release_reference_paths(root: Path) -> list[Path]:
 
 
 def dart_release_version_pattern(root: Path) -> str:
-    """Match qualified releases and bare/v versions near the release target."""
+    """Match DART/release- versions of any major and bare/v active lines.
+
+    Bare/v versions need a valid target and use its major or the previous major,
+    excluding tokens preceded by '=' or ':' with zero or one space.
+    """
     prefixes = r"(?:DART\s*|release-)\d+"
     target = read_release_target(root, [])
     if target is not None:
         major = int(target[2].split(".")[0])
-        majors = "|".join(str(value) for value in range(max(0, major - 1), major + 2))
-        prefixes += rf"|v?(?:{majors})"
+        majors = "|".join(str(value) for value in range(max(0, major - 1), major + 1))
+        prefixes += rf"|(?<![=:])(?<![=:] )v?(?:{majors})"
     return rf"(?<![\w.])(?:{prefixes})\.\d+(?:\.\d+)?(?:[a-z]+\d*)?"
 
 
@@ -4029,13 +4033,18 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         r"[`*]*(?<![\w.])(?:DART\s*|release-)\d+\.\d+" r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
     )
     next_version = rf"[`*]*{dart_release_version_pattern(root)}[`*]*"
+    next_target = re.compile(
+        rf"\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
+        rf"(?:release(?:\s+version)?|version)[`*]*"
+        rf"(?:\s+(?:is|will\s+be)|\s*[:=]|\s+)[`*]*\s*"
+        rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
+        rf"\s*(?:[:=]\s*)?",
+        re.IGNORECASE,
+    )
     current_target = re.compile(
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
         rf"|\b(?:current stable|develops|developing|stabilizes)\b"
         rf".{{0,80}}{version}"
-        rf"|\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
-        rf"(?:release(?:\s+version)?|version)[`*]*"
-        rf"(?:\s+(?:is|will\s+be)|\s*[:=]|\s+)[`*]*\s*{next_version}"
         rf"|{version}\s+(?:development|stabilization)\s+branch"
         rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
         rf".{{0,80}}\bmilestone\b"
@@ -4050,8 +4059,6 @@ def check_release_references(root: Path, errors: list[str]) -> None:
     )
     translated_target = re.compile(
         rf"현재\s+(?:안정\s+버전(?:은|이)?\s+)?{version}"
-        rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
-        rf"\s*(?:[:=]\s*)?{next_version}"
         rf"|{version}\s*(?:개발|안정화)\s*브랜치"
         rf"|(?:main|release-\d+\.\d+).{{0,80}}{version}.{{0,40}}(?:개발|안정화)"
         rf"|{version}.{{0,80}}마일스톤.{{0,40}}(?:사용|설정|선택|지정)"
@@ -4069,8 +4076,13 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         for line_number, text in texts:
             for paragraph in text.split("\n\n"):
                 normalized = " ".join(paragraph.split())
-                if current_target.search(normalized) or translated_target.search(
-                    normalized
+                if (
+                    current_target.search(normalized)
+                    or translated_target.search(normalized)
+                    or any(
+                        re.match(next_version, normalized[match.end() :], re.IGNORECASE)
+                        for match in next_target.finditer(normalized)
+                    )
                 ):
                     errors.append(
                         f"{path.relative_to(root)}:{line_number}: resolve the release "
@@ -4533,7 +4545,7 @@ def exercise_scenarios(
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
         elif re.search(
-            # DART/release- qualify any major; bare/v need a valid target major ±1.
+            # DART/release- match any major; bare/v use target/prior, excluding parameters.
             rf"{release_version}\b",
             prompt_class,
             re.IGNORECASE,
