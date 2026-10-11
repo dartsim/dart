@@ -244,6 +244,7 @@ test-build-requirements = { cmd = [
   "tests/test_compiler_requirements.py",
   "tests/test_dependency_requirements.py",
   "tests/test_minimum_requirement_metadata.py",
+  "tests/test_setup_cmake_args.py",
   "tests/test_wheel_linux.py",
   "-q",
 ] }

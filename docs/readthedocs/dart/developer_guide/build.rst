@@ -208,8 +208,9 @@ include:
      - Use a system ImGui package instead of the bundled compatibility target.
    * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
-     - Use an installed nanobind 3.1 or newer, located with
-       ``python -m nanobind --cmake_dir``, instead of fetching nanobind 3.1.0.
+     - Use an installed nanobind 3.1 or newer instead of fetching nanobind
+       3.1.0. CMake uses ``nanobind_DIR`` when set, and otherwise
+       ``python -m nanobind --cmake_dir``.
 
 Build targets
 -------------
