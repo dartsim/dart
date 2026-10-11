@@ -24,7 +24,7 @@ jobs:
         runner: [ubuntu-24.04, windows-2022, macos-15]
     env:
       CMAKE_GENERATOR: Ninja
-      # MSVC single-config builds otherwise default to Debug (/Zi PDB races).
+      # MSVC single-config builds otherwise default to Debug.
       CMAKE_BUILD_TYPE: Release
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
       LIBGL_ALWAYS_SOFTWARE: "1"
@@ -53,8 +53,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1 libegl1
           echo "VK_DRIVER_FILES=$GITHUB_WORKSPACE/.pixi/envs/gui-ci/share/vulkan/icd.d/lvp_icd.x86_64.json" >> "$GITHUB_ENV"
+      # As in CI Windows, default MSVC options drop DART's /Zi so parallel
+      # sccache compiles do not share a program database.
       - name: Configure Filament
-        run: pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON
+        run: >-
+          pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON
+          ${{ runner.os == 'Windows' && '-DDART_MSVC_DEFAULT_OPTIONS=ON' || '' }}
       - name: Build GUI tests and bindings
         run: >-
           pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
