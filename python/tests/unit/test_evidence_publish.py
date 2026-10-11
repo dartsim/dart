@@ -681,8 +681,8 @@ def test_inputs_inside_the_staging_directory_fail_before_clearing(
     assert staged.is_file()
 
 
-@pytest.mark.parametrize("entry", ["artifact", "selection"])
-def test_input_links_inside_the_staging_directory_fail_before_clearing(
+@pytest.mark.parametrize("entry", ["artifact", "directory", "uppercase", "selection"])
+def test_links_inside_the_staging_directory_are_never_deleted(
     tmp_path: Path, entry: str
 ) -> None:
     selection = _selection(tmp_path)
@@ -695,6 +695,14 @@ def test_input_links_inside_the_staging_directory_fail_before_clearing(
         link = staging / (manifest["selected"][0]["sha256"] + ".png")
         link.symlink_to(manifest["selected"][0]["path"])
         manifest["selected"][0]["path"] = str(link)
+    elif entry == "directory":
+        link = staging / ("0" * 64)
+        link.symlink_to(tmp_path, target_is_directory=True)
+        manifest["selected"][0]["path"] = str(link / "shot.png")
+    elif entry == "uppercase":
+        # Case-insensitive file systems would write the copy through this link.
+        link = staging / (manifest["selected"][0]["sha256"].upper() + ".PNG")
+        link.symlink_to(tmp_path / "elsewhere.png")
     selection.write_text(json.dumps(manifest), encoding="utf-8")
     if entry == "selection":
         link = staging / ("0" * 64 + ".json")

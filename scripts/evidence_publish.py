@@ -38,8 +38,9 @@ SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 # gh --attach validates file types and sizes itself and renders these as players.
 _VIDEO_SUFFIXES = {".mp4", ".mov", ".webm"}
 _ARTIFACT_KINDS = {"still", "grid", "composite", "video"}
-# Staged copies are named <sha256><suffix>; a rerun clears only these names.
-_STAGED_NAME = re.compile(r"[0-9a-f]{64}(?:\.[^.]+)?")
+# Staged copies are named <sha256><suffix>; a rerun clears only these names,
+# in any case because case-insensitive file systems alias them.
+_STAGED_NAME = re.compile(r"[0-9a-f]{64}(?:\.[^.]+)?", re.IGNORECASE)
 
 
 def _sha256(path: Path) -> str:
@@ -351,14 +352,9 @@ def _paths_alias(left: Path, right: Path) -> bool:
 
 
 def _inside(path: Path, directory: Path) -> bool:
+    child = str(path.resolve(strict=False)).casefold()
     parent = str(directory.resolve(strict=False)).casefold()
-    # Check the entry as well as its target: clearing staging deletes entries.
-    entry = path.parent.resolve(strict=False) / path.name
-    for candidate in (entry, path.resolve(strict=False)):
-        child = str(candidate).casefold()
-        if child == parent or child.startswith(parent.rstrip("/\\") + os.sep):
-            return True
-    return False
+    return child == parent or child.startswith(parent.rstrip("/\\") + os.sep)
 
 
 def _preflight_outputs(
@@ -511,8 +507,12 @@ def _clear_staging(attach_dir: Path) -> None:
     """Remove copies a run staged in attach_dir; leave any other file alone."""
     if attach_dir.is_dir():
         for child in attach_dir.iterdir():
-            if _STAGED_NAME.fullmatch(child.name):
-                child.unlink()
+            if not _STAGED_NAME.fullmatch(child.name):
+                continue
+            # A link or directory here may lead to an input; never delete it.
+            if child.is_symlink() or not child.is_file():
+                raise ValueError(f"staging entry is not a regular file: {child}")
+            child.unlink()
 
 
 def _write_outputs(
@@ -661,7 +661,7 @@ def main(argv: list[str] | None = None) -> int:
         text = _write_outputs(args.out, args.manifest_out, section, manifest)
     except (OSError, ValueError, KeyError) as error:
         if attach_dir is not None:
-            with contextlib.suppress(OSError):
+            with contextlib.suppress(OSError, ValueError):
                 _clear_staging(attach_dir)
         print(f"error: {error}", file=sys.stderr)
         return 2
