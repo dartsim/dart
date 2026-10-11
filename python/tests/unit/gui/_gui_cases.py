@@ -15,13 +15,13 @@ else:
     from _gui_probe import probe
 import dartpy as dart
 
-osg = dart.gui.osg
+gui = dart.gui
 NODE_TYPES = ("WorldNode", "RealTimeWorldNode")
 EXIT_ROOTS = []
 
 
 def recording_node(kind, world, events):
-    base = getattr(osg, kind)
+    base = getattr(gui, kind)
 
     class Node(base):
         def __init__(self, world, extra):
@@ -48,16 +48,16 @@ def recording_node(kind, world, events):
 
 
 def recording_handler(events, expected_viewer=None):
-    class Handler(osg.GUIEventHandler):
+    class Handler(gui.GUIEventHandler):
         def __init__(self, extra):
             super().__init__()
             self.extra = extra
 
         def handle(self, ea, aa):
             if expected_viewer is not None:
-                assert aa is expected_viewer, (aa, expected_viewer)
+                assert aa.getViewer() is expected_viewer
             events.append((ea.getKey(), int(ea.getEventType())))
-            return ea.getKey() == int(osg.GUIEventAdapter.KEY_A)
+            return ea.getKey() == ord("a")
 
     return Handler("custom constructor argument")
 
@@ -128,7 +128,7 @@ def lifetime(case, kind):
     world = dart.simulation.World()
     events = []
     node = recording_node(kind, world, events)
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     viewer.addWorldNode(node)
     expected = ["refresh", "pre_refresh", "post_refresh"]
 
@@ -188,8 +188,7 @@ def lifetime(case, kind):
         gc.collect()
         growth = None if before_rss is None else rss_bytes() - before_rss
         retained = sum(ref() is not None for ref in references)
-        # A camera can retain its latest/pending node after scene removal.
-        assert retained <= 2, retained
+        assert retained == 0, retained
         del viewer
         gc.collect()
         assert all(ref() is None for ref in references)
@@ -203,7 +202,7 @@ def lifetime(case, kind):
         gc.collect()
         assert reference() is None
     elif case == "two_viewers":
-        other = osg.Viewer()
+        other = gui.Viewer()
         other.addWorldNode(node)
         reference = weakref.ref(node)
         del node
@@ -219,7 +218,7 @@ def lifetime(case, kind):
     elif case == "two_viewers_remove":
         viewer.removeWorldNode(node)
         del node
-        other = osg.Viewer()
+        other = gui.Viewer()
         nodes = [recording_node(kind, world, events) for _ in range(10)]
         references = [weakref.ref(node) for node in nodes]
         for node in nodes:
@@ -233,7 +232,7 @@ def lifetime(case, kind):
         gc.collect()
         retained = sum(ref() is not None for ref in references)
         print(json.dumps({"retained_after_other_viewer_destruction": retained}))
-        assert retained <= 1, retained
+        assert retained == 0, retained
         del viewer
         gc.collect()
         assert all(ref() is None for ref in references)
@@ -241,7 +240,7 @@ def lifetime(case, kind):
         viewer.removeWorldNode(node)
         del node
         viewer_reference = weakref.ref(viewer)
-        base = getattr(osg, kind)
+        base = getattr(gui, kind)
 
         class SelfRemovingNode(base):
             def __init__(self, world, extra):
@@ -276,15 +275,15 @@ def lifetime(case, kind):
     elif case == "direct_base":
         viewer.removeWorldNode(node)
         del node
-        node = getattr(osg, kind)(world)
+        node = getattr(gui, kind)(world)
         viewer.addWorldNode(node)
         del node
         gc.collect()
         probe.refresh_viewer(viewer)
         del viewer
         gc.collect()
-        node = getattr(osg, kind)(world)
-        viewer = osg.Viewer()
+        node = getattr(gui, kind)(world)
+        viewer = gui.Viewer()
         viewer.addWorldNode(node)
         del viewer
         gc.collect()
@@ -304,23 +303,23 @@ def handler_lifetime(case):
     events = []
     if case == "handler_self_remove":
 
-        class SelfRemovingHandler(osg.GUIEventHandler):
+        class SelfRemovingHandler(gui.GUIEventHandler):
             def handle(self, ea, aa):
                 events.append((ea.getKey(), int(ea.getEventType())))
-                probe.remove_handler(aa, self)
+                probe.remove_handler(aa.getViewer(), self)
                 return True
 
         handler = SelfRemovingHandler()
     else:
         handler = recording_handler(events)
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     viewer.addEventHandler(handler)
-    expected = [(int(osg.GUIEventAdapter.KEY_A), int(osg.GUIEventAdapter.KEYDOWN))]
+    expected = [(ord("a"), int(gui.GUIEventAdapter.KEYDOWN))]
     if case == "handler_drop":
         reference = weakref.ref(handler)
         del handler
         gc.collect()
-        probe.dispatch_viewer_handlers(viewer, key=int(osg.GUIEventAdapter.KEY_A))
+        probe.dispatch_viewer_handlers(viewer, key=ord("a"))
         print(json.dumps({"handler_alive": reference() is not None, "events": events}))
         assert events == expected, events
         del viewer
@@ -329,8 +328,8 @@ def handler_lifetime(case):
     elif case == "handler_delete_viewer":
         del viewer
         gc.collect()
-        viewer = osg.Viewer()
-        assert probe.handle(handler, viewer, key=int(osg.GUIEventAdapter.KEY_A))
+        viewer = gui.Viewer()
+        assert probe.handle(handler, viewer, key=ord("a"))
         assert events == expected, events
     elif case == "handler_viewer_cycle":
         handler.viewer = viewer
@@ -342,12 +341,12 @@ def handler_lifetime(case):
         reference = weakref.ref(handler)
         del handler
         gc.collect()
-        probe.dispatch_viewer_handlers(viewer, key=int(osg.GUIEventAdapter.KEY_A))
+        probe.dispatch_viewer_handlers(viewer, key=ord("a"))
         assert events == expected, events
         gc.collect()
         # The handler removed itself, so another dispatch must not reach it.
         handled = list(events)
-        probe.dispatch_viewer_handlers(viewer, key=int(osg.GUIEventAdapter.KEY_A))
+        probe.dispatch_viewer_handlers(viewer, key=ord("a"))
         assert events == handled, events
         del viewer
         gc.collect()
@@ -357,6 +356,45 @@ def handler_lifetime(case):
     return {"case": case}
 
 
+def attachment_detach_exception():
+    events = []
+    errors = []
+
+    class Attachment(gui.ViewerAttachment):
+        def __init__(self, name, raises):
+            super().__init__()
+            self.name = name
+            self.raises = raises
+
+        def customAttach(self, viewer):
+            if viewer is None:
+                events.append(self.name)
+                if self.raises:
+                    raise RuntimeError("attachment detach failed")
+
+        def refresh(self):
+            pass
+
+    viewer = gui.Viewer()
+    first = Attachment("throwing", True)
+    second = Attachment("remaining", False)
+    for attachment in (first, second):
+        attachment.owner = viewer
+        viewer.addAttachment(attachment)
+    references = [weakref.ref(value) for value in (viewer, first, second)]
+    previous_hook = sys.unraisablehook
+    sys.unraisablehook = lambda error: errors.append(str(error.exc_value))
+    try:
+        del attachment, first, second, viewer
+        gc.collect()
+    finally:
+        sys.unraisablehook = previous_hook
+    assert sorted(events) == ["remaining", "throwing"], events
+    assert errors == ["attachment detach failed"], errors
+    assert all(reference() is None for reference in references)
+    return {"detached": len(events), "unraisable_errors": len(errors)}
+
+
 if __name__ == "__main__":
     if os.name != "nt":
         import resource
@@ -364,7 +402,9 @@ if __name__ == "__main__":
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     os.environ["DISPLAY"] = ""
     case = sys.argv[1]
-    if case.startswith("handler_"):
+    if case == "attachment_detach_exception":
+        result = attachment_detach_exception()
+    elif case.startswith("handler_"):
         result = handler_lifetime(case)
     elif case == "dispatch":
         result = dispatch(sys.argv[2])

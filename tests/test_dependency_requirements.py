@@ -266,7 +266,7 @@ def test_module_floors(
     if package == "assimp" and version_kind != "unknown":
         variables += f"set(assimp_VERSION {version})\n"
     if package == "imgui":
-        variables += f'set(imgui_INCLUDE_DIR "{include.as_posix()}")\nset(imgui_backends_INCLUDE_DIR "{include.as_posix()}")\n'
+        variables += f'set(imgui_INCLUDE_DIR "{include.as_posix()}")\n'
     accepted = version_kind == "minimum"
     result = configure(
         tmp_path,
@@ -370,5 +370,39 @@ def test_rejected_config_resets_mixed_case_flags(tmp_path, package):
         f"set({package.upper()}_FOUND TRUE)\n"
         f"include(DARTFind{package})\n"
         f'if({package}_FOUND OR {package.upper()}_FOUND)\nmessage(FATAL_ERROR "Stale found flag")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_filament_explicit_root_rejects_an_incomplete_sdk(tmp_path):
+    config_package(tmp_path, "Filament", None, "Filament::filament")
+    root = tmp_path / "incomplete-sdk"
+    (root / "include" / "filament").mkdir(parents=True)
+    (root / "include" / "filament" / "Engine.h").touch()
+    result = configure(
+        tmp_path,
+        f'set(Filament_ROOT "{root.as_posix()}")\n'
+        "find_package(Filament QUIET MODULE)\n"
+        'if(Filament_FOUND)\nmessage(FATAL_ERROR "Mixed incomplete SDK with prefix")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_filament_changed_root_invalidates_cached_package_directory(tmp_path):
+    config_package(tmp_path, "Filament", None, "Filament::filament")
+    original_root = tmp_path / "prefix"
+    result = configure(
+        tmp_path,
+        f'set(Filament_ROOT "{original_root.as_posix()}")\n'
+        "find_package(Filament REQUIRED MODULE)\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    replacement_root = tmp_path / "replacement-sdk"
+    replacement_root.mkdir()
+    result = configure(
+        tmp_path,
+        f'set(Filament_ROOT "{replacement_root.as_posix()}")\n'
+        "find_package(Filament QUIET MODULE)\n"
+        'if(Filament_FOUND)\nmessage(FATAL_ERROR "Kept the previous SDK")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr

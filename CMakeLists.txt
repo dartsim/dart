@@ -180,13 +180,28 @@ if(DEFINED DART_DARTPY_BINDER)
   unset(DART_DARTPY_BINDER CACHE)
   unset(DART_DARTPY_BINDER)
 endif()
-dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-dart_option(DART_BUILD_IO "Build model loading and file parsers" ON)
-dart_option(DART_BUILD_GUI "Build OpenSceneGraph and ImGui support" ON)
-if(NOT DART_BUILD_GUI OR NOT DART_BUILD_GUI_OSG)
-  set(DART_BUILD_GUI OFF)
-  set(DART_BUILD_GUI_OSG OFF)
+# DART 7 removed the OpenSceneGraph GUI. The legacy DART_BUILD_GUI_OSG=OFF
+# still selects a headless build; ON fails with migration text.
+if(DEFINED DART_BUILD_GUI_OSG)
+  if(DART_BUILD_GUI_OSG)
+    message(
+      FATAL_ERROR
+      "DART 7 removed the OpenSceneGraph GUI; use DART_BUILD_GUI for the Filament GUI, or set DART_BUILD_GUI_OSG=OFF for a headless build."
+    )
+  endif()
+  set(
+    DART_BUILD_GUI
+    OFF
+    CACHE BOOL
+    "Build the Filament GUI and ImGui support"
+    FORCE
+  )
+  unset(DART_BUILD_GUI_OSG CACHE)
+  unset(DART_BUILD_GUI_OSG)
 endif()
+dart_option(DART_BUILD_IO "Build model loading and file parsers" ON)
+dart_option(DART_BUILD_GUI "Build the Filament GUI and ImGui support" ON)
+dart_option(DART_USE_SYSTEM_FILAMENT "Use an installed Filament SDK" ON)
 if(DART_BUILD_DARTPY AND NOT DART_BUILD_IO)
   message(FATAL_ERROR "dartpy requires DART_BUILD_IO.")
 endif()
@@ -196,7 +211,7 @@ endif()
 if(DART_BUILD_DARTPY AND NOT DART_BUILD_GUI)
   message(FATAL_ERROR "The all-in-one dartpy package requires DART_BUILD_GUI.")
 endif()
-dart_option(DART_ENABLE_GUI_OSG_SMOKE_TESTS "Build the off-screen GUI OSG capture smoke test (needs a DISPLAY or Xvfb)" OFF)
+dart_option(DART_ENABLE_GUI_SMOKE_TESTS "Build the off-screen GUI capture smoke test (needs a graphics device)" OFF)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
 dart_option(DART_PROFILE_BUILTIN "Enable the built-in text profiling backend" ON)
 dart_option(DART_PROFILE_TRACY "Enable the Tracy profiling backend for local developer profiling" OFF)
@@ -521,7 +536,7 @@ if(DART_VERBOSE)
   message(STATUS "Compiler version : ${CMAKE_CXX_COMPILER_VERSION}")
   message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-  message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
+  message(STATUS "Build gui        : ${DART_BUILD_GUI}")
   message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
   message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
   if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
@@ -660,6 +675,9 @@ install(
     ${DART_CONFIG_OUT}
     ${DART_VERSION_OUT}
     "${DART_SOURCE_DIR}/cmake/DARTFindPackageVersion.cmake"
+    # Removed-component stub that reports the OSG GUI migration.
+    "${DART_SOURCE_DIR}/cmake/dart_gui-osgComponent.cmake"
+    "${DART_SOURCE_DIR}/cmake/dart_gui-osgTargets.cmake"
   DESTINATION "${CONFIG_INSTALL_DIR}"
 )
 
@@ -726,7 +744,7 @@ if(DART_VERBOSE)
   message(STATUS ${PC_CONFIG_OUT})
 endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
-install(FILES ${PC_CONFIG_OUT} DESTINATION ${PC_CONFIG_INSTALL_DIR})
+install(FILES ${PC_CONFIG_OUT} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
 install(
@@ -798,6 +816,8 @@ endif()
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-14)
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
+# GUI sources register before their build gates; GUI builds register again.
+list(REMOVE_DUPLICATES formatting_files)
 list(LENGTH formatting_files formatting_files_length)
 
 if(CLANG_FORMAT_EXECUTABLE)

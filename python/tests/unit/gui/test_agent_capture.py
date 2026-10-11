@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import dartpy as dart
 import numpy as np
 import pytest
 
@@ -19,11 +20,10 @@ import agent_capture
 import agent_debug_overlay
 from _image_tools import read_image
 
-requires_display = pytest.mark.skipif(
-    not os.environ.get("DISPLAY"),
-    reason="off-screen GLX capture needs a DISPLAY (run under xvfb-run on "
-    "headless hosts)",
-)
+
+@pytest.fixture
+def capture_gui():
+    return dart.gui
 
 
 def _args(**overrides) -> argparse.Namespace:
@@ -155,7 +155,7 @@ def test_reproduce_command_prefers_explicit_distance():
 
 
 def test_reproduce_command_records_custom_warmup():
-    # Warmup frames affect OSG initialization before the screenshot; a
+    # Warmup frames affect renderer initialization before the screenshot; a
     # non-default value must survive into the recorded reproduce command.
     command = agent_capture._reproduce_command(_args(warmup_frames=25))
     assert "--warmup-frames 25" in command
@@ -299,8 +299,9 @@ def test_dart_shape_contacts_exercises_supported_shape_adapters():
     assert world.getLastCollisionResult().getNumContacts() >= 3
 
 
-@requires_display
-def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path, monkeypatch):
+def test_run_capture_smoke_writes_stills_and_sidecar(
+    tmp_path, monkeypatch, capture_gui
+):
     (tmp_path / "claim_capture_scene.py").write_text(
         "import agent_capture\n"
         "def make_world():\n"
@@ -318,13 +319,11 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path, monkeypatch):
         layers=["contacts", "labels"],
         steps=250,
     )
-    try:
-        sidecar = agent_capture.run_capture(args)
-    except RuntimeError as error:
-        if "off-screen GL context" in str(error):
-            pytest.fail(str(error))
-        raise
+    sidecar = agent_capture.run_capture(args)
     assert sidecar["schema_version"] == "dart.agent_capture/v2"
+    assert sidecar["renderer"] == "filament"
+    assert sidecar["graphics_backend"] in {"opengl", "vulkan", "metal"}
+    assert sidecar["graphics_device"]
     assert sidecar["collision_detector"] == "fcl"
     stills = [a for a in sidecar["artifacts"] if a["kind"] == "still"]
     assert len(stills) == 1
@@ -349,8 +348,7 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path, monkeypatch):
     assert saved == sidecar
 
 
-@requires_display
-def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path):
+def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path, capture_gui):
     common = {
         "steps": 250,
         "width": 320,
@@ -406,7 +404,7 @@ def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path):
             >= 4
         ), color
 
-    # Prove every CI-requested OSG layer contributes pixels independently;
+    # Prove every CI-requested debug layer contributes pixels independently;
     # contacts must not mask a broken collision-bounds or labels path.
     for layer in debug_layers:
         debug = agent_capture.run_capture(
@@ -422,3 +420,21 @@ def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path):
         assert plain_artifact["camera"] == debug_artifact["camera"]
         debug_image = read_image(tmp_path / layer / debug_artifact["path"])
         assert _changed_pixel_count(plain_image, debug_image) >= 32, layer
+
+
+def test_capture_reports_disabled_gui_component():
+    from types import SimpleNamespace
+
+    core = SimpleNamespace(gui=SimpleNamespace())
+    with pytest.raises(RuntimeError, match="Filament GUI"):
+        agent_capture._capture_gui(core)
+    enabled = SimpleNamespace(gui=SimpleNamespace(Viewer=object))
+    assert agent_capture._capture_gui(enabled) is enabled.gui
+    assert "--renderer" not in agent_capture._reproduce_command(_args())
+
+
+def test_invalid_capture_dimensions_fail_before_loading_gui():
+    with pytest.raises(ValueError, match="dimensions"):
+        agent_capture.run_capture(_args(width=0))
+    with pytest.raises(ValueError, match="nonnegative"):
+        agent_capture.run_capture(_args(warmup_frames=-1))

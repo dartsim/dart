@@ -7,7 +7,7 @@ own id/category/summary.
 
 ``SceneHandle`` is the Python analog of the C++ host's ``DemoSceneSetup``
 (see ``examples/demos/DemoScene.hpp``), scaled down to what a plain
-``dart.gui.osg.Viewer`` can actually do without ImGui (no per-scene panel,
+keyboard-driven viewer can actually do without ImGui (no per-scene panel,
 no host-owned teardown registry -- the runner just re-derives everything a
 scene needs from the fields below each time it switches).
 """
@@ -53,11 +53,9 @@ class SceneHandle:
     key_actions: Dict[int, Tuple[str, Callable[[], None]]] = field(default_factory=dict)
 
     # An optional object with a ``handle(ea, aa) -> bool`` method (typically
-    # a ``dart.gui.osg.GUIEventHandler`` subclass instance, called directly
-    # as a plain Python method rather than registered with the OSG event
-    # system -- dartpy has no ``Viewer.removeEventHandler`` binding, so the
-    # runner instead just forwards events to whichever scene is active and
-    # drops the reference on switch).
+    # a scene-specific input callback object, called directly
+    # as a plain Python method. The navigator forwards events to whichever
+    # scene is active and drops the reference on switch).
     extra_handler: Optional[object] = None
 
     # Extra instruction lines shown via ``viewer.addInstructionText`` and
@@ -85,6 +83,12 @@ class PyDemoScene:
     build: Callable[[], SceneHandle]
 
 
+def get_gui():
+    import dartpy as dart
+
+    return dart.gui
+
+
 def make_demo_scenes() -> List[PyDemoScene]:
     """Returns the catalog in navigator order (categories group by
     first-appearance, matching the C++ host's convention).
@@ -102,6 +106,9 @@ def make_demo_scenes() -> List[PyDemoScene]:
         rigid_loop,
     )
 
+    def selected(build):
+        return lambda: build(gui=get_gui())
+
     scenes = [
         PyDemoScene(
             id="hello_world_gui",
@@ -111,7 +118,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "KR5 arm and ground plane with no active controller -- the "
                 "starting point for dartpy GUI apps."
             ),
-            build=hello_world_gui.build,
+            build=selected(hello_world_gui.build),
         ),
         PyDemoScene(
             id="rigid_cubes",
@@ -119,10 +126,9 @@ def make_demo_scenes() -> List[PyDemoScene]:
             category="Rigid Body",
             summary=(
                 "A stack of cubes loaded from a skeleton file falls onto the "
-                "ground plane under gravity, rendered with the default "
-                "shadow technique."
+                "ground plane under gravity, rendered with shadows."
             ),
-            build=rigid_cubes.build,
+            build=selected(rigid_cubes.build),
         ),
         PyDemoScene(
             id="rigid_chain",
@@ -132,7 +138,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "A damped articulated chain loaded from a skeleton file with "
                 "a randomized initial pose."
             ),
-            build=rigid_chain.build,
+            build=selected(rigid_chain.build),
         ),
         PyDemoScene(
             id="rigid_loop",
@@ -142,7 +148,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "A chain closed into a loop by a ball-joint constraint "
                 "linking two non-adjacent links."
             ),
-            build=rigid_loop.build,
+            build=selected(rigid_loop.build),
         ),
         PyDemoScene(
             id="drag_and_drop",
@@ -152,7 +158,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "An interactive gizmo frame carrying a draggable child box, "
                 "plus world-axis markers."
             ),
-            build=drag_and_drop.build,
+            build=selected(drag_and_drop.build),
         ),
         PyDemoScene(
             id="contacts_pointcloud",
@@ -162,7 +168,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "Live contact points between a transparent KR5 arm and the "
                 "ground, rendered as a red point cloud."
             ),
-            build=contacts_pointcloud.build,
+            build=selected(contacts_pointcloud.build),
         ),
         PyDemoScene(
             id="biped_stand",
@@ -172,7 +178,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "SPD-balanced standing biped with an ankle strategy and "
                 "keyboard push tests (arrow keys)."
             ),
-            build=biped_stand.build,
+            build=selected(biped_stand.build),
         ),
         PyDemoScene(
             id="operational_space_control",
@@ -182,7 +188,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "KR5 arm chasing a draggable end-effector target with "
                 "task-space (operational-space) PD control."
             ),
-            build=operational_space_control.build,
+            build=selected(operational_space_control.build),
         ),
         PyDemoScene(
             id="atlas_puppet",
@@ -192,7 +198,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
                 "Purely kinematic Atlas whole-body IK puppet with "
                 "draggable hand/foot targets and posture regularization."
             ),
-            build=atlas_puppet.build,
+            build=selected(atlas_puppet.build),
         ),
     ]
     import dartpy as dart

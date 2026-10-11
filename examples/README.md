@@ -8,7 +8,7 @@ a benchmark, and a CI-load-bearing microbenchmark harness.
 
 ## `demos`: the consolidated example catalog
 
-`demos/` hosts `dart-demos`, an OSG/ImGui application that bundles every
+`demos/` hosts `dart-demos`, a Filament/ImGui application that bundles every
 former single-purpose GUI example (add/delete skeletons, box stacking, rigid
 chains/cubes/loops, joint constraints, humanoid controllers, soft bodies,
 drag-and-drop, IK, and more) as selectable scenes in one window.
@@ -17,9 +17,10 @@ Build and run it:
 
     $ pixi run demos
 
-The UI and initial window automatically follow desktop DPI. Use View >
-**GUI scale** or `--gui-scale 1.5` for a manual override; see
-[display scaling](demos/README.md#display-scaling) for platform behavior.
+The UI automatically follows desktop DPI, and the default window uses the
+primary monitor's content scale. Use View > **GUI scale** or `--gui-scale 1.5`
+for a manual override; see [display scaling](demos/README.md#display-scaling)
+for platform behavior.
 
 The flagship deformable-body scenes can be opened directly:
 
@@ -36,7 +37,8 @@ standalone examples:
 Use `dart` or `fcl` for apples-to-apples soft-body comparisons. The
 consolidated `dart` detector covers `SoftMeshShape` in these scenes.
 
-or, from a manual build directory:
+or, from a manual build directory (the default `DART_BUILD_GUI=ON` needs a
+Filament SDK):
 
     $ cmake --build build --target dart-demos
     $ ./build/bin/dart-demos
@@ -46,6 +48,8 @@ Useful flags (`./dart-demos --help` for the full list):
     --list-scenes            Print the catalog grouped by category and exit.
     --scene <id>              Start on a specific scene (e.g. --scene boxes).
     --cycle-scenes            Headless smoke test: step every scene and exit.
+
+`pixi run cycle-demos` runs that smoke test without a graphics context.
 
 Each scene's source lives under `demos/scenes/`; scene ids match their
 original standalone example names (e.g. `demos/scenes/BoxesScene.cpp` is
@@ -65,11 +69,14 @@ anything:
 - **`contact_benchmark`** — backs `tests/benchmark/integration/` and the
   performance-dashboard CI workflow; its header is compiled directly by
   those targets, so it cannot be removed or relocated without touching CI.
+  It builds without the GUI; its `--gui` modes need `DART_BUILD_GUI=ON`.
 
 ## Build Instructions
 
 This project is dependent on DART. Please make sure a proper version of DART
-is installed before building this project.
+is installed before building this project. The GUI examples (`hello_world` and
+`demos`) need DART's `gui` component, built with `DART_BUILD_GUI=ON` (the
+default); without it they are skipped and the other examples still build.
 
 Copy this directory to your workspace (e.g., in Linux):
 

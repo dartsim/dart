@@ -23,10 +23,11 @@ IO probe through its legacy forwarding target. Neither path adds explicit
 CURL or OpenSSL links; shared and static consumers check their dependency
 propagation. The asset probe makes no downloads or cache writes.
 
-Request `gui` to exercise installed OSG and ImGui APIs through `dart-gui`.
-The same probe accepts legacy `gui-osg` and `external-imgui` components. Test
+Request `gui` to exercise installed Filament GUI and ImGui APIs through
+`dart-gui`. The same probe accepts the legacy `external-imgui` component. Test
 system and bundled ImGui installations, including a GUI build with IO disabled.
-Rendering is checked separately by `offscreen_capture_smoke`.
+Rendering is checked separately by `offscreen_capture_smoke` and the
+`scripts/test_gui_install.py` consumer.
 When staging a build configured for a Pixi prefix, select the staged library
 directory and the Pixi dependency directory in the runtime library path, or
 configure an install RPATH for that test installation.
@@ -41,5 +42,7 @@ some FCL distributions include an older standard flag in their metadata.
 For CMake consumers, the exported `dart` target supplies `cxx_std_17`.
 
 `DART_BUILD_IO=OFF` and `DART_BUILD_GUI=OFF` select the core-only build.
-The legacy `DART_BUILD_GUI_OSG=OFF` also disables the whole GUI subtree. When
-re-enabling GUI in an existing build directory, set both GUI switches to `ON`.
+The legacy `DART_BUILD_GUI_OSG=OFF` also disables the whole GUI subtree, and
+`DART_BUILD_GUI_OSG=ON` fails because DART 7 removed the OSG GUI. When
+re-enabling GUI in an existing build directory, set `DART_BUILD_GUI=ON`.
+Requesting the removed `gui-osg` component reports the migration to `gui`.

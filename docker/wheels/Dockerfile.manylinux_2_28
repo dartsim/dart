@@ -5,11 +5,19 @@ ARG NUM_CORES=8
 
 # Build every native dependency with the manylinux toolchain: Conda libraries
 # require newer GLIBCXX/CXXABI symbols even when their glibc floor is 2.28.
-RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.22.1,<4.3.4"
+RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.22.1,<4.3.4" ninja
 
 RUN yum install -y \
     boost-devel \
-    glew-devel
+    clang \
+    libX11-devel \
+    libXcursor-devel \
+    libXext-devel \
+    libXi-devel \
+    libXinerama-devel \
+    libXrandr-devel \
+    libjpeg-turbo-devel \
+    libpng-devel
 
 # fmt
 RUN git clone --depth 1 https://github.com/fmtlib/fmt.git -b '11.1.4' \
@@ -102,16 +110,18 @@ RUN git clone --depth 1 https://github.com/bulletphysics/bullet3.git -b '3.25' \
     && cmake --build bullet3/build --target install -j${NUM_CORES} \
     && rm -rf bullet3
 
-# openscenegraph
-RUN git clone --depth 1 https://github.com/openscenegraph/OpenSceneGraph.git -b OpenSceneGraph-3.6.5 \
-    && mkdir -p OpenSceneGraph/build \
-    && cmake OpenSceneGraph -B OpenSceneGraph/build \
+# GLFW for the Filament GUI; keep only the X11 backend and PIC for dartpy.
+RUN git clone --depth 1 https://github.com/glfw/glfw.git -b '3.4' \
+    && cmake glfw -B glfw/build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    -DBUILD_OSG_APPLICATIONS=OFF \
-    -DBUILD_OSG_DEPRECATED_SERIALIZERS=OFF \
-    && cmake --build OpenSceneGraph/build --target install -j${NUM_CORES} \
-    && rm -rf OpenSceneGraph
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DGLFW_BUILD_X11=ON -DGLFW_BUILD_WAYLAND=OFF \
+    -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF \
+    && cmake --build glfw/build --target install -j${NUM_CORES} \
+    && rm -rf glfw
 
 # Match the existing external fmt configuration.
 RUN git clone --depth 1 https://github.com/gabime/spdlog.git -b v1.15.3 \
@@ -133,3 +143,15 @@ RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o 
 
 # Use the pinned CMake for wheel builds, including the other Python rows.
 ENV PATH=/opt/python/cp313-cp313/bin:$PATH
+
+# AlmaLinux AppStream provides Clang 21; use manylinux's active GCC toolset
+# instead of the newer toolset selected by the distribution's Clang configs.
+RUN /usr/bin/clang --version \
+    && test "$(/usr/bin/clang -dumpversion | cut -d. -f1)" -ge 20 \
+    && gcc_install_dir="$(dirname "$(gcc -print-libgcc-file-name)")" \
+    && for driver in clang clang++; do \
+        sed -i "s@--gcc-install-dir=.*@--gcc-install-dir=${gcc_install_dir}@" \
+        "/etc/clang/$(/usr/bin/clang -dumpmachine)-${driver}.cfg"; \
+    done \
+    && printf '#include <span>\n#include <ranges>\nint main() {}\n' \
+    | /usr/bin/clang++ -std=c++20 -stdlib=libstdc++ -x c++ -fsyntax-only -

@@ -445,6 +445,9 @@ def configure_and_build(revision: Revision) -> tuple[Path, Path]:
         "-DCMAKE_C_COMPILER_LAUNCHER=",
         "-DCMAKE_CXX_COMPILER_LAUNCHER=",
         "-DDART_BUILD_DARTPY=OFF",
+        # Base revisions before DART 6.21 build the OSG GUI by default.
+        "-DDART_BUILD_GUI=OFF",
+        "-DDART_BUILD_GUI_OSG=OFF",
         "-DDART_BUILD_PROFILE=ON",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",

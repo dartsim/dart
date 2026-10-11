@@ -1,0 +1,12 @@
+material {
+    name : dartDepth,
+    shadingModel : unlit,
+    doubleSided : true
+}
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        float depth = 1.0 - getNormalizedViewportCoord().z;
+        material.baseColor = vec4(vec3(depth), 1.0);
+    }
+}

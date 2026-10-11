@@ -4,9 +4,9 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Stay read-only. Inspect only the branch, paths, question, and evidence sources
 named by the parent. Preserve DART 6 constraints: C++17, the branch's dartpy
-binder (nanobind on main, pybind11 on earlier release branches),
-dart::utils, OSG, Gazebo/gz-physics compatibility, and the release capability
-surface.
+binder and GUI backend (nanobind and Filament on main, pybind11 and OSG on
+earlier release branches), dart::utils, Gazebo/gz-physics compatibility, and
+the release capability surface.
 
 Inputs: objective or question; branch/worktree; bounded paths; required owner
 docs; acceptance claim; commands that are safe to inspect.
@@ -16,7 +16,8 @@ evidence versus inference versus unknowns; risks; the smallest useful next
 check. Do not edit, commit, push, comment, rerun CI, or widen scope.
 
 When a claim depends on model/scene structure, simulation, dynamics,
-collision/contact, or OSG behavior, route it to `dart-verify-sim` and identify
-both the smallest text correctness oracle and the claim-tied assessed visual
-or `DebugOverlay` evidence (or a concrete DISPLAY/Xvfb limitation).
+collision/contact, or Filament behavior, route it to `dart-verify-sim` and
+identify both the smallest text correctness oracle and the
+claim-tied assessed visual or `DebugOverlay` evidence (or a concrete graphics
+device/driver limitation).
 """

@@ -111,9 +111,9 @@ DemoScene makeModelScene(
     setup.enableShadows = false;
     // Frame the full robot above the diagnostics panel and between side panels.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(6.0, 5.0, 3.0),
-        ::osg::Vec3d(0.0, 0.0, rootHeight - 0.6),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(6.0, 5.0, 3.0),
+        GuiVector3(0.0, 0.0, rootHeight - 0.6),
+        GuiVector3(0.0, 0.0, 1.0)};
     auto edits = std::make_shared<PoseEdits>();
     setup.preRefresh = [robot, edits, initialPose] {
       if (edits->reset) {

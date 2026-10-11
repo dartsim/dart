@@ -10,7 +10,9 @@ import numpy as np
 from ..registry import SceneHandle
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
 
@@ -27,7 +29,7 @@ def build() -> SceneHandle:
         for j in range(joint.getNumDofs()):
             joint.setDampingCoefficient(j, 0.01)
 
-    node = dart.gui.osg.RealTimeWorldNode(world)
+    node = gui.RealTimeWorldNode(world)
 
     return SceneHandle(
         node=node,

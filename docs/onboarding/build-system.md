@@ -21,7 +21,7 @@ primary C++ libraries:
 | --------- | ------ | -------- |
 | `dart` | `dart` | Headless core and enabled collision backends |
 | `io` | `dart-io` | SKEL, SDF, MJCF and URDF loading |
-| `gui` | `dart-gui` | OSG and ImGui integration |
+| `gui` | `dart-gui` | Filament GUI and ImGui integration |
 
 The nanobind `dartpy` module includes all three libraries. See
 [Python bindings](python-bindings.md) for the binder contracts and wheel checks.
@@ -39,8 +39,9 @@ new library layout.
 `DART_BUILD_IO=OFF`, `DART_BUILD_GUI=OFF`, and `DART_BUILD_DARTPY=OFF` configure
 the standalone headless `dart` library. The complete GUI directory is skipped,
 including ImGui and graphics discovery. The legacy `DART_BUILD_GUI_OSG=OFF`
-also disables GUI; set both GUI options to `ON` when re-enabling it in a reused
-build directory.
+also selects this headless build (it caches `DART_BUILD_GUI=OFF`), while
+`DART_BUILD_GUI_OSG=ON` fails because DART 7 removed the OSG GUI; set
+`DART_BUILD_GUI=ON` to re-enable the GUI in a reused build directory.
 
 Optional Bullet and ODE implementations compile into core. Their legacy CMake
 components and targets forward to `dart` for rebuilt consumers; the former
@@ -72,13 +73,21 @@ libraries must rebuild.
 
 ## DART 6.21 GUI
 
-`dart-gui` combines OSG and ImGui and depends directly on core. It supports
-`DART_BUILD_IO=OFF` when Python is disabled. `DART_BUILD_GUI=ON` requires
-OpenSceneGraph and OpenGL; `DART_USE_SYSTEM_IMGUI` selects the existing system
-or bundled ImGui configuration.
+`dart-gui` combines the Filament GUI and ImGui and depends directly on core. It
+supports `DART_BUILD_IO=OFF` when Python is disabled. `DART_BUILD_GUI=ON` (the
+default) requires Filament 1.77.3, GLFW 3.4, libpng, libjpeg, and Dear ImGui
+1.92.8 or newer. `DART_USE_SYSTEM_FILAMENT=ON` (the default) uses an installed
+Filament SDK; `OFF` uses DART's pinned private SDK, which Linux builds from
+source with Clang 20 or newer and Ninja, and macOS arm64 and 64-bit Windows
+download as prebuilt archives. `DART_USE_SYSTEM_IMGUI` selects the system or
+bundled ImGui configuration.
 
-Use `find_package(DART CONFIG REQUIRED COMPONENTS gui)` and link `dart-gui`.
-OSG and ImGui compatibility headers keep their current paths. Legacy
-`gui-osg` / `external-imgui` components and `dart-gui-osg` /
-`dart-external-imgui` targets forward to `dart-gui`; applications linked to
-their former shared libraries must rebuild.
+Use `find_package(DART CONFIG REQUIRED COMPONENTS gui)`, link `dart-gui`, and
+include `dart/gui/gui.hpp`. ImGui compatibility headers keep their
+`dart/external/imgui/` paths. The legacy `external-imgui` component and
+`dart-external-imgui` target forward to `dart-gui`; applications linked to the
+former ImGui shared library must rebuild. The OSG `gui-osg` component,
+`dart-gui-osg` target, and `dart/gui/osg` headers are removed; requesting
+`gui-osg` reports the migration instead of forwarding to `dart-gui`. The
+[visualization guide](../readthedocs/dart/user_guide/visualization.rst) covers
+porting.

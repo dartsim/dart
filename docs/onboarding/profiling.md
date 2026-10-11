@@ -310,11 +310,18 @@ discovery before its static initializers run. These headless workloads need no
 OSG plugins; otherwise OSG allocates a conda-embedded environment path even
 when `OSG_LIBRARY_PATH` is set. The harness adds its measurement and
 perturbation controls and checks the shim's lookup ABI against the active Pixi
-OSG library. A host lock serializes staging, measurement and copying artifacts
-to the requested output directory. Subprocesses inherit the lock, so an orphan
-must finish before a later run can replace the slot. The staging root must be
-private, owned by the current user, and on its parent's filesystem; mount points
-are refused.
+OSG library when one exists. Every arm is configured with
+`DART_BUILD_GUI=OFF`, and with `DART_BUILD_GUI_OSG=ON` only for historical
+sources that still contain `dart/gui/osg` while the dependency prefix provides
+`lib/libosgDB.so`; DART 7 rejects `DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no
+longer in the Pixi environment, so A/B runs against an OSG-era base cannot
+build its OSG-linked `contact_benchmark` driver; this is an expected
+transitional failure, and rows that do not use that driver, such as
+`--rows gzb,robot`, avoid it. A host lock serializes staging, measurement and
+copying artifacts to the requested output directory. Subprocesses inherit the
+lock, so an orphan must finish before a later run can replace the slot. The
+staging root must be private, owned by the current user, and on its parent's
+filesystem; mount points are refused.
 Set `DART_PERF_STAGING_ROOT` to an absolute directory on an executable
 filesystem when another account owns the default root or temporary storage is mounted
 `noexec`. Its value is recorded in the environment fingerprint and backfill
@@ -512,8 +519,8 @@ before/after matrix separately.
 
 ## Interactive Memory Inspection
 
-Memory inspection is compiled out of `dart-demos` by default. After the normal
-`pixi run config`, opt in by reconfiguring the same build with
+Memory inspection is compiled out of `dart-demos` by default. After
+`pixi run config-demos`, opt in by reconfiguring the same build with
 `-DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. The default-OFF build excludes the
 diagnostics sources, link dependencies, host state, environment probe, Memory
 tab, and frame-path calls; its post-link check rejects any diagnostics marker in
@@ -548,8 +555,8 @@ hardware-counter/access-sampling and benchmark evidence. Hue identifies data
 category, while hatch, border, opacity, and text also identify storage state so
 the map is not color-only. Region maps retain up to 48 logical rows in an inner
 scroll area, but render only the roughly eight visible rows into a bounded
-per-region draw list so the 16-bit-index OpenGL2 backend stays below its vertex
-limit. The current runtime page-size observation groups the object atlas into
+per-region draw list that stays within the 16-bit ImGui index limit. The
+current runtime page-size observation groups the object atlas into
 virtual-page runs but does not place page or cache-line separators: the snapshot
 intentionally lacks raw bases and does not yet capture the scrubbed base
 remainders and host cache-line size required for those guides.

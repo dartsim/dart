@@ -9,11 +9,6 @@ import dartpy as dart
 import numpy as np
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
-)
-
-
 
 def load_tutorial(filename="main_finished.py"):
     path = Path(__file__).parents[2] / "tutorials" / "collisions" / filename
@@ -134,7 +129,7 @@ def test_spawn_controls_and_finite_simulation(tutorial, key):
 
     class KeyEvent:
         def getEventType(self):
-            return dart.gui.osg.GUIEventAdapter.KEYDOWN
+            return dart.gui.GUIEventAdapter.KEYDOWN
 
         def getKey(self):
             return ord(key)
@@ -235,7 +230,7 @@ def test_randomization_and_oldest_object_deletion(tutorial):
             self.key = key
 
         def getEventType(self):
-            return dart.gui.osg.GUIEventAdapter.KEYDOWN
+            return dart.gui.GUIEventAdapter.KEYDOWN
 
         def getKey(self):
             return ord(self.key)

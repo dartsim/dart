@@ -1,6 +1,12 @@
 Examples
 ========
 
+For interactive worlds, Linux display-free PNG capture, and the DART 7 Filament
+renderer, see :doc:`the visualization guide <../../dart/user_guide/visualization>`.
+The ``dartpy.gui`` classes retain the world-node simulation callback names;
+they are interim bindings that DART 7's Python rendering API replaces before
+release.
+
 Once you have installed dartpy using pip install -U dartpy, you can run the following "Hello World" example to simulate a 6-DOF robot using DART.
 
 .. note::
@@ -177,7 +183,7 @@ expects:
 
 A complete, runnable demo -- which builds the DART skeleton from the solver's
 product-of-exponentials chain, drives a draggable ``InteractiveFrame`` target in
-an ``ImGuiViewer``, and re-solves the IK live as you drag -- is available at
+a ``dart.gui.Viewer``, and re-solves the IK live as you drag -- is available at
 ``python/examples/ssik_analytical_ik/main.py``. It also ships a headless smoke
 test over all ssik prebuilt arms:
 
@@ -189,6 +195,6 @@ test over all ssik prebuilt arms:
    python python/examples/ssik_analytical_ik/main.py --self-test      # headless check
 
 A C++ counterpart embeds a Python interpreter to drive the same solver from
-an OSG/ImGui application: the ``ssik_ik_gui`` scene in the consolidated
+a Filament/ImGui application: the ``ssik_ik_gui`` scene in the consolidated
 ``dart-demos`` catalog (``pixi run demos``, then select it from the catalog,
 or launch it directly with ``bin/dart-demos --scene ssik_ik_gui``).

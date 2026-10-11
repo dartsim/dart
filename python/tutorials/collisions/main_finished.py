@@ -85,7 +85,7 @@ def setup_ring(ring):
         dof.setPosition(dof.getRestPosition())
 
 
-class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
+class CollisionsEventHandler(dart.gui.GUIEventHandler):
     def __init__(self, world, ball, soft_body, hybrid_body, rigid_chain, rigid_ring):
         super().__init__()
         self.world = world
@@ -96,7 +96,7 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
         self.skeleton_count = 0
 
     def handle(self, event, action):
-        if event.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if event.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
         key = event.getKey()
         if ord("1") <= key <= ord("5"):
@@ -185,7 +185,7 @@ class CollisionsEventHandler(dart.gui.osg.GUIEventHandler):
         self.world.removeSkeleton(skeleton)
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, handler):
         super().__init__(world)
         self.world = world
@@ -432,7 +432,7 @@ def build_scene():
 
 def main():
     node = build_scene()
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(node.handler)
     viewer.addInstructionText(
@@ -449,7 +449,7 @@ def main():
         "         If the simulation freezes, you may need to force quit the application.\n"
     )
     print(viewer.getInstructions())
-    viewer.setUpViewInWindow(0, 0, 640, 480)
+    viewer.setUpViewInWindow()
     viewer.setCameraHomePosition([3, 2, 2], [0, 0, 0], [0, 0, 1])
     viewer.run()
 

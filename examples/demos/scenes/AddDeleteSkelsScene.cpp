@@ -42,10 +42,9 @@
 // spawn/delete behavior is unchanged, and the string-keyed factory check keeps
 // this a faithful, forward-compatible port.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -148,9 +147,9 @@ DemoScene makeAddDeleteSkelsScene()
     // ground.skel plane and a growing cube pile to remain readable inside the
     // demo host's center viewport.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(7.0, 7.0, 8.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(7.0, 7.0, 8.0),
+        GuiVector3(0.0, 0.0, 1.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.keyActions.push_back(KeyAction{'q', "Spawn cube", [world, state] {
                                            spawnCube(world, *state);

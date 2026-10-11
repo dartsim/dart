@@ -60,10 +60,9 @@
 
 #include "../Scenes.hpp"
 #include "../ZUp.hpp"
+#include "GuiBackend.hpp"
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 

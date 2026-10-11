@@ -1,4 +1,6 @@
+// clang-format off
 #include "detail/dart_nb.hpp"
+// clang-format on
 
 /*
  * Copyright (c) 2011, The DART development contributors
@@ -35,13 +37,36 @@
 namespace dart {
 namespace python {
 
-void dart_gui_osg(nb::module_& m);
+void dart_gui_filament(nb::module_& m);
 
 void dart_gui(nb::module_& m)
 {
   auto sm = m.def_submodule("gui");
+  sm.doc()
+      = "Interim bindings of the Filament dart::gui viewer; DART 7's Python "
+        "rendering API replaces them before release.";
+  dart_gui_filament(sm);
+  sm.attr("__dict__")["__builtins__"]
+      = nb::module_::import_("builtins").attr("__dict__");
+  // Preserve typed out-of-range values for native mouse-index validation.
+  nb::exec(
+      R"(
+import operator as _operator
 
-  dart_gui_osg(sm);
+def _mouse_missing(cls, value):
+    try:
+        value = _operator.index(value)
+    except TypeError:
+        return None
+    result = int.__new__(cls, value)
+    result._name_ = '???'
+    result._value_ = value
+    return result
+
+for _mouse_enum in [MouseButton, MouseButtonEvent]:
+    _mouse_enum._missing_ = classmethod(_mouse_missing)
+)",
+      sm.attr("__dict__"));
 }
 
 } // namespace python

@@ -1,5 +1,6 @@
 """Tests for DART 6's deterministic AI infrastructure checks."""
 
+import ast
 import copy
 import importlib.util
 import json
@@ -1432,9 +1433,9 @@ def test_simulation_scenario_contract_mutations_are_rejected(mutation, expected)
         "model/scene loading",
         "collision/contact/constraints",
         "simulation stepping",
-        "OSG rendering",
+        "Filament rendering",
         "visual example",
-        "OSG capture is unavailable",
+        "Filament capture is unavailable",
         "replacement evidence",
         "settled-contact",
         "text/geometry oracle",
@@ -1495,7 +1496,7 @@ def test_simulation_skill_contract_markers_are_required(monkeypatch, marker):
         (".claude/skills/dart-io/SKILL.md", "also load `dart-verify-sim`"),
         (
             ".claude/skills/dart-io/SKILL.md",
-            "claim-tied OSG visual corroboration",
+            "claim-tied Filament visual corroboration",
         ),
         (".claude/skills/dart-python/SKILL.md", "load `dart-verify-sim`"),
         (
@@ -1506,7 +1507,7 @@ def test_simulation_skill_contract_markers_are_required(monkeypatch, marker):
             ".claude/skills/dart-python/SKILL.md",
             "collision/contact/constraints",
         ),
-        (".claude/skills/dart-python/SKILL.md", "GUI/OSG output"),
+        (".claude/skills/dart-python/SKILL.md", "GUI/Filament output"),
         (".claude/skills/dart-python/SKILL.md", "visual exception"),
         (".claude/skills/dart-ci/SKILL.md", "also load `dart-verify-sim`"),
         (".claude/skills/dart-ci/SKILL.md", "visual exception"),
@@ -1899,6 +1900,8 @@ def test_single_cmake_target_build_contract(command, target, expected):
             "cmake -G Ninja -S . -B build/default -DCMAKE_BUILD_TYPE=Release",
             True,
         ),
+        ("cmake -S . -B build/default -DDART_BUILD_GUI=ON", True),
+        ("cmake -S . -B build/default -DUNKNOWN_OPTION=OFF", False),
         (
             "cmake -S . -B build/default -DDART_BUILD_UTILS_ASSETS=ON",
             True,
@@ -2471,6 +2474,78 @@ def test_test_gate_contract_rejects_ctest_runner_drift(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("relative", "old", "new", "expected"),
+    (
+        (
+            "tests/CMakeLists.txt",
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui"',
+            '"-DDART_CTEST_EXCLUDE_LABEL=unit"',
+            "tests/CMakeLists.txt: missing `test-all` graph marker",
+        ),
+        (
+            "tests/CMakeLists.txt",
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui"',
+            "",
+            "tests/CMakeLists.txt: missing `test-all` graph marker",
+        ),
+        (
+            "cmake/DARTRunCTest.cmake",
+            '-LE "${DART_CTEST_EXCLUDE_LABEL}"',
+            '-L "${DART_CTEST_EXCLUDE_LABEL}"',
+            "cmake/DARTRunCTest.cmake: commands and lexical control flow",
+        ),
+    ),
+)
+def test_test_gate_contract_pins_the_gui_ctest_exclusion(
+    tmp_path, relative, old, new, expected
+):
+    _copy_test_gate_contract(tmp_path)
+    path = tmp_path / relative
+    text = path.read_text(encoding="utf-8")
+    assert old in text
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (
+        ("-L gui", "-L filament"),
+        ("&& ctest --test-dir", "&& echo --test-dir"),
+        ("python/tests/unit/gui python/tests/integration", "python/tests/integration"),
+        ("&& python -I scripts/run_pytest.py", "&& echo -I scripts/run_pytest.py"),
+        ("test-gui = {", "test-gui-old = {"),
+    ),
+)
+def test_test_gate_contract_requires_test_gui_to_own_gui_tests(tmp_path, old, new):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    text = pixi.read_text(encoding="utf-8")
+    offset = text.index("test-gui = {")
+    assert old in text[offset:]
+    pixi.write_text(
+        text[:offset] + text[offset:].replace(old, new, 1), encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any("`test-gui` must run the `gui` CTest label" in error for error in errors)
+
+
+def test_default_pytest_target_leaves_rendering_modules_to_test_gui():
+    sources = infra.default_pytest_sources(ROOT)
+
+    assert all((ROOT / path).is_file() for path in infra.GUI_ONLY_PYTHON_TESTS)
+    assert sources.isdisjoint(infra.GUI_ONLY_PYTHON_TESTS)
+    assert "python/tests/unit/gui/test_gui_import.py" in sources
+
+
+@pytest.mark.parametrize(
     "injection",
     (
         "set(_dart_gtest_unsets)\n",
@@ -2750,6 +2825,7 @@ add_custom_target(
     ${CMAKE_COMMAND}
     "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
     "-DDART_CTEST_CONFIGURATION=$<CONFIG>"
+    "-DDART_CTEST_EXCLUDE_LABEL=gui"
     -P "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
 )
@@ -3634,6 +3710,103 @@ endif()
     assert errors == []
 
 
+def _add_inactive_gui_sources(root: Path) -> Path:
+    names = (
+        "GuiDescriptors",
+        "GuiInteractions",
+        "GuiViewer",
+        "GuiParity",
+        "GuiImageDecoders",
+        "GuiMesh",
+        "FilamentBackend",
+    )
+    cmake = root / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_subdirectory(tests)",
+            'set(DART_BUILD_GUI OFF CACHE BOOL "" FORCE)\n' "add_subdirectory(tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    integration = root / "tests/integration/CMakeLists.txt"
+    integration.write_text(
+        integration.read_text(encoding="utf-8")
+        + "\nif(TARGET dart-gui)\n"
+        + "".join(f'  dart_add_test("integration" test_{name})\n' for name in names)
+        + "endif()\n",
+        encoding="utf-8",
+    )
+    for name in names:
+        (integration.parent / f"test_{name}.cpp").write_text(
+            "int main(void) { return 0; }\n", encoding="utf-8"
+        )
+    return integration
+
+
+def test_cmake_semantic_graph_probe_accepts_gui_disabled_sources(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    _add_inactive_gui_sources(tmp_path)
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (
+        ('  dart_add_test("integration" test_GuiParity)', ""),
+        ("if(TARGET dart-gui)", "if(FALSE)"),
+        ("if(TARGET dart-gui)", "if(FALSE)\nif(TARGET dart-gui)"),
+        ("if(TARGET dart-gui)", "return()\nif(TARGET dart-gui)"),
+        (
+            '  dart_add_test("integration" test_GuiParity)',
+            '  dart_add_test("integration" test_GuiParity)\n'
+            '  dart_add_test("integration" test_GuiParity)',
+        ),
+    ),
+)
+def test_cmake_semantic_graph_probe_rejects_gui_inactive_owner_drift(
+    tmp_path, old, new
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    integration = _add_inactive_gui_sources(tmp_path)
+    text = integration.read_text(encoding="utf-8").replace(old, new, 1)
+    if new.startswith("if(FALSE)\n"):
+        text += "endif()\n"
+    integration.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "neither configured nor explicitly approved as inactive" in error
+        for error in errors
+    )
+
+
+def test_cmake_semantic_graph_probe_rejects_gui_enabled_missing_targets(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    _add_inactive_gui_sources(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "set(DART_BUILD_GUI OFF", "set(DART_BUILD_GUI ON", 1
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "neither configured nor explicitly approved as inactive" in error
+        for error in errors
+    )
+
+
 def test_cmake_semantic_graph_probe_rejects_library_only_runtime_test(tmp_path):
     cmake = tmp_path / "tests" / "regression" / "CMakeLists.txt"
     build = _configure_semantic_graph_fixture(tmp_path)
@@ -4476,7 +4649,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
         "python_binding": "nanobind",
         "optional_python_bindings": [],
         "io_namespace": "dart::utils",
-        "gui_backend": "OSG",
+        "gui_backend": "Filament",
     }
     assert report["inventory"]["model_harness"]["model_pins"] == {
         "project": [],
@@ -4486,7 +4659,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     assert report["inventory"]["model_harness"]["generated_skill_metadata_chars"] > 0
     assert report["inventory"]["durable_context"]["owners"]["count"] == 5
     visual = report["inventory"]["visual_verification"]
-    assert visual["backend"] == "OSG"
+    assert visual["backend"] == "Filament"
     assert "agent-capture" in visual["tasks"]
     assert "image-verdict" in visual["tasks"]
     assert "verification-bundle" in visual["tasks"]
@@ -4641,29 +4814,15 @@ def test_release_hook_validation_rejects_unsafe_suffix_and_extra_keys(tmp_path):
 
 
 def _write_visual_runtime_fixtures(root):
-    overlay_path = root / "python/tests/unit/gui/test_agent_debug_overlay.py"
-    overlay_path.parent.mkdir(parents=True, exist_ok=True)
-    overlay_path.write_text(
-        'pytest.fail("no off-screen GL context despite a configured DISPLAY")\n'
-        "assert with_overlay != base\n"
-        "assert after_clear == base\n"
-    )
-    capture_path = root / "python/tests/unit/gui/test_agent_capture.py"
-    capture_path.write_text(
-        "test_run_capture_smoke_writes_stills_and_sidecar\n"
-        "test_run_capture_debug_layers_change_pixels_end_to_end\n"
-        'factory="claim_capture_scene:make_world"\n'
-        "pytest.fail(str(error))\n"
-        'assert "--factory claim_capture_scene:make_world"\n'
-        'debug_layers = ["contacts", "collision_bounds", "labels"]\n'
-        'plain_artifact["camera"] == combined_artifact["camera"]\n'
-        "assert _changed_pixel_count(plain_image, combined_image) >= 128\n"
-        "agent_debug_overlay.CONTACT_POINT_RGB\n"
-        "assert contact_pixels >= 4\n"
-        "for layer in debug_layers\n"
-        'assert debug["layers"] == [layer]\n'
-        "assert _changed_pixel_count(plain_image, debug_image) >= 32\n"
-    )
+    for relative in (
+        "python/tests/unit/gui/test_agent_debug_overlay.py",
+        "python/tests/unit/gui/test_agent_capture.py",
+    ):
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(
+            (ROOT / relative).read_text(encoding="utf-8"), encoding="utf-8"
+        )
     (root / "pixi.toml").write_text(
         "test-agent-debug-overlay =\n"
         "test_contacts_layer_marks_points_and_normals\n"
@@ -4798,7 +4957,6 @@ def test_ci_wiring_rejects_a_shorthand_check_lint_without_the_ai_checks(tmp_path
     "marker",
     (
         "Agent visual verification smoke",
-        "xvfb-run",
         "bash -eu -o pipefail <<'VISUAL_SMOKE'",
         "pixi run agent-capture",
         "--scene box_on_ground --steps 250 --focus box --auto-views 1",
@@ -4874,9 +5032,11 @@ def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, line, expected)
 @pytest.mark.parametrize(
     "marker",
     (
-        'pytest.fail("no off-screen GL context despite a configured DISPLAY")',
-        "assert with_overlay != base",
-        "assert after_clear == base",
+        "viewer.setUpViewForCapture(240, 180)",
+        "viewer.captureScreen(str(path))",
+        "viewer.frame()",
+        "assert np.abs(with_overlay - base).max() > 2",
+        "assert np.abs(after_clear - base).max() <= 2",
     ),
 )
 def test_ci_wiring_requires_non_skippable_overlay_pixel_assertions(tmp_path, marker):
@@ -4893,7 +5053,7 @@ def test_ci_wiring_requires_non_skippable_overlay_pixel_assertions(tmp_path, mar
     path.write_text(
         (ROOT / "python/tests/unit/gui/test_agent_debug_overlay.py")
         .read_text()
-        .replace(marker, "missing-overlay-marker", 1)
+        .replace(marker, "missing_overlay_marker")
     )
     errors = []
 
@@ -4925,12 +5085,12 @@ def test_ci_wiring_requires_non_skippable_overlay_pixel_assertions(tmp_path, mar
         ),
         (
             "python/tests/unit/gui/test_agent_capture.py",
-            "pytest.fail(str(error))",
+            "sidecar = agent_capture.run_capture(args)",
             "missing non-skippable factory-capture marker",
         ),
         (
             "python/tests/unit/gui/test_agent_capture.py",
-            'assert "--factory claim_capture_scene:make_world"',
+            'assert "--factory claim_capture_scene:make_world" in sidecar["reproduce"]',
             "missing non-skippable factory-capture marker",
         ),
         (
@@ -5013,7 +5173,7 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
     )
     _write_visual_runtime_fixtures(tmp_path)
     path = tmp_path / relative
-    path.write_text(path.read_text().replace(marker, "missing-runtime-marker", 1))
+    path.write_text(path.read_text().replace(marker, "missing_runtime_marker"))
     errors = []
 
     infra.check_ci_wiring(tmp_path, errors)
@@ -5432,6 +5592,28 @@ def test_unstaged_rename_out_of_ai_scope_blocks_other_staged_ai_work(tmp_path):
     first.rename(tmp_path / "misc" / "first.md")
 
     assert hook.run_staged(tmp_path) == 2
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "# assert with_overlay != base\n",
+        '"assert with_overlay != base"\n',
+        'message = "assert with_overlay != base"\n',
+        "if False:\n    assert with_overlay != base\n",
+    ],
+)
+def test_visual_python_marker_rejects_comment_and_string_spoofs(source):
+    assert not infra.visual_python_marker(
+        ast.parse(source), "assert with_overlay != base"
+    )
+
+
+def test_visual_python_marker_matches_assertions_independent_of_quote_style():
+    assert infra.visual_python_marker(
+        ast.parse("assert sidecar['renderer'] == 'filament'\n"),
+        'assert sidecar["renderer"] == "filament"',
+    )
 
 
 @pytest.mark.parametrize("filename", ["ci_ubuntu.yml", "ci_windows.yml"])

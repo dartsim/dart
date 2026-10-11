@@ -18,6 +18,7 @@ pixi run test         # Build and run C++ tests
 pixi run build-py-dev # Build dartpy
 pixi run test-py      # Run dartpy tests
 pixi run test-all     # Build defaults and run C++/Python tests
+pixi run test-gui     # Run Filament GUI tests that need a graphics device
 pixi run lint         # Format code, docs, TOML, and spelling (auto-fixes)
 pixi run check-lint   # Run the non-mutating lint aggregate
 ```
@@ -52,10 +53,10 @@ the repository root to the working directory.
 
 - Branch from the resolved target into a non-tracking topic branch
   (`origin/main` by default); never commit directly to `main` or `release-*`.
-- Preserve C++17, the nanobind binder, `dart::utils` parsers, OSG, installed
-  headers, package components, ABI-sensitive interfaces, default simulation
-  behavior, and Gazebo/gz-physics compatibility unless a maintainer approves
-  otherwise.
+- Preserve C++17, the nanobind binder, `dart::utils` parsers, Filament,
+  installed headers, package components, ABI-sensitive interfaces, default
+  simulation behavior, and Gazebo/gz-physics compatibility unless a maintainer
+  approves otherwise.
 - dartpy uses nanobind as its only binder, under `python/dartpy/`; follow
   `docs/onboarding/python-bindings.md`.
 - New fixes land on `main`; backports to a `release-6.*` branch use
@@ -98,7 +99,8 @@ large, multi-session, or explicitly autonomous work. Its project home is
 ## Before Every Commit
 
 - Run `pixi run lint`, even for docs-only changes.
-- Run `pixi run build` and focused tests when C++ or Python behavior changes.
+- Run `pixi run build` and focused tests when C++ or Python behavior changes;
+  GUI changes also run `pixi run test-gui`.
 - Use `dart-changelog` to decide whether `CHANGELOG.md` needs an entry.
 - Promote durable facts and remove a completing `docs/dev_tasks/<task>/` folder.
 - Run `pixi run install-hooks` once per clone. Its fast staged safety check is

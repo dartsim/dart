@@ -16,12 +16,31 @@ CTest and the Python binding tests. It does not run lint; run `pixi run lint`
 separately. Use `test` or `test-py` for focused reruns and clearer failure
 attribution.
 
+These gates build the GUI but leave out GUI tests that need a graphics device:
+CTest tests labeled `gui` and the Python rendering tests. For GUI, Filament,
+`dartpy.gui`, or GUI example changes, also run `pixi run test-gui`. It builds
+the tests, dartpy, and `dart-demos` in the same tree, runs
+`ctest -L gui -LE filament-native`, then runs `python/tests/unit/gui` and
+`python/tests/integration`. Linux capture uses Vulkan and needs no display
+server; to use the Pixi environment's Mesa Lavapipe driver as CI does, set
+`VK_DRIVER_FILES` to the absolute path of
+`.pixi/envs/<env>/share/vulkan/icd.d/lvp_icd.x86_64.json`. Native-window tests
+need a desktop session; Linux windows use X11, through XWayland on Wayland
+desktops (Xvfb also works):
+
+```bash
+pixi run ctest --test-dir build/default/cpp/Release -L filament-native --output-on-failure
+```
+
 `pixi run check-ai-infra` also reconfigures the current platform, queries
 CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
 to depend directly on `tests_and_run` and `pytest`, requires those targets to
-cover every configured C++ and Python test, rejects omitted test directories or
-unowned test sources, and admits inactive platform tests or the one compile-only
+cover every configured C++ and Python test except the `gui`-labeled CTest tests
+and the four GUI-only Python modules (`test_filament`, `test_gui_offscreen`,
+`test_agent_capture`, `test_agent_debug_overlay`), which it requires
+`pixi run test-gui` to run, rejects omitted test directories or unowned test
+sources, and admits inactive platform tests or the one compile-only
 C test only through exact branch-owned predicates and target contracts. It
 walks the active generated CTest subdirectory graph, maps registrations back to
 configured executables, rejects unapproved command filters or non-executing
@@ -49,7 +68,7 @@ disabled, list-only, skipped, or result-inverted CTest entries, collection-only
 or spoofed pytest substitutions, stale generated test directories, and decoy
 targets. Native hosted CI remains the platform-specific execution proof.
 
-For model, simulation, collision/contact, or OSG claims, also use
+For model, simulation, collision/contact, or Filament claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in
 [`docs/ai/verification.md`](../ai/verification.md).
 
@@ -62,8 +81,9 @@ or GUI behavior.
 For rendering, model, mesh, texture, GUI, or visual-example changes, inspect
 the captured screenshot or frame sequence instead of treating command success
 as enough evidence. After the render loop finishes, verify that the requested
-artifact exists, is non-empty, and is a regular file; capture callbacks can
-report write failures after the final frame has already advanced.
+artifact exists, is non-empty, and is a regular file; a frame that Filament
+skips leaves the queued capture unwritten, and write errors throw from the
+`frame()` call that performs the capture.
 
 Live ImGui controls that change `VisualAspect` color or alpha after renderable
 nodes already exist must also update renderer-visible state. Do not assume that

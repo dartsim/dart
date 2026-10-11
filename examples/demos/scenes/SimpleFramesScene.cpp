@@ -35,9 +35,8 @@
 // arrow), demonstrating that Frame children render through their ancestor's
 // world attachment. No physics; there are no skeletons in this world.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -90,8 +89,8 @@ DemoScene makeSimpleFramesScene()
         dart::math::toRadian(60.0), Eigen::Vector3d(0, 1, 0)));
 
     // The original never calls createVisualAspect()/setColor() on any of
-    // these frames; ShapeFrameNode only renders a shape frame that has a
-    // VisualAspect (dart/gui/osg/ShapeFrameNode.cpp), so the original's shape
+    // these frames; the viewer only renders a shape frame that has a
+    // VisualAspect, so the original's shape
     // frames are actually never drawn -- setShape() alone does not create
     // one. That leaves the demo showing nothing, defeating the whole point
     // of a "visualize nested frames" scene, so this port adds an explicit
@@ -168,9 +167,9 @@ DemoScene makeSimpleFramesScene()
     // otherwise empty viewport. Pull the eye in close and aim at the cluster's
     // centroid so the boxes, ellipsoid markers, and arrow fill the frame.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(0.55, 0.25, 0.5),
-        ::osg::Vec3d(0.08, 0.0, 0.03),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(0.55, 0.25, 0.5),
+        GuiVector3(0.08, 0.0, 0.03),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.preStep = [anchors] {
       // Nothing to simulate; the frames are purely kinematic. This lambda

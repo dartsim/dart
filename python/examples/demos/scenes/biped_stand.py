@@ -21,7 +21,7 @@ import numpy as np
 from ..registry import SceneHandle
 
 
-class BipedStandNode(dart.gui.osg.RealTimeWorldNode):
+class BipedStandNode:
     def __init__(self, world, skel):
         super().__init__(world)
         self.skel = skel
@@ -117,7 +117,9 @@ class BipedStandNode(dart.gui.osg.RealTimeWorldNode):
         self.ext_force_duration = 100
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
     world.setGravity([0, -9.81, 0])
 
@@ -131,9 +133,12 @@ def build() -> SceneHandle:
     biped.getDof("j_heel_right_1").setPosition(0.25)
     biped.getDof("j_abdomen_2").setPosition(0.00)
 
-    node = BipedStandNode(world, biped)
+    class WorldNode(BipedStandNode, gui.RealTimeWorldNode):
+        pass
 
-    ea = dart.gui.osg.GUIEventAdapter
+    node = WorldNode(world, biped)
+
+    ea = gui.GUIEventAdapter
     key_actions = {
         ea.KEY_Up: ("Push +X", lambda: node.push([40, 0, 0])),
         ea.KEY_Down: ("Push -X", lambda: node.push([-40, 0, 0])),
@@ -144,7 +149,7 @@ def build() -> SceneHandle:
     return SceneHandle(
         node=node,
         key_actions=key_actions,
-        camera_home=([3, 1.5, 3], [0, 0, 0], [0, 0, 0]),
+        camera_home=([3, 1.5, 3], [0, 0, 0], [0, 1, 0]),
         notes=(
             "Push-test keys remapped from 1-4 (original) to arrow keys: "
             "navigator reserves 0-9 for direct scene select."

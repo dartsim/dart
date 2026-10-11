@@ -6,22 +6,17 @@ import weakref
 import dartpy as dart
 import pytest
 
-
-if not hasattr(dart.gui, "osg"):
-    pytest.skip("DART_BUILD_GUI_OSG is disabled", allow_module_level=True)
-
 from ._gui_probe import probe
 
-osg = dart.gui.osg
+gui = dart.gui
 
 
-@pytest.mark.parametrize("base", [osg.Viewer, osg.ImGuiViewer])
-def test_factory_subclass_custom_initializer(base):
-    class CustomViewer(base):
+def test_factory_subclass_custom_initializer():
+    class CustomViewer(gui.Viewer):
         def __init__(self, world, extra):
             super().__init__()
             self.extra = extra
-            self.node = osg.WorldNode(world)
+            self.node = gui.WorldNode(world)
             self.addWorldNode(self.node)
 
     world = dart.simulation.World()
@@ -31,39 +26,48 @@ def test_factory_subclass_custom_initializer(base):
 
 
 def test_viewer_primary_and_secondary_bases():
-    viewer = osg.Viewer()
-    assert probe.accept_action_adapter(viewer)
-    assert probe.base_view(viewer) is viewer
+    viewer = gui.Viewer()
     assert probe.base_subject(viewer) is viewer
-    assert isinstance(viewer, osg.osgViewer)
     assert isinstance(viewer, dart.common.Subject) is False
-    assert osg.osgViewer in type(viewer).__mro__
     assert (dart.common.Subject in type(viewer).__mro__) is False
+    assert gui.GUIActionAdapter(viewer).getViewer() is viewer
 
 
-def test_drag_and_drop_invalidation():
-    viewer = osg.Viewer()
+def test_drag_and_drop_detachment():
+    viewer = gui.Viewer()
     frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World())
     dnd = viewer.enableDragAndDrop(frame)
+    assert probe.base_subject(dnd) is dnd
+    assert probe.base_observer(dnd) is dnd
+    assert isinstance(dnd, dart.common.Subject) is False
+    assert isinstance(dnd, dart.common.Observer) is False
     dnd.setObstructable(False)
     assert dnd.isObstructable() is False
     assert viewer.disableDragAndDrop(dnd) is True
-    with pytest.raises((TypeError, RuntimeError)):
-        dnd.isObstructable()
+    assert dnd.getEntity() is None
+    assert dnd.getSimpleFrame() is None
+    dnd.update()
+    dnd.move()
+    dnd.saveState()
 
 
-def test_raw_imgui_getter_identity_and_ownership():
-    viewer = osg.ImGuiViewer()
-    handler = viewer.getImGuiHandler()
-    assert viewer.getImGuiHandler() is handler
+def test_raw_default_handler_getter_identity_and_ownership():
+    viewer = gui.Viewer()
+    handler = viewer.getDefaultEventHandler()
+    assert viewer.getDefaultEventHandler() is handler
+    reference = weakref.ref(viewer)
     del viewer
     gc.collect()
-    handler.removeAllWidget()
+    assert reference() is not None
+    assert handler.getModKeyMask() == 0
+    del handler
+    gc.collect()
+    assert reference() is None
 
 
 def test_attachment_is_released_with_viewer():
-    viewer = osg.Viewer()
-    overlay = osg.DebugOverlay()
+    viewer = gui.Viewer()
+    overlay = gui.DebugOverlay()
     reference = weakref.ref(overlay)
     viewer.addAttachment(overlay)
     del overlay
@@ -74,17 +78,15 @@ def test_attachment_is_released_with_viewer():
 
 
 def test_widget_remains_abstract():
-    with pytest.raises(TypeError):
-        osg.ImGuiWidget()
+    with pytest.raises(RuntimeError, match="pure virtual"):
+        gui.ImGuiWidget().render()
 
 
 def test_combined_modifier_mask_roundtrip():
-    cls = osg.GUIEventAdapter.ModKeyMask
+    cls = gui.GUIEventAdapter.ModKeyMask
     value = cls(int(cls.MODKEY_CTRL) | int(cls.MODKEY_SHIFT))
     assert int(value) == 15
-    assert value.name == "???"
-    assert str(value) == "ModKeyMask.???"
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World())
     dnd = viewer.enableDragAndDrop(frame)
     dnd.setRotationModKey(value)
@@ -94,22 +96,25 @@ def test_combined_modifier_mask_roundtrip():
 
 @pytest.mark.parametrize("kind", ["SimpleFrameDnD", "InteractiveFrameDnD"])
 def test_direct_drag_and_drop_constructor_handles_viewer_deletion(kind):
-    viewer = osg.Viewer()
-    frame = (osg.InteractiveFrame(dart.dynamics.Frame.World())
-             if kind == "InteractiveFrameDnD"
-             else dart.dynamics.SimpleFrame(dart.dynamics.Frame.World()))
-    dnd = getattr(osg, kind)(viewer, frame)
+    viewer = gui.Viewer()
+    frame = (
+        gui.InteractiveFrame(dart.dynamics.Frame.World())
+        if kind == "InteractiveFrameDnD"
+        else dart.dynamics.SimpleFrame(dart.dynamics.Frame.World())
+    )
+    dnd = getattr(gui, kind)(viewer, frame)
     assert dnd.isMoving() is False
     del viewer
     gc.collect()
-    with pytest.raises((TypeError, RuntimeError)):
-        dnd.isMoving()
+    # Direct interactions keep their viewer alive until they are released.
+    assert dnd.isMoving() is False
+    assert dnd.getEntity() is frame
     del dnd
     gc.collect()
 
 
 def test_drag_and_drop_reenable_preserves_new_wrapper_identity():
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World())
     retired = []
     for _ in range(100):
@@ -118,48 +123,36 @@ def test_drag_and_drop_reenable_preserves_new_wrapper_identity():
         assert viewer.enableDragAndDrop(frame) is dnd
         assert viewer.disableDragAndDrop(dnd)
         retired.append(dnd)
-        with pytest.raises((TypeError, RuntimeError)):
-            dnd.isMoving()
+        assert dnd.getEntity() is None
+        assert dnd.getSimpleFrame() is None
+        assert dnd.isMoving() is False
         del dnd
 
 
-def test_exported_key_aliases_preserve_canonical_names():
-    event = osg.GUIEventAdapter
-    for alias, canonical in [
-        ("KEY_Page_Up", "KEY_Prior"),
-        ("KEY_Page_Down", "KEY_Next"),
-        ("KEY_KP_Page_Up", "KEY_KP_Prior"),
-        ("KEY_KP_Page_Down", "KEY_KP_Next"),
-        ("KEY_Script_switch", "KEY_Mode_switch"),
-    ]:
-        value = getattr(event, alias)
-        assert value == getattr(event, canonical)
-        assert value.name == canonical
-        assert str(value) == "KeySymbol." + canonical
-
-
-@pytest.mark.parametrize("name,secondary", [
-    ("Viewer", dart.common.Subject),
-    ("ImGuiViewer", dart.common.Subject),
-    ("DragAndDrop", dart.common.Subject),
-    ("SimpleFrameDnD", dart.common.Subject),
-    ("SimpleFrameShapeDnD", dart.common.Subject),
-    ("BodyNodeDnD", dart.common.Subject),
-    ("InteractiveFrameDnD", dart.common.Subject),
-    ("InteractiveTool", dart.dynamics.Detachable),
-    ("InteractiveFrame", dart.dynamics.Detachable),
-])
+@pytest.mark.parametrize(
+    "name,secondary",
+    [
+        ("Viewer", dart.common.Subject),
+        ("DragAndDrop", dart.common.Subject),
+        ("SimpleFrameDnD", dart.common.Subject),
+        ("SimpleFrameShapeDnD", dart.common.Subject),
+        ("BodyNodeDnD", dart.common.Subject),
+        ("InteractiveFrameDnD", dart.common.Subject),
+        ("InteractiveTool", dart.dynamics.Detachable),
+        ("InteractiveFrame", dart.dynamics.Detachable),
+    ],
+)
 def test_secondary_ancestry_is_explicit(name, secondary):
-    cls = getattr(osg, name)
+    cls = getattr(gui, name)
     assert issubclass(cls, secondary) is False
     assert (secondary in cls.__mro__) is False
 
 
 def test_attachment_viewer_cycle_is_collected():
-    class Overlay(osg.DebugOverlay):
+    class Overlay(gui.DebugOverlay):
         pass
 
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     overlay = Overlay()
     overlay.owner = viewer
     viewer.addAttachment(overlay)
@@ -170,10 +163,10 @@ def test_attachment_viewer_cycle_is_collected():
 
 
 def test_view_handler_cycle_is_collected():
-    class Handler(osg.GUIEventHandler):
+    class Handler(gui.GUIEventHandler):
         pass
 
-    viewer = osg.osgViewer()
+    viewer = gui.Viewer()
     handler = Handler()
     handler.owner = viewer
     viewer.addEventHandler(handler)

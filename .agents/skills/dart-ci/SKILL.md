@@ -12,8 +12,8 @@ description: "DART CI: GitHub Actions, cache debugging, and platform-specific fa
 Load this skill when debugging CI failures or working with GitHub Actions.
 
 When the failing claim depends on model/scene structure, physics behavior, or
-OSG output, also load `dart-verify-sim` and reproduce it with a text oracle plus
-assessed visual evidence. Document a visual exception when OSG/Xvfb is
+Filament output, also load `dart-verify-sim` and reproduce it with a text oracle plus
+assessed visual evidence. Document a visual exception when graphics support is
 unavailable or not applicable in the failing environment.
 
 ## Quick Commands
@@ -50,10 +50,11 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | macOS ARM64 SEGFAULT | Replace `alloca()`/VLAs with `std::vector<T>`            |
 | RTD build fails      | Use defensive `.get(key, default)` patterns              |
 | gz-physics fails     | Reproduce with `pixi run -e gazebo test-gz`              |
+| CI Filament fails    | Reproduce with `pixi run test-gui`; native-window failures with `pixi run ctest --test-dir build/<env>/cpp/Release -L filament-native` (`pixi run ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows; under `xvfb-run` on headless Linux); consumer failures with `pixi run python scripts/test_gui_install.py` on that build directory |
 
 ## Workflow Architecture
 
-The CI workflows that a failing PR check belongs to (full 12-workflow index:
+The CI workflows that a failing PR check belongs to (full workflow index:
 `docs/onboarding/ci-cd.md` § "Workflow Index"):
 
 | Workflow            | Purpose                                | Platforms  |
@@ -61,6 +62,7 @@ The CI workflows that a failing PR check belongs to (full 12-workflow index:
 | `ci_ubuntu.yml`     | AI checks, lint, build, test, coverage | Ubuntu     |
 | `ci_macos.yml`      | Lint, build, test                      | macOS      |
 | `ci_windows.yml`    | Lint, build, test                      | Windows    |
+| `ci_filament.yml`   | Filament GUI functional lane (`<runner>-Filament-functional`; not yet required) | Ubuntu, Windows, macOS |
 | `ci_freebsd.yml`    | Build + test (VM)                      | FreeBSD    |
 | `ci_simd.yml`       | SIMD x86 instruction-level matrix      | Ubuntu x86_64 |
 | `ci_toolchain.yml`  | Alternate toolchain build + test       | Ubuntu     |

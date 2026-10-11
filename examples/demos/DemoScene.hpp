@@ -33,7 +33,7 @@
 #ifndef DART_EXAMPLES_DEMOS_DEMOSCENE_HPP_
 #define DART_EXAMPLES_DEMOS_DEMOSCENE_HPP_
 
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/dart.hpp>
 
@@ -52,7 +52,7 @@ class DemoHost;
 /// fully usable without a keyboard.
 struct KeyAction
 {
-  /// ASCII key code, or an osgGA::GUIEventAdapter::KeySymbol value.
+  /// ASCII key code, or a dart::gui::GUIEventAdapter::KeySymbol value.
   int key = 0;
 
   /// Short label shown next to the key in the panel, e.g. "Shoot sphere".
@@ -68,9 +68,9 @@ struct KeyAction
 /// Camera pose applied when a scene becomes active.
 struct CameraHome
 {
-  ::osg::Vec3d eye;
-  ::osg::Vec3d center;
-  ::osg::Vec3d up;
+  GuiVector3 eye;
+  GuiVector3 center;
+  GuiVector3 up;
 };
 
 //==============================================================================
@@ -84,10 +84,10 @@ public:
   explicit DemoHostContext(DemoHost& host);
 
   /// The viewer the scene is being installed into.
-  dart::gui::osg::ImGuiViewer* viewer() const;
+  GuiViewer* viewer() const;
 
   /// The world node that was just created for this scene.
-  dart::gui::osg::WorldNode* worldNode() const;
+  demo_gui::WorldNode* worldNode() const;
 
   /// Registers an arbitrary teardown action to run when this scene is torn
   /// down (on switch, rebuild/reset, or app shutdown).
@@ -95,11 +95,11 @@ public:
 
   /// Adds a ViewerAttachment and arranges for it to be removed automatically
   /// on teardown.
-  void addAttachment(dart::gui::osg::ViewerAttachment* attachment);
+  void addOwnedAttachment(GuiPtr<demo_gui::ViewerAttachment> attachment);
 
   /// Adds an event handler and arranges for it to be removed automatically on
   /// teardown.
-  void addEventHandler(::osgGA::GUIEventHandler* handler);
+  void addEventHandler(GuiPtr<demo_events::GUIEventHandler> handler);
 
   /// Appends a line to the host's diagnostics log console.
   void log(const std::string& message) const;
@@ -142,7 +142,7 @@ struct DemoSceneSetup
   /// Camera pose to apply when this scene becomes active. Optional.
   std::optional<CameraHome> cameraHome;
 
-  /// Whether the host should attach its default shadow technique.
+  /// Whether the host should enable shadows for this scene's world.
   bool enableShadows = true;
 
   /// Frames to enable drag-and-drop on (SimpleFrameDnD: unconstrained
@@ -150,10 +150,7 @@ struct DemoSceneSetup
   /// a free-drag. For an InteractiveFrame whose per-axis/plane gizmo tools
   /// should be draggable, call Viewer::enableDragAndDrop(InteractiveFrame*)
   /// (InteractiveFrameDnD) from onActivate and release it via
-  /// ctx.addTeardown(disableDragAndDrop) -- that is now safe to tear down at
-  /// runtime (the gui-osg InteractiveFrameDnD destructor deletes the 9 per-tool
-  /// sub-DnDs it allocates), whereas before its defaulted destructor leaked
-  /// them and left them observing freed entities across a scene switch.
+  /// ctx.addTeardown(disableDragAndDrop) before the world is destroyed.
   std::vector<dart::dynamics::SimpleFramePtr> dragFrames;
 
   /// Optional hook for anything else a scene needs to register (extra

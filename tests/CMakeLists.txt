@@ -144,13 +144,14 @@ add_custom_target(
 # Add custom target to build all the tests and run the tests
 add_custom_target(
   tests_and_run
+  # GUI tests need a graphics device; `pixi run test-gui` runs them.
   COMMAND
     ${CMAKE_COMMAND} "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
-    "-DDART_CTEST_CONFIGURATION=$<CONFIG>" -P
+    "-DDART_CTEST_CONFIGURATION=$<CONFIG>" "-DDART_CTEST_EXCLUDE_LABEL=gui" -P
     "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
 )
 
-dart_format_add(GTestUtils.hpp)
+dart_format_add(GTestUtils.hpp cmake/gui_consumer/main.cpp)
 
 add_subdirectory(benchmark)

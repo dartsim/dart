@@ -56,7 +56,7 @@ using dart::dynamics::BodyNode;
 /// (end the drag); the continuous per-frame target/force computation lives in
 /// DragForce::applyPreStep/applyPreRefresh instead, driven by the world's own
 /// frame loop rather than by mouse-event cadence.
-class DragForce::MouseHandler : public dart::gui::osg::MouseEventHandler
+class DragForce::MouseHandler : public demo_gui::MouseEventHandler
 {
 public:
   MouseHandler(
@@ -75,15 +75,14 @@ public:
     if (ImGui::GetIO().WantCaptureMouse)
       return;
 
-    const auto event
-        = mEventHandler->getButtonEvent(dart::gui::osg::LEFT_MOUSE);
+    const auto event = mEventHandler->getButtonEvent(demo_gui::LEFT_MOUSE);
 
-    if (event == dart::gui::osg::BUTTON_PUSH) {
+    if (event == demo_gui::BUTTON_PUSH) {
       const bool ctrl = (mEventHandler->getModKeyMask()
-                         & ::osgGA::GUIEventAdapter::MODKEY_CTRL)
+                         & demo_events::GUIEventAdapter::MODKEY_CTRL)
                         != 0;
       const auto& picks = mEventHandler->getButtonPicks(
-          dart::gui::osg::LEFT_MOUSE, dart::gui::osg::BUTTON_PUSH);
+          demo_gui::LEFT_MOUSE, demo_gui::BUTTON_PUSH);
 
       BodyNode* body = nullptr;
       Eigen::Vector3d point = Eigen::Vector3d::Zero();
@@ -98,7 +97,7 @@ public:
       } else if (mOnPlainClickSelect) {
         mOnPlainClickSelect(body); // body may be nullptr: click-to-deselect.
       }
-    } else if (event == dart::gui::osg::BUTTON_RELEASE) {
+    } else if (event == demo_gui::BUTTON_RELEASE) {
       mOwner->endDrag();
     }
   }
@@ -116,8 +115,7 @@ DragForce::~DragForce() = default;
 
 //==============================================================================
 void DragForce::installMouseHandler(
-    dart::gui::osg::ImGuiViewer* viewer,
-    std::function<void(BodyNode*)> onPlainClickSelect)
+    GuiViewer* viewer, std::function<void(BodyNode*)> onPlainClickSelect)
 {
   mViewer = viewer;
   mMouseHandler = new MouseHandler(this, std::move(onPlainClickSelect));
@@ -133,7 +131,7 @@ void DragForce::onSceneInstalled(const dart::simulation::WorldPtr& world)
 }
 
 //==============================================================================
-void DragForce::reset(dart::gui::osg::ImGuiViewer* viewer)
+void DragForce::reset(GuiViewer* viewer)
 {
   endDrag();
   detachGizmo(viewer);
@@ -178,7 +176,7 @@ Eigen::Vector3d DragForce::computeDragTarget() const
     return mDragAnchorWorld;
 
   return mDragAnchorWorld
-         + deh->getDeltaCursor(mDragAnchorWorld, dart::gui::osg::UNCONSTRAINED);
+         + deh->getDeltaCursor(mDragAnchorWorld, demo_gui::UNCONSTRAINED);
 }
 
 //==============================================================================
@@ -307,16 +305,14 @@ void DragForce::applyPreRefresh(bool paused)
 
 //==============================================================================
 void DragForce::attachGizmo(
-    BodyNode* body,
-    const dart::simulation::WorldPtr& world,
-    dart::gui::osg::ImGuiViewer* viewer)
+    BodyNode* body, const dart::simulation::WorldPtr& world, GuiViewer* viewer)
 {
   detachGizmo(viewer);
   if (!body || !world)
     return;
 
   mGizmoBody = body;
-  mGizmoFrame = std::make_shared<dart::gui::osg::InteractiveFrame>(
+  mGizmoFrame = std::make_shared<demo_gui::InteractiveFrame>(
       dart::dynamics::Frame::World(),
       "gizmo_" + body->getName(),
       body->getWorldTransform());
@@ -326,7 +322,7 @@ void DragForce::attachGizmo(
 }
 
 //==============================================================================
-void DragForce::detachGizmo(dart::gui::osg::ImGuiViewer* viewer)
+void DragForce::detachGizmo(GuiViewer* viewer)
 {
   if (mGizmoDnd && viewer) {
     viewer->disableDragAndDrop(mGizmoDnd);

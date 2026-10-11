@@ -33,7 +33,7 @@
 #ifndef DART_EXAMPLES_DEMOS_INSPECTOR_HPP_
 #define DART_EXAMPLES_DEMOS_INSPECTOR_HPP_
 
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/common/Observer.hpp>
 
@@ -42,10 +42,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-namespace osg {
-class Group;
-} // namespace osg
 
 namespace dart_demos {
 
@@ -91,11 +87,11 @@ public:
 
   /// Renders the detail view for the current selection: transforms,
   /// velocities, mass, per-joint sliders (editable only while `paused`), and
-  /// the wireframe/hidden toggles. `worldNode` is the active scene's OSG
+  /// the wireframe/hidden toggles. `worldNode` is the active scene's
   /// group (DemoHost::getWorldNode()), used to locate the selected body's
   /// rendered nodes for the wireframe toggle; may be nullptr (the toggle is
   /// then a no-op checkbox).
-  void renderDetail(bool paused, ::osg::Group* worldNode);
+  void renderDetail(bool paused, GuiGroup* worldNode);
 
   /// Applies every pending joint-position edit queued by renderDetail's
   /// sliders (clamped to limits, isfinite-checked) and clears the queue.
@@ -123,7 +119,7 @@ private:
   void renderBodyRow(dart::dynamics::BodyNode* body);
   void renderJointRow(dart::dynamics::Joint* joint);
   void setWireframe(
-      dart::dynamics::BodyNode* body, bool enabled, ::osg::Group* worldNode);
+      dart::dynamics::BodyNode* body, bool enabled, GuiGroup* worldNode);
   void setHidden(dart::dynamics::BodyNode* body, bool hidden);
   void snapshotHighlightColors();
   void restoreHighlight();

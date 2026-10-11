@@ -1,0 +1,44 @@
+material {
+    name : dartLegacyTransparentLit,
+    shadingModel : specularGlossiness,
+    blending : fade,
+    depthWrite : false,
+    doubleSided : true,
+    requires : [ color ],
+    parameters : [
+        {
+            type : float4,
+            name : baseColor
+        },
+        {
+            type : float,
+            name : metallic
+        },
+        {
+            type : float,
+            name : roughness
+        },
+        {
+            type : float,
+            name : reflectance
+        },
+        {
+            type : float3,
+            name : emissiveColor
+        },
+        { type : float3, name : ambientColor },
+        { type : float3, name : specularColor },
+        { type : float, name : glossiness }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor = materialParams.baseColor * getColor();
+        material.baseColor.rgb *= material.baseColor.a;
+        material.specularColor = materialParams.specularColor;
+        material.glossiness = materialParams.glossiness;
+        material.emissive = vec4(materialParams.emissiveColor + 0.1 * materialParams.ambientColor, 0.0);
+    }
+}
