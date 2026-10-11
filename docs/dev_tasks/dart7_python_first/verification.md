@@ -46,7 +46,7 @@ Known gaps:
 
 ### WP-7.0.1 Release-line and AI-policy rollover
 
-- **Branch:** `ai/dart7-release-rollover`, based on main `1b5722176`. It ships
+- **Pull request:** [#3697](https://github.com/dartsim/dart/pull/3697). It ships
   with WP-7.0.2 as one PR: the project-home commit, then the rollover commit.
   CI checks each PR's milestone against the release target that the rollover
   sets, and the rollover cites the project home.
@@ -106,7 +106,7 @@ Known gaps:
 
 ### WP-7.0.2 Project home and design doc
 
-- **Branch:** `docs/dart7-program-home`; it ships inside WP-7.0.1's PR.
+- **Pull request:** inside WP-7.0.1's [#3697](https://github.com/dartsim/dart/pull/3697).
 - **Scope:**
   - this folder;
   - `docs/design/dart7_python_api.md` and its index row;
@@ -134,8 +134,7 @@ Known gaps:
 
 ### WP-7.0.3 Fixed-size XML value parsing
 
-- **Branch:** `fix/xml-vector-parse-bounds`, commit `31fd3d0f7` on main
-  `1b5722176`.
+- **Pull request:** [#3698](https://github.com/dartsim/dart/pull/3698).
 - **Objective:** wrong element counts raise a clear error before anything is
   written, routed through one shared helper.
 - **Scope:** `dart/utils/XmlHelpers.cpp`, its unit tests, and an SDF-level
@@ -174,8 +173,7 @@ Known gaps:
 
 ### WP-7.0.4 GIL acquisition during finalization
 
-- **Branch:** `fix/nanobind-gil-finalization`, commit `96431bd38` on main
-  `1b5722176`.
+- **Pull request:** [#3699](https://github.com/dartsim/dart/pull/3699).
 - **Objective:**
   - deleters skip Python calls when no thread state can be attached;
   - callbacks raise a defined error instead of inventing results.

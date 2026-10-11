@@ -26,7 +26,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above on `main`; files `nightly-failure` issues |
-| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
+| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory `release-6.*` wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
@@ -232,7 +232,8 @@ Every write fetches `origin/gh-pages`, resets to and regenerates against it and
 pushes with bounded retries after rejection; it never force-pushes. The
 repository ruleset also blocks force-push and branch deletion.
 
-The existing wall-time dashboard continues at `performance/dart6/`, pinned
+The existing wall-time dashboard continues at `performance/dart6/` for the
+`release-6.*` maintenance line only (main is the DART 7 line), pinned
 to `ubuntu-24.04`, with `DART_BUILD_PROFILE=OFF`, alerts and alert comments
 disabled. Removing profiler overhead intentionally introduces a one-time
 level shift; historical points across that shift are not directly comparable.
