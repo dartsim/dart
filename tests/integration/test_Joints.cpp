@@ -1649,6 +1649,26 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
   ASSERT_EQ(constraint.getDimension(), 1u);
   constraint.getInformation(&info);
   EXPECT_NEAR(b, 1.0, 1e-9);
+
+  // The same prescribed joint on a floating base has a reactive child body,
+  // but its DoF still takes no impulse, so the same clip applies.
+  const SkeletonPtr floatingSkeleton = Skeleton::create("floating_leader");
+  floatingSkeleton->setTimeStep(1e-3);
+  auto base = floatingSkeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto arm = floatingSkeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      base.second);
+  arm.first->setAxis(Eigen::Vector3d::UnitX());
+  arm.first->setActuatorType(Joint::VELOCITY);
+  arm.first->setPosition(0, 0.1);
+  arm.first->setVelocity(0, -1.0);
+  ASSERT_TRUE(arm.second->isReactive());
+  follower->setMimicJoint(arm.first, multiplier, 0.0);
+  CouplerConstraintTestHelper floatingConstraint(
+      follower, follower->getMimicDofProperties());
+  floatingConstraint.update();
+  ASSERT_EQ(floatingConstraint.getDimension(), 1u);
+  floatingConstraint.getInformation(&info);
+  EXPECT_NEAR(b, 1.0, 1e-9);
 }
 
 //==============================================================================
