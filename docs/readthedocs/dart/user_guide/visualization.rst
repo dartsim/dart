@@ -131,7 +131,12 @@ After setting the camera, request a PNG and render its frame:
 
 PNG rows have their origin at the top left. The capture includes widgets and
 debug overlays. Capture viewers do not read or write ``imgui.ini``. ``record`` queues numbered captures; ``pauseRecording`` stops
-them. Missing output directories and write failures raise an error.
+them. Missing output directories and write failures raise an error. Without a
+usable graphics backend (a Vulkan loader and driver for capture on Linux, or an
+X11/OpenGL stack for windows), viewer setup raises
+``dart::gui::RenderingUnavailableError`` (``dartpy.gui.RenderingUnavailableError``
+in Python, a ``RuntimeError``) naming the system packages to install; importing
+dartpy and simulating never need one.
 ``CameraMode.DEPTH`` displays nonlinear camera depth as a screenshot, rather
 than returning metric depth or segmentation arrays.
 

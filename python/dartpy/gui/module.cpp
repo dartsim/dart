@@ -34,6 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/RenderingUnavailableError.hpp>
+
 namespace dart {
 namespace python {
 
@@ -42,6 +44,8 @@ void dart_gui_filament(nb::module_& m);
 void dart_gui(nb::module_& m)
 {
   auto sm = m.def_submodule("gui");
+  nb::exception<gui::RenderingUnavailableError>(
+      sm, "RenderingUnavailableError", PyExc_RuntimeError);
   sm.doc()
       = "Interim bindings of the Filament dart::gui viewer; DART 7's Python "
         "rendering API replaces them before release.";

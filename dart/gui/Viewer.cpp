@@ -34,6 +34,7 @@
 #include <dart/gui/DragAndDrop.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/InteractiveFrame.hpp>
+#include <dart/gui/RenderingUnavailableError.hpp>
 #include <dart/gui/Viewer.hpp>
 #include <dart/gui/ViewerAttachment.hpp>
 #include <dart/gui/WorldNode.hpp>
@@ -42,6 +43,7 @@
 #include <dart/gui/detail/key_input.hpp>
 #include <dart/gui/detail/native_window.hpp>
 #include <dart/gui/detail/overlay_adapter.hpp>
+#include <dart/gui/detail/render_context.hpp>
 #include <dart/gui/detail/renderable.hpp>
 
 #include <dart/simulation/World.hpp>
@@ -89,15 +91,18 @@ bool viewerEventDispatch = false;
 std::vector<GLFWwindow*> deferredViewerWindows;
 void initViewerWindowSystem()
 {
+  dart::gui::detail::checkFilamentBackendAvailability(false);
 #if defined(_WIN32) || defined(__APPLE__)
   constexpr const char* requirement = "";
 #else
   // Filament's Linux GL platform is GLX, so Wayland desktops use XWayland.
   glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-  constexpr const char* requirement = " (an X11 or XWayland display)";
+  constexpr const char* requirement
+      = " (install libx11-6, libgl1 and libgl1-mesa-dri; use an X11 or "
+        "XWayland display)";
 #endif
   if (glfwInit() != GLFW_TRUE)
-    throw std::runtime_error(
+    throw RenderingUnavailableError(
         std::string("Cannot initialize the native window system")
         + requirement);
 }
@@ -536,7 +541,7 @@ struct Viewer::Impl
       if (!window) {
         if (viewerGlfwUsers == 0)
           glfwTerminate();
-        throw std::runtime_error("Cannot create the DART window");
+        throw RenderingUnavailableError("Cannot create the DART window");
       }
       ++viewerGlfwUsers;
       glfwSetWindowPos(window, x, y);

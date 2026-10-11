@@ -34,6 +34,8 @@
 
 #include "native_window.hpp"
 
+#include <dart/gui/RenderingUnavailableError.hpp>
+
 #include <filament/Engine.h>
 #include <filament/Renderer.h>
 #include <filament/View.h>
@@ -42,8 +44,121 @@
 #include <iostream>
 #include <stdexcept>
 #include <utility>
+#include <vector>
+
+#if defined(__linux__)
+  #include <bluevk/BlueVK.h>
+  #include <dlfcn.h>
+#endif
 
 namespace dart::gui::detail {
+void checkFilamentBackendAvailability(bool headless)
+{
+#if defined(__linux__)
+  using Library = std::unique_ptr<void, int (*)(void*)>;
+  if (!headless) {
+    for (const char* name : {"libX11.so.6", "libGL.so.1"}) {
+      Library library(dlopen(name, RTLD_NOW | RTLD_LOCAL), dlclose);
+      if (!library)
+        throw RenderingUnavailableError(
+            std::string("Window rendering cannot load ") + name
+            + "; install an X11/OpenGL stack (libx11-6, libgl1, "
+              "libgl1-mesa-dri) and use an X11 or XWayland display.");
+    }
+    return;
+  }
+  constexpr const char* requirement
+      = "Headless rendering requires a Vulkan loader and usable ICD/driver "
+        "(install libvulkan1 and mesa-vulkan-drivers, or a vendor driver).";
+  Library library(dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL), dlclose);
+  if (!library)
+    throw RenderingUnavailableError(
+        std::string("Cannot load libvulkan.so.1. ") + requirement);
+  const auto createInstance = reinterpret_cast<PFN_vkCreateInstance>(
+      dlsym(library.get(), "vkCreateInstance"));
+  const auto destroyInstance = reinterpret_cast<PFN_vkDestroyInstance>(
+      dlsym(library.get(), "vkDestroyInstance"));
+  const auto enumerateDevices
+      = reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(
+          dlsym(library.get(), "vkEnumeratePhysicalDevices"));
+  const auto getProperties
+      = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(
+          dlsym(library.get(), "vkGetPhysicalDeviceProperties"));
+  const auto getQueues
+      = reinterpret_cast<PFN_vkGetPhysicalDeviceQueueFamilyProperties>(
+          dlsym(library.get(), "vkGetPhysicalDeviceQueueFamilyProperties"));
+  const auto getExtensions
+      = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(
+          dlsym(library.get(), "vkEnumerateDeviceExtensionProperties"));
+  if (!createInstance || !destroyInstance || !enumerateDevices || !getProperties
+      || !getQueues || !getExtensions)
+    throw RenderingUnavailableError(requirement);
+  // Filament panics on its driver thread if the loader has no usable ICD.
+  VkApplicationInfo application{};
+  application.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+  application.apiVersion = VK_API_VERSION_1_1;
+  VkInstanceCreateInfo information{};
+  information.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  information.pApplicationInfo = &application;
+  VkInstance instance = VK_NULL_HANDLE;
+  const auto result = createInstance(&information, nullptr, &instance);
+  if (result != VK_SUCCESS)
+    throw RenderingUnavailableError(
+        std::string("Cannot create a Vulkan instance (VkResult ")
+        + std::to_string(result) + "). " + requirement);
+  std::uint32_t count = 0;
+  bool available = false;
+  try {
+    if (enumerateDevices(instance, &count, nullptr) == VK_SUCCESS
+        && count > 0) {
+      std::vector<VkPhysicalDevice> devices(count);
+      if (enumerateDevices(instance, &count, devices.data()) == VK_SUCCESS) {
+        devices.resize(count);
+        // Match Filament 1.77.3's physical-device eligibility checks.
+        for (auto device : devices) {
+          VkPhysicalDeviceProperties properties{};
+          getProperties(device, &properties);
+          if (properties.apiVersion < VK_API_VERSION_1_1)
+            continue;
+          std::uint32_t queueCount = 0;
+          getQueues(device, &queueCount, nullptr);
+          std::vector<VkQueueFamilyProperties> queues(queueCount);
+          getQueues(device, &queueCount, queues.data());
+          bool graphics = false;
+          for (const auto& queue : queues)
+            graphics |= (queue.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+          if (!graphics)
+            continue;
+          std::uint32_t extensionCount = 0;
+          if (getExtensions(device, nullptr, &extensionCount, nullptr)
+              != VK_SUCCESS)
+            continue;
+          std::vector<VkExtensionProperties> extensions(extensionCount);
+          if (getExtensions(device, nullptr, &extensionCount, extensions.data())
+              != VK_SUCCESS)
+            continue;
+          for (const auto& extension : extensions)
+            if (std::string(extension.extensionName)
+                == VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+              available = true;
+          if (available)
+            break;
+        }
+      }
+    }
+  } catch (...) {
+    destroyInstance(instance, nullptr);
+    throw;
+  }
+  destroyInstance(instance, nullptr);
+  if (!available)
+    throw RenderingUnavailableError(
+        std::string("No usable Vulkan physical device. ") + requirement);
+#else
+  (void)headless;
+#endif
+}
+
 FilamentRenderContext createFilamentRenderContext(
     int width, int height, bool headless, void* nativeWindow)
 {
@@ -53,6 +168,7 @@ FilamentRenderContext createFilamentRenderContext(
   if (!headless && nativeWindow == nullptr)
     throw std::invalid_argument(
         "Filament requires a native window for interactive rendering");
+  checkFilamentBackendAvailability(headless);
   FilamentRenderContext context;
   using Backend = ::filament::Engine::Backend;
 #if defined(__APPLE__)

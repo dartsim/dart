@@ -19,8 +19,12 @@
     selects a headless build. These `gui` names previously belonged to the
     GLUT-based GUI shipped through DART 6.19. `DART_BUILD_GUI` (default `ON`)
     builds the Filament GUI and ImGui, which require Filament 1.77.3, GLFW 3.4,
-    libpng, libjpeg, and Dear ImGui 1.92.8 or newer. The `dartpy.gui` bindings
-    are interim; DART 7's Python rendering API replaces them before release.
+    libpng, libjpeg, and Dear ImGui 1.92.8 or newer. Rendering without a usable
+    graphics backend raises `dart::gui::RenderingUnavailableError`
+    (`dartpy.gui.RenderingUnavailableError`) naming the missing system
+    packages. The `dartpy.gui` bindings are interim; DART 7's Python rendering
+    API replaces them before release.
+    [#3696](https://github.com/dartsim/dart/pull/3696)
     `DART_ENABLE_GUI_SMOKE_TESTS` (default `OFF`) replaces
     `DART_ENABLE_GUI_OSG_SMOKE_TESTS`; enable it to build the capture smoke test
     on a host with a graphics device.

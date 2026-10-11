@@ -86,6 +86,26 @@ or GUI behavior.
 
 ## GUI Visual Checks
 
+The Linux wheel C22 headless gate runs separately from CI:
+
+```bash
+python3 scripts/wheel_linux.py cp312
+python3 scripts/check_headless_wheel.py dist/dartpy-*-cp312-abi3-manylinux_2_28_x86_64.whl
+```
+
+The check requires Docker and a native wheel architecture. It runs
+`auditwheel show` and lists every ELF object's `readelf -d` NEEDED entries in a
+manylinux container, rejecting GL, EGL, OpenGL, X11, xcb, Wayland and Vulkan
+dependencies (including auditwheel-renamed libraries). A fresh
+`python:3.12-slim` container installs the wheel without system graphics
+packages, imports dartpy and steps a world ten times. Capture and both window
+setup overloads must raise `dartpy.gui.RenderingUnavailableError`, a
+`RuntimeError` subclass, with the required system package names. Each rendering
+case runs in its own process so an abort or segfault fails the gate. Linux
+capture needs `libvulkan1` plus a usable ICD such as `mesa-vulkan-drivers`;
+windows need an X11/OpenGL stack and an X11 or XWayland display. The GUI import
+unit tests also cover an installed Vulkan loader with a missing ICD.
+
 For rendering, model, mesh, texture, GUI, or visual-example changes, inspect
 the captured screenshot or frame sequence instead of treating command success
 as enough evidence. After the render loop finishes, verify that the requested

@@ -61,5 +61,6 @@ struct FilamentRenderContext
 };
 DART_GUI_API FilamentRenderContext createFilamentRenderContext(
     int width, int height, bool headless, void* nativeWindow);
+DART_GUI_API void checkFilamentBackendAvailability(bool headless);
 DART_GUI_API void destroyFilamentRenderContext(FilamentRenderContext& context);
 } // namespace dart::gui::detail
