@@ -723,6 +723,8 @@ def test_failing_gates_yield_not_ready(
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["status"] == "not_ready"
     assert manifest["pass"] is False
+    assert manifest["attach_dir"] is None
+    assert not list((tmp_path / "temp").iterdir())
 
 
 @pytest.mark.parametrize(

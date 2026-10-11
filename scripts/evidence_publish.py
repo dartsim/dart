@@ -423,7 +423,7 @@ def _build_manifest(
     selection: dict[str, Any],
     *,
     out: Path,
-    attach_dir: Path,
+    attach_dir: Path | None,
     attach: list[str],
     publication_pass: bool,
     text_oracle: str,
@@ -435,7 +435,7 @@ def _build_manifest(
     manifest: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "status": "ready" if publication_pass else "not_ready",
-        "attach_dir": str(attach_dir),
+        "attach_dir": None if attach_dir is None else str(attach_dir),
         "attach": list(dict.fromkeys(attach)),
         "selection_sha256": _selection_digest(selection),
         "artifacts": [
@@ -556,25 +556,31 @@ def main(argv: list[str] | None = None) -> int:
         _retire_previous_success(args.manifest_out)
         selection = _load_selection(args.selection)
         _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
-        attach_dir = Path(tempfile.mkdtemp(prefix="dart-evidence-attach-")).resolve()
-        attach: list[str] = []
-        staged: dict[str, str] = {}
-        for artifact in selection["selected"]:
-            sha256 = artifact["sha256"]
-            name = staged.setdefault(
-                sha256, sha256 + Path(artifact["path"]).suffix.lower()
-            )
-            staged_path = attach_dir / name
-            shutil.copyfile(args.selection.parent / artifact["path"], staged_path)
-            if _sha256(staged_path) != sha256:
-                raise ValueError(
-                    f"selected artifact {artifact['path']!r} changed content "
-                    "while staging"
-                )
-            attach.append(name)
         selection_pass = _selection_passes(selection)
         semantic_pass = args.semantic_verdict == "pass"
         publication_ready = selection_pass and semantic_pass
+        # Identical content shares one name; the first suffix wins.
+        names: dict[str, str] = {}
+        attach = [
+            names.setdefault(
+                artifact["sha256"],
+                artifact["sha256"] + Path(artifact["path"]).suffix.lower(),
+            )
+            for artifact in selection["selected"]
+        ]
+        # Only publishable evidence is staged for gh --attach.
+        if publication_ready:
+            attach_dir = Path(
+                tempfile.mkdtemp(prefix="dart-evidence-attach-")
+            ).resolve()
+            for artifact, name in zip(selection["selected"], attach):
+                staged_path = attach_dir / name
+                shutil.copyfile(args.selection.parent / artifact["path"], staged_path)
+                if _sha256(staged_path) != artifact["sha256"]:
+                    raise ValueError(
+                        f"selected artifact {artifact['path']!r} changed content "
+                        "while staging"
+                    )
         note: str | None = None
 
         if not selection_pass:
