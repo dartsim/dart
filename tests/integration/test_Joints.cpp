@@ -1605,7 +1605,9 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
   constraint.getInformation(&info);
   EXPECT_NEAR(b, 0.4 * 0.5e-3 / 1e-3 - 1.0, 1e-9);
 
-  // The correction never outpaces the follower's velocity limits.
+  // The correction never outpaces the follower's velocity limits. With a
+  // reactive leader, the limits cap only the correction; clipping the coupled
+  // velocity too would make the row push the leader.
   follower->setVelocityLowerLimit(0, -0.1);
   follower->setVelocityUpperLimit(0, 0.1);
   constraint.update();
@@ -1631,6 +1633,22 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
   constraint.getVelocityChange(&response, false);
   constraint.unexcite();
   EXPECT_NEAR(response, 1.0 / followerInertia, 1e-10);
+
+  // A motion-prescribed leader takes no impulse either, so the row servos the
+  // follower within its velocity limits: on the mimicked position, a leader
+  // driven at -1 rad/s asks for m * -1 = 2 rad/s, clipped to 1 rad/s.
+  leaderSkeleton->setMobile(true);
+  leader->setActuatorType(Joint::VELOCITY);
+  leader->setPosition(0, 0.1);
+  follower->setPosition(0, -0.2);
+  leader->setVelocity(0, -1.0);
+  follower->setVelocity(0, 0.0);
+  follower->setVelocityLowerLimit(0, -1.0);
+  follower->setVelocityUpperLimit(0, 1.0);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 1u);
+  constraint.getInformation(&info);
+  EXPECT_NEAR(b, 1.0, 1e-9);
 }
 
 //==============================================================================

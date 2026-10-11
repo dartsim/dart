@@ -233,9 +233,21 @@ void CouplerConstraint::update()
               ? referenceJoint->getVelocity(referenceDof)
               : 0.0;
 
-    mNegativeVelocityError[i] = correctionVelocity
-                                - (mJoint->getVelocity(i)
-                                   - mimicProp.mMultiplier * referenceVelocity);
+    const double followerVelocity = mJoint->getVelocity(i);
+    if (getCouplerReactiveReferenceSkeleton(mimicProp) != nullptr) {
+      mNegativeVelocityError[i]
+          = correctionVelocity
+            - (followerVelocity - mimicProp.mMultiplier * referenceVelocity);
+    } else {
+      // A leader that takes no impulse makes this row a velocity servo on the
+      // follower, so the follower's whole target respects its velocity limits.
+      // Clipping a reactive pair's target instead would push the leader.
+      const double targetVelocity = math::clip(
+          mimicProp.mMultiplier * referenceVelocity + correctionVelocity,
+          mJoint->getVelocityLowerLimit(i),
+          mJoint->getVelocityUpperLimit(i));
+      mNegativeVelocityError[i] = targetVelocity - followerVelocity;
+    }
     mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
     mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
 
