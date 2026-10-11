@@ -88,8 +88,10 @@ Read these files first:
 - **Bugfix**: Target the development branch (`main`)
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
-- **Scope**: Use this development branch only for compatible maintenance,
-  dependency minimization, CI, docs, and fixes.
+- **Scope**: Follow the resolved branch's `AGENTS.md` compatibility and
+  approval rules: on `main` that includes approved PLAN-624 work; release
+  branches take compatible maintenance, dependency minimization, CI, docs,
+  and fixes.
 
 ## Output
 

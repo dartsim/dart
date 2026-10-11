@@ -4636,7 +4636,8 @@ def exercise_scenarios(
                 re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
                 or not (
                     re.search(
-                        rf"{DEPENDENCY_NAME_PATTERN}\s+(?:to\s+)?$",
+                        rf"{DEPENDENCY_NAME_PATTERN}\s+(?:to\s+)?"
+                        rf"(?:version\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$",
                         prompt_class[: match.start()],
                         re.IGNORECASE,
                     )
@@ -4657,7 +4658,8 @@ def exercise_scenarios(
                 )
                 and not dependency_next_version(prompt_class[: match.start("version")])
                 for match in re.finditer(
-                    rf"(?<![-\w])(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])\s*"
+                    rf"(?<![-\w])(?:version|release|checkout|branch|line|target|milestone|tag)"
+                    rf"\s*(?:===|==|[<>~!]=|[:=<>])\s*"
                     rf"(?P<version>v?(?:{active_dart_majors(root) or '(?!)'})\.\d+)",
                     prompt_class,
                     re.IGNORECASE,
