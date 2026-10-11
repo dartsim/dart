@@ -164,8 +164,9 @@ public:
       = Eigen::Vector3d::UnitZ()) const;
 
   /// Get two points that are under the current cursor position. The near point
-  /// will be inside the plane of the camera. The far point will have the given
-  /// distance from the plane of the camera (default is 1.0).
+  /// lies on the near clip plane. Distance is a window depth in [0, 1]; the far
+  /// point uses the last rendered projection, or the default before rendering.
+  /// At the default distance of 1.0, it remains the cursor ray's far endpoint.
   void getNearAndFarPointUnderCursor(
       Eigen::Vector3d& nearPt,
       Eigen::Vector3d& farPt,

@@ -1205,7 +1205,13 @@ std::optional<Renderable> createPointCloudRenderable(
       std::move(buffers.normals),
       color,
       bounds.min,
-      bounds.max);
+      bounds.max,
+      {},
+      nullptr,
+      kDefaultDielectricMetallic,
+      kDefaultMatteRoughness,
+      {0.0f, 0.0f, 0.0f},
+      descriptor.geometry.pointCloudColors.size() != 1u);
 }
 
 std::optional<Renderable> createVoxelGridRenderable(

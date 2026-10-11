@@ -48,6 +48,7 @@
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/MeshShape.hpp>
+#include <dart/dynamics/PointCloudShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 
 #include <dart/common/Deprecated.hpp>
@@ -408,6 +409,46 @@ TEST(FilamentBackend, MainScenePointAndMeshColorsPreserveAuthoredSrgb)
   EXPECT_EQ(pixels[blueOffset + 3], 255);
   ASSERT_TRUE(
       preserveCapture("authored-point-mesh-colors.png", pixels, width, height));
+}
+
+TEST(FilamentBackend, BoxPointCloudRetainsOverallColorAfterSynchronize)
+{
+  constexpr unsigned width = 160, height = 120;
+  dart::gui::detail::FilamentRenderer renderer(width, height, true);
+  renderer.setShadowsEnabled(false);
+  renderer.setBackgroundColor({0, 0, 0, 1});
+  renderer.setCamera({0, -4, 0}, {0, 0, 0}, {0, 0, 1}, 45, .01, 1000);
+  dart::dynamics::PointCloudShape cloud(.55);
+  cloud.setPoint({{0, 0, 0}, {.9, 0, 0}});
+  cloud.setPointShapeType(dart::dynamics::PointCloudShape::BOX);
+  cloud.setColorMode(dart::dynamics::PointCloudShape::BIND_OVERALL);
+  cloud.setOverallColor({.9, .05, .05, 1});
+  const auto geometry = dart::gui::describeShape(cloud);
+  ASSERT_TRUE(geometry);
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.id = 1;
+  descriptor.geometry = *geometry;
+  const auto center = (height / 2 * width + width / 2) * 4;
+  for (const Eigen::Vector4d& visualColor :
+       {Eigen::Vector4d(0, .9, 0, 1), Eigen::Vector4d(0, 0, .9, 1)}) {
+    descriptor.material.rgba = visualColor;
+    renderer.synchronize({descriptor});
+    const auto image = renderer.readPixelsRGBA();
+    EXPECT_GT(image[center], image[center + 1] + 30);
+    EXPECT_GT(image[center], image[center + 2] + 30);
+    ASSERT_TRUE(preserveCapture(
+        "box-point-cloud-overall-color.png", image, width, height));
+  }
+  cloud.setColorMode(dart::dynamics::PointCloudShape::USE_SHAPE_COLOR);
+  descriptor.geometry = *dart::gui::describeShape(cloud);
+  ++descriptor.renderResourceVersion;
+  for (const unsigned channel : {2u, 1u}) {
+    descriptor.material.rgba = Eigen::Vector4d(0, 0, 0, 1);
+    descriptor.material.rgba[channel] = .9;
+    renderer.synchronize({descriptor});
+    const auto image = renderer.readPixelsRGBA();
+    EXPECT_GT(image[center + channel], image[center] + 30);
+  }
 }
 
 TEST(FilamentBackend, DarkLinearVertexColorsPreservePrecision)

@@ -497,6 +497,80 @@ TEST(GuiDescriptors, LineEditsRebuildResourcesWithoutShapeVersionChange)
   EXPECT_NE(before[0].renderResourceVersion, after[0].renderResourceVersion);
 }
 
+TEST(GuiDescriptors, DynamicTriangleGeometryEditsWithoutShapeVersionChange)
+{
+  using namespace dart::dynamics;
+  dart::simulation::World world;
+  auto frame = SimpleFrame::createShared(Frame::World(), "dynamic_mesh");
+  auto heightmap = std::make_shared<HeightmapShapef>();
+  heightmap->setHeightField(HeightmapShapef::HeightField::Zero(2, 2));
+  heightmap->setDataVariance(Shape::STATIC);
+  frame->setShape(heightmap);
+  frame->createVisualAspect();
+  world.addSimpleFrame(frame);
+  RenderableExtractor extractor;
+  const auto before = extractor.extract(world);
+  ASSERT_EQ(before.size(), 1u);
+  ASSERT_EQ(before[0].geometry.kind, ShapeKind::Heightmap);
+  ASSERT_EQ(before[0].geometry.triangleVertices.size(), 4u);
+  ASSERT_EQ(before[0].geometry.triangleNormals.size(), 4u);
+  const auto heightmapVersion = heightmap->getVersion();
+  heightmap->getHeightFieldModifiable()(0, 0) = 2.0;
+  const auto cached = extractor.extract(world);
+  EXPECT_EQ(cached[0].renderResourceVersion, before[0].renderResourceVersion);
+  EXPECT_EQ(cached[0].geometry.triangleVertices[0], Eigen::Vector3d::Zero());
+
+  heightmap->setDataVariance(Shape::DYNAMIC_VERTICES);
+  const auto heights = extractor.extract(world);
+  ASSERT_EQ(heights.size(), 1u);
+  EXPECT_EQ(heightmap->getVersion(), heightmapVersion);
+  EXPECT_NE(heights[0].renderResourceVersion, before[0].renderResourceVersion);
+  EXPECT_EQ(heights[0].geometry.triangleVertices[0], Eigen::Vector3d(0, 0, 2));
+  EXPECT_DOUBLE_EQ(heights[0].geometry.localBoundsMax.z(), 2.0);
+  EXPECT_FALSE(heights[0].geometry.triangleNormals[0].isApprox(
+      before[0].geometry.triangleNormals[0]));
+  EXPECT_EQ(
+      extractor.extract(world)[0].renderResourceVersion,
+      heights[0].renderResourceVersion);
+
+  auto convex = std::make_shared<ConvexMeshShape>(
+      ConvexMeshShape::Vertices{
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::UnitX(),
+          Eigen::Vector3d::UnitY()},
+      ConvexMeshShape::Triangles{
+          ConvexMeshShape::TriMeshType::Triangle(0, 1, 2)});
+  convex->setDataVariance(Shape::DYNAMIC_VERTICES | Shape::DYNAMIC_ELEMENTS);
+  convex->getMesh()->computeVertexNormals();
+  frame->setShape(convex);
+  const auto meshBefore = extractor.extract(world);
+  ASSERT_EQ(meshBefore.size(), 1u);
+  ASSERT_EQ(meshBefore[0].geometry.triangleVertices.size(), 3u);
+  ASSERT_EQ(meshBefore[0].geometry.triangleNormals.size(), 3u);
+  const auto convexVersion = convex->getVersion();
+  convex->getMesh()->getVertices()[0].z() = 2.0;
+  const auto vertices = extractor.extract(world);
+  EXPECT_EQ(convex->getVersion(), convexVersion);
+  EXPECT_NE(
+      vertices[0].renderResourceVersion, meshBefore[0].renderResourceVersion);
+  EXPECT_EQ(vertices[0].geometry.triangleVertices[0], Eigen::Vector3d(0, 0, 2));
+  EXPECT_DOUBLE_EQ(vertices[0].geometry.localBoundsMax.z(), 2.0);
+
+  convex->getMesh()->addTriangle(0, 1, 2);
+  const auto indices = extractor.extract(world);
+  EXPECT_EQ(convex->getVersion(), convexVersion);
+  EXPECT_NE(
+      indices[0].renderResourceVersion, vertices[0].renderResourceVersion);
+  ASSERT_EQ(indices[0].geometry.triangleIndices.size(), 2u);
+  EXPECT_EQ(indices[0].geometry.triangleIndices[1], Eigen::Vector3i(0, 1, 2));
+
+  convex->getMesh()->getVertexNormals()[0] = Eigen::Vector3d::UnitX();
+  const auto normals = extractor.extract(world);
+  EXPECT_EQ(convex->getVersion(), convexVersion);
+  EXPECT_NE(normals[0].renderResourceVersion, indices[0].renderResourceVersion);
+  EXPECT_EQ(normals[0].geometry.triangleNormals[0], Eigen::Vector3d::UnitX());
+}
+
 TEST(GuiDescriptors, SkeletonAndSoftGeometryRemainLive)
 {
   using namespace dart::dynamics;

@@ -689,6 +689,9 @@ public:
     if (capture)
       requestScreenshot(context, screenshot, width, height);
     context.renderer->endFrame();
+    const auto projection = context.camera->getProjectionMatrix();
+    lastDepthProjection = Eigen::Vector4d(
+        projection[2][2], projection[3][2], projection[2][3], projection[3][3]);
     if (headless)
       context.engine->flushAndWait();
     return true;
@@ -707,6 +710,7 @@ public:
   OrbitCamera camera;
   Eigen::Vector3d cameraEye, cameraCenter, cameraUp;
   double cameraFovy = 45, cameraNear = 0.01, cameraFar = 1000;
+  std::optional<Eigen::Vector4d> lastDepthProjection;
   ScreenshotCapture screenshot;
   ImGuiOverlay overlay;
   std::array<std::optional<Renderable>, 2> debugRenderables;
@@ -770,6 +774,10 @@ void FilamentRenderer::resize(int width, int height)
 bool FilamentRenderer::frame(bool captureRGBA)
 {
   return mImpl->render(captureRGBA);
+}
+std::optional<Eigen::Vector4d> FilamentRenderer::getLastDepthProjection() const
+{
+  return mImpl->lastDepthProjection;
 }
 std::vector<std::uint8_t> FilamentRenderer::consumeCapturedPixelsRGBA()
 {

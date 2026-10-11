@@ -192,6 +192,8 @@ public:
   std::string getRenderDevice() const;
 
 private:
+  friend class DefaultEventHandler;
+  double getWindowDepthRayParameter(double depth) const;
   friend class WorldNode;
   bool ownsWorldSteps(WorldNode* node);
   friend std::vector<std::uint8_t> detail::readViewerPixelsRGBA(Viewer& viewer);

@@ -114,8 +114,6 @@ std::size_t computeGeometryResourceVersion(
       hashCombine(seed, std::hash<int>{}(line.x()));
       hashCombine(seed, std::hash<int>{}(line.y()));
     }
-    for (const auto& normal : geometry.triangleNormals)
-      hashVector3d(seed, normal);
     for (const auto& uv : geometry.meshTextureCoordinates)
       hashVector3d(seed, uv);
     for (const auto& meshMaterial : geometry.meshMaterials) {
@@ -176,19 +174,19 @@ std::size_t computeGeometryResourceVersion(
     for (double size : geometry.voxelSizes)
       hashCombine(seed, std::hash<double>{}(size));
   }
-  if (geometry.kind == ShapeKind::SoftMesh
-      || geometry.kind == ShapeKind::Mesh) {
-    hashCombine(seed, geometry.triangleVertices.size());
-    for (const Eigen::Vector3d& vertex : geometry.triangleVertices) {
-      hashVector3d(seed, vertex);
-    }
-    hashCombine(seed, geometry.triangleIndices.size());
-    for (const Eigen::Vector3i& triangle : geometry.triangleIndices) {
-      for (int axis = 0; axis < 3; ++axis) {
-        hashCombine(seed, std::hash<int>{}(triangle[axis]));
-      }
+  hashCombine(seed, geometry.triangleVertices.size());
+  for (const Eigen::Vector3d& vertex : geometry.triangleVertices) {
+    hashVector3d(seed, vertex);
+  }
+  hashCombine(seed, geometry.triangleIndices.size());
+  for (const Eigen::Vector3i& triangle : geometry.triangleIndices) {
+    for (int axis = 0; axis < 3; ++axis) {
+      hashCombine(seed, std::hash<int>{}(triangle[axis]));
     }
   }
+  hashCombine(seed, geometry.triangleNormals.size());
+  for (const auto& normal : geometry.triangleNormals)
+    hashVector3d(seed, normal);
   return seed;
 }
 

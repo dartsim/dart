@@ -246,9 +246,13 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
 void DefaultEventHandler::getNearAndFarPointUnderCursor(
     Eigen::Vector3d& nearPt, Eigen::Vector3d& farPt, double distance) const
 {
+  if (!std::isfinite(distance) || distance < 0 || distance > 1)
+    throw std::invalid_argument("Window depth must be finite and in [0, 1]");
   mViewer->getRayUnderCursor(
       getWindowCursorX(), getWindowCursorY(), nearPt, farPt);
-  farPt = nearPt + distance * (farPt - nearPt);
+  if (distance != 1)
+    farPt = nearPt
+            + mViewer->getWindowDepthRayParameter(distance) * (farPt - nearPt);
 }
 
 //==============================================================================
@@ -435,8 +439,8 @@ bool DefaultEventHandler::handle(const GUIEventAdapter& ea, GUIActionAdapter&)
     case GUIEventAdapter::DRAG:
     case GUIEventAdapter::RELEASE:
 
-      assignEventToButtons(mLastButtonEvent, ea);
       eventPick(ea);
+      assignEventToButtons(mLastButtonEvent, ea);
 
       mViewer->updateDragAndDrops();
 
@@ -482,21 +486,31 @@ void DefaultEventHandler::eventPick(const GUIEventAdapter& ea)
       return;
   }
 
-  if (((ea.getButtonMask() & GUIEventAdapter::LEFT_MOUSE_BUTTON)
-       && !mSuppressButtonPicks[LEFT_MOUSE][mbe])
-      || ((ea.getButtonMask() & GUIEventAdapter::RIGHT_MOUSE_BUTTON)
-          && !mSuppressButtonPicks[RIGHT_MOUSE][mbe])
-      || ((ea.getButtonMask() & GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
-          && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe])) {
+  // Release masks omit released buttons; inspect their previous active state.
+  const int buttonMask
+      = mbe == BUTTON_RELEASE ? ~ea.getButtonMask() : ea.getButtonMask();
+  const bool pickLeft
+      = (buttonMask & GUIEventAdapter::LEFT_MOUSE_BUTTON)
+        && !mSuppressButtonPicks[LEFT_MOUSE][mbe]
+        && (mbe != BUTTON_RELEASE || wasActive(mLastButtonEvent[LEFT_MOUSE]));
+  const bool pickRight
+      = (buttonMask & GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+        && !mSuppressButtonPicks[RIGHT_MOUSE][mbe]
+        && (mbe != BUTTON_RELEASE || wasActive(mLastButtonEvent[RIGHT_MOUSE]));
+  const bool pickMiddle
+      = (buttonMask & GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+        && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe]
+        && (mbe != BUTTON_RELEASE || wasActive(mLastButtonEvent[MIDDLE_MOUSE]));
+  if (pickLeft || pickRight || pickMiddle) {
     pick(mTempPicks, ea);
 
-    if (ea.getButtonMask() & GUIEventAdapter::LEFT_MOUSE_BUTTON)
+    if (pickLeft)
       mButtonPicks[LEFT_MOUSE][mbe] = mTempPicks;
 
-    if (ea.getButtonMask() & GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+    if (pickRight)
       mButtonPicks[RIGHT_MOUSE][mbe] = mTempPicks;
 
-    if (ea.getButtonMask() & GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+    if (pickMiddle)
       mButtonPicks[MIDDLE_MOUSE][mbe] = mTempPicks;
   }
 }

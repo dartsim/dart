@@ -987,3 +987,56 @@ TEST(GuiViewer, NativeDragConstructorsRejectNullArguments)
       dart::gui::SimpleFrameShapeDnD(&viewer, &frame, nullptr),
       std::invalid_argument);
 }
+
+TEST(GuiViewer, ReleasePicksTrackOnlyNewlyReleasedButtons)
+{
+  using Event = dart::gui::GUIEventAdapter;
+  auto world = dart::simulation::World::create();
+  auto frame = std::make_shared<dart::dynamics::SimpleFrame>(
+      dart::dynamics::Frame::World());
+  frame->setShape(std::make_shared<dart::dynamics::SphereShape>(0.5));
+  frame->createVisualAspect();
+  world->addSimpleFrame(frame);
+  dart::gui::Viewer viewer;
+  viewer.addWorldNode(std::make_shared<dart::gui::WorldNode>(world));
+  viewer.setCameraHome({0, 0, 3}, {0, 0, 0}, {0, 1, 0});
+  auto* handler = viewer.getDefaultEventHandler();
+  const auto& left = handler->getButtonPicks(
+      dart::gui::LEFT_MOUSE, dart::gui::BUTTON_RELEASE);
+  const auto& right = handler->getButtonPicks(
+      dart::gui::RIGHT_MOUSE, dart::gui::BUTTON_RELEASE);
+
+  viewer.handleEvent(Event(Event::PUSH, 0, 800, 500, Event::LEFT_MOUSE_BUTTON));
+  viewer.handleEvent(Event(Event::RELEASE, 0, 800, 500));
+  ASSERT_EQ(left.size(), 1u);
+  EXPECT_EQ(left.front().frame, frame.get());
+  viewer.handleEvent(Event(Event::PUSH, 0, 800, 500, Event::LEFT_MOUSE_BUTTON));
+  viewer.handleEvent(Event(Event::RELEASE, 0, 0, 0));
+  EXPECT_TRUE(left.empty());
+
+  const int chord = Event::LEFT_MOUSE_BUTTON | Event::RIGHT_MOUSE_BUTTON;
+  viewer.handleEvent(Event(Event::PUSH, 0, 800, 500, chord));
+  viewer.handleEvent(Event(Event::DRAG, 0, 800, 500, chord));
+  viewer.handleEvent(
+      Event(Event::RELEASE, 0, 800, 500, Event::RIGHT_MOUSE_BUTTON));
+  ASSERT_EQ(left.size(), 1u);
+  EXPECT_EQ(left.front().frame, frame.get());
+  EXPECT_TRUE(right.empty());
+  EXPECT_EQ(
+      handler->getButtonEvent(dart::gui::LEFT_MOUSE),
+      dart::gui::BUTTON_RELEASE);
+  EXPECT_EQ(
+      handler->getButtonEvent(dart::gui::RIGHT_MOUSE), dart::gui::BUTTON_DRAG);
+  viewer.handleEvent(Event(Event::RELEASE, 0, 0, 0, Event::RIGHT_MOUSE_BUTTON));
+  EXPECT_EQ(left.size(), 1u);
+  viewer.handleEvent(Event(Event::RELEASE, 0, 800, 500));
+  ASSERT_EQ(right.size(), 1u);
+  EXPECT_EQ(right.front().frame, frame.get());
+
+  handler->suppressButtonPicks(
+      dart::gui::LEFT_MOUSE, dart::gui::BUTTON_RELEASE);
+  viewer.handleEvent(Event(Event::PUSH, 0, 800, 500, chord));
+  viewer.handleEvent(Event(Event::RELEASE, 0, 0, 0));
+  EXPECT_EQ(left.size(), 1u);
+  EXPECT_TRUE(right.empty());
+}

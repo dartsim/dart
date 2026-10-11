@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,8 @@ public:
       double nearPlane,
       double farPlane);
   void resize(int width, int height);
+  // GL clip z/w coefficients from the last completed frame.
+  std::optional<Eigen::Vector4d> getLastDepthProjection() const;
   bool frame(bool captureRGBA = false);
   // Consume a readback queued by a successful frame(true), without rendering
   // another frame. Both capture APIs return tightly packed top-left RGBA.

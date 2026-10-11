@@ -1197,6 +1197,21 @@ Eigen::Vector3d Viewer::getCameraDirection() const
 {
   return (mImpl->center - mImpl->eye).normalized();
 }
+double Viewer::getWindowDepthRayParameter(double depth) const
+{
+  double cameraDepth
+      = viewerNearPlane * viewerFarPlane
+        / (viewerFarPlane * (1 - depth) + viewerNearPlane * depth);
+  if (mImpl->renderer) {
+    if (const auto projection = mImpl->renderer->getLastDepthProjection()) {
+      const double ndcDepth = 2 * depth - 1;
+      // Unproject clip z/w for perspective or orthographic depth.
+      cameraDepth = ((*projection)[1] - ndcDepth * (*projection)[3])
+                    / ((*projection)[0] - ndcDepth * (*projection)[2]);
+    }
+  }
+  return (cameraDepth - viewerNearPlane) / (viewerFarPlane - viewerNearPlane);
+}
 void Viewer::setWireframe(bool enabled)
 {
   mImpl->wireframe = enabled;

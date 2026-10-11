@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <dart/gui/DebugOverlay.hpp>
+#include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/GridVisual.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/SupportPolygonVisual.hpp>
@@ -45,6 +46,7 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -677,4 +679,55 @@ TEST(GuiParity, CombinedCapturePreservesRefreshRecordingAndOverlayTransitions)
   EXPECT_THROW(
       gui::detail::captureViewerPixelsRGBA(viewer), std::runtime_error);
   EXPECT_EQ(node->refreshes, captures);
+}
+
+TEST(GuiParity, CursorWindowDepthUsesLastRenderedProjection)
+{
+  auto world = simulation::World::create();
+  world->addSimpleFrame(visualFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones())));
+  gui::Viewer viewer;
+  viewer.setCameraHome({0, 0, 4}, {0, 0, 0}, {0, 1, 0});
+  using Event = gui::GUIEventAdapter;
+  viewer.handleEvent(Event(Event::MOVE, 0, 800, 500));
+  auto* handler = viewer.getDefaultEventHandler();
+  const auto expectDepth = [&](double windowDepth, double cameraDepth) {
+    Eigen::Vector3d nearPoint, point;
+    handler->getNearAndFarPointUnderCursor(nearPoint, point, windowDepth);
+    EXPECT_TRUE(nearPoint.isApprox(Eigen::Vector3d(0, 0, 3.99), 1e-12));
+    EXPECT_TRUE(point.isApprox(Eigen::Vector3d(0, 0, 4 - cameraDepth), 1e-12))
+        << "window depth " << windowDepth << ": " << point.transpose();
+  };
+  expectDepth(0, .01);
+  expectDepth(.5, 2 * .01 * 1000 / (.01 + 1000));
+  expectDepth(1, 1000);
+  Eigen::Vector3d nearPoint, point;
+  for (const double invalid :
+       {-0.1,
+        1.1,
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity()})
+    EXPECT_THROW(
+        handler->getNearAndFarPointUnderCursor(nearPoint, point, invalid),
+        std::invalid_argument);
+
+  viewer.addWorldNode(std::make_shared<gui::WorldNode>(world));
+  viewer.setUpViewForCapture(width, height);
+  viewer.handleEvent(Event(Event::MOVE, 0, width / 2, height / 2));
+  viewer.frame();
+  expectDepth(0, .01);
+  expectDepth(
+      .5, .02); // Filament's color projection has an infinite far plane.
+  expectDepth(1, 1000);
+
+  viewer.setCameraMode(gui::CameraMode::DEPTH);
+  viewer.frame();
+  const double nearPlane = 3.5 * .98, farPlane = 4.5 * 1.02;
+  expectDepth(0, nearPlane);
+  expectDepth(.5, 2 * nearPlane * farPlane / (nearPlane + farPlane));
+  expectDepth(1, 1000);
+  viewer.setCameraMode(gui::CameraMode::RGBA);
+  expectDepth(.5, 2 * nearPlane * farPlane / (nearPlane + farPlane));
+  viewer.frame();
+  expectDepth(.5, .02);
 }
