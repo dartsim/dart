@@ -44,7 +44,7 @@ on:
         description: "Revision to measure: a merged main revision (merge, nightly) or the release candidate (release; defaults to the tag)"
         type: string
       base:
-        description: "Expected first parent (merge) or the previous release tag (release; defaults to the newest earlier v6 tag)"
+        description: "Expected first parent (merge) or the previous release tag (release; defaults to the newest earlier release tag)"
         type: string
       tag:
         description: "Release tag: must match v<package.xml version> at head; with no head, selects an existing tag's commit"

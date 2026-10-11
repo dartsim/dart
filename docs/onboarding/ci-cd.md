@@ -75,15 +75,15 @@ repository ruleset is configured by the maintainer, not in code.
 - The release tier is dispatched with
   `gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
   Candidates must belong to the first-parent history of `main` or a
-  `release-6.x` branch. The tag is `v<package.xml version>` at the candidate;
-  a supplied tag must match. With no `head`, `-f tag=v6.x.y` selects an existing
+  `release-X.Y` branch. The tag is `v<package.xml version>` at the candidate;
+  a supplied tag must match. With no `head`, `-f tag=vX.Y.Z` selects an existing
   tag's commit. An existing tag must name the selected candidate.
-  The base is the newest earlier `v6` tag merged into the candidate's parent;
-  `-f base=v6.x.y` selects another eligible baseline. Both arms use `main`'s
+  The base is the newest earlier release tag merged into the candidate's parent;
+  `-f base=vX.Y.Z` selects another eligible baseline. Both arms use `main`'s
   harness and Pixi environment. Comparisons involving a 6.19.x tag run the
   portable `gzb/ode` and `robot/dart` rows. A policy FAIL is published and the
   writer stays green; an ERROR publishes nothing. Only `main` candidates include
-  a change ledger; `release-6.x` candidates carry the tag comparison only.
+  a change ledger; `release-X.Y` candidates carry the tag comparison only.
   Hosted records take precedence over local tag records even when their
   environment fingerprints match. Identical-or-refuse checks apply only within
   the same `runner.environment`.
@@ -238,7 +238,7 @@ disabled. Removing profiler overhead intentionally introduces a one-time
 level shift; historical points across that shift are not directly comparable.
 CI has no quiet hardware: wall time and estimated cycles are advisory.
 Cache, prefetch, SIMD and threading claims require hand-run `perf stat`
-evidence. `release-6.x` branches are tracked by release records only.
+evidence. `release-X.Y` branches are tracked by release records only.
 
 After merging workflow changes, verify the hosted behavior: dispatch the
 merge tier twice for the same `main` SHA and check identical Ir or different
