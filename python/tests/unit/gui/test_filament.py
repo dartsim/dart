@@ -421,6 +421,20 @@ def test_drag_getters_retain_exact_owner_after_detach(entity_type, getter, creat
     )
 
 
+def test_pick_owners_in_python_cycles_are_collected():
+    class Frame(dart.dynamics.SimpleFrame):
+        pass
+
+    frame = Frame(dart.dynamics.Frame.World(), "picked")
+    pick = dart.gui.PickInfo()
+    pick.frame = frame
+    frame.pick = pick
+    reference = weakref.ref(frame)
+    del frame, pick
+    gc.collect()
+    assert reference() is None
+
+
 @pytest.mark.parametrize("frame_kind", ["simple", "interactive"])
 def test_pick_frame_owner_is_usable_after_wrapper_collection(frame_kind):
     _run_gui_subprocess(

@@ -2527,9 +2527,8 @@ def test_test_gate_contract_requires_test_gui_to_own_gui_tests(tmp_path, old, ne
     text = pixi.read_text(encoding="utf-8")
     offset = text.index("test-gui = {")
     assert old in text[offset:]
-    pixi.write_text(
-        text[:offset] + text[offset:].replace(old, new, 1), encoding="utf-8"
-    )
+    # Mutate every `test-gui` variant, including the Windows override.
+    pixi.write_text(text[:offset] + text[offset:].replace(old, new), encoding="utf-8")
     errors = []
 
     infra.check_test_gate_contract(tmp_path, errors)

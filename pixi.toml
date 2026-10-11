@@ -1269,6 +1269,23 @@ test-gui = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+[feature.filament.target.win-64.tasks]
+test-gui = { cmd = """
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        --target tests dartpy dart-demos \
+        --parallel \
+    && ctest --test-dir "build/$PIXI_ENVIRONMENT_NAME/cpp" -C "$BUILD_TYPE" -L gui \
+        -LE filament-native --output-on-failure \
+    && python -I scripts/run_pytest.py \
+        --pythonpath "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" \
+        --pythonpath "$PIXI_PROJECT_ROOT/scripts" \
+        python/tests/unit/gui python/tests/integration -q
+""", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
+
 [feature.filament.target.linux-64.dependencies]
 filament = { version = "==1.77.3", build = "x11_ha25ca8e_0" }
 libvulkan-loader = "1.4.*"

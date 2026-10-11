@@ -3772,17 +3772,15 @@ def _build_arm(
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_ENABLE_SIMD=OFF",
-        # Historical OSG sources link their GUI only while the environment
-        # still provides OSG; DART 7 rejects DART_BUILD_GUI_OSG=ON, and current
-        # arms build no GUI.
-        "-DDART_BUILD_GUI_OSG="
-        + (
-            "ON"
+        # Historical OSG sources (including DART 7 trees before Filament) build
+        # their GUI only while the environment still provides OSG; DART 7
+        # rejects DART_BUILD_GUI_OSG=ON, and current arms build no GUI.
+        *(
+            ("-DDART_BUILD_GUI_OSG=ON", "-DDART_BUILD_GUI=ON")
             if (Path(source) / "dart/gui/osg").is_dir()
             and (Path(dependency) / "lib/libosgDB.so").is_file()
-            else "OFF"
+            else ("-DDART_BUILD_GUI_OSG=OFF", "-DDART_BUILD_GUI=OFF")
         ),
-        "-DDART_BUILD_GUI=OFF",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",

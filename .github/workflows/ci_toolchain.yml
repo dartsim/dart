@@ -135,5 +135,5 @@ jobs:
                 ;;
             esac
             pixi run build-tests
-            ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2
+            ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2 -LE gui
           '

@@ -196,6 +196,8 @@ if(DEFINED DART_BUILD_GUI_OSG)
     "Build the Filament GUI and ImGui support"
     FORCE
   )
+  # A normal variable from an embedding project would shadow the cache entry.
+  set(DART_BUILD_GUI OFF)
   unset(DART_BUILD_GUI_OSG CACHE)
   unset(DART_BUILD_GUI_OSG)
 endif()

@@ -114,6 +114,30 @@ int nodeClear(PyObject* self)
   nodeEdges(self).clear();
   return 0;
 }
+
+// Python-owned picked frames and shapes can reference their PickInfo.
+GcEdges pickEdges(PyObject* self)
+{
+  GcEdges edges;
+  if (nb::inst_ready(self)) {
+    auto* pick = nb::cast<dart::gui::PickInfo*>(nb::handle(self));
+    edges.add(pick->getFrameOwner(), [pick] { pick->setFrameOwner(nullptr); });
+    edges.add(pick->shape, [pick] { pick->shape.reset(); });
+  }
+  return edges;
+}
+
+int pickTraverse(PyObject* self, visitproc visit, void* arg)
+{
+  Py_VISIT(Py_TYPE(self));
+  return pickEdges(self).traverse(visit, arg);
+}
+
+int pickClear(PyObject* self)
+{
+  pickEdges(self).clear();
+  return 0;
+}
 } // namespace
 
 Ownership::~Ownership()
@@ -194,6 +218,15 @@ const PyType_Slot* nodeSlots()
   static const PyType_Slot result[]
       = {{Py_tp_traverse, reinterpret_cast<void*>(nodeTraverse)},
          {Py_tp_clear, reinterpret_cast<void*>(nodeClear)},
+         {0, nullptr}};
+  return result;
+}
+
+const PyType_Slot* pickSlots()
+{
+  static const PyType_Slot result[]
+      = {{Py_tp_traverse, reinterpret_cast<void*>(pickTraverse)},
+         {Py_tp_clear, reinterpret_cast<void*>(pickClear)},
          {0, nullptr}};
   return result;
 }

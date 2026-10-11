@@ -310,10 +310,11 @@ discovery before its static initializers run. These headless workloads need no
 OSG plugins; otherwise OSG allocates a conda-embedded environment path even
 when `OSG_LIBRARY_PATH` is set. The harness adds its measurement and
 perturbation controls and checks the shim's lookup ABI against the active Pixi
-OSG library when one exists. Every arm is configured with
-`DART_BUILD_GUI=OFF`, and with `DART_BUILD_GUI_OSG=ON` only for historical
-sources that still contain `dart/gui/osg` while the dependency prefix provides
-`lib/libosgDB.so`; DART 7 rejects `DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no
+OSG library when one exists. Historical arms whose source still contains
+`dart/gui/osg` are configured with `DART_BUILD_GUI_OSG=ON` and
+`DART_BUILD_GUI=ON` while the dependency prefix provides `lib/libosgDB.so`;
+every other arm uses `OFF` for both, since DART 7 rejects
+`DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no
 longer in the Pixi environment, so A/B runs against an OSG-era base cannot
 build its OSG-linked `contact_benchmark` driver; this is an expected
 transitional failure, and rows that do not use that driver, such as

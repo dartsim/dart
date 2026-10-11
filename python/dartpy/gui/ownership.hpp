@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dart/gui/DefaultEventHandler.hpp>
 #include <dart/gui/GUIEventHandler.hpp>
 #include <dart/gui/ImGuiWidget.hpp>
 #include <dart/gui/RealTimeWorldNode.hpp>
@@ -28,6 +29,7 @@ std::shared_ptr<Ownership> ownership(dart::gui::Viewer* owner);
 void retire(dart::gui::Viewer* owner, void* child);
 const PyType_Slot* slots();
 const PyType_Slot* nodeSlots();
+const PyType_Slot* pickSlots();
 std::vector<std::shared_ptr<dart::gui::WorldNode>> nodes(
     dart::gui::Viewer* owner);
 
@@ -77,5 +79,10 @@ template <>
 inline const PyType_Slot* gc_slots<dart::gui::RealTimeWorldNode>()
 {
   return gui::nodeSlots();
+}
+template <>
+inline const PyType_Slot* gc_slots<dart::gui::PickInfo>()
+{
+  return gui::pickSlots();
 }
 } // namespace dartnb

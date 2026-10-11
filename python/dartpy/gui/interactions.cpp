@@ -2,6 +2,7 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 #include "detail/eigen.hpp"
+#include "gui/ownership.hpp"
 
 /*
  * Copyright (c) 2011, The DART development contributors
