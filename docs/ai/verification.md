@@ -117,9 +117,11 @@ PRs fixing or changing dynamics, collision/contact, constraint, simulation,
 or rendering behavior include a before/after visual pair by default, supported
 by the text oracle. Capture the base revision and PR head using the same scene,
 camera, steps, dimensions, and renderer, compose side by side with
-`pixi run image-compose`, and publish with `pixi run evidence-publish` after
-explicit maintainer approval for uploads. Magnify small effects with a closer
-camera, side view, contrasting colors, or contact/debug layers; interpenetration
+`pixi run image-compose`, and follow the [publication procedure below](#visual-verification-headless-capture)
+after explicit maintainer/user approval. Attachments use the same store as
+drag-and-drop, never release assets or tags; `--body-file` replaces the whole
+PR body. Magnify small effects with a
+closer camera, side view, contrasting colors, or contact/debug layers; interpenetration
 and penetration depth need a close side view because a distant still hides
 them. If the pair looks identical, check the text oracle on both revisions and
 reframe until any visible effect shows. Skip only with a stated reason, such as
@@ -260,38 +262,42 @@ readable alongside their contact markers and collision bounds.
       --visible-observation "what was seen after opening the selected PNGs" \
       --reconciliation "how image and text agree or disagree" \
       --semantic-verdict pass --not-proven "explicit claim boundary" \
-      --out pr_section.md   # manual placeholders; gh-release needs --yes
+      --out pr_section.md   # local references for gh --body-file and --attach
   ```
 
   Every artifact must support an explicit claim (`evidence-select` rejects
   unclaimed ones and records per-artifact rationale). Publication passes only
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
-  A `gh-release --yes` run does not upload anything when either gate fails.
-  Before GitHub access, it validates the complete selection contract (claims,
-  artifact kinds and metadata, coverage, rejected entries, byte totals, and
-  pass state), revalidates local sizes and SHA-256 digests, then stages
-  every selected file under its immutable content-addressed name. Duplicate
-  local basenames are safe; duplicate source paths are rejected.
-  A retry accepts an existing asset only
-  when GitHub reports the exact size and SHA-256 digest with state `uploaded`;
-  missing integrity metadata fails closed. After create/upload it re-queries
-  GitHub, verifies every selected asset, and uses only the final remote download
-  URLs validated against the repository, tag, and content-addressed name.
-  Missing or invalid URL metadata fails closed. Retries upload absent names or
-  reuse exact uploaded assets; a same-name incomplete, mismatched, or
-  unverifiable asset blocks publication. It is never deleted or clobbered
-  automatically: recovery requires explicit maintainer approval to delete that
-  exact asset or use a new tag.
-  Output paths are preflighted before GitHub access. A mutating attempt
-  atomically invalidates previous local success with a non-passing `publishing`
-  record; later failure records `partial_or_unverified`, observed remote state,
-  and bounded recovery guidance without publishable URLs. Final section and
-  manifest writes are atomic, with the authoritative manifest written last.
-  The manifest binds attempt and selection identity, repository, release tag,
-  source path, size, digest, asset name, final URL, and URL provenance. Dry-run
-  URLs are explicitly `predicted`, never remote attestations.
-  Media is GitHub-hosted, never committed to the repository.
+  The helper validates local media, records source sizes and hashes, and stages
+  hash-verified copies without network access in the manifest's absolute
+  `attach_dir`: `<out>.attach/` beside the section, refilled on each run.
+  References use the staged names in its `attach` list. Splice the
+  section into the complete PR body: `gh pr edit --body-file` replaces the
+  whole body. Alternatively, post the section as a separate `gh pr comment`.
+  After explicit maintainer/user approval, run GitHub CLI 2.99+ from
+  `attach_dir` with an explicit PR URL (or a number plus `-R owner/repo`),
+  passing the complete body's absolute path to `--body-file` (the manifest's
+  `section` path is absolute) and `--attach` for each `attach` name.
+  `gh pr create` also needs `-R owner/repo` and `--head <branch>`
+  (`<owner>:<branch>` for a fork branch).
+  Each command accepts at most 50 files; gh validates their types and sizes.
+  If gh exits nonzero after some uploads, it has still created or updated the
+  PR or posted the comment with them: inspect that result and, after explicit
+  maintainer/user approval, attach only the missing files to that PR body
+  (`gh pr edit`) or comment (`gh pr comment --edit-last`) instead of rerunning
+  the command. gh does not write the uploaded URLs back to `--body-file`, so
+  refresh the local body from the PR
+  (`gh pr view <PR URL> --json body --jq .body > <body file>`)
+  before any later body edit. Attaching needs write access to the
+  repository; without it, open the PR without `--attach` and, after explicit
+  maintainer/user approval, have a maintainer attach the evidence.
+  GitHub CLI uploads to the same user-attachments store as the PR/issue editor's
+  drag-and-drop flow and rewrites the local references. If CLI attachment upload
+  is unavailable, ask a maintainer to drag and drop the media into the PR editor
+  and replace each staged reference with the URL the editor inserts. Host
+  transient evidence as attachments, never release assets or tags, and keep
+  it out of Git.
 
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step

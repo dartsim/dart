@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -23,49 +24,23 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _release_asset_name(path: Path) -> str:
-    return f"sha256-{_sha256(path)}{path.suffix.lower()}"
-
-
-def _remote_asset(
-    path: Path,
+def _publication_args(
+    selection: Path,
+    out: Path,
+    manifest_out: Path,
     *,
-    repo: str = "dartsim/dart",
-    tag: str = "verification-media",
-) -> dict[str, object]:
-    return {
-        "name": _release_asset_name(path),
-        "size": path.stat().st_size,
-        "digest": f"sha256:{_sha256(path)}",
-        "state": "uploaded",
-        "url": (
-            f"https://github.com/{repo}/releases/download/"
-            f"{tag}/{_release_asset_name(path)}"
-        ),
-    }
-
-
-def _release(
-    *paths: Path,
-    immutable: bool = False,
-    draft: bool = False,
-    repo: str = "dartsim/dart",
-    tag: str = "verification-media",
-) -> dict[str, object]:
-    return {
-        "isImmutable": immutable,
-        "isDraft": draft,
-        "assets": [_remote_asset(path, repo=repo, tag=tag) for path in paths],
-    }
-
-
-class _Completed:
-    def __init__(
-        self, returncode: int = 0, *, stdout: str = "", stderr: str = ""
-    ) -> None:
-        self.returncode = returncode
-        self.stdout = stdout
-        self.stderr = stderr
+    verdict: str = "pass",
+) -> list[str]:
+    return [
+        str(selection),
+        "--environment",
+        "Linux",
+        *_semantic_args(verdict),
+        "--out",
+        str(out),
+        "--manifest-out",
+        str(manifest_out),
+    ]
 
 
 def _semantic_args(verdict: str = "pass") -> list[str]:
@@ -134,7 +109,7 @@ def _selection(tmp_path: Path, passing: bool = True) -> Path:
     return path
 
 
-def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
+def test_section_emits_local_references_and_context(tmp_path: Path) -> None:
     selection = _selection(tmp_path)
     out = tmp_path / "section.md"
     code = evidence_publish.main(
@@ -158,7 +133,12 @@ def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
     assert code == 0
     text = out.read_text(encoding="utf-8")
     assert "## Visual verification" in text
-    assert "UPLOAD-PLACEHOLDER" in text
+    assert (
+        f"![contact markers at rest]({_sha256(tmp_path / 'shot.png')}.png)" in text
+    )
+    assert f"\n\n![]({_sha256(tmp_path / 'clip.mp4')}.mp4)\n\n" in text
+    assert "![settling clip]" not in text
+    assert "UPLOAD-PLACEHOLDER" not in text
     assert "**Environment**: Linux x86_64, llvmpipe" in text
     assert "What to look for: yellow cross at interface" in text
     assert "Why this artifact" in text
@@ -193,459 +173,27 @@ def test_non_passing_selection_fails_publication(tmp_path: Path) -> None:
     assert code == 1
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["pass"] is False
+    assert manifest["status"] == "not_ready"
     assert "uncovered claims: C2" in manifest["note"]
     text = out.read_text(encoding="utf-8")
     assert "✘ (no evidence)" in text  # uncovered claim surfaces to the reviewer
 
 
-def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> None:
-    selection = _selection(tmp_path)
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--tag",
-            "verification-media",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(out),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-    assert code == 0
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["schema_version"] == "dart.evidence_publication/v4"
-    assert manifest["status"] == "dry_run"
-    assert manifest["url_provenance"] == "predicted"
-    assert manifest["repository"] == "dartsim/dart"
-    assert manifest["release_tag"] == "verification-media"
-    assert manifest["uploaded"] is False
-    assert "dry-run" in manifest["note"]
-    shot_name = _release_asset_name(tmp_path / "shot.png")
-    clip_name = _release_asset_name(tmp_path / "clip.mp4")
-    assert manifest["artifacts"][0] == {
-        "path": "shot.png",
-        "bytes": 3,
-        "sha256": _sha256(tmp_path / "shot.png"),
-        "release_asset": shot_name,
-        "url": (
-            "https://github.com/dartsim/dart/releases/download/"
-            f"verification-media/{shot_name}"
-        ),
-    }
-    text = out.read_text(encoding="utf-8")
-    # Images embed inline; videos fall back to plain links.
-    assert (
-        "![contact markers at rest](https://github.com/dartsim/dart/releases/"
-        f"download/verification-media/{shot_name})" in text
-    )
-    assert (
-        "[settling clip](https://github.com/dartsim/dart/releases/download/"
-        f"verification-media/{clip_name})" in text
-    )
-    assert "UPLOAD-PLACEHOLDER" not in text
-
-
-def test_gh_release_create_includes_assets_before_immutable_publication(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    calls: list[list[str]] = []
-    view_count = 0
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        calls.append(list(args))
-        if args[:2] == ["release", "view"]:
-            view_count += 1
-            if view_count == 1:
-                return _Completed(1, stderr="release not found")
-            return _Completed(stdout=json.dumps(_release(shot, clip, immutable=True)))
-        assert args[:2] == ["release", "create"]
-        staged_paths = [Path(arg) for arg in args[3 : args.index("--repo")]]
-        assert [path.name for path in staged_paths] == [
-            _release_asset_name(shot),
-            _release_asset_name(clip),
-        ]
-        assert [path.read_bytes() for path in staged_paths] == [b"png", b"mp4"]
-        return _Completed(0)
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--tag",
-            "verification-media",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(out),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-    assert code == 0
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["uploaded"] is True
-    assert manifest["repository"] == "dartsim/dart"
-    assert manifest["release_tag"] == "verification-media"
-    assert "note" not in manifest
-    verbs = [call[:2] for call in calls]
-    assert verbs == [
-        ["release", "view"],
-        ["release", "create"],
-        ["release", "view"],
-    ]
-    assert view_count == 2
-    shot_name = _release_asset_name(tmp_path / "shot.png")
-    assert manifest["urls"]["shot.png"] == (
-        "https://github.com/dartsim/dart/releases/download/"
-        f"verification-media/{shot_name}"
-    )
-    assert manifest["status"] == "published_and_verified"
-    assert manifest["url_provenance"] == "github_release_view"
-
-
-@pytest.mark.parametrize("backend", ["manual", "dry-run", "gh-release"])
-@pytest.mark.parametrize("failure_at", ["section", "manifest"])
-@pytest.mark.parametrize("error_type", [KeyboardInterrupt, OSError])
-def test_passing_rewrite_invalidates_previous_manifest_before_section(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    backend: str,
-    failure_at: str,
-    error_type: type[BaseException],
-) -> None:
-    selection = _selection(tmp_path)
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-    out.write_text("OLD SUCCESS URL\n", encoding="utf-8")
-    manifest_out.write_text(json.dumps({"pass": True}), encoding="utf-8")
-    atomic_write = evidence_publish._atomic_write_text
-    interrupted = False
-
-    def interrupt_write(path: Path, text: str) -> None:
-        nonlocal interrupted
-        if path == out and text.startswith("## Visual verification\n"):
-            assert not manifest_out.exists()
-            atomic_write(path, text)
-            if failure_at == "section":
-                interrupted = True
-                raise error_type("simulated section write failure")
-            return
-        if path == manifest_out and json.loads(text)["pass"]:
-            interrupted = True
-            raise error_type("simulated final manifest write failure")
-        atomic_write(path, text)
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        assert backend == "gh-release"
-        assert args[:2] == ["release", "view"]
-        return _Completed(
-            stdout=json.dumps(_release(tmp_path / "shot.png", tmp_path / "clip.mp4"))
-        )
-
-    monkeypatch.setattr(evidence_publish, "_atomic_write_text", interrupt_write)
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    args = [
-        str(selection),
-        "--environment",
-        "Linux",
-        *_semantic_args(),
-        "--out",
-        str(out),
-        "--manifest-out",
-        str(manifest_out),
-    ]
-    if backend != "manual":
-        args.extend(["--backend", "gh-release", "--repo", "dartsim/dart"])
-    if backend == "gh-release":
-        args.append("--yes")
-
-    if error_type is KeyboardInterrupt:
-        with pytest.raises(KeyboardInterrupt):
-            evidence_publish.main(args)
-    else:
-        assert evidence_publish.main(args) == 2
-
-    assert interrupted
-    assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
-    if manifest_out.exists():
-        assert json.loads(manifest_out.read_text(encoding="utf-8"))["pass"] is False
-
-
-@pytest.mark.parametrize(
-    "status",
-    ["publishing", "failed_pre_mutation", "partial_or_unverified", "not_ready"],
-)
-def test_interrupted_section_write_leaves_non_passing_manifest(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str
-) -> None:
-    selection = _selection(tmp_path, passing=status != "not_ready")
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-    out.write_text("OLD SUCCESS URL\n", encoding="utf-8")
-    manifest_out.write_text(
-        json.dumps({"pass": True, "status": "published_and_verified"}),
-        encoding="utf-8",
-    )
-    atomic_write = evidence_publish._atomic_write_text
-    calls: list[list[str]] = []
-
-    def interrupt_section_write(path: Path, text: str) -> None:
-        atomic_write(path, text)
-        if path == out and (
-            f"**Status**: `{status}`" in text or status == "not_ready"
-        ):
-            raise KeyboardInterrupt("simulated interruption between output writes")
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        if status == "failed_pre_mutation":
-            return _Completed(1, stderr="authentication failed")
-        if args[:2] == ["release", "upload"]:
-            raise OSError("simulated partial upload")
-        assert args[:2] == ["release", "view"]
-        return _Completed(stdout=json.dumps(_release()))
-
-    monkeypatch.setattr(evidence_publish, "_atomic_write_text", interrupt_section_write)
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    with pytest.raises(KeyboardInterrupt):
-        evidence_publish.main(
-            [
-                str(selection),
-                "--backend",
-                "gh-release",
-                "--repo",
-                "dartsim/dart",
-                "--yes",
-                "--environment",
-                "Linux",
-                *_semantic_args(),
-                "--out",
-                str(out),
-                "--manifest-out",
-                str(manifest_out),
-            ]
-        )
-
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["pass"] is False
-    assert manifest["status"] == status
-    assert manifest["urls"] == {}
-    assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
-    if status in {"publishing", "not_ready"}:
-        assert calls == []
-
-
-def test_partial_upload_invalidates_stale_success_outputs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-    out.write_text("## Visual verification\n\nOLD SUCCESS URL\n", encoding="utf-8")
-    manifest_out.write_text(
-        json.dumps({"pass": True, "status": "published_and_verified"}),
-        encoding="utf-8",
-    )
-    state_during_upload: dict[str, object] = {}
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        if args[:2] == ["release", "view"]:
-            return _Completed(stdout=json.dumps(_release()))
-        if args[:2] == ["release", "upload"]:
-            state_during_upload.update(
-                json.loads(manifest_out.read_text(encoding="utf-8"))
-            )
-            assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
-            raise OSError("simulated interrupted upload")
-        return _Completed()
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(out),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 2
-    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert failed["status"] == "partial_or_unverified"
-    assert failed["pass"] is False
-    assert failed["uploaded"] is False
-    assert failed["urls"] == {}
-    assert failed["remote_mutation_started"] is True
-    assert "explicit maintainer approval" in failed["recovery"]
-    assert state_during_upload["status"] == "publishing"
-    assert state_during_upload["pass"] is False
-    assert state_during_upload["urls"] == {}
-    section = out.read_text(encoding="utf-8")
-    assert "OLD SUCCESS URL" not in section
-    assert "Publishable evidence**: no" in section
-
-
-def test_partial_upload_refreshes_observed_remote_assets(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    view_count = 0
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        if args[:2] == ["release", "view"]:
-            view_count += 1
-            release = _release() if view_count == 1 else _release(shot)
-            return _Completed(stdout=json.dumps(release))
-        if args[:2] == ["release", "upload"]:
-            raise subprocess.CalledProcessError(
-                1,
-                ["gh", *args],
-                stderr="simulated partial upload",
-            )
-        return _Completed()
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 2
-    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
-    observed = {
-        asset["name"]: asset for asset in failed["observed_release_assets"]
-    }
-    assert observed[_release_asset_name(shot)] == {
-        **_remote_asset(shot),
-        "present": True,
-    }
-    assert observed[_release_asset_name(clip)] == {
-        "name": _release_asset_name(clip),
-        "present": False,
-        "size": None,
-        "digest": None,
-        "state": None,
-        "url": None,
-    }
-    assert view_count == 2
-
-
-def test_final_verification_failure_refreshes_observed_remote_assets(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    view_count = 0
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        if args[:2] == ["release", "view"]:
-            view_count += 1
-            if view_count == 1:
-                return _Completed(stdout=json.dumps(_release()))
-            if view_count == 2:
-                return _Completed(stdout="{malformed")
-            return _Completed(stdout=json.dumps(_release(shot, clip)))
-        return _Completed()
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 2
-    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
-    observed = {
-        asset["name"]: asset for asset in failed["observed_release_assets"]
-    }
-    for path in (shot, clip):
-        assert observed[_release_asset_name(path)] == {
-            **_remote_asset(path),
-            "present": True,
-        }
-    assert view_count == 3
-
-
 @pytest.mark.parametrize(
     "alias",
-    ["same-output", "selected-artifact", "case-output", "case-artifact", "case-selection"],
+    [
+        "same-output",
+        "selected-artifact",
+        "case-output",
+        "case-artifact",
+        "case-selection",
+    ],
 )
-def test_output_aliases_fail_before_github(
+def test_output_aliases_fail_before_writing(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     alias: str,
 ) -> None:
     selection = _selection(tmp_path)
-    calls: list[list[str]] = []
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        return _Completed()
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
     out = tmp_path / ("shot.png" if alias == "selected-artifact" else "section.md")
     manifest_out = out if alias == "same-output" else tmp_path / "publication.json"
     if alias == "case-output":
@@ -658,11 +206,6 @@ def test_output_aliases_fail_before_github(
     code = evidence_publish.main(
         [
             str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
             "--environment",
             "Linux",
             *_semantic_args(),
@@ -674,30 +217,17 @@ def test_output_aliases_fail_before_github(
     )
 
     assert code == 2
-    assert calls == []
 
 
-def test_unwritable_output_shape_fails_before_github(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_unwritable_output_shape_fails_before_writing(
+    tmp_path: Path,
 ) -> None:
     selection = _selection(tmp_path)
     parent_file = tmp_path / "not-a-directory"
     parent_file.write_text("x", encoding="utf-8")
-    calls: list[list[str]] = []
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        return _Completed()
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
     code = evidence_publish.main(
         [
             str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
             "--environment",
             "Linux",
             *_semantic_args(),
@@ -707,715 +237,6 @@ def test_unwritable_output_shape_fails_before_github(
     )
 
     assert code == 2
-    assert calls == []
-
-
-@pytest.mark.parametrize("remote_url", [None, "https://example.com/not-github"])
-def test_remote_download_url_is_required_and_validated(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    remote_url: str | None,
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    manifest_out = tmp_path / "publication.json"
-    view_count = 0
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        if args[:2] != ["release", "view"]:
-            return _Completed()
-        view_count += 1
-        if view_count == 1:
-            return _Completed(stdout=json.dumps(_release()))
-        release = _release(shot, clip)
-        release["assets"][0]["url"] = remote_url
-        return _Completed(stdout=json.dumps(release))
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 2
-    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert failed["status"] == "partial_or_unverified"
-    assert failed["urls"] == {}
-    assert failed["url_provenance"] is None
-
-
-def test_remote_url_matches_repository_case_insensitively() -> None:
-    artifact = {"path": "shot.png", "sha256": "ab" * 32}
-    name = evidence_publish._release_asset_name(artifact)
-    url = f"https://github.com/dartsim/dart/releases/download/media/{name}"
-
-    def validate(repo: str, tag: str = "media") -> str:
-        return evidence_publish._validated_remote_asset_url(
-            {"url": url}, artifact, repo, tag
-        )
-
-    assert validate("DARTsim/DART") == url
-    with pytest.raises(ValueError):
-        validate("dartsim/other")
-    with pytest.raises(ValueError):
-        validate("dartsim/dart", tag="Media")
-
-
-def test_published_urls_come_from_final_remote_asset_metadata(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    tag = "verification-media/pr-3403"
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        return _Completed(
-            stdout=json.dumps(_release(shot, clip, tag=tag))
-        )
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--tag",
-            tag,
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 0
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["url_provenance"] == "github_release_view"
-    assert all(
-        "/verification-media/pr-3403/" in url
-        for url in manifest["urls"].values()
-    )
-    assert all("%2F" not in url for url in manifest["urls"].values())
-
-
-def test_content_addressing_isolates_same_basename_across_publications(
-    tmp_path: Path,
-) -> None:
-    urls: list[str] = []
-    for index, content in enumerate((b"png", b"PNG")):
-        root = tmp_path / str(index)
-        root.mkdir()
-        selection = _selection(root)
-        shot = root / "shot.png"
-        shot.write_bytes(content)
-        selected = json.loads(selection.read_text(encoding="utf-8"))
-        selected["selected"][0]["sha256"] = _sha256(shot)
-        selection.write_text(json.dumps(selected), encoding="utf-8")
-        manifest_out = root / "publication.json"
-
-        code = evidence_publish.main(
-            [
-                str(selection),
-                "--backend",
-                "gh-release",
-                "--repo",
-                "dartsim/dart",
-                "--environment",
-                "Linux",
-                *_semantic_args(),
-                "--out",
-                str(root / "section.md"),
-                "--manifest-out",
-                str(manifest_out),
-            ]
-        )
-
-        assert code == 0
-        manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-        urls.append(manifest["urls"]["shot.png"])
-        assert manifest["artifacts"][0]["sha256"] == _sha256(shot)
-
-    assert urls[0] != urls[1]
-    assert urls[0].endswith(f"/{_release_asset_name(tmp_path / '0' / 'shot.png')}")
-    assert urls[1].endswith(f"/{_release_asset_name(tmp_path / '1' / 'shot.png')}")
-
-
-def test_partial_content_addressed_upload_resumes_without_clobber(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    shot_name = _release_asset_name(shot)
-    calls: list[list[str]] = []
-    staged_sources: list[str] = []
-    events: list[str] = []
-    view_count = 0
-    copyfile = evidence_publish.shutil.copyfile
-
-    def record_copy(source, target):
-        staged_sources.append(Path(source).name)
-        events.append(f"stage:{Path(source).name}")
-        return copyfile(source, target)
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        calls.append(list(args))
-        events.append(f"gh:{'/'.join(args[:2])}")
-        if args[:2] == ["release", "view"]:
-            view_count += 1
-            paths = (shot,) if view_count == 1 else (shot, clip)
-            return _Completed(stdout=json.dumps(_release(*paths)))
-        return _Completed()
-
-    monkeypatch.setattr(evidence_publish.shutil, "copyfile", record_copy)
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 0
-    assert staged_sources == ["shot.png", "clip.mp4"]
-    assert events[:3] == [
-        "stage:shot.png",
-        "stage:clip.mp4",
-        "gh:release/view",
-    ]
-    assert not any(call[:2] == ["release", "create"] for call in calls)
-    uploads = [call for call in calls if call[:2] == ["release", "upload"]]
-    assert len(uploads) == 1
-    assert "--clobber" not in uploads[0]
-    uploaded_names = [
-        Path(argument).name for argument in uploads[0][3 : uploads[0].index("--repo")]
-    ]
-    assert uploaded_names == [_release_asset_name(tmp_path / "clip.mp4")]
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["urls"]["shot.png"].endswith(f"/{shot_name}")
-
-
-def test_existing_content_addressed_asset_mismatch_fails_before_mutation(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    calls: list[list[str]] = []
-    release = {
-        "isImmutable": False,
-        "isDraft": False,
-        "assets": [
-            {
-                "name": _release_asset_name(shot),
-                "size": shot.stat().st_size,
-                "digest": f"sha256:{'0' * 64}",
-                "state": "uploaded",
-            }
-        ],
-    }
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        return _Completed(stdout=json.dumps(release))
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-        ]
-    )
-
-    assert code == 2
-    assert len(calls) == 1
-    assert calls[0][:2] == ["release", "view"]
-
-
-@pytest.mark.parametrize(
-    ("field", "value"),
-    [
-        ("digest", None),
-        ("digest", ""),
-        ("state", None),
-        ("state", "new"),
-    ],
-)
-def test_existing_asset_requires_verifiable_digest_and_uploaded_state(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    field: str,
-    value: object,
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    calls: list[list[str]] = []
-    asset = {
-        "name": _release_asset_name(shot),
-        "size": shot.stat().st_size,
-        "digest": f"sha256:{_sha256(shot)}",
-        "state": "uploaded",
-    }
-    asset[field] = value
-    release = {"isImmutable": False, "isDraft": False, "assets": [asset]}
-    manifest_out = tmp_path / "publication.json"
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        return _Completed(stdout=json.dumps(release))
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 2
-    assert len(calls) == 1
-    assert calls[0][:2] == ["release", "view"]
-    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert failed["status"] == "failed_pre_mutation"
-    assert failed["pass"] is False
-    assert "explicit maintainer approval" in failed["recovery"]
-
-
-@pytest.mark.parametrize("assets_present", [False, True])
-def test_draft_release_fails_before_upload_or_reuse(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    assets_present: bool,
-) -> None:
-    selection = _selection(tmp_path)
-    paths = (tmp_path / "shot.png", tmp_path / "clip.mp4") if assets_present else ()
-    calls: list[list[str]] = []
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        assert args[:2] == ["release", "view"]
-        assert "isDraft" in args[args.index("--json") + 1].split(",")
-        return _Completed(stdout=json.dumps(_release(*paths, draft=True)))
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    manifest_out = tmp_path / "publication.json"
-    out = tmp_path / "section.md"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(out),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 2
-    assert len(calls) == 1
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["status"] == "failed_pre_mutation"
-    assert manifest["pass"] is False
-    assert manifest["uploaded"] is False
-    assert manifest["remote_mutation_started"] is False
-    assert manifest["urls"] == {}
-    assert "target release is a draft" in manifest["error"]
-    assert "publish the draft or use another tag" in manifest["recovery"]
-    assert "publish the draft or use another tag" in out.read_text(encoding="utf-8")
-
-
-@pytest.mark.parametrize("draft", [None, "false", 0])
-def test_release_requires_boolean_draft_metadata(draft: object) -> None:
-    release = _release()
-    if draft is None:
-        release.pop("isDraft")
-    else:
-        release["isDraft"] = draft
-
-    with pytest.raises(ValueError, match="omitted boolean isDraft"):
-        evidence_publish._parse_release_assets(_Completed(stdout=json.dumps(release)))
-
-
-def test_final_release_verification_rejects_draft(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = evidence_publish._load_selection(_selection(tmp_path))
-    view_count = 0
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        assert args[:2] == ["release", "view"]
-        view_count += 1
-        return _Completed(
-            stdout=json.dumps(
-                _release(
-                    tmp_path / "shot.png",
-                    tmp_path / "clip.mp4",
-                    draft=view_count > 1,
-                )
-            )
-        )
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    attempt = evidence_publish._PublicationAttempt(attempt_id="test-attempt")
-    with pytest.raises(ValueError, match="publish the draft or use another tag"):
-        evidence_publish._publish_gh_release(
-            selection, tmp_path, "dartsim/dart", "verification-media", attempt
-        )
-    assert view_count == 3  # Initial lookup, final verification, failure refresh.
-    assert attempt.mutation_started is False
-
-
-def test_release_lookup_failure_is_not_treated_as_missing_release(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path)
-    calls: list[list[str]] = []
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        calls.append(list(args))
-        return _Completed(1, stderr="authentication failed")
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-        ]
-    )
-
-    assert code == 2
-    assert len(calls) == 1
-    assert calls[0][:2] == ["release", "view"]
-
-
-@pytest.mark.parametrize(
-    ("final_state", "expected"),
-    [
-        ("missing", "did not find selected asset"),
-        ("digest", "does not match the selected digest"),
-    ],
-)
-def test_gh_release_requeries_and_verifies_every_asset_after_upload(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-    final_state: str,
-    expected: str,
-) -> None:
-    selection = _selection(tmp_path)
-    shot = tmp_path / "shot.png"
-    clip = tmp_path / "clip.mp4"
-    calls: list[list[str]] = []
-    view_count = 0
-
-    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
-        nonlocal view_count
-        calls.append(list(args))
-        if args[:2] != ["release", "view"]:
-            return _Completed()
-        view_count += 1
-        if view_count == 1:
-            return _Completed(stdout=json.dumps(_release()))
-        final = _release(shot, clip)
-        if final_state == "missing":
-            final["assets"] = [final["assets"][0]]
-        else:
-            final["assets"][1]["digest"] = f"sha256:{'0' * 64}"
-        return _Completed(stdout=json.dumps(final))
-
-    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-        ]
-    )
-
-    assert code == 2
-    assert view_count == 2
-    assert len([call for call in calls if call[:2] == ["release", "upload"]]) == 1
-    assert expected in capsys.readouterr().err
-
-
-def test_duplicate_basenames_use_distinct_content_addressed_assets(
-    tmp_path: Path,
-) -> None:
-    (tmp_path / "a").mkdir()
-    (tmp_path / "b").mkdir()
-    a_shot = tmp_path / "a" / "shot.png"
-    b_shot = tmp_path / "b" / "shot.png"
-    a_shot.write_bytes(b"x")
-    b_shot.write_bytes(b"y")
-    manifest = {
-        "schema_version": "dart.evidence_selection/v1",
-        "claims": [{"id": "C1", "text": "t", "covered": True}],
-        "selected": [
-            {
-                "path": "a/shot.png",
-                "kind": "still",
-                "claims": ["C1"],
-                "caption": "",
-                "observe": "",
-                "quality": 0.5,
-                "bytes": 1,
-                "sha256": _sha256(a_shot),
-                "rationale": "r",
-            },
-            {
-                "path": "b/shot.png",
-                "kind": "still",
-                "claims": ["C1"],
-                "caption": "",
-                "observe": "",
-                "quality": 0.5,
-                "bytes": 1,
-                "sha256": _sha256(b_shot),
-                "rationale": "r",
-            },
-        ],
-        "rejected": [],
-        "total_bytes": 2,
-        "uncovered_claims": [],
-        "pass": True,
-    }
-    selection = tmp_path / "selection.json"
-    selection.write_text(json.dumps(manifest), encoding="utf-8")
-    publication = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "x.md"),
-            "--manifest-out",
-            str(publication),
-        ]
-    )
-    assert code == 0
-    published = json.loads(publication.read_text(encoding="utf-8"))
-    assets = [artifact["release_asset"] for artifact in published["artifacts"]]
-    assert len(set(assets)) == 2
-    assert all(asset.startswith("sha256-") for asset in assets)
-
-
-def test_staging_revalidates_distinct_paths_sharing_one_release_asset(
-    tmp_path: Path,
-) -> None:
-    (tmp_path / "a").mkdir()
-    (tmp_path / "b").mkdir()
-    first = tmp_path / "a" / "shot.png"
-    second = tmp_path / "b" / "shot.png"
-    first.write_bytes(b"same")
-    second.write_bytes(b"same")
-    digest = _sha256(first)
-    artifacts = [
-        {"path": "a/shot.png", "bytes": 4, "sha256": digest},
-        {"path": "b/shot.png", "bytes": 4, "sha256": digest},
-    ]
-    stage_dir = tmp_path / "stage"
-    stage_dir.mkdir()
-
-    staged = evidence_publish._stage_release_assets(
-        artifacts,
-        tmp_path,
-        stage_dir,
-    )
-
-    assert list(staged) == [f"sha256-{digest}.png"]
-    assert len(list(stage_dir.iterdir())) == 2
-    assert all(path.read_bytes() == b"same" for path in stage_dir.iterdir())
-
-
-def test_gh_release_requires_repo(tmp_path: Path) -> None:
-    selection = _selection(tmp_path)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "x.md"),
-        ]
-    )
-    assert code == 2
-
-
-@pytest.mark.parametrize("repo", ["dartsim", "/dart", "dartsim/", "bad owner/dart"])
-def test_gh_release_rejects_invalid_repository(tmp_path: Path, repo: str) -> None:
-    selection = _selection(tmp_path)
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            repo,
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-        ]
-    )
-    assert code == 2
-
-
-@pytest.mark.parametrize(
-    "tag",
-    [
-        "--force",
-        "bad tag",
-        "refs//verification",
-        "refs/.verification",
-        "refs/verification.lock",
-        "verification..media",
-        "verification@{media",
-        "verification?media",
-        "verification/",
-        "@",
-    ],
-)
-def test_gh_release_rejects_unsafe_tag(tmp_path: Path, tag: str) -> None:
-    selection = _selection(tmp_path)
-    with pytest.raises(SystemExit) as caught:
-        evidence_publish.main(
-            [
-                str(selection),
-                "--backend",
-                "gh-release",
-                "--repo",
-                "dartsim/dart",
-                "--tag",
-                tag,
-                "--environment",
-                "Linux",
-                *_semantic_args(),
-                "--out",
-                str(tmp_path / "section.md"),
-            ]
-        )
-    assert caught.value.code == 2
-
-
-def test_gh_release_accepts_hierarchical_safe_tag(tmp_path: Path) -> None:
-    selection = _selection(tmp_path)
-    manifest_out = tmp_path / "publication.json"
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--tag",
-            "verification-media/pr-3403",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 0
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["release_tag"] == "verification-media/pr-3403"
-    assert all(
-        "/verification-media%2Fpr-3403/" in url
-        for url in manifest["urls"].values()
-    )
 
 
 def test_uncertain_semantic_review_fails_publication(tmp_path: Path) -> None:
@@ -1437,6 +258,7 @@ def test_uncertain_semantic_review_fails_publication(tmp_path: Path) -> None:
     assert code == 1
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["pass"] is False
+    assert manifest["status"] == "not_ready"
     assert manifest["semantic_review"]["verdict"] == "uncertain"
     assert "semantic review verdict is uncertain" in manifest["note"]
 
@@ -1496,9 +318,8 @@ def test_stored_coverage_without_selected_artifact_fails_closed(
         ("rejected", "rejected artifact entries are invalid"),
     ],
 )
-def test_gh_release_yes_validates_complete_selection_before_github_lookup(
+def test_validates_complete_selection_before_writing(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     mutation: str,
     expected: str,
@@ -1523,21 +344,9 @@ def test_gh_release_yes_validates_complete_selection_before_github_lookup(
         manifest["rejected"] = [{"path": "other.png", "reason": ""}]
     selection.write_text(json.dumps(manifest), encoding="utf-8")
 
-    calls = []
-
-    def record_gh(*args, **kwargs):
-        calls.append((args, kwargs))
-        raise AssertionError("invalid selection must fail before a GitHub lookup")
-
-    monkeypatch.setattr(evidence_publish, "_gh", record_gh)
     code = evidence_publish.main(
         [
             str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
             "--environment",
             "Linux",
             *_semantic_args(),
@@ -1547,7 +356,6 @@ def test_gh_release_yes_validates_complete_selection_before_github_lookup(
     )
 
     assert code == 2
-    assert calls == []
     assert expected in capsys.readouterr().err
 
 
@@ -1561,9 +369,8 @@ def test_gh_release_yes_validates_complete_selection_before_github_lookup(
         ("unknown-claim", "unknown claims"),
     ],
 )
-def test_gh_release_yes_revalidates_selected_artifacts_before_mutation(
+def test_revalidates_selected_artifacts_before_writing(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     mutation: str,
     expected: str,
@@ -1583,21 +390,9 @@ def test_gh_release_yes_revalidates_selected_artifacts_before_mutation(
         manifest["selected"][0]["claims"] = ["C999"]
         selection.write_text(json.dumps(manifest), encoding="utf-8")
 
-    calls = []
-
-    def record_gh(*args, **kwargs):
-        calls.append((args, kwargs))
-        raise AssertionError("invalid evidence must not mutate GitHub")
-
-    monkeypatch.setattr(evidence_publish, "_gh", record_gh)
     code = evidence_publish.main(
         [
             str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
             "--environment",
             "Linux",
             *_semantic_args(),
@@ -1607,77 +402,7 @@ def test_gh_release_yes_revalidates_selected_artifacts_before_mutation(
     )
 
     assert code == 2
-    assert calls == []
     assert expected in capsys.readouterr().err
-
-
-def test_gh_release_yes_does_not_upload_failing_evidence(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    selection = _selection(tmp_path, passing=False)
-    calls = []
-
-    def record_gh(*args, **kwargs):
-        calls.append((args, kwargs))
-        raise AssertionError("failing evidence must not mutate GitHub")
-
-    monkeypatch.setattr(evidence_publish, "_gh", record_gh)
-    manifest_out = tmp_path / "publication.json"
-
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--yes",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(tmp_path / "section.md"),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 1
-    assert calls == []
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["uploaded"] is False
-    assert manifest["urls"] == {}
-
-
-def test_gh_release_dry_run_does_not_render_unpublishable_urls(
-    tmp_path: Path,
-) -> None:
-    selection = _selection(tmp_path, passing=False)
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-
-    code = evidence_publish.main(
-        [
-            str(selection),
-            "--backend",
-            "gh-release",
-            "--repo",
-            "dartsim/dart",
-            "--environment",
-            "Linux",
-            *_semantic_args(),
-            "--out",
-            str(out),
-            "--manifest-out",
-            str(manifest_out),
-        ]
-    )
-
-    assert code == 1
-    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["urls"] == {}
-    assert all(artifact["url"] is None for artifact in manifest["artifacts"])
-    assert "UPLOAD-PLACEHOLDER" in out.read_text(encoding="utf-8")
 
 
 def test_semantic_review_rejects_empty_fields(tmp_path: Path) -> None:
@@ -1742,8 +467,465 @@ def test_selection_rejects_aliases_of_one_artifact(tmp_path: Path, alias: str) -
             link.symlink_to(tmp_path / "shot.png")
         else:
             os.link(tmp_path / "shot.png", link)
-    manifest["selected"][1] = {**manifest["selected"][0], "path": path, "claims": ["C2"]}
+    manifest["selected"][1] = {
+        **manifest["selected"][0],
+        "path": path,
+        "claims": ["C2"],
+    }
     selection.write_text(json.dumps(manifest), encoding="utf-8")
 
     with pytest.raises(ValueError, match="duplicated"):
-        evidence_publish._load_selection(selection)
+        evidence_publish._load_selection(selection, manifest)
+
+
+def test_publication_stages_verified_files_in_selection_order(tmp_path: Path) -> None:
+    selection_dir = tmp_path / "selection"
+    selection_dir.mkdir()
+    selection = _selection(selection_dir)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    frames = selection_dir / "frames"
+    frames.mkdir()
+    (selection_dir / "shot.png").rename(frames / "shot.png")
+    (selection_dir / "clip.mp4").rename(tmp_path / "clip.mp4")
+    manifest["selected"][0]["path"] = "frames/./shot.png"
+    manifest["selected"][1]["path"] = str(tmp_path / "clip.mp4")
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+
+    names = [
+        artifact["sha256"] + Path(artifact["path"]).suffix.lower()
+        for artifact in manifest["selected"]
+    ]
+    text = out.read_text(encoding="utf-8")
+    assert f"![contact markers at rest]({names[0]})" in text
+    assert f"\n\n![]({names[1]})\n\n" in text
+    publication = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert publication["schema_version"] == "dart.evidence_publication/v5"
+    assert publication["status"] == "ready"
+    assert publication["pass"] is True
+    assert publication["attach"] == names
+    attach_dir = Path(publication["attach_dir"])
+    assert attach_dir == (tmp_path / "section.md.attach").resolve()
+    assert {path.name for path in attach_dir.iterdir()} == set(names)
+    for name, artifact in zip(names, manifest["selected"]):
+        assert (attach_dir / name).is_file()
+        assert _sha256(attach_dir / name) == artifact["sha256"]
+    assert publication["artifacts"] == [
+        {key: artifact[key] for key in ("path", "bytes", "sha256")}
+        for artifact in manifest["selected"]
+    ]
+    assert (
+        not {
+            "backend",
+            "repository",
+            "urls",
+            "url_provenance",
+            "uploaded",
+            "attempt_id",
+        }
+        & publication.keys()
+    )
+
+
+def test_caption_is_escaped_like_gh_alt_text(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    manifest["selected"][0]["caption"] = "a](https://example.com) [b]\nc\\d"
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+
+    name = manifest["selected"][0]["sha256"] + ".png"
+    assert f"![a\\](https://example.com) \\[b\\] c\\\\d]({name})" in out.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_changed_staged_copy_fails_before_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    def corrupt_copy(source: Path, destination: Path) -> None:
+        Path(destination).write_bytes(b"changed")
+
+    monkeypatch.setattr(evidence_publish.shutil, "copyfile", corrupt_copy)
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert not out.exists()
+    assert not manifest_out.exists()
+    assert not list((tmp_path / "section.md.attach").iterdir())
+
+
+def test_failed_rerun_drops_previous_passing_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    assert json.loads(manifest_out.read_text(encoding="utf-8"))["pass"] is True
+
+    def corrupt_copy(source: Path, destination: Path) -> None:
+        Path(destination).write_bytes(b"changed")
+
+    monkeypatch.setattr(evidence_publish.shutil, "copyfile", corrupt_copy)
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert not manifest_out.exists()
+    assert not list((tmp_path / "section.md.attach").iterdir())
+
+
+def test_invalid_rerun_drops_previous_passing_manifest(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    assert Path(json.loads(manifest_out.read_text(encoding="utf-8"))["section"]).is_absolute()
+    (tmp_path / "shot.png").write_bytes(b"edited")
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert not manifest_out.exists()
+
+
+@pytest.mark.parametrize(
+    ("content", "retired"),
+    [
+        ({"schema_version": "dart.evidence_publication/v5", "pass": True}, True),
+        ({"schema_version": "dart.evidence_publication/v4", "pass": True}, True),
+        ({"schema_version": "dart.evidence_publication/v5", "pass": False}, False),
+        ({"schema_version": "dart.evidence_selection/v1", "pass": True}, False),
+    ],
+)
+def test_retire_previous_success_only_removes_passing_publications(
+    tmp_path: Path, content: dict[str, Any], retired: bool
+) -> None:
+    path = tmp_path / "previous.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    evidence_publish._retire_previous_success(path, [])
+    assert path.exists() is not retired
+
+
+@pytest.mark.parametrize("alias", ["selection", "artifact"])
+def test_manifest_out_naming_an_input_is_never_retired(
+    tmp_path: Path, alias: str
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    publication = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, publication)) == 0
+    if alias == "selection":
+        selection = publication
+    else:
+        manifest = json.loads(selection.read_text(encoding="utf-8"))
+        manifest["selected"][0]["path"] = str(publication)
+        selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert evidence_publish.main(_publication_args(selection, out, publication)) == 2
+    assert json.loads(publication.read_text(encoding="utf-8"))["pass"] is True
+
+
+def test_rerun_without_manifest_replaces_staged_copies(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    args = _publication_args(selection, out, tmp_path / "unused.json")[:-2]
+    (tmp_path / "section.md.attach").mkdir()
+    (tmp_path / "section.md.attach" / "notes.txt").write_text("keep")
+    assert evidence_publish.main(args) == 0
+    shot = tmp_path / "shot.png"
+    shot.write_bytes(b"new")
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    manifest["selected"][0]["sha256"] = _sha256(shot)
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert evidence_publish.main(args) == 0
+
+    assert {path.name for path in (tmp_path / "section.md.attach").iterdir()} == {
+        "notes.txt",
+        *(a["sha256"] + Path(a["path"]).suffix for a in manifest["selected"]),
+    }
+
+
+@pytest.mark.parametrize("alias", ["copy", "symlink", "hardlink"])
+def test_aliased_manifest_never_touches_another_sections_copies(
+    tmp_path: Path, alias: str
+) -> None:
+    selection = _selection(tmp_path)
+    original = tmp_path / "publication.json"
+    assert (
+        evidence_publish.main(
+            _publication_args(selection, tmp_path / "section.md", original)
+        )
+        == 0
+    )
+    attach_dir = Path(json.loads(original.read_text(encoding="utf-8"))["attach_dir"])
+    staged = sorted(attach_dir.iterdir())
+    other = tmp_path / "other.json"
+    if alias == "copy":
+        other.write_bytes(original.read_bytes())
+    elif alias == "symlink":
+        other.symlink_to(original)
+    else:
+        os.link(original, other)
+
+    status = evidence_publish.main(
+        _publication_args(selection, tmp_path / "other.md", other)
+    )
+
+    assert status == (2 if alias == "symlink" else 0)
+    assert json.loads(original.read_text(encoding="utf-8"))["pass"] is True
+    assert sorted(attach_dir.iterdir()) == staged
+
+
+def test_inputs_inside_the_staging_directory_fail_before_clearing(
+    tmp_path: Path,
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    staged = tmp_path / "section.md.attach" / (manifest["selected"][0]["sha256"] + ".png")
+    manifest["selected"][0]["path"] = str(staged)
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert staged.is_file()
+
+
+@pytest.mark.parametrize("entry", ["artifact", "directory", "uppercase", "selection"])
+def test_links_inside_the_staging_directory_are_never_deleted(
+    tmp_path: Path, entry: str
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    for artifact in manifest["selected"]:
+        artifact["path"] = str(tmp_path / artifact["path"])
+    staging = tmp_path / "section.md.attach"
+    staging.mkdir()
+    if entry == "artifact":
+        link = staging / (manifest["selected"][0]["sha256"] + ".png")
+        link.symlink_to(manifest["selected"][0]["path"])
+        manifest["selected"][0]["path"] = str(link)
+    elif entry == "directory":
+        link = staging / ("0" * 64)
+        link.symlink_to(tmp_path, target_is_directory=True)
+        manifest["selected"][0]["path"] = str(link / "shot.png")
+    elif entry == "uppercase":
+        # Case-insensitive file systems would write the copy through this link.
+        link = staging / (manifest["selected"][0]["sha256"].upper() + ".PNG")
+        link.symlink_to(tmp_path / "elsewhere.png")
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    if entry == "selection":
+        link = staging / ("0" * 64 + ".json")
+        link.symlink_to(selection)
+        selection = link
+
+    status = evidence_publish.main(
+        _publication_args(
+            selection, tmp_path / "section.md", tmp_path / "publication.json"
+        )
+    )
+
+    assert status == 2
+    assert link.is_symlink()
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="needs POSIX FIFOs")
+def test_fifo_manifest_fails_without_blocking(tmp_path: Path) -> None:
+    manifest_out = tmp_path / "publication.json"
+    os.mkfifo(manifest_out)
+    args = _publication_args(_selection(tmp_path), tmp_path / "section.md", manifest_out)
+
+    # The timeout turns a blocking read of the FIFO into a failure.
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS / "evidence_publish.py"), *args],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.returncode == 2
+    assert "not a regular file" in result.stderr
+
+
+def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    (tmp_path / "clip.mp4").write_bytes((tmp_path / "shot.png").read_bytes())
+    manifest["selected"][1]["sha256"] = manifest["selected"][0]["sha256"]
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+
+    name = manifest["selected"][0]["sha256"] + ".png"
+    text = out.read_text(encoding="utf-8")
+    assert f"![contact markers at rest]({name})" in text
+    assert f"\n\n![]({name})\n\n" in text
+    publication = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert publication["attach"] == [name]
+    attach_dir = Path(publication["attach_dir"])
+    assert list(attach_dir.iterdir()) == [attach_dir / name]
+
+
+def test_more_than_50_artifacts_fail_before_writing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    for index in range(49):
+        name = f"extra-{index}.png"
+        (tmp_path / name).write_bytes(b"png")
+        manifest["selected"].append({**manifest["selected"][0], "path": name})
+    manifest["total_bytes"] = sum(
+        artifact["bytes"] for artifact in manifest["selected"]
+    )
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+
+    error = capsys.readouterr().err
+    assert "gh" in error and "50" in error and "--attach" in error
+    assert "per-command" in error
+    assert not out.exists()
+    assert not manifest_out.exists()
+
+
+@pytest.mark.parametrize(
+    ("passing", "verdict"),
+    [(False, "pass"), (True, "fail"), (True, "uncertain")],
+)
+def test_failing_gates_yield_not_ready(
+    tmp_path: Path, passing: bool, verdict: str
+) -> None:
+    selection = _selection(tmp_path, passing=passing)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert (
+        evidence_publish.main(
+            _publication_args(selection, out, manifest_out, verdict=verdict)
+        )
+        == 1
+    )
+
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["status"] == "not_ready"
+    assert manifest["pass"] is False
+    assert manifest["attach_dir"] is None
+    assert not (tmp_path / "section.md.attach").exists()
+
+
+@pytest.mark.parametrize(
+    ("suffix", "kind"),
+    [
+        (".png", "still"),
+        (".jpg", "still"),
+        (".jpeg", "still"),
+        (".gif", "still"),
+        (".webp", "still"),
+        (".svg", "still"),
+        (".mp4", "video"),
+        (".webm", "video"),
+        (".mov", "video"),
+    ],
+)
+def test_supported_attachment_suffixes(tmp_path: Path, suffix: str, kind: str) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    name = f"shot{suffix.upper()}"
+    (tmp_path / "shot.png").rename(tmp_path / name)
+    manifest["selected"][0].update(path=name, kind=kind)
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    out = tmp_path / "section.md"
+    assert (
+        evidence_publish.main(
+            _publication_args(selection, out, tmp_path / "publication.json")
+        )
+        == 0
+    )
+    caption = "" if kind == "video" else "contact markers at rest"
+    staged_name = manifest["selected"][0]["sha256"] + suffix
+    assert f"![{caption}]({staged_name})" in out.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("failure_at", ["section", "manifest"])
+@pytest.mark.parametrize("error_type", [KeyboardInterrupt, OSError])
+def test_passing_rewrite_invalidates_previous_manifest_before_section(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_at: str,
+    error_type: type[BaseException],
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    out.write_text("OLD SUCCESS URL\n", encoding="utf-8")
+    manifest_out.write_text(json.dumps({"pass": True}), encoding="utf-8")
+    atomic_write = evidence_publish._atomic_write_text
+    interrupted = False
+
+    def interrupt_write(path: Path, text: str) -> None:
+        nonlocal interrupted
+        if path == out and text.startswith("## Visual verification\n"):
+            assert not manifest_out.exists()
+            atomic_write(path, text)
+            if failure_at == "section":
+                interrupted = True
+                raise error_type("simulated section write failure")
+            return
+        if path == manifest_out and json.loads(text)["pass"]:
+            interrupted = True
+            raise error_type("simulated final manifest write failure")
+        atomic_write(path, text)
+
+    monkeypatch.setattr(evidence_publish, "_atomic_write_text", interrupt_write)
+    args = _publication_args(selection, out, manifest_out)
+
+    if error_type is KeyboardInterrupt:
+        with pytest.raises(KeyboardInterrupt):
+            evidence_publish.main(args)
+    else:
+        assert evidence_publish.main(args) == 2
+
+    assert interrupted
+    assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
+    if manifest_out.exists():
+        assert json.loads(manifest_out.read_text(encoding="utf-8"))["pass"] is False
+
+
+def test_interrupted_section_write_leaves_non_passing_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path, passing=False)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    out.write_text("OLD SUCCESS URL\n", encoding="utf-8")
+    manifest_out.write_text(json.dumps({"pass": True}), encoding="utf-8")
+    atomic_write = evidence_publish._atomic_write_text
+
+    def interrupt_section_write(path: Path, text: str) -> None:
+        atomic_write(path, text)
+        if path == out:
+            raise KeyboardInterrupt("simulated interruption between output writes")
+
+    monkeypatch.setattr(evidence_publish, "_atomic_write_text", interrupt_section_write)
+    with pytest.raises(KeyboardInterrupt):
+        evidence_publish.main(_publication_args(selection, out, manifest_out))
+
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["pass"] is False
+    assert manifest["status"] == "not_ready"
+    assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
