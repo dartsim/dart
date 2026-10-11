@@ -4,6 +4,16 @@
 
 ### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestone/106)
 
+* Constraint
+
+  * Fix mimic joints enforced by the coupler constraint
+    (`Joint::setUseCouplerConstraint(true)`). Coupled joints no longer gain
+    energy, or diverge when the follower has more inertia than the leader;
+    per-DoF couplers on multi-DoF joints no longer crash; and a joint that
+    mimics only a later DoF now gets its constraint:
+    [#3702](https://github.com/dartsim/dart/pull/3702),
+    [#3700](https://github.com/dartsim/dart/pull/3700)
+
 * Python
 
   * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,
