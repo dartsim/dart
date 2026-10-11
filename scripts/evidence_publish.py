@@ -523,16 +523,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest-out", type=Path, help="publication manifest JSON")
     args = parser.parse_args(argv)
 
+    attach_dir: Path | None = None
     try:
         selection = _load_selection(args.selection)
         _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
+        # A failed rerun must not leave the previous passing manifest behind.
+        if args.manifest_out is not None:
+            args.manifest_out.unlink(missing_ok=True)
         attach_dir = Path(tempfile.mkdtemp(prefix="dart-evidence-attach-")).resolve()
         attach: list[str] = []
         staged: dict[str, str] = {}
         for artifact in selection["selected"]:
             sha256 = artifact["sha256"]
             name = staged.setdefault(
-                sha256, sha256[:16] + Path(artifact["path"]).suffix.lower()
+                sha256, sha256 + Path(artifact["path"]).suffix.lower()
             )
             staged_path = attach_dir / name
             shutil.copyfile(args.selection.parent / artifact["path"], staged_path)
@@ -592,6 +596,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         text = _write_outputs(args.out, args.manifest_out, section, manifest)
     except (OSError, ValueError, KeyError) as error:
+        if attach_dir is not None:
+            shutil.rmtree(attach_dir, ignore_errors=True)
         print(f"error: {error}", file=sys.stderr)
         return 2
     print(text)

@@ -140,9 +140,9 @@ def test_section_emits_local_references_and_context(tmp_path: Path) -> None:
     text = out.read_text(encoding="utf-8")
     assert "## Visual verification" in text
     assert (
-        f"![contact markers at rest]({_sha256(tmp_path / 'shot.png')[:16]}.png)" in text
+        f"![contact markers at rest]({_sha256(tmp_path / 'shot.png')}.png)" in text
     )
-    assert f"\n\n![]({_sha256(tmp_path / 'clip.mp4')[:16]}.mp4)\n\n" in text
+    assert f"\n\n![]({_sha256(tmp_path / 'clip.mp4')}.mp4)\n\n" in text
     assert "![settling clip]" not in text
     assert "UPLOAD-PLACEHOLDER" not in text
     assert "**Environment**: Linux x86_64, llvmpipe" in text
@@ -502,7 +502,7 @@ def test_publication_stages_verified_files_in_selection_order(tmp_path: Path) ->
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
 
     names = [
-        artifact["sha256"][:16] + Path(artifact["path"]).suffix.lower()
+        artifact["sha256"] + Path(artifact["path"]).suffix.lower()
         for artifact in manifest["selected"]
     ]
     text = out.read_text(encoding="utf-8")
@@ -548,7 +548,7 @@ def test_caption_is_escaped_like_gh_alt_text(tmp_path: Path) -> None:
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
 
-    name = manifest["selected"][0]["sha256"][:16] + ".png"
+    name = manifest["selected"][0]["sha256"] + ".png"
     assert f"![a\\](https://example.com) \\[b\\] c\\\\d]({name})" in out.read_text(
         encoding="utf-8"
     )
@@ -569,6 +569,27 @@ def test_changed_staged_copy_fails_before_writing(
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
     assert not out.exists()
     assert not manifest_out.exists()
+    assert not list((tmp_path / "temp").iterdir())
+
+
+def test_failed_rerun_drops_previous_passing_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    assert json.loads(manifest_out.read_text(encoding="utf-8"))["pass"] is True
+    staged_dirs = set((tmp_path / "temp").iterdir())
+
+    def corrupt_copy(source: Path, destination: Path) -> None:
+        Path(destination).write_bytes(b"changed")
+
+    monkeypatch.setattr(evidence_publish.shutil, "copyfile", corrupt_copy)
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert not manifest_out.exists()
+    assert set((tmp_path / "temp").iterdir()) == staged_dirs
 
 
 def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:
@@ -582,7 +603,7 @@ def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
 
-    name = manifest["selected"][0]["sha256"][:16] + ".png"
+    name = manifest["selected"][0]["sha256"] + ".png"
     text = out.read_text(encoding="utf-8")
     assert f"![contact markers at rest]({name})" in text
     assert f"\n\n![]({name})\n\n" in text
@@ -670,7 +691,7 @@ def test_supported_attachment_suffixes(tmp_path: Path, suffix: str, kind: str) -
         == 0
     )
     caption = "" if kind == "video" else "contact markers at rest"
-    staged_name = manifest["selected"][0]["sha256"][:16] + suffix
+    staged_name = manifest["selected"][0]["sha256"] + suffix
     assert f"![{caption}]({staged_name})" in out.read_text(encoding="utf-8")
 
 
