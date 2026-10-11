@@ -126,7 +126,7 @@ constexpr double kFinalSleepLinearRatio = 0.1;
 constexpr double kFinalSleepAngularRatio = 0.2;
 constexpr std::size_t kDenseContactJitterMinIslandSize = 3;
 constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
-constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.005;
+constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.002;
 
 // Largest angle (rad) between a support normal and gravity that still counts
 // as a level support (about 0.06 degrees). Gravity drives motion along a
@@ -401,8 +401,6 @@ bool isRestingPair(const collision::Contact& contact)
          && (resting2 || !skeleton2->isMobile());
 }
 
-// Whether a skeleton with bodies can move (a skeleton without bodies never
-// keeps others awake; see ConstraintSolver::buildConstrainedGroups()).
 struct FilterDecision
 {
   const collision::CollisionObject* object1;
@@ -1437,14 +1435,7 @@ void World::step(bool _resetCommand)
 
   // Mirror the enable flag onto the solver so its island rest-detection / LCP
   // skipping runs only when the feature is on (otherwise it is a strict no-op).
-  // Its rest detection also reads the wake band.
   mConstraintSolver->setDeactivationActive(deactivationEnabled);
-  mConstraintSolver->mLinearWakeSpeed
-      = mDeactivationOptions.mWakeThresholdScale
-        * mDeactivationOptions.mLinearSpeedThreshold;
-  mConstraintSolver->mAngularWakeSpeed
-      = mDeactivationOptions.mWakeThresholdScale
-        * mDeactivationOptions.mAngularSpeedThreshold;
   if (deactivationEnabled)
     wakeRestingSkeletonsIfStepStateChanged();
 
