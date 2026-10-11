@@ -110,10 +110,12 @@ optional reference differences; it does not inspect meaning.
 `pixi run evidence-select` keeps a bounded claim-covering artifact set.
 `pixi run evidence-publish` requires the text oracle, visible observation,
 text/image reconciliation, semantic verdict, and at least one explicit
-not-proven boundary before it marks the PR visual section ready. Use
-`--backend attachments --repo owner/repo --yes` after explicit maintainer
-upload approval; use PR-editor drag-and-drop if the helper cannot upload.
-PR mutations still require explicit maintainer approval.
+not-proven boundary before it marks the PR visual section ready. It renders local
+references without network access. After explicit maintainer/user approval, run
+GitHub CLI 2.99+ `gh pr create|edit|comment --body-file <body> --attach <file>`
+from the selection directory, repeating `--attach` for the manifest's `attach` list.
+Use PR-editor drag-and-drop as the fallback, replacing each relative reference
+with the URL the editor inserts.
 `pixi run verification-bundle` packages primary text evidence, a still, and an
 optional grid with hashes and a semantic-review prompt for an image-capable
 handoff; producing the bundle does not itself complete semantic review.

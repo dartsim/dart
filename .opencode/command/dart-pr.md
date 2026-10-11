@@ -59,18 +59,18 @@ Use these practices:
     solely as PR evidence. Commit visual files only when they are durable
     documentation, fixtures, or source assets that should live in the
     repository.
-  - Use `pixi run evidence-publish` with
-    `--backend attachments --repo owner/repo --yes` after explicit
-    maintainer/user approval for uploads. The helper uses the `gh` token,
-    without a browser cookie, to upload to the same user-attachments store as
-    the web PR/issue editor's drag-and-drop or file picker. Never host transient
-    evidence as release assets or tags. Any action that edits or comments on a
-    PR still requires explicit maintainer/user approval.
-  - If the current tool cannot upload PR attachments, keep the local artifact
-    paths in the working note, ask a maintainer to upload them through the PR
-    editor, and then update the PR body with the returned GitHub attachment
-    URL after explicit maintainer/user approval. Do not fall back to committing
-    transient evidence into `docs/assets/`.
+  - Use `pixi run evidence-publish` to render the section without network access.
+    After explicit maintainer/user approval, run GitHub CLI 2.99+
+    `gh pr create|edit|comment --body-file <body> --attach <file>` from the
+    selection directory, repeating `--attach` for the manifest's `attach` list.
+    GitHub CLI uploads to the same user-attachments store as the web editor's
+    drag-and-drop or file picker and rewrites local references. It needs push
+    access to the repository. Never host transient evidence as release assets
+    or tags. PR edits and comments require explicit maintainer/user approval.
+  - If CLI attachment upload is unavailable, ask a maintainer to drag and drop
+    the media into the PR editor and replace each relative reference with the
+    URL the editor inserts, after explicit maintainer/user approval. Do not
+    fall back to committing transient evidence into `docs/assets/`.
   - If no headless path exists, either add a narrowly scoped capture mode when
     it fits the example or document why visual comparison is not practical.
 - Mark non-applicable checklist items as "N/A" with a short reason.

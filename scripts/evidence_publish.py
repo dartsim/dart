@@ -1,21 +1,17 @@
-"""Generate a PR-body visual-verification section and publish media to GitHub.
+"""Generate a PR-body visual-verification section with local media references.
 
 Takes an evidence selection manifest (scripts/evidence_select.py) plus
 context fields and produces the "Visual verification" markdown a reviewer
 can read without reproducing the environment: what each artifact shows, the
 text oracle, semantic image observation, reconciliation/verdict, explicit
 claim boundary, environment/configuration, limitations, and reproduction
-commands. Media is GitHub-hosted, never committed to the repository.
-
-Backends:
-- manual (default): emits the section with UPLOAD-PLACEHOLDER markers plus
-  instructions for the PR web-editor drag-and-drop flow. No network access,
-  no approval needed.
-- attachments: uploads raw media to GitHub's user-attachments store using the
-  gh CLI token and embeds the returned URLs. Requires --repo, --yes, passing
-  publication gates, and maintainer/user approval per repo policy
-  (docs/ai/principles.md, "Approval Boundaries"). Without --yes, emits manual
-  placeholders without network access. Images and videos render inline.
+commands. This script never accesses the network. After explicit maintainer
+approval, post the section with GitHub CLI 2.99+ using
+gh pr create|edit|comment --body-file <body> --attach <path>, repeating --attach
+for each manifest attach path and running from the selection directory.
+GitHub CLI uploads media and rewrites the local references in place. The
+fallback is drag-and-drop in the web editor: replace each relative reference
+with the URL the editor inserts. Media is GitHub-hosted, never committed.
 """
 
 from __future__ import annotations
@@ -26,37 +22,19 @@ import json
 import math
 import os
 import re
-import subprocess
 import sys
 import tempfile
-import uuid
-from http.client import HTTPException
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.parse import quote
 
 SCHEMA_VERSION = "dart.evidence_publication/v5"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
+GITHUB_ATTACHMENT_LIMIT_BYTES = 10_000_000
 
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
-_MEDIA_TYPES = {
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".gif": "image/gif",
-    ".mp4": "video/mp4",
-    ".webm": "video/webm",
-    ".mov": "video/quicktime",
-}
-_ATTACHMENT_URL = re.compile(
-    r"https://github\.com/user-attachments/assets/"
-    r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}"
-)
+_ATTACHMENT_SUFFIXES = _IMAGE_SUFFIXES | {".mp4", ".mov", ".webm"}
 _ARTIFACT_KINDS = {"still", "grid", "composite", "video"}
-_GITHUB_REPOSITORY = re.compile(
-    r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9_.-]+"
-)
 
 
 def _sha256(path: Path) -> str:
@@ -164,9 +142,15 @@ def _load_selection(path: Path) -> dict[str, Any]:
         artifact_path = Path(declared_path)
         if not artifact_path.is_absolute():
             artifact_path = path.parent / artifact_path
+        artifact_path = artifact_path.resolve()
         if not artifact_path.is_file():
             raise ValueError(
                 f"selected artifact is missing or not a regular file: {artifact_path}"
+            )
+        if artifact_path.suffix.lower() not in _ATTACHMENT_SUFFIXES:
+            raise ValueError(
+                f"GitHub cannot attach selected artifact {declared_path!r}: "
+                f"unsupported suffix {artifact_path.suffix!r}"
             )
         # Compare files, not strings, so ./a.png, symlinks and hardlinks to
         # one file cannot count as separate artifacts.
@@ -175,6 +159,12 @@ def _load_selection(path: Path) -> dict[str, Any]:
             raise ValueError(f"selected artifact path {declared_path!r} is duplicated")
         selected_files.add((stat.st_dev, stat.st_ino))
         actual_bytes = stat.st_size
+        if actual_bytes > GITHUB_ATTACHMENT_LIMIT_BYTES:
+            raise ValueError(
+                f"selected artifact {declared_path!r} exceeds GitHub's 10 MB "
+                f"attachment limit ({GITHUB_ATTACHMENT_LIMIT_BYTES} bytes); "
+                "shrink or re-encode it"
+            )
         if actual_bytes != expected_bytes:
             raise ValueError(
                 f"selected artifact {declared_path!r} changed size after "
@@ -230,91 +220,20 @@ def _load_selection(path: Path) -> dict[str, Any]:
     return manifest
 
 
-def _gh(args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(["gh", *args], capture_output=True, text=True, check=True)
-
-
-def _publish_attachments(
-    selection: dict[str, Any],
-    base_dir: Path,
-    repo: str,
-) -> dict[str, str]:
-    """Upload selected media and accept only attachment URLs from HTTP 201."""
-    for artifact in selection["selected"]:
-        suffix = Path(artifact["path"]).suffix.lower()
-        if suffix not in _MEDIA_TYPES:
-            raise ValueError(f"unsupported media suffix for {artifact['path']!r}")
-
-    # The upload host is fixed, so pin gh too: an ambient GH_HOST must not
-    # hand another server's token to uploads.github.com.
-    token = _gh(["auth", "token", "--hostname", "github.com"]).stdout.strip()
-    if not token:
-        raise ValueError("gh auth token returned an empty token")
-    repository_id = _gh(
-        ["api", "--hostname", "github.com", f"repos/{repo}", "--jq", ".id"]
-    ).stdout.strip()
-    if not re.fullmatch(r"[1-9][0-9]*", repository_id):
-        raise ValueError("gh api returned an invalid repository ID")
-
-    urls: dict[str, str] = {}
-    for artifact in selection["selected"]:
-        source = Path(artifact["path"])
-        if not source.is_absolute():
-            source = base_dir / source
-        data = source.read_bytes()
-        if (
-            len(data) != artifact["bytes"]
-            or hashlib.sha256(data).hexdigest() != artifact["sha256"]
-        ):
-            raise ValueError(
-                f"selected artifact {artifact['path']!r} changed before upload"
-            )
-        mime = _MEDIA_TYPES[source.suffix.lower()]
-        query = urlencode(
-            {"name": source.name, "content_type": mime, "repository_id": repository_id}
-        )
-        request = Request(
-            f"https://uploads.github.com/user-attachments/assets?{query}",
-            data=data,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Accept": "application/json",
-                "Content-Type": mime,
-            },
-            method="POST",
-        )
-        with urlopen(request, timeout=60) as response:
-            if response.status != 201:
-                raise ValueError(
-                    f"attachment upload returned HTTP {response.status}, expected 201"
-                )
-            payload = json.loads(response.read())
-        url = payload.get("url") if isinstance(payload, dict) else None
-        if not isinstance(url, str) or not _ATTACHMENT_URL.fullmatch(url):
-            raise ValueError(
-                "attachment upload returned an invalid user-attachments URL"
-            )
-        urls[artifact["path"]] = url
-    return urls
-
-
-def _artifact_reference(artifact: dict[str, Any], url: str | None) -> str:
-    name = Path(artifact["path"]).name
-    if url is None:
-        return (
-            f"<!-- UPLOAD-PLACEHOLDER: drag-drop {artifact['path']} into the PR "
-            f"web editor here and delete this comment -->\n"
-            f"`{name}` (pending upload)"
-        )
-    suffix = Path(artifact["path"]).suffix.lower()
-    if suffix in _IMAGE_SUFFIXES:
-        return f"![{artifact['caption'] or name}]({url})"
-    return url
+def _artifact_reference(artifact: dict[str, Any], path: str) -> str:
+    caption = (
+        artifact["caption"] or Path(artifact["path"]).name
+        if Path(path).suffix.lower() in _IMAGE_SUFFIXES
+        else ""
+    )
+    # gh percent-decodes destinations when matching --attach paths, so this
+    # keeps names with spaces or parentheses valid Markdown links.
+    return f"![{caption}]({quote(path, safe='/')})"
 
 
 def render_section(
     selection: dict[str, Any],
-    urls: dict[str, str],
+    attach: list[str],
     *,
     environment: str,
     configuration: str,
@@ -345,7 +264,7 @@ def render_section(
         caption = artifact["caption"] or Path(artifact["path"]).name
         lines.append(f"#### {index}. {caption}")
         lines.append("")
-        lines.append(_artifact_reference(artifact, urls.get(artifact["path"])))
+        lines.append(_artifact_reference(artifact, attach[index - 1]))
         lines.append("")
         details = [f"Supports: {', '.join(artifact['claims'])}"]
         if artifact.get("observe"):
@@ -509,38 +428,25 @@ def _selection_digest(selection: dict[str, Any]) -> str:
 def _build_manifest(
     selection: dict[str, Any],
     *,
-    backend: str,
-    repository: str | None,
     out: Path,
-    urls: dict[str, str],
-    uploaded: bool,
-    status: str,
-    url_provenance: str | None,
+    attach: list[str],
     publication_pass: bool,
     text_oracle: str,
     visible_observation: str,
     reconciliation: str,
     semantic_verdict: str,
-    attempt_id: str | None = None,
     note: str | None = None,
-    error: str | None = None,
 ) -> dict[str, Any]:
     manifest: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
-        "status": status,
-        "backend": backend,
-        "repository": repository,
-        "uploaded": uploaded,
-        "urls": urls,
-        "url_provenance": url_provenance,
+        "status": "ready" if publication_pass else "not_ready",
+        "attach": attach,
         "selection_sha256": _selection_digest(selection),
         "artifacts": [
             {
                 "path": artifact["path"],
                 "bytes": artifact["bytes"],
                 "sha256": artifact["sha256"],
-                "url": urls.get(artifact["path"]),
-                "url_provenance": url_provenance if artifact["path"] in urls else None,
             }
             for artifact in selection["selected"]
         ],
@@ -552,34 +458,11 @@ def _build_manifest(
             "reconciliation": reconciliation,
             "verdict": semantic_verdict,
         },
-        "attempt_id": attempt_id,
         "pass": publication_pass,
     }
     if note is not None:
         manifest["note"] = note
-    if error is not None:
-        manifest["error"] = error
     return manifest
-
-
-def _render_publication_state(
-    status: str,
-    *,
-    attempt_id: str,
-    error: str | None = None,
-) -> str:
-    lines = [
-        "## Visual verification publication is not ready",
-        "",
-        f"- **Status**: `{status}`",
-        f"- **Attempt**: `{attempt_id}`",
-        "- **Publishable evidence**: no",
-        "",
-        "Do not copy URLs or treat this output as completed verification.",
-    ]
-    if error is not None:
-        lines.extend(["", f"**Error**: {error}"])
-    return "\n".join(lines) + "\n"
 
 
 def _write_outputs(
@@ -604,15 +487,6 @@ def _write_outputs(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("selection", type=Path, help="evidence selection JSON")
-    parser.add_argument(
-        "--backend", choices=("manual", "attachments"), default="manual"
-    )
-    parser.add_argument("--repo", default="", help="owner/repo for attachments")
-    parser.add_argument(
-        "--yes",
-        action="store_true",
-        help="actually upload (attachments backend); otherwise dry-run",
-    )
     parser.add_argument("--environment", required=True, type=_non_empty)
     parser.add_argument("--configuration", default="")
     parser.add_argument("--limitation", action="append", default=[], type=_non_empty)
@@ -653,66 +527,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest-out", type=Path, help="publication manifest JSON")
     args = parser.parse_args(argv)
 
-    selection: dict[str, Any] | None = None
-    attempt_id: str | None = None
-    repository: str | None = None
     try:
         selection = _load_selection(args.selection)
         _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
         selection_pass = _selection_passes(selection)
         semantic_pass = args.semantic_verdict == "pass"
         publication_ready = selection_pass and semantic_pass
-        urls: dict[str, str] = {}
-        uploaded = False
-        status = "not_ready"
-        url_provenance: str | None = None
+        base_dir = args.selection.parent.resolve()
+        attach = [
+            Path(
+                os.path.relpath((base_dir / artifact["path"]).resolve(), base_dir)
+            ).as_posix()
+            for artifact in selection["selected"]
+        ]
         note: str | None = None
-
-        if args.backend == "attachments":
-            repo = args.repo.strip()
-            if not _GITHUB_REPOSITORY.fullmatch(repo):
-                raise ValueError("--backend attachments requires --repo owner/repo")
-            repository = repo
-            if args.yes and publication_ready:
-                attempt_id = str(uuid.uuid4())
-                publishing = _build_manifest(
-                    selection,
-                    backend=args.backend,
-                    repository=repository,
-                    out=args.out,
-                    urls={},
-                    uploaded=False,
-                    status="publishing",
-                    url_provenance=None,
-                    publication_pass=False,
-                    text_oracle=args.text_oracle,
-                    visible_observation=args.visible_observation,
-                    reconciliation=args.reconciliation,
-                    semantic_verdict=args.semantic_verdict,
-                    attempt_id=attempt_id,
-                    note=(
-                        "A GitHub publication attempt is in progress. This state "
-                        "invalidates any prior success output."
-                    ),
-                )
-                _write_outputs(
-                    args.out,
-                    args.manifest_out,
-                    _render_publication_state("publishing", attempt_id=attempt_id),
-                    publishing,
-                )
-                urls = _publish_attachments(selection, args.selection.parent, repo)
-                uploaded = True
-                status = "published"
-                url_provenance = "upload_response"
-            elif not args.yes and publication_ready:
-                status = "dry_run"
-                note = (
-                    "dry-run: nothing was uploaded; re-run with --yes after "
-                    "maintainer approval, or drag-drop into the PR web editor"
-                )
-        elif publication_ready:
-            status = "manual_ready"
 
         if not selection_pass:
             uncovered = sorted(
@@ -734,7 +562,7 @@ def main(argv: list[str] | None = None) -> int:
 
         section = render_section(
             selection,
-            urls,
+            attach,
             environment=args.environment,
             configuration=args.configuration,
             limitations=args.limitation,
@@ -747,76 +575,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         manifest = _build_manifest(
             selection,
-            backend=args.backend,
-            repository=repository,
             out=args.out,
-            urls=urls,
-            uploaded=uploaded,
-            status=status,
-            url_provenance=url_provenance,
+            attach=attach,
             publication_pass=publication_ready,
             text_oracle=args.text_oracle,
             visible_observation=args.visible_observation,
             reconciliation=args.reconciliation,
             semantic_verdict=args.semantic_verdict,
-            attempt_id=attempt_id,
             note=note,
         )
         text = _write_outputs(args.out, args.manifest_out, section, manifest)
-    except (
-        HTTPException,
-        OSError,
-        ValueError,
-        KeyError,
-        subprocess.CalledProcessError,
-    ) as error:
-        error_text = str(error)
-        if (
-            isinstance(error, subprocess.CalledProcessError)
-            and error.stderr
-            and error.stderr.strip()
-        ):
-            error_text = f"{error_text}: {error.stderr.strip()}"
-        if selection is not None and attempt_id is not None:
-            status = "failed"
-            failure = _build_manifest(
-                selection,
-                backend=args.backend,
-                repository=repository,
-                out=args.out,
-                urls={},
-                uploaded=False,
-                status=status,
-                url_provenance=None,
-                publication_pass=False,
-                text_oracle=args.text_oracle,
-                visible_observation=args.visible_observation,
-                reconciliation=args.reconciliation,
-                semantic_verdict=args.semantic_verdict,
-                attempt_id=attempt_id,
-                note=(
-                    "Publication did not complete. "
-                    "Any prior success output remains invalidated."
-                ),
-                error=error_text,
-            )
-            try:
-                _write_outputs(
-                    args.out,
-                    args.manifest_out,
-                    _render_publication_state(
-                        status,
-                        attempt_id=attempt_id,
-                        error=error_text,
-                    ),
-                    failure,
-                )
-            except OSError as write_error:
-                error_text = (
-                    f"{error_text}; additionally failed to persist failure state: "
-                    f"{write_error}"
-                )
-        print(f"error: {error_text}", file=sys.stderr)
+    except (OSError, ValueError, KeyError) as error:
+        print(f"error: {error}", file=sys.stderr)
         return 2
     print(text)
     return 0 if manifest["pass"] else 1

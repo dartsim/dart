@@ -117,10 +117,10 @@ PRs fixing or changing dynamics, collision/contact, constraint, simulation,
 or rendering behavior include a before/after visual pair by default, supported
 by the text oracle. Capture the base revision and PR head using the same scene,
 camera, steps, dimensions, and renderer, compose side by side with
-`pixi run image-compose`, and publish with `pixi run evidence-publish` using
-`--backend attachments --repo owner/repo --yes` after explicit maintainer
-approval for uploads. Magnify small effects with a closer camera, side view,
-contrasting colors, or contact/debug layers; interpenetration
+`pixi run image-compose`, render the section with `pixi run evidence-publish`,
+and post it with GitHub CLI 2.99+ `--body-file` and `--attach` from the selection
+directory after explicit maintainer approval. Magnify small effects with a
+closer camera, side view, contrasting colors, or contact/debug layers; interpenetration
 and penetration depth need a close side view because a distant still hides
 them. If the pair looks identical, check the text oracle on both revisions and
 reframe until any visible effect shows. Skip only with a stated reason, such as
@@ -261,21 +261,22 @@ readable alongside their contact markers and collision bounds.
       --visible-observation "what was seen after opening the selected PNGs" \
       --reconciliation "how image and text agree or disagree" \
       --semantic-verdict pass --not-proven "explicit claim boundary" \
-      --out pr_section.md   # manual placeholders; attachments needs --repo and --yes
+      --out pr_section.md   # local references for gh --body-file and --attach
   ```
 
   Every artifact must support an explicit claim (`evidence-select` rejects
   unclaimed ones and records per-artifact rationale). Publication passes only
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
-  The `attachments` backend requires `--repo owner/repo` and explicit upload
-  approval before `--yes`. It uses the `gh` token to upload to the same GitHub
-  user-attachments store as the PR/issue editor's drag-and-drop flow. Without
-  `--yes` it renders manual placeholders without GitHub access; failing gates
-  also prevent uploads. It validates local media and upload-response URLs,
-  records source sizes and hashes in the manifest, and keeps failed attempts
-  non-passing. If the helper cannot upload, ask a maintainer to drag and drop
-  the media into the PR editor and use the returned attachment URLs. Host
+  The helper validates local media, records source sizes and hashes, and
+  renders references relative to the selection directory without network access.
+  After explicit maintainer/user approval, run GitHub CLI 2.99+
+  `gh pr create|edit|comment --body-file <body> --attach <file>` from that
+  directory, repeating `--attach` for each path in the manifest's `attach` list.
+  GitHub CLI uploads to the same user-attachments store as the PR/issue editor's
+  drag-and-drop flow and rewrites the local references. If CLI attachment upload
+  is unavailable, ask a maintainer to drag and drop the media into the PR editor
+  and replace each relative reference with the URL the editor inserts. Host
   transient evidence as attachments, never release assets or tags, and keep
   it out of Git.
 
