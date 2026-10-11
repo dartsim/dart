@@ -31,6 +31,16 @@
     `EmbedStateAndProperties`. These operations could not be instantiated
     previously; type traits such as `std::is_copy_constructible` now correctly
     report `false`. Class layouts remain unchanged.
+  * Compile optional Bullet and ODE collision backends into the `dart` library.
+    Existing CMake targets and components remain available for rebuilt
+    applications, but consumers of the separate collision shared libraries
+    must rebuild.
+  * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
+    legacy CMake names and public `dart::utils` headers for rebuilt consumers.
+    Enabling IO now requires both tinyxml2 and urdfdom.
+  * Combine the OSG GUI and ImGui integration into `dart-gui`, preserving
+    `dart-gui-osg` and `dart-external-imgui` as CMake forwarding targets.
+    Applications linked to the former GUI shared libraries must rebuild.
 
 * API
 
@@ -81,9 +91,18 @@
 
 * Build
 
-  * Add the optional `utils-assets` component for C++ and dartpy online model
-    retrieval, with pinned sources, verified versioned caches, and offline
-    reuse. Native builds opt in with `DART_BUILD_UTILS_ASSETS=ON` and require
+  * Add independently configurable headless core builds using
+    `DART_BUILD_IO=OFF`, `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`,
+    including the complete removal of graphics dependency discovery and ImGui
+    downloads from that build.
+  * Allow GUI builds with IO disabled; `dart-gui` depends directly on core.
+  * Keep dartpy as one all-in-one nanobind Python module linked to
+    `dart`, `dart-io` and `dart-gui`, requiring IO and GUI.
+
+  * Add the optional `utils-assets` component within `dart-io` for C++ and
+    dartpy online model retrieval, with pinned sources, verified versioned
+    caches, and offline reuse. Native builds opt in with
+    `DART_BUILD_UTILS_ASSETS=ON` and require
     libcurl and OpenSSL; Pixi builds enable it by default. The catalog includes
     Atlas v5 and Unitree G1 model-viewing demos.
 

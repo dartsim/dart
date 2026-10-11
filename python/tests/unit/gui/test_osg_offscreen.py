@@ -12,9 +12,8 @@ import os
 import struct
 import zlib
 
-import pytest
-
 import dartpy as dart
+import pytest
 
 # The off-screen pbuffer path requires an X server.
 requires_display = pytest.mark.skipif(
@@ -22,12 +21,6 @@ requires_display = pytest.mark.skipif(
     reason="off-screen GLX capture needs a DISPLAY (run under xvfb-run on "
     "headless hosts)",
 )
-
-# Skip the whole module if dartpy was built without the OSG GUI.
-try:
-    _osg = dart.gui.osg
-except AttributeError:  # pragma: no cover - depends on build config
-    pytest.skip("dartpy built without gui.osg", allow_module_level=True)
 
 
 def _read_png_luminance(path):

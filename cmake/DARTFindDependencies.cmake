@@ -186,11 +186,14 @@ else()
   set(spdlog_FOUND FALSE)
 endif()
 
-if(NOT DART_USE_SYSTEM_ODE OR NOT DART_USE_SYSTEM_BULLET)
+if(
+  (NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
+  OR (NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
+)
   include(FetchContent)
 endif()
 
-if(NOT DART_USE_SYSTEM_ODE)
+if(NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
   # Match Ubuntu/conda-forge libode settings (libccd enabled, box-cylinder disabled).
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
@@ -215,7 +218,7 @@ if(NOT DART_USE_SYSTEM_ODE)
   unset(_dart_build_shared_libs)
 endif()
 
-if(NOT DART_USE_SYSTEM_BULLET)
+if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
   # Match conda-forge Bullet float64 build flags.
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)

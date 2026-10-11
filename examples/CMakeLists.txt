@@ -8,5 +8,7 @@ add_subdirectory(cylindrical_constraint)
 add_subdirectory(speed_test)
 
 # OSG renderer examples
-add_subdirectory(contact_benchmark)
-add_subdirectory(demos)
+if(TARGET dart-gui-osg)
+  add_subdirectory(contact_benchmark)
+  add_subdirectory(demos)
+endif()

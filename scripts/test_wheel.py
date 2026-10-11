@@ -12,8 +12,9 @@ from pathlib import Path
 
 SMOKE_TEST = r"""
 import dartpy as dart
+from dartpy.gui.osg import InteractiveFrame
 from dartpy.math import Random
-from dartpy.utils import DartLoader
+from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
 
 assert dart.collision.BulletCollisionDetector() is not None
 assert dart.collision.OdeCollisionDetector() is not None
@@ -30,6 +31,16 @@ assert -1.0 <= value <= 1.0
 
 loader = DartLoader()
 assert loader.parseSkeleton("missing-file-for-wheel-smoke.urdf") is None
+skeleton = loader.parseSkeletonString(
+    '<robot name="wheel_smoke"><link name="base"/></robot>', ""
+)
+assert skeleton is not None
+assert skeleton.getNumBodyNodes() == 1
+
+frame = InteractiveFrame(dart.dynamics.Frame.World())
+shapes = frame.getShapeFrames()
+assert isinstance(shapes, list)
+assert shapes
 
 # C++ must dispatch to Python overrides; a broken wheel silently skips them.
 skeletons = [dart.dynamics.Skeleton("a"), dart.dynamics.Skeleton("b")]

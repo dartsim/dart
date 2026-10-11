@@ -34,10 +34,20 @@
 
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#endif
 
 #include <algorithm>
 
@@ -47,6 +57,15 @@ namespace collision {
 //==============================================================================
 CollisionDetector::Factory* CollisionDetector::getFactory()
 {
+  // Keep backend registrar objects linked when dart is a static library.
+  DARTCollisionDetector::getStaticType();
+  FCLCollisionDetector::getStaticType();
+#if HAVE_BULLET
+  BulletCollisionDetector::getStaticType();
+#endif
+#if HAVE_ODE
+  OdeCollisionDetector::getStaticType();
+#endif
   return SingletonFactory::getSingletonPtr();
 }
 

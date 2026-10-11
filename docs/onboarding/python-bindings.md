@@ -2,6 +2,19 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
+For DART 6.21, `dartpy` is one all-in-one nanobind extension,
+containing core, collision backends enabled in the build, IO parsers and
+OSG/ImGui bindings. It links `dart`, `dart-io` and `dart-gui`. Enabling
+`DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`;
+for a headless C++ installation, set `DART_BUILD_DARTPY=OFF`. See
+[build system notes](build-system.md) for the C++ package layout and legacy
+forwarding targets.
+
+With `DART_BUILD_UTILS_ASSETS=ON`, `dart-io` also includes the optional online
+robot model retriever, exposed as `dartpy.utils.ModelResourceRetriever`.
+See [IO and model loading](io-parsing.md#online-robot-models) for its
+dependencies and verified-cache workflow.
+
 ```bash
 pixi run build-py-dev
 pixi run test-py
@@ -39,7 +52,7 @@ imports, linked components, or installed package behavior.
 
 DART 6.21 uses nanobind as the only dartpy binder. Sources live directly under
 `python/dartpy/`. The module keeps the DART namespaces, camelCase names,
-and overloads, including `dartpy.gui.osg` when `DART_BUILD_GUI_OSG` is enabled.
+and overloads, including `dartpy.gui.osg` in the all-in-one module.
 
 Python 3.10 or newer and nanobind 3.1 or newer are required.
 `DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
@@ -76,7 +89,6 @@ GUI Python ancestry follows the primary base: `Viewer` and `ImGuiViewer`, plus
 `InteractiveTool` and `InteractiveFrame` omit `dynamics.Detachable`, inherited
 through `SimpleFrame`. These secondary bases remain usable through native
 arguments and pointer returns; only `isinstance`, `issubclass`, and MRO differ.
-
 
 OSG trampoline aliases occupy Python instance storage. Their constructors take
 one OSG reference and their destructors release it without deleting that
@@ -209,3 +221,8 @@ Use the candidate branch for the workflow definition and the exact candidate
 SHA for the checkout. `ref=main` enables the release-only Python rows without
 requesting publication. Inspect both architectures' repaired tags and fresh
 container smoke tests before release.
+
+The repaired-wheel smoke test requires all four parser APIs and constructs an
+OSG interactive frame without opening a display. It also parses an inline
+URDF model, so missing IO or GUI support fails acceptance. Linux release
+wheels run this check in the fresh manylinux container without a display.

@@ -4021,7 +4021,7 @@ def test_local_uses_independent_source_and_cmake_caches(
     from types import SimpleNamespace
 
     module = _load_runner()
-    monkeypatch.setattr(module, "install_targets", lambda *args: [])
+    monkeypatch.setattr(module, "install_targets", lambda *args: ["dart-utils-urdf"])
     args = module.parser().parse_args(
         [
             "local",
@@ -7143,8 +7143,11 @@ def test_install_targets_reads_configured_gui_from_cmake(tmp_path, gui):
 
 
 @pytest.mark.parametrize("gui", [False, True])
+@pytest.mark.parametrize(
+    "io_targets", [("dart-utils", "dart-utils-urdf"), ("dart-io",)]
+)
 def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
-    monkeypatch, tmp_path, gui
+    monkeypatch, tmp_path, gui, io_targets
 ):
     module = _load_runner()
     root = tmp_path / "harness"
@@ -7167,7 +7170,12 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
         lambda *args: {"compiler": "GNU 13.3.0", "compiler_sha": "1" * 64},
     )
     monkeypatch.setattr(module, "library_hashes", lambda *args: {})
-    installed_targets = ["dart-optimizer-ipopt", *(["dart-gui-osg"] if gui else [])]
+    installed_targets = [
+        "dart",
+        *io_targets,
+        "dart-optimizer-ipopt",
+        *(["dart-gui-osg"] if gui else []),
+    ]
     monkeypatch.setattr(module, "install_targets", lambda *args: installed_targets)
 
     def execute(command, env, log, timeout, **kwargs):
@@ -7185,10 +7193,9 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
             if Path(command[2]).resolve() == driver:
                 (driver / "portable_step_bench").write_bytes(b"driver")
             else:
-                assert set(command[command.index("--target") + 1 :]) == {
-                    "dart-utils-urdf",
-                    *installed_targets,
-                }
+                assert set(command[command.index("--target") + 1 :]) == set(
+                    installed_targets
+                )
         elif command[:2] == ["cmake", "--install"]:
             staged_prefix = Path(command[command.index("--prefix") + 1])
             assert staged_prefix == module.MEASUREMENT_ROOT / "arm/prefix"

@@ -4,19 +4,22 @@
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
-if(BULLET_FOUND)
-  if(DART_USE_SYSTEM_BULLET)
-    # Test whether Bullet was built with double precision. If so, we need to
-    # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
-    # any Bullet headers. This is a workaround for the fact that Bullet does not
-    # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-    include(CheckCXXSourceCompiles)
-    set(CMAKE_REQUIRED_FLAGS "-w")
-    set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-    set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
-    check_cxx_source_compiles(
-      "
+dart_check_optional_package(BULLET "dart" "Bullet" "3.06")
+if(DART_USE_SYSTEM_BULLET)
+  # Test whether Bullet was built with double precision. If so, we need to
+  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
+  # any Bullet headers. This is a workaround for the fact that Bullet does not
+  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_FLAGS "-w")
+  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  unset(BT_USE_DOUBLE_PRECISION CACHE)
+  check_cxx_source_compiles(
+    "
       #include <btBulletCollisionCommon.h>
       int main()
       {
@@ -24,30 +27,21 @@ if(BULLET_FOUND)
         btStaticPlaneShape planeShape(v, 0.);
         return 0;
       }
-      "
-      BT_USE_DOUBLE_PRECISION
-    )
-  else()
-    # FetchContent builds Bullet with USE_DOUBLE_PRECISION=ON, so keep DART in sync.
-    set(BT_USE_DOUBLE_PRECISION TRUE)
-  endif()
-
-  if(DART_VERBOSE)
-    if(BT_USE_DOUBLE_PRECISION)
-      message(STATUS "Looking for Bullet - found (double precision)")
-    else()
-      message(STATUS "Looking for Bullet - found (single precision)")
-    endif()
-  endif()
-
-  set(HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
-else()
-  message(
-    WARNING
-    "Looking for Bullet - NOT found, to use dart-collision-bullet, please install libbullet-dev"
+    "
+    BT_USE_DOUBLE_PRECISION
   )
-  set(HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
-  return()
+  cmake_pop_check_state()
+else()
+  # FetchContent builds Bullet with USE_DOUBLE_PRECISION=ON, so keep DART in sync.
+  set(BT_USE_DOUBLE_PRECISION TRUE)
+endif()
+
+if(DART_VERBOSE)
+  if(BT_USE_DOUBLE_PRECISION)
+    message(STATUS "Looking for Bullet - found (double precision)")
+  else()
+    message(STATUS "Looking for Bullet - found (single precision)")
+  endif()
 endif()
 
 # Search all header and source files
@@ -60,12 +54,32 @@ file(GLOB detail_srcs "detail/*.cpp")
 set(target_name ${PROJECT_NAME}-collision-bullet)
 set(component_name collision-bullet)
 
-# Add target
-dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
-target_link_libraries(${target_name} PUBLIC dart Bullet)
-if(BT_USE_DOUBLE_PRECISION)
-  target_compile_definitions(${target_name} PUBLIC BT_USE_DOUBLE_PRECISION)
+# Add backend sources to core and retain the legacy target for rebuilt consumers.
+dart_add_core_headers(${hdrs} ${detail_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs})
+set(bullet_target Bullet)
+get_target_property(bullet_alias Bullet ALIASED_TARGET)
+if(bullet_alias)
+  get_target_property(bullet_alias_global Bullet ALIAS_GLOBAL)
+  if(NOT bullet_alias_global)
+    set(bullet_target ${bullet_alias})
+  endif()
 endif()
+get_property(bullet_imported_targets DIRECTORY PROPERTY IMPORTED_TARGETS)
+if(bullet_target IN_LIST bullet_imported_targets)
+  set_property(TARGET ${bullet_target} PROPERTY IMPORTED_GLOBAL TRUE)
+endif()
+# Defer the installed name so CMake does not export a parent's alias target.
+dart_property_add(DART_CORE_LINK_LIBRARIES
+  $<BUILD_INTERFACE:${bullet_target}> $<INSTALL_INTERFACE:$<1:Bullet>>
+)
+dart_property_add(DART_CORE_DEPENDENCY_PACKAGES Bullet)
+if(BT_USE_DOUBLE_PRECISION)
+  dart_property_add(DART_CORE_COMPILE_DEFINITIONS BT_USE_DOUBLE_PRECISION)
+endif()
+add_library(${target_name} INTERFACE ${hdrs})
+target_link_libraries(${target_name} INTERFACE dart)
+add_dependencies(${target_name} dart)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

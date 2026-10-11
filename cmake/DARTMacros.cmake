@@ -146,7 +146,7 @@ macro(dart_check_optional_package variable component dependency)
     OFF
   )
   mark_as_advanced(DART_SKIP_${variable})
-  if(${${variable}_FOUND} AND NOT ${DART_SKIP_${variable}})
+  if(${variable}_FOUND AND NOT DART_SKIP_${variable})
     set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(
@@ -157,7 +157,7 @@ macro(dart_check_optional_package variable component dependency)
     endif()
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
-    if(NOT ${${variable}_FOUND})
+    if(NOT ${variable}_FOUND)
       if(ARGV3) # version
         message(
           WARNING
@@ -171,7 +171,7 @@ macro(dart_check_optional_package variable component dependency)
           " ${component}, please install ${dependency}"
         )
       endif()
-    elseif(${DART_SKIP_${variable}} AND DART_VERBOSE)
+    elseif(DART_SKIP_${variable} AND DART_VERBOSE)
       message(
         STATUS
         "Not using ${dependency} - version ${${variable}_VERSION}"
@@ -316,7 +316,11 @@ endfunction()
 # )
 function(dart_build_example_in_source target)
   dart_build_target_in_source(${target} ${ARGN})
-  dart_add_example(${target})
+  # Examples with missing dependencies are skipped; keep them out of the
+  # aggregate examples target.
+  if(TARGET ${target})
+    dart_add_example(${target})
+  endif()
 endfunction()
 
 # ==============================================================================

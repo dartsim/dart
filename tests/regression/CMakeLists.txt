@@ -36,7 +36,11 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(test_Issue1184 dart-collision-bullet)
 endif()
 
-if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
+if(
+  TARGET dart-collision-bullet
+  AND TARGET dart-collision-ode
+  AND TARGET dart-utils
+)
   dart_add_test("regression" test_Issue1234)
   target_link_libraries(
     test_Issue1234
@@ -79,7 +83,8 @@ if(TARGET dart-external-imgui)
   if(NOT dart_skip_system_imgui_asan_test)
     dart_add_test("regression" test_Issue2671)
     target_link_libraries(test_Issue2671 dart-external-imgui ${CMAKE_DL_LIBS})
-    if(NOT DART_USE_SYSTEM_IMGUI)
+    # The visibility probe opens a shared library with dlopen.
+    if(NOT DART_USE_SYSTEM_IMGUI AND BUILD_SHARED_LIBS)
       target_compile_definitions(
         test_Issue2671
         PRIVATE DART_EXTERNAL_IMGUI_HAS_DART_PATCHES

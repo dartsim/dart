@@ -15,10 +15,6 @@ set(PYTHON_SITE_PACKAGES "${PYTHON_SITE_PACKAGES}" PARENT_SCOPE)
 
 file(GLOB_RECURSE dartpy_headers CONFIGURE_DEPENDS "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources CONFIGURE_DEPENDS "*.cpp")
-if(NOT DART_BUILD_GUI_OSG)
-  list(FILTER dartpy_sources EXCLUDE REGEX "/gui/")
-  list(FILTER dartpy_headers EXCLUDE REGEX "/gui/")
-endif()
 execute_process(
   COMMAND
     "${Python_EXECUTABLE}"
@@ -75,26 +71,22 @@ endif()
 target_compile_features(dartpy PRIVATE cxx_std_17)
 target_include_directories(dartpy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(dartpy SYSTEM PRIVATE "${NB_DIR}/src")
-target_link_libraries(
-  dartpy
-  PRIVATE dart dart-utils dart-utils-urdf tsl::robin_map
-)
-if(DART_BUILD_GUI_OSG)
-  target_link_libraries(dartpy PRIVATE dart-gui-osg)
-  target_compile_definitions(dartpy PRIVATE DARTPY_GUI_OSG)
-endif()
-if(TARGET dart-utils-assets)
-  target_link_libraries(dartpy PRIVATE dart-utils-assets)
-  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
-endif()
-foreach(optional dart-collision-bullet dart-collision-ode)
-  if(TARGET ${optional})
-    target_link_libraries(dartpy PRIVATE ${optional})
+set(dartpy_libraries dart dart-io dart-gui)
+foreach(dartpy_library ${dartpy_libraries})
+  if(NOT TARGET ${dartpy_library})
+    message(
+      FATAL_ERROR
+      "Cannot find the library ${dartpy_library}. Please check the configuration of DART."
+    )
   endif()
 endforeach()
+target_link_libraries(dartpy PRIVATE ${dartpy_libraries} tsl::robin_map)
+if(TARGET dart-utils-assets)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
+endif()
 target_compile_definitions(
   dartpy
-  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
+  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}" DARTPY_GUI_OSG
 )
 install(TARGETS dartpy LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}")
 list(

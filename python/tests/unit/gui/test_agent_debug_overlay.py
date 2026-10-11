@@ -22,13 +22,6 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-try:
-    _osg = dart.gui.osg
-except AttributeError:  # pragma: no cover - depends on build config
-    pytest.skip("dartpy built without gui.osg", allow_module_level=True)
-
-_HAS_OSG = True
-
 
 def _settled_world():
     world = dart.simulation.World()
@@ -329,7 +322,6 @@ def test_collision_bounds_layer_skips_visual_only_shapes():
     assert np.allclose(extent, [0.4, 0.7, 1.0], atol=1e-9)
 
 
-@pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
 def test_populate_overlay_loads_lines_and_labels():
     world = _settled_world()
     scene = ado.build_overlay(world, layers=("body_frames", "labels"))
@@ -346,7 +338,6 @@ def test_populate_overlay_loads_lines_and_labels():
     assert overlay.getNumLabels() == 2
 
 
-@pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
 def test_populate_overlay_empty_scene_clears_overlay():
     world = _settled_world()
     overlay = dart.gui.osg.DebugOverlay()
@@ -359,7 +350,6 @@ def test_populate_overlay_empty_scene_clears_overlay():
     assert overlay.getNumLabels() == 0
 
 
-@pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
 @requires_display
 def test_engine_rendered_overlay_changes_pixels(tmp_path):
     world = _settled_world()

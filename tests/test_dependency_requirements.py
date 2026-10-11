@@ -62,6 +62,34 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     (directory / f"{package}Config.cmake").write_text(contents + extra)
 
 
+@pytest.mark.parametrize("skip", ["ON", "OFF"])
+def test_optional_package_with_undefined_found_flag(tmp_path, skip):
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        f"set(DART_SKIP_Missing {skip})\n"
+        'dart_check_optional_package(Missing "optional component" "Missing")\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+    assert "HAVE_Missing:BOOL=FALSE" in cache
+
+
+@pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom"])
+def test_io_requires_all_parser_dependencies(tmp_path, missing):
+    if missing == "urdfdom":
+        config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        f"set(CMAKE_DISABLE_FIND_PACKAGE_{missing} TRUE)\n"
+        f'include("{(ROOT / "dart/utils/CMakeLists.txt").as_posix()}")\n',
+    )
+    assert result.returncode != 0
+    assert f"dart-io requires {missing}" in result.stdout + result.stderr
+    assert "DART_BUILD_IO=OFF" in result.stdout + result.stderr
+
+
 @pytest.mark.parametrize(
     "package,minimum,target,required",
     [
