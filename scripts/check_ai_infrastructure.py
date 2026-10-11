@@ -189,7 +189,7 @@ APPROVED_CTEST_SELECTIONS = {
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_RELEASE_VERSION_PREFIX = (
     r"(?:DART(?:py)?(?:\.__version__|[\s_]+(?:version|release))?\s*"
-    r"(?:==|[<>~!]=|[:=<>])?\s*v?|release-)"
+    r"(?:===|==|[<>~!]=|[:=<>])?\s*v?|release-)"
 )
 NEXT_RELEASE_VERSION_PREFIX = (
     r"\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
@@ -4077,14 +4077,17 @@ def dependency_next_version(prefix: str) -> bool:
     if next_target is None or "dart" in next_target.group().lower():
         return False
     sentence_prefix = re.split(r"[.!?](?:\s+|$)", prefix[: next_target.start()])[-1]
-    return (
-        re.search(
-            rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
-            rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}",
-            sentence_prefix,
-            re.IGNORECASE,
-        )
-        is not None
+    update = None
+    for update in re.finditer(
+        rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
+        rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}",
+        sentence_prefix,
+        re.IGNORECASE,
+    ):
+        pass
+    # The clause stays the dependency's only if DART is not named after it.
+    return update is not None and not re.search(
+        r"\bDART", sentence_prefix[update.end() :], re.IGNORECASE
     )
 
 
