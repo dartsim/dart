@@ -270,8 +270,9 @@ readable alongside their contact markers and collision bounds.
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
   The helper validates local media, records source sizes and hashes, and stages
-  hash-verified copies in the manifest's absolute `attach_dir` without network
-  access. References use the staged names in its `attach` list. Splice the
+  hash-verified copies without network access in the manifest's absolute
+  `attach_dir`: `<out>.attach/` beside the section, refilled on each run.
+  References use the staged names in its `attach` list. Splice the
   section into the complete PR body: `gh pr edit --body-file` replaces the
   whole body. Alternatively, post the section as a separate `gh pr comment`.
   After explicit maintainer/user approval, run GitHub CLI 2.99+ from

@@ -6,7 +6,6 @@ import hashlib
 import json
 import os
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -18,13 +17,6 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import evidence_publish
-
-
-@pytest.fixture(autouse=True)
-def isolate_tempdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    tempdir = tmp_path / "temp"
-    tempdir.mkdir()
-    monkeypatch.setattr(tempfile, "tempdir", str(tempdir))
 
 
 def _sha256(path: Path) -> str:
@@ -515,9 +507,7 @@ def test_publication_stages_verified_files_in_selection_order(tmp_path: Path) ->
     assert publication["pass"] is True
     assert publication["attach"] == names
     attach_dir = Path(publication["attach_dir"])
-    assert attach_dir.is_absolute()
-    assert attach_dir.parent == tmp_path / "temp"
-    assert attach_dir.name.startswith("dart-evidence-attach-")
+    assert attach_dir == (tmp_path / "section.md.attach").resolve()
     assert {path.name for path in attach_dir.iterdir()} == set(names)
     for name, artifact in zip(names, manifest["selected"]):
         assert (attach_dir / name).is_file()
@@ -570,7 +560,7 @@ def test_changed_staged_copy_fails_before_writing(
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
     assert not out.exists()
     assert not manifest_out.exists()
-    assert not list((tmp_path / "temp").iterdir())
+    assert not list((tmp_path / "section.md.attach").iterdir())
 
 
 def test_failed_rerun_drops_previous_passing_manifest(
@@ -589,7 +579,7 @@ def test_failed_rerun_drops_previous_passing_manifest(
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
     assert not manifest_out.exists()
-    assert not list((tmp_path / "temp").iterdir())
+    assert not list((tmp_path / "section.md.attach").iterdir())
 
 
 def test_invalid_rerun_drops_previous_passing_manifest(tmp_path: Path) -> None:
@@ -622,58 +612,72 @@ def test_retire_previous_success_only_removes_passing_publications(
     assert path.exists() is not retired
 
 
-def test_rerun_retires_previous_staging_directory(tmp_path: Path) -> None:
+def test_rerun_without_manifest_replaces_staged_copies(tmp_path: Path) -> None:
     selection = _selection(tmp_path)
     out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-    for _ in range(2):
-        assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    args = _publication_args(selection, out, tmp_path / "unused.json")[:-2]
+    (tmp_path / "section.md.attach").mkdir()
+    (tmp_path / "section.md.attach" / "notes.txt").write_text("keep")
+    assert evidence_publish.main(args) == 0
+    shot = tmp_path / "shot.png"
+    shot.write_bytes(b"new")
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    manifest["selected"][0]["sha256"] = _sha256(shot)
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
 
-    attach_dir = json.loads(manifest_out.read_text(encoding="utf-8"))["attach_dir"]
-    assert list((tmp_path / "temp").iterdir()) == [Path(attach_dir)]
+    assert evidence_publish.main(args) == 0
 
-
-@pytest.mark.parametrize("link", ["symlink", "hardlink"])
-def test_linked_manifest_never_retires_its_target(tmp_path: Path, link: str) -> None:
-    selection = _selection(tmp_path)
-    out = tmp_path / "section.md"
-    original = tmp_path / "publication.json"
-    assert evidence_publish.main(_publication_args(selection, out, original)) == 0
-    attach_dir = Path(json.loads(original.read_text(encoding="utf-8"))["attach_dir"])
-    alias = tmp_path / "alias.json"
-    if link == "symlink":
-        alias.symlink_to(original)
-    else:
-        os.link(original, alias)
-
-    status = evidence_publish.main(_publication_args(selection, out, alias))
-
-    assert status == (2 if link == "symlink" else 0)
-    assert json.loads(original.read_text(encoding="utf-8"))["pass"] is True
-    assert attach_dir.is_dir()
+    assert {path.name for path in (tmp_path / "section.md.attach").iterdir()} == {
+        "notes.txt",
+        *(a["sha256"] + Path(a["path"]).suffix for a in manifest["selected"]),
+    }
 
 
-def test_retire_never_removes_directories_outside_the_temp_root(
-    tmp_path: Path,
+@pytest.mark.parametrize("alias", ["copy", "symlink", "hardlink"])
+def test_aliased_manifest_never_touches_another_sections_copies(
+    tmp_path: Path, alias: str
 ) -> None:
-    outside = tmp_path / "dart-evidence-attach-keep"
-    outside.mkdir()
-    manifest_out = tmp_path / "publication.json"
-    manifest_out.write_text(
-        json.dumps(
-            {
-                "schema_version": "dart.evidence_publication/v5",
-                "pass": True,
-                "attach_dir": str(outside),
-            }
-        ),
-        encoding="utf-8",
+    selection = _selection(tmp_path)
+    original = tmp_path / "publication.json"
+    assert (
+        evidence_publish.main(
+            _publication_args(selection, tmp_path / "section.md", original)
+        )
+        == 0
+    )
+    attach_dir = Path(json.loads(original.read_text(encoding="utf-8"))["attach_dir"])
+    staged = sorted(attach_dir.iterdir())
+    other = tmp_path / "other.json"
+    if alias == "copy":
+        other.write_bytes(original.read_bytes())
+    elif alias == "symlink":
+        other.symlink_to(original)
+    else:
+        os.link(original, other)
+
+    status = evidence_publish.main(
+        _publication_args(selection, tmp_path / "other.md", other)
     )
 
-    evidence_publish._retire_previous_success(manifest_out)
+    assert status == (2 if alias == "symlink" else 0)
+    assert json.loads(original.read_text(encoding="utf-8"))["pass"] is True
+    assert sorted(attach_dir.iterdir()) == staged
 
-    assert outside.is_dir()
-    assert not manifest_out.exists()
+
+def test_inputs_inside_the_staging_directory_fail_before_clearing(
+    tmp_path: Path,
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    staged = tmp_path / "section.md.attach" / (manifest["selected"][0]["sha256"] + ".png")
+    manifest["selected"][0]["path"] = str(staged)
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert staged.is_file()
 
 
 def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:
@@ -744,7 +748,7 @@ def test_failing_gates_yield_not_ready(
     assert manifest["status"] == "not_ready"
     assert manifest["pass"] is False
     assert manifest["attach_dir"] is None
-    assert not list((tmp_path / "temp").iterdir())
+    assert not (tmp_path / "section.md.attach").exists()
 
 
 @pytest.mark.parametrize(

@@ -8,7 +8,8 @@ claim boundary, environment/configuration, limitations, and reproduction
 commands. This script never accesses the network. Insert the section into the
 complete PR body because gh pr edit --body-file replaces the whole body, or
 post it separately with gh pr comment. After explicit maintainer/user approval,
-run GitHub CLI 2.99+ from the manifest attach_dir with an explicit PR URL (or a
+run GitHub CLI 2.99+ from the manifest attach_dir (<out>.attach, which each run
+refills with hash-named copies) with an explicit PR URL (or a
 number plus -R owner/repo); gh pr create also needs -R owner/repo and --head
 <branch>. Pass --attach for each manifest attach name (at most 50 per command).
 GitHub CLI uploads media and rewrites the local references in place. The
@@ -19,13 +20,13 @@ URL the editor inserts. Media is GitHub-hosted, never committed.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import math
 import os
 import re
 import shutil
-import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -37,6 +38,8 @@ SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 # gh --attach validates file types and sizes itself and renders these as players.
 _VIDEO_SUFFIXES = {".mp4", ".mov", ".webm"}
 _ARTIFACT_KINDS = {"still", "grid", "composite", "video"}
+# Staged copies are named <sha256><suffix>; a rerun clears only these names.
+_STAGED_NAME = re.compile(r"[0-9a-f]{64}(?:\.[^.]+)?")
 
 
 def _sha256(path: Path) -> str:
@@ -347,11 +350,18 @@ def _paths_alias(left: Path, right: Path) -> bool:
     return False
 
 
+def _inside(path: Path, directory: Path) -> bool:
+    child = str(path.resolve(strict=False)).casefold()
+    parent = str(directory.resolve(strict=False)).casefold()
+    return child == parent or child.startswith(parent.rstrip("/\\") + os.sep)
+
+
 def _preflight_outputs(
     selection_path: Path,
     selection: dict[str, Any],
     out: Path,
     manifest_out: Path | None,
+    attach_dir: Path,
 ) -> None:
     """Prove output paths are distinct, non-input, and atomically writable."""
     outputs = [out] + ([manifest_out] if manifest_out is not None else [])
@@ -364,6 +374,13 @@ def _preflight_outputs(
 
     if manifest_out is not None and _paths_alias(out, manifest_out):
         raise ValueError("--out and --manifest-out must be distinct files")
+    if attach_dir.is_symlink() or (attach_dir.exists() and not attach_dir.is_dir()):
+        raise ValueError(f"staging path is not a directory: {attach_dir}")
+    for path in protected + outputs:
+        if _inside(path, attach_dir):
+            raise ValueError(
+                f"inputs and outputs must stay outside the staging directory: {path}"
+            )
     for output in outputs:
         if output.is_symlink():
             raise ValueError(f"output path must not be a symbolic link: {output}")
@@ -463,34 +480,33 @@ def _build_manifest(
 
 
 def _retire_previous_success(manifest_out: Path | None) -> None:
-    """Delete a previous publication's staging directory and passing manifest.
+    """Delete a previous passing publication manifest.
 
-    Only an unlinked regular file holding a publication manifest qualifies,
-    and only a staging directory this script created under the temp root is
-    removed, so a linked or aliased input or a corrupted path is never touched.
+    Only a regular file holding a publication manifest qualifies, so an
+    aliased input or a symlink, which preflight rejects, is never touched.
     """
-    if manifest_out is None:
+    if manifest_out is None or manifest_out.is_symlink():
         return
     try:
-        info = manifest_out.lstat()
-        # A symlink or hard link would retire another publication's evidence.
-        if not stat.S_ISREG(info.st_mode) or info.st_nlink > 1:
-            return
         previous = json.loads(manifest_out.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return
-    if not isinstance(previous, dict) or not str(
-        previous.get("schema_version", "")
-    ).startswith("dart.evidence_publication/"):
-        return
-    staged = Path(str(previous.get("attach_dir", "")))
     if (
-        staged.name.startswith("dart-evidence-attach-")
-        and staged.parent == Path(tempfile.gettempdir()).resolve()
+        isinstance(previous, dict)
+        and str(previous.get("schema_version", "")).startswith(
+            "dart.evidence_publication/"
+        )
+        and previous.get("pass") is True
     ):
-        shutil.rmtree(staged, ignore_errors=True)
-    if previous.get("pass") is True:
         manifest_out.unlink(missing_ok=True)
+
+
+def _clear_staging(attach_dir: Path) -> None:
+    """Remove copies a run staged in attach_dir; leave any other file alone."""
+    if attach_dir.is_dir():
+        for child in attach_dir.iterdir():
+            if _STAGED_NAME.fullmatch(child.name):
+                child.unlink()
 
 
 def _write_outputs(
@@ -555,12 +571,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest-out", type=Path, help="publication manifest JSON")
     args = parser.parse_args(argv)
 
+    out = args.out.resolve()
+    # The section owns its staging directory, so reruns replace its copies.
+    staging = out.with_name(out.name + ".attach")
     attach_dir: Path | None = None
     try:
         # A failed rerun must not leave the previous passing manifest behind.
         _retire_previous_success(args.manifest_out)
         selection = _load_selection(args.selection)
-        _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
+        _preflight_outputs(
+            args.selection, selection, args.out, args.manifest_out, staging
+        )
+        _clear_staging(staging)
         selection_pass = _selection_passes(selection)
         semantic_pass = args.semantic_verdict == "pass"
         publication_ready = selection_pass and semantic_pass
@@ -575,9 +597,8 @@ def main(argv: list[str] | None = None) -> int:
         ]
         # Only publishable evidence is staged for gh --attach.
         if publication_ready:
-            attach_dir = Path(
-                tempfile.mkdtemp(prefix="dart-evidence-attach-")
-            ).resolve()
+            staging.mkdir(exist_ok=True)
+            attach_dir = staging
             for artifact, name in zip(selection["selected"], attach):
                 staged_path = attach_dir / name
                 shutil.copyfile(args.selection.parent / artifact["path"], staged_path)
@@ -634,7 +655,8 @@ def main(argv: list[str] | None = None) -> int:
         text = _write_outputs(args.out, args.manifest_out, section, manifest)
     except (OSError, ValueError, KeyError) as error:
         if attach_dir is not None:
-            shutil.rmtree(attach_dir, ignore_errors=True)
+            with contextlib.suppress(OSError):
+                _clear_staging(attach_dir)
         print(f"error: {error}", file=sys.stderr)
         return 2
     print(text)
