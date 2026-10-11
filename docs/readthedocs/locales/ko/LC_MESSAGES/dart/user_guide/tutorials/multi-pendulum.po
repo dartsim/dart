@@ -133,7 +133,7 @@ msgstr ""
 #: ../../dart/user_guide/tutorials/multi-pendulum.md:58
 #: ed42b7d8a19e4bc0ab2c20c51bb0ff95
 msgid ""
-"These tutorials use the OSG viewer utilities under ``dart::gui::osg``. "
+"These tutorials use the Filament viewer utilities under ``dart::gui``. "
 "After we create the ``World`` and pendulum skeleton, we instantiate a "
 "``Controller`` plus a GUI event handler, wrap the world in a "
 "``RealTimeWorldNode``, and send that node to a ``Viewer``."

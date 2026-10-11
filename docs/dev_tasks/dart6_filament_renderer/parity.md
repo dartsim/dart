@@ -14,8 +14,8 @@ gates, Gazebo, the CP313 wheel, and the relocated installed consumer.
 M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11;
 native functional CI passed on Linux, Windows and macOS. Still pending for
 release acceptance: the wheel/cache gates in `README.md`, accepted Linux
-performance/resource comparisons against an immutable OSG checkout on a quiet
-host, and final release reviews. Historical paired visual assessments below cover the
+Filament performance/resource measurements on GPU and Lavapipe on a quiet
+host against an approved fast-profile disposition (decision D32), and final release reviews. Historical paired visual assessments below cover the
 preview bytes; the completion session re-checked rendering with viewed
 captures but did not repeat the 37-pair OSG comparison.
 

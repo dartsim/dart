@@ -281,6 +281,7 @@ DEPENDENCY_NAMES = (
     "Bullet",
     "ODE",
     "FCL",
+    # Historical and release-6.20 text still names OSG versions.
     "OpenSceneGraph",
     "OSG",
     "Filament",

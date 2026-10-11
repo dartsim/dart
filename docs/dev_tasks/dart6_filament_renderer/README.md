@@ -25,7 +25,8 @@ interim module before 7.0 rc.
 
 Feature parity and release acceptance still require fresh Linux/native,
 installed-consumer/wheel, platform, and performance evidence. Linux RTX 5070 Ti
-and software-driver comparisons must stay within measured OSG baseline noise.
+and Lavapipe measurements must meet an approved fast-profile disposition
+(decision D32); no renderer baseline is required.
 Windows/macOS performance is maintainer-deferred; native functional CI is
 mandatory. User approval to replace OSG does not establish those results.
 

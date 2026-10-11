@@ -396,7 +396,6 @@ def environment(prefix: Path) -> dict[str, str]:
         "LC_ALL": "C",
         "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
         "LD_LIBRARY_PATH": ":".join(paths),
-        "LD_PRELOAD": str(MEASUREMENT_ROOT / "arm/osgpath.so"),
     }
 
 
@@ -571,7 +570,7 @@ def row_command(row: Row, args, world: Path, warmup: int, steps: int) -> list[st
 
 
 def perturb_environment(env: dict, args, config: str) -> dict:
-    env["LD_PRELOAD"] += f":{args.shim}"
+    env["LD_PRELOAD"] = str(args.shim)
     if config == "tcache0":
         env["GLIBC_TUNABLES"] += ":glibc.malloc.tcache_count=0"
     elif config:
@@ -1242,7 +1241,6 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
         "preset": provenance["preset"],
         "harness_sha": harness,
         "allocshim_sha": sha(args.shim.read_bytes()),
-        "osgpath_sha": sha((MEASUREMENT_ROOT / "arm/osgpath.so").read_bytes()),
         "heappad_sha": sha(args.heappad.read_bytes()) if args.perturb else None,
     }
     values["runner"] = {
@@ -1353,9 +1351,6 @@ def run_arm(args) -> dict:
             (slot / "dependencies").symlink_to(
                 Path(dependency).resolve(), target_is_directory=True
             )
-        build_shims(args, slot, names=("osgpath",))
-        if dependency and (Path(dependency) / "lib/libosgDB.so").is_file():
-            validate_osg_shim(slot / "osgpath.so", Path(dependency) / "lib/libosgDB.so")
         arm.shim, arm.heappad = slot / "allocshim.so", slot / "heappad.so"
         shutil.copy2(args.shim, arm.shim)
         if args.perturb:
@@ -3622,10 +3617,9 @@ def build_shims(args, shims: Path, names=("allocshim", "heappad")) -> None:
     shims.mkdir(parents=True, exist_ok=True)
     options = ["-O2", "-shared", "-fPIC"]
     for name in names:
-        compiler = "/usr/bin/c++" if name == "osgpath" else "/usr/bin/cc"
+        compiler = "/usr/bin/cc"
         compiler_sha = sha(Path(compiler).resolve(strict=True).read_bytes())
-        suffix = "cpp" if name == "osgpath" else "c"
-        source = ROOT / f"tools/perf/{name}.{suffix}"
+        source = ROOT / f"tools/perf/{name}.c"
         binary, stamp = shims / f"{name}.so", shims / f"{name}.sha256"
         identity = sha(
             json.dumps(
@@ -3655,25 +3649,6 @@ def build_shims(args, shims: Path, names=("allocshim", "heappad")) -> None:
             build=True,
         )
         stamp.write_text(identity + "\n", encoding="utf-8")
-
-
-def validate_osg_shim(shim: Path, library: Path) -> None:
-    symbols = []
-    for path in (shim, library):
-        exported = subprocess.check_output(
-            ["/usr/bin/nm", "-D", "--defined-only", str(path)], text=True
-        )
-        symbols.append(
-            {
-                line.split()[-1]
-                for line in exported.splitlines()
-                if "appendPlatformSpecificLibraryFilePaths" in line
-            }
-        )
-    if len(symbols[0]) != 1 or not symbols[0].issubset(symbols[1]):
-        raise ValueError(
-            "active OSG plugin discovery ABI differs from normalization shim"
-        )
 
 
 def install_targets(build: Path) -> list[str]:
@@ -3778,11 +3753,10 @@ def _build_arm(
         CB in drivers
         and contact_cmake.is_file()
         and "gui-osg" in contact_cmake.read_text(encoding="utf-8")
-        and not (Path(dependency) / "lib/libosgDB.so").is_file()
     ):
         raise ValueError(
-            "historical contact_benchmark requires OpenSceneGraph; "
-            "use --rows gzb,robot or an environment providing OpenSceneGraph"
+            "infrastructure error: historical contact_benchmark uses the removed "
+            "gui-osg component; use the release-6.20 harness for OSG-era comparisons"
         )
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
@@ -3796,15 +3770,8 @@ def _build_arm(
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_ENABLE_SIMD=OFF",
-        # Historical OSG sources (including DART 7 trees before Filament) build
-        # their GUI only while the environment still provides OSG; DART 7
-        # rejects DART_BUILD_GUI_OSG=ON, and current arms build no GUI.
-        *(
-            ("-DDART_BUILD_GUI_OSG=ON", "-DDART_BUILD_GUI=ON")
-            if (Path(source) / "dart/gui/osg").is_dir()
-            and (Path(dependency) / "lib/libosgDB.so").is_file()
-            else ("-DDART_BUILD_GUI_OSG=OFF", "-DDART_BUILD_GUI=OFF")
-        ),
+        "-DDART_BUILD_GUI_OSG=OFF",
+        "-DDART_BUILD_GUI=OFF",
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",

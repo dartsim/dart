@@ -48,14 +48,10 @@ aarch64 wheel and the publish runs themselves remain.
    merged handoff recorded no Windows/macOS wheel runs with Filament; native
    GUI CI passes do not qualify those wheels. The C22 slim import check runs
    in `Publish dartpy` for the abi3 Linux wheels.
-5. On a quiet host, run the OSG-baseline comparison with
-   `scripts/compare_gui_renderers.py` for completed frames, setup, full RGBA,
-   RSS and GPU memory on RTX and Lavapipe. Never stop other sessions' work;
-   record the host state. The OSG reference (binary, its 50 libraries,
-   `manifest.json`, and the OSG-capable `gui_render_benchmark.cpp`, SHA256
-   `bdfe859c...`, which is in no git ref) is preserved outside the repository
-   on the original development host; otherwise rebuild it from `ec43ea419fe`
-   in an environment that still has OpenSceneGraph.
+5. On a quiet host, measure Filament completed frames, setup, full RGBA,
+   RSS and GPU memory on RTX and Lavapipe against an approved fast-profile
+   disposition (decision D32). Record the host state; never stop other
+   sessions' work.
 6. Retire this folder once the remaining release gates close; durable
    facts are already in the owner docs listed in `README.md`.
 
@@ -64,8 +60,8 @@ aarch64 wheel and the publish runs themselves remain.
 - `config` and `config-demos` share `build/<env>/cpp/Release` (system versus
   bundled docking ImGui), so alternating `test-gui` and `demos` reconfigures
   that tree.
-- A/B perf runs against OSG-era base revisions cannot build their OSG-linked
-  `contact_benchmark` once the environment lacks OpenSceneGraph.
+- Historical contact benchmarks requiring the removed GUI component fail with
+  an infrastructure error; use the `release-6.20` harness for comparisons.
 - Explicit `--width/--height` demo windows open at the origin instead of
   centered; `examples/demos/GuiBackend.hpp` is a thin alias layer that could be
   inlined; test-only `detail::readViewerPixelsRGBA` hooks are declared in the

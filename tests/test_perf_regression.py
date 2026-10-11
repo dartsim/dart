@@ -959,6 +959,15 @@ def test_compare_classification_and_thresholds():
         head["run"]["env"]["fingerprint"] = value
         assert module.compare(base, head)["verdict"]["status"] == "ERROR"
 
+    historical = copy.deepcopy(base)
+    historical["run"]["env"]["osgpath_sha"] = "0" * 64
+    assert module.compare(historical, historical)["verdict"]["status"] == "PASS"
+    for parent, child in ((historical, base), (base, historical)):
+        record = module.compare(parent, child)
+        assert record["schema"] == "dart-perf/1"
+        assert record["verdict"]["status"] == "ERROR"
+        assert "osgpath_sha" in module.markdown(record)
+
     multiple["results"][1]["threads"] = 4
     report = module.markdown(module.compare(multiple, multiple))
     assert "1/4 threads" in report
@@ -992,91 +1001,6 @@ def _load_runner():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
-
-
-def _fake_runtime_shim(module, shims=None, **kwargs):
-    path = (shims or module.MEASUREMENT_ROOT / "arm") / "osgpath.so"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(b"runtime shim")
-    module.validate_osg_shim = lambda *args: None
-
-
-def test_osg_preload_disables_embedded_plugin_path_before_main(tmp_path):
-    module = _load_runner()
-    if sys.platform != "linux" or any(
-        not Path(tool).is_file()
-        for tool in ("/usr/bin/c++", "/usr/bin/nm", "/usr/bin/readelf")
-    ):
-        pytest.skip("OSG normalization requires Linux and the system compiler/binutils")
-    library = tmp_path / "discovery.cpp"
-    library.write_text(
-        "#include <cstdlib>\n#include <deque>\n#include <string>\n"
-        "namespace osgDB {\n"
-        "void appendPlatformSpecificLibraryFilePaths(std::deque<std::string>& paths)"
-        ' { paths.emplace_back(std::getenv("CONDA_PREFIX")); }\n}\n'
-        "std::deque<std::string> paths;\n"
-        "struct Initialize { Initialize() {"
-        " osgDB::appendPlatformSpecificLibraryFilePaths(paths); } };\n"
-        "Initialize initialize;\n"
-        'extern "C" int discovered() { return paths.size(); }\n'
-    )
-    driver = tmp_path / "driver.cpp"
-    driver.write_text(
-        '#include <cstdio>\nextern "C" int discovered();\n'
-        'int main() { std::printf("%d\\n", discovered()); }\n'
-    )
-    subprocess.run(
-        [
-            "/usr/bin/c++",
-            "-shared",
-            "-fPIC",
-            str(library),
-            "-o",
-            str(tmp_path / "libdiscovery.so"),
-        ],
-        check=True,
-    )
-    subprocess.run(
-        [
-            "/usr/bin/c++",
-            str(driver),
-            f"-L{tmp_path}",
-            "-ldiscovery",
-            "-o",
-            str(tmp_path / "driver"),
-        ],
-        check=True,
-    )
-    args = module.parser().parse_args(
-        [
-            "run",
-            "--prefix",
-            str(tmp_path),
-            "--output-dir",
-            str(tmp_path),
-            "--commit",
-            "HEAD",
-        ]
-    )
-    module.build_shims(args, tmp_path, names=("osgpath",))
-    module.validate_osg_shim(tmp_path / "osgpath.so", tmp_path / "libdiscovery.so")
-    with pytest.raises(ValueError, match="plugin discovery ABI differs"):
-        module.validate_osg_shim(tmp_path / "osgpath.so", tmp_path / "driver")
-    for prefix in (tmp_path / "env", tmp_path / "a-longer-environment-prefix"):
-        env = {"LD_LIBRARY_PATH": str(tmp_path), "CONDA_PREFIX": str(prefix)}
-        assert (
-            subprocess.check_output([str(tmp_path / "driver")], env=env, text=True)
-            == "1\n"
-        )
-        env["LD_PRELOAD"] = str(tmp_path / "osgpath.so")
-        assert (
-            subprocess.check_output([str(tmp_path / "driver")], env=env, text=True)
-            == "0\n"
-        )
-    dynamic = subprocess.check_output(
-        ["/usr/bin/readelf", "-d", str(tmp_path / "osgpath.so")], text=True
-    )
-    assert "(NEEDED)" not in dynamic
 
 
 def _fake_valgrind(module, monkeypatch, tmp_path):
@@ -1159,7 +1083,6 @@ def test_valgrind_hashes_require_launcher_and_tool(
 
 def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     module = _load_runner()
-    _fake_runtime_shim(module)
     launcher, tool = _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
@@ -1488,11 +1411,6 @@ def test_run_arm_loads_installed_sample_data_before_unchecked_source(
     monkeypatch.setattr(module, "command_output", lambda command: "installed")
     stamp = {"workload_sources": {}}
     monkeypatch.setattr(module, "installed_provenance", lambda args: stamp)
-    monkeypatch.setattr(
-        module,
-        "build_shims",
-        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
-    )
 
     def measure(arm, provenance):
         assert provenance is stamp
@@ -1515,7 +1433,6 @@ def test_fingerprint_includes_active_runtime_environment(
     module = _load_runner()
     if default_staging:
         monkeypatch.setattr(module, "DEFAULT_MEASUREMENT_ROOT", module.MEASUREMENT_ROOT)
-    _fake_runtime_shim(module)
     _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
@@ -1582,7 +1499,6 @@ def test_fingerprint_includes_active_runtime_environment(
         ).encode()
     )
     assert str(module.MEASUREMENT_ROOT) not in json.dumps(first)
-    assert first["osgpath_sha"] == module.sha(b"runtime shim")
     monkeypatch.delenv("PIXI_ENVIRONMENT_NAME")
     for key in ("RUNNER_NAME", "ImageOS", "ImageVersion"):
         monkeypatch.delenv(key, raising=False)
@@ -1599,7 +1515,6 @@ def test_fingerprint_includes_active_runtime_environment(
     changed_environment = module.fingerprint(args)
     previous_root = module.MEASUREMENT_ROOT
     monkeypatch.setattr(module, "MEASUREMENT_ROOT", tmp_path / "other-staging-root")
-    _fake_runtime_shim(module)
     changed_root = module.fingerprint(args)
     monkeypatch.setattr(module, "MEASUREMENT_ROOT", previous_root)
     for changed, field in (
@@ -1891,11 +1806,6 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
 @pytest.mark.parametrize("changed", [False, True])
 def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, changed):
     module = _load_runner()
-    monkeypatch.setattr(
-        module,
-        "build_shims",
-        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
-    )
     _fake_valgrind(module, monkeypatch, tmp_path)
     row = module.select_rows(name)[0]
     args = module.parser().parse_args(
@@ -2493,7 +2403,6 @@ def test_environment_is_identical_under_ambient_pollution(monkeypatch, tmp_path)
         "LC_ALL": "C",
         "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
         "LD_LIBRARY_PATH": f"{prefix}/lib:{module.MEASUREMENT_ROOT}/arm/dependencies/lib",
-        "LD_PRELOAD": str(module.MEASUREMENT_ROOT / "arm/osgpath.so"),
     }
     assert module.environment(prefix) == expected
     for name in (
@@ -2796,11 +2705,6 @@ def test_run_arm_stages_readonly_install_with_external_binaries(monkeypatch, tmp
     )
     monkeypatch.setattr(module, "command_output", lambda command: "commit")
     monkeypatch.setattr(module, "installed_provenance", lambda args: {})
-    monkeypatch.setattr(
-        module,
-        "build_shims",
-        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
-    )
 
     def measure(arm, provenance):
         assert (arm.bin_dir / "driver").read_text() == "override"
@@ -2939,7 +2843,6 @@ def test_perf_workspace_rejects_unsafe_roots_and_inputs(monkeypatch, tmp_path, u
 def test_execute_uses_fixed_measurement_working_directory(tmp_path, build):
     module = _load_runner()
     env = module.environment(module.MEASUREMENT_ROOT / "arm/prefix")
-    env.pop("LD_PRELOAD")
     output = module.execute(
         [sys.executable, "-c", "import os; print(os.getcwd())"],
         env,
@@ -3395,11 +3298,6 @@ def test_run_resolves_shims_and_reports_missing_options(
     monkeypatch, tmp_path, capsys, layout
 ):
     module = _load_runner()
-    monkeypatch.setattr(
-        module,
-        "build_shims",
-        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
-    )
     root = tmp_path / "repo"
     world = root / "tests/benchmark/worlds/3k_shapes.sdf.gz"
     world.parent.mkdir(parents=True)
@@ -7115,8 +7013,8 @@ def test_install_targets_reads_configured_gui_from_cmake(tmp_path, gui):
         "add_library(dart STATIC fixture.c)\n"
         "install(TARGETS dart)\n"
         "if(GUI)\n"
-        "  add_library(dart-gui-osg STATIC fixture.c)\n"
-        "  install(TARGETS dart-gui-osg)\n"
+        "  add_library(dart-gui STATIC fixture.c)\n"
+        "  install(TARGETS dart-gui)\n"
         "endif()\n"
         "add_library(UNIT_dynamics STATIC EXCLUDE_FROM_ALL fixture.c)\n"
         "add_custom_target(contact_benchmark)\n"
@@ -7139,7 +7037,7 @@ def test_install_targets_reads_configured_gui_from_cmake(tmp_path, gui):
         capture_output=True,
         text=True,
     )
-    assert module.install_targets(build) == ["dart", *(["dart-gui-osg"] if gui else [])]
+    assert module.install_targets(build) == ["dart", *(["dart-gui"] if gui else [])]
 
 
 @pytest.mark.parametrize("gui", [False, True])
@@ -7174,7 +7072,7 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
         "dart",
         *io_targets,
         "dart-optimizer-ipopt",
-        *(["dart-gui-osg"] if gui else []),
+        *(["dart-gui"] if gui else []),
     ]
     monkeypatch.setattr(module, "install_targets", lambda *args: installed_targets)
 
@@ -7225,16 +7123,15 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
 
 
 @pytest.mark.parametrize(
-    "legacy,osg,contact",
+    "legacy,contact",
     [
-        (True, False, True),
-        (True, True, True),
-        (True, False, False),
-        (False, False, True),
+        (True, True),
+        (True, False),
+        (False, True),
     ],
 )
-def test_build_arm_classifies_missing_historical_osg_as_infrastructure(
-    monkeypatch, tmp_path, legacy, osg, contact
+def test_build_arm_rejects_removed_historical_gui_as_infrastructure(
+    monkeypatch, tmp_path, legacy, contact
 ):
     module = _load_runner()
     source, build, driver, prefix, dependency = (
@@ -7245,9 +7142,6 @@ def test_build_arm_classifies_missing_historical_osg_as_infrastructure(
     contact_cmake.write_text(
         f"set(required_components {'gui-osg' if legacy else 'gui'})"
     )
-    if osg:
-        (dependency / "lib").mkdir(parents=True)
-        (dependency / "lib/libosgDB.so").touch()
     configured = []
 
     def execute(*args, **kwargs):
@@ -7256,10 +7150,10 @@ def test_build_arm_classifies_missing_historical_osg_as_infrastructure(
 
     monkeypatch.setattr(module, "execute", execute)
     args = module.parser().parse_args(["local"])
-    unavailable = legacy and not osg and contact
+    unavailable = legacy and contact
     with pytest.raises(
         ValueError,
-        match="requires OpenSceneGraph" if unavailable else "reached configure",
+        match="release-6.20 harness" if unavailable else "reached configure",
     ) as failure:
         module._build_arm(
             args,
@@ -7278,7 +7172,7 @@ def test_build_arm_classifies_missing_historical_osg_as_infrastructure(
     assert bool(configured) == (not unavailable)
 
 
-def test_backfill_does_not_record_missing_historical_osg_as_broken_source(
+def test_backfill_does_not_record_removed_historical_gui_as_broken_source(
     monkeypatch, tmp_path
 ):
     module, args, revisions, _, _, measurements = _backfill_test_setup(
@@ -7291,7 +7185,7 @@ def test_backfill_does_not_record_missing_historical_osg_as_broken_source(
         module._build_arm(*arguments, tmp_path / "dependencies", module.ROOT, {})
 
     monkeypatch.setattr(module, "build_arm", build_arm)
-    with pytest.raises(ValueError, match="requires OpenSceneGraph"):
+    with pytest.raises(ValueError, match="release-6.20 harness"):
         module.backfill(args)
     assert attempts == [revisions[0], revisions[0]]
     assert measurements == []

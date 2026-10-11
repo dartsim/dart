@@ -49,18 +49,6 @@ def canonical_type(value):
     value = value.replace("Eigen::Quaternion<double, 0>", "dartpy.math.Quaternion")
     value = value.replace("typing_extensions.CapsuleType", "types.CapsuleType")
     value = re.sub(
-        r"\bdart::gui::osg::([\w:]+)",
-        lambda m: "dartpy.gui.osg." + m[1].replace("::", "."),
-        value,
-    )
-    value = value.replace(
-        "osgShadow::ShadowTechnique", "dartpy.gui.osg.ShadowTechnique"
-    )
-    value = value.replace(
-        "osg::View::LightingMode", "dartpy.gui.osg.Viewer.LightingMode"
-    )
-    value = value.replace("osgGA::GUIEventAdapter::", "dartpy.gui.osg.GUIEventAdapter.")
-    value = re.sub(
         r"\bdart::(common|math|optimizer|dynamics|collision|constraint|simulation|utils)::([\w:]+)",
         lambda m: "dartpy." + m[1] + "." + m[2].replace("::", "."),
         value,
@@ -296,15 +284,6 @@ def self_check():
             'tuple[typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 1]"]]'
         )
         == "tuple[array<float64,3>]"
-    )
-    assert canonical_type("dart::gui::osg::Viewer") == "dartpy.gui.osg.Viewer"
-    assert (
-        canonical_type("osg::View::LightingMode")
-        == "dartpy.gui.osg.Viewer.LightingMode"
-    )
-    assert (
-        canonical_type("osgGA::GUIEventAdapter::EventType")
-        == "dartpy.gui.osg.GUIEventAdapter.EventType"
     )
     assert compare({"X": {"kind": "class"}}, {})["missing"] == ["X"]
     assert shape("(self: X, value: float) -> None")["arguments"] == [

@@ -305,21 +305,11 @@ diagnostic. The report names each row's qualification and thread count.
 All tiers stage each arm in the harness-owned staging slot, including binaries, libraries,
 revision inputs, shims, dependency paths and measurement outputs. Measurements
 run from the staging root with a fixed minimal environment: system `PATH`,
-`LC_ALL=C`, the existing FMA mask in `GLIBC_TUNABLES`, and staged library paths;
-the harness preloads a small shim that disables OSG's implicit platform plugin
-discovery before its static initializers run. These headless workloads need no
-OSG plugins; otherwise OSG allocates a conda-embedded environment path even
-when `OSG_LIBRARY_PATH` is set. The harness adds its measurement and
-perturbation controls and checks the shim's lookup ABI against the active Pixi
-OSG library when one exists. Historical arms whose source still contains
-`dart/gui/osg` are configured with `DART_BUILD_GUI_OSG=ON` and
-`DART_BUILD_GUI=ON` while the dependency prefix provides `lib/libosgDB.so`;
-every other arm uses `OFF` for both, since DART 7 rejects
-`DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no longer in the Pixi environment,
-so an OSG-era arm whose `contact_benchmark` requires `gui-osg` raises an
-infrastructure error before configuration; backfill does not record it as
-broken source. Use portable rows (`--rows gzb,robot`) or an environment that
-provides OpenSceneGraph. A host lock serializes staging, measurement and
+`LC_ALL=C`, the existing FMA mask in `GLIBC_TUNABLES`, and staged library paths.
+Arms are configured headless. A historical `contact_benchmark` requiring the
+removed `gui-osg` component fails with an explicit infrastructure error; use
+the `release-6.20` harness for OSG-era comparisons. Backfill does not record
+this as broken source. A host lock serializes staging, measurement and
 copying artifacts to the requested output directory. Subprocesses inherit the
 lock, so an orphan must finish before a later run can replace the slot. The
 staging root must be private, owned by the current user, and on its parent's
@@ -433,9 +423,8 @@ For repeatability checks, require identical deterministic counts and common
 guards with matching toolchain, inputs and environment fingerprints. Earlier
 pilots used arbitrary absolute paths and inherited environments: even local
 runs of one revision could differ by over 0.26% Ir. Fixed staging removes those
-allocation-layout inputs, including OSG's implicit conda plugin path. The
-runtime shim hash and staging root are fingerprinted; matching fingerprints
-still require the same runtime environment and toolchain. Wall time and RSS
+allocation-layout inputs. Allocation shim hashes and the staging root are
+fingerprinted; matching fingerprints still require the same runtime environment and toolchain. Wall time and RSS
 remain advisory.
 
 Inspect history with

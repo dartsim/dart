@@ -103,7 +103,7 @@ msgstr ""
 #: ../../dartpy/user_guide/examples.rst:121 d5ac22e965874fac92ddc53f8dce6d0d
 msgid ""
 "A C++ counterpart embeds a Python interpreter to drive the same solver "
-"from an OSG/ImGui application: the ``ssik_ik_gui`` scene in the "
+"from a Filament/ImGui application: the ``ssik_ik_gui`` scene in the "
 "consolidated ``dart-demos`` catalog (``pixi run demos``, then select it "
 "from the catalog, or launch it directly with ``bin/dart-demos --scene "
 "ssik_ik_gui``)."

@@ -54,7 +54,7 @@ at a 1 ms timestep. The pinned Atlas has 31 visual and 28 collision shapes; G1
 has 34 visual and 35 collision shapes. Short free simulation establishes
 numerical loading sanity, without ground contact or locomotion validation.
 
-Capture the actual cache-only demo worlds with core OSG debug layers:
+Capture the actual cache-only demo worlds with the Filament debug overlay:
 
 ```bash
 pixi run agent-capture -- --factory examples.demos.scenes.modern_humanoids:atlas_world \
