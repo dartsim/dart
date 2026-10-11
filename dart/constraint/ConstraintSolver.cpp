@@ -58,7 +58,6 @@
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -89,15 +88,10 @@ using namespace dynamics;
 
 constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
 constexpr double kDenseContactIslandSleepContactPenetrationTolerance = 0.005;
+// Small plane contacts must converge within the resting-height accuracy bound.
+constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.002;
 constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
 constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
-// The wake band of the default DeactivationOptions (twice the sleep
-// thresholds). World keeps a sleep candidate across a missed contact while its
-// speed stays inside the wake band of its options. A body may count as resting
-// on a missed contact only inside that band and this one: a wider band would
-// also take in a body at the top of a flight.
-constexpr double kMissedContactQuietLinearSpeed = 0.02; // m/s
-constexpr double kMissedContactQuietAngularSpeed = 0.1; // rad/s
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 bool gSleepContactPenetrationToleranceUserConfigured = false;
@@ -990,7 +984,6 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
-  mIslandSkeletons.reserve(mSkeletons.size());
 
   // A newly subscribed skeleton may carry constraint state from another
   // solver. Clear it once at insertion so steady-state solve() can derive its
@@ -1038,7 +1031,6 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());
-  mIslandSkeletons.clear();
 }
 
 //==============================================================================
@@ -1054,7 +1046,6 @@ void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
-  mIslandSkeletons.clear();
 }
 
 //==============================================================================
@@ -1693,7 +1684,6 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
   if (!hasSkeleton(skeleton)) {
     mSkeletons.push_back(skeleton);
-    mIslandSkeletons.reserve(mSkeletons.size());
     return true;
   } else {
     dtwarn << "Skeleton [" << skeleton->getName()
@@ -2783,7 +2773,6 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
   mGroupPreserveSleepCandidates.clear();
-  mIslandSkeletons.clear();
 
   // With no active constraints, no island can be frozen. Clear any stale
   // freeze flags so a body that just lost all of its contacts resumes
@@ -3119,10 +3108,11 @@ void ConstraintSolver::buildConstrainedGroups()
 
           const bool usePlaneShapeSleepContactPenetrationTolerance
               = useDenseIslandSleepContactPenetrationTolerance
+                && !denseContactIsland
                 && contactTouchesPlaneShape(contact->getContact());
           const double contactSleepContactPenetrationTolerance
               = usePlaneShapeSleepContactPenetrationTolerance
-                    ? kDenseContactIslandSleepContactPenetrationTolerance
+                    ? kAdaptivePlaneSleepContactPenetrationTolerance
                     : groupSleepContactPenetrationTolerance;
           const double preserveSleepCandidatePenetrationTolerance
               = contactSleepContactPenetrationTolerance;
@@ -3141,119 +3131,6 @@ void ConstraintSolver::buildConstrainedGroups()
     }
 
     {
-      const double linearWakeSpeed
-          = std::min(kMissedContactQuietLinearSpeed, mLinearWakeSpeed);
-      const double angularWakeSpeed
-          = std::min(kMissedContactQuietAngularSpeed, mAngularWakeSpeed);
-      // Whether every body moves inside the linear wake band once up to one
-      // step of gravity along gravity is taken off its velocity, as a body
-      // whose contact is missed falls freely for that step. Nothing is taken
-      // off if gravity is off for any of its bodies.
-      const auto fallsInsideWakeBand = [&](const Skeleton& skeleton) {
-        const Eigen::Vector3d& gravity = skeleton.getGravity();
-        double oneStepOfGravity = gravity.norm() * mTimeStep;
-        for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
-          if (!skeleton.getBodyNode(i)->getGravityMode())
-            oneStepOfGravity = 0.0;
-        }
-        Eigen::Vector3d down = Eigen::Vector3d::Zero();
-        if (oneStepOfGravity > 0.0)
-          down = gravity.normalized();
-        for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
-          const Eigen::Vector3d velocity
-              = skeleton.getBodyNode(i)->getLinearVelocity();
-          const double fall
-              = std::clamp(velocity.dot(down), 0.0, oneStepOfGravity);
-          if ((velocity - fall * down).norm() > linearWakeSpeed)
-            return false;
-        }
-        return true;
-      };
-      // A FreeJoint and no other degrees of freedom, with no joint constraint
-      // or spring that could pull the body back once it leaves its island, and
-      // only force or passive actuators, so that forces alone move it: a joint
-      // that follows an acceleration, velocity or lock command moves as
-      // commanded, a servo drives its joint toward a commanded velocity even
-      // when that is zero, and a mimic joint follows another joint.
-      const auto isFreeRigidBody = [this](const Skeleton& skeleton) {
-        if (skeleton.getNumDofs() != 6u)
-          return false;
-        const auto* joint = skeleton.getRootJoint();
-        if (dynamic_cast<const FreeJoint*>(joint) == nullptr
-            || canJointCreateAutomaticConstraint(joint)) {
-          return false;
-        }
-        for (std::size_t i = 0; i < 6u; ++i) {
-          const auto actuatorType = joint->getActuatorType(i);
-          if ((actuatorType != dynamics::Joint::FORCE
-               && actuatorType != dynamics::Joint::PASSIVE)
-              || joint->getSpringStiffness(i) != 0.0) {
-            return false;
-          }
-        }
-        return true;
-      };
-      bool hasUngroupedAwakeMobileSkeleton = false;
-      for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-        const auto& skeleton = mSkeletons[i];
-        // A skeleton without bodies has nothing that can move.
-        if (!skeleton->isMobile() || skeleton->getNumBodyNodes() == 0u)
-          continue;
-
-        const auto root = ConstraintBase::getRootSkeleton(skeleton);
-        const auto groupIndex = root->mUnionIndex;
-        const bool grouped = groupIndex != invalidUnionIndex
-                             && groupIndex < mGroupResting.size();
-        if (grouped || skeleton->isResting() || skeleton->isSleepCandidate())
-          continue;
-
-        // An awake body outside every island may be falling onto one. While
-        // one exists, no island newly freezes, and candidates in islands that
-        // cannot rest lose their candidacy and dwell (pass 2 below). A
-        // collision backend can miss a resting contact for a single step
-        // (Bullet does for spheres and cylinders), and the body then falls
-        // freely for that step. So a free rigid body (isFreeRigidBody above)
-        // that was in an island at the previous build counts only from its
-        // second build outside every island if it moves like that: its smoothed
-        // speeds are inside the wake band (the World's, capped at the default
-        // one), it spins no faster than the band allows, apart from up to one
-        // step of falling it moves inside the band (fallsInsideWakeBand above),
-        // and no force or command drives it (World never counts a driven body
-        // as quiet either). Such a body cannot be told from one that is
-        // starting to fall, released from a hold or at the top of a flight (the
-        // smoothed speeds catch a flight's top only while three steps of
-        // gravity exceed the band, that is, at steps of about 0.66 ms or more
-        // under Earth gravity and the default band), so an island that becomes
-        // eligible at that build can freeze while the body falls onto it. Any
-        // other body counts at once: at the turning point of a swing against a
-        // joint limit, an obstacle or another body, a body on a joint or a
-        // spring leaves its island just as slowly and then swings freely. Body
-        // speeds miss the point masses of soft bodies, so a soft body always
-        // counts too. The previous build must have put the body in an island.
-        // Pass 2 has not yet restamped the island index, so it still holds that
-        // build's island, but World also gives island 0 to a sleep candidate
-        // that it puts to rest outside every island, and the body keeps it when
-        // it wakes, so the body must also be in that build's record of islands
-        // (mIslandSkeletons). On simulation-mode re-entry steps the preparation
-        // passes build first with automatic deactivation off, which clears that
-        // record, so a body leaving its island counts at once on those steps.
-        const bool leftIsland = skeleton->getIslandIndex() >= 0
-                                && i < mIslandSkeletons.size()
-                                && mIslandSkeletons[i] == skeleton.get();
-        const bool movesLikeMissedContact
-            = leftIsland && isFreeRigidBody(*skeleton)
-              && skeleton->getNumSoftBodyNodes() == 0u
-              && skeleton->getSmoothedLinearSpeed() <= linearWakeSpeed
-              && skeleton->getSmoothedAngularSpeed() <= angularWakeSpeed
-              && fallsInsideWakeBand(*skeleton)
-              && skeleton->computeMaxBodyAngularSpeed() <= angularWakeSpeed
-              && !skeleton->hasExternalDisturbance();
-        if (!movesLikeMissedContact) {
-          hasUngroupedAwakeMobileSkeleton = true;
-          break;
-        }
-      }
-
       // Pass 1: an island can freeze only if every member is a sleep candidate.
       // Keep that kinematic condition separate from constraint/contact
       // eligibility. A contact whose penetration exceeds the automatic
@@ -3273,26 +3150,11 @@ void ConstraintSolver::buildConstrainedGroups()
         mGroupResting[groupIndex] = mGroupResting[groupIndex] && sleepCandidate;
       }
 
-      if (hasUngroupedAwakeMobileSkeleton) {
-        for (const auto& skeleton : mSkeletons) {
-          if (skeleton->isResting())
-            continue;
-
-          const auto root = ConstraintBase::getRootSkeleton(skeleton);
-          const auto groupIndex = root->mUnionIndex;
-          if (groupIndex != invalidUnionIndex
-              && groupIndex < mGroupResting.size()) {
-            mGroupResting[groupIndex] = false;
-          }
-        }
-      }
-
       // Pass 2: stamp the island index and keep only already-frozen islands
       // frozen. A newly eligible island must run one final contact solve before
       // it freezes so observable force caches (e.g. transmitted wrench queries)
       // keep the last solved constraint forces instead of an unconstrained
       // forward-dynamics value.
-      mIslandSkeletons.clear();
       for (const auto& skeleton : mSkeletons) {
         const auto root = ConstraintBase::getRootSkeleton(skeleton);
         const auto groupIndex = root->mUnionIndex;
@@ -3303,7 +3165,7 @@ void ConstraintSolver::buildConstrainedGroups()
               && mGroupAllSleepCandidates[groupIndex];
         const bool groupCanRest = grouped && mGroupResting[groupIndex];
         const bool groupCanPreserveSleepCandidate
-            = groupAllSleepCandidates && !hasUngroupedAwakeMobileSkeleton
+            = groupAllSleepCandidates
               && groupIndex < mGroupPreserveSleepCandidates.size()
               && mGroupPreserveSleepCandidates[groupIndex];
         if (grouped && !groupCanRest && !groupCanPreserveSleepCandidate
@@ -3312,13 +3174,8 @@ void ConstraintSolver::buildConstrainedGroups()
         }
         skeleton->setResting(groupCanRest && skeleton->isResting());
         skeleton->setIslandIndex(grouped ? static_cast<int>(groupIndex) : -1);
-        const dynamics::Skeleton* const islandSkeleton
-            = grouped ? skeleton.get() : nullptr;
-        mIslandSkeletons.push_back(islandSkeleton);
       }
     }
-  } else {
-    mIslandSkeletons.clear();
   }
 
   //----------------------------------------------------------------------------
@@ -3853,7 +3710,6 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupMobileSkeletonCountScratch.reserve(groupCount);
   mGroupAlreadyRestingScratch.reserve(groupCount);
   mGroupSolvedToRestScratch.reserve(groupCount);
-  mIslandSkeletons.reserve(mSkeletons.size());
   // Each skeleton can form its own island, and all of them may retire at once.
   // This covers this World only: when several prepared Worlds share a thread,
   // the first step whose combined retirements exceed it allocates once, a new
