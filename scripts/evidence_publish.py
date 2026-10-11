@@ -462,20 +462,29 @@ def _build_manifest(
 
 
 def _retire_previous_success(manifest_out: Path | None) -> None:
-    """Delete a passing publication manifest; never touch any other file."""
+    """Delete a previous publication's staging directory and passing manifest.
+
+    Only a publication manifest qualifies, and only a staging directory this
+    script created under the temp root is removed, so an aliased input or a
+    corrupted path is never touched.
+    """
     if manifest_out is None:
         return
     try:
         previous = json.loads(manifest_out.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return
+    if not isinstance(previous, dict) or not str(
+        previous.get("schema_version", "")
+    ).startswith("dart.evidence_publication/"):
+        return
+    staged = Path(str(previous.get("attach_dir", "")))
     if (
-        isinstance(previous, dict)
-        and str(previous.get("schema_version", "")).startswith(
-            "dart.evidence_publication/"
-        )
-        and previous.get("pass") is True
+        staged.name.startswith("dart-evidence-attach-")
+        and staged.parent == Path(tempfile.gettempdir()).resolve()
     ):
+        shutil.rmtree(staged, ignore_errors=True)
+    if previous.get("pass") is True:
         manifest_out.unlink(missing_ok=True)
 
 

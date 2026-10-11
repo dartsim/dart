@@ -278,12 +278,14 @@ readable alongside their contact markers and collision bounds.
   `attach_dir` with an explicit PR URL (or a number plus `-R owner/repo`),
   passing the complete body's absolute path to `--body-file` (the manifest's
   `section` path is absolute) and `--attach` for each `attach` name.
-  `gh pr create` also needs `-R owner/repo` and `--head <branch>`.
+  `gh pr create` also needs `-R owner/repo` and `--head <branch>`
+  (`<owner>:<branch>` for a fork branch).
   Each command accepts at most 50 files; gh validates their types and sizes.
   If gh exits nonzero after some uploads, it has still created or updated the
   PR or posted the comment with them: inspect that result and, after explicit
-  maintainer/user approval, attach only the missing files with `gh pr edit`
-  on it instead of rerunning the command.
+  maintainer/user approval, attach only the missing files to that PR body
+  (`gh pr edit`) or comment (`gh pr comment --edit-last`) instead of rerunning
+  the command.
   GitHub CLI uploads to the same user-attachments store as the PR/issue editor's
   drag-and-drop flow and rewrites the local references. If CLI attachment upload
   is unavailable, ask a maintainer to drag and drop the media into the PR editor

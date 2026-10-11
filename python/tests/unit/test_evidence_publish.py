@@ -581,7 +581,6 @@ def test_failed_rerun_drops_previous_passing_manifest(
     manifest_out = tmp_path / "publication.json"
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
     assert json.loads(manifest_out.read_text(encoding="utf-8"))["pass"] is True
-    staged_dirs = set((tmp_path / "temp").iterdir())
 
     def corrupt_copy(source: Path, destination: Path) -> None:
         Path(destination).write_bytes(b"changed")
@@ -590,7 +589,7 @@ def test_failed_rerun_drops_previous_passing_manifest(
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
     assert not manifest_out.exists()
-    assert set((tmp_path / "temp").iterdir()) == staged_dirs
+    assert not list((tmp_path / "temp").iterdir())
 
 
 def test_invalid_rerun_drops_previous_passing_manifest(tmp_path: Path) -> None:
@@ -621,6 +620,40 @@ def test_retire_previous_success_only_removes_passing_publications(
     path.write_text(json.dumps(content), encoding="utf-8")
     evidence_publish._retire_previous_success(path)
     assert path.exists() is not retired
+
+
+def test_rerun_retires_previous_staging_directory(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    for _ in range(2):
+        assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+
+    attach_dir = json.loads(manifest_out.read_text(encoding="utf-8"))["attach_dir"]
+    assert list((tmp_path / "temp").iterdir()) == [Path(attach_dir)]
+
+
+def test_retire_never_removes_directories_outside_the_temp_root(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "dart-evidence-attach-keep"
+    outside.mkdir()
+    manifest_out = tmp_path / "publication.json"
+    manifest_out.write_text(
+        json.dumps(
+            {
+                "schema_version": "dart.evidence_publication/v5",
+                "pass": True,
+                "attach_dir": str(outside),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    evidence_publish._retire_previous_success(manifest_out)
+
+    assert outside.is_dir()
+    assert not manifest_out.exists()
 
 
 def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:
