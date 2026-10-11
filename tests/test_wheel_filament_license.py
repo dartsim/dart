@@ -123,11 +123,13 @@ def test_wheel_always_builds_gui_with_available_sdk(
 @pytest.mark.parametrize("with_filament", [False, True])
 @pytest.mark.parametrize("reuse_metadata", [False, True])
 @pytest.mark.parametrize("abi3", [False, True])
+@pytest.mark.parametrize("crlf", [False, True])
 def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
-    tmp_path, monkeypatch, setup_commands, with_filament, reuse_metadata, abi3
+    tmp_path, monkeypatch, setup_commands, with_filament, reuse_metadata, abi3, crlf
 ):
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "LICENSE").write_text("DART BSD license\n", encoding="utf-8")
+    dart_license = b"DART BSD license\r\n" if crlf else b"DART BSD license\n"
+    (tmp_path / "LICENSE").write_bytes(dart_license)
     (tmp_path / "setup.py").write_text("# Wheel fixture\n", encoding="utf-8")
     sdk_license = tmp_path / "sdk" / "LICENSE"
     sdk_license.parent.mkdir()
@@ -184,8 +186,10 @@ def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
     assert ("-cp312-abi3-" in wheel.name) is abi3
     with zipfile.ZipFile(wheel) as archive:
         prefix = "dartpy-1.0.dist-info/"
-        assert archive.read(prefix + "licenses/LICENSE") == b"DART BSD license\n"
-        metadata = archive.read(prefix + "METADATA").decode("utf-8")
+        assert archive.read(prefix + "licenses/LICENSE") == dart_license
+        metadata = (
+            archive.read(prefix + "METADATA").decode("utf-8").replace("\r\n", "\n")
+        )
         assert "License-File: LICENSE\n" in metadata
         if reuse_metadata:
             assert metadata.endswith("Prepared description\n")
@@ -209,7 +213,10 @@ def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
             assert not any("filament/notices/" in name for name in archive.namelist())
 
 
-def test_wheel_rejects_missing_declared_sdk_license(tmp_path, setup_commands):
+@pytest.mark.parametrize("relocate_build", [False, True])
+def test_wheel_rejects_missing_declared_sdk_license(
+    tmp_path, monkeypatch, setup_commands, relocate_build
+):
     distribution = Distribution(
         {
             "ext_modules": [Extension("dartpy", sources=[])],
@@ -221,7 +228,13 @@ def test_wheel_rejects_missing_declared_sdk_license(tmp_path, setup_commands):
     )
     build = distribution.get_command_obj("build_ext")
     build.build_temp = str(tmp_path / "build")
-    manifest = Path(build.build_temp) / "dartpy" / "dartpy-filament-license.txt"
+    build.ensure_finalized()
+    build_temp = Path(build.build_temp)
+    monkeypatch.delenv("DARTPY_BUILD_TEMP", raising=False)
+    if relocate_build:
+        build_temp = tmp_path / "relocated-build"
+        monkeypatch.setenv("DARTPY_BUILD_TEMP", str(build_temp))
+    manifest = build_temp / "dartpy" / "dartpy-filament-license.txt"
     manifest.parent.mkdir(parents=True)
     manifest.write_text(str(tmp_path / "missing-LICENSE"), encoding="utf-8")
     dist_info = tmp_path / "dartpy.dist-info"

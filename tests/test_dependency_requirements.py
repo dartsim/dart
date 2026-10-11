@@ -483,6 +483,25 @@ def test_filament_explicit_root_rejects_an_incomplete_sdk(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize("explicit_root", [False, True])
+def test_filament_config_case_variants_are_loaded_once(tmp_path, explicit_root):
+    config_package(tmp_path, "Filament", None, "Filament::filament")
+    config = tmp_path / "prefix/lib/cmake/Filament/FilamentConfig.cmake"
+    # Both spellings reach the same SDK on case-insensitive filesystems.
+    config.with_name("filamentConfig.cmake").write_text(config.read_text())
+    result = configure(
+        tmp_path,
+        (
+            f'set(Filament_ROOT "{(tmp_path / "prefix").as_posix()}")\n'
+            if explicit_root
+            else ""
+        )
+        + "find_package(Filament REQUIRED MODULE)\n"
+        + 'if(NOT TARGET Filament::filament)\nmessage(FATAL_ERROR "Missing SDK target")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_filament_changed_root_invalidates_cached_package_directory(tmp_path):
     config_package(tmp_path, "Filament", None, "Filament::filament")
     original_root = tmp_path / "prefix"

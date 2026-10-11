@@ -82,14 +82,14 @@ struct OverlayProjection
   }
   bool clip(Eigen::Vector3d& a, Eigen::Vector3d& b) const
   {
-    constexpr double near = 1e-4;
+    constexpr double nearDepth = 1e-4;
     const double da = (a - eye).dot(forward), db = (b - eye).dot(forward);
-    if (!a.allFinite() || !b.allFinite() || (da < near && db < near))
+    if (!a.allFinite() || !b.allFinite() || (da < nearDepth && db < nearDepth))
       return false;
-    if (da < near)
-      a += (b - a) * ((near - da) / (db - da));
-    else if (db < near)
-      b += (a - b) * ((near - db) / (da - db));
+    if (da < nearDepth)
+      a += (b - a) * ((nearDepth - da) / (db - da));
+    else if (db < nearDepth)
+      b += (a - b) * ((nearDepth - db) / (da - db));
     return true;
   }
 };

@@ -585,9 +585,9 @@ void dart_gui_filament(nb::module_& m)
       .def(
           "getRayUnderCursor",
           [](const gui::Viewer& self, double x, double y) {
-            Eigen::Vector3d near, far;
-            self.getRayUnderCursor(x, y, near, far);
-            return nb::make_tuple(near, far);
+            Eigen::Vector3d nearPoint, farPoint;
+            self.getRayUnderCursor(x, y, nearPoint, farPoint);
+            return nb::make_tuple(nearPoint, farPoint);
           },
           nb::arg("x"),
           nb::arg("y"))

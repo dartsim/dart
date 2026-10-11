@@ -1926,24 +1926,24 @@ TEST(FilamentBackend, DepthRespectsOriginalPerPrimitiveWriteMasks)
   dart::gui::detail::FilamentRenderer renderer(width, height, true);
   renderer.setShadowsEnabled(false);
   renderer.setCamera({0, 0, 0}, {0, 0, -1}, {0, 1, 0}, 45, .01, 1000);
-  dart::gui::RenderableDescriptor far;
-  far.id = 1;
-  far.geometry.kind = dart::gui::ShapeKind::Mesh;
-  far.geometry.triangleVertices = {{-2, -2, 0}, {2, -2, 0}, {0, 2, 0}};
-  far.geometry.triangleIndices = {{0, 1, 2}};
-  far.worldTransform.translation().z() = -6;
-  auto near = far;
-  near.id = 2;
-  near.geometry.kind = dart::gui::ShapeKind::Box;
-  near.geometry.size = Eigen::Vector3d::Ones();
-  near.worldTransform.translation().z() = -4;
+  dart::gui::RenderableDescriptor farShape;
+  farShape.id = 1;
+  farShape.geometry.kind = dart::gui::ShapeKind::Mesh;
+  farShape.geometry.triangleVertices = {{-2, -2, 0}, {2, -2, 0}, {0, 2, 0}};
+  farShape.geometry.triangleIndices = {{0, 1, 2}};
+  farShape.worldTransform.translation().z() = -6;
+  auto nearShape = farShape;
+  nearShape.id = 2;
+  nearShape.geometry.kind = dart::gui::ShapeKind::Box;
+  nearShape.geometry.size = Eigen::Vector3d::Ones();
+  nearShape.worldTransform.translation().z() = -4;
   const auto center = (height / 2 * width + width / 2) * 4;
   const auto capture = [&](int expectedGray) {
     renderer.setDepthMode(false);
-    renderer.synchronize({far, near});
+    renderer.synchronize({farShape, nearShape});
     const auto color = renderer.readPixelsRGBA();
     renderer.setDepthMode(true);
-    renderer.synchronize({far, near});
+    renderer.synchronize({farShape, nearShape});
     const auto image = renderer.readPixelsRGBA();
     ASSERT_EQ(image.size(), width * height * 4);
     for (unsigned channel = 0; channel < 3; ++channel)
@@ -1962,37 +1962,37 @@ TEST(FilamentBackend, DepthRespectsOriginalPerPrimitiveWriteMasks)
   // far surface remains 248; making the near box opaque exposes depth 12.
   for (const double alpha : {0.0, .5, 1 - 5e-9, 1.0}) {
     SCOPED_TRACE(alpha);
-    near.material.rgba = {1, 0, 0, alpha};
-    ++near.renderResourceVersion;
+    nearShape.material.rgba = {1, 0, 0, alpha};
+    ++nearShape.renderResourceVersion;
     capture(alpha == 1 ? 12 : 248);
   }
   // OSG BOX points always blend and write depth, including alpha zero.
-  near.geometry.kind = dart::gui::ShapeKind::PointCloud;
-  near.geometry.pointShapeType = dart::gui::PointShapeType::Box;
-  near.geometry.pointCloudPoints = {{0, 0, 0}};
-  near.geometry.pointSize = 1;
+  nearShape.geometry.kind = dart::gui::ShapeKind::PointCloud;
+  nearShape.geometry.pointShapeType = dart::gui::PointShapeType::Box;
+  nearShape.geometry.pointCloudPoints = {{0, 0, 0}};
+  nearShape.geometry.pointSize = 1;
   for (const double alpha : {0.0, .5, 1.0}) {
     SCOPED_TRACE(alpha);
-    near.material.rgba.w() = alpha;
-    ++near.renderResourceVersion;
+    nearShape.material.rgba.w() = alpha;
+    ++nearShape.renderResourceVersion;
     capture(12);
   }
 
-  near.geometry.kind = dart::gui::ShapeKind::Mesh;
-  near.geometry.triangleVertices = {{-1, -1, 0}, {1, -1, 0}, {0, 1, 0}};
-  near.geometry.triangleIndices = {{0, 1, 2}};
-  near.geometry.meshUsesVertexColors = true;
-  near.geometry.meshVertexColors.assign(3, Eigen::Vector4d(1, 0, 0, 1));
-  ++near.renderResourceVersion;
+  nearShape.geometry.kind = dart::gui::ShapeKind::Mesh;
+  nearShape.geometry.triangleVertices = {{-1, -1, 0}, {1, -1, 0}, {0, 1, 0}};
+  nearShape.geometry.triangleIndices = {{0, 1, 2}};
+  nearShape.geometry.meshUsesVertexColors = true;
+  nearShape.geometry.meshVertexColors.assign(3, Eigen::Vector4d(1, 0, 0, 1));
+  ++nearShape.renderResourceVersion;
   // COLOR_INDEX remains a nonwriter even when every vertex is opaque.
   capture(246);
-  near.geometry.meshUsesVertexColors = false;
-  near.geometry.meshUsesMaterialColors = true;
-  near.geometry.meshMaterials.resize(1);
-  near.geometry.meshAlphaMode = dart::gui::MeshAlphaMode::Blend;
+  nearShape.geometry.meshUsesVertexColors = false;
+  nearShape.geometry.meshUsesMaterialColors = true;
+  nearShape.geometry.meshMaterials.resize(1);
+  nearShape.geometry.meshAlphaMode = dart::gui::MeshAlphaMode::Blend;
   for (unsigned coefficient = 0; coefficient < 4; ++coefficient) {
     SCOPED_TRACE(coefficient);
-    auto& material = near.geometry.meshMaterials.front();
+    auto& material = nearShape.geometry.meshMaterials.front();
     material = dart::gui::MeshMaterialDescriptor{};
     const std::array<Eigen::Vector4d*, 4> channels
         = {&material.ambient,
@@ -2000,7 +2000,7 @@ TEST(FilamentBackend, DepthRespectsOriginalPerPrimitiveWriteMasks)
            &material.specular,
            &material.emissive};
     channels[coefficient]->w() = .5;
-    ++near.renderResourceVersion;
+    ++nearShape.renderResourceVersion;
     capture(246);
   }
 }

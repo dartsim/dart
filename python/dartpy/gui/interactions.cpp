@@ -544,9 +544,9 @@ nb::tuple dart_gui_interactions(nb::module_& m)
       .def(
           "getNearAndFarPointUnderCursor",
           [](const gui::DefaultEventHandler& self, double distance) {
-            Eigen::Vector3d near, far;
-            self.getNearAndFarPointUnderCursor(near, far, distance);
-            return nb::make_tuple(near, far);
+            Eigen::Vector3d nearPoint, farPoint;
+            self.getNearAndFarPointUnderCursor(nearPoint, farPoint, distance);
+            return nb::make_tuple(nearPoint, farPoint);
           },
           nb::arg("distance") = 1.0)
       .def(

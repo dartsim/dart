@@ -1047,9 +1047,12 @@ SimpleFrameDnD* Viewer::enableDragAndDrop(dynamics::SimpleFrame* frame)
         "Cannot add a drag handler while the Viewer is closing");
   if (!frame)
     throw std::invalid_argument("Drag frame must not be null");
-  for (const auto& drag : mImpl->dragAndDrops)
-    if (drag->getEntity() == frame && typeid(*drag) == typeid(SimpleFrameDnD))
-      return static_cast<SimpleFrameDnD*>(drag.get());
+  for (const auto& drag : mImpl->dragAndDrops) {
+    auto* existing = drag.get();
+    if (existing->getEntity() == frame
+        && typeid(*existing) == typeid(SimpleFrameDnD))
+      return static_cast<SimpleFrameDnD*>(existing);
+  }
   auto drag = std::make_shared<SimpleFrameDnD>(this, frame);
   mImpl->dragAndDrops.push_back(drag);
   return drag.get();

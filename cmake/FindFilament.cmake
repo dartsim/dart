@@ -142,24 +142,18 @@ endforeach()
 # to the archive-layout search below. The default config search also stays off
 # when DART explicitly selects the fetched archive
 # (DART_USE_SYSTEM_FILAMENT=OFF).
+# Search both config spellings once; Windows resolves them to the same file.
 if(_dart_filament_roots)
-  find_package(
-    filament
-    CONFIG
-    QUIET
-    PATHS ${_dart_filament_roots}
-    NO_DEFAULT_PATH
-  )
   find_package(
     Filament
     CONFIG
     QUIET
+    NAMES filament Filament
     PATHS ${_dart_filament_roots}
     NO_DEFAULT_PATH
   )
 elseif(NOT DEFINED DART_USE_SYSTEM_FILAMENT OR DART_USE_SYSTEM_FILAMENT)
-  find_package(filament CONFIG QUIET)
-  find_package(Filament CONFIG QUIET)
+  find_package(Filament CONFIG QUIET NAMES filament Filament)
 endif()
 _dart_filament_promote_imports()
 

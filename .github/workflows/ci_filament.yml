@@ -26,11 +26,13 @@ jobs:
       CMAKE_GENERATOR: Ninja
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
       LIBGL_ALWAYS_SOFTWARE: "1"
-      DART_FILAMENT_PARITY_DIR: ${{ runner.temp }}/filament-parity
       # `pixi run config` builds the GUI and dartpy; Windows uses its own task.
-      BUILD_DIR: ${{ runner.os == 'Windows' && 'build/gui-ci/cpp' || 'build/gui-ci/cpp/Release' }}
+      BUILD_DIR: ${{ matrix.runner == 'windows-2022' && 'build/gui-ci/cpp' || 'build/gui-ci/cpp/Release' }}
     steps:
       - uses: actions/checkout@v7
+      - name: Set parity output directory
+        shell: bash
+        run: echo "DART_FILAMENT_PARITY_DIR=$RUNNER_TEMP/filament-parity" >> "$GITHUB_ENV"
       - name: Setup MSVC
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1.13.0

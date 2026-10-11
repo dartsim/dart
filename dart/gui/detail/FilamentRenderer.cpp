@@ -79,8 +79,8 @@ struct VisibleDepthRange
   Eigen::Vector3d eye;
   Eigen::Matrix3d worldToCamera;
   std::array<Eigen::Vector3d, 5> planes;
-  double near = std::numeric_limits<double>::infinity();
-  double far = 0;
+  double nearDepth = std::numeric_limits<double>::infinity();
+  double farDepth = 0;
 
   VisibleDepthRange(
       const Eigen::Vector3d& eye_,
@@ -139,8 +139,8 @@ struct VisibleDepthRange
       count = output;
     }
     for (std::size_t i = 0; i < count; ++i) {
-      near = std::min(near, polygon[i].z());
-      far = std::max(far, polygon[i].z());
+      nearDepth = std::min(nearDepth, polygon[i].z());
+      farDepth = std::max(farDepth, polygon[i].z());
     }
   }
 };
@@ -577,25 +577,25 @@ public:
           && renderableEntities.count(descriptor.id) != 0)
         addDescriptorDepthRange(
             range, descriptor, cameraCenter, cameraUp, cameraFovy, height);
-    double near = cameraNear, far = cameraFar;
-    if (std::isfinite(range.near) && range.far > 0) {
+    double nearDepth = cameraNear, farDepth = cameraFar;
+    if (std::isfinite(range.nearDepth) && range.farDepth > 0) {
       // osg::clampProjectionMatrix widens degenerate ranges, adds a two
       // percent margin and retains its default near/far ratio of .0005.
-      if (range.far < range.near + 1e-6) {
-        const double average = (range.near + range.far) * .5;
-        range.near = average - 1e-6;
-        range.far = average + 1e-6;
+      if (range.farDepth < range.nearDepth + 1e-6) {
+        const double average = (range.nearDepth + range.farDepth) * .5;
+        range.nearDepth = average - 1e-6;
+        range.farDepth = average + 1e-6;
       }
-      near = std::max(range.near * .98, range.far * .0005);
-      far = range.far * 1.02;
+      nearDepth = std::max(range.nearDepth * .98, range.farDepth * .0005);
+      farDepth = range.farDepth * 1.02;
     }
     context.camera->setProjection(
-        cameraFovy, static_cast<double>(width) / height, near, far);
+        cameraFovy, static_cast<double>(width) / height, nearDepth, farDepth);
     // SDK setProjection renders with an infinite far plane. Its finite GL
     // culling matrix, used as a supported custom projection, preserves the
     // retained OSG nonlinear displayed depth range on every backend.
     const auto projection = context.camera->getCullingProjectionMatrix();
-    context.camera->setCustomProjection(projection, near, far);
+    context.camera->setCustomProjection(projection, nearDepth, farDepth);
   }
   void updateClearColor()
   {

@@ -252,10 +252,9 @@ class CMakeWheel(bdist_wheel):
     ) -> None:
         super().write_wheelfile(wheelfile_base, generator)
         command = cast(CMakeBuild, self.get_finalized_command("build_ext"))
+        build_temp = Path(os.environ.get("DARTPY_BUILD_TEMP") or command.build_temp)
         for ext in self.distribution.ext_modules or []:
-            manifest = (
-                Path(command.build_temp) / ext.name / "dartpy-filament-license.txt"
-            )
+            manifest = build_temp / ext.name / "dartpy-filament-license.txt"
             if not manifest.is_file():
                 continue
             license_path = manifest.read_text(encoding="utf-8").strip()

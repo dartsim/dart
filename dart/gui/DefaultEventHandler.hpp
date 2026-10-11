@@ -167,7 +167,9 @@ public:
   /// will be inside the plane of the camera. The far point will have the given
   /// distance from the plane of the camera (default is 1.0).
   void getNearAndFarPointUnderCursor(
-      Eigen::Vector3d& near, Eigen::Vector3d& far, double distance = 1.0) const;
+      Eigen::Vector3d& nearPt,
+      Eigen::Vector3d& farPt,
+      double distance = 1.0) const;
 
   /// Get the most recent picks for the specified button and event type
   const std::vector<PickInfo>& getButtonPicks(

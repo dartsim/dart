@@ -125,12 +125,12 @@ TEST(GuiViewer, DefaultWindowFitsProportionallyAtDesktopDpi)
   EXPECT_EQ(large.x, 365);
   EXPECT_EQ(large.y, 108);
   EXPECT_NEAR(static_cast<double>(large.width) / large.height, 1.6, 0.001);
-  const auto small
+  const auto smallWindow
       = detail::fitDefaultWindow({0, 0, 640, 480}, 2.0f, 0.0, false);
-  EXPECT_EQ(small.width, 576);
-  EXPECT_EQ(small.height, 360);
-  EXPECT_EQ(small.x, 32);
-  EXPECT_EQ(small.y, 60);
+  EXPECT_EQ(smallWindow.width, 576);
+  EXPECT_EQ(smallWindow.height, 360);
+  EXPECT_EQ(smallWindow.x, 32);
+  EXPECT_EQ(smallWindow.y, 60);
 }
 
 TEST(GuiViewer, DefaultWindowRespectsManualScaleAndNegativeMonitorOrigin)
