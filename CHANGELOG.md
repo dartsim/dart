@@ -2,6 +2,8 @@
 
 ## DART 6
 
+### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestone/106)
+
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
