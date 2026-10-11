@@ -24,10 +24,10 @@
     (`dartpy.gui.RenderingUnavailableError`) naming the missing system
     packages. The `dartpy.gui` bindings are interim; DART 7's Python rendering
     API replaces them before release.
-    [#3696](https://github.com/dartsim/dart/pull/3696)
     `DART_ENABLE_GUI_SMOKE_TESTS` (default `OFF`) replaces
     `DART_ENABLE_GUI_OSG_SMOKE_TESTS`; enable it to build the capture smoke test
     on a host with a graphics device.
+    [#3696](https://github.com/dartsim/dart/pull/3696)
 
   * dartpy now uses nanobind 3.1 or newer and requires Python 3.10 or newer.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
@@ -87,6 +87,12 @@
     `BodyNode::copyAs()`, preventing invalid mesh updates.
 
 * Python
+
+  * Avoid crashes when native code releases Python objects, or calls Python
+    collision filters, analytical IK solvers or optimizer overrides, while
+    Python 3.15 or newer shuts down. Builds against the full Python API were
+    affected; the stable-ABI wheels attach through an API that cannot fail
+    this way.
 
   * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
     and world-recording access for Python simulation tutorials.

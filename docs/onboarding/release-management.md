@@ -1,6 +1,6 @@
 # Release Management
 
-New features and fixes target `main`. Backport merged fixes to a `release-6.*`
+New features and fixes target `main`. Backport merged fixes to a `release-*`
 branch using `dart-backport-pr`; release-specific packaging, CI, and branch
 guidance may target that branch directly.
 
@@ -42,7 +42,8 @@ body edits also restart Linux and Windows CI under these event triggers.
 
 The version sources serve different purposes:
 
-- **Compatibility line:** DART 6; reusable policy preserves this contract.
+- **Compatibility line:** DART 7 on `main`, with the compatibility contract in
+  `AGENTS.md`; `release-6.20` keeps the DART 6 line.
 - **Source/package version:** `package.xml`, also exposed as Sphinx `release`;
   `pixi.toml` matches it during packaging. These may retain a previously
   published version while new changes accumulate.
@@ -76,31 +77,32 @@ closing it. Both metadata files must contain readable version strings.
 
 ## Compatibility Policy
 
-DART 6 PRs should:
+PRs should:
 
-- preserve DART 6 compatibility unless explicitly approved otherwise;
+- preserve the base branch's compatibility rules in `AGENTS.md` unless
+  explicitly approved otherwise;
 - document package and dependency changes clearly;
 - run Gazebo/gz-physics gates when downstream behavior can be affected;
 - keep changelog and version metadata changes separate from unrelated cleanup
   when possible.
 
-## DART 6 Release Closeout
+## Release Closeout
 
-A DART 6.x.y release on a stabilization or maintenance branch is packaged by
-one "Packaging 6.x.y" PR on its `release-6.x` branch, including the first
-`6.x.0` release after an early stabilization cut. It bumps `package.xml` and the
+A DART X.Y.Z release on a stabilization or maintenance branch is packaged by
+one "Packaging X.Y.Z" PR on its `release-X.Y` branch, including the first
+`X.Y.0` release after an early stabilization cut. It bumps `package.xml` and the
 `pixi.toml` workspace version, dates the release's `CHANGELOG.md` heading, links
 that heading to the closed milestone (`?closed=1`), and adds a short release
 summary under it. Its
 squash commit is the release candidate: once the gates below pass, tag it
-`v6.x.y` (annotated, message `DART 6.x.y`) and publish the GitHub release
-`DART 6.x.y`.
+`vX.Y.Z` (annotated, message `DART X.Y.Z`) and publish the GitHub release
+`DART X.Y.Z`.
 
-Before tagging any DART 6.x.y release, record passing compatibility evidence on
+Before tagging any DART X.Y.Z release, record passing compatibility evidence on
 the exact candidate SHA for the forced optional-dependency-off gate and
 `pixi run -e gazebo test-gz`, confirming that both `test-gz-physics` and
 `test-gz-sim` ran. Evidence from a different SHA is not release evidence. When
-activating a new `release-6.x` branch, confirm its branch protection requires
+activating a new `release-X.Y` branch, confirm its branch protection requires
 uniquely named contexts for both gates.
 
 Development and release branches enforce these gates through the required
@@ -113,23 +115,23 @@ Before tagging, also record the release performance comparison on the exact
 candidate SHA:
 `gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
 It takes the version from the candidate's `package.xml`, compares the candidate
-with the previous `v6` tag on the rows both can run (`-f base=v6.x.y` selects
-another baseline), and publishes `performance/releases/v6.x.y.json`, `.md` and
+with the previous release tag on the rows both can run (`-f base=vX.Y.Z` selects
+another baseline), and publishes `performance/releases/vX.Y.Z.json`, `.md` and
 `index.md` on `gh-pages`. Only `main` candidates list merged changes since that
 tag that moved a gated row, broke a row or carried a rationale line;
-`release-6.x` candidates carry the tag comparison only. Read it before
+`release-X.Y` candidates carry the tag comparison only. Read it before
 tagging; a FAIL does not block by itself but needs an explanation. After
 publishing the GitHub release, check that the record names the tagged commit,
-then attach both files as `dart-perf-v6.x.y.json` and `dart-perf-v6.x.y.md`
+then attach both files as `dart-perf-vX.Y.Z.json` and `dart-perf-vX.Y.Z.md`
 (commands in [CI/CD](ci-cd.md#performance-records-and-guards)); if the record names a
-different candidate, dispatch again with `-f tag=v6.x.y` and no `head` first.
+different candidate, dispatch again with `-f tag=vX.Y.Z` and no `head` first.
 Hosted records take precedence over local records. Within the same producer,
 the tagged commit's record replaces any stored candidate, including a newer
 or diverged one.
 
-A maintainer may cut `release-6.x` before the first minor-release tag to
+A maintainer may cut `release-X.Y` before the first minor-release tag to
 stabilize that release while `main` develops the next minor version. In that
-case, package and tag the first `6.x.0` release on the stabilization branch,
+case, package and tag the first `X.Y.0` release on the stabilization branch,
 as for later patch releases.
 Without a stabilization cut, package and tag the minor release on `main`,
 then cut a maintenance branch from the tag when patch releases must diverge.
@@ -146,12 +148,13 @@ the table above owns the next release target.
 ### ABI window
 
 DART uses `MAJOR.MINOR` for `SOVERSION` (`cmake/DARTMacros.cmake`). Additive
-private members are permitted only before 6.20.0 is first packaged; 6.20.x
-patches must preserve class layouts. Downstream-subclassed vtables remain
+private members and layout changes are permitted on a release line only
+before its `X.Y.0` is first packaged; `X.Y.z` patches must preserve class
+layouts. For example, 6.20.x patches preserve the 6.20.0 layouts. Downstream-subclassed vtables remain
 frozen throughout that window. Prefer implementation-private or function-local
 storage for new scratch state.
 
-## Verifying DART 6 Changes
+## Verifying Changes
 
 Verify before merging: `pixi run test-all` for the complete default CMake graph.
 The branch configuration pins `BUILD_TESTING=ON`, so `ALL` builds the default

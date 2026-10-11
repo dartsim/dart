@@ -1,4 +1,4 @@
-"""Geometry tests for the DART 6 agent view-quality helpers (no GL needed)."""
+"""Geometry tests for the DART agent view-quality helpers (no graphics device needed)."""
 
 import math
 import sys

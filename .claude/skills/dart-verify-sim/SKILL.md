@@ -1,11 +1,11 @@
 ---
 name: dart-verify-sim
-description: "DART Verify Sim: text-first and Filament visual debugging for DART 6 scenes, dynamics, collision, contacts, and GUI output"
+description: "DART Verify Sim: text-first and Filament visual debugging for DART scenes, dynamics, collision, contacts, and GUI output"
 ---
 
-# DART 6 Simulation Verification
+# DART Simulation Verification
 
-Load this skill whenever a DART 6 claim depends on 3D structure or
+Load this skill whenever a DART claim depends on 3D structure or
 behavior: model/scene loading, dynamics, collision/contact/constraints,
 simulation stepping, Filament rendering, or a visual example.
 
@@ -89,7 +89,7 @@ its third exercises a valid custom factory, and its fourth performs the full
 `agent-capture` A/B with identical cameras and requires debug layers to change
 at least 128 pixels plus visible contact-marker color pixels, then proves each
 of the contacts, collision-bounds, and labels layers changes pixels on its own.
-Filtered DART 6 sentinel contacts remain diagnostic sidecar evidence rather
+Filtered DART sentinel contacts remain diagnostic sidecar evidence rather
 than an A/B failure. For a custom `--factory`, replace the text case with a
 focused test, pose/contact trace, or checksum comparison that exercises that
 factory; do not pair a custom scene with an unrelated benchmark. Use

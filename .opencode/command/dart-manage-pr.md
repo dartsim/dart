@@ -72,7 +72,7 @@ gh pr checks <PR_NUMBER>
      correct stale or missing metadata only after maintainer/user approval.
      For an explicit rollover, follow the owner's proposed-target rule.
    - Confirm ordinary changes target `main`. Backports and release-specific
-     packaging, CI, or branch guidance may target a maintained `release-6.*`
+     packaging, CI, or branch guidance may target a maintained `release-*`
      branch; backports use `dart-backport-pr`.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.

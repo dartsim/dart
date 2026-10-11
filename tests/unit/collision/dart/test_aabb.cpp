@@ -303,7 +303,7 @@ TEST(Aabb, Transformed_Unbounded)
       Aabb(Eigen::Vector3d(-1.0, -1.0, -1.0), Eigen::Vector3d(1.0, 1.0, 1.0))));
 }
 
-// DART 6 supplementary coverage tests
+// Supplementary coverage tests
 TEST(Aabb, ContainsCornersAndOverlapsAtSingleCorner)
 {
   const Aabb aabb(

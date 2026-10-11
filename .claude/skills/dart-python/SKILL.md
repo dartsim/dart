@@ -56,8 +56,10 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 - nanobind is dartpy's only binder on `main`, under `python/dartpy/`.
   Use the DART 6.20 compatibility notes in the owner guide.
-- Follow the existing DART 6 camelCase binding names used in `python/examples`
-  and `python/tests`.
+- Until the PLAN-624 rename lands, follow the current binding names in
+  `python/examples` and `python/tests`; bind new DART 7 APIs directly in the
+  DART 7 Python style (snake_case, properties, keyword-only options) from the
+  PLAN-624 design doc.
 - NumPy arrays auto-convert to Eigen types
 - `dartpy.gui` always exists: dartpy requires `DART_BUILD_IO` and
   `DART_BUILD_GUI`. GUI callers use the Filament-backed `dart.gui.Viewer` and

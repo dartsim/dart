@@ -11,10 +11,11 @@ source on Linux: GUI tree C++/native/Python tests, the rendered 37-scene
 cycle, Python demos, display-free capture on RTX and Lavapipe, GUI-off core
 gates, Gazebo, the CP313 wheel, and the relocated installed consumer.
 
-Still pending for release acceptance: native Windows/macOS functional CI
-(needs approved publication), accepted Linux performance/resource comparisons
-against an immutable OSG checkout on a quiet host, and final release reviews
-after publication. Historical paired visual assessments below cover the
+M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11;
+native functional CI passed on Linux, Windows and macOS. Still pending for
+release acceptance: the wheel/cache gates in `README.md`, accepted Linux
+performance/resource comparisons against an immutable OSG checkout on a quiet
+host, and final release reviews. Historical paired visual assessments below cover the
 preview bytes; the completion session re-checked rendering with viewed
 captures but did not repeat the 37-pair OSG comparison.
 

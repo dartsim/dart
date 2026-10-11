@@ -1,4 +1,4 @@
-# CI And DART 6 Checks
+# CI And DART Checks
 
 Use GitHub Actions as the hosted source of truth after a PR is opened. Locally,
 run the smallest gate that proves the touched surface, then broaden when shared
@@ -27,7 +27,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above except CI Filament, on `main`; files `nightly-failure` issues |
-| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
+| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory `release-6.*` wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
@@ -77,15 +77,15 @@ repository ruleset is configured by the maintainer, not in code.
 - The release tier is dispatched with
   `gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
   Candidates must belong to the first-parent history of `main` or a
-  `release-6.x` branch. The tag is `v<package.xml version>` at the candidate;
-  a supplied tag must match. With no `head`, `-f tag=v6.x.y` selects an existing
+  `release-X.Y` branch. The tag is `v<package.xml version>` at the candidate;
+  a supplied tag must match. With no `head`, `-f tag=vX.Y.Z` selects an existing
   tag's commit. An existing tag must name the selected candidate.
-  The base is the newest earlier `v6` tag merged into the candidate's parent;
-  `-f base=v6.x.y` selects another eligible baseline. Both arms use `main`'s
+  The base is the newest earlier release tag merged into the candidate's parent;
+  `-f base=vX.Y.Z` selects another eligible baseline. Both arms use `main`'s
   harness and Pixi environment. Comparisons involving a 6.19.x tag run the
   portable `gzb/ode` and `robot/dart` rows. A policy FAIL is published and the
   writer stays green; an ERROR publishes nothing. Only `main` candidates include
-  a change ledger; `release-6.x` candidates carry the tag comparison only.
+  a change ledger; `release-X.Y` candidates carry the tag comparison only.
   Hosted records take precedence over local tag records even when their
   environment fingerprints match. Identical-or-refuse checks apply only within
   the same `runner.environment`.
@@ -99,7 +99,7 @@ These tiers publish in this repository's `gh-pages` branch:
 | Path | Content |
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
-| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points |
+| `performance/dart7-ir/` | Merge-only Ir and allocation chart for main's DART 7 line, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points. `performance/dart6-ir/` keeps the frozen pre-7.0 history |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
 | `performance/records/main/<yyyy>/<date>-<sha12>-backfill.json` | Local A/B record with `runner.environment: local`, pushed once by a maintainer after review; never charted |
 | `performance/releases/<tag>.{json,md}` and `index.md` | Comparison with the previous tag; main candidates include a ledger of changes; per-row release index; JSON and markdown attached by hand to the GitHub release |
@@ -234,13 +234,14 @@ Every write fetches `origin/gh-pages`, resets to and regenerates against it and
 pushes with bounded retries after rejection; it never force-pushes. The
 repository ruleset also blocks force-push and branch deletion.
 
-The existing wall-time dashboard continues at `performance/dart6/`, pinned
+The existing wall-time dashboard continues at `performance/dart6/` for the
+`release-6.*` maintenance line only (main is the DART 7 line), pinned
 to `ubuntu-24.04`, with `DART_BUILD_PROFILE=OFF`, alerts and alert comments
 disabled. Removing profiler overhead intentionally introduces a one-time
 level shift; historical points across that shift are not directly comparable.
 CI has no quiet hardware: wall time and estimated cycles are advisory.
 Cache, prefetch, SIMD and threading claims require hand-run `perf stat`
-evidence. `release-6.x` branches are tracked by release records only.
+evidence. `release-X.Y` branches are tracked by release records only.
 
 After merging workflow changes, verify the hosted behavior: dispatch the
 merge tier twice for the same `main` SHA and check identical Ir or different
@@ -255,7 +256,7 @@ For the repeated-SHA check, use
 Manual dispatches can name an ancestor of `main` that provides the selected
 tier's harness; the merge base, when supplied, must be that commit's first
 parent. For an existing release tag, use
-`gh workflow run perf.yml --ref main -f tier=release -f tag=v6.x.y`.
+`gh workflow run perf.yml --ref main -f tier=release -f tag=vX.Y.Z`.
 Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
 
 Measurements stage every arm under one fixed path with a minimal environment,
@@ -275,19 +276,19 @@ After publishing the GitHub release, attach its performance record manually:
 (
 set -e
 git fetch origin gh-pages
-git show origin/gh-pages:performance/releases/v6.x.y.json > dart-perf-v6.x.y.json
-tag_commit=$(git rev-parse --verify 'v6.x.y^{commit}')
-record_commit=$(jq -er .run.commit dart-perf-v6.x.y.json)
+git show origin/gh-pages:performance/releases/vX.Y.Z.json > dart-perf-vX.Y.Z.json
+tag_commit=$(git rev-parse --verify 'vX.Y.Z^{commit}')
+record_commit=$(jq -er .run.commit dart-perf-vX.Y.Z.json)
 if [ "$record_commit" != "$tag_commit" ]; then
-  echo 'record names another candidate; dispatch -f tag=v6.x.y first' >&2
+  echo 'record names another candidate; dispatch -f tag=vX.Y.Z first' >&2
   exit 1
 fi
-git show origin/gh-pages:performance/releases/v6.x.y.md > dart-perf-v6.x.y.md
-gh release upload v6.x.y dart-perf-v6.x.y.json dart-perf-v6.x.y.md
+git show origin/gh-pages:performance/releases/vX.Y.Z.md > dart-perf-vX.Y.Z.md
+gh release upload vX.Y.Z dart-perf-vX.Y.Z.json dart-perf-vX.Y.Z.md
 )
 ```
 
-If the commit check fails, dispatch again with `-f tag=v6.x.y` and no `head`
+If the commit check fails, dispatch again with `-f tag=vX.Y.Z` and no `head`
 before uploading; the tagged commit's record replaces the stored candidate
 even if that candidate is newer or diverged. A FAIL needs an explanation of
 its changed guards or gated regressions; it does not block release by itself.

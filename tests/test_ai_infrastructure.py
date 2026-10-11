@@ -1,4 +1,4 @@
-"""Tests for DART 6's deterministic AI infrastructure checks."""
+"""Tests for DART's deterministic AI infrastructure checks."""
 
 import ast
 import copy
@@ -113,10 +113,47 @@ def test_release_scenarios_are_exercisable():
     assert infra.exercise_scenarios(ROOT) == []
 
 
+@pytest.fixture
+def release_reference_target(tmp_path):
+    path = tmp_path / "docs/onboarding/release-management.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "## Release Target\n\n"
+        "| Branch | Phase | Next release |\n"
+        "| ------ | ----- | ------------ |\n"
+        "| `main` | Development | `7.0.0` |\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 @pytest.mark.parametrize(
     ("relative", "text"),
     [
         ("AGENTS.md", "`main` develops DART 6.22.\n"),
+        ("AGENTS.md", "`main` develops DART 7.0.\n"),
+        ("docs/ai/README.md", "Next release: DART v12.0.0\n"),
+        (
+            "docs/ai/README.md",
+            "When updating Python, prepare DART for the next release: 7.0.0.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "For DART, update nanobind before the upcoming release 7.0.0.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "When updating libdart, the next version is 7.0.0.\n",
+        ),
+        ("AGENTS.md", "Currently DART7.0\n"),
+        ("AGENTS.md", "Currently release-12.0\n"),
+        ("docs/ai/README.md", "Next release: DART 12.0.0\n"),
+        ("docs/README.md", "| release-7.0 | Maintenance | 7.0.1 |\n"),
+        ("docs/onboarding/contributing.md", "Use milestone DART 7.0.0\n"),
+        (
+            "docs/onboarding/contributing.md",
+            "Release packaging targets release-7.0 directly.\n",
+        ),
         ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
         ("GEMINI.md", "The next release is currently DART 6.22.\n"),
         ("AGENTS.md", "The next release is DART 6.22.0.\n"),
@@ -124,13 +161,37 @@ def test_release_scenarios_are_exercisable():
         ("docs/plans/dashboard.md", "The upcoming release will be DART 6.22.0.\n"),
         ("docs/ai/README.md", "Planned release = `DART 6.22.0`\n"),
         ("AGENTS.md", "Next release: `6.22.0`\n"),
+        ("AGENTS.md", "Next release: 7.0.0\n"),
+        ("AGENTS.md", "Prepare DART for the next release: 7.0.0\n"),
+        ("AGENTS.md", "Prepare the Python-first DART for the next release: 7.0.0\n"),
+        ("AGENTS.md", "For DART's Python API, the next release is 7.0.0.\n"),
+        ("AGENTS.md", "Prepare branch-local DART for the next release: 7.0.0\n"),
+        ("AGENTS.md", "For gz-physics, the next release is 7.0.0\n"),
+        ("AGENTS.md", "When updating Python-first DART, the next version is 7.0.0\n"),
+        ("AGENTS.md", "When updating nanobinder, the next version is 7.0.0\n"),
+        ("AGENTS.md", "When updating support for Python, the next version is 7.8.0\n"),
+        ("AGENTS.md", "Update gz-physics. Next release: 7.0.0\n"),
+        ("AGENTS.md", "Update gz-physics! Next release: 7.0.0\n"),
+        ("AGENTS.md", "Update gz-physics? Next release: 7.0.0\n"),
+        ("AGENTS.md", "For gz-physics, the next DART release is 7.0.0\n"),
+        ("AGENTS.md", "For gz-physics, the next release is DART 7.0.0\n"),
         ("docs/README.md", "The next release is 6.22.0.\n"),
         ("AGENTS.md", "Next version: DART 6.22.0\n"),
         ("AGENTS.md", "The next version is DART 6.22.0.\n"),
         ("docs/README.md", "Planned version = **DART 6.22.0**\n"),
         ("docs/plans/dashboard.md", "The upcoming version will be DART 6.22.0.\n"),
         ("docs/ai/README.md", "Next DART version: `6.22.0`\n"),
+        ("docs/ai/README.md", "Next DART version: 8.0.0\n"),
+        ("docs/ai/README.md", "Next DART release: v8.0.0\n"),
+        ("docs/ai/README.md", "Next DART version: **v8.0.0**\n"),
+        ("docs/ai/README.md", "Next DART version: DART 8.0.0\n"),
+        ("docs/ai/README.md", "다음 DART 버전: 8.0.0\n"),
         ("AGENTS.md", "Next version: 6.22.0\n"),
+        ("AGENTS.md", "Next version: 6.22.0rc1\n"),
+        ("AGENTS.md", "Next version: 7.0.0rc1\n"),
+        ("AGENTS.md", "Next version: DART7.0\n"),
+        ("AGENTS.md", "Next version: release-7.0\n"),
+        ("AGENTS.md", "Next version: v7.0.0\n"),
         ("docs/README.md", "**Next version**: **DART 6.22.0**\n"),
         ("docs/README.md", "**Next version:** ``6.22.0``\n"),
         ("docs/README.md", "``Next version`` = ``6.22.0``\n"),
@@ -184,7 +245,9 @@ def test_release_scenarios_are_exercisable():
         ),
     ],
 )
-def test_release_references_reject_copied_routing(tmp_path, relative, text):
+def test_release_references_reject_copied_routing(
+    release_reference_target, tmp_path, relative, text
+):
     path = tmp_path / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -200,6 +263,48 @@ def test_release_references_reject_copied_routing(tmp_path, relative, text):
     ("relative", "text"),
     [
         ("docs/readthedocs/index.rst", "DART 6.19.5 was released on 2026-10-04.\n"),
+        ("docs/ai/README.md", "DART 6.20 collision backends\n"),
+        ("docs/ai/README.md", "release-6.20 is the maintenance line.\n"),
+        ("docs/ai/README.md", "DART 7.0 collision backends\n"),
+        ("docs/ai/README.md", "release-7.0 is the maintenance line.\n"),
+        ("docs/ai/README.md", "When updating nanobind, the next version is 3.1.0.\n"),
+        ("docs/ai/README.md", "When updating libcurl, the next version is 7.86.0.\n"),
+        (
+            "docs/ai/README.md",
+            "When updating libcurl from 7.85.0, the next version is 7.86.0.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "When updating gz-physics from version 7.7.0, the next version is "
+            "7.8.0.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "When upgrading gz-physics from version 7.7.0 to version 7.8.0, the next "
+            "version is 7.9.0.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "Use the release-6.20 pybind11 binder and select the milestone from the "
+            "base branch.\n",
+        ),
+        ("docs/ai/README.md", "When updating gz-physics, the next version is 9.0.0.\n"),
+        ("docs/ai/README.md", "When updating gz-physics, the next version is 7.8.0.\n"),
+        (
+            "docs/ai/README.md",
+            "When updating gz-physics 7.7.0, the next version is v7.8.0.\n",
+        ),
+        ("docs/ai/README.md", "When updating EIGEN, the next version is 7.8.0.\n"),
+        ("docs/ai/README.md", "Update gz-math, the next version is 7.8.0.\n"),
+        (
+            "docs/ai/README.md",
+            "When upgrading to gz-cmake, the next version is 7.8.0.\n",
+        ),
+        ("docs/ai/README.md", "Upgrade Python, the next version is 7.8.0.\n"),
+        ("docs/ai/README.md", "Bump gz-sim, the next version is 7.8.0.\n"),
+        ("docs/ai/README.md", "When bumping to Python, the next version is 7.8.0.\n"),
+        ("docs/ai/README.md", "When updating gz-sim, the next version is 8.0.0.\n"),
+        ("docs/ai/README.md", "The next version is 16.0.\n"),
         (
             "docs/readthedocs/dart/developer_guide/build.rst",
             "DART 6.20 requires C++17 and the following dependency baselines.\n",
@@ -233,7 +338,7 @@ def test_release_references_reject_copied_routing(tmp_path, relative, text):
     ],
 )
 def test_release_references_allow_history_and_dependency_floors(
-    tmp_path, relative, text
+    release_reference_target, tmp_path, relative, text
 ):
     path = tmp_path / relative
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -328,6 +433,11 @@ def test_release_references_accept_release_metadata_only_rollover(
     ("catalog", "line_number"),
     [
         ('msgid "Neutral source"\nmsgstr "현재 DART 6.22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "현재 DART 7.0"\n', 2),
+        (
+            'msgid "Neutral source"\nmsgstr "release-7.0 브랜치는 DART 7.0를 개발합니다"\n',
+            2,
+        ),
         ('msgid "Neutral source"\nmsgstr "다음 릴리스는 DART 6.22.0입니다."\n', 2),
         ('msgid "Neutral source"\nmsgstr "차기 버전은 **DART 6.22**입니다."\n', 2),
         ('msgid "Neutral source"\nmsgstr "다음 릴리스: ``DART 6.22.0``"\n', 2),
@@ -356,7 +466,9 @@ def test_release_references_accept_release_metadata_only_rollover(
         ),
     ],
 )
-def test_release_translations_reject_copied_routing(tmp_path, catalog, line_number):
+def test_release_translations_reject_copied_routing(
+    release_reference_target, tmp_path, catalog, line_number
+):
     relative = "docs/readthedocs/locales/ko/LC_MESSAGES/index.po"
     path = tmp_path / relative
     path.parent.mkdir(parents=True)
@@ -1647,7 +1759,8 @@ def test_boolean_schema_versions_are_rejected():
     ("field", "value", "expected"),
     [
         ("schema_version", 1, "`schema_version` must be 2"),
-        ("profile", "main", "`profile` must be 'dart6'"),
+        ("profile", "main", "`profile` must be 'dart7'"),
+        ("profile", "dart6", "`profile` must be 'dart7'"),
         ("base_ref", "origin/main", "keys must be"),
     ],
 )
@@ -4857,7 +4970,7 @@ def test_model_upgrade_workflow_is_bounded_and_future_model_scalable():
     assert "do not clone the workflow" in workflow
     assert "apply/adapt/omit" in workflow
     assert "durable project context" in workflow
-    assert "representative DART 6 physics investigation" in workflow
+    assert "representative DART physics investigation" in workflow
     assert "Images are never the" in workflow
     assert "sole correctness oracle" in workflow
     assert "configured CMake File API result" in workflow
@@ -4867,6 +4980,26 @@ def test_model_upgrade_workflow_is_bounded_and_future_model_scalable():
     assert "## Updating Models And Coding Agents" in readme
     assert "**Codex — " in readme
     assert "**Claude Code — " in readme
+
+
+@pytest.mark.parametrize("identity", ["DART 7", "DART 7.0", "DART 12.0.0"])
+def test_model_upgrade_contract_accepts_versioned_identity(monkeypatch, identity):
+    source = ROOT / ".claude/commands/dart-model-upgrade.md"
+    original = source.read_text()
+    changed = re.sub(
+        r"\bDART(?= (?:physics investigation|nanobind binder))", identity, original
+    )
+    assert changed != original
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return changed
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    assert infra.exercise_scenarios(ROOT, emit=False) == []
 
 
 def test_ultrawork_uses_explicit_delegation_and_lean_prompt_shape():
@@ -5003,7 +5136,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
 
     assert report["schema_version"] == 1
     assert report["profile"] == {
-        "name": "dart6",
+        "name": "dart7",
         "cpp_standard": "C++17",
         "python_binding": "nanobind",
         "optional_python_bindings": [],
@@ -5131,7 +5264,7 @@ def test_doctor_print_distinguishes_capture_and_native_window_prerequisites(caps
         ("{", "invalid JSON"),
         ("null", "top level must be an object"),
         ("[]", "top level must be an object"),
-        ('{"profile": "main"}', "`profile` must be 'dart6'"),
+        ('{"profile": "main"}', "`profile` must be 'dart7'"),
     ],
 )
 def test_doctor_does_not_claim_a_profile_when_invalid(
@@ -5150,7 +5283,7 @@ def test_doctor_does_not_claim_a_profile_when_invalid(
     assert report["ok"] is False
     assert any(expected in error for error in report["errors"])
     output = capsys.readouterr().out
-    assert "DART 6 AI doctor: FAIL" in output
+    assert "DART AI infrastructure doctor: FAIL" in output
     assert "profile: unavailable" in output
     assert "profile: main" not in output
 
@@ -6116,14 +6249,33 @@ def test_every_scenario_rejects_pinned_prompt(scenario_data, scenario_id):
     errors = infra.exercise_scenarios(ROOT, scenario_data, emit=False)
 
     assert (
-        f"scenario `{scenario_id}`: prompt_class must be release-neutral; use DART 6"
+        f"scenario `{scenario_id}`: prompt_class must be release-neutral; use DART"
         in errors
     )
 
 
 @pytest.mark.parametrize(
     "version",
-    ["6.22.0", "**DART 6.22.0**", "release-6.22", "v6.22.0", "DART6.22", "DART\n6.22"],
+    [
+        "6.22.0",
+        "**DART 6.22.0**",
+        "release-6.22",
+        "v6.22.0",
+        "DART6.22",
+        "DART\n6.22",
+        "7.0.0",
+        "DART 7.0",
+        "release-7.0",
+        "v7.0.0",
+        "DART7.0",
+        "DART\n7.0",
+        "DART 12.0",
+        "6.22",
+        "7.0",
+        "DART v12.0.0",
+        "6.22.0rc1",
+        "7.0.0rc1",
+    ],
 )
 def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
     scenario_data["scenarios"][0]["prompt_class"] = f"Inspect {version} checkout"
@@ -6131,19 +6283,215 @@ def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
     errors = infra.exercise_scenarios(ROOT, scenario_data, emit=False)
 
     assert (
-        "scenario `orientation`: prompt_class must be release-neutral; use DART 6"
+        "scenario `orientation`: prompt_class must be release-neutral; use DART"
         in errors
     )
 
 
 @pytest.mark.parametrize(
     "prompt",
-    ["Orient to the current DART 6 checkout", "Inspect DART 6 compatibility"],
+    [
+        "Inspect DART version: 7.0.0",
+        "Inspect dartpy==7.0.0 compatibility",
+        "Pin dartpy>=8.1 in a DART checkout",
+        "Inspect DART_VERSION=6.22.0 compatibility",
+        "Inspect DART_VERSION=7.0.0 compatibility",
+        "Pin dartpy===7.0.0 for the DART checkout",
+        "Inspect the DART checkout (version: 7.0.0)",
+        "Inspect the DART checkout (version: 6.22.0)",
+        "For DART, update nanobind before the upcoming release 7.0.0.",
+        "When updating Python, main's next release is 7.0.0.",
+        "Inspect the DART checkout: 7.0.0",
+        "Inspect the DART library 7.0.0 checkout",
+        "When updating libdart, the next version is 7.0.0",
+        "Inspect libdart 6.20.0 compatibility in a DART checkout",
+        "Inspect -DDARTPY_VERSION_INFO=6.20.0 in a DART checkout",
+        "Pin libdart-dev=6.20.0 for the DART checkout",
+        "Inspect -DDARTPY_VERSION_INFO:STRING=6.20.0 in the current DART checkout",
+        "When updating Python, prepare DART for the next release: 7.0.0",
+        "Pin dartpy_version=7.0.0 in a DART checkout",
+        "Inspect DaRt_ReLeAsE=v12.0.0 compatibility",
+        "Pin dartpy_VERSION=8.1 in a DART checkout",
+        "Inspect gz-physics DART 7.0.0 compatibility",
+        "Inspect gz-physics release-7.0 compatibility",
+        "Inspect nanobinder 7.0.0 compatibility",
+        "Prepare DART for the next release: 7.0.0",
+        "Prepare the Python-first DART for the next release: 7.0.0",
+        "For DART's Python API, the next release is 7.0.0.",
+        "Inspect DART pre-release 7.0.0 compatibility",
+        "Inspect DART pre-release 6.22.0 compatibility",
+        "Inspect dartpy.__version__: 7.0.0 compatibility",
+        "Inspect dart.__version__: 6.22.0 compatibility",
+        "Inspect Python-first 7.0.0 compatibility",
+        "Inspect branch-local 7.0.0 compatibility",
+        "Inspect pre-Python 7.0.0 compatibility",
+        "Inspect foo-bar-baz 7.8.0 compatibility in a DART checkout",
+        "When updating gz-physics, the next version is DART 7.0.0.",
+        "When updating gz-physics, the next DART version is 7.0.0.",
+        "When updating gz-physics, the next version is 7.8.0; inspect 7.0.0 checkout.",
+        "Update gz-physics. Next version: 7.0.0",
+        "Use the next version: 6.22",
+    ],
+)
+def test_scenario_rejects_qualified_version_prompts(scenario_data, prompt):
+    scenario_data["scenarios"][0]["prompt_class"] = prompt
+
+    assert infra.exercise_scenarios(ROOT, scenario_data, emit=False) == [
+        "scenario `orientation`: prompt_class must be release-neutral; use DART"
+    ]
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "Orient to the current DART checkout",
+        "Inspect DART compatibility",
+        "Inspect DART 6 compatibility",
+        "Inspect Python 3.12 support in the current DART checkout",
+        "Tune time_step=0.001 in a DART checkout",
+        "Update a dependency to v12.0.0 in a DART checkout",
+        "Tune friction=7.0 in a DART checkout",
+        "Tune friction= 7.0 in a DART checkout",
+        "Tune friction:7.0 in a DART checkout",
+        "Tune friction: 7.0 in a DART checkout",
+        "Update nanobind to 3.1.0 in a DART checkout",
+        "Update nanobind to v3.1.0 in a DART checkout",
+        "Update gz-physics to 9.0.0 in a DART checkout",
+        "Inspect gz-sim 8.0.0 compatibility in the current DART checkout",
+        "Inspect gz-physics 7.8.0 compatibility in a DART checkout",
+        "Update gz-physics to 7.8.0 in a DART checkout",
+        "Update gz-physics to v7.8.0 in a DART checkout",
+        "Check gz-physics version: 7.8.0 in a DART checkout",
+        "Inspect Codex CLI version: 0.162.0 in the current DART checkout",
+        "Inspect gz-physics version 7.4.0 compatibility in the current DART checkout",
+        "Update gz-physics to version 7.8.0 in a DART checkout",
+        "Update gz-physics from 7.7.0 to 7.8.0 in a DART checkout",
+        "Upgrade gz-physics from version 7.7.0 to version 7.8.0 in a DART checkout",
+        "Update gz-physics to release 7.8.0 in a DART checkout",
+        "Check compatibility with gz-math 7.4.0 and 7.5.0",
+        "Update gz-physics to version: 7.8.0 in a DART checkout",
+        "Check gz-math versions 7.4.0 and 7.5.0 compatibility in a DART checkout",
+        "Check that the gz-physics version is 7.8.0 before building DART",
+        "Check gz-math versions 7.3.0, 7.4.0, and 7.5.0 compatibility in the current DART checkout",
+        "When upgrading gz-physics from version 7.7.0 to version 7.8.0, the next version is 7.9.0.",
+        "When updating gz-physics from version 7.7.0, the next version is 7.8.0.",
+        "When updating libcurl from 7.85.0, the next version is 7.86.0.",
+        "Inspect libcurl 7.85.0 compatibility in a DART checkout",
+        "Inspect CURL 7.85.0 compatibility in a DART checkout",
+        "When upgrading Python, next version: 3.15.0",
+        "When updating gz-physics, next version: 7.8.0",
+        "Inspect gz-physics v7.8.0 compatibility in a DART checkout",
+        "Inspect gz-foo-bar-baz 7.8.0 compatibility in a DART checkout",
+        "Inspect GZ-MATH v7.8.0 compatibility in a DART checkout",
+        "Inspect EIGEN v7.8.0 compatibility in a DART checkout",
+        "Update gz-sim to 8.0.0 in a DART checkout",
+        "Update Python to 3.15.0 in a DART checkout",
+        "When updating gz-physics, the next version is 7.8.0.",
+        "When updating gz-physics 7.7.0, the next version is v7.8.0.",
+        "Check gravity 9.81 in a DART checkout",
+        "Inspect 12.0.0 checkout",
+        "Inspect 16.0 checkout",
+        "Inspect v16.0 checkout",
+    ],
 )
 def test_scenario_accepts_release_neutral_prompt(scenario_data, prompt):
     scenario_data["scenarios"][0]["prompt_class"] = prompt
 
     assert infra.exercise_scenarios(ROOT, scenario_data, emit=False) == []
+
+
+@pytest.mark.parametrize(
+    ("version", "pinned"),
+    [
+        ("7.1", True),
+        ("9.0.0", False),
+        ("v9.0.0", False),
+        ("6.22", False),
+        ("v6.22", False),
+    ],
+)
+def test_release_detectors_follow_target_major(
+    release_reference_target, tmp_path, scenario_data, monkeypatch, version, pinned
+):
+    text = release_reference_target.read_text(encoding="utf-8")
+    release_reference_target.write_text(
+        text.replace("7.0.0", "8.0.0"), encoding="utf-8"
+    )
+    original_read_text = Path.read_text
+
+    def read_text(path, *args, **kwargs):
+        if path == ROOT / "docs/onboarding/release-management.md":
+            path = release_reference_target
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    (tmp_path / "AGENTS.md").write_text(f"Next version: {version}\n", encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert len(errors) == int(pinned)
+    scenario_data["scenarios"][0]["prompt_class"] = f"Inspect {version} checkout"
+    assert infra.exercise_scenarios(ROOT, scenario_data, emit=False) == (
+        ["scenario `orientation`: prompt_class must be release-neutral; use DART"]
+        if pinned
+        else []
+    )
+
+
+@pytest.mark.parametrize("row", ["", "| main | Development | invalid |\n"])
+@pytest.mark.parametrize(
+    ("version", "pinned"),
+    [
+        ("6.22", False),
+        ("v7.0.0rc1", False),
+        ("DART 12.0", True),
+        ("DART7.0", True),
+        ("release-7.0", True),
+        ("DART version: 8.0.0", True),
+        ("dartpy release = v8.0.0", True),
+        ("DART_VERSION=6.22.0", True),
+        ("dartpy_version=7.0.0", True),
+        ("DART_RELEASE=v12.0.0", True),
+        ("dartpy==8.0.0", True),
+        ("dartpy>=8.1", True),
+        ("DART<=8.1", True),
+        ("dartpy~=8.1", True),
+        ("DART!=8.1", True),
+        ("dartpy<8.1", True),
+        ("DART>8.1", True),
+        ("dart.__version__: v12.0.0", True),
+        ("dartpy.__version__>=8.1", True),
+        ("DaRtPy.__version__ v16.0", True),
+    ],
+)
+def test_release_detectors_require_target_for_bare_versions(
+    release_reference_target, tmp_path, scenario_data, monkeypatch, row, version, pinned
+):
+    text = release_reference_target.read_text(encoding="utf-8")
+    release_reference_target.write_text(
+        text.replace("| `main` | Development | `7.0.0` |\n", row), encoding="utf-8"
+    )
+    original_read_text = Path.read_text
+
+    def read_text(path, *args, **kwargs):
+        if path == ROOT / "docs/onboarding/release-management.md":
+            path = release_reference_target
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    (tmp_path / "AGENTS.md").write_text(f"Next version: {version}\n", encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert len(errors) == int(pinned)
+    scenario_data["scenarios"][0]["prompt_class"] = f"Inspect {version} checkout"
+    assert infra.exercise_scenarios(ROOT, scenario_data, emit=False) == (
+        ["scenario `orientation`: prompt_class must be release-neutral; use DART"]
+        if pinned
+        else []
+    )
 
 
 def test_full_infrastructure_check_rejects_pinned_scenario_prompt(
@@ -6162,6 +6510,29 @@ def test_full_infrastructure_check_rejects_pinned_scenario_prompt(
     errors = infra.run_checks(ROOT)
 
     assert (
-        "scenario `orientation`: prompt_class must be release-neutral; use DART 6"
+        "scenario `orientation`: prompt_class must be release-neutral; use DART"
         in errors
     )
+
+
+@pytest.mark.parametrize(("version", "expected"), [("7.0.0", []), ("8.0.0", 1)])
+def test_main_release_target_matches_branch_profile(tmp_path, version, expected):
+    owner = tmp_path / "docs/onboarding/release-management.md"
+    owner.parent.mkdir(parents=True)
+    owner.write_text(
+        (ROOT / "docs/onboarding/release-management.md")
+        .read_text(encoding="utf-8")
+        .replace("`7.0.0`", f"`{version}`", 1),
+        encoding="utf-8",
+    )
+    profile = tmp_path / "docs/ai/branch-profile.json"
+    profile.parent.mkdir(parents=True)
+    profile.write_text(json.dumps({"profile": "dart7"}), encoding="utf-8")
+    errors = []
+
+    infra.check_release_target_profile(tmp_path, errors)
+
+    if expected == []:
+        assert errors == []
+    else:
+        assert len(errors) == 1 and "branch profile `dart7`" in errors[0]

@@ -1,15 +1,14 @@
-# DART 6 North-Star Roadmap
+# DART North-Star Roadmap
 
-DART 6 is the compatibility support lane. Its AI-native roadmap is to make
-maintenance work discoverable, bounded, verifiable, and safe for downstream
-users.
+`main` is the Python-first DART 7 development line; `release-6.20` remains the
+DART 6 maintenance lane.
 
 ## Sequencing Principles
 
 1. Preserve compatibility first. Public headers, installed package components,
    ABI-sensitive class layouts, and Gazebo/gz-physics behavior are
    release-branch constraints.
-2. Re-run the DART 6 gates that cover the affected surface.
+2. Re-run the target branch's gates that cover the affected surface.
 3. Prefer one branch and one verification story per packet or PR.
 4. Keep behavior-preserving performance or dependency work separate from
    behavior-changing simulation policy.

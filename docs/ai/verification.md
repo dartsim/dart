@@ -199,7 +199,7 @@ engine-rendered overlay on/off pixel regression
 `agent-capture` itself with identical cameras and requires the
 contact/bounds/label layers to change at least 128
 pixels; it also requires rendered contact-marker color pixels, while retaining
-the sidecar's count of any filtered DART 6 sentinel contacts, then proves
+the sidecar's count of any filtered DART sentinel contacts, then proves
 contacts, collision bounds, and labels each change pixels independently. This
 keeps the camera assessment, Filament debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end

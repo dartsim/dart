@@ -1,4 +1,4 @@
-"""View-quality assessment and adaptive viewpoint selection for DART 6.
+"""View-quality assessment and adaptive viewpoint selection for DART.
 
 Geometry-first checks that let a headless agent detect inadequate captures —
 cropped, too far/close, occluded, or ambiguous views — and deterministically
@@ -30,7 +30,7 @@ MAX_SUBJECT_FRACTION = 0.75
 MIN_CORNER_COVERAGE = 0.999
 MAX_OCCLUSION_FRACTION = 0.35
 MAX_AMBIGUITY_IOU = 0.55
-# Contact bias as a fraction of the eye->sample ray: DART 6's contact solver
+# Contact bias as a fraction of the eye->sample ray: DART's contact solver
 # leaves millimetre-scale penetration at rest, so a sampled corner can sit just
 # inside a neighbor's surface. A nearest hit within this last stretch of the ray
 # counts as contact, not occlusion; real occluders sit far closer to the eye.

@@ -174,7 +174,7 @@ if(DEFINED DART_DARTPY_BINDER)
   if(NOT DART_DARTPY_BINDER STREQUAL "nanobind")
     message(
       FATAL_ERROR
-      "DART 6.21 removed the pybind11 binder. dartpy now uses nanobind; remove DART_DARTPY_BINDER from your configuration."
+      "DART 7.0 removed the pybind11 binder. dartpy now uses nanobind; remove DART_DARTPY_BINDER from your configuration."
     )
   endif()
   unset(DART_DARTPY_BINDER CACHE)

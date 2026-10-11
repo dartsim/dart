@@ -137,7 +137,7 @@ jobs:
           case "${DARTPY_REF}" in
             v*|refs/tags/v*) ;;
             *)
-              echo "::error::When publish=true, ref must be a version tag (e.g. v6.17.0). Got '${DARTPY_REF}'."
+              echo "::error::When publish=true, ref must be a version tag in vX.Y.Z format. Got '${DARTPY_REF}'."
               exit 1
               ;;
           esac

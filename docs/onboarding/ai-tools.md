@@ -34,7 +34,7 @@ routing lives in `docs/ai/README.md` § "Updating Models And Coding Agents";
 do not duplicate or pin it here. The three read-only project agents inherit
 the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
 audits the current diff, and `dart_release_auditor` classifies named
-reference material as apply/adapt/omit against the DART 6 compatibility
+reference material as apply/adapt/omit against the branch's compatibility
 surface.
 
 **Tested Versions**: Claude Code CLI 2.1.296 (Claude Opus 5.5), Codex CLI
@@ -43,7 +43,7 @@ exercised locally on this branch.
 
 Use `dart-model-upgrade` for future model or coding-agent changes; its audit
 includes configuration, prompts, generated adapters, runtime tooling, durable
-`docs/` context, session handoffs, and a representative DART 6 Filament
+`docs/` context, session handoffs, and a representative DART Filament
 visual-debug investigation.
 
 Inspect project hooks with `/hooks`. Project hooks are advisory and may be
@@ -125,7 +125,7 @@ git push -u origin "HEAD:${branch}"
 
 ## PR Lifecycle
 
-Agent-authored PRs on `main` and `release-6.*` follow these steps. Each GitHub
+Agent-authored PRs on `main` and `release-*` follow these steps. Each GitHub
 mutation still needs explicit maintainer/user approval: a `manage <PR>` request
 covers the routine ones (see `dart-manage-pr`), and step 4 defines merge
 approval.

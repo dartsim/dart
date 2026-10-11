@@ -59,7 +59,7 @@ the checker.
 
 ## Visual Verification North Star
 
-DART 6 visual verification follows one evidence chain:
+DART visual verification follows one evidence chain:
 
 1. a text oracle establishes scene, dynamics, collision/contact, or constraint
    correctness;
@@ -78,8 +78,9 @@ cannot be averaged into a pass. The capture sidecar identifies deterministic
 static or start/middle/end inspection targets so future image-capable models can
 exercise the same contract without prompt-specific frame selection.
 
-The current implementation uses public C++17, nanobind, the Filament-backed
+Main and DART 7 releases use public C++17, nanobind, the Filament-backed
 `Viewer`, core `DebugOverlay`, and the same camera-assessment path.
+`release-6.20` retains its pybind11/OSG stack.
 
 ### Capability Lineage And Release Verdicts
 

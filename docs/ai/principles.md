@@ -1,6 +1,6 @@
 # AI Principles
 
-These principles apply to AI-assisted DART 6 work on development,
+These principles apply to AI-assisted DART work on development,
 stabilization, and maintenance branches.
 Keep this file short: it spends always-loaded agent context, so put procedures
 and compatibility detail in the owner docs named by `AGENTS.md`.
@@ -34,13 +34,15 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 
 ## Compatibility First
 
-- DART 6 is a compatibility support lane. Preserve existing public headers,
-  package components, and downstream Gazebo/gz-physics behavior unless a
-  maintainer explicitly accepts a breaking change.
+- `main` is the Python-first DART 7 line: its Python API may change as the
+  DART 7 design doc records, while the C++ API that Gazebo/gz-physics and
+  gz-sim use, installed headers, and package components stay compatible. Any
+  other breaking change needs explicit maintainer acceptance. `release-6.20`
+  is a DART 6 compatibility lane.
 - dartpy uses the approved nanobind binder exclusively on `main`; release
   branches keep the binder they shipped with. Binder contracts live in
   `docs/onboarding/python-bindings.md`.
-- Target `main`, where new patches land; backports to a `release-6.*`
+- Target `main`, where new patches land; backports to a `release-*`
   stabilization or maintenance branch use `dart-backport-pr`. A stabilization
   branch may be cut before the release tag (see
   `docs/onboarding/release-management.md`).

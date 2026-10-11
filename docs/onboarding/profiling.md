@@ -1,4 +1,4 @@
-# Profiling DART 6
+# Profiling DART
 
 Use profiling to find the hot path before changing performance-sensitive code,
 then use the benchmark and determinism gates to prove the change. Profiling
@@ -385,7 +385,7 @@ summary. Otherwise, allocation-count or requested-byte decreases, or Ir
 improvements of at least 1%, count as improved.
 
 Use `pixi run perf-backfill --revs <file>` for a resumable local history run.
-The file contains one commit, ref or `v6.x.y` tag per line, with blank lines
+The file contains one commit, ref or `vX.Y.Z` tag per line, with blank lines
 and `#` comments ignored. Put tags after commits. For the historical window,
 generate the commit list with
 `git rev-list --first-parent --reverse --since=2026-07-01T00:00:00Z 789d3662c59 -- dart`,
@@ -532,7 +532,7 @@ When compiled in, the consolidated `dart-demos` Memory tab is a diagnostic lead
 generator, not a heap or cache profiler. Its shared
 `examples/demos/memory_diagnostics_model.*` owns opt-in cadence, process probes,
 bounded history, reset, and compatible snapshot comparisons. The branch-local
-`memory_diagnostics.*` collector/view owns DART 6 World traversal and raw-ImGui
+`memory_diagnostics.*` collector/view owns DART World traversal and raw-ImGui
 presentation inside `DemoHost`.
 
 Within a diagnostics-enabled build, keep the collection-disabled path before
@@ -563,7 +563,7 @@ virtual-page runs but does not place page or cache-line separators: the snapshot
 intentionally lacks raw bases and does not yet capture the scrubbed base
 remainders and host cache-line size required for those guides.
 
-The DART 6 World `MemoryManager` rows and exact maps cover reservation arenas.
+The DART World `MemoryManager` rows and exact maps cover reservation arenas.
 The World reserves and resets the frame arena, but current classic solver paths
 do not allocate their scratch through it. Do not present those rows as legacy
 solver scratch usage or color the arena as though it owns the classic object
@@ -580,7 +580,7 @@ For Gazebo-path claims, use `--gz-preset` as described in
 
 ## Remaining Deformable Gates
 
-The unmet full-parity goal targets DART 6.21 in
+The unmet full-parity goal targets DART 7.0 in
 [PLAN-622](../plans/dashboard.md#plan-622-dart-6-deformable-body-feature-and-performance).
 The [deformable-body design](../design/dart6_deformable_body.md) owns the
 model scope, measured layout decisions, and pre-default collision contract.

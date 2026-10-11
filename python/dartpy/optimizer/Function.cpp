@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/gil.hpp"
 // clang-format on
 
 #include <nanobind/stl/function.h>
@@ -66,7 +67,7 @@ public:
   void evalGradient(
       const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
-    nb::gil_scoped_acquire guard;
+    dartnb::GilScopedAcquire guard;
     // Function has no public Python evalGradient method.
     if (!nb::hasattr(nb_trampoline.base(), "evalGradient"))
       return Function::evalGradient(x, grad);
