@@ -140,7 +140,16 @@ APPROVED_INACTIVE_CPP_TESTS = {
 APPROVED_CTEST_SELECTIONS = {
     "test_ConstraintSolver": {
         "arguments": (),
-        "environment": ("GTEST_FILTER=ConstraintSolver.*",),
+        "environment": (
+            "GTEST_FILTER=ConstraintSolver.*"
+            ":-ConstraintSolver.*BitIdenticalThreadCountResults",
+        ),
+    },
+    "test_ConstraintSolver_thread_determinism": {
+        "arguments": (
+            "--gtest_filter=ConstraintSolver.*BitIdenticalThreadCountResults",
+        ),
+        "environment": (),
     },
     "test_FrictionAnalytic": {
         "arguments": (),
