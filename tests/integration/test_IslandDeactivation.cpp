@@ -2207,14 +2207,94 @@ TEST(IslandDeactivation, DefaultContactErvRestoresAdaptivePolicy)
 }
 
 //==============================================================================
-// A settled body does not sleep while another mobile body is still falling.
-// Downstream worlds can attach/detach joints between otherwise independent
-// models; sleeping one settled model before the other dynamic models land
-// changes the later contact response. The settled body starts on the floor, so
-// it could sleep within the first sleep delay if nothing held it awake. The
-// falling body holds it awake only while it is outside every island, that is,
-// until it lands, not until it settles.
-TEST(IslandDeactivation, SettledBodyOnFloorWaitsForFallingBody)
+namespace {
+
+//==============================================================================
+// The original movers are distant or aimed past the sleeper. Place the same
+// mover on a later impact course, without touching the sleeping body's state.
+void checkWakeOnLaterImpact(
+    const WorldPtr& world,
+    const SkeletonPtr& sleeper,
+    const SkeletonPtr& mover,
+    bool placeOnImpactCourse = true)
+{
+  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_FALSE(mover->isResting());
+  ASSERT_LT(mover->getIslandIndex(), 0);
+  if (placeOnImpactCourse) {
+    const Eigen::Vector3d target
+        = sleeper->getBodyNode(0)->getTransform().translation();
+    auto* joint = mover->getJoint(0);
+    if (auto* free = dynamic_cast<FreeJoint*>(joint)) {
+      free->setActuatorType(Joint::FORCE);
+      free->setSpringStiffness(5, 0.0);
+      Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+      pose.translation() = target + Eigen::Vector3d(0, 0, kBoxSize + 0.1);
+      free->setTransform(pose);
+      Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+      velocity[5] = -1.0;
+      free->setVelocities(velocity);
+    } else {
+      ASSERT_NE(dynamic_cast<RevoluteJoint*>(joint), nullptr);
+      Eigen::Isometry3d hinge = Eigen::Isometry3d::Identity();
+      hinge.translation() = target + Eigen::Vector3d(0.25, 0, 0.55);
+      joint->setTransformFromParentBodyNode(hinge);
+      joint->setPosition(0, -0.4);
+      joint->setVelocity(0, 2.0);
+    }
+  }
+
+  if (placeOnImpactCourse) {
+    // Fixture edits conservatively wake the world. Complete that re-entry,
+    // then restore the settled island's eligibility before the later contact.
+    world->step();
+    sleeper->setSleepCandidate(true);
+    sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->step();
+    ASSERT_TRUE(sleeper->isResting());
+    ASSERT_LT(mover->getIslandIndex(), 0);
+  }
+
+  bool contacted = false;
+  bool impactResolved = false;
+  const auto* sleeperShape = sleeper->getBodyNode(0)->getShapeNode(0);
+  const auto* moverShape = mover->getBodyNode(0)->getShapeNode(0);
+  for (std::size_t step = 0; step < 1500; ++step) {
+    world->step();
+    for (const auto& contact : world->getLastCollisionResult().getContacts()) {
+      const auto* first = contact.collisionObject1->getShapeFrame();
+      const auto* second = contact.collisionObject2->getShapeFrame();
+      if ((first == sleeperShape && second == moverShape)
+          || (first == moverShape && second == sleeperShape)) {
+        if (!contacted) {
+          EXPECT_FALSE(sleeper->isResting()) << "did not wake on first contact";
+        }
+        contacted = true;
+        EXPECT_LT(contact.penetrationDepth, 0.01) << "impact tunneled";
+        impactResolved = impactResolved || contact.force.norm() > 1e-3;
+      }
+    }
+    if (!contacted) {
+      ASSERT_TRUE(sleeper->isResting()) << "woke before impact";
+    }
+    ASSERT_TRUE(sleeper->getPositions().allFinite());
+    ASSERT_TRUE(mover->getPositions().allFinite());
+    for (const auto& body : {sleeper, mover}) {
+      const auto transform = body->getBodyNode(0)->getTransform();
+      const double extent = kHalf * transform.linear().row(2).cwiseAbs().sum();
+      ASSERT_GE(transform.translation().z() - extent, -0.002)
+          << body->getName() << " sank through the floor";
+    }
+  }
+  EXPECT_TRUE(contacted) << "moving body never hit the sleeping island";
+  EXPECT_TRUE(impactResolved) << "contact did not resolve an impact force";
+}
+
+} // namespace
+
+//==============================================================================
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(IslandDeactivation, SettledIslandSleepsBeforeFallingBodyAndWakesOnImpact)
 {
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
@@ -2225,32 +2305,25 @@ TEST(IslandDeactivation, SettledBodyOnFloorWaitsForFallingBody)
   auto falling = createFreeBox(
       "falling",
       Eigen::Vector3d::Constant(kBoxSize),
-      Eigen::Vector3d(1.0, 0, kHalf + 3.0));
+      Eigen::Vector3d(0, 0, kHalf + 3.0));
   world->addSkeleton(settled);
   world->addSkeleton(falling);
 
   for (std::size_t i = 0; i < 650; ++i) {
     world->step();
-    ASSERT_FALSE(settled->isResting())
-        << "settled body slept while another body was still falling at step "
-        << i;
     ASSERT_FALSE(falling->isResting());
   }
 
   EXPECT_GT(falling->getBodyNode(0)->getTransform().translation().z(), 1.0);
 
-  const std::size_t stepsToSleep = stepUntil(world.get(), 7000, [&]() {
-    return settled->isResting() && falling->isResting();
-  });
-  EXPECT_LT(stepsToSleep, 7000u)
-      << "bodies did not sleep after the falling body landed";
+  ASSERT_TRUE(settled->isResting());
+  checkWakeOnLaterImpact(world, settled, falling, false);
 }
 
+//==============================================================================
 namespace {
 
-//==============================================================================
-// A sleeper box resting on the floor, and a mover whose motion decides whether
-// the sleeper's island may freeze.
+// A sleeper box resting on the floor and an unrelated mover.
 struct SleeperScene
 {
   WorldPtr world;
@@ -2277,7 +2350,7 @@ SleeperScene makeZeroGravitySleeperScene()
 
 //==============================================================================
 // Makes the sleeper a candidate whose dwell is complete, so its island freezes
-// at the next step unless another body holds islands awake.
+// at the next step once its own contact constraints permit it.
 void makeSleepEligible(const World& world, Skeleton& sleeper)
 {
   sleeper.setSleepCandidate(true);
@@ -2310,18 +2383,10 @@ SkeletonPtr createPendulum(const Eigen::Vector3d& hingePosition)
 } // namespace
 
 //==============================================================================
-// A collision backend can miss a resting contact for a single step (Bullet does
-// for spheres and cylinders). For that step the body is outside every island
-// and falls freely, so it moves at its resting jitter plus one step of gravity.
-// Such a free rigid body does not hold a newly eligible island awake at its
-// first step outside every island, only from its second. A body that also
-// spins, that was moving fast until then, that a spring can pull back or that a
-// force drives holds the island awake at once.
-TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(
+    IslandDeactivation, ContactLeaversDoNotBlockIndependentSleepAndWakeOnImpact)
 {
-  // The leaver touches the floor and moves away from it at the speed one step
-  // of gravity gives a body whose contact is missed, so it is in a contact
-  // island after the first step and outside every island after the second.
   const auto makeScene = [](double spin) {
     auto scene = makeZeroGravitySleeperScene();
     scene.mover = createFreeBox(
@@ -2343,9 +2408,8 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     makeSleepEligible(*world, *sleeper);
     world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_TRUE(sleeper->isResting())
-        << "a body one step out of its island at missed-contact speed held the "
-           "island awake";
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   }
 
   {
@@ -2356,9 +2420,9 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     ASSERT_LT(leaver->getIslandIndex(), 0);
     makeSleepEligible(*world, *sleeper);
     world->step();
-    EXPECT_FALSE(sleeper->isResting())
-        << "a body two steps out of its island did not hold the island awake";
-    EXPECT_FALSE(sleeper->isSleepCandidate());
+    ASSERT_TRUE(sleeper->isResting());
+    EXPECT_TRUE(sleeper->isSleepCandidate());
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   }
 
   {
@@ -2368,28 +2432,23 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     makeSleepEligible(*world, *sleeper);
     world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_FALSE(sleeper->isResting())
-        << "a spinning body one step out of its island did not hold the "
-           "island awake";
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   }
 
   {
     auto [world, sleeper, leaver] = makeScene(0.0);
     world->step();
     ASSERT_GE(leaver->getIslandIndex(), 0);
-    // The smoothed speed World's rest pass leaves after a fast flight.
     leaver->setSmoothedLinearSpeed(1.0);
     makeSleepEligible(*world, *sleeper);
     world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_FALSE(sleeper->isResting())
-        << "a body that was moving fast until it left its island did not "
-           "hold the island awake";
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   }
 
   {
-    // A spring on its joint can pull the body back, as gravity does a pendulum
-    // at the turning point of a swing, so the body counts at once.
     auto [world, sleeper, leaver] = makeScene(0.0);
     auto* joint = leaver->getJoint(0);
     joint->setRestPosition(5, joint->getPosition(5));
@@ -2399,14 +2458,11 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     makeSleepEligible(*world, *sleeper);
     world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_FALSE(sleeper->isResting())
-        << "a body on a spring one step out of its island did not hold the "
-           "island awake";
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   }
 
   {
-    // A body that a force drives off its support is not resting on a missed
-    // contact, however slowly it starts.
     auto scene = makeZeroGravitySleeperScene();
     auto leaver = createFreeBox(
         "leaver",
@@ -2421,22 +2477,14 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     makeSleepEligible(*scene.world, *scene.sleeper);
     scene.world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_FALSE(scene.sleeper->isResting())
-        << "a body that a force drove out of its island did not hold the "
-           "island awake";
+    ASSERT_TRUE(scene.sleeper->isResting());
+    checkWakeOnLaterImpact(scene.world, scene.sleeper, leaver);
   }
 
-  // With gravity, the speed checked leaves out up to one step of gravity along
-  // gravity, unless gravity is off for the body. The leaver stays against a
-  // wall in the air for the first step, then moves away, so it is in a contact
-  // island after the second step and outside every island after the third,
-  // where it moves at the given velocity. The sleeper starts settled on the
-  // floor, so the initial-rest credit confirmed on the second solve makes it
-  // a sleep candidate at the second step.
   const auto checkLeaverExit = [](const Eigen::Vector3d& exitVelocity,
                                   bool leaverGravity,
-                                  bool expectHeldAwake,
-                                  const char* message) {
+                                  const char* scenario) {
+    SCOPED_TRACE(scenario);
     auto world = makeSleepWorld();
     world->addSkeleton(createFloor());
     world->addSkeleton(createWall());
@@ -2454,8 +2502,6 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     world->step();
     ASSERT_GE(leaver->getIslandIndex(), 0);
 
-    // Gravity acts for two steps after this velocity write before the
-    // leaver's first step outside every island.
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity.tail<3>() = exitVelocity;
     if (leaverGravity)
@@ -2467,7 +2513,8 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     ASSERT_TRUE(sleeper->isSleepCandidate());
     world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_EQ(sleeper->isResting(), !expectHeldAwake) << message;
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   };
   const DeactivationOptions opts;
   const double band = opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
@@ -2476,49 +2523,30 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
       = defaultWorld->getGravity().norm() * defaultWorld->getTimeStep();
   const Eigen::Vector3d away = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d down = -Eigen::Vector3d::UnitZ();
-  // Leaving the wall needs some speed away from it.
   const Eigen::Vector3d off = 0.25 * band * away;
   const Eigen::Vector3d fallingPastBand
       = off + (band + 0.5 * oneStepOfGravity) * down;
   checkLeaverExit(
       fallingPastBand,
       true,
-      false,
-      "a body falling one step out of its island within one step of gravity "
-      "of the wake band held the island awake");
+      "gravity-enabled exit within the wake band plus one gravity step");
   checkLeaverExit(
-      fallingPastBand,
-      false,
-      true,
-      "a body without gravity past the wake band did not hold the island "
-      "awake");
+      fallingPastBand, false, "gravity-disabled exit beyond the wake band");
   checkLeaverExit(
       1.1 * band * away + oneStepOfGravity * down,
       true,
-      true,
-      "a body leaving sideways past the wake band did not hold the island "
-      "awake");
+      "sideways exit beyond the wake band");
   checkLeaverExit(
       off - (band + 0.5 * oneStepOfGravity) * down,
       true,
-      true,
-      "a body rising past the wake band did not hold the island awake");
+      "rising exit beyond the wake band");
 }
 
 //==============================================================================
-// A body whose joint follows an acceleration, velocity or lock command moves as
-// commanded, not as gravity and contacts move it, so it is not resting on a
-// missed contact when it leaves its island, even if it was dynamic and in an
-// island at the previous build. It holds a newly eligible island awake at once.
-TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
+// A command edit restarts eligibility; continued unrelated motion permits
+// sleep.
+TEST(IslandDeactivation, ActuatorChangeRestartsSettledIslandEligibility)
 {
-  // As in the gravity checks of OneStepContactMissDoesNotHoldIslandsAwake, the
-  // leaver stays against a wall in the air for the first step, then moves away,
-  // so it is in a contact island after the second step and outside every island
-  // after the third. From the third step its joint follows a zero acceleration
-  // command, so it keeps the velocity it had after the second step. The sleeper
-  // starts settled on the floor, so the initial-rest credit confirmed on the
-  // second solve makes it a sleep candidate at the second step.
   const auto checkLeaver = [](bool leaverGravity,
                               double downSpeed,
                               const char* message) {
@@ -2556,6 +2584,11 @@ TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
     ASSERT_NEAR(
         leaver->getBodyNode(0)->getLinearVelocity().z(), -downSpeed, 1e-12);
     EXPECT_FALSE(sleeper->isResting()) << message;
+    // The command edit invalidates candidacy once, rather than vetoing sleep.
+    ASSERT_LT(
+        stepUntil(world.get(), 1500, [&]() { return sleeper->isResting(); }),
+        1500u);
+    checkWakeOnLaterImpact(world, sleeper, leaver);
   };
 
   const DeactivationOptions defaults;
@@ -2564,40 +2597,27 @@ TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
   const auto defaultWorld = World::create();
   const double oneStepOfGravity
       = defaultWorld->getGravity().norm() * defaultWorld->getTimeStep();
-  // Falling half a step of gravity past the wake band, as a body whose contact
-  // was missed falls only after a step of gravity. (The force that holds the
-  // commanded acceleration against gravity also counts as a disturbance.)
   checkLeaver(
       true,
       band + 0.5 * oneStepOfGravity,
-      "a body that follows an acceleration command did not hold the island "
-      "awake when it left its island falling past the wake band");
-  // Without gravity, inside the wake band, which a body whose contact was
-  // missed may also move within.
-  checkLeaver(
-      false,
-      0.5 * band,
-      "a body that follows an acceleration command did not hold the island "
-      "awake when it left its island inside the wake band");
+      "acceleration command edit with gravity");
+  checkLeaver(false, 0.5 * band, "acceleration command edit without gravity");
 }
 
 //==============================================================================
-// A body leaving its island beyond the wake band of the World's
-// DeactivationOptions holds a newly eligible island awake at once, even inside
-// the default wake band. Wider thresholds do not widen the band.
-TEST(IslandDeactivation, TunedWakeBandBoundsOneStepContactMiss)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(IslandDeactivation, TunedWakeBandsDoNotCoupleIslandsAndContactStillWakes)
 {
   const auto checkLeaverWithThresholds = [](double linearThreshold,
                                             double angularThreshold,
                                             const Eigen::Vector6d& velocity,
                                             const char* message) {
+    SCOPED_TRACE(message);
     auto scene = makeZeroGravitySleeperScene();
     auto opts = scene.world->getDeactivationOptions();
     opts.mLinearSpeedThreshold = linearThreshold;
     opts.mAngularSpeedThreshold = angularThreshold;
     scene.world->setDeactivationOptions(opts);
-    // The leaver touches the floor and moves away from it, as in
-    // OneStepContactMissDoesNotHoldIslandsAwake.
     auto leaver = createFreeBox(
         "leaver",
         Eigen::Vector3d::Constant(kBoxSize),
@@ -2610,7 +2630,8 @@ TEST(IslandDeactivation, TunedWakeBandBoundsOneStepContactMiss)
     makeSleepEligible(*scene.world, *scene.sleeper);
     scene.world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    EXPECT_FALSE(scene.sleeper->isResting()) << message;
+    ASSERT_TRUE(scene.sleeper->isResting());
+    checkWakeOnLaterImpact(scene.world, scene.sleeper, leaver);
   };
 
   const DeactivationOptions defaults;
@@ -2624,41 +2645,32 @@ TEST(IslandDeactivation, TunedWakeBandBoundsOneStepContactMiss)
       0.5 * defaults.mLinearSpeedThreshold,
       defaults.mAngularSpeedThreshold,
       velocity,
-      "a body leaving past a tightened linear wake band did not hold the "
-      "island awake");
+      "tightened linear wake threshold");
   velocity[2] = 0.75 * angularBand;
   velocity[5] = 0.5 * linearBand;
   checkLeaverWithThresholds(
       defaults.mLinearSpeedThreshold,
       0.5 * defaults.mAngularSpeedThreshold,
       velocity,
-      "a body spinning past a tightened angular wake band did not hold the "
-      "island awake");
+      "tightened angular wake threshold");
   velocity[2] = 0.0;
   velocity[5] = 1.25 * linearBand;
   checkLeaverWithThresholds(
       2.0 * defaults.mLinearSpeedThreshold,
       2.0 * defaults.mAngularSpeedThreshold,
       velocity,
-      "a body leaving past the default wake band did not hold the island "
-      "awake under wider thresholds");
+      "wider wake thresholds");
 }
 
 //==============================================================================
-// World puts a sleep candidate to rest outside every island when the collision
-// detector reports no constraint for it, and gives it island 0 so that it stays
-// at rest. Once it is woken, by a velocity write or by a caller through the
-// public setters, it was not in an island at the previous build, so it holds a
-// newly eligible island awake at once.
-TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(
+    IslandDeactivation,
+    WokenUngroupedBodyAllowsIndependentSleepAndWakesOnImpact)
 {
   const auto checkWokenFloater = [](bool wakeThroughSetters,
                                     const char* message) {
-    // The sleeper starts settled on the floor, so the initial-rest credit
-    // confirmed on the second solve makes it a sleep candidate at the second
-    // step. The floater hovers, touching nothing and without gravity, as a
-    // candidate whose dwell is complete, so World puts it to rest at the first
-    // step. It stays at rest through the second step and wakes at the third.
+    SCOPED_TRACE(message);
     auto world = makeSleepWorld();
     world->addSkeleton(createFloor());
     auto sleeper = createFreeBox(
@@ -2685,8 +2697,6 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
       floater->setResting(false);
       floater->setSleepCandidate(false);
     }
-    // A velocity write inside the wake band sets the floater moving, and wakes
-    // it at the next step if it still rests.
     const auto& opts = world->getDeactivationOptions();
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity[3] = 0.5 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
@@ -2694,28 +2704,25 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
     world->step();
     ASSERT_FALSE(floater->isResting());
     ASSERT_LT(floater->getIslandIndex(), 0);
-    EXPECT_FALSE(sleeper->isResting()) << message;
+    if (wakeThroughSetters) {
+      // A public rest-state edit invalidates the world's prior candidacy once.
+      EXPECT_FALSE(sleeper->isResting());
+    }
+    ASSERT_LT(
+        stepUntil(world.get(), 1500, [&]() { return sleeper->isResting(); }),
+        1500u);
+    checkWakeOnLaterImpact(world, sleeper, floater);
   };
-  checkWokenFloater(
-      false,
-      "a body that a velocity write woke from rest outside every island did "
-      "not hold the island awake");
-  checkWokenFloater(
-      true,
-      "a body woken through the setters from rest outside every island did "
-      "not hold the island awake");
+  checkWokenFloater(false, "velocity-write wake");
+  checkWokenFloater(true, "public-setter wake");
 }
 
 //==============================================================================
-// A body on a joint can be at the turning point of a swing, against its joint
-// limit, an obstacle or another body, when it leaves its island. It leaves as
-// slowly as a body whose contact was missed but then swings freely, so it holds
-// a newly eligible island awake from its first step outside every island.
-TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(
+    IslandDeactivation,
+    PendulumLeavingLimitAllowsIndependentSleepAndWakesOnImpact)
 {
-  // The pendulum pose reset between the first two solves restarts quiet dwell.
-  // Grant the sleeper full eligibility after the second solve so the third
-  // tests the pendulum's island-exit veto.
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto sleeper = createFreeBox(
@@ -2724,10 +2731,6 @@ TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
       Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
   world->addSkeleton(sleeper);
 
-  // The pendulum starts just past its upper limit. After the first step, reset
-  // it there and start it swinging back at a few milliradians per second, so
-  // it is in a joint-limit island after the second step and outside every
-  // island after the third.
   auto pendulum = createPendulum(Eigen::Vector3d(3.0, 0, 2.0));
   auto* hinge = pendulum->getJoint(0);
   const double limit = math::toRadian(10.0);
@@ -2755,24 +2758,17 @@ TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
   ASSERT_LT(
       pendulum->computeMaxBodyAngularSpeed(),
       opts.mWakeThresholdScale * opts.mAngularSpeedThreshold);
-  EXPECT_FALSE(sleeper->isResting())
-      << "a pendulum leaving its joint limit did not hold the island awake at "
-         "its first step outside every island";
-  EXPECT_FALSE(sleeper->isSleepCandidate());
+  ASSERT_TRUE(sleeper->isResting());
+  EXPECT_TRUE(sleeper->isSleepCandidate());
+  checkWakeOnLaterImpact(world, sleeper, pendulum);
 }
 
 //==============================================================================
-// Bodies flying together can share a contact island during a real flight and
-// lose it again. A body that leaves such an island fast is in flight, not
-// resting on a missed contact, so it holds a newly eligible island awake from
-// its first step outside every island.
-TEST(IslandDeactivation, BodiesFlyingTogetherHoldIslandsAwakeWhenTheySeparate)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(IslandDeactivation, SeparatingFlyersAllowIndependentSleepAndWakeOnImpact)
 {
   auto scene = makeZeroGravitySleeperScene();
 
-  // Two touching boxes fly toward the sleeper at 1 m/s and drift apart at
-  // twice the wake speed, so they share a contact island after the first step
-  // only.
   Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
   velocity[3] = -1.0;
   auto lower = createFreeBox(
@@ -2798,24 +2794,15 @@ TEST(IslandDeactivation, BodiesFlyingTogetherHoldIslandsAwakeWhenTheySeparate)
   scene.world->step();
   ASSERT_LT(lower->getIslandIndex(), 0);
   ASSERT_LT(upper->getIslandIndex(), 0);
-  EXPECT_FALSE(scene.sleeper->isResting())
-      << "bodies flying apart did not hold the island awake at their first "
-         "step outside it";
-  EXPECT_FALSE(scene.sleeper->isSleepCandidate());
+  ASSERT_TRUE(scene.sleeper->isResting());
+  EXPECT_TRUE(scene.sleeper->isSleepCandidate());
+  checkWakeOnLaterImpact(scene.world, scene.sleeper, lower);
 }
 
 //==============================================================================
-// A body knocked off a table is in flight from the step it leaves the table. It
-// holds a newly eligible island awake from its first step outside every island
-// when it leaves fast, and from its second step at the latest.
-TEST(IslandDeactivation, BodyKnockedOffTableHoldsIslandsAwake)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(IslandDeactivation, BodyLeavingTableAllowsIndependentSleepAndWakesOnImpact)
 {
-  // The rider overlaps the table edge by half a millimeter. After the first
-  // step it is knocked off at 1 m/s, so it is in a contact island with the
-  // table after the second step and outside every island after the third.
-  // The sleeper starts settled on the floor, so the initial-rest credit
-  // confirmed on the second solve makes it a sleep candidate at the second
-  // step.
   const auto makeScene = []() {
     auto world = makeSleepWorld();
     world->addSkeleton(createFloor());
@@ -2851,32 +2838,28 @@ TEST(IslandDeactivation, BodyKnockedOffTableHoldsIslandsAwake)
     ASSERT_TRUE(sleeper->isSleepCandidate());
     world->step();
     ASSERT_LT(rider->getIslandIndex(), 0);
-    EXPECT_FALSE(sleeper->isResting())
-        << "a body knocked off a table did not hold the island awake at its "
-           "first step outside every island";
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, rider);
   }
 
   {
     auto [world, sleeper, rider] = makeScene();
     world->step();
     ASSERT_GE(rider->getIslandIndex(), 0);
-    // Keep the sleeper from freezing at the rider's first step out, whatever
-    // the rule decides there.
     sleeper->setSleepCandidate(false);
     world->step();
     ASSERT_LT(rider->getIslandIndex(), 0);
     makeSleepEligible(*world, *sleeper);
     world->step();
-    EXPECT_FALSE(sleeper->isResting())
-        << "a body knocked off a table did not hold the island awake at its "
-           "second step outside every island";
+    ASSERT_TRUE(sleeper->isResting());
+    checkWakeOnLaterImpact(world, sleeper, rider);
   }
 }
 
 //==============================================================================
-// A body that has not been in an island holds islands awake whatever its speed,
-// even a velocity-actuated body parked in the air at exactly zero speed.
-TEST(IslandDeactivation, ParkedActuatedBodyKeepsSettledIslandAwake)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(
+    IslandDeactivation, ParkedActuatedBodyAllowsSleepAndWakesIslandWhenReleased)
 {
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
@@ -2897,15 +2880,14 @@ TEST(IslandDeactivation, ParkedActuatedBodyKeepsSettledIslandAwake)
     world->step();
     ASSERT_LT(parked->getIslandIndex(), 0);
     ASSERT_DOUBLE_EQ(parked->computeMaxBodyLinearSpeed(), 0.0);
-    ASSERT_FALSE(settled->isResting())
-        << "settled body slept beside a parked body at step " << i;
   }
+  ASSERT_TRUE(settled->isResting());
+  checkWakeOnLaterImpact(world, settled, parked);
 }
 
 //==============================================================================
-// A mechanism that swings without entering any island keeps a settled island
-// awake for as long as it swings.
-TEST(IslandDeactivation, SwingingPendulumKeepsSettledIslandAwake)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(IslandDeactivation, SwingingPendulumAllowsIndependentSleepAndWakesOnImpact)
 {
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
@@ -2922,9 +2904,9 @@ TEST(IslandDeactivation, SwingingPendulumKeepsSettledIslandAwake)
   for (std::size_t i = 0; i < 1500; ++i) {
     world->step();
     ASSERT_LT(pendulum->getIslandIndex(), 0);
-    ASSERT_FALSE(settled->isResting())
-        << "settled body slept while a pendulum swung at step " << i;
   }
+  ASSERT_TRUE(settled->isResting());
+  checkWakeOnLaterImpact(world, settled, pendulum);
 }
 
 //==============================================================================
@@ -5863,6 +5845,89 @@ TEST(IslandDeactivation, ReplayInManyWorldsSteppedInParallel)
 }
 
 //==============================================================================
+// Reproduce the 2 cm drop with unrelated motion for 5 s at 1 ms steps.
+class UnrelatedMotionSleeping : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(UnrelatedMotionSleeping, DroppedBoxSleepPolicy)
+{
+  const auto& scene = GetParam();
+  auto world = makeSleepWorld();
+  world->setTimeStep(0.001);
+  auto floor = createFloor();
+  auto* floorBody = floor->getBodyNode(0);
+  auto floorShape = std::static_pointer_cast<BoxShape>(
+      floorBody->getShapeNode(0)->getShape());
+  floorShape->setSize(Eigen::Vector3d(10, 10, 1));
+  Eigen::Isometry3d floorTransform = Eigen::Isometry3d::Identity();
+  floorTransform.translation().z() = -0.5;
+  floorBody->getParentJoint()->setTransformFromParentBodyNode(floorTransform);
+  floor->setMobile(scene == "MobileZeroDofFloor");
+  ASSERT_EQ(floor->getNumDofs(), 0u);
+  world->addSkeleton(floor);
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(0.5), Eigen::Vector3d(0, 0, 0.27));
+  world->addSkeleton(box);
+
+  SkeletonPtr mover;
+  if (scene == "FixedBasePendulum") {
+    mover = Skeleton::create("pendulum");
+    auto pair = mover->createJointAndBodyNodePair<RevoluteJoint>();
+    pair.first->setAxis(Eigen::Vector3d::UnitY());
+    Eigen::Isometry3d hinge = Eigen::Isometry3d::Identity();
+    hinge.translation() = Eigen::Vector3d(4, 0, 3);
+    pair.first->setTransformFromParentBodyNode(hinge);
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation().z() = 1.0;
+    pair.first->setTransformFromChildBodyNode(offset);
+    pair.second->createShapeNodeWith<VisualAspect>(
+        std::make_shared<SphereShape>(0.1));
+    pair.first->setPosition(0, 0.8);
+  } else if (scene == "UnsupportedFreeBody") {
+    mover = Skeleton::create("flyer");
+    auto pair = mover->createJointAndBodyNodePair<FreeJoint>();
+    pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+        std::make_shared<SphereShape>(0.1));
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = Eigen::Vector3d(50, 50, 10);
+    pair.first->setTransform(transform);
+  }
+  if (mover)
+    world->addSkeleton(mover);
+
+  int firstRestStep = -1;
+  for (int step = 1; step <= 5000; ++step) {
+    world->step();
+    if (firstRestStep < 0 && box->isResting())
+      firstRestStep = step;
+    if (mover) {
+      ASSERT_LT(mover->getIslandIndex(), 0);
+      ASSERT_FALSE(mover->isResting());
+    }
+  }
+  RecordProperty("first_rest_step", firstRestStep);
+  EXPECT_GT(firstRestStep, 0);
+  // The immobile-floor control first rests at step 1065 for this 1 ms drop.
+  EXPECT_LE(firstRestStep, 1065);
+  EXPECT_TRUE(box->isResting());
+  EXPECT_NEAR(
+      box->getBodyNode(0)->getTransform().translation().z(), 0.25, 1e-4);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IndependentSleepRegression,
+    UnrelatedMotionSleeping,
+    ::testing::Values(
+        "StaticFloor",
+        "MobileZeroDofFloor",
+        "FixedBasePendulum",
+        "UnsupportedFreeBody"),
+    [](const ::testing::TestParamInfo<std::string>& info) {
+      return info.param;
+    });
+
+//==============================================================================
 TEST(IslandDeactivation, EmptySkeletonDoesNotKeepBodiesAwake)
 {
   auto world = makeSleepWorld();
@@ -6216,12 +6281,10 @@ TEST(IslandDeactivation, OtherWorldSleepTransitionsDoNotAffectSleep)
 }
 
 //==============================================================================
-// A just-eligible contact island must not be marked resting while a separate
-// mobile body is awake outside every island. This test's mover has not been in
-// an island, so it holds islands awake whatever its speed. The veto must reach
-// the group-level solve-to-rest flag, not just the per-skeleton pre-solve
-// resting flag.
-TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
+// Independent islands may sleep; later contact must wake and resolve impact.
+TEST(
+    IslandDeactivation,
+    UngroupedMotionAllowsNewContactIslandSleepAndWakesOnImpact)
 {
   auto world = makeSleepWorld();
   world->setGravity(Eigen::Vector3d::Zero());
@@ -6251,8 +6314,9 @@ TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
   ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
   EXPECT_FALSE(awake->isResting());
   EXPECT_FALSE(awake->isSleepCandidate());
-  EXPECT_FALSE(sleeper->isResting());
-  EXPECT_FALSE(sleeper->isSleepCandidate());
+  ASSERT_TRUE(sleeper->isResting());
+  EXPECT_TRUE(sleeper->isSleepCandidate());
+  checkWakeOnLaterImpact(world, sleeper, awake);
 }
 
 //==============================================================================
