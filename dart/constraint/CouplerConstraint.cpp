@@ -45,6 +45,14 @@
 
 namespace {
 
+// Matches MimicMotorConstraint's default, so a violated mimic relationship
+// settles within a few dozen steps.
+constexpr double kCouplerErrorReductionParameter = 0.4;
+
+// Caps the position-correction velocity, as JointConstraint does by default,
+// unless the follower's velocity limits are tighter.
+constexpr double kCouplerMaxErrorReductionVelocity = 10.0;
+
 // Keep the public owning vector while retaining its empty storage between
 // rebuilt constraints. Synchronization also covers destruction on another
 // thread; each constructor copies the current properties into its own buffer.
@@ -105,6 +113,18 @@ void releaseCouplerMimicProperties(
   // destructor.
   if (storage.buffers.size() < storage.buffers.capacity())
     storage.buffers.push_back(std::move(properties));
+}
+
+// Returns the leader's skeleton if the leader coordinate responds to impulses.
+// An immobile or motion-prescribed leader takes no reaction impulse.
+dart::dynamics::Skeleton* getCouplerReactiveReferenceSkeleton(
+    const dart::dynamics::MimicDofProperties& mimicProp)
+{
+  const auto* body = mimicProp.mReferenceJoint->getChildBodyNode();
+  if (body == nullptr || !body->isReactive())
+    return nullptr;
+
+  return const_cast<dart::dynamics::Skeleton*>(body->getSkeleton().get());
 }
 
 } // namespace
@@ -178,37 +198,57 @@ void CouplerConstraint::update()
   // Reset dimension
   mDim = 0;
 
-  std::size_t dof = mJoint->getNumDofs();
+  const bool isFollowerReactive = mBodyNode->isReactive();
+  const double timeStep = mJoint->getSkeleton()->getTimeStep();
+  const std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
     const auto& mimicProp = mMimicProps[i];
 
-    double timeStep = mJoint->getSkeleton()->getTimeStep();
-    double qError
-        = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
-              * mimicProp.mMultiplier
-          + mimicProp.mOffset - mJoint->getPosition(i);
-    double desiredVelocity = math::clip(
-        qError / timeStep,
-        mJoint->getVelocityLowerLimit(i),
-        mJoint->getVelocityUpperLimit(i));
-
-    mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
-
-    if (mNegativeVelocityError[i] != 0.0) {
-      mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
-      mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
-
-      if (mActive[i]) {
-        ++(mLifeTime[i]);
-      } else {
-        mActive[i] = true;
-        mLifeTime[i] = 0;
-      }
-
-      ++mDim;
-    } else {
+    if (!isFollowerReactive
+        || mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr) {
       mActive[i] = false;
+      continue;
     }
+
+    // Each row is the bilateral constraint J v = v_f - m v_r, driven toward
+    // the scaled position error. Its unit impulse moves both joints.
+    const auto* referenceJoint = mimicProp.mReferenceJoint;
+    const std::size_t referenceDof = mimicProp.mReferenceDofIndex;
+    const double qError
+        = referenceJoint->getPosition(referenceDof) * mimicProp.mMultiplier
+          + mimicProp.mOffset - mJoint->getPosition(i);
+    // The correction never outpaces the follower's own velocity limits.
+    const double correctionVelocity = math::clip(
+        kCouplerErrorReductionParameter * qError / timeStep,
+        std::max(
+            mJoint->getVelocityLowerLimit(i),
+            -kCouplerMaxErrorReductionVelocity),
+        std::min(
+            mJoint->getVelocityUpperLimit(i),
+            kCouplerMaxErrorReductionVelocity));
+    // An immobile leader keeps its position, whatever velocity it stores.
+    const double referenceVelocity
+        = referenceJoint->getSkeleton()->isMobile()
+              ? referenceJoint->getVelocity(referenceDof)
+              : 0.0;
+
+    mNegativeVelocityError[i] = correctionVelocity
+                                - (mJoint->getVelocity(i)
+                                   - mimicProp.mMultiplier * referenceVelocity);
+    mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
+    mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
+
+    // Satisfied rows stay active: other constraints' impulses could violate
+    // them otherwise.
+    if (mActive[i]) {
+      ++(mLifeTime[i]);
+    } else {
+      mActive[i] = true;
+      mLifeTime[i] = 0;
+    }
+
+    ++mDim;
   }
 }
 
@@ -243,45 +283,52 @@ void CouplerConstraint::applyUnitImpulse(std::size_t index)
 {
   DART_ASSERT(index < mDim && "Invalid Index.");
 
-  std::size_t localIndex = 0;
-  const dynamics::SkeletonPtr& dependentSkeleton = mJoint->getSkeleton();
+  dynamics::Skeleton* dependentSkeleton = mJoint->getSkeleton().get();
+  const std::size_t dof = mJoint->getNumDofs();
 
-  std::size_t dof = mJoint->getNumDofs();
+  // Every row reads its leader's response, so clear all leaders; otherwise a
+  // row could read a response left over from probing another row.
+  dependentSkeleton->clearConstraintImpulses();
+  for (std::size_t i = 0; i < dof; ++i) {
+    if (!mActive[i])
+      continue;
+
+    auto* referenceSkeleton
+        = getCouplerReactiveReferenceSkeleton(mMimicProps[i]);
+    if (referenceSkeleton != nullptr && referenceSkeleton != dependentSkeleton)
+      referenceSkeleton->clearConstraintImpulses();
+  }
+
+  std::size_t localIndex = 0;
   for (std::size_t i = 0; i < dof; ++i) {
     if (mActive[i] == false)
       continue;
 
     if (localIndex == index) {
       const auto& mimicProp = mMimicProps[i];
-      dynamics::Joint* referenceJoint
+      auto* referenceJoint
           = const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint);
-      dynamics::Skeleton* referenceSkeleton = const_cast<dynamics::Skeleton*>(
-          mimicProp.mReferenceJoint->getSkeleton().get());
-      dynamics::BodyNode* referenceBodyNode = const_cast<dynamics::BodyNode*>(
-          mimicProp.mReferenceJoint->getChildBodyNode());
+      auto* referenceSkeleton = getCouplerReactiveReferenceSkeleton(mimicProp);
 
-      DART_ASSERT(referenceJoint != nullptr);
-      DART_ASSERT(referenceSkeleton != nullptr);
-      DART_ASSERT(referenceBodyNode != nullptr);
-
-      dependentSkeleton->clearConstraintImpulses();
-      if (referenceSkeleton != dependentSkeleton.get())
-        referenceSkeleton->clearConstraintImpulses();
-
-      double impulse = 1.0;
+      const double impulse = 1.0;
       mJoint->setConstraintImpulse(i, impulse);
-
-      referenceJoint->setConstraintImpulse(
-          mimicProp.mReferenceDofIndex, -impulse * mimicProp.mMultiplier);
-
       dependentSkeleton->updateBiasImpulse(mBodyNode);
-      referenceSkeleton->updateBiasImpulse(referenceBodyNode);
+      if (referenceSkeleton != nullptr) {
+        referenceJoint->setConstraintImpulse(
+            mimicProp.mReferenceDofIndex, -impulse * mimicProp.mMultiplier);
+        referenceSkeleton->updateBiasImpulse(
+            referenceJoint->getChildBodyNode());
+      }
 
       dependentSkeleton->updateVelocityChange();
-      referenceSkeleton->updateVelocityChange();
+      if (referenceSkeleton != nullptr
+          && referenceSkeleton != dependentSkeleton)
+        referenceSkeleton->updateVelocityChange();
 
       mJoint->setConstraintImpulse(i, 0.0);
-      referenceJoint->setConstraintImpulse(mimicProp.mReferenceDofIndex, 0.0);
+      if (referenceSkeleton != nullptr)
+        referenceJoint->setConstraintImpulse(mimicProp.mReferenceDofIndex, 0.0);
+      break;
     }
 
     ++localIndex;
@@ -301,11 +348,21 @@ void CouplerConstraint::getVelocityChange(double* delVel, bool withCfm)
     if (mActive[i] == false)
       continue;
 
+    // J dv = dv_f - m dv_r, reading only skeletons the probe excited.
+    double velocityChange = 0.0;
     if (mJoint->getSkeleton()->isImpulseApplied())
-      delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
-      delVel[localIndex] = 0.0;
+      velocityChange = mJoint->getVelocityChange(i);
 
+    const auto& mimicProp = mMimicProps[i];
+    const auto* referenceSkeleton
+        = getCouplerReactiveReferenceSkeleton(mimicProp);
+    if (referenceSkeleton != nullptr && referenceSkeleton->isImpulseApplied()) {
+      velocityChange -= mimicProp.mMultiplier
+                        * mimicProp.mReferenceJoint->getVelocityChange(
+                            mimicProp.mReferenceDofIndex);
+    }
+
+    delVel[localIndex] = velocityChange;
     ++localIndex;
   }
 
@@ -321,10 +378,12 @@ void CouplerConstraint::getVelocityChange(double* delVel, bool withCfm)
 void CouplerConstraint::excite()
 {
   mJoint->getSkeleton()->setImpulseApplied(true);
-  for (const auto& mimicProp : mMimicProps) {
-    const_cast<dynamics::Skeleton*>(
-        mimicProp.mReferenceJoint->getSkeleton().get())
-        ->setImpulseApplied(true);
+  for (std::size_t i = 0; i < mJoint->getNumDofs(); ++i) {
+    if (!mActive[i])
+      continue;
+
+    if (auto* skeleton = getCouplerReactiveReferenceSkeleton(mMimicProps[i]))
+      skeleton->setImpulseApplied(true);
   }
 }
 
@@ -332,10 +391,12 @@ void CouplerConstraint::excite()
 void CouplerConstraint::unexcite()
 {
   mJoint->getSkeleton()->setImpulseApplied(false);
-  for (const auto& mimicProp : mMimicProps) {
-    const_cast<dynamics::Skeleton*>(
-        mimicProp.mReferenceJoint->getSkeleton().get())
-        ->setImpulseApplied(false);
+  for (std::size_t i = 0; i < mJoint->getNumDofs(); ++i) {
+    if (!mActive[i])
+      continue;
+
+    if (auto* skeleton = getCouplerReactiveReferenceSkeleton(mMimicProps[i]))
+      skeleton->setImpulseApplied(false);
   }
 }
 
@@ -351,14 +412,15 @@ void CouplerConstraint::applyImpulse(double* lambda)
     mJoint->setConstraintImpulse(
         i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
 
-    auto& mimicProp = mMimicProps[i];
-    dynamics::Joint* referenceJoint
-        = const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint);
-    DART_ASSERT(referenceJoint != nullptr);
-    referenceJoint->setConstraintImpulse(
-        mimicProp.mReferenceDofIndex,
-        referenceJoint->getConstraintImpulse(mimicProp.mReferenceDofIndex)
-            - lambda[localIndex] * mimicProp.mMultiplier);
+    const auto& mimicProp = mMimicProps[i];
+    if (getCouplerReactiveReferenceSkeleton(mimicProp) != nullptr) {
+      auto* referenceJoint
+          = const_cast<dynamics::Joint*>(mimicProp.mReferenceJoint);
+      referenceJoint->setConstraintImpulse(
+          mimicProp.mReferenceDofIndex,
+          referenceJoint->getConstraintImpulse(mimicProp.mReferenceDofIndex)
+              - lambda[localIndex] * mimicProp.mMultiplier);
+    }
 
     mOldX[i] = lambda[localIndex];
 
@@ -428,10 +490,7 @@ void CouplerConstraint::uniteSkeletons()
 //==============================================================================
 bool CouplerConstraint::isActive() const
 {
-  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)
-    return true;
-
-  return false;
+  return mDim != 0;
 }
 
 } // namespace constraint
