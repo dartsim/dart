@@ -8,8 +8,8 @@ supported AI tools.
 - `.claude/commands/` and `.claude/skills/` are the editable source.
 - `.opencode/command/` and `.agents/skills/` are generated.
 
-`branch-profile.json` owns the shared `dart6` compatibility facts and forbidden
-surfaces, independent of the target branch. Resolve that target using
+`branch-profile.json` owns the checkout's line profile (`dart7` on `main`), its
+compatibility facts and forbidden surfaces, independent of the target branch. Resolve that target using
 [`Release Management`](../onboarding/release-management.md#release-target).
 `agent-scenarios.json` owns the eight deterministic orientation,
 small-change, failure-diagnosis, documentation-update, model-upgrade,
