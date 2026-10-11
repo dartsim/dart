@@ -90,21 +90,20 @@ above lists every merged change.
     for the previous behavior:
     [#3131](https://github.com/dartsim/dart/pull/3131)
 
-  * More resting scenes fall asleep (sleeping has been on by default since
-    6.19): dense piles, islands that use a custom `BodyNodeCollisionFilter`,
-    worlds where the detector misses a resting contact for one step, and
-    imported worlds whose bodies start at rest on level supports, which now
-    settle within their first steps. A body that has just lost its support
-    looks like a missed contact for one step, so a nearby island can fall
-    asleep as it starts to fall. Set `DeactivationOptions::mEnabled` to
-    `false` for always-active simulation, or `DART_CUSTOM_FILTER_SLEEPING=0`
-    to keep custom-filter islands awake:
+  * Sleeping (on by default since 6.19) covers more resting scenes: islands
+    that use a custom `BodyNodeCollisionFilter` can now sleep, and imported
+    worlds whose bodies start at rest on level supports settle within their
+    first steps. A stricter quiet check keeps slowly creeping bodies awake, so
+    a settling body falls asleep later than in 6.19, about 0.5 s later for a
+    box dropped onto a floor. As in 6.19, each island sleeps independently of
+    other moving bodies and wakes on contact. Set
+    `DeactivationOptions::mEnabled` to `false` for always-active simulation,
+    or `DART_CUSTOM_FILTER_SLEEPING=0` to keep custom-filter islands awake:
     [#3086](https://github.com/dartsim/dart/pull/3086),
     [#3112](https://github.com/dartsim/dart/pull/3112),
-    [#3353](https://github.com/dartsim/dart/pull/3353),
     [#3565](https://github.com/dartsim/dart/pull/3565),
-    [#3566](https://github.com/dartsim/dart/pull/3566),
-    [#3632](https://github.com/dartsim/dart/pull/3632)
+    [#3632](https://github.com/dartsim/dart/pull/3632),
+    [#3683](https://github.com/dartsim/dart/pull/3683)
 
   * When a step needs more contacts than `CollisionOption::maxNumContacts`
     allows, the cap is now shared across the colliding pairs. Detection used
