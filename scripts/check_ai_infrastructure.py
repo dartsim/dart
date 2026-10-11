@@ -4018,7 +4018,7 @@ def dart_release_version_pattern(root: Path) -> str:
     Bare/v versions need a valid target and use its major or the previous major,
     excluding tokens preceded by '=' or ':' with zero or one space.
     """
-    prefixes = r"(?:DART\s*|release-)\d+"
+    prefixes = r"(?:DART\s*v?|release-)\d+"
     target = read_release_target(root, [])
     if target is not None:
         major = int(target[2].split(".")[0])
@@ -4030,7 +4030,8 @@ def dart_release_version_pattern(root: Path) -> str:
 def check_release_references(root: Path, errors: list[str]) -> None:
     """Keep reusable guidance independent of the branch's next release."""
     version = (
-        r"[`*]*(?<![\w.])(?:DART\s*|release-)\d+\.\d+" r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
+        r"[`*]*(?<![\w.])(?:DART\s*v?|release-)\d+\.\d+"
+        r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
     )
     next_version = rf"[`*]*{dart_release_version_pattern(root)}[`*]*"
     next_target = re.compile(

@@ -131,6 +131,7 @@ def release_reference_target(tmp_path):
     [
         ("AGENTS.md", "`main` develops DART 6.22.\n"),
         ("AGENTS.md", "`main` develops DART 7.0.\n"),
+        ("docs/ai/README.md", "Next release: DART v12.0.0\n"),
         ("AGENTS.md", "Currently DART7.0\n"),
         ("AGENTS.md", "Currently release-12.0\n"),
         ("docs/ai/README.md", "Next release: DART 12.0.0\n"),
@@ -5612,6 +5613,7 @@ def test_every_scenario_rejects_pinned_prompt(scenario_data, scenario_id):
         "DART 12.0",
         "6.22",
         "7.0",
+        "DART v12.0.0",
         "6.22.0rc1",
         "7.0.0rc1",
     ],
@@ -5635,6 +5637,7 @@ def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
         "Inspect DART 6 compatibility",
         "Inspect Python 3.12 support in the current DART checkout",
         "Tune time_step=0.001 in a DART checkout",
+        "Update a dependency to v12.0.0 in a DART checkout",
         "Tune friction=7.0 in a DART checkout",
         "Tune friction= 7.0 in a DART checkout",
         "Tune friction:7.0 in a DART checkout",

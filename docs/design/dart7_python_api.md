@@ -39,8 +39,9 @@ introspection. Native renames in the binding sources avoid all three.
   a public `__module__`.
 - The top level re-exports exactly this allowlist: `World`, `WorldBatch`,
   `Multibody`, `Link`, `Joint`, `Dof`, `Frame`, `SimpleFrame`, `Collider`,
-  `Visual`, `Transform`, `Rotation`, `Material`, `PositionServo`,
-  `VelocityServo` and `Recorder`. Everything else lives in its submodule.
+  `Visual`, `Transform`, `Rotation`, `Material`, `PositionServo` and
+  `VelocityServo`, plus `Recorder` when the recorder (M4) ships. Everything else
+  lives in its submodule.
 - Python names follow PEP 8:
   - `snake_case` for functions, methods, keyword arguments and fields;
   - `CapWords` for classes;
@@ -138,7 +139,7 @@ every new member needs a use case:
   `world.hooks` and `world.constraints`.
 
 Not bound in Python: internal preparation steps, the C++ recording accessor
-(replaced by `dart.Recorder`), index and memory-manager accessors, the
+(replaced by `dart.Recorder` once the recorder ships), index and memory-manager accessors, the
 `remove_all_*` family, and boolean collision-check overloads.
 
 Worlds have two explicit modes on the same objects:
