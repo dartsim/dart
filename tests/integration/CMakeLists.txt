@@ -148,8 +148,26 @@ target_include_directories(
 set_tests_properties(
   test_ConstraintSolver
   PROPERTIES
-    ENVIRONMENT "GTEST_FILTER=ConstraintSolver.*"
+    ENVIRONMENT
+      "GTEST_FILTER=ConstraintSolver.*:-ConstraintSolver.*BitIdenticalThreadCountResults"
     FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+)
+# The NSGS and FBF thread-count determinism checks step 130-box scenes many
+# times. Under gcov they outlast test_ConstraintSolver's 3000-second budget
+# even at one and two threads (the NSGS check alone took 16 minutes), so the
+# coverage job (`--label-exclude no-coverage-value` in pixi's build-coverage)
+# skips this entry; every functional CI job still runs it.
+add_test(
+  NAME test_ConstraintSolver_thread_determinism
+  COMMAND
+    $<TARGET_FILE:test_ConstraintSolver>
+    --gtest_filter=ConstraintSolver.*BitIdenticalThreadCountResults
+)
+set_tests_properties(
+  test_ConstraintSolver_thread_determinism
+  PROPERTIES
+    FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+    LABELS "no-coverage-value"
 )
 add_test(
   NAME test_AdaptiveSoftContactModel
