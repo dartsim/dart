@@ -48,6 +48,17 @@ def _split_windows_cmake_args(value: str) -> List[str]:
     ]
 
 
+def _cmake_generator(cmake_args: List[str], default: str) -> str:
+    """Return the generator selected by a -G argument, else the default."""
+    generator = default
+    for index, arg in enumerate(cmake_args):
+        if arg == "-G" and index + 1 < len(cmake_args):
+            generator = cmake_args[index + 1]
+        elif arg.startswith("-G") and len(arg) > 2:
+            generator = arg[2:]
+    return generator
+
+
 def _cmake_args_from_env() -> List[str]:
     dartpy_cmake_args = os.environ.get("DARTPY_CMAKE_ARGS_JSON")
     if dartpy_cmake_args:
@@ -140,7 +151,8 @@ class CMakeBuild(build_ext):
 
         else:
             # Single config generators are handled "normally"
-            single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
+            generator = _cmake_generator(cmake_args, cmake_generator)
+            single_config = any(x in generator for x in {"NMake", "Ninja"})
 
             # CMake allows an arch-in-generator style for backward compatibility
             # contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
