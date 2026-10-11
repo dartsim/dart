@@ -45,10 +45,10 @@ pixi run test-py         # Run Python tests
 This development branch ships Pixi-managed wheel tasks. The core tasks are
 `wheel-build-core`, `wheel-repair-linux-core`, `wheel-repair-macos-core`,
 `wheel-repair-windows-core`, `wheel-verify-core`, and `wheel-test-core`;
-the per-Python environments `py310-wheel` through `py313-wheel` expose
+the per-Python environments `py312-wheel` through `py314-wheel` expose
 `wheel-build`, `wheel-repair`, `wheel-verify`, and `wheel-test` on top of
 them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
-`pixi run -e py313-wheel wheel-build`). See
+`pixi run -e py314-wheel wheel-build`). See
 `docs/onboarding/python-bindings.md` for the wheel workflow overview.
 
 ## Key Patterns

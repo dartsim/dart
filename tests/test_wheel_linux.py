@@ -17,15 +17,20 @@ def test_wheel_matrix_and_platform_routing():
     )
     job = workflow["jobs"]["build_wheels"]
     rows = job["strategy"]["matrix"]["include"]
+    assert len(rows) == 12
     linux = [row for row in rows if row["os"] == "linux"]
     assert {row["build"] for row in linux} == {
         f"cp{version}-manylinux_{arch}"
-        for version in (310, 311, 312, 313)
+        for version in (312, 313, 314)
         for arch in ("x86_64", "aarch64")
     }
     for row in linux:
         assert row["runner"] == (
             "ubuntu-24.04-arm" if "aarch64" in row["build"] else "ubuntu-24.04"
+        )
+    for row in rows:
+        assert (
+            row["pixi_env"] == row["build"].split("-")[0].replace("cp", "py") + "-wheel"
         )
         assert row["release_only"] == (
             "false" if row["build"].startswith("cp313-") else "true"
@@ -33,8 +38,10 @@ def test_wheel_matrix_and_platform_routing():
     assert [(row["runner"], row["build"]) for row in rows if row["os"] != "linux"] == [
         ("macos-15", "cp313-macosx_arm64"),
         ("macos-15", "cp312-macosx_arm64"),
+        ("macos-15", "cp314-macosx_arm64"),
         ("windows-2025-vs2026", "cp313-win_amd64"),
         ("windows-2025-vs2026", "cp312-win_amd64"),
+        ("windows-2025-vs2026", "cp314-win_amd64"),
     ]
     steps = {step.get("name"): step for step in job["steps"]}
     assert "matrix.os == 'linux'" in steps["Build and test manylinux wheel"]["if"]
@@ -49,7 +56,11 @@ def test_wheel_matrix_and_platform_routing():
         assert "matrix.os != 'linux'" in steps[name]["if"]
 
 
-def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
+@pytest.mark.parametrize("python_tag", ["cp312", "cp313", "cp314"])
+@pytest.mark.parametrize("arch", ["x86_64", "aarch64"])
+def test_linux_driver_repairs_and_tests_in_clean_base(
+    monkeypatch, tmp_path, python_tag, arch
+):
     spec = importlib.util.spec_from_file_location(
         "wheel_linux", ROOT / "scripts/wheel_linux.py"
     )
@@ -57,32 +68,33 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
     spec.loader.exec_module(module)
     calls = []
     monkeypatch.setattr(module, "__file__", str(tmp_path / "scripts/wheel_linux.py"))
-    monkeypatch.setattr(module.platform, "machine", lambda: "aarch64")
-    monkeypatch.setattr("sys.argv", ["wheel_linux.py", "cp312"])
+    monkeypatch.setattr(module.platform, "machine", lambda: arch)
+    monkeypatch.setattr("sys.argv", ["wheel_linux.py", python_tag])
     monkeypatch.setattr(
         module.subprocess, "run", lambda cmd, **kwargs: calls.append((cmd, kwargs))
     )
     module.main()
     assert len(calls) == 3
     build, repair, smoke = [cmd for cmd, _ in calls]
-    assert "BASE_IMAGE=quay.io/pypa/manylinux_2_28_aarch64" in build
-    assert "--plat manylinux_2_28_aarch64 --only-plat" in repair[-1]
-    assert "/opt/python/cp312-cp312/bin/python" in repair[-1]
+    assert f"BASE_IMAGE=quay.io/pypa/manylinux_2_28_{arch}" in build
+    assert f"--plat manylinux_2_28_{arch} --only-plat" in repair[-1]
+    assert f"/opt/python/{python_tag}-{python_tag}/bin/python" in repair[-1]
     assert "--exclude=build" in repair[-1]
-    assert "quay.io/pypa/manylinux_2_28_aarch64" in smoke
-    assert "dartpy-manylinux-2-28-aarch64" not in smoke
+    assert f"quay.io/pypa/manylinux_2_28_{arch}" in smoke
+    assert f"dartpy-manylinux-2-28-{arch}" not in smoke
     assert "LD_LIBRARY_PATH" in smoke
-    assert smoke[-1].endswith("cp312-*-manylinux_2_28_aarch64.whl")
+    assert smoke[-1].endswith(f"{python_tag}-*-manylinux_2_28_{arch}.whl")
     assert all(kwargs == {"check": True} for _, kwargs in calls)
 
 
-def test_linux_driver_rejects_unsupported_python(monkeypatch):
+@pytest.mark.parametrize("python_tag", ["cp310", "cp311", "cp315"])
+def test_linux_driver_rejects_unsupported_python(monkeypatch, python_tag):
     spec = importlib.util.spec_from_file_location(
         "wheel_linux", ROOT / "scripts/wheel_linux.py"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    monkeypatch.setattr("sys.argv", ["wheel_linux.py", "cp314"])
+    monkeypatch.setattr("sys.argv", ["wheel_linux.py", python_tag])
     with pytest.raises(SystemExit, match="2"):
         module.main()
 

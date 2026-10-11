@@ -14,6 +14,14 @@
     [#3702](https://github.com/dartsim/dart/pull/3702),
     [#3700](https://github.com/dartsim/dart/pull/3700)
 
+* Python
+
+  * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,
+    aarch64), macOS (arm64) and Windows. Python 3.10 (end of life) and 3.11
+    no longer get wheels, so pip on those versions keeps installing dartpy
+    6.20.0. Source builds still support Python 3.10 and newer:
+    [#3704](https://github.com/dartsim/dart/pull/3704)
+
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy

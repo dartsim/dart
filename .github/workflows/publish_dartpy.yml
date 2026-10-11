@@ -71,14 +71,8 @@ jobs:
 
           - os: linux
             runner: ubuntu-24.04
-            build: "cp311-manylinux_x86_64"
-            pixi_env: py311-wheel
-            release_only: true
-
-          - os: linux
-            runner: ubuntu-24.04
-            build: "cp310-manylinux_x86_64"
-            pixi_env: py310-wheel
+            build: "cp314-manylinux_x86_64"
+            pixi_env: py314-wheel
             release_only: true
 
           - os: linux
@@ -95,14 +89,8 @@ jobs:
 
           - os: linux
             runner: ubuntu-24.04-arm
-            build: "cp311-manylinux_aarch64"
-            pixi_env: py311-wheel
-            release_only: true
-
-          - os: linux
-            runner: ubuntu-24.04-arm
-            build: "cp310-manylinux_aarch64"
-            pixi_env: py310-wheel
+            build: "cp314-manylinux_aarch64"
+            pixi_env: py314-wheel
             release_only: true
 
           # Pin macOS to macos-15 (not macos-latest): dependency packages are
@@ -120,6 +108,12 @@ jobs:
             pixi_env: py312-wheel
             release_only: true
 
+          - os: macos
+            runner: macos-15
+            build: "cp314-macosx_arm64"
+            pixi_env: py314-wheel
+            release_only: true
+
           - os: windows
             runner: windows-2025-vs2026
             build: "cp313-win_amd64"
@@ -130,6 +124,12 @@ jobs:
             runner: windows-2025-vs2026
             build: "cp312-win_amd64"
             pixi_env: py312-wheel
+            release_only: true
+
+          - os: windows
+            runner: windows-2025-vs2026
+            build: "cp314-win_amd64"
+            pixi_env: py314-wheel
             release_only: true
 
     env:
