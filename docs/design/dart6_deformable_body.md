@@ -166,7 +166,7 @@ assumed speedup.
 
 ## Paper-scope decisions
 
-DART 6 carries **one** deformable model: the point-mass surface flesh of
+DART 6 and DART 7.0 carry **one** deformable model: the point-mass surface flesh of
 `SoftBodyNode`, which is close to the Jain/Liu contact model. This section is the
 durable owner of that scope; it supersedes the 2026-07-11 deferral list that
 previously appeared here.
@@ -180,13 +180,14 @@ needed uninstalled headers, absence from the generated aggregate, and a Doxygen
 exclusion purely to avoid freezing an unfinished API into 6.20 — symptoms of
 being in the wrong place. The implementation is preserved in the
 [PR #3404](https://github.com/dartsim/dart/pull/3404). Do not
-restart it on the DART 6 line (`main`).
+restart it on `release-6.20`, or on the DART 7 line (`main`) before a second
+physics domain is planned; DART 7.0 keeps volumetric FEM out of scope.
 
 **The Jain/Liu deferrals were retracted (2026-07-23).** The SIMBICON/controller
 rows (biped push recovery, noisy floor, biped walking) and the hand scenes
 (finger flick, arm fold, pinch grasp) are no longer approved deferrals; they are
-active DART 6 work, as is the four-link flexible-rigid-foot versus deformable-foot
-comparison. They build controllers, models, and scenes on the shipped
+active work, now targeting DART 7.0 on `main` because there is no 6.21 release,
+as is the four-link flexible-rigid-foot versus deformable-foot comparison. They build controllers, models, and scenes on the shipped
 `SoftBodyNode` and adaptive activation rather than adding new dynamics, so they
 fit the compatibility contract.
 
