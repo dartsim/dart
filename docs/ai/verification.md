@@ -286,7 +286,8 @@ readable alongside their contact markers and collision bounds.
   maintainer/user approval, attach only the missing files to that PR body
   (`gh pr edit`) or comment (`gh pr comment --edit-last`) instead of rerunning
   the command. gh does not write the uploaded URLs back to `--body-file`, so
-  refresh the local body from the PR (`gh pr view <PR URL> --json body`)
+  refresh the local body from the PR
+  (`gh pr view <PR URL> --json body --jq .body > <body file>`)
   before any later body edit. Attaching needs write access to the
   repository; without it, open the PR without `--attach` and, after explicit
   maintainer/user approval, have a maintainer attach the evidence.
