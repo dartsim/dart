@@ -4,15 +4,25 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components utils-urdf gui-osg)
-set(required_libraries dart dart-utils-urdf dart-gui-osg)
+set(required_components utils-urdf gui)
+set(required_libraries dart dart-utils-urdf dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
+  if(NOT TARGET ${example_name})
+    dart_format_add(main.cpp)
+  endif()
   return()
 endif()
 
-find_package(DART 6.17 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 6.19 REQUIRED COMPONENTS ${required_components} CONFIG)
+include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
+if(NOT DART_EXAMPLES_HAVE_FILAMENT_GUI)
+  message(
+    FATAL_ERROR
+    "hello_world requires the Filament gui component (dart/gui/Viewer.hpp)"
+  )
+endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})

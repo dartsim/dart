@@ -38,7 +38,7 @@ namespace dart_demos {
 namespace tinkertoy {
 
 //==============================================================================
-void TinkertoyState::handlePick(const dart::gui::osg::PickInfo& pick)
+void TinkertoyState::handlePick(const demo_gui::PickInfo& pick)
 {
   auto* bn
       = dynamic_cast<dart::dynamics::BodyNode*>(pick.frame->getParentFrame());
@@ -85,12 +85,12 @@ void TinkertoyState::decrementForceCoeff()
 void TinkertoyMouseHandler::update()
 {
   auto* defaultHandler = mViewer->getDefaultEventHandler();
-  if (defaultHandler->getButtonEvent(dart::gui::osg::LEFT_MOUSE)
-      != dart::gui::osg::BUTTON_PUSH)
+  if (defaultHandler->getButtonEvent(demo_gui::LEFT_MOUSE)
+      != demo_gui::BUTTON_PUSH)
     return;
 
   const auto& picks = defaultHandler->getButtonPicks(
-      dart::gui::osg::LEFT_MOUSE, dart::gui::osg::BUTTON_PUSH);
+      demo_gui::LEFT_MOUSE, demo_gui::BUTTON_PUSH);
   if (picks.empty())
     return;
 

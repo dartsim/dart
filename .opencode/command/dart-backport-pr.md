@@ -20,11 +20,11 @@ Backport PR or commits: $ARGUMENTS
 ## Workflow
 
 New patches land on `main`. Use this workflow to backport merged PRs to a
-selected `release-6.*` stabilization or maintenance branch.
+selected `release-*` stabilization or maintenance branch.
 A release branch may be cut from an approved stabilization commit before its
 first release tag, or from a published release tag.
 
-For a source change involving model/scene structure, physics behavior, or OSG
+For a source change involving model/scene structure, physics behavior, or Filament
 output, use the release branch's `dart-verify-sim` workflow to preserve the text
 oracle and assessed visual evidence. Document a visual exception when the
 release branch cannot render the claim.

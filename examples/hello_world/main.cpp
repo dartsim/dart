@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/osg.hpp>
+#include "../GuiOptions.hpp"
+
+#include <dart/gui/RealTimeWorldNode.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <dart/dart.hpp>
-
-#include <osgShadow/ShadowMap>
 
 #include <iostream>
 
@@ -42,10 +43,10 @@ using namespace dart;
 
 int main(int argc, char* argv[])
 {
-  const dart::gui::osg::GuiScaleOptions options
-      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  const dart_examples::GuiScaleOptions options
+      = dart_examples::parseGuiScaleOptions(argc, argv, &std::cerr);
   if (options.showHelp) {
-    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    dart_examples::printGuiScaleUsage(std::cout, argv[0]);
     return 0;
   }
 
@@ -84,21 +85,15 @@ int main(int argc, char* argv[])
   world->addSkeleton(ground);
 
   // Wrap a WorldNode around it
-  ::osg::ref_ptr<gui::osg::RealTimeWorldNode> node
-      = new gui::osg::RealTimeWorldNode(world);
+  auto node = std::make_shared<gui::RealTimeWorldNode>(world);
 
   // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::osg::Viewer();
+  auto viewer = gui::Viewer();
   viewer.addWorldNode(node);
 
-  // Enable shadow
-  auto shadow
-      = dart::gui::osg::WorldNode::createDefaultShadowTechnique(&viewer);
-  if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get())) {
-    auto mapResolution = static_cast<short>(std::pow(2, 12));
-    sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
-  }
-  node->setShadowTechnique(shadow);
+  node->setShadowsEnabled(true);
+  if (options.scale)
+    viewer.setGuiScale(*options.scale);
 
   viewer.addInstructionText("Press space to start free falling the box.\n");
   std::cout << viewer.getInstructions() << std::endl;
@@ -107,18 +102,14 @@ int main(int argc, char* argv[])
   viewer.setUpViewInWindow(
       0,
       0,
-      dart::gui::osg::scaleWindowExtent(640, options.scale),
-      dart::gui::osg::scaleWindowExtent(480, options.scale));
+      dart_examples::scaleWindowExtent(640, options.scale.value_or(1.0)),
+      dart_examples::scaleWindowExtent(480, options.scale.value_or(1.0)));
 
   // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57f, 3.14f, 1.64f),
-      ::osg::Vec3(0.00f, 0.00f, 0.50f),
-      ::osg::Vec3(-0.24f, -0.25f, 0.94f));
-
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  viewer.setCameraHome(
+      Eigen::Vector3d(2.57, 3.14, 1.64),
+      Eigen::Vector3d(0.00, 0.00, 0.50),
+      Eigen::Vector3d(-0.24, -0.25, 0.94));
 
   // Begin running the application loop
   viewer.run();

@@ -31,7 +31,9 @@ an exercise:
 
 The parameterized task is also available, for example `pixi run py-tu biped`
 or `pixi run py-tu biped_finished`. With dartpy installed in your Python
-environment, run any script directly:
+environment, run any script directly. The all-in-one nanobind extension always
+includes IO and `dartpy.gui`; `pixi run test` and `test-py` keep the GUI enabled
+and skip device-dependent rendering tests:
 
 ```console
 python python/tutorials/multi_pendulum/main.py
@@ -44,7 +46,7 @@ python python/tutorials/dominoes/main.py
 python python/tutorials/dominoes/main_finished.py
 ```
 
-The OSG viewer requires a desktop session with OpenGL. Scripts print their
+The Filament viewer requires a desktop session. Scripts print their
 controls, and Space starts or pauses physics. The biped model is Y-up; the
 other scenes are Z-up. Sample models resolve through `dart://sample/`.
 Unfinished structural exercises raise `NotImplementedError` identifying the

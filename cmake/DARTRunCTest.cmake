@@ -42,6 +42,12 @@ endforeach()
 
 set(_dart_ctest_arguments --output-on-failure)
 if(
+  DEFINED DART_CTEST_EXCLUDE_LABEL
+  AND NOT DART_CTEST_EXCLUDE_LABEL STREQUAL ""
+)
+  list(APPEND _dart_ctest_arguments -LE "${DART_CTEST_EXCLUDE_LABEL}")
+endif()
+if(
   DEFINED DART_CTEST_CONFIGURATION
   AND NOT DART_CTEST_CONFIGURATION STREQUAL ""
 )

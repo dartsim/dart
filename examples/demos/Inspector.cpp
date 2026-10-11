@@ -32,10 +32,6 @@
 
 #include "Inspector.hpp"
 
-#include <osg/Group>
-#include <osg/NodeVisitor>
-#include <osg/PolygonMode>
-
 #include <algorithm>
 #include <utility>
 
@@ -49,35 +45,6 @@ using dart::dynamics::BodyNode;
 using dart::dynamics::DegreeOfFreedom;
 using dart::dynamics::Joint;
 using dart::dynamics::ShapeNode;
-
-//==============================================================================
-/// Finds every OSG node named exactly `name` under `root`. Used to locate a
-/// selected body's rendered nodes for the wireframe toggle: gui-osg's
-/// ShapeFrameNode constructor names each node "<ShapeFrame name> [frame]"
-/// (dart/gui/osg/ShapeFrameNode.cpp), which is the only host-facing way to
-/// reach a specific body's OSG subtree without a dart/ change (WorldNode
-/// keeps its Frame->ShapeFrameNode map private). Relies on ShapeNode names
-/// being unique within the world; two different skeletons that happen to
-/// reuse the same body/shape-node name would both match (a documented, rare
-/// edge case -- most scenes use distinct body names).
-class NamedNodeFinder : public ::osg::NodeVisitor
-{
-public:
-  explicit NamedNodeFinder(std::string name)
-    : ::osg::NodeVisitor(TRAVERSE_ALL_CHILDREN), mName(std::move(name))
-  {
-  }
-
-  void apply(::osg::Node& node) override
-  {
-    if (node.getName() == mName)
-      mFound.push_back(&node);
-    traverse(node);
-  }
-
-  std::string mName;
-  std::vector<::osg::Node*> mFound;
-};
 
 //==============================================================================
 /// Returns a finite, correctly-ordered [lo, hi] position range for `dof`'s
@@ -214,7 +181,7 @@ void Inspector::renderJointRow(Joint* joint)
 }
 
 //==============================================================================
-void Inspector::renderDetail(bool paused, ::osg::Group* worldNode)
+void Inspector::renderDetail(bool paused, GuiGroup* worldNode)
 {
   if (!mSelected) {
     ImGui::TextWrapped("No body selected. Click a body in the tree above.");
@@ -321,32 +288,14 @@ void Inspector::applyQueuedEdits()
 }
 
 //==============================================================================
-void Inspector::setWireframe(
-    BodyNode* body, bool enabled, ::osg::Group* worldNode)
+void Inspector::setWireframe(BodyNode* body, bool enabled, GuiGroup* worldNode)
 {
   mBodyVisualState[body].wireframe = enabled;
   if (!worldNode)
     return;
 
-  for (std::size_t i = 0; i < body->getNumShapeNodes(); ++i) {
-    auto* sn = body->getShapeNode(i);
-    if (!sn)
-      continue;
-
-    NamedNodeFinder finder(sn->getName() + " [frame]");
-    worldNode->accept(finder);
-    for (auto* node : finder.mFound) {
-      auto* stateSet = node->getOrCreateStateSet();
-      if (enabled) {
-        stateSet->setAttributeAndModes(
-            new ::osg::PolygonMode(
-                ::osg::PolygonMode::FRONT_AND_BACK, ::osg::PolygonMode::LINE),
-            ::osg::StateAttribute::ON | ::osg::StateAttribute::OVERRIDE);
-      } else {
-        stateSet->removeAttribute(::osg::StateAttribute::POLYGONMODE);
-      }
-    }
-  }
+  if (auto* viewer = worldNode->getViewer())
+    viewer->setBodyWireframe(body, enabled);
 }
 
 //==============================================================================

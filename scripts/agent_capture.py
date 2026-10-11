@@ -1,20 +1,12 @@
-"""Deterministic headless capture harness for DART 6 agent visual evidence.
+"""Deterministic headless capture harness for DART agent visual evidence.
 
-Drives a DART 6 world through the OSG offscreen path (WP-ASV
-`Viewer.captureOffscreen`) with active camera control: explicit orbit
-parameters, focus-framed reframing, view-quality-scored auto viewpoints,
-turntables, and motion sequences with optional camera sweep. Debug layers
-(grid, world frame, contacts, body frames, velocities, centers of mass,
-inertia boxes, collision bounds, trajectories, labels) are rendered
-*through the DART core OSG pipeline* via a dart.gui.osg.DebugOverlay viewer
-attachment: segments become always-on-top overlay lines and labels become
-world-anchored osgText, drawn unlit and depth-test disabled so they stay
-legible on top of the geometry they annotate. The overlay is populated before
-each capture and cleared afterward. Every run writes a sidecar JSON recording
-camera parameters, layers, view reports, and the exact reproduction command.
+Drives a DART world through Filament with explicit orbit
+parameters, focus framing, assessed viewpoints, turntables, and motion
+sequences. Debug layers render through the DebugOverlay attachment.
+Every run records cameras, layers, graphics diagnostics, and the reproduction
+command in its JSON sidecar.
 
-Requires a GLX-capable X server (run under ``xvfb-run`` on headless hosts);
-see docs/ai/verification.md.
+Filament capture on Linux needs no display server. See docs/ai/verification.md.
 """
 
 from __future__ import annotations
@@ -37,7 +29,7 @@ import numpy as np
 
 SCHEMA_VERSION = "dart.agent_capture/v2"
 
-# Default OSG warmup frames before each screenshot; shared by the argument
+# Default warmup frames before each screenshot; shared by the argument
 # parser and the reproduce-command writer so non-default runs record the flag.
 DEFAULT_WARMUP_FRAMES = 10
 
@@ -53,7 +45,7 @@ class _ContactSnapshot:
 
 def _snapshot_contacts(contacts: Any) -> list[_ContactSnapshot]:
     # CollisionResult.getContacts() exposes references to DART-owned contacts.
-    # OSG frame traversal can refresh that backing result even without a world
+    # Viewer frame traversal can refresh that backing result even without a world
     # step, so temporal captures must own the values they intend to render.
     return [
         _ContactSnapshot(
@@ -70,12 +62,16 @@ def _import_dartpy() -> Any:
         import dartpy
     except ImportError as error:  # pragma: no cover - environment specific
         raise RuntimeError(
-            "agent_capture needs dartpy with the OSG GUI on PYTHONPATH; run "
+            "agent_capture needs dartpy with a GUI component on PYTHONPATH; run "
             "through `pixi run agent-capture`"
         ) from error
-    if not hasattr(dartpy.gui, "osg"):
-        raise RuntimeError("this dartpy build has no gui.osg module")
     return dartpy
+
+
+def _capture_gui(dart: Any) -> Any:
+    if not hasattr(dart.gui, "Viewer"):
+        raise RuntimeError("this dartpy build has no Filament GUI component")
+    return dart.gui
 
 
 def _load_factory(spec: str) -> Callable[[], Any]:
@@ -305,20 +301,18 @@ def _sweep_camera(camera: avq.AgentCamera, azimuth_offset: float) -> avq.AgentCa
 def _shoot(
     viewer: Any, camera: avq.AgentCamera, path: Path, args: argparse.Namespace
 ) -> bool:
-    return viewer.captureOffscreen(
-        str(path),
-        camera.eye,
-        camera.center,
-        camera.up,
-        width=args.width,
-        height=args.height,
-        fovYDeg=camera.fovy_deg,
-        warmupFrames=args.warmup_frames,
-    )
+    viewer.setCameraHome(camera.eye, camera.center, camera.up)
+    viewer.setVerticalFieldOfView(camera.fovy_deg)
+    for _ in range(args.warmup_frames):
+        viewer.frame()
+    path.unlink(missing_ok=True)
+    viewer.captureScreen(str(path))
+    viewer.frame()
+    return path.is_file() and path.stat().st_size > 0
 
 
 # Overlay label height as a fraction of the vertical view, converted to the
-# world-unit character size OBJECT_COORDS text needs so labels stay a constant
+# world-unit character size the overlay labels use so they stay a constant
 # on-screen size regardless of the camera distance to the subject.
 LABEL_VIEW_FRACTION = 0.05
 
@@ -346,7 +340,7 @@ def _capture_view(
         return _shoot(viewer, camera, path, args)
 
     # Render the debug layers through the engine: populate the always-on-top
-    # DebugOverlay attachment so captureOffscreen draws the lines and labels on
+    # DebugOverlay attachment so the capture frame draws the lines and labels on
     # top of the scene, then clear it so the next view starts fresh.
     scene = ado.build_overlay(
         world,
@@ -478,6 +472,10 @@ def _assess_capture_view(world, camera, args, name: str) -> dict[str, Any]:
 
 
 def run_capture(args: argparse.Namespace) -> dict[str, Any]:
+    if args.width <= 0 or args.height <= 0:
+        raise ValueError("capture dimensions must be positive")
+    if args.steps < 0 or args.warmup_frames < 0:
+        raise ValueError("step and warmup counts must be nonnegative")
     dart = _import_dartpy()
     if args.factory:
         world = _load_factory(args.factory)()
@@ -491,6 +489,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         scene_id = args.scene
     if not hasattr(world, "step") or not hasattr(world, "getNumSkeletons"):
         raise TypeError("scene factory must return a dartpy.simulation.World")
+    gui = _capture_gui(dart)
 
     tracker = ado.TrajectoryTracker(world) if "trajectories" in args.layers else None
     for _ in range(args.steps):
@@ -510,12 +509,13 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         else []
     )
 
-    viewer = dart.gui.osg.ImGuiViewer()
-    viewer.addWorldNode(dart.gui.osg.WorldNode(world))
+    viewer = gui.Viewer()
+    viewer.addWorldNode(gui.WorldNode(world))
+    viewer.setUpViewForCapture(args.width, args.height)
 
     overlay = None
     if args.layers:
-        overlay = dart.gui.osg.DebugOverlay()
+        overlay = gui.DebugOverlay()
         font = ado.find_default_font()
         if font:
             overlay.setFont(font)
@@ -576,10 +576,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             layers=_prestep_layers(args),
             stats=capture_stats,
         ):
-            raise RuntimeError(
-                "captureOffscreen failed: no off-screen GL context (needs a "
-                "usable DISPLAY; run under xvfb-run on headless hosts)"
-            )
+            raise RuntimeError("Filament capture did not write the still image")
         artifacts.append(
             {
                 "kind": "still",
@@ -617,7 +614,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 layers=_prestep_layers(args),
                 stats=capture_stats,
             ):
-                raise RuntimeError("captureOffscreen failed during turntable")
+                raise RuntimeError("Filament capture did not write the turntable image")
         entry: dict[str, Any] = {
             "kind": "turntable",
             "view": views[0]["name"],
@@ -669,7 +666,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 overlay,
                 stats=capture_stats,
             ):
-                raise RuntimeError("captureOffscreen failed during motion capture")
+                raise RuntimeError("Filament capture did not write the motion image")
         entry = {
             "kind": "motion",
             "view": views[0]["name"],
@@ -688,6 +685,9 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     sidecar = {
         "schema_version": SCHEMA_VERSION,
         "scene": scene_id,
+        "renderer": "filament",
+        "graphics_backend": viewer.getRenderBackend(),
+        "graphics_device": viewer.getRenderDevice(),
         "collision_detector": world.getConstraintSolver()
         .getCollisionDetector()
         .getType(),
@@ -751,7 +751,7 @@ def _reproduce_command(args: argparse.Namespace) -> str:
     if args.fovy_deg != avq.DEFAULT_FOVY_DEG:
         parts.append(f"--fovy-deg {args.fovy_deg}")
     if args.warmup_frames != DEFAULT_WARMUP_FRAMES:
-        # Warmup frames affect OSG initialization before the screenshot, so
+        # Warmup frames affect initialization before the screenshot, so
         # replaying without them can produce different evidence.
         parts.append(f"--warmup-frames {args.warmup_frames}")
     if args.layers:

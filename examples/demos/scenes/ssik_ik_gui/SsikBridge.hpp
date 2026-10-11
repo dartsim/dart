@@ -90,11 +90,9 @@ private:
 /// activate this scene many times per run, and CPython does not reliably
 /// support repeated Py_Finalize/Py_Initialize cycles with extension modules
 /// loaded (numpy in particular); this deliberately never finalizes, leaking
-/// the interpreter until process exit. Also forces the viewer to
-/// SingleThreaded (already the host-wide default set in
-/// DemoHost::ensureViewerConfigured(), but asserted here too as a hard
-/// invariant this scene relies on): an OSG draw thread calling into Python
-/// while the main thread holds the GIL would deadlock on the first solve.
+/// the interpreter until process exit. Scene callbacks execute on the
+/// frame-loop thread that owns the GIL; renderer worker threads never invoke
+/// Python.
 inline void ensurePythonInitialized()
 {
   static const bool initialized = [] {

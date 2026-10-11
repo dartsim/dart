@@ -21,7 +21,7 @@ import numpy as np
 from ..registry import SceneHandle
 
 
-class OperationalSpaceControlNode(dart.gui.osg.RealTimeWorldNode):
+class OperationalSpaceControlNode:
     def __init__(self, world, kr5, target):
         super().__init__(world)
         self.kr5 = kr5
@@ -62,7 +62,9 @@ class OperationalSpaceControlNode(dart.gui.osg.RealTimeWorldNode):
         self.kr5.setForces(forces1 + forces2 + forces3)
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.simulation.World()
 
     urdf_parser = dart.utils.DartLoader()
@@ -80,7 +82,10 @@ def build() -> SceneHandle:
     target.createVisualAspect().setColor([0.9, 0.1, 0.1])
     world.addSimpleFrame(target)
 
-    node = OperationalSpaceControlNode(world, kr5, target)
+    class WorldNode(OperationalSpaceControlNode, gui.RealTimeWorldNode):
+        pass
+
+    node = WorldNode(world, kr5, target)
 
     return SceneHandle(
         node=node,

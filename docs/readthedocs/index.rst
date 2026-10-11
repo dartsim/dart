@@ -6,11 +6,11 @@
 Welcome to DART documentation!
 ==============================
 
-.. admonition:: You are reading the DART 6 LTS documentation
+.. admonition:: You are reading the DART 7 development documentation
    :class: important
 
-   This site documents the **DART 6** compatibility line. New development
-   happens on ``main``; release branches provide stabilization and maintenance.
+   This site documents ``main``'s **DART 7** development line; ``release-6.20``
+   provides DART 6 maintenance documentation.
    Find published versions and release notes in `GitHub Releases
    <https://github.com/dartsim/dart/releases>`_.
 
@@ -45,7 +45,7 @@ Getting started
 Updates
 -------
 
-* 2026-10-04: DART version 6.19.5 released. See the
+* 2026-10-11: DART version 6.20.0 released. See the
   `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
 * Track planned releases in
   `GitHub Milestones <https://github.com/dartsim/dart/milestones>`_.
@@ -107,6 +107,7 @@ If you use DART in an academic publication, please consider citing this
    :caption: dart (C++)
 
    dart/user_guide/installation
+   dart/user_guide/visualization
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide

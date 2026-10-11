@@ -59,9 +59,9 @@ world = dart.simulation.World()
 world.addSkeleton(pendulum)
 ```
 
-`build_scene()` returns a custom `dart.gui.osg.RealTimeWorldNode` containing
+`build_scene()` returns a custom `dart.gui.RealTimeWorldNode` containing
 this world, its controller, and its event handler. `main()` adds the node and
-handler to a `dart.gui.osg.Viewer`. Override `customPreStep()` to update the
+handler to a `dart.gui.Viewer`. Override `customPreStep()` to update the
 controller before each simulation step. This is where sensors, actuators,
 and interactive control belong. `customPostStep()` records the resulting
 state using `world.bake()`.

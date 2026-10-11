@@ -1,11 +1,11 @@
 # docs/background/
 
-Agent rules for DART 6 theory and research background.
+Agent rules for DART theory and research background.
 
 ## Purpose
 
 `docs/background/` owns durable theory, math, paper, and reference notes that
-help agents understand DART 6 implementation work. It is not the place for
+help agents understand DART implementation work. It is not the place for
 DART-specific design decisions, roadmap priority, or active handoff state.
 
 ## Rules
@@ -14,8 +14,8 @@ DART-specific design decisions, roadmap priority, or active handoff state.
   `docs/background/README.md`.
 - Preserve attribution for material derived from papers, textbooks, PDFs, or
   external projects.
-- Keep release-branch claims compatibility-aware; DART 6 changes need direct
-  release-branch proof.
+- Keep release-branch claims compatibility-aware. Changes need direct
+  compatibility evidence against their target branch.
 - Put DART architecture and API tradeoffs in `docs/design/`.
 - Put priority, next steps, and acceptance gates in `docs/plans/`.
 - Put active implementation handoff state in `docs/dev_tasks/<task>/`.

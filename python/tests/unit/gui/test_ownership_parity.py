@@ -1,4 +1,4 @@
-"""Run unchanged with either dartpy extension selected through PYTHONPATH."""
+"""Native dispatch and ownership regressions without a rendering context."""
 
 import gc
 import os
@@ -9,13 +9,10 @@ from pathlib import Path
 import dartpy as dart
 import pytest
 
-if not hasattr(dart.gui, "osg"):
-    pytest.skip("DART_BUILD_GUI_OSG is disabled", allow_module_level=True)
-
-from ._gui_probe import probe
 from ._gui_cases import NODE_TYPES, dispatch, recording_handler, recording_node
+from ._gui_probe import probe
 
-osg = dart.gui.osg
+gui = dart.gui
 
 
 def test_minimal_world_and_skeleton_shared_ownership():
@@ -63,7 +60,7 @@ def test_all_five_virtuals_and_custom_constructor(kind):
 
 @pytest.mark.parametrize("kind", NODE_TYPES)
 def test_subclass_without_overrides_uses_cpp_fallback(kind):
-    base = getattr(osg, kind)
+    base = getattr(gui, kind)
 
     class Plain(base):
         def __init__(self, world, extra):
@@ -84,42 +81,44 @@ def test_subclass_without_overrides_uses_cpp_fallback(kind):
 
 def test_handler_virtual_dispatch_custom_constructor_and_fallback():
     events = []
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     handler = recording_handler(events, expected_viewer=viewer)
     assert handler.extra == "custom constructor argument"
-    key = int(osg.GUIEventAdapter.KEY_A)
+    key = ord("a")
     assert probe.handle(handler, viewer, key=key) is True
     assert probe.handle(handler, viewer, key=key + 1) is False
     assert events == [
-        (key, int(osg.GUIEventAdapter.KEYDOWN)),
-        (key + 1, int(osg.GUIEventAdapter.KEYDOWN)),
+        (key, int(gui.GUIEventAdapter.KEYDOWN)),
+        (key + 1, int(gui.GUIEventAdapter.KEYDOWN)),
     ]
 
-    class Plain(osg.GUIEventHandler):
+    class Plain(gui.GUIEventHandler):
         pass
 
-    assert probe.handle(Plain(), viewer, key=key) is True
-    assert probe.handle(osg.GUIEventHandler(), viewer, key=key) is True
+    with pytest.raises(RuntimeError, match="pure virtual"):
+        probe.handle(Plain(), viewer, key=key)
+    with pytest.raises(RuntimeError, match="pure virtual"):
+        probe.handle(gui.GUIEventHandler(), viewer, key=key)
 
 
 def test_callback_event_survives_native_temporary_owner():
-    class RememberEvent(osg.GUIEventHandler):
+    class RememberEvent(gui.GUIEventHandler):
         def handle(self, ea, aa):
             self.event = ea
             return True
 
     handler = RememberEvent()
-    viewer = osg.Viewer()
-    key = int(osg.GUIEventAdapter.KEY_A)
+    viewer = gui.Viewer()
+    key = ord("a")
     assert probe.handle(handler, viewer, key=key) is True
     gc.collect()
     assert handler.event.getKey() == key
-    assert handler.event.getEventType() == osg.GUIEventAdapter.KEYDOWN
+    assert handler.event.getEventType() == gui.GUIEventAdapter.KEYDOWN
 
 
-@pytest.mark.parametrize("name", ("KEY_A", "KEYDOWN"))
+@pytest.mark.parametrize("name", ("KEY_Left", "KEYDOWN"))
 def test_event_enums_equal_and_hash_like_int(name):
-    value = getattr(osg.GUIEventAdapter, name)
+    value = getattr(gui.GUIEventAdapter, name)
     integer = int(value)
     assert value == integer
     assert integer == value
@@ -131,12 +130,12 @@ def test_event_enums_equal_and_hash_like_int(name):
 @pytest.mark.parametrize("kind", NODE_TYPES)
 @pytest.mark.parametrize("with_world", (False, True))
 def test_base_constructors_and_world_replacement(kind, with_world):
-    base = getattr(osg, kind)
+    base = getattr(gui, kind)
     world = dart.simulation.World()
     node = base(world=world) if with_world else base()
     assert node.getWorld() is (world if with_world else None)
     replacement = dart.simulation.World()
-    node.setWorld(newWorld=replacement)
+    node.setWorld(world=replacement)
     assert node.getWorld() is replacement
     probe.refresh(node)
 
@@ -145,7 +144,7 @@ def test_viewer_keyword_arguments_and_world_removal_overload():
     world = dart.simulation.World()
     events = []
     node = recording_node("WorldNode", world, events)
-    viewer = osg.Viewer()
+    viewer = gui.Viewer()
     expected = ["refresh", "pre_refresh", "post_refresh"]
 
     def refresh_events():
@@ -154,53 +153,39 @@ def test_viewer_keyword_arguments_and_world_removal_overload():
         probe.refresh_viewer(viewer)
         return list(events)
 
-    viewer.addWorldNode(newWorldNode=node)
+    viewer.addWorldNode(node=node)
     assert refresh_events() == expected
-    viewer.removeWorldNode(oldWorldNode=node)
+    viewer.removeWorldNode(node=node)
     assert refresh_events() == []
-    viewer.addWorldNode(newWorldNode=node, active=True)
+    viewer.addWorldNode(node=node, active=True)
     assert refresh_events() == expected
-    viewer.removeWorldNode(oldWorld=world)
+    viewer.removeWorldNode(world=world)
     assert refresh_events() == []
 
 
-def test_ref_ptr_return_and_parameter_survive_original_owner():
+def test_shared_world_return_survives_original_owner():
     world = dart.simulation.World()
-    viewer = osg.Viewer()
-    technique = osg.WorldNode.createDefaultShadowTechnique(viewer)
-    assert isinstance(technique, osg.ShadowTechnique)
-    node = osg.WorldNode(world=world, shadowTechnique=technique)
-    assert node.getShadowTechnique() is technique
-    other = osg.RealTimeWorldNode(
-        world=world,
-        shadower=technique,
-        targetFrequency=120.0,
-        targetRealTimeFactor=0.5,
-    )
-    assert other.getShadowTechnique() is technique
-    assert other.getTargetFrequency() == pytest.approx(120.0)
-    assert other.getTargetRealTimeFactor() == pytest.approx(0.5)
-    del node, other, viewer
+    node = gui.WorldNode(world)
+    survivor = node.getWorld()
+    assert survivor is world
+    del node, world
     gc.collect()
-    # This reuses a C++-created shadow object after its C++ owners have gone.
-    survivor = osg.WorldNode(world, technique)
-    assert survivor.getShadowTechnique() is technique
-    survivor.setShadowTechnique()
-    assert survivor.getShadowTechnique() is None
-    survivor.setShadowTechnique(shadowTechnique=technique)
-    assert survivor.getShadowTechnique() is technique
+    survivor.step()
+    assert survivor.getTime() > 0.0
+    assert gui.WorldNode(survivor).getWorld() is survivor
 
 
-def test_repeated_ref_ptr_returns_do_not_accumulate_native_references():
-    viewer = osg.Viewer()
-    technique = osg.WorldNode.createDefaultShadowTechnique(viewer)
-    node = osg.WorldNode(dart.simulation.World(), technique)
-    assert node.getShadowTechnique() is technique
-    before = probe.shadow_ref_count(technique)
+def test_repeated_shared_returns_preserve_identity_and_python_reference_counts():
+    viewer = gui.Viewer()
+    world = dart.simulation.World()
+    node = gui.WorldNode(world)
+    viewer.addWorldNode(node)
+    before = sys.getrefcount(world), sys.getrefcount(node)
     for _ in range(1000):
-        assert node.getShadowTechnique() is technique
+        assert node.getWorld() is world
+        assert viewer.getWorldNode(world) is node
     gc.collect()
-    assert probe.shadow_ref_count(technique) == before
+    assert (sys.getrefcount(world), sys.getrefcount(node)) == before
 
 
 @pytest.mark.parametrize("kind", NODE_TYPES)
@@ -237,9 +222,14 @@ def test_handler_lifetime_subprocess(case):
     run_child(case)
 
 
+def test_throwing_attachment_detach_during_cycle_collection():
+    run_child("attachment_detach_exception")
+
+
 @pytest.mark.parametrize("platform", ["win32", "darwin"])
 def test_rss_oracle_is_optional_outside_linux(platform, monkeypatch):
     from types import SimpleNamespace
+
     from . import _gui_cases
 
     monkeypatch.setattr(_gui_cases, "sys", SimpleNamespace(platform=platform))

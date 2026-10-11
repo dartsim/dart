@@ -1,4 +1,4 @@
-# Profiling DART 6
+# Profiling DART
 
 Use profiling to find the hot path before changing performance-sensitive code,
 then use the benchmark and determinism gates to prove the change. Profiling
@@ -86,8 +86,9 @@ tooling, artifacts, and results stay in private workspaces, outside the public
 DART repository and its GitHub content. Model-format compatibility support
 remains in scope. Use the existing
 [visual-evidence selection and publication flow](../ai/verification.md#visual-verification-headless-capture)
-for plots and claim-tied simulation highlights; publish images through its
-prerelease backend after upload approval, and keep transient media out of Git.
+for plots and claim-tied simulation highlights after explicit approval.
+Attachments use the same store as drag-and-drop, never release assets or tags;
+`--body-file` replaces the whole PR body. Keep transient media out of Git.
 For visible physics changes, follow the
 [simulation verification route](../ai/verification.md#simulation-verification-route).
 
@@ -310,11 +311,19 @@ discovery before its static initializers run. These headless workloads need no
 OSG plugins; otherwise OSG allocates a conda-embedded environment path even
 when `OSG_LIBRARY_PATH` is set. The harness adds its measurement and
 perturbation controls and checks the shim's lookup ABI against the active Pixi
-OSG library. A host lock serializes staging, measurement and copying artifacts
-to the requested output directory. Subprocesses inherit the lock, so an orphan
-must finish before a later run can replace the slot. The staging root must be
-private, owned by the current user, and on its parent's filesystem; mount points
-are refused.
+OSG library when one exists. Historical arms whose source still contains
+`dart/gui/osg` are configured with `DART_BUILD_GUI_OSG=ON` and
+`DART_BUILD_GUI=ON` while the dependency prefix provides `lib/libosgDB.so`;
+every other arm uses `OFF` for both, since DART 7 rejects
+`DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no longer in the Pixi environment,
+so an OSG-era arm whose `contact_benchmark` requires `gui-osg` raises an
+infrastructure error before configuration; backfill does not record it as
+broken source. Use portable rows (`--rows gzb,robot`) or an environment that
+provides OpenSceneGraph. A host lock serializes staging, measurement and
+copying artifacts to the requested output directory. Subprocesses inherit the
+lock, so an orphan must finish before a later run can replace the slot. The
+staging root must be private, owned by the current user, and on its parent's
+filesystem; mount points are refused.
 Set `DART_PERF_STAGING_ROOT` to an absolute directory on an executable
 filesystem when another account owns the default root or temporary storage is mounted
 `noexec`. Its value is recorded in the environment fingerprint and backfill
@@ -376,7 +385,7 @@ summary. Otherwise, allocation-count or requested-byte decreases, or Ir
 improvements of at least 1%, count as improved.
 
 Use `pixi run perf-backfill --revs <file>` for a resumable local history run.
-The file contains one commit, ref or `v6.x.y` tag per line, with blank lines
+The file contains one commit, ref or `vX.Y.Z` tag per line, with blank lines
 and `#` comments ignored. Put tags after commits. For the historical window,
 generate the commit list with
 `git rev-list --first-parent --reverse --since=2026-07-01T00:00:00Z 789d3662c59 -- dart`,
@@ -512,8 +521,8 @@ before/after matrix separately.
 
 ## Interactive Memory Inspection
 
-Memory inspection is compiled out of `dart-demos` by default. After the normal
-`pixi run config`, opt in by reconfiguring the same build with
+Memory inspection is compiled out of `dart-demos` by default. After
+`pixi run config-demos`, opt in by reconfiguring the same build with
 `-DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. The default-OFF build excludes the
 diagnostics sources, link dependencies, host state, environment probe, Memory
 tab, and frame-path calls; its post-link check rejects any diagnostics marker in
@@ -523,7 +532,7 @@ When compiled in, the consolidated `dart-demos` Memory tab is a diagnostic lead
 generator, not a heap or cache profiler. Its shared
 `examples/demos/memory_diagnostics_model.*` owns opt-in cadence, process probes,
 bounded history, reset, and compatible snapshot comparisons. The branch-local
-`memory_diagnostics.*` collector/view owns DART 6 World traversal and raw-ImGui
+`memory_diagnostics.*` collector/view owns DART World traversal and raw-ImGui
 presentation inside `DemoHost`.
 
 Within a diagnostics-enabled build, keep the collection-disabled path before
@@ -548,13 +557,13 @@ hardware-counter/access-sampling and benchmark evidence. Hue identifies data
 category, while hatch, border, opacity, and text also identify storage state so
 the map is not color-only. Region maps retain up to 48 logical rows in an inner
 scroll area, but render only the roughly eight visible rows into a bounded
-per-region draw list so the 16-bit-index OpenGL2 backend stays below its vertex
-limit. The current runtime page-size observation groups the object atlas into
+per-region draw list that stays within the 16-bit ImGui index limit. The
+current runtime page-size observation groups the object atlas into
 virtual-page runs but does not place page or cache-line separators: the snapshot
 intentionally lacks raw bases and does not yet capture the scrubbed base
 remainders and host cache-line size required for those guides.
 
-The DART 6 World `MemoryManager` rows and exact maps cover reservation arenas.
+The DART World `MemoryManager` rows and exact maps cover reservation arenas.
 The World reserves and resets the frame arena, but current classic solver paths
 do not allocate their scratch through it. Do not present those rows as legacy
 solver scratch usage or color the arena as though it owns the classic object
@@ -571,7 +580,7 @@ For Gazebo-path claims, use `--gz-preset` as described in
 
 ## Remaining Deformable Gates
 
-The unmet full-parity goal targets DART 6.21 in
+The unmet full-parity goal targets DART 7.0 in
 [PLAN-622](../plans/dashboard.md#plan-622-dart-6-deformable-body-feature-and-performance).
 The [deformable-body design](../design/dart6_deformable_body.md) owns the
 model scope, measured layout decisions, and pre-default collision contract.

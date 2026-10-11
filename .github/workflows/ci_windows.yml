@@ -213,7 +213,7 @@ jobs:
             -DDART_MSVC_DEFAULT_OPTIONS=ON `
             -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF `
             -DCMAKE_UNITY_BUILD=ON `
-            -DDART_BUILD_GUI_OSG=ON
+            -DDART_BUILD_GUI=ON
 
       - name: Check build requirements
         if: matrix.part == 'cpp'

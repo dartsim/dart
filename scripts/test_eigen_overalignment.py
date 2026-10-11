@@ -161,7 +161,7 @@ def configure(build_dir: Path, args: argparse.Namespace) -> None:
         f"-DCMAKE_CXX_FLAGS={cmake_cxx_flags(args.alignment)}",
         "-DDART_BUILD_DARTPY=OFF",
         "-DBUILD_TESTING=ON",
-        "-DDART_BUILD_GUI_OSG=OFF",
+        "-DDART_BUILD_GUI=OFF",
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_PROFILE_BUILTIN=OFF",
         "-DDART_PROFILE_TRACY=OFF",

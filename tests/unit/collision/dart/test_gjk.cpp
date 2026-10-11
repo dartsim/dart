@@ -859,7 +859,7 @@ TEST(Mpr, ReportsSeparatedAndConcentricCases)
   EXPECT_TRUE(contained.position.allFinite());
 }
 
-// DART 6 supplementary coverage tests
+// Supplementary coverage tests
 TEST(Gjk, InvalidDirectionWarmStartFallsBackToFiniteQuery)
 {
   const double nan = std::numeric_limits<double>::quiet_NaN();

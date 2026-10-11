@@ -40,18 +40,18 @@ msgid "Welcome to DART documentation!"
 msgstr "DART 문서에 오신걸 환영합니다!"
 
 #: ../../index.rst:9 441998cba6bc4f1d8fa78411d5d4939d
-msgid "You are reading the DART 6 LTS documentation"
-msgstr "DART 6 LTS 문서를 보고 계십니다"
+msgid "You are reading the DART 7 development documentation"
+msgstr "DART 7 개발 문서를 보고 계십니다"
 
 #: ../../index.rst:12 6cad3fa9078941028cf1f733bfb74a90
 msgid ""
-"This site documents the **DART 6** compatibility line. New development "
-"happens on ``main``; release branches provide stabilization and maintenance. "
+"This site documents ``main``'s **DART 7** development line; ``release-6.20`` "
+"provides DART 6 maintenance documentation. "
 "Find published versions and release notes in `GitHub Releases "
 "<https://github.com/dartsim/dart/releases>`_."
 msgstr ""
-"이 사이트는 **DART 6** 호환성 계열을 설명합니다. 새로운 개발은 ``main`` 에서 진행하며, "
-"릴리스 브랜치는 안정화와 유지보수를 제공합니다. 배포된 버전과 릴리스 노트는 "
+"이 사이트는 ``main`` 의 **DART 7** 개발 계열을 설명하며, ``release-6.20`` 은 DART 6 "
+"유지보수 문서를 제공합니다. 배포된 버전과 릴리스 노트는 "
 "`GitHub Releases <https://github.com/dartsim/dart/releases>`_ 에서 확인하세요."
 
 #: ../../index.rst:19 ec09eccd75204784a40fdfbb861a0529
@@ -111,10 +111,10 @@ msgstr "업데이트"
 
 #: ../../index.rst:48 3f69476da5af4658b2cfd243a9f3f8c7
 msgid ""
-"2026-10-04: DART version 6.19.5 released. See the `CHANGELOG "
+"2026-10-11: DART version 6.20.0 released. See the `CHANGELOG "
 "<https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_."
 msgstr ""
-"2026-10-04: DART 버전 6.19.5 출시. `CHANGELOG "
+"2026-10-11: DART 버전 6.20.0 출시. `CHANGELOG "
 "<https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_ 를 참고하세요."
 
 #: ../../index.rst:50 05567f0679f643878beb91d4663472eb

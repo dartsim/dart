@@ -55,7 +55,7 @@ Read these files first:
    silently choosing.
 3. **Setup** - Resolve the target from the live PR base, or use `main` for
    new development and fixes. Release-specific packaging, CI, branch guidance,
-   and backports use the selected maintained `release-6.*` branch; backports
+   and backports use the selected maintained `release-*` branch; backports
    of merged `main` fixes use `dart-backport-pr`. Fetch the target and read its
    `docs/onboarding/release-management.md` § "Release target" before creating
    a topic branch. Verify the exact `DART <Next release>` milestone is open on
@@ -68,7 +68,7 @@ Read these files first:
    feasible, and `pixi run -e gazebo test-gz` for package, collision,
    constraint, or downstream Gazebo/gz-physics compatibility work. If the
    claim depends on scene structure, simulation, dynamics, collision/contact,
-   OSG output, or a visual example, route through `dart-verify-sim`: prove
+   Filament output, or a visual example, route through `dart-verify-sim`: prove
    correctness with text first, then add assessed claim-tied visual/debug
    evidence or record why it is unavailable or not applicable.
 6. **PR** - After explicit maintainer/user approval, push with the same local
@@ -88,8 +88,10 @@ Read these files first:
 - **Bugfix**: Target the development branch (`main`)
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
-- **Scope**: Use this development branch only for compatible maintenance,
-  dependency minimization, CI, docs, and fixes.
+- **Scope**: Follow the resolved branch's `AGENTS.md` compatibility and
+  approval rules: on `main` that includes approved PLAN-624 work; release
+  branches take compatible maintenance, dependency minimization, CI, docs,
+  and fixes.
 
 ## Output
 

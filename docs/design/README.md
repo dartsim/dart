@@ -1,6 +1,6 @@
 # DART Design Docs
 
-This directory holds durable DART 6 technical design proposals and decision
+This directory holds durable DART technical design proposals and decision
 rationale. Use it for architecture, API shape, compatibility constraints,
 tradeoffs, and design rules that should outlive a particular roadmap sequence.
 
@@ -18,6 +18,7 @@ For cross-bucket placement decisions, use
 | [`dart6_ai_infra.md`](dart6_ai_infra.md) | Release-branch AI documentation, model-evolution, and visual-evidence decisions within DART 6 compatibility constraints. |
 | [`dart6_collision_backends.md`](dart6_collision_backends.md) | Current DART 6.20 collision-backend architecture, compatibility boundary, downstream gz obligations, and later backend lifecycle. |
 | [`dart6_deformable_body.md`](dart6_deformable_body.md) | DART 6.20 deformable-body compatibility, paper scope, performance evidence, and collision-backend decisions. |
+| [`dart7_python_api.md`](dart7_python_api.md) | DART 7 Python-first API rules (naming, vocabulary, arrays, transforms, modes, control, batching, rendering) and the core-engine contracts they rely on. |
 
 ## Placement Rules
 

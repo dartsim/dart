@@ -1021,7 +1021,8 @@ TEST(World, TypedSetterToFclKeepsPrimitive)
   world->setCollisionDetector(CollisionDetectorType::Fcl);
 
   // The typed setter must produce a detector with the same default shape type
-  // as the rest of DART 6 (PRIMITIVE), not change the established default.
+  // as the existing FCL factory default (PRIMITIVE), not change the established
+  // default.
   auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
       world->getCollisionDetector());
   ASSERT_TRUE(fclDetector);

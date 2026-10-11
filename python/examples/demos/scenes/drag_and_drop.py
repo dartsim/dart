@@ -18,12 +18,14 @@ def _marker(world, position, color, name):
     world.addSimpleFrame(marker)
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.simulation.World()
 
     tf = dart.math.Isometry3()
     tf.set_translation([4, -4, 0])
-    frame = dart.gui.osg.InteractiveFrame(
+    frame = gui.InteractiveFrame(
         dart.dynamics.Frame.World(), "interactive frame", tf, 2
     )
     world.addSimpleFrame(frame)
@@ -39,7 +41,7 @@ def build() -> SceneHandle:
     _marker(world, [0, 8, 0], [0, 0.9, 0], "Y")
     _marker(world, [0, 0, 8], [0, 0, 0.9], "Z")
 
-    node = dart.gui.osg.WorldNode(world)
+    node = gui.WorldNode(world)
 
     return SceneHandle(
         node=node,

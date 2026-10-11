@@ -2,7 +2,7 @@
 
 Historical exact-revision evidence belongs to merged PRs #3382, #3408, and
 #3423 and their hosted checks. No incomplete local run establishes a detector
-ranking. The 6.21 lane must record exact revision SHAs, commands, raw rows,
+ranking. The 7.0 lane must record exact revision SHAs, commands, raw rows,
 host state, eligibility, and results for each acceptance item.
 
 ## Focused numerical gates

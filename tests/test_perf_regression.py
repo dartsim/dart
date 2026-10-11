@@ -5384,9 +5384,9 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     (pages / "performance/dart6").mkdir(parents=True)
     (pages / "performance/dart6/index.html").write_text("chart")
     module.chart_data(pages, published)
-    chart = (pages / "performance/dart6-ir/data.js").read_text()
+    chart = (pages / "performance/dart7-ir/data.js").read_text()
     point = json.loads(chart.removeprefix("window.BENCHMARK_DATA = "))["entries"][
-        "DART 6 deterministic counts"
+        "DART 7 deterministic counts"
     ][0]
     assert point["commit"]["id"] == record["run"]["commit"]
     benches = {bench["name"]: bench["value"] for bench in point["benches"]}
@@ -5653,9 +5653,9 @@ def _stock_chart_template(pages):
 
 
 def _chart_points(pages):
-    data = (pages / "performance/dart6-ir/data.js").read_text()
+    data = (pages / "performance/dart7-ir/data.js").read_text()
     return json.loads(data.removeprefix("window.BENCHMARK_DATA = "))["entries"][
-        "DART 6 deterministic counts"
+        "DART 7 deterministic counts"
     ]
 
 
@@ -5868,7 +5868,7 @@ def test_chart_writer_rerun_does_not_duplicate_commit_and_fingerprint(tmp_path):
     _stock_chart_template(tmp_path)
     record = _publication_fixture()
     module.chart_data(tmp_path, record)
-    data_path = tmp_path / "performance/dart6-ir/data.js"
+    data_path = tmp_path / "performance/dart7-ir/data.js"
     saved = data_path.read_bytes()
     record["run"]["time"] = "2026-10-09T08:00:00+00:00"
     module.chart_data(tmp_path, record)
@@ -5921,7 +5921,7 @@ def test_chart_equal_timestamps_have_the_same_order_and_fingerprint_annotations(
         _stock_chart_template(pages)
         for record in ordered:
             module.chart_data(pages, record)
-        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+        scripts.append((pages / "performance/dart7-ir/data.js").read_bytes())
     assert scripts[0] == scripts[1]
 
 
@@ -5962,7 +5962,7 @@ def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_pa
         "s3w/dart@1:01234567 Ir",
         "s3w/dart@1:01234567 allocations",
     ]
-    assert (tmp_path / "performance/dart6-ir/index.html").read_text() == (
+    assert (tmp_path / "performance/dart7-ir/index.html").read_text() == (
         tmp_path / "performance/dart6/index.html"
     ).read_text()
     record["run"]["time"] = "2026-10-08T08:01:00+00:00"
@@ -5995,11 +5995,11 @@ def test_chart_out_of_order_publication_keeps_newest_points_and_latest_value(tmp
         record["results"][0]["head"]["ir_per_step"] = minute
         module.chart_data(tmp_path, record)
     data = json.loads(
-        (tmp_path / "performance/dart6-ir/data.js")
+        (tmp_path / "performance/dart7-ir/data.js")
         .read_text()
         .removeprefix("window.BENCHMARK_DATA = ")
     )
-    points = data["entries"]["DART 6 deterministic counts"]
+    points = data["entries"]["DART 7 deterministic counts"]
     assert [point["commit"]["id"] for point in points] == [
         f"{minute:040x}" for minute in range(1, 251)
     ]
@@ -6109,7 +6109,7 @@ def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
     assert (
         len(records) == 4
     )  # Changed guards and fingerprint transitions stay immutable.
-    assert not (tmp_path / "performance/dart6-ir").exists()
+    assert not (tmp_path / "performance/dart7-ir").exists()
 
 
 def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicate(
@@ -6466,7 +6466,7 @@ def test_chart_annotates_comparability_changes_across_missing_rows(
                 if bench["name"].startswith("stable/")
             )
         assert all("changed:" not in bench["extra"] for bench in points[0]["benches"])
-        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+        scripts.append((pages / "performance/dart7-ir/data.js").read_bytes())
     assert scripts[0] == scripts[1]
 
 
@@ -6506,9 +6506,9 @@ def test_chart_legacy_points_validate_counts_and_split_unknown_inputs(tmp_path):
     _stock_chart_template(tmp_path)
     record = _publication_fixture()
     module.chart_data(tmp_path, record)
-    data_path = tmp_path / "performance/dart6-ir/data.js"
+    data_path = tmp_path / "performance/dart7-ir/data.js"
     data = json.loads(data_path.read_text().removeprefix("window.BENCHMARK_DATA = "))
-    point = data["entries"]["DART 6 deterministic counts"][0]
+    point = data["entries"]["DART 7 deterministic counts"][0]
     point.pop("measurement")
     for bench in point["benches"]:
         for field in (
@@ -6575,7 +6575,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     real_run(["git", "clone", str(remote), str(pages)], check=True, capture_output=True)
     _stock_chart_template(pages)
     if tier == "backfill":
-        for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+        for name in ("performance/dart7-ir/data.js", "performance/guards/main.md"):
             target = pages / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(b"preserve hosted evidence\n")
@@ -6671,7 +6671,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
     if tier == "backfill":
         assert (
-            pages / "performance/dart6-ir/data.js"
+            pages / "performance/dart7-ir/data.js"
         ).read_bytes() == b"preserve hosted evidence\n"
         assert (
             pages / "performance/guards/main.md"
@@ -6681,7 +6681,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
             concurrent
         )
     elif outcome == "no-chart":
-        assert not (pages / "performance/dart6-ir/data.js").exists()
+        assert not (pages / "performance/dart7-ir/data.js").exists()
     else:
         points = _chart_points(pages)
         assert [point["commit"]["id"] for point in points] == (
@@ -6954,11 +6954,11 @@ def test_robot_absolute_input_errors_remain_publishable(
     assert module.publication_record(path, "merge")["verdict"]["status"] == "FAIL"
 
 
-def _backfill_test_setup(monkeypatch, tmp_path):
+def _backfill_test_setup(monkeypatch, tmp_path, driver_cmake="driver"):
     module = _load_runner()
     repo = _perf_repository(tmp_path / "repository")
     base = _perf_commit(
-        repo, "examples/contact_benchmark/CMakeLists.txt", "driver", "Add driver"
+        repo, "examples/contact_benchmark/CMakeLists.txt", driver_cmake, "Add driver"
     )
     first = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "Change DART (#3229)")
     last = _perf_commit(repo, "dart/dynamics/test.cpp", "last", "Change DART (#3300)")
@@ -7222,6 +7222,81 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
         json.loads((prefix / "share/dart/perf-build.json").read_text())["commit"]
         == "b" * 40
     )
+
+
+@pytest.mark.parametrize(
+    "legacy,osg,contact",
+    [
+        (True, False, True),
+        (True, True, True),
+        (True, False, False),
+        (False, False, True),
+    ],
+)
+def test_build_arm_classifies_missing_historical_osg_as_infrastructure(
+    monkeypatch, tmp_path, legacy, osg, contact
+):
+    module = _load_runner()
+    source, build, driver, prefix, dependency = (
+        tmp_path / name for name in ("src", "build", "driver", "prefix", "dependencies")
+    )
+    contact_cmake = source / "examples/contact_benchmark/CMakeLists.txt"
+    contact_cmake.parent.mkdir(parents=True)
+    contact_cmake.write_text(
+        f"set(required_components {'gui-osg' if legacy else 'gui'})"
+    )
+    if osg:
+        (dependency / "lib").mkdir(parents=True)
+        (dependency / "lib/libosgDB.so").touch()
+    configured = []
+
+    def execute(*args, **kwargs):
+        configured.append(args[0])
+        raise ValueError("reached configure")
+
+    monkeypatch.setattr(module, "execute", execute)
+    args = module.parser().parse_args(["local"])
+    unavailable = legacy and not osg and contact
+    with pytest.raises(
+        ValueError,
+        match="requires OpenSceneGraph" if unavailable else "reached configure",
+    ) as failure:
+        module._build_arm(
+            args,
+            "a" * 40,
+            source,
+            build,
+            driver,
+            prefix,
+            [module.CB] if contact else [],
+            tmp_path / "arm",
+            dependency,
+            module.ROOT,
+            {},
+        )
+    assert not isinstance(failure.value, module.BuildFailure)
+    assert bool(configured) == (not unavailable)
+
+
+def test_backfill_does_not_record_missing_historical_osg_as_broken_source(
+    monkeypatch, tmp_path
+):
+    module, args, revisions, _, _, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path, driver_cmake="set(required_components gui-osg)"
+    )
+    attempts = []
+
+    def build_arm(*arguments):
+        attempts.append(arguments[1])
+        module._build_arm(*arguments, tmp_path / "dependencies", module.ROOT, {})
+
+    monkeypatch.setattr(module, "build_arm", build_arm)
+    with pytest.raises(ValueError, match="requires OpenSceneGraph"):
+        module.backfill(args)
+    assert attempts == [revisions[0], revisions[0]]
+    assert measurements == []
+    assert not list(args.output_dir.glob("runs/*/build-failure.json"))
+    assert not list(args.output_dir.glob("runs/*/record.json"))
 
 
 @pytest.mark.parametrize("failure", ["retry-build", "build", "infrastructure", "value"])
@@ -7874,7 +7949,8 @@ def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
     assert module.release_scope(candidate, None, None)["base_tag"] == "v6.19.3"
     assert module.release_scope(candidate, None, "v6.19.0")["base"] == first
     refusals = [
-        (None, "v7.0.0", None),
+        (None, "v7.0", None),
+        (None, "v7.0.0.rc1", None),
         (None, "v6.20.0", None),
         (patch, "v6.19.3", None),
         (off_branch, None, None),
@@ -7892,6 +7968,84 @@ def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
     for request in refusals:
         with pytest.raises(ValueError):
             module.release_scope(*request)
+
+
+def test_release_scope_refuses_a_tag_from_another_release_line(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "DART 6 release",
+    )
+    _perf_git(repo, "tag", "v6.20.0")
+    _perf_git(repo, "checkout", "-b", "release-6.20")
+    head = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>7.0.1</version></package>",
+        "Wrong release line",
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.20", head)
+    monkeypatch.setattr(module, "ROOT", repo)
+
+    with pytest.raises(ValueError, match="release-6.20 must carry a v6.20.Z tag"):
+        module.release_scope(head, None, None)
+
+
+@pytest.mark.parametrize("branch", ["main", "release-7.0"])
+def test_release_scope_recognizes_v7_and_uses_newest_merged_release(
+    monkeypatch, tmp_path, branch
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "DART 6 release",
+    )
+    _perf_git(repo, "tag", "v6.20.0")
+    first = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>7.0.0</version></package>",
+        "DART 7 release",
+    )
+    _perf_git(repo, "tag", "v7.0.0")
+    if branch != "main":
+        _perf_git(repo, "checkout", "-b", branch)
+    head = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>7.0.1</version></package>",
+        "DART 7 patch",
+    )
+    _perf_git(repo, "tag", "v7.0.1")
+    _perf_git(repo, "tag", "v7.0.1-rc1")
+    _perf_git(repo, "update-ref", f"refs/remotes/origin/{branch}", head)
+    _perf_git(repo, "checkout", "-b", "unmerged", old)
+    _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>8.0.0</version></package>",
+        "Unmerged release",
+    )
+    _perf_git(repo, "tag", "v8.0.0")
+    monkeypatch.setattr(module, "ROOT", repo)
+
+    assert module.release_scope(None, "v7.0.1", None) == {
+        "head": head,
+        "tag": "v7.0.1",
+        "base_tag": "v7.0.0",
+        "base": first,
+        "branch": branch,
+    }
+    assert module.release_scope(head, None, None)["tag"] == "v7.0.1"
+    assert module.release_scope(head, None, "v6.20.0")["base"] == old
+    with pytest.raises(ValueError, match="earlier merged release tag"):
+        module.release_scope(head, None, "v8.0.0")
 
 
 @pytest.mark.parametrize(
@@ -8760,18 +8914,20 @@ def test_release_records_order_precedence_and_index(monkeypatch, tmp_path, capsy
         in index
     )
     assert "| robot/dart |" in index
-    branch_record = candidate(third, "7" * 64)
-    branch_record["run"].update(
-        tag="v6.19.5", base_tag="v6.19.4", branch="release-6.19"
-    )
-    module.write_release(pages, branch_record)
-    assert json.loads((pages / "performance/releases/v6.19.5.json").read_text())[
-        "ledger"
-    ] == {"entries": [], "missing": []}
-    assert (
-        "release-6.19 is tracked by tags only."
-        in (pages / "performance/releases/v6.19.5.md").read_text()
-    )
+    for tag, base_tag, branch in (
+        ("v6.19.5", "v6.19.4", "release-6.19"),
+        ("v7.0.1", "v7.0.0", "release-7.0"),
+    ):
+        branch_record = candidate(third, "7" * 64)
+        branch_record["run"].update(tag=tag, base_tag=base_tag, branch=branch)
+        module.write_release(pages, branch_record)
+        assert json.loads((pages / f"performance/releases/{tag}.json").read_text())[
+            "ledger"
+        ] == {"entries": [], "missing": []}
+        assert (
+            f"{branch} is tracked by tags only."
+            in (pages / f"performance/releases/{tag}.md").read_text()
+        )
 
 
 @pytest.mark.parametrize("tag_created", ["normalized", "retry"])
@@ -8942,7 +9098,7 @@ def test_backfill_publication_is_one_commit_and_idempotent(
     _perf_git(pages, "config", "user.name", "Maintainer")
     _perf_git(pages, "config", "user.email", "maintainer@example.com")
     kept = {}
-    for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+    for name in ("performance/dart7-ir/data.js", "performance/guards/main.md"):
         target = pages / name
         target.parent.mkdir(parents=True, exist_ok=True)
         kept[name] = b"preserve hosted evidence\n"

@@ -1,0 +1,149 @@
+material {
+    name : dartTransparentTexturedLit,
+    shadingModel : lit,
+    blending : fade,
+    depthWrite : false,
+    doubleSided : true,
+    requires : [
+        color,
+        uv0
+    ],
+    parameters : [
+        {
+            type : float4,
+            name : baseColor
+        },
+        {
+            type : float,
+            name : metallic
+        },
+        {
+            type : float,
+            name : roughness
+        },
+        {
+            type : float,
+            name : reflectance
+        },
+        {
+            type : float3,
+            name : emissiveColor
+        },
+        {
+            type : float,
+            name : useBaseColorTexture
+        },
+        {
+            type : float,
+            name : baseColorTextureHasAlpha
+        },
+        {
+            type : float,
+            name : useMetallicTexture
+        },
+        {
+            type : float,
+            name : useRoughnessTexture
+        },
+        {
+            type : float,
+            name : useMetallicRoughnessTexture
+        },
+        {
+            type : float,
+            name : useNormalTexture
+        },
+        {
+            type : float,
+            name : useOcclusionTexture
+        },
+        {
+            type : float,
+            name : useEmissiveTexture
+        },
+        {
+            type : sampler2d,
+            name : baseColorTexture
+        },
+        {
+            type : sampler2d,
+            name : metallicTexture
+        },
+        {
+            type : sampler2d,
+            name : roughnessTexture
+        },
+        {
+            type : sampler2d,
+            name : metallicRoughnessTexture
+        },
+        {
+            type : sampler2d,
+            name : normalTexture
+        },
+        {
+            type : sampler2d,
+            name : occlusionTexture
+        },
+        {
+            type : sampler2d,
+            name : emissiveTexture
+        }
+    ]
+}
+
+fragment {
+    #include "legacy_texture_sampling.glsl"
+    void material(inout MaterialInputs material) {
+        vec2 uv = getUV0();
+        if (materialParams.useNormalTexture > 0.5) {
+            material.normal = normalize(
+                    sampleLegacyTexture(materialParams_normalTexture, uv).xyz * 2.0 - 1.0);
+        }
+        prepareMaterial(material);
+
+        vec4 baseColor = materialParams.baseColor * getColor();
+        if (materialParams.useBaseColorTexture > 0.5) {
+            vec4 texel = sampleLegacyTexture(materialParams_baseColorTexture, uv);
+            // RGB textures modulate color only, including at GL_CLAMP borders.
+            if (materialParams.baseColorTextureHasAlpha < 0.5) {
+                texel.a = 1.0;
+            }
+            baseColor *= texel;
+        }
+
+
+        float metallic = materialParams.metallic;
+        float roughness = materialParams.roughness;
+        if (materialParams.useMetallicRoughnessTexture > 0.5) {
+            vec4 metallicRoughness = sampleLegacyTexture(
+                    materialParams_metallicRoughnessTexture, uv);
+            roughness *= metallicRoughness.g;
+            metallic *= metallicRoughness.b;
+        }
+        if (materialParams.useMetallicTexture > 0.5) {
+            metallic *= sampleLegacyTexture(materialParams_metallicTexture, uv).r;
+        }
+        if (materialParams.useRoughnessTexture > 0.5) {
+            roughness *= sampleLegacyTexture(materialParams_roughnessTexture, uv).r;
+        }
+
+        vec3 emissive = materialParams.emissiveColor;
+        if (materialParams.useEmissiveTexture > 0.5) {
+            emissive *= sampleLegacyTexture(materialParams_emissiveTexture, uv).rgb;
+        }
+
+        material.baseColor = baseColor;
+        material.baseColor.rgb *= material.baseColor.a;
+        material.metallic = clamp(metallic, 0.0, 1.0);
+        material.roughness = clamp(roughness, 0.04, 1.0);
+        material.reflectance = materialParams.reflectance;
+        // Preserve authored emissive color independently of camera exposure.
+        material.emissive = vec4(emissive, 0.0);
+
+        if (materialParams.useOcclusionTexture > 0.5) {
+            material.ambientOcclusion = sampleLegacyTexture(
+                    materialParams_occlusionTexture, uv).r;
+        }
+    }
+}

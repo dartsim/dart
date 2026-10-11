@@ -45,10 +45,9 @@
 //    the host's Tools tab, so every scene can inspect contacts. Force
 //    application (keys 1-4) is unaffected and preserved with full parity.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -98,9 +97,9 @@ DemoScene makeRigidCubesScene()
     // across); the original example's eye(5,5,5) leaves the stack a tiny,
     // distant speck. Frame it tightly around the stack instead.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(1.1, 1.1, 0.55),
-        ::osg::Vec3d(0.0, 0.0, -0.3),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(1.1, 1.1, 0.55),
+        GuiVector3(0.0, 0.0, -0.3),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.preStep = [world, state] {
       // Apply the decaying force to the second skeleton's first body, as in

@@ -49,7 +49,7 @@ class Controller:
         print(f"wheel speed = {self.speed}")
 
 
-class BipedEventHandler(dart.gui.osg.GUIEventHandler):
+class BipedEventHandler(dart.gui.GUIEventHandler):
     def __init__(self, world, controller):
         super().__init__()
         self.world = world
@@ -58,7 +58,7 @@ class BipedEventHandler(dart.gui.osg.GUIEventHandler):
         self.positive_sign = True
 
     def handle(self, event, action):
-        if event.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if event.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
         key = event.getKey()
         if key in (ord(","), ord(".")):
@@ -85,7 +85,7 @@ class BipedEventHandler(dart.gui.osg.GUIEventHandler):
             self.force_countdown -= 1
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, controller, handler):
         super().__init__(world)
         self.world = world
@@ -162,7 +162,7 @@ def build_scene():
 
 def main():
     node = build_scene()
-    viewer = dart.gui.osg.Viewer()
+    viewer = dart.gui.Viewer()
     viewer.addWorldNode(node)
     viewer.addEventHandler(node.handler)
     viewer.addInstructionText(
@@ -171,7 +171,7 @@ def main():
         "a/A: increase wheel speed; s/S: decrease wheel speed\n"
     )
     print(viewer.getInstructions())
-    viewer.setUpViewInWindow(0, 0, 640, 480)
+    viewer.setUpViewInWindow()
     viewer.setCameraHomePosition([5, 3, 3], [0, 0, 0], [0, 1, 0])
     viewer.run()
 

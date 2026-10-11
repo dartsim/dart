@@ -33,9 +33,8 @@
 // Mirrored from examples/hello_world: a single free box falling onto a static
 // ground body. The standalone example remains the minimal first-program sample.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -110,9 +109,9 @@ DemoScene makeHelloWorldScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.57, 3.14, 1.64),
-        ::osg::Vec3d(0.00, 0.00, 0.50),
-        ::osg::Vec3d(-0.24, -0.25, 0.94)};
+        GuiVector3(2.57, 3.14, 1.64),
+        GuiVector3(0.00, 0.00, 0.50),
+        GuiVector3(-0.24, -0.25, 0.94)};
 
     setup.renderPanel = [boxBody] {
       const Eigen::Vector3d p = boxBody->getWorldTransform().translation();

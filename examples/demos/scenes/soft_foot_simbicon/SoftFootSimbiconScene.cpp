@@ -45,9 +45,8 @@
 #include "../atlas_simbicon/Controller.hpp"
 #include "../atlas_simbicon/State.hpp"
 #include "../atlas_simbicon/StateMachine.hpp"
+#include "GuiBackend.hpp"
 #include "SoftFootSimbiconModel.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <memory>
 #include <string>
@@ -120,9 +119,9 @@ DemoScene makeSoftFootSimbiconScene()
     DemoSceneSetup setup;
     setup.world = state->model.world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.14, 3.28, 6.28) * 1.6,
-        ::osg::Vec3d(0.00, 0.00, 0.00),
-        ::osg::Vec3d(0.00, 0.10, 0.00)};
+        GuiVector3(5.14, 3.28, 6.28) * 1.6,
+        GuiVector3(0.00, 0.00, 0.00),
+        GuiVector3(0.00, 0.10, 0.00)};
 
     setup.preStep = [state, scriptedPushStep, scriptedPushMagnitude] {
       if (scriptedPushStep > 0

@@ -39,7 +39,7 @@ Use these practices:
   expected.
 - For model/scene, dynamics, collision/contact, simulation, rendering, mesh,
   texture, GUI, or visual-example changes, use `dart-verify-sim`: report the
-  text correctness oracle and include assessed, claim-tied OSG/debug-overlay
+  text correctness oracle and include assessed, claim-tied Filament/debug-overlay
   evidence when applicable (an image alone is not correctness proof):
   - Prefer an existing headless example path such as `--headless`,
     `--frames`, `--width`, `--height`, and `--shot` over manual
@@ -48,26 +48,13 @@ Use these practices:
     before/after 3D highlights, matched captures, and compute-only plots.
   - Inspect the images yourself and include the commands plus any environment
     variables such as software rendering flags in the PR body.
-  - Upload transient comparison images, GIFs, and videos through the GitHub
-    PR/issue Markdown attachment flow so the PR body contains GitHub-hosted
-    `https://github.com/user-attachments/assets/...` URLs that render inline.
-    Do not commit screenshots, headless renders, GIFs, or screencast videos
-    solely as PR evidence. Commit visual files only when they are durable
-    documentation, fixtures, or source assets that should live in the
-    repository.
-  - The official GitHub attachment flow is the web PR/issue editor drag/drop or
-    file picker. `gh pr edit`, `gh pr comment`, and the public REST API do not
-    provide a supported generic attachment upload command; any command or action
-    that edits or comments on a PR still requires explicit maintainer/user
-    approval. Use a maintainer-approved upload helper only when it produces
-    GitHub attachment URLs without committing files to the branch; helpers that
-    mimic the web upload may require a browser session cookie and must not be
-    used unless the maintainer has explicitly approved that credential handling.
-  - If the current tool cannot upload PR attachments, keep the local artifact
-    paths in the working note, ask a maintainer to upload them through the PR
-    editor, and then update the PR body with the returned GitHub attachment
-    URL after explicit maintainer/user approval. Do not fall back to committing
-    transient evidence into `docs/assets/`.
+  - Use `pixi run evidence-publish` to render the section without network access.
+    Follow `docs/ai/verification.md` § "Visual Verification (Headless Capture)"
+    for publication after explicit maintainer/user approval. Attachments use
+    the same store as drag-and-drop, never release assets or tags;
+    `--body-file` replaces the whole PR body. Keep transient PR evidence out of
+    Git; commit visual files only as durable documentation, fixtures, or source
+    assets.
   - If no headless path exists, either add a narrowly scoped capture mode when
     it fits the example or document why visual comparison is not practical.
 - Mark non-applicable checklist items as "N/A" with a short reason.
@@ -89,7 +76,7 @@ Use these practices:
    that exact title is open on GitHub. For an explicit rollover, follow the
    owner's proposed-target rule. Publishing or updating the PR requires
    explicit maintainer/user approval.
-4. New fixes target `main`; backports to a maintained `release-6.*` branch use
+4. New fixes target `main`; backports to a maintained `release-*` branch use
    `dart-backport-pr`. Release-specific packaging, CI, and branch guidance may
    target the resolved release branch directly.
 5. Before every commit, run:

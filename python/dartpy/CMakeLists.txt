@@ -86,9 +86,13 @@ if(TARGET dart-utils-assets)
 endif()
 target_compile_definitions(
   dartpy
-  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}" DARTPY_GUI_OSG
+  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
 )
-install(TARGETS dartpy LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}")
+# A separate component lets C++ package checks skip the absolute site-packages.
+install(
+  TARGETS dartpy
+  LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}" COMPONENT python
+)
 list(
   REMOVE_ITEM dartpy_headers
   "${CMAKE_CURRENT_SOURCE_DIR}/detail/dart_eigen_dense.h"

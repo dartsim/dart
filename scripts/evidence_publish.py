@@ -1,58 +1,46 @@
-"""Generate a PR-body visual-verification section and publish media to GitHub.
+"""Generate a PR-body visual-verification section with local media references.
 
 Takes an evidence selection manifest (scripts/evidence_select.py) plus
 context fields and produces the "Visual verification" markdown a reviewer
 can read without reproducing the environment: what each artifact shows, the
 text oracle, semantic image observation, reconciliation/verdict, explicit
 claim boundary, environment/configuration, limitations, and reproduction
-commands. Media is GitHub-hosted, never committed to the repository.
-
-Backends:
-- manual (default): emits the section with UPLOAD-PLACEHOLDER markers plus
-  step-by-step instructions for the documented PR web-editor attachment flow
-  (the only official way to mint user-attachments URLs; see
-  .claude/commands/dart-pr.md). No network access, no approval needed.
-- gh-release: uploads assets to a dedicated release tag via the gh CLI and
-  embeds the release-asset URLs directly. Mutates shared GitHub state, so it
-  requires both --yes and maintainer/user approval per repo policy
-  (docs/ai/principles.md, "Shared state needs approval"). Release-asset
-  images render inline in PR bodies; videos appear as links (only
-  user-attachments get the inline player).
+commands. This script never accesses the network. Insert the section into the
+complete PR body because gh pr edit --body-file replaces the whole body, or
+post it separately with gh pr comment. After explicit maintainer/user approval,
+run GitHub CLI 2.99+ from the manifest attach_dir (<out>.attach, which each run
+refills with hash-named copies) with an explicit PR URL (or a
+number plus -R owner/repo); gh pr create also needs -R owner/repo and --head
+<branch>. Pass --attach for each manifest attach name (at most 50 per command).
+GitHub CLI uploads media and rewrites the local references in place. The
+fallback is drag-and-drop in the web editor: replace each reference with the
+URL the editor inserts. Media is GitHub-hosted, never committed.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import math
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
-import uuid
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, unquote, urlsplit
 
-SCHEMA_VERSION = "dart.evidence_publication/v4"
+SCHEMA_VERSION = "dart.evidence_publication/v5"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 
-_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
+# gh --attach validates file types and sizes itself and renders these as players.
+_VIDEO_SUFFIXES = {".mp4", ".mov", ".webm"}
 _ARTIFACT_KINDS = {"still", "grid", "composite", "video"}
-_GITHUB_REPOSITORY = re.compile(
-    r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9_.-]+"
-)
-
-
-@dataclass
-class _PublicationAttempt:
-    attempt_id: str
-    mutation_started: bool = False
-    observed_assets: list[dict[str, Any]] = field(default_factory=list)
+# Staged copies are named <sha256><suffix>; a rerun clears only these names,
+# in any case because case-insensitive file systems alias them.
+_STAGED_NAME = re.compile(r"[0-9a-f]{64}(?:\.[^.]+)?", re.IGNORECASE)
 
 
 def _sha256(path: Path) -> str:
@@ -63,8 +51,17 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _load_selection(path: Path) -> dict[str, Any]:
-    manifest = json.loads(path.read_text(encoding="utf-8"))
+def _declared_inputs(path: Path, manifest: Any) -> list[Path]:
+    """The selection file and its declared artifact paths, valid or not."""
+    selected = manifest.get("selected") if isinstance(manifest, dict) else None
+    return [path] + [
+        path.parent / artifact["path"]
+        for artifact in (selected if isinstance(selected, list) else [])
+        if isinstance(artifact, dict) and isinstance(artifact.get("path"), str)
+    ]
+
+
+def _load_selection(path: Path, manifest: Any) -> dict[str, Any]:
     if not isinstance(manifest, dict):
         raise ValueError("selection manifest must be a JSON object")
     if manifest.get("schema_version") != SELECTION_SCHEMA_VERSION:
@@ -95,6 +92,8 @@ def _load_selection(path: Path) -> dict[str, Any]:
     selected = manifest.get("selected")
     if not isinstance(selected, list) or not selected:
         raise ValueError("selection manifest has no selected artifacts")
+    if len(selected) > 50:
+        raise ValueError("selection exceeds gh's per-command --attach limit of 50")
     selected_files: set[tuple[int, int]] = set()
     covered_by_artifacts: set[str] = set()
     selected_bytes = 0
@@ -160,6 +159,7 @@ def _load_selection(path: Path) -> dict[str, Any]:
         artifact_path = Path(declared_path)
         if not artifact_path.is_absolute():
             artifact_path = path.parent / artifact_path
+        artifact_path = artifact_path.resolve()
         if not artifact_path.is_file():
             raise ValueError(
                 f"selected artifact is missing or not a regular file: {artifact_path}"
@@ -226,343 +226,22 @@ def _load_selection(path: Path) -> dict[str, Any]:
     return manifest
 
 
-def _gh(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["gh", *args], capture_output=True, text=True, check=check)
-
-
-def _release_asset_name(artifact: dict[str, Any]) -> str:
-    """Return an immutable, content-addressed release-asset name."""
-    suffix = Path(artifact["path"]).suffix.lower()
-    return f"sha256-{artifact['sha256']}{suffix}"
-
-
-def _release_asset_url(repo: str, tag: str, artifact: dict[str, Any]) -> str:
-    tag_path = quote(tag, safe="")
-    asset_path = quote(_release_asset_name(artifact), safe="")
-    return f"https://github.com/{repo}/releases/download/{tag_path}/{asset_path}"
-
-
-def _validated_remote_asset_url(
-    asset: dict[str, Any],
-    artifact: dict[str, Any],
-    repo: str,
-    tag: str,
-) -> str:
-    """Return a GitHub-attested release URL after validating its binding."""
-    name = _release_asset_name(artifact)
-    url = asset.get("url")
-    if not isinstance(url, str) or not url:
-        raise ValueError(
-            f"verified release asset {name!r} has no GitHub-reported download URL"
-        )
-    parsed = urlsplit(url)
-    # GitHub owner and repository names are case-insensitive and its URLs use
-    # the canonical spelling; the tag and the asset name are not.
-    path = unquote(parsed.path)
-    repo_prefix = f"/{repo}/"
-    if (
-        parsed.scheme != "https"
-        or parsed.hostname != "github.com"
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.port is not None
-        or parsed.query
-        or parsed.fragment
-        or path[: len(repo_prefix)].lower() != repo_prefix.lower()
-        or path[len(repo_prefix) :] != f"releases/download/{tag}/{name}"
-    ):
-        raise ValueError(
-            f"verified release asset {name!r} has an unexpected GitHub-reported "
-            "download URL"
-        )
-    return url
-
-
-def _parse_release_assets(
-    view: subprocess.CompletedProcess,
-) -> tuple[bool, dict[str, dict[str, Any]]]:
-    payload = json.loads(view.stdout)
-    if not isinstance(payload, dict):
-        raise ValueError("gh release view returned a non-object JSON value")
-    if type(payload.get("isDraft")) is not bool:
-        raise ValueError("gh release view omitted boolean isDraft")
-    if payload["isDraft"]:
-        raise ValueError(
-            "target release is a draft; publish the draft or use another tag "
-            "before retrying"
-        )
-    if type(payload.get("isImmutable")) is not bool:
-        raise ValueError("gh release view omitted boolean isImmutable")
-    assets = payload.get("assets")
-    if not isinstance(assets, list):
-        raise ValueError("gh release view omitted its assets list")
-    by_name: dict[str, dict[str, Any]] = {}
-    for asset in assets:
-        if not isinstance(asset, dict):
-            raise ValueError("gh release view returned a non-object asset")
-        name = asset.get("name")
-        if not isinstance(name, str) or not name:
-            raise ValueError("gh release view returned an asset without a name")
-        if name in by_name:
-            raise ValueError(f"release contains duplicate asset name {name!r}")
-        by_name[name] = asset
-    return payload["isImmutable"], by_name
-
-
-def _asset_recovery(name: str) -> str:
-    return (
-        f"do not clobber or delete {name!r} automatically; retry only after a "
-        "maintainer explicitly approves deletion of this exact incomplete asset "
-        "or chooses a new release tag"
+def _artifact_reference(artifact: dict[str, Any], path: str) -> str:
+    caption = (
+        ""
+        if Path(artifact["path"]).suffix.lower() in _VIDEO_SUFFIXES
+        else artifact["caption"] or Path(artifact["path"]).name
     )
-
-
-def _validate_existing_asset(asset: dict[str, Any], artifact: dict[str, Any]) -> None:
-    name = _release_asset_name(artifact)
-    if type(asset.get("size")) is not int or asset["size"] != artifact["bytes"]:
-        raise ValueError(
-            f"existing release asset {name!r} does not match the selected byte "
-            f"count; {_asset_recovery(name)}"
-        )
-    digest = asset.get("digest")
-    expected_digest = f"sha256:{artifact['sha256']}"
-    if digest != expected_digest:
-        raise ValueError(
-            f"existing release asset {name!r} does not match the selected digest; "
-            f"{_asset_recovery(name)}"
-        )
-    if asset.get("state") != "uploaded":
-        raise ValueError(
-            f"existing release asset {name!r} is not fully uploaded; "
-            f"{_asset_recovery(name)}"
-        )
-
-
-def _observed_selected_assets(
-    assets: dict[str, dict[str, Any]],
-    selected_assets: dict[str, dict[str, Any]],
-) -> list[dict[str, Any]]:
-    observed: list[dict[str, Any]] = []
-    for name in sorted(selected_assets):
-        asset = assets.get(name)
-        observed.append(
-            {
-                "name": name,
-                "present": asset is not None,
-                "size": asset.get("size") if asset is not None else None,
-                "digest": asset.get("digest") if asset is not None else None,
-                "state": asset.get("state") if asset is not None else None,
-                "url": asset.get("url") if asset is not None else None,
-            }
-        )
-    return observed
-
-
-def _stage_release_assets(
-    artifacts: list[dict[str, Any]],
-    base_dir: Path,
-    stage_dir: Path,
-) -> dict[str, Path]:
-    """Freeze and revalidate every selected asset before any GitHub action."""
-    staged: dict[str, Path] = {}
-    for index, artifact in enumerate(artifacts):
-        name = _release_asset_name(artifact)
-        source = Path(artifact["path"])
-        if not source.is_absolute():
-            source = base_dir / source
-        target = (
-            stage_dir / name
-            if name not in staged
-            else stage_dir / f"duplicate-{index:04d}-{name}"
-        )
-        shutil.copyfile(source, target)
-        if (
-            target.stat().st_size != artifact["bytes"]
-            or _sha256(target) != artifact["sha256"]
-        ):
-            raise ValueError(
-                f"selected artifact {artifact['path']!r} changed while staging"
-            )
-        staged.setdefault(name, target)
-    return staged
-
-
-def _refresh_observed_assets_after_publication_failure(
-    view_arguments: list[str],
-    selected_assets: dict[str, dict[str, Any]],
-    attempt: _PublicationAttempt,
-) -> None:
-    """Best-effort refresh remote state without masking publication failure."""
-    attempt.observed_assets = []
-    try:
-        view = _gh(view_arguments, check=False)
-        if view.returncode != 0:
-            return
-        _, assets = _parse_release_assets(view)
-    except (OSError, TypeError, ValueError, subprocess.CalledProcessError):
-        return
-    attempt.observed_assets = _observed_selected_assets(assets, selected_assets)
-
-
-def _publish_gh_release(
-    selection: dict[str, Any],
-    base_dir: Path,
-    repo: str,
-    tag: str,
-    attempt: _PublicationAttempt,
-) -> dict[str, str]:
-    """Upload selected artifacts and return GitHub-attested path->URL bindings."""
-    selected_assets: dict[str, dict[str, Any]] = {}
-    for artifact in selection["selected"]:
-        name = _release_asset_name(artifact)
-        previous = selected_assets.setdefault(name, artifact)
-        if (
-            previous["sha256"] != artifact["sha256"]
-            or previous["bytes"] != artifact["bytes"]
-        ):
-            raise ValueError(
-                f"selected artifacts collide on release asset name {name!r}"
-            )
-
-    with tempfile.TemporaryDirectory(prefix="dart-evidence-publish-") as temp_dir:
-        staged = _stage_release_assets(
-            selection["selected"],
-            base_dir,
-            Path(temp_dir),
-        )
-        view_arguments = [
-            "release",
-            "view",
-            tag,
-            "--repo",
-            repo,
-            "--json",
-            "assets,isImmutable,isDraft",
-        ]
-        view = _gh(view_arguments, check=False)
-        release_exists = view.returncode == 0
-        immutable = False
-        existing: dict[str, dict[str, Any]] = {}
-        if release_exists:
-            immutable, existing = _parse_release_assets(view)
-            attempt.observed_assets = _observed_selected_assets(
-                existing, selected_assets
-            )
-        elif "release not found" not in f"{view.stdout}\n{view.stderr}".lower():
-            raise subprocess.CalledProcessError(
-                view.returncode,
-                ["gh", *view_arguments],
-                output=view.stdout,
-                stderr=view.stderr,
-            )
-        else:
-            attempt.observed_assets = _observed_selected_assets({}, selected_assets)
-
-        missing: list[str] = []
-        for name, artifact in selected_assets.items():
-            if name in existing:
-                _validate_existing_asset(existing[name], artifact)
-            else:
-                missing.append(name)
-        if immutable and missing:
-            raise ValueError(
-                f"release tag {tag!r} is immutable and cannot accept "
-                "missing evidence assets"
-            )
-
-        if not release_exists:
-            attempt.mutation_started = True
-            try:
-                _gh(
-                    [
-                        "release",
-                        "create",
-                        tag,
-                        *(str(staged[name]) for name in missing),
-                        "--repo",
-                        repo,
-                        "--title",
-                        f"Verification media ({tag})",
-                        "--notes",
-                        "GitHub-hosted media for PR visual-verification sections. "
-                        + "Not a software release.",
-                        "--prerelease",
-                    ]
-                )
-            except (OSError, subprocess.CalledProcessError):
-                _refresh_observed_assets_after_publication_failure(
-                    view_arguments,
-                    selected_assets,
-                    attempt,
-                )
-                raise
-        elif missing:
-            # Content-addressed names prevent a later publication from replacing
-            # bytes behind an older PR URL. Exact uploaded assets are reusable;
-            # same-name incomplete or unverifiable assets deliberately block.
-            attempt.mutation_started = True
-            try:
-                _gh(
-                    [
-                        "release",
-                        "upload",
-                        tag,
-                        *(str(staged[name]) for name in missing),
-                        "--repo",
-                        repo,
-                    ]
-                )
-            except (OSError, subprocess.CalledProcessError):
-                _refresh_observed_assets_after_publication_failure(
-                    view_arguments,
-                    selected_assets,
-                    attempt,
-                )
-                raise
-        try:
-            final_view = _gh(view_arguments)
-            _, final_assets = _parse_release_assets(final_view)
-        except (OSError, TypeError, ValueError, subprocess.CalledProcessError):
-            _refresh_observed_assets_after_publication_failure(
-                view_arguments,
-                selected_assets,
-                attempt,
-            )
-            raise
-        attempt.observed_assets = _observed_selected_assets(
-            final_assets, selected_assets
-        )
-        urls: dict[str, str] = {}
-        for name, artifact in selected_assets.items():
-            if name not in final_assets:
-                raise ValueError(
-                    f"release verification did not find selected asset {name!r}"
-                )
-            _validate_existing_asset(final_assets[name], artifact)
-            url = _validated_remote_asset_url(final_assets[name], artifact, repo, tag)
-            for selected in selection["selected"]:
-                if _release_asset_name(selected) == name:
-                    urls[selected["path"]] = url
-    return urls
-
-
-def _artifact_reference(artifact: dict[str, Any], url: str | None) -> str:
-    name = Path(artifact["path"]).name
-    if url is None:
-        return (
-            f"<!-- UPLOAD-PLACEHOLDER: drag-drop {artifact['path']} into the PR "
-            f"web editor here and delete this comment -->\n"
-            f"`{name}` (pending upload)"
-        )
-    suffix = Path(artifact["path"]).suffix.lower()
-    if suffix in _IMAGE_SUFFIXES:
-        return f"![{artifact['caption'] or name}]({url})"
-    return f"[{artifact['caption'] or name}]({url})"
+    # Escape alt text the way gh does, so a caption cannot close the image early.
+    caption = caption.translate(
+        str.maketrans({"\\": "\\\\", "[": "\\[", "]": "\\]", "\n": " ", "\r": " "})
+    )
+    return f"![{caption}]({path})"
 
 
 def render_section(
     selection: dict[str, Any],
-    urls: dict[str, str],
+    attach: list[str],
     *,
     environment: str,
     configuration: str,
@@ -593,7 +272,7 @@ def render_section(
         caption = artifact["caption"] or Path(artifact["path"]).name
         lines.append(f"#### {index}. {caption}")
         lines.append("")
-        lines.append(_artifact_reference(artifact, urls.get(artifact["path"])))
+        lines.append(_artifact_reference(artifact, attach[index - 1]))
         lines.append("")
         details = [f"Supports: {', '.join(artifact['claims'])}"]
         if artifact.get("observe"):
@@ -640,30 +319,6 @@ def _non_empty(value: str) -> str:
     return stripped
 
 
-def _release_tag(value: str) -> str:
-    """Return a conservative GitHub release tag that cannot become a CLI option."""
-    tag = _non_empty(value)
-    forbidden = set(" ~^:?*[\\")
-    components = tag.split("/")
-    if (
-        len(tag) > 200
-        or tag.startswith("-")
-        or tag == "@"
-        or tag.endswith(("/", "."))
-        or ".." in tag
-        or "@{" in tag
-        or "//" in tag
-        or any(ord(character) < 32 or ord(character) == 127 for character in tag)
-        or any(character in forbidden for character in tag)
-        or any(
-            not component or component.startswith(".") or component.endswith(".lock")
-            for component in components
-        )
-    ):
-        raise argparse.ArgumentTypeError("value must be a safe GitHub release tag")
-    return tag
-
-
 def _selection_passes(selection: dict[str, Any]) -> bool:
     claims = selection.get("claims")
     selected = selection.get("selected")
@@ -705,11 +360,18 @@ def _paths_alias(left: Path, right: Path) -> bool:
     return False
 
 
+def _inside(path: Path, directory: Path) -> bool:
+    child = str(path.resolve(strict=False)).casefold()
+    parent = str(directory.resolve(strict=False)).casefold()
+    return child == parent or child.startswith(parent.rstrip("/\\") + os.sep)
+
+
 def _preflight_outputs(
     selection_path: Path,
     selection: dict[str, Any],
     out: Path,
     manifest_out: Path | None,
+    attach_dir: Path,
 ) -> None:
     """Prove output paths are distinct, non-input, and atomically writable."""
     outputs = [out] + ([manifest_out] if manifest_out is not None else [])
@@ -722,6 +384,13 @@ def _preflight_outputs(
 
     if manifest_out is not None and _paths_alias(out, manifest_out):
         raise ValueError("--out and --manifest-out must be distinct files")
+    if attach_dir.is_symlink() or (attach_dir.exists() and not attach_dir.is_dir()):
+        raise ValueError(f"staging path is not a directory: {attach_dir}")
+    for path in protected + outputs:
+        if _inside(path, attach_dir):
+            raise ValueError(
+                f"inputs and outputs must stay outside the staging directory: {path}"
+            )
     for output in outputs:
         if output.is_symlink():
             raise ValueError(f"output path must not be a symbolic link: {output}")
@@ -781,47 +450,31 @@ def _selection_digest(selection: dict[str, Any]) -> str:
 def _build_manifest(
     selection: dict[str, Any],
     *,
-    backend: str,
-    repository: str | None,
-    release_tag: str | None,
     out: Path,
-    urls: dict[str, str],
-    uploaded: bool,
-    status: str,
-    url_provenance: str | None,
+    attach_dir: Path | None,
+    attach: list[str],
     publication_pass: bool,
     text_oracle: str,
     visible_observation: str,
     reconciliation: str,
     semantic_verdict: str,
-    attempt: _PublicationAttempt | None = None,
     note: str | None = None,
-    error: str | None = None,
-    recovery: str | None = None,
 ) -> dict[str, Any]:
     manifest: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
-        "status": status,
-        "backend": backend,
-        "repository": repository,
-        "release_tag": release_tag,
-        "uploaded": uploaded,
-        "urls": urls,
-        "url_provenance": url_provenance,
+        "status": "ready" if publication_pass else "not_ready",
+        "attach_dir": None if attach_dir is None else str(attach_dir),
+        "attach": list(dict.fromkeys(attach)),
         "selection_sha256": _selection_digest(selection),
         "artifacts": [
             {
                 "path": artifact["path"],
                 "bytes": artifact["bytes"],
                 "sha256": artifact["sha256"],
-                "release_asset": (
-                    _release_asset_name(artifact) if backend == "gh-release" else None
-                ),
-                "url": urls.get(artifact["path"]),
             }
             for artifact in selection["selected"]
         ],
-        "section": str(out),
+        "section": str(out.resolve()),
         "artifact_count": len(selection["selected"]),
         "semantic_review": {
             "text_oracle": text_oracle,
@@ -829,49 +482,48 @@ def _build_manifest(
             "reconciliation": reconciliation,
             "verdict": semantic_verdict,
         },
-        "attempt_id": attempt.attempt_id if attempt is not None else None,
-        "remote_mutation_started": (
-            attempt.mutation_started if attempt is not None else False
-        ),
-        "remote_mutation_possible": (
-            status == "publishing"
-            or (attempt.mutation_started if attempt is not None else False)
-        ),
-        "observed_release_assets": (
-            attempt.observed_assets if attempt is not None else []
-        ),
         "pass": publication_pass,
     }
     if note is not None:
         manifest["note"] = note
-    if error is not None:
-        manifest["error"] = error
-    if recovery is not None:
-        manifest["recovery"] = recovery
     return manifest
 
 
-def _render_publication_state(
-    status: str,
-    *,
-    attempt_id: str,
-    error: str | None = None,
-    recovery: str | None = None,
-) -> str:
-    lines = [
-        "## Visual verification publication is not ready",
-        "",
-        f"- **Status**: `{status}`",
-        f"- **Attempt**: `{attempt_id}`",
-        "- **Publishable evidence**: no",
-        "",
-        "Do not copy URLs or treat this output as completed verification.",
-    ]
-    if error is not None:
-        lines.extend(["", f"**Error**: {error}"])
-    if recovery is not None:
-        lines.extend(["", f"**Recovery**: {recovery}"])
-    return "\n".join(lines) + "\n"
+def _retire_previous_success(manifest_out: Path | None, inputs: list[Path]) -> None:
+    """Delete a previous passing publication manifest.
+
+    Only a regular file holding a publication manifest qualifies, so an
+    input, a symlink, or a FIFO that would block the read, all of which
+    preflight rejects, is never touched.
+    """
+    if manifest_out is None or manifest_out.is_symlink() or not manifest_out.is_file():
+        return
+    try:
+        if any(_paths_alias(manifest_out, path) for path in inputs):
+            return
+        previous = json.loads(manifest_out.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if (
+        isinstance(previous, dict)
+        and str(previous.get("schema_version", "")).startswith(
+            "dart.evidence_publication/"
+        )
+        and previous.get("pass") is True
+    ):
+        manifest_out.unlink(missing_ok=True)
+
+
+def _clear_staging(attach_dir: Path) -> None:
+    """Remove copies a run staged in attach_dir; leave any other file alone."""
+    if attach_dir.is_dir():
+        for child in attach_dir.iterdir():
+            if not _STAGED_NAME.fullmatch(child.name):
+                continue
+            # A link or directory here may lead to an input; never delete it.
+            if child.is_symlink() or not child.is_file():
+                raise ValueError(f"staging entry is not a regular file: {child}")
+            child.unlink()
 
 
 def _write_outputs(
@@ -893,33 +545,9 @@ def _write_outputs(
     return text
 
 
-def _recovery(repo: str, tag: str) -> str:
-    return (
-        f"Re-query {repo} release tag {tag!r}. If the release is a draft, publish "
-        "the draft or use another tag. Exact assets in uploaded state with "
-        "matching size and SHA-256 may be reused. If a same-name asset is "
-        "incomplete, unverifiable, or mismatched, do not delete or clobber it: "
-        "obtain explicit maintainer approval to delete only that exact asset or "
-        "publish under a new tag."
-    )
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("selection", type=Path, help="evidence selection JSON")
-    parser.add_argument("--backend", choices=("manual", "gh-release"), default="manual")
-    parser.add_argument("--repo", default="", help="owner/repo for gh-release")
-    parser.add_argument(
-        "--tag",
-        default="verification-media",
-        type=_release_tag,
-        help="release tag for gh-release",
-    )
-    parser.add_argument(
-        "--yes",
-        action="store_true",
-        help="actually upload (gh-release backend); otherwise dry-run",
-    )
     parser.add_argument("--environment", required=True, type=_non_empty)
     parser.add_argument("--configuration", default="")
     parser.add_argument("--limitation", action="append", default=[], type=_non_empty)
@@ -960,87 +588,49 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest-out", type=Path, help="publication manifest JSON")
     args = parser.parse_args(argv)
 
-    selection: dict[str, Any] | None = None
-    attempt: _PublicationAttempt | None = None
-    repository: str | None = None
-    release_tag: str | None = None
+    out = args.out.resolve()
+    # The section owns its staging directory, so reruns replace its copies.
+    staging = out.with_name(out.name + ".attach")
+    attach_dir: Path | None = None
     try:
-        selection = _load_selection(args.selection)
-        _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
+        raw: Any = None
+        try:
+            raw = json.loads(args.selection.read_text(encoding="utf-8"))
+        finally:
+            # A failed rerun must not leave the previous passing manifest behind.
+            _retire_previous_success(
+                args.manifest_out, _declared_inputs(args.selection, raw)
+            )
+        selection = _load_selection(args.selection, raw)
+        _preflight_outputs(
+            args.selection, selection, args.out, args.manifest_out, staging
+        )
+        _clear_staging(staging)
         selection_pass = _selection_passes(selection)
         semantic_pass = args.semantic_verdict == "pass"
         publication_ready = selection_pass and semantic_pass
-        urls: dict[str, str] = {}
-        uploaded = False
-        status = "not_ready"
-        url_provenance: str | None = None
-        note: str | None = None
-
-        if args.backend == "gh-release":
-            repo = args.repo.strip()
-            if not _GITHUB_REPOSITORY.fullmatch(repo):
-                raise ValueError("--backend gh-release requires --repo owner/repo")
-            repository = repo
-            release_tag = args.tag
-            if args.yes and publication_ready:
-                attempt = _PublicationAttempt(attempt_id=str(uuid.uuid4()))
-                recovery = _recovery(repo, args.tag)
-                publishing = _build_manifest(
-                    selection,
-                    backend=args.backend,
-                    repository=repository,
-                    release_tag=release_tag,
-                    out=args.out,
-                    urls={},
-                    uploaded=False,
-                    status="publishing",
-                    url_provenance=None,
-                    publication_pass=False,
-                    text_oracle=args.text_oracle,
-                    visible_observation=args.visible_observation,
-                    reconciliation=args.reconciliation,
-                    semantic_verdict=args.semantic_verdict,
-                    attempt=attempt,
-                    note=(
-                        "A GitHub publication attempt is in progress. This state "
-                        "invalidates any prior success output."
-                    ),
-                    recovery=recovery,
-                )
-                _write_outputs(
-                    args.out,
-                    args.manifest_out,
-                    _render_publication_state(
-                        "publishing",
-                        attempt_id=attempt.attempt_id,
-                        recovery=recovery,
-                    ),
-                    publishing,
-                )
-                urls = _publish_gh_release(
-                    selection,
-                    args.selection.parent,
-                    repo,
-                    args.tag,
-                    attempt,
-                )
-                uploaded = True
-                status = "published_and_verified"
-                url_provenance = "github_release_view"
-            elif not args.yes and publication_ready:
-                # Dry-run URLs are planning aids, never remote attestations.
-                for artifact in selection["selected"]:
-                    urls[artifact["path"]] = _release_asset_url(
-                        repo, args.tag, artifact
+        # Identical content shares one name; the first suffix wins.
+        names: dict[str, str] = {}
+        attach = [
+            names.setdefault(
+                artifact["sha256"],
+                artifact["sha256"] + Path(artifact["path"]).suffix.lower(),
+            )
+            for artifact in selection["selected"]
+        ]
+        # Only publishable evidence is staged for gh --attach.
+        if publication_ready:
+            staging.mkdir(exist_ok=True)
+            attach_dir = staging
+            for artifact, name in zip(selection["selected"], attach):
+                staged_path = attach_dir / name
+                shutil.copyfile(args.selection.parent / artifact["path"], staged_path)
+                if _sha256(staged_path) != artifact["sha256"]:
+                    raise ValueError(
+                        f"selected artifact {artifact['path']!r} changed content "
+                        "while staging"
                     )
-                status = "dry_run"
-                url_provenance = "predicted"
-                note = (
-                    "dry-run: URLs are predicted, nothing was uploaded; re-run "
-                    "with --yes after maintainer approval"
-                )
-        elif publication_ready:
-            status = "manual_ready"
+        note: str | None = None
 
         if not selection_pass:
             uncovered = sorted(
@@ -1062,7 +652,7 @@ def main(argv: list[str] | None = None) -> int:
 
         section = render_section(
             selection,
-            urls,
+            attach,
             environment=args.environment,
             configuration=args.configuration,
             limitations=args.limitation,
@@ -1075,86 +665,22 @@ def main(argv: list[str] | None = None) -> int:
         )
         manifest = _build_manifest(
             selection,
-            backend=args.backend,
-            repository=repository,
-            release_tag=release_tag,
             out=args.out,
-            urls=urls,
-            uploaded=uploaded,
-            status=status,
-            url_provenance=url_provenance,
+            attach_dir=attach_dir,
+            attach=attach,
             publication_pass=publication_ready,
             text_oracle=args.text_oracle,
             visible_observation=args.visible_observation,
             reconciliation=args.reconciliation,
             semantic_verdict=args.semantic_verdict,
-            attempt=attempt,
             note=note,
         )
         text = _write_outputs(args.out, args.manifest_out, section, manifest)
-    except (
-        OSError,
-        ValueError,
-        KeyError,
-        subprocess.CalledProcessError,
-    ) as error:
-        error_text = str(error)
-        if (
-            isinstance(error, subprocess.CalledProcessError)
-            and error.stderr
-            and error.stderr.strip()
-        ):
-            error_text = f"{error_text}: {error.stderr.strip()}"
-        if selection is not None and attempt is not None:
-            status = (
-                "partial_or_unverified"
-                if attempt.mutation_started
-                else "failed_pre_mutation"
-            )
-            recovery = _recovery(
-                repository or args.repo.strip(), release_tag or args.tag
-            )
-            failure = _build_manifest(
-                selection,
-                backend=args.backend,
-                repository=repository,
-                release_tag=release_tag,
-                out=args.out,
-                urls={},
-                uploaded=False,
-                status=status,
-                url_provenance=None,
-                publication_pass=False,
-                text_oracle=args.text_oracle,
-                visible_observation=args.visible_observation,
-                reconciliation=args.reconciliation,
-                semantic_verdict=args.semantic_verdict,
-                attempt=attempt,
-                note=(
-                    "Publication did not reach a remotely verified success state. "
-                    "Any prior success output remains invalidated."
-                ),
-                error=error_text,
-                recovery=recovery,
-            )
-            try:
-                _write_outputs(
-                    args.out,
-                    args.manifest_out,
-                    _render_publication_state(
-                        status,
-                        attempt_id=attempt.attempt_id,
-                        error=error_text,
-                        recovery=recovery,
-                    ),
-                    failure,
-                )
-            except OSError as write_error:
-                error_text = (
-                    f"{error_text}; additionally failed to persist failure state: "
-                    f"{write_error}"
-                )
-        print(f"error: {error_text}", file=sys.stderr)
+    except (OSError, ValueError, KeyError) as error:
+        if attach_dir is not None:
+            with contextlib.suppress(OSError, ValueError):
+                _clear_staging(attach_dir)
+        print(f"error: {error}", file=sys.stderr)
         return 2
     print(text)
     return 0 if manifest["pass"] else 1

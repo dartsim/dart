@@ -34,9 +34,8 @@
 // programmatic and uses only the public adaptive-contact activation API.
 
 #include "AdaptiveSoftContactModel.hpp"
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -164,9 +163,9 @@ DemoScene makeAdaptiveSoftContactScene()
     DemoSceneSetup setup;
     setup.world = state->model.world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(3.1, 2.4, 2.0),
-        ::osg::Vec3d(0.0, 0.0, 0.42),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(3.1, 2.4, 2.0),
+        GuiVector3(0.0, 0.0, 0.42),
+        GuiVector3(0.0, 0.0, 1.0)};
     setup.preStep = [state] {
       applySettings(*state);
       adaptive_model::prepareStep(state->model);

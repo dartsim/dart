@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/gil.hpp"
 // clang-format on
 
 #include <nanobind/trampoline.h>
@@ -61,7 +62,7 @@ public:
                       dart::collision::CollisionFilter>) {
       NB_OVERRIDE_PURE(ignoresCollision, object1, object2);
     } else {
-      nb::gil_scoped_acquire guard;
+      dartnb::GilScopedAcquire guard;
       // CompositeCollisionFilter has no public Python ignoresCollision method.
       if (!nb::hasattr(nb_trampoline.base(), "ignoresCollision"))
         return CollisionFilterBase::ignoresCollision(object1, object2);

@@ -1,6 +1,6 @@
 # Orchestrator / Executor Operating Model
 
-This file owns the DART 6 AI work-packet contract. The development branch
+This file owns the DART AI work-packet contract. The development branch
 keeps a small workflow surface and a strict compatibility envelope.
 
 ## Roles
@@ -11,7 +11,7 @@ DART AI work can split into two roles when the task is large enough:
   The orchestrator reads the north star, the plan dashboard, and relevant owner
   docs; turns roadmap intent into bounded work packets; and reviews executor
   output against acceptance evidence. Large, team-scale, or explicitly
-  autonomous DART 6 work enters through `dart-ultrawork`, which
+  autonomous DART work enters through `dart-ultrawork`, which
   uses `docs/dev_tasks/<task>/` as the project home and starts from either a
   provided brief or one up-front decision interview.
 - **Executor** - owns implementation of one packet at a time. The executor
@@ -38,7 +38,7 @@ ownership.
 
 ## Review Loop
 
-Review is part of the DART 6 work cycle, not a final courtesy pass.
+Review is part of the DART work cycle, not a final courtesy pass.
 For every meaningful implementation chunk, the orchestrator runs an independent
 review lane after verification and again after cleanup or fixes. A packet is
 done only after the current post-fix state has at least two clean review passes
@@ -79,7 +79,7 @@ dev-task folder, never in a separate tracking system. Every packet records:
   before execution.
 
 When a claim depends on 3D structure or behavior — model/scene loading,
-dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
+dynamics, collision/contact/constraints, simulation stepping, Filament rendering,
 or a visual example — route verification through `dart-verify-sim`. Acceptance
 evidence pairs a text correctness oracle with an assessed claim-tied capture
 using core bounds/raycast view selection and only the `DebugOverlay` layers
@@ -87,9 +87,9 @@ needed by the claim. If visual corroboration is unavailable or genuinely
 irrelevant, the packet must say why and name replacement evidence; a screenshot
 alone never proves correctness.
 
-## DART 6 Compatibility Checks
+## DART Compatibility Checks
 
-Every DART 6 packet that touches code, packages, CI, public docs, or release
+Every DART packet that touches code, packages, CI, public docs, or release
 workflow must state whether it can affect:
 
 - public headers or installed include paths;
@@ -99,7 +99,7 @@ workflow must state whether it can affect:
 - Gazebo/gz-physics or gz-sim downstream behavior;
 - dartpy bindings or published user documentation.
 
-If any answer is yes, acceptance evidence needs the matching DART 6
+If any answer is yes, acceptance evidence needs the matching
 gate.
 
 ## Lifecycle

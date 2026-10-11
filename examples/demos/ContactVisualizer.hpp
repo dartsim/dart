@@ -34,8 +34,7 @@
 #define DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
 
 #include "ContactArrowLayout.hpp"
-
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/dart.hpp>
 

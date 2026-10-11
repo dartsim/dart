@@ -53,7 +53,7 @@ MEASURED_PATHS = (
     "CMakeLists.txt",
     "cmake",
 )
-RELEASE_TAG = re.compile(r"v6\.\d+\.\d+")
+RELEASE_TAG = re.compile(r"v\d+\.\d+\.\d+")
 LOCAL_PATH = re.compile(r"""file:///[^\s'"]+|(?<![\w.~:/-])/[^\s/'"]+/""")
 # Only these comparison-policy failures can be acknowledged by a rationale.
 WAIVABLE_FAILURES = (
@@ -1431,7 +1431,15 @@ def _measure_arm(args, provenance) -> dict:
             "branch": command_output(["git", "branch", "--show-current"]),
             "pr": None,
             "describe": command_output(
-                ["git", "describe", "--tags", "--match", "v6*", "--always", commit]
+                [
+                    "git",
+                    "describe",
+                    "--tags",
+                    "--match",
+                    "v[0-9]*.[0-9]*.[0-9]*",
+                    "--always",
+                    commit,
+                ]
             ),
             "time": datetime.now(timezone.utc).isoformat(),
             "env": env_fingerprint,
@@ -2370,7 +2378,7 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
             raise ValueError(f"unknown release revision: {revision}") from error
 
     if tag is not None and not RELEASE_TAG.fullmatch(tag):
-        raise ValueError("release tag must have the form v6.x.y")
+        raise ValueError("release tag must have the form vX.Y.Z")
     tags = set(git("tag", "--list").splitlines())
     if head is None:
         if tag not in tags:
@@ -2397,7 +2405,7 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
         *sorted(
             branch
             for branch in branches
-            if re.fullmatch(r"origin/release-6\.\d+", branch)
+            if re.fullmatch(r"origin/release-\d+\.\d+", branch)
         ),
     ]
     branch = next(
@@ -2411,6 +2419,11 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
     )
     if branch is None:
         raise ValueError("release candidate is not on main or a release branch")
+    line = re.fullmatch(r"release-(\d+)\.(\d+)", branch)
+    if line and tuple(tag[1:].split(".")[:2]) != line.groups():
+        raise ValueError(
+            f"release candidate on {branch} must carry a v{line[1]}.{line[2]}.Z tag"
+        )
     try:
         previous = [
             name
@@ -2420,7 +2433,7 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
     except subprocess.CalledProcessError as error:
         raise ValueError("release candidate has no previous release") from error
     if not previous or (base is not None and base not in previous):
-        raise ValueError("release base must be an earlier merged v6 tag")
+        raise ValueError("release base must be an earlier merged release tag")
     base_tag = base or max(
         previous, key=lambda name: tuple(map(int, name[1:].split(".")))
     )
@@ -2566,7 +2579,7 @@ def head_fingerprints(record: dict) -> dict:
 
 def chart_data(pages: Path, record: dict) -> None:
     """Use the existing stock github-action-benchmark page and data format."""
-    directory = pages / "performance/dart6-ir"
+    directory = pages / "performance/dart7-ir"
     directory.mkdir(parents=True, exist_ok=True)
     index = directory / "index.html"
     if not index.exists():
@@ -2584,7 +2597,7 @@ def chart_data(pages: Path, record: dict) -> None:
             "repoUrl": "https://github.com/dartsim/dart",
             "entries": {},
         }
-    series = data["entries"].setdefault("DART 6 deterministic counts", [])
+    series = data["entries"].setdefault("DART 7 deterministic counts", [])
     run = record["run"]
     fingerprint = run["env"]["fingerprint"]
     row_fingerprints = head_fingerprints(record)
@@ -2702,7 +2715,7 @@ def chart_data(pages: Path, record: dict) -> None:
                             f" -> {new.get(key, 'unknown')}"
                         )
             previous_benches[bench["name"]] = (point, bench)
-    data["entries"]["DART 6 deterministic counts"] = series[-250:]
+    data["entries"]["DART 7 deterministic counts"] = series[-250:]
     data["lastUpdate"] = series[-1]["date"]
     # The stock page reads this as executable JS; JSON escaping closes script literals.
     data_path.write_text(
@@ -3094,7 +3107,7 @@ def release_markdown(record: dict) -> str:
         "## Ledger",
         "",
     ]
-    if run["branch"].startswith("release-6."):
+    if re.fullmatch(r"release-\d+\.\d+", run["branch"]):
         lines.append(f"{run['branch']} is tracked by tags only.")
     else:
         ledger = record["ledger"]
@@ -3234,7 +3247,7 @@ def write_release(pages: Path, record: dict) -> list[str]:
                 if not descendant and not later:
                     print(f"Keep {run['tag']}: older or diverged candidate")
                     return []
-    if run["branch"].startswith("release-6."):
+    if re.fullmatch(r"release-\d+\.\d+", run["branch"]):
         ledger = {"entries": [], "missing": []}
     else:
         history = pages / "performance/records/main"
@@ -3362,7 +3375,7 @@ def write_publication(pages: Path, record: dict) -> list[str]:
         changed.append(str(path.relative_to(pages)))
         if run["tier"] == "merge" and incoming_source != "local" and not chart_repeated:
             chart_data(pages, record)
-            changed.append("performance/dart6-ir")
+            changed.append("performance/dart7-ir")
     return changed
 
 
@@ -3760,6 +3773,17 @@ def _build_arm(
     harness,
     env,
 ):
+    contact_cmake = Path(source) / "examples/contact_benchmark/CMakeLists.txt"
+    if (
+        CB in drivers
+        and contact_cmake.is_file()
+        and "gui-osg" in contact_cmake.read_text(encoding="utf-8")
+        and not (Path(dependency) / "lib/libosgDB.so").is_file()
+    ):
+        raise ValueError(
+            "historical contact_benchmark requires OpenSceneGraph; "
+            "use --rows gzb,robot or an environment providing OpenSceneGraph"
+        )
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
@@ -3772,7 +3796,15 @@ def _build_arm(
         "-DDART_BUILD_DARTPY=OFF",
         "-DDART_BUILD_PROFILE=OFF",
         "-DDART_ENABLE_SIMD=OFF",
-        "-DDART_BUILD_GUI_OSG=ON",
+        # Historical OSG sources (including DART 7 trees before Filament) build
+        # their GUI only while the environment still provides OSG; DART 7
+        # rejects DART_BUILD_GUI_OSG=ON, and current arms build no GUI.
+        *(
+            ("-DDART_BUILD_GUI_OSG=ON", "-DDART_BUILD_GUI=ON")
+            if (Path(source) / "dart/gui/osg").is_dir()
+            and (Path(dependency) / "lib/libosgDB.so").is_file()
+            else ("-DDART_BUILD_GUI_OSG=OFF", "-DDART_BUILD_GUI=OFF")
+        ),
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",
@@ -3902,7 +3934,7 @@ def broken_arm(rows, args, run, marker) -> dict:
                     "describe",
                     "--tags",
                     "--match",
-                    "v6*",
+                    "v[0-9]*.[0-9]*.[0-9]*",
                     "--always",
                     marker["commit"],
                 ]

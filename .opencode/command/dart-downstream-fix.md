@@ -23,30 +23,31 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 ## Workflow
 
 If the downstream symptom depends on scene/model structure, simulation,
-collision/contact, or OSG output, route through `dart-verify-sim`: establish a
+collision/contact, or Filament output, route through `dart-verify-sim`: establish a
 text oracle, add assessed claim-tied visual evidence, or document a
-visual exception when OSG/Xvfb is unavailable or not applicable.
+visual exception when graphics support is unavailable or not applicable.
 
 1. Read the downstream issue, logs, stack traces, and reproduction steps.
 2. Identify the DART API, component, and invalid usage pattern involved.
 3. Search for related validation and recovery patterns in DART.
 4. Plan the smallest fix and the regression test location.
 5. Decide whether the bug applies to the active release line. For applicable
-   bug fixes, implement on the DART 6 development branch, `main`:
+   bug fixes, implement on the development branch, `main`:
    - branch:
-     `fix/<downstream-project>-<issue-number>-<brief-description>-6-lts`
+     `fix/<downstream-project>-<issue-number>-<brief-description>`
    - add a regression test that reproduces the downstream symptom
    - keep the fix minimal; no unrelated refactors
 6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when
    feasible, and run `pixi run -e gazebo test-gz` when Gazebo/gz-physics
    compatibility could be affected.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
-   After approval, create the PR against `main` with the branch-matching DART
-   6.x release milestone and reference the downstream issue.
+   After approval, create the PR against `main` with the milestone resolved
+   from the target branch's `docs/onboarding/release-management.md`, and
+   reference the downstream issue.
 
 ## Release-Line Conventions
 
-- DART 6 LTS may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
+- DART 6 code (`release-6.20`) may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
 
 ## Output
 

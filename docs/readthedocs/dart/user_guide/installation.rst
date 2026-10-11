@@ -4,8 +4,8 @@ Installation
 Cross-platform
 --------------
 
-For a reproducible DART 6 environment across Linux, macOS, and Windows, use
-Pixi or conda-forge:
+For a reproducible packaged DART environment across Linux, macOS, and Windows,
+use Pixi or conda-forge:
 
 .. code-block:: bash
 
@@ -23,7 +23,7 @@ To install the distro-packaged DART C++ libraries on Ubuntu or Debian:
    sudo apt update
    sudo apt install libdart-all-dev
 
-If you need a newer DART 6 LTS build than your distro provides, prefer the
+If you need a newer packaged DART build than your distro provides, prefer the
 cross-platform package channels above.
 
 macOS

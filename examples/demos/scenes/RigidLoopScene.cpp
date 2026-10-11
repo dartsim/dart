@@ -34,10 +34,9 @@
 // posed into a loop and closed with a BallJointConstraint between links 6 and
 // 10 (highlighted red), with the same per-joint damping controller.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -128,9 +127,9 @@ DemoScene makeRigidLoopScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.0, 1.0, 2.0),
-        ::osg::Vec3d(0.0, 0.0, 0.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(2.0, 1.0, 2.0),
+        GuiVector3(0.0, 0.0, 0.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     // Captured directly (not looked up via world->getSkeleton(0) each call)
     // so the damping controller always targets this scene's own chain.
