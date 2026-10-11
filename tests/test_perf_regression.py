@@ -7895,6 +7895,30 @@ def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
             module.release_scope(*request)
 
 
+def test_release_scope_refuses_a_tag_from_another_release_line(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "DART 6 release",
+    )
+    _perf_git(repo, "tag", "v6.20.0")
+    _perf_git(repo, "checkout", "-b", "release-6.20")
+    head = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>7.0.1</version></package>",
+        "Wrong release line",
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.20", head)
+    monkeypatch.setattr(module, "ROOT", repo)
+
+    with pytest.raises(ValueError, match="release-6.20 must carry a v6.20.Z tag"):
+        module.release_scope(head, None, None)
+
+
 @pytest.mark.parametrize("branch", ["main", "release-7.0"])
 def test_release_scope_recognizes_v7_and_uses_newest_merged_release(
     monkeypatch, tmp_path, branch

@@ -2419,6 +2419,11 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
     )
     if branch is None:
         raise ValueError("release candidate is not on main or a release branch")
+    line = re.fullmatch(r"release-(\d+)\.(\d+)", branch)
+    if line and tuple(tag[1:].split(".")[:2]) != line.groups():
+        raise ValueError(
+            f"release candidate on {branch} must carry a v{line[1]}.{line[2]}.Z tag"
+        )
     try:
         previous = [
             name

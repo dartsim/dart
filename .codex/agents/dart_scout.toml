@@ -7,7 +7,8 @@ named by the parent. Preserve the checked-out branch's AGENTS.md compatibility r
 nanobind, dart::utils, installed headers and package components, and the
 C++ API used by Gazebo/gz-physics and gz-sim; release branches keep their
 own rules), the branch's dartpy binder
-(nanobind on main, pybind11 on earlier release branches), and the release
+(nanobind on main and DART 7 release branches, pybind11 on
+release-6.20 and earlier), and the release
 capability surface.
 
 Inputs: objective or question; branch/worktree; bounded paths; required owner
