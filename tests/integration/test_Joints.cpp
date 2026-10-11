@@ -1632,6 +1632,19 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
       dart::constraint::ConstraintBase::compressPath(leaderSkeleton).get(),
       dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
 
+  // A zero multiplier leaves the leader out of the row, and so of the island.
+  follower->setMimicJoint(leader, 0.0, 0.0);
+  CouplerConstraintTestHelper unscaledConstraint(
+      follower, follower->getMimicDofProperties());
+  unscaledConstraint.update();
+  leaderSkeleton->resetUnion();
+  followerSkeleton->resetUnion();
+  unscaledConstraint.uniteSkeletons();
+  EXPECT_NE(
+      dart::constraint::ConstraintBase::compressPath(leaderSkeleton).get(),
+      dart::constraint::ConstraintBase::compressPath(followerSkeleton).get());
+  follower->setMimicJoint(leader, multiplier, 0.0);
+
   double response = 0.0;
   constraint.excite();
   constraint.applyUnitImpulse(0);

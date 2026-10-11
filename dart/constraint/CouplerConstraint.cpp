@@ -118,13 +118,13 @@ void releaseCouplerMimicProperties(
 // Returns the leader's skeleton if the leader coordinate responds to impulses.
 // An immobile or motion-prescribed leader takes no reaction impulse. The DoF's
 // own actuator decides: a prescribed joint on a floating base still has a
-// reactive child body.
+// reactive child body. A zero multiplier leaves the leader out of the row.
 dart::dynamics::Skeleton* getCouplerReactiveReferenceSkeleton(
     const dart::dynamics::MimicDofProperties& mimicProp)
 {
   const auto* joint = mimicProp.mReferenceJoint;
   const auto* body = joint->getChildBodyNode();
-  if (body == nullptr || !body->isReactive()
+  if (mimicProp.mMultiplier == 0.0 || body == nullptr || !body->isReactive()
       || !dart::dynamics::Joint::isDynamicActuatorType(
           joint->getActuatorType(mimicProp.mReferenceDofIndex)))
     return nullptr;
