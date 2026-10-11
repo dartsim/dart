@@ -2,42 +2,54 @@
 
 Branch `feature/dart7-filament-m6a` is non-tracking from `main` `3d31d568794`.
 It ports the tested Filament work (the earlier branch at `fc4a3d9cc31` plus its
-resolved merge with `main`) as DART 7.0 milestone M6a. Pushing, opening a PR,
-or any other GitHub mutation needs explicit maintainer approval.
+resolved merge with `main`) as DART 7.0 milestone M6a. It is published as
+draft PR #3696 (milestone "DART 7.0.0"). Pushes in the original session were
+maintainer-approved; PR edits, comments, review requests, marking ready, and
+merging each need fresh maintainer approval.
 
 ## Current state
 
 The OSG replacement, the native FTexture use-after-free repair, the C21
-removal hygiene, and the interim camelCase `dartpy.gui` nanobind module are
-implemented and locally qualified on Linux (see `verification.md`). M6b (the
-DART 7.0 program) builds `dart.render` and `dart.viewer` on the C++
-`dart::gui` backend and deletes the interim module before 7.0 rc.
+removal hygiene, the C22 typed `RenderingUnavailableError`, and the interim
+camelCase `dartpy.gui` nanobind module are implemented and locally qualified on
+Linux (see `verification.md`). The first CI rounds fixed Windows macro
+collisions (`near`/`far`), an AppleClang `typeid` warning, a duplicate Filament
+config import on case-insensitive filesystems, line-ending-dependent wheel
+license tests, the `CI Filament` workflow's job-level contexts and targets, and
+offline-cache demo cycling. The first Codex review's four findings (release
+picks, dynamic triangle hashing, cursor window depth, point-cloud overall
+color) are fixed with regressions. M6b (the DART 7.0 program) builds
+`dart.render` and `dart.viewer` on the C++ `dart::gui` backend and deletes the
+interim module before 7.0 rc.
 
 ## Next steps
 
-1. Ask the maintainer to approve pushing the branch and opening a draft PR
-   (`dart-pr`; plain title). Before every push, merge the latest `main` and
-   rerun `pixi run test-all`, `pixi run test-gui`, and
-   `pixi run -e gazebo test-gz`. After the DART 7.0 M0 rollover lands, merge
-   it and retarget the CHANGELOG entry from main's unreleased section.
-2. After publication, watch `CI Filament` (Linux/Windows/macOS). Windows uses
-   Mesa WGL copied next to the test binaries; macOS uses Metal. Pixel bounds
-   were tuned on RTX and Lavapipe; widen only with captured per-backend
-   evidence.
-3. M6a gates before the C2 checkpoint: the C22 headless-import audit, a
-   separately cached Filament SDK stage for x86_64 and aarch64 in
-   `docker/wheels/Dockerfile.manylinux_2_28`, native Windows/macOS wheels, and
-   quiet-host performance on GPU and Lavapipe.
-4. On a quiet host, run the OSG-baseline comparison with
+1. Expected CI failures until resolved upstream: the release-target check
+   fails while `main`'s release-management row still names 6.21.0 (it also
+   skips the Linux and Windows C++ "Build and test" steps that run after
+   lint); merge `main` once the DART 7.0 rollover lands and retarget the
+   CHANGELOG entry. Perf A/B cannot build the OSG-based base revision and needs
+   a maintainer decision.
+2. Before every push, merge the latest `main` and rerun `pixi run test-all`,
+   `pixi run test-gui`, and `pixi run -e gazebo test-gz`. Watch `CI Filament`
+   (Linux/Windows/macOS); Windows uses Mesa WGL copied next to the test
+   binaries and macOS uses Metal. Pixel bounds were tuned on RTX and Lavapipe;
+   widen only with captured per-backend evidence.
+3. After the DART 7.0 GIL finalization fix lands on `main`, apply its guard
+   rules to the GUI binding callbacks and destruction notifications.
+4. M6a gates before the C2 checkpoint: wire `scripts/check_headless_wheel.py`
+   into wheel CI, a separately cached Filament SDK stage for x86_64 and
+   aarch64 in `docker/wheels/Dockerfile.manylinux_2_28`, native
+   Windows/macOS wheels, and quiet-host performance on GPU and Lavapipe.
+5. On a quiet host, run the OSG-baseline comparison with
    `scripts/compare_gui_renderers.py` for completed frames, setup, full RGBA,
    RSS and GPU memory on RTX and Lavapipe. Never stop other sessions' work;
    record the host state. The OSG reference (binary, its 50 libraries,
    `manifest.json`, and the OSG-capable `gui_render_benchmark.cpp`, SHA256
-   `bdfe859c...`, which is in no git ref) exists only in
-   `/tmp/dart-filament-osg-reference-before-removal` (102 MB), and `/tmp` is
-   cleared at reboot. Move it to durable storage first; otherwise rebuild it
-   from `ec43ea419fe` in an environment that still has OpenSceneGraph.
-5. Retire this folder once publication and the remaining gates close; durable
+   `bdfe859c...`, which is in no git ref) is preserved outside the repository
+   on the original development host; otherwise rebuild it from `ec43ea419fe`
+   in an environment that still has OpenSceneGraph.
+6. Retire this folder once publication and the remaining gates close; durable
    facts are already in the owner docs listed in `README.md`.
 
 ## Known follow-ups (not blockers)
