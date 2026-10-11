@@ -43,7 +43,7 @@
 // Configuration and every BodyNode's composite Aspect state every step
 // forever, which is a documented portRisk ("memory grows fast; a host should
 // cap or ring-buffer it") given dart-demos scenes can run indefinitely.
-// Pausing on scrub is done through the host's ImGuiViewer (captured via
+// Pausing on scrub is done through the host's Viewer (captured via
 // onActivate), rather than a WorldNode-owned mViewer pointer that is only
 // valid after addWorldNode -- this also resolves the original's "moveTo()
 // dereferences mViewer before it may be set" portRisk, since the viewer
@@ -57,10 +57,9 @@
 // (a deliberate fix); as a knock-on, '[' at frame 0 now pauses via moveTo(0)
 // where the original was a no-op.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
@@ -119,8 +118,8 @@ struct SoftBodiesState
   std::deque<TimeSlice> history;
   std::size_t currentIndex = 0;
   std::size_t framesRecorded = 0;
-  dart::gui::osg::ImGuiViewer* viewer = nullptr;
-  dart::gui::osg::WorldNode* worldNode = nullptr;
+  GuiViewer* viewer = nullptr;
+  demo_gui::WorldNode* worldNode = nullptr;
   SoftBodyDisplayOptions display;
 };
 
@@ -371,9 +370,9 @@ DemoScene makeSoftBodiesScene()
       "dart://sample/skel/softBodies.skel",
       "Soft-body simulation with recorded-state playback.",
       CameraHome{
-          ::osg::Vec3d(3.0, -3.0, 2.2),
-          ::osg::Vec3d(0.0, 0.0, 0.4),
-          ::osg::Vec3d(0.0, 0.0, 1.0)}});
+          GuiVector3(3.0, -3.0, 2.2),
+          GuiVector3(0.0, 0.0, 0.4),
+          GuiVector3(0.0, 0.0, 1.0)}});
 }
 
 //==============================================================================
@@ -385,9 +384,9 @@ DemoScene makeSoftCubesScene()
       "dart://sample/skel/soft_cubes.skel",
       "Soft cube stack with recorded-state playback.",
       CameraHome{
-          ::osg::Vec3d(2.5, -2.8, 2.0),
-          ::osg::Vec3d(0.0, 0.0, 0.35),
-          ::osg::Vec3d(0.0, 0.0, 1.0)}});
+          GuiVector3(2.5, -2.8, 2.0),
+          GuiVector3(0.0, 0.0, 0.35),
+          GuiVector3(0.0, 0.0, 1.0)}});
 }
 
 //==============================================================================
@@ -399,9 +398,9 @@ DemoScene makeSoftOpenChainScene()
       "dart://sample/skel/soft_open_chain.skel",
       "Open chain of soft links with recorded-state playback.",
       CameraHome{
-          ::osg::Vec3d(2.7, -2.7, 1.9),
-          ::osg::Vec3d(0.0, 0.0, 0.25),
-          ::osg::Vec3d(0.0, 0.0, 1.0)}});
+          GuiVector3(2.7, -2.7, 1.9),
+          GuiVector3(0.0, 0.0, 0.25),
+          GuiVector3(0.0, 0.0, 1.0)}});
 }
 
 } // namespace dart_demos

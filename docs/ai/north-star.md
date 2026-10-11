@@ -10,7 +10,7 @@ Near-term AI-assisted work should prioritize:
 - compatibility evidence for package components and installed headers;
 - development-branch CI and Gazebo gates;
 - branch-local model/tool audits that keep durable project context and
-  text-first, semantically inspected OSG verification discoverable as agents
+  text-first, semantically inspected Filament verification discoverable as agents
   evolve;
 - living roadmap state in `docs/plans/dashboard.md`;
 - clean handoffs through `docs/dev_tasks/`;

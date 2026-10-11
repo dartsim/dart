@@ -57,7 +57,7 @@
   #include <dart/common/detail/AllocatorMemoryLayout.hpp>
 #endif
 
-#include <dart/gui/osg/IncludeImGui.hpp>
+#include <dart/external/imgui/imgui.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -1565,10 +1565,11 @@ void renderMemoryMapRegion(
       "and observation; raise detail rows to resolve byte boundaries.");
   ImGui::PopTextWrapPos();
 
-  // OpenGL2 does not advertise ImGuiBackendFlags_RendererHasVtxOffset and
-  // DART's packaged ImDrawIdx is 16-bit. A separate child gives every region
-  // its own draw list, while the fixed viewport and explicit culling keep the
-  // visible primitive count independent of the requested logical row count.
+  // DART's packaged ImDrawIdx is 16-bit, so keep each draw list small even
+  // when the renderer supports vertex offsets. A separate child gives every
+  // region its own draw list, while the fixed viewport and explicit culling
+  // keep the visible primitive count independent of the requested logical row
+  // count.
   constexpr std::size_t kVisibleRows = 8u;
   constexpr int kDrawListVertexLimit = 56 * 1024;
   constexpr int kCellVertexLimit = kDrawListVertexLimit - 2048;
@@ -1818,8 +1819,8 @@ void renderMemoryMapRegion(
     constexpr int kTooltipVertexStop = 40 * 1024;
     std::size_t shownSegmentCount = 0;
     for (const auto& segment : cell.segments) {
-      // Tooltips have their own draw lists, but OpenGL2 applies the same
-      // 16-bit index limit. Leave ample room for this entry and the bounded
+      // Tooltips have their own draw lists with the same 16-bit index
+      // limit. Leave ample room for this entry and the bounded
       // region-scope footer before emitting more evidence rows.
       if (shownSegmentCount == kTooltipEntryLimit
           || !hasMemoryMapVertexCapacity(
@@ -1859,8 +1860,8 @@ void renderMemoryMapRegion(
     if (shownSegmentCount < cell.segments.size()) {
       ImGui::Separator();
       ImGui::TextDisabled(
-          "%zu additional evidence lanes omitted to keep the OpenGL2 "
-          "tooltip below its 16-bit draw-index limit.",
+          "%zu additional evidence lanes omitted to keep the tooltip "
+          "below its 16-bit draw-index limit.",
           cell.segments.size() - shownSegmentCount);
     }
     ImGui::Separator();
@@ -1880,8 +1881,8 @@ void renderMemoryMapRegion(
 
   if (detailTruncated) {
     ImGui::TextDisabled(
-        "Visible detail capped to keep the OpenGL2 draw list below the "
-        "16-bit index limit; zoom or scroll to inspect another area.");
+        "Visible detail capped to keep the draw list below the 16-bit "
+        "index limit; zoom or scroll to inspect another area.");
   }
 
   if (objectAtlas) {

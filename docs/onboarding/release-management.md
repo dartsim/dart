@@ -105,7 +105,7 @@ uniquely named contexts for both gates.
 
 Development and release branches enforce these gates through the required
 `Asserts enabled (no -DNDEBUG)` context, owned only by CI Linux and
-configuring/building with OpenSceneGraph forcibly disabled, and the required
+configuring/building with the optional GUI forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 

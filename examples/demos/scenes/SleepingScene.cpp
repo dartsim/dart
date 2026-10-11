@@ -43,8 +43,8 @@
 // its bespoke panel controls (stacks, shoot sphere, drop box, deactivation
 // toggle, island coloring) are ported here. Host-owned chrome shared across
 // every scene is intentionally not duplicated: the custom clear color,
-// headlights/key+fill lights/SoftShadowMap, the global configureImGuiStyle()
-// override, the SingleThreaded threading-model call, viewer->simulate(true)
+// headlights/key+fill lights/shadows, the global configureImGuiStyle()
+// override, viewer->simulate(true)
 // autostart, and the "Run simulation" checkbox are all owned by DemoHost.
 // The original 's' key printed awake/asleep stats to stdout; the scene panel
 // shows the same awake/asleep counts continuously.
@@ -55,9 +55,8 @@
 // unconditionally, so this port keeps the original's always-live
 // recolor/aim-line behavior.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -629,9 +628,9 @@ DemoScene makeSleepingScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(6.0, 8.0, 4.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(6.0, 8.0, 4.0),
+        GuiVector3(0.0, 0.0, 1.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.preRefresh = [world, state] {
       recolorIslands(world, *state);

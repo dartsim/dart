@@ -107,9 +107,9 @@ DemoScene makeVehicleScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.0, 3.0, 3.0),
-        ::osg::Vec3d(0.0, 0.0, 0.0),
-        ::osg::Vec3d(0.0, 1.0, 0.0)};
+        GuiVector3(5.0, 3.0, 3.0),
+        GuiVector3(0.0, 0.0, 0.0),
+        GuiVector3(0.0, 1.0, 0.0)};
 
     setup.preStep = [state] {
       auto& vehicle = state->vehicle;

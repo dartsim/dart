@@ -97,7 +97,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev
           version: "2"
 
       - name: Build with coverage
@@ -146,7 +146,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev
           version: "2"
 
       - name: Compile each target as one unity file
@@ -202,7 +202,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          packages: libgl1-mesa-dev
           version: "2"
 
       - name: Check Lint
@@ -215,14 +215,16 @@ jobs:
         run: |
           # Later config/config-py tasks preserve unity in the CMake cache.
           ulimit -c 0
-          pixi run config -- -DCMAKE_UNITY_BUILD=ON -DDART_BUILD_GUI_OSG=ON
+          pixi run config -- -DCMAKE_UNITY_BUILD=ON -DDART_BUILD_GUI=ON
           DART_VERBOSE=ON \
           pixi run test-all
 
       - name: Agent visual verification smoke
         run: |
           rm -rf /tmp/dart-agent-visual-smoke
-          xvfb-run -a -s '-screen 0 640x480x24' \
+          # Display-free Filament capture on the environment's Lavapipe ICD.
+          export VK_DRIVER_FILES="$GITHUB_WORKSPACE/.pixi/envs/default/share/vulkan/icd.d/lvp_icd.x86_64.json"
+          env -u DISPLAY -u WAYLAND_DISPLAY \
             bash -eu -o pipefail <<'VISUAL_SMOKE'
           pixi run agent-capture -- \
               --scene box_on_ground --steps 250 --focus box --auto-views 1 \
@@ -241,8 +243,7 @@ jobs:
           pixi run image-verdict -- \
             /tmp/dart-agent-visual-smoke/dart_main.png
           VISUAL_SMOKE
-          xvfb-run -a -s '-screen 0 640x480x24' \
-            pixi run test-agent-debug-overlay
+          env -u DISPLAY -u WAYLAND_DISPLAY pixi run test-agent-debug-overlay
 
       - name: Upload agent visual verification evidence
         uses: actions/upload-artifact@v7
@@ -314,7 +315,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev
           version: "2"
 
       - name: Build and test with assertions (no -DNDEBUG)
@@ -326,9 +327,8 @@ jobs:
             set -euo pipefail
             BUILD_TYPE=None
             DART_VERBOSE=ON
-            # DART 6 dartpy requires dart-gui-osg, so this required variant
-            # runs the C++ tests with assertions and validates the no-OSG
-            # contract. -O2 keeps NDEBUG undefined; at -O0 the tests take hours.
+            # Exercise the renderer-free C++ build with assertions.
+            # -O2 keeps NDEBUG undefined; at -O0 the tests take hours.
             # Unity builds catch file-local name collisions on Linux too;
             # see code-style.md.
             cmake \
@@ -341,9 +341,8 @@ jobs:
               -DCMAKE_CXX_FLAGS=-O2 \
               -DCMAKE_UNITY_BUILD=ON \
               -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-              -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=TRUE \
               -DDART_BUILD_DARTPY=OFF \
-              -DDART_BUILD_GUI_OSG=OFF \
+              -DDART_BUILD_GUI=OFF \
               -DDART_BUILD_PROFILE=ON \
               -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -385,7 +384,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev
           version: "2"
 
       - name: Build and test with Eigen over-alignment

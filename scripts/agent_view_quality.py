@@ -2,9 +2,8 @@
 
 Geometry-first checks that let a headless agent detect inadequate captures —
 cropped, too far/close, occluded, or ambiguous views — and deterministically
-pick better ones, via an assess-view / `select_viewpoints` workflow over this
-branch's OSG offscreen path
-(`Viewer.captureOffscreen(eye, center, up, fovYDeg, ...)` from WP-ASV).
+pick better ones, via an assess-view / `select_viewpoints` workflow over
+Filament's display-free capture path.
 
 Body bounds come from the core ``Shape.getBoundingBox()`` local AABB and
 occlusion from core raycasts against the world's real collision geometry (the
@@ -42,7 +41,7 @@ DEFAULT_FOVY_DEG = 30.0
 
 @dataclass
 class AgentCamera:
-    """Look-at camera matching Viewer.captureOffscreen's parameters."""
+    """Look-at camera matching Viewer.setCameraHome and its vertical field of view."""
 
     eye: np.ndarray
     center: np.ndarray

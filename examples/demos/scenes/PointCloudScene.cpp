@@ -71,7 +71,7 @@
 
 #if HAVE_OCTOMAP
 
-  #include <dart/gui/osg/osg.hpp>
+  #include "GuiBackend.hpp"
 
   #include <dart/utils/urdf/urdf.hpp>
   #include <dart/utils/utils.hpp>
@@ -114,7 +114,7 @@ struct PointCloudState
   dart::dynamics::VisualAspect* pointCloudVisualAspect = nullptr;
   dart::dynamics::VisualAspect* voxelGridVisualAspect = nullptr;
 
-  ::osg::ref_ptr<dart::gui::osg::GridVisual> grid;
+  GuiPtr<demo_gui::GridVisual> grid;
 
   PointSamplingMode samplingMode = PointSamplingMode::SampleOnRobot;
   bool update = true;
@@ -392,14 +392,14 @@ DemoScene makePointCloudScene()
     state->pointCloudVisualAspect = pointCloudVisual;
     state->voxelGridVisualAspect = voxelVisual;
     state->sensorFrame = sensorFrame;
-    state->grid = new dart::gui::osg::GridVisual();
+    state->grid = makeGui<demo_gui::GridVisual>();
 
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.57, 3.14, 1.64),
-        ::osg::Vec3d(0.00, 0.00, 0.30),
-        ::osg::Vec3d(-0.24, -0.25, 0.94)};
+        GuiVector3(2.57, 3.14, 1.64),
+        GuiVector3(0.00, 0.00, 0.30),
+        GuiVector3(-0.24, -0.25, 0.94)};
 
     setup.preStep = [state, world] {
       if (!state->update)
@@ -442,7 +442,7 @@ DemoScene makePointCloudScene()
     };
 
     setup.onActivate = [state](DemoHostContext& ctx) {
-      ctx.addAttachment(state->grid.get());
+      ctx.addOwnedAttachment(state->grid);
     };
 
     setup.renderPanel = [state] {
@@ -562,16 +562,13 @@ DemoScene makePointCloudScene()
         if (display) {
           int plane = static_cast<int>(state->grid->getPlaneType());
           if (ImGui::RadioButton("XY-Plane", &plane, 0))
-            state->grid->setPlaneType(
-                dart::gui::osg::GridVisual::PlaneType::XY);
+            state->grid->setPlaneType(demo_gui::GridVisual::PlaneType::XY);
           ImGui::SameLine();
           if (ImGui::RadioButton("YZ-Plane", &plane, 1))
-            state->grid->setPlaneType(
-                dart::gui::osg::GridVisual::PlaneType::YZ);
+            state->grid->setPlaneType(demo_gui::GridVisual::PlaneType::YZ);
           ImGui::SameLine();
           if (ImGui::RadioButton("ZX-Plane", &plane, 2))
-            state->grid->setPlaneType(
-                dart::gui::osg::GridVisual::PlaneType::ZX);
+            state->grid->setPlaneType(demo_gui::GridVisual::PlaneType::ZX);
 
           const char* const kOffsetLabels[3] = {"X", "Y", "Z"};
           ImGui::Columns(3);

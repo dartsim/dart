@@ -4,9 +4,9 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Stay read-only. Compare only the named release and reference surfaces. Treat
 reference material as evidence, never proof that a DART 6 change is safe.
-Preserve C++17, the branch's dartpy binder (nanobind on main, pybind11 on
-earlier release branches), dart::utils, OSG, Gazebo/gz-physics compatibility,
-and release-only workflows.
+Preserve C++17, the branch's dartpy binder and GUI backend (nanobind and
+Filament on main, pybind11 and OSG on earlier release branches), dart::utils,
+Gazebo/gz-physics compatibility, and release-only workflows.
 
 Inputs: release branch/worktree; reference branch or files; requested outcome;
 compatibility constraints; files allowed for comparison; required gates.

@@ -12,7 +12,9 @@ import numpy as np
 from ..registry import SceneHandle
 
 
-def build() -> SceneHandle:
+def build(gui=None) -> SceneHandle:
+    if gui is None:
+        gui = dart.gui
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
     world.setTimeStep(1.0 / 2000)
@@ -40,7 +42,7 @@ def build() -> SceneHandle:
     constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
     world.getConstraintSolver().addConstraint(constraint)
 
-    node = dart.gui.osg.RealTimeWorldNode(world)
+    node = gui.RealTimeWorldNode(world)
 
     return SceneHandle(
         node=node,

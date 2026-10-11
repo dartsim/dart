@@ -32,7 +32,7 @@
 
 #include "Theme.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/external/imgui/imgui_internal.h>
 
@@ -188,7 +188,7 @@ void applyModernDarkMetrics()
 }
 
 //==============================================================================
-GuiScaleTheme::GuiScaleTheme(const dart::gui::osg::ImGuiHandler& handler)
+GuiScaleTheme::GuiScaleTheme(const GuiScaleSource& handler)
   : mHandler(handler),
     mContext(ImGui::GetCurrentContext()),
     mBaseStyle(ImGui::GetStyle())
@@ -198,13 +198,13 @@ GuiScaleTheme::GuiScaleTheme(const dart::gui::osg::ImGuiHandler& handler)
   hook.UserData = this;
   hook.Callback = [](ImGuiContext*, ImGuiContextHook* currentHook) {
     auto& theme = *static_cast<GuiScaleTheme*>(currentHook->UserData);
-    const double scale = theme.mHandler.getGuiScale();
+    const double scale = guiLayoutScale(theme.mHandler.getGuiScale());
     if (std::abs(scale - theme.mAppliedScale) <= 1e-6)
       return;
 
     // Scaling previous rounded metrics repeatedly shrinks fractional sizes.
     ImGui::GetStyle() = theme.mBaseStyle;
-    dart::gui::osg::applyImGuiScale(scale);
+    dart_demos::applyGuiScale(scale);
     theme.mAppliedScale = scale;
   };
   mHookId = ImGui::AddContextHook(mContext, &hook);

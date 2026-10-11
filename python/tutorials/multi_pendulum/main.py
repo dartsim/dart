@@ -1,6 +1,7 @@
 """Multi-pendulum exercises. Complete the numbered TODO lessons in Controller."""
 
 import math
+import weakref
 
 import dartpy as dart
 import numpy as np
@@ -156,7 +157,7 @@ class Controller:
                     self.force_countdown[i] -= 1
 
 
-class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
+class PendulumEventHandler(dart.gui.GUIEventHandler):
     def __init__(self, world, controller):
         super().__init__()
         self.world = world
@@ -166,7 +167,7 @@ class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
         self.play_frame = 0
 
     def handle(self, event, action):
-        if event.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if event.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
         key = event.getKey()
         if ord("0") <= key <= ord("9"):
@@ -236,7 +237,7 @@ class PendulumEventHandler(dart.gui.osg.GUIEventHandler):
         self.play_frame += default_playback_frame_step
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, controller, handler):
         super().__init__(world)
         self.world = world
@@ -268,8 +269,9 @@ def build_scene():
 
 def main():
     node = build_scene()
-    viewer = dart.gui.osg.Viewer()
-    node.handler.viewer = viewer
+    viewer = dart.gui.Viewer()
+    # A weak reference avoids a viewer -> handler -> viewer ownership cycle.
+    node.handler.viewer = weakref.proxy(viewer)
     viewer.addWorldNode(node)
     viewer.addEventHandler(node.handler)
     viewer.addInstructionText(
@@ -279,7 +281,7 @@ def main():
         "r: tip constraint; f: joint/body force mode\n"
     )
     print(viewer.getInstructions())
-    viewer.setUpViewInWindow(0, 0, 640, 480)
+    viewer.setUpViewInWindow()
     viewer.setCameraHomePosition([5, 3, 3], [0, 0, -2], [0, 0, 1])
     viewer.run()
 

@@ -79,7 +79,7 @@ jobs:
         id: build
         run: |
           ulimit -c 0
-          pixi run config -- -DDART_BUILD_GUI_OSG=ON
+          pixi run config -- -DDART_BUILD_GUI=ON
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all

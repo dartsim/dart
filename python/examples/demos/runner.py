@@ -1,7 +1,7 @@
 """CLI and keyboard-navigated viewer runtime for the dartpy consolidated
 demos.
 
-This is a plain ``dart.gui.osg.Viewer`` (no ImGui) driven by a single
+This is a Filament keyboard-driven viewer with a single
 ``GUIEventHandler`` navigator instead of the C++ host's panel chrome because
 dartpy has no Python-side ImGui panel API.
 
@@ -11,7 +11,7 @@ Modes:
                           display needed) and exit nonzero on any failure.
   --scene ID --shot PATH [--steps N]
                           Build one scene, step it, capture a PNG, and exit.
-                          Needs a real (or virtual, e.g. Xvfb) display.
+                          No display server is needed on Linux.
   --scene ID (or nothing) Interactive mode: opens a window with the
                           keyboard navigator (n/p next/prev, 0-9 direct
                           select, r rebuild, h help, ESC quit).
@@ -20,11 +20,11 @@ Modes:
 import argparse
 import os
 import sys
-import time
+import weakref
 
 import dartpy as dart
 
-from .registry import make_demo_scenes
+from .registry import get_gui, make_demo_scenes
 
 _DEFAULT_CYCLE_STEPS = 50
 _DEFAULT_SHOT_STEPS = 60
@@ -45,21 +45,19 @@ def _find_scene(scenes, scene_id):
     return next((s for s in scenes if s.id == scene_id), None)
 
 
-def _install_scene(viewer, handle):
+def _install_scene(viewer, handle, gui):
     """Wires a built SceneHandle into the given viewer. Returns state the
     caller must pass back to ``_uninstall_scene`` to tear it down.
     """
 
     viewer.addWorldNode(handle.node, True)
 
-    if handle.shadow:
-        shadow = dart.gui.osg.WorldNode.createDefaultShadowTechnique(viewer)
-        handle.node.setShadowTechnique(shadow)
+    handle.node.setShadowsEnabled(handle.shadow)
 
     grid = None
     if handle.grid:
-        grid = dart.gui.osg.GridVisual()
-        grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.ZX)
+        grid = gui.GridVisual()
+        grid.setPlaneType(gui.GridVisual.PlaneType.ZX)
         grid.setOffset([0, -0.55, 0])
         viewer.addAttachment(grid)
 
@@ -101,7 +99,7 @@ def _uninstall_scene(viewer, handle, state):
 
 def _run_headless_steps(handle, world, steps):
     """Advances a scene deterministically, bypassing RealTimeWorldNode's
-    wall-clock-gated stepping in refresh() (see dart/gui/osg/
+    wall-clock-gated stepping in refresh() (see dart/gui/
     RealTimeWorldNode.cpp) so --cycle/--shot don't depend on real time.
     Physics is only stepped when the scene allows it (kinematic-only scenes
     like atlas_puppet set allow_simulation=False and animate purely through
@@ -160,22 +158,15 @@ def cmd_shot(scenes, scene_id, path, steps):
         print(f"[demos] Failed to build demo '{scene.id}': {exc}", file=sys.stderr)
         return 1
 
-    viewer = dart.gui.osg.Viewer()
-    state = _install_scene(viewer, handle)
-    viewer.setUpViewInWindow(0, 0, 640, 480)
+    gui = get_gui()
+    viewer = gui.Viewer()
+    state = _install_scene(viewer, handle, gui)
+    viewer.setUpViewForCapture(640, 480)
 
     try:
         world = handle.node.getWorld()
         _run_headless_steps(handle, world, steps)
-        # Two frames to settle the render state, then capture -- mirrors the
-        # C++ demos host's headless-shot recipe (examples/demos/
-        # DemoHost.cpp). The actual write happens inside SaveScreen's draw
-        # callback (dart/gui/osg/Viewer.cpp), which may run on a separate
-        # draw thread depending on the viewer's threading model. dartpy has
-        # no setThreadingModel binding to force SingleThreaded, so keep
-        # pumping frames for a short grace period until the file actually
-        # shows up, rather than trust a single extra frame and risk a
-        # silently-truncated/missing PNG.
+        # Settle the render state before the completed capture frame.
         try:
             os.remove(path)
         except FileNotFoundError:
@@ -189,20 +180,16 @@ def cmd_shot(scenes, scene_id, path, steps):
         viewer.frame()
         viewer.frame()
         viewer.captureScreen(path)
-        deadline = time.monotonic() + 2.0
-        while not os.path.exists(path) and time.monotonic() < deadline:
-            viewer.frame()
-            time.sleep(0.02)
+        viewer.frame()
     except Exception as exc:
         print(f"[demos] Failed to capture demo '{scene.id}': {exc}", file=sys.stderr)
         return 1
     finally:
         _uninstall_scene(viewer, handle, state)
 
-    if not os.path.exists(path):
+    if not os.path.isfile(path) or os.path.getsize(path) == 0:
         print(
-            f"[demos] Screenshot for '{scene.id}' did not appear at {path} "
-            "within the grace period.",
+            f"[demos] Screenshot for '{scene.id}' was not written to {path}.",
             file=sys.stderr,
         )
         return 1
@@ -211,20 +198,28 @@ def cmd_shot(scenes, scene_id, path, steps):
     return 0
 
 
-class Navigator(dart.gui.osg.GUIEventHandler):
+class Navigator:
     """Keyboard-driven scene switcher. Reserves n/p/h/r/0-9/ESC; forwards
     anything else to the active scene's key_actions and extra_handler (see
     registry.SceneHandle).
     """
 
-    def __init__(self, viewer, scenes):
+    def __init__(self, viewer, scenes, gui):
         super().__init__()
-        self.viewer = viewer
+        self.gui = gui
+        self._viewer = weakref.ref(viewer)
         self.scenes = scenes
         self.index = -1
         self.running = True
         self._handle = None
         self._state = None
+
+    @property
+    def viewer(self):
+        viewer = self._viewer()
+        if viewer is None:
+            raise RuntimeError("Demo viewer has been destroyed")
+        return viewer
 
     def activate(self, index, *, rebuild=False):
         if not 0 <= index < len(self.scenes):
@@ -243,7 +238,7 @@ class Navigator(dart.gui.osg.GUIEventHandler):
         if self._handle is not None:
             _uninstall_scene(self.viewer, self._handle, self._state)
 
-        self._state = _install_scene(self.viewer, handle)
+        self._state = _install_scene(self.viewer, handle, self.gui)
         self._handle = handle
         self.index = index
 
@@ -286,7 +281,7 @@ class Navigator(dart.gui.osg.GUIEventHandler):
         )
 
     def handle(self, ea, aa):
-        ea_cls = dart.gui.osg.GUIEventAdapter
+        ea_cls = self.gui.GUIEventAdapter
         event_type = ea.getEventType()
         if event_type in (ea_cls.CLOSE_WINDOW, ea_cls.QUIT_APPLICATION):
             self.running = False
@@ -338,8 +333,13 @@ class Navigator(dart.gui.osg.GUIEventHandler):
 
 
 def cmd_interactive(scenes, scene_id):
-    viewer = dart.gui.osg.Viewer()
-    navigator = Navigator(viewer, scenes)
+    gui = get_gui()
+
+    class EventHandler(Navigator, gui.GUIEventHandler):
+        pass
+
+    viewer = gui.Viewer()
+    navigator = EventHandler(viewer, scenes, gui)
     viewer.addEventHandler(navigator)
 
     initial_index = 0
@@ -361,9 +361,9 @@ def cmd_interactive(scenes, scene_id):
             return 1
 
     navigator.print_help()
-    viewer.setUpViewInWindow(0, 0, 1280, 960)
+    viewer.setUpViewInWindow()
 
-    while navigator.running:
+    while navigator.running and not viewer.done():
         try:
             viewer.frame()
         except Exception as exc:

@@ -43,13 +43,11 @@
 // same information continuously, and there is no user-facing console in the
 // GUI. Force/torque arrows are drawn with a SimpleFrame + ArrowShape pool
 // added to the world (as RigidCubesScene's contact-force visuals do), rather
-// than the original's raw OSG geometry attached directly to the viewer's root
-// group, so they are automatically cleaned up when the scene's world is torn
-// down.
+// than raw renderer geometry, so they are automatically cleaned up when the
+// scene's world is torn down.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -375,9 +373,9 @@ DemoScene makeSimulationEventHandlerScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.0, 5.0, 3.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(5.0, 5.0, 3.0),
+        GuiVector3(0.0, 0.0, 1.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.postStep = [world, state] {
       ++state->frameCounter;
@@ -386,37 +384,37 @@ DemoScene makeSimulationEventHandlerScene()
     };
 
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Tab),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Tab),
         "Select next body",
         [state] {
           selectNextBody(*state);
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_BackSpace),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_BackSpace),
         "Select previous body",
         [state] {
           selectPreviousBody(*state);
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Up),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Up),
         "Force +Y",
         [state] {
           applyForce(*state, Eigen::Vector3d(0, state->forceMagnitude, 0));
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Down),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Down),
         "Force -Y",
         [state] {
           applyForce(*state, Eigen::Vector3d(0, -state->forceMagnitude, 0));
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Left),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Left),
         "Force -X",
         [state] {
           applyForce(*state, Eigen::Vector3d(-state->forceMagnitude, 0, 0));
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Right),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Right),
         "Force +X",
         [state] {
           applyForce(*state, Eigen::Vector3d(state->forceMagnitude, 0, 0));

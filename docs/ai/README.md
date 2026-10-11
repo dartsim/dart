@@ -116,7 +116,7 @@ context and across-session project state. Model upgrades therefore audit
 not only configuration, prompts, adapters, hooks, scripts, and tests.
 
 Every target also exercises one representative DART 6 physics investigation
-through `dart-verify-sim`: the same text oracle, assessed OSG view, and
+through `dart-verify-sim`: the same text oracle, assessed Filament view, and
 claim-specific debug layers. Rendering or native image-review limitations are
 reported rather than converted into model-quality claims.
 
@@ -147,10 +147,10 @@ taxonomy.
 
 ## Development Profile
 
-Development and release branches preserve C++17, `dart::utils`, OSG, and
-Gazebo/gz-physics compatibility, and each keeps the dartpy binder it ships
-with: nanobind under `python/dartpy/` on `main`, pybind11 on earlier release
-branches; see
+Development and release branches preserve C++17, `dart::utils`, and
+Gazebo/gz-physics compatibility, and each keeps the dartpy binder and GUI
+backend it ships with: nanobind under `python/dartpy/` and Filament on `main`,
+pybind11 and OSG on earlier release branches; see
 [`python-bindings.md`](../onboarding/python-bindings.md). The DART 6 component
 map is [`architecture.md`](../onboarding/architecture.md). Release and backport
 policy and the branch-local next release live in

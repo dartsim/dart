@@ -1,0 +1,32 @@
+material {
+    name : dartPointColor,
+    shadingModel : unlit,
+    blending : transparent,
+    depthWrite : true,
+    doubleSided : true,
+    requires : [ color, uv0 ],
+    parameters : [
+        { type : sampler2d, name : baseColorTexture },
+        { type : float, name : useBaseColorTexture },
+        { type : float, name : baseColorTextureHasAlpha }
+    ]
+}
+fragment {
+    #include "legacy_texture_sampling.glsl"
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor = getColor();
+        if (materialParams.useBaseColorTexture > 0.5) {
+            vec4 texel = sampleLegacyTexture(materialParams_baseColorTexture, getUV0());
+            if (materialParams.baseColorTextureHasAlpha < 0.5) {
+                texel.a = 1.0;
+            }
+            material.baseColor *= texel;
+        }
+        #if defined(BLEND_MODE_OPAQUE)
+        material.baseColor.a = 1.0;
+        #else
+        material.baseColor.rgb *= material.baseColor.a;
+        #endif
+    }
+}

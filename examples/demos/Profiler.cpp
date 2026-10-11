@@ -32,7 +32,7 @@
 
 #include "Profiler.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/common/Profile.hpp>
 

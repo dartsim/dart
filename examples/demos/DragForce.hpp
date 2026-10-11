@@ -33,7 +33,7 @@
 #ifndef DART_EXAMPLES_DEMOS_DRAGFORCE_HPP_
 #define DART_EXAMPLES_DEMOS_DRAGFORCE_HPP_
 
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/dart.hpp>
 
@@ -81,7 +81,7 @@ public:
   /// handler exists. `onPlainClickSelect` is invoked with the picked body (or
   /// nullptr for a miss) on a plain (non-Ctrl) left-click.
   void installMouseHandler(
-      dart::gui::osg::ImGuiViewer* viewer,
+      GuiViewer* viewer,
       std::function<void(dart::dynamics::BodyNode*)> onPlainClickSelect);
 
   /// Binds the force-line visual to the newly-installed scene's world. Call
@@ -90,7 +90,7 @@ public:
 
   /// Releases the gizmo and clears momentary-drag state. Call from
   /// DemoHost::teardownCurrentScene before the world is destroyed.
-  void reset(dart::gui::osg::ImGuiViewer* viewer);
+  void reset(GuiViewer* viewer);
 
   /// Applies the momentary drag spring and/or the gizmo spring (while
   /// running). Call from the host's composed preStep.
@@ -111,10 +111,10 @@ public:
   void attachGizmo(
       dart::dynamics::BodyNode* body,
       const dart::simulation::WorldPtr& world,
-      dart::gui::osg::ImGuiViewer* viewer);
+      GuiViewer* viewer);
 
   /// Detaches the gizmo, if attached.
-  void detachGizmo(dart::gui::osg::ImGuiViewer* viewer);
+  void detachGizmo(GuiViewer* viewer);
 
   /// Renders the compact "Drag: <body> |F|=.. N" toolbar status line.
   void renderToolbarStatus(double guiScale) const;
@@ -143,7 +143,7 @@ private:
       const Eigen::Vector3d& target);
   void teleportToGizmo();
 
-  dart::gui::osg::ImGuiViewer* mViewer = nullptr;
+  GuiViewer* mViewer = nullptr;
   dart::simulation::WorldPtr mWorld;
 
   // Momentary Ctrl+drag state.
@@ -154,8 +154,8 @@ private:
 
   // Gizmo-on-selection state.
   dart::dynamics::BodyNode* mGizmoBody = nullptr;
-  dart::gui::osg::InteractiveFramePtr mGizmoFrame;
-  dart::gui::osg::InteractiveFrameDnD* mGizmoDnd = nullptr;
+  demo_gui::InteractiveFramePtr mGizmoFrame;
+  demo_gui::InteractiveFrameDnD* mGizmoDnd = nullptr;
 
   // Shared force-line visual, lazily bound to the active world.
   dart::dynamics::SimpleFramePtr mLineFrame;

@@ -73,12 +73,8 @@ NB_MODULE(dartpy, m)
   dart_constraint(m);
   dart_simulation(m);
   dart_utils(m);
-#ifdef DARTPY_GUI_OSG
   dart_gui(m);
   bind_gui_probe(m);
-#else
-  m.def_submodule("gui");
-#endif
 }
 
 } // namespace python

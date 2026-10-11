@@ -32,16 +32,15 @@
 
 #include "DemoHost.hpp"
 
-#include "DisplaySettings.hpp"
 #include "Theme.hpp"
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   #include "memory_diagnostics.hpp"
 #endif
 
-#include <dart/gui/osg/IncludeImGui.hpp>
-
 #include <dart/collision/CollisionDetector.hpp>
+
+#include <dart/external/imgui/imgui.h>
 #ifdef IMGUI_HAS_DOCK
   // DockBuilder lives in the internal header on the docking branch. The
   // compatibility copy exists for system ImGui builds too, so the include is
@@ -52,12 +51,8 @@
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/SoftBodyNode.hpp>
 
-#include <osg/Camera>
-#include <osg/GraphicsContext>
-#include <osg/Viewport>
-#include <osgGA/EventQueue>
-
 #include <algorithm>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -124,8 +119,7 @@ std::string formatKeyActionLabel(const KeyAction& action)
 /// wall-clock budget entirely, so mLowestRealTimeFactor is left at its
 /// never-updated +infinity default (and the smoothed/highest fields would
 /// otherwise misleadingly read 0.00 instead of "not measured").
-bool hasLiveRtfStats(
-    const dart::gui::osg::ImGuiViewer* viewer, const DemoWorldNode* worldNode)
+bool hasLiveRtfStats(const GuiViewer* viewer, const DemoWorldNode* worldNode)
 {
   return worldNode && viewer->isSimulating()
          && std::isfinite(worldNode->getLowestRealTimeFactor());
@@ -223,9 +217,9 @@ SceneCounts collectSceneCounts(const dart::simulation::WorldPtr& world)
 }
 
 //==============================================================================
-/// Forwards ImGui rendering to the host; kept alive by ImGuiHandler's own
+/// Forwards ImGui rendering to the host; kept alive by the viewer's
 /// widget list once registered.
-class HostPanelWidget : public dart::gui::osg::ImGuiWidget
+class HostPanelWidget : public demo_gui::ImGuiWidget
 {
 public:
   explicit HostPanelWidget(DemoHost* host) : mHost(host) {}
@@ -242,23 +236,24 @@ private:
 //==============================================================================
 /// Persistent (never torn down) key handler that dispatches to the active
 /// scene's key actions. Installed once at startup.
-class DemoKeyHandler : public ::osgGA::GUIEventHandler
+class DemoKeyHandler : public demo_events::GUIEventHandler
 {
 public:
   explicit DemoKeyHandler(DemoHost* host) : mHost(host) {}
 
   bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+      const demo_events::GUIEventAdapter& ea,
+      demo_events::GUIActionAdapter&) override
   {
-    if (ea.getHandled())
+    if (guiEventHandled(ea))
       return false;
 
-    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN)
+    if (ea.getEventType() != demo_events::GUIEventAdapter::KEYDOWN)
       return false;
 
     // Never let typing in an ImGui field (e.g. the always-visible "Search
-    // demos..." box) trigger a scene key action -- osgGA delivers key events
-    // to every handler regardless of ImGui focus.
+    // demos..." box) trigger a scene key action. The viewer already drops key
+    // presses while ImGui wants the keyboard; this also covers held keys.
     if (ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
@@ -275,13 +270,13 @@ private:
 DemoHostContext::DemoHostContext(DemoHost& host) : mHost(host) {}
 
 //==============================================================================
-dart::gui::osg::ImGuiViewer* DemoHostContext::viewer() const
+GuiViewer* DemoHostContext::viewer() const
 {
   return mHost.getViewer();
 }
 
 //==============================================================================
-dart::gui::osg::WorldNode* DemoHostContext::worldNode() const
+demo_gui::WorldNode* DemoHostContext::worldNode() const
 {
   return mHost.getWorldNode();
 }
@@ -293,20 +288,22 @@ void DemoHostContext::addTeardown(std::function<void()> teardown)
 }
 
 //==============================================================================
-void DemoHostContext::addAttachment(
-    dart::gui::osg::ViewerAttachment* attachment)
+void DemoHostContext::addOwnedAttachment(
+    GuiPtr<demo_gui::ViewerAttachment> attachment)
 {
   auto* viewer = mHost.getViewer();
-  viewer->addAttachment(attachment);
-  addTeardown([viewer, attachment] { viewer->removeAttachment(attachment); });
+  addGuiAttachment(*viewer, attachment);
+  addTeardown(
+      [viewer, attachment] { removeGuiAttachment(*viewer, attachment); });
 }
 
 //==============================================================================
-void DemoHostContext::addEventHandler(::osgGA::GUIEventHandler* handler)
+void DemoHostContext::addEventHandler(
+    GuiPtr<demo_events::GUIEventHandler> handler)
 {
   auto* viewer = mHost.getViewer();
-  viewer->addEventHandler(handler);
-  addTeardown([viewer, handler] { viewer->removeEventHandler(handler); });
+  addGuiEventHandler(*viewer, handler);
+  addTeardown([viewer, handler] { removeGuiEventHandler(*viewer, handler); });
 }
 
 //==============================================================================
@@ -317,7 +314,7 @@ void DemoHostContext::log(const std::string& message) const
 
 //==============================================================================
 DemoWorldNode::DemoWorldNode(const dart::simulation::WorldPtr& world)
-  : dart::gui::osg::RealTimeWorldNode(world), mStepCount(0)
+  : demo_gui::RealTimeWorldNode(world), mStepCount(0)
 {
 }
 
@@ -487,7 +484,7 @@ DemoHost::DemoHost(
     mSimulationThreads(static_cast<int>(std::min<std::size_t>(
         simulationThreads,
         static_cast<std::size_t>(std::numeric_limits<int>::max())))),
-    mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale.value_or(1.0))),
+    mGuiScale(dart_demos::sanitizeGuiScale(guiScale.value_or(1.0))),
     mAutomaticGuiScale(!guiScale.has_value())
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
@@ -500,7 +497,7 @@ DemoHost::DemoHost(
 
   buildCategories();
   mAvailableCollisionDetectors = getAvailableCollisionDetectorNames();
-  mViewer = new dart::gui::osg::ImGuiViewer();
+  mViewer = makeGui<GuiViewer>();
 
   // Captures dart::common's dtmsg/dtwarn/dterr output (and any other
   // std::cout/std::cerr writes) into the same log the host already uses for
@@ -599,7 +596,7 @@ std::size_t DemoHost::getActiveWorldNodeCount() const
 }
 
 //==============================================================================
-dart::gui::osg::ImGuiViewer* DemoHost::getViewer() const
+GuiViewer* DemoHost::getViewer() const
 {
   return mViewer.get();
 }
@@ -701,18 +698,12 @@ void DemoHost::ensureViewerConfigured()
     return;
   mViewerConfigured = true;
 
-  mViewer->setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
-
-  applyModernDarkColors();
-  applyModernDarkMetrics();
-  mGuiScaleTheme = std::make_unique<GuiScaleTheme>(*mViewer->getImGuiHandler());
-  mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
-
-  mViewer->getCamera()->setClearColor(::osg::Vec4(0.58f, 0.62f, 0.65f, 1.0f));
-
-  mViewer->getImGuiHandler()->addWidget(
-      std::make_shared<HostPanelWidget>(this));
-  mViewer->addEventHandler(new DemoKeyHandler(this));
+  mViewer->setBackgroundColor(Eigen::Vector4d(0.58, 0.62, 0.65, 1.0));
+  mViewer->setVerticalFieldOfView(30.0);
+  if (!mAutomaticGuiScale)
+    dart_demos::setGuiScale(*mViewer, mGuiScale);
+  mViewer->addWidget(std::make_shared<HostPanelWidget>(this));
+  addGuiEventHandler(*mViewer, makeGui<DemoKeyHandler>(this));
 
   // Host-wide picking: plain left-click selects a body for the Inspector;
   // Ctrl+left-drag starts a spring-force drag (DragForce owns both, since it
@@ -726,9 +717,21 @@ void DemoHost::ensureViewerConfigured()
   // switches (unlike a scene's own attachments, which are torn down on
   // switch via ctx.addTeardown). Off by default -- most scenes already
   // render their own ground plane/floor.
-  mGridVisual = new dart::gui::osg::GridVisual();
+  mGridVisual = makeGui<demo_gui::GridVisual>();
   mGridVisual->display(false);
-  mViewer->addAttachment(mGridVisual.get());
+  addGuiAttachment(*mViewer, mGridVisual);
+}
+
+void DemoHost::initializeGuiTheme()
+{
+  if (mGuiScaleTheme || !mViewer->getImGuiContext())
+    return;
+  auto* previous = ImGui::GetCurrentContext();
+  ImGui::SetCurrentContext(mViewer->getImGuiContext());
+  applyModernDarkColors();
+  applyModernDarkMetrics();
+  mGuiScaleTheme = std::make_unique<GuiScaleTheme>(*mViewer);
+  ImGui::SetCurrentContext(previous);
 }
 
 //==============================================================================
@@ -737,12 +740,8 @@ void DemoHost::applyShadowState()
   if (!mWorldNode)
     return;
 
-  if (mShadowsEnabled && mCurrentSceneWantsShadows) {
-    mWorldNode->setShadowTechnique(
-        dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer.get()));
-  } else {
-    mWorldNode->setShadowTechnique(nullptr);
-  }
+  setGuiShadows(
+      *mWorldNode, *mViewer, mShadowsEnabled && mCurrentSceneWantsShadows);
 }
 
 //==============================================================================
@@ -759,6 +758,7 @@ void DemoHost::processPendingSwitch()
 
   const std::string requestedId = *mPendingSceneId;
   mPendingSceneId.reset();
+  mLastSwitchSkipReason.clear();
 
   const DemoScene* scene = findScene(requestedId);
   if (!scene) {
@@ -777,6 +777,10 @@ void DemoHost::processPendingSwitch()
     setup = scene->factory();
     if (!setup.world)
       throw std::runtime_error("factory returned a null world");
+  } catch (const AssetsNotPrefetched& e) {
+    ok = false;
+    failureReason = e.what();
+    mLastSwitchSkipReason = failureReason;
   } catch (const std::exception& e) {
     ok = false;
     failureReason = e.what();
@@ -843,7 +847,7 @@ void DemoHost::teardownCurrentScene()
   mExtraTeardowns.clear();
 
   if (mWorldNode) {
-    mViewer->removeWorldNode(mWorldNode.get());
+    removeGuiWorldNode(*mViewer, mWorldNode);
     mWorldNode = nullptr;
     if (mActiveWorldNodeCount > 0)
       --mActiveWorldNodeCount;
@@ -872,7 +876,7 @@ void DemoHost::installScene(
   mContactVisualizer.onSceneInstalled(mCurrentWorld);
   mCurrentSceneWantsShadows = setup.enableShadows;
 
-  mWorldNode = new DemoWorldNode(mCurrentWorld);
+  mWorldNode = makeGui<DemoWorldNode>(mCurrentWorld);
   applyShadowState();
 
   // Compose the host-level facilities (joint-slider edits, drag-force/
@@ -919,7 +923,7 @@ void DemoHost::installScene(
   mSavedGravity = mGravityEnabled ? mCurrentWorld->getGravity()
                                   : Eigen::Vector3d(0.0, 0.0, -9.81);
 
-  mViewer->addWorldNode(mWorldNode.get());
+  addGuiWorldNode(*mViewer, mWorldNode);
   ++mActiveWorldNodeCount;
 
   mCurrentRenderPanel = setup.renderPanel;
@@ -955,12 +959,10 @@ void DemoHost::installScene(
   // the offscreen capture home keep using the scene's canonical view.
   if (applyCameraHomePose) {
     const CameraHome defaultHome{
-        ::osg::Vec3d(6.0, 8.0, 4.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
-    applyCameraHome(
-        mCurrentCameraHome.value_or(defaultHome),
-        mViewer->getCameraManipulator() != nullptr);
+        GuiVector3(6.0, 8.0, 4.0),
+        GuiVector3(0.0, 0.0, 1.0),
+        GuiVector3(0.0, 0.0, 1.0)};
+    applyCameraHome(mCurrentCameraHome.value_or(defaultHome), true);
   }
 }
 
@@ -983,13 +985,8 @@ void DemoHost::installEmptyFallback()
 //==============================================================================
 void DemoHost::applyCameraHome(const CameraHome& home, bool viaManipulator)
 {
-  if (viaManipulator && mViewer->getCameraManipulator()) {
-    mViewer->getCameraManipulator()->setHomePosition(
-        home.eye, home.center, home.up);
-    mViewer->setCameraManipulator(mViewer->getCameraManipulator());
-  } else {
-    mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
-  }
+  (void)viaManipulator;
+  mViewer->setCameraHome(home.eye, home.center, home.up);
 }
 
 //==============================================================================
@@ -997,7 +994,46 @@ void DemoHost::fitCameraToWorld()
 {
   if (!mCurrentWorld)
     return;
-  dart::gui::osg::applyDefaultCameraPose(*mViewer, mCurrentWorld);
+  Eigen::Vector3d minimum = Eigen::Vector3d::Zero(), maximum = minimum;
+  bool found = false;
+  for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i) {
+    const auto skeleton = mCurrentWorld->getSkeleton(i);
+    if (!skeleton->isMobile())
+      continue;
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      const Eigen::Vector3d position
+          = skeleton->getBodyNode(j)->getTransform().translation();
+      // A diverged body must not make the camera pose invalid.
+      if (!position.allFinite())
+        continue;
+      if (!found) {
+        minimum = maximum = position;
+        found = true;
+      } else {
+        minimum = minimum.cwiseMin(position);
+        maximum = maximum.cwiseMax(position);
+      }
+    }
+  }
+  if (!found) {
+    mViewer->setCameraHome(
+        Eigen::Vector3d(0.0, -20.0, 10.0),
+        Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::UnitZ());
+    return;
+  }
+  const Eigen::Vector3d center = 0.5 * (minimum + maximum),
+                        extent = maximum - minimum;
+  const double distance = std::max(
+      10.0, std::max({extent.x(), extent.y(), extent.z() * 1.2}) * 0.9 + 8.0);
+  const double lookAtZ = std::clamp(0.6 * center.z(), 0.0, 5.0);
+  mViewer->setCameraHome(
+      Eigen::Vector3d(
+          center.x(),
+          center.y() - distance,
+          lookAtZ + std::max(6.0, distance * 0.55)),
+      Eigen::Vector3d(center.x(), center.y(), lookAtZ),
+      Eigen::Vector3d::UnitZ());
 }
 
 //==============================================================================
@@ -1017,9 +1053,20 @@ int DemoHost::listScenes() const
 }
 
 //==============================================================================
-int DemoHost::cycleScenes(int framesPerScene)
+int DemoHost::cycleScenes(
+    int framesPerScene, bool render, int width, int height)
 {
   bool anyFailure = false;
+  std::size_t skipped = 0;
+  if (render) {
+    ensureViewerConfigured();
+    const CameraHome home{
+        GuiVector3(6.0, 8.0, 4.0),
+        GuiVector3(0.0, 0.0, 1.0),
+        GuiVector3(0.0, 0.0, 1.0)};
+    if (!prepareOffscreenContext(width, height, home))
+      return 1;
+  }
 
   // Loop the whole catalog twice in-process: this rapid re-switch robustness
   // gate must not leak world nodes or corrupt state across repeated switches.
@@ -1028,14 +1075,27 @@ int DemoHost::cycleScenes(int framesPerScene)
       requestSceneSwitch(scene.id);
       processPendingSwitch();
 
-      if (mLastSwitchFailed) {
+      if (!mLastSwitchSkipReason.empty()) {
+        std::cout << "[cycle-scenes] demo '" << scene.id
+                  << "' skipped: " << mLastSwitchSkipReason << "\n";
+        ++skipped;
+      } else if (mLastSwitchFailed) {
         std::cerr << "[cycle-scenes] demo '" << scene.id
                   << "' failed to start.\n";
         anyFailure = true;
       }
 
-      for (int frame = 0; frame < framesPerScene && mWorldNode; ++frame)
-        mWorldNode->stepOnce();
+      try {
+        for (int frame = 0; frame < framesPerScene && mWorldNode; ++frame) {
+          mWorldNode->stepOnce();
+          if (render)
+            mViewer->frame();
+        }
+      } catch (const std::exception& error) {
+        std::cerr << "[cycle-scenes] demo '" << scene.id
+                  << "' failed to render: " << error.what() << "\n";
+        anyFailure = true;
+      }
 
       if (mActiveWorldNodeCount != 1) {
         std::cerr << "[cycle-scenes] world-node leak detected after '"
@@ -1046,7 +1106,7 @@ int DemoHost::cycleScenes(int framesPerScene)
   }
 
   std::cout << "[cycle-scenes] cycled " << mScenes.size() << " demo(s) x2, "
-            << framesPerScene << " frame(s) each. "
+            << framesPerScene << " frame(s) each, " << skipped << " skipped. "
             << (anyFailure ? "FAILED" : "OK") << "\n";
   return anyFailure ? 1 : 0;
 }
@@ -1055,58 +1115,17 @@ int DemoHost::cycleScenes(int framesPerScene)
 bool DemoHost::prepareOffscreenContext(
     int width, int height, const CameraHome& home)
 {
-  ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
-      = new ::osg::GraphicsContext::Traits;
-  traits->readDISPLAY();
-  traits->setUndefinedScreenDetailsToDefaultScreen();
-  traits->x = 0;
-  traits->y = 0;
-  traits->width = width;
-  traits->height = height;
-  traits->red = traits->green = traits->blue = 8;
-  traits->alpha = 8;
-  traits->depth = 24;
-  traits->windowDecoration = false;
-  traits->pbuffer = true;
-  traits->doubleBuffer = true;
-
-  ::osg::ref_ptr<::osg::GraphicsContext> gc
-      = ::osg::GraphicsContext::createGraphicsContext(traits.get());
-  if (!gc) {
-    std::cerr << "[headless] Failed to create an off-screen GL context (no "
-                 "usable DISPLAY?).\n";
-    return false;
-  }
-
-  auto* camera = mViewer->getCamera();
-  camera->setGraphicsContext(gc.get());
-  camera->setViewport(new ::osg::Viewport(0, 0, width, height));
-  camera->setProjectionMatrixAsPerspective(
-      30.0, static_cast<double>(width) / height, 0.1, 1000.0);
-  const GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
-  camera->setDrawBuffer(buffer);
-  camera->setReadBuffer(buffer);
-
-  // SingleThreaded makes Viewer::captureScreen's final-draw callback complete
-  // inside frame(). Other OSG threading models may run draw callbacks on a
-  // separate thread, which would make a single extra frame an unreliable
-  // screenshot completion point for the headless CLI path.
-  mViewer->setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
-  mViewer->setCameraManipulator(nullptr);
+  mGuiScaleTheme.reset();
+  mViewer->setCameraHome(home.eye, home.center, home.up);
   mViewer->simulate(false);
-  camera->setViewMatrixAsLookAt(home.eye, home.center, home.up);
-
-  mViewer->realize();
-  if (!mViewer->isRealized()) {
-    std::cerr << "[headless] Viewer failed to realize off-screen.\n";
+  try {
+    mViewer->setUpViewForCapture(width, height);
+  } catch (const std::exception& error) {
+    std::cerr << "[headless] Failed to create an off-screen capture context: "
+              << error.what() << "\n";
     return false;
   }
-
-  if (auto* queue = mViewer->getEventQueue()) {
-    queue->windowResize(0, 0, width, height);
-    queue->setMouseInputRange(0.0f, 0.0f, width, height);
-  }
-
+  initializeGuiTheme();
   return true;
 }
 
@@ -1167,9 +1186,9 @@ int DemoHost::runHeadlessShot(
 #endif
 
   const CameraHome defaultHome{
-      ::osg::Vec3d(6.0, 8.0, 4.0),
-      ::osg::Vec3d(0.0, 0.0, 1.0),
-      ::osg::Vec3d(0.0, 0.0, 1.0)};
+      GuiVector3(6.0, 8.0, 4.0),
+      GuiVector3(0.0, 0.0, 1.0),
+      GuiVector3(0.0, 0.0, 1.0)};
   const CameraHome home = mCurrentCameraHome.value_or(defaultHome);
 
   if (!prepareOffscreenContext(width, height, home))
@@ -1187,36 +1206,32 @@ int DemoHost::runHeadlessShot(
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   if (mDebugScrollMemoryPanelTicks > 0) {
-    if (auto* queue = mViewer->getEventQueue()) {
-      // Hover inside the right-side scene panel so ImGui routes the wheel to
-      // the Memory tab content. osgGA Y grows upward and the ImGui handler
-      // flips it, so mid-height works in either convention; the fixed inset
-      // stays inside the panel for every supported width.
-      const float hoverX = static_cast<float>(width) - 60.0f;
-      const float hoverY = static_cast<float>(height) / 2.0f;
-      mViewer->getCamera()->setViewMatrixAsLookAt(
-          home.eye, home.center, home.up);
-      queue->mouseMotion(hoverX, hoverY);
+    auto* previous = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(mViewer->getImGuiContext());
+    const float hoverX = static_cast<float>(width) - 60.0f;
+    const float hoverY = static_cast<float>(height) / 2.0f;
+    applyCameraHome(home, false);
+    ImGui::GetIO().AddMousePosEvent(hoverX, hoverY);
+    mViewer->frame();
+    for (int tick = 0; tick < mDebugScrollMemoryPanelTicks; ++tick) {
+      ImGui::GetIO().AddMousePosEvent(hoverX, hoverY);
+      ImGui::GetIO().AddMouseWheelEvent(0.0f, -1.0f);
       mViewer->frame();
-      for (int tick = 0; tick < mDebugScrollMemoryPanelTicks; ++tick) {
-        queue->mouseMotion(hoverX, hoverY);
-        queue->mouseScroll(::osgGA::GUIEventAdapter::SCROLL_DOWN);
-        mViewer->frame();
-        char scrollSuffix[24];
-        std::snprintf(
-            scrollSuffix, sizeof(scrollSuffix), ".scroll%04d.png", tick);
-        const std::string tickPath = shotPath + scrollSuffix;
-        std::remove(tickPath.c_str());
-        mViewer->captureScreen(tickPath);
-        mViewer
-            ->frame(); // SaveScreen writes this tick's PNG during this frame.
-      }
+      char scrollSuffix[24];
+      std::snprintf(
+          scrollSuffix, sizeof(scrollSuffix), ".scroll%04d.png", tick);
+      const std::string tickPath = shotPath + scrollSuffix;
+      std::remove(tickPath.c_str());
+      mViewer->captureScreen(tickPath);
+      mViewer->frame();
     }
+    ImGui::SetCurrentContext(previous);
   }
+
 #endif
 
-  // Re-pin the view (realize() may have reset it) and draw, then capture.
-  mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
+  // Re-pin the view and draw, then capture.
+  applyCameraHome(home, false);
   mViewer->frame();
   mViewer->frame();
   mViewer->captureScreen(shotPath);
@@ -1240,33 +1255,25 @@ int DemoHost::run(std::optional<int> width, std::optional<int> height)
 {
   ensureViewerConfigured();
 
-  mViewer->setUpViewInWindow(
-      0,
-      0,
-      width.value_or(kDefaultWindowWidth),
-      height.value_or(kDefaultWindowHeight));
-
-  if (!mViewer->isRealized())
-    mViewer->realize();
-
-  if (!mViewer->isRealized()) {
-    std::cerr << "Failed to create the demos window.\n";
+  mGuiScaleTheme.reset();
+  try {
+    if (!width && !height)
+      mViewer->setUpViewInWindow();
+    else
+      mViewer->setUpViewInWindow(
+          0,
+          0,
+          width.value_or(kDefaultWindowWidth),
+          height.value_or(kDefaultWindowHeight));
+  } catch (const std::exception& error) {
+    std::cerr << "Failed to create the demos window: " << error.what() << "\n";
     return 1;
   }
 
-  auto* window = dynamic_cast<::osgViewer::GraphicsWindow*>(
-      mViewer->getCamera()->getGraphicsContext());
-  if (window) {
-    const auto metrics = queryDisplayMetrics(*window);
-    if (mAutomaticGuiScale && metrics.guiScale)
-      setGuiScale(*metrics.guiScale);
-    WindowRectangle current;
-    window->getWindowRectangle(
-        current.x, current.y, current.width, current.height);
-    const auto fitted
-        = fitInitialWindow(current, metrics, mGuiScale, width, height);
-    window->setWindowRectangle(fitted.x, fitted.y, fitted.width, fitted.height);
-  }
+  mViewer->setWindowTitle("DART demos");
+  initializeGuiTheme();
+  if (mAutomaticGuiScale)
+    mGuiScale = guiScale(*mViewer);
   mNextDpiCheck
       = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
 
@@ -1298,11 +1305,11 @@ int DemoHost::run(std::optional<int> width, std::optional<int> height)
 //==============================================================================
 void DemoHost::setGuiScale(double scale)
 {
-  const double sanitized = dart::gui::osg::sanitizeGuiScale(scale);
+  const double sanitized = dart_demos::sanitizeGuiScale(scale);
   if (std::abs(mGuiScale - sanitized) <= 1e-6)
     return;
   mGuiScale = sanitized;
-  mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
+  dart_demos::setGuiScale(*mViewer, mGuiScale);
   mDockLayoutResetRequested = true;
   mMeasuredToolbarHeight = 0.0f;
   mMeasuredBottomHeight = 0.0f;
@@ -1311,12 +1318,11 @@ void DemoHost::setGuiScale(double scale)
 //==============================================================================
 void DemoHost::updateAutomaticGuiScale()
 {
-  auto* window = dynamic_cast<::osgViewer::GraphicsWindow*>(
-      mViewer->getCamera()->getGraphicsContext());
-  if (window) {
-    const auto metrics = queryDisplayMetrics(*window);
-    if (metrics.guiScale)
-      setGuiScale(*metrics.guiScale);
+  const double detected = guiScale(*mViewer);
+  if (std::abs(mGuiScale - detected) > 1e-6) {
+    mGuiScale = detected;
+    mDockLayoutResetRequested = true;
+    mMeasuredToolbarHeight = mMeasuredBottomHeight = 0.0f;
   }
 }
 
@@ -1352,7 +1358,7 @@ bool DemoHost::handleKey(int key)
   // Case-insensitive fallback: try the opposite-case alphabetic key so a scene
   // that binds 'q' still responds to a Shift-held 'Q' (and vice versa). Only
   // ASCII letters are folded; special keys (arrows, Tab, ...) carry large
-  // osgGA KeySymbol codes and are left untouched.
+  // GUIEventAdapter KeySymbol codes and are left untouched.
   if (key >= 0 && key <= 255 && std::isalpha(static_cast<unsigned char>(key))) {
     const int lower = std::tolower(static_cast<unsigned char>(key));
     const int alt = (key == lower)
@@ -1371,8 +1377,10 @@ bool DemoHost::handleKey(int key)
 //==============================================================================
 void DemoHost::renderPanels()
 {
+  if (mAutomaticGuiScale)
+    updateAutomaticGuiScale();
   const ImGuiIO& io = ImGui::GetIO();
-  const float scale = static_cast<float>(mGuiScale);
+  const float scale = static_cast<float>(guiLayoutScale(mGuiScale));
   const float screenW = std::max(1.0f, io.DisplaySize.x);
   const float screenH = std::max(1.0f, io.DisplaySize.y);
 
@@ -1527,7 +1535,7 @@ void DemoHost::renderToolbar()
 {
   const bool hasScene = mWorldNode != nullptr;
   const bool simulating = mViewer->isSimulating();
-  const float scale = static_cast<float>(mGuiScale);
+  const float scale = static_cast<float>(guiLayoutScale(mGuiScale));
 
   ImGui::TextColored(ImVec4(0.42f, 0.70f, 1.0f, 1.0f), "DART");
   ImGui::SameLine();
@@ -1627,13 +1635,13 @@ void DemoHost::renderToolbar()
   }
 
   sameLineIfEnoughRoom(120.0f * scale);
-  mDragForce.renderToolbarStatus(mGuiScale);
+  mDragForce.renderToolbarStatus(guiLayoutScale(mGuiScale));
 }
 
 //==============================================================================
 void DemoHost::renderRuntimeControls()
 {
-  const float scale = static_cast<float>(mGuiScale);
+  const float scale = static_cast<float>(guiLayoutScale(mGuiScale));
 
   sameLineIfEnoughRoom(250.0f * scale);
   ImGui::SetNextItemWidth(clampedItemWidth(170.0f * scale, 120.0f * scale));
@@ -1695,15 +1703,17 @@ void DemoHost::renderViewMenu()
   if (mGridVisual) {
     static const char* const kPlaneNames[] = {"XY", "YZ", "ZX"};
     int planeIndex = static_cast<int>(mGridVisual->getPlaneType());
-    ImGui::SetNextItemWidth(120.0f * static_cast<float>(mGuiScale));
+    ImGui::SetNextItemWidth(
+        120.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
     if (ImGui::Combo(
             "Plane", &planeIndex, kPlaneNames, IM_ARRAYSIZE(kPlaneNames))) {
       mGridVisual->setPlaneType(
-          static_cast<dart::gui::osg::GridVisual::PlaneType>(planeIndex));
+          static_cast<demo_gui::GridVisual::PlaneType>(planeIndex));
     }
 
     float cellSize = static_cast<float>(mGridVisual->getMinorLineStepSize());
-    ImGui::SetNextItemWidth(120.0f * static_cast<float>(mGuiScale));
+    ImGui::SetNextItemWidth(
+        120.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
     if (ImGui::SliderFloat(
             "Cell size",
             &cellSize,
@@ -1716,7 +1726,8 @@ void DemoHost::renderViewMenu()
     }
 
     int numCells = static_cast<int>(mGridVisual->getNumCells());
-    ImGui::SetNextItemWidth(120.0f * static_cast<float>(mGuiScale));
+    ImGui::SetNextItemWidth(
+        120.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
     if (ImGui::SliderInt(
             "Num cells", &numCells, 2, 100, "%d", ImGuiSliderFlags_AlwaysClamp)
         && numCells > 0) {
@@ -1730,16 +1741,16 @@ void DemoHost::renderViewMenu()
     mViewer->switchHeadlights(headlights);
 
   ImGui::Separator();
-  if (ImGui::Checkbox("Automatic DPI scaling", &mAutomaticGuiScale)
-      && mAutomaticGuiScale) {
-    updateAutomaticGuiScale();
+  if (ImGui::Checkbox("Automatic DPI scaling", &mAutomaticGuiScale)) {
+    mViewer->setAutomaticGuiScale(mAutomaticGuiScale);
+    if (mAutomaticGuiScale)
+      updateAutomaticGuiScale();
   }
   float guiScale = static_cast<float>(mGuiScale);
-  const float minGuiScale
-      = static_cast<float>(dart::gui::osg::getMinGuiScale());
-  const float maxGuiScale
-      = static_cast<float>(dart::gui::osg::getMaxGuiScale());
-  ImGui::SetNextItemWidth(160.0f * static_cast<float>(mGuiScale));
+  const float minGuiScale = static_cast<float>(0.5);
+  const float maxGuiScale = static_cast<float>(4.0);
+  ImGui::SetNextItemWidth(
+      160.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
   if (ImGui::SliderFloat(
           "GUI scale",
           &guiScale,
@@ -1831,7 +1842,7 @@ void DemoHost::renderInspectorSection()
         ImVec2(
             0.0f,
             std::min(
-                180.0f * static_cast<float>(mGuiScale),
+                180.0f * static_cast<float>(guiLayoutScale(mGuiScale)),
                 ImGui::GetContentRegionAvail().y * 0.45f)),
         true,
         ImGuiWindowFlags_HorizontalScrollbar);
@@ -1898,7 +1909,7 @@ void DemoHost::renderToolsSection()
   }
 
   if (ImGui::CollapsingHeader("Drag Force", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mDragForce.renderTunables(mGuiScale);
+    mDragForce.renderTunables(guiLayoutScale(mGuiScale));
   }
 
   if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -1991,7 +2002,7 @@ void DemoHost::renderDiagnostics()
             ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
             : std::size_t{0};
 
-  dart::gui::osg::PerformanceStatsData stats;
+  demo_gui::PerformanceStatsData stats;
   stats.frame = static_cast<int>(mWorldNode ? mWorldNode->getStepCount() : 0u);
   stats.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
   stats.sceneName = mCurrentSceneTitle;
@@ -2045,11 +2056,11 @@ void DemoHost::renderDiagnostics()
 void DemoHost::renderLogSection(float height)
 {
   ImGui::Checkbox("Info", &mLogShowInfo);
-  sameLineIfEnoughRoom(95.0f * static_cast<float>(mGuiScale));
+  sameLineIfEnoughRoom(95.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
   ImGui::Checkbox("Warning", &mLogShowWarning);
-  sameLineIfEnoughRoom(72.0f * static_cast<float>(mGuiScale));
+  sameLineIfEnoughRoom(72.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
   ImGui::Checkbox("Error", &mLogShowError);
-  sameLineIfEnoughRoom(100.0f * static_cast<float>(mGuiScale));
+  sameLineIfEnoughRoom(100.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
   ImGui::Checkbox("Autoscroll", &mLogAutoscroll);
   sameLineIfEnoughRoom(calcButtonWidth("Copy"));
   if (ImGui::Button("Copy")) {

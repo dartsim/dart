@@ -214,7 +214,7 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
     "${PROJECT_SOURCE_DIR}/examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.cpp"
     # The controller sources are GUI-free and are reused as-is.
     # AtlasSimbiconScene.cpp is deliberately excluded: it is the only file in
-    # that directory that pulls in OSG and ImGui.
+    # that directory that pulls in the GUI and ImGui.
     "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/Controller.cpp"
     "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/State.cpp"
     "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/StateMachine.cpp"
@@ -426,4 +426,90 @@ if(TARGET dart-utils)
     dart_add_test("integration" test_ForwardKinematics)
     target_link_libraries(test_ForwardKinematics dart-utils-urdf)
   endif()
+endif()
+
+# GUI contracts include actual renderer tests when the optional component is built.
+if(TARGET dart-gui)
+  find_package(PNG REQUIRED)
+  find_package(JPEG REQUIRED)
+  find_package(glfw3 REQUIRED)
+  dart_add_test("integration" test_GuiDescriptors)
+  dart_add_test("integration" test_GuiInteractions)
+  dart_add_test("integration" test_GuiViewer)
+  dart_add_test("integration" test_GuiParity)
+  dart_add_test("integration" test_GuiImageDecoders)
+  dart_add_test("integration" test_GuiMesh)
+  dart_add_test("integration" test_FilamentBackend)
+  foreach(
+    gui_test
+    GuiDescriptors
+    GuiInteractions
+    GuiViewer
+    GuiParity
+    GuiImageDecoders
+    GuiMesh
+    FilamentBackend
+  )
+    target_link_libraries(test_${gui_test} dart-gui)
+    set_tests_properties(test_${gui_test} PROPERTIES LABELS "gui;filament")
+    if(gui_test STREQUAL "FilamentBackend")
+      target_link_libraries(
+        test_${gui_test}
+        PNG::PNG
+        JPEG::JPEG
+        glfw
+        Filament::filament
+      )
+      target_compile_features(test_${gui_test} PRIVATE cxx_std_20)
+      set_tests_properties(
+        test_${gui_test}
+        PROPERTIES LABELS "gui;gui-device;filament;filament-headless"
+      )
+      set_property(
+        TEST test_${gui_test}
+        PROPERTY ENVIRONMENT "GTEST_FILTER=FilamentBackend.*"
+      )
+      add_test(
+        NAME test_FilamentNative
+        COMMAND test_FilamentBackend --gtest_filter=FilamentNative.*
+      )
+      set_tests_properties(
+        test_FilamentNative
+        PROPERTIES LABELS "gui;gui-device;filament-native"
+      )
+      # A filter that selects nothing must fail instead of passing silently.
+      set_tests_properties(
+        test_${gui_test}
+        test_FilamentNative
+        PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+      )
+    endif()
+    if(gui_test STREQUAL "GuiParity" OR gui_test STREQUAL "GuiMesh")
+      target_link_libraries(test_${gui_test} PNG::PNG)
+      set_tests_properties(
+        test_${gui_test}
+        PROPERTIES LABELS "gui;gui-device;filament;filament-headless"
+      )
+    endif()
+    if(gui_test STREQUAL "GuiImageDecoders")
+      target_sources(
+        test_${gui_test}
+        PRIVATE ${DART_SOURCE_DIR}/dart/gui/detail/image_decoders.cpp
+      )
+    endif()
+    if(NOT gui_test STREQUAL "FilamentBackend")
+      target_compile_features(test_${gui_test} PRIVATE cxx_std_17)
+    endif()
+  endforeach()
+else()
+  # Lint formats the GUI tests in GUI-off configurations too.
+  dart_format_add(
+    test_GuiDescriptors.cpp
+    test_GuiInteractions.cpp
+    test_GuiViewer.cpp
+    test_GuiParity.cpp
+    test_GuiImageDecoders.cpp
+    test_GuiMesh.cpp
+    test_FilamentBackend.cpp
+  )
 endif()

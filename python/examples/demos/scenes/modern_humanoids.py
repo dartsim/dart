@@ -5,7 +5,6 @@ import numpy as np
 
 from ..registry import SceneHandle
 
-
 MODEL_URIS = {
     "atlas-v5": (
         "model://atlas-v5/0d92c25f336db51049a9516de46886838e6ea596/"
@@ -85,7 +84,7 @@ def _build(world) -> SceneHandle:
         print(f"{dof.getName()}: {position:.3f} rad")
 
     return SceneHandle(
-        node=dart.gui.osg.WorldNode(world),
+        node=dart.gui.WorldNode(world),
         camera_home=(
             [3.0, 2.5, 1.8],
             [0.0, 0.0, robot.getRootBodyNode().getWorldTransform().translation()[2]],

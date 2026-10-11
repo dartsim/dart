@@ -36,7 +36,6 @@ endif()
 
 if(
   gui IN_LIST DART_TEST_COMPONENTS
-  OR gui-osg IN_LIST DART_TEST_COMPONENTS
   OR external-imgui IN_LIST DART_TEST_COMPONENTS
 )
   add_executable(package_gui gui.cpp)

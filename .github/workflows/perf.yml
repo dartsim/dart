@@ -117,7 +117,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Build and measure
         run: |
@@ -459,7 +459,7 @@ jobs:
         if: ${{ steps.scope.outputs.mode == 'ab' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Measure and apply the parent rules
         if: ${{ steps.scope.outputs.mode == 'ab' }}
@@ -765,7 +765,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Measure HEAD and nightly diagnostics
         id: measure
@@ -902,7 +902,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+          sudo apt-get install -y libgl1-mesa-dev valgrind
 
       - name: Measure the candidate against the previous release
         run: |

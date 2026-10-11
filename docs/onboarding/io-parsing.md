@@ -34,11 +34,12 @@ requests. Cache identities include model ID, revision, and manifest content;
 whole-directory publication preserves DART 6 mesh-relative texture loading.
 Corruption fails with the affected cache directory; remove that exact directory
 and prefetch again to repair it. Do not change cache contents while a loaded
-scene is using them: OSG reads some textures directly from local paths.
+scene is using them: the GUI renderer reads some textures directly from local
+paths.
 
 Verification pairs `test-robot-assets` topology/geometry/inertia/short-step
-checks with inspected OSG captures. The default C++/Python retriever tests use
-deterministic local fixtures rather than online vendor availability.
+checks with inspected Filament captures. The default C++/Python retriever tests
+use deterministic local fixtures rather than online vendor availability.
 
 The Hubo puppet scene and installed `dart://sample/urdf/drchubo/` resources
 have been retired. The Fetch demo is retired, while its model remains a parser

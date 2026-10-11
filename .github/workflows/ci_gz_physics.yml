@@ -64,7 +64,7 @@ jobs:
       - name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev
           version: 1.0
 
       - name: Test gz-physics

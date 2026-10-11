@@ -17,6 +17,7 @@ Load this skill when writing or debugging tests.
 pixi run test         # Quick test run
 pixi run test-py      # Python tests
 pixi run test-all     # Build defaults and run C++/Python tests
+pixi run test-gui     # GUI tests except native-window tests; needs a graphics device
 pixi run -e gazebo test-gz # Gazebo/gz-physics compatibility gate
 ```
 
@@ -61,7 +62,7 @@ gh run view <RUN_ID> --log-failed
 ## Simulation And Visual End-to-End Checks
 
 When a failure or change depends on scene structure, dynamics,
-collision/contact, simulation stepping, OSG output, or a visual example, also
+collision/contact, simulation stepping, Filament output, or a visual example, also
 load `dart-verify-sim`. Use its text-first oracle and then an assessed,
 claim-tied capture through `DebugOverlay`. Record a concrete no-visual reason
 only when capture is unavailable or not applicable.
@@ -75,5 +76,15 @@ only when capture is unavailable or not applicable.
   pins `BUILD_TESTING=ON`, so that graph also runs CTest and pytest. Pair it
   with `pixi run lint`; use `pixi run test` or `pixi run test-py` for focused
   reruns and clearer failure attribution.
+- `pixi run test`, `test-py`, and `test-all` build the GUI but skip tests that
+  need a graphics device (CTest label `gui-device` and the Python GUI rendering
+  tests). Device-free GUI tests remain in the default gates; the `gui` label
+  covers all GUI tests.
+  GUI, Filament, and `dartpy.gui` changes also need `pixi run test-gui`, which
+  selects `-L gui -LE filament-native` in the same `build/<env>/cpp/Release`
+  tree. Native-window tests need a desktop session or Xvfb:
+  `ctest --test-dir build/<env>/cpp/Release -L filament-native`
+  (`ctest --test-dir build/<env>/cpp -C Release -L filament-native` on
+  Windows).
 - For package, collision, constraint, or dependency changes that could affect
   downstream users, run `pixi run -e gazebo test-gz`.

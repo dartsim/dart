@@ -43,7 +43,7 @@ exercised locally on this branch.
 
 Use `dart-model-upgrade` for future model or coding-agent changes; its audit
 includes configuration, prompts, generated adapters, runtime tooling, durable
-`docs/` context, session handoffs, and a representative DART 6 OSG
+`docs/` context, session handoffs, and a representative DART 6 Filament
 visual-debug investigation.
 
 Inspect project hooks with `/hooks`. Project hooks are advisory and may be

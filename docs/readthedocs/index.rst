@@ -107,6 +107,7 @@ If you use DART in an academic publication, please consider citing this
    :caption: dart (C++)
 
    dart/user_guide/installation
+   dart/user_guide/visualization
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide
