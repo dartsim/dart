@@ -182,3 +182,6 @@ compile_flags.txt
 
 # Temporary apt downloads
 .tmp_apt/
+
+# PR evidence staged for gh --attach by scripts/evidence_publish.py
+*.attach/
