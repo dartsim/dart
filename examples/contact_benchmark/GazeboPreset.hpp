@@ -365,9 +365,9 @@ inline std::optional<std::string> findUnsupportedIgnoredGazeboSdf(
   }
   if (std::string_view(element.Name()) == "visual") {
     // SdfParser still parses visuals while loading. Check the fields it
-    // reads to prevent malformed/unsupported pose encodings from throwing
-    // or overflowing its fixed six-component pose vector; their rendering
-    // properties otherwise do not constrain the physics subset.
+    // reads to prevent malformed/unsupported pose encodings from throwing;
+    // their rendering properties otherwise do not constrain the physics
+    // subset.
     const auto* geometry = element.FirstChildElement("geometry");
     if (!geometry)
       return path + "/geometry is required by DART's visual loader";

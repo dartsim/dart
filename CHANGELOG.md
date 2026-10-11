@@ -77,6 +77,11 @@
     resource retriever and root-joint options.
     [#3653](https://github.com/dartsim/dart/pull/3653)
 
+  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a
+    fixed-size vector or pose has the wrong number of values, instead of
+    writing out of bounds or leaving values unset in release builds. An MJCF
+    weld `solref` with one value keeps the default for the other.
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning

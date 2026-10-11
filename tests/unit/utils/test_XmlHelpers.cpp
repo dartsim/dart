@@ -43,6 +43,126 @@
 
 using namespace dart::utils;
 
+namespace {
+
+template <typename Parser, typename Result>
+void expectFixedSizeParsing(
+    Parser parser,
+    int expectedCount,
+    const std::string& input,
+    const Result& expected)
+{
+  EXPECT_TRUE(parser(input).isApprox(expected));
+
+  std::string whitespaceInput = " \t\n";
+  for (const char character : input)
+    whitespaceInput += character == ' ' ? " \t\n " : std::string(1, character);
+  whitespaceInput += " \t\n";
+  EXPECT_TRUE(parser(whitespaceInput).isApprox(expected));
+
+  for (const int actualCount :
+       {0, expectedCount - 1, expectedCount + 1, expectedCount + 2}) {
+    std::string invalidInput;
+    for (int i = 0; i < actualCount; ++i) {
+      if (i != 0)
+        invalidInput += ' ';
+      invalidInput += std::to_string(i + 1);
+    }
+
+    SCOPED_TRACE(invalidInput);
+    try {
+      parser(invalidInput);
+      ADD_FAILURE() << "Expected std::invalid_argument for " << actualCount
+                    << " elements";
+    } catch (const std::invalid_argument& error) {
+      const std::string message = error.what();
+      EXPECT_NE(
+          message.find("value [" + invalidInput + "]"), std::string::npos);
+      EXPECT_NE(
+          message.find("exactly " + std::to_string(expectedCount)),
+          std::string::npos);
+      EXPECT_NE(
+          message.find("got " + std::to_string(actualCount)),
+          std::string::npos);
+    }
+  }
+}
+
+} // namespace
+
+//==============================================================================
+TEST(XmlHelpers, Vector2dRequiresExactElementCount)
+{
+  expectFixedSizeParsing(toVector2d, 2, "1.5 -2.5", Eigen::Vector2d(1.5, -2.5));
+}
+
+//==============================================================================
+TEST(XmlHelpers, Vector2iRequiresExactElementCount)
+{
+  expectFixedSizeParsing(toVector2i, 2, "1.5 -2.5", Eigen::Vector2i(1, -2));
+}
+
+//==============================================================================
+TEST(XmlHelpers, Vector3dRequiresExactElementCount)
+{
+  expectFixedSizeParsing(
+      toVector3d, 3, "1.5 -2.5 3.5", Eigen::Vector3d(1.5, -2.5, 3.5));
+}
+
+//==============================================================================
+TEST(XmlHelpers, Vector3iRequiresExactElementCount)
+{
+  expectFixedSizeParsing(
+      toVector3i, 3, "1.5 -2.5 3.5", Eigen::Vector3i(1, -2, 3));
+}
+
+//==============================================================================
+TEST(XmlHelpers, Vector4dRequiresExactElementCount)
+{
+  expectFixedSizeParsing(
+      toVector4d,
+      4,
+      "1.5 -2.5 3.5 -4.5",
+      Eigen::Vector4d(1.5, -2.5, 3.5, -4.5));
+}
+
+//==============================================================================
+TEST(XmlHelpers, Vector6dRequiresExactElementCount)
+{
+  Eigen::Vector6d expected;
+  expected << 1.5, -2.5, 3.5, -4.5, 5.5, -6.5;
+  expectFixedSizeParsing(toVector6d, 6, "1.5 -2.5 3.5 -4.5 5.5 -6.5", expected);
+}
+
+//==============================================================================
+TEST(XmlHelpers, Isometry3dRequiresExactElementCount)
+{
+  Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+  expected.translation() = Eigen::Vector3d(1.5, -2.5, 3.5);
+  expected.linear() = (Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX())
+                       * Eigen::AngleAxisd(-0.3, Eigen::Vector3d::UnitY())
+                       * Eigen::AngleAxisd(0.4, Eigen::Vector3d::UnitZ()))
+                          .toRotationMatrix();
+  expectFixedSizeParsing(
+      toIsometry3d, 6, "1.5 -2.5 3.5 0.2 -0.3 0.4", expected);
+}
+
+//==============================================================================
+TEST(XmlHelpers, Isometry3dWithExtrinsicRotationRequiresExactElementCount)
+{
+  Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+  expected.translation() = Eigen::Vector3d(1.5, -2.5, 3.5);
+  expected.linear() = (Eigen::AngleAxisd(0.4, Eigen::Vector3d::UnitZ())
+                       * Eigen::AngleAxisd(-0.3, Eigen::Vector3d::UnitY())
+                       * Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX()))
+                          .toRotationMatrix();
+  expectFixedSizeParsing(
+      toIsometry3dWithExtrinsicRotation,
+      6,
+      "1.5 -2.5 3.5 0.2 -0.3 0.4",
+      expected);
+}
+
 //==============================================================================
 // Tests for valid input (round-trip parsing)
 //==============================================================================
