@@ -51,8 +51,17 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _load_selection(path: Path) -> dict[str, Any]:
-    manifest = json.loads(path.read_text(encoding="utf-8"))
+def _declared_inputs(path: Path, manifest: Any) -> list[Path]:
+    """The selection file and its declared artifact paths, valid or not."""
+    selected = manifest.get("selected") if isinstance(manifest, dict) else None
+    return [path] + [
+        path.parent / artifact["path"]
+        for artifact in (selected if isinstance(selected, list) else [])
+        if isinstance(artifact, dict) and isinstance(artifact.get("path"), str)
+    ]
+
+
+def _load_selection(path: Path, manifest: Any) -> dict[str, Any]:
     if not isinstance(manifest, dict):
         raise ValueError("selection manifest must be a JSON object")
     if manifest.get("schema_version") != SELECTION_SCHEMA_VERSION:
@@ -480,16 +489,18 @@ def _build_manifest(
     return manifest
 
 
-def _retire_previous_success(manifest_out: Path | None) -> None:
+def _retire_previous_success(manifest_out: Path | None, inputs: list[Path]) -> None:
     """Delete a previous passing publication manifest.
 
     Only a regular file holding a publication manifest qualifies, so an
-    aliased input, a symlink, or a FIFO that would block the read, all of
-    which preflight rejects, is never touched.
+    input, a symlink, or a FIFO that would block the read, all of which
+    preflight rejects, is never touched.
     """
     if manifest_out is None or manifest_out.is_symlink() or not manifest_out.is_file():
         return
     try:
+        if any(_paths_alias(manifest_out, path) for path in inputs):
+            return
         previous = json.loads(manifest_out.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return
@@ -582,9 +593,15 @@ def main(argv: list[str] | None = None) -> int:
     staging = out.with_name(out.name + ".attach")
     attach_dir: Path | None = None
     try:
-        # A failed rerun must not leave the previous passing manifest behind.
-        _retire_previous_success(args.manifest_out)
-        selection = _load_selection(args.selection)
+        raw: Any = None
+        try:
+            raw = json.loads(args.selection.read_text(encoding="utf-8"))
+        finally:
+            # A failed rerun must not leave the previous passing manifest behind.
+            _retire_previous_success(
+                args.manifest_out, _declared_inputs(args.selection, raw)
+            )
+        selection = _load_selection(args.selection, raw)
         _preflight_outputs(
             args.selection, selection, args.out, args.manifest_out, staging
         )

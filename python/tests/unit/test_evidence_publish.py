@@ -475,7 +475,7 @@ def test_selection_rejects_aliases_of_one_artifact(tmp_path: Path, alias: str) -
     selection.write_text(json.dumps(manifest), encoding="utf-8")
 
     with pytest.raises(ValueError, match="duplicated"):
-        evidence_publish._load_selection(selection)
+        evidence_publish._load_selection(selection, manifest)
 
 
 def test_publication_stages_verified_files_in_selection_order(tmp_path: Path) -> None:
@@ -609,8 +609,27 @@ def test_retire_previous_success_only_removes_passing_publications(
 ) -> None:
     path = tmp_path / "previous.json"
     path.write_text(json.dumps(content), encoding="utf-8")
-    evidence_publish._retire_previous_success(path)
+    evidence_publish._retire_previous_success(path, [])
     assert path.exists() is not retired
+
+
+@pytest.mark.parametrize("alias", ["selection", "artifact"])
+def test_manifest_out_naming_an_input_is_never_retired(
+    tmp_path: Path, alias: str
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    publication = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, publication)) == 0
+    if alias == "selection":
+        selection = publication
+    else:
+        manifest = json.loads(selection.read_text(encoding="utf-8"))
+        manifest["selected"][0]["path"] = str(publication)
+        selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert evidence_publish.main(_publication_args(selection, out, publication)) == 2
+    assert json.loads(publication.read_text(encoding="utf-8"))["pass"] is True
 
 
 def test_rerun_without_manifest_replaces_staged_copies(tmp_path: Path) -> None:
