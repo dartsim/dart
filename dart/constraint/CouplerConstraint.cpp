@@ -223,15 +223,18 @@ void CouplerConstraint::update()
     const double qError
         = referenceJoint->getPosition(referenceDof) * mimicProp.mMultiplier
           + mimicProp.mOffset - mJoint->getPosition(i);
-    // The correction never outpaces the follower's own velocity limits.
+    // The correction never outpaces the follower's own velocity limits, and a
+    // satisfied row asks for none even when those limits exclude zero.
+    const double velocityLowerLimit = mJoint->getVelocityLowerLimit(i);
+    const double velocityUpperLimit = mJoint->getVelocityUpperLimit(i);
     const double correctionVelocity = math::clip(
         kCouplerErrorReductionParameter * qError / timeStep,
-        std::max(
-            mJoint->getVelocityLowerLimit(i),
-            -kCouplerMaxErrorReductionVelocity),
         std::min(
-            mJoint->getVelocityUpperLimit(i),
-            kCouplerMaxErrorReductionVelocity));
+            0.0,
+            std::max(velocityLowerLimit, -kCouplerMaxErrorReductionVelocity)),
+        std::max(
+            0.0,
+            std::min(velocityUpperLimit, kCouplerMaxErrorReductionVelocity)));
     // An immobile leader keeps its position, whatever velocity it stores.
     const double referenceVelocity
         = referenceJoint->getSkeleton()->isMobile()
@@ -247,10 +250,13 @@ void CouplerConstraint::update()
       // A leader that takes no impulse makes this row a velocity servo on the
       // follower, so the follower's whole target respects its velocity limits.
       // Clipping a reactive pair's target instead would push the leader.
-      const double targetVelocity = math::clip(
-          mimicProp.mMultiplier * referenceVelocity + correctionVelocity,
-          mJoint->getVelocityLowerLimit(i),
-          mJoint->getVelocityUpperLimit(i));
+      // Invalid limits (lower > upper) are skipped, as JointConstraint does.
+      double targetVelocity
+          = mimicProp.mMultiplier * referenceVelocity + correctionVelocity;
+      if (velocityLowerLimit <= velocityUpperLimit) {
+        targetVelocity = math::clip(
+            targetVelocity, velocityLowerLimit, velocityUpperLimit);
+      }
       mNegativeVelocityError[i] = targetVelocity - followerVelocity;
     }
     mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
@@ -466,12 +472,14 @@ void CouplerConstraint::uniteSkeletons()
 
   auto dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
 
-  for (const auto& mimicProp : mMimicProps) {
-    if (mimicProp.mReferenceJoint == nullptr)
-      continue;
-
-    auto referenceBody = mimicProp.mReferenceJoint->getChildBodyNode();
-    if (referenceBody == nullptr || !referenceBody->isReactive())
+  // Unite only the leaders that take impulses from this constraint's rows, so
+  // a prescribed leader's own island stays separate and can still sleep.
+  const std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i) {
+    const auto& mimicProp = mMimicProps[i];
+    if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
+        || mimicProp.mReferenceJoint == nullptr
+        || getCouplerReactiveReferenceSkeleton(mimicProp) == nullptr)
       continue;
 
     auto referenceSkeletonConst = mimicProp.mReferenceJoint->getSkeleton();
