@@ -35,14 +35,18 @@ find_package(
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} PUBLIC ${required_libraries})
-# DART 7 reuses the GLUT-era gui component name for the Filament GUI.
-if(DART_gui_FOUND AND DART_VERSION VERSION_GREATER_EQUAL 7.0)
+include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
+if(DART_EXAMPLES_HAVE_FILAMENT_GUI)
   target_link_libraries(${example_name} PUBLIC dart-gui)
   target_compile_definitions(
     ${example_name}
     PRIVATE DART_CONTACT_BENCHMARK_HAS_GUI=1
   )
 else()
+  message(
+    STATUS
+    "Building contact_benchmark without GUI modes: the Filament gui component (dart/gui/Viewer.hpp) is unavailable"
+  )
   target_compile_definitions(
     ${example_name}
     PRIVATE DART_CONTACT_BENCHMARK_HAS_GUI=0

@@ -2,7 +2,7 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
-For DART 6.21, `dartpy` is one all-in-one nanobind extension,
+For DART 7, `dartpy` is one all-in-one nanobind extension,
 containing core, collision backends enabled in the build, IO parsers and the
 Filament GUI bindings (`dartpy.gui`). It links `dart`, `dart-io` and
 `dart-gui`. Enabling `DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and

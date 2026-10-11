@@ -17,7 +17,7 @@ Load this skill when writing or debugging tests.
 pixi run test         # Quick test run
 pixi run test-py      # Python tests
 pixi run test-all     # Build defaults and run C++/Python tests
-pixi run test-gui     # GUI tests that need a graphics device
+pixi run test-gui     # GUI tests except native-window tests; needs a graphics device
 pixi run -e gazebo test-gz # Gazebo/gz-physics compatibility gate
 ```
 
@@ -77,10 +77,12 @@ only when capture is unavailable or not applicable.
   with `pixi run lint`; use `pixi run test` or `pixi run test-py` for focused
   reruns and clearer failure attribution.
 - `pixi run test`, `test-py`, and `test-all` build the GUI but skip tests that
-  need a graphics device (CTest label `gui` and the Python GUI rendering tests).
+  need a graphics device (CTest label `gui-device` and the Python GUI rendering
+  tests). Device-free GUI tests remain in the default gates; the `gui` label
+  covers all GUI tests.
   GUI, Filament, and `dartpy.gui` changes also need `pixi run test-gui`, which
-  runs them in the same `build/<env>/cpp/Release` tree. Native-window tests
-  need a desktop session or Xvfb:
+  selects `-L gui -LE filament-native` in the same `build/<env>/cpp/Release`
+  tree. Native-window tests need a desktop session or Xvfb:
   `ctest --test-dir build/<env>/cpp/Release -L filament-native`
   (`ctest --test-dir build/<env>/cpp -C Release -L filament-native` on
   Windows).

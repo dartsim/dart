@@ -57,9 +57,49 @@ applied onto `main` `3d31d568794`. The result equals the merged tree plus
     - Installed `gui-osg`: REQUIRED fails with migration text; OPTIONAL
       leaves `DART_gui-osg_FOUND` false and defines no target.
   - Wheel image: AlmaLinux AppStream Clang 21.1.8 and GLFW 3.4 build the
-    pinned Filament SDK in about 154 s. An end-to-end cp312 abi3 wheel run
-    then failed because `BlueVK.h` needs Vulkan headers the image lacks;
-    staging Filament's own headers fixes the private SDK.
+    pinned Filament SDK in about 154 s. The first end-to-end cp312 abi3 run
+    failed because `BlueVK.h` needs Vulkan headers the image lacks, and the
+    second failed linking the SDK's non-PIC `libzstd.a` into the extension.
+    Staging Filament's Vulkan headers and building the SDK position
+    independent fix both. `python3 scripts/wheel_linux.py cp312` now builds
+    `dartpy-6.19.5-cp312-abi3-manylinux_2_28_x86_64.whl` (17.3 MB). The
+    repair, verification and abi3 audit pass, and so do the smoke tests in
+    fresh cp312 and cp313 manylinux containers.
+- Post-port reviews: a Codex review of `767f26a0008` (8 findings: 7 real,
+  1 refuted because MSVC builds are static) and two lenses of a review
+  workflow (docs/AI and downstream; 14 findings). Every confirmed item is
+  fixed, with regressions where practical:
+  - PickInfo owners join Python GC.
+  - Legacy OSG cache migration: a cached `DART_BUILD_GUI_OSG=ON` default is
+    dropped, while explicit `ON` still fails.
+  - Embedded `DART_BUILD_GUI_OSG=OFF` stays headless.
+  - Optional `gui-osg` probes report not found instead of failing.
+  - The `gui-device` label keeps device-free GUI tests in the required
+    gates.
+  - The installed ImGui floor is 1.92.8.
+  - Examples detect the Filament GUI by feature rather than by version.
+  - The perf harness reports OSG-era arms without OSG as an infrastructure
+    error and builds historical OSG arms with both switches.
+  - Windows `test-gui` uses the Windows tree; ai-doctor reports Vulkan
+    capture readiness.
+  - The private SDK is built PIC.
+  - Docs follow.
+
+  After the fixes:
+
+  | Gate | Result |
+  | --- | --- |
+  | `check-lint` | passes |
+  | `test-ai-infra` | 1,694 |
+  | `test-build-requirements` | 156 |
+  | `test-perf-regression` | 875 |
+  | `test-gz-compat-tools` | 55 |
+  | `test-all` | 178 CTest and 697 Python |
+  | `test-gui` | 13 CTest and 257 Python |
+  | `pixi run -e gazebo test-gz` | gz-physics 199/199 and 4/4, gz-sim 1/1 |
+- Not covered here: in A/B mode, CI perf runs the base revision's harness, so
+  this transition PR's A/B against an OSG base cannot build in an environment
+  without OpenSceneGraph.
 
 ## Completion session (2026-10-10, uncommitted working tree)
 

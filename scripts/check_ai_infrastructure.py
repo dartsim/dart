@@ -214,8 +214,44 @@ APPROVED_CTEST_SELECTIONS = {
     },
 }
 # Rendering tests need a graphics device, so `test`/`test-all` leave them to
-# `pixi run test-gui`: the `gui` CTest label and these Python modules.
-GUI_CTEST_EXCLUSION = "-DDART_CTEST_EXCLUDE_LABEL=gui"
+# `pixi run test-gui`: the `gui-device` CTest label and these Python modules.
+GUI_CTEST_EXCLUSION = "-DDART_CTEST_EXCLUDE_LABEL=gui-device"
+GUI_DEVICE_CTESTS = frozenset(
+    {
+        "test_FilamentBackend",
+        "test_FilamentNative",
+        "test_GuiParity",
+        "test_GuiMesh",
+        "examples_demos_cycle_render",
+        "offscreen_capture_smoke",
+    }
+)
+GUI_APP_CTEST_ARGUMENTS = {
+    "examples_demos_cycle": ("--cycle-scenes", "--frames", "2"),
+    "examples_demos_cycle_render": (
+        "--cycle-scenes",
+        "--headless",
+        "--frames",
+        "2",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    ),
+    "examples_demos_capture": (
+        "--headless",
+        "--scene",
+        "hello_world",
+        "--steps",
+        "5",
+        "--width",
+        "320",
+        "--height",
+        "240",
+        "--shot",
+        "<build>/examples/demos/hello-world.png",
+    ),
+}
 GUI_ONLY_PYTHON_TESTS = frozenset(
     f"python/tests/unit/gui/test_{name}.py"
     for name in ("agent_capture", "agent_debug_overlay", "filament", "gui_offscreen")
@@ -1152,6 +1188,7 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "${regression_tests}",
                         "${unit_tests}",
                     ),
+                    ("WORKING_DIRECTORY", "${DART_BINARY_DIR}"),
                 ),
                 (),
                 "cmake/DARTRunCTest.cmake",
@@ -1566,7 +1603,9 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
     for command in collect_task_commands(pixi, "test-gui") or [""]:
         segments = [shell_tokens(segment) for segment in command.split("&&")]
         if not any(
-            tokens[:1] == ["ctest"] and contains_token_sequence(tokens, ("-L", "gui"))
+            tokens[:1] == ["ctest"]
+            and contains_token_sequence(tokens, ("-L", "gui"))
+            and contains_token_sequence(tokens, ("-LE", "filament-native"))
             for tokens in segments
         ) or not any(
             tokens[:3] == ["python", "-I", "scripts/run_pytest.py"]
@@ -1574,8 +1613,9 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             for tokens in segments
         ):
             errors.append(
-                "pixi.toml: `test-gui` must run the `gui` CTest label and "
-                "`python/tests/unit/gui`, which `test` and `test-all` leave out"
+                "pixi.toml: `test-gui` must run the `gui` CTest label with "
+                "`-LE filament-native` and `python/tests/unit/gui`, including "
+                "the graphics tests that `test` and `test-all` leave out"
             )
             break
 
@@ -2621,7 +2661,7 @@ def generated_ctest_registrations(
     """Read freshly configured CTest commands without requiring built artifacts."""
     prefix = "CMake semantic test graph"
     registrations: dict[str, tuple[list[str], Path]] = {}
-    test_root = (build_dir / "tests").resolve()
+    test_root = build_dir.resolve()
     root_file = test_root / "CTestTestfile.cmake"
     if not root_file.is_file():
         errors.append(f"{prefix}: configured CTest files are unavailable")
@@ -2791,6 +2831,31 @@ def ctest_property_values(test: dict[str, Any], name: str) -> list[Any]:
     ]
 
 
+def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
+    """Only rendering registrations may be excluded from the broad test gate."""
+    name = test["name"]
+    labels = {
+        label
+        for values in ctest_property_values(test, "LABELS")
+        if isinstance(values, list)
+        for label in values
+        if isinstance(label, str)
+    }
+    needs_device = name in GUI_DEVICE_CTESTS or name.startswith(
+        "examples_demos_capture"
+    )
+    if needs_device and not {"gui", "gui-device"}.issubset(labels):
+        errors.append(
+            f"CMake semantic test graph: graphics test `{name}` must have "
+            "the `gui` and `gui-device` labels"
+        )
+    elif not needs_device and "gui-device" in labels:
+        errors.append(
+            f"CMake semantic test graph: test `{name}` must run in the broad "
+            "gate and cannot have the `gui-device` label"
+        )
+
+
 def check_cmake_ctest_inventory(
     build_dir: Path,
     configuration: str,
@@ -2805,7 +2870,7 @@ def check_cmake_ctest_inventory(
             [
                 ctest_executable,
                 "--test-dir",
-                str(build_dir / "tests"),
+                str(build_dir),
                 "--show-only=json-v1",
                 "-C",
                 configuration,
@@ -2855,6 +2920,7 @@ def check_cmake_ctest_inventory(
         if name in registered_tests:
             errors.append(f"{prefix}: CTest test name `{name}` is duplicated")
             continue
+        check_ctest_gui_labels(test, errors)
         if any(
             value in (True, 1, "1", "ON", "TRUE")
             for value in ctest_property_values(test, "DISABLED")
@@ -2892,6 +2958,12 @@ def check_cmake_ctest_inventory(
             name, {"arguments": (), "environment": ()}
         )
         expected_arguments = tuple(selection_policy["arguments"])
+        app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
+        if app_arguments is not None:
+            expected_arguments = tuple(
+                argument.replace("<build>", build_dir.as_posix())
+                for argument in app_arguments
+            )
         if tuple(generated_command[1:]) != expected_arguments:
             errors.append(
                 f"{prefix}: CTest test `{name}` has unapproved command arguments "
@@ -2932,13 +3004,15 @@ def check_cmake_ctest_inventory(
             for item in (value if isinstance(value, list) else [value])
             if isinstance(item, str)
         ]
-        selected = bool(expected_arguments or expected_environment)
+        selected = (
+            bool(expected_arguments or expected_environment) and app_arguments is None
+        )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
             errors.append(
                 f"{prefix}: selected CTest test `{name}` does not fail on zero tests "
                 f"with exact pattern `{SAFE_ZERO_TEST_PATTERN}`"
             )
-        elif not selected and fail_patterns:
+        elif not selected and fail_patterns not in ([], [SAFE_ZERO_TEST_PATTERN]):
             errors.append(
                 f"{prefix}: CTest test `{name}` has unapproved failure patterns "
                 f"{fail_patterns}"
@@ -3087,6 +3161,9 @@ def check_cmake_test_target_trace(
             or tests_arguments.count("COMMAND") != 1
             or not suffix
             or suffix[0] != "DEPENDS"
+            or suffix[-2:-1] != ["WORKING_DIRECTORY"]
+            or not cmake_paths_match(suffix[-1], build_dir)
+            or suffix.count("WORKING_DIRECTORY") != 1
         ):
             errors.append(
                 f"{prefix}: expanded `tests_and_run` command does not invoke "
@@ -3487,9 +3564,25 @@ def check_cmake_test_graph(
         relative_source = (
             repository_directory(source) if isinstance(source, str) else None
         )
-        if isinstance(relative_source, str) and any(
-            relative_source == directory or relative_source.startswith(f"{directory}/")
-            for directory in test_directories
+        if isinstance(relative_source, str) and (
+            any(
+                relative_source == directory
+                or relative_source.startswith(f"{directory}/")
+                for directory in test_directories
+            )
+            or (
+                relative_source == "tests/benchmark/integration"
+                and name == "offscreen_capture_smoke"
+            )
+            or (
+                relative_source == "examples/demos"
+                and name
+                in {
+                    "dart-demos",
+                    "UNIT_examples_demos_GuiScaling",
+                    "UNIT_examples_demos_MemoryDiagnostics",
+                }
+            )
         ):
             json_file = entry.get("jsonFile")
             if not isinstance(json_file, str):
@@ -5316,12 +5409,44 @@ def _visual_verification_inventory(root: Path) -> dict[str, Any]:
         "test-agent-debug-overlay",
         "verification-bundle",
     }
+    vulkan_source = "unavailable"
+    vulkan_files = []
+    for variable in ("VK_DRIVER_FILES", "VK_ICD_FILENAMES"):
+        if os.environ.get(variable):
+            vulkan_source = variable
+            vulkan_files = [
+                Path(path) for path in os.environ[variable].split(os.pathsep)
+            ]
+            break
+    else:
+        prefix = os.environ.get("CONDA_PREFIX")
+        if prefix:
+            vulkan_files = sorted(
+                (Path(prefix) / "share/vulkan/icd.d").glob("lvp_icd.*.json")
+            )
+            if vulkan_files:
+                vulkan_source = "Pixi Lavapipe"
+    if not sys.platform.startswith("linux"):
+        vulkan_readiness = "not required on this platform"
+    elif any(path.is_file() for path in vulkan_files):
+        vulkan_readiness = "ICD available (device not probed)"
+    elif vulkan_source != "unavailable":
+        vulkan_readiness = "selected ICD missing"
+    else:
+        vulkan_readiness = "unknown (no selected or Pixi ICD; system driver not probed)"
     return {
         "backend": "Filament",
         "paths": _path_inventory(paths, root),
         "tasks": sorted(visual_tasks & tasks),
-        "display": os.environ.get("DISPLAY", ""),
-        "xvfb_run": shutil.which("xvfb-run") or "unavailable",
+        "capture_vulkan": {
+            "source": vulkan_source,
+            "icd_files": [str(path) for path in vulkan_files],
+            "readiness": vulkan_readiness,
+        },
+        "native_window": {
+            "display": os.environ.get("DISPLAY", ""),
+            "xvfb_run": shutil.which("xvfb-run") or "unavailable",
+        },
         "semantic_review_contract": (
             "native-image-inspection-or-image-capable-handoff"
         ),
@@ -5448,7 +5573,10 @@ def print_doctor(data: dict[str, Any]) -> None:
     print(
         "  visual verification: "
         f"{visual['backend']}, {len(visual['tasks'])} tasks, "
-        f"DISPLAY={visual['display'] or '(unset)'}, xvfb-run={visual['xvfb_run']}"
+        f"capture Vulkan={visual['capture_vulkan']['readiness']} "
+        f"({visual['capture_vulkan']['source']}); "
+        f"native-window DISPLAY={visual['native_window']['display'] or '(unset)'}, "
+        f"xvfb-run={visual['native_window']['xvfb_run']}"
     )
     for tool, tool_version in data["tools"].items():
         print(f"  {tool}: {tool_version}")

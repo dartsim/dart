@@ -148,6 +148,6 @@ if(DART_ENABLE_GUI_SMOKE_TESTS AND TARGET dart-gui)
   add_test(NAME offscreen_capture_smoke COMMAND offscreen_capture_smoke)
   set_tests_properties(
     offscreen_capture_smoke
-    PROPERTIES LABELS "gui;filament-headless"
+    PROPERTIES LABELS "gui;gui-device;filament-headless"
   )
 endif()

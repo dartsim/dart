@@ -37,7 +37,9 @@ Python tests through the CMake graph. Run lint separately, and use the focused
 test tasks when you need clearer failure output.
 
 ``pixi run config`` also builds the Filament GUI, but these gates skip GUI tests
-that need a graphics device. Run ``pixi run test-gui`` for GUI changes; the
+that need a graphics device (CTest label ``gui-device`` and Python rendering
+tests). Device-free GUI tests still run. Run ``pixi run test-gui`` for GUI
+changes; it selects ``-L gui -LE filament-native``. The
 :doc:`visualization guide </dart/user_guide/visualization>` describes the GUI
 tasks.
 
@@ -214,6 +216,10 @@ include:
      - ``ON``
      - Build the Filament GUI and ImGui (``gui`` component, ``dart-gui``);
        ``OFF`` skips the whole GUI directory.
+   * - ``DART_ENABLE_GUI_SMOKE_TESTS``
+     - ``OFF``
+     - Build the offscreen GUI capture smoke test; needs a graphics device.
+       Replaces ``DART_ENABLE_GUI_OSG_SMOKE_TESTS``.
    * - ``DART_USE_SYSTEM_FILAMENT``
      - ``ON``
      - Use an installed Filament 1.77.3 SDK; ``OFF`` uses a pinned private

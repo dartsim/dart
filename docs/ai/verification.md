@@ -11,7 +11,9 @@ surface affects shared behavior.
   the touched module.
 - For GUI, Filament, `dartpy.gui`, or GUI example changes, also run
   `pixi run test-gui`; `pixi run test`, `test-py`, and `test-all` build the GUI
-  but skip the tests that need a graphics device.
+  but skip the CTest tests labeled `gui-device` and Python rendering tests.
+  Device-free GUI tests remain in the default gates; `gui` selects all GUI
+  CTests, and `test-gui` excludes only `filament-native` native-window tests.
 - For behavior-bearing physics or simulation changes, include a high-quality,
   self-contained GUI example or durable demo artifact unless the task explicitly
   records why a different user-level visual artifact is the right evidence.

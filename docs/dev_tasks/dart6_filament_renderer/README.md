@@ -10,8 +10,8 @@ remain before release acceptance.
 ## Contract
 
 DART 7.0 uses Filament as the sole GUI renderer; this topic is milestone M6a
-of the maintainer-approved DART 7.0 plan (decisions D30-D32 and D31a, recorded
-in the DART 7.0 project home, `docs/dev_tasks/dart7_python_first/`). There is
+of the maintainer-approved DART 7.0 plan. Decisions D30-D32 and D31a are
+recorded in the DART 7.0 program's project home (forthcoming). There is
 no 6.21 release: `main`'s 6.21 work folds into 7.0.0. Remove the OSG
 component, installed GUI headers, Python namespace, dependencies, examples,
 and selectors. Keep public core C++17, `dart::utils`, collision/simulation
@@ -52,8 +52,10 @@ mandatory. User approval to replace OSG does not establish those results.
   (nanobind, all-in-one) requires it, and `pixi run config` builds both into
   `build/<env>/cpp/Release`. This supersedes the branch's earlier opt-in GUI
   and separate GUI tree. `DART_BUILD_GUI_OSG=OFF` still disables the GUI.
-- GUI tests that need a graphics device carry the CTest label `gui` and are
-  excluded from `pixi run test`/`test-all` (and the Python `pytest` target);
+- GUI tests that need a graphics device carry the CTest label `gui-device`
+  and are excluded from `pixi run test`/`test-all`; the Python `pytest` target
+  excludes rendering tests. Device-free GUI tests still run. The `gui` label
+  covers all GUI tests;
   `pixi run test-gui` and `CI Filament` run them.
 - Upstream rewrote `main`'s history on 2026-10-10 (a purged MuJoCo comparison
   lane). The branch was rebased onto the rewritten base `ec43ea419fe` before

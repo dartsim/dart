@@ -1,5 +1,8 @@
-This project is dependent on DART. Please make sure a proper version of DART is 
-installed before building this project.
+This example requires DART's Filament `gui` component, built with
+`DART_BUILD_GUI=ON` (the default). CMake detects the installed
+`dart/gui/Viewer.hpp` header independently of the reported DART version.
+Configuration fails with a migration message if only the older GLUT GUI is
+installed.
 
 ## Build Instructions
 

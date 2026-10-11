@@ -17,9 +17,11 @@ separately. Use `test` or `test-py` for focused reruns and clearer failure
 attribution.
 
 These gates build the GUI but leave out GUI tests that need a graphics device:
-CTest tests labeled `gui` and the Python rendering tests. For GUI, Filament,
-`dartpy.gui`, or GUI example changes, also run `pixi run test-gui`. It builds
-the tests, dartpy, and `dart-demos` in the same tree, runs
+CTest tests labeled `gui-device` and the Python rendering tests. Device-free
+GUI tests still run in these gates. The `gui` label covers all GUI tests.
+For GUI, Filament, `dartpy.gui`, or GUI example changes, also run
+`pixi run test-gui`. It builds the tests, dartpy, and `dart-demos` in the same
+tree, runs
 `ctest -L gui -LE filament-native`, then runs `python/tests/unit/gui` and
 `python/tests/integration`. Linux capture uses Vulkan and needs no display
 server; to use the Pixi environment's Mesa Lavapipe driver as CI does, set
@@ -32,12 +34,18 @@ desktops (Xvfb also works):
 pixi run ctest --test-dir build/default/cpp/Release -L filament-native --output-on-failure
 ```
 
+`DART_ENABLE_GUI_SMOKE_TESTS` defaults to `OFF` and replaces
+`DART_ENABLE_GUI_OSG_SMOKE_TESTS`. It adds the device-dependent offscreen
+capture smoke test. To include it when reproducing `CI Filament`, configure
+with `pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` before running
+`pixi run test-gui`.
+
 `pixi run check-ai-infra` also reconfigures the current platform, queries
 CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
 to depend directly on `tests_and_run` and `pytest`, requires those targets to
-cover every configured C++ and Python test except the `gui`-labeled CTest tests
-and the four GUI-only Python modules (`test_filament`, `test_gui_offscreen`,
+cover every configured C++ and Python test except the `gui-device`-labeled
+CTest tests and the four GUI-only Python modules (`test_filament`, `test_gui_offscreen`,
 `test_agent_capture`, `test_agent_debug_overlay`), which it requires
 `pixi run test-gui` to run, rejects omitted test directories or unowned test
 sources, and admits inactive platform tests or the one compile-only

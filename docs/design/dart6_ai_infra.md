@@ -102,7 +102,7 @@ The release workflow is the cumulative result of these merged changes:
   factories and engine-rendered overlay checks non-skippable under Xvfb.
   Preserve the same-camera A/B and per-layer pixel gates.
 
-DART 6.21 replaces the historical OSG renderer with Filament and the neutral
+DART 7 replaces the historical OSG renderer with Filament and the neutral
 `dart::gui` / `dartpy.gui` APIs. Linux captures use Vulkan without a display;
 interactive native fixtures use the platform graphics facilities. The prior
 PRs establish the evidence contract, not a requirement to retain their old

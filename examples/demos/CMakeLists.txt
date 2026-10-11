@@ -133,10 +133,17 @@ if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui)
 endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
-  find_package(DART 7.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+  find_package(DART 6.19 REQUIRED COMPONENTS ${required_components} CONFIG)
+  include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
+  if(NOT DART_EXAMPLES_HAVE_FILAMENT_GUI)
+    message(
+      FATAL_ERROR
+      "dart-demos requires the Filament gui component (dart/gui/Viewer.hpp)"
+    )
+  endif()
   find_package(
     DART
-    7.0
+    6.19
     QUIET
     COMPONENTS collision-bullet collision-ode utils-assets
     CONFIG
@@ -536,6 +543,6 @@ if(BUILD_TESTING AND TARGET dart-demos)
   set_tests_properties(
     examples_demos_capture
     examples_demos_cycle_render
-    PROPERTIES LABELS "examples;gui;headless"
+    PROPERTIES LABELS "examples;gui;gui-device;headless"
   )
 endif()

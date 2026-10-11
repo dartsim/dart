@@ -3760,6 +3760,17 @@ def _build_arm(
     harness,
     env,
 ):
+    contact_cmake = Path(source) / "examples/contact_benchmark/CMakeLists.txt"
+    if (
+        CB in drivers
+        and contact_cmake.is_file()
+        and "gui-osg" in contact_cmake.read_text(encoding="utf-8")
+        and not (Path(dependency) / "lib/libosgDB.so").is_file()
+    ):
+        raise ValueError(
+            "historical contact_benchmark requires OpenSceneGraph; "
+            "use --rows gzb,robot or an environment providing OpenSceneGraph"
+        )
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",

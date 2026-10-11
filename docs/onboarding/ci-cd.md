@@ -18,7 +18,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, GUI-disabled assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
 | `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
 | `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and nanobind Python tests; unity builds |
-| `ci_filament.yml`                 | CI Filament                  | PR, push, dispatch              | GUI test lane: `ubuntu-24.04-Filament-functional`, `windows-2022-Filament-functional`, and `macos-15-Filament-functional` configure with `pixi run -e gui-ci config` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui`-labeled CTest tests and the Python rendering modules; CI Linux still runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe |
+| `ci_filament.yml`                 | CI Filament                  | PR, push, dispatch              | GUI test lane: `ubuntu-24.04-Filament-functional`, `windows-2022-Filament-functional`, and `macos-15-Filament-functional` configure with `pixi run -e gui-ci config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` and run the Filament C++ tests (display-free Vulkan and Xvfb native-window tests on Linux, native tests on Windows and macOS), the Python GUI and integration tests, and a relocated C++17 consumer check. The CI Linux, macOS, and Windows Release jobs build the GUI but skip the `gui-device`-labeled CTest tests and the Python rendering modules; device-free GUI tests still run. CI Linux also runs the display-free agent-capture smoke and `test-agent-debug-overlay` on Lavapipe |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
@@ -351,6 +351,13 @@ pixi run test-py
 pixi run test-gui
 pixi run -e gazebo test-gz
 ```
+
+To reproduce the `CI Filament` capture smoke test, run
+`pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` before
+`pixi run test-gui`. This option defaults to `OFF`, needs a graphics device,
+and replaces `DART_ENABLE_GUI_OSG_SMOKE_TESTS`. The GUI task selects
+`-L gui -LE filament-native`; run native-window tests separately as described
+in [testing guidance](testing.md).
 
 `ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
 testing and configures it once, so gz-physics' contact-callback test

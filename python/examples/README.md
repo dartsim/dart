@@ -20,7 +20,7 @@ Run it:
 
     $ pixi run py-demos
 
-or manually, with a GUI-enabled dartpy (`pixi run build-py-dev` builds one):
+or manually, with dartpy (`pixi run build-py-dev` builds it):
 
     $ cd python
     $ PYTHONPATH=../build/default/cpp/Release/python/dartpy python -m examples.demos
@@ -37,7 +37,7 @@ Each scene's source lives under `demos/scenes/`.
 ## Standalone examples
 
 - **`filament`** — a minimal world using the `dart.gui.Viewer`. Run it with
-  `pixi run py-ex filament`, which builds a GUI-enabled dartpy first. The
+  `pixi run py-ex filament`, which builds dartpy first. The
   script's `--capture frame.png` option writes a PNG (without a display on
   Linux); capture dimensions are physical pixels.
 - **`hello_world`** — the canonical minimal "first program"; start here if
@@ -52,9 +52,10 @@ Each scene's source lives under `demos/scenes/`.
 
 ## Execute Instructions
 
-Run any example's `main.py` with a GUI-enabled dartpy on `PYTHONPATH`
-(`pixi run build-py-dev` builds one; `pixi run test` or `test-py` reconfigures
-that tree without the GUI):
+Run any example's `main.py` with dartpy on `PYTHONPATH`.
+`pixi run build-py-dev` builds the all-in-one nanobind extension, which always
+includes IO and `dartpy.gui`. `pixi run test` and `test-py` keep the GUI enabled
+and skip device-dependent rendering tests:
 
     $ pixi run py-ex hello_world
     $ pixi run py-ex ssik_analytical_ik

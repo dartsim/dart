@@ -75,8 +75,13 @@ anything:
 
 This project is dependent on DART. Please make sure a proper version of DART
 is installed before building this project. The GUI examples (`hello_world` and
-`demos`) need DART's `gui` component, built with `DART_BUILD_GUI=ON` (the
-default); without it they are skipped and the other examples still build.
+`demos`) need the Filament `gui` component, built with `DART_BUILD_GUI=ON` (the
+default). CMake detects its installed `dart/gui/Viewer.hpp` header independently
+of the reported DART version. Without it, including with an older GLUT GUI,
+these examples are skipped and the other examples still build. Configuring a
+GUI example individually requires the Filament component and fails clearly
+when it is absent. `contact_benchmark` still builds without it, but its GUI
+modes are unavailable.
 
 Copy this directory to your workspace (e.g., in Linux):
 

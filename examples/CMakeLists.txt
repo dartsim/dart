@@ -16,15 +16,13 @@ add_subdirectory(contact_benchmark)
 if(NOT DART_IN_SOURCE_BUILD)
   find_package(DART QUIET OPTIONAL_COMPONENTS gui CONFIG)
 endif()
-if(
-  DART_IN_SOURCE_BUILD
-  OR (DART_gui_FOUND AND DART_VERSION VERSION_GREATER_EQUAL 7.0)
-)
+include("${CMAKE_CURRENT_LIST_DIR}/CheckFilamentGui.cmake")
+if(DART_IN_SOURCE_BUILD OR DART_EXAMPLES_HAVE_FILAMENT_GUI)
   add_subdirectory(hello_world)
   add_subdirectory(demos)
 else()
   message(
     STATUS
-    "Skipping GUI examples: they need DART 7 with its gui component"
+    "Skipping GUI examples: they need the Filament gui component (dart/gui/Viewer.hpp)"
   )
 endif()

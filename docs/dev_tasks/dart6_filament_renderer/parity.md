@@ -2,8 +2,8 @@
 
 ## Current sole-Filament acceptance
 
-The user approved complete OSG removal for 6.21, superseding the staged
-6.22-removal plan. C++ core/gz compatibility and pybind11 remain required;
+The user approved complete OSG removal for DART 7, superseding the staged
+6.22-removal plan. C++ core/gz compatibility and nanobind remain required;
 Python GUI API changes are approved. The completion session (see
 `verification.md`, top section) repaired the native FTexture use-after-free
 with deterministic red/green regressions and locally qualified the final

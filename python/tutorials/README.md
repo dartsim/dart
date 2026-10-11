@@ -30,9 +30,10 @@ an exercise:
 | `pixi run tu-dominoes` | `pixi run tu-dominoes-fi` |
 
 The parameterized task is also available, for example `pixi run py-tu biped`
-or `pixi run py-tu biped_finished`. With a GUI-enabled dartpy (built with
-`DART_BUILD_GUI=ON`) installed in your Python environment, run any script
-directly:
+or `pixi run py-tu biped_finished`. With dartpy installed in your Python
+environment, run any script directly. The all-in-one nanobind extension always
+includes IO and `dartpy.gui`; `pixi run test` and `test-py` keep the GUI enabled
+and skip device-dependent rendering tests:
 
 ```console
 python python/tutorials/multi_pendulum/main.py

@@ -9,7 +9,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def configure(tmp_path, content):
+def configure(tmp_path, content, *, cmake_args=()):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
@@ -34,6 +34,7 @@ def configure(tmp_path, content):
             str(source),
             "-B",
             str(tmp_path / "build"),
+            *cmake_args,
         ],
         capture_output=True,
         text=True,
@@ -101,7 +102,7 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
         ("tinyxml2", "9.0.0", "tinyxml2::tinyxml2", False),
         ("urdfdom", "3.0.1", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
-        ("imgui", "1.91.9", "imgui::imgui", True),
+        ("imgui", "1.92.8", "imgui::imgui", True),
     ],
 )
 @pytest.mark.parametrize("version_kind", ["minimum", "older", "unknown", "newer"])
@@ -140,13 +141,84 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize("version,accepted", [("1.91.9b", True), ("1.90.9b", False)])
+@pytest.mark.parametrize(
+    "version,accepted", [("1.92.8b", True), ("1.92.7b", False), ("1.91.9b", False)]
+)
 def test_imgui_release_suffix_floor(tmp_path, version, accepted):
     config_package(tmp_path, "imgui", version, "imgui::imgui")
     result = configure(tmp_path, "include(DARTFindimgui)\n")
     assert (result.returncode == 0) == accepted, result.stdout + result.stderr
     if not accepted:
-        assert "ImGui >= 1.91.9" in result.stderr
+        assert "ImGui >= 1.92.8" in result.stderr
+
+
+@pytest.mark.parametrize("setting", ["legacy-default", "explicit-on", "explicit-off"])
+def test_legacy_gui_option_migration(tmp_path, setting):
+    source = (ROOT / "CMakeLists.txt").read_text()
+    migration = source[
+        source.index("# DART 7 removed the OpenSceneGraph GUI.") : source.index(
+            'dart_option(DART_BUILD_IO "'
+        )
+    ]
+    if setting == "legacy-default":
+        build = tmp_path / "build"
+        build.mkdir()
+        (build / "CMakeCache.txt").write_text(
+            "//Build osgDart library\nDART_BUILD_GUI_OSG:BOOL=ON\n"
+        )
+        args = ()
+    else:
+        args = (f"-DDART_BUILD_GUI_OSG={'ON' if setting == 'explicit-on' else 'OFF'}",)
+    result = configure(
+        tmp_path,
+        "include(dart_defs)\n"
+        + migration
+        + 'dart_option(DART_BUILD_GUI "Build the Filament GUI and ImGui support" ON)\n',
+        cmake_args=args,
+    )
+    output = result.stdout + result.stderr
+    if setting == "explicit-on":
+        assert result.returncode != 0
+        assert "DART 7 removed the OpenSceneGraph GUI" in output
+    else:
+        assert result.returncode == 0, output
+        cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+        assert (
+            f"DART_BUILD_GUI:BOOL={'OFF' if setting == 'explicit-off' else 'ON'}"
+            in cache
+        )
+        assert "DART_BUILD_GUI_OSG:" not in cache
+        if setting == "legacy-default":
+            assert "Removing the cached legacy OSG GUI default" in output
+
+
+@pytest.mark.parametrize("gui", ["absent", "legacy", "filament", "other-prefix"])
+def test_examples_detect_selected_filament_gui(tmp_path, gui):
+    include = tmp_path / "selected-include"
+    include.mkdir()
+    if gui in ("filament", "other-prefix"):
+        header = (
+            (include if gui == "filament" else tmp_path / "prefix" / "include")
+            / "dart"
+            / "gui"
+            / "Viewer.hpp"
+        )
+        header.parent.mkdir(parents=True)
+        header.touch()
+    target = ""
+    if gui != "absent":
+        target = (
+            "add_library(dart-gui INTERFACE IMPORTED)\n"
+            f'set_target_properties(dart-gui PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include.as_posix()}")\n'
+        )
+    result = configure(
+        tmp_path,
+        target
+        + f'include("{(ROOT / "examples" / "CheckFilamentGui.cmake").as_posix()}")\n'
+        + f"if(NOT DART_EXAMPLES_HAVE_FILAMENT_GUI STREQUAL {'TRUE' if gui == 'filament' else 'FALSE'})\n"
+        + 'message(FATAL_ERROR "Incorrect GUI capability")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 @pytest.mark.parametrize("bundled", [False, True])
@@ -196,9 +268,9 @@ def test_bullet_header_floor(tmp_path, bundled, version):
         ),
         (
             "imgui",
-            "1.91.9",
+            "1.92.8",
             "imgui.h",
-            '#define IMGUI_VERSION "1.91.9"\n',
+            '#define IMGUI_VERSION "1.92.8"\n',
             "imgui::imgui",
         ),
     ],
@@ -236,7 +308,7 @@ def test_config_header_version_fallback(
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
         ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
-        ("imgui", "1.91.9", "imgui", "imgui.h", "IMGUI_VERSION"),
+        ("imgui", "1.92.8", "imgui", "imgui.h", "IMGUI_VERSION"),
     ],
 )
 @pytest.mark.parametrize("version_kind", ["minimum", "older", "unknown"])

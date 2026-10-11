@@ -15,7 +15,14 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-find_package(DART 7.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 6.19 REQUIRED COMPONENTS ${required_components} CONFIG)
+include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
+if(NOT DART_EXAMPLES_HAVE_FILAMENT_GUI)
+  message(
+    FATAL_ERROR
+    "hello_world requires the Filament gui component (dart/gui/Viewer.hpp)"
+  )
+endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})

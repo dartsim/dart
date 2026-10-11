@@ -46,7 +46,7 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | macOS ARM64 SEGFAULT | Replace `alloca()`/VLAs with `std::vector<T>`            |
 | RTD build fails      | Use defensive `.get(key, default)` patterns              |
 | gz-physics fails     | Reproduce with `pixi run -e gazebo test-gz`              |
-| CI Filament fails    | Reproduce with `pixi run test-gui`; native-window failures with `pixi run ctest --test-dir build/<env>/cpp/Release -L filament-native` (`pixi run ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows; under `xvfb-run` on headless Linux); consumer failures with `pixi run python scripts/test_gui_install.py` on that build directory |
+| CI Filament fails    | Configure with `pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON`, then run `pixi run test-gui`; native-window failures with `pixi run ctest --test-dir build/<env>/cpp/Release -L filament-native` (`pixi run ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows; under `xvfb-run` on headless Linux); consumer failures with `pixi run python scripts/test_gui_install.py` on that build directory |
 
 ## Workflow Architecture
 
@@ -68,6 +68,12 @@ The CI workflows that a failing PR check belongs to (full workflow index:
 FreeBSD, toolchain, CodeQL, wheels, Linux ASan/coverage/Eigen alignment, and
 macOS Debug run only in `nightly.yml`; their failures arrive as
 `nightly-failure` issues, not PR checks.
+
+Default test gates exclude device-dependent CTests labeled `gui-device` and
+Python rendering tests; device-free GUI tests still run. `pixi run test-gui`
+selects all `gui` CTests except `filament-native`. The capture smoke option
+`DART_ENABLE_GUI_SMOKE_TESTS` defaults to `OFF`, needs a graphics device, and
+replaces `DART_ENABLE_GUI_OSG_SMOKE_TESTS`; `CI Filament` enables it.
 
 ## Downstream Compatibility Policy
 

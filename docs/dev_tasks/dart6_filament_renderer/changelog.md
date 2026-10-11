@@ -6,7 +6,7 @@
 - Content: Filament-backed `dart::gui` / `dartpy.gui` replacement; removed
   `gui-osg` component, `dart/gui/osg` headers and `dartpy.gui.osg`; reuse of
   the GLUT-era `gui` / `dart-gui` / `gui.hpp` names; `DART_BUILD_GUI`
-  replacing `DART_BUILD_GUI_OSG` with default `OFF`; GUI dependency floor
+  replacing `DART_BUILD_GUI_OSG` with default `ON`; GUI dependency floor
   (Filament 1.77.3, GLFW 3.4, libpng, libjpeg, ImGui >= 1.92.8); the
   `external-imgui` component kept without the OpenGL2 backend; a link to the
   Read the Docs visualization migration guide.

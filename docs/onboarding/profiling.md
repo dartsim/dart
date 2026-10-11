@@ -314,11 +314,11 @@ OSG library when one exists. Historical arms whose source still contains
 `dart/gui/osg` are configured with `DART_BUILD_GUI_OSG=ON` and
 `DART_BUILD_GUI=ON` while the dependency prefix provides `lib/libosgDB.so`;
 every other arm uses `OFF` for both, since DART 7 rejects
-`DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no
-longer in the Pixi environment, so A/B runs against an OSG-era base cannot
-build its OSG-linked `contact_benchmark` driver; this is an expected
-transitional failure, and rows that do not use that driver, such as
-`--rows gzb,robot`, avoid it. A host lock serializes staging, measurement and
+`DART_BUILD_GUI_OSG=ON`. OpenSceneGraph is no longer in the Pixi environment,
+so an OSG-era arm whose `contact_benchmark` requires `gui-osg` raises an
+infrastructure error before configuration; backfill does not record it as
+broken source. Use portable rows (`--rows gzb,robot`) or an environment that
+provides OpenSceneGraph. A host lock serializes staging, measurement and
 copying artifacts to the requested output directory. Subprocesses inherit the
 lock, so an orphan must finish before a later run can replace the slot. The
 staging root must be private, owned by the current user, and on its parent's

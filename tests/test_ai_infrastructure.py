@@ -2478,13 +2478,19 @@ def test_test_gate_contract_rejects_ctest_runner_drift(tmp_path):
     (
         (
             "tests/CMakeLists.txt",
-            '"-DDART_CTEST_EXCLUDE_LABEL=gui"',
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device"',
             '"-DDART_CTEST_EXCLUDE_LABEL=unit"',
             "tests/CMakeLists.txt: missing `test-all` graph marker",
         ),
         (
             "tests/CMakeLists.txt",
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device"',
             '"-DDART_CTEST_EXCLUDE_LABEL=gui"',
+            "tests/CMakeLists.txt: missing `test-all` graph marker",
+        ),
+        (
+            "tests/CMakeLists.txt",
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device"',
             "",
             "tests/CMakeLists.txt: missing `test-all` graph marker",
         ),
@@ -2515,6 +2521,7 @@ def test_test_gate_contract_pins_the_gui_ctest_exclusion(
     ("old", "new"),
     (
         ("-L gui", "-L filament"),
+        ("-LE filament-native", "-LE gui-device"),
         ("&& ctest --test-dir", "&& echo --test-dir"),
         ("python/tests/unit/gui python/tests/integration", "python/tests/integration"),
         ("&& python -I scripts/run_pytest.py", "&& echo -I scripts/run_pytest.py"),
@@ -2542,6 +2549,67 @@ def test_default_pytest_target_leaves_rendering_modules_to_test_gui():
     assert all((ROOT / path).is_file() for path in infra.GUI_ONLY_PYTHON_TESTS)
     assert sources.isdisjoint(infra.GUI_ONLY_PYTHON_TESTS)
     assert "python/tests/unit/gui/test_gui_import.py" in sources
+
+
+@pytest.mark.parametrize(
+    ("name", "labels", "expected_error"),
+    (
+        ("test_FilamentBackend", ["gui", "gui-device"], False),
+        ("examples_demos_capture", ["gui", "gui-device"], False),
+        ("examples_demos_capture_extra", ["gui", "gui-device"], False),
+        ("test_GuiViewer", ["gui"], False),
+        ("examples_demos_cycle", ["gui"], False),
+        ("test_GuiMesh", ["gui"], True),
+        ("test_FilamentNative", ["gui-device"], True),
+        ("test_GuiDescriptors", ["gui", "gui-device"], True),
+        ("examples_demos_cycle", ["gui", "gui-device"], True),
+    ),
+)
+def test_ctest_gui_labels_only_exclude_device_dependent_tests(
+    name, labels, expected_error
+):
+    errors = []
+
+    infra.check_ctest_gui_labels(
+        {"name": name, "properties": [{"name": "LABELS", "value": labels}]}, errors
+    )
+
+    assert bool(errors) == expected_error
+
+
+def test_ctest_broad_gate_runs_gui_logic_without_running_graphics(tmp_path):
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(GuiLabels NONE)\n"
+        "enable_testing()\n"
+        "add_test(NAME gui_logic COMMAND ${CMAKE_COMMAND} -E touch logic-ran)\n"
+        'set_tests_properties(gui_logic PROPERTIES LABELS "gui")\n'
+        "add_test(NAME gui_render COMMAND ${CMAKE_COMMAND} -E false)\n"
+        'set_tests_properties(gui_render PROPERTIES LABELS "gui;gui-device")\n',
+        encoding="utf-8",
+    )
+    build = tmp_path / "build"
+    configured = subprocess.run(
+        ["cmake", "-S", str(tmp_path), "-B", str(build)], capture_output=True, text=True
+    )
+    assert configured.returncode == 0, configured.stdout + configured.stderr
+
+    result = subprocess.run(
+        [
+            "cmake",
+            f"-DDART_CTEST_COMMAND={infra.shutil.which('ctest')}",
+            infra.GUI_CTEST_EXCLUSION,
+            "-P",
+            str(ROOT / "cmake/DARTRunCTest.cmake"),
+        ],
+        cwd=build,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (build / "logic-ran").is_file()
+    assert "1/1 Test" in result.stdout
 
 
 @pytest.mark.parametrize(
@@ -2788,6 +2856,7 @@ def _configure_semantic_graph_fixture(
         "CMakeLists.txt": """
 cmake_minimum_required(VERSION 3.22)
 project(test_graph C CXX)
+set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 enable_testing()
 set(BUILD_TESTING ON CACHE BOOL "")
@@ -2824,9 +2893,10 @@ add_custom_target(
     ${CMAKE_COMMAND}
     "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
     "-DDART_CTEST_CONFIGURATION=$<CONFIG>"
-    "-DDART_CTEST_EXCLUDE_LABEL=gui"
+    "-DDART_CTEST_EXCLUDE_LABEL=gui-device"
     -P "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+  WORKING_DIRECTORY "${DART_BINARY_DIR}"
 )
 """.lstrip(),
         "tests/integration/CMakeLists.txt": """
@@ -2931,6 +3001,219 @@ def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     infra.check_cmake_test_graph(tmp_path, build, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize("build_testing", (None, "ON", "OFF"))
+def test_repository_ctest_initialization_generates_the_full_dart_subtree(
+    tmp_path, build_testing
+):
+    ordering = [
+        (name, arguments, scope)
+        for name, arguments, scope in infra.cmake_scoped_commands(
+            (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+        )
+        if (name, arguments) in {("include", "CTest"), ("add_subdirectory", "dart")}
+    ]
+    assert len(ordering) == 2
+    assert all(scope == () for _, _, scope in ordering)
+    tmp_path.joinpath("CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(CtestInitialization NONE)\n"
+        + "".join(f"{name}({arguments})\n" for name, arguments, _ in ordering)
+        + "if(BUILD_TESTING)\n"
+        "  add_test(NAME semantic COMMAND ${CMAKE_COMMAND} -E true)\n"
+        "endif()\n",
+        encoding="utf-8",
+    )
+    child = tmp_path / "dart/child"
+    child.mkdir(parents=True)
+    child.parent.joinpath("CMakeLists.txt").write_text(
+        "add_subdirectory(child)\n", encoding="utf-8"
+    )
+    child.joinpath("CMakeLists.txt").write_text("# No tests here.\n", encoding="utf-8")
+    build = tmp_path / "build"
+    command = ["cmake", "-S", str(tmp_path), "-B", str(build)]
+    if build_testing is not None:
+        command.append(f"-DBUILD_TESTING={build_testing}")
+
+    result = subprocess.run(command, capture_output=True, text=True)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    if build_testing == "OFF":
+        assert not (build / "CTestTestfile.cmake").exists()
+        assert not (build / "dart/child/CTestTestfile.cmake").exists()
+    else:
+        errors = []
+        registrations = infra.generated_ctest_registrations(build, "Release", errors)
+        assert errors == []
+        assert set(registrations) == {"semantic"}
+        assert (build / "dart/child/CTestTestfile.cmake").is_file()
+
+
+def _add_demo_semantic_fixture(root: Path, labels: str = "gui", frames: str = "2"):
+    cmake = root / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8") + "\nadd_subdirectory(examples/demos)\n",
+        encoding="utf-8",
+    )
+    demos = root / "examples/demos"
+    demos.mkdir(parents=True)
+    demos.joinpath("main.cpp").write_text(
+        "int main() { return 0; }\n", encoding="utf-8"
+    )
+    demos.joinpath("CMakeLists.txt").write_text(
+        "add_executable(dart-demos main.cpp)\n"
+        "add_dependencies(tests_and_run dart-demos)\n"
+        f"add_test(NAME examples_demos_cycle COMMAND dart-demos --cycle-scenes --frames {frames})\n"
+        f'set_tests_properties(examples_demos_cycle PROPERTIES LABELS "{labels}")\n',
+        encoding="utf-8",
+    )
+    return demos
+
+
+@pytest.mark.parametrize(
+    ("labels", "frames", "expected"),
+    (
+        ("gui", "2", None),
+        ("gui;gui-device", "2", "cannot have the `gui-device` label"),
+        ("gui", "0", "unapproved command arguments"),
+    ),
+)
+def test_cmake_semantic_graph_includes_demo_labels_and_arguments(
+    tmp_path, labels, frames, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    _add_demo_semantic_fixture(tmp_path, labels, frames)
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if expected is None:
+        assert errors == []
+    else:
+        assert any(
+            expected in error and "examples_demos_cycle" in error for error in errors
+        )
+
+
+def test_cmake_broad_gate_runs_demo_tests_from_the_dart_build_root(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    demos = _add_demo_semantic_fixture(tmp_path)
+    demos.joinpath("main.cpp").write_text(
+        '#include <fstream>\nint main() { std::ofstream("demo-ran") << "ran"; return 0; }\n',
+        encoding="utf-8",
+    )
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    assert errors == []
+
+    result = subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(build),
+            "--target",
+            "tests_and_run",
+            "--config",
+            "Release",
+            "--parallel",
+            "2",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (build / "examples/demos/demo-ran").is_file()
+
+
+@pytest.mark.parametrize("poison_variable", (False, True))
+def test_cmake_semantic_graph_rejects_narrowed_ctest_working_directory(
+    tmp_path, poison_variable
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    if poison_variable:
+        cmake = tmp_path / "CMakeLists.txt"
+        old = "set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})"
+        new = "set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/tests)"
+        expected = "expanded `tests_and_run` command does not invoke"
+    else:
+        cmake = tmp_path / "tests/CMakeLists.txt"
+        old = 'WORKING_DIRECTORY "${DART_BINARY_DIR}"'
+        new = 'WORKING_DIRECTORY "${DART_BINARY_DIR}/tests"'
+        expected = "does not originate from its validated source contract"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(old, new, 1),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("enabled", "registered", "dependency", "expected"),
+    (
+        (False, True, True, None),
+        (True, True, True, None),
+        (True, False, True, "not registered with CTest"),
+        (True, True, False, "`tests_and_run` omits"),
+    ),
+)
+def test_cmake_semantic_graph_owns_opt_in_gui_smoke(
+    tmp_path, enabled, registered, dependency, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    root_cmake = tmp_path / "CMakeLists.txt"
+    root_cmake.write_text(
+        root_cmake.read_text(encoding="utf-8").replace(
+            "add_subdirectory(tests)",
+            f"set(DART_ENABLE_GUI_SMOKE_TESTS {'ON' if enabled else 'OFF'})\n"
+            "add_subdirectory(tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    tests_cmake = tmp_path / "tests/CMakeLists.txt"
+    tests_cmake.write_text(
+        tests_cmake.read_text(encoding="utf-8")
+        + "\nadd_subdirectory(benchmark/integration)\n",
+        encoding="utf-8",
+    )
+    smoke_dir = tmp_path / "tests/benchmark/integration"
+    smoke_dir.mkdir(parents=True)
+    smoke_dir.joinpath("offscreen_capture_smoke.cpp").write_text(
+        "int main() { return 0; }\n", encoding="utf-8"
+    )
+    smoke_dir.joinpath("CMakeLists.txt").write_text(
+        "if(DART_ENABLE_GUI_SMOKE_TESTS)\n"
+        "  add_executable(offscreen_capture_smoke offscreen_capture_smoke.cpp)\n"
+        + (
+            "  add_test(NAME offscreen_capture_smoke COMMAND offscreen_capture_smoke)\n"
+            '  set_tests_properties(offscreen_capture_smoke PROPERTIES LABELS "gui;gui-device")\n'
+            if registered
+            else ""
+        )
+        + (
+            "  add_dependencies(tests_and_run offscreen_capture_smoke)\n"
+            if dependency
+            else ""
+        )
+        + "endif()\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if expected is None:
+        assert errors == []
+    else:
+        assert any(
+            expected in error and "offscreen_capture_smoke" in error for error in errors
+        )
 
 
 def test_cmake_semantic_graph_probe_accepts_release_multi_config_graph(tmp_path):
@@ -4662,7 +4945,106 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     assert "agent-capture" in visual["tasks"]
     assert "image-verdict" in visual["tasks"]
     assert "verification-bundle" in visual["tasks"]
+    assert set(visual["capture_vulkan"]) == {"source", "icd_files", "readiness"}
+    assert set(visual["native_window"]) == {"display", "xvfb_run"}
     json.dumps(report)
+
+
+@pytest.mark.parametrize("variable", ("VK_DRIVER_FILES", "VK_ICD_FILENAMES"))
+def test_visual_inventory_reports_selected_vulkan_icd(tmp_path, monkeypatch, variable):
+    monkeypatch.setattr(infra.sys, "platform", "linux")
+    monkeypatch.delenv("VK_DRIVER_FILES", raising=False)
+    monkeypatch.delenv("VK_ICD_FILENAMES", raising=False)
+    icd = tmp_path / "driver.json"
+    icd.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv(
+        variable, os.pathsep.join([str(tmp_path / "missing.json"), str(icd)])
+    )
+    monkeypatch.delenv("DISPLAY", raising=False)
+
+    visual = infra._visual_verification_inventory(tmp_path)
+
+    assert visual["capture_vulkan"] == {
+        "source": variable,
+        "icd_files": [str(tmp_path / "missing.json"), str(icd)],
+        "readiness": "ICD available (device not probed)",
+    }
+    assert visual["native_window"]["display"] == ""
+
+
+def test_visual_inventory_honors_missing_driver_override_before_pixis_icd(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(infra.sys, "platform", "linux")
+    driver = tmp_path / "share/vulkan/icd.d/lvp_icd.x86_64.json"
+    driver.parent.mkdir(parents=True)
+    driver.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path))
+    monkeypatch.setenv("VK_ICD_FILENAMES", str(driver))
+    missing = tmp_path / "missing.json"
+    monkeypatch.setenv("VK_DRIVER_FILES", str(missing))
+
+    vulkan = infra._visual_verification_inventory(tmp_path)["capture_vulkan"]
+
+    assert vulkan == {
+        "source": "VK_DRIVER_FILES",
+        "icd_files": [str(missing)],
+        "readiness": "selected ICD missing",
+    }
+
+
+def test_visual_inventory_discovers_pixis_lavapipe_icd(tmp_path, monkeypatch):
+    monkeypatch.setattr(infra.sys, "platform", "linux")
+    monkeypatch.delenv("VK_DRIVER_FILES", raising=False)
+    monkeypatch.delenv("VK_ICD_FILENAMES", raising=False)
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path))
+    driver = tmp_path / "share/vulkan/icd.d/lvp_icd.aarch64.json"
+    driver.parent.mkdir(parents=True)
+    driver.write_text("{}", encoding="utf-8")
+
+    vulkan = infra._visual_verification_inventory(tmp_path)["capture_vulkan"]
+
+    assert vulkan == {
+        "source": "Pixi Lavapipe",
+        "icd_files": [str(driver)],
+        "readiness": "ICD available (device not probed)",
+    }
+
+
+def test_visual_inventory_keeps_unprobed_system_vulkan_readiness_unknown(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(infra.sys, "platform", "linux")
+    for variable in ("VK_DRIVER_FILES", "VK_ICD_FILENAMES", "CONDA_PREFIX"):
+        monkeypatch.delenv(variable, raising=False)
+
+    vulkan = infra._visual_verification_inventory(tmp_path)["capture_vulkan"]
+
+    assert vulkan["source"] == "unavailable"
+    assert vulkan["icd_files"] == []
+    assert vulkan["readiness"].startswith("unknown")
+
+
+@pytest.mark.parametrize("platform", ("darwin", "win32"))
+def test_visual_inventory_does_not_require_vulkan_outside_linux(
+    tmp_path, monkeypatch, platform
+):
+    monkeypatch.setattr(infra.sys, "platform", platform)
+    monkeypatch.setattr(infra.shutil, "which", lambda name: None)
+
+    visual = infra._visual_verification_inventory(tmp_path)
+
+    assert visual["capture_vulkan"]["readiness"] == "not required on this platform"
+
+
+def test_doctor_print_distinguishes_capture_and_native_window_prerequisites(capsys):
+    report = infra.doctor_report(ROOT)
+
+    infra.print_doctor(report)
+
+    output = capsys.readouterr().out
+    assert "capture Vulkan=" in output
+    assert "; native-window DISPLAY=" in output
 
 
 @pytest.mark.parametrize(

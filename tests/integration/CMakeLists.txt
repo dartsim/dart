@@ -463,7 +463,7 @@ if(TARGET dart-gui)
       target_compile_features(test_${gui_test} PRIVATE cxx_std_20)
       set_tests_properties(
         test_${gui_test}
-        PROPERTIES LABELS "gui;filament;filament-headless"
+        PROPERTIES LABELS "gui;gui-device;filament;filament-headless"
       )
       set_property(
         TEST test_${gui_test}
@@ -475,7 +475,7 @@ if(TARGET dart-gui)
       )
       set_tests_properties(
         test_FilamentNative
-        PROPERTIES LABELS "gui;filament-native"
+        PROPERTIES LABELS "gui;gui-device;filament-native"
       )
       # A filter that selects nothing must fail instead of passing silently.
       set_tests_properties(
@@ -488,7 +488,7 @@ if(TARGET dart-gui)
       target_link_libraries(test_${gui_test} PNG::PNG)
       set_tests_properties(
         test_${gui_test}
-        PROPERTIES LABELS "gui;filament;filament-headless"
+        PROPERTIES LABELS "gui;gui-device;filament;filament-headless"
       )
     endif()
     if(gui_test STREQUAL "GuiImageDecoders")

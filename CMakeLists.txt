@@ -182,6 +182,16 @@ if(DEFINED DART_DARTPY_BINDER)
 endif()
 # DART 7 removed the OpenSceneGraph GUI. The legacy DART_BUILD_GUI_OSG=OFF
 # still selects a headless build; ON fails with migration text.
+get_property(_dart_gui_osg_help CACHE DART_BUILD_GUI_OSG PROPERTY HELPSTRING)
+if(DART_BUILD_GUI_OSG AND _dart_gui_osg_help STREQUAL "Build osgDart library")
+  message(
+    STATUS
+    "Removing the cached legacy OSG GUI default; using DART_BUILD_GUI."
+  )
+  unset(DART_BUILD_GUI_OSG CACHE)
+  unset(DART_BUILD_GUI_OSG)
+endif()
+unset(_dart_gui_osg_help)
 if(DEFINED DART_BUILD_GUI_OSG)
   if(DART_BUILD_GUI_OSG)
     message(
@@ -561,13 +571,13 @@ endif(DART_VERBOSE)
 # Add sub-directories
 #===============================================================================
 
+include(CTest)
 add_subdirectory(dart)
 
 set(DART_IN_SOURCE_BUILD TRUE)
 
 if(TARGET dart)
   # Add a "tests" target to build unit tests.
-  include(CTest)
   if(BUILD_TESTING)
     if(MSVC)
       add_subdirectory(tests)

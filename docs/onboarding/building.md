@@ -29,7 +29,10 @@ path and any feature environment affected by the change.
 `pixi run config` builds the Filament GUI (`DART_BUILD_GUI=ON`, the default)
 and dartpy into `build/<env>/cpp/Release`. `pixi run test`, `test-py`, and
 `test-all` leave out GUI tests that need a graphics device; `pixi run test-gui`
-runs them in the same tree.
+runs all GUI tests except native-window tests in the same tree. CTest uses
+`gui-device` for the device-dependent exclusion; device-free GUI tests remain
+in the default gates. See [testing guidance](testing.md) for native-window
+tests.
 
 ```bash
 pixi run demos        # Build dart-demos and open a native window
