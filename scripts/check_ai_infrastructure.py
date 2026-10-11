@@ -188,8 +188,15 @@ APPROVED_CTEST_SELECTIONS = {
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_RELEASE_VERSION_PREFIX = (
-    r"(?:DART(?:py)?(?:[\s_]+(?:version|release))?\s*"
+    r"(?:DART(?:py)?(?:\.__version__|[\s_]+(?:version|release))?\s*"
     r"(?:==|[<>~!]=|[:=<>])?\s*v?|release-)"
+)
+NEXT_RELEASE_VERSION_PREFIX = (
+    r"\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
+    r"(?:release(?:\s+version)?|version)[`*]*"
+    r"(?:\s+(?:is|will\s+be)|\s*[:=]|\s+)[`*]*\s*"
+    r"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
+    r"\s*(?:[:=]\s*)?"
 )
 DEPENDENCY_NAMES = (
     "Python",
@@ -219,7 +226,7 @@ DEPENDENCY_NAMES = (
     "MSVC",
 )
 DEPENDENCY_NAME_PATTERN = (
-    rf"\b(?:[a-z0-9]+(?:-[a-z0-9]+)+|{'|'.join(DEPENDENCY_NAMES)})\b"
+    rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
 )
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
@@ -4062,6 +4069,25 @@ def dart_release_version_pattern(root: Path) -> str:
     return rf"(?<![\w.])(?:{prefixes})\.\d+(?:\.\d+)?(?:[a-z]+\d*)?"
 
 
+def dependency_next_version(prefix: str) -> bool:
+    """Recognize a next-version clause belonging to a dependency update."""
+    next_target = re.search(
+        rf"(?:{NEXT_RELEASE_VERSION_PREFIX})$", prefix, re.IGNORECASE
+    )
+    if next_target is None or "dart" in next_target.group().lower():
+        return False
+    sentence_prefix = re.split(r"[.!?](?:\s+|$)", prefix[: next_target.start()])[-1]
+    return (
+        re.search(
+            rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
+            rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}",
+            sentence_prefix,
+            re.IGNORECASE,
+        )
+        is not None
+    )
+
+
 def names_next_release(root: Path, text: str) -> bool:
     """Detect a concrete version immediately after a next-release phrase."""
     version = (
@@ -4069,15 +4095,7 @@ def names_next_release(root: Path, text: str) -> bool:
         r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
     )
     next_version = rf"[`*]*{dart_release_version_pattern(root)}[`*]*"
-    next_target = re.compile(
-        rf"\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
-        rf"(?:release(?:\s+version)?|version)[`*]*"
-        rf"(?:\s+(?:is|will\s+be)|\s*[:=]|\s+)[`*]*\s*"
-        rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
-        rf"\s*(?:[:=]\s*)?",
-        re.IGNORECASE,
-    )
-    for match in next_target.finditer(text):
+    for match in re.finditer(NEXT_RELEASE_VERSION_PREFIX, text, re.IGNORECASE):
         suffix = text[match.end() :]
         if re.match(version, suffix, re.IGNORECASE) or (
             "dart" in match.group().lower()
@@ -4088,10 +4106,9 @@ def names_next_release(root: Path, text: str) -> bool:
             )
         ):
             return True
-        sentence_prefix = re.split(r"[.!?](?:\s+|$)", text[: match.start()])[-1]
-        if not re.search(
-            DEPENDENCY_NAME_PATTERN, sentence_prefix, re.IGNORECASE
-        ) and re.match(next_version, suffix, re.IGNORECASE):
+        if not dependency_next_version(text[: match.end()]) and re.match(
+            next_version, suffix, re.IGNORECASE
+        ):
             return True
     return False
 
@@ -4606,10 +4623,13 @@ def exercise_scenarios(
             # DART/dartpy (optional label/operator/v) and release- qualify any major.
             # Bare/v exclude dependency versions and unqualified '=' or ':' parameters.
             re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
-            or not re.search(
-                rf"{DEPENDENCY_NAME_PATTERN} $",
-                prompt_class[: match.start()],
-                re.IGNORECASE,
+            or not (
+                re.search(
+                    rf"{DEPENDENCY_NAME_PATTERN} $",
+                    prompt_class[: match.start()],
+                    re.IGNORECASE,
+                )
+                or dependency_next_version(prompt_class[: match.start()])
             )
             for match in re.finditer(
                 rf"{release_version}\b", prompt_class, re.IGNORECASE
