@@ -116,12 +116,17 @@ void releaseCouplerMimicProperties(
 }
 
 // Returns the leader's skeleton if the leader coordinate responds to impulses.
-// An immobile or motion-prescribed leader takes no reaction impulse.
+// An immobile or motion-prescribed leader takes no reaction impulse. The DoF's
+// own actuator decides: a prescribed joint on a floating base still has a
+// reactive child body.
 dart::dynamics::Skeleton* getCouplerReactiveReferenceSkeleton(
     const dart::dynamics::MimicDofProperties& mimicProp)
 {
-  const auto* body = mimicProp.mReferenceJoint->getChildBodyNode();
-  if (body == nullptr || !body->isReactive())
+  const auto* joint = mimicProp.mReferenceJoint;
+  const auto* body = joint->getChildBodyNode();
+  if (body == nullptr || !body->isReactive()
+      || !dart::dynamics::Joint::isDynamicActuatorType(
+          joint->getActuatorType(mimicProp.mReferenceDofIndex)))
     return nullptr;
 
   return const_cast<dart::dynamics::Skeleton*>(body->getSkeleton().get());
@@ -233,9 +238,21 @@ void CouplerConstraint::update()
               ? referenceJoint->getVelocity(referenceDof)
               : 0.0;
 
-    mNegativeVelocityError[i] = correctionVelocity
-                                - (mJoint->getVelocity(i)
-                                   - mimicProp.mMultiplier * referenceVelocity);
+    const double followerVelocity = mJoint->getVelocity(i);
+    if (getCouplerReactiveReferenceSkeleton(mimicProp) != nullptr) {
+      mNegativeVelocityError[i]
+          = correctionVelocity
+            - (followerVelocity - mimicProp.mMultiplier * referenceVelocity);
+    } else {
+      // A leader that takes no impulse makes this row a velocity servo on the
+      // follower, so the follower's whole target respects its velocity limits.
+      // Clipping a reactive pair's target instead would push the leader.
+      const double targetVelocity = math::clip(
+          mimicProp.mMultiplier * referenceVelocity + correctionVelocity,
+          mJoint->getVelocityLowerLimit(i),
+          mJoint->getVelocityUpperLimit(i));
+      mNegativeVelocityError[i] = targetVelocity - followerVelocity;
+    }
     mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
     mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
 
