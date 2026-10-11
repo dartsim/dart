@@ -34,15 +34,16 @@ visual exception when OSG/Xvfb is unavailable or not applicable.
 5. Decide whether the bug applies to the active release line. For applicable
    bug fixes, implement on the development branch, `main`:
    - branch:
-     `fix/<downstream-project>-<issue-number>-<brief-description>-6-lts`
+     `fix/<downstream-project>-<issue-number>-<brief-description>`
    - add a regression test that reproduces the downstream symptom
    - keep the fix minimal; no unrelated refactors
 6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when
    feasible, and run `pixi run -e gazebo test-gz` when Gazebo/gz-physics
    compatibility could be affected.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
-   After approval, create the PR against `main` with the branch-matching DART
-   6.x release milestone and reference the downstream issue.
+   After approval, create the PR against `main` with the milestone resolved
+   from the target branch's `docs/onboarding/release-management.md`, and
+   reference the downstream issue.
 
 ## Release-Line Conventions
 
