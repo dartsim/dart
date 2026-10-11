@@ -88,6 +88,12 @@
 
 * Python
 
+  * Avoid crashes when native code releases Python objects, or calls Python
+    collision filters, analytical IK solvers or optimizer overrides, while
+    Python 3.15 or newer shuts down. Builds against the full Python API were
+    affected; the stable-ABI wheels attach through an API that cannot fail
+    this way.
+
   * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
     and world-recording access for Python simulation tutorials.
     [#3644](https://github.com/dartsim/dart/pull/3644)
