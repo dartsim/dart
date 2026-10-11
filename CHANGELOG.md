@@ -100,6 +100,10 @@
     option), and Linux keeps `cp310` and `cp311` wheels, so each release
     publishes eight wheels instead of twelve.
 
+  * Source builds of `dartpy` on Windows work with the Ninja and NMake
+    generators, and the `DARTPY_BUILD_TEMP` environment variable moves the
+    CMake build tree, for example to a larger disk.
+
 * Examples
 
   * Replace the four C++ tutorials with Python exercises and solutions in
@@ -131,7 +135,8 @@
     Atlas v5 and Unitree G1 model-viewing demos.
 
   * Add `DART_USE_SYSTEM_NANOBIND` (default `OFF`); the bundled build fetches
-    nanobind 3.1.0 and its robin_map submodule.
+    nanobind 3.1.0 and its robin_map submodule. With `ON`, CMake uses
+    `nanobind_DIR` when set and otherwise asks the build's Python.
 
   * Add `DART_USE_SYSTEM_FILAMENT` (default `ON`) to build the GUI against an
     installed Filament 1.77.3 SDK. `OFF` uses DART's pinned private SDK, built
