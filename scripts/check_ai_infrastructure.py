@@ -4006,6 +4006,9 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     for line in text.splitlines():
         if match := re.fullmatch(r"## DART ([0-9]+)[ \t]*", line):
             section = match[1]
+        elif line.startswith("## "):
+            # Any other level-two heading ends the current major's section.
+            section = None
         elif (
             grouped
             and (match := re.match(r"### \[DART (([0-9]+)\.[0-9]+\.[0-9]+) ", line))

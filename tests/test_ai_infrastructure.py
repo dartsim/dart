@@ -685,6 +685,28 @@ def test_release_target_requires_matching_major_sections(
     assert errors == ([] if error is None else [f"CHANGELOG.md: {error}"])
 
 
+def test_release_target_ends_major_sections_at_other_level_two_headings(
+    release_target_owner, tmp_path
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 7.0.0 |\n", encoding="utf-8"
+    )
+    (tmp_path / "CHANGELOG.md").write_text(
+        "## DART 7\n\n"
+        "## Notes\n\n"
+        "### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)\n\n"
+        "## DART 6\n\n"
+        "### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == ["CHANGELOG.md: DART 7.0.0 must be listed under `## DART 7`"]
+
+
 @pytest.mark.parametrize(
     ("target", "package_version", "workspace_version", "valid"),
     [
