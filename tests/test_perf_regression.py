@@ -5384,9 +5384,9 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     (pages / "performance/dart6").mkdir(parents=True)
     (pages / "performance/dart6/index.html").write_text("chart")
     module.chart_data(pages, published)
-    chart = (pages / "performance/dart6-ir/data.js").read_text()
+    chart = (pages / "performance/dart7-ir/data.js").read_text()
     point = json.loads(chart.removeprefix("window.BENCHMARK_DATA = "))["entries"][
-        "DART 6 deterministic counts"
+        "DART 7 deterministic counts"
     ][0]
     assert point["commit"]["id"] == record["run"]["commit"]
     benches = {bench["name"]: bench["value"] for bench in point["benches"]}
@@ -5653,9 +5653,9 @@ def _stock_chart_template(pages):
 
 
 def _chart_points(pages):
-    data = (pages / "performance/dart6-ir/data.js").read_text()
+    data = (pages / "performance/dart7-ir/data.js").read_text()
     return json.loads(data.removeprefix("window.BENCHMARK_DATA = "))["entries"][
-        "DART 6 deterministic counts"
+        "DART 7 deterministic counts"
     ]
 
 
@@ -5868,7 +5868,7 @@ def test_chart_writer_rerun_does_not_duplicate_commit_and_fingerprint(tmp_path):
     _stock_chart_template(tmp_path)
     record = _publication_fixture()
     module.chart_data(tmp_path, record)
-    data_path = tmp_path / "performance/dart6-ir/data.js"
+    data_path = tmp_path / "performance/dart7-ir/data.js"
     saved = data_path.read_bytes()
     record["run"]["time"] = "2026-10-09T08:00:00+00:00"
     module.chart_data(tmp_path, record)
@@ -5921,7 +5921,7 @@ def test_chart_equal_timestamps_have_the_same_order_and_fingerprint_annotations(
         _stock_chart_template(pages)
         for record in ordered:
             module.chart_data(pages, record)
-        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+        scripts.append((pages / "performance/dart7-ir/data.js").read_bytes())
     assert scripts[0] == scripts[1]
 
 
@@ -5962,7 +5962,7 @@ def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_pa
         "s3w/dart@1:01234567 Ir",
         "s3w/dart@1:01234567 allocations",
     ]
-    assert (tmp_path / "performance/dart6-ir/index.html").read_text() == (
+    assert (tmp_path / "performance/dart7-ir/index.html").read_text() == (
         tmp_path / "performance/dart6/index.html"
     ).read_text()
     record["run"]["time"] = "2026-10-08T08:01:00+00:00"
@@ -5995,11 +5995,11 @@ def test_chart_out_of_order_publication_keeps_newest_points_and_latest_value(tmp
         record["results"][0]["head"]["ir_per_step"] = minute
         module.chart_data(tmp_path, record)
     data = json.loads(
-        (tmp_path / "performance/dart6-ir/data.js")
+        (tmp_path / "performance/dart7-ir/data.js")
         .read_text()
         .removeprefix("window.BENCHMARK_DATA = ")
     )
-    points = data["entries"]["DART 6 deterministic counts"]
+    points = data["entries"]["DART 7 deterministic counts"]
     assert [point["commit"]["id"] for point in points] == [
         f"{minute:040x}" for minute in range(1, 251)
     ]
@@ -6109,7 +6109,7 @@ def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
     assert (
         len(records) == 4
     )  # Changed guards and fingerprint transitions stay immutable.
-    assert not (tmp_path / "performance/dart6-ir").exists()
+    assert not (tmp_path / "performance/dart7-ir").exists()
 
 
 def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicate(
@@ -6466,7 +6466,7 @@ def test_chart_annotates_comparability_changes_across_missing_rows(
                 if bench["name"].startswith("stable/")
             )
         assert all("changed:" not in bench["extra"] for bench in points[0]["benches"])
-        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+        scripts.append((pages / "performance/dart7-ir/data.js").read_bytes())
     assert scripts[0] == scripts[1]
 
 
@@ -6506,9 +6506,9 @@ def test_chart_legacy_points_validate_counts_and_split_unknown_inputs(tmp_path):
     _stock_chart_template(tmp_path)
     record = _publication_fixture()
     module.chart_data(tmp_path, record)
-    data_path = tmp_path / "performance/dart6-ir/data.js"
+    data_path = tmp_path / "performance/dart7-ir/data.js"
     data = json.loads(data_path.read_text().removeprefix("window.BENCHMARK_DATA = "))
-    point = data["entries"]["DART 6 deterministic counts"][0]
+    point = data["entries"]["DART 7 deterministic counts"][0]
     point.pop("measurement")
     for bench in point["benches"]:
         for field in (
@@ -6575,7 +6575,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     real_run(["git", "clone", str(remote), str(pages)], check=True, capture_output=True)
     _stock_chart_template(pages)
     if tier == "backfill":
-        for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+        for name in ("performance/dart7-ir/data.js", "performance/guards/main.md"):
             target = pages / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(b"preserve hosted evidence\n")
@@ -6671,7 +6671,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
     if tier == "backfill":
         assert (
-            pages / "performance/dart6-ir/data.js"
+            pages / "performance/dart7-ir/data.js"
         ).read_bytes() == b"preserve hosted evidence\n"
         assert (
             pages / "performance/guards/main.md"
@@ -6681,7 +6681,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
             concurrent
         )
     elif outcome == "no-chart":
-        assert not (pages / "performance/dart6-ir/data.js").exists()
+        assert not (pages / "performance/dart7-ir/data.js").exists()
     else:
         points = _chart_points(pages)
         assert [point["commit"]["id"] for point in points] == (
@@ -9098,7 +9098,7 @@ def test_backfill_publication_is_one_commit_and_idempotent(
     _perf_git(pages, "config", "user.name", "Maintainer")
     _perf_git(pages, "config", "user.email", "maintainer@example.com")
     kept = {}
-    for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+    for name in ("performance/dart7-ir/data.js", "performance/guards/main.md"):
         target = pages / name
         target.parent.mkdir(parents=True, exist_ok=True)
         kept[name] = b"preserve hosted evidence\n"

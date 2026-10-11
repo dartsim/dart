@@ -6,7 +6,9 @@ slice:
 
 * Wall-time dashboard:
   `https://dartsim.github.io/dart/performance/dart6/ <https://dartsim.github.io/dart/performance/dart6/>`_
-* Deterministic instruction-count and allocation dashboard:
+* Deterministic instruction-count and allocation dashboard for main (DART 7):
+  `https://dartsim.github.io/dart/performance/dart7-ir/ <https://dartsim.github.io/dart/performance/dart7-ir/>`_;
+  the DART 6 history stays at
   `https://dartsim.github.io/dart/performance/dart6-ir/ <https://dartsim.github.io/dart/performance/dart6-ir/>`_
 
 The deterministic chart publishes merge measurements from ``perf.yml``;

@@ -441,9 +441,10 @@ libraries.
   distribution. This replaces the Python 3.10+ support and `cp310`/`cp311`
   wheels that main's unreleased changelog entries describe; M5's packaging
   PR updates those entries.
-- The C++ package uses `AnyNewerVersion` compatibility: DART N.x accepts
-  requests for any earlier version until a release removes APIs downstreams
-  use.
+- The C++ package accepts requests for any earlier version back to 6.0, until
+  a release removes APIs downstreams use. A custom version file provides this:
+  CMake's stock `AnyNewerVersion` would also accept requests for older majors,
+  which DART does not promise to support.
   - Downstreams opt out with a version range such as
     `find_package(DART 6.10...<7)`.
   - When a 6.x request resolves to 7.x, the package configuration prints a

@@ -2579,7 +2579,7 @@ def head_fingerprints(record: dict) -> dict:
 
 def chart_data(pages: Path, record: dict) -> None:
     """Use the existing stock github-action-benchmark page and data format."""
-    directory = pages / "performance/dart6-ir"
+    directory = pages / "performance/dart7-ir"
     directory.mkdir(parents=True, exist_ok=True)
     index = directory / "index.html"
     if not index.exists():
@@ -2597,7 +2597,7 @@ def chart_data(pages: Path, record: dict) -> None:
             "repoUrl": "https://github.com/dartsim/dart",
             "entries": {},
         }
-    series = data["entries"].setdefault("DART 6 deterministic counts", [])
+    series = data["entries"].setdefault("DART 7 deterministic counts", [])
     run = record["run"]
     fingerprint = run["env"]["fingerprint"]
     row_fingerprints = head_fingerprints(record)
@@ -2715,7 +2715,7 @@ def chart_data(pages: Path, record: dict) -> None:
                             f" -> {new.get(key, 'unknown')}"
                         )
             previous_benches[bench["name"]] = (point, bench)
-    data["entries"]["DART 6 deterministic counts"] = series[-250:]
+    data["entries"]["DART 7 deterministic counts"] = series[-250:]
     data["lastUpdate"] = series[-1]["date"]
     # The stock page reads this as executable JS; JSON escaping closes script literals.
     data_path.write_text(
@@ -3375,7 +3375,7 @@ def write_publication(pages: Path, record: dict) -> list[str]:
         changed.append(str(path.relative_to(pages)))
         if run["tier"] == "merge" and incoming_source != "local" and not chart_repeated:
             chart_data(pages, record)
-            changed.append("performance/dart6-ir")
+            changed.append("performance/dart7-ir")
     return changed
 
 

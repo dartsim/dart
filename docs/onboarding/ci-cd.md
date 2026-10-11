@@ -99,7 +99,7 @@ These tiers publish in this repository's `gh-pages` branch:
 | Path | Content |
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
-| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points |
+| `performance/dart7-ir/` | Merge-only Ir and allocation chart for main's DART 7 line, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points. `performance/dart6-ir/` keeps the frozen pre-7.0 history |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
 | `performance/records/main/<yyyy>/<date>-<sha12>-backfill.json` | Local A/B record with `runner.environment: local`, pushed once by a maintainer after review; never charted |
 | `performance/releases/<tag>.{json,md}` and `index.md` | Comparison with the previous tag; main candidates include a ledger of changes; per-row release index; JSON and markdown attached by hand to the GitHub release |

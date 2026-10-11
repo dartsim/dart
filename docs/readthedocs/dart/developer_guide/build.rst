@@ -46,7 +46,7 @@ tasks.
 Platform and tool requirements
 ------------------------------
 
-DART 6.20 requires C++17 and the following source-build baselines:
+The development branch requires C++17 and the following source-build baselines:
 
 .. list-table::
    :header-rows: 1

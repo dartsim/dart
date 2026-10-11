@@ -24,8 +24,9 @@ only with new evidence and maintainer approval.
 - **D4. Keep `pip install dartpy` / `import dartpy`.** Version 7 signals the
   break.
 - **D5. C++ and Python both become 7.0.**
-  - The CMake package uses `AnyNewerVersion`, so gz-physics' request for DART
-    6.10 keeps resolving. Today `SameMajorVersion` would reject 7.x, and
+  - The CMake package accepts requests back to 6.0 (`AnyNewerVersion`
+    semantics with a 6.0 floor, through a custom version file), so
+    gz-physics' request for DART 6.10 keeps resolving. Today `SameMajorVersion` would reject 7.x, and
     gz-cmake only warns and skips the plugin.
   - No deprecated C++ API is removed during 7.x; gz uses several of them,
     including the version macros.

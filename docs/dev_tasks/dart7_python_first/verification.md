@@ -231,9 +231,10 @@ Known gaps:
 - **Scope:**
   - the gz shim test and the contact-surface header probe, as described under
     Gazebo gates in the [README](README.md#gates);
-  - version plumbing: `AnyNewerVersion`, a `cmake -P` test that renders the
-    version file for 7.0.0, 7.4.2 and 8.0.0 and asserts that 6.10 and 6.16 are
-    accepted while `6.16 EXACT` and the range `6.10...<7` are rejected, a status
+  - version plumbing: a custom version file with a 6.0 floor, and a `cmake -P`
+    test that renders it for 7.0.0, 7.4.2 and 8.0.0 and asserts that 6.10 and
+    6.16 are accepted while 5.x, `6.16 EXACT` and the range `6.10...<7` are
+    rejected, a status
     line when a 6.x request resolves to 7.x, and a way for the Gazebo lanes to
     see a 7.x version before packaging (a version bump or a CI-only override);
   - machine-checked inventories of the gz-used accessors and mutation paths.
