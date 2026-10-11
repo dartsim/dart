@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -590,6 +591,36 @@ def test_failed_rerun_drops_previous_passing_manifest(
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
     assert not manifest_out.exists()
     assert set((tmp_path / "temp").iterdir()) == staged_dirs
+
+
+def test_invalid_rerun_drops_previous_passing_manifest(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+    assert Path(json.loads(manifest_out.read_text(encoding="utf-8"))["section"]).is_absolute()
+    (tmp_path / "shot.png").write_bytes(b"edited")
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert not manifest_out.exists()
+
+
+@pytest.mark.parametrize(
+    ("content", "retired"),
+    [
+        ({"schema_version": "dart.evidence_publication/v5", "pass": True}, True),
+        ({"schema_version": "dart.evidence_publication/v4", "pass": True}, True),
+        ({"schema_version": "dart.evidence_publication/v5", "pass": False}, False),
+        ({"schema_version": "dart.evidence_selection/v1", "pass": True}, False),
+    ],
+)
+def test_retire_previous_success_only_removes_passing_publications(
+    tmp_path: Path, content: dict[str, Any], retired: bool
+) -> None:
+    path = tmp_path / "previous.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    evidence_publish._retire_previous_success(path)
+    assert path.exists() is not retired
 
 
 def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:

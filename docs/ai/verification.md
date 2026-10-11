@@ -276,7 +276,8 @@ readable alongside their contact markers and collision bounds.
   whole body. Alternatively, post the section as a separate `gh pr comment`.
   After explicit maintainer/user approval, run GitHub CLI 2.99+ from
   `attach_dir` with an explicit PR URL (or a number plus `-R owner/repo`),
-  passing `--body-file <body>` and `--attach` for each `attach` name.
+  passing the complete body's absolute path to `--body-file` (the manifest's
+  `section` path is absolute) and `--attach` for each `attach` name.
   `gh pr create` also needs `-R owner/repo` and `--head <branch>`.
   Each command accepts at most 50 files; gh validates their types and sizes.
   If gh exits nonzero after some uploads, it has still created or updated the

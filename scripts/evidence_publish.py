@@ -446,7 +446,7 @@ def _build_manifest(
             }
             for artifact in selection["selected"]
         ],
-        "section": str(out),
+        "section": str(out.resolve()),
         "artifact_count": len(selection["selected"]),
         "semantic_review": {
             "text_oracle": text_oracle,
@@ -459,6 +459,24 @@ def _build_manifest(
     if note is not None:
         manifest["note"] = note
     return manifest
+
+
+def _retire_previous_success(manifest_out: Path | None) -> None:
+    """Delete a passing publication manifest; never touch any other file."""
+    if manifest_out is None:
+        return
+    try:
+        previous = json.loads(manifest_out.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if (
+        isinstance(previous, dict)
+        and str(previous.get("schema_version", "")).startswith(
+            "dart.evidence_publication/"
+        )
+        and previous.get("pass") is True
+    ):
+        manifest_out.unlink(missing_ok=True)
 
 
 def _write_outputs(
@@ -525,11 +543,10 @@ def main(argv: list[str] | None = None) -> int:
 
     attach_dir: Path | None = None
     try:
+        # A failed rerun must not leave the previous passing manifest behind.
+        _retire_previous_success(args.manifest_out)
         selection = _load_selection(args.selection)
         _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
-        # A failed rerun must not leave the previous passing manifest behind.
-        if args.manifest_out is not None:
-            args.manifest_out.unlink(missing_ok=True)
         attach_dir = Path(tempfile.mkdtemp(prefix="dart-evidence-attach-")).resolve()
         attach: list[str] = []
         staged: dict[str, str] = {}
