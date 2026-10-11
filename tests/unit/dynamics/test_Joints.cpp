@@ -434,17 +434,22 @@ TEST(Joints, DisturbanceVersionChangesOnlyWithPendingActuation)
   joint->setForce(0, 0.0);
   joint->setForces(Eigen::Vector6d::Zero());
   joint->setCommand(0, 0.0);
-  joint->setCommands(Eigen::Vector6d::Zero());
   joint->resetForces();
   joint->resetCommands();
   EXPECT_EQ(before, version());
+
+  // setCommands() always notifies: a derived joint may override setCommand()
+  // and keep its commands outside the base storage.
+  joint->setCommands(Eigen::Vector6d::Zero());
+  EXPECT_GT(version(), before);
+  before = version();
 
   joint->setForces(Eigen::Vector6d::Ones());
   EXPECT_GT(version(), before);
   before = version();
   joint->setForces(Eigen::Vector6d::Ones());
   joint->setForce(0, 1.0);
-  joint->setCommands(Eigen::Vector6d::Ones());
+  joint->setCommand(0, 1.0);
   EXPECT_EQ(before, version());
 
   joint->setCommand(0, 2.0);
