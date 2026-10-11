@@ -140,6 +140,29 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1"])
+def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
+    # Eigen 5's version file accepts a requested single version only within
+    # that minor release, so a 3.4.0 request rejects Eigen 5.
+    config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
+    major, minor, _ = version.split(".")
+    (tmp_path / "prefix/lib/cmake/Eigen3/Eigen3ConfigVersion.cmake").write_text(
+        f'set(PACKAGE_VERSION "{version}")\n'
+        "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+        "if(PACKAGE_FIND_VERSION AND (PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION\n"
+        f"    OR NOT PACKAGE_FIND_VERSION_MAJOR EQUAL {major}\n"
+        f"    OR NOT PACKAGE_FIND_VERSION_MINOR EQUAL {minor}))\n"
+        "  set(PACKAGE_VERSION_COMPATIBLE FALSE)\n"
+        "endif()\n"
+    )
+    result = configure(
+        tmp_path,
+        "include(DARTFindEigen3)\n"
+        'if(NOT Eigen3_FOUND)\n  message(FATAL_ERROR "Rejected Eigen3")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize("version,accepted", [("1.91.9b", True), ("1.90.9b", False)])
 def test_imgui_release_suffix_floor(tmp_path, version, accepted):
     config_package(tmp_path, "imgui", version, "imgui::imgui")
