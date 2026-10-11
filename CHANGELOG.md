@@ -91,6 +91,11 @@
 
 * Build
 
+  * MSVC projects that link the installed `dart` CMake target inherit
+    `/permissive-` and `/Zc:twoPhase-`, the conformance options DART is
+    compiled with, so DART's templates compile in those projects:
+    [#1622](https://github.com/dartsim/dart/issues/1622)
+
   * Add independently configurable headless core builds using
     `DART_BUILD_IO=OFF`, `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`,
     including the complete removal of graphics dependency discovery and ImGui

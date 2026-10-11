@@ -193,6 +193,15 @@ endif()
 # C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_17)
 
+# DART's public templates need the MSVC parsing mode DART is compiled with
+# (see dart_defs.cmake), so consumers inherit it as well.
+target_compile_options(
+  dart
+  INTERFACE
+    "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->"
+    "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:twoPhase->"
+)
+
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
   if(MSVC)
