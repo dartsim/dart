@@ -6804,3 +6804,26 @@ int main(int argc, char* argv[])
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+
+//==============================================================================
+TEST(IslandDeactivation, ManualDwellAfterContactFreeStepsKeepsWorldRecord)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
+  world->addSkeleton(box);
+  world->step();
+  world->step();
+  ASSERT_EQ(world->getLastCollisionResult().getNumContacts(), 0u);
+  ASSERT_FALSE(box->isSleepCandidate());
+  ASSERT_EQ(box->getRestDwellTime(), 0.0);
+
+  box->setRestDwellTime(0.25);
+  world->step();
+  EXPECT_DOUBLE_EQ(box->getRestDwellTime(), 0.25);
+
+  ++world->getConstraintSolver()->getCollisionOption().maxNumContacts;
+  world->step();
+  EXPECT_DOUBLE_EQ(box->getRestDwellTime(), 0.0);
+}

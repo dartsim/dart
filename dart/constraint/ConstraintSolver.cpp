@@ -177,7 +177,9 @@ bool isExactDynamicType(const DynamicT* object)
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
 #endif
-  const bool isExact = typeid(*object) == typeid(ExactT);
+  const auto& dynamicType = typeid(*object);
+  const bool isExact
+      = &dynamicType == &typeid(ExactT) || dynamicType == typeid(ExactT);
 #if defined(__clang__)
   #pragma clang diagnostic pop
 #endif
@@ -1750,9 +1752,14 @@ bool ConstraintSolver::updateConstraintsWithQueryFilter(
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
+  const auto& collisionFilter = mCollisionOption.collisionFilter;
   auto* restingContactFilter
-      = dynamic_cast<collision::BodyNodeCollisionFilter*>(
-          mCollisionOption.collisionFilter.get());
+      = isExactDynamicType<collision::BodyNodeCollisionFilter>(
+            collisionFilter.get())
+            ? static_cast<collision::BodyNodeCollisionFilter*>(
+                collisionFilter.get())
+            : dynamic_cast<collision::BodyNodeCollisionFilter*>(
+                collisionFilter.get());
   if (restingContactFilter != nullptr) {
     bool hasAwakeMobileSkeleton = false;
     if (mDeactivationActive) {
