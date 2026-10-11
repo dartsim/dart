@@ -4053,6 +4053,15 @@ def release_reference_paths(root: Path) -> list[Path]:
     return sorted(paths)
 
 
+def active_dart_majors(root: Path) -> str:
+    """Return the release target's major and the one before it, as a regex."""
+    target = read_release_target(root, [])
+    if target is None:
+        return ""
+    major = int(target[2].split(".")[0])
+    return "|".join(str(value) for value in range(max(0, major - 1), major + 1))
+
+
 def dart_release_version_pattern(root: Path) -> str:
     """Heuristically match qualified versions of any major or bare/v target/prior.
 
@@ -4061,10 +4070,8 @@ def dart_release_version_pattern(root: Path) -> str:
     before parameter values, and version suffixes can still be misclassified.
     """
     prefixes = rf"{DART_RELEASE_VERSION_PREFIX}\d+"
-    target = read_release_target(root, [])
-    if target is not None:
-        major = int(target[2].split(".")[0])
-        majors = "|".join(str(value) for value in range(max(0, major - 1), major + 1))
+    majors = active_dart_majors(root)
+    if majors:
         prefixes += rf"|(?<![=:])(?<![=:] )v?(?:{majors})"
     return rf"(?<![\w.])(?:{prefixes})\.\d+(?:\.\d+)?(?:[a-z]+\d*)?"
 
@@ -4077,17 +4084,17 @@ def dependency_next_version(prefix: str) -> bool:
     if next_target is None or "dart" in next_target.group().lower():
         return False
     sentence_prefix = re.split(r"[.!?](?:\s+|$)", prefix[: next_target.start()])[-1]
-    update = None
-    for update in re.finditer(
-        rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
-        rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}",
-        sentence_prefix,
-        re.IGNORECASE,
-    ):
-        pass
-    # The clause stays the dependency's only if DART is not named after it.
-    return update is not None and not re.search(
-        r"\bDART", sentence_prefix[update.end() :], re.IGNORECASE
+    # Only a dependency update directly before the phrase owns the version,
+    # as in "When updating gz-physics, the next version is 7.8.0".
+    return (
+        re.search(
+            rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
+            rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}(?:\s+v?\d+(?:\.\d+)*)?"
+            rf"[\s,]*(?:the\s+)?$",
+            sentence_prefix,
+            re.IGNORECASE,
+        )
+        is not None
     )
 
 
@@ -4642,14 +4649,16 @@ def exercise_scenarios(
             or names_next_release(root, prompt_class)
             or any(
                 # A labeled version ("version: 7.0.0") is a pin, not a parameter,
-                # unless a dependency name owns the label.
+                # unless a dependency name or dependency update owns the label.
                 not re.search(
                     rf"{DEPENDENCY_NAME_PATTERN}\s+$",
                     prompt_class[: match.start()],
                     re.IGNORECASE,
                 )
+                and not dependency_next_version(prompt_class[: match.start("version")])
                 for match in re.finditer(
-                    r"(?<![-\w])(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])\s*v?\d+\.\d+",
+                    rf"(?<![-\w])(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])\s*"
+                    rf"(?P<version>v?(?:{active_dart_majors(root) or '(?!)'})\.\d+)",
                     prompt_class,
                     re.IGNORECASE,
                 )
