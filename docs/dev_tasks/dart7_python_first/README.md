@@ -347,7 +347,7 @@ before the first release candidate.
 | ID | Objective | Status |
 | --- | --- | --- |
 | WP-7.0.1 | Roll main's release line and AI policy from DART 6 to 7.0 | In review |
-| WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Planned |
+| WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
 | WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | In review |
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Ready to publish |
 | WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Planned |

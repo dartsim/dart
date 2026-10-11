@@ -99,9 +99,10 @@ Known gaps:
 ### WP-7.0.1b Changelog reconciliation
 
 - **Objective:** main's stale "DART 6.20.0 (Unreleased)" section matches the
-  released 6.20.0 section on `release-6.20`. On 2026-10-11, 22 PR references
-  appeared only on main and 39 only on the release branch.
-- **Status:** planned, after WP-7.0.1 merges.
+  released 6.20.0 section on `release-6.20`.
+- **Status:** done on 2026-10-11 by the maintainer's merge of `release-6.20`
+  into main (`e029bcc17`, v6.20.0), which also moved the package version to
+  6.20.0.
 
 ### WP-7.0.2 Project home and design doc
 
