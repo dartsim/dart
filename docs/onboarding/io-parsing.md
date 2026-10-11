@@ -31,7 +31,7 @@ pixi run demos -- --scene unitree_g1
 GUI scenes use the verified cache. The retriever itself can download on first
 access when explicitly constructed online. Offline mode performs no network
 requests. Cache identities include model ID, revision, and manifest content;
-whole-directory publication preserves DART 6 mesh-relative texture loading.
+whole-directory publication preserves DART's mesh-relative texture loading.
 Corruption fails with the affected cache directory; remove that exact directory
 and prefetch again to repair it. Do not change cache contents while a loaded
 scene is using them: OSG reads some textures directly from local paths.

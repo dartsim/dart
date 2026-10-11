@@ -1,8 +1,8 @@
 # DART Changelog
 
-## DART 6
+## DART 7
 
-### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
+### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
 * Breaking Changes
 
@@ -118,6 +118,8 @@
   * Add `DART_USE_SYSTEM_NANOBIND` (default `OFF`); the bundled build fetches
     nanobind 3.1.0 and its robin_map submodule. With `ON`, CMake uses
     `nanobind_DIR` when set and otherwise asks the build's Python.
+
+## DART 6
 
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
 

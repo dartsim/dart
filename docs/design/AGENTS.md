@@ -1,6 +1,6 @@
 # docs/design/
 
-Agent rules for durable DART 6 design documents.
+Agent rules for durable DART design documents.
 
 ## Purpose
 
@@ -19,9 +19,10 @@ They are not roadmap dashboards or implementation handoff logs.
 - Do not put priority, horizon, next step, gate, or active implementation
   handoff state here. Use `docs/plans/dashboard.md` and
   `docs/dev_tasks/<task>/` for that state.
-- Preserve the DART 6 compatibility envelope: public headers, installed
-  package components, ABI-sensitive class layouts, and Gazebo/gz-physics
-  behavior are release-branch constraints.
+- Preserve the compatibility envelope in `AGENTS.md`: public headers,
+  installed package components, and the Gazebo-facing C++ API and behavior.
+  ABI-sensitive class layouts become release-branch constraints once a
+  release line is first packaged.
 - Link every direct `docs/design/*.md` file from `docs/design/README.md`.
 
 ## Verification

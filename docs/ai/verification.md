@@ -136,7 +136,7 @@ media stays out of the repository and uploads require explicit approval.
 
 ## Visual Verification (Headless Capture)
 
-DART 6 renders off-screen through the `dart::gui::osg` helper
+DART renders off-screen through the `dart::gui::osg` helper
 (`dart/gui/osg/OffscreenViewer.hpp`). The GLX pbuffer path needs an X server:
 use the workstation display, or wrap headless hosts in
 `xvfb-run -a -s '-screen 0 1280x1024x24' <command>`. conda-forge has no
@@ -151,7 +151,7 @@ is set.
   pixi run capture ssik_ik_gui arm.png
   ```
 
-- Or capture from dartpy (DART 6 offscreen bindings):
+- Or capture from dartpy (DART offscreen bindings):
 
   ```python
   import dartpy as dart
@@ -182,7 +182,7 @@ emitted frame, and runs the engine-rendered overlay on/off pixel regression
 under Xvfb. A second A/B runs through `agent-capture` itself with identical
 cameras and requires the contact/bounds/label layers to change at least 128
 pixels; it also requires rendered contact-marker color pixels, while retaining
-the sidecar's count of any filtered DART 6 sentinel contacts, then proves
+the sidecar's count of any filtered DART sentinel contacts, then proves
 contacts, collision bounds, and labels each change pixels independently. This
 keeps the camera assessment, core OSG debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end

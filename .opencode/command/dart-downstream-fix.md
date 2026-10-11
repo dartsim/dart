@@ -32,7 +32,7 @@ visual exception when OSG/Xvfb is unavailable or not applicable.
 3. Search for related validation and recovery patterns in DART.
 4. Plan the smallest fix and the regression test location.
 5. Decide whether the bug applies to the active release line. For applicable
-   bug fixes, implement on the DART 6 development branch, `main`:
+   bug fixes, implement on the development branch, `main`:
    - branch:
      `fix/<downstream-project>-<issue-number>-<brief-description>-6-lts`
    - add a regression test that reproduces the downstream symptom
@@ -46,7 +46,7 @@ visual exception when OSG/Xvfb is unavailable or not applicable.
 
 ## Release-Line Conventions
 
-- DART 6 LTS may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
+- DART 6 code (`release-6.20`) may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
 
 ## Output
 

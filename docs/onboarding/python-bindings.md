@@ -2,9 +2,10 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
-For DART 6.21, `dartpy` is one all-in-one nanobind extension,
-containing core, collision backends enabled in the build, IO parsers and
-OSG/ImGui bindings. It links `dart`, `dart-io` and `dart-gui`. Enabling
+On `main`, before the DART 7.0 Python API work (M5) and renderer replacement
+(M6), `dartpy` is one all-in-one nanobind extension containing core,
+collision backends enabled in the build, IO parsers and OSG/ImGui bindings.
+It links `dart`, `dart-io` and `dart-gui`. Enabling
 `DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`;
 for a headless C++ installation, set `DART_BUILD_DARTPY=OFF`. See
 [build system notes](build-system.md) for the C++ package layout and legacy
@@ -50,9 +51,14 @@ imports, linked components, or installed package behavior.
 
 ## Nanobind binder
 
-DART 6.21 uses nanobind as the only dartpy binder. Sources live directly under
-`python/dartpy/`. The module keeps the DART namespaces, camelCase names,
-and overloads, including `dartpy.gui.osg` in the all-in-one module.
+The current implementation on `main` uses nanobind as the only dartpy binder.
+Sources live directly under `python/dartpy/`. The module keeps the DART
+namespaces, camelCase names, and overloads, including `dartpy.gui.osg` in the
+all-in-one module.
+The DART 7.0 Python contract is defined in
+[the DART 7 Python API design](../design/dart7_python_api.md): PEP 8 names
+without compatibility aliases, a Python package with a private extension,
+and Filament rendering.
 
 Python 3.10 or newer and nanobind 3.1 or newer are required.
 `DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its

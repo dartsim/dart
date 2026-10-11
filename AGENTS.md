@@ -1,4 +1,4 @@
-# Agent Guidelines for DART 6
+# Agent Guidelines for DART
 
 This file is the repository pointer board. Start every task with
 `docs/ai/principles.md`, then load only the owner docs needed for the work.
@@ -6,7 +6,7 @@ This file is the repository pointer board. Start every task with
 ## Project Profile
 
 - **WHAT**: C++17 robotics physics engine with dartpy bindings (nanobind)
-- **WHY**: Stable DART 6 LTS compatibility for users and Gazebo/gz-physics
+- **WHY**: A Python-first DART 7 that stays compatible with Gazebo/gz-physics
 - **HOW**: Use repository `pixi run ...` tasks; run `pixi run lint` before commits
 
 ## Quick Commands
@@ -48,17 +48,21 @@ See `docs/onboarding/ci-cd.md` when a gate fails.
 Subdirectories may provide a closer `AGENTS.md`; instructions accumulate from
 the repository root to the working directory.
 
-## DART 6 Compatibility Rules
+## Compatibility Rules
 
 - Branch from the resolved target into a non-tracking topic branch
   (`origin/main` by default); never commit directly to `main` or `release-*`.
-- Preserve C++17, the nanobind binder, `dart::utils` parsers, OSG, installed
-  headers, package components, ABI-sensitive interfaces, default simulation
-  behavior, and Gazebo/gz-physics compatibility unless a maintainer approves
-  otherwise.
+- `main` is the Python-first DART 7 line ([PLAN-624](docs/plans/dashboard.md));
+  `release-6.20` is the DART 6 maintenance line and keeps its own checkout's rules.
+- On `main`, preserve C++17, the nanobind binder, `dart::utils` parsers, installed
+  headers, package components (including legacy forwarding components), and
+  source and behavior compatibility of the C++ API used by Gazebo/gz-physics and
+  gz-sim. PLAN-624 approves the dartpy clean break, the OSG-to-Filament renderer
+  replacement, and labeled default-behavior changes behind its gates; any other
+  public-API, ABI-layout, or default-behavior change needs maintainer approval.
 - dartpy uses nanobind as its only binder, under `python/dartpy/`; follow
   `docs/onboarding/python-bindings.md`.
-- New fixes land on `main`; backports to a `release-6.*` branch use
+- New fixes land on `main`; backports to a `release-*` branch use
   `dart-backport-pr`. Target the release branch for release-specific packaging,
   CI, and branch guidance. Resolve the next release and milestone from the
   fetched target's `docs/onboarding/release-management.md`.

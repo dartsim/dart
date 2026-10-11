@@ -1,10 +1,10 @@
-# DART 6 Plan Dashboard
+# DART Plan Dashboard
 
-This dashboard is the operating view for DART 6 development and release planning. It points to
+This dashboard is the operating view for DART development and release planning. It points to
 the owner documents that hold detailed packet boards and evidence.
 
 Priority order is document order. Active implementation handoff remains in
-`docs/dev_tasks/`; this dashboard only records the DART 6 roadmap view.
+`docs/dev_tasks/`; this dashboard only records the roadmap view.
 
 ### PLAN-624: DART 7.0 Python-first Program
 

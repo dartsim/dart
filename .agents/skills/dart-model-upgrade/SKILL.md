@@ -1,6 +1,6 @@
 ---
 name: dart-model-upgrade
-description: "DART Model Upgrade: audit and update DART 6 AI infrastructure for model or coding-agent upgrades, including named models, reasoning modes, migrations, compatibility reviews, and visual simulation-debugging evaluations"
+description: "DART Model Upgrade: audit and update DART AI infrastructure for model or coding-agent upgrades, including named models, reasoning modes, migrations, compatibility reviews, and visual simulation-debugging evaluations"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-model-upgrade.md -->
@@ -24,13 +24,13 @@ etc., map those to the positional values supplied by the user.
 
 ## Command Body
 
-Audit or update DART 6's AI infrastructure for: $ARGUMENTS
+Audit or update DART's AI infrastructure for: $ARGUMENTS
 
 ## Objective
 
-Use live primary guidance and representative DART 6 tasks to decide
+Use live primary guidance and representative DART tasks to decide
 what to preserve, update, remove, consolidate, or add. Prefer the smallest
-change that improves the target without weakening DART 6 compatibility,
+change that improves the target without weakening the branch's compatibility rules,
 safety, evidence, public paths, or cross-tool capability parity. The reusable
 intake, comparison, verification, and closeout core stays model-agnostic. This
 workflow is itself an audit surface: improve it when a target exposes a
@@ -102,7 +102,7 @@ simulation state with text-first and OSG visual/debug evidence.
    separately. If a behavioral runner is unavailable, report structural
    evidence without turning it into a model-quality claim.
 
-   Every target runs one representative DART 6 physics investigation through
+   Every target runs one representative DART physics investigation through
    `dart-verify-sim` using the same scene and claim. Require a text correctness
    oracle, then corroborate it with an assessed OSG capture and only the needed
    `DebugOverlay` layers. Compare whether the model requests missing evidence,
@@ -125,10 +125,9 @@ simulation state with text-first and OSG visual/debug evidence.
    per-family entry in the owner doc; do not clone the workflow or append an
    ever-growing model taxonomy.
 7. **Implement only in apply mode.** Apply the smallest supported delta.
-   Preserve C++17, the nanobind binder, `dart::utils`, OSG,
-   public/ABI/package behavior, and Gazebo/gz-physics compatibility. The
-   approved DART 6.21 nanobind binder is permitted under
-   `python/dartpy/`. Follow the branch profile for other surfaces,
+   Preserve C++17, the nanobind binder, `dart::utils`, and the other
+   compatibility rules in the branch's `AGENTS.md`. The
+   approved DART nanobind binder is permitted under `python/dartpy/`. Follow the branch profile for other surfaces,
    including the forbidden historical `python/dartpy/nanobind` path. Keep
    outcome, constraints, permissions, evidence, routing, and stopping
    conditions explicit. Edit `.claude/` sources and run
@@ -161,7 +160,7 @@ simulation state with text-first and OSG visual/debug evidence.
    `pixi run lint` before a commit. Complete the principle audit and two clean
    role-separated reviews. Label unavailable behavioral, cross-tool, hosted,
    or downstream evidence.
-10. **Close out for DART 6.** Make the changelog decision in apply mode,
+10. **Close out.** Make the changelog decision in apply mode,
     promote durable guidance, and remove completing temporary task state.
     Pushes, PRs, comments, review triggers, CI reruns, and merges require
     explicit maintainer/user approval.
@@ -173,7 +172,7 @@ simulation state with text-first and OSG visual/debug evidence.
   reference material
 - Durable context, session-handoff, freshness, and context-cost findings
 - Comparison matrix, limitations, prompt/config changes, and unchanged choices
-- DART 6 physics/OSG investigation, semantic visual review, artifacts, and
+- DART physics/OSG investigation, semantic visual review, artifacts, and
   failure-boundary results
 - Gates, compatibility effects, principle audit, two reviews, and blockers
 - In apply mode, the changelog decision and local/external completion state

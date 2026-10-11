@@ -1,5 +1,5 @@
 ---
-description: debug and fix CI failures on DART 6 development and release branches
+description: debug and fix CI failures on DART development and release branches
 argument-hint: "<pr-number|run-id> [target-branch=main]"
 agent: build
 ---
@@ -8,7 +8,7 @@ agent: build
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
 
-Fix DART 6 CI: $ARGUMENTS
+Fix DART CI: $ARGUMENTS
 
 ## Required Reading
 

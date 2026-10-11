@@ -1,12 +1,12 @@
 # Documentation Information Architecture
 
-This file owns the conceptual structure of `docs/` on DART 6 development and
+This file owns the conceptual structure of `docs/` on DART development and
 release branches: what each documentation bucket is for, how agents should
 choose a home for new knowledge, and when a branch-local folder split is justified.
 
 ## Design Goal
 
-DART 6 documentation should help maintainers and agents answer six
+DART documentation should help maintainers and agents answer six
 release-branch questions without rediscovering the branch from raw code:
 
 1. What guidance is public user documentation?
@@ -25,7 +25,7 @@ buckets required for AI-native maintenance work.
 | Conceptual bucket     | Current path        | Audience             | Lifecycle           | Owns                                                       |
 | --------------------- | ------------------- | -------------------- | ------------------- | ---------------------------------------------------------- |
 | Published user docs   | `docs/readthedocs/` | DART users           | durable, published  | Public user docs, tutorials, and Read the Docs inputs      |
-| Developer handbook    | `docs/onboarding/`  | maintainers, agents  | durable             | Build/test/CI/release/compatibility guidance for DART 6 |
+| Developer handbook    | `docs/onboarding/`  | maintainers, agents  | durable             | Build/test/CI/release/compatibility guidance for DART |
 | AI workflow policy    | `docs/ai/`          | agents, maintainers  | durable             | Release-branch AI principles, terminology, workflow map, sessions, orchestration, and gates |
 | Living roadmap        | `docs/plans/`       | maintainers, agents  | living              | Priority, horizon, active gaps, next steps, gates, and acceptance criteria |
 | Design rationale      | `docs/design/`      | maintainers, agents  | durable, revisable  | Architecture, API shape, compatibility constraints, tradeoffs, and accepted decisions |
@@ -37,10 +37,10 @@ buckets required for AI-native maintenance work.
 `docs/onboarding/` is the durable developer handbook path for this release
 branch. Do not rename it during ordinary maintenance.
 
-DART 6 uses the AI-infrastructure buckets that solve release-branch
+DART uses the AI-infrastructure buckets that solve release-branch
 lifecycle problems.
 
-`docs/python_api/` is intentionally not part of this DART 6 AI-infra split.
+`docs/python_api/` is intentionally not part of this AI-infra split.
 The release branch still owns dartpy user docs under `docs/readthedocs/dartpy/`
 and C++ API generation input under `docs/doxygen/`.
 
@@ -52,7 +52,7 @@ Use this matrix before creating or moving a release-branch doc:
 | ---------------------------------------------------------------- | ------------------------ | ------------------------------------- |
 | Public install, tutorial, or user concept guidance               | `docs/readthedocs/`      | `docs/onboarding/` as the only path   |
 | Contributor workflow, build/test/CI/release operation            | `docs/onboarding/`       | `docs/ai/` unless the rule is AI-only |
-| DART 6 compatibility or downstream maintenance policy            | `docs/onboarding/` or `docs/design/` by lifecycle | `docs/dev_tasks/` after work lands |
+| DART compatibility or downstream maintenance policy            | `docs/onboarding/` or `docs/design/` by lifecycle | `docs/dev_tasks/` after work lands |
 | AI agent rule, terminology, workflow map, session, orchestration, or verification policy | `docs/ai/` | `docs/onboarding/` as source of truth |
 | Priority, horizon, next step, gate, active gap, or plan state    | `docs/plans/`            | `docs/design/` or `docs/onboarding/`  |
 | Durable architecture/API tradeoff, accepted decision, or compatibility rationale | `docs/design/` | `docs/plans/` for mutable operating fields |

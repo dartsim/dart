@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and diagnose DART 6's repository-local AI infrastructure."""
+"""Validate and diagnose DART's repository-local AI infrastructure."""
 
 from __future__ import annotations
 
@@ -749,7 +749,7 @@ def check_branch_profile(
 
     expected = {
         "schema_version": 2,
-        "profile": "dart6",
+        "profile": "dart7",
         "cpp_standard": "C++17",
         "python_binding": "nanobind",
         "optional_python_bindings": [],
@@ -3749,7 +3749,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     changelog = root / "CHANGELOG.md"
     headings = (
         re.findall(
-            r"^### \[DART (6\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
+            r"^### \[DART ([0-9]+\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
             changelog.read_text(encoding="utf-8"),
             re.MULTILINE,
         )
@@ -3762,7 +3762,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         or sum(heading[0] == version for heading in headings) != 1
     ):
         errors.append(
-            f"CHANGELOG.md: Release Target `{version}` must be the leading DART 6 release heading and appear exactly once"
+            f"CHANGELOG.md: Release Target `{version}` must be the leading DART release heading and appear exactly once"
         )
         return
     target_numbers = tuple(int(number) for number in version.split("."))
@@ -3771,7 +3771,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         for heading in headings[1:]
     ):
         errors.append(
-            f"CHANGELOG.md: Release Target `{version}` cannot precede a newer retained DART 6 release heading"
+            f"CHANGELOG.md: Release Target `{version}` cannot precede a newer retained DART release heading"
         )
         return
     _, state, link = headings[0]
@@ -3834,7 +3834,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         ):
             parsed = (
                 re.fullmatch(
-                    r"(6)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
+                    r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
                     source,
                 )
                 if isinstance(source, str)
@@ -3843,7 +3843,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
             if not parsed:
                 errors.append(
                     f"CHANGELOG.md: Release Target `{version}` cannot compare {relative} version; "
-                    "expected a DART 6 version (numeric for package.xml; "
+                    "expected a DART version (numeric for package.xml; "
                     "optional .devN/.alphaN/.betaN/.rcN suffix for Pixi)"
                 )
                 return
@@ -3865,8 +3865,8 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     )
 
 
-def check_release_target(root: Path, errors: list[str]) -> None:
-    """Validate the branch-local owner, using CI/base checkout identity if known."""
+def read_release_target(root: Path, errors: list[str]) -> tuple[str, str, str] | None:
+    """Read and validate the branch-local release target row."""
     relative = "docs/onboarding/release-management.md"
     path = root / relative
     if not path.is_file():
@@ -3900,25 +3900,35 @@ def check_release_target(root: Path, errors: list[str]) -> None:
         )
         return
     branch, phase, version = [cell.strip().strip("`") for cell in cells[2]]
-    branch_match = re.fullmatch(r"main|release-6\.(\d+)", branch)
-    version_match = re.fullmatch(r"6\.(\d+)\.(\d+)", version)
+    branch_match = re.fullmatch(r"main|release-(\d+)\.(\d+)", branch)
+    version_match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
     if (
         not branch_match
         or not version_match
         or (branch == "main" and phase != "Development")
         or (branch != "main" and phase not in {"Stabilization", "Maintenance"})
-        or (branch != "main" and branch_match[1] != version_match[1])
+        or (branch != "main" and branch_match.groups() != version_match.groups()[:2])
         or (
             branch != "main"
             and phase
-            != ("Stabilization" if int(version_match[2]) == 0 else "Maintenance")
+            != ("Stabilization" if int(version_match[3]) == 0 else "Maintenance")
         )
     ):
         errors.append(
-            f"{relative}: Release Target has an invalid branch, phase, or full DART 6 version"
+            f"{relative}: Release Target has an invalid branch, phase, or full DART version"
         )
         return
 
+    return branch, phase, version
+
+
+def check_release_target(root: Path, errors: list[str]) -> None:
+    """Validate the branch-local owner, using CI/base checkout identity if known."""
+    target = read_release_target(root, errors)
+    if target is None:
+        return
+    branch, _, version = target
+    relative = "docs/onboarding/release-management.md"
     check_release_changelog(root, version, errors)
 
     expected_branch = os.environ.get("GITHUB_BASE_REF")
@@ -3930,7 +3940,7 @@ def check_release_target(root: Path, errors: list[str]) -> None:
             text=True,
         ).stdout.strip()
         for candidate in (checkout, os.environ.get("GITHUB_REF_NAME", "")):
-            if re.fullmatch(r"main|release-6\.\d+", candidate):
+            if re.fullmatch(r"main|release-\d+\.\d+", candidate):
                 expected_branch = candidate
                 break
     if expected_branch and branch != expected_branch:
@@ -4002,10 +4012,23 @@ def release_reference_paths(root: Path) -> list[Path]:
     return sorted(paths)
 
 
+def dart_release_version_pattern(root: Path) -> str:
+    """Match qualified releases and bare/v versions near the release target."""
+    prefixes = r"(?:DART\s*|release-)\d+"
+    target = read_release_target(root, [])
+    if target is not None:
+        major = int(target[2].split(".")[0])
+        majors = "|".join(str(value) for value in range(max(0, major - 1), major + 2))
+        prefixes += rf"|v?(?:{majors})"
+    return rf"(?<![\w.])(?:{prefixes})\.\d+(?:\.\d+)?(?:[a-z]+\d*)?"
+
+
 def check_release_references(root: Path, errors: list[str]) -> None:
     """Keep reusable guidance independent of the branch's next release."""
-    version = r"[`*]*DART\s+6\.\d+(?:\.\d+)?[`*]*"
-    next_version = r"[`*]*(?:DART\s+)?6\.\d+(?:\.\d+)?[`*]*"
+    version = (
+        r"[`*]*(?<![\w.])(?:DART\s*|release-)\d+\.\d+" r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
+    )
+    next_version = rf"[`*]*{dart_release_version_pattern(root)}[`*]*"
     current_target = re.compile(
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
         rf"|\b(?:current stable|develops|developing|stabilizes)\b"
@@ -4018,11 +4041,11 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         rf".{{0,80}}\bmilestone\b"
         rf"|(?:\b(?:use|set|select|assign)\b.{{0,80}}\bmilestone\b"
         rf"|--milestone|\bmilestone\s*(?:set|[:=])).{{0,80}}{version}"
-        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|"
-        r"[^|]*\bDART\s+6\.\d+\.\d+[^|]*\|"
-        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|\s*"
-        r"(?:Development|Stabilization|Maintenance)\s*\|\s*`?6\.\d+\.\d+`?\s*\|"
-        r"|\btarget(?:s)?\s+`?(?:origin/)?release-6\.\d+\b",
+        r"|\|\s*`?(?:main|release-\d+\.\d+)`?\s*\|"
+        r"[^|]*\bDART\s+\d+\.\d+\.\d+[^|]*\|"
+        r"|\|\s*`?(?:main|release-\d+\.\d+)`?\s*\|\s*"
+        r"(?:Development|Stabilization|Maintenance)\s*\|\s*`?\d+\.\d+\.\d+`?\s*\|"
+        r"|\btarget(?:s)?\s+`?(?:origin/)?release-\d+\.\d+\b",
         re.IGNORECASE,
     )
     translated_target = re.compile(
@@ -4030,7 +4053,7 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
         rf"\s*(?:[:=]\s*)?{next_version}"
         rf"|{version}\s*(?:개발|안정화)\s*브랜치"
-        rf"|(?:main|release-6\.\d+).{{0,80}}{version}.{{0,40}}(?:개발|안정화)"
+        rf"|(?:main|release-\d+\.\d+).{{0,80}}{version}.{{0,40}}(?:개발|안정화)"
         rf"|{version}.{{0,80}}마일스톤.{{0,40}}(?:사용|설정|선택|지정)"
         rf"|마일스톤.{{0,80}}{version}.{{0,40}}(?:사용|설정|선택|지정)",
         re.IGNORECASE,
@@ -4479,6 +4502,7 @@ def exercise_scenarios(
     else:
         profile_forbidden = set(profile_forbidden_value)
 
+    release_version = dart_release_version_pattern(root)
     seen: set[str] = set()
     for index, scenario in enumerate(scenarios):
         if not isinstance(scenario, dict):
@@ -4509,9 +4533,12 @@ def exercise_scenarios(
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
         elif re.search(
-            r"\b(?:DART\s*|v)?6\.\d+(?:\.\d+)?\b", prompt_class, re.IGNORECASE
+            # DART/release- qualify any major; bare/v need a valid target major ±1.
+            rf"{release_version}\b",
+            prompt_class,
+            re.IGNORECASE,
         ):
-            local_errors.append("prompt_class must be release-neutral; use DART 6")
+            local_errors.append("prompt_class must be release-neutral; use DART")
         start_dir = scenario.get("start_dir")
         start_relative = repository_relative_path(root, start_dir)
         if start_relative is None:
@@ -4609,7 +4636,7 @@ def exercise_scenarios(
 
         if scenario_id == "model-upgrade":
             expected_prompt = (
-                "audit or update DART 6 AI infrastructure for a named model, "
+                "audit or update DART AI infrastructure for a named model, "
                 "reasoning mode, or coding-agent release"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4632,6 +4659,7 @@ def exercise_scenarios(
                 workflow_text = workflow_path.read_text(encoding="utf-8")
             except OSError:
                 workflow_text = ""
+            workflow_text = re.sub(r"\bDART\s+\d+(?:\.\d+)*\b", "DART", workflow_text)
             for marker in (
                 "Use these verdicts",
                 "existing model/settings",
@@ -4648,12 +4676,12 @@ def exercise_scenarios(
                 "`audit-only` is read-only",
                 "workflow is itself an audit surface",
                 "do not clone the workflow",
-                "representative DART 6 physics investigation",
+                "representative DART physics investigation",
                 "text correctness",
                 "Images are never the",
                 "text/image disagreement",
                 "C++17",
-                "approved DART 6.21 nanobind binder",
+                "approved DART nanobind binder",
                 "`python/dartpy/`",
                 "`dart::utils`",
                 "OSG",
@@ -4681,7 +4709,7 @@ def exercise_scenarios(
                 "temporary claim-tied evidence",
             }
             expected_prompt = (
-                "verify claim-dependent DART 6 simulation, dynamics, "
+                "verify claim-dependent DART simulation, dynamics, "
                 "collision/contact/constraints, model/scene, GUI, or OSG behavior"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -5251,7 +5279,7 @@ def print_doctor(data: dict[str, Any]) -> None:
     profile = data["profile"]
     inventory = data["inventory"]
     model_harness = inventory["model_harness"]
-    print(f"DART 6 AI doctor: {state}")
+    print(f"DART AI infrastructure doctor: {state}")
     print(f"  repository: {data['root']}")
     print(f"  branch: {data['branch']}")
     if profile is None:

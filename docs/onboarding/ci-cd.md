@@ -1,4 +1,4 @@
-# CI And DART 6 Checks
+# CI And DART Checks
 
 Use GitHub Actions as the hosted source of truth after a PR is opened. Locally,
 run the smallest gate that proves the touched surface, then broaden when shared

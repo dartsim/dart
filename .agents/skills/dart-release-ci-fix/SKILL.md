@@ -1,6 +1,6 @@
 ---
 name: dart-release-ci-fix
-description: "DART Release CI Fix: debug and fix CI failures on DART 6 development and release branches"
+description: "DART Release CI Fix: debug and fix CI failures on DART development and release branches"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-release-ci-fix.md -->
@@ -24,7 +24,7 @@ etc., map those to the positional values supplied by the user.
 
 ## Command Body
 
-Fix DART 6 CI: $ARGUMENTS
+Fix DART CI: $ARGUMENTS
 
 ## Required Reading
 

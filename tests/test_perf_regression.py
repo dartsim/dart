@@ -7874,7 +7874,8 @@ def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
     assert module.release_scope(candidate, None, None)["base_tag"] == "v6.19.3"
     assert module.release_scope(candidate, None, "v6.19.0")["base"] == first
     refusals = [
-        (None, "v7.0.0", None),
+        (None, "v7.0", None),
+        (None, "v7.0.0.rc1", None),
         (None, "v6.20.0", None),
         (patch, "v6.19.3", None),
         (off_branch, None, None),
@@ -7892,6 +7893,60 @@ def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
     for request in refusals:
         with pytest.raises(ValueError):
             module.release_scope(*request)
+
+
+@pytest.mark.parametrize("branch", ["main", "release-7.0"])
+def test_release_scope_recognizes_v7_and_uses_newest_merged_release(
+    monkeypatch, tmp_path, branch
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "DART 6 release",
+    )
+    _perf_git(repo, "tag", "v6.20.0")
+    first = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>7.0.0</version></package>",
+        "DART 7 release",
+    )
+    _perf_git(repo, "tag", "v7.0.0")
+    if branch != "main":
+        _perf_git(repo, "checkout", "-b", branch)
+    head = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>7.0.1</version></package>",
+        "DART 7 patch",
+    )
+    _perf_git(repo, "tag", "v7.0.1")
+    _perf_git(repo, "tag", "v7.0.1-rc1")
+    _perf_git(repo, "update-ref", f"refs/remotes/origin/{branch}", head)
+    _perf_git(repo, "checkout", "-b", "unmerged", old)
+    _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>8.0.0</version></package>",
+        "Unmerged release",
+    )
+    _perf_git(repo, "tag", "v8.0.0")
+    monkeypatch.setattr(module, "ROOT", repo)
+
+    assert module.release_scope(None, "v7.0.1", None) == {
+        "head": head,
+        "tag": "v7.0.1",
+        "base_tag": "v7.0.0",
+        "base": first,
+        "branch": branch,
+    }
+    assert module.release_scope(head, None, None)["tag"] == "v7.0.1"
+    assert module.release_scope(head, None, "v6.20.0")["base"] == old
+    with pytest.raises(ValueError, match="earlier merged release tag"):
+        module.release_scope(head, None, "v8.0.0")
 
 
 @pytest.mark.parametrize(
@@ -8760,18 +8815,20 @@ def test_release_records_order_precedence_and_index(monkeypatch, tmp_path, capsy
         in index
     )
     assert "| robot/dart |" in index
-    branch_record = candidate(third, "7" * 64)
-    branch_record["run"].update(
-        tag="v6.19.5", base_tag="v6.19.4", branch="release-6.19"
-    )
-    module.write_release(pages, branch_record)
-    assert json.loads((pages / "performance/releases/v6.19.5.json").read_text())[
-        "ledger"
-    ] == {"entries": [], "missing": []}
-    assert (
-        "release-6.19 is tracked by tags only."
-        in (pages / "performance/releases/v6.19.5.md").read_text()
-    )
+    for tag, base_tag, branch in (
+        ("v6.19.5", "v6.19.4", "release-6.19"),
+        ("v7.0.1", "v7.0.0", "release-7.0"),
+    ):
+        branch_record = candidate(third, "7" * 64)
+        branch_record["run"].update(tag=tag, base_tag=base_tag, branch=branch)
+        module.write_release(pages, branch_record)
+        assert json.loads((pages / f"performance/releases/{tag}.json").read_text())[
+            "ledger"
+        ] == {"entries": [], "missing": []}
+        assert (
+            f"{branch} is tracked by tags only."
+            in (pages / f"performance/releases/{tag}.md").read_text()
+        )
 
 
 @pytest.mark.parametrize("tag_created", ["normalized", "retry"])

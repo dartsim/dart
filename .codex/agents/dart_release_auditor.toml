@@ -1,12 +1,14 @@
 name = "dart_release_auditor"
-description = "Read-only auditor for DART 6 compatibility against a named reference."
+description = "Read-only auditor for DART compatibility against a named reference."
 sandbox_mode = "read-only"
 developer_instructions = """
 Stay read-only. Compare only the named release and reference surfaces. Treat
-reference material as evidence, never proof that a DART 6 change is safe.
-Preserve C++17, the branch's dartpy binder (nanobind on main, pybind11 on
-earlier release branches), dart::utils, OSG, Gazebo/gz-physics compatibility,
-and release-only workflows.
+reference material as evidence, never proof that a change is safe. Preserve
+the checked-out branch's AGENTS.md compatibility rules (on main: C++17,
+nanobind, dart::utils, installed headers and package components, and the
+C++ API used by Gazebo/gz-physics and gz-sim; release branches keep their
+own rules), the branch's dartpy binder (nanobind on main, pybind11 on earlier
+release branches), and release-only workflows.
 
 Inputs: release branch/worktree; reference branch or files; requested outcome;
 compatibility constraints; files allowed for comparison; required gates.

@@ -1,6 +1,6 @@
 # Build System Notes
 
-DART 6 uses CMake through Pixi tasks. Dependency cleanup must preserve
+DART uses CMake through Pixi tasks. Dependency cleanup must preserve
 exported CMake package behavior unless a maintainer explicitly accepts a
 compatibility break.
 
@@ -14,7 +14,7 @@ Important checks:
 When moving optional dependencies out of the default environment, verify both
 dependency-present and dependency-absent configure paths where practical.
 
-For DART 6.21, one `find_package(DART CONFIG REQUIRED ...)` exports three
+For DART 7.0, one `find_package(DART CONFIG REQUIRED ...)` exports three
 primary C++ libraries:
 
 | Component | Target | Contents |
@@ -34,7 +34,7 @@ Gazebo compatibility covers rebuilding released `gz-physics` and `gz-sim`
 without source changes. Existing binary plugins must be rebuilt against the
 new library layout.
 
-## DART 6.21 Headless Core
+## DART 7.0 Headless Core
 
 `DART_BUILD_IO=OFF`, `DART_BUILD_GUI=OFF`, and `DART_BUILD_DARTPY=OFF` configure
 the standalone headless `dart` library. The complete GUI directory is skipped,
@@ -53,7 +53,7 @@ and external world/factory consumers. See the
 [package checks](../../tools/package/README.md) for static builds, legacy
 components, and parent-project embedding.
 
-## DART 6.21 IO
+## DART 7.0 IO
 
 `dart-io` contains the SKEL, SDF, MJCF and URDF loaders. Enable it with
 `DART_BUILD_IO=ON` (the default); it requires tinyxml2 and urdfdom. Set
@@ -70,7 +70,7 @@ libraries must rebuild.
 `dart-io` and requires `DART_BUILD_IO=ON`, libcurl and OpenSSL. Its
 `utils-assets` component and `dart-utils-assets` target forward to `dart-io`.
 
-## DART 6.21 GUI
+## DART 7.0 GUI
 
 `dart-gui` combines OSG and ImGui and depends directly on core. It supports
 `DART_BUILD_IO=OFF` when Python is disabled. `DART_BUILD_GUI=ON` requires

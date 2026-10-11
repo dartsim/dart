@@ -1,4 +1,4 @@
-# Contributing On DART 6 Branches
+# Contributing To DART
 
 Keep changes focused and branch from `main`, the development branch for the next
 release:
@@ -81,7 +81,7 @@ topic branches from its fetched remote ref without tracking it, as in the
 `main` example above. Resolve the next release and exact open milestone using
 [Release Management](release-management.md#release-target) from the fetched
 target branch; that owner also defines stabilization cuts and release gates.
-Dependency-minimization work on DART 6 must preserve installed
+Dependency-minimization work must preserve installed
 headers, package components, and downstream behavior unless a maintainer
 explicitly approves a breaking change.
 

@@ -53,7 +53,7 @@ MEASURED_PATHS = (
     "CMakeLists.txt",
     "cmake",
 )
-RELEASE_TAG = re.compile(r"v6\.\d+\.\d+")
+RELEASE_TAG = re.compile(r"v\d+\.\d+\.\d+")
 LOCAL_PATH = re.compile(r"""file:///[^\s'"]+|(?<![\w.~:/-])/[^\s/'"]+/""")
 # Only these comparison-policy failures can be acknowledged by a rationale.
 WAIVABLE_FAILURES = (
@@ -1431,7 +1431,15 @@ def _measure_arm(args, provenance) -> dict:
             "branch": command_output(["git", "branch", "--show-current"]),
             "pr": None,
             "describe": command_output(
-                ["git", "describe", "--tags", "--match", "v6*", "--always", commit]
+                [
+                    "git",
+                    "describe",
+                    "--tags",
+                    "--match",
+                    "v[0-9]*.[0-9]*.[0-9]*",
+                    "--always",
+                    commit,
+                ]
             ),
             "time": datetime.now(timezone.utc).isoformat(),
             "env": env_fingerprint,
@@ -2370,7 +2378,7 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
             raise ValueError(f"unknown release revision: {revision}") from error
 
     if tag is not None and not RELEASE_TAG.fullmatch(tag):
-        raise ValueError("release tag must have the form v6.x.y")
+        raise ValueError("release tag must have the form vX.Y.Z")
     tags = set(git("tag", "--list").splitlines())
     if head is None:
         if tag not in tags:
@@ -2397,7 +2405,7 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
         *sorted(
             branch
             for branch in branches
-            if re.fullmatch(r"origin/release-6\.\d+", branch)
+            if re.fullmatch(r"origin/release-\d+\.\d+", branch)
         ),
     ]
     branch = next(
@@ -2420,7 +2428,7 @@ def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
     except subprocess.CalledProcessError as error:
         raise ValueError("release candidate has no previous release") from error
     if not previous or (base is not None and base not in previous):
-        raise ValueError("release base must be an earlier merged v6 tag")
+        raise ValueError("release base must be an earlier merged release tag")
     base_tag = base or max(
         previous, key=lambda name: tuple(map(int, name[1:].split(".")))
     )
@@ -3094,7 +3102,7 @@ def release_markdown(record: dict) -> str:
         "## Ledger",
         "",
     ]
-    if run["branch"].startswith("release-6."):
+    if re.fullmatch(r"release-\d+\.\d+", run["branch"]):
         lines.append(f"{run['branch']} is tracked by tags only.")
     else:
         ledger = record["ledger"]
@@ -3234,7 +3242,7 @@ def write_release(pages: Path, record: dict) -> list[str]:
                 if not descendant and not later:
                     print(f"Keep {run['tag']}: older or diverged candidate")
                     return []
-    if run["branch"].startswith("release-6."):
+    if re.fullmatch(r"release-\d+\.\d+", run["branch"]):
         ledger = {"entries": [], "missing": []}
     else:
         history = pages / "performance/records/main"
@@ -3902,7 +3910,7 @@ def broken_arm(rows, args, run, marker) -> dict:
                     "describe",
                     "--tags",
                     "--match",
-                    "v6*",
+                    "v[0-9]*.[0-9]*.[0-9]*",
                     "--always",
                     marker["commit"],
                 ]
