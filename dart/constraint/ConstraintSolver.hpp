@@ -501,19 +501,6 @@ private:
   /// Restarts awake skeletons' sleep eligibility after a manual constraint
   /// removal and makes the change observable to World.
   void restartAwakeSleepCandidacy();
-
-  /// The wake band of the World's DeactivationOptions (the wake threshold scale
-  /// times each sleep threshold), which World sets every step. Island sleeping
-  /// reads it; until World sets it, it is unbounded.
-  double mLinearWakeSpeed = std::numeric_limits<double>::infinity();
-  double mAngularWakeSpeed = std::numeric_limits<double>::infinity();
-
-  /// For each skeleton in mSkeletons, the skeleton itself if the last build of
-  /// constrained groups put it in an island, or null. A build without islands
-  /// or with deactivation inactive empties it, and so does removing a
-  /// skeleton. Unlike the island index, which World also sets, only builds
-  /// fill it.
-  std::vector<const dynamics::Skeleton*> mIslandSkeletons;
 };
 
 } // namespace constraint
