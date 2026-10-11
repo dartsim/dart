@@ -3975,14 +3975,11 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
 def check_release_changelog(root: Path, version: str, errors: list[str]) -> None:
     """Require the planned release section, including a dated packaging candidate."""
     changelog = root / "CHANGELOG.md"
-    headings = (
-        re.findall(
-            r"^### \[DART ([0-9]+\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
-            changelog.read_text(encoding="utf-8"),
-            re.MULTILINE,
-        )
-        if changelog.is_file()
-        else []
+    text = changelog.read_text(encoding="utf-8") if changelog.is_file() else ""
+    headings = re.findall(
+        r"^### \[DART ([0-9]+\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
+        text,
+        re.MULTILINE,
     )
     if (
         not headings
@@ -4002,6 +3999,26 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
             f"CHANGELOG.md: Release Target `{version}` cannot precede a newer retained DART release heading"
         )
         return
+    # Where releases are grouped under `## DART <major>` sections, each release
+    # heading must sit under its own major's section.
+    grouped = re.search(r"^## DART [0-9]+[ \t]*$", text, re.MULTILINE)
+    section = None
+    for line in text.splitlines():
+        if match := re.fullmatch(r"## DART ([0-9]+)[ \t]*", line):
+            section = match[1]
+        elif line.startswith("## "):
+            # Any other level-two heading ends the current major's section.
+            section = None
+        elif (
+            grouped
+            and (match := re.match(r"### \[DART (([0-9]+)\.[0-9]+\.[0-9]+) ", line))
+            and section != match[2]
+        ):
+            placement = f", not `## DART {section}`" if section else ""
+            errors.append(
+                f"CHANGELOG.md: DART {match[1]} must be listed under `## DART {match[2]}`{placement}"
+            )
+            return
     _, state, link = headings[0]
     milestone_link = re.fullmatch(
         r"https://github\.com/dartsim/dart/milestone/([1-9][0-9]*)(?:\?closed=[01])?",
