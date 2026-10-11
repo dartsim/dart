@@ -516,6 +516,33 @@ def test_publication_records_relative_paths_in_selection_order(tmp_path: Path) -
     )
 
 
+def test_caption_is_escaped_like_gh_alt_text(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    manifest["selected"][0]["caption"] = "a](https://example.com) [b]\nc\\d"
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+
+    assert "![a\\](https://example.com) \\[b\\] c\\\\d](shot.png)" in out.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_attach_path_falls_back_to_absolute_across_drives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def no_relative_path(path, start=None):
+        raise ValueError("path is on mount 'D:', start on mount 'C:'")
+
+    monkeypatch.setattr(evidence_publish.os.path, "relpath", no_relative_path)
+    shot = (tmp_path / "shot.png").resolve()
+
+    assert evidence_publish._attach_path(shot, tmp_path) == shot.as_posix()
+
+
 def test_reference_percent_encodes_markdown_unsafe_names(tmp_path: Path) -> None:
     selection = _selection(tmp_path)
     manifest = json.loads(selection.read_text(encoding="utf-8"))
@@ -557,42 +584,6 @@ def test_failing_gates_yield_not_ready(
     assert manifest["pass"] is False
 
 
-@pytest.mark.parametrize("invalid", ["suffix", "size"])
-def test_unattachable_artifact_fails_without_passing_outputs(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalid: str
-) -> None:
-    selection = _selection(tmp_path)
-    manifest = json.loads(selection.read_text(encoding="utf-8"))
-    artifact = manifest["selected"][0]
-    path = tmp_path / "shot.png"
-    if invalid == "suffix":
-        path = path.rename(tmp_path / "shot.bmp")
-        artifact["path"] = path.name
-    else:
-        with path.open("wb") as stream:
-            stream.truncate(evidence_publish.GITHUB_ATTACHMENT_LIMIT_BYTES + 1)
-        artifact["bytes"] = path.stat().st_size
-        artifact["sha256"] = _sha256(path)
-        manifest["total_bytes"] = artifact["bytes"] + 3
-    selection.write_text(json.dumps(manifest), encoding="utf-8")
-    out = tmp_path / "section.md"
-    manifest_out = tmp_path / "publication.json"
-
-    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
-
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    if invalid == "suffix":
-        assert "shot.bmp" in captured.err
-        assert "unsupported" in captured.err.lower()
-    else:
-        assert "shot.png" in captured.err
-        assert "10 MB" in captured.err
-        assert "shrink or re-encode" in captured.err
-    assert not out.exists()
-    assert not manifest_out.exists()
-
-
 @pytest.mark.parametrize(
     ("suffix", "kind"),
     [
@@ -600,6 +591,8 @@ def test_unattachable_artifact_fails_without_passing_outputs(
         (".jpg", "still"),
         (".jpeg", "still"),
         (".gif", "still"),
+        (".webp", "still"),
+        (".svg", "still"),
         (".mp4", "video"),
         (".webm", "video"),
         (".mov", "video"),
@@ -613,14 +606,15 @@ def test_supported_attachment_suffixes(tmp_path: Path, suffix: str, kind: str) -
     manifest["selected"][0].update(path=name, kind=kind)
     selection.write_text(json.dumps(manifest), encoding="utf-8")
 
+    out = tmp_path / "section.md"
     assert (
         evidence_publish.main(
-            _publication_args(
-                selection, tmp_path / "section.md", tmp_path / "publication.json"
-            )
+            _publication_args(selection, out, tmp_path / "publication.json")
         )
         == 0
     )
+    caption = "" if kind == "video" else "contact markers at rest"
+    assert f"![{caption}]({name})" in out.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("failure_at", ["section", "manifest"])

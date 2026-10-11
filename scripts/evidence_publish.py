@@ -30,10 +30,9 @@ from urllib.parse import quote
 
 SCHEMA_VERSION = "dart.evidence_publication/v5"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
-GITHUB_ATTACHMENT_LIMIT_BYTES = 10_000_000
 
-_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
-_ATTACHMENT_SUFFIXES = _IMAGE_SUFFIXES | {".mp4", ".mov", ".webm"}
+# gh --attach validates file types and sizes itself and renders these as players.
+_VIDEO_SUFFIXES = {".mp4", ".mov", ".webm"}
 _ARTIFACT_KINDS = {"still", "grid", "composite", "video"}
 
 
@@ -147,11 +146,6 @@ def _load_selection(path: Path) -> dict[str, Any]:
             raise ValueError(
                 f"selected artifact is missing or not a regular file: {artifact_path}"
             )
-        if artifact_path.suffix.lower() not in _ATTACHMENT_SUFFIXES:
-            raise ValueError(
-                f"GitHub cannot attach selected artifact {declared_path!r}: "
-                f"unsupported suffix {artifact_path.suffix!r}"
-            )
         # Compare files, not strings, so ./a.png, symlinks and hardlinks to
         # one file cannot count as separate artifacts.
         stat = artifact_path.stat()
@@ -159,12 +153,6 @@ def _load_selection(path: Path) -> dict[str, Any]:
             raise ValueError(f"selected artifact path {declared_path!r} is duplicated")
         selected_files.add((stat.st_dev, stat.st_ino))
         actual_bytes = stat.st_size
-        if actual_bytes > GITHUB_ATTACHMENT_LIMIT_BYTES:
-            raise ValueError(
-                f"selected artifact {declared_path!r} exceeds GitHub's 10 MB "
-                f"attachment limit ({GITHUB_ATTACHMENT_LIMIT_BYTES} bytes); "
-                "shrink or re-encode it"
-            )
         if actual_bytes != expected_bytes:
             raise ValueError(
                 f"selected artifact {declared_path!r} changed size after "
@@ -220,11 +208,22 @@ def _load_selection(path: Path) -> dict[str, Any]:
     return manifest
 
 
+def _attach_path(path: Path, base_dir: Path) -> str:
+    try:
+        return Path(os.path.relpath(path, base_dir)).as_posix()
+    except ValueError:  # Windows paths on different drives have no relative form
+        return path.as_posix()
+
+
 def _artifact_reference(artifact: dict[str, Any], path: str) -> str:
     caption = (
-        artifact["caption"] or Path(artifact["path"]).name
-        if Path(path).suffix.lower() in _IMAGE_SUFFIXES
-        else ""
+        ""
+        if Path(path).suffix.lower() in _VIDEO_SUFFIXES
+        else artifact["caption"] or Path(artifact["path"]).name
+    )
+    # Escape alt text the way gh does, so a caption cannot close the image early.
+    caption = caption.translate(
+        str.maketrans({"\\": "\\\\", "[": "\\[", "]": "\\]", "\n": " ", "\r": " "})
     )
     # gh percent-decodes destinations when matching --attach paths, so this
     # keeps names with spaces or parentheses valid Markdown links.
@@ -535,9 +534,7 @@ def main(argv: list[str] | None = None) -> int:
         publication_ready = selection_pass and semantic_pass
         base_dir = args.selection.parent.resolve()
         attach = [
-            Path(
-                os.path.relpath((base_dir / artifact["path"]).resolve(), base_dir)
-            ).as_posix()
+            _attach_path((base_dir / artifact["path"]).resolve(), base_dir)
             for artifact in selection["selected"]
         ]
         note: str | None = None
