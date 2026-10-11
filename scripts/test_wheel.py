@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import os
 import subprocess
 import sys
 import tempfile
@@ -12,7 +13,7 @@ from pathlib import Path
 
 SMOKE_TEST = r"""
 import dartpy as dart
-from dartpy.gui.osg import InteractiveFrame
+from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
 from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
 
@@ -66,13 +67,22 @@ option.collisionFilter.calls = 0
 assert not group.collide(option)
 assert option.collisionFilter.calls > 0
 
+assert hasattr(dart.gui, "Viewer")
+node = dart.gui.WorldNode(world)
+viewer = dart.gui.Viewer()
+viewer.addWorldNode(node)
+assert viewer.getNumWorldNodes() == 1
+assert node.getWorld().getName() == "wheel smoke"
+
 print("dartpy wheel smoke test passed")
 """
 
 
-def run_command(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+def run_command(
+    cmd: list[str], *, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
     if result.stdout:
         print(result.stdout)
     if result.stderr:
@@ -91,6 +101,36 @@ def _venv_python(venv_path: Path) -> Path:
     if sys.platform == "win32":
         return venv_path / "Scripts" / "python.exe"
     return venv_path / "bin" / "python"
+
+
+def _smoke_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    conda_prefix = env.get("CONDA_PREFIX")
+    for name in (
+        "CONDA_PREFIX",
+        "CONDA_DEFAULT_ENV",
+        "CONDA_PROMPT_MODIFIER",
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "LD_LIBRARY_PATH",
+        "DYLD_LIBRARY_PATH",
+        "DYLD_FALLBACK_LIBRARY_PATH",
+        "DISPLAY",
+        "WAYLAND_DISPLAY",
+        "VK_DRIVER_FILES",
+        "VK_ICD_FILENAMES",
+        "LIBGL_DRIVERS_PATH",
+        "MESA_LOADER_DRIVER_OVERRIDE",
+    ):
+        env.pop(name, None)
+    if conda_prefix:
+        prefix = Path(conda_prefix).resolve()
+        env["PATH"] = os.pathsep.join(
+            entry
+            for entry in env.get("PATH", "").split(os.pathsep)
+            if entry and not Path(entry).resolve().is_relative_to(prefix)
+        )
+    return env
 
 
 def test_wheel(wheel_path: Path) -> None:
@@ -116,7 +156,9 @@ def test_wheel(wheel_path: Path) -> None:
             ]
         )
         run_command([str(python_path), "-m", "pip", "install", str(wheel_path)])
-        run_command([str(python_path), "-c", SMOKE_TEST])
+        run_command(
+            [str(python_path), "-I", "-c", SMOKE_TEST], env=_smoke_environment()
+        )
 
 
 def _expand_wheels(patterns: list[str]) -> list[Path]:

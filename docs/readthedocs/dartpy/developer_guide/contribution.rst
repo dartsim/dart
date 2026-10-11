@@ -21,7 +21,8 @@ Testing
 
 * Add tests for new functionality in the `python/tests` directory
 * Ensure all existing tests pass before submitting a pull request
-* Run tests using: ``pixi run test-dartpy``
+* Run tests using ``pixi run test-py`` (and ``pixi run test-gui`` for
+  ``dartpy.gui`` changes)
 
 Documentation
 ~~~~~~~~~~~~~

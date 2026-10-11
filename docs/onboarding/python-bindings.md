@@ -2,12 +2,13 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
-On `main`, before the DART 7.0 Python API work (M5) and renderer replacement
-(M6), `dartpy` is one all-in-one nanobind extension containing core,
-collision backends enabled in the build, IO parsers and OSG/ImGui bindings.
-It links `dart`, `dart-io` and `dart-gui`. Enabling
-`DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`;
-for a headless C++ installation, set `DART_BUILD_DARTPY=OFF`. See
+On `main`, before the DART 7.0 package-layout work (M5),
+`dartpy` is one all-in-one nanobind extension,
+containing core, collision backends enabled in the build, IO parsers and the
+Filament GUI bindings (`dartpy.gui`). It links `dart`, `dart-io` and
+`dart-gui`. Enabling `DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and
+`DART_BUILD_GUI=ON`; for a headless C++ installation, set
+`DART_BUILD_DARTPY=OFF`. See
 [build system notes](build-system.md) for the C++ package layout and legacy
 forwarding targets.
 
@@ -53,12 +54,13 @@ imports, linked components, or installed package behavior.
 
 The current implementation on `main` uses nanobind as the only dartpy binder.
 Sources live directly under `python/dartpy/`. The module keeps the DART
-namespaces, camelCase names, and overloads, including `dartpy.gui.osg` in the
-all-in-one module.
-The DART 7.0 Python contract is defined in
-[the DART 7 Python API design](../design/dart7_python_api.md): PEP 8 names
-without compatibility aliases, a Python package with a private extension,
-and Filament rendering.
+namespaces, camelCase names, and overloads, including the interim
+`dartpy.gui` module backed by Filament. The DART 7.0 Python contract is defined
+in [the DART 7 Python API design](../design/dart7_python_api.md): PEP 8 names
+without compatibility aliases and a Python package with a private extension.
+M6a landed the renderer in [#3696](https://github.com/dartsim/dart/pull/3696);
+M6b still replaces the interim GUI module with `dart.render` and `dart.viewer`
+before the first release candidate. `release-6.20` retains pybind11 and OSG.
 
 Python 3.10 or newer and nanobind 3.1 or newer are required.
 `DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
@@ -93,29 +95,18 @@ needs a writable independent array should make an explicit copy.
 
 ### GUI ownership
 
-GUI Python ancestry follows the primary base: `Viewer` and `ImGuiViewer`, plus
-`DragAndDrop`, `SimpleFrameDnD`, `SimpleFrameShapeDnD`, `BodyNodeDnD`, and
+GUI Python ancestry follows the primary base: `Viewer`, plus `DragAndDrop`,
+`SimpleFrameDnD`, `SimpleFrameShapeDnD`, `BodyNodeDnD`, and
 `InteractiveFrameDnD`, omit `common.Subject` from Python ancestry.
 `InteractiveTool` and `InteractiveFrame` omit `dynamics.Detachable`, inherited
 through `SimpleFrame`. These secondary bases remain usable through native
 arguments and pointer returns; only `isinstance`, `issubclass`, and MRO differ.
 
-OSG trampoline aliases occupy Python instance storage. Their constructors take
-one OSG reference and their destructors release it without deleting that
-co-located memory. Native viewers use heap factories through the hybrid
-construction helper, preserving custom Python subclass initializers.
-
-Viewer retention registries keep Python overrides alive for native world-node,
-event-handler, and attachment edges. Their GC slots detach native edges before
-clearing Python references. Factory deleters retain the registry until native
-destruction finishes. Removed wrappers remain retained while camera callbacks
-or native callback snapshots still reference them; they can outlive removal
-until viewer destruction. `ref_ptr` returns attach ownership only when creating
-a wrapper, preserving identity and avoiding repeated-getter reference growth.
-
-DragAndDrop wrappers observe native destruction notifications and become invalid
-when native code deletes the object. Calls through invalid wrappers raise a
-Python error instead of accessing freed memory.
+Each viewer's retention registry keeps the Python wrappers and overrides of its
+world nodes, attachments, widgets, and event handlers alive while the viewer
+holds them; removing one releases it. The viewer's GC slots detach these native
+edges before clearing Python references. `enableDragAndDrop` returns wrappers
+that share ownership of the native interaction.
 
 ### Binding infrastructure
 
@@ -178,8 +169,9 @@ need GC-visible ownership before those cases can participate safely.
 
 Reusable porting and API probes live under `scripts/nanobind/`. The regular
 `python/tests/` suite tests the nanobind behavior, including ownership and the accepted
-changes from DART 6.20. Regular Python CI jobs include GUI coverage; Windows
-uses its existing unity build.
+changes from DART 6.20. Regular Python CI jobs cover GUI construction and
+ownership; `CI Filament` runs the rendering tests. Windows uses its existing
+unity build.
 
 ## Wheels
 
@@ -232,7 +224,8 @@ SHA for the checkout. `ref=main` enables the release-only Python rows without
 requesting publication. Inspect both architectures' repaired tags and fresh
 container smoke tests before release.
 
-The repaired-wheel smoke test requires all four parser APIs and constructs an
-OSG interactive frame without opening a display. It also parses an inline
-URDF model, so missing IO or GUI support fails acceptance. Linux release
-wheels run this check in the fresh manylinux container without a display.
+The repaired-wheel smoke test requires all four parser APIs and constructs a
+`dartpy.gui` interactive frame and a viewer with a world node without opening a
+display. It also parses an inline URDF model, so missing IO or GUI support fails
+acceptance. Linux release wheels run this check in the fresh manylinux
+container without a display.

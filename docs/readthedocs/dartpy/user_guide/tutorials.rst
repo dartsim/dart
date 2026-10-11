@@ -14,7 +14,7 @@ start with the :doc:`dartpy examples </dartpy/user_guide/examples>`.
 Setup and execution
 -------------------
 
-From a source checkout, build dartpy with the OSG viewer:
+From a source checkout, build dartpy with the Filament viewer:
 
 .. code-block:: console
 
@@ -50,15 +50,16 @@ You can also run a script directly in an environment with dartpy installed:
    python python/tutorials/biped/main.py
    python python/tutorials/biped/main_finished.py
 
-A desktop session with OpenGL is required for the interactive viewer.
+The interactive viewer requires a desktop graphics session: OpenGL on Linux
+and Windows, or Metal on macOS.
 The scripts print the viewer and tutorial controls. Space starts or pauses
 simulation. Exercise code that needs an unfinished model or controller
 raises ``NotImplementedError`` identifying the lesson to complete.
 
 Each script exposes ``build_scene()`` to construct its world node without
 opening a window. The node retains its controller and event handler;
-``main()`` attaches it to an OSG ``Viewer``. This also lets you inspect or step
-a completed scene from Python.
+``main()`` attaches it to a Filament ``Viewer``. This also lets you inspect or
+step a completed scene from Python.
 
 .. toctree::
    :maxdepth: 1

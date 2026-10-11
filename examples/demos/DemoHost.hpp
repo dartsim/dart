@@ -44,8 +44,7 @@
   #include "memory_diagnostics_model.hpp"
 #endif
 
-#include <dart/gui/osg/PerformanceStatsPanel.hpp>
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <chrono>
 #include <deque>
@@ -64,7 +63,7 @@ class GuiScaleTheme;
 /// wrapping each call so a throwing (or otherwise misbehaving) callback is
 /// logged once through the host's error sink and then disabled -- it never
 /// crashes the app or corrupts the frame loop.
-class DemoWorldNode : public dart::gui::osg::RealTimeWorldNode
+class DemoWorldNode : public demo_gui::RealTimeWorldNode
 {
 public:
   explicit DemoWorldNode(const dart::simulation::WorldPtr& world);
@@ -149,7 +148,7 @@ struct LogEntry
 };
 
 //==============================================================================
-/// Owns the single ImGuiViewer window, the scene registry, and the safe
+/// Owns the single Viewer window, the scene registry, and the safe
 /// runtime scene-switching machinery described in examples/demos/README.md.
 /// Persistent host chrome (window, theme, panel layout) survives scene
 /// switches; per-scene state (world node, widgets, drag-and-drop, event
@@ -182,13 +181,16 @@ public:
 
   /// Advances through every scene in the catalog, `framesPerScene` steps
   /// each, twice in a row (the repeat proves rapid re-switching does not leak
-  /// world nodes). No window or GPU context is required. Returns 0 if every
-  /// scene's factory succeeded and the world-node bookkeeping stayed
-  /// balanced, nonzero otherwise.
-  int cycleScenes(int framesPerScene);
+  /// world nodes). Without `render` no window or GPU context is required;
+  /// with it, every step also renders a display-free `width` x `height`
+  /// frame, so scene replacement exercises renderer resource churn. Returns 0
+  /// if every scene's factory (and render) succeeded or lacked prefetched
+  /// assets and the world-node bookkeeping stayed balanced, nonzero otherwise.
+  int cycleScenes(
+      int framesPerScene, bool render = false, int width = 0, int height = 0);
 
-  /// Builds `sceneId` (or the initial scene if empty) off-screen via a pbuffer
-  /// GraphicsContext, steps it `steps` times, and writes a screenshot to
+  /// Builds `sceneId` (or the initial scene if empty) in a display-free
+  /// capture viewer, steps it `steps` times, and writes a screenshot to
   /// `shotPath`. Returns 0 on success, nonzero on failure.
   int runHeadlessShot(
       const std::string& shotPath,
@@ -213,9 +215,10 @@ public:
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   /// Number of wheel-down ticks runHeadlessShot() injects into the viewer
   /// event queue while hovering the scene panel, capturing one frame per tick
-  /// next to the --shot path. Exercises the real osgGA -> ImGui scroll path so
-  /// headless captures can prove the Memory tab scrolls without corrupting the
-  /// renderer. Verification-only; compiled out with the diagnostics option.
+  /// next to the --shot path. Exercises the viewer-owned ImGui scroll input
+  /// queue so headless captures can prove the Memory tab scrolls without
+  /// corrupting the renderer. Verification-only; compiled out with the
+  /// diagnostics option.
   void setDebugScrollMemoryPanelTicks(int ticks);
 #endif
 
@@ -228,7 +231,7 @@ public:
   // panel widget / key handler; not part of the app-facing API.
   //----------------------------------------------------------------------------
 
-  dart::gui::osg::ImGuiViewer* getViewer() const;
+  GuiViewer* getViewer() const;
   DemoWorldNode* getWorldNode() const;
   void addTeardown(std::function<void()> teardown);
   void log(LogEntry::Level level, const std::string& message);
@@ -299,6 +302,7 @@ private:
   void applyCameraHome(const CameraHome& home, bool viaManipulator);
 
   void ensureViewerConfigured();
+  void initializeGuiTheme();
   void setGuiScale(double scale);
   void updateAutomaticGuiScale();
   bool prepareOffscreenContext(int width, int height, const CameraHome& home);
@@ -328,8 +332,8 @@ private:
   std::vector<CategoryGroup> mCategories;
   std::unordered_map<std::string, std::size_t> mCategoryIndexByName;
 
-  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
-  ::osg::ref_ptr<DemoWorldNode> mWorldNode;
+  GuiPtr<GuiViewer> mViewer;
+  GuiPtr<DemoWorldNode> mWorldNode;
   dart::simulation::WorldPtr mCurrentWorld;
   std::function<void()> mCurrentRenderPanel;
   std::vector<KeyAction> mCurrentKeyActions;
@@ -340,6 +344,7 @@ private:
   std::string mCurrentSceneTitle;
   std::optional<std::string> mPendingSceneId;
   bool mLastSwitchFailed = false;
+  std::string mLastSwitchSkipReason;
   std::size_t mActiveWorldNodeCount = 0;
 
   std::string mStatusLine = "No demo loaded yet.";
@@ -355,7 +360,7 @@ private:
   DragForce mDragForce;
   ContactVisualizer mContactVisualizer;
   Profiler mProfiler;
-  dart::gui::osg::PerformanceStatsPanel mPerformanceStatsPanel;
+  demo_gui::PerformanceStatsPanel mPerformanceStatsPanel;
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   dart::examples::demos::DiagnosticSession mMemoryDiagnosticsSession;
   std::uint64_t mMemoryDiagnosticsGeneration = 0;
@@ -377,7 +382,7 @@ private:
   // toggling the host's global mShadowsEnabled can be combined with it.
   bool mShadowsEnabled = true;
   bool mCurrentSceneWantsShadows = true;
-  ::osg::ref_ptr<dart::gui::osg::GridVisual> mGridVisual;
+  GuiPtr<demo_gui::GridVisual> mGridVisual;
 
   double mGuiScale;
   bool mAutomaticGuiScale;

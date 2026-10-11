@@ -55,7 +55,7 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 
 ## GUI Visual Checks
 
-- For OSG GUI, scene, or simulation rendering changes, load `dart-verify-sim`.
+- For Filament GUI, scene, or simulation rendering changes, load `dart-verify-sim`.
   Pair a focused text correctness oracle with `agent-capture`, view assessment,
   and claim-relevant core `DebugOverlay` layers; inspect the artifact and
   sidecar instead of relying only on command success.

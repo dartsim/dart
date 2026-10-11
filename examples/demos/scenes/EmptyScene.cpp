@@ -33,9 +33,8 @@
 // Ported from examples/empty: a minimal world whose only content is a
 // draggable InteractiveFrame gizmo target.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -58,23 +57,15 @@ DemoScene makeEmptyScene()
     setup.world = dart::simulation::World::create();
     setup.enableShadows = false;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.57, 3.14, 1.64),
-        ::osg::Vec3d(0.00, 0.00, 0.00),
-        ::osg::Vec3d(-0.24, -0.25, 0.94)};
+        GuiVector3(2.57, 3.14, 1.64),
+        GuiVector3(0.00, 0.00, 0.00),
+        GuiVector3(-0.24, -0.25, 0.94)};
 
-    auto target = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    auto target = std::make_shared<demo_gui::InteractiveFrame>(
         dart::dynamics::Frame::World());
     setup.world->addSimpleFrame(target);
 
-    // Drag `target` through the InteractiveFrame-typed
-    // Viewer::enableDragAndDrop() overload (InteractiveFrameDnD) so its
-    // per-axis/plane gizmo tools are usable. InteractiveFrameDnD allocates 9
-    // raw per-tool sub-DnDs; the accompanying gui-osg library fix gives it a
-    // real destructor that deletes them, so it is now safe to tear down on a
-    // scene switch. Registered in onActivate and released via
-    // ctx.addTeardown(disableDragAndDrop), which runs before the world is
-    // destroyed. (DemoSceneSetup::dragFrames / SimpleFrameDnD remains the right
-    // tool for plain SimpleFrames wanting only an unconstrained free-drag.)
+    // Release the gizmo drag handler before the scene's world is destroyed.
     setup.onActivate = [target](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
       if (auto* dnd = viewer->enableDragAndDrop(target.get()))

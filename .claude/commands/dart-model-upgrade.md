@@ -8,16 +8,17 @@ Audit or update DART's AI infrastructure for: $ARGUMENTS
 
 ## Objective
 
-Use live primary guidance and representative DART tasks to decide
-what to preserve, update, remove, consolidate, or add. Prefer the smallest
-change that improves the target without weakening the branch's compatibility rules,
-safety, evidence, public paths, or cross-tool capability parity. The reusable
-intake, comparison, verification, and closeout core stays model-agnostic. This
-workflow is itself an audit surface: improve it when a target exposes a
-reusable gap, and replace stale target-specific guidance instead of
-accumulating one command or permanent branch per model family. Because DART is
-a 3D physics simulator, every target also demonstrates how well it investigates
-simulation state with text-first and OSG visual/debug evidence.
+Use live primary guidance and representative DART tasks to decide what to
+preserve, update, remove, consolidate, or add. Prefer the smallest change
+that improves the target without weakening the branch's compatibility
+rules, safety, evidence, public paths, or cross-tool capability parity. The
+reusable intake, comparison, verification, and closeout core stays
+model-agnostic. This workflow is itself an audit surface: improve it when a
+target exposes a reusable gap, and replace stale target-specific guidance
+instead of accumulating one command or permanent branch per model family.
+Because DART is a 3D physics simulator, every target also demonstrates how
+well it investigates simulation state with text-first and Filament
+visual/debug evidence.
 
 ## Required Reading
 
@@ -50,7 +51,7 @@ simulation state with text-first and OSG visual/debug evidence.
    references, prompt and instruction sizes, generated skill-metadata size,
    custom-agent inheritance, hooks, scenarios, durable context and project
    state, active plan/dev-task handoffs, and the branch-local
-   `dart-verify-sim`/OSG/image-evaluation route. Run baseline read-only gates.
+   `dart-verify-sim`/Filament/image-evaluation route. Run baseline read-only gates.
    Create `docs/dev_tasks/<task>/` only when the apply task is genuinely
    multi-session; audit-only reports the proposed path without creating it.
 3. **Refresh primary guidance.** Read current official model, prompting,
@@ -83,14 +84,15 @@ simulation state with text-first and OSG visual/debug evidence.
    evidence without turning it into a model-quality claim.
 
    Every target runs one representative DART physics investigation through
-   `dart-verify-sim` using the same scene and claim. Require a text correctness
-   oracle, then corroborate it with an assessed OSG capture and only the needed
-   `DebugOverlay` layers. Compare whether the model requests missing evidence,
-   repairs poor views, chooses claim-tied views/layers, reconciles text/image
-   disagreement, and says what the image does not prove. Images are never the
-   sole correctness oracle. If rendering or native image review is unavailable,
-   exercise the text path, record the exact limitation, and do not infer visual
-   quality from tool availability.
+   `dart-verify-sim` using the same scene and claim. Require a
+   text correctness oracle, then corroborate it with an assessed Filament
+   capture and only the needed `DebugOverlay` layers. Compare whether the
+   model requests missing evidence, repairs poor views, chooses claim-tied
+   views/layers, reconciles text/image disagreement, and says what the
+   image does not prove. Images are never the sole correctness oracle. If
+   rendering or native image review is unavailable, exercise the text path,
+   record the exact limitation, and do not infer visual quality from tool
+   availability.
 6. **Route by task shape.** Derive routing for the target family from its
    refreshed official guidance, then record the result in the model-routing
    owner, `docs/ai/README.md` § "Updating Models And Coding Agents", which
@@ -105,20 +107,21 @@ simulation state with text-first and OSG visual/debug evidence.
    per-family entry in the owner doc; do not clone the workflow or append an
    ever-growing model taxonomy.
 7. **Implement only in apply mode.** Apply the smallest supported delta.
-   Preserve C++17, the nanobind binder, `dart::utils`, and the other
-   compatibility rules in the branch's `AGENTS.md`. The
-   approved DART nanobind binder is permitted under `python/dartpy/`. Follow the branch profile for other surfaces,
-   including the forbidden historical `python/dartpy/nanobind` path. Keep
-   outcome, constraints, permissions, evidence, routing, and stopping
-   conditions explicit. Edit `.claude/` sources and run
-   `pixi run sync-ai-commands`; never hand-edit generated adapters. Prefer
-   progressive disclosure over loading every plan or task by default. Improve
-   this source in the same apply change when evidence exposes a reusable gap,
-   and remove superseded model-specific guidance.
+   Preserve C++17, the nanobind binder, `dart::utils`, Filament, and the
+   other compatibility rules in the branch's `AGENTS.md`. The
+   approved DART nanobind binder is permitted under `python/dartpy/`.
+   Follow the branch profile for other surfaces, including the forbidden
+   historical `python/dartpy/nanobind` path. Keep outcome, constraints,
+   permissions, evidence, routing, and stopping conditions explicit. Edit
+   `.claude/` sources and run `pixi run sync-ai-commands`; never hand-edit
+   generated adapters. Prefer progressive disclosure over loading every
+   plan or task by default. Improve this source in the same apply change
+   when evidence exposes a reusable gap, and remove superseded
+   model-specific guidance.
 8. **Exercise trigger and failure boundaries.** Cover direct, indirect,
    incomplete, non-trigger, and edge prompts. Include a negative case that
    retains its existing route plus failures for model pins, config aliases,
-   generated parity, instruction discovery, approvals, unavailable OSG,
+   generated parity, instruction discovery, approvals, unavailable graphics,
    rejected views, text/image disagreement, and a static geometry defect that
    visual-only inspection must not pass. Include a fresh-session case that
    finds current project state and the correct resume surface without hidden
@@ -126,7 +129,7 @@ simulation state with text-first and OSG visual/debug evidence.
    them.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, the relevant
-   docs/AI gates in `docs/ai/verification.md`, and the representative OSG
+   docs/AI gates in `docs/ai/verification.md`, and the representative Filament
    investigation. Treat the configured CMake File API result, expanded
    target-command trace, and CTest inventory from `check-ai-infra` as the
    effective test-graph proof. Require its controlled runner probes to execute a
@@ -152,7 +155,7 @@ simulation state with text-first and OSG visual/debug evidence.
   reference material
 - Durable context, session-handoff, freshness, and context-cost findings
 - Comparison matrix, limitations, prompt/config changes, and unchanged choices
-- DART physics/OSG investigation, semantic visual review, artifacts, and
-  failure-boundary results
+- DART physics/Filament investigation, semantic visual review, artifacts,
+  and failure-boundary results
 - Gates, compatibility effects, principle audit, two reviews, and blockers
 - In apply mode, the changelog decision and local/external completion state

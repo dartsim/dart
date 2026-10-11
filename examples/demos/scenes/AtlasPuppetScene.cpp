@@ -51,7 +51,7 @@
 // from making the unactuated robot collapse in a forced step). The
 // w/a/s/d/q/e/f/z movement keys and the 'r' posture-optimize hold need both
 // KEYDOWN and KEYUP, which DemoScene::KeyAction (key-down only) cannot
-// express; they are handled by a small osgGA::GUIEventHandler registered via
+// express; they are handled by a small GUIEventHandler registered via
 // DemoHostContext::addEventHandler, the same pattern
 // OperationalSpaceControlScene (B3) used for its held 1/2/3 constraint keys.
 // The single-press keys (1-4 target toggle, t reset, x/c support toggle, p
@@ -62,9 +62,8 @@
 // is set up by this same factory a few lines above, so the index is stable
 // here.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -283,7 +282,7 @@ void setupAtlasPuppetEndEffectors(const SkeletonPtr& atlas)
 
   auto* lHand = atlas->getBodyNode("l_hand")->createEndEffector("l_hand");
   lHand->setDefaultRelativeTransform(tfHand, true);
-  auto lhTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
+  auto lhTarget = std::make_shared<demo_gui::InteractiveFrame>(
       Frame::World(), "lh_target");
   lHand->getIK(true)->setTarget(lhTarget);
   lHand->getIK()->useWholeBody();
@@ -298,7 +297,7 @@ void setupAtlasPuppetEndEffectors(const SkeletonPtr& atlas)
 
   auto* rHand = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
   rHand->setDefaultRelativeTransform(tfHand, true);
-  auto rhTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
+  auto rhTarget = std::make_shared<demo_gui::InteractiveFrame>(
       Frame::World(), "rh_target");
   rHand->getIK(true)->setTarget(rhTarget);
   rHand->getIK()->useWholeBody();
@@ -326,7 +325,7 @@ void setupAtlasPuppetEndEffectors(const SkeletonPtr& atlas)
 
   auto* lFoot = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
   lFoot->setRelativeTransform(tfFoot);
-  auto lfTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
+  auto lfTarget = std::make_shared<demo_gui::InteractiveFrame>(
       Frame::World(), "lf_target");
   lFoot->getIK(true)->setTarget(lfTarget);
   lFoot->getIK()->setHierarchyLevel(1);
@@ -338,7 +337,7 @@ void setupAtlasPuppetEndEffectors(const SkeletonPtr& atlas)
 
   auto* rFoot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
   rFoot->setRelativeTransform(tfFoot);
-  auto rfTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
+  auto rfTarget = std::make_shared<demo_gui::InteractiveFrame>(
       Frame::World(), "rf_target");
   rFoot->getIK(true)->setTarget(rfTarget);
   rFoot->getIK()->setHierarchyLevel(1);
@@ -475,7 +474,7 @@ void updatePuppet(AtlasPuppetState& state)
 /// flags on KEYDOWN/KEYUP; 'r' toggles posture-enforcement + balance mode
 /// while held. Needs KEYUP as well as KEYDOWN, so it cannot be expressed as
 /// an ordinary (key-down-only) KeyAction -- see the file comment.
-class AtlasPuppetMoveHandler : public ::osgGA::GUIEventHandler
+class AtlasPuppetMoveHandler : public demo_events::GUIEventHandler
 {
 public:
   explicit AtlasPuppetMoveHandler(std::shared_ptr<AtlasPuppetState> state)
@@ -484,19 +483,20 @@ public:
   }
 
   bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+      const demo_events::GUIEventAdapter& ea,
+      demo_events::GUIActionAdapter&) override
   {
-    if (ea.getHandled())
+    if (guiEventHandled(ea))
       return false;
 
-    const bool down = ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN;
-    const bool up = ea.getEventType() == ::osgGA::GUIEventAdapter::KEYUP;
+    const bool down
+        = ea.getEventType() == demo_events::GUIEventAdapter::KEYDOWN;
+    const bool up = ea.getEventType() == demo_events::GUIEventAdapter::KEYUP;
     if (!down && !up)
       return false;
 
     // Don't let typing in an ImGui field (e.g. the host's "Search demos..."
-    // box) walk or rotate the puppet -- osgGA delivers key events to every
-    // handler regardless of ImGui focus.
+    // box) walk or rotate the puppet.
     if (ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
@@ -651,9 +651,9 @@ DemoScene makeAtlasPuppetScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.34, 3.00, 2.41),
-        ::osg::Vec3d(0.00, 0.00, 1.00),
-        ::osg::Vec3d(-0.20, -0.08, 0.98)};
+        GuiVector3(5.34, 3.00, 2.41),
+        GuiVector3(0.00, 0.00, 1.00),
+        GuiVector3(-0.20, -0.08, 0.98)};
 
     setup.onActivate = [state, atlas](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
@@ -678,16 +678,16 @@ DemoScene makeAtlasPuppetScene()
         if (!ee->getIK())
           return;
         if (const auto& frame
-            = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
+            = std::dynamic_pointer_cast<demo_gui::InteractiveFrame>(
                 ee->getIK()->getTarget())) {
           if (auto* dnd = viewer->enableDragAndDrop(frame.get()))
             ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });
         }
       });
 
-      ctx.addAttachment(new dart::gui::osg::SupportPolygonVisual(
+      ctx.addOwnedAttachment(std::make_shared<demo_gui::SupportPolygonVisual>(
           atlas, kAtlasPuppetDisplayElevation));
-      ctx.addEventHandler(new AtlasPuppetMoveHandler(state));
+      ctx.addEventHandler(std::make_shared<AtlasPuppetMoveHandler>(state));
     };
 
     setup.keyActions.push_back(

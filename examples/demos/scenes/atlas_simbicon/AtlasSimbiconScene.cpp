@@ -82,15 +82,12 @@
 
 #include "../Scenes.hpp"
 #include "Controller.hpp"
-
-#include <dart/gui/osg/osg.hpp>
+#include "GuiBackend.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
 
 #include <dart/dart.hpp>
-
-#include <osgShadow/ShadowMap>
 
 #include <algorithm>
 #include <memory>
@@ -113,8 +110,8 @@ struct AtlasSimbiconState
   Eigen::Vector3d externalForce = Eigen::Vector3d::Zero();
   int forceDuration = 0;
 
-  dart::gui::osg::WorldNode* worldNode = nullptr;
-  dart::gui::osg::Viewer* viewer = nullptr;
+  demo_gui::WorldNode* worldNode = nullptr;
+  demo_gui::Viewer* viewer = nullptr;
 
   float gravityAcc = 9.81f;
   bool depthMode = false;
@@ -144,21 +141,15 @@ void pushAtlas(
 }
 
 //==============================================================================
-void showShadow(
-    dart::gui::osg::WorldNode* worldNode, dart::gui::osg::Viewer* viewer)
+void showShadow(demo_gui::WorldNode* worldNode, demo_gui::Viewer* viewer)
 {
-  auto shadow = dart::gui::osg::WorldNode::createDefaultShadowTechnique(viewer);
-  if (auto* sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get())) {
-    const auto mapResolution = static_cast<short>(std::pow(2, 12));
-    sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
-  }
-  worldNode->setShadowTechnique(shadow);
+  setGuiShadows(*worldNode, *viewer, true);
 }
 
 //==============================================================================
-void hideShadow(dart::gui::osg::WorldNode* worldNode)
+void hideShadow(demo_gui::WorldNode* worldNode)
 {
-  worldNode->setShadowTechnique(nullptr);
+  worldNode->setShadowsEnabled(false);
 }
 
 } // namespace
@@ -212,9 +203,9 @@ DemoScene makeAtlasSimbiconScene()
     // (see the file comment).
     setup.enableShadows = false;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.14, 3.28, 6.28) * 2.0,
-        ::osg::Vec3d(1.00, 0.00, 0.00),
-        ::osg::Vec3d(0.00, 0.1, 0.00)};
+        GuiVector3(5.14, 3.28, 6.28) * 2.0,
+        GuiVector3(1.00, 0.00, 0.00),
+        GuiVector3(0.00, 0.1, 0.00)};
 
     setup.preStep = [state] {
       state->pelvis->addExtForce(state->externalForce);
@@ -240,7 +231,7 @@ DemoScene makeAtlasSimbiconScene()
       auto* viewer = state->viewer;
       const auto priorCameraMode = viewer->getCameraMode();
       const bool priorHeadlights = viewer->checkHeadlights();
-      state->depthMode = priorCameraMode == dart::gui::osg::CameraMode::DEPTH;
+      state->depthMode = priorCameraMode == demo_gui::CameraMode::DEPTH;
       ctx.addTeardown([viewer, priorCameraMode, priorHeadlights] {
         viewer->setCameraMode(priorCameraMode);
         viewer->switchHeadlights(priorHeadlights);
@@ -294,8 +285,8 @@ DemoScene makeAtlasSimbiconScene()
 
       if (ImGui::Checkbox("Depth mode", &state->depthMode) && state->viewer) {
         state->viewer->setCameraMode(
-            state->depthMode ? dart::gui::osg::CameraMode::DEPTH
-                             : dart::gui::osg::CameraMode::RGBA);
+            state->depthMode ? demo_gui::CameraMode::DEPTH
+                             : demo_gui::CameraMode::RGBA);
       }
 
       ImGui::Separator();

@@ -8,8 +8,8 @@ description: "DART CI: GitHub Actions, cache debugging, and platform-specific fa
 Load this skill when debugging CI failures or working with GitHub Actions.
 
 When the failing claim depends on model/scene structure, physics behavior, or
-OSG output, also load `dart-verify-sim` and reproduce it with a text oracle plus
-assessed visual evidence. Document a visual exception when OSG/Xvfb is
+Filament output, also load `dart-verify-sim` and reproduce it with a text oracle plus
+assessed visual evidence. Document a visual exception when graphics support is
 unavailable or not applicable in the failing environment.
 
 ## Quick Commands
@@ -46,10 +46,11 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | macOS ARM64 SEGFAULT | Replace `alloca()`/VLAs with `std::vector<T>`            |
 | RTD build fails      | Use defensive `.get(key, default)` patterns              |
 | gz-physics fails     | Reproduce with `pixi run -e gazebo test-gz`              |
+| CI Filament fails    | Configure with `pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON`, then run `pixi run test-gui`; native-window failures with `pixi run ctest --test-dir build/<env>/cpp/Release -L filament-native` (`pixi run ctest --test-dir build/<env>/cpp -C Release -L filament-native` on Windows; under `xvfb-run` on headless Linux); consumer failures with `pixi run python scripts/test_gui_install.py` on that build directory |
 
 ## Workflow Architecture
 
-The CI workflows that a failing PR check belongs to (full 12-workflow index:
+The CI workflows that a failing PR check belongs to (full workflow index:
 `docs/onboarding/ci-cd.md` § "Workflow Index"):
 
 | Workflow            | Purpose                                | Platforms  |
@@ -57,6 +58,7 @@ The CI workflows that a failing PR check belongs to (full 12-workflow index:
 | `ci_ubuntu.yml`     | AI checks, lint, build, test, coverage | Ubuntu     |
 | `ci_macos.yml`      | Lint, build, test                      | macOS      |
 | `ci_windows.yml`    | Lint, build, test                      | Windows    |
+| `ci_filament.yml`   | Filament GUI functional lane (`<runner>-Filament-functional`; not yet required) | Ubuntu, Windows, macOS |
 | `ci_freebsd.yml`    | Build + test (VM)                      | FreeBSD    |
 | `ci_simd.yml`       | SIMD x86 instruction-level matrix      | Ubuntu x86_64 |
 | `ci_toolchain.yml`  | Alternate toolchain build + test       | Ubuntu     |
@@ -66,6 +68,12 @@ The CI workflows that a failing PR check belongs to (full 12-workflow index:
 FreeBSD, toolchain, CodeQL, wheels, Linux ASan/coverage/Eigen alignment, and
 macOS Debug run only in `nightly.yml`; their failures arrive as
 `nightly-failure` issues, not PR checks.
+
+Default test gates exclude device-dependent CTests labeled `gui-device` and
+Python rendering tests; device-free GUI tests still run. `pixi run test-gui`
+selects all `gui` CTests except `filament-native`. The capture smoke option
+`DART_ENABLE_GUI_SMOKE_TESTS` defaults to `OFF`, needs a graphics device, and
+replaces `DART_ENABLE_GUI_OSG_SMOKE_TESTS`; `CI Filament` enables it.
 
 ## Downstream Compatibility Policy
 

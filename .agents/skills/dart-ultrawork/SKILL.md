@@ -107,7 +107,7 @@ the real scope materially different stops and reports back.
 4. **Create or refresh the tracking surface** - Populate the project home with
    value, north star, deliverable, scope, non-goals, assumptions, risks,
    acceptance evidence, gates, dependencies, milestone, next actions, and
-   blockers. Claim-dependent physics/simulation, collision/contact, model, OSG,
+   blockers. Claim-dependent physics/simulation, collision/contact, model, Filament,
    and visual-example work routes through `dart-verify-sim`: require a text
    oracle plus assessed visual/debug evidence, or a justified replacement. Keep `RESUME.md`
    as the handoff; add `decisions.md`, `verification.md`, and

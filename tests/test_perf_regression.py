@@ -6954,11 +6954,11 @@ def test_robot_absolute_input_errors_remain_publishable(
     assert module.publication_record(path, "merge")["verdict"]["status"] == "FAIL"
 
 
-def _backfill_test_setup(monkeypatch, tmp_path):
+def _backfill_test_setup(monkeypatch, tmp_path, driver_cmake="driver"):
     module = _load_runner()
     repo = _perf_repository(tmp_path / "repository")
     base = _perf_commit(
-        repo, "examples/contact_benchmark/CMakeLists.txt", "driver", "Add driver"
+        repo, "examples/contact_benchmark/CMakeLists.txt", driver_cmake, "Add driver"
     )
     first = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "Change DART (#3229)")
     last = _perf_commit(repo, "dart/dynamics/test.cpp", "last", "Change DART (#3300)")
@@ -7222,6 +7222,81 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
         json.loads((prefix / "share/dart/perf-build.json").read_text())["commit"]
         == "b" * 40
     )
+
+
+@pytest.mark.parametrize(
+    "legacy,osg,contact",
+    [
+        (True, False, True),
+        (True, True, True),
+        (True, False, False),
+        (False, False, True),
+    ],
+)
+def test_build_arm_classifies_missing_historical_osg_as_infrastructure(
+    monkeypatch, tmp_path, legacy, osg, contact
+):
+    module = _load_runner()
+    source, build, driver, prefix, dependency = (
+        tmp_path / name for name in ("src", "build", "driver", "prefix", "dependencies")
+    )
+    contact_cmake = source / "examples/contact_benchmark/CMakeLists.txt"
+    contact_cmake.parent.mkdir(parents=True)
+    contact_cmake.write_text(
+        f"set(required_components {'gui-osg' if legacy else 'gui'})"
+    )
+    if osg:
+        (dependency / "lib").mkdir(parents=True)
+        (dependency / "lib/libosgDB.so").touch()
+    configured = []
+
+    def execute(*args, **kwargs):
+        configured.append(args[0])
+        raise ValueError("reached configure")
+
+    monkeypatch.setattr(module, "execute", execute)
+    args = module.parser().parse_args(["local"])
+    unavailable = legacy and not osg and contact
+    with pytest.raises(
+        ValueError,
+        match="requires OpenSceneGraph" if unavailable else "reached configure",
+    ) as failure:
+        module._build_arm(
+            args,
+            "a" * 40,
+            source,
+            build,
+            driver,
+            prefix,
+            [module.CB] if contact else [],
+            tmp_path / "arm",
+            dependency,
+            module.ROOT,
+            {},
+        )
+    assert not isinstance(failure.value, module.BuildFailure)
+    assert bool(configured) == (not unavailable)
+
+
+def test_backfill_does_not_record_missing_historical_osg_as_broken_source(
+    monkeypatch, tmp_path
+):
+    module, args, revisions, _, _, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path, driver_cmake="set(required_components gui-osg)"
+    )
+    attempts = []
+
+    def build_arm(*arguments):
+        attempts.append(arguments[1])
+        module._build_arm(*arguments, tmp_path / "dependencies", module.ROOT, {})
+
+    monkeypatch.setattr(module, "build_arm", build_arm)
+    with pytest.raises(ValueError, match="requires OpenSceneGraph"):
+        module.backfill(args)
+    assert attempts == [revisions[0], revisions[0]]
+    assert measurements == []
+    assert not list(args.output_dir.glob("runs/*/build-failure.json"))
+    assert not list(args.output_dir.glob("runs/*/record.json"))
 
 
 @pytest.mark.parametrize("failure", ["retry-build", "build", "infrastructure", "value"])

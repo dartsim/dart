@@ -3,17 +3,17 @@
 This module builds world-derived debug layers — a ground grid, the world frame,
 contact markers/normals/forces, body frames, velocity arrows, centers of mass,
 inertia-equivalent boxes, collision bounding boxes, trajectory polylines, and
-name labels — and renders them *through the DART core OSG pipeline* via a
-``dart.gui.osg.DebugOverlay`` viewer attachment. Segments become always-on-top
-overlay lines and labels become world-anchored osgText, both drawn unlit with
-depth testing disabled in a late render bin, so the debug primitives stay
+name labels — and renders them through Filament via a
+``DebugOverlay`` viewer attachment. Segments become always-on-top
+overlay lines and labels become world-anchored text, both drawn unlit with
+depth testing disabled after the scene, so the debug primitives stay
 legible on top of the geometry they annotate instead of being buried in depth or
 composited onto the PNG. The capture harness populates the overlay, renders
-through ``captureOffscreen``, then clears it.
+through ``Viewer.captureScreen``, then clears it.
 
 ``build_overlay`` and ``OverlayScene`` stay pure Python + numpy over the classic
 dartpy surface; only the rendering backend (``populate_overlay``) touches the
-OSG scene.
+GUI attachment.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ GRID_RGB = (117, 125, 128)  # rgba(0.46, 0.49, 0.5)
 COM_RGB = (56, 209, 219)  # COM teal (0.22, 0.82, 0.86)
 INERTIA_RGB = (148, 112, 242)  # inertia purple (0.58, 0.44, 0.95)
 COLLISION_BOUNDS_RGB = (51, 219, 110)  # bounds green (0.2, 0.86, 0.43)
-# osgText labels render on the Viewer's light-gray (0.9) background, so a dark
+# Overlay labels render on the Viewer's light-gray (0.9) background, so a dark
 # slate reads far more clearly than white.
 LABEL_RGB = (33, 33, 40)
 
@@ -438,9 +438,7 @@ def build_overlay(
 # the axes they sit beside.
 DEFAULT_LABEL_CHARACTER_SIZE = 0.1
 
-# Font files tried, in order, when none is set explicitly. osgText renders
-# nothing without a usable font, so the harness resolves one from the runtime
-# environment (the pixi/conda env ships DejaVuSans).
+# The pixi/conda environment provides DejaVuSans for deterministic overlay text.
 _FONT_CANDIDATES = ("DejaVuSans.ttf", "Arial.ttf", "arial.ttf", "Vera.ttf")
 
 
@@ -449,7 +447,7 @@ def _color01(rgb: tuple[int, int, int]) -> list[float]:
 
 
 def find_default_font() -> str | None:
-    """Locate a TrueType font for osgText labels, or None for osgText's default.
+    """Locate a TrueType font for overlay labels, or use the built-in default.
 
     Searches the active conda/pixi environment's font directory and the common
     system DejaVu locations. Returning an absolute path keeps label rendering
@@ -487,10 +485,10 @@ def populate_overlay(
     label_color: tuple[int, int, int] = LABEL_RGB,
     character_size: float = DEFAULT_LABEL_CHARACTER_SIZE,
 ) -> tuple[int, int]:
-    """Load an ``OverlayScene`` into a ``dart.gui.osg.DebugOverlay`` attachment.
+    """Load an ``OverlayScene`` into a ``DebugOverlay`` attachment.
 
     Segments become always-on-top overlay lines carrying their per-layer color,
-    and labels become world-anchored osgText, both rendered by the engine unlit
+    and labels become world-anchored text, both rendered by the engine unlit
     and depth-test disabled so debug primitives stay legible over the geometry
     they annotate. Clears any previous content first so the overlay tracks the
     current scene. Returns ``(num_lines, num_labels)``.

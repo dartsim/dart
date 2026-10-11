@@ -1,18 +1,18 @@
 ---
 name: dart-verify-sim
-description: "DART Verify Sim: text-first and OSG visual debugging for DART scenes, dynamics, collision, contacts, and GUI output"
+description: "DART Verify Sim: text-first and Filament visual debugging for DART scenes, dynamics, collision, contacts, and GUI output"
 ---
 
 # DART Simulation Verification
 
 Load this skill whenever a DART claim depends on 3D structure or
 behavior: model/scene loading, dynamics, collision/contact/constraints,
-simulation stepping, OSG rendering, or a visual example.
+simulation stepping, Filament rendering, or a visual example.
 
 **Lead with text, corroborate with images.** An image-capable agent can inspect
 a rendered frame, but pixels do not expose solver state and machine pixel
 checks are not semantic inspection. First run a text oracle, then verify the
-same claim end to end through the core OSG capture/debug path.
+same claim end to end through the core Filament capture/debug path.
 
 ## Owner And Evidence Contract
 
@@ -26,7 +26,7 @@ Read `docs/ai/verification.md`. Record:
 4. the reproduce command, view-quality result, reconciliation, verdict, claim
    boundary, and limitations.
 
-If OSG capture is unavailable or visual corroboration is genuinely irrelevant,
+If Filament capture is unavailable or visual corroboration is genuinely irrelevant,
 state why and name the replacement evidence. Never use an image as the
 `sole correctness oracle`.
 
@@ -66,7 +66,7 @@ deterministic static or start/middle/end inspection targets.
 
 Available layers are `grid`, `world_frame`, `body_frames`, `contacts`,
 `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`, and
-`labels`. They render through `dart::gui::osg::DebugOverlay`, not image-space
+`labels`. They render through `dart::gui::DebugOverlay`, not image-space
 annotation. Use `--focus` plus `--auto-views` when framing is uncertain;
 `scripts/agent_view_quality.py` rejects cropped, off-frame, too-near, too-far,
 occluded, ambiguous, or no-bounded-renderable views using core bounds and
@@ -106,14 +106,19 @@ optional reference differences; it does not inspect meaning.
 `pixi run evidence-select` keeps a bounded claim-covering artifact set.
 `pixi run evidence-publish` requires the text oracle, visible observation,
 text/image reconciliation, semantic verdict, and at least one explicit
-not-proven boundary before it marks the PR visual section ready. Upload or PR
-mutations still require explicit maintainer approval.
+not-proven boundary before it marks the PR visual section ready. It renders local
+references without network access. Follow `docs/ai/verification.md`
+§ "Visual Verification (Headless Capture)" for publication after
+explicit maintainer/user approval. Attachments use the same store as drag-and-drop,
+never release assets or tags; `--body-file` replaces the whole PR body.
 `pixi run verification-bundle` packages primary text evidence, a still, and an
 optional grid with hashes and a semantic-review prompt for an image-capable
 handoff; producing the bundle does not itself complete semantic review.
 
 ## Environment
 
-OSG offscreen capture needs a real X display or Xvfb. When no display is
-available, keep the text evidence, record the rendering limitation, and do not
-claim visual runtime coverage.
+Filament capture on Linux uses Vulkan without an X display or Xvfb. Native
+interactive tests still need a desktop session (Xvfb on headless Linux).
+Windows uses native OpenGL and macOS uses Metal. If the required graphics
+device or driver is unavailable, keep the text evidence, record the
+limitation, and name replacement evidence.

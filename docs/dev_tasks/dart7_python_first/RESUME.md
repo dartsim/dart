@@ -11,15 +11,16 @@ tracks the release.
 | [#3698](https://github.com/dartsim/dart/pull/3698) | WP-7.0.3 | Draft; merges main after #3697 |
 | [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Draft; merges main after #3697 |
 
-The Filament backend effort owns M6a in
-[#3696](https://github.com/dartsim/dart/pull/3696).
+M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11
+at `b63cc07f6`. Main now uses Filament and the interim camelCase `dartpy.gui`.
+M6b, sensor rendering and the Python render/viewer API, remains pending.
 
 ## Next steps
 
 1. Land #3697 first. Until it merges, main's CI rejects pull requests with the
    "DART 7.0.0" milestone, because main's release target still reads 6.21.0.
-2. Then merge main into #3698, #3699 and #3696 so their release-target checks
-   pass.
+2. Then merge main into #3698 and #3699 so their release-target checks pass.
+   #3696 is already merged; this rollover resolves its release-target mismatch.
 3. After WP-7.0.3 merges, backport it to `release-6.20` with
    `dart-backport-pr`. WP-7.0.4 applies only to the nanobind bindings.
 4. Open the follow-up packets: WP-7.0.3b (SDF pose attributes), the ODE
@@ -34,8 +35,8 @@ The Filament backend effort owns M6a in
 - Main moves quickly. Before every approved push to a published branch, merge
   the latest `origin/main` (never rebase a published branch) and re-run the
   packet's gates.
-- The rollover overlaps the Filament effort's AI-checker and test edits.
-  Whichever lands second keeps both sides.
+- The rollover integrates #3696's Filament AI-checker and test edits while
+  retaining the DART 7 branch profile and release routing.
 - dartpy has no Python 3.15 CI lane yet. Re-run the shutdown regression test
   against a 3.15 build when touching finalization code.
 

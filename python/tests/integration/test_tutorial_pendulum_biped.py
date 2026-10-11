@@ -1,4 +1,4 @@
-"""Exercise the tutorial callbacks without creating an OSG window."""
+"""Exercise the tutorial callbacks without creating a graphics window."""
 
 import gc
 import importlib.util
@@ -8,11 +8,6 @@ from pathlib import Path
 import dartpy as dart
 import numpy as np
 import pytest
-
-pytestmark = pytest.mark.skipif(
-    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
-)
-
 
 
 def load_tutorial(name, finished=True):
@@ -29,7 +24,7 @@ class KeyEvent:
         self.key = key
 
     def getEventType(self):
-        return dart.gui.osg.GUIEventAdapter.KEYDOWN
+        return dart.gui.GUIEventAdapter.KEYDOWN
 
     def getKey(self):
         return ord(self.key)

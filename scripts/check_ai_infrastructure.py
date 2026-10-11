@@ -29,6 +29,7 @@ CONFIG_ONLY_CACHE_VARIABLES = {
     "CMAKE_INSTALL_PREFIX",
     "CMAKE_PREFIX_PATH",
     "DART_BUILD_DARTPY",
+    "DART_BUILD_GUI",
     "DART_BUILD_PROFILE",
     "DART_BUILD_UTILS_ASSETS",
     "DART_DISABLE_COMPILER_CACHE",
@@ -136,6 +137,23 @@ APPROVED_INACTIVE_CPP_TESTS = {
         ),
         "cache": {"BUILD_SHARED_LIBS": "OFF"},
     },
+    **{
+        f"tests/integration/test_{name}.cpp": {
+            "owner": "tests/integration/CMakeLists.txt",
+            "command": "dart_add_test",
+            "scopes": ("if:TARGET dart-gui",),
+            "cache": {"DART_BUILD_GUI": "OFF"},
+        }
+        for name in (
+            "GuiDescriptors",
+            "GuiInteractions",
+            "GuiViewer",
+            "GuiParity",
+            "GuiImageDecoders",
+            "GuiMesh",
+            "FilamentBackend",
+        )
+    },
 }
 APPROVED_CTEST_SELECTIONS = {
     "test_ConstraintSolver": {
@@ -185,7 +203,59 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": ("--gtest_filter=ContactArrowLayoutTest.*",),
         "environment": (),
     },
+    # One GUI binary splits display-free and native-window suites.
+    "test_FilamentBackend": {
+        "arguments": (),
+        "environment": ("GTEST_FILTER=FilamentBackend.*",),
+    },
+    "test_FilamentNative": {
+        "arguments": ("--gtest_filter=FilamentNative.*",),
+        "environment": (),
+    },
 }
+# Rendering tests need a graphics device, so `test`/`test-all` leave them to
+# `pixi run test-gui`: the `gui-device` CTest label and these Python modules.
+GUI_CTEST_EXCLUSION = "-DDART_CTEST_EXCLUDE_LABEL=gui-device"
+GUI_DEVICE_CTESTS = frozenset(
+    {
+        "test_FilamentBackend",
+        "test_FilamentNative",
+        "test_GuiParity",
+        "test_GuiMesh",
+        "examples_demos_cycle_render",
+        "offscreen_capture_smoke",
+    }
+)
+GUI_APP_CTEST_ARGUMENTS = {
+    "examples_demos_cycle": ("--cycle-scenes", "--frames", "2"),
+    "examples_demos_cycle_render": (
+        "--cycle-scenes",
+        "--headless",
+        "--frames",
+        "2",
+        "--width",
+        "160",
+        "--height",
+        "120",
+    ),
+    "examples_demos_capture": (
+        "--headless",
+        "--scene",
+        "hello_world",
+        "--steps",
+        "5",
+        "--width",
+        "320",
+        "--height",
+        "240",
+        "--shot",
+        "<build>/examples/demos/hello-world.png",
+    ),
+}
+GUI_ONLY_PYTHON_TESTS = frozenset(
+    f"python/tests/unit/gui/test_{name}.py"
+    for name in ("agent_capture", "agent_debug_overlay", "filament", "gui_offscreen")
+)
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_VERSION_QUALIFIER = (
     r"(?:(?:-D)?DART(?:py)?(?:\.__version__|[\s_]+(?:version|release)(?:_info)?"
@@ -809,7 +879,7 @@ def check_branch_profile(
         "python_binding": "nanobind",
         "optional_python_bindings": [],
         "io_namespace": "dart::utils",
-        "gui_backend": "OSG",
+        "gui_backend": "Filament",
     }
     if not isinstance(profile, dict):
         errors.append(f"{path.relative_to(root)}: top level must be an object")
@@ -1163,6 +1233,7 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "${CMAKE_COMMAND}",
                         "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}",
                         "-DDART_CTEST_CONFIGURATION=$<CONFIG>",
+                        GUI_CTEST_EXCLUSION,
                         "-P",
                         "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake",
                     ),
@@ -1172,6 +1243,7 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "${regression_tests}",
                         "${unit_tests}",
                     ),
+                    ("WORKING_DIRECTORY", "${DART_BINARY_DIR}"),
                 ),
                 (),
                 "cmake/DARTRunCTest.cmake",
@@ -1357,6 +1429,28 @@ def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
         ("endif", ()),
         ("endforeach", ()),
         ("set", ("_dart_ctest_arguments", "--output-on-failure")),
+        (
+            "if",
+            (
+                "DEFINED",
+                "DART_CTEST_EXCLUDE_LABEL",
+                "AND",
+                "NOT",
+                "DART_CTEST_EXCLUDE_LABEL",
+                "STREQUAL",
+                "",
+            ),
+        ),
+        (
+            "list",
+            (
+                "APPEND",
+                "_dart_ctest_arguments",
+                "-LE",
+                "${DART_CTEST_EXCLUDE_LABEL}",
+            ),
+        ),
+        ("endif", ()),
         (
             "if",
             (
@@ -1561,6 +1655,25 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             )
             break
 
+    for command in collect_task_commands(pixi, "test-gui") or [""]:
+        segments = [shell_tokens(segment) for segment in command.split("&&")]
+        if not any(
+            tokens[:1] == ["ctest"]
+            and contains_token_sequence(tokens, ("-L", "gui"))
+            and contains_token_sequence(tokens, ("-LE", "filament-native"))
+            for tokens in segments
+        ) or not any(
+            tokens[:3] == ["python", "-I", "scripts/run_pytest.py"]
+            and "python/tests/unit/gui" in tokens
+            for tokens in segments
+        ):
+            errors.append(
+                "pixi.toml: `test-gui` must run the `gui` CTest label with "
+                "`-LE filament-native` and `python/tests/unit/gui`, including "
+                "the graphics tests that `test` and `test-all` leave out"
+            )
+            break
+
     exact_pytest_tasks = {
         "test-ai-infra": {
             "tokens": [
@@ -1696,6 +1809,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             "pixi.toml: every `config` command used by `test-all` must only "
             "configure CMake"
         )
+    # CMake rejects dartpy without the GUI, so this also keeps `config` GUI-on.
     required_runtime_config_values = (
         ("BUILD_TESTING", "ON"),
         ("DART_BUILD_DARTPY", "ON"),
@@ -2602,7 +2716,7 @@ def generated_ctest_registrations(
     """Read freshly configured CTest commands without requiring built artifacts."""
     prefix = "CMake semantic test graph"
     registrations: dict[str, tuple[list[str], Path]] = {}
-    test_root = (build_dir / "tests").resolve()
+    test_root = build_dir.resolve()
     root_file = test_root / "CTestTestfile.cmake"
     if not root_file.is_file():
         errors.append(f"{prefix}: configured CTest files are unavailable")
@@ -2772,6 +2886,31 @@ def ctest_property_values(test: dict[str, Any], name: str) -> list[Any]:
     ]
 
 
+def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
+    """Only rendering registrations may be excluded from the broad test gate."""
+    name = test["name"]
+    labels = {
+        label
+        for values in ctest_property_values(test, "LABELS")
+        if isinstance(values, list)
+        for label in values
+        if isinstance(label, str)
+    }
+    needs_device = name in GUI_DEVICE_CTESTS or name.startswith(
+        "examples_demos_capture"
+    )
+    if needs_device and not {"gui", "gui-device"}.issubset(labels):
+        errors.append(
+            f"CMake semantic test graph: graphics test `{name}` must have "
+            "the `gui` and `gui-device` labels"
+        )
+    elif not needs_device and "gui-device" in labels:
+        errors.append(
+            f"CMake semantic test graph: test `{name}` must run in the broad "
+            "gate and cannot have the `gui-device` label"
+        )
+
+
 def check_cmake_ctest_inventory(
     build_dir: Path,
     configuration: str,
@@ -2786,7 +2925,7 @@ def check_cmake_ctest_inventory(
             [
                 ctest_executable,
                 "--test-dir",
-                str(build_dir / "tests"),
+                str(build_dir),
                 "--show-only=json-v1",
                 "-C",
                 configuration,
@@ -2836,6 +2975,7 @@ def check_cmake_ctest_inventory(
         if name in registered_tests:
             errors.append(f"{prefix}: CTest test name `{name}` is duplicated")
             continue
+        check_ctest_gui_labels(test, errors)
         if any(
             value in (True, 1, "1", "ON", "TRUE")
             for value in ctest_property_values(test, "DISABLED")
@@ -2873,6 +3013,12 @@ def check_cmake_ctest_inventory(
             name, {"arguments": (), "environment": ()}
         )
         expected_arguments = tuple(selection_policy["arguments"])
+        app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
+        if app_arguments is not None:
+            expected_arguments = tuple(
+                argument.replace("<build>", build_dir.as_posix())
+                for argument in app_arguments
+            )
         if tuple(generated_command[1:]) != expected_arguments:
             errors.append(
                 f"{prefix}: CTest test `{name}` has unapproved command arguments "
@@ -2913,13 +3059,15 @@ def check_cmake_ctest_inventory(
             for item in (value if isinstance(value, list) else [value])
             if isinstance(item, str)
         ]
-        selected = bool(expected_arguments or expected_environment)
+        selected = (
+            bool(expected_arguments or expected_environment) and app_arguments is None
+        )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
             errors.append(
                 f"{prefix}: selected CTest test `{name}` does not fail on zero tests "
                 f"with exact pattern `{SAFE_ZERO_TEST_PATTERN}`"
             )
-        elif not selected and fail_patterns:
+        elif not selected and fail_patterns not in ([], [SAFE_ZERO_TEST_PATTERN]):
             errors.append(
                 f"{prefix}: CTest test `{name}` has unapproved failure patterns "
                 f"{fail_patterns}"
@@ -2983,6 +3131,15 @@ def check_cmake_ctest_inventory(
         )
 
 
+def default_pytest_sources(root: Path) -> set[str]:
+    """Return the Python test modules that the default `pytest` target runs."""
+    return {
+        path.relative_to(root).as_posix()
+        for path in (root / "python" / "tests").rglob("test_*.py")
+        if path.is_file()
+    } - GUI_ONLY_PYTHON_TESTS
+
+
 def check_cmake_test_target_trace(
     root: Path,
     build_dir: Path,
@@ -3042,22 +3199,26 @@ def check_cmake_test_target_trace(
         configuration_definition = (
             tests_arguments[4].partition("=")[2] if len(tests_arguments) > 4 else ""
         )
-        suffix = tests_arguments[7:]
+        suffix = tests_arguments[8:]
         if (
             tests_arguments[:2] != ["tests_and_run", "COMMAND"]
-            or len(tests_arguments) < 8
+            or len(tests_arguments) < 9
             or not executable_paths_match(tests_arguments[2], cmake_executable)
             or not tests_arguments[3].startswith("-DDART_CTEST_COMMAND=")
             or not executable_paths_match(ctest_definition, trusted_ctest)
             or not tests_arguments[4].startswith("-DDART_CTEST_CONFIGURATION=")
             or configuration_definition not in {"$<CONFIG>", "Release"}
-            or tests_arguments[5] != "-P"
+            or tests_arguments[5] != GUI_CTEST_EXCLUSION
+            or tests_arguments[6] != "-P"
             or not cmake_paths_match(
-                tests_arguments[6], root / "cmake" / "DARTRunCTest.cmake"
+                tests_arguments[7], root / "cmake" / "DARTRunCTest.cmake"
             )
             or tests_arguments.count("COMMAND") != 1
             or not suffix
             or suffix[0] != "DEPENDS"
+            or suffix[-2:-1] != ["WORKING_DIRECTORY"]
+            or not cmake_paths_match(suffix[-1], build_dir)
+            or suffix.count("WORKING_DIRECTORY") != 1
         ):
             errors.append(
                 f"{prefix}: expanded `tests_and_run` command does not invoke "
@@ -3151,9 +3312,8 @@ def check_cmake_test_target_trace(
                 if source
             ]
             expected_sources = [
-                normalized_absolute_path(str(path), root)
-                for path in sorted((root / "python" / "tests").rglob("test_*.py"))
-                if path.is_file()
+                normalized_absolute_path(relative, root)
+                for relative in default_pytest_sources(root)
             ]
             valid = len(traced_sources) == len(expected_sources) and set(
                 traced_sources
@@ -3459,9 +3619,26 @@ def check_cmake_test_graph(
         relative_source = (
             repository_directory(source) if isinstance(source, str) else None
         )
-        if isinstance(relative_source, str) and any(
-            relative_source == directory or relative_source.startswith(f"{directory}/")
-            for directory in test_directories
+        if isinstance(relative_source, str) and (
+            any(
+                relative_source == directory
+                or relative_source.startswith(f"{directory}/")
+                for directory in test_directories
+            )
+            or (
+                relative_source == "tests/benchmark/integration"
+                and name == "offscreen_capture_smoke"
+            )
+            or (
+                relative_source == "examples/demos"
+                and name
+                in {
+                    "dart-demos",
+                    "UNIT_examples_demos_GuiScaling",
+                    "UNIT_examples_demos_MemoryDiagnostics",
+                    "UNIT_examples_demos_SceneCycle",
+                }
+            )
         ):
             json_file = entry.get("jsonFile")
             if not isinstance(json_file, str):
@@ -3589,11 +3766,7 @@ def check_cmake_test_graph(
             errors,
         )
 
-    expected_python_sources = {
-        path.relative_to(root).as_posix()
-        for path in (root / "python" / "tests").rglob("test_*.py")
-        if path.is_file()
-    }
+    expected_python_sources = default_pytest_sources(root)
     actual_python_sources = {
         source["path"]
         for source in target_data["pytest"].get("sources", [])
@@ -4254,6 +4427,53 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
             errors.append(f"AGENTS.md: stale duplicated guidance `{stale}`")
 
 
+def visual_python_marker(tree: ast.AST, marker: str) -> bool:
+    """Match executable Python nodes rather than comments or diagnostic strings."""
+    nodes = []
+    pending = [tree]
+    while pending:
+        node = pending.pop()
+        nodes.append(node)
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Constant):
+            pending.extend(node.body if node.test.value else node.orelse)
+        else:
+            pending.extend(ast.iter_child_nodes(node))
+    if marker.startswith("test_"):
+        return any(
+            isinstance(node, ast.FunctionDef) and node.name == marker for node in nodes
+        )
+    if marker.startswith("factory="):
+        value = ast.literal_eval(marker.partition("=")[2])
+        return any(
+            isinstance(node, ast.keyword)
+            and node.arg == "factory"
+            and isinstance(node.value, ast.Constant)
+            and node.value.value == value
+            for node in nodes
+        )
+    if marker == "for layer in debug_layers":
+        return any(
+            isinstance(node, ast.For)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "layer"
+            and isinstance(node.iter, ast.Name)
+            and node.iter.id == "debug_layers"
+            for node in nodes
+        )
+    expected = ast.parse(marker).body[0]
+    if isinstance(expected, ast.Assert):
+        signature = ast.dump(expected.test, include_attributes=False)
+        return any(
+            isinstance(node, ast.Assert)
+            and ast.dump(node.test, include_attributes=False) == signature
+            for node in nodes
+        )
+    if isinstance(expected, ast.Expr):
+        expected = expected.value
+    signature = ast.dump(expected, include_attributes=False)
+    return any(ast.dump(node, include_attributes=False) == signature for node in nodes)
+
+
 def check_ci_wiring(root: Path, errors: list[str]) -> None:
     workflow = root / ".github" / "workflows" / "ci_ubuntu.yml"
     pixi_path = root / "pixi.toml"
@@ -4312,7 +4532,6 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
                 "continue-on-error"
             )
         expected_visual_markers = (
-            ("xvfb-run", 2),
             ("bash -eu -o pipefail <<'VISUAL_SMOKE'", 1),
             ("pixi run agent-capture", 2),
             (
@@ -4346,12 +4565,24 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         except OSError as error:
             errors.append(f"{overlay_test.relative_to(root)}: unable to read: {error}")
         else:
+            try:
+                overlay_tree = ast.parse(overlay_text)
+                overlay_tree.body = [
+                    node
+                    for node in overlay_tree.body
+                    if isinstance(node, ast.FunctionDef)
+                    and node.name == "test_engine_rendered_overlay_changes_pixels"
+                ]
+            except SyntaxError:
+                overlay_tree = ast.Module(body=[], type_ignores=[])
             for marker in (
-                'pytest.fail("no off-screen GL context despite a configured DISPLAY")',
-                "assert with_overlay != base",
-                "assert after_clear == base",
+                "viewer.setUpViewForCapture(240, 180)",
+                "viewer.captureScreen(str(path))",
+                "viewer.frame()",
+                "assert np.abs(with_overlay - base).max() > 2",
+                "assert np.abs(after_clear - base).max() <= 2",
             ):
-                if marker not in overlay_text:
+                if not visual_python_marker(overlay_tree, marker):
                     errors.append(
                         f"{overlay_test.relative_to(root)}: missing non-skippable "
                         f"overlay marker `{marker}`"
@@ -4362,12 +4593,28 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         except OSError as error:
             errors.append(f"{capture_test.relative_to(root)}: unable to read: {error}")
         else:
+            try:
+                capture_tree = ast.parse(capture_text)
+                capture_tree.body = [
+                    node
+                    for node in capture_tree.body
+                    if isinstance(node, ast.FunctionDef)
+                    and node.name
+                    in {
+                        "test_run_capture_smoke_writes_stills_and_sidecar",
+                        "test_run_capture_debug_layers_change_pixels_end_to_end",
+                    }
+                ]
+            except SyntaxError:
+                capture_tree = ast.Module(body=[], type_ignores=[])
             for marker in (
                 "test_run_capture_smoke_writes_stills_and_sidecar",
                 "test_run_capture_debug_layers_change_pixels_end_to_end",
                 'factory="claim_capture_scene:make_world"',
-                "pytest.fail(str(error))",
-                'assert "--factory claim_capture_scene:make_world"',
+                "sidecar = agent_capture.run_capture(args)",
+                'assert sidecar["renderer"] == "filament"',
+                'assert sidecar["graphics_device"]',
+                'assert "--factory claim_capture_scene:make_world" in sidecar["reproduce"]',
                 'debug_layers = ["contacts", "collision_bounds", "labels"]',
                 'plain_artifact["camera"] == combined_artifact["camera"]',
                 "assert _changed_pixel_count(plain_image, combined_image) >= 128",
@@ -4377,7 +4624,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
                 'assert debug["layers"] == [layer]',
                 "assert _changed_pixel_count(plain_image, debug_image) >= 32",
             ):
-                if marker not in capture_text:
+                if not visual_python_marker(capture_tree, marker):
                     errors.append(
                         f"{capture_test.relative_to(root)}: missing non-skippable "
                         f"factory-capture marker `{marker}`"
@@ -4850,7 +5097,7 @@ def exercise_scenarios(
                 "approved DART nanobind binder",
                 "`python/dartpy/`",
                 "`dart::utils`",
-                "OSG",
+                "Filament",
                 "configured CMake File API result",
                 "source-marker matches",
             ):
@@ -4876,7 +5123,7 @@ def exercise_scenarios(
             }
             expected_prompt = (
                 "verify claim-dependent DART simulation, dynamics, "
-                "collision/contact/constraints, model/scene, GUI, or OSG behavior"
+                "collision/contact/constraints, model/scene, GUI, or Filament behavior"
             )
             if scenario.get("prompt_class") != expected_prompt:
                 local_errors.append(
@@ -4936,9 +5183,9 @@ def exercise_scenarios(
                 "model/scene loading",
                 "collision/contact/constraints",
                 "simulation stepping",
-                "OSG rendering",
+                "Filament rendering",
                 "visual example",
-                "OSG capture is unavailable",
+                "Filament capture is unavailable",
                 "replacement evidence",
                 "settled-contact",
                 "text/geometry oracle",
@@ -4979,7 +5226,7 @@ def exercise_scenarios(
                 ),
                 ".codex/agents/dart_reviewer.toml": (
                     "text-first evidence",
-                    "OSG/debug-overlay",
+                    "Filament/debug-overlay",
                 ),
                 ".claude/commands/dart-new-task.md": (
                     "route through `dart-verify-sim`",
@@ -5002,13 +5249,13 @@ def exercise_scenarios(
                 ),
                 ".claude/skills/dart-io/SKILL.md": (
                     "also load `dart-verify-sim`",
-                    "claim-tied OSG visual corroboration",
+                    "claim-tied Filament visual corroboration",
                 ),
                 ".claude/skills/dart-python/SKILL.md": (
                     "load `dart-verify-sim`",
                     "focused Python text/behavior oracle",
                     "collision/contact/constraints",
-                    "GUI/OSG output",
+                    "GUI/Filament output",
                     "visual exception",
                 ),
                 ".claude/skills/dart-ci/SKILL.md": (
@@ -5338,7 +5585,12 @@ def _visual_verification_inventory(root: Path) -> dict[str, Any]:
         root / "scripts" / "evidence_publish.py",
         root / "scripts" / "image_verdict.py",
         root / "scripts" / "verification_bundle.py",
-        root / "python" / "dartpy" / "gui" / "osg",
+        root / "dart" / "gui" / "Viewer.hpp",
+        root / "dart" / "gui" / "DebugOverlay.hpp",
+        root / "python" / "dartpy" / "gui" / "Viewer.cpp",
+        root / "python" / "dartpy" / "gui" / "interactions.cpp",
+        root / "python" / "tests" / "unit" / "gui" / "test_gui_import.py",
+        root / "python" / "tests" / "unit" / "gui" / "test_gui_offscreen.py",
     ]
     try:
         tasks = collect_task_names(read_toml(root / "pixi.toml"))
@@ -5352,12 +5604,44 @@ def _visual_verification_inventory(root: Path) -> dict[str, Any]:
         "test-agent-debug-overlay",
         "verification-bundle",
     }
+    vulkan_source = "unavailable"
+    vulkan_files = []
+    for variable in ("VK_DRIVER_FILES", "VK_ICD_FILENAMES"):
+        if os.environ.get(variable):
+            vulkan_source = variable
+            vulkan_files = [
+                Path(path) for path in os.environ[variable].split(os.pathsep)
+            ]
+            break
+    else:
+        prefix = os.environ.get("CONDA_PREFIX")
+        if prefix:
+            vulkan_files = sorted(
+                (Path(prefix) / "share/vulkan/icd.d").glob("lvp_icd.*.json")
+            )
+            if vulkan_files:
+                vulkan_source = "Pixi Lavapipe"
+    if not sys.platform.startswith("linux"):
+        vulkan_readiness = "not required on this platform"
+    elif any(path.is_file() for path in vulkan_files):
+        vulkan_readiness = "ICD available (device not probed)"
+    elif vulkan_source != "unavailable":
+        vulkan_readiness = "selected ICD missing"
+    else:
+        vulkan_readiness = "unknown (no selected or Pixi ICD; system driver not probed)"
     return {
-        "backend": "OSG",
+        "backend": "Filament",
         "paths": _path_inventory(paths, root),
         "tasks": sorted(visual_tasks & tasks),
-        "display": os.environ.get("DISPLAY", ""),
-        "xvfb_run": shutil.which("xvfb-run") or "unavailable",
+        "capture_vulkan": {
+            "source": vulkan_source,
+            "icd_files": [str(path) for path in vulkan_files],
+            "readiness": vulkan_readiness,
+        },
+        "native_window": {
+            "display": os.environ.get("DISPLAY", ""),
+            "xvfb_run": shutil.which("xvfb-run") or "unavailable",
+        },
         "semantic_review_contract": (
             "native-image-inspection-or-image-capable-handoff"
         ),
@@ -5484,7 +5768,10 @@ def print_doctor(data: dict[str, Any]) -> None:
     print(
         "  visual verification: "
         f"{visual['backend']}, {len(visual['tasks'])} tasks, "
-        f"DISPLAY={visual['display'] or '(unset)'}, xvfb-run={visual['xvfb_run']}"
+        f"capture Vulkan={visual['capture_vulkan']['readiness']} "
+        f"({visual['capture_vulkan']['source']}); "
+        f"native-window DISPLAY={visual['native_window']['display'] or '(unset)'}, "
+        f"xvfb-run={visual['native_window']['xvfb_run']}"
     )
     for tool, tool_version in data["tools"].items():
         print(f"  {tool}: {tool_version}")

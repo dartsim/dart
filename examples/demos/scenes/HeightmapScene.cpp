@@ -47,9 +47,8 @@
 // attachment via onActivate, so it is added/removed with this scene rather
 // than for the app's lifetime.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -93,7 +92,7 @@ dart::dynamics::ShapePtr createHeightmapShape(
 struct HeightmapState
 {
   dart::dynamics::SimpleFramePtr terrain;
-  ::osg::ref_ptr<dart::gui::osg::GridVisual> grid;
+  GuiPtr<demo_gui::GridVisual> grid;
 
   int xResolution = 100;
   int yResolution = 100;
@@ -184,17 +183,17 @@ DemoScene makeHeightmapScene()
     world->addSimpleFrame(state->terrain);
     updateHeightmapShape(*state);
 
-    state->grid = new dart::gui::osg::GridVisual();
+    state->grid = makeGui<demo_gui::GridVisual>();
 
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(2.57, 3.14, 1.64),
-        ::osg::Vec3d(0.00, 0.00, 0.30),
-        ::osg::Vec3d(-0.24, -0.25, 0.94)};
+        GuiVector3(2.57, 3.14, 1.64),
+        GuiVector3(0.00, 0.00, 0.30),
+        GuiVector3(-0.24, -0.25, 0.94)};
 
     setup.onActivate = [state](DemoHostContext& ctx) {
-      ctx.addAttachment(state->grid.get());
+      ctx.addOwnedAttachment(state->grid);
     };
 
     setup.renderPanel = [state] {
@@ -314,16 +313,13 @@ DemoScene makeHeightmapScene()
         if (display) {
           int plane = static_cast<int>(state->grid->getPlaneType());
           if (ImGui::RadioButton("XY-Plane", &plane, 0))
-            state->grid->setPlaneType(
-                dart::gui::osg::GridVisual::PlaneType::XY);
+            state->grid->setPlaneType(demo_gui::GridVisual::PlaneType::XY);
           ImGui::SameLine();
           if (ImGui::RadioButton("YZ-Plane", &plane, 1))
-            state->grid->setPlaneType(
-                dart::gui::osg::GridVisual::PlaneType::YZ);
+            state->grid->setPlaneType(demo_gui::GridVisual::PlaneType::YZ);
           ImGui::SameLine();
           if (ImGui::RadioButton("ZX-Plane", &plane, 2))
-            state->grid->setPlaneType(
-                dart::gui::osg::GridVisual::PlaneType::ZX);
+            state->grid->setPlaneType(demo_gui::GridVisual::PlaneType::ZX);
 
           // Same local-copy discipline as the terrain fields above: route each
           // grid tunable through a temporary and commit only a finite (and, for

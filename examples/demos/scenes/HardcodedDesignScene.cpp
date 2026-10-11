@@ -43,13 +43,10 @@
 // disabled for this scene's world to preserve the original's kinematic-only
 // behavior regardless of Play/Pause state.
 
+#include "GuiBackend.hpp"
 #include "Scenes.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
 #include <dart/dart.hpp>
-
-#include <osg/PolygonMode>
 
 #include <algorithm>
 #include <memory>
@@ -187,20 +184,15 @@ DemoScene makeHardcodedDesignScene()
     // vertical FOV (the original's tighter 2,2,2 -> origin view clipped the
     // upper links).
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(6.5, 6.5, 3.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(6.5, 6.5, 3.0),
+        GuiVector3(0.0, 0.0, 1.0),
+        GuiVector3(0.0, 0.0, 1.0)};
 
-    // Match the original's wireframe rendering style. osg::Node::getStateSet()
-    // (unlike getOrCreateStateSet()) may return null if no StateSet has been
-    // created yet, so use the creating accessor to avoid a null dereference.
+    // Match the original's wireframe rendering style.
     setup.onActivate = [](DemoHostContext& ctx) {
-      if (auto* node = ctx.worldNode()) {
-        node->getOrCreateStateSet()->setAttributeAndModes(
-            new ::osg::PolygonMode(
-                ::osg::PolygonMode::FRONT_AND_BACK, ::osg::PolygonMode::LINE),
-            ::osg::StateAttribute::ON | ::osg::StateAttribute::OVERRIDE);
-      }
+      auto* viewer = ctx.viewer();
+      viewer->setWireframe(true);
+      ctx.addTeardown([viewer] { viewer->setWireframe(false); });
     };
 
     setup.keyActions.push_back(KeyAction{'-', "Invert direction", [state] {

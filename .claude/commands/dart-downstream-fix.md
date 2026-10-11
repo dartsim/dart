@@ -19,9 +19,9 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 ## Workflow
 
 If the downstream symptom depends on scene/model structure, simulation,
-collision/contact, or OSG output, route through `dart-verify-sim`: establish a
+collision/contact, or Filament output, route through `dart-verify-sim`: establish a
 text oracle, add assessed claim-tied visual evidence, or document a
-visual exception when OSG/Xvfb is unavailable or not applicable.
+visual exception when graphics support is unavailable or not applicable.
 
 1. Read the downstream issue, logs, stack traces, and reproduction steps.
 2. Identify the DART API, component, and invalid usage pattern involved.

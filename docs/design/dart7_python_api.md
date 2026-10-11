@@ -404,7 +404,10 @@ Binding rules:
 
 ## Rendering
 
-Rendering uses the Filament renderer:
+M6a merged the Filament renderer on `main` in
+[#3696](https://github.com/dartsim/dart/pull/3696). Its camelCase `dartpy.gui`
+bindings are interim. M6b still implements the following Python API and
+removes that interim module before the first release candidate:
 
 - **`dart.render`** is headless.
   - A `Renderer` returns NumPy arrays: RGB, metric depth and segmentation.

@@ -1,12 +1,17 @@
 # dart-demos
 
 `dart-demos` is the consolidated DART 6 demo application: a single
-`dart::gui::osg::ImGuiViewer` host that runs every GUI demo as a
+`dart::gui::Viewer` host that runs every GUI demo as a
 runtime-switchable *scene*, selected from a categorized navigator. It replaces
 the scattered per-example programs that used to live under `examples/*`.
 
 Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The dartpy
 counterpart is `pixi run py-demos` (see `python/examples/demos/`).
+
+DART 7 uses Filament for every GUI example. `pixi run cycle-demos`
+exercises scene replacement without creating a graphics context. All scenes
+share `DemoHost` and use the renderer-independent `dart::gui` API. Manual CMake
+builds need the GUI (`DART_BUILD_GUI=ON`, the default) and a Filament SDK.
 
 The deformable-body flagship scenes are available as
 `--scene adaptive_soft_contact` and `--scene soft_worm`.
@@ -16,25 +21,25 @@ The deformable-body flagship scenes are available as
 Interactive windows automatically use desktop DPI: for example, X11
 `Xft.dpi: 192` selects 2x scaling. Windows uses the native window's DPI;
 macOS uses Cocoa's logical points. X11 (including XWayland) follows its
-desktop-wide `Xft.dpi` setting. Failed detection starts at 1x and keeps the
-last valid scale after startup.
+desktop-wide `Xft.dpi` setting. Failed detection falls back to 1x.
 
-The default 1600x1000 window grows with the UI scale, fits within 90% of the
-current monitor's usable area, and opens centered. Explicit `--width` and
-`--height` values are exact, unscaled window dimensions (pixels on X11 and
-Windows, logical points on macOS). Later DPI changes preserve the window's
-position and size, while rebuilding the docked panel layout for the new scale.
+The default 1600x1000 window grows with the GUI scale (the primary monitor's
+content scale, or the manual `--gui-scale`/`DART_GUI_SCALE` value), fits
+proportionally within 90% of the primary monitor's usable area, and opens
+centered on it. Explicit `--width` and `--height` values are exact, unscaled window
+dimensions (pixels on X11 and Windows, logical points on macOS). Later DPI
+changes preserve the window's position and size, while rebuilding the docked
+panel layout for the new scale.
 
 Use `pixi run demos --gui-scale 1.5` or `DART_GUI_SCALE` for a manual scale
 between 0.5 and 4; the CLI overrides the environment. View > **Automatic DPI
 scaling** restores automatic mode. Adjusting the **GUI scale** slider switches
 to manual mode. These controls change the UI without resizing the window.
-Scene annotations drawn through OSG retain their scale from scene activation.
+Scene annotations retain their scale from scene activation.
 
 Headless captures default to 1x regardless of desktop DPI, and retain exact
 requested image dimensions. Numeric scale overrides still apply to their UI.
-macOS keeps OSG's point-sized OpenGL surface; native Retina rendering is not
-enabled by this sizing feature.
+macOS uses native Retina rendering with logical window coordinates.
 
 ## Architecture
 
@@ -42,11 +47,11 @@ enabled by this sizing feature.
   (`Theme.*`), the scene registry, and the persistent chrome (simulation
   toolbar, `Demos` navigator, `Diagnostics` panel, and the visual-debugging
   panels). It swaps the active scene at runtime. On docking-ImGui builds
-  (`pixi run demos`, which configures `DART_USE_SYSTEM_IMGUI=OFF`) the chrome
-  opens as a dockable workspace — panels can be dragged, split, and re-tabbed,
-  and View > "Reset layout" restores the default arrangement; system-ImGui
-  builds keep the fixed layout, sized from measured content so it stays intact
-  at any `--gui-scale`.
+  (`pixi run demos`, whose `config-demos` step selects the bundled docking
+  ImGui) the chrome opens as a dockable workspace — panels can be dragged,
+  split, and re-tabbed, and View > "Reset layout" restores the default
+  arrangement; system-ImGui builds keep the fixed layout, sized from measured
+  content so it stays intact at any `--gui-scale`.
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked
@@ -78,7 +83,7 @@ Memory tab, per-frame branch, collector code, or diagnostics-only platform
 link. Enable the feature explicitly in the existing Pixi-configured build:
 
 ```bash
-pixi run config
+pixi run config-demos
 pixi run cmake -S . -B build/default/cpp/Release \
   -DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON
 pixi run cmake --build build/default/cpp/Release --target dart-demos
@@ -98,7 +103,7 @@ The tab deliberately separates values with different scopes:
 
 - **Process resident memory** is the OS-reported current resident set,
   process-lifetime peak, and peak observed by this sampled session. It includes
-  OSG/ImGui, collision backends, libraries, assets, allocator-retained pages,
+  Filament/ImGui, collision backends, libraries, assets, allocator-retained pages,
   and the diagnostics buffers themselves; it is not DART-owned heap
   attribution. A scene switch can briefly overlap the outgoing and candidate
   Worlds, so the process-lifetime peak may include both.
@@ -136,7 +141,7 @@ and text for storage state. Increase **Address-map detail rows / region** to
 resolve smaller spans without changing their address order. Each region keeps
 up to 48 logical rows in an inner scroll area with about eight visible at once;
 offscreen primitives are culled and each region has a conservatively bounded
-draw list for the 16-bit-index OpenGL2 backend. Raw process addresses are
+draw list for 16-bit ImGui indices. Raw process addresses are
 capture-local and never shown; offsets are relative to each exact region or
 host-page run. A collapsed exact-range table exposes the same labels, extent
 evidence, and limitations without requiring pointer hover.
@@ -184,7 +189,7 @@ whatever the user changes at runtime:
   reach physics or geometry).
 - **World-owned visuals only.** Debug geometry is a `SimpleFrame`/`ArrowShape`
   added to the scene's world (torn down with it), never a raw node injected
-  into the OSG graph.
+  into a renderer-owned scene graph.
 - **Full teardown.** Anything registered through `DemoHostContext`
   (attachments, event handlers, drag-and-drop) is released via
   `ctx.addTeardown`. Facilities that hold `BodyNode*`/`Skeleton*` across a
@@ -192,7 +197,7 @@ whatever the user changes at runtime:
   the pointer in `handleDestructionNotification` (see `Inspector`,
   `DragForce`).
 - **Frame-loop thread only.** All world mutation happens on the frame-loop
-  thread (the viewer runs `SingleThreaded`); panel edits apply in
+  thread; panel edits apply in
   `preStep`/`preRefresh` or via queued commands, never mid-render.
 - **Re-read `dt` per step.** Controllers that use the timestep read
   `world->getTimeStep()` each step — the toolbar Timestep control changes it
@@ -211,8 +216,8 @@ whatever the user changes at runtime:
 - `--scene <id>` — start on a specific scene.
 - `--cycle-scenes [--frames N]` — headless: build every scene, step N frames
   each, twice (a leak/robustness audit); exit nonzero on any factory failure.
-- `--headless --shot <path> [--steps N]` — off-screen pbuffer capture
-  (requires a DISPLAY/GPU; a local self-verification tool, not a CI gate).
+- `--headless --shot <path> [--steps N]` — off-screen capture. Linux uses
+  Vulkan without a DISPLAY; software Vulkan drivers are supported.
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
   scene with a specific registered backend (`fcl`, `dart`, `bullet`, or `ode`
   when available). The toolbar can switch backends while the scene is running.

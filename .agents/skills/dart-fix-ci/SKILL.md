@@ -35,9 +35,9 @@ Fix CI failure: $ARGUMENTS
 ## Workflow
 
 When the failing claim depends on model/scene structure, simulation, dynamics,
-collision/contact/constraints, or GUI/OSG output, use `dart-verify-sim` to pair
+collision/contact/constraints, or GUI/Filament output, use `dart-verify-sim` to pair
 the focused reproduction with assessed, claim-tied visual evidence. Document a
-visual exception when OSG/Xvfb is unavailable or not applicable.
+visual exception when graphics support is unavailable or not applicable.
 
 1. Identify failing checks: `gh pr checks <PR_NUMBER>` or `gh run view <RUN_ID>`.
 2. Inspect the first real failure:

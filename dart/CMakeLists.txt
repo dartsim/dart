@@ -26,8 +26,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #   sdf
 #   urdf
 # gui
-#   osg
-#     render
+#   detail
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -38,8 +37,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart-collision-bullet, dart-collision-ode - forwarding interfaces to dart
 # dart-io - {dart}, utils, utils/mjcf, utils/sdf, utils/urdf, [tinyxml2, urdfdom]
 # dart-utils, dart-utils-urdf - forwarding interfaces to dart-io
-# dart-gui - {dart}, gui/osg, gui/osg/render, gui/imgui, [openscenegraph, OpenGL]
-# dart-gui-osg, dart-external-imgui - forwarding interfaces to dart-gui
+# dart-gui - {dart}, gui, gui/detail, gui/imgui, [filament, glfw, png, jpeg]
+# dart-external-imgui - forwarding interface to dart-gui
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -51,7 +50,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (dart), {dart-gui}
 # external-imgui - (gui), {dart-external-imgui}
-# gui-osg - (external-imgui), {dart-gui-osg}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -77,7 +75,7 @@ if(DART_BUILD_IO)
   add_subdirectory(utils) # tinyxml2, urdfdom
 endif()
 if(DART_BUILD_GUI)
-  add_subdirectory(gui) # osg
+  add_subdirectory(gui) # Filament
 endif()
 add_subdirectory(simd) # header-only SIMD module
 

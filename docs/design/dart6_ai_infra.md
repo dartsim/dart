@@ -59,12 +59,12 @@ the checker.
 
 ## Visual Verification North Star
 
-DART 6 visual verification follows one evidence chain:
+DART visual verification follows one evidence chain:
 
 1. a text oracle establishes scene, dynamics, collision/contact, or constraint
    correctness;
 2. core bounds and collision raycasts select and assess a claim-tied camera;
-3. the OSG offscreen renderer captures the scene with only the necessary
+3. the Filament offscreen renderer captures the scene with only the necessary
    `DebugOverlay` layers;
 4. machine pixel checks establish artifact integrity or reference difference;
 5. an image-capable reviewer inspects the selected still or temporal frames and
@@ -78,18 +78,17 @@ cannot be averaged into a pass. The capture sidecar identifies deterministic
 static or start/middle/end inspection targets so future image-capable models can
 exercise the same contract without prompt-specific frame selection.
 
-Main's current C++17/nanobind visual stack uses transitional OSG until M6;
-`release-6.20` retains its pybind11/OSG stack. The current path includes
-`OffscreenViewer`, core `DebugOverlay`, and camera assessment. DART 7 releases
-ship nanobind and Filament.
+Main and DART 7 releases use public C++17, nanobind, the Filament-backed
+`Viewer`, core `DebugOverlay`, and the same camera-assessment path.
+`release-6.20` retains its pybind11/OSG stack.
 
 ### Capability Lineage And Release Verdicts
 
 The release workflow is the cumulative result of these merged changes:
 
 - [#3304](https://github.com/dartsim/dart/pull/3304) established usable
-  translucent, dynamic soft-body visualization. Preserve the OSG rendering
-  behavior; its older standalone capture entrypoint has since converged into
+  translucent, dynamic soft-body visualization. Preserve the demonstrated
+  translucent rendering behavior; its older standalone capture entrypoint has since converged into
   `dart-demos`.
 - [#3314](https://github.com/dartsim/dart/pull/3314) added the GLX-pbuffer
   `OffscreenViewer`, default camera, dartpy bindings, and initial
@@ -98,11 +97,18 @@ The release workflow is the cumulative result of these merged changes:
   failures.
 - [#3374](https://github.com/dartsim/dart/pull/3374) added assessed viewpoints,
   ten OSG `DebugOverlay` layers, capture sidecars, and claim-tied
-  selection/publication. Preserve the core OSG path and improve the evidence
-  contract rather than adding image-space annotations.
+  selection/publication. Preserve engine-rendered overlays and improve the
+  evidence contract rather than adding image-space annotations.
 - [#3385](https://github.com/dartsim/dart/pull/3385) made claim-specific World
   factories and engine-rendered overlay checks non-skippable under Xvfb.
   Preserve the same-camera A/B and per-layer pixel gates.
+
+DART 7 replaces the historical OSG renderer with Filament and the neutral
+`dart::gui` / `dartpy.gui` APIs. Linux captures use Vulkan without a display;
+interactive native fixtures use the platform graphics facilities. The prior
+PRs establish the evidence contract, not a requirement to retain their old
+renderer or display dependency. Preserve same-camera and per-layer pixel gates,
+explicit graphics failures, and display-free import and viewer construction.
 
 The branch keeps the model-agnostic upgrade workflow, documentation as
 operational memory, absence of repository model pins, text/image semantic
@@ -112,11 +118,10 @@ SHA-256 digest plus claim coverage and pass state before any GitHub call, then
 uses content-addressed assets and records path/size/digest/URL bindings without
 cross-content clobber.
 
-The visual evidence contract currently runs on main's C++17/nanobind stack
-with transitional OSG until M6; `release-6.20` retains its pybind11/OSG stack.
-The current path includes `OffscreenViewer`, `agent_capture.py`,
-`agent_view_quality.py`, and core `DebugOverlay`. The visual fixtures and
-raycast fallback use the consolidated `DARTCollisionDetector`; the owned contact snapshots and
+The visual evidence contract runs on DART's C++17 public interfaces, nanobind,
+Filament `Viewer`, `agent_capture.py`, `agent_view_quality.py`, and core
+`DebugOverlay` path. The visual fixtures and raycast fallback use the
+consolidated `DARTCollisionDetector`; the owned contact snapshots and
 same-camera overlay checks strengthen that path, and semantic image inspection
 pins the multi-shape smoke to an orthogonal camera where its labels and contact
 markers remain readable. None depends on the removed temporary

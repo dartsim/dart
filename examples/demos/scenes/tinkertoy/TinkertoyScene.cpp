@@ -41,10 +41,7 @@
 //  - The drag target is an InteractiveFrame dragged through
 //    Viewer::enableDragAndDrop(InteractiveFrame*) (InteractiveFrameDnD), so its
 //    per-axis/plane gizmo tools are fully usable -- the same as the original.
-//    This relies on the accompanying gui-osg library fix that gives
-//    InteractiveFrameDnD a real destructor (it deletes the 9 per-tool sub-DnDs
-//    it allocates), making it safe to tear down on scene switch; the DnD is
-//    registered in onActivate and released via ctx.addTeardown(
+//    The DnD is registered in onActivate and released via ctx.addTeardown(
 //    disableDragAndDrop). (DemoSceneSetup::dragFrames / SimpleFrameDnD is still
 //    the right tool for plain SimpleFrames that want only an unconstrained
 //    free-drag.)
@@ -53,7 +50,7 @@
 //    built-in Ctrl+H toggle still works. This is a dropped tunable, noted here.
 //  - The keyboard input handler (Tab/1/2/3/Backspace/Delete/Up/Down/`) is
 //    expressed entirely as KeyActions (auto-mirrored as panel buttons) rather
-//    than a custom osgGA::GUIEventHandler; only the mouse-pick handler needs
+//    than a custom GUIEventHandler; only the mouse-pick handler needs
 //    a real handler class (MouseEventHandler, registered directly on the
 //    host's DefaultEventHandler; its destruction auto-unregisters it, see
 //    TinkertoyState.hpp).
@@ -85,9 +82,8 @@
 //    is not replicated; the host owns the window title.
 
 #include "../Scenes.hpp"
+#include "GuiBackend.hpp"
 #include "TinkertoyState.hpp"
-
-#include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
@@ -396,21 +392,20 @@ DemoScene makeTinkertoyScene()
 
     // Purely-visual world-origin reference axes; all tools disabled, so it
     // is never dragged (matches the original's "coordinates" InteractiveFrame).
-    auto coordinates = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    auto coordinates = std::make_shared<demo_gui::InteractiveFrame>(
         dart::dynamics::Frame::World(),
         "coordinates",
         Eigen::Isometry3d::Identity(),
         0.2);
     for (std::size_t i = 0; i < 3; ++i)
       for (std::size_t j = 0; j < 3; ++j)
-        coordinates
-            ->getTool(static_cast<dart::gui::osg::InteractiveTool::Type>(i), j)
+        coordinates->getTool(static_cast<demo_gui::InteractiveTool::Type>(i), j)
             ->setEnabled(false);
     world->addSimpleFrame(coordinates);
 
     auto state = std::make_shared<TinkertoyState>();
     state->world = world;
-    state->target = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    state->target = std::make_shared<demo_gui::InteractiveFrame>(
         dart::dynamics::Frame::World());
     world->addSimpleFrame(state->target);
 
@@ -426,9 +421,9 @@ DemoScene makeTinkertoyScene()
     DemoSceneSetup setup;
     setup.world = world;
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(3.0, 3.0, 2.0),
-        ::osg::Vec3d(0.0, 0.0, 0.3),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+        GuiVector3(3.0, 3.0, 2.0),
+        GuiVector3(0.0, 0.0, 0.3),
+        GuiVector3(0.0, 0.0, 1.0)};
 
     setup.onActivate = [state](DemoHostContext& ctx) {
       state->viewer = ctx.viewer();
@@ -444,8 +439,7 @@ DemoScene makeTinkertoyScene()
       ctx.addTeardown([mouse] {});
 
       // Make the target's gizmo tools draggable via InteractiveFrameDnD, torn
-      // down on scene switch (safe now that the gui-osg fix gives that DnD a
-      // real destructor; see the file header).
+      // down before the scene world is destroyed.
       auto* viewer = ctx.viewer();
       if (auto* dnd = viewer->enableDragAndDrop(state->target.get()))
         ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });
@@ -472,7 +466,7 @@ DemoScene makeTinkertoyScene()
     };
 
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Tab),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Tab),
         "Reset camera",
         [state] {
           if (state->viewer)
@@ -492,25 +486,25 @@ DemoScene makeTinkertoyScene()
           addBallJointBlock(world, *state, state->pickedNode, getRelTf(*state));
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_BackSpace),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_BackSpace),
         "Clear selection",
         [state] {
           state->clearPick();
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Delete),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Delete),
         "Delete picked block",
         [world, state] {
           deletePick(world, *state);
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Up),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Up),
         "Increase force coeff",
         [state] {
           state->incrementForceCoeff();
         }});
     setup.keyActions.push_back(KeyAction{
-        static_cast<int>(::osgGA::GUIEventAdapter::KEY_Down),
+        static_cast<int>(demo_events::GUIEventAdapter::KEY_Down),
         "Decrease force coeff",
         [state] {
           state->decrementForceCoeff();

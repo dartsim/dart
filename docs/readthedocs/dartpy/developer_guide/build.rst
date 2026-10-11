@@ -25,4 +25,8 @@ When configuring DART with CMake, enable the Python bindings:
 
    cmake -DDART_BUILD_DARTPY=ON ...
 
+dartpy is one module that includes ``dartpy.gui``, so it requires
+``DART_BUILD_IO`` and ``DART_BUILD_GUI`` (both ``ON`` by default) and the GUI
+dependencies.
+
 For detailed instructions, see the :doc:`C++ build guide </dart/developer_guide/build>`.

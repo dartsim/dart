@@ -4,12 +4,11 @@
 
 #include "Theme.hpp"
 
-#include <dart/gui/osg/ImGuiHandler.hpp>
-#include <dart/gui/osg/Utils.hpp>
-
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <memory>
+#include <sstream>
 
 #include <cmath>
 
@@ -21,12 +20,17 @@ class GuiScaleThemeTest : public ::testing::Test
 protected:
   void SetUp() override
   {
-    mHandler = new dart::gui::osg::ImGuiHandler();
+    mPreviousContext = ImGui::GetCurrentContext();
+    mContext = ImGui::CreateContext();
+    mViewer = std::make_unique<dart::gui::Viewer>();
     auto& io = ImGui::GetIO();
     io.IniFilename = nullptr;
     io.DisplaySize = ImVec2(1600, 1000);
     io.DeltaTime = 1.0f / 60.0f;
-#ifndef IMGUI_HAS_TEXTURES
+#if IMGUI_VERSION_NUM >= 19200
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+    io.Fonts->AddFontDefault();
+#else
     unsigned char* pixels;
     int width, height;
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
@@ -34,21 +38,20 @@ protected:
     applyModernDarkColors();
     applyModernDarkMetrics();
     mBaseline = ImGui::GetStyle();
-    mTheme = std::make_unique<GuiScaleTheme>(*mHandler);
+    mTheme = std::make_unique<GuiScaleTheme>(*mViewer);
   }
 
   void TearDown() override
   {
     mTheme.reset();
-    ImGui_ImplOpenGL2_Shutdown();
-    ImGui::DestroyContext();
-    mHandler = nullptr;
+    mViewer.reset();
+    ImGui::DestroyContext(mContext);
+    ImGui::SetCurrentContext(mPreviousContext);
   }
 
   void beginFrame(double scale)
   {
-    mHandler->setGuiScale(scale);
-    dart::gui::osg::applyImGuiScale(scale, &mPreviousScale);
+    mViewer->setGuiScale(scale);
     ImGui::NewFrame();
     ImGui::Begin("About");
   }
@@ -59,10 +62,11 @@ protected:
     ImGui::Render();
   }
 
-  ::osg::ref_ptr<dart::gui::osg::ImGuiHandler> mHandler;
+  std::unique_ptr<dart::gui::Viewer> mViewer;
+  ImGuiContext* mContext = nullptr;
+  ImGuiContext* mPreviousContext = nullptr;
   std::unique_ptr<GuiScaleTheme> mTheme;
   ImGuiStyle mBaseline;
-  double mPreviousScale = 1.0;
 };
 
 TEST_F(GuiScaleThemeTest, FractionalChangesRestoreMetricsAndFirstFrameFonts)
@@ -102,8 +106,47 @@ TEST_F(GuiScaleThemeTest, RemovingThemeStopsItsFrameHook)
   mTheme.reset();
   ImGui::GetStyle().WindowPadding.x = 17.0f;
   beginFrame(1.0);
-  EXPECT_FLOAT_EQ(ImGui::GetStyle().WindowPadding.x, 8.0f);
+  EXPECT_FLOAT_EQ(ImGui::GetStyle().WindowPadding.x, 17.0f);
   endFrame();
+}
+
+TEST_F(GuiScaleThemeTest, RetinaFramebufferKeepsLogicalMetrics)
+{
+  ImGui::GetIO().DisplayFramebufferScale = ImVec2(2.0f, 2.0f);
+  beginFrame(2.0);
+  EXPECT_FLOAT_EQ(ImGui::GetStyle().WindowPadding.x, mBaseline.WindowPadding.x);
+  endFrame();
+  beginFrame(3.0);
+  EXPECT_FLOAT_EQ(
+      ImGui::GetStyle().WindowPadding.x,
+      std::floor(mBaseline.WindowPadding.x * 1.5f));
+  endFrame();
+}
+
+TEST(GuiScaleOptions, InvalidAndOutOfRangeOverridesStayUsable)
+{
+  for (const auto* value : {"", "0", "-1", "nan", "inf", "1.5trailing"})
+    EXPECT_EQ(parseGuiScale(value, 1.25, nullptr), 1.25);
+  EXPECT_EQ(parseGuiScale("1.5", 1.0, nullptr), 1.5);
+  EXPECT_EQ(parseGuiScale("0.1", 1.0, nullptr), 0.5);
+  EXPECT_EQ(parseGuiScale("100", 1.0, nullptr), 4.0);
+  EXPECT_EQ(sanitizeGuiScale(std::numeric_limits<double>::quiet_NaN()), 1.0);
+  EXPECT_EQ(dart_examples::scaleWindowExtent(640, 1.5), 960);
+}
+
+TEST(GuiScaleOptions, EqualsAndSeparateArgumentsSelectManualScaling)
+{
+  char executable[] = "hello_world";
+  char separate[] = "--gui-scale";
+  char scale[] = "1.25";
+  char equals[] = "--gui-scale=2";
+  char help[] = "--help";
+  char* arguments[] = {executable, separate, scale, equals, help};
+  const auto options
+      = dart_examples::parseGuiScaleOptions(5, arguments, nullptr);
+  ASSERT_TRUE(options.scale);
+  EXPECT_EQ(*options.scale, 2.0);
+  EXPECT_TRUE(options.showHelp);
 }
 
 } // namespace

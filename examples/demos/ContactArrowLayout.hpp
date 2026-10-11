@@ -74,7 +74,7 @@ struct ContactArrow
 /// - the *force* reference from the peak contact force actually observed, so
 ///   the longest arrow on screen is the largest force on screen.
 ///
-/// The class is deliberately free of OSG and ImGui so it can be exercised
+/// The class is deliberately free of GUI and ImGui so it can be exercised
 /// headlessly.
 class ContactArrowLayout
 {
@@ -82,7 +82,7 @@ public:
   /// Longest arrow drawn when the scene scale cannot be measured, and the
   /// bounds the measured reference is clamped into. The upper bound also
   /// keeps a diverging solve from flinging an arrow head far enough to blow
-  /// out OSG's automatic near/far and render the scene undrawable.
+  /// out the scene bounds.
   static constexpr double kFallbackReferenceLength = 0.25; // meters
   static constexpr double kMinReferenceLength = 0.02;      // meters
   static constexpr double kMaxReferenceLength = 5.0;       // meters

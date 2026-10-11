@@ -1,6 +1,7 @@
 """Dominoes exercises: complete Lessons 1–3 in the marked sections."""
 
 import math
+import weakref
 
 import dartpy as dart
 import numpy as np
@@ -50,7 +51,7 @@ class Controller:
         raise NotImplementedError("Lessons 3a–3b: implement operational space control.")
 
 
-class DominoEventHandler(dart.gui.osg.GUIEventHandler):
+class DominoEventHandler(dart.gui.GUIEventHandler):
     def __init__(self, world, controller, viewer=None):
         super().__init__()
         self.mWorld = world
@@ -71,7 +72,7 @@ class DominoEventHandler(dart.gui.osg.GUIEventHandler):
         self.mContactForceArrows = []
 
     def handle(self, ea, _aa):
-        if ea.getEventType() != dart.gui.osg.GUIEventAdapter.KEYDOWN:
+        if ea.getEventType() != dart.gui.GUIEventAdapter.KEYDOWN:
             return False
         key = ea.getKey()
         if key == ord("p"):
@@ -251,7 +252,7 @@ class DominoEventHandler(dart.gui.osg.GUIEventHandler):
             frame.getVisualAspect().setHidden(True)
 
 
-class CustomWorldNode(dart.gui.osg.RealTimeWorldNode):
+class CustomWorldNode(dart.gui.RealTimeWorldNode):
     def __init__(self, world, handler):
         super().__init__(world)
         self.world = world
@@ -323,8 +324,8 @@ def build_scene():
 
 def main():
     node = build_scene()
-    viewer = dart.gui.osg.Viewer()
-    node.handler.mViewer = viewer
+    viewer = dart.gui.Viewer()
+    node.handler.mViewer = weakref.proxy(viewer)
     viewer.addWorldNode(node)
     viewer.addEventHandler(node.handler)
     viewer.addInstructionText(
@@ -340,7 +341,7 @@ def main():
         "'v': Turn contact force visualization on/off\n"
     )
     print(viewer.getInstructions())
-    viewer.setUpViewInWindow(0, 0, 640, 480)
+    viewer.setUpViewInWindow()
     viewer.setCameraHomePosition([2.0, 1.0, 2.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0])
     viewer.run()
 
