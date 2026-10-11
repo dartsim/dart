@@ -1463,6 +1463,11 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
 
       constraint->getInformation(&constInfo);
 
+      // Subclasses may override the contact response, so only exact contact
+      // constraints are checked for singular rows, as in
+      // solveConstrainedGroup().
+      const bool exactContact
+          = isExactBoxedLcpDynamicType<ContactConstraint>(constraint);
       double tangentResponse = 0.0;
       constraint->excite();
       for (std::size_t j = 0; j < dim; ++j) {
@@ -1474,7 +1479,7 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
 
         std::size_t index = nSkip * row + offset;
         constraint->getVelocityChange(A.data() + index, true);
-        if (j > 0u) {
+        if (exactContact && j > 0u) {
           double response[3];
           constraint->getVelocityChange(response, false);
           tangentResponse += response[j];
@@ -1487,7 +1492,8 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
       constraint->unexcite();
 
       // Pin a singular contact normal row, as in solveConstrainedGroup().
-      if (isSingularContactNormalRow(
+      if (exactContact
+          && isSingularContactNormalRow(
               A.data()[nSkip * offset + offset],
               tangentResponse,
               constraint->mIsSelfCollision && constraint->mIsReactiveA
