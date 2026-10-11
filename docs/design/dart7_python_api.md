@@ -287,9 +287,6 @@ c = h·D + h²·K
 - Dense kernels preserve traversal and child-summation order, Eigen expression
   grouping, the fused multiply-add contraction policy, factorization choices
   and lazy-cache timing. They keep a virtual fallback for custom subclasses.
-  Their PRs come in this order: differential tests, dense indexing with the old
-  arithmetic, one joint family per PR, storage authority, then labeled numeric
-  changes.
 
 ### Concurrency
 

@@ -187,6 +187,13 @@ checkpoint C2. M5a starts when M0 exits.
 | M1h | Native sensors, without recording | |
 | M1i | Remapping clone | `WorldBatch` prerequisite |
 
+### M2 dense articulated-body data
+
+M2 PRs come in this order: differential tests, dense indexing with the old
+arithmetic, one joint family per PR, storage authority, then labeled numeric
+changes. The numerical rules they follow live in the design doc's
+"Determinism and the executor" section.
+
 ### M5 dartpy 7.0 API
 
 M5a starts when M0 exits, in this order:

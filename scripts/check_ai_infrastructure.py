@@ -3926,7 +3926,7 @@ def read_release_target(root: Path, errors: list[str]) -> tuple[str, str, str] |
     path = root / relative
     if not path.is_file():
         errors.append(f"{relative}: missing Release Target owner")
-        return
+        return None
     sections = re.findall(
         r"^## Release Target\s*\n(.*?)(?=^## |\Z)",
         path.read_text(encoding="utf-8"),
@@ -3953,7 +3953,7 @@ def read_release_target(root: Path, errors: list[str]) -> tuple[str, str, str] |
         errors.append(
             f"{relative}: Release Target must have exactly one three-column table row"
         )
-        return
+        return None
     branch, phase, version = [cell.strip().strip("`") for cell in cells[2]]
     branch_match = re.fullmatch(r"main|release-(\d+)\.(\d+)", branch)
     version_match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
@@ -3972,7 +3972,7 @@ def read_release_target(root: Path, errors: list[str]) -> tuple[str, str, str] |
         errors.append(
             f"{relative}: Release Target has an invalid branch, phase, or full DART version"
         )
-        return
+        return None
 
     return branch, phase, version
 
