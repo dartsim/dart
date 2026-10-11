@@ -633,6 +633,26 @@ def test_rerun_retires_previous_staging_directory(tmp_path: Path) -> None:
     assert list((tmp_path / "temp").iterdir()) == [Path(attach_dir)]
 
 
+@pytest.mark.parametrize("link", ["symlink", "hardlink"])
+def test_linked_manifest_never_retires_its_target(tmp_path: Path, link: str) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    original = tmp_path / "publication.json"
+    assert evidence_publish.main(_publication_args(selection, out, original)) == 0
+    attach_dir = Path(json.loads(original.read_text(encoding="utf-8"))["attach_dir"])
+    alias = tmp_path / "alias.json"
+    if link == "symlink":
+        alias.symlink_to(original)
+    else:
+        os.link(original, alias)
+
+    status = evidence_publish.main(_publication_args(selection, out, alias))
+
+    assert status == (2 if link == "symlink" else 0)
+    assert json.loads(original.read_text(encoding="utf-8"))["pass"] is True
+    assert attach_dir.is_dir()
+
+
 def test_retire_never_removes_directories_outside_the_temp_root(
     tmp_path: Path,
 ) -> None:

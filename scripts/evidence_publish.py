@@ -25,6 +25,7 @@ import math
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -464,13 +465,17 @@ def _build_manifest(
 def _retire_previous_success(manifest_out: Path | None) -> None:
     """Delete a previous publication's staging directory and passing manifest.
 
-    Only a publication manifest qualifies, and only a staging directory this
-    script created under the temp root is removed, so an aliased input or a
-    corrupted path is never touched.
+    Only an unlinked regular file holding a publication manifest qualifies,
+    and only a staging directory this script created under the temp root is
+    removed, so a linked or aliased input or a corrupted path is never touched.
     """
     if manifest_out is None:
         return
     try:
+        info = manifest_out.lstat()
+        # A symlink or hard link would retire another publication's evidence.
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink > 1:
+            return
         previous = json.loads(manifest_out.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return
