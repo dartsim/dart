@@ -126,7 +126,7 @@ constexpr double kFinalSleepLinearRatio = 0.1;
 constexpr double kFinalSleepAngularRatio = 0.2;
 constexpr std::size_t kDenseContactJitterMinIslandSize = 3;
 constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
-constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.005;
+constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.002;
 
 // Largest angle (rad) between a support normal and gravity that still counts
 // as a level support (about 0.06 degrees). Gravity drives motion along a
@@ -401,8 +401,6 @@ bool isRestingPair(const collision::Contact& contact)
          && (resting2 || !skeleton2->isMobile());
 }
 
-// Whether a skeleton with bodies can move (a skeleton without bodies never
-// keeps others awake; see ConstraintSolver::buildConstrainedGroups()).
 struct FilterDecision
 {
   const collision::CollisionObject* object1;
@@ -1437,14 +1435,7 @@ void World::step(bool _resetCommand)
 
   // Mirror the enable flag onto the solver so its island rest-detection / LCP
   // skipping runs only when the feature is on (otherwise it is a strict no-op).
-  // Its rest detection also reads the wake band.
   mConstraintSolver->setDeactivationActive(deactivationEnabled);
-  mConstraintSolver->mLinearWakeSpeed
-      = mDeactivationOptions.mWakeThresholdScale
-        * mDeactivationOptions.mLinearSpeedThreshold;
-  mConstraintSolver->mAngularWakeSpeed
-      = mDeactivationOptions.mWakeThresholdScale
-        * mDeactivationOptions.mAngularSpeedThreshold;
   if (deactivationEnabled)
     wakeRestingSkeletonsIfStepStateChanged();
 
@@ -2700,8 +2691,6 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 {
   auto& deactivationState = *mDeactivationState;
   deactivationState.mReplayVerified = false;
-  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
-  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
   // Classify once per step. The default filter needs only the same exact-type
@@ -2727,9 +2716,18 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   }
   // A sleep candidate is checked like a resting body: the next solve may
   // freeze it on evidence gathered before the change.
+  const bool hasRestingOrCandidate
+      = hasRestingOrCandidateMobileSkeleton(mSkeletons);
+  // No sleep evidence exists to invalidate in a moving, contact-free world.
+  if (!hasRestingOrCandidate && !hasDwellingMobileSkeleton(mSkeletons)
+      && mLastStepRestingWorldSkeletonStates.empty()
+      && mInitialRestSpeedLimits.empty()) {
+    return;
+  }
   const bool restingOrCandidate
-      = mLastStepRestingWorldStateValid
-        && hasRestingOrCandidateMobileSkeleton(mSkeletons);
+      = mLastStepRestingWorldStateValid && hasRestingOrCandidate;
+  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   // Before the no-contact kinematic snapshot exists, this guard is the only
   // place that can notice support pose edits made between the sleep transition
   // and the next step. Once the full snapshot exists, let its exact

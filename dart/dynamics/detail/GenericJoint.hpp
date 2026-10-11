@@ -391,6 +391,17 @@ size_t GenericJoint<ConfigSpaceT>::getIndexInTree(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
+Joint::ActuatorType GenericJoint<ConfigSpaceT>::getActuatorTypeForValidIndex(
+    std::size_t index) const
+{
+  DART_ASSERT(index < getNumDofs());
+  return Joint::mAspectProperties.mActuatorTypes.empty()
+             ? Joint::mAspectProperties.mActuatorType
+             : Joint::getActuatorType(index);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
 {
   if (index >= getNumDofs())
@@ -405,7 +416,8 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     return;
   }
 
-  switch (this->getActuatorType(index)) {
+  const double previousCommand = this->mAspectState.mCommands[index];
+  switch (getActuatorTypeForValidIndex(index)) {
     case Joint::FORCE:
       this->mAspectState.mCommands[index] = math::clip(
           command,
@@ -460,7 +472,8 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       break;
   }
 
-  this->notifyExternalDisturbanceUpdated();
+  if (this->mAspectState.mCommands[index] != previousCommand)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -489,6 +502,9 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
   for (std::size_t i = 0; i < getNumDofs(); ++i)
     setCommand(i, commands[static_cast<Eigen::Index>(i)]);
 
+  // A derived joint can override setCommand() and keep its commands outside
+  // mCommands, so a comparison here could miss a change. setCommands() is not
+  // on the per-step path, so always notify.
   this->notifyExternalDisturbanceUpdated();
 }
 
@@ -503,8 +519,10 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getCommands() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetCommands()
 {
+  const bool changed = (this->mAspectState.mCommands.array() != 0.0).any();
   this->mAspectState.mCommands.setZero();
-  this->notifyExternalDisturbanceUpdated();
+  if (changed)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -820,8 +838,13 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
   this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdated();
 
-  if (this->getActuatorType(index) == Joint::VELOCITY)
-    this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
+  if (getActuatorTypeForValidIndex(index) == Joint::VELOCITY) {
+    const double command = this->getVelocitiesStatic()[index];
+    if (this->mAspectState.mCommands[index] != command) {
+      this->mAspectState.mCommands[index] = command;
+      this->notifyExternalDisturbanceUpdated();
+    }
+  }
 }
 
 //==============================================================================
@@ -848,10 +871,18 @@ void GenericJoint<ConfigSpaceT>::setVelocities(
 
   setVelocitiesStatic(velocities);
 
+  bool commandChanged = false;
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::VELOCITY)
-      this->mAspectState.mCommands[i] = this->getVelocitiesStatic()[i];
+    if (getActuatorTypeForValidIndex(i) == Joint::VELOCITY) {
+      const double command = this->getVelocitiesStatic()[i];
+      if (this->mAspectState.mCommands[i] != command) {
+        this->mAspectState.mCommands[i] = command;
+        commandChanged = true;
+      }
+    }
   }
+  if (commandChanged)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1039,7 +1070,7 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (this->getActuatorType(index) == Joint::ACCELERATION) {
+  if (getActuatorTypeForValidIndex(index) == Joint::ACCELERATION) {
     const double command = this->getAccelerationsStatic()[index];
     if (this->mAspectState.mCommands[index] != command) {
       this->mAspectState.mCommands[index] = command;
@@ -1074,7 +1105,7 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
 
   bool commandChanged = false;
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::ACCELERATION) {
+    if (getActuatorTypeForValidIndex(i) == Joint::ACCELERATION) {
       const double command = this->getAccelerationsStatic()[i];
       if (this->mAspectState.mCommands[i] != command) {
         this->mAspectState.mCommands[i] = command;
@@ -1198,12 +1229,16 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
     return;
   }
 
+  bool changed = this->mAspectState.mForces[index] != force;
   this->mAspectState.mForces[index] = force;
 
-  if (this->getActuatorType(index) == Joint::FORCE)
-    this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
+  if (getActuatorTypeForValidIndex(index) == Joint::FORCE) {
+    changed |= this->mAspectState.mCommands[index] != force;
+    this->mAspectState.mCommands[index] = force;
+  }
 
-  this->notifyExternalDisturbanceUpdated();
+  if (changed)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1227,14 +1262,19 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
     return;
   }
 
+  bool changed = (this->mAspectState.mForces.array() != forces.array()).any();
   this->mAspectState.mForces = forces;
 
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::FORCE)
+    if (getActuatorTypeForValidIndex(i) == Joint::FORCE) {
+      changed
+          |= this->mAspectState.mCommands[i] != this->mAspectState.mForces[i];
       this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+    }
   }
 
-  this->notifyExternalDisturbanceUpdated();
+  if (changed)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1336,14 +1376,18 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getForceUpperLimits() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetForces()
 {
+  bool changed = (this->mAspectState.mForces.array() != 0.0).any();
   this->mAspectState.mForces.setZero();
 
   for (std::size_t i = 0; i < getNumDofs(); ++i) {
-    if (this->getActuatorType(i) == Joint::FORCE)
-      this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+    if (getActuatorTypeForValidIndex(i) == Joint::FORCE) {
+      changed |= this->mAspectState.mCommands[i] != 0.0;
+      this->mAspectState.mCommands[i] = 0.0;
+    }
   }
 
-  this->notifyExternalDisturbanceUpdated();
+  if (changed)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================

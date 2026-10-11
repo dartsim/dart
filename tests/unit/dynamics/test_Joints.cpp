@@ -416,3 +416,102 @@ TEST(Joints, BulkActuatorTypesRoundTripThroughJointProperties)
   copiedJoint->setActuatorTypes({Joint::SERVO, Joint::PASSIVE, Joint::SERVO});
   EXPECT_EQ(copiedJoint->getActuatorTypes(), actuatorTypes);
 }
+
+TEST(Joints, DisturbanceVersionChangesOnlyWithPendingActuation)
+{
+  struct VersionAccess : Skeleton
+  {
+    using Skeleton::getGlobalExternalDisturbanceVersion;
+  };
+  auto skel = Skeleton::create("actuation_changes");
+  auto [joint, body] = skel->createJointAndBodyNodePair<FreeJoint>();
+  (void)body;
+  const auto version = []() {
+    return VersionAccess::getGlobalExternalDisturbanceVersion();
+  };
+
+  auto before = version();
+  joint->setForce(0, 0.0);
+  joint->setForces(Eigen::Vector6d::Zero());
+  joint->setCommand(0, 0.0);
+  joint->resetForces();
+  joint->resetCommands();
+  EXPECT_EQ(before, version());
+
+  // setCommands() always notifies: a derived joint may override setCommand()
+  // and keep its commands outside the base storage.
+  joint->setCommands(Eigen::Vector6d::Zero());
+  EXPECT_GT(version(), before);
+  before = version();
+
+  joint->setForces(Eigen::Vector6d::Ones());
+  EXPECT_GT(version(), before);
+  before = version();
+  joint->setForces(Eigen::Vector6d::Ones());
+  joint->setForce(0, 1.0);
+  joint->setCommand(0, 1.0);
+  EXPECT_EQ(before, version());
+
+  joint->setCommand(0, 2.0);
+  EXPECT_GT(version(), before);
+  before = version();
+  joint->setForce(0, 1.0);
+  EXPECT_EQ(joint->getCommand(0), 1.0);
+  EXPECT_GT(version(), before)
+      << "An unchanged force still restores its command";
+
+  joint->setActuatorType(Joint::SERVO);
+  joint->setActuatorType(1, Joint::MIMIC);
+  joint->setCommand(0, 3.0);
+  before = version();
+  joint->resetForces();
+  EXPECT_GT(version(), before);
+  EXPECT_EQ(joint->getCommand(0), 3.0);
+  before = version();
+  joint->resetForces();
+  EXPECT_EQ(before, version()) << "Non-force commands survive force resets";
+  joint->resetCommands();
+  EXPECT_GT(version(), before);
+
+  before = version();
+  joint->setForce(0, -0.0);
+  joint->setCommand(0, -0.0);
+  EXPECT_TRUE(std::signbit(joint->getForce(0)));
+  EXPECT_TRUE(std::signbit(joint->getCommand(0)));
+  joint->resetForces();
+  joint->resetCommands();
+  EXPECT_FALSE(std::signbit(joint->getForce(0)));
+  EXPECT_FALSE(std::signbit(joint->getCommand(0)));
+  EXPECT_EQ(before, version());
+}
+
+//==============================================================================
+TEST(Joints, VelocityCommandChangesNotifyDisturbance)
+{
+  struct VersionAccess : Skeleton
+  {
+    using Skeleton::getGlobalExternalDisturbanceVersion;
+  };
+  auto skel = Skeleton::create("velocity_commands");
+  auto [joint, body] = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  (void)body;
+  joint->setActuatorType(Joint::VELOCITY);
+  const auto version = []() {
+    return VersionAccess::getGlobalExternalDisturbanceVersion();
+  };
+
+  // A velocity actuator mirrors velocities into its command, which counts as
+  // a pending disturbance even after a force reset that changes nothing.
+  auto before = version();
+  joint->setVelocity(0, 0.5);
+  EXPECT_GT(version(), before);
+  before = version();
+  joint->setVelocities(Eigen::VectorXd::Constant(1, 0.5));
+  EXPECT_EQ(before, version());
+  joint->setVelocities(Eigen::VectorXd::Constant(1, 1.0));
+  EXPECT_GT(version(), before);
+  before = version();
+  joint->resetForces();
+  EXPECT_EQ(before, version());
+  EXPECT_EQ(joint->getCommand(0), 1.0);
+}
