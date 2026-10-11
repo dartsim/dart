@@ -498,14 +498,19 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
   }
 
   // Dispatch per DoF so that joints with mixed (per-DoF) actuator types apply
-  // the correct clamping/zeroing rules for each DoF.
-  for (std::size_t i = 0; i < getNumDofs(); ++i)
+  // the correct clamping/zeroing rules for each DoF. Compare through the
+  // virtual getter: a derived joint may override setCommand() and getCommand()
+  // to keep its commands outside mCommands, and controllers may resend the same
+  // commands every step, which must not count as a disturbance.
+  bool changed = false;
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    const double previousCommand = this->getCommand(i);
     setCommand(i, commands[static_cast<Eigen::Index>(i)]);
+    changed |= this->getCommand(i) != previousCommand;
+  }
 
-  // A derived joint can override setCommand() and keep its commands outside
-  // mCommands, so a comparison here could miss a change. setCommands() is not
-  // on the per-step path, so always notify.
-  this->notifyExternalDisturbanceUpdated();
+  if (changed)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
