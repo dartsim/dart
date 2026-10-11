@@ -24,6 +24,8 @@ jobs:
         runner: [ubuntu-24.04, windows-2022, macos-15]
     env:
       CMAKE_GENERATOR: Ninja
+      # MSVC single-config builds otherwise default to Debug (/Zi PDB races).
+      CMAKE_BUILD_TYPE: Release
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
       LIBGL_ALWAYS_SOFTWARE: "1"
       # `pixi run config` builds the GUI and dartpy; Windows uses its own task.
