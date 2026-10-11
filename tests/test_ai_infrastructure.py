@@ -5640,6 +5640,8 @@ def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
         "Inspect DART version: 7.0.0",
         "Inspect dartpy==7.0.0 compatibility",
         "Pin dartpy>=8.1 in a DART checkout",
+        "Prepare DART for the next release: 7.0.0",
+        "Use the next version: 6.22",
     ],
 )
 def test_scenario_rejects_qualified_version_prompts(scenario_data, prompt):

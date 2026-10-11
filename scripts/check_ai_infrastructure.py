@@ -4033,8 +4033,8 @@ def dart_release_version_pattern(root: Path) -> str:
     return rf"(?<![\w.])(?:{prefixes})\.\d+(?:\.\d+)?(?:[a-z]+\d*)?"
 
 
-def check_release_references(root: Path, errors: list[str]) -> None:
-    """Keep reusable guidance independent of the branch's next release."""
+def names_next_release(root: Path, text: str) -> bool:
+    """Detect a concrete version immediately after a next-release phrase."""
     version = (
         rf"[`*]*(?<![\w.]){DART_RELEASE_VERSION_PREFIX}\d+\.\d+"
         r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
@@ -4047,6 +4047,26 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
         rf"\s*(?:[:=]\s*)?",
         re.IGNORECASE,
+    )
+    return any(
+        re.match(next_version, text[match.end() :], re.IGNORECASE)
+        or (
+            "dart" in match.group().lower()
+            and re.match(
+                version,
+                "DART " + text[match.end() :].lstrip("`*"),
+                re.IGNORECASE,
+            )
+        )
+        for match in next_target.finditer(text)
+    )
+
+
+def check_release_references(root: Path, errors: list[str]) -> None:
+    """Keep reusable guidance independent of the branch's next release."""
+    version = (
+        rf"[`*]*(?<![\w.]){DART_RELEASE_VERSION_PREFIX}\d+\.\d+"
+        r"(?:\.\d+)?(?:[a-z]+\d*)?[`*]*"
     )
     current_target = re.compile(
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
@@ -4086,18 +4106,7 @@ def check_release_references(root: Path, errors: list[str]) -> None:
                 if (
                     current_target.search(normalized)
                     or translated_target.search(normalized)
-                    or any(
-                        re.match(next_version, normalized[match.end() :], re.IGNORECASE)
-                        or (
-                            "dart" in match.group().lower()
-                            and re.match(
-                                version,
-                                "DART " + normalized[match.end() :].lstrip("`*"),
-                                re.IGNORECASE,
-                            )
-                        )
-                        for match in next_target.finditer(normalized)
-                    )
+                    or names_next_release(root, normalized)
                 ):
                     errors.append(
                         f"{path.relative_to(root)}:{line_number}: resolve the release "
@@ -4565,7 +4574,7 @@ def exercise_scenarios(
             rf"{release_version}\b",
             prompt_class,
             re.IGNORECASE,
-        ):
+        ) or names_next_release(root, prompt_class):
             local_errors.append("prompt_class must be release-neutral; use DART")
         start_dir = scenario.get("start_dir")
         start_relative = repository_relative_path(root, start_dir)
