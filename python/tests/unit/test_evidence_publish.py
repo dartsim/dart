@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -678,6 +679,54 @@ def test_inputs_inside_the_staging_directory_fail_before_clearing(
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
     assert staged.is_file()
+
+
+@pytest.mark.parametrize("entry", ["artifact", "selection"])
+def test_input_links_inside_the_staging_directory_fail_before_clearing(
+    tmp_path: Path, entry: str
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    for artifact in manifest["selected"]:
+        artifact["path"] = str(tmp_path / artifact["path"])
+    staging = tmp_path / "section.md.attach"
+    staging.mkdir()
+    if entry == "artifact":
+        link = staging / (manifest["selected"][0]["sha256"] + ".png")
+        link.symlink_to(manifest["selected"][0]["path"])
+        manifest["selected"][0]["path"] = str(link)
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    if entry == "selection":
+        link = staging / ("0" * 64 + ".json")
+        link.symlink_to(selection)
+        selection = link
+
+    status = evidence_publish.main(
+        _publication_args(
+            selection, tmp_path / "section.md", tmp_path / "publication.json"
+        )
+    )
+
+    assert status == 2
+    assert link.is_symlink()
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="needs POSIX FIFOs")
+def test_fifo_manifest_fails_without_blocking(tmp_path: Path) -> None:
+    manifest_out = tmp_path / "publication.json"
+    os.mkfifo(manifest_out)
+    args = _publication_args(_selection(tmp_path), tmp_path / "section.md", manifest_out)
+
+    # The timeout turns a blocking read of the FIFO into a failure.
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS / "evidence_publish.py"), *args],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.returncode == 2
+    assert "not a regular file" in result.stderr
 
 
 def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:

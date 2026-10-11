@@ -351,9 +351,14 @@ def _paths_alias(left: Path, right: Path) -> bool:
 
 
 def _inside(path: Path, directory: Path) -> bool:
-    child = str(path.resolve(strict=False)).casefold()
     parent = str(directory.resolve(strict=False)).casefold()
-    return child == parent or child.startswith(parent.rstrip("/\\") + os.sep)
+    # Check the entry as well as its target: clearing staging deletes entries.
+    entry = path.parent.resolve(strict=False) / path.name
+    for candidate in (entry, path.resolve(strict=False)):
+        child = str(candidate).casefold()
+        if child == parent or child.startswith(parent.rstrip("/\\") + os.sep):
+            return True
+    return False
 
 
 def _preflight_outputs(
@@ -483,9 +488,10 @@ def _retire_previous_success(manifest_out: Path | None) -> None:
     """Delete a previous passing publication manifest.
 
     Only a regular file holding a publication manifest qualifies, so an
-    aliased input or a symlink, which preflight rejects, is never touched.
+    aliased input, a symlink, or a FIFO that would block the read, all of
+    which preflight rejects, is never touched.
     """
-    if manifest_out is None or manifest_out.is_symlink():
+    if manifest_out is None or manifest_out.is_symlink() or not manifest_out.is_file():
         return
     try:
         previous = json.loads(manifest_out.read_text(encoding="utf-8"))
