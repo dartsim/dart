@@ -188,8 +188,38 @@ APPROVED_CTEST_SELECTIONS = {
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_RELEASE_VERSION_PREFIX = (
-    r"(?:DART(?:py)?(?:\s+(?:version|release))?\s*"
+    r"(?:DART(?:py)?(?:[\s_]+(?:version|release))?\s*"
     r"(?:==|[<>~!]=|[:=<>])?\s*v?|release-)"
+)
+DEPENDENCY_NAMES = (
+    "Python",
+    "nanobind",
+    "pybind11",
+    "Eigen",
+    "CMake",
+    "numpy",
+    "assimp",
+    "Bullet",
+    "ODE",
+    "FCL",
+    "OpenSceneGraph",
+    "OSG",
+    "Filament",
+    "spdlog",
+    "fmt",
+    "urdfdom",
+    "tinyxml2",
+    "octomap",
+    "sdformat",
+    "Ubuntu",
+    "macOS",
+    "Windows",
+    "GCC",
+    "Clang",
+    "MSVC",
+)
+DEPENDENCY_NAME_PATTERN = (
+    rf"\b(?:[a-z0-9]+(?:-[a-z0-9]+)+|{'|'.join(DEPENDENCY_NAMES)})\b"
 )
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
@@ -4017,12 +4047,11 @@ def release_reference_paths(root: Path) -> list[Path]:
 
 
 def dart_release_version_pattern(root: Path) -> str:
-    """Match any major with DART/dartpy (optional label/operator/v) or release-.
+    """Heuristically match qualified versions of any major or bare/v target/prior.
 
-    Bare/v use target/prior majors, except after '=' or ':' plus up to one space.
-    This is a heuristic, like the earlier 6.x matcher: Markdown inside a token,
-    other separators before parameter values, and version suffixes can still be
-    misclassified.
+    Bare '=' or ':' parameters are exempt; callers exclude dependency versions.
+    Like the earlier 6.x matcher, Markdown inside a token, other separators
+    before parameter values, and version suffixes can still be misclassified.
     """
     prefixes = rf"{DART_RELEASE_VERSION_PREFIX}\d+"
     target = read_release_target(root, [])
@@ -4048,18 +4077,23 @@ def names_next_release(root: Path, text: str) -> bool:
         rf"\s*(?:[:=]\s*)?",
         re.IGNORECASE,
     )
-    return any(
-        re.match(next_version, text[match.end() :], re.IGNORECASE)
-        or (
+    for match in next_target.finditer(text):
+        suffix = text[match.end() :]
+        if re.match(version, suffix, re.IGNORECASE) or (
             "dart" in match.group().lower()
             and re.match(
                 version,
-                "DART " + text[match.end() :].lstrip("`*"),
+                "DART " + suffix.lstrip("`*"),
                 re.IGNORECASE,
             )
-        )
-        for match in next_target.finditer(text)
-    )
+        ):
+            return True
+        sentence_prefix = re.split(r"[.!?](?:\s+|$)", text[: match.start()])[-1]
+        if not re.search(
+            DEPENDENCY_NAME_PATTERN, sentence_prefix, re.IGNORECASE
+        ) and re.match(next_version, suffix, re.IGNORECASE):
+            return True
+    return False
 
 
 def check_release_references(root: Path, errors: list[str]) -> None:
@@ -4568,12 +4602,18 @@ def exercise_scenarios(
         prompt_class = scenario.get("prompt_class")
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
-        elif re.search(
+        elif any(
             # DART/dartpy (optional label/operator/v) and release- qualify any major.
-            # Bare/v use target/prior majors; unqualified '=' or ':' parameters are exempt.
-            rf"{release_version}\b",
-            prompt_class,
-            re.IGNORECASE,
+            # Bare/v exclude dependency versions and unqualified '=' or ':' parameters.
+            re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
+            or not re.search(
+                rf"{DEPENDENCY_NAME_PATTERN} $",
+                prompt_class[: match.start()],
+                re.IGNORECASE,
+            )
+            for match in re.finditer(
+                rf"{release_version}\b", prompt_class, re.IGNORECASE
+            )
         ) or names_next_release(root, prompt_class):
             local_errors.append("prompt_class must be release-neutral; use DART")
         start_dir = scenario.get("start_dir")
