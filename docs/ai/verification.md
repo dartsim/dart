@@ -117,9 +117,10 @@ PRs fixing or changing dynamics, collision/contact, constraint, simulation,
 or rendering behavior include a before/after visual pair by default, supported
 by the text oracle. Capture the base revision and PR head using the same scene,
 camera, steps, dimensions, and renderer, compose side by side with
-`pixi run image-compose`, render the section with `pixi run evidence-publish`,
-and post it with GitHub CLI 2.99+ `--body-file` and `--attach` from the selection
-directory after explicit maintainer approval. Magnify small effects with a
+`pixi run image-compose`, and follow the [publication procedure below](#visual-verification-headless-capture)
+after explicit maintainer/user approval. Attachments use the same store as
+drag-and-drop, never release assets or tags; `--body-file` replaces the whole
+PR body. Magnify small effects with a
 closer camera, side view, contrasting colors, or contact/debug layers; interpenetration
 and penetration depth need a close side view because a distant still hides
 them. If the pair looks identical, check the text oracle on both revisions and
@@ -268,15 +269,20 @@ readable alongside their contact markers and collision bounds.
   unclaimed ones and records per-artifact rationale). Publication passes only
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
-  The helper validates local media, records source sizes and hashes, and
-  renders references relative to the selection directory without network access.
-  After explicit maintainer/user approval, run GitHub CLI 2.99+
-  `gh pr create|edit|comment --body-file <body> --attach <file>` from that
-  directory, repeating `--attach` for each path in the manifest's `attach` list.
+  The helper validates local media, records source sizes and hashes, and stages
+  hash-verified copies in the manifest's absolute `attach_dir` without network
+  access. References use the staged names in its `attach` list. Splice the
+  section into the complete PR body: `gh pr edit --body-file` replaces the
+  whole body. Alternatively, post the section as a separate `gh pr comment`.
+  After explicit maintainer/user approval, run GitHub CLI 2.99+ from
+  `attach_dir` with an explicit PR URL (or a number plus `-R owner/repo`),
+  passing `--body-file <body>` and `--attach` for each `attach` name.
+  `gh pr create` also needs `-R owner/repo` and `--head <branch>`.
+  Each command accepts at most 50 files; gh validates their types and sizes.
   GitHub CLI uploads to the same user-attachments store as the PR/issue editor's
   drag-and-drop flow and rewrites the local references. If CLI attachment upload
   is unavailable, ask a maintainer to drag and drop the media into the PR editor
-  and replace each relative reference with the URL the editor inserts. Host
+  and replace each staged reference with the URL the editor inserts. Host
   transient evidence as attachments, never release assets or tags, and keep
   it out of Git.
 

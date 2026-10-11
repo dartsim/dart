@@ -48,25 +48,13 @@ Use these practices:
     before/after 3D highlights, matched captures, and compute-only plots.
   - Inspect the images yourself and include the commands plus any environment
     variables such as software rendering flags in the PR body.
-  - Upload transient comparison images, GIFs, and videos through the GitHub
-    PR/issue Markdown attachment flow so the PR body contains GitHub-hosted
-    `https://github.com/user-attachments/assets/...` URLs that render inline.
-    Do not commit screenshots, headless renders, GIFs, or screencast videos
-    solely as PR evidence. Commit visual files only when they are durable
-    documentation, fixtures, or source assets that should live in the
-    repository.
   - Use `pixi run evidence-publish` to render the section without network access.
-    After explicit maintainer/user approval, run GitHub CLI 2.99+
-    `gh pr create|edit|comment --body-file <body> --attach <file>` from the
-    selection directory, repeating `--attach` for the manifest's `attach` list.
-    GitHub CLI uploads to the same user-attachments store as the web editor's
-    drag-and-drop or file picker and rewrites local references. It needs push
-    access to the repository. Never host transient evidence as release assets
-    or tags. PR edits and comments require explicit maintainer/user approval.
-  - If CLI attachment upload is unavailable, ask a maintainer to drag and drop
-    the media into the PR editor and replace each relative reference with the
-    URL the editor inserts, after explicit maintainer/user approval. Do not
-    fall back to committing transient evidence into `docs/assets/`.
+    Follow `docs/ai/verification.md` § "Visual Verification (Headless Capture)"
+    for publication after explicit maintainer/user approval. Attachments use
+    the same store as drag-and-drop, never release assets or tags;
+    `--body-file` replaces the whole PR body. Keep transient PR evidence out of
+    Git; commit visual files only as durable documentation, fixtures, or source
+    assets.
   - If no headless path exists, either add a narrowly scoped capture mode when
     it fits the example or document why visual comparison is not practical.
 - Mark non-applicable checklist items as "N/A" with a short reason.

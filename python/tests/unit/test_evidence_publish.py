@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,13 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import evidence_publish
+
+
+@pytest.fixture(autouse=True)
+def isolate_tempdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    tempdir = tmp_path / "temp"
+    tempdir.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(tempdir))
 
 
 def _sha256(path: Path) -> str:
@@ -131,8 +139,10 @@ def test_section_emits_local_references_and_context(tmp_path: Path) -> None:
     assert code == 0
     text = out.read_text(encoding="utf-8")
     assert "## Visual verification" in text
-    assert "![contact markers at rest](shot.png)" in text
-    assert "\n\n![](clip.mp4)\n\n" in text
+    assert (
+        f"![contact markers at rest]({_sha256(tmp_path / 'shot.png')[:16]}.png)" in text
+    )
+    assert f"\n\n![]({_sha256(tmp_path / 'clip.mp4')[:16]}.mp4)\n\n" in text
     assert "![settling clip]" not in text
     assert "UPLOAD-PLACEHOLDER" not in text
     assert "**Environment**: Linux x86_64, llvmpipe" in text
@@ -474,7 +484,7 @@ def test_selection_rejects_aliases_of_one_artifact(tmp_path: Path, alias: str) -
         evidence_publish._load_selection(selection)
 
 
-def test_publication_records_relative_paths_in_selection_order(tmp_path: Path) -> None:
+def test_publication_stages_verified_files_in_selection_order(tmp_path: Path) -> None:
     selection_dir = tmp_path / "selection"
     selection_dir.mkdir()
     selection = _selection(selection_dir)
@@ -491,14 +501,26 @@ def test_publication_records_relative_paths_in_selection_order(tmp_path: Path) -
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
 
+    names = [
+        artifact["sha256"][:16] + Path(artifact["path"]).suffix.lower()
+        for artifact in manifest["selected"]
+    ]
     text = out.read_text(encoding="utf-8")
-    assert "![contact markers at rest](frames/shot.png)" in text
-    assert "\n\n![](../clip.mp4)\n\n" in text
+    assert f"![contact markers at rest]({names[0]})" in text
+    assert f"\n\n![]({names[1]})\n\n" in text
     publication = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert publication["schema_version"] == "dart.evidence_publication/v5"
     assert publication["status"] == "ready"
     assert publication["pass"] is True
-    assert publication["attach"] == ["frames/shot.png", "../clip.mp4"]
+    assert publication["attach"] == names
+    attach_dir = Path(publication["attach_dir"])
+    assert attach_dir.is_absolute()
+    assert attach_dir.parent == tmp_path / "temp"
+    assert attach_dir.name.startswith("dart-evidence-attach-")
+    assert {path.name for path in attach_dir.iterdir()} == set(names)
+    for name, artifact in zip(names, manifest["selected"]):
+        assert (attach_dir / name).is_file()
+        assert _sha256(attach_dir / name) == artifact["sha256"]
     assert publication["artifacts"] == [
         {key: artifact[key] for key in ("path", "bytes", "sha256")}
         for artifact in manifest["selected"]
@@ -526,39 +548,73 @@ def test_caption_is_escaped_like_gh_alt_text(tmp_path: Path) -> None:
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
 
-    assert "![a\\](https://example.com) \\[b\\] c\\\\d](shot.png)" in out.read_text(
+    name = manifest["selected"][0]["sha256"][:16] + ".png"
+    assert f"![a\\](https://example.com) \\[b\\] c\\\\d]({name})" in out.read_text(
         encoding="utf-8"
     )
 
 
-def test_attach_path_falls_back_to_absolute_across_drives(
+def test_changed_staged_copy_fails_before_writing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def no_relative_path(path, start=None):
-        raise ValueError("path is on mount 'D:', start on mount 'C:'")
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
 
-    monkeypatch.setattr(evidence_publish.os.path, "relpath", no_relative_path)
-    shot = (tmp_path / "shot.png").resolve()
+    def corrupt_copy(source: Path, destination: Path) -> None:
+        Path(destination).write_bytes(b"changed")
 
-    assert evidence_publish._attach_path(shot, tmp_path) == shot.as_posix()
+    monkeypatch.setattr(evidence_publish.shutil, "copyfile", corrupt_copy)
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+    assert not out.exists()
+    assert not manifest_out.exists()
 
 
-def test_reference_percent_encodes_markdown_unsafe_names(tmp_path: Path) -> None:
+def test_identical_content_uses_one_staged_file(tmp_path: Path) -> None:
     selection = _selection(tmp_path)
     manifest = json.loads(selection.read_text(encoding="utf-8"))
-    (tmp_path / "shot.png").rename(tmp_path / "shot (1).png")
-    manifest["selected"][0]["path"] = "shot (1).png"
+    (tmp_path / "clip.mp4").write_bytes((tmp_path / "shot.png").read_bytes())
+    manifest["selected"][1]["sha256"] = manifest["selected"][0]["sha256"]
     selection.write_text(json.dumps(manifest), encoding="utf-8")
     out = tmp_path / "section.md"
     manifest_out = tmp_path / "publication.json"
 
     assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
 
-    assert "![contact markers at rest](shot%20%281%29.png)" in out.read_text(
-        encoding="utf-8"
-    )
+    name = manifest["selected"][0]["sha256"][:16] + ".png"
+    text = out.read_text(encoding="utf-8")
+    assert f"![contact markers at rest]({name})" in text
+    assert f"\n\n![]({name})\n\n" in text
     publication = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert publication["attach"] == ["shot (1).png", "clip.mp4"]
+    assert publication["attach"] == [name]
+    attach_dir = Path(publication["attach_dir"])
+    assert list(attach_dir.iterdir()) == [attach_dir / name]
+
+
+def test_more_than_50_artifacts_fail_before_writing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    for index in range(49):
+        name = f"extra-{index}.png"
+        (tmp_path / name).write_bytes(b"png")
+        manifest["selected"].append({**manifest["selected"][0], "path": name})
+    manifest["total_bytes"] = sum(
+        artifact["bytes"] for artifact in manifest["selected"]
+    )
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 2
+
+    error = capsys.readouterr().err
+    assert "gh" in error and "50" in error and "--attach" in error
+    assert "per-command" in error
+    assert not out.exists()
+    assert not manifest_out.exists()
 
 
 @pytest.mark.parametrize(
@@ -614,7 +670,8 @@ def test_supported_attachment_suffixes(tmp_path: Path, suffix: str, kind: str) -
         == 0
     )
     caption = "" if kind == "video" else "contact markers at rest"
-    assert f"![{caption}]({name})" in out.read_text(encoding="utf-8")
+    staged_name = manifest["selected"][0]["sha256"][:16] + suffix
+    assert f"![{caption}]({staged_name})" in out.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("failure_at", ["section", "manifest"])

@@ -111,11 +111,10 @@ optional reference differences; it does not inspect meaning.
 `pixi run evidence-publish` requires the text oracle, visible observation,
 text/image reconciliation, semantic verdict, and at least one explicit
 not-proven boundary before it marks the PR visual section ready. It renders local
-references without network access. After explicit maintainer/user approval, run
-GitHub CLI 2.99+ `gh pr create|edit|comment --body-file <body> --attach <file>`
-from the selection directory, repeating `--attach` for the manifest's `attach` list.
-Use PR-editor drag-and-drop as the fallback, replacing each relative reference
-with the URL the editor inserts.
+references without network access. Follow `docs/ai/verification.md`
+§ "Visual Verification (Headless Capture)" for publication after
+explicit maintainer/user approval. Attachments use the same store as drag-and-drop,
+never release assets or tags; `--body-file` replaces the whole PR body.
 `pixi run verification-bundle` packages primary text evidence, a still, and an
 optional grid with hashes and a semantic-review prompt for an image-capable
 handoff; producing the bundle does not itself complete semantic review.

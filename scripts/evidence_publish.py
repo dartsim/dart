@@ -5,13 +5,15 @@ context fields and produces the "Visual verification" markdown a reviewer
 can read without reproducing the environment: what each artifact shows, the
 text oracle, semantic image observation, reconciliation/verdict, explicit
 claim boundary, environment/configuration, limitations, and reproduction
-commands. This script never accesses the network. After explicit maintainer
-approval, post the section with GitHub CLI 2.99+ using
-gh pr create|edit|comment --body-file <body> --attach <path>, repeating --attach
-for each manifest attach path and running from the selection directory.
+commands. This script never accesses the network. Insert the section into the
+complete PR body because gh pr edit --body-file replaces the whole body, or
+post it separately with gh pr comment. After explicit maintainer/user approval,
+run GitHub CLI 2.99+ from the manifest attach_dir with an explicit PR URL (or a
+number plus -R owner/repo); gh pr create also needs -R owner/repo and --head
+<branch>. Pass --attach for each manifest attach name (at most 50 per command).
 GitHub CLI uploads media and rewrites the local references in place. The
-fallback is drag-and-drop in the web editor: replace each relative reference
-with the URL the editor inserts. Media is GitHub-hosted, never committed.
+fallback is drag-and-drop in the web editor: replace each reference with the
+URL the editor inserts. Media is GitHub-hosted, never committed.
 """
 
 from __future__ import annotations
@@ -22,11 +24,11 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
 
 SCHEMA_VERSION = "dart.evidence_publication/v5"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
@@ -76,6 +78,8 @@ def _load_selection(path: Path) -> dict[str, Any]:
     selected = manifest.get("selected")
     if not isinstance(selected, list) or not selected:
         raise ValueError("selection manifest has no selected artifacts")
+    if len(selected) > 50:
+        raise ValueError("selection exceeds gh's per-command --attach limit of 50")
     selected_files: set[tuple[int, int]] = set()
     covered_by_artifacts: set[str] = set()
     selected_bytes = 0
@@ -208,26 +212,17 @@ def _load_selection(path: Path) -> dict[str, Any]:
     return manifest
 
 
-def _attach_path(path: Path, base_dir: Path) -> str:
-    try:
-        return Path(os.path.relpath(path, base_dir)).as_posix()
-    except ValueError:  # Windows paths on different drives have no relative form
-        return path.as_posix()
-
-
 def _artifact_reference(artifact: dict[str, Any], path: str) -> str:
     caption = (
         ""
-        if Path(path).suffix.lower() in _VIDEO_SUFFIXES
+        if Path(artifact["path"]).suffix.lower() in _VIDEO_SUFFIXES
         else artifact["caption"] or Path(artifact["path"]).name
     )
     # Escape alt text the way gh does, so a caption cannot close the image early.
     caption = caption.translate(
         str.maketrans({"\\": "\\\\", "[": "\\[", "]": "\\]", "\n": " ", "\r": " "})
     )
-    # gh percent-decodes destinations when matching --attach paths, so this
-    # keeps names with spaces or parentheses valid Markdown links.
-    return f"![{caption}]({quote(path, safe='/')})"
+    return f"![{caption}]({path})"
 
 
 def render_section(
@@ -428,6 +423,7 @@ def _build_manifest(
     selection: dict[str, Any],
     *,
     out: Path,
+    attach_dir: Path,
     attach: list[str],
     publication_pass: bool,
     text_oracle: str,
@@ -439,7 +435,8 @@ def _build_manifest(
     manifest: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "status": "ready" if publication_pass else "not_ready",
-        "attach": attach,
+        "attach_dir": str(attach_dir),
+        "attach": list(dict.fromkeys(attach)),
         "selection_sha256": _selection_digest(selection),
         "artifacts": [
             {
@@ -529,14 +526,25 @@ def main(argv: list[str] | None = None) -> int:
     try:
         selection = _load_selection(args.selection)
         _preflight_outputs(args.selection, selection, args.out, args.manifest_out)
+        attach_dir = Path(tempfile.mkdtemp(prefix="dart-evidence-attach-")).resolve()
+        attach: list[str] = []
+        staged: dict[str, str] = {}
+        for artifact in selection["selected"]:
+            sha256 = artifact["sha256"]
+            name = staged.setdefault(
+                sha256, sha256[:16] + Path(artifact["path"]).suffix.lower()
+            )
+            staged_path = attach_dir / name
+            shutil.copyfile(args.selection.parent / artifact["path"], staged_path)
+            if _sha256(staged_path) != sha256:
+                raise ValueError(
+                    f"selected artifact {artifact['path']!r} changed content "
+                    "while staging"
+                )
+            attach.append(name)
         selection_pass = _selection_passes(selection)
         semantic_pass = args.semantic_verdict == "pass"
         publication_ready = selection_pass and semantic_pass
-        base_dir = args.selection.parent.resolve()
-        attach = [
-            _attach_path((base_dir / artifact["path"]).resolve(), base_dir)
-            for artifact in selection["selected"]
-        ]
         note: str | None = None
 
         if not selection_pass:
@@ -573,6 +581,7 @@ def main(argv: list[str] | None = None) -> int:
         manifest = _build_manifest(
             selection,
             out=args.out,
+            attach_dir=attach_dir,
             attach=attach,
             publication_pass=publication_ready,
             text_oracle=args.text_oracle,

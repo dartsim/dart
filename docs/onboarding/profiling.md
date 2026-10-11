@@ -86,9 +86,9 @@ tooling, artifacts, and results stay in private workspaces, outside the public
 DART repository and its GitHub content. Model-format compatibility support
 remains in scope. Use the existing
 [visual-evidence selection and publication flow](../ai/verification.md#visual-verification-headless-capture)
-for plots and claim-tied simulation highlights; post the rendered section with
-GitHub CLI 2.99+ `--body-file` and `--attach` from the selection directory after
-explicit maintainer approval, and keep transient media out of Git.
+for plots and claim-tied simulation highlights after explicit approval.
+Attachments use the same store as drag-and-drop, never release assets or tags;
+`--body-file` replaces the whole PR body. Keep transient media out of Git.
 For visible physics changes, follow the
 [simulation verification route](../ai/verification.md#simulation-verification-route).
 
