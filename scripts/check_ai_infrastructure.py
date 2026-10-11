@@ -224,10 +224,9 @@ DEPENDENCY_NAMES = (
     "GCC",
     "Clang",
     "MSVC",
+    "CURL",
 )
-DEPENDENCY_NAME_PATTERN = (
-    rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
-)
+DEPENDENCY_NAME_PATTERN = rf"(?<![-\w])(?:gz-[a-z0-9]+(?:-[a-z0-9]+)*|lib(?!rar(?:y|ies)(?![-\w]))[a-z0-9]+(?:-[a-z0-9]+)*|{'|'.join(DEPENDENCY_NAMES)})(?![-\w])"
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
     "PASS_REGULAR_EXPRESSION",
     "SKIP_REGULAR_EXPRESSION",
@@ -4636,7 +4635,8 @@ def exercise_scenarios(
                 re.match(DART_RELEASE_VERSION_PREFIX, match.group(), re.IGNORECASE)
                 or not (
                     re.search(
-                        rf"{DEPENDENCY_NAME_PATTERN}\s+(?:to\s+)?"
+                        rf"{DEPENDENCY_NAME_PATTERN}\s+"
+                        rf"(?:from\s+(?:v?\d+(?:\.\d+)*\s+to\s+)?|to\s+)?"
                         rf"(?:version\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$",
                         prompt_class[: match.start()],
                         re.IGNORECASE,
