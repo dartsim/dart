@@ -188,8 +188,8 @@ APPROVED_CTEST_SELECTIONS = {
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_VERSION_QUALIFIER = (
-    r"DART(?:py)?(?:\.__version__|[\s_]+(?:version|release))?\s*"
-    r"(?:===|==|[<>~!]=|[:=<>])?\s*v?"
+    r"(?:(?:-D)?DART(?:py)?(?:\.__version__|[\s_]+(?:version|release)(?:_info)?)?"
+    r"|libdart[\w.+-]*)\s*(?:===|==|[<>~!]=|[:=<>])?\s*v?"
 )
 DART_RELEASE_VERSION_PREFIX = rf"(?:{DART_VERSION_QUALIFIER}|release-)"
 NEXT_RELEASE_VERSION_PREFIX = (
@@ -4089,7 +4089,8 @@ def dependency_next_version(prefix: str) -> bool:
     return (
         re.search(
             rf"\b(?:update|updating|upgrade|upgrading|bump|bumping)\s+"
-            rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}(?:\s+v?\d+(?:\.\d+)*)?"
+            rf"(?:to\s+)?{DEPENDENCY_NAME_PATTERN}"
+            rf"(?:\s+(?:from\s+|to\s+)?v?\d+(?:\.\d+)*(?:\s*(?:,|and|or|to)\s*v?\d+(?:\.\d+)*)*)?"
             rf"[\s,]*(?:the\s+)?$",
             sentence_prefix,
             re.IGNORECASE,
@@ -4642,8 +4643,8 @@ def exercise_scenarios(
                 or not (
                     re.search(
                         rf"{DEPENDENCY_NAME_PATTERN}\s+"
-                        rf"(?:from\s+(?:(?:(?:version|release)\s+)?v?\d+(?:\.\d+)*"
-                        rf"\s+to\s+)?|to\s+)?"
+                        rf"(?:(?:from\s+)?(?:(?:version|release)\s+)?"
+                        rf"(?:v?\d+(?:\.\d+)*(?:\s*(?:,|and|or|to)\s*v?\d+(?:\.\d+)*)*\s*(?:,|and|or|to)\s*)?|to\s+)?"
                         rf"(?:(?:version|release)\s*(?:===|==|[<>~!]=|[:=<>])?\s*)?$",
                         prompt_class[: match.start()],
                         re.IGNORECASE,
