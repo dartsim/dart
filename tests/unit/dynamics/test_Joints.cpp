@@ -434,17 +434,19 @@ TEST(Joints, DisturbanceVersionChangesOnlyWithPendingActuation)
   joint->setForce(0, 0.0);
   joint->setForces(Eigen::Vector6d::Zero());
   joint->setCommand(0, 0.0);
-  joint->setCommands(Eigen::Vector6d::Zero());
   joint->resetForces();
   joint->resetCommands();
   EXPECT_EQ(before, version());
+
+  joint->setCommands(Eigen::Vector6d::Zero());
+  EXPECT_EQ(before, version()) << "Resending unchanged commands";
 
   joint->setForces(Eigen::Vector6d::Ones());
   EXPECT_GT(version(), before);
   before = version();
   joint->setForces(Eigen::Vector6d::Ones());
   joint->setForce(0, 1.0);
-  joint->setCommands(Eigen::Vector6d::Ones());
+  joint->setCommand(0, 1.0);
   EXPECT_EQ(before, version());
 
   joint->setCommand(0, 2.0);
@@ -509,4 +511,57 @@ TEST(Joints, VelocityCommandChangesNotifyDisturbance)
   joint->resetForces();
   EXPECT_EQ(before, version());
   EXPECT_EQ(joint->getCommand(0), 1.0);
+}
+
+//==============================================================================
+namespace {
+
+// A joint that keeps its commands outside the base storage.
+class ExternalCommandJoint : public RevoluteJoint
+{
+public:
+  explicit ExternalCommandJoint(const Properties& properties)
+    : RevoluteJoint(properties)
+  {
+  }
+
+  void setCommand(std::size_t index, double command) override
+  {
+    if (index == 0u)
+      mExternalCommand = command;
+  }
+
+  double getCommand(std::size_t index) const override
+  {
+    return index == 0u ? mExternalCommand : 0.0;
+  }
+
+private:
+  double mExternalCommand{0.0};
+};
+
+} // namespace
+
+//==============================================================================
+TEST(Joints, SetCommandsNotifiesOverriddenCommandChangesOnly)
+{
+  struct VersionAccess : Skeleton
+  {
+    using Skeleton::getGlobalExternalDisturbanceVersion;
+  };
+  auto skel = Skeleton::create("external_commands");
+  auto pair = skel->createJointAndBodyNodePair<ExternalCommandJoint>();
+  auto* joint = pair.first;
+  const auto version = []() {
+    return VersionAccess::getGlobalExternalDisturbanceVersion();
+  };
+
+  auto before = version();
+  joint->setCommands(Eigen::VectorXd::Constant(1, 2.0));
+  EXPECT_EQ(joint->getCommand(0), 2.0);
+  EXPECT_GT(version(), before) << "A change stored outside mCommands";
+
+  before = version();
+  joint->setCommands(Eigen::VectorXd::Constant(1, 2.0));
+  EXPECT_EQ(before, version()) << "Resending the same commands";
 }
