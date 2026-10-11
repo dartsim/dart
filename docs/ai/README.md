@@ -1,13 +1,14 @@
-# DART 6 AI Workflows
+# DART AI Workflows
 
-This directory contains the DART 6 AI operating model used by Codex,
-Claude Code, and OpenCode. It focuses on the workflows needed to maintain the
-DART 6 LTS line.
+This directory contains the DART AI operating model used by Codex,
+Claude Code, and OpenCode. It focuses on the workflows needed to develop the
+Python-first DART 7 line on `main` while keeping the Gazebo-facing C++ surface
+compatible.
 
 ## Visibility And Context Budget
 
 `AGENTS.md`, this start list, and workflow `Required Reading` blocks are the
-visibility contract for DART 6 agents. Do not copy the same rule into
+visibility contract for DART agents. Do not copy the same rule into
 every workflow; move it to the owner doc, then add only the pointer needed for
 the workflow to load it.
 
@@ -29,9 +30,10 @@ Start with:
 - [`sessions.md`](sessions.md)
 - [`components.md`](components.md)
 - [`capabilities.json`](capabilities.json)
-- [`branch-profile.json`](branch-profile.json): machine-readable DART 6
+- [`branch-profile.json`](branch-profile.json): machine-readable DART
   compatibility facts, required surfaces, and forbidden markers and paths.
-  The shared `dart6` profile applies to development and release branches;
+  Each branch names its line: `dart7` on `main` and `dart6` on
+  `release-6.20`;
   [Release Management](../onboarding/release-management.md#release-target)
   owns each base branch's target.
 - [`agent-scenarios.json`](agent-scenarios.json): the eight deterministic agent
@@ -86,11 +88,11 @@ For documentation placement, use
 For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
 
 Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in
-Claude/OpenCode when DART 6 work should run as an autonomous
+Claude/OpenCode when DART work should run as an autonomous
 project from either a provided brief or one up-front decision interview. The
 workflow keeps `docs/dev_tasks/<task>/` as the project home and records
 acceptance criteria, risks, decisions, verification, progress, and handoff
-state before routing bounded work through the DART 6
+state before routing bounded work through the DART
 orchestrator/executor model. Use `dart-new-task` for ordinary bounded
 single-session work unless the user explicitly asks for autonomous project
 handling.
@@ -115,7 +117,7 @@ context and across-session project state. Model upgrades therefore audit
 `docs/dev_tasks/`, and the handbook/design/release owners routed into a task,
 not only configuration, prompts, adapters, hooks, scripts, and tests.
 
-Every target also exercises one representative DART 6 physics investigation
+Every target also exercises one representative DART physics investigation
 through `dart-verify-sim`: the same text oracle, assessed Filament view, and
 claim-specific debug layers. Rendering or native image-review limitations are
 reported rather than converted into model-quality claims.
@@ -149,9 +151,9 @@ taxonomy.
 
 Development and release branches preserve C++17, `dart::utils`, and
 Gazebo/gz-physics compatibility, and each keeps the dartpy binder and GUI
-backend it ships with: nanobind under `python/dartpy/` and Filament on `main`,
-pybind11 and OSG on earlier release branches; see
-[`python-bindings.md`](../onboarding/python-bindings.md). The DART 6 component
+backend it ships with: nanobind under `python/dartpy/` and Filament on `main`
+and DART 7 release branches; pybind11 and OSG on `release-6.20`. See
+[`python-bindings.md`](../onboarding/python-bindings.md). The DART component
 map is [`architecture.md`](../onboarding/architecture.md). Release and backport
 policy and the branch-local next release live in
 [`release-management.md`](../onboarding/release-management.md).

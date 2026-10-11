@@ -1,17 +1,19 @@
 # DART 7 Filament renderer (milestone M6a)
 
-Status: the complete OSG replacement, including the repaired native FTexture
-use-after-free, is ported onto `main`'s consolidated libraries and
-nanobind-only dartpy on branch `feature/dart7-filament-m6a`, and locally
-qualified on Linux. Pushing and opening a PR need maintainer approval; native
-Windows/macOS CI, packaging, headless-import, and quiet-host performance gates
-remain before release acceptance.
+Status (2026-10-11): M6a merged in
+[#3696](https://github.com/dartsim/dart/pull/3696), merge `b63cc07f6`. Main's
+GUI backend is Filament, including the repaired native FTexture use-after-free
+and interim nanobind `dartpy.gui`. `CI Filament` passed on Linux, Windows and
+macOS. The x86_64 stable-ABI wheel is locally qualified; the separately cached
+SDK stage, aarch64/Windows/macOS wheel qualification, quiet-host performance,
+and final release reviews remain open. M6b's Python render/viewer API remains
+pending.
 
 ## Contract
 
 DART 7.0 uses Filament as the sole GUI renderer; this topic is milestone M6a
 of the maintainer-approved DART 7.0 plan. Decisions D30-D32 and D31a are
-recorded in the DART 7.0 program's project home (forthcoming). There is
+recorded in the [DART 7.0 project home](../dart7_python_first/README.md). There is
 no 6.21 release: `main`'s 6.21 work folds into 7.0.0. Remove the OSG
 component, installed GUI headers, Python namespace, dependencies, examples,
 and selectors. Keep public core C++17, `dart::utils`, collision/simulation
@@ -71,20 +73,23 @@ mandatory. User approval to replace OSG does not establish those results.
 
 ## Remaining gates
 
-1. Maintainer approval to push and open the PR (draft first).
-2. Green `CI Filament` on ubuntu-24.04, windows-2022 and macos-15, and native
-   Windows/macOS wheels.
-3. Headless import (C22): `_dartpy` and its bundled libraries need no libGL,
-   libEGL, libOpenGL, libX11, libxcb, libwayland, or libvulkan; `import dartpy`
-   and stepping a world work in `python:3.12-slim`; rendering without a usable
-   backend raises a typed error naming the missing system packages.
-4. Packaging: a separately cached Filament SDK stage for x86_64 and aarch64
+1. Qualify the aarch64, Windows and macOS wheels. The merged evidence records
+   only the x86_64 stable-ABI wheel's repair, audit and fresh cp312/cp313 smoke
+   checks; native GUI CI is already green on all three operating systems.
+2. C22 headless import already passed locally on the x86_64 cp312 stable-ABI
+   manylinux_2_28 wheel: no graphics libraries among the NEEDED entries of its
+   14 ELF objects, import plus ten `World.step()` calls in `python:3.12-slim`,
+   and the typed `RenderingUnavailableError` for capture, window and default
+   window. What remains is the aarch64 wheel and the `Publish dartpy` runs
+   themselves, which invoke `scripts/check_headless_wheel.py` for the Linux
+   stable-ABI rows.
+3. Packaging: a separately cached Filament SDK stage for x86_64 and aarch64
    in the manylinux image, keeping the wheel job under 120 minutes, with the
-   license notices in the wheel.
-5. The C2 gate (about 8 weeks before API freeze): performance re-measured on a
+   existing wheel license notices retained.
+4. The C2 gate (about 8 weeks before API freeze): performance re-measured on a
    quiet host (GPU and Lavapipe) with an approved fast-profile disposition;
    historical Lavapipe timings are not release evidence.
-6. Final release reviews after any publication-driven changes.
+5. Final release reviews after any publication-driven changes.
 
 ## Read-only DART 7 references
 

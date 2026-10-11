@@ -1,6 +1,6 @@
 # Changelog decision
 
-- Decision: the entry lives under DART 6.21.0 "Breaking Changes" because this
+- Decision: the entry lives under DART 7.0.0 "Breaking Changes" because this
   removes a renderer component, installed headers, the Python OSG namespace,
   and the OpenSceneGraph dependency.
 - Content: Filament-backed `dart::gui` / `dartpy.gui` replacement; removed
@@ -14,4 +14,4 @@
   leak-free or release-ready claim.
 - The previous 6.21 deprecation / 6.22 removal wording is superseded and removed
   from this unreleased entry. Released historical changelog entries are kept.
-- Add the actual PR link only after explicitly approved publication.
+- The merged entry links [#3696](https://github.com/dartsim/dart/pull/3696).

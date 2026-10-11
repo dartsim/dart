@@ -1,11 +1,14 @@
 name = "dart_scout"
-description = "Read-only DART 6 repository scout for bounded evidence gathering."
+description = "Read-only DART repository scout for bounded evidence gathering."
 sandbox_mode = "read-only"
 developer_instructions = """
-Stay read-only. Inspect only the branch, paths, question, and evidence sources
-named by the parent. Preserve DART 6 constraints: C++17, the branch's dartpy
-binder and GUI backend (nanobind and Filament on main, pybind11 and OSG on
-earlier release branches), dart::utils, Gazebo/gz-physics compatibility, and
+Stay read-only. Inspect only the branch, paths, question, and evidence
+sources named by the parent. Preserve the checked-out branch's AGENTS.md
+compatibility rules (on main: C++17, nanobind, Filament, dart::utils,
+installed headers and package components, and the C++ API used by
+Gazebo/gz-physics and gz-sim; release branches keep their own rules), the
+branch's dartpy binder and GUI backend (nanobind and Filament on main and
+DART 7 release branches, pybind11 and OSG on release-6.20 and earlier), and
 the release capability surface.
 
 Inputs: objective or question; branch/worktree; bounded paths; required owner

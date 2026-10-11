@@ -1,8 +1,8 @@
 # DART Changelog
 
-## DART 6
+## DART 7
 
-### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
+### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
 * Breaking Changes
 
@@ -24,10 +24,10 @@
     (`dartpy.gui.RenderingUnavailableError`) naming the missing system
     packages. The `dartpy.gui` bindings are interim; DART 7's Python rendering
     API replaces them before release.
-    [#3696](https://github.com/dartsim/dart/pull/3696)
     `DART_ENABLE_GUI_SMOKE_TESTS` (default `OFF`) replaces
     `DART_ENABLE_GUI_OSG_SMOKE_TESTS`; enable it to build the capture smoke test
     on a host with a graphics device.
+    [#3696](https://github.com/dartsim/dart/pull/3696)
 
   * dartpy now uses nanobind 3.1 or newer and requires Python 3.10 or newer.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
@@ -146,6 +146,8 @@
     installed Filament 1.77.3 SDK. `OFF` uses DART's pinned private SDK, built
     from source on Linux (Clang 20 or newer and Ninja) and downloaded prebuilt
     on macOS arm64 and 64-bit Windows.
+
+## DART 6
 
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 

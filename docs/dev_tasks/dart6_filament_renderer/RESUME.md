@@ -1,11 +1,10 @@
 # Resume
 
-Branch `feature/dart7-filament-m6a` is non-tracking from `main` `3d31d568794`.
-It ports the tested Filament work (the earlier branch at `fc4a3d9cc31` plus its
-resolved merge with `main`) as DART 7.0 milestone M6a. It is published as
-draft PR #3696 (milestone "DART 7.0.0"). Pushes in the original session were
-maintainer-approved; PR edits, comments, review requests, marking ready, and
-merging each need fresh maintainer approval.
+M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11
+at `b63cc07f6`. Main now uses Filament and the interim nanobind `dartpy.gui`.
+The port originated on `feature/dart7-filament-m6a` from `main` `3d31d568794`,
+using the earlier Filament source at `fc4a3d9cc31` and its resolved main merge.
+The dated qualification history remains in `verification.md`.
 
 ## Current state
 
@@ -22,26 +21,33 @@ color) are fixed with regressions. M6b (the DART 7.0 program) builds
 `dart.render` and `dart.viewer` on the C++ `dart::gui` backend and deletes the
 interim module before 7.0 rc.
 
+The merged PR's `CI Filament` functional lanes passed on ubuntu-24.04,
+windows-2022 and macos-15. Linux x86_64 cp312 stable-ABI wheel repair, audit,
+and fresh cp312/cp313 smoke tests passed locally. The merged Dockerfile still
+builds the SDK during the wheel build, and the merged evidence does not
+qualify aarch64, Windows or macOS wheels. The C22 headless-import check passed
+locally on the x86_64 stable-ABI wheel and is wired into `Publish dartpy`; the
+aarch64 wheel and the publish runs themselves remain.
+
 ## Next steps
 
-1. Expected CI failures until resolved upstream: the release-target check
-   fails while `main`'s release-management row still names 6.21.0 (it also
-   skips the Linux and Windows C++ "Build and test" steps that run after
-   lint); merge `main` once the DART 7.0 rollover lands and retarget the
-   CHANGELOG entry. Perf A/B cannot build the OSG-based base revision and needs
-   a maintainer decision.
-2. Before every push, merge the latest `main` and rerun `pixi run test-all`,
+1. Land the DART 7.0 rollover (#3697), which resolves the release-target
+   mismatch and puts the Filament entry in the DART 7.0.0 changelog section.
+   #3696 is already merged and needs no further branch merge or PR update.
+2. For approved follow-up pushes, merge the latest `main` and rerun `pixi run test-all`,
    `pixi run test-gui`, and `pixi run -e gazebo test-gz`. Watch `CI Filament`
    (Linux/Windows/macOS); Windows uses Mesa WGL copied next to the test
    binaries and macOS uses Metal. Pixel bounds were tuned on RTX and Lavapipe;
    widen only with captured per-backend evidence.
 3. After the DART 7.0 GIL finalization fix lands on `main`, apply its guard
    rules to the GUI binding callbacks and destruction notifications.
-4. M6a gates before the C2 checkpoint: a separately cached Filament SDK stage
-   for x86_64 and aarch64 in `docker/wheels/Dockerfile.manylinux_2_28`, native
-   Windows/macOS wheels (the `Publish dartpy` rows have not yet run with
-   Filament), and quiet-host performance on GPU and Lavapipe. The C22 slim
-   import check runs in `Publish dartpy` for the abi3 Linux wheels.
+4. Remaining release gates before the C2 checkpoint: a separately cached
+   Filament SDK stage for x86_64 and aarch64 in
+   `docker/wheels/Dockerfile.manylinux_2_28`, aarch64 and native Windows/macOS
+   wheel qualification, and quiet-host performance on GPU and Lavapipe. The
+   merged handoff recorded no Windows/macOS wheel runs with Filament; native
+   GUI CI passes do not qualify those wheels. The C22 slim import check runs
+   in `Publish dartpy` for the abi3 Linux wheels.
 5. On a quiet host, run the OSG-baseline comparison with
    `scripts/compare_gui_renderers.py` for completed frames, setup, full RGBA,
    RSS and GPU memory on RTX and Lavapipe. Never stop other sessions' work;
@@ -50,7 +56,7 @@ interim module before 7.0 rc.
    `bdfe859c...`, which is in no git ref) is preserved outside the repository
    on the original development host; otherwise rebuild it from `ec43ea419fe`
    in an environment that still has OpenSceneGraph.
-6. Retire this folder once publication and the remaining gates close; durable
+6. Retire this folder once the remaining release gates close; durable
    facts are already in the owner docs listed in `README.md`.
 
 ## Known follow-ups (not blockers)
@@ -73,8 +79,9 @@ interim module before 7.0 rc.
   configure download the 1.77.3 notices; offline configures fail, and
   `FindFilament` does not enforce the SDK version (only matc/runtime
   agreement).
-- Windows `/MT` CRT selection in `FindFilament` and Windows Python task paths
-  are untested.
+- Windows `/MT` CRT selection in `FindFilament` and the Windows `test-gui` pixi
+  task override have no recorded qualification; `CI Filament`'s Windows GUI
+  ctest and Python GUI suites passed.
 
 ## Recovery notes
 

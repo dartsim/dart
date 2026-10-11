@@ -1,4 +1,4 @@
-"""Tests for the DART 6 agent capture harness."""
+"""Tests for the DART agent capture harness."""
 
 import argparse
 import json

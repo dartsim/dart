@@ -1,4 +1,4 @@
-"""Deterministic headless capture harness for DART 6 agent visual evidence.
+"""Deterministic headless capture harness for DART agent visual evidence.
 
 Drives a DART world through Filament with explicit orbit
 parameters, focus framing, assessed viewpoints, turntables, and motion

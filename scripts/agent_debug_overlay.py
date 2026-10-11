@@ -1,4 +1,4 @@
-"""Engine-rendered debug overlays for DART 6 headless captures.
+"""Engine-rendered debug overlays for DART headless captures.
 
 This module builds world-derived debug layers — a ground grid, the world frame,
 contact markers/normals/forces, body frames, velocity arrows, centers of mass,
@@ -57,7 +57,7 @@ DEBUG_LAYERS = (
     "labels",
 )
 
-# DART 6's collision detector can emit sentinel/garbage contact points (seen
+# DART collision detectors can emit sentinel/garbage contact points (seen
 # in practice: coordinates ~1e101). Drawing those would produce misleading
 # evidence, so contacts outside this bound are skipped and counted; the text
 # oracle (contact traces) is the place to surface such anomalies.

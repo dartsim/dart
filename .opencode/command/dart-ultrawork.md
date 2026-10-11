@@ -49,7 +49,7 @@ evidence, and gates named before execution starts. An executor who finds
 the real scope materially different stops and reports back.
 
 1. **Session start and current reality** - Locate the project home. For
-   DART 6 autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
+   DART autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
    project directory. If it exists, read its `README.md`, `RESUME.md`, and any
    autonomous sidecars such as `decisions.md`, `verification.md`, or
    `progress-log.md`; then verify checkout state, current branch, and any

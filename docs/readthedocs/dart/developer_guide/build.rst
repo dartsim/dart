@@ -3,11 +3,11 @@
 Build
 =====
 
-This page describes the DART 6 LTS source-build paths. The source version is
-read from ``package.xml`` and may retain a previously published version until
-release packaging. For the planned release, read the target branch's
-``docs/onboarding/release-management.md``; published versions are listed in
-`GitHub Releases <https://github.com/dartsim/dart/releases>`_.
+This page describes the DART development branch's source-build paths. The
+source version is read from ``package.xml`` and may retain a previously
+published version until release packaging. For the planned release, read the
+target branch's ``docs/onboarding/release-management.md``; published versions
+are listed in `GitHub Releases <https://github.com/dartsim/dart/releases>`_.
 
 Recommended Pixi build
 ----------------------
@@ -46,7 +46,7 @@ tasks.
 Platform and tool requirements
 ------------------------------
 
-DART 6.20 requires C++17 and the following source-build baselines:
+The development branch requires C++17 and the following source-build baselines:
 
 .. list-table::
    :header-rows: 1

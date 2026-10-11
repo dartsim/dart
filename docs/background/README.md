@@ -1,9 +1,9 @@
 # DART Background Theory
 
-This directory is the release-branch home for durable theory and research
-background used by DART 6 maintainers and agents.
+This directory holds durable theory and research background for DART
+maintainers and agents on development and release branches.
 
-DART 6 already carries the original source PDFs:
+DART carries the original source PDFs:
 
 - [`../dynamics.pdf`](../dynamics.pdf) - articulated rigid-body dynamics
   foundations.

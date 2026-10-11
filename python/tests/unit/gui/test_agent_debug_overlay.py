@@ -1,4 +1,4 @@
-"""Tests for DART 6 debug-overlay composition and engine injection."""
+"""Tests for DART debug-overlay composition and engine injection."""
 
 import sys
 from pathlib import Path
