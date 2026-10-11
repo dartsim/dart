@@ -39,11 +39,15 @@ imports, linked components, or installed package behavior.
 
 macOS and Windows wheel packaging is Pixi-managed. `wheel-build-core`,
 `wheel-repair-<platform>-core`, `wheel-verify-core`, and `wheel-test-core`
-implement the pipeline, and the `py310-wheel`..`py313-wheel` environments
+implement the pipeline, and the `py312-wheel`..`py314-wheel` environments
 expose the corresponding tasks.
 
-Linux release wheels use `python3 scripts/wheel_linux.py cp313` (also
-`cp310`, `cp311`, `cp312`) on native x86_64 or aarch64 hosts with Docker.
+The DART 6.20.1 release matrix contains 12 wheels: Python 3.12, 3.13, and 3.14
+on Linux x86_64 and aarch64, macOS arm64, and Windows x86_64. Source builds
+continue to support Python 3.10 and newer.
+
+Linux release wheels use `python3 scripts/wheel_linux.py cp314` (also
+`cp312`, `cp313`) on native x86_64 or aarch64 hosts with Docker.
 The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
 dependencies and dartpy with the manylinux toolchain, requires
 `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
