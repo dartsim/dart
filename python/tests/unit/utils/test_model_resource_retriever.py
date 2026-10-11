@@ -94,6 +94,7 @@ def local_https_server(before_response=None, stream_response=None):
     certificate = Path(__file__).with_name("fixtures") / "localhost-test.crt"
     key = certificate.with_suffix(".key")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     # The committed private key is solely for this isolated test server.
     context.load_cert_chain(certificate, key)
     server.socket = context.wrap_socket(server.socket, server_side=True)
