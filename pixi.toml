@@ -155,11 +155,20 @@ skip_dirs = {
     'node_modules',
 }
 root = pathlib.Path('.')
-toml_files = []
-for path in root.rglob('*.toml'):
-    if any(part in skip_dirs for part in path.parts):
-        continue
-    toml_files.append(path)
+# Format tracked files only, so untracked private trees are never touched;
+# tracked TOML also lives in hidden directories such as .codex/. Split on NUL
+# so quoted names stay intact, and skip tracked files deleted from the tree.
+tracked = subprocess.run(
+    ['git', 'ls-files', '-z', '--', '*.toml'],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.split(chr(0))
+toml_files = [
+    path
+    for path in map(pathlib.Path, filter(None, tracked))
+    if path.is_file() and not any(part in skip_dirs for part in path.parts)
+]
 
 if not toml_files:
     raise SystemExit(0)
@@ -232,6 +241,7 @@ test-ai-infra = { cmd = [
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
   "tests/test_check_local_paths.py",
+  "tests/test_lint_cmake.py",
   "-q",
 ] }
 
