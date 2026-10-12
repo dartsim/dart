@@ -191,7 +191,7 @@ void VoxelGridShape::updateOccupancy(
 //==============================================================================
 double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
 {
-  const auto node = mOctree->search(point.x(), point.y(), point.z());
+  const auto node = mOctree->search(toPoint3d(point));
   if (node)
     return node->getOccupancy();
   else

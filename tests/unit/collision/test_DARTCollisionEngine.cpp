@@ -1601,6 +1601,21 @@ TEST(DARTCollisionDetector, ConvertsSphereAndBoxShapes)
 
 //==============================================================================
 #if HAVE_OCTOMAP
+TEST(VoxelGridShape, QueriesUpdatedBoundaryCell)
+{
+  for (const double coordinate : {0.01, 0.03, 0.06, -0.05}) {
+    dynamics::VoxelGridShape voxelGrid(0.01);
+    const Eigen::Vector3d point(coordinate, coordinate, coordinate);
+    EXPECT_EQ(0.0, voxelGrid.getOccupancy(point));
+    voxelGrid.updateOccupancy(point);
+    EXPECT_GT(voxelGrid.getOccupancy(point), 0.5) << coordinate;
+    const double occupied = voxelGrid.getOccupancy(point);
+    voxelGrid.updateOccupancy(point, false);
+    EXPECT_LT(voxelGrid.getOccupancy(point), occupied) << coordinate;
+  }
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, ConvertsVoxelGridToCompoundShape)
 {
   dynamics::VoxelGridShape voxelGrid(0.1);
