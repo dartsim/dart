@@ -726,22 +726,41 @@ TEST(GuiAppControl, ClearingCallbacksSurvivesCapturesThatAddControls)
 {
   auto panel = Control::makePanel();
   auto group = panel->addGroup("Group");
-  for (int i = 0; i < 8; ++i) {
-    // Each capture appends a control to the group when it is destroyed,
-    // which reallocates the group's children while they are being cleared.
-    struct Appends
+  int lateCapturesDestroyed = 0;
+  struct Counts
+  {
+    explicit Counts(int* destroyed) : destroyed(destroyed) {}
+    ~Counts()
     {
-      Control* group;
-      ~Appends()
-      {
-        group->addButton("late");
-      }
-    };
-    auto capture = std::make_shared<Appends>(Appends{group.get()});
+      ++*destroyed;
+    }
+    int* destroyed;
+  };
+  // Each capture appends a control with a callback of its own when it is
+  // destroyed, which also reallocates the group's children while they are
+  // being cleared.
+  struct Appends
+  {
+    Appends(Control* group, int* destroyed) : group(group), destroyed(destroyed)
+    {
+    }
+    ~Appends()
+    {
+      auto counts = std::make_shared<Counts>(destroyed);
+      group->addButton("late")->setOnChange([counts] {});
+    }
+    Control* group;
+    int* destroyed;
+  };
+  for (int i = 0; i < 8; ++i) {
+    auto capture
+        = std::make_shared<Appends>(group.get(), &lateCapturesDestroyed);
     group->addButton("b")->setOnChange([capture] {});
   }
   panel->clearCallbacks();
-  EXPECT_GT(group->getChildren().size(), 8u);
+  EXPECT_EQ(group->getChildren().size(), 16u);
+  // The appended controls' callbacks were cleared too.
+  EXPECT_EQ(lateCapturesDestroyed, 8);
 }
 
 //==============================================================================

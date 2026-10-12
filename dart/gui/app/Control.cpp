@@ -554,10 +554,12 @@ void Control::clearCallbacks()
   mOnChange = nullptr;
   mPending = false;
   mUnreleasedEdit = false;
-  // Iterate a snapshot: a destroyed callback's captures may append controls.
-  const auto children = mChildren;
-  for (const auto& child : children)
+  // A destroyed callback's captures may append controls, with callbacks of
+  // their own: index the live list, so appended children are cleared too.
+  for (std::size_t i = 0; i < mChildren.size(); ++i) {
+    const auto child = mChildren[i];
     child->clearCallbacks();
+  }
 }
 
 //==============================================================================
