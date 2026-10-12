@@ -40,7 +40,7 @@
   List them with `git worktree list`, and remove a worktree after its packet
   merges.
 - **Parity runs.** Until WP-PD.17, run the Python app from `python/` with
-  `PYTHONPATH=../build/default/cpp/Release/python/dartpy python -m examples.demos`.
+  `PYTHONPATH=../build/default/cpp/Release/python/dartpy pixi run python -m examples.demos`.
 
 ## Verification commands
 

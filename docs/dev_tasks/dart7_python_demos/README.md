@@ -383,7 +383,8 @@ Per scene, the parity evidence is:
 1. Run the C++ app from the build tree:
    `./build/default/cpp/Release/bin/dart-demos --scene <id> --headless --steps 200 --width 960 --height 600 --shot <png> --debug-print-world`.
 2. Run the Python app with the same flags, from `python/`:
-   `PYTHONPATH=../build/default/cpp/Release/python/dartpy python -m examples.demos …`.
+   `PYTHONPATH=../build/default/cpp/Release/python/dartpy pixi run python -m examples.demos …`.
+   `pixi run` supplies the interpreter dartpy was built for, and `ssik`.
    From WP-PD.17 on, `pixi run demos -- …` runs it from the repository root.
 3. Compare the print-world lines (exact or counts, per the matrix).
 4. Compose the two captures with `pixi run image-sheet` and review them
