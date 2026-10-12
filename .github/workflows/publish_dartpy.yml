@@ -76,6 +76,12 @@ jobs:
             release_only: true
 
           - os: linux
+            runner: ubuntu-24.04
+            build: "cp315-manylinux_x86_64"
+            pixi_env: py315-wheel
+            release_only: true
+
+          - os: linux
             runner: ubuntu-24.04-arm
             build: "cp313-manylinux_aarch64"
             pixi_env: py313-wheel
@@ -91,6 +97,12 @@ jobs:
             runner: ubuntu-24.04-arm
             build: "cp314-manylinux_aarch64"
             pixi_env: py314-wheel
+            release_only: true
+
+          - os: linux
+            runner: ubuntu-24.04-arm
+            build: "cp315-manylinux_aarch64"
+            pixi_env: py315-wheel
             release_only: true
 
           # Pin macOS to macos-15 (not macos-latest): dependency packages are

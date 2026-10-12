@@ -17,11 +17,11 @@ def test_wheel_matrix_and_platform_routing():
     )
     job = workflow["jobs"]["build_wheels"]
     rows = job["strategy"]["matrix"]["include"]
-    assert len(rows) == 12
+    assert len(rows) == 14
     linux = [row for row in rows if row["os"] == "linux"]
     assert {row["build"] for row in linux} == {
         f"cp{version}-manylinux_{arch}"
-        for version in (312, 313, 314)
+        for version in (312, 313, 314, 315)
         for arch in ("x86_64", "aarch64")
     }
     for row in linux:
@@ -56,7 +56,7 @@ def test_wheel_matrix_and_platform_routing():
         assert "matrix.os != 'linux'" in steps[name]["if"]
 
 
-@pytest.mark.parametrize("python_tag", ["cp312", "cp313", "cp314"])
+@pytest.mark.parametrize("python_tag", ["cp312", "cp313", "cp314", "cp315"])
 @pytest.mark.parametrize("arch", ["x86_64", "aarch64"])
 def test_linux_driver_repairs_and_tests_in_clean_base(
     monkeypatch, tmp_path, python_tag, arch
@@ -87,7 +87,7 @@ def test_linux_driver_repairs_and_tests_in_clean_base(
     assert all(kwargs == {"check": True} for _, kwargs in calls)
 
 
-@pytest.mark.parametrize("python_tag", ["cp310", "cp311", "cp315"])
+@pytest.mark.parametrize("python_tag", ["cp310", "cp311", "cp316"])
 def test_linux_driver_rejects_unsupported_python(monkeypatch, python_tag):
     spec = importlib.util.spec_from_file_location(
         "wheel_linux", ROOT / "scripts/wheel_linux.py"

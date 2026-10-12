@@ -51,6 +51,12 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 `pixi run -e py314-wheel wheel-build`). See
 `docs/onboarding/python-bindings.md` for the wheel workflow overview.
 
+cp315 wheels cover Linux x86_64 and aarch64 through
+`python3 scripts/wheel_linux.py cp315` using Docker's manylinux toolchain.
+macOS arm64 and Windows x64 cp315 wheels follow once conda-forge's bullet-cpp
+has Python 3.15 builds
+([conda-forge/bullet-feedstock#70](https://github.com/conda-forge/bullet-feedstock/pull/70)).
+
 ## Key Patterns
 
 - DART 6 uses pybind11 under `python/dartpy/`; do not import nanobind
