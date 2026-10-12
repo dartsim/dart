@@ -266,7 +266,8 @@ in `python/examples/demos/scenes/`. Column key:
 - `exact`: the print-world counts must match.
 - `counts`: the scene is seeded randomly, so only the construction counts
   must match.
-- `n/a`: the scene loads no world; it is gated on the model assets.
+- `assets`: like `exact`, but the scene loads cached robot models, so its
+  comparison needs `pixi run fetch-robot-assets` first.
 
 | Scene id | C++ source | Python module | Batch | Native or bindings needed | Oracle | Status |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -286,8 +287,8 @@ in `python/examples/demos/scenes/`. Column key:
 | hybrid_dynamics | `HybridDynamicsScene.cpp` | `hybrid_dynamics.py` | S2 | core | exact | Open |
 | mixed_chain | `MixedChainScene.cpp` | `mixed_chain.py` | S2 | core | counts | Open |
 | vehicle | `VehicleScene.cpp` | `vehicle.py` | S2 | core | exact | Open |
-| atlas_v5 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | n/a | Open |
-| unitree_g1 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | n/a | Open |
+| atlas_v5 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | assets | Open |
+| unitree_g1 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | assets | Open |
 | drag_and_drop | `DragAndDropScene.cpp` | `drag_and_drop.py` | WP-PD.7 | core | exact | Open |
 | sleeping | `SleepingScene.cpp` | `sleeping.py` | S3 | WP-PD.8 resting bindings | exact | Open |
 | box_stacking | `BoxStackingScene.cpp` | `box_stacking.py` | S3 | `_demos.set_boxed_lcp_solver` | counts | Open |
@@ -381,8 +382,9 @@ Before a full-catalog run, provision the optional inputs with
 Per scene, the parity evidence is:
 
 1. Run the C++ app from the build tree:
-   `./build/default/cpp/Release/bin/dart-demos --scene <id> --headless --steps 200 --width 960 --height 600 --shot <png> --debug-print-world`.
-2. Run the Python app with the same flags, from `python/`:
+   `./build/default/cpp/Release/bin/dart-demos --scene <id> --headless --steps 200 --width 960 --height 600 --shot <id>-cpp.png --debug-print-world`.
+2. Run the Python app with the same flags, but `--shot <id>-py.png`, from
+   `python/`:
    `PYTHONPATH=../build/default/cpp/Release/python/dartpy pixi run python -m examples.demos …`.
    `pixi run` supplies the interpreter dartpy was built for, and `ssik`.
    From WP-PD.17 on, `pixi run demos -- …` runs it from the repository root.

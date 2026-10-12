@@ -33,7 +33,9 @@ is done only after two clean review passes on its final state.
   owners, the active context's retention, the wheel catalog, the exact
   SIMBICON files, and this record. Later heads added the drawing-callback
   non-goal, the build-tree C++ parity command, the optional inputs a
-  full-catalog run needs, and tinkertoy's pick-and-drag check.
+  full-catalog run needs, tinkertoy's pick-and-drag check, the Pixi
+  interpreter for parity runs, a world oracle for the humanoid scenes, and
+  separate capture paths for the two apps.
 
 ## 2026-10-12: WP-PD.1 to WP-PD.3, the host stack
 
