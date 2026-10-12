@@ -4,7 +4,7 @@
 
 The code doesn't need to be perfect right away, feel free to post work-in-progress versions to get the discussion started.
 
-For PR descriptions, follow the [Effect-first contributor guidance](docs/onboarding/contributing.md#pr-descriptions).
+For PR descriptions, follow the [contributor guidance](docs/onboarding/contributing.md#pr-descriptions) and complete the [PR Author Checklist](docs/onboarding/contributing.md#pr-author-checklist).
 
 ## DART Contributors
 

@@ -2935,7 +2935,7 @@ def contact_surface_probe_command(
     trace_records: list[dict[str, Any]],
     errors: list[str],
 ) -> list[str] | None:
-    """Admit only the installed-header probe's isolated C++14 compiler command."""
+    """Admit only the installed-header probe's isolated platform compiler command."""
     prefix = "CMake semantic test graph: ContactSurfaceProbe"
     source = root / "tests/cmake/ContactSurfaceProbe.cpp"
     try:
@@ -2980,7 +2980,11 @@ def contact_surface_probe_command(
     uses_msvc = cmake_compiler_uses_msvc_abi(build_dir, cache, errors)
     if uses_msvc is None:
         return None
-    flags = ["/std:c++14", "/Zs"] if uses_msvc else ["-std=c++14", "-fsyntax-only"]
+    flags = (
+        ["/std:c++17", "/permissive-", "/Zc:twoPhase-", "/Zs"]
+        if uses_msvc
+        else ["-std=c++14", "-fsyntax-only"]
+    )
     include_flag = "/I" if uses_msvc else "-I"
     return [
         compiler,
@@ -3188,8 +3192,8 @@ def check_cmake_ctest_inventory(
                 else:
                     errors.append(
                         f"{prefix}: ContactSurfaceProbe must use the configured "
-                        "compiler with only C++14 flags, DART/Eigen includes, "
-                        "and its probe source"
+                        "compiler with only the platform probe flags, "
+                        "DART/Eigen includes, and its probe source"
                     )
         if tuple(generated_command[1:]) != expected_arguments:
             errors.append(

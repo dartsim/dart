@@ -133,10 +133,13 @@ reframe until any visible effect shows. Skip only with a stated reason, such as
 a headless-only or invisible change.
 
 When an improvement is visible in motion, contact, settling, stability, or
-rendering, select the 3D simulation highlights as images or a short GIF/video.
+rendering, select matched stills for a static difference or a short video for
+motion, timing, or interaction.
 Use the same camera for before and after, and place the key comparison in the
-PR's Effect section beside its claim; keep the text oracle and reproduction
-details later in the body. For compute-only wins with unchanged motion, show
+PR beside its supported claim, following [PR Descriptions](../onboarding/contributing.md#pr-descriptions).
+Keep the text oracle, observations, explicit claim boundaries, failures,
+uncertainty, and limiting caveats visible; collapse reproduction and
+environment details. For compute-only wins with unchanged motion, show
 plots of the measured work or time instead of identical simulation captures.
 Use the capture, composition, selection, and publication flow below; transient
 media stays out of the repository and uploads require explicit approval.
@@ -284,6 +287,12 @@ readable alongside their contact markers and collision bounds.
   unclaimed ones and records per-artifact rationale). Publication passes only
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
+  The `Visual verification` section groups claims with their supporting media
+  and keeps the text oracle, observations, explicit boundaries, and material
+  limitations visible. Environment/configuration metadata, machine claim IDs,
+  selection rationale, detailed reconciliation, and reproduction commands
+  belong in collapsed details. Uncovered claims and failed/uncertain verdicts
+  with their explanation remain outside those details.
   The helper validates local media, records source sizes and hashes, and stages
   hash-verified copies without network access in the manifest's absolute
   `attach_dir`: `<out>.attach/` beside the section, refilled on each run.
