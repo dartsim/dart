@@ -1432,6 +1432,11 @@ struct World::StepContext
   bool resetCommand = true;
   bool deactivationEnabled = false;
   bool customFilterSleeping = false;
+  // Copies that keep the solve's collision group and filter alive until
+  // step() returns.
+  collision::CollisionGroupPtr collisionGroup;
+  std::shared_ptr<collision::CollisionFilter> collisionFilter;
+  bool collisionGroupUnchanged = false;
 };
 
 //==============================================================================
@@ -1453,44 +1458,9 @@ void World::step(bool _resetCommand)
 
   advanceVelocities(context);
   auto& disturbedThisStep = mDisturbedThisStepScratch;
-
-  // Detect activated constraints and compute constraint impulses. The group
-  // stamp also proves that contacts remain alive through this solve.
-  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
-  const std::size_t collisionGroupVersion = collisionGroup->getContentVersion();
-  const auto collisionFilter
-      = mConstraintSolver->getCollisionOption().collisionFilter;
+  solveConstraints(context);
   auto& deactivationState = *mDeactivationState;
-  if (isReplayed(deactivationState, collisionFilter.get())
-      && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
-      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
-          || hasRestingOrCandidateMobileSkeleton(mSkeletons)
-          || hasDwellingMobileSkeleton(mSkeletons))) {
-    // Record before a body can freeze; moving bodies with no quiet dwell
-    // need no replay record.
-    const bool enableContact
-        = mConstraintSolver->getCollisionOption().enableContact;
-    const bool restingAtSolve = hasRestingMobileSkeleton();
-    const RecorderDisarm disarm{
-        armRecorder(deactivationState, collisionFilter.get())};
-    const bool queryComplete
-        = mConstraintSolver->solveWithQueryFilter(deactivationState.mRecorder);
-    finishRecord(
-        deactivationState,
-        *mConstraintSolver,
-        collisionFilter,
-        collisionGroup,
-        collisionGroupVersion,
-        queryComplete,
-        enableContact,
-        restingAtSolve);
-  } else {
-    deactivationState.mRecordValid = false;
-    mConstraintSolver->solve();
-  }
-  const bool collisionGroupUnchanged
-      = mConstraintSolver->getCollisionGroup() == collisionGroup
-        && collisionGroup->getContentVersion() == collisionGroupVersion;
+  const bool collisionGroupUnchanged = context.collisionGroupUnchanged;
 
   {
     parallelForIndexRange(
@@ -1808,6 +1778,52 @@ void World::advanceVelocities(const StepContext& context)
           }
         });
   }
+}
+
+//==============================================================================
+void World::solveConstraints(StepContext& context)
+{
+  // Detect activated constraints and compute constraint impulses. The group
+  // stamp also proves that contacts remain alive through this solve.
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  const std::size_t collisionGroupVersion = collisionGroup->getContentVersion();
+  const auto collisionFilter
+      = mConstraintSolver->getCollisionOption().collisionFilter;
+  auto& deactivationState = *mDeactivationState;
+  if (isReplayed(deactivationState, collisionFilter.get())
+      && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
+      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
+          || hasRestingOrCandidateMobileSkeleton(mSkeletons)
+          || hasDwellingMobileSkeleton(mSkeletons))) {
+    // Record before a body can freeze; moving bodies with no quiet dwell
+    // need no replay record.
+    const bool enableContact
+        = mConstraintSolver->getCollisionOption().enableContact;
+    const bool restingAtSolve = hasRestingMobileSkeleton();
+    const RecorderDisarm disarm{
+        armRecorder(deactivationState, collisionFilter.get())};
+    const bool queryComplete
+        = mConstraintSolver->solveWithQueryFilter(deactivationState.mRecorder);
+    finishRecord(
+        deactivationState,
+        *mConstraintSolver,
+        collisionFilter,
+        collisionGroup,
+        collisionGroupVersion,
+        queryComplete,
+        enableContact,
+        restingAtSolve);
+  } else {
+    deactivationState.mRecordValid = false;
+    mConstraintSolver->solve();
+  }
+  const bool collisionGroupUnchanged
+      = mConstraintSolver->getCollisionGroup() == collisionGroup
+        && collisionGroup->getContentVersion() == collisionGroupVersion;
+
+  context.collisionGroup = collisionGroup;
+  context.collisionFilter = collisionFilter;
+  context.collisionGroupUnchanged = collisionGroupUnchanged;
 }
 
 //==============================================================================

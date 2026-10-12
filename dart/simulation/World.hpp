@@ -752,6 +752,10 @@ private:
   /// velocities of the awake ones.
   void advanceVelocities(const StepContext& context);
 
+  /// Solves constraints once, recording the collision filter's decisions
+  /// when a later step may replay them.
+  void solveConstraints(StepContext& context);
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,
