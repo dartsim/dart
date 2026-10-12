@@ -774,23 +774,26 @@ def constructs(tokens, start, end, declarations, heads):
 
 
 def using_declarations(tokens):
-    """(name, target, scope, start, stop, depth) for each `using a::b::name;`.
+    """(name, target, scope, start, stop, depth) for each using import.
 
     A declaration is visible at tokens start..stop within `scope` and declares
     the name at `depth`, the length of its namespace or class scope, or past
-    `BLOCK` in a block.
+    `BLOCK` in a block. A namespace directive has no single imported name.
     """
     values = tokens.values
     result = []
     for i in range(len(values) - 1):
-        if values[i] != "using" or values[i + 1] in {"namespace", "typename"}:
+        if values[i] != "using" or values[i + 1] == "typename":
             continue
-        j = i + 1
+        directive = values[i + 1] == "namespace"
+        start = i + 1 + directive
+        j = start
         while j < len(values) and (IDENTIFIER.match(values[j]) or values[j] == "::"):
             j += 1
-        if values[j : j + 1] != [";"] or "::" not in values[i:j]:
+        if values[j : j + 1] != [";"] or (not directive and "::" not in values[i:j]):
             continue
-        name, target = values[j - 1], qualified(values[i + 1 : j])
+        name = None if directive else values[j - 1]
+        target = qualified(values[start:j])
         scope = tokens.scopes.get(i, ())
         opening = tokens.enclosing[i]
         if opening is None or opening in tokens.bodies:
@@ -1386,7 +1389,7 @@ def scan_sources(api, source_root):
         row["receiver_types"].update(dart_receivers)
         row["unresolved_count"] += not bool(dart_receivers)
 
-    def free_function(name, tokens, index, path, imports, namespace_aliases):
+    def free_function(name, tokens, index, path, namespace_aliases):
         """The DART functions that an unqualified call can reach.
 
         Lookup stops at the innermost scope that declares the name: a function
@@ -1401,13 +1404,20 @@ def scan_sources(api, source_root):
             if "::".join(scope[:size] + (name,)) in api.free_functions:
                 found[size].append("::".join(scope[:size] + (name,)))
         for short, target, where, start, stop, depth in tokens.using:
-            if short == name and start < index < stop and scope[: len(where)] == where:
+            if start < index < stop and scope[: len(where)] == where:
+                if short is None:
+                    target = qualified_function(
+                        target + "::" + name, where, tokens, index, namespace_aliases
+                    )
+                    found[0] += [target] if target else []
+                    continue
+                if short != name:
+                    continue
                 declared_at.add(depth)
-                target = qualified_function(target, where, imports, namespace_aliases)
+                target = qualified_function(
+                    target, where, tokens, index, namespace_aliases
+                )
                 found[depth] += [target] if target else []
-        found[0] += [
-            f"{s}::{name}" for s in imports if f"{s}::{name}" in api.free_functions
-        ]
         for header in closure[path]:
             for owner in declared[header].get(name, ()):
                 if scope[: len(owner)] == owner:
@@ -1415,7 +1425,15 @@ def scan_sources(api, source_root):
         depths = declared_at | {depth for depth, items in found.items() if items}
         return sorted(set(found[max(depths, default=0)]))
 
-    def qualified_function(name, scope, imports, namespace_aliases):
+    def qualified_function(name, scope, tokens, index, namespace_aliases):
+        here = tokens.scopes.get(index, ())
+        imports = [
+            expand(target.lstrip(":"), namespace_aliases)
+            for short, target, where, start, stop, _ in tokens.using
+            if short is None and start < index < stop and here[: len(where)] == where
+        ]
+        if "dart" in imports:
+            imports += ["dart::" + space for space in imports if space != "dart"]
         for candidate in api.spellings(expand(name, namespace_aliases), scope, imports):
             if candidate in api.free_functions:
                 return candidate
@@ -1647,7 +1665,8 @@ def scan_sources(api, source_root):
                     free = qualified_function(
                         qualifier + "::" + name,
                         tokens.scopes.get(i, ()),
-                        imports,
+                        tokens,
+                        i,
                         namespace_aliases,
                     )
                     if free:
@@ -1657,9 +1676,7 @@ def scan_sources(api, source_root):
                 if inferred:
                     declarations = candidates(name, inferred)
                 if not declarations:
-                    for free in free_function(
-                        name, tokens, i, path, imports, namespace_aliases
-                    ):
+                    for free in free_function(name, tokens, i, path, namespace_aliases):
                         add("free_functions", free, path, tokens.line(i))
             if j == i + 1:
                 declarations = [

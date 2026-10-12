@@ -949,6 +949,52 @@ namespace dart { using math::measure; void h() { measure(15.0); } }
     }
 
 
+@pytest.mark.parametrize(
+    ("imported_namespace", "qualifier"), [("dart::math", ""), ("dart", "math::")]
+)
+def test_free_function_namespace_imports_stay_in_their_scopes(
+    extractor, api, tmp_path, imported_namespace, qualifier
+):
+    result = _scan_files(
+        extractor,
+        api,
+        tmp_path,
+        {
+            "namespaces.cc": "namespace other { double measure(double); "
+            "namespace math { double measure(double); } }\n"
+            f"""namespace first {{
+using namespace {imported_namespace};
+void f() {{ {qualifier}measure(1.0); }}
+}}
+namespace second {{
+using namespace other;
+void f() {{ {qualifier}measure(2.0); }}
+}}
+""",
+            "blocks.cc": "namespace other { double measure(double); "
+            "namespace math { double measure(double); } }\n"
+            f"""void f() {{
+  {{
+    using namespace {imported_namespace};
+    {qualifier}measure(1.0);
+  }}
+  {{
+    using namespace other;
+    {qualifier}measure(2.0);
+  }}
+}}
+""",
+        },
+    )
+    functions = _entries(result, "free_functions")
+    assert set(functions) == {"dart::math::measure"}
+    assert functions["dart::math::measure"]["count"] == 2
+    assert functions["dart::math::measure"]["examples"] == [
+        "dartsim/src/blocks.cc:5",
+        "dartsim/src/namespaces.cc:4",
+    ]
+
+
 def test_subscripted_container_elements(extractor, api, tmp_path):
     result = _scan(
         extractor,
