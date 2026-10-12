@@ -493,6 +493,13 @@ void HierarchicalIK::Constraint::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
+  if (nullptr == hik) {
+    dterr << "[HierarchicalIK::Constraint::evalGradient] Attempting to use a "
+          << "Constraint function of an expired HierarchicalIK module!\n";
+    DART_ASSERT(false);
+    _grad.setZero();
+    return;
+  }
 
   const IKHierarchy& hierarchy = hik->getIKHierarchy();
   const SkeletonPtr& skel = hik->getSkeleton();

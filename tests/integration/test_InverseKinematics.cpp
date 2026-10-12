@@ -155,6 +155,28 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
 }
 
 //==============================================================================
+TEST(InverseKinematics, ExpiredHierarchyConstraintGradientIsGuarded)
+{
+  optimizer::FunctionPtr constraint;
+  {
+    auto skel = Skeleton::create();
+    skel->createJointAndBodyNodePair<FreeJoint>();
+    constraint = skel->getIK(true)->getProblem()->getEqConstraint(0);
+  }
+  // The Skeleton, and with it its whole-body IK, no longer exist.
+  ASSERT_NE(constraint, nullptr);
+  const Eigen::VectorXd x = Eigen::VectorXd::Zero(6);
+  Eigen::VectorXd grad = Eigen::VectorXd::Ones(6);
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+#ifdef NDEBUG
+  constraint->evalGradient(x, gradMap);
+  EXPECT_TRUE(grad.isZero());
+#elif GTEST_HAS_DEATH_TEST
+  EXPECT_DEATH(constraint->evalGradient(x, gradMap), "");
+#endif
+}
+
+//==============================================================================
 TEST(InverseKinematics, CloneWithoutProblemObjective)
 {
   SkeletonPtr skel = Skeleton::create();
