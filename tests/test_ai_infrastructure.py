@@ -1472,6 +1472,8 @@ def test_release_target_rejects_invalid_tables(
         ("docs/topic", "", "docs/topic", True),
         ("", "", "", True),
         ("release-6.20", "main", "", True),
+        # A stacked PR's base is another topic branch.
+        ("docs/topic", "refactor/topic", "123/merge", True),
     ],
 )
 def test_release_target_checks_known_base_branch(
