@@ -581,16 +581,27 @@ public:
   void inlineUse() { mDirty = true; }
   Custom();
   void shadowed();
+  void conditional();
   int mCount;
 };
 Custom::Custom() : mCount{0} { mDirty = false; }
 void Custom::shadowed() { bool mDirty = false; mDirty = true; }
+void Custom::conditional() {
+#ifdef LOCAL
+  bool mDirty = false;
+#endif
+  mDirty = true;
+}
 void unrelated(bool mDirty) { mDirty = true; }
 class Other { bool mDirty; void use() { mDirty = true; } };
 """,
     )
     field = _entries(result, "data_members")["mDirty"]
-    assert field["examples"] == ["dartsim/src/sample.cc:3", "dartsim/src/sample.cc:8"]
+    assert field["examples"] == [
+        "dartsim/src/sample.cc:15",
+        "dartsim/src/sample.cc:3",
+        "dartsim/src/sample.cc:9",
+    ]
     assert field["receiver_types"] == ["dart::dynamics::Widget"]
 
 
@@ -722,6 +733,13 @@ using namespace gz;
 void U::f() { W::getAndReset(); }
 namespace gz { void gz::U::g() { W::setFriction(1.0); } }
 """,
+            "k.cc": """namespace gz {
+struct Root { using W = dart::dynamics::Widget; };
+using Parent = Root;
+struct Leaf : Parent { void f(); };
+void Leaf::f() { W::getFriction(); }
+}
+""",
         },
     )
     members = _entries(result, "members")
@@ -737,6 +755,7 @@ namespace gz { void gz::U::g() { W::setFriction(1.0); } }
     assert "clear" not in members
     assert members["getAndReset"]["examples"] == ["dartsim/src/j.cc:3"]
     assert members["setFriction"]["examples"] == ["dartsim/src/j.cc:4"]
+    assert members["getFriction"]["examples"] == ["dartsim/src/k.cc:5"]
 
 
 def test_inactive_and_alternative_preprocessor_branches(extractor, api, tmp_path):
@@ -876,6 +895,15 @@ void f() {
 using dart::math::measure;
 namespace gz { using other::measure; void f() { measure(14.0); } }
 """,
+            "nested.cc": """namespace other { double measure(double); }
+void f() {
+  using dart::math::measure;
+  {
+    using other::measure;
+    measure(16.0);
+  }
+}
+""",
         },
     )
     function = _entries(overloads, "free_functions")["dart::math::measure"]
@@ -899,6 +927,26 @@ namespace dart { using math::measure; void h() { measure(15.0); } }
 """,
     )
     assert _entries(enclosed, "free_functions")["dart::math::measure"]["count"] == 3
+
+    # Declarations in one scope form one overload set.
+    header = tmp_path / "dart" / "api.hpp"
+    header.write_text(
+        header.read_text().replace(
+            "namespace math {",
+            "namespace other {\ndouble measure(int);\n}\nnamespace math {",
+        )
+    )
+    both = _scan(
+        extractor,
+        extractor.index_api(header.parent),
+        tmp_path / "both",
+        "using dart::other::measure;\nusing dart::math::measure;\n"
+        "void f() { measure(1.0); }\n",
+    )
+    assert set(_entries(both, "free_functions")) == {
+        "dart::math::measure",
+        "dart::other::measure",
+    }
 
 
 def test_subscripted_container_elements(extractor, api, tmp_path):

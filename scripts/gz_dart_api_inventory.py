@@ -56,6 +56,7 @@ IGNORED = re.compile(
 CONDITIONAL = re.compile(r"[ \t]*#[ \t]*(if|ifdef|ifndef|elif|else|endif)\b(.*)")
 INCLUDE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*[<"]([^>"\n]+)[>"]', re.MULTILINE)
 THIRD_PARTY = re.compile(r"(?:bt|d|ai)[A-Z]")  # Bullet, ODE and Assimp types
+BLOCK = 1 << 30  # lookup depth of a block scope, past any namespace or class
 NOT_DATA = {
     "(",
     ":",
@@ -776,8 +777,8 @@ def using_declarations(tokens):
     """(name, target, scope, start, stop, depth) for each `using a::b::name;`.
 
     A declaration is visible at tokens start..stop within `scope` and declares
-    the name at `depth`, the length of its namespace or class scope; a block's
-    declaration is deeper than all of them.
+    the name at `depth`, the length of its namespace or class scope, or past
+    `BLOCK` in a block.
     """
     values = tokens.values
     result = []
@@ -794,9 +795,9 @@ def using_declarations(tokens):
         opening = tokens.enclosing[i]
         if opening is None or opening in tokens.bodies:
             result.append((name, target, scope, i, len(values), len(scope)))
-        elif values[opening] == "{":  # a block's declaration hides outer functions
+        elif values[opening] == "{":  # an inner block lies deeper than outer ones
             stop = tokens.pairs.get(opening, len(values))
-            result.append((name, target, scope, i, stop, float("inf")))
+            result.append((name, target, scope, i, stop, BLOCK + opening))
     return result
 
 
@@ -1114,7 +1115,7 @@ def scan_sources(api, source_root):
             for header in closure[path]
             if header != path
             for entry in declared_using[header]
-            if entry[5] != float("inf")
+            if entry[5] < BLOCK
         ]
     declared = defaultdict(lambda: defaultdict(set))
     for path, _, _, functions, *_ in files:
@@ -1126,16 +1127,33 @@ def scan_sources(api, source_root):
 
     # Base classes declared in the scanned sources, for inherited names.
     source_classes = {cls["name"] for _, _, classes, *_ in files for cls in classes}
+    renamed_classes = {}  # source aliases, which may name source classes
+    for _, tokens, _, _, source_aliases, imports, namespace_aliases in files:
+        for name, values, index in source_aliases:
+            for _, _, value in names_in(values):
+                where = tokens.scopes.get(index, ())
+                renamed_classes.setdefault(
+                    name, (value, where, imports, namespace_aliases)
+                )
+                break
+
+    def source_class(name, scope, imports, namespace_aliases, depth=0):
+        """The scanned class that `name` names in `scope`, through aliases."""
+        for candidate in api.spellings(expand(name, namespace_aliases), scope, imports):
+            if candidate in source_classes:
+                return candidate
+            if candidate in renamed_classes and depth < 8:
+                return source_class(*renamed_classes[candidate], depth + 1)
+        return None
+
     parents = defaultdict(list)
     for _, tokens, classes, _, _, imports, namespace_aliases in files:
         for cls in classes:
             for raw in cls["bases"]:
-                spelled = expand(base_name(raw), namespace_aliases)
                 scope = tokens.scopes.get(cls["index"], ())
-                for candidate in api.spellings(spelled, scope, imports):
-                    if candidate in source_classes and candidate != cls["name"]:
-                        parents[cls["name"]].append(candidate)
-                        break
+                parent = source_class(base_name(raw), scope, imports, namespace_aliases)
+                if parent and parent != cls["name"]:
+                    parents[cls["name"]].append(parent)
     ancestry = {}
     for name in parents:
         ancestry[name], pending = [], list(parents[name])
@@ -1369,7 +1387,7 @@ def scan_sources(api, source_root):
         row["unresolved_count"] += not bool(dart_receivers)
 
     def free_function(name, tokens, index, path, imports, namespace_aliases):
-        """The DART function that an unqualified call reaches.
+        """The DART functions that an unqualified call can reach.
 
         Lookup stops at the innermost scope that declares the name: a function
         of an enclosing namespace or class, or a using-declaration, counts in
@@ -1395,7 +1413,7 @@ def scan_sources(api, source_root):
                 if scope[: len(owner)] == owner:
                     declared_at.add(len(owner))
         depths = declared_at | {depth for depth, items in found.items() if items}
-        return (found[max(depths, default=0)] or [None])[0]
+        return sorted(set(found[max(depths, default=0)]))
 
     def qualified_function(name, scope, imports, namespace_aliases):
         for candidate in api.spellings(expand(name, namespace_aliases), scope, imports):
@@ -1577,8 +1595,11 @@ def scan_sources(api, source_root):
                     and name in api.data_members
                     and tokens.source_relevant
                     and tokens.enclosing[i] not in class_bodies
-                    and not any(  # a local declaration hides the field
-                        b[3] == name and b[0] <= i <= b[1] and b[2] <= i
+                    and not any(  # a local declaration that every build sees here
+                        b[3] == name
+                        and b[0] <= i <= b[1]
+                        and b[2] <= i
+                        and set(tokens.branches[b[2]]) <= set(tokens.branches[i])
                         for b in tokens.bindings
                     )
                 ):
@@ -1635,11 +1656,11 @@ def scan_sources(api, source_root):
                 inferred = enclosing_bases(tokens, i)
                 if inferred:
                     declarations = candidates(name, inferred)
-                free = not declarations and free_function(
-                    name, tokens, i, path, imports, namespace_aliases
-                )
-                if free:
-                    add("free_functions", free, path, tokens.line(i))
+                if not declarations:
+                    for free in free_function(
+                        name, tokens, i, path, imports, namespace_aliases
+                    ):
+                        add("free_functions", free, path, tokens.line(i))
             if j == i + 1:
                 declarations = [
                     d
