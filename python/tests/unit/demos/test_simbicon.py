@@ -148,3 +148,19 @@ def test_controller_world_python_backref_cycle_collects():
     gc.collect()
     assert all(reference() is None for reference in references)
     assert collected, "Controller's retained World edge was invisible to GC"
+
+
+def test_dropping_a_controller_removes_its_pelvis_harness():
+    model = soft_foot.create_model(soft_foot.Feet.RIGID)
+    solver = model.world.getConstraintSolver()
+    original_count = solver.getNumConstraints()
+    controller = simbicon.Controller(model.atlas, model.world)
+    controller.harness_pelvis()
+    assert solver.getNumConstraints() == original_count + 1
+    del controller
+    gc.collect()
+    assert solver.getNumConstraints() == original_count
+    # A model's own controller belongs to the model, which keeps its harness.
+    model.controller.harness_pelvis()
+    gc.collect()
+    assert solver.getNumConstraints() == original_count + 1

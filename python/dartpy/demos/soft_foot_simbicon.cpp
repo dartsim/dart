@@ -40,6 +40,9 @@
   #include "demo_models/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
   #include "detail/eigen.hpp"
 
+  #include <stdexcept>
+  #include <string>
+
 namespace dart::python {
 nb::object make_simbicon_controller(
     std::shared_ptr<dart_demos::atlas_simbicon::Controller> controller,
@@ -112,9 +115,19 @@ void bind_soft_foot_simbicon(nb::module_& demos)
 
   m.def(
       "create_model",
-      &model::createModel,
+      [](model::Feet feet) {
+        try {
+          return model::createModel(feet);
+        } catch (const std::runtime_error& error) {
+          throw std::runtime_error(
+              std::string(error.what())
+              + "; these demo models load DART's sample data (dart://sample),"
+                " which a DART source checkout provides");
+        }
+      },
       nb::arg("feet"),
-      "Build the Y-up Atlas-on-ground World with the requested foot geometry.");
+      "Build the Y-up Atlas-on-ground World with the requested foot geometry. "
+      "It loads DART's sample data, which a source checkout provides.");
   m.def(
       "apply_push",
       [](model::Model& self, const Eigen::Vector3d& force, int steps) {
@@ -177,6 +190,8 @@ void bind_soft_foot_simbicon(nb::module_& demos)
       "max_recoverable_push",
       &model::maxRecoverablePush,
       nb::arg("feet"),
+      // A sweep of a dozen simulations; other Python threads keep running.
+      nb::call_guard<nb::gil_scoped_release>(),
       "Sweep lateral pushes and return the largest recoverable force in N.");
 }
 } // namespace dart::python

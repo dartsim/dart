@@ -51,6 +51,7 @@ struct DemoController
   nb::object worldWrapper;
   dart::simulation::WorldPtr world;
   std::shared_ptr<NativeController> native;
+  bool ownsNative = true;
 
   DemoController(nb::object atlasObject, nb::object worldObject)
     : atlasWrapper(std::move(atlasObject)), worldWrapper(std::move(worldObject))
@@ -73,8 +74,26 @@ struct DemoController
     : atlasWrapper(nb::cast(controller->getAtlasRobot())),
       worldWrapper(nb::cast(owner)),
       world(std::move(owner)),
-      native(std::move(controller))
+      native(std::move(controller)),
+      ownsNative(false)
   {
+  }
+
+  DemoController(DemoController&&) = default;
+  DemoController& operator=(DemoController&&) = default;
+
+  ~DemoController()
+  {
+    release();
+  }
+
+  // A controller built here installs its pelvis harness in its own World's
+  // solver, which outlives it; leave that World unharnessed. A model's
+  // controller belongs to the model.
+  void release()
+  {
+    if (native && ownsNative && world)
+      native->unharnessPelvis();
   }
 
   NativeController& get() const
@@ -86,6 +105,7 @@ struct DemoController
 
   void clear()
   {
+    release();
     native.reset();
     world.reset();
     atlasWrapper.reset();
