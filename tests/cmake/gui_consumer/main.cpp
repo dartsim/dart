@@ -3,8 +3,6 @@
 #include <dart/simulation/World.hpp>
 
 #include <dart/external/imgui/imgui.h>
-// Consumers may also write the bare name; it must find the same header.
-#include <imgui.h>
 
 #include <fstream>
 
@@ -14,6 +12,8 @@ static_assert(_MSVC_LANG == 201703L, "The GUI consumer must remain C++17");
 static_assert(__cplusplus == 201703L, "The GUI consumer must remain C++17");
 #endif
 
+const char* bareImGuiVersion();
+
 int main()
 {
   auto world = dart::simulation::World::create();
@@ -22,7 +22,8 @@ int main()
   stats.reset();
   dart::gui::Viewer viewer;
   viewer.addWorldNode(node);
-  if (node->getWorld() != world || ImGui::GetVersion() == nullptr)
+  if (node->getWorld() != world || ImGui::GetVersion() == nullptr
+      || bareImGuiVersion() == nullptr)
     return 1;
 #if !defined(_WIN32)
   // A display-free capture exercises the installed renderer and materials.
