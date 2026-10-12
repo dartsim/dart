@@ -5,22 +5,24 @@
 | Packet | Branch | State |
 | --- | --- | --- |
 | WP-PD.0 | `docs/demo-app-consolidation-plan` | Draft PR #3732 |
-| WP-PD.1 | `build/imgui-docking` | Local; gates pass, in review |
-| WP-PD.2 | `refactor/demo-models-library` | Local; gates pass, in review; to be stacked on WP-PD.1 |
-| WP-PD.8 | `feature/bind-resting-heightmap-voxel` | Local; gates pass, in review |
-| WP-PD.9 | `codex/bind-whole-body-ik` | Codex lane running |
+| WP-PD.1 | `build/imgui-docking` | Draft PR #3745, bottom of stack #3748 |
+| WP-PD.2 | `refactor/demo-models-library` | Draft PR #3746, stacked on #3745 |
+| WP-PD.3 | `refactor/gui-app-host` | Draft PR #3747, stacked on #3746 |
+| WP-PD.4 | `feature/app-panels-contract` | Local, on WP-PD.3; gates and reviews running |
+| WP-PD.8 | `feature/bind-resting-heightmap-voxel` | Draft PR #3737; voxel input hardening in progress |
+| WP-PD.9 | `feature/bind-whole-body-ik` | Local; gates pass, in review |
 
+- Related fixes: #3735 (API snapshots of non-arithmetic enums) and #3744
+  (heightmap bounds).
 - `main`'s Windows C++ CI fails on `ContactSurfaceProbe` since #3725. #3731
   fixes it; that failure is not caused by these packets.
-- `scripts/nanobind/api_surface.py --snapshot` fails on the current dartpy
-  (a non-arithmetic enum). A separate fix keeps the API-diff gate usable.
 
 ## Immediate next step
 
-1. Publish WP-PD.1 and WP-PD.2 as a stack once their reviews are clean.
-2. Start WP-PD.3 (host move) as a Codex lane on top of WP-PD.2, with the
-   spec built from the README's packet scope.
-3. Commit and review WP-PD.9 when its lane finishes.
+1. Finish WP-PD.4's reviews, then add it to stack #3748.
+2. Write WP-PD.5 (`dartpy.viewer`) on top of WP-PD.4.
+3. Publish WP-PD.9 once two local reviews are clean.
+4. Watch the GitHub reviews and CI of the open PRs.
 
 ## Recovery notes
 

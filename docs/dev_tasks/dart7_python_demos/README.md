@@ -103,9 +103,12 @@ How callbacks behave:
   it. That wrapper's `tp_traverse` and `tp_clear` keep it visible to the
   garbage collector. The host holds only weak thunks.
 - **Active scene.** During `run()`, a binding-side session keeps the active
-  scene's `SceneSetup` wrapper alive, including its controls and key actions,
-  until that scene's teardown has run. A factory's returned setup would
-  otherwise lose its last reference, and its weak thunks would expire.
+  scene's wrappers alive until that scene's teardown has run: the
+  `SceneSetup` with its controls and key actions, and the `SceneContext`
+  with the teardowns, attachments and event handlers registered through it.
+  Otherwise a factory's returned setup, or a context dropped after
+  `on_activate` returns, would lose its last reference, and its weak thunks
+  would expire before the teardown that needs them.
 - **Ordinary exceptions.** They reach the host's guards as C++ errors. The
   host logs them, disables only the failing callback, and counts the
   failure. `--cycle-scenes` exits nonzero if any count is above zero.
@@ -121,16 +124,16 @@ WP-PD.18.
 
 | ID | Title | Depends on | Lane | Status |
 | --- | --- | --- | --- | --- |
-| WP-PD.0 | Record the demo-host decision and project home | — | Claude | In progress |
-| WP-PD.1 | Bundle the Dear ImGui docking release | 0 | Claude | Planned |
-| WP-PD.2 | Move the GUI-free demo models into `dart-demo-models` | 0 | Codex | Planned |
-| WP-PD.3 | Move the demo host into private `dart/gui/app` | 1, 2 | Codex | Planned |
-| WP-PD.4 | Add declarative panels and the Python-ready scene contract | 3 | Claude | Planned |
+| WP-PD.0 | Record the demo-host decision and project home | — | Claude | Draft PR #3732 |
+| WP-PD.1 | Bundle the Dear ImGui docking release | 0 | Claude | Draft PR #3745 |
+| WP-PD.2 | Move the GUI-free demo models into `dart-demo-models` | 0 | Codex | Draft PR #3746 |
+| WP-PD.3 | Move the demo host into private `dart/gui/app` | 1, 2 | Codex | Draft PR #3747 |
+| WP-PD.4 | Add declarative panels and the Python-ready scene contract | 3 | Claude | Local, in review |
 | WP-PD.5 | Bind the host as `dartpy.viewer` | 4 | Claude | Planned |
 | WP-PD.6 | Bind the models as `dartpy._demos` | 2 | Codex | Planned |
 | WP-PD.7 | Run the Python catalog on the native host | 5 | Claude | Planned |
-| WP-PD.8 | Bind resting state, `HeightmapShapef` and `VoxelGridShape` | 0 | Codex | Planned |
-| WP-PD.9 | Bind end effectors, supports, whole-body IK and balance constraints | 0 | Codex | Planned |
+| WP-PD.8 | Bind resting state, `HeightmapShapef` and `VoxelGridShape` | 0 | Codex | Draft PR #3737 |
+| WP-PD.9 | Bind end effectors, supports, whole-body IK and balance constraints | 0 | Codex | Local, in review |
 | WP-PD.10 | Port scene batch S1 | 7 | Codex | Planned |
 | WP-PD.11 | Port scene batch S2 | 7 | Codex | Planned |
 | WP-PD.12 | Port scene batch S3 | 6, 7, 8 | Codex | Planned |
@@ -157,7 +160,9 @@ Packet scope:
   - Change the default of `wheel-build-core`'s argument and of
     `scripts/wheel_build.py` to `OFF`.
   - Update the docs.
-- **WP-PD.2.** `git mv` `ContactArrowLayout`, `atlas_simbicon/*`,
+- **WP-PD.2.** `git mv` `ContactArrowLayout`, the SIMBICON controller
+  (`atlas_simbicon/{Controller,State,StateMachine,TerminalCondition}.*`; the
+  `AtlasSimbiconScene.cpp` factory stays with the C++ scenes),
   `SoftFootSimbiconModel`, `AdaptiveSoftContactModel` and `SoftWormModel`.
   - `test_ConstraintSolver` links `dart-demo-models` instead of compiling
     these sources by path. CTest names stay the same.
@@ -186,8 +191,10 @@ Packet scope:
   - Add a dartpy POST_BUILD check that memory diagnostics are compiled out.
   - Add the device-free tests and a GUI-only `test_viewer_render.py`.
   - Add a `test_wheel.py` smoke test and the `python-bindings.md` notes.
-- **WP-PD.6.** Bind simbicon, soft worm, adaptive contact (with point
-  markers) and soft foot.
+- **WP-PD.6.** Create the private `dartpy._demos` module and bind simbicon,
+  soft worm, adaptive contact (with point markers) and soft foot. The scene
+  batches depend on it for the module only: each batch adds its own helpers
+  (listed under WP-PD.10 to WP-PD.16).
   - Validation fixes: an unknown state-machine name raises, the index
     off-by-one is fixed, DOFs are checked before use, and the binding keeps
     the World that owns the solver alive.
@@ -315,6 +322,10 @@ Scene-specific notes:
   exists. On an empty asset cache they raise `AssetsNotPrefetchedError`, and
   `ssik_ik_gui` raises it when `ssik` is missing; the cycle reports both as
   skipped.
+- **Release wheels.** Wheels build without `DART_BUILD_UTILS_ASSETS`, so a
+  wheel's catalog lists 35 scenes, without `atlas_v5` and `unitree_g1`. The
+  wheel smoke test expects exactly that list; the 37-row parity evidence
+  comes from source builds with assets enabled.
 - **agent-capture.** `modern_humanoids.atlas_world` and `g1_world` keep
   returning Worlds, so agent-capture's `--factory` contract still holds.
 - **ssik_ik_gui is a full port**, not just a move. It brings the 19-arm combo
