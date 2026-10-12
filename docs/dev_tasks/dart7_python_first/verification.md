@@ -94,7 +94,7 @@ Known gaps:
 - **Evidence:** `pixi run test-ai-infra` (1688 passed),
   `pixi run exercise-agent-scenarios`, `pixi run check-lint` and
   `pixi run lint` pass on the stacked commit.
-- **Status:** in review: final passes on the amended commit.
+- **Status:** done; merged in [#3697](https://github.com/dartsim/dart/pull/3697).
 
 ### WP-7.0.1b Changelog reconciliation
 
@@ -130,7 +130,7 @@ Known gaps:
     --nightly` measures only the head; the comparison form is
     `--rows nightly`) and a shim assertion that rejected the permitted FCL
     default. Both were fixed.
-- **Status:** in review: final passes on the amended commit.
+- **Status:** done; merged in [#3697](https://github.com/dartsim/dart/pull/3697).
 
 ### WP-7.0.3 Fixed-size XML value parsing
 
@@ -160,7 +160,7 @@ Known gaps:
   - Two clean passes followed on the final commit: a commit review, and a
     focused review of caller cardinalities, exception contracts and log levels
     0–6.
-- **Status:** done; ready to publish. Backport candidate for `release-6.20`.
+- **Status:** done; merged in [#3698](https://github.com/dartsim/dart/pull/3698). The `release-6.20` backport is [#3717](https://github.com/dartsim/dart/pull/3717).
 
 ### WP-7.0.3b SDF pose attributes
 
@@ -169,7 +169,7 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Status:** planned. It changes behavior, so it targets main only.
+- **Status:** in review in [#3719](https://github.com/dartsim/dart/pull/3719). It changes behavior, so it targets main only.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -209,7 +209,7 @@ Known gaps:
   - Two clean passes followed on the final commit: a commit review, and a
     focused review of the guards, the remaining owners and callbacks, and the
     skip condition.
-- **Status:** done; ready to publish.
+- **Status:** done; merged in [#3699](https://github.com/dartsim/dart/pull/3699).
 
 ### WP-7.0.5 Performance baseline
 
@@ -300,4 +300,5 @@ Known gaps:
   `dartpy<7` supports.
 - **Risk:** that line's bindings use a different binder, so the 3.15 wheels
   need their own review of GIL acquisition during finalization.
-- **Status:** planned.
+- **Status:** in progress. [#3704](https://github.com/dartsim/dart/pull/3704) builds
+  6.20.1 wheels for Python 3.12 to 3.14; Python 3.15 wheels remain.
