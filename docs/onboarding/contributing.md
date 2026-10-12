@@ -62,6 +62,11 @@ explicitly approves a breaking change.
 
 ## PR Descriptions
 
+The PR Text workflow checks the PR title, body, commit messages, file names and
+added lines of every PR commit for private or machine-specific paths. It runs
+only the base branch's checker, so PR changes cannot bypass the guard. Check a
+draft locally with `python scripts/check_local_paths.py --text-file <file>`.
+
 Text-only descriptions make a PR's effect and value slow to assess. Every PR
 starts with a short `## Effect` section that a human reviewer can absorb in
 about a minute:

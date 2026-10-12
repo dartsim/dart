@@ -58,6 +58,9 @@ jobs:
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
 
+      - name: Test the local-path checker
+        run: pixi run python -I scripts/run_pytest.py tests/test_check_local_paths.py -q
+
       - name: Test the performance regression harness
         run: pixi run test-perf-regression
 
