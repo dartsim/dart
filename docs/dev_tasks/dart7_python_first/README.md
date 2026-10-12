@@ -234,7 +234,7 @@ exits.
 | M1c | Snapshots, checkpoints, and the field and frame oracle | One PR per hidden-state gap; moving the solver's random-number state is a labeled numeric change |
 | M1d | One deterministic executor, GIL release, `step(n)` | Closes the quiet window. The 64-world row must show scaling from 1 to 8 threads before batch bindings start |
 | M1e | Typed solver selection in `WorldConfig` | Per-World solver parameters are opt-in; the process-wide statistics keep last-write-wins |
-| M1f | DART detector as the default of dartpy's `dart.World` and the MJCF world loader | A breaking Python default change, so a must-have before `F`. Lands after the published capability matrix and M1b's strict shape rejection. The C++ `World` keeps FCL; see the [switch](#default-detector-switch) |
+| M1f | DART detector as the default of dartpy's `dart.World` and `dart.io.load_world` for MJCF | A breaking Python default change, so a must-have before `F`. Lands after the published capability matrix and M1b's strict shape rejection. The C++ `World`, `dart::utils::MjcfParser::readWorld` and its direct dartpy binding keep FCL; see the [switch](#default-detector-switch) |
 | M1g | Actuator channels, compliant motor rows, `StepHook` | |
 | M1h | Native sensors, without recording | |
 | M1i | Remapping clone | `WorldBatch` prerequisite |
@@ -338,9 +338,14 @@ meshes, and warns once and then skips heightmaps.
 
 D13, as amended on 2026-10-12, splits the switch:
 
-- **Python and MJCF, in 7.0 (M1f).** dartpy's `dart.World` and the MJCF world
-  loader default to the DART detector. This breaking Python default change is
-  a must-have that lands before `F`, and only after:
+- **Python, including MJCF loading, in 7.0 (M1f).** dartpy's `dart.World` and
+  `dart.io.load_world` for MJCF default to the DART detector. The MJCF switch
+  changes only `dart.io.load_world`, never the C++
+  `dart::utils::MjcfParser::readWorld`. The dartpy `MjcfParser` binding
+  exposes that C++ parser directly; changing it would also switch C++
+  callers from FCL. The parser and its direct binding keep FCL. This
+  breaking Python default change is a must-have that lands before `F`, and
+  only after:
   - a published shape and query capability matrix;
   - strict rejection, when a World compiles (M1b), of shapes the native
     detector cannot handle.

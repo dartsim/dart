@@ -406,6 +406,33 @@ Known gaps:
   `pyproject.toml` already sets `xfail_strict = true`, and each test also
   passes `strict=True`. The contract lives only in these tests, not in
   `python/examples/`, because that directory's examples run automatically.
+- **Review follow-up on 2026-10-12** (main `3c4c68813` merged locally):
+  - The four Codex findings on `a2301f5fd` are addressed: M1f's MJCF
+    switch belongs only in `dart.io.load_world`; constructor and MJCF loader
+    acceptance check `world.collision.detector`; the batch fixture configures
+    its own PositionServo with matching nonzero serial and batch targets;
+    and `step(True)` must raise `TypeError`.
+  - `pixi run lint`, `pixi run check-lint` and `pixi run build-py-dev` pass.
+    `pixi run test-py` reports 688 passed, 2 skipped and 11 XFAIL, with no
+    XPASS. `pixi run test-gui` passes 13 CTests and reports 262 passed,
+    1 skipped and the render acceptance test XFAIL, with no XPASS.
+  - The same `--runxfail` command above fails all 11 acceptance tests and
+    the render test. The changed tests fail for missing `dart.World`,
+    `dart.io`, integer-count stepping and `dart.PositionServo`, respectively;
+    the render test still fails for missing `dart.render`.
+  - The minimal MJCF fixture loads through the existing direct parser and
+    retains FCL. Visual evidence is unnecessary for these documentation and
+    acceptance-contract changes; no simulation implementation changes.
+  - Changelog decision:
+    - Mode: decide
+    - Base evidence: `origin/main` at `3c4c68813`
+    - Scope evidence: #3728 review follow-up diff
+    - Decision: no entry required
+    - Target section: N/A
+    - Entry text: N/A
+    - PR-body note: Documentation and strict-xfail acceptance coverage only;
+      released library behavior is unchanged.
+    - Follow-up: none
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
     counter instead of `step_count`; the render test ran in the device-free

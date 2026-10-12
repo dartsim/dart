@@ -139,8 +139,12 @@ every new member needs a use case:
 - sub-objects: `world.collision`, `world.solver`, `world.sensors`,
   `world.hooks` and `world.constraints`.
 
-dartpy's `dart.World` and the MJCF world loader default to the native DART
-collision detector. The C++ `World` defaults to FCL, for Gazebo compatibility.
+dartpy's `dart.World` and `dart.io.load_world` for MJCF default to the native
+DART collision detector, exposed through `world.collision.detector`. The
+MJCF switch belongs only in `dart.io.load_world`; the C++
+`dart::utils::MjcfParser::readWorld` and its direct dartpy `MjcfParser`
+binding keep FCL. Changing that parser would also switch C++ callers. The
+C++ `World` defaults to FCL, for Gazebo compatibility.
 
 Not bound in Python: internal preparation steps, the C++ recording accessor
 (replaced by `dart.Recorder` once the recorder ships), index and memory-manager accessors, the

@@ -98,9 +98,13 @@ only with new evidence and maintainer approval.
 - **D13. Zero-allocation contract on the DART and Bullet detectors.**
   - Amended by the maintainer on 2026-10-12: the C++ `World` keeps FCL as its
     default detector in 7.0, for Gazebo compatibility; switching the C++
-    default to DART is a labeled 7.x change. dartpy's `dart.World` and the
-    MJCF world loader default to the DART detector in 7.0. That breaking
-    Python default change is a must-have that lands before `F`, after the
+    default to DART is a labeled 7.x change. dartpy's `dart.World` and
+    `dart.io.load_world` for MJCF default to the DART detector in 7.0.
+    The MJCF switch changes only `dart.io.load_world`, never the C++
+    `dart::utils::MjcfParser::readWorld` or its direct dartpy `MjcfParser`
+    binding: changing that parser would also switch C++ callers from FCL.
+    The parser and its direct binding keep FCL. That breaking Python
+    default change is a must-have that lands before `F`, after the
     published shape and query capability matrix and the strict rejection of
     unsupported shapes when a World compiles (M1b). Behavior comparisons
     against FCL and PLAN-622's pre-default coverage gate remain prerequisites

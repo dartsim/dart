@@ -35,12 +35,27 @@ def robot(world):
 
 
 @pytest.mark.xfail(
-    strict=True, reason="M5: top-level World and keyword-only construction are pending"
+    strict=True,
+    reason="M5/M1f: top-level World, keyword-only construction and the DART detector default are pending",
 )
 def test_world_construction_keywords():
     world = dart.World(time_step=1e-3, gravity=(0, 0, -9.81))
     assert world.time_step == 1e-3
     np.testing.assert_array_equal(world.gravity, (0, 0, -9.81))
+    assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="M5/M1f: io.load_world and its MJCF DART detector default are pending",
+)
+def test_load_world_mjcf_detector_default(tmp_path):
+    path = tmp_path / "world.xml"
+    path.write_text(
+        '<mujoco><worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>'
+    )
+    world = dart.io.load_world(path)
+    assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
 
 
 @pytest.mark.xfail(strict=True, reason="M1b: explicit edit/compile modes are pending")
@@ -84,11 +99,13 @@ def test_imu_sensor(world, robot):
 
 @pytest.mark.xfail(
     strict=True,
-    reason="M1d/M5b: step(n) and step_count are pending; step accepts only bool",
+    reason="M1d/M5b: step(n), step_count and rejection of bool arguments are pending",
 )
 def test_step_n(world):
     world.step(20)
     assert world.step_count == 20
+    with pytest.raises(TypeError):
+        world.step(True)
 
 
 @pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
@@ -139,12 +156,15 @@ def test_capture_restore_state(world, robot):
     strict=True, reason="M1i/M1g/M5b: WorldBatch clones, set/step and the position-target channel are pending"
 )
 def test_world_batch_set_step(world, robot):
+    servo = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    robot.joints["shoulder_yaw"].actuator = servo
     batch = dart.WorldBatch(world, count=64)
     assert batch.positions.shape == (64, robot.getNumDofs())
     batch.set("velocities", np.ones_like(batch.positions))
-    batch.set("position_targets", np.zeros_like(batch.positions))
+    batch.set("position_targets", np.full_like(batch.positions, 0.5))
     batch.step(20)
     robot.setVelocities(np.ones(robot.getNumDofs()))
+    robot.dofs.position_targets = np.full(robot.getNumDofs(), 0.5)
     for _ in range(20):
         world.step()
     assert np.any(robot.getPositions() != 0)
