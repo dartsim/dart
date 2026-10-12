@@ -94,6 +94,7 @@
     factory cannot create `fcl`, for example after an application
     unregisters the factory's creators. The parser creates the FCL detector
     directly instead and warns once.
+    [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Collision
 
