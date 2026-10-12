@@ -47,6 +47,9 @@ namespace dart::python {
 nb::object make_simbicon_controller(
     std::shared_ptr<dart_demos::atlas_simbicon::Controller> controller,
     dart::simulation::WorldPtr world);
+std::shared_ptr<dart_demos::atlas_simbicon::Controller> unharnessingOwner(
+    std::shared_ptr<dart_demos::atlas_simbicon::Controller> controller,
+    const dart::simulation::WorldPtr& world);
 
 void bind_soft_foot_simbicon(nb::module_& demos)
 {
@@ -117,7 +120,10 @@ void bind_soft_foot_simbicon(nb::module_& demos)
       "create_model",
       [](model::Feet feet) {
         try {
-          return model::createModel(feet);
+          auto created = model::createModel(feet);
+          created.controller
+              = unharnessingOwner(std::move(created.controller), created.world);
+          return created;
         } catch (const std::runtime_error& error) {
           throw std::runtime_error(
               std::string(error.what())

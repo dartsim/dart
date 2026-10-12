@@ -44,6 +44,29 @@ namespace dart::python {
 namespace {
 using NativeController = dart_demos::atlas_simbicon::Controller;
 
+} // namespace
+
+// Python drops controllers in any order relative to their World. When the last
+// owner of a controller goes, remove its pelvis harness from the World's
+// solver, or the solver keeps a weld to bodies that may be freed. A World that
+// is gone took its solver and harness with it.
+std::shared_ptr<dart_demos::atlas_simbicon::Controller> unharnessingOwner(
+    std::shared_ptr<dart_demos::atlas_simbicon::Controller> controller,
+    const dart::simulation::WorldPtr& world)
+{
+  auto* raw = controller.get();
+  return std::shared_ptr<dart_demos::atlas_simbicon::Controller>(
+      raw,
+      [owned = std::move(controller),
+       weak = std::weak_ptr<dart::simulation::World>(world)](auto*) mutable {
+        if (weak.lock())
+          owned->unharnessPelvis();
+        owned.reset();
+      });
+}
+
+namespace {
+
 // The native controller borrows its solver; release it before its World.
 struct DemoController
 {
@@ -51,7 +74,6 @@ struct DemoController
   nb::object worldWrapper;
   dart::simulation::WorldPtr world;
   std::shared_ptr<NativeController> native;
-  bool ownsNative = true;
 
   DemoController(nb::object atlasObject, nb::object worldObject)
     : atlasWrapper(std::move(atlasObject)), worldWrapper(std::move(worldObject))
@@ -63,9 +85,11 @@ struct DemoController
     if (!nb::isinstance<dart::simulation::World>(worldWrapper))
       throw nb::type_error("world must be a World");
     world = nb::cast<dart::simulation::WorldPtr>(worldWrapper);
-    native = std::make_shared<NativeController>(
-        nb::cast<dart::dynamics::SkeletonPtr>(atlasWrapper),
-        world->getConstraintSolver());
+    native = unharnessingOwner(
+        std::make_shared<NativeController>(
+            nb::cast<dart::dynamics::SkeletonPtr>(atlasWrapper),
+            world->getConstraintSolver()),
+        world);
   }
 
   DemoController(
@@ -74,26 +98,8 @@ struct DemoController
     : atlasWrapper(nb::cast(controller->getAtlasRobot())),
       worldWrapper(nb::cast(owner)),
       world(std::move(owner)),
-      native(std::move(controller)),
-      ownsNative(false)
+      native(std::move(controller))
   {
-  }
-
-  DemoController(DemoController&&) = default;
-  DemoController& operator=(DemoController&&) = default;
-
-  ~DemoController()
-  {
-    release();
-  }
-
-  // A controller built here installs its pelvis harness in its own World's
-  // solver, which outlives it; leave that World unharnessed. A model's
-  // controller belongs to the model.
-  void release()
-  {
-    if (native && ownsNative && world)
-      native->unharnessPelvis();
   }
 
   NativeController& get() const
@@ -105,7 +111,6 @@ struct DemoController
 
   void clear()
   {
-    release();
     native.reset();
     world.reset();
     atlasWrapper.reset();

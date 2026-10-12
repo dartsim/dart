@@ -164,3 +164,18 @@ def test_dropping_a_controller_removes_its_pelvis_harness():
     model.controller.harness_pelvis()
     gc.collect()
     assert solver.getNumConstraints() == original_count + 1
+
+
+def test_dropping_a_model_unharnesses_its_controller_in_a_surviving_world():
+    model = soft_foot.create_model(soft_foot.Feet.RIGID)
+    world = model.world
+    solver = world.getConstraintSolver()
+    original_count = solver.getNumConstraints()
+    model.controller.harness_pelvis()
+    assert solver.getNumConstraints() == original_count + 1
+    del model
+    gc.collect()
+    assert solver.getNumConstraints() == original_count
+    # No weld is left to reference the freed pelvis.
+    world.removeAllSkeletons()
+    world.step()
