@@ -63,7 +63,8 @@ jobs:
         run: >-
           pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
           --target test_GuiDescriptors test_GuiInteractions test_GuiImageDecoders test_GuiViewer test_GuiParity test_GuiMesh test_FilamentBackend offscreen_capture_smoke dartpy dart-demos
-          test_GuiApp test_GuiAppMemoryDiagnostics test_GuiAppMemoryDiagnosticsModel UNIT_examples_demos_SceneCycle test_Issue2671
+          test_GuiApp test_GuiAppMemoryDiagnostics test_GuiAppMemoryDiagnosticsModel test_Issue2671
+          ${{ runner.os == 'Linux' && 'UNIT_examples_demos_SceneCycle' || '' }}
       - name: Windows isolated software WGL
         if: runner.os == 'Windows'
         shell: pwsh
