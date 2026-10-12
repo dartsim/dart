@@ -2,20 +2,25 @@
 
 ## Current state (2026-10-12)
 
-- WP-PD.0 is in progress on the local branch
-  `docs/demo-app-consolidation-plan`, cut from `origin/main` at `722f28ddd`.
-  Nothing has been pushed.
-- No other packet branch exists yet.
+| Packet | Branch | State |
+| --- | --- | --- |
+| WP-PD.0 | `docs/demo-app-consolidation-plan` | Draft PR #3732 |
+| WP-PD.1 | `build/imgui-docking` | Local; gates pass, in review |
+| WP-PD.2 | `refactor/demo-models-library` | Local; gates pass, in review; to be stacked on WP-PD.1 |
+| WP-PD.8 | `feature/bind-resting-heightmap-voxel` | Local; gates pass, in review |
+| WP-PD.9 | `codex/bind-whole-body-ik` | Codex lane running |
+
+- `main`'s Windows C++ CI fails on `ContactSurfaceProbe` since #3725. #3731
+  fixes it; that failure is not caused by these packets.
+- `scripts/nanobind/api_surface.py --snapshot` fails on the current dartpy
+  (a non-arithmetic enum). A separate fix keeps the API-diff gate usable.
 
 ## Immediate next step
 
-1. Finish WP-PD.0:
-   - lint and check-lint;
-   - two clean local reviews;
-   - commit;
-   - ask the maintainer to approve a push and a draft PR.
-2. Start WP-PD.1 (docking ImGui) in the main checkout.
-3. Run WP-PD.2 (model move) in parallel as a Codex lane in a worktree.
+1. Publish WP-PD.1 and WP-PD.2 as a stack once their reviews are clean.
+2. Start WP-PD.3 (host move) as a Codex lane on top of WP-PD.2, with the
+   spec built from the README's packet scope.
+3. Commit and review WP-PD.9 when its lane finishes.
 
 ## Recovery notes
 

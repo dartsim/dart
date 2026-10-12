@@ -26,7 +26,8 @@ The project is complete when:
 
 1. `python -m examples.demos` runs all 37 scenes in the parity matrix below.
    Each scene matches the C++ app on its `--debug-print-world` counts and an
-   assessed capture pair.
+   assessed capture pair. Scenes driven by keys or panel controls also pass
+   scripted interaction checks (see [Gates](#gates)).
 2. The host rows H1–H12 are reachable from the Python app, each proven by a
    test or a capture.
 3. `pixi run demos`, `pixi run cycle-demos` and `pixi run capture` launch the
@@ -72,6 +73,11 @@ Non-goals:
 | App host | `dart/gui/app/` → `dart-gui-app` (static, `EXCLUDE_FROM_ALL`, never installed) | `dart::gui::app` |
 | Docking gate | `dart/gui/CMakeLists.txt` adds `app/` only when the copied `dart/external/imgui/imgui.h` defines `IMGUI_HAS_DOCK`. Otherwise it prints a "compiled out" status line. | — |
 | GUI-free models | `python/native/demo_models/` → `dart-demo-models` (static, `EXCLUDE_FROM_ALL`). It is added right after `dart` in the top-level CMake file. IO-dependent sources are added only when `dart-utils` and `dart-utils-urdf` exist. | `dart_demos` |
+
+Both static targets link into the shared dartpy module. GCC and Clang builds
+already compile every target with `-fPIC` (the top-level `add_compile_options`),
+and MSVC needs no position-independent code, so neither target sets the
+property itself.
 | Host bindings | `python/dartpy/viewer/`, compiled only when `dart-gui-app` exists | `dartpy.viewer` |
 | Model bindings | `python/dartpy/demos/` | `dartpy._demos` (private) |
 | Scenes | `python/examples/demos/scenes/*.py`, `scenes/common.py`, `registry.py`, `__main__.py` | — |
@@ -96,6 +102,10 @@ How callbacks behave:
 - **Ownership.** Each callable belongs to the Python wrapper that accepted
   it. That wrapper's `tp_traverse` and `tp_clear` keep it visible to the
   garbage collector. The host holds only weak thunks.
+- **Active scene.** During `run()`, a binding-side session keeps the active
+  scene's `SceneSetup` wrapper alive, including its controls and key actions,
+  until that scene's teardown has run. A factory's returned setup would
+  otherwise lose its last reference, and its weak thunks would expire.
 - **Ordinary exceptions.** They reach the host's guards as C++ errors. The
   host logs them, disables only the failing callback, and counts the
   failure. `--cycle-scenes` exits nonzero if any count is above zero.
@@ -330,10 +340,14 @@ By change type:
   `-DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF`, build
   `test_ConstraintSolver`, and run the four model gates.
 - **Install and wheel:**
-  - `scripts/test_gui_install.py` and `pixi run test-package-core`;
-  - `scripts/wheel_linux.py cp312`, then `scripts/check_headless_wheel.py`;
+  - `pixi run python scripts/test_gui_install.py build/default/cpp/Release`,
+    after removing any `gui-install*` staging directories in that tree;
+  - `python3 scripts/wheel_linux.py cp312`, then
+    `python3 scripts/check_headless_wheel.py dist/dartpy-*-cp312-abi3-manylinux_2_28_*.whl`;
   - record the wheel size;
-  - diff `scripts/nanobind/api_surface.py --snapshot` against the base.
+  - snapshot the API on the base and on the head with
+    `PYTHONPATH=build/default/cpp/Release/python/dartpy pixi run python scripts/nanobind/api_surface.py --snapshot`,
+    and diff the two outputs.
 - **Docs:** `pixi run docs-build` and `pixi run docs-build-ko` when Read the
   Docs pages change.
 - **AI infrastructure:** `pixi run test-ai-infra` when the checker changes.
@@ -342,11 +356,19 @@ Per scene, the parity evidence is:
 
 1. Run the C++ app:
    `dart-demos --scene <id> --headless --steps 200 --width 960 --height 600 --shot <png> --debug-print-world`.
-2. Run the Python app with the same flags:
-   `python -m examples.demos …`.
+2. Run the Python app with the same flags, from `python/`:
+   `PYTHONPATH=../build/default/cpp/Release/python/dartpy python -m examples.demos …`.
+   From WP-PD.17 on, `pixi run demos -- …` runs it from the repository root.
 3. Compare the print-world lines (exact or counts, per the matrix).
 4. Compose the two captures with `pixi run image-sheet` and review them
    semantically through `dart-verify-sim`.
+5. For a scene whose behavior is driven by key actions or panel controls,
+   such as atlas_puppet, wam_ikfast, ssik_ik_gui, tinkertoy or
+   operational_space_control, the scene's pytest also builds the scene
+   headlessly. It triggers each key action and control callback, steps, and
+   asserts the effect: a moved target, a toggled support, a new solution, a
+   changed force. Where the effect is visible, a capture after that
+   interaction joins the pair.
 
 Images never enter the repository.
 
