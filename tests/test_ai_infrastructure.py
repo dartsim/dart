@@ -3347,6 +3347,138 @@ def test_cmake_semantic_graph_rejects_bypassed_version_script_test(
     )
 
 
+def _add_contact_surface_probe_fixture(root: Path):
+    eigen = root / "eigen"
+    eigen.mkdir()
+    eigen.joinpath("Eigen3Targets.cmake").write_text(
+        "add_library(Eigen3::Eigen INTERFACE IMPORTED)\n"
+        "set_target_properties(Eigen3::Eigen PROPERTIES "
+        'INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/eigen/include")\n',
+        encoding="utf-8",
+    )
+    cmake = root / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_subdirectory(tests)",
+            'set(Eigen3_DIR "${CMAKE_SOURCE_DIR}/eigen" CACHE PATH "")\n'
+            'include("${Eigen3_DIR}/Eigen3Targets.cmake")\n'
+            "add_subdirectory(tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    source = root / "tests/cmake/ContactSurfaceProbe.cpp"
+    source.parent.mkdir(exist_ok=True)
+    source.write_text(
+        (ROOT / "tests/cmake/ContactSurfaceProbe.cpp").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    cmake = root / "tests/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + "\nget_target_property(probe_eigen Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)\n"
+        "if(MSVC)\n"
+        "  set(probe_flags /std:c++14 /Zs)\n"
+        "  set(probe_include_flag /I)\n"
+        "else()\n"
+        "  set(probe_flags -std=c++14 -fsyntax-only)\n"
+        "  set(probe_include_flag -I)\n"
+        "endif()\n"
+        "foreach(include_dir ${PROJECT_SOURCE_DIR} ${DART_BINARY_DIR} ${probe_eigen})\n"
+        '  list(APPEND probe_flags "${probe_include_flag}${include_dir}")\n'
+        "endforeach()\n"
+        "add_test(NAME ContactSurfaceProbe COMMAND "
+        '"${CMAKE_CXX_COMPILER}" ${probe_flags} '
+        '"${PROJECT_SOURCE_DIR}/tests/cmake/ContactSurfaceProbe.cpp")\n',
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        ["cmake", "-S", str(root), "-B", str(root / "build")],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    return cmake, source
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (None, None, None),
+        ("c++14", "c++17", "only C++14 flags"),
+        ("${probe_flags}", "${probe_flags} -DPROBE_BYPASS", "only C++14 flags"),
+        (
+            "${probe_flags}",
+            "${probe_flags} -I${PROJECT_SOURCE_DIR}/extra",
+            "only C++14 flags",
+        ),
+        (" ${probe_eigen}", "", "only C++14 flags"),
+        ("${CMAKE_CXX_COMPILER}", "${CMAKE_COMMAND}", "configured compiler"),
+        (
+            "add_test(NAME ContactSurfaceProbe",
+            "add_test(NAME FakeContactSurfaceProbe",
+            "ContactSurfaceProbe is not registered",
+        ),
+    ),
+)
+def test_cmake_semantic_graph_contact_surface_probe_command(
+    tmp_path, old, new, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
+    if old is not None:
+        cmake.write_text(
+            cmake.read_text(encoding="utf-8").replace(old, new),
+            encoding="utf-8",
+        )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if expected is None:
+        assert errors == []
+    else:
+        assert any(expected in error for error in errors)
+
+
+def test_cmake_semantic_graph_contact_surface_probe_rejects_fake_source(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    _, source = _add_contact_surface_probe_fixture(tmp_path)
+    source.write_text("int main() { return 0; }\n", encoding="utf-8")
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "source does not match the contact-surface probe" in error for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("property_name", "value", "expected"),
+    (
+        ("DISABLED", "TRUE", "is disabled"),
+        ("WILL_FAIL", "TRUE", "result-neutralizing property"),
+        ("ENVIRONMENT", '"CPATH=extra"', "cannot modify its environment"),
+    ),
+)
+def test_cmake_semantic_graph_contact_surface_probe_preserves_execution_checks(
+    tmp_path, property_name, value, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + f"\nset_tests_properties(ContactSurfaceProbe PROPERTIES {property_name} {value})\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(expected in error and "ContactSurfaceProbe" in error for error in errors)
+
+
 @pytest.mark.parametrize("build_testing", (None, "ON", "OFF"))
 def test_repository_ctest_initialization_generates_the_full_dart_subtree(
     tmp_path, build_testing

@@ -256,6 +256,19 @@ Known gaps:
     with it active: 199 of 199 tests plus 4 performance tests.
   - gz-physics and gz-sim use only lower-bound version guards (6.10 and 6.13),
     which hold for 7.x. The reported engine name becomes `dartsim-7.0.0`.
+- **WP-7.0.6b Gazebo gates (2026-10-11, on main `e629dd3de`):**
+  - `ContactSurfaceProbe` compiles gz-physics's header-check source as C++14
+    with only DART and Eigen include directories; it fails when
+    `ContactSurface.hpp`'s include tree needs `std::optional`.
+  - `test_GazeboShim` mirrors gz-physics main
+    `4e2af8c733ac8396a9d2b4dcae1f7f6aa28c5668` and counts each override:
+    detector subclasses through the factory, collision-group and ray-cast
+    dispatch, `ContactSurfaceHandler` callbacks while stepping, and FCL defaults
+    after every factory creator is removed. Registering the base Bullet detector
+    makes it fail. Its Bullet and ODE cases run only when those components are
+    built.
+  - Still open: the machine-checked inventories of gz-used accessors and
+    mutation paths.
 - **Status:** in progress.
 
 ### WP-7.0.7 Scope artifacts
