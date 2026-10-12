@@ -95,7 +95,13 @@ get_target_property(
   INTERFACE_INCLUDE_DIRECTORIES
 )
 if(MSVC)
-  set(contact_surface_probe_flags /std:c++14 /Zs)
+  # Use the C++17 dialect and template parsing mode DART exports to MSVC users.
+  set(
+    contact_surface_probe_flags
+    /std:c++17
+    ${DART_MSVC_CXX_PARSING_OPTIONS}
+    /Zs
+  )
   set(contact_surface_include_flag /I)
 else()
   set(contact_surface_probe_flags -std=c++14 -fsyntax-only)

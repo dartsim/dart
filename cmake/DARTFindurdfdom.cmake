@@ -10,7 +10,29 @@ include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 
 # Discover without a version so config files for newer major releases work.
 find_package(urdfdom QUIET CONFIG)
-dart_check_package_version(urdfdom 3.0.1)
+if(urdfdom_FOUND AND NOT urdfdom_VERSION)
+  # urdfdom < 4 ships no CMake version file; use its own pkg-config metadata.
+  get_filename_component(_urdfdom_config_dir "${urdfdom_DIR}" REALPATH)
+  find_file(
+    _urdfdom_pc
+    urdfdom.pc
+    PATHS
+      "${_urdfdom_config_dir}/../../pkgconfig"
+      "${_urdfdom_config_dir}/../../../libdata/pkgconfig"
+    NO_DEFAULT_PATH
+    NO_CACHE
+  )
+  if(_urdfdom_pc)
+    file(STRINGS "${_urdfdom_pc}" _urdfdom_version_line REGEX "^Version:[ \t]*")
+    if(_urdfdom_version_line MATCHES "^Version:[ \t]*([^ \t]+)")
+      set(urdfdom_VERSION "${CMAKE_MATCH_1}")
+    endif()
+  endif()
+  unset(_urdfdom_pc)
+endif()
+# Upstream urdfdom 3.0.1 still reports 3.0.0 (Ubuntu 22.04 ships it); the two
+# differ only in MSVC debug library names, so 3.0.0 is the checkable floor.
+dart_check_package_version(urdfdom 3.0.0)
 
 if(urdfdom_FOUND AND MSVC)
   # Remove invalid path (i.e., /include) from urdfdom_INCLUDE_DIRS. This happens
