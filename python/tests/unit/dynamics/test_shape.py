@@ -129,6 +129,10 @@ def test_voxel_grid_rejects_unaddressable_points(resolution, axis, path, invalid
             "above": float(np.nextafter(np.float32(upper), np.float32(np.inf))),
         }[invalid]
         message = "lies outside the voxel grid"
+    elif np.isfinite(invalid) and path in ("single", "query"):
+        # Single points reach OctoMap as doubles, so 1e39 stays finite.
+        coordinate = invalid
+        message = "lies outside the voxel grid"
     else:
         coordinate = invalid
         message = "must be finite"
@@ -320,3 +324,16 @@ def test_voxel_grid_traces_across_the_grid_at_the_largest_resolution():
     shape.updateOccupancy(points=np.array([[inside, 0, 0]]), sensorOrigin=[-inside, 0, 0])
     assert shape.getOccupancy([inside, 0, 0]) > 0.5
     assert 0 < shape.getOccupancy([0, 0, 0]) < 0.5
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+def test_voxel_grid_validates_single_points_at_double_precision():
+    shape = dart.dynamics.VoxelGridShape(resolution=0.125)
+    # Addressable as a double, although it rounds to the bound as a float.
+    shape.updateOccupancy([4095.99999, 0, 0])
+    assert shape.getOccupancy([4095.99999, 0, 0]) > 0.5
+    # Outside as a double, although it rounds into range as a float.
+    with pytest.raises(ValueError, match="lies outside the voxel grid"):
+        shape.updateOccupancy([-4096.00001, 0, 0])

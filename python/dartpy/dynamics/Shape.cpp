@@ -82,13 +82,17 @@ namespace python {
 #if HAVE_OCTOMAP
 namespace {
 
+// Single points reach OctoMap as doubles, while rays and point clouds are
+// narrowed to float first; validate the coordinates OctoMap will use.
 void validateVoxelPoint(
     const dart::dynamics::VoxelGridShape* shape,
     const Eigen::Vector3d& point,
+    bool narrowed,
     const char* name = "point")
 {
-  const Eigen::Vector3f narrowed = point.cast<float>();
-  if (!narrowed.allFinite())
+  const Eigen::Vector3d used
+      = narrowed ? point.cast<float>().cast<double>() : point;
+  if (!used.allFinite())
     throw nb::value_error((std::string(name) + " must be finite").c_str());
 
   const auto octree = shape->getOctree();
@@ -96,7 +100,7 @@ void validateVoxelPoint(
   const double maxKey = std::ldexp(1.0, octree->getTreeDepth() - 1);
   for (int i = 0; i < 3; ++i) {
     // OctoMap casts to int before checking bounds; validate in double first.
-    const double key = std::floor(factor * static_cast<double>(narrowed[i]));
+    const double key = std::floor(factor * used[i]);
     if (!(key >= -maxKey && key < maxKey))
       throw nb::value_error(
           (std::string(name) + " lies outside the voxel grid").c_str());
@@ -341,7 +345,7 @@ void Shape(nb::module_& m)
           +[](dart::dynamics::VoxelGridShape* self,
               const Eigen::Vector3d& point,
               bool occupied) {
-            validateVoxelPoint(self, point);
+            validateVoxelPoint(self, point, false);
             self->updateOccupancy(point, occupied);
           },
           nb::arg("point"),
@@ -358,14 +362,14 @@ void Shape(nb::module_& m)
                   nb::c_contig,
                   nb::device::cpu> points,
               const Eigen::Vector3d& sensorOrigin) {
-            validateVoxelPoint(self, sensorOrigin, "sensorOrigin");
+            validateVoxelPoint(self, sensorOrigin, true, "sensorOrigin");
 
             const auto view = points.view<nb::ndim<2>>();
             octomap::Pointcloud cloud;
             cloud.reserve(points.shape(0));
             for (std::size_t i = 0; i < points.shape(0); ++i) {
               const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
-              validateVoxelPoint(self, point);
+              validateVoxelPoint(self, point, true);
               validateVoxelRay(self, sensorOrigin, point);
               cloud.push_back(point.x(), point.y(), point.z());
             }
@@ -378,7 +382,7 @@ void Shape(nb::module_& m)
           "getOccupancy",
           +[](const dart::dynamics::VoxelGridShape* self,
               const Eigen::Vector3d& point) {
-            validateVoxelPoint(self, point);
+            validateVoxelPoint(self, point, false);
             return self->getOccupancy(point);
           },
           nb::arg("point"))
