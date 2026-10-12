@@ -3,32 +3,33 @@
 ## Current state (2026-10-11)
 
 M0 is active. The GitHub milestone "DART 7.0.0" (#105, formerly "DART 6.21.0")
-tracks the release.
+tracks the release, and main's release target reads 7.0.0.
 
 | Pull request | Packet | State |
 | --- | --- | --- |
-| [#3697](https://github.com/dartsim/dart/pull/3697) | WP-7.0.2 and WP-7.0.1 | Draft: the project home plus the release-line and AI-policy rollover; lands first |
-| [#3698](https://github.com/dartsim/dart/pull/3698) | WP-7.0.3 | Draft; merges main after #3697 |
-| [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Draft; merges main after #3697 |
+| [#3697](https://github.com/dartsim/dart/pull/3697) | WP-7.0.1 and WP-7.0.2 | Merged |
+| [#3698](https://github.com/dartsim/dart/pull/3698) | WP-7.0.3 | Merged |
+| [#3717](https://github.com/dartsim/dart/pull/3717) | WP-7.0.3 backport to `release-6.20` | Draft; it also starts DART 6.20.1 |
+| [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Merged |
 
-M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11
-at `b63cc07f6`. Main now uses Filament and the interim camelCase `dartpy.gui`.
-M6b, sensor rendering and the Python render/viewer API, remains pending.
+M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696). Main uses
+Filament and the interim camelCase `dartpy.gui`. The Filament effort applies
+WP-7.0.4's finalization rule to the `python/dartpy/gui/` binding sites in its
+own follow-up PR. M6b, sensor rendering and the Python render/viewer API,
+remains pending.
 
 ## Next steps
 
-1. Land #3697 first. Until it merges, main's CI rejects pull requests with the
-   "DART 7.0.0" milestone, because main's release target still reads 6.21.0.
-2. Then merge main into #3698 and #3699 so their release-target checks pass.
-   #3696 is already merged; this rollover resolves its release-target mismatch.
-3. After WP-7.0.3 merges, backport it to `release-6.20` with
-   `dart-backport-pr`. WP-7.0.4 applies only to the nanobind bindings.
-4. Open the follow-up packets: WP-7.0.3b (SDF pose attributes), the ODE
-   callback exception fix, the analytical-IK clone crash, a tokenized
-   release-reference check (the regular-expression matcher misreads Markdown
-   inside tokens, unusual parameter separators and version suffixes, as its
-   6.x predecessor did), and a DART 7 wall-time dashboard (the DART 6
-   dashboard now tracks `release-6.*` only). Then start WP-7.0.5 to WP-7.0.8.
+1. Land #3717, then publish the in-progress packets WP-7.0.3b (SDF pose
+   attributes) and WP-7.0.5 (performance baseline and many-World rows).
+2. Open the follow-up packets: the ODE callback exception fix, the
+   analytical-IK clone crash, a tokenized release-reference check (the
+   regular-expression matcher misreads Markdown inside tokens, unusual
+   parameter separators and version suffixes, as its 6.x predecessor did), and
+   a DART 7 wall-time dashboard (the DART 6 dashboard now tracks `release-6.*`
+   only).
+3. Then WP-7.0.6 to WP-7.0.8, and pin `dart7-base` right before the first M1
+   PR.
 
 ## Risks and recovery
 

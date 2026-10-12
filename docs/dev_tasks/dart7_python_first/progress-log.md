@@ -23,3 +23,7 @@
   - The rollover was stacked on the project home and narrowed after review.
   - The milestone "DART 6.21.0" was retitled "DART 7.0.0", after archiving the
     earlier milestone of that name.
+  - #3697 (program home and release-line rollover), #3698 (XML value
+    parsing) and #3699 (GIL finalization) merged; the 6.20 backport of #3698
+    opened as #3717, which also starts DART 6.20.1.
+  - WP-7.0.3b and WP-7.0.5 started.
