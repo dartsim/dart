@@ -4468,8 +4468,52 @@ endif()
     assert errors == []
 
 
+@pytest.mark.parametrize(
+    ("system_imgui", "scope", "accepted"),
+    (
+        ("ON", "TARGET dart-gui-app", True),
+        ("OFF", "TARGET dart-gui-app", False),
+        ("ON", "FALSE", False),
+    ),
+)
+def test_cmake_semantic_graph_probe_gui_app_inactive_policy(
+    tmp_path, system_imgui, scope, accepted
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_subdirectory(tests)",
+            f'set(DART_USE_SYSTEM_IMGUI {system_imgui} CACHE BOOL "" FORCE)\n'
+            "add_library(dart-gui INTERFACE)\nadd_subdirectory(tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    integration = tmp_path / "tests/integration/CMakeLists.txt"
+    integration.write_text(
+        integration.read_text(encoding="utf-8")
+        + f'\nif({scope})\n  dart_add_test("integration" test_GuiApp)\nendif()\n',
+        encoding="utf-8",
+    )
+    (integration.parent / "test_GuiApp.cpp").write_text(
+        "int main(void) { return 0; }\n", encoding="utf-8"
+    )
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    if accepted:
+        assert errors == []
+    else:
+        assert any(
+            "neither configured nor explicitly approved as inactive" in error
+            for error in errors
+        )
+
+
 def _add_inactive_gui_sources(root: Path) -> Path:
     names = (
+        "GuiAppMemoryDiagnostics",
+        "GuiAppMemoryDiagnosticsModel",
         "GuiDescriptors",
         "GuiInteractions",
         "GuiViewer",

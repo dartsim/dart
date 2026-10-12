@@ -583,10 +583,10 @@ the demo executable.
 
 When compiled in, the consolidated `dart-demos` Memory tab is a diagnostic lead
 generator, not a heap or cache profiler. Its shared
-`examples/demos/memory_diagnostics_model.*` owns opt-in cadence, process probes,
+`dart/gui/app/memory_diagnostics_model.*` owns opt-in cadence, process probes,
 bounded history, reset, and compatible snapshot comparisons. The branch-local
-`memory_diagnostics.*` collector/view owns DART World traversal and raw-ImGui
-presentation inside `DemoHost`.
+`dart/gui/app/memory_diagnostics.*` collector/view owns DART World traversal and raw-ImGui
+presentation inside `dart::gui::app::App`.
 
 Within a diagnostics-enabled build, keep the collection-disabled path before
 every OS probe, World walk, address collection, history mutation, and

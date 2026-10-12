@@ -1,0 +1,302 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+// runCommandLine(): the demo app's command-line options and dispatch. See
+// examples/demos/README.md for the host architecture.
+
+#include "App.hpp"
+#include "GuiOptions.hpp"
+
+#include <charconv>
+#include <iostream>
+#include <optional>
+#include <string>
+
+#include <cstdlib>
+#include <cstring>
+
+namespace {
+
+constexpr int kDefaultWindowWidth = 1600;
+constexpr int kDefaultWindowHeight = 1000;
+
+//==============================================================================
+enum class ParseResult
+{
+  Run,
+  Help,
+  Error
+};
+
+//==============================================================================
+struct Options
+{
+  std::optional<double> guiScale;
+  bool listScenes = false;
+  bool cycleScenes = false;
+  int cycleFrames = 30;
+  bool headless = false;
+  std::string shotPath = "dart-demos.png";
+  int steps = 150;
+  std::string sceneId;
+  std::optional<int> width;
+  std::optional<int> height;
+  std::string collisionDetectorName;
+  std::size_t simulationThreads = 1u;
+
+  // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
+  // headless --shot capture exercise UI state that normally requires
+  // interactive input (a body selected in the Inspector; the Profiler
+  // actively recording).
+  std::string debugSelectBody;
+  bool debugRecordProfile = false;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  int debugScrollMemoryPanelTicks = 0;
+#endif
+};
+
+//==============================================================================
+void printUsage(const char* prog)
+{
+  std::cout
+      << "Usage: " << prog << " [options]\n"
+      << "  --list-scenes   Print the demo catalog grouped by category and "
+         "exit.\n"
+      << "  --scene <id>    Select the initial demo (default: first in the "
+         "catalog).\n"
+      << "  --cycle-scenes  Advance through every demo without opening a "
+         "window; smoke test. With --headless, also render each step\n"
+         "                  off-screen (--width/--height, default 320x240).\n"
+      << "  --frames <n>    Steps per demo with --cycle-scenes (default "
+         "30).\n"
+      << "  --headless      Render one frame off-screen to a PNG and exit "
+         "(no window).\n"
+      << "  --shot <path>   Output PNG path for --headless (default "
+         "dart-demos.png).\n"
+      << "  --steps <n>     Sim steps to settle before the --headless shot "
+         "(default 150).\n"
+      << "  --width <w> --height <h>  Render/window size (default "
+      << kDefaultWindowWidth << "x" << kDefaultWindowHeight
+      << "; interactive defaults scale and fit the monitor).\n"
+      << "  --gui-scale <f> Scale the ImGui panels and initial window size "
+         "(default: automatic DPI;\n"
+         "                  headless default: 1.0; also --gui-scale=<f>; "
+         "DART_GUI_SCALE seeds\n"
+         "                  the same manual scale; supported range 0.5-4, "
+         "out-of-range values are "
+         "clamped).\n"
+      << "  --collision-detector <name>  Initial collision backend "
+         "(e.g. fcl, dart, bullet, ode when available).\n"
+      << "  --threads <n>   Initial simulation worker threads (0 selects "
+         "hardware concurrency).\n"
+      << "  -h, --help      Show this help.\n";
+}
+
+//==============================================================================
+bool parseWindowExtent(const char* value, std::optional<int>& extent)
+{
+  int parsed = 0;
+  const auto* end = value + std::strlen(value);
+  const auto result = std::from_chars(value, end, parsed);
+  if (result.ec != std::errc() || result.ptr != end || parsed <= 0) {
+    std::cerr << "Invalid window dimension '" << value
+              << "'. Expected a positive integer.\n";
+    return false;
+  }
+  extent = parsed;
+  return true;
+}
+
+//==============================================================================
+std::size_t parseThreadCount(const char* value, std::size_t fallback)
+{
+  if (value == nullptr || value[0] == '\0')
+    return fallback;
+
+  char* end = nullptr;
+  const auto parsed = std::strtoull(value, &end, 10);
+  if (end == value)
+    return fallback;
+
+  return static_cast<std::size_t>(parsed);
+}
+
+//==============================================================================
+/// Parses command-line options.
+ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
+{
+  const int argc = static_cast<int>(argv.size());
+  if (const char* detectorEnv = std::getenv("COLLISION_DETECTOR"))
+    opt.collisionDetectorName = detectorEnv;
+  if (const char* threadsEnv = std::getenv("THREADS"))
+    opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
+  // Use the shared GUI scale environment override; the
+  // --gui-scale flag below overrides it.
+  if (const char* guiScaleEnv = std::getenv("DART_GUI_SCALE");
+      guiScaleEnv != nullptr && guiScaleEnv[0] != '\0') {
+    opt.guiScale = dart_examples::parseGuiScale(guiScaleEnv, 1.0, &std::cerr);
+  }
+
+  auto needsValue = [&](int i) {
+    if (i + 1 >= argc) {
+      std::cerr << "Missing value for " << argv[i] << "\n";
+      return ParseResult::Error;
+    }
+    return ParseResult::Run;
+  };
+
+  for (int i = 1; i < argc; ++i) {
+    const char* a = argv[i].c_str();
+    if (std::strcmp(a, "--list-scenes") == 0) {
+      opt.listScenes = true;
+    } else if (std::strcmp(a, "--scene") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.sceneId = argv[++i];
+    } else if (std::strcmp(a, "--cycle-scenes") == 0) {
+      opt.cycleScenes = true;
+    } else if (std::strcmp(a, "--frames") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.cycleFrames = std::stoi(argv[++i]);
+    } else if (std::strcmp(a, "--headless") == 0) {
+      opt.headless = true;
+    } else if (std::strcmp(a, "--shot") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.shotPath = argv[++i];
+    } else if (std::strcmp(a, "--steps") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.steps = std::stoi(argv[++i]);
+    } else if (std::strcmp(a, "--width") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      if (!parseWindowExtent(argv[++i].c_str(), opt.width))
+        return ParseResult::Error;
+    } else if (std::strcmp(a, "--height") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      if (!parseWindowExtent(argv[++i].c_str(), opt.height))
+        return ParseResult::Error;
+    } else if (std::strcmp(a, "--gui-scale") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.guiScale = dart_examples::parseGuiScale(
+          argv[++i].c_str(), opt.guiScale.value_or(1.0), &std::cerr);
+    } else if (std::strncmp(a, "--gui-scale=", 12) == 0) {
+      opt.guiScale = dart_examples::parseGuiScale(
+          a + 12, opt.guiScale.value_or(1.0), &std::cerr);
+    } else if (std::strcmp(a, "--collision-detector") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.collisionDetectorName = argv[++i];
+    } else if (std::strcmp(a, "--threads") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.simulationThreads
+          = parseThreadCount(argv[++i].c_str(), opt.simulationThreads);
+    } else if (std::strcmp(a, "--debug-select-body") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.debugSelectBody = argv[++i];
+    } else if (std::strcmp(a, "--debug-record-profile") == 0) {
+      opt.debugRecordProfile = true;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+    } else if (std::strcmp(a, "--debug-scroll-memory-panel") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.debugScrollMemoryPanelTicks = std::stoi(argv[++i]);
+#endif
+    } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
+      printUsage(argv[0].c_str());
+      return ParseResult::Help;
+    } else {
+      std::cerr << "Unknown option: " << a << "\n";
+      printUsage(argv[0].c_str());
+      return ParseResult::Error;
+    }
+  }
+  return ParseResult::Run;
+}
+
+} // namespace
+
+//==============================================================================
+int dart::gui::app::runCommandLine(
+    std::vector<Scene> scenes, const std::vector<std::string>& argv)
+{
+  Options opt;
+  const ParseResult parseResult = parseArgs(argv, opt);
+  if (parseResult == ParseResult::Help)
+    return 0;
+  if (parseResult == ParseResult::Error)
+    return 1;
+
+  dart::gui::app::App host(
+      std::move(scenes),
+      opt.headless ? std::optional<double>(opt.guiScale.value_or(1.0))
+                   : opt.guiScale,
+      opt.collisionDetectorName,
+      opt.simulationThreads);
+  if (!opt.sceneId.empty())
+    host.setInitialScene(opt.sceneId);
+  if (!opt.debugSelectBody.empty())
+    host.setDebugSelectBodyName(opt.debugSelectBody);
+  if (opt.debugRecordProfile)
+    host.setDebugRecordProfile(true);
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  if (opt.debugScrollMemoryPanelTicks > 0)
+    host.setDebugScrollMemoryPanelTicks(opt.debugScrollMemoryPanelTicks);
+#endif
+
+  if (opt.listScenes)
+    return host.listScenes();
+
+  if (opt.cycleScenes)
+    return host.cycleScenes(
+        opt.cycleFrames,
+        opt.headless,
+        opt.width.value_or(320),
+        opt.height.value_or(240));
+
+  if (opt.headless) {
+    return host.runHeadlessShot(
+        opt.shotPath,
+        opt.steps,
+        opt.sceneId,
+        opt.width.value_or(kDefaultWindowWidth),
+        opt.height.value_or(kDefaultWindowHeight));
+  }
+
+  return host.run(opt.width, opt.height);
+}

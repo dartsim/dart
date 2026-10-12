@@ -40,6 +40,8 @@ def main() -> None:
     original.rename(relocated)
     if (relocated / "include/dart/gui/detail").exists():
         raise RuntimeError("Private GUI implementation headers were installed")
+    if (relocated / "include/dart/gui/app").exists():
+        raise RuntimeError("Private GUI app headers were installed")
     cache = (build_dir / "CMakeCache.txt").read_text()
     if "DART_USE_SYSTEM_IMGUI:BOOL=OFF" in cache:
         # Emulate a prefix that also holds another ImGui: the consumer, which

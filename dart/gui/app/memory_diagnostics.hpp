@@ -8,8 +8,8 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_HPP_
-#define DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_HPP_
+#ifndef DART_GUI_APP_MEMORY_DIAGNOSTICS_HPP_
+#define DART_GUI_APP_MEMORY_DIAGNOSTICS_HPP_
 
 #include "memory_diagnostics_model.hpp"
 
@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 
 /// Collects one DART 6 diagnostic snapshot without retaining graph pointers.
 DiagnosticSnapshot collectMemoryDiagnostics(
@@ -29,6 +29,6 @@ DiagnosticSnapshot collectMemoryDiagnostics(
 void renderMemoryDiagnostics(
     DiagnosticSession& session, double monotonicNowSeconds, double guiScale);
 
-} // namespace dart::examples::demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_HPP_
+#endif // DART_GUI_APP_MEMORY_DIAGNOSTICS_HPP_

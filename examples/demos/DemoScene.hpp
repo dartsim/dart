@@ -35,161 +35,16 @@
 
 #include "GuiBackend.hpp"
 
-#include <dart/dart.hpp>
+#include <dart/gui/app/Scene.hpp>
 
-#include <functional>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
+// The scene sources predate dart::gui::app; these aliases keep them unchanged.
 namespace dart_demos {
-
-class DemoHost;
-
-//==============================================================================
-/// Optional model assets have not been prefetched; scene cycling may skip them.
-class AssetsNotPrefetched : public std::runtime_error
-{
-public:
-  using std::runtime_error::runtime_error;
-};
-
-//==============================================================================
-/// A single keyboard shortcut a scene wants to expose. The host wires this up
-/// both as a key handler and as a clickable panel button, so every demo stays
-/// fully usable without a keyboard.
-struct KeyAction
-{
-  /// ASCII key code, or a dart::gui::GUIEventAdapter::KeySymbol value.
-  int key = 0;
-
-  /// Short label shown next to the key in the panel, e.g. "Shoot sphere".
-  std::string label;
-
-  /// Invoked on key-down (or panel button click). The host wraps every call
-  /// in a try/catch and disables the action after its first failure, so a
-  /// broken callback can never crash the app.
-  std::function<void()> callback;
-};
-
-//==============================================================================
-/// Camera pose applied when a scene becomes active.
-struct CameraHome
-{
-  GuiVector3 eye;
-  GuiVector3 center;
-  GuiVector3 up;
-};
-
-//==============================================================================
-/// Context handed to DemoSceneSetup::onActivate so a scene can register extra
-/// viewer-level resources (attachments, custom event handlers, gizmo-typed
-/// drag-and-drop, ...). Everything registered through this context is torn
-/// down automatically the next time the host switches away from the scene.
-class DemoHostContext
-{
-public:
-  explicit DemoHostContext(DemoHost& host);
-
-  /// The viewer the scene is being installed into.
-  GuiViewer* viewer() const;
-
-  /// The world node that was just created for this scene.
-  demo_gui::WorldNode* worldNode() const;
-
-  /// Registers an arbitrary teardown action to run when this scene is torn
-  /// down (on switch, rebuild/reset, or app shutdown).
-  void addTeardown(std::function<void()> teardown);
-
-  /// Adds a ViewerAttachment and arranges for it to be removed automatically
-  /// on teardown.
-  void addOwnedAttachment(GuiPtr<demo_gui::ViewerAttachment> attachment);
-
-  /// Adds an event handler and arranges for it to be removed automatically on
-  /// teardown.
-  void addEventHandler(GuiPtr<demo_events::GUIEventHandler> handler);
-
-  /// Appends a line to the host's diagnostics log console.
-  void log(const std::string& message) const;
-
-private:
-  DemoHost& mHost;
-};
-
-//==============================================================================
-/// Everything a scene factory builds. The host owns and drives all of this;
-/// the scene only supplies data and callbacks.
-struct DemoSceneSetup
-{
-  /// The simulated world. Required; a null world is treated as a factory
-  /// failure.
-  dart::simulation::WorldPtr world;
-
-  /// Called immediately before each simulation step.
-  std::function<void()> preStep;
-
-  /// Called immediately after each simulation step.
-  std::function<void()> postStep;
-
-  /// Called once per rendered frame, before the (possible) simulation
-  /// step(s) -- unlike preStep/postStep, this runs even while the
-  /// simulation is paused (it is wired to WorldNode::customPreRefresh(),
-  /// which fires unconditionally at the top of every refresh()). Use this
-  /// for visuals that should keep updating while paused (e.g. recoloring by
-  /// live state, or an aim-line preview); prefer preStep/postStep for
-  /// anything that must only run once per physics step. Optional.
-  std::function<void()> preRefresh;
-
-  /// Draws the scene-specific controls the host embeds in its right-hand
-  /// panel. Optional.
-  std::function<void()> renderPanel;
-
-  /// Keyboard shortcuts, mirrored as panel buttons.
-  std::vector<KeyAction> keyActions;
-
-  /// Camera pose to apply when this scene becomes active. Optional.
-  std::optional<CameraHome> cameraHome;
-
-  /// Whether the host should enable shadows for this scene's world.
-  bool enableShadows = true;
-
-  /// Frames to enable drag-and-drop on (SimpleFrameDnD: unconstrained
-  /// free-drag). This is the right tool for a plain SimpleFrame that only needs
-  /// a free-drag. For an InteractiveFrame whose per-axis/plane gizmo tools
-  /// should be draggable, call Viewer::enableDragAndDrop(InteractiveFrame*)
-  /// (InteractiveFrameDnD) from onActivate and release it via
-  /// ctx.addTeardown(disableDragAndDrop) before the world is destroyed.
-  std::vector<dart::dynamics::SimpleFramePtr> dragFrames;
-
-  /// Optional hook for anything else a scene needs to register (extra
-  /// attachments, custom event handlers, ...).
-  std::function<void(DemoHostContext&)> onActivate;
-};
-
-//==============================================================================
-/// One entry in the demo catalog. `factory` is only invoked lazily -- the
-/// first time the demo is selected (and again on Rebuild/Reset) -- and may
-/// throw to signal a startup failure; the host will surface the reason and
-/// keep whatever was running before.
-struct DemoScene
-{
-  /// Stable, snake_case identifier used by --scene and --cycle-scenes.
-  std::string id;
-
-  /// Human-readable title shown in the navigator and status messages.
-  std::string title;
-
-  /// Category used to group rows in the navigator (first-appearance order).
-  std::string category;
-
-  /// One-line summary shown as a row tooltip.
-  std::string summary;
-
-  /// Builds (or rebuilds) the scene. May throw.
-  std::function<DemoSceneSetup()> factory;
-};
-
+using DemoScene = dart::gui::app::Scene;
+using DemoSceneSetup = dart::gui::app::SceneSetup;
+using DemoHostContext = dart::gui::app::SceneContext;
+using dart::gui::app::AssetsNotPrefetched;
+using dart::gui::app::CameraHome;
+using dart::gui::app::KeyAction;
 } // namespace dart_demos
 
 #endif // DART_EXAMPLES_DEMOS_DEMOSCENE_HPP_

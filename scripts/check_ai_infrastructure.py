@@ -92,6 +92,12 @@ SCENARIO_KEYS = {
 SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 ROUTE_KEYS = {"kind", "name", "path"}
 APPROVED_INACTIVE_CPP_TESTS = {
+    "tests/integration/test_GuiApp.cpp": {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": ("if:TARGET dart-gui-app",),
+        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
+    },
     "tests/integration/test_ModelResourceRetriever.cpp": {
         "owner": "tests/integration/CMakeLists.txt",
         "command": "dart_add_test",
@@ -145,6 +151,8 @@ APPROVED_INACTIVE_CPP_TESTS = {
             "cache": {"DART_BUILD_GUI": "OFF"},
         }
         for name in (
+            "GuiAppMemoryDiagnostics",
+            "GuiAppMemoryDiagnosticsModel",
             "GuiDescriptors",
             "GuiInteractions",
             "GuiViewer",
@@ -3810,8 +3818,6 @@ def check_cmake_test_graph(
                 and name
                 in {
                     "dart-demos",
-                    "UNIT_examples_demos_GuiScaling",
-                    "UNIT_examples_demos_MemoryDiagnostics",
                     "UNIT_examples_demos_SceneCycle",
                 }
             )

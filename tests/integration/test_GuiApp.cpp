@@ -2,7 +2,10 @@
  * All rights reserved. See LICENSE for the BSD-style license.
  */
 
-#include "Theme.hpp"
+#include "GuiOptions.hpp"
+
+#include <dart/gui/app/App.hpp>
+#include <dart/gui/app/Theme.hpp>
 
 #include <gtest/gtest.h>
 
@@ -12,7 +15,7 @@
 
 #include <cmath>
 
-namespace dart_demos {
+namespace dart::gui::app {
 namespace {
 
 class GuiScaleThemeTest : public ::testing::Test
@@ -123,14 +126,77 @@ TEST_F(GuiScaleThemeTest, RetinaFramebufferKeepsLogicalMetrics)
   endFrame();
 }
 
+TEST(SceneCycle, MissingAssetsAreSkippedAndPreviousSceneIsPreserved)
+{
+  Scene missing;
+  missing.id = "missing";
+  missing.factory = []() -> SceneSetup {
+    throw AssetsNotPrefetched("Prefetch test assets");
+  };
+  Scene valid;
+  valid.id = "valid";
+  int activations = 0;
+  int teardowns = 0;
+  valid.factory = [&] {
+    SceneSetup setup;
+    setup.world = dart::simulation::World::create();
+    setup.onActivate = [&](SceneContext& context) {
+      ++activations;
+      context.addTeardown([&] { ++teardowns; });
+    };
+    return setup;
+  };
+  {
+    // The first miss installs a fallback; the second preserves the valid scene.
+    App host({missing, valid}, std::nullopt);
+    testing::internal::CaptureStdout();
+    EXPECT_EQ(host.cycleScenes(0), 0);
+    const auto output = testing::internal::GetCapturedStdout();
+    EXPECT_NE(
+        output.find(
+            "[cycle-scenes] demo 'missing' skipped: Prefetch test assets"),
+        std::string::npos);
+    EXPECT_NE(output.find("2 skipped. OK"), std::string::npos);
+    EXPECT_EQ(host.getActiveWorldNodeCount(), 1u);
+    EXPECT_EQ(activations, 2);
+    EXPECT_EQ(teardowns, 1);
+  }
+  EXPECT_EQ(teardowns, 2);
+}
+
+TEST(SceneCycle, OtherFactoryFailuresStillFail)
+{
+  Scene missing;
+  missing.id = "missing";
+  missing.factory = []() -> SceneSetup {
+    throw AssetsNotPrefetched("Prefetch test assets");
+  };
+  for (int failure = 0; failure < 3; ++failure) {
+    Scene broken;
+    broken.id = "broken";
+    broken.factory = [failure]() -> SceneSetup {
+      if (failure == 0)
+        throw std::runtime_error("Corrupt cached model");
+      if (failure == 1)
+        throw 42;
+      return {};
+    };
+    App host({missing, broken}, std::nullopt);
+    EXPECT_EQ(host.cycleScenes(0), 1);
+    EXPECT_EQ(host.getActiveWorldNodeCount(), 1u);
+  }
+}
+
 TEST(GuiScaleOptions, InvalidAndOutOfRangeOverridesStayUsable)
 {
   for (const auto* value : {"", "0", "-1", "nan", "inf", "1.5trailing"})
-    EXPECT_EQ(parseGuiScale(value, 1.25, nullptr), 1.25);
-  EXPECT_EQ(parseGuiScale("1.5", 1.0, nullptr), 1.5);
-  EXPECT_EQ(parseGuiScale("0.1", 1.0, nullptr), 0.5);
-  EXPECT_EQ(parseGuiScale("100", 1.0, nullptr), 4.0);
-  EXPECT_EQ(sanitizeGuiScale(std::numeric_limits<double>::quiet_NaN()), 1.0);
+    EXPECT_EQ(dart_examples::parseGuiScale(value, 1.25, nullptr), 1.25);
+  EXPECT_EQ(dart_examples::parseGuiScale("1.5", 1.0, nullptr), 1.5);
+  EXPECT_EQ(dart_examples::parseGuiScale("0.1", 1.0, nullptr), 0.5);
+  EXPECT_EQ(dart_examples::parseGuiScale("100", 1.0, nullptr), 4.0);
+  EXPECT_EQ(
+      dart_examples::sanitizeGuiScale(std::numeric_limits<double>::quiet_NaN()),
+      1.0);
   EXPECT_EQ(dart_examples::scaleWindowExtent(640, 1.5), 960);
 }
 
@@ -150,4 +216,4 @@ TEST(GuiScaleOptions, EqualsAndSeparateArgumentsSelectManualScaling)
 }
 
 } // namespace
-} // namespace dart_demos
+} // namespace dart::gui::app

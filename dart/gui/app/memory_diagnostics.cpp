@@ -76,7 +76,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -1015,9 +1015,9 @@ DiagnosticSnapshot collectMemoryDiagnostics(
   return snapshot;
 }
 
-} // namespace dart::examples::demos
+} // namespace dart::gui::app
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -2305,4 +2305,4 @@ void renderMemoryDiagnostics(
   }
 }
 
-} // namespace dart::examples::demos
+} // namespace dart::gui::app
