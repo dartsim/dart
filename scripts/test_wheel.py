@@ -82,6 +82,16 @@ def test_wheel(wheel_path: Path) -> None:
         )
         run_command([str(python_path), "-m", "pip", "install", str(wheel_path)])
         run_command([str(python_path), "-c", SMOKE_TEST])
+        run_command(
+            [
+                str(python_path),
+                "-I",
+                str(
+                    Path(__file__).resolve().parents[1]
+                    / "python/tests/unit/test_shutdown.py"
+                ),
+            ]
+        )
 
 
 def _expand_wheels(patterns: list[str]) -> list[Path]:

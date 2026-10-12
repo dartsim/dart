@@ -42,12 +42,16 @@ macOS and Windows wheel packaging is Pixi-managed. `wheel-build-core`,
 implement the pipeline, and the `py312-wheel`..`py314-wheel` environments
 expose the corresponding tasks.
 
-The DART 6.20.1 release matrix contains 12 wheels: Python 3.12, 3.13, and 3.14
-on Linux x86_64 and aarch64, macOS arm64, and Windows x86_64. Source builds
-continue to support Python 3.10 and newer.
+The DART 6.20.1 release matrix contains 14 wheels: Python 3.12, 3.13, and 3.14
+on Linux x86_64 and aarch64, macOS arm64, and Windows x64, plus cp315 wheels
+for Linux x86_64 and aarch64. Source builds support Python 3.10 and newer.
 
-Linux release wheels use `python3 scripts/wheel_linux.py cp314` (also
-`cp312`, `cp313`) on native x86_64 or aarch64 hosts with Docker.
+macOS arm64 and Windows x64 cp315 wheels follow once conda-forge's bullet-cpp
+has Python 3.15 builds
+([conda-forge/bullet-feedstock#70](https://github.com/conda-forge/bullet-feedstock/pull/70)).
+
+Linux release wheels use `python3 scripts/wheel_linux.py cp315` (also
+`cp312`, `cp313`, `cp314`) on native x86_64 or aarch64 hosts with Docker.
 The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
 dependencies and dartpy with the manylinux toolchain, requires
 `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
@@ -76,3 +80,11 @@ Use the candidate branch for the workflow definition and the exact candidate
 SHA for the checkout. `ref=main` enables the release-only Python rows without
 requesting publication. Inspect both architectures' repaired tags and fresh
 container smoke tests before release.
+
+## GIL ownership
+
+Python analytical IK explicitly acquires the GIL for callbacks, cloning, and
+callable destruction. Optimizer and raycast `std::function` callbacks use
+pybind11's callable ownership; virtual callbacks use its trampoline GIL handling.
+`python/tests/unit/test_shutdown.py` exercises these paths during interpreter
+finalization and runs from `scripts/test_wheel.py` for every wheel version.

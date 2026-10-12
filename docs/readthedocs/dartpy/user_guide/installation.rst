@@ -28,8 +28,8 @@ matching version tags.
    * - Platform
      - CPython wheels built by this branch
    * - Linux x86_64 and aarch64
-     - 3.13 on regular wheel runs; 3.12, 3.13, and 3.14 on nightly, release
-       branch, and tag builds
+     - 3.13 on regular wheel runs; 3.12, 3.13, 3.14, and 3.15 on nightly,
+       release branch, and tag builds
    * - macOS arm64
      - 3.13 on regular wheel runs; 3.12, 3.13, and 3.14 on nightly, release
        branch, and tag builds
@@ -39,6 +39,10 @@ matching version tags.
    * - Other Python versions or platforms
      - Build from source with Python 3.10 or newer, or use conda-forge/Pixi when
        packages are available there
+
+cp315 wheels cover Linux x86_64 and aarch64. macOS arm64 and Windows x64 cp315
+wheels follow once conda-forge's bullet-cpp has Python 3.15 builds
+(`conda-forge/bullet-feedstock#70 <https://github.com/conda-forge/bullet-feedstock/pull/70>`_).
 
 Starting with DART 6.20.1, Python 3.10 and 3.11 no longer receive new wheels;
 ``pip`` on those versions continues to install dartpy 6.20.0.

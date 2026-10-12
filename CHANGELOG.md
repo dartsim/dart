@@ -47,6 +47,10 @@
     6.20.0. Source builds still support Python 3.10 and newer:
     [#3704](https://github.com/dartsim/dart/pull/3704)
 
+  * dartpy publishes Python 3.15 wheels for Linux x86_64 and aarch64. macOS
+    arm64 and Windows x64 follow once conda-forge's bullet-cpp builds for
+    Python 3.15. [#3730](https://github.com/dartsim/dart/pull/3730)
+
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
