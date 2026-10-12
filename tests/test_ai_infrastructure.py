@@ -6946,3 +6946,109 @@ def test_pytest_concurrent_node_rejects_partition_violations(
     result = _run_concurrent_pytest(tmp_path, *arguments, prefix_sibling=prefix_sibling)
     assert result.returncode != 0
     assert not (tmp_path / "calls").exists()
+
+
+def _run_pytest_runner(tmp_path, *arguments, **options):
+    return subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            str(ROOT / "scripts/run_pytest.py"),
+            "--rootdir",
+            str(tmp_path),
+            *arguments,
+        ],
+        cwd=tmp_path,
+        **options,
+    )
+
+
+def test_pytest_runner_keeps_prefix_deselection_without_concurrent_node(tmp_path):
+    (tmp_path / "test_dropped.py").write_text(
+        "def test_dropped():\n    raise AssertionError\n", encoding="utf-8"
+    )
+    (tmp_path / "test_kept.py").write_text(
+        "def test_kept():\n    pass\n", encoding="utf-8"
+    )
+    result = _run_pytest_runner(
+        tmp_path,
+        str(tmp_path),
+        "--deselect",
+        "test_dropped.py",
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "1 passed, 1 deselected" in result.stdout
+
+
+def test_pytest_concurrent_node_replays_non_ascii_child_output(tmp_path):
+    source = tmp_path / "test_unicode.py"
+    source.write_text(
+        "def test_slow_\u00e9():\n    pass\ndef test_fast():\n    pass\n",
+        encoding="utf-8",
+    )
+    result = _run_pytest_runner(
+        tmp_path,
+        "--concurrent-node",
+        "test_unicode.py::test_slow_\u00e9",
+        str(source),
+        "-v",
+        capture_output=True,
+        timeout=30,
+    )
+    output = result.stdout.decode("utf-8", errors="replace")
+    assert result.returncode == 0, output + result.stderr.decode(errors="replace")
+    assert "test_slow_\u00e9 PASSED" in output
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="sends POSIX SIGINT")
+def test_pytest_concurrent_node_stops_child_when_interrupted(tmp_path):
+    import signal
+    import time
+
+    source = tmp_path / "test_interrupt.py"
+    source.write_text(
+        "import os\nimport time\nfrom pathlib import Path\n"
+        "ROOT = Path(__file__).parent\n"
+        "def test_slow():\n"
+        "    (ROOT / 'child.pid').write_text(str(os.getpid()))\n"
+        "    time.sleep(60)\n"
+        "def test_fast():\n"
+        "    deadline = time.monotonic() + 20\n"
+        "    while not (ROOT / 'child.pid').exists() and time.monotonic() < deadline:\n"
+        "        time.sleep(0.01)\n"
+        "    (ROOT / 'ready').touch()\n"
+        "    time.sleep(60)\n",
+        encoding="utf-8",
+    )
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-I",
+            str(ROOT / "scripts/run_pytest.py"),
+            "--rootdir",
+            str(tmp_path),
+            "--concurrent-node",
+            "test_interrupt.py::test_slow",
+            str(source),
+        ],
+        cwd=tmp_path,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    try:
+        deadline = time.monotonic() + 30
+        while not (tmp_path / "ready").exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert (tmp_path / "ready").exists(), "the runs did not start"
+        process.send_signal(signal.SIGINT)
+        process.communicate(timeout=20)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+    assert process.returncode != 0
+    with pytest.raises(ProcessLookupError):
+        os.kill(int((tmp_path / "child.pid").read_text()), 0)

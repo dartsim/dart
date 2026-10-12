@@ -64,13 +64,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
             selected = [item.nodeid for item in items]
             if options.concurrent_node and deselected != [options.concurrent_node]:
                 self.error = "concurrent selection must deselect only its child node"
-            elif deselected and (
+            elif options.concurrent_node and (
                 len(original) != len(set(original))
-                or any(original.count(node) != 1 for node in deselected)
+                or original.count(options.concurrent_node) != 1
             ):
                 self.error = "deselection must name each collected node exactly once"
-            elif deselected and selected != [
-                node for node in original if node not in deselected
+            elif options.concurrent_node and selected != [
+                node for node in original if node != options.concurrent_node
             ]:
                 self.error = "selection is not the exact deselection complement"
             elif options.expect_node and (
@@ -88,6 +88,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     [
                         sys.executable,
                         "-I",
+                        "-X",
+                        "utf8",
                         str(Path(__file__).resolve()),
                         *[
                             argument
@@ -123,29 +125,46 @@ def main(arguments: Sequence[str] | None = None) -> int:
     selection_guard = _SelectionGuard()
     with (
         tempfile.TemporaryDirectory(prefix="dart-pytest-") as child_directory,
-        tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as child_output,
+        tempfile.TemporaryFile() as child_output,
     ):
-        result = pytest.main(
-            [
-                "-c",
-                str(ROOT / "pyproject.toml"),
-                "--noconftest",
-                *pytest_arguments,
-            ],
-            plugins=[guard, selection_guard],
-        )
-        if result == pytest.ExitCode.OK and guard.executed == 0:
-            print(
-                "ERROR: pytest completed without executing a test body", file=sys.stderr
+        try:
+            result = pytest.main(
+                [
+                    "-c",
+                    str(ROOT / "pyproject.toml"),
+                    "--noconftest",
+                    *pytest_arguments,
+                ],
+                plugins=[guard, selection_guard],
             )
-            result = pytest.ExitCode.TESTS_FAILED
-        child_result = 0
-        if selection_guard.child:
-            child_result = selection_guard.child.wait()
-            child_output.seek(0)
-            print(f"\n=== Concurrent pytest: {options.concurrent_node} ===", flush=True)
-            print(child_output.read(), end="", flush=True)
-        return int(result) or child_result
+            if result == pytest.ExitCode.OK and guard.executed == 0:
+                print(
+                    "ERROR: pytest completed without executing a test body",
+                    file=sys.stderr,
+                )
+                result = pytest.ExitCode.TESTS_FAILED
+            child = selection_guard.child
+            child_result = 0
+            if child:
+                if result == pytest.ExitCode.INTERRUPTED:
+                    child.terminate()
+                child_result = child.wait()
+                child_output.seek(0)
+                print(
+                    f"\n=== Concurrent pytest: {options.concurrent_node} ===",
+                    flush=True,
+                )
+                print(
+                    child_output.read().decode("utf-8", errors="replace"),
+                    end="",
+                    flush=True,
+                )
+            return int(result) or child_result
+        finally:
+            # A second interrupt can escape wait(); never leave the child running.
+            if selection_guard.child and selection_guard.child.poll() is None:
+                selection_guard.child.kill()
+                selection_guard.child.wait()
 
 
 if __name__ == "__main__":
