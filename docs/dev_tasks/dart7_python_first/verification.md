@@ -259,6 +259,12 @@ Known gaps:
   and 4096 contacts for K = 1, 64 and 1024, and a loop-closure error of
   2e-12 m. The dartpy loop measured 114 microseconds per step and read. These
   are head-only smoke numbers, not a baseline.
+- **Baseline procedure:** immediately before the first M1 PR, record the last
+  main SHA as `dart7-base`, with its host and the per-row records from
+  `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
+  Each milestone exit runs
+  `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
+  and compares each detector against its own baseline.
 - **Gazebo-preset rows:** nightly `S7-t1` and `S7-t4` run
   `contact_benchmark --gz-preset` on the settled `3k_shapes.sdf` with the
   DART, Bullet and ODE detectors at 1 and 4 threads. The preset installs a
@@ -298,9 +304,8 @@ Known gaps:
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
   and compares each detector against its own baseline.
-- **Status:** in progress: the rows landed in
-  [#3720](https://github.com/dartsim/dart/pull/3720), then the `S7` rows, and
-  the `dart7-base` pin waits for the start of M1.
+- **Status:** in progress: the harness is ready for review, and the
+  `dart7-base` pin waits for the start of M1.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
@@ -345,8 +350,7 @@ Known gaps:
     built.
   - Still open: the machine-checked inventories of gz-used accessors and
     mutation paths.
-- **Status:** in progress: 6a and 6b landed in
-  [#3725](https://github.com/dartsim/dart/pull/3725); the inventories remain.
+- **Status:** in progress.
 
 ### WP-7.0.7 Scope artifacts
 
