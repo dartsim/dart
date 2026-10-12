@@ -136,6 +136,11 @@ public:
   /// Appends a line to the host's diagnostics log console.
   void log(const std::string& message) const;
 
+  /// Reports a failed callback that the host does not invoke itself, such as
+  /// an event handler its owner disabled. It is logged and counted like a
+  /// failed scene hook, so a strict scene cycle fails.
+  void reportFailure(const std::string& what, const std::string& error) const;
+
 private:
   App& host() const;
 

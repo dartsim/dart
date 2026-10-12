@@ -350,6 +350,13 @@ void SceneContext::log(const std::string& message) const
 }
 
 //==============================================================================
+void SceneContext::reportFailure(
+    const std::string& what, const std::string& error) const
+{
+  host().reportCallbackFailure(what, error);
+}
+
+//==============================================================================
 AppWorldNode::AppWorldNode(const dart::simulation::WorldPtr& world)
   : dart::gui::RealTimeWorldNode(world), mStepCount(0)
 {
@@ -741,15 +748,20 @@ void App::invokeSceneCallback(
     callback();
     return;
   } catch (const std::exception& e) {
-    reportFailure(
-        "Demo '" + mCurrentSceneTitle + "' " + what + " failed: " + e.what()
-        + " (disabled)");
+    reportCallbackFailure(what, e.what());
   } catch (...) {
-    reportFailure(
-        "Demo '" + mCurrentSceneTitle + "' " + what
-        + " failed: unknown error (disabled)");
+    reportCallbackFailure(what, "unknown error");
   }
   callback = nullptr;
+}
+
+//==============================================================================
+void App::reportCallbackFailure(
+    const std::string& what, const std::string& error)
+{
+  reportFailure(
+      "Demo '" + mCurrentSceneTitle + "' " + what + " failed: " + error
+      + " (disabled)");
   ++mCallbackFailures;
 }
 
@@ -950,7 +962,12 @@ void App::processPendingSwitch()
       teardownCurrentScene();
       installEmptyFallback();
     }
-    log(LogEntry::Level::Error, mStatusLine);
+    // Missing assets are reported as skips; real failures also reach the
+    // terminal in display-free runs.
+    if (mLastSwitchSkipReason.empty())
+      reportFailure(mStatusLine);
+    else
+      log(LogEntry::Level::Error, mStatusLine);
     return;
   }
 

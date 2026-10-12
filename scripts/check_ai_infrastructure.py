@@ -263,7 +263,13 @@ GUI_APP_CTEST_ARGUMENTS = {
 }
 GUI_ONLY_PYTHON_TESTS = frozenset(
     f"python/tests/unit/gui/test_{name}.py"
-    for name in ("agent_capture", "agent_debug_overlay", "filament", "gui_offscreen")
+    for name in (
+        "agent_capture",
+        "agent_debug_overlay",
+        "filament",
+        "gui_offscreen",
+        "viewer_render",
+    )
 )
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_VERSION_QUALIFIER = (

@@ -57,6 +57,10 @@ void retain(
     edge.node = child;
   state->active.push_back(std::move(edge));
 }
+/// Whether `attachment` is a Python subclass, whose overrides run Python
+/// whenever the viewer refreshes or attaches it.
+bool isPythonAttachment(const dart::gui::ViewerAttachment& attachment);
+
 } // namespace dartnb::gui
 
 namespace dartnb {

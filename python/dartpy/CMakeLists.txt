@@ -35,13 +35,20 @@ set(dartpy_abi)
 if(DART_DARTPY_STABLE_ABI)
   set(dartpy_abi STABLE_ABI)
 endif()
+# dartpy.viewer binds the private demo app host, which a vanilla system ImGui
+# compiles out (see dart/gui/CMakeLists.txt).
+set(dartpy_build_sources ${dartpy_sources})
+if(NOT TARGET dart-gui-app)
+  list(FILTER dartpy_build_sources EXCLUDE REGEX "/viewer/[^/]+\\.cpp$")
+  message(STATUS "dartpy.viewer is compiled out with the demo app host")
+endif()
 nanobind_add_module(
   dartpy
   NB_STATIC
   PROTECT_STACK
   ${dartpy_abi}
   ${dartpy_headers}
-  ${dartpy_sources}
+  ${dartpy_build_sources}
 )
 set_target_properties(
   dartpy
@@ -81,6 +88,22 @@ foreach(dartpy_library ${dartpy_libraries})
   endif()
 endforeach()
 target_link_libraries(dartpy PRIVATE ${dartpy_libraries} tsl::robin_map)
+if(TARGET dart-gui-app)
+  target_link_libraries(dartpy PRIVATE dart-gui-app)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_VIEWER)
+  if(NOT DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
+    # The default build must not ship the opt-in memory diagnostics.
+    add_custom_command(
+      TARGET dartpy
+      POST_BUILD
+      COMMAND
+        ${CMAKE_COMMAND} "-DDART_DEMOS_EXECUTABLE=$<TARGET_FILE:dartpy>" -P
+        "${PROJECT_SOURCE_DIR}/dart/gui/app/tests/check_memory_diagnostics_compiled_out.cmake"
+      COMMENT "Verifying memory diagnostics are absent from dartpy"
+      VERBATIM
+    )
+  endif()
+endif()
 if(TARGET dart-utils-assets)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
 endif()
