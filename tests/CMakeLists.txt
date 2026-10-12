@@ -87,6 +87,39 @@ endfunction()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# Source and generated dart/ headers have the installed include layout. Do not
+# inherit dart's dependency includes, compile definitions, or C++17 requirement.
+get_target_property(
+  contact_surface_eigen_includes
+  Eigen3::Eigen
+  INTERFACE_INCLUDE_DIRECTORIES
+)
+if(MSVC)
+  set(contact_surface_probe_flags /std:c++14 /Zs)
+  set(contact_surface_include_flag /I)
+else()
+  set(contact_surface_probe_flags -std=c++14 -fsyntax-only)
+  set(contact_surface_include_flag -I)
+endif()
+foreach(
+  include_dir
+  ${DART_SOURCE_DIR}
+  ${DART_BINARY_DIR}
+  ${contact_surface_eigen_includes}
+)
+  list(
+    APPEND contact_surface_probe_flags
+    "${contact_surface_include_flag}${include_dir}"
+  )
+endforeach()
+add_test(
+  NAME ContactSurfaceProbe
+  COMMAND
+    "${CMAKE_CXX_COMPILER}" ${contact_surface_probe_flags}
+    "${PROJECT_SOURCE_DIR}/tests/cmake/ContactSurfaceProbe.cpp"
+)
+dart_format_add(cmake/ContactSurfaceProbe.cpp)
+
 # We categorize tests as:
 # - "integration": high level tests to verify the combination of several
 #   components are correctly performs together
@@ -98,6 +131,16 @@ add_subdirectory(baseline)
 add_subdirectory(integration)
 add_subdirectory(regression)
 add_subdirectory(unit)
+
+add_test(
+  NAME test_DARTConfigVersion
+  COMMAND
+    "${CMAKE_COMMAND}" "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigVersion"
+    "-DDART_VERSION=${DART_VERSION}"
+    "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}" -P
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
+)
 
 # Print tests
 dart_get_tests(integration_tests "integration")
