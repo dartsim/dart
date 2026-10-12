@@ -48,6 +48,7 @@ openssl = ">=1.1.1,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+pyperf = ">=2.10.0,<3"
 
 [tasks]
 config-core = { cmd = """
@@ -75,6 +76,9 @@ test-package-core = { cmd = """
 ] }
 perf-compare = { cmd = "python scripts/perf_regression.py local" }
 perf-backfill = { cmd = "python scripts/perf_regression.py backfill" }
+perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
@@ -883,6 +887,10 @@ build-py-dev = { cmd = """
 dartpy = { cmd = "python", depends-on = [
   "build-py-dev",
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
+
+perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" } }
 
 fetch-robot-assets = { cmd = "python -m examples.demos.fetch_robot_assets", cwd = "python", depends-on = [
   "build-py-dev",
