@@ -328,11 +328,11 @@ void Shape(nb::module_& m)
       m, "VoxelGridShape")
       .def(
           dartnb::factory(+[](double resolution) {
-            // OctoMap squares ray components in float; this cap keeps every
-            // ray between addressable points far below float's range.
-            if (!(resolution > 0.0 && resolution <= 1e6))
-              throw nb::value_error(
-                  "resolution must be positive and at most 1e6");
+            // OctoMap squares ray components in float, so the upper bound
+            // keeps every ray between addressable points far below float's
+            // range; the lower bound keeps 1 / resolution finite.
+            if (!(resolution >= 1e-6 && resolution <= 1e6))
+              throw nb::value_error("resolution must be within [1e-6, 1e6]");
             return std::make_shared<dart::dynamics::VoxelGridShape>(resolution);
           }),
           nb::arg("resolution") = 0.01)

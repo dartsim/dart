@@ -109,9 +109,10 @@
 
 * Dynamics
 
-  * `VoxelGridShape::getOccupancy()` now looks up the same cell that
-    `updateOccupancy()` writes, so points on a voxel boundary report their
-    occupancy. [#3737](https://github.com/dartsim/dart/pull/3737)
+  * `VoxelGridShape::updateOccupancy()` now writes a single point through
+    OctoMap's double-precision update, so a point on a voxel boundary lands
+    in the cell that `getOccupancy()` reads.
+    [#3737](https://github.com/dartsim/dart/pull/3737)
 
   * Preserve the generated soft mesh and shape-node properties when cloning
     soft-body skeletons, avoiding duplicate null meshes during collision checks.

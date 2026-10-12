@@ -69,11 +69,31 @@ def test_voxel_grid_construction():
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
 )
 @pytest.mark.parametrize(
-    "resolution", [0, -0.1, np.nan, np.inf, -np.inf, np.nextafter(1e6, 2e6), 1e18]
+    "resolution",
+    [
+        0,
+        -0.1,
+        np.nan,
+        np.inf,
+        -np.inf,
+        np.nextafter(1e6, 2e6),
+        1e18,
+        np.nextafter(1e-6, 0),
+        1e-320,
+    ],
 )
 def test_voxel_grid_rejects_invalid_resolution(resolution):
-    with pytest.raises(ValueError, match="resolution must be positive and at most"):
+    with pytest.raises(ValueError, match=r"resolution must be within \[1e-6, 1e6\]"):
         dart.dynamics.VoxelGridShape(resolution=resolution)
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+def test_voxel_grid_works_at_the_smallest_resolution():
+    shape = dart.dynamics.VoxelGridShape(resolution=1e-6)
+    shape.updateOccupancy([0, 0, 0])
+    assert shape.getOccupancy([0, 0, 0]) > 0.5
 
 
 @pytest.mark.skipif(
@@ -154,7 +174,8 @@ def test_voxel_grid_accepts_addressable_boundaries(resolution, axis, path, bound
         shape.updateOccupancy(points=np.array([point]), sensorOrigin=point)
     elif path == "sensorOrigin":
         endpoint = point.copy()
-        endpoint[axis] += 2 * resolution if coordinate < 0 else -2 * resolution
+        # Inside a cell: OctoMap stores ray endpoints at float precision.
+        endpoint[axis] += 2.5 * resolution if coordinate < 0 else -2.5 * resolution
         shape.updateOccupancy(points=np.array([endpoint]), sensorOrigin=point)
         assert shape.getOccupancy(endpoint) > 0.5
         assert 0 < shape.getOccupancy(point) < 0.5
@@ -281,9 +302,13 @@ def test_voxel_grid_rejects_rays_longer_than_octomap_traces():
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
 )
 def test_voxel_grid_rejects_rays_float_cannot_measure():
-    shape = dart.dynamics.VoxelGridShape(resolution=1e-25)
+    shape = dart.dynamics.VoxelGridShape(resolution=1e-6)
+    # The endpoints straddle a cell boundary, yet their float distance
+    # squares to zero.
     with pytest.raises(ValueError, match="float arithmetic"):
-        shape.updateOccupancy(points=np.array([[1e-24] * 3]))
+        shape.updateOccupancy(
+            points=np.array([[1e-30, 0, 0]]), sensorOrigin=[-1e-30, 0, 0]
+        )
 
 
 @pytest.mark.skipif(

@@ -1612,6 +1612,12 @@ TEST(VoxelGridShape, QueriesUpdatedBoundaryCell)
     const double occupied = voxelGrid.getOccupancy(point);
     voxelGrid.updateOccupancy(point, false);
     EXPECT_LT(voxelGrid.getOccupancy(point), occupied) << coordinate;
+
+    // A cell OctoMap's own double-precision update writes reads back too.
+    dynamics::VoxelGridShape external(0.01);
+    std::const_pointer_cast<octomap::OcTree>(external.getOctree())
+        ->updateNode(coordinate, coordinate, coordinate, true);
+    EXPECT_GT(external.getOccupancy(point), 0.5) << coordinate;
   }
 }
 
