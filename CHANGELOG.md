@@ -82,6 +82,12 @@
     writing out of bounds or leaving values unset in release builds. An MJCF
     weld `solref` with one value keeps the default for the other.
 
+* Collision
+
+  * An exception thrown by a collision filter during an ODE collision check
+    now reaches the caller after ODE finishes the check, instead of unwinding
+    through ODE and leaving its collision space locked.
+
 * Constraint
 
   * Fix simulations blowing up when no joint motion can resolve a contact
