@@ -32,6 +32,7 @@
 
 #include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -549,4 +550,52 @@ TEST(SkelParser, Shapes)
   // Mesh
   skel = world->getSkeleton("mesh skeleton");
   EXPECT_NE(skel, nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, LoadsWorldWithoutFclDetectorCreator)
+{
+  // A host can unregister the detector factory's creators, for example before
+  // it unloads the plugin that registered them.
+  using collision::CollisionDetector;
+  using collision::FCLCollisionDetector;
+  struct FactoryRestorer
+  {
+    CollisionDetector::Factory saved{*CollisionDetector::getFactory()};
+    ~FactoryRestorer()
+    {
+      *CollisionDetector::getFactory() = saved;
+    }
+  } restorer;
+  CollisionDetector::getFactory()->unregisterCreator(
+      FCLCollisionDetector::getStaticType());
+
+  const auto expectFcl = [](const WorldPtr& world,
+                            FCLCollisionDetector::PrimitiveShape type) {
+    ASSERT_NE(world, nullptr);
+    const auto fcl = std::dynamic_pointer_cast<FCLCollisionDetector>(
+        world->getCollisionDetector());
+    ASSERT_NE(fcl, nullptr);
+    EXPECT_EQ(fcl->getPrimitiveShapeType(), type);
+    EXPECT_EQ(
+        fcl->getContactPointComputationMethod(), FCLCollisionDetector::DART);
+    world->step();
+  };
+
+  expectFcl(
+      SkelParser::readWorld("dart://sample/skel/test/single_pendulum.skel"),
+      FCLCollisionDetector::MESH);
+
+  // An fcl, unknown, or omitted collision_detector also loads FCL.
+  for (const std::string detector :
+       {"<collision_detector>fcl</collision_detector>",
+        "<collision_detector>unknown</collision_detector>",
+        ""}) {
+    SCOPED_TRACE(detector);
+    expectFcl(
+        SkelParser::readWorldXML(
+            "<skel version=\"1.0\"><world name=\"world\"><physics>" + detector
+            + "</physics></world></skel>"),
+        FCLCollisionDetector::PRIMITIVE);
+  }
 }
