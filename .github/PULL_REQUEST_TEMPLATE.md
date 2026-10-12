@@ -1,44 +1,7 @@
-## Effect
+## Summary
 
--
-
-<!-- Follow docs/onboarding/contributing.md#pr-descriptions: user effect or risk removed, headline measurement (or why none applies), and key plot/visual when applicable; readable in about a minute. Write each paragraph and list item on one line: GitHub renders newlines as line breaks. -->
-
-## Motivation / Problem
-
--
-
-<!-- Why is this change needed? What problem does it solve? -->
-
-## Changes / Key Changes
-
--
-
-<!-- High-level list of key changes. -->
+<!-- State the problem and resulting behavior in one or two sentences or a few short bullets. Add rationale, reviewer notes, compatibility/migration guidance, or related links only when useful. Put the key comparison or visual beside its claim; required simulation evidence still follows dart-verify-sim. Follow [PR Descriptions](../docs/onboarding/contributing.md#pr-descriptions) and complete the [PR Author Checklist](../docs/onboarding/contributing.md#pr-author-checklist) before publication. Write each paragraph and list item on one line: GitHub renders newlines as line breaks. -->
 
 ## Testing
 
-- What you verified that this PR's CI does not run (a reproduction with a reporter's toolchain, a negative check, hardware runs, review passes), or why nothing beyond CI was needed. Omit the lint, unit, gate, and platform jobs CI runs anyway.
-
-## Breaking Changes
-
-- [ ] None
-- 
-
-<!-- If breaking changes exist, describe impact and migration steps. -->
-
-## Related Issues / PRs (backports)
-
--
-
-<!-- List issue links and any related/backport PRs. -->
-
----
-
-#### Checklist
-
-- [ ] Milestone set (resolve the next release from the target branch's `docs/onboarding/release-management.md`)
-- [ ] CHANGELOG.md updated if required
-- [ ] Add unit tests for new functionality
-- [ ] Document new methods and classes
-- [ ] Add Python bindings (dartpy) if applicable
+<!-- Report meaningful verification beyond this PR's CI and relevant gaps. If CI covers all relevant verification, one short statement is enough. Keep routine gate logs in task evidence, collapse reproduction/configuration detail, and leave failures, uncertainty, and limiting caveats visible. -->

@@ -173,6 +173,11 @@
 
 * Build
 
+  * Restore URDF support and `dart-io` builds with urdfdom 3.x installations
+    that ship no CMake version file, such as Ubuntu 22.04 and FreeBSD packages.
+    The minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
+    3.0.0.
+
   * The installed CMake package accepts version requests from 6.0 up to the
     installed version, so `find_package(DART 6.10)` finds DART 7. `EXACT`
     requests and version ranges keep their meaning.

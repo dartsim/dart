@@ -2,10 +2,11 @@
 
 Takes an evidence selection manifest (scripts/evidence_select.py) plus
 context fields and produces the "Visual verification" markdown a reviewer
-can read without reproducing the environment: what each artifact shows, the
-text oracle, semantic image observation, reconciliation/verdict, explicit
-claim boundary, environment/configuration, limitations, and reproduction
-commands. This script never accesses the network. Insert the section into the
+can read without reproducing the environment: claims beside their media,
+correctness checks, observed results, and explicit limitations. Environment,
+claim IDs, selection rationale, reconciliation, and reproduction commands are
+collapsed; failed or uncertain verification stays visible. This script never
+accesses the network. Insert the section into the
 complete PR body because gh pr edit --body-file replaces the whole body, or
 post it separately with gh pr comment. After explicit maintainer/user approval,
 run GitHub CLI 2.99+ from the manifest attach_dir (<out>.attach, which each run
@@ -239,6 +240,10 @@ def _artifact_reference(artifact: dict[str, Any], path: str) -> str:
     return f"![{caption}]({path})"
 
 
+def _one_line(text: str) -> str:
+    return " ".join(text.splitlines())
+
+
 def render_section(
     selection: dict[str, Any],
     attach: list[str],
@@ -254,61 +259,78 @@ def render_section(
     semantic_verdict: str,
 ) -> str:
     lines: list[str] = ["## Visual verification", ""]
-    lines.append(f"**Environment**: {environment}")
-    if configuration:
-        lines.append(f"**Configuration**: {configuration}")
-    lines.append("")
-
-    lines.append("### Claims and evidence")
-    lines.append("")
     claim_map = {claim["id"]: claim for claim in selection["claims"]}
-    for claim_id in sorted(claim_map):
-        claim = claim_map[claim_id]
-        status = "✔" if claim["covered"] else "✘ (no evidence)"
-        lines.append(f"- **{claim_id}** — {claim['text']} {status}")
-    lines.append("")
+    if not _selection_passes(selection):
+        lines.extend(["**Evidence incomplete.**", ""])
+        for claim in selection["claims"]:
+            if not claim["covered"]:
+                lines.append(f"- {_one_line(claim['text'])} ✘ (no evidence)")
+        lines.append("")
+    if semantic_verdict != "pass":
+        lines.extend(
+            [
+                f"**Verification: {semantic_verdict}** — {_one_line(reconciliation)}",
+                "",
+            ]
+        )
 
     for index, artifact in enumerate(selection["selected"], start=1):
         caption = artifact["caption"] or Path(artifact["path"]).name
-        lines.append(f"#### {index}. {caption}")
+        lines.append(f"### {_one_line(caption)}")
+        lines.append("")
+        for claim_id in artifact["claims"]:
+            lines.append(f"- {_one_line(claim_map[claim_id]['text'])}")
         lines.append("")
         lines.append(_artifact_reference(artifact, attach[index - 1]))
         lines.append("")
-        details = [f"Supports: {', '.join(artifact['claims'])}"]
         if artifact.get("observe"):
-            details.append(f"What to look for: {artifact['observe']}")
-        details.append(f"Why this artifact: {artifact['rationale']}")
-        for detail in details:
-            lines.append(f"- {detail}")
-        lines.append("")
+            lines.extend([f"What to look for: {_one_line(artifact['observe'])}", ""])
 
-    lines.append("### Semantic review")
-    lines.append("")
-    lines.append(f"- **Text oracle**: {text_oracle}")
-    lines.append(f"- **Visible observation**: {visible_observation}")
-    lines.append(f"- **Reconciliation**: {reconciliation}")
-    lines.append(f"- **Verdict**: {semantic_verdict}")
+    lines.append(f"- **Check**: {_one_line(text_oracle)}")
+    lines.append(f"- **Observed**: {_one_line(visible_observation)}")
     lines.append("")
 
     if not_proven:
         lines.append("**What this evidence does not prove**:")
         for item in not_proven:
-            lines.append(f"- {item}")
+            lines.append(f"- {_one_line(item)}")
         lines.append("")
     if limitations:
         lines.append("**Limitations**:")
         for item in limitations:
-            lines.append(f"- {item}")
+            lines.append(f"- {_one_line(item)}")
         lines.append("")
+
+    lines.extend(
+        ["<details><summary>Verification details and reproduction</summary>", ""]
+    )
+    lines.append(f"**Environment**: {_one_line(environment)}")
+    if configuration:
+        lines.append(f"**Configuration**: {_one_line(configuration)}")
+    lines.append("")
+    for claim_id in sorted(claim_map):
+        claim = claim_map[claim_id]
+        status = "✔" if claim["covered"] else "✘ (no evidence)"
+        lines.append(
+            f"- **{_one_line(claim_id)}** — {_one_line(claim['text'])} {status}"
+        )
+    lines.append("")
+    for artifact in selection["selected"]:
+        caption = artifact["caption"] or Path(artifact["path"]).name
+        lines.append(
+            f"- **{_one_line(caption)}**: supports {_one_line(', '.join(artifact['claims']))}; "
+            f"{_one_line(artifact['rationale'])}"
+        )
+    lines.append("")
+    lines.append(f"- **Reconciliation**: {_one_line(reconciliation)}")
+    lines.append(f"- **Verdict**: {semantic_verdict}")
+    lines.append("")
     if reproduce:
-        lines.append("<details><summary>Reproduce</summary>")
-        lines.append("")
         lines.append("```bash")
         lines.extend(reproduce)
         lines.append("```")
         lines.append("")
-        lines.append("</details>")
-        lines.append("")
+    lines.append("</details>")
     return "\n".join(lines).rstrip() + "\n"
 
 
