@@ -94,7 +94,7 @@ if(ODE_FOUND OR ode_FOUND)
   endforeach()
 
   if(NOT _dart_ode_has_libccd_box_cyl)
-    include(CheckCSourceCompiles)
+    include(CheckCXXSourceCompiles)
 
     set(_dart_ode_includes "")
     if(TARGET ODE::ODE)
@@ -112,7 +112,7 @@ if(ODE_FOUND OR ode_FOUND)
       set(CMAKE_REQUIRED_INCLUDES "${_dart_ode_includes}")
     endif()
 
-    check_c_source_compiles(
+    check_cxx_source_compiles(
       "
 #include <ode/odeconfig.h>
 #ifndef dLIBCCD_BOX_CYL
