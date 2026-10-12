@@ -20,7 +20,17 @@
     now gets no normal impulse, and with the Dantzig solver alone it no longer
     zeroes the other contacts in its group:
     [#3716](https://github.com/dartsim/dart/pull/3716),
-    [#3707](https://github.com/dartsim/dart/pull/3707)
+    [#3707](https://github.com/dartsim/dart/pull/3707),
+    [#3721](https://github.com/dartsim/dart/pull/3721)
+
+* Parsers
+
+  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
+    4- or 6-element vector or pose value has the wrong number of elements,
+    instead of writing out of bounds or leaving values unset in release
+    builds. An MJCF weld `solref` with one value keeps the default for the
+    other.
+    [#3698](https://github.com/dartsim/dart/pull/3698)
 
 * Python
 

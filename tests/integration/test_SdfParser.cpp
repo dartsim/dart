@@ -56,6 +56,7 @@
 
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -69,6 +70,36 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 using namespace utils;
+
+//==============================================================================
+TEST(SdfParser, SevenValuePoseThrowsParseError)
+{
+  struct PoseResourceRetriever : PresentResourceRetriever
+  {
+    std::string readAll(const common::Uri&) override
+    {
+      // Use an accepted version so the quaternion pose reaches value parsing.
+      return R"(<sdf version="1.6">
+        <model name="quaternion_pose">
+          <pose rotation_format="quat_xyzw">1 2 3 0 0 0 1</pose>
+          <link name="body"/>
+        </model>
+      </sdf>)";
+    }
+  };
+
+  SdfParser::Options options;
+  options.mResourceRetriever = std::make_shared<PoseResourceRetriever>();
+  try {
+    SdfParser::readSkeleton("memory://quaternion_pose.sdf", options);
+    FAIL() << "Expected a parse error for a seven-value pose";
+  } catch (const std::invalid_argument& error) {
+    const std::string message = error.what();
+    EXPECT_NE(message.find("exactly 6"), std::string::npos);
+    EXPECT_NE(message.find("got 7"), std::string::npos);
+    EXPECT_NE(message.find("1 2 3 0 0 0 1"), std::string::npos);
+  }
+}
 
 //==============================================================================
 TEST(SdfParser, SDFSingleBodyWithoutJoint)

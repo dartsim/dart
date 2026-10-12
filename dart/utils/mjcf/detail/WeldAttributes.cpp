@@ -85,7 +85,14 @@ Errors appendWeldAttributes(
 
   // solref
   if (hasAttribute(element, "solref")) {
-    attributes.mSolRef = getAttributeVector2d(element, "solref");
+    const Eigen::VectorXd solref = getAttributeVectorXd(element, "solref");
+    if (solref.size() == 0 || solref.size() > 2) {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "Invalid dimension for 'solref' attribute");
+      return errors;
+    }
+    attributes.mSolRef.head(solref.size()) = solref;
   }
 
   // body1
