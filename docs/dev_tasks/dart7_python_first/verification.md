@@ -213,8 +213,8 @@ Known gaps:
 
 ### WP-7.0.5 Performance baseline
 
-- **Objective:** pin `dart7-base`, the last main revision before M1, and record
-  its host and the `perf_regression.py local ... --rows nightly` results here.
+- **Objective:** measure the core refactors against `dart7-base`, the last main
+  revision before the first M1 PR.
 - **Scope:**
   - add `--worlds K` to `tools/perf/portable_step_bench.cpp`, using 6.x C++ APIs
     so both arms run it, with detectors pinned;
@@ -223,8 +223,48 @@ Known gaps:
   - a dartpy loop benchmark written in 6.x spelling, which the M5 codemod later
     converts (doubling as a codemod test);
   - rows measure stepping plus reading transforms and contacts.
-- **Gate:** every milestone exit runs `local --base dart7-base --rows nightly`.
-- **Status:** planned.
+- **Added:** `--worlds K` steps K independent Worlds in sequence per outer
+  step, with two generated scenes: a box resting on a floor (`contact`) and a
+  four-bar linkage with joint friction and a ball-joint closure
+  (`closed-loop-friction`). Existing rows keep their settings and measurement
+  boundary, and their guards match the previous driver exactly. Editing the
+  shared driver changes the `gzb` and `robot` input hashes in both arms, so the
+  PR names those rows in a `Rebaseline-Rationale:` line. The dartpy loop,
+  `pixi run perf-dartpy-loop`, times stepping plus transform and contact reads
+  with pyperf. [Profiling](../../onboarding/profiling.md#many-world-step-loops)
+  owns how to run both.
+- **Rows and cost:** measured on 2026-10-11 at main `e629dd3de` on the local
+  performance host. Cost is the time of two serial measurements of a row,
+  which estimates its incremental two-arm CI time; the per-PR rows total 25 s.
+
+  | Row | Tier | Ir per outer step | Cost (s) |
+  | --- | --- | ---: | ---: |
+  | `w1/dart` | Per PR | 76,560 | 5.3 |
+  | `w1/ode` | Per PR | 76,401 | 5.3 |
+  | `w64/dart` | Per PR | 4,898,253 | 7.2 |
+  | `w64/ode` | Per PR | 4,893,465 | 7.0 |
+  | `w1/fcl` | Nightly | 76,629 | 5.2 |
+  | `w1/bullet` | Nightly | 71,858 | 5.6 |
+  | `w64/fcl` | Nightly | 4,902,497 | 6.9 |
+  | `w64/bullet` | Nightly | 4,597,060 | 29.8 |
+  | `w1024/dart` | Nightly | 78,371,096 | 39.7 |
+  | `w1024/ode` | Nightly | 78,295,213 | 83.1 |
+  | `w1024/fcl` | Nightly | 78,438,333 | 35.4 |
+  | `w1024/bullet` | Nightly | 73,552,338 | 499.5 |
+  | `closed-loop-friction/dart` | Nightly | 72,141 | 9.0 |
+
+  All 13 rows qualified under the seven heap-layout perturbations, with 4, 256
+  and 4096 contacts for K = 1, 64 and 1024, and a loop-closure error of
+  2e-12 m. The dartpy loop measured 114 microseconds per step and read. These
+  are head-only smoke numbers, not a baseline.
+- **Baseline procedure:** immediately before the first M1 PR, record the last
+  main SHA as `dart7-base`, with its host and the per-row records from
+  `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
+  Each milestone exit runs
+  `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
+  and compares each detector against its own baseline.
+- **Status:** in progress: the harness is ready for review, and the
+  `dart7-base` pin waits for the start of M1.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
