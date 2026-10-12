@@ -3493,6 +3493,9 @@ def test_cmake_semantic_graph_contact_surface_probe_follows_clang_groups(
             f"-DCOMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS={supported}",
         ),
     )
+    cache = infra.cmake_cache_values(build / "CMakeCache.txt")
+    if infra.cmake_cxx_compiler_family(build, cache, []) in {None, "MSVC", "GNU"}:
+        pytest.skip("the generator did not select a Clang-family compiler")
     cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
     if removed is not None:
         cmake.write_text(
