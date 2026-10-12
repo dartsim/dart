@@ -402,8 +402,9 @@ Each packet records its scope, non-goals, gates and evidence in
   - the Python-loop benchmark row (arrives with WP-7.0.5);
   - the example runner in test mode, once it exists;
   - the codemod round trip on non-GUI tutorial code.
-- **GUI changes:** `pixi run test-gui` and `scripts/compare_gui_renderers.py`,
-  delivered in #3696; `CI Filament` on three operating systems.
+- **GUI changes:** `pixi run test-gui`, delivered in #3696; `CI Filament`
+  on three operating systems. Quiet-host Filament measurements on GPU and
+  Lavapipe require an approved fast-profile disposition (decision D32).
 - **Gazebo gates:**
   - The shim test is generated from the gz-physics development branch at a
     recorded revision and refreshed on a schedule. It covers the

@@ -210,8 +210,9 @@ working area; like the `/tmp` packets below, they are not committed.
   and RECORD hashes, passes lazy import and exception translation, and passes
   63/63 GUI cases on the default GPU and on explicit Lavapipe.
 - Not run here: native Windows/macOS rendering (needs `CI Filament` after
-  approved publication) and accepted OSG performance comparisons (needs a
-  quiet host; other sessions' builds kept this host busy).
+  approved publication) and Filament measurements on GPU and Lavapipe against an approved
+  fast-profile disposition (decision D32; needs a quiet host; other sessions'
+  builds kept this host busy).
 
 ## Historical qualification
 
