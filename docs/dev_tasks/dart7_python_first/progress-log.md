@@ -27,3 +27,6 @@
     parsing) and #3699 (GIL finalization) merged; the 6.20 backport of #3698
     opened as #3717 on the 6.20.1 patch line.
   - WP-7.0.3b and WP-7.0.5 started.
+- **2026-10-12**
+  - WP-7.0.5 gained nightly Gazebo-preset sleeping rows (`S7`), which run the
+    custom-filter decision replay that gz-physics's default step uses.

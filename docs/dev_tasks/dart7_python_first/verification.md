@@ -222,7 +222,9 @@ Known gaps:
   - nightly: K = 1024, plus FCL, Bullet and the closed-loop joint-friction row;
   - a dartpy loop benchmark written in 6.x spelling, which the M5 codemod later
     converts (doubling as a codemod test);
-  - rows measure stepping plus reading transforms and contacts.
+  - rows measure stepping plus reading transforms and contacts;
+  - nightly Gazebo-preset sleeping rows, which cover the custom collision-filter
+    replay path Gazebo's default step uses.
 - **Added:** `--worlds K` steps K independent Worlds in sequence per outer
   step, with two generated scenes: a box resting on a floor (`contact`) and a
   four-bar linkage with joint friction and a ball-joint closure
@@ -282,7 +284,14 @@ Known gaps:
   off, the 1-thread DART and ODE rows rest no body and their hashes change to
   `0x29469c863f538cf2` and `0x7de27186a1a62f97`. Process time is one whole
   driver run at host load 7–11; the Bullet rows took up to 417 s at load 60,
-  within the harness's 900 s per-row timeout.
+  within the harness's 900 s per-row timeout. Run four at a time on two
+  physical cores with both SMT threads, like `--jobs 4` on the hosted
+  runner's four vCPUs, and sharing those cores with other host work, the six
+  rows kept their guards and the slowest, 1-thread Bullet, took 311 s. No
+  hosted run has measured them yet. A row that times out makes the nightly
+  verdict ERROR and skips that night's publication for every row, so confirm
+  the fit with a nightly `perf.yml` dispatch on the branch, which publishes
+  nothing off main, or by watching the first nightly after merge.
 - **Baseline procedure:** immediately before the first M1 PR, record the last
   main SHA as `dart7-base`, with its host and the per-row records from
   `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
