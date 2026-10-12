@@ -2,7 +2,7 @@
 
 -
 
-<!-- Follow docs/onboarding/contributing.md#pr-descriptions: user effect or risk removed, headline measurement (or why none applies), and key plot/visual when applicable; readable in about a minute. -->
+<!-- Follow docs/onboarding/contributing.md#pr-descriptions: user effect or risk removed, headline measurement (or why none applies), and key plot/visual when applicable; readable in about a minute. Write each paragraph and list item on one line: GitHub renders newlines as line breaks. -->
 
 ## Motivation / Problem
 
