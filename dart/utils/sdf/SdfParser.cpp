@@ -38,6 +38,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/String.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
@@ -56,6 +57,8 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
@@ -71,6 +74,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -80,6 +84,78 @@ namespace utils {
 namespace SdfParser {
 
 namespace {
+
+//==============================================================================
+Eigen::Isometry3d readSdfPose(
+    const tinyxml2::XMLElement* parentElement, const std::string& defaultFrame)
+{
+  const auto* poseElement = parentElement->FirstChildElement("pose");
+  const std::string element
+      = "<" + std::string(parentElement->Name()) + "><pose>";
+
+  if (const char* relativeTo = poseElement->Attribute("relative_to")) {
+    const std::string frame = common::trim(relativeTo);
+    if (!frame.empty() && frame != defaultFrame) {
+      throw std::invalid_argument(
+          element + " relative_to [" + frame
+          + "]: DART does not support SDF frame semantics for that frame");
+    }
+  }
+
+  const char* rotationFormat = poseElement->Attribute("rotation_format");
+  const std::string format = rotationFormat ? rotationFormat : "euler_rpy";
+  if (format != "euler_rpy" && format != "quat_xyzw") {
+    throw std::invalid_argument(
+        element + " has unsupported rotation_format [" + format + "]");
+  }
+
+  bool degrees = false;
+  if (const char* attribute = poseElement->Attribute("degrees")) {
+    const std::string value = common::toUpper(common::trim(attribute));
+    if (value != "TRUE" && value != "FALSE" && value != "1" && value != "0") {
+      throw std::invalid_argument(
+          element + " has invalid degrees [" + attribute + "]");
+    }
+    degrees = toBool(value);
+  }
+  if (degrees && format == "quat_xyzw") {
+    throw std::invalid_argument(
+        element + " degrees=true is invalid with rotation_format=quat_xyzw");
+  }
+
+  const std::string text = poseElement->GetText() ? poseElement->GetText() : "";
+  const auto values = common::split(text);
+  const std::size_t count = format == "euler_rpy" ? 6u : 7u;
+  if (values.size() != count) {
+    throw std::invalid_argument(
+        element + " rotation_format [" + format + "] requires exactly "
+        + std::to_string(count) + " values; got "
+        + std::to_string(values.size()) + " in [" + text + "]");
+  }
+
+  if (format == "euler_rpy" && !degrees)
+    return toIsometry3dWithExtrinsicRotation(text);
+
+  const Eigen::VectorXd pose = toVectorXd(text);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = pose.head<3>();
+  if (format == "euler_rpy") {
+    const Eigen::Vector3d rpy = pose.tail<3>() * math::toRadian(1.0);
+    transform.linear() = math::eulerZYXToMatrix(rpy.reverse().eval());
+  } else {
+    Eigen::Quaterniond rotation(pose[6], pose[3], pose[4], pose[5]);
+    const double scale = rotation.coeffs().cwiseAbs().maxCoeff();
+    if (!rotation.coeffs().allFinite() || scale == 0.0) {
+      throw std::invalid_argument(
+          element + " rotation_format=quat_xyzw requires a finite, nonzero "
+                    "quaternion");
+    }
+    // Scale first so finite nonzero quaternions cannot overflow or underflow.
+    rotation.coeffs() /= scale;
+    transform.linear() = rotation.normalized().toRotationMatrix();
+  }
+  return transform;
+}
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
 
@@ -705,8 +781,7 @@ dynamics::SkeletonPtr makeSkeleton(
   //--------------------------------------------------------------------------
   // transformation
   if (hasElement(_skeletonElement, "pose")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(_skeletonElement, "pose");
+    Eigen::Isometry3d W = readSdfPose(_skeletonElement, "world");
     skeletonFrame = W;
   }
 
@@ -840,8 +915,7 @@ SDFBodyNode readBodyNode(
   //--------------------------------------------------------------------------
   // transformation
   if (hasElement(bodyNodeElement, "pose")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(bodyNodeElement, "pose");
+    Eigen::Isometry3d W = readSdfPose(bodyNodeElement, "__model__");
     initTransform = skeletonFrame * W;
   } else {
     initTransform = skeletonFrame;
@@ -881,8 +955,7 @@ SDFBodyNode readBodyNode(
 
     // offset
     if (hasElement(inertiaElement, "pose")) {
-      Eigen::Isometry3d T
-          = getValueIsometry3dWithExtrinsicRotation(inertiaElement, "pose");
+      Eigen::Isometry3d T = readSdfPose(inertiaElement, bodyName);
       properties.mInertia.setLocalCOM(T.translation());
     }
 
@@ -969,7 +1042,8 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     // pose
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     if (hasElement(softShapeEle, "pose"))
-      T = getValueIsometry3dWithExtrinsicRotation(softShapeEle, "pose");
+      T = readSdfPose(
+          softShapeEle, getAttributeString(softBodyNodeElement, "name"));
 
     // geometry
     tinyxml2::XMLElement* geometryEle = getElement(softShapeEle, "geometry");
@@ -1134,8 +1208,7 @@ dynamics::ShapeNode* readShapeNode(
 
   // Transformation
   if (hasElement(shapeNodeEle, "pose")) {
-    const Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(shapeNodeEle, "pose");
+    const Eigen::Isometry3d W = readSdfPose(shapeNodeEle, bodyNode->getName());
     shapeNode->setRelativeTransform(W);
   }
 
@@ -1412,8 +1485,7 @@ SDFJoint readJoint(
   if (child_it != _sdfBodyNodes.end())
     childWorld = child_it->second.initTransform;
   if (hasElement(_jointElement, "pose"))
-    childToJoint
-        = getValueIsometry3dWithExtrinsicRotation(_jointElement, "pose");
+    childToJoint = readSdfPose(_jointElement, newJoint.childName);
 
   Eigen::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;

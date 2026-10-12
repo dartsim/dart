@@ -82,6 +82,13 @@
     writing out of bounds or leaving values unset in release builds. An MJCF
     weld `solref` with one value keeps the default for the other.
 
+  * SDF model, link, joint, visual, and collision poses honor
+    `rotation_format="quat_xyzw"` and Euler `degrees="true"`.
+    Invalid formats, value counts, zero quaternions, and quaternion poses in
+    degrees throw `std::invalid_argument`. A `relative_to` frame other than
+    the element's default frame is explicitly rejected instead of silently
+    misplacing the pose.
+
 * Constraint
 
   * Fix simulations blowing up when no joint motion can resolve a contact
