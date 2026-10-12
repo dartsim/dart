@@ -1456,7 +1456,7 @@ void World::step(bool _resetCommand)
 }
 
 //==============================================================================
-void World::beginStep(StepContext& context)
+inline void World::beginStep(StepContext& context)
 {
   if (!isInSimulationMode())
     enterSimulationMode();
@@ -1473,7 +1473,7 @@ void World::beginStep(StepContext& context)
 }
 
 //==============================================================================
-void World::stepWithoutDeactivation(const StepContext& context)
+inline void World::stepWithoutDeactivation(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
 
@@ -1535,7 +1535,7 @@ void World::stepWithoutDeactivation(const StepContext& context)
 }
 
 //==============================================================================
-bool World::tryAllRestingFastPath(StepContext& context)
+inline bool World::tryAllRestingFastPath(StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
 
@@ -1570,7 +1570,7 @@ bool World::tryAllRestingFastPath(StepContext& context)
 }
 
 //==============================================================================
-void World::advanceVelocities(const StepContext& context)
+inline void World::advanceVelocities(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
 
@@ -1663,7 +1663,7 @@ void World::advanceVelocities(const StepContext& context)
 }
 
 //==============================================================================
-void World::solveConstraints(StepContext& context)
+inline void World::solveConstraints(StepContext& context)
 {
   // Detect activated constraints and compute constraint impulses. The group
   // stamp also proves that contacts remain alive through this solve.
@@ -1709,7 +1709,7 @@ void World::solveConstraints(StepContext& context)
 }
 
 //==============================================================================
-void World::advancePositions(const StepContext& context)
+inline void World::advancePositions(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
   const bool customFilterSleeping = context.customFilterSleeping;
@@ -1792,7 +1792,7 @@ void World::advancePositions(const StepContext& context)
 }
 
 //==============================================================================
-void World::finishDeactivationStep(const StepContext& context)
+inline void World::finishDeactivationStep(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
   const bool customFilterSleeping = context.customFilterSleeping;

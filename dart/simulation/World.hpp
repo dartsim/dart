@@ -733,10 +733,10 @@ private:
   /// Prepares the World for a step and mirrors the deactivation flag onto the
   /// constraint solver. With deactivation on, also wakes resting skeletons
   /// after edits made between steps.
-  void beginStep(StepContext& context);
+  inline void beginStep(StepContext& context);
 
   /// Runs the whole step with deactivation off.
-  void stepWithoutDeactivation(const StepContext& context);
+  inline void stepWithoutDeactivation(const StepContext& context);
 
   /// Records whether a custom BodyNodeCollisionFilter lets skeletons sleep
   /// this step. When the last solve found no contacts, runs the all-resting
@@ -745,24 +745,24 @@ private:
   /// changed since the last step, advances time and the frame count without
   /// integrating or solving, clears resting skeletons' accelerations under
   /// such a filter, and returns true.
-  bool tryAllRestingFastPath(StepContext& context);
+  inline bool tryAllRestingFastPath(StepContext& context);
 
   /// Wakes resting skeletons that are disturbed or moving, clears the forces
   /// and commands of those still resting under step(true), and integrates the
   /// velocities of the awake ones.
-  void advanceVelocities(const StepContext& context);
+  inline void advanceVelocities(const StepContext& context);
 
   /// Solves constraints once, recording the collision filter's decisions
   /// when a later step may replay them.
-  void solveConstraints(StepContext& context);
+  inline void solveConstraints(StepContext& context);
 
   /// Applies constraint impulses and integrates the positions of awake
   /// skeletons, then clears their forces and commands under step(true).
-  void advancePositions(const StepContext& context);
+  inline void advancePositions(const StepContext& context);
 
   /// Updates rest states and time, then saves what the next step compares
   /// against.
-  void finishDeactivationStep(const StepContext& context);
+  inline void finishDeactivationStep(const StepContext& context);
 
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
