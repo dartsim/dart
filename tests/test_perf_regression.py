@@ -5022,7 +5022,10 @@ def test_verdict_snippet_requires_complete_qualified_smoke_rows(
     assert json.loads((tmp_path / "head.json").read_text()) == (
         ab_head if mixed else arm
     )
-    assert bool((tmp_path / "smoke-failures.txt").read_text()) == bool(defect)
+    # Like the merge record, a head harness may add rows but not drop or repeat them.
+    assert bool((tmp_path / "smoke-failures.txt").read_text()) == (
+        defect not in (None, "extra")
+    )
 
 
 @pytest.mark.parametrize("status", [0, 1, 2])
