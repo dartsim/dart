@@ -73,14 +73,14 @@ Non-goals:
 | App host | `dart/gui/app/` → `dart-gui-app` (static, `EXCLUDE_FROM_ALL`, never installed) | `dart::gui::app` |
 | Docking gate | `dart/gui/CMakeLists.txt` adds `app/` only when the copied `dart/external/imgui/imgui.h` defines `IMGUI_HAS_DOCK`. Otherwise it prints a "compiled out" status line. | — |
 | GUI-free models | `python/native/demo_models/` → `dart-demo-models` (static, `EXCLUDE_FROM_ALL`). It is added right after `dart` in the top-level CMake file. IO-dependent sources are added only when `dart-utils` and `dart-utils-urdf` exist. | `dart_demos` |
+| Host bindings | `python/dartpy/viewer/`, compiled only when `dart-gui-app` exists | `dartpy.viewer` |
+| Model bindings | `python/dartpy/demos/` | `dartpy._demos` (private) |
+| Scenes | `python/examples/demos/scenes/*.py`, `scenes/common.py`, `registry.py`, `__main__.py` | — |
 
 Both static targets link into the shared dartpy module. GCC and Clang builds
 already compile every target with `-fPIC` (the top-level `add_compile_options`),
 and MSVC needs no position-independent code, so neither target sets the
 property itself.
-| Host bindings | `python/dartpy/viewer/`, compiled only when `dart-gui-app` exists | `dartpy.viewer` |
-| Model bindings | `python/dartpy/demos/` | `dartpy._demos` (private) |
-| Scenes | `python/examples/demos/scenes/*.py`, `scenes/common.py`, `registry.py`, `__main__.py` | — |
 
 The Python surface:
 
@@ -206,10 +206,17 @@ Packet scope:
   - `HierarchicalIK`, `WholeBodyIK`, and `BalanceConstraint` with its enums.
   - Affiliated-Skeleton retention, and GC traversal into the whole-body and
     end-effector IKs.
-- **WP-PD.10 to WP-PD.16.** The scene batches below.
-  - S6a also deletes the `SharedLibraryWamIkFast` test target and keeps
-    `GeneratedWamIkFast`.
-  - S6b migrates the standalone ssik example, its test and its docs.
+- **WP-PD.10 to WP-PD.16.** The scene batches below. Each batch moves the
+  native helpers its scenes need into `dart-demo-models`, binds them in
+  `dartpy._demos`, and adds C++ or Python tests for them:
+  - S3 (WP-PD.12): `set_boxed_lcp_solver`.
+  - S4 (WP-PD.13): the SPD and operational-space `Controllers`, and
+    `PointCloudSensor`.
+  - S5 (WP-PD.14): `WorldHistory`.
+  - S6a (WP-PD.15): `WamIkFast` and `set_wam_ikfast`. S6a also deletes the
+    `SharedLibraryWamIkFast` test target and keeps `GeneratedWamIkFast`.
+  - S6b (WP-PD.16): `RelaxedPosture`. S6b also migrates the standalone ssik
+    example, its test and its docs.
 - **WP-PD.17.** `demos`, `cycle-demos` and `capture` run
   `python -m examples.demos`, with Windows overrides.
   - Delete `py-demos` and update its doc references.
