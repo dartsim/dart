@@ -371,7 +371,7 @@ before the first release candidate.
 | WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress |
 | WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | Planned |
 | WP-7.0.7 | Record the freeze date, checkpoints, must-have list and acceptance tests | Planned |
-| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | Planned |
+| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) builds 6.20.1 wheels for Python 3.12 to 3.14 |
 
 Each packet records its scope, non-goals, gates and evidence in
 [verification.md](verification.md) before it is marked done.

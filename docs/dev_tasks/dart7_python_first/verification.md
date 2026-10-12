@@ -260,4 +260,5 @@ Known gaps:
   `dartpy<7` supports.
 - **Risk:** that line's bindings use a different binder, so the 3.15 wheels
   need their own review of GIL acquisition during finalization.
-- **Status:** planned.
+- **Status:** in progress. [#3704](https://github.com/dartsim/dart/pull/3704) builds
+  6.20.1 wheels for Python 3.12 to 3.14; Python 3.15 wheels remain.

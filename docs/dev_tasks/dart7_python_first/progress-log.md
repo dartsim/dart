@@ -25,5 +25,5 @@
     earlier milestone of that name.
   - #3697 (program home and release-line rollover), #3698 (XML value
     parsing) and #3699 (GIL finalization) merged; the 6.20 backport of #3698
-    opened as #3717, which also starts DART 6.20.1.
+    opened as #3717 on the 6.20.1 patch line.
   - WP-7.0.3b and WP-7.0.5 started.

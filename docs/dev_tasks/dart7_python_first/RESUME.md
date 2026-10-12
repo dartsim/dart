@@ -9,7 +9,7 @@ tracks the release, and main's release target reads 7.0.0.
 | --- | --- | --- |
 | [#3697](https://github.com/dartsim/dart/pull/3697) | WP-7.0.1 and WP-7.0.2 | Merged |
 | [#3698](https://github.com/dartsim/dart/pull/3698) | WP-7.0.3 | Merged |
-| [#3717](https://github.com/dartsim/dart/pull/3717) | WP-7.0.3 backport to `release-6.20` | Draft; it also starts DART 6.20.1 |
+| [#3717](https://github.com/dartsim/dart/pull/3717) | WP-7.0.3 backport to `release-6.20` | Draft, for DART 6.20.1 |
 | [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Merged |
 
 M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696). Main uses
@@ -28,7 +28,8 @@ rendering and the Python render/viewer API, remains pending.
    parameter separators and version suffixes, as its 6.x predecessor did), and
    a DART 7 wall-time dashboard (the DART 6 dashboard now tracks `release-6.*`
    only).
-3. Then WP-7.0.6 to WP-7.0.8, and pin `dart7-base` right before the first M1
+3. Then WP-7.0.6, WP-7.0.7 and the rest of WP-7.0.8 (Python 3.15 wheels), and
+   pin `dart7-base` right before the first M1
    PR.
 
 ## Risks and recovery
