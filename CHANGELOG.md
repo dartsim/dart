@@ -114,9 +114,9 @@
     kinematics copied by `BodyNode::copyTo()` or `BodyNode::copyAs()` now
     selects the copies of the original degrees of freedom, keeps the selected
     ones that were not copied when the copy stays in the same skeleton, and
-    warns when none remain. When a copied analytical solver does not solve for
-    the copies of the original's degrees of freedom, such as an IkFast solver
-    whose stored indices shift, the copy warns and uses `JacobianDLS` instead.
+    warns when none remain. When a copied analytical solver's degrees of
+    freedom no longer fit the copy, such as IkFast indices that now refer to
+    different degrees of freedom, the copy warns and uses `JacobianDLS` instead.
     `IkFast::getDofs()` now returns an empty list when IkFast cannot configure,
     as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
