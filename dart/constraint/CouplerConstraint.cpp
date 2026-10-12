@@ -259,8 +259,10 @@ void CouplerConstraint::update()
       }
       mNegativeVelocityError[i] = targetVelocity - followerVelocity;
     }
-    mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
-    mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
+    // A satisfied row stays active, so it must be able to apply no impulse
+    // even when the follower's force limits exclude zero.
+    mUpperBound[i] = std::max(0.0, mJoint->getForceUpperLimit(i) * timeStep);
+    mLowerBound[i] = std::min(0.0, mJoint->getForceLowerLimit(i) * timeStep);
 
     // Satisfied rows stay active: other constraints' impulses could violate
     // them otherwise.
