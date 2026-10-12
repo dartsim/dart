@@ -3,7 +3,8 @@
 // CMAKE_REQUIRED_FLAGS /std:c++14 (MSVC) or -std=c++14 (other compilers).
 // gz-physics 7 keeps CMake 3.5 policies, so its check compiles as C++14. From
 // gz-physics 8, policy CMP0067 also applies CMAKE_CXX_STANDARD 17, whose flag
-// came after -std=c++14 with GCC and Ninja (CMake 3.22 to 4.1).
+// comes after -std=c++14, so with GCC that check compiles as C++17 (CMake 3.22
+// through at least 4.4, with Ninja or Makefiles).
 // Refresh by checking DART_HAS_CONTACT_SURFACE_HEADER and CMake's probe
 // template.
 // The ContactSurfaceProbe CTest checks syntax with only DART and Eigen include
