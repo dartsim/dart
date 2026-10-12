@@ -177,11 +177,11 @@ private:
 
   /// Minimum heights.
   /// Is computed each time the height field is set with setHeightField().
-  S mMinHeight;
+  S mMinHeight = 0;
 
   /// Maximum heights.
   /// Is computed each time the height field is set with setHeightField().
-  S mMaxHeight;
+  S mMaxHeight = 0;
 };
 
 using HeightmapShapef = HeightmapShape<float>;
