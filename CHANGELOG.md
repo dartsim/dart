@@ -163,6 +163,7 @@
 
   * Allow C++-only projects to find the installed CMake package with the
     `collision-ode` component without enabling C.
+    [#3756](https://github.com/dartsim/dart/pull/3756)
 
   * Restore URDF support and `dart-io` builds with urdfdom 3.x installations
     that ship no CMake version file, such as Ubuntu 22.04 and FreeBSD packages.
