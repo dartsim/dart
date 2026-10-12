@@ -273,3 +273,13 @@ def test_voxel_grid_rejects_rays_longer_than_octomap_traces():
     # A long ray that fits the buffer is still traced.
     shape.updateOccupancy(points=np.array([[30.0, 0.0, 0.0]]))
     assert shape.getOccupancy([30.0, 0.0, 0.0]) > 0.5
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+@pytest.mark.parametrize("resolution, coordinate", [(1e20, 1e20), (1e-25, 1e-24)])
+def test_voxel_grid_rejects_rays_float_cannot_measure(resolution, coordinate):
+    shape = dart.dynamics.VoxelGridShape(resolution=resolution)
+    with pytest.raises(ValueError, match="float arithmetic"):
+        shape.updateOccupancy(points=np.array([[coordinate] * 3]))

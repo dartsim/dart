@@ -124,6 +124,15 @@ void validateVoxelRay(
     throw nb::value_error(
         "the ray from sensorOrigin to a point crosses too many voxels for "
         "OctoMap");
+  // OctoMap normalizes the ray in float, which fails for a length that
+  // overflows or underflows float.
+  if (cells > 0.0) {
+    const float length = (to.cast<float>() - from.cast<float>()).norm();
+    if (!(std::isfinite(length) && length > 0.0f))
+      throw nb::value_error(
+          "the ray from sensorOrigin to a point is too long or too short for "
+          "OctoMap's float arithmetic");
+  }
 }
 
 } // namespace
