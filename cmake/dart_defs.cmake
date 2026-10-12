@@ -424,6 +424,8 @@ endfunction()
 #-------------------------------------------------------------------------------
 # Configure MSVC-specific compiler and linker policy.
 #-------------------------------------------------------------------------------
+set(DART_MSVC_CXX_PARSING_OPTIONS /permissive- /Zc:twoPhase-)
+
 function(dart_configure_msvc_toolchain)
   if(NOT MSVC)
     return()
@@ -463,10 +465,11 @@ function(dart_configure_msvc_toolchain)
     _ENABLE_EXTENDED_ALIGNED_STORAGE
   )
 
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
+  foreach(option IN LISTS DART_MSVC_CXX_PARSING_OPTIONS)
+    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:${option}>")
+  endforeach()
   add_compile_options(
-    $<$<COMPILE_LANGUAGE:CXX>:/EHsc>
-    $<$<COMPILE_LANGUAGE:CXX>:/permissive->
-    $<$<COMPILE_LANGUAGE:CXX>:/Zc:twoPhase->
     $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
     $<$<COMPILE_LANGUAGE:CXX>:/wd4005>
     $<$<COMPILE_LANGUAGE:CXX>:/wd4099>
@@ -498,6 +501,97 @@ function(dart_configure_msvc_toolchain)
     add_link_options($<$<CONFIG:Release>:/INCREMENTAL:NO>)
   endif()
 endfunction()
+
+#-------------------------------------------------------------------------------
+# Configure compiler warnings, diagnostics, and build-type flags.
+# A macro keeps CMAKE_*_FLAGS in the caller's scope.
+#-------------------------------------------------------------------------------
+macro(dart_configure_compiler_options)
+  if(MSVC)
+    # MSVC policy is configured before dependency discovery.
+    if(DART_TREAT_WARNINGS_AS_ERRORS)
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
+    endif()
+  elseif(CMAKE_COMPILER_IS_GNUCXX)
+    # There is a known bug in GCC 12.1 and above that leads to spurious
+    # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and
+    # -Warray-bounds warnings from gcc/x86_64-linux-gnu/12/include/avx512fintrin.h.
+    # The bug is tracked here: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593
+    # The following workaround can be removed once the bug is fixed.
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.1)
+      add_compile_options(-Wno-array-bounds)
+      add_compile_options(-Wno-dangling-pointer)
+      add_compile_options(-Wno-maybe-uninitialized)
+      add_compile_options(-Wno-stringop-overflow)
+      add_compile_options(-Wno-uninitialized)
+    endif()
+
+    add_compile_options(-Wall -Wextra -fPIC)
+    if(CMAKE_UNITY_BUILD)
+      # Unity sources include .cpp files, so GCC warns about ordinary file-local
+      # types used by classes with linkage as though they were defined in headers.
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-subobject-linkage>)
+    endif()
+    if(DART_TREAT_WARNINGS_AS_ERRORS)
+      add_compile_options(-Werror)
+    endif()
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.2.0)
+      # TODO: These warnings should be properly addressed and these compiler options removed
+      add_compile_options(
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>
+        -Wno-alloc-size-larger-than
+        -Wno-dangling-pointer
+      )
+    endif()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(
+      CMAKE_CXX_FLAGS_DEBUG
+      "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls"
+    )
+    if(DART_FAST_DEBUG)
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1")
+    endif()
+    set(
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}"
+    )
+    set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+
+    # Enforce to colorize compilation output
+    if(${DART_FORCE_COLORED_OUTPUT})
+      add_compile_options(-fdiagnostics-color=always)
+    endif()
+  elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    add_compile_options(-Wall -Wextra -fPIC)
+    if(DART_TREAT_WARNINGS_AS_ERRORS)
+      add_compile_options(-Werror)
+    endif()
+    if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    endif()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+    set(
+      CMAKE_CXX_FLAGS_DEBUG
+      "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls"
+    )
+    if(DART_FAST_DEBUG)
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1")
+    endif()
+    set(
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}"
+    )
+    set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+
+    # Enforce to colorize compilation output
+    if(${DART_FORCE_COLORED_OUTPUT})
+      add_compile_options(-fcolor-diagnostics)
+    endif()
+  else()
+    message(SEND_ERROR "Compiler[${CMAKE_CXX_COMPILER_ID}] not supported.")
+  endif()
+endmacro()
 
 function(dart_library)
   set(prefix _ARG)
