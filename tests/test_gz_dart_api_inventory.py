@@ -437,6 +437,7 @@ void build() {
   auto handler = std::make_shared<Handler>();
   auto solver = std::make_shared<dart::dynamics::DerivedSolver>();
 }
+struct Tuple : std::tuple<int, dart::dynamics::Solver, bool> {};
 """,
     )
     constructors = _entries(result, "constructors")
@@ -496,11 +497,15 @@ class Derived : public dart::collision::DerivedDetector {
   static Registrar<Derived> sRegistrar;
 };
 Derived::Registrar<Derived> Derived::sRegistrar{};
+extern dart::dynamics::Widget gDefined{};
+extern void use(dart::dynamics::Widget w = dart::dynamics::Widget(1));
 """,
     )
     constructors = _entries(result, "constructors")
     assert constructors["dart::dynamics::Widget"]["examples"] == [
-        "dartsim/src/sample.cc:9"
+        "dartsim/src/sample.cc:17",
+        "dartsim/src/sample.cc:18",
+        "dartsim/src/sample.cc:9",
     ]
     assert constructors["dart::collision::Detector::Registrar"]["examples"] == [
         "dartsim/src/sample.cc:16"
@@ -553,17 +558,18 @@ def test_fields_of_dart_bases_through_implicit_this(extractor, api, tmp_path):
         """class Custom : public dart::dynamics::Widget {
 public:
   void inlineUse() { mDirty = true; }
-  void outOfLine();
+  Custom();
   void shadowed();
+  int mCount;
 };
-void Custom::outOfLine() { mDirty = false; }
+Custom::Custom() : mCount{0} { mDirty = false; }
 void Custom::shadowed() { bool mDirty = false; mDirty = true; }
 void unrelated(bool mDirty) { mDirty = true; }
 class Other { bool mDirty; void use() { mDirty = true; } };
 """,
     )
     field = _entries(result, "data_members")["mDirty"]
-    assert field["examples"] == ["dartsim/src/sample.cc:3", "dartsim/src/sample.cc:7"]
+    assert field["examples"] == ["dartsim/src/sample.cc:3", "dartsim/src/sample.cc:8"]
     assert field["receiver_types"] == ["dart::dynamics::Widget"]
 
 
@@ -690,6 +696,11 @@ struct Alias { static void clear(); };
 void h() { Alias::clear(); }
 }
 """,
+            "j.cc": """namespace gz { struct U { using W = dart::dynamics::Widget; void f(); void g(); }; }
+using namespace gz;
+void U::f() { W::getAndReset(); }
+namespace gz { void gz::U::g() { W::setFriction(1.0); } }
+""",
         },
     )
     members = _entries(result, "members")
@@ -703,6 +714,8 @@ void h() { Alias::clear(); }
         "dart::dynamics::Widget",
     ]
     assert "clear" not in members
+    assert members["getAndReset"]["examples"] == ["dartsim/src/j.cc:3"]
+    assert members["setFriction"]["examples"] == ["dartsim/src/j.cc:4"]
 
 
 def test_inactive_and_alternative_preprocessor_branches(extractor, api, tmp_path):
@@ -837,6 +850,11 @@ void f() {
             # A member hides the imported function in out-of-line definitions.
             "member.cc": "struct S { double measure(double); void f(); };\n"
             "using namespace dart::math;\nvoid S::f() { measure(11.0); }\n",
+            # So does a nearer using-declaration of another function.
+            "nearer.cc": """namespace other { double measure(double); }
+using dart::math::measure;
+namespace gz { using other::measure; void f() { measure(14.0); } }
+""",
         },
     )
     function = _entries(overloads, "free_functions")["dart::math::measure"]
@@ -846,6 +864,19 @@ void f() {
         "dartsim/src/renamed.cc:3",
         "dartsim/src/same.cc:4",
     ]
+
+    # Code inside a DART namespace finds its functions without imports.
+    enclosed = _scan(
+        extractor,
+        api,
+        tmp_path / "enclosed",
+        """namespace dart {
+namespace math { void f() { measure(12.0); } }
+void g() { math::measure(13.0); }
+}
+""",
+    )
+    assert _entries(enclosed, "free_functions")["dart::math::measure"]["count"] == 2
 
 
 def test_subscripted_container_elements(extractor, api, tmp_path):

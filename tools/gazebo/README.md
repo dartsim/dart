@@ -231,8 +231,8 @@ branches that a literal `#if 0` or `#if 1` rules out and scans every other
 branch, so the inventory can list uses that only a branch inactive in a given
 build makes. A use takes the types of every declaration that some build lets
 it see, so a variable declared in a branch does not hide other declarations of
-it from uses outside that branch. A type alias defined differently in
-alternative branches resolves to one of its definitions.
+it from uses outside that branch. A type alias or Gazebo class defined
+differently in alternative branches keeps one of its definitions.
 
 With clean source checkouts, regenerate and check it from the DART root:
 

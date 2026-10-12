@@ -18,8 +18,8 @@ Preprocessor conditions are not evaluated, except that a literal `#if 0` or
 inventory also lists uses that only a branch inactive in a given build makes.
 A use takes the types of every declaration that some build lets it see, so a
 variable declared in a branch does not hide other declarations of it from uses
-outside that branch. A type alias defined differently in alternative branches
-resolves to one of its definitions.
+outside that branch. A type alias or Gazebo class defined differently in
+alternative branches keeps one of its definitions.
 """
 
 import argparse
@@ -214,7 +214,7 @@ class Tokens:
     pairs: dict = field(init=False)
     enclosing: list = field(init=False)
     scopes: dict = field(default_factory=dict)
-    bodies: set = field(default_factory=set)
+    bodies: dict = field(default_factory=dict)
     bindings: list = field(default_factory=list)
     branches: list = field(default_factory=list)
     aliases: dict = field(default_factory=dict)
@@ -373,7 +373,7 @@ def scopes(tokens):
                     j += 1
                 if j < end and values[j] == "{" and j in tokens.pairs:
                     names = tuple(v for v in values[i + 1 : j] if v != "::")
-                    tokens.bodies.add(j)
+                    tokens.bodies[j] = namespace + names
                     walk(j + 1, tokens.pairs[j], namespace + names)
                     i = tokens.pairs[j] + 1
                     segment = i
@@ -404,7 +404,7 @@ def scopes(tokens):
                             (owner or "::".join(namespace), name)
                         ).strip(":")
                         if k < end and values[k] == "{" and k in tokens.pairs:
-                            tokens.bodies.add(k)
+                            tokens.bodies[k] = tuple(full_name.split("::"))
                             parents = []
                             angle = 0
                             for p in range(parent_start, k + 1):
@@ -442,7 +442,13 @@ def scopes(tokens):
                             continue
                         if k < end and values[k] == ";":
                             aliases.append((full_name, [full_name], i))
-            if value == "(" and i in tokens.pairs:
+            initializer = (  # `m{...}` in a constructor's member initializers
+                value == "{"
+                and (IDENTIFIER.match(values[i - 1]) or values[i - 1] == ">")
+                and ":" in values[segment:i]
+                and ")" in values[segment : values.index(":", segment, i)]
+            )
+            if (value == "(" or initializer) and i in tokens.pairs:
                 for p in range(i, tokens.pairs[i] + 1):
                     tokens.scopes[p] = here
                 i = tokens.pairs[i] + 1
@@ -458,8 +464,16 @@ def scopes(tokens):
                     path = qualifier_path(method["return_tokens"])
                     if owner is None:
                         method["name"] = "::".join(namespace + path + (method["name"],))
-                        if path:  # an out-of-line definition looks names up in A::B
+                        if path and value == "{" and i in tokens.pairs:
+                            # An out-of-line definition looks names up in A::B,
+                            # which scan_sources resolves to the declared class.
                             inside, scope = method["name_index"] + 1, namespace + path
+                            method["definition"] = (
+                                namespace,
+                                path,
+                                inside,
+                                tokens.pairs[i],
+                            )
                     functions.append(method)
                 elif owner and access != "private":
                     member = data_member(prefix, owner)
@@ -690,14 +704,11 @@ def constructs(tokens, start, end, declarations, heads):
     after = template_end(values, end)
     for head, body in heads:
         if head < start < body:  # a base's constructors run for the class's
-            return before in {
-                ":",
-                ",",
-                "public",
-                "protected",
-                "private",
-                "virtual",
-            } and (values[after : after + 1] in (["{"], [","]))
+            return (
+                before in {":", ",", "public", "protected", "private", "virtual"}
+                and values[after : after + 1] in (["{"], [","])
+                and not in_template_argument(values, start)
+            )
     if before in {".", "->", "~", "operator"}:
         return False
     if (
@@ -710,19 +721,32 @@ def constructs(tokens, start, end, declarations, heads):
         return values[end : end + 2] == ["::", values[end - 1]]
     if in_template_argument(values, start):
         return False
-    statement = lead
-    while statement and values[statement - 1] not in {";", "{", "}", ":"}:
+    variable = variable_after_type(values, end)
+    statement = lead  # the specifiers of the declaration that the type starts
+    while statement and values[statement - 1] not in {
+        ";",
+        "{",
+        "}",
+        ":",
+        "(",
+        ",",
+        "=",
+    }:
         statement -= 1
     specifiers = set(values[statement:lead])
-    if specifiers & {"typedef", "extern", "friend"} or (
-        "static" in specifiers  # an in-class declaration, defined out of line
-        and not specifiers & {"inline", "constexpr"}
-        and any(tokens.enclosing[start] == body for _, body in heads)
+    defined = variable is not None and values[variable + 1] in {"=", "{", "("}
+    if (
+        specifiers & {"typedef", "friend"}
+        or ("extern" in specifiers and not defined)
+        or (  # an in-class declaration, defined out of line
+            "static" in specifiers
+            and not specifiers & {"inline", "constexpr"}
+            and any(tokens.enclosing[start] == body for _, body in heads)
+        )
     ):
         return False
     if before == "new" or values[after : after + 1] in (["("], ["{"]):
         return True
-    variable = variable_after_type(values, end)
     opening = tokens.enclosing[start]  # parameters are not constructions
     return (
         variable is not None
@@ -739,8 +763,9 @@ def constructs(tokens, start, end, declarations, heads):
 def using_declarations(tokens):
     """(name, target, scope, start, stop, depth) for each `using a::b::name;`.
 
-    A declaration is visible at tokens start..stop within `scope`, and a function
-    of that name declared in a scope deeper than `depth` hides it.
+    A declaration is visible at tokens start..stop within `scope` and declares
+    the name at `depth`, the length of its namespace or class scope; a block's
+    declaration is deeper than all of them.
     """
     values = tokens.values
     result = []
@@ -996,7 +1021,6 @@ def scan_sources(api, source_root):
                 line += 1
             tokens.branches.append(branches[line])
         classes, functions, source_aliases, _ = scopes(tokens)
-        tokens.using = using_declarations(tokens)
         for function in functions:
             source_returns[function["name"].split("::")[-1]].append(function)
         imports = re.findall(r"\busing\s+namespace\s+([\w:]+)\s*;", clean)
@@ -1043,25 +1067,43 @@ def scan_sources(api, source_root):
                         pending.append(header)
         closure[relative] = sorted(seen - {relative}) + [relative]
     own = {
-        path: (list(imports), dict(namespace_aliases), list(tokens.using))
+        path: (list(imports), dict(namespace_aliases))
         for path, tokens, _, _, _, imports, namespace_aliases in files
     }
     for path, tokens, _, _, _, imports, namespace_aliases in files:
         imports.clear()
         for header in reversed(closure[path]):  # the file's own first
-            spaces, renamed, used = own[header]
+            spaces, renamed = own[header]
             imports += [space for space in spaces if space not in imports]
             for key, value in renamed.items():
                 namespace_aliases.setdefault(key, value)
-            if header != path:  # an included header's namespace-scope declarations
-                tokens.using += [
-                    (*entry[:3], -1, len(tokens.values), entry[5])
-                    for entry in used
-                    if entry[5] != float("inf")
-                ]
         imports[:] = [expand(space.lstrip(":"), namespace_aliases) for space in imports]
         if "dart" in imports:
             imports += ["dart::" + space for space in imports if space != "dart"]
+    # An out-of-line definition `A::B::f` looks names up in the class A::B.
+    known = {"::".join(s) for _, tokens, *_ in files for s in tokens.bodies.values()}
+    for _, tokens, _, functions, _, imports, namespace_aliases in files:
+        for function in functions:
+            if "definition" in function:
+                outer, qualifier, first, last = function["definition"]
+                spelled = expand("::".join(qualifier), namespace_aliases)
+                owner = next(
+                    (c for c in api.spellings(spelled, outer, imports) if c in known),
+                    "::".join(outer + qualifier),
+                )
+                for index in range(first, last + 1):
+                    tokens.scopes[index] = tuple(owner.split("::"))
+                function["name"] = owner + "::" + function["name"].rpartition("::")[2]
+        tokens.using = using_declarations(tokens)
+    declared_using = {path: list(tokens.using) for path, tokens, *_ in files}
+    for path, tokens, *_ in files:  # and an included header's namespace-scope ones
+        tokens.using += [
+            (*entry[:3], -1, len(tokens.values), entry[5])
+            for header in closure[path]
+            if header != path
+            for entry in declared_using[header]
+            if entry[5] != float("inf")
+        ]
     declared = defaultdict(lambda: defaultdict(set))
     for path, _, _, functions, *_ in files:
         for function in functions:
@@ -1069,14 +1111,6 @@ def scan_sources(api, source_root):
             declared[path][function["name"].split("::")[-1]].add(
                 tuple(scope.split("::")) if scope else ()
             )
-
-    def hidden(name, path, scope, depth):
-        """Whether a function declared deeper than `depth` around the call hides it."""
-        return any(
-            len(owner) > depth and scope[: len(owner)] == owner
-            for header in closure[path]
-            for owner in declared[header].get(name, ())
-        )
 
     # Base classes declared in the scanned sources, for inherited names.
     source_classes = {cls["name"] for _, _, classes, *_ in files for cls in classes}
@@ -1323,31 +1357,36 @@ def scan_sources(api, source_root):
         row["unresolved_count"] += not bool(dart_receivers)
 
     def free_function(name, tokens, index, path, imports, namespace_aliases):
-        """The DART function that an unqualified call reaches through imports.
+        """The DART function that an unqualified call reaches.
 
-        A using-declaration joins the overload set of its own scope, and a
-        using-directive of a DART namespace acts at the global scope, so only a
-        function declared between them and the call hides them.
+        Lookup stops at the innermost scope that declares the name: a function
+        of an enclosing namespace or class, or a using-declaration, counts in
+        its own scope, and a using-directive of a DART namespace at the global
+        scope.
         """
         scope = tokens.scopes.get(index, ())
+        found = defaultdict(list)  # depth -> the DART functions declared there
+        declared_at = set()
+        for size in range(len(scope), 0, -1):
+            if "::".join(scope[:size] + (name,)) in api.free_functions:
+                found[size].append("::".join(scope[:size] + (name,)))
         for short, target, where, start, stop, depth in tokens.using:
-            target = expand(target, namespace_aliases)
-            if (
-                short == name
-                and start < index < stop
-                and scope[: len(where)] == where
-                and target in api.free_functions
-                and not hidden(name, path, scope, depth)
-            ):
-                return target
-        for space in imports:
-            if f"{space}::{name}" in api.free_functions:
-                return None if hidden(name, path, scope, 0) else f"{space}::{name}"
-        return None
+            if short == name and start < index < stop and scope[: len(where)] == where:
+                declared_at.add(depth)
+                if expand(target, namespace_aliases) in api.free_functions:
+                    found[depth].append(expand(target, namespace_aliases))
+        found[0] += [
+            f"{s}::{name}" for s in imports if f"{s}::{name}" in api.free_functions
+        ]
+        for header in closure[path]:
+            for owner in declared[header].get(name, ()):
+                if scope[: len(owner)] == owner:
+                    declared_at.add(len(owner))
+        depths = declared_at | {depth for depth, items in found.items() if items}
+        return (found[max(depths, default=0)] or [None])[0]
 
-    def qualified_function(name, imports, namespace_aliases):
-        name = expand(name, namespace_aliases)
-        for candidate in (name, *(f"{space}::{name}" for space in imports)):
+    def qualified_function(name, scope, imports, namespace_aliases):
+        for candidate in api.spellings(expand(name, namespace_aliases), scope, imports):
             if candidate in api.free_functions:
                 return candidate
         return None
@@ -1573,7 +1612,10 @@ def scan_sources(api, source_root):
                         inferred = bases
                         declarations = candidates(name, inferred)
                     free = qualified_function(
-                        qualifier + "::" + name, imports, namespace_aliases
+                        qualifier + "::" + name,
+                        tokens.scopes.get(i, ()),
+                        imports,
+                        namespace_aliases,
                     )
                     if free:
                         add("free_functions", free, path, tokens.line(i))
