@@ -193,12 +193,12 @@ target_compile_features(dart PUBLIC cxx_std_17)
 
 # DART's public templates need the MSVC parsing mode DART is compiled with
 # (see dart_defs.cmake), so consumers inherit it as well.
-target_compile_options(
-  dart
-  INTERFACE
-    "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->"
-    "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:twoPhase->"
-)
+foreach(option IN LISTS DART_MSVC_CXX_PARSING_OPTIONS)
+  target_compile_options(
+    dart
+    INTERFACE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:${option}>"
+  )
+endforeach()
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
