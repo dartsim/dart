@@ -682,6 +682,69 @@ TEST(SceneContract, FailingSceneHookIsDisabledAloneAndFailsTheCycle)
 }
 
 //==============================================================================
+TEST(SceneContract, DestroyedTeardownsCannotAddTeardowns)
+{
+  // A teardown capture whose destructor tries to add a teardown, as a
+  // binding's finalizer might.
+  struct AddsOnDestruction
+  {
+    App* host = nullptr;
+    bool* rejected = nullptr;
+    ~AddsOnDestruction()
+    {
+      if (!host)
+        return;
+      try {
+        host->addTeardown([] {});
+      } catch (const std::logic_error&) {
+        *rejected = true;
+      }
+    }
+  };
+  bool rejected = false;
+  App* hostPtr = nullptr;
+  const Scene scene = makeScene("leaky", [&] {
+    auto setup = emptySetup();
+    setup.onActivate = [&](SceneContext& ctx) {
+      auto capture = std::make_shared<AddsOnDestruction>();
+      capture->host = hostPtr;
+      capture->rejected = &rejected;
+      ctx.addTeardown([capture] {});
+    };
+    return setup;
+  });
+  App host({scene}, std::nullopt);
+  hostPtr = &host;
+  testing::internal::CaptureStdout();
+  EXPECT_EQ(host.cycleScenes(1), 0);
+  testing::internal::GetCapturedStdout();
+  EXPECT_TRUE(rejected);
+}
+
+//==============================================================================
+TEST(GuiAppControl, ClearingCallbacksSurvivesCapturesThatAddControls)
+{
+  auto panel = Control::makePanel();
+  auto group = panel->addGroup("Group");
+  for (int i = 0; i < 8; ++i) {
+    // Each capture appends a control to the group when it is destroyed,
+    // which reallocates the group's children while they are being cleared.
+    struct Appends
+    {
+      Control* group;
+      ~Appends()
+      {
+        group->addButton("late");
+      }
+    };
+    auto capture = std::make_shared<Appends>(Appends{group.get()});
+    group->addButton("b")->setOnChange([capture] {});
+  }
+  panel->clearCallbacks();
+  EXPECT_GT(group->getChildren().size(), 8u);
+}
+
+//==============================================================================
 TEST(SceneContract, TeardownsCannotAddTeardowns)
 {
   const Scene scene = makeScene("nested", [] {
@@ -772,6 +835,15 @@ TEST(SceneContract, KinematicScenesDisablePlayUntilTornDown)
   EXPECT_EQ(host.cycleScenes(1), 0);
   testing::internal::GetCapturedStdout();
   EXPECT_EQ(allowed, (std::vector<bool>{false, true, false, true}));
+
+  // A viewer whose owner disallowed simulation stays that way.
+  allowed.clear();
+  App owned({makeScene("kinematic", record(false))}, std::nullopt);
+  owned.getViewer()->allowSimulation(false);
+  testing::internal::CaptureStdout();
+  EXPECT_EQ(owned.cycleScenes(1), 0);
+  testing::internal::GetCapturedStdout();
+  EXPECT_FALSE(owned.getViewer()->isAllowingSimulation());
 }
 
 //==============================================================================

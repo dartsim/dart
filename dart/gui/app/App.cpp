@@ -997,8 +997,9 @@ void App::teardownCurrentScene()
   mTearingDown = true;
   for (auto it = teardowns.rbegin(); it != teardowns.rend(); ++it)
     invokeSceneCallback(*it, "teardown");
-  mTearingDown = false;
+  // Destroying the callables can run destructors that try to add more.
   teardowns.clear();
+  mTearingDown = false;
   // The scene's contexts expire only now, so its teardowns could use them.
   mActivation.reset();
 
@@ -1014,11 +1015,14 @@ void App::teardownCurrentScene()
       --mActiveWorldNodeCount;
   }
 
-  if (!mViewer->isAllowingSimulation()) {
+  // Undo only what installScene() changed: an owner may have disallowed
+  // simulation itself.
+  if (mRestoreSimulationOnTeardown) {
     mViewer->allowSimulation(true);
     if (mResumeSimulationOnTeardown)
       mViewer->simulate(true);
   }
+  mRestoreSimulationOnTeardown = false;
   mResumeSimulationOnTeardown = false;
 
   mCurrentWorld.reset();
@@ -1099,9 +1103,10 @@ void App::installScene(
   mViewer->addWorldNode(mWorldNode);
   ++mActiveWorldNodeCount;
 
-  if (!setup.allowSimulation) {
+  if (!setup.allowSimulation && mViewer->isAllowingSimulation()) {
     mResumeSimulationOnTeardown = mViewer->isSimulating();
     mViewer->allowSimulation(false);
+    mRestoreSimulationOnTeardown = true;
   }
 
   mCurrentPanel = std::move(setup.panel);

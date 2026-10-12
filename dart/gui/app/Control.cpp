@@ -554,7 +554,9 @@ void Control::clearCallbacks()
   mOnChange = nullptr;
   mPending = false;
   mUnreleasedEdit = false;
-  for (const auto& child : mChildren)
+  // Iterate a snapshot: a destroyed callback's captures may append controls.
+  const auto children = mChildren;
+  for (const auto& child : children)
     child->clearCallbacks();
 }
 

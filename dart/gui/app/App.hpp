@@ -403,6 +403,7 @@ private:
   std::shared_ptr<const void> mActivation;
   bool mTearingDown = false;
   bool mResumeSimulationOnTeardown = false;
+  bool mRestoreSimulationOnTeardown = false;
   bool mEchoErrors = false;
   std::size_t mCallbackFailures = 0;
   std::function<bool()> mStopRequested;
