@@ -286,12 +286,46 @@ Known gaps:
 ### WP-7.0.7 Scope artifacts
 
 - **Scope:**
-  - the freeze date `F`, the checkpoints C1 and C2, and the M3 thresholds;
+  - the dependency/order/priority refinement dated 2026-10-11; historical
+    evidence dates stay;
+  - API freeze `F`, declared after every must-have breaking change has merged
+    and C2 has passed; additive work after `F` goes to 7.1;
+  - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
+    land before `F` without delaying the remaining breaking changes;
+  - C2 before `F`, so release candidates carry the final render API;
+  - the default-detector switch only if its prerequisites pass before M1
+    starts, scheduled first so later rebaselines start from the final default;
+    otherwise a labeled 7.x change;
+  - the M3 thresholds: at least 15% `Ir` gain on `dyn`/`robot`, improved K = 64
+    wall time, and the flagged spike passing guards and the shim with `memcpy`
+    snapshots at most 0.1× the gather cost; M2 stops below 10% gain from its
+    first three kernel PRs;
   - the 7.0 must-have list and explicit deferrals;
-  - the target-shape acceptance tests, marked `xfail(strict=True)`;
-  - a maintainer check of the PyPI project history for deleted 7.0.0 files,
-    because PyPI never accepts a reused file name.
-- **Status:** planned.
+  - the target-shape acceptance tests, marked `xfail(strict=True)`.
+- **Evidence on 2026-10-11** (main `b3f922f57`):
+  `python/tests/acceptance/test_target_shape.py` collects ten tests, all
+  XFAIL with no XPASS, through `pixi run test-py` (688 passed, 2 skipped,
+  10 XFAIL). With `--runxfail`, each fails for its intended missing feature:
+
+  | Test | Observed failure |
+  | --- | --- |
+  | World construction keywords | `AttributeError`: no `dart.World` |
+  | edit/compile | `AttributeError`: no `World.compile` |
+  | loading and data | `AttributeError`: no `dart.data` |
+  | joint PositionServo | `AttributeError`: no `dart.PositionServo` |
+  | IMU sensor | `AttributeError`: no `dart.sensors` |
+  | `step(n)` | `TypeError`: current overload accepts `bool`, rejects `20` |
+  | Transform composition | `AttributeError`: no `dart.Transform` |
+  | capture/restore state | `AttributeError`: no `World.capture_state` |
+  | Renderer RGB | `AttributeError`: no `dart.render` |
+  | WorldBatch set/step | `AttributeError`: no `dart.WorldBatch` |
+
+  `pyproject.toml` already sets `xfail_strict = true`, and each test also
+  passes `strict=True`. The contract lives only in these tests, not in
+  `python/examples/`, because that directory's examples run automatically.
+- **Pending maintainer action:** check PyPI's project history for deleted
+  7.0.0 files, because PyPI never accepts a reused file name.
+- **Status:** in review.
 
 ### WP-7.0.8 Newer-Python wheels for 6.20.x
 

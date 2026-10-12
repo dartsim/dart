@@ -27,6 +27,12 @@ DART 7.0 is a **clean break for Python**:
 Earlier runtime-shim attempts produced untyped stubs, alias-order bugs and broken
 introspection. Native renames in the binding sources avoid all three.
 
+Release scope follows dependencies, order and priority. The API freeze `F` is
+declared once every breaking change on the 7.0 must-have list has merged and
+checkpoint C2 has passed; additive work after `F` goes to 7.1. The
+[project home](../dev_tasks/dart7_python_first/README.md) owns the scope list and
+checkpoint criteria.
+
 ## Package and naming
 
 - The distribution and import name stays `dartpy`; documentation uses
@@ -155,6 +161,10 @@ Worlds that were never compiled stay lazy, which is the C++ default. They
 prepare the same dense data on their first step and rebuild only the affected
 parts after an edit, keeping object addresses stable, so downstream runtime
 edits keep working. Lazy and compiled worlds run the same kernels.
+
+The default detector switches from FCL to DART in 7.0 only if its capability
+prerequisites pass before M1 starts. It is scheduled first so later rebaselines
+start from the final default; otherwise the switch is a 7.x labeled change.
 
 Structural edits on a compiled World happen inside `with world.edit():`. Leaving
 the block recompiles the affected data and starts a new topology revision.
@@ -406,8 +416,9 @@ Binding rules:
 
 M6a merged the Filament renderer on `main` in
 [#3696](https://github.com/dartsim/dart/pull/3696). Its camelCase `dartpy.gui`
-bindings are interim. M6b still implements the following Python API and
-removes that interim module before the first release candidate:
+bindings are interim. M6b implements the following Python API and removes that
+interim module before the API freeze `F`, so release candidates carry the final
+render API:
 
 - **`dart.render`** is headless.
   - A `Renderer` returns NumPy arrays: RGB, metric depth and segmentation.

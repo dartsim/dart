@@ -84,8 +84,10 @@ Priority order is document order. Active implementation handoff remains in
   - representative behavior comparisons;
   - the deformable-body pre-default coverage gate.
 
-  If the gate does not pass by the M0 decision date, FCL stays the 7.0 default and
-  the flip moves to a later 7.x release. FCL remains a core dependency.
+  The switch ships in 7.0 only if these prerequisites pass before M1 starts.
+  It is scheduled first so later rebaselines start from the final default;
+  otherwise FCL stays the 7.0 default and the switch is a 7.x labeled change.
+  FCL remains a core dependency.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.

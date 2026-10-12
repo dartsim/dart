@@ -96,9 +96,10 @@ only with new evidence and maintainer approval.
   - Structural edits go inside `edit()`.
   - The C++ default stays lazy, so downstream runtime edits keep working.
 - **D13. Zero-allocation contract on the DART and Bullet detectors.**
-  - The default detector switches from FCL to DART only if its capability gate
-    passes by the M0 decision date; otherwise the switch is a 7.x labeled
-    change.
+  - The default detector switches from FCL to DART in 7.0 only if its
+    capability prerequisites pass before M1 starts. The switch is scheduled
+    first so later rebaselines start from the final default; otherwise it is
+    a 7.x labeled change.
   - Known gaps: the native detector currently warns once and skips heightmaps,
     and it approximates ellipsoids and cones.
 - **D14. One deterministic executor**, a GIL-free `step(n)`, and `WorldBatch`
@@ -158,4 +159,26 @@ only with new evidence and maintainer approval.
   (M6b).
 - **D31a. Interim GUI bindings.** M6a lands with the Filament effort's tested
   camelCase GUI bindings as an interim, undocumented module. M6b replaces them
-  with the 7.0 API and deletes them before the first release candidate.
+  with the 7.0 API and deletes them before the API freeze `F`, so release
+  candidates carry the final render API.
+
+## Scope-gate refinement (2026-10-11)
+
+The maintainer refined the program's plans to express when work happens through
+dependencies, order and priority. Specific future dates and date-relative gates
+are removed; past dates on decisions and evidence stay.
+
+- D13's default-detector switch is gated on its prerequisites passing before
+  M1 starts, so later rebaselines start from the final default.
+- The API freeze `F` is declared once every breaking change on the 7.0
+  must-have list has merged and C2 has passed. Additive work after `F` goes to
+  7.1.
+- C1, the M3 go/no-go, is decided after the first three M2 kernel PRs, at the
+  M2 stop rule. M3 must be able to land before `F` without delaying the
+  remaining breaking changes. Gazebo gates must stay green through those
+  three PRs; the flagged contiguous-state spike is limited to revolute/free
+  joint positions and velocities.
+- C2 passes before `F`, so release candidates carry the final render API.
+
+The [project home](README.md) owns the must-have list, checkpoint criteria and
+priority order.
