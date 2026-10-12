@@ -282,6 +282,10 @@ TEST(GuiAppControl, BuildersValidateAndSanitizeValues)
   EXPECT_THROW(whole->setRange(0.2, 0.8), std::invalid_argument);
   auto unbounded = panel->addInput("n", 1e12, 1.0, 0, true);
   EXPECT_DOUBLE_EQ(unbounded->getValue().x(), std::numeric_limits<int>::max());
+  EXPECT_THROW(
+      panel->addInput(
+          "fast", 0.0, 1.0, 3, false, -infinity, infinity, std::nan("")),
+      std::invalid_argument);
 
   auto checkbox = panel->addCheckbox("on", true);
   checkbox->setValue(Eigen::Vector4d(0.25, 0.0, 0.0, 0.0));
@@ -514,6 +518,45 @@ TEST(GuiAppControl, IntegerTextEntryClampsInsteadOfWrapping)
   EXPECT_EQ(panel->dispatch({}), 0u);
   EXPECT_EQ(calls, 1);
   EXPECT_DOUBLE_EQ(slider->getValue().x(), 100.0);
+}
+
+//==============================================================================
+TEST(GuiAppControl, CtrlClickStepsInputsByTheirFastStep)
+{
+  constexpr double infinity = std::numeric_limits<double>::infinity();
+  auto panel = Control::makePanel();
+  auto input
+      = panel->addInput("count", 1.0, 1.0, 0, true, -infinity, infinity, 10.0);
+
+  ScopedImGuiFrameContext context;
+  ImVec2 plus;
+  context.frame([&] {
+    panel->render();
+    // The + button is the square at the right end of the input's group.
+    const ImVec2 max = ImGui::GetItemRectMax();
+    const float side = ImGui::GetFrameHeight();
+    plus = ImVec2(max.x - 0.5f * side, max.y - 0.5f * side);
+  });
+  ImGuiIO& io = ImGui::GetIO();
+  const auto click = [&](bool ctrl) {
+    const std::vector<std::function<void()>> inputs = {
+        [&] { io.AddMousePosEvent(plus.x, plus.y); },
+        [&] {
+          io.AddKeyEvent(ImGuiMod_Ctrl, ctrl);
+          io.AddMouseButtonEvent(0, true);
+        },
+        [&] { io.AddMouseButtonEvent(0, false); },
+        [&] { io.AddKeyEvent(ImGuiMod_Ctrl, false); },
+    };
+    for (const auto& input : inputs) {
+      input();
+      context.frame([&] { panel->render(); });
+    }
+  };
+  click(true);
+  EXPECT_DOUBLE_EQ(input->getValue().x(), 11.0);
+  click(false);
+  EXPECT_DOUBLE_EQ(input->getValue().x(), 12.0);
 }
 
 //==============================================================================

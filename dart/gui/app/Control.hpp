@@ -144,6 +144,7 @@ public:
       int decimals = 3,
       bool integer = false,
       bool notifyOnRelease = false);
+  /// \p stepFast is the +/- step while Ctrl is held; 0 keeps \p step.
   std::shared_ptr<Control> addInput(
       std::string label,
       double value,
@@ -151,7 +152,8 @@ public:
       int decimals = 3,
       bool integer = false,
       double min = -std::numeric_limits<double>::infinity(),
-      double max = std::numeric_limits<double>::infinity());
+      double max = std::numeric_limits<double>::infinity(),
+      double stepFast = 0.0);
   std::shared_ptr<Control> addVec3(
       std::string label,
       const Eigen::Vector3d& value,
@@ -234,6 +236,7 @@ private:
   double mMin = 0.0;
   double mMax = 0.0;
   double mStep = 0.0;
+  double mStepFast = 0.0;
   double mSpeed = 0.01;
   Eigen::Vector4d mColor = Eigen::Vector4d::Zero();
   Eigen::Vector4d mValue = Eigen::Vector4d::Zero();

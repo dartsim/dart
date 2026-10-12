@@ -337,14 +337,17 @@ std::shared_ptr<Control> Control::addInput(
     int decimals,
     bool integer,
     double min,
-    double max)
+    double max,
+    double stepFast)
 {
   requireFinite(value, "input value");
   requireFinite(step, "input step");
+  requireFinite(stepFast, "input fast step");
   if (decimals < 0 || decimals > kMaxDecimals)
     throw std::invalid_argument("decimals must be between 0 and 15");
   auto control = std::shared_ptr<Control>(new Control(Kind::Input, label));
   control->mStep = std::abs(step);
+  control->mStepFast = std::abs(stepFast);
   control->mDecimals = decimals;
   control->mInteger = integer;
   control->setRange(min, max);
@@ -686,14 +689,18 @@ void Control::renderSelf()
       double value = mValue.x();
       // An integer input always steps, by at least one.
       const double integerStep = std::max(1.0, std::round(mStep));
+      const double integerStepFast = std::max(1.0, std::round(mStepFast));
       const double* step
           = mInteger ? &integerStep : (mStep > 0.0 ? &mStep : nullptr);
+      const double* stepFast = nullptr;
+      if (mStepFast > 0.0)
+        stepFast = mInteger ? &integerStepFast : &mStepFast;
       if (ImGui::InputScalar(
               kValueId,
               ImGuiDataType_Double,
               &value,
               step,
-              nullptr,
+              stepFast,
               format.c_str()))
         edit(Eigen::Vector4d(value, 0.0, 0.0, 0.0));
       break;
