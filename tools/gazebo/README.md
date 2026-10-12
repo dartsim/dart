@@ -200,6 +200,34 @@ maintainer decided are not DART regressions; `baseline` keeps them, and
 `pixi run test-gz-compat-tools` after changing `compare_failures.py` or the
 world generator.
 
+## DART C++ API inventory
+
+[`compat/dart_api_inventory.json`](compat/dart_api_inventory.json) records the
+DART types, accessor and mutation calls, free functions, macros, and virtual
+overrides used by the gz-physics dartsim plugin, its direct DART test code,
+and directly by gz-sim. It includes source revisions, use counts, source
+locations, and matching DART header declarations with signatures, constness,
+and virtual status. The lexical inventory retains declaration candidates for
+unresolved receivers (`unresolved_count`) and overloads. The Gazebo gates
+remain the source and behavior checks.
+Macro entries also retain DART feature probes and mark whether the current
+DART headers declare them (`declared_in_dart`).
+
+With clean source checkouts, regenerate and check it from the DART root:
+
+```bash
+python scripts/gz_dart_api_inventory.py "$GZ_PHYSICS_SOURCE" --gz-sim "$GZ_SIM_SOURCE"
+python scripts/gz_dart_api_inventory.py --check "$GZ_PHYSICS_SOURCE" --gz-sim "$GZ_SIM_SOURCE"
+```
+
+To refresh the recorded SHAs, fetch each source repository, check out the
+chosen revision, and regenerate with both checkouts. Keep the gz-physics
+revision aligned with the DART compatibility shim; refresh gz-sim from its
+main branch. A check with only gz-physics retains the recorded gz-sim scan and
+reports that it was not rescanned. Without a checkout, the command explicitly
+reports a skipped check. Run `pixi run test-gz-compat-tools` after extractor
+changes.
+
 ## Drivers
 
 [`bench/`](bench/) holds drivers that link one lane's gz-physics, gz-sim and

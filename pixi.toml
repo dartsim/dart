@@ -273,14 +273,15 @@ test-build-requirements = { cmd = [
   "-q",
 ] }
 
-# The Gazebo compatibility lanes' failure comparison and benchmark world
-# generator (tools/gazebo); run after changing either.
+# The Gazebo compatibility lanes' failure comparison, benchmark world generator,
+# and DART C++ API inventory; run after changing their tooling.
 test-gz-compat-tools = { cmd = [
   "python",
   "-I",
   "scripts/run_pytest.py",
   "tests/test_gz_compat_compare.py",
   "tests/test_gz_bench_worlds.py",
+  "tests/test_gz_dart_api_inventory.py",
   "-q",
 ] }
 
