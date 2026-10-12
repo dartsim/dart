@@ -2690,24 +2690,41 @@ bool Skeleton::moveBodyNodeTree(
 //==============================================================================
 // Binds the IK modules of copied Nodes to the DOFs of the copy. Each Node
 // cloned its IK module before the copied BodyNodes joined their Skeleton, so
-// the module still selects DOFs by their indices in the original Skeleton.
-// setDofs() also rebuilds the IK and analytical DOF maps.
+// the module still selects DOFs by their indices in originalDofs, the DOFs of
+// the original Skeleton before the copy. setDofs() also rebuilds the IK and
+// analytical DOF maps.
 static void bindCopiedInverseKinematics(
+    const std::vector<const DegreeOfFreedom*>& originalDofs,
     const std::vector<const BodyNode*>& originals,
     const std::vector<BodyNode*>& copies,
     bool replacedRootJoint,
     bool sameSkeleton)
 {
-  // The index of the copy of each copied DOF, by the index of its original. A
-  // requested parent Joint replaces the root's Joint instead of copying it.
-  std::unordered_map<std::size_t, std::size_t> copiedDofs;
+  // The copy of each copied DOF. A requested parent Joint replaces the root's
+  // Joint instead of copying it.
+  std::unordered_map<const DegreeOfFreedom*, const DegreeOfFreedom*> copiedDofs;
   for (std::size_t i = replacedRootJoint ? 1 : 0; i < originals.size(); ++i) {
     const Joint* original = originals[i]->getParentJoint();
-    for (std::size_t j = 0; j < original->getNumDofs(); ++j) {
-      copiedDofs[original->getIndexInSkeleton(j)]
-          = copies[i]->getParentJoint()->getIndexInSkeleton(j);
-    }
+    for (std::size_t j = 0; j < original->getNumDofs(); ++j)
+      copiedDofs[original->getDof(j)] = copies[i]->getParentJoint()->getDof(j);
   }
+
+  // The index of the DOF that the copy uses in place of the DOF that had this
+  // index before the copy, if any. The DOFs of Joints that were not copied stay
+  // in the original Skeleton, so a copy into that Skeleton keeps them,
+  // including those that its Node does not depend on, which an IK module can
+  // select too.
+  const auto counterpart
+      = [&](std::size_t index) -> std::optional<std::size_t> {
+    if (index >= originalDofs.size())
+      return std::nullopt;
+    const auto copy = copiedDofs.find(originalDofs[index]);
+    if (copy != copiedDofs.end())
+      return copy->second->getIndexInSkeleton();
+    if (sameSkeleton)
+      return originalDofs[index]->getIndexInSkeleton();
+    return std::nullopt;
+  };
 
   const auto printDofs
       = [](std::ostream& out, const std::vector<std::size_t>& dofs) {
@@ -2727,19 +2744,6 @@ static void bindCopiedInverseKinematics(
       auto* node = dynamic_cast<JacobianNode*>(copiedNodes[n]);
       if (node == nullptr || node->getIK() == nullptr)
         continue;
-
-      // The DOF that the copy uses in place of a DOF of the original Skeleton,
-      // if any. The DOFs of Joints that were not copied stay in the original
-      // Skeleton, so a copy into that Skeleton keeps those it depends on.
-      const auto counterpart
-          = [&](std::size_t dof) -> std::optional<std::size_t> {
-        const auto copy = copiedDofs.find(dof);
-        if (copy != copiedDofs.end())
-          return copy->second;
-        if (sameSkeleton && node->dependsOn(dof))
-          return dof;
-        return std::nullopt;
-      };
 
       InverseKinematics& ik = *node->getIK();
       const std::vector<std::size_t> selected = ik.getDofs();
@@ -2873,9 +2877,10 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     }
   }
 
+  const std::vector<const DegreeOfFreedom*> dofs = getDofs();
   _newSkeleton->receiveBodyNodeTree(clones);
   bindCopiedInverseKinematics(
-      tree, clones, _parentJoint != nullptr, _newSkeleton.get() == this);
+      dofs, tree, clones, _parentJoint != nullptr, _newSkeleton.get() == this);
 
   return root;
 }

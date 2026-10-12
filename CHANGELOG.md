@@ -112,8 +112,8 @@
   * Fix crashes when cloning a skeleton, or copying a body node that has an
     end effector, whose inverse kinematics uses an analytical solver. Inverse
     kinematics copied by `BodyNode::copyTo()` or `BodyNode::copyAs()` now
-    selects the copies of the original degrees of freedom, along with the ones
-    that a copy within the same skeleton still shares with the original, and
+    selects the copies of the original degrees of freedom, keeps the selected
+    ones that were not copied when the copy stays in the same skeleton, and
     warns when none remain. When a copied analytical solver does not solve for
     the copies of the original's degrees of freedom, such as an IkFast solver
     whose stored indices shift, the copy warns and uses `JacobianDLS` instead.

@@ -604,6 +604,85 @@ TEST(InverseKinematics, CopyEndEffectorWithinSkeleton)
 }
 
 //==============================================================================
+TEST(InverseKinematics, CopyEndEffectorWithinSkeletonKeepsUnrelatedDof)
+{
+  auto skeleton = Skeleton::create("original");
+  auto root = skeleton->createJointAndBodyNodePair<PrismaticJoint>();
+  auto pair = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+
+  // An IK module can select a DOF that its node does not depend on, such as
+  // the DOF of another branch that a null-space objective drives.
+  auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
+  ik->setDofs({0, 1, 2});
+  const Eigen::Vector3d weights(0.5, 1.0, 0.25);
+  ik->getGradientMethod().setComponentWeights(weights);
+  const Eigen::Vector3d seed(0.1, 0.6, -0.3);
+  ik->getProblem()->addSeed(seed);
+
+  testing::internal::CaptureStderr();
+  pair.second->copyTo(root.second);
+  const std::string output = testing::internal::GetCapturedStderr();
+  EXPECT_TRUE(output.empty()) << output;
+
+  // The copy keeps the DOFs that it shares with the original, with their
+  // weights and seed entries, and selects its own DOF in place of the
+  // original's.
+  ASSERT_EQ(skeleton->getNumDofs(), 4u);
+  EndEffector* copiedEE = skeleton->getEndEffector(1);
+  EXPECT_FALSE(copiedEE->dependsOn(2));
+  const auto& copiedIK = copiedEE->getIK();
+  EXPECT_EQ(copiedIK->getDofs(), std::vector<std::size_t>({0, 3, 2}));
+  EXPECT_EQ(
+      entries(copiedIK->getGradientMethod().getComponentWeights()),
+      entries(weights));
+  const auto& copiedSeeds = copiedIK->getProblem()->getSeeds();
+  ASSERT_EQ(copiedSeeds.size(), 1u);
+  EXPECT_EQ(entries(copiedSeeds[0]), entries(seed));
+  EXPECT_EQ(ik->getDofs(), std::vector<std::size_t>({0, 1, 2}));
+}
+
+//==============================================================================
+TEST(InverseKinematics, CopyEndEffectorIntoEarlierTree)
+{
+  auto skeleton = Skeleton::create("original");
+  BodyNode* first
+      = skeleton->createJointAndBodyNodePair<PrismaticJoint>().second;
+  auto second = skeleton->createJointAndBodyNodePair<PrismaticJoint>();
+  auto pair = second.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
+  ASSERT_EQ(ik->getDofs(), std::vector<std::size_t>({1, 2}));
+  const std::vector<DegreeOfFreedom*> dofs = skeleton->getDofs();
+
+  testing::internal::CaptureStderr();
+  pair.second->copyTo(first);
+  const std::string output = testing::internal::GetCapturedStderr();
+  EXPECT_TRUE(output.empty()) << output;
+
+  // The copy joins the first tree, but the Skeleton appends its DOF, so the
+  // DOFs of the second tree keep their indices.
+  EndEffector* copiedEE = skeleton->getEndEffector(1);
+  ASSERT_EQ(copiedEE->getBodyNode()->getTreeIndex(), 0u);
+  ASSERT_EQ(skeleton->getNumDofs(), 4u);
+  for (std::size_t i = 0; i < dofs.size(); ++i)
+    EXPECT_EQ(skeleton->getDof(i), dofs[i]) << i;
+
+  // The copied IK module selects the DOF of the second tree's root, which it
+  // shares with the original, and its own DOF in place of the original's.
+  const auto selected = [&](const InverseKinematics& module) {
+    std::vector<DegreeOfFreedom*> selection;
+    for (const std::size_t dof : module.getDofs())
+      selection.push_back(skeleton->getDof(dof));
+    return selection;
+  };
+  EXPECT_EQ(
+      selected(*copiedEE->getIK()),
+      std::vector<DegreeOfFreedom*>(
+          {dofs[1], copiedEE->getBodyNode()->getParentJoint()->getDof(0)}));
+  EXPECT_EQ(selected(*ik), std::vector<DegreeOfFreedom*>({dofs[1], dofs[2]}));
+}
+
+//==============================================================================
 TEST(InverseKinematics, CopyEndEffectorWithStoredAnalyticalDofs)
 {
   auto original = Skeleton::create("original");
