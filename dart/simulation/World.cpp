@@ -1538,14 +1538,13 @@ void World::stepWithoutDeactivation(const StepContext& context)
 bool World::tryAllRestingFastPath(StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
-  const bool deactivationEnabled = context.deactivationEnabled;
 
   const bool customFilterSleeping = mDeactivationState->mStepCustomBodyFilter;
   context.customFilterSleeping = customFilterSleeping;
   const bool lastStepHadNoContacts
       = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
   bool allRestingFastPathReady = false;
-  if (deactivationEnabled && lastStepHadNoContacts) {
+  if (lastStepHadNoContacts) {
     bool allRestingSnapshotStale = false;
     allRestingFastPathReady
         = isAllRestingFastPathReady(_resetCommand, &allRestingSnapshotStale);
@@ -1553,7 +1552,7 @@ bool World::tryAllRestingFastPath(StepContext& context)
       wakeRestingSkeletonsForWorldChange();
   }
 
-  if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
+  if (lastStepHadNoContacts && allRestingFastPathReady) {
     if (customFilterSleeping) {
       for (const auto& skel : mSkeletons) {
         if (skel->isMobile() && skel->isResting())
@@ -1574,7 +1573,6 @@ bool World::tryAllRestingFastPath(StepContext& context)
 void World::advanceVelocities(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
-  const bool deactivationEnabled = context.deactivationEnabled;
 
   // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
   // step so the post-step rest-detection pass can treat it as non-quiet even
@@ -1584,8 +1582,7 @@ void World::advanceVelocities(const StepContext& context)
   auto& disturbedThisStep = mDisturbedThisStepScratch;
   disturbedThisStep.clear();
   const bool trackDisturbances
-      = deactivationEnabled
-        && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
+      = mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
   {
     if (trackDisturbances)
       disturbedThisStep.assign(mSkeletons.size(), false);
@@ -1612,7 +1609,7 @@ void World::advanceVelocities(const StepContext& context)
             return;
 
           const bool externallyDisturbed
-              = deactivationEnabled && (trackDisturbances || skel->isResting())
+              = (trackDisturbances || skel->isResting())
                 && skel->hasExternalDisturbance();
           if (externallyDisturbed && !disturbedThisStep.empty())
             disturbedThisStep[i] = 1;
@@ -1622,7 +1619,7 @@ void World::advanceVelocities(const StepContext& context)
           // case it is woken so the actuation is integrated rather than
           // silently dropped. Gravity alone is not a disturbance, so a body
           // resting on its support stays asleep.
-          if (deactivationEnabled && skel->isResting()) {
+          if (skel->isResting()) {
             if (externallyDisturbed || hasNonzeroGeneralizedVelocity(*skel)) {
               skel->setResting(false);
               skel->setSleepCandidate(false);
@@ -1715,7 +1712,6 @@ void World::solveConstraints(StepContext& context)
 void World::advancePositions(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
-  const bool deactivationEnabled = context.deactivationEnabled;
   const bool customFilterSleeping = context.customFilterSleeping;
   auto& disturbedThisStep = mDisturbedThisStepScratch;
 
@@ -1743,7 +1739,7 @@ void World::advancePositions(const StepContext& context)
           // transmitted-wrench/body-force queries keep the last solved contact
           // forces; that path processes the impulse but preserves the resting
           // state.
-          if (deactivationEnabled && skel->isResting()) {
+          if (skel->isResting()) {
             if (skel->isImpulseApplied()) {
               if (skel->isSleepCandidate()) {
                 preservingFinalSleepSolve = true;
@@ -1799,7 +1795,6 @@ void World::advancePositions(const StepContext& context)
 void World::finishDeactivationStep(const StepContext& context)
 {
   const bool _resetCommand = context.resetCommand;
-  const bool deactivationEnabled = context.deactivationEnabled;
   const bool customFilterSleeping = context.customFilterSleeping;
   const bool collisionGroupUnchanged = context.collisionGroupUnchanged;
   auto& disturbedThisStep = mDisturbedThisStepScratch;
@@ -1809,26 +1804,21 @@ void World::finishDeactivationStep(const StepContext& context)
   // sleep, and wake any that have started moving again. This is a deterministic
   // function of post-step cached speeds, dwell time, and the configured
   // thresholds, so it does not depend on container or iteration order.
-  if (deactivationEnabled
-      && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
+  if (mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
     updateRestStates(disturbedThisStep);
 
   mTime += mTimeStep;
   mFrame++;
 
   // A snapshot can only serve a next step on which a mobile body can freeze.
-  if (deactivationEnabled
-      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
+  if (mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
       && hasRestingOrCandidateMobileSkeleton(mSkeletons)) {
     updateAllRestingKinematicSnapshot(_resetCommand);
   } else {
     invalidateAllRestingKinematicSnapshot();
   }
 
-  if (deactivationEnabled)
-    updateLastStepRestingWorldState();
-  else
-    invalidateLastStepRestingWorldState();
+  updateLastStepRestingWorldState();
 
   updateRetainedContacts(
       deactivationState,
