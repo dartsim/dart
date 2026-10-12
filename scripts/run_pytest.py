@@ -37,12 +37,40 @@ def main(arguments: Sequence[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--pythonpath", action="append", default=[])
+    parser.add_argument("--expect-node")
     options, pytest_arguments = parser.parse_known_args(
         arguments if arguments is not None else sys.argv[1:]
     )
     _clear_pytest_environment()
 
     import pytest
+
+    class _SelectionGuard:
+        error = None
+
+        @pytest.hookimpl(hookwrapper=True, tryfirst=True)
+        def pytest_collection_modifyitems(self, config, items):
+            original = [item.nodeid for item in items]
+            deselected = config.getoption("deselect") or []
+            yield
+            selected = [item.nodeid for item in items]
+            if deselected and (
+                len(original) != len(set(original))
+                or any(original.count(node) != 1 for node in deselected)
+            ):
+                self.error = "deselection must name each collected node exactly once"
+            elif deselected and selected != [
+                node for node in original if node not in deselected
+            ]:
+                self.error = "selection is not the exact deselection complement"
+            elif options.expect_node and selected != [options.expect_node]:
+                self.error = (
+                    f"expected exactly one collected node: {options.expect_node}"
+                )
+
+        def pytest_collection_finish(self):
+            if self.error:
+                raise pytest.UsageError(self.error)
 
     pythonpath_entries = [
         entry
@@ -64,7 +92,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             "--noconftest",
             *pytest_arguments,
         ],
-        plugins=[guard],
+        plugins=[guard, _SelectionGuard()],
     )
     if result == pytest.ExitCode.OK and guard.executed == 0:
         print("ERROR: pytest completed without executing a test body", file=sys.stderr)

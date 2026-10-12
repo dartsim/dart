@@ -187,14 +187,15 @@ add_custom_target(
 # Add custom target to build all the tests and run the tests
 add_custom_target(
   tests_and_run
-  # Rendering tests need a graphics device; `pixi run test-gui` runs them.
+  # Device tests use test-gui; the pytest target owns the Python entries.
   COMMAND
     ${CMAKE_COMMAND} "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
     "-DDART_CTEST_CONFIGURATION=$<CONFIG>"
-    "-DDART_CTEST_EXCLUDE_LABEL=gui-device" -P
+    "-DDART_CTEST_EXCLUDE_LABEL=gui-device|pytest" -P
     "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
   WORKING_DIRECTORY "${DART_BINARY_DIR}"
+  VERBATIM
 )
 
 dart_format_add(GTestUtils.hpp cmake/gui_consumer/main.cpp)
