@@ -31,7 +31,9 @@ is done only after two clean review passes on its final state.
   the following commits fixed: runnable parity and wheel gates, the active
   setup's retention, the architecture table, the scene batches' helper
   owners, the active context's retention, the wheel catalog, the exact
-  SIMBICON files, and this record.
+  SIMBICON files, and this record. Later heads added the drawing-callback
+  non-goal, the build-tree C++ parity command, the optional inputs a
+  full-catalog run needs, and tinkertoy's pick-and-drag check.
 
 ## 2026-10-12: WP-PD.1 to WP-PD.3, the host stack
 
@@ -49,14 +51,23 @@ Published as stack #3748: #3745 (WP-PD.1), #3746 (WP-PD.2) and #3747
   diagnostics lanes, the vanilla and GUI-off lanes, the install guard and 28
   before/after command-line runs pass. A `sleeping` capture differs from its
   base only in the two FPS readouts.
-- **Reviews:** two consecutive clean local passes on each final head.
+- **Reviews:** two consecutive clean local passes on each final head. The
+  GitHub reviews then found that a copied `examples` directory no longer
+  builds `dart-demos`, now documented as source-tree only (#3746), and that
+  the checker rejected `test_GuiApp` as inactive in GUI-off builds (#3747).
+  Both are fixed.
 
 ## 2026-10-12: WP-PD.8 and WP-PD.9, model bindings
 
 - **WP-PD.8 (#3737):** resting state, `HeightmapShapef` and `VoxelGridShape`
   with occupancy updates. A review found uninitialized heightmap bounds in
-  C++, fixed separately in #3744.
-- **WP-PD.9 (local):** whole-body IK bindings plus a C++ guard for expired
+  C++, fixed separately in #3744. Later reviews hardened the voxel inputs
+  against OctoMap's limits: points must be finite and addressable after
+  float narrowing, rays must fit OctoMap's key buffer and have a nonzero
+  float length, and resolution is capped at 1e6 so ray lengths cannot
+  overflow float. They also fixed a C++ query that read the wrong boundary
+  cell.
+- **WP-PD.9 (#3751):** whole-body IK bindings plus a C++ guard for expired
   hierarchy constraints. `test`, `test-py`, the GC probes and the Gazebo gate
   pass. A review found that GC could clear an IK module that moved to a live
   Skeleton; the traversal now counts only nodes still in the hierarchy's own

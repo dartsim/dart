@@ -54,7 +54,8 @@ In scope:
 
 Non-goals:
 
-- **No Python ImGui API**, and no Python per-frame render callbacks.
+- **No Python ImGui API**, and no Python drawing callbacks. The
+  per-frame `pre_refresh` hook runs scene logic only; the host draws.
 - **No new public surface:** no installed headers, package components or
   gz-facing API.
 - **M6b's other work is out of scope:** `dart.render` sensors, and porting
@@ -129,11 +130,11 @@ WP-PD.18.
 | WP-PD.2 | Move the GUI-free demo models into `dart-demo-models` | 0 | Codex | Draft PR #3746 |
 | WP-PD.3 | Move the demo host into private `dart/gui/app` | 1, 2 | Codex | Draft PR #3747 |
 | WP-PD.4 | Add declarative panels and the Python-ready scene contract | 3 | Claude | Local, in review |
-| WP-PD.5 | Bind the host as `dartpy.viewer` | 4 | Claude | Planned |
+| WP-PD.5 | Bind the host as `dartpy.viewer` | 4 | Claude | Local, in review |
 | WP-PD.6 | Bind the models as `dartpy._demos` | 2 | Codex | Planned |
 | WP-PD.7 | Run the Python catalog on the native host | 5 | Claude | Planned |
 | WP-PD.8 | Bind resting state, `HeightmapShapef` and `VoxelGridShape` | 0 | Codex | Draft PR #3737 |
-| WP-PD.9 | Bind end effectors, supports, whole-body IK and balance constraints | 0 | Codex | Local, in review |
+| WP-PD.9 | Bind end effectors, supports, whole-body IK and balance constraints | 0 | Codex | Draft PR #3751 |
 | WP-PD.10 | Port scene batch S1 | 7 | Codex | Planned |
 | WP-PD.11 | Port scene batch S2 | 7 | Codex | Planned |
 | WP-PD.12 | Port scene batch S3 | 6, 7, 8 | Codex | Planned |
@@ -373,10 +374,14 @@ By change type:
   Docs pages change.
 - **AI infrastructure:** `pixi run test-ai-infra` when the checker changes.
 
+Before a full-catalog run, provision the optional inputs with
+`pixi run install-ssik` and `pixi run fetch-robot-assets`. Without them,
+`ssik_ik_gui`, `atlas_v5` and `unitree_g1` are skipped, not run.
+
 Per scene, the parity evidence is:
 
-1. Run the C++ app:
-   `dart-demos --scene <id> --headless --steps 200 --width 960 --height 600 --shot <png> --debug-print-world`.
+1. Run the C++ app from the build tree:
+   `./build/default/cpp/Release/bin/dart-demos --scene <id> --headless --steps 200 --width 960 --height 600 --shot <png> --debug-print-world`.
 2. Run the Python app with the same flags, from `python/`:
    `PYTHONPATH=../build/default/cpp/Release/python/dartpy python -m examples.demos …`.
    From WP-PD.17 on, `pixi run demos -- …` runs it from the repository root.
@@ -388,8 +393,10 @@ Per scene, the parity evidence is:
    operational_space_control, the scene's pytest also builds the scene
    headlessly. It triggers each key action and control callback, steps, and
    asserts the effect: a moved target, a toggled support, a new solution, a
-   changed force. Where the effect is visible, a capture after that
-   interaction joins the pair.
+   changed force. tinkertoy's interaction is a mouse pick and drag, so its
+   test scripts a pick through the scene's event handler, drags, and
+   asserts the spring force moves the picked body. Where the effect is
+   visible, a capture after that interaction joins the pair.
 
 Images never enter the repository.
 
