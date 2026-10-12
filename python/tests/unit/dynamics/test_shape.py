@@ -258,3 +258,18 @@ def test_voxel_grid_rejects_nonfinite_point(invalid):
         shape.updateOccupancy([invalid, 0, 0])
     with pytest.raises(ValueError):
         shape.getOccupancy([invalid, 0, 0])
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+def test_voxel_grid_rejects_rays_longer_than_octomap_traces():
+    shape = dart.dynamics.VoxelGridShape(resolution=0.001)
+    with pytest.raises(ValueError, match="too many voxels"):
+        shape.updateOccupancy(
+            points=np.array([[20.0, 20.0, 20.0]]), sensorOrigin=[-20.0, -20.0, -20.0]
+        )
+    assert shape.getOccupancy([20.0, 20.0, 20.0]) == 0
+    # A long ray that fits the buffer is still traced.
+    shape.updateOccupancy(points=np.array([[30.0, 0.0, 0.0]]))
+    assert shape.getOccupancy([30.0, 0.0, 0.0]) > 0.5

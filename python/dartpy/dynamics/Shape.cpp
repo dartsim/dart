@@ -103,6 +103,29 @@ void validateVoxelPoint(
   }
 }
 
+// OctoMap traces each sensor ray into a fixed buffer of KeyRay::maxSize keys,
+// which a longer ray overruns; reject such rays before inserting anything.
+void validateVoxelRay(
+    const dart::dynamics::VoxelGridShape* shape,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to)
+{
+  const double factor = 1.0 / shape->getOctree()->getResolution();
+  const auto key = [factor](double coordinate) {
+    return std::floor(
+        factor * static_cast<double>(static_cast<float>(coordinate)));
+  };
+  double cells = 0.0;
+  for (int i = 0; i < 3; ++i)
+    cells += std::abs(key(to[i]) - key(from[i]));
+  // The traversal adds at most one key per crossed cell, plus rounding slack.
+  static const std::size_t maxKeys = octomap::KeyRay().sizeMax();
+  if (cells + 4.0 > static_cast<double>(maxKeys))
+    throw nb::value_error(
+        "the ray from sensorOrigin to a point crosses too many voxels for "
+        "OctoMap");
+}
+
 } // namespace
 #endif
 
@@ -331,6 +354,7 @@ void Shape(nb::module_& m)
             for (std::size_t i = 0; i < points.shape(0); ++i) {
               const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
               validateVoxelPoint(self, point);
+              validateVoxelRay(self, sensorOrigin, point);
               cloud.push_back(point.x(), point.y(), point.z());
             }
             self->updateOccupancy(
