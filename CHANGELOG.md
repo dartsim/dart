@@ -163,6 +163,7 @@
   * The installed CMake package accepts version requests from 6.0 up to the
     installed version, so `find_package(DART 6.10)` finds DART 7. `EXACT`
     requests and version ranges keep their meaning.
+    [#3725](https://github.com/dartsim/dart/pull/3725)
 
   * MSVC projects that link the installed `dart` CMake target inherit
     `/permissive-` and `/Zc:twoPhase-`, the conformance options DART is
