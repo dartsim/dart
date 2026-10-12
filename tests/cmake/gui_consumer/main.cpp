@@ -3,6 +3,8 @@
 #include <dart/simulation/World.hpp>
 
 #include <dart/external/imgui/imgui.h>
+// Consumers may also write the bare name; it must find the same header.
+#include <imgui.h>
 
 #include <fstream>
 

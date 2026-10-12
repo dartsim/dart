@@ -257,7 +257,14 @@ else()
       $<BUILD_INTERFACE:${DART_BINARY_DIR}>
       $<BUILD_INTERFACE:${dart_imgui_SOURCE_DIR}>
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/dart/external/imgui>
+  )
+  # An install prefix can also hold another ImGui (for example a Conda
+  # environment's vanilla imgui.h), so installed consumers must find the
+  # bundled docking headers first when they write <imgui.h>.
+  target_include_directories(
+    ${target_name}
+    BEFORE
+    PUBLIC $<INSTALL_INTERFACE:include/dart/external/imgui>
   )
   target_compile_definitions(
     ${target_name}
