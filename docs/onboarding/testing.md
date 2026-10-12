@@ -51,8 +51,10 @@ CTest tests and the four GUI-only Python modules (`test_filament`, `test_gui_off
 sources, and admits inactive platform tests or the one compile-only
 C test only through exact branch-owned predicates and target contracts. It
 walks the active generated CTest subdirectory graph, maps registrations back to
-configured executables, rejects unapproved command filters or non-executing
-modes, selects only the requested branch of multi-config registrations, rejects
+configured executables, and admits the required package-version CMake script
+only with its exact source, output directory, version, pointer size and active
+CMake command. It rejects unapproved command filters or non-executing modes,
+selects only the requested branch of multi-config registrations, rejects
 result-neutralizing test properties or GTest environment modifications, and
 requires selected registrations to use a digit-bounded zero-test failure guard.
 Both `pixi run test` and the aggregate reach `tests_and_run`, which removes

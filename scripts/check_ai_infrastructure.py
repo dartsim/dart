@@ -2914,13 +2914,15 @@ def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
 
 
 def check_cmake_ctest_inventory(
+    root: Path,
     build_dir: Path,
     configuration: str,
     ctest_executable: str,
     test_targets: dict[str, dict[str, Any]],
+    cache: dict[str, str],
     errors: list[str],
 ) -> None:
-    """Require configured C++ targets to have executing CTest registrations."""
+    """Require executing CTest registrations for C++ targets and version checks."""
     prefix = "CMake semantic test graph"
     try:
         result = subprocess.run(
@@ -2963,6 +2965,58 @@ def check_cmake_ctest_inventory(
     generated_names = set(generated)
     if inventory_names != generated_names:
         errors.append(f"{prefix}: CTest JSON and generated registration names disagree")
+
+    version_test = "test_DARTConfigVersion"
+    if version_test not in generated_names:
+        errors.append(
+            f"{prefix}: required CMake script test `{version_test}` is missing"
+        )
+    version_arguments: tuple[str, ...] = ()
+    try:
+        version = cache.get("DART_VERSION_OVERRIDE")
+        if not version:
+            match = re.search(
+                r"<version>([0-9]+\.[0-9]+\.[0-9]+)</version>",
+                (root / "package.xml").read_text(encoding="utf-8"),
+            )
+            version = match.group(1) if match else ""
+        cmake_version = ".".join(
+            cache.get(f"CMAKE_CACHE_{part}_VERSION", "")
+            for part in ("MAJOR", "MINOR", "PATCH")
+        )
+        compiler = build_dir / "CMakeFiles" / cmake_version / "CMakeCXXCompiler.cmake"
+        pointer_size = next(
+            (
+                tokens[1]
+                for name, arguments in cmake_commands(
+                    compiler.read_text(encoding="utf-8")
+                )
+                if name == "set"
+                and len(tokens := cmake_argument_tokens(arguments)) == 2
+                and tokens[0] == "CMAKE_CXX_SIZEOF_DATA_PTR"
+            ),
+            "",
+        )
+        if (
+            not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)
+            or not pointer_size.isdigit()
+        ):
+            errors.append(
+                f"{prefix}: CMake script test version or pointer size is unavailable"
+            )
+        elif not (root / "tests/cmake/test_DARTConfigVersion.cmake").is_file():
+            errors.append(f"{prefix}: required CMake script test source is missing")
+        else:
+            version_arguments = (
+                f"-DSOURCE_DIR={root.as_posix()}",
+                f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/DARTConfigVersion",
+                f"-DDART_VERSION={version}",
+                f"-DCMAKE_SIZEOF_VOID_P={pointer_size}",
+                "-P",
+                f"{root.as_posix()}/tests/cmake/test_DARTConfigVersion.cmake",
+            )
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect CMake script test inputs: {error}")
 
     registered_tests: dict[str, tuple[list[str], Path]] = {}
     for test in tests:
@@ -3016,6 +3070,16 @@ def check_cmake_ctest_inventory(
         )
         expected_arguments = tuple(selection_policy["arguments"])
         app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
+        if name == version_test:
+            expected_arguments = version_arguments
+            trusted_cmake = shutil.which("cmake")
+            if trusted_cmake is None or not all(
+                cmake_paths_match(candidate[0], Path(trusted_cmake))
+                for candidate in (generated_command, effective_command)
+            ):
+                errors.append(
+                    f"{prefix}: CMake script test `{name}` must use the active CMake executable"
+                )
         if app_arguments is not None:
             expected_arguments = tuple(
                 argument.replace("<build>", build_dir.as_posix())
@@ -3062,7 +3126,9 @@ def check_cmake_ctest_inventory(
             if isinstance(item, str)
         ]
         selected = (
-            bool(expected_arguments or expected_environment) and app_arguments is None
+            bool(expected_arguments or expected_environment)
+            and app_arguments is None
+            and name != version_test
         )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
             errors.append(
@@ -3103,7 +3169,7 @@ def check_cmake_ctest_inventory(
             return True
         return test_name == target_name and command[0] == target_name
 
-    matched_registrations: set[str] = set()
+    matched_registrations: set[str] = {version_test} & set(registered_tests)
     unregistered = []
     for name, artifacts in target_artifacts.items():
         matches = {
@@ -3761,10 +3827,12 @@ def check_cmake_test_graph(
         errors.append(f"{prefix}: trusted CTest executable is unavailable")
     elif test_target_data:
         check_cmake_ctest_inventory(
+            root,
             build_dir,
             desired,
             ctest_executable,
             test_target_data,
+            cache,
             errors,
         )
 

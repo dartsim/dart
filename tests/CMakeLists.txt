@@ -99,6 +99,16 @@ add_subdirectory(integration)
 add_subdirectory(regression)
 add_subdirectory(unit)
 
+add_test(
+  NAME test_DARTConfigVersion
+  COMMAND
+    "${CMAKE_COMMAND}" "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigVersion"
+    "-DDART_VERSION=${DART_VERSION}"
+    "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}" -P
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
+)
+
 # Print tests
 dart_get_tests(integration_tests "integration")
 dart_get_tests(regression_tests "regression")

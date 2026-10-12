@@ -3069,6 +3069,11 @@ def _configure_semantic_graph_fixture(
 cmake_minimum_required(VERSION 3.22)
 project(test_graph C CXX)
 set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(DART_VERSION 6.20.0)
+set(DART_VERSION_OVERRIDE "" CACHE STRING "")
+if(DART_VERSION_OVERRIDE)
+  set(DART_VERSION "${DART_VERSION_OVERRIDE}")
+endif()
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 enable_testing()
 set(BUILD_TESTING ON CACHE BOOL "")
@@ -3096,6 +3101,16 @@ endforeach()
 add_custom_target(ALL DEPENDS ${all_targets})
 """.lstrip(),
         "tests/CMakeLists.txt": """
+add_test(
+  NAME test_DARTConfigVersion
+  COMMAND
+    "${CMAKE_COMMAND}"
+    "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigVersion"
+    "-DDART_VERSION=${DART_VERSION}"
+    "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
+)
 add_subdirectory(integration)
 add_subdirectory(regression)
 add_subdirectory(unit)
@@ -3160,6 +3175,13 @@ endif()
         "cmake/DARTRunCTest.cmake": (ROOT / "cmake/DARTRunCTest.cmake").read_text(
             encoding="utf-8"
         ),
+        "cmake/DARTConfigVersion.cmake.in": (
+            ROOT / "cmake/DARTConfigVersion.cmake.in"
+        ).read_text(encoding="utf-8"),
+        "tests/cmake/test_DARTConfigVersion.cmake": (
+            ROOT / "tests/cmake/test_DARTConfigVersion.cmake"
+        ).read_text(encoding="utf-8"),
+        "package.xml": "<package><version>6.20.0</version></package>\n",
         "scripts/run_pytest.py": (ROOT / "scripts/run_pytest.py").read_text(
             encoding="utf-8"
         ),
@@ -3213,6 +3235,116 @@ def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     infra.check_cmake_test_graph(tmp_path, build, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize("override", ("", "7.0.0", "7.4.2", "8.0.0"))
+def test_cmake_semantic_graph_accepts_effective_version_script_test(tmp_path, override):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    result = subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(tmp_path),
+            "-B",
+            str(build),
+            f"-DDART_VERSION_OVERRIDE={override}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (
+            "NAME test_DARTConfigVersion",
+            "NAME missing_version_test",
+            "required CMake script test",
+        ),
+        (
+            "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}",
+            "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}/wrong",
+            "unapproved command arguments",
+        ),
+        (
+            "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigVersion",
+            "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/wrong",
+            "unapproved command arguments",
+        ),
+        (
+            "-DDART_VERSION=${DART_VERSION}",
+            "-DDART_VERSION=5.0.0",
+            "unapproved command arguments",
+        ),
+        (
+            "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}",
+            "-DCMAKE_SIZEOF_VOID_P=0",
+            "unapproved command arguments",
+        ),
+        (
+            "cmake/test_DARTConfigVersion.cmake",
+            "cmake/Noop.cmake",
+            "unapproved command arguments",
+        ),
+        (
+            '"${CMAKE_COMMAND}"\n    "-DSOURCE_DIR=',
+            '"${CMAKE_CTEST_COMMAND}"\n    "-DSOURCE_DIR=',
+            "must use the active CMake executable",
+        ),
+        (
+            '-P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"',
+            "--version",
+            "uses non-executing option",
+        ),
+    ),
+)
+def test_cmake_semantic_graph_rejects_changed_version_script_test(
+    tmp_path, old, new, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake = tmp_path / "tests/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(old, new, 1), encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("property_name", "value", "expected"),
+    (
+        ("DISABLED", "TRUE", "is disabled"),
+        ("WILL_FAIL", "TRUE", "result-neutralizing"),
+        ("LABELS", "gui-device", "must run in the broad gate"),
+    ),
+)
+def test_cmake_semantic_graph_rejects_bypassed_version_script_test(
+    tmp_path, property_name, value, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake = tmp_path / "tests/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + f"\nset_tests_properties(test_DARTConfigVersion PROPERTIES {property_name} {value})\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        expected in error and "test_DARTConfigVersion" in error for error in errors
+    )
 
 
 @pytest.mark.parametrize("build_testing", (None, "ON", "OFF"))
