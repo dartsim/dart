@@ -54,6 +54,8 @@ Use these practices:
 - Follow `docs/onboarding/contributing.md` § "PR Descriptions" for the
   Effect-first template order, comparisons, plots, collapsed raw tables, and
   Testing content. This is the PR-description owner for agents and contributors.
+  Write each paragraph and list item of the body on one line: GitHub renders
+  newlines as line breaks, so never wrap PR text at a fixed width.
 - For CI, performance, or infrastructure work, include evidence such as CI run
   observations, timing, reruns, benchmark output, or why a skipped check is
   expected.

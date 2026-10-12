@@ -103,6 +103,11 @@ full data after Effect; write for users and downstream maintainers who do not
 know the implementation. Include compatibility, opt-in, or migration steps
 when relevant.
 
+Write each paragraph and list item on one line, and separate paragraphs with a
+blank line. GitHub renders every newline in PR descriptions, comments, issues,
+and release notes as a line break, so text wrapped at a fixed width, as this
+repository's docs are, breaks mid-sentence.
+
 For meaningful API, workflow, behavior, or performance changes, include a
 concise Before / After comparison of user-visible outcomes. Small tables or
 bullets are fine; when performance A/B results, sweeps, or physics metrics
