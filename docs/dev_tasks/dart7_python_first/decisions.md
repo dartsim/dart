@@ -185,8 +185,8 @@ are removed; past dates on decisions and evidence stay.
   must-haves, and additive work that misses `F` goes to 7.1. The maintainer
   confirmed this reading on 2026-10-12.
 - C1, the M3 go/no-go, is decided after the first three M2 kernel PRs, at the
-  M2 stop rule. M3 must be able to land before `F` without delaying the
-  remaining breaking changes. Gazebo gates must stay green through those
+  M2 stop rule. M3 must be able to land before `F` without delaying
+  any other must-have, and so without delaying `F`. Gazebo gates must stay green through those
   three PRs; the flagged contiguous-state spike is limited to revolute/free
   joint positions and velocities.
 - C2 passes before `F`, so release candidates carry the final render API.

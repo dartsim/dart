@@ -152,8 +152,9 @@ additive, merges before the API freeze `F`; see the
 
 ### Priority and thresholds
 
-The critical path starts with the baseline pin, then M1 stage extraction
-(M1a), the executor (M1d) and remapping clone (M1i), then `WorldBatch`. M5 and
+The remaining critical path starts with the baseline pin, then M1 stage
+extraction (M1a), the executor (M1d) and remapping clone (M1i), then
+`WorldBatch`, M5b's simulation bindings and the acceptance tests. M5 and
 M6b run in parallel with that path. The Python and MJCF default-detector
 switch (M1f) is off the critical path: it lands after the capability matrix
 and M1b's strict shape rejection, and before `F`.
@@ -182,7 +183,7 @@ deciding M3.
   for every core change.
 - Refactor PRs are bit-identical per detector at one and several threads, with
   no new steady-state allocations. Numeric changes are separate, labeled PRs.
-- Step-path quiet window: from the first M1a PR until the M1d executor PR
+- Step-path quiet window: from the M1a PR until the M1d executor PR
   merges, changes to World stepping, the constraint solver, the native
   collision detector or generic-joint dynamics go through this program. Plans
   cite symbols, with line numbers only as of a named revision.
@@ -221,7 +222,7 @@ deciding M3.
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
 Critical path: WP-7.0.1 rollover → baseline pin → M1a → M1d → M1i →
-`WorldBatch`. In parallel: M6a → M6b → checkpoint C2. M5a starts when M0
+`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6a → M6b → checkpoint C2. M5a starts when M0
 exits.
 
 ### M1 core seams
@@ -290,7 +291,8 @@ passed. Only additive work that is not a must-have and misses `F` moves to 7.1.
   3. a flagged spike limited to storing revolute and free-joint
      positions and velocities contiguously, passes the guards and the shim test,
      and its memory-copy snapshots cost at most 0.1× of the gather path;
-  4. M3 can land before `F` without delaying the remaining breaking changes.
+  4. M3 can land before `F` without delaying any other must-have, and so
+     without delaying `F`.
 
   Otherwise M3 moves to 7.x and must be purely additive when it lands.
   Aspect-state semantics change only in 8.0.
@@ -431,7 +433,7 @@ API, so it stays when the interim tests are ported.
 | WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
 | WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport merged ([#3717](https://github.com/dartsim/dart/pull/3717)) |
-| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Merged ([#3719](https://github.com/dartsim/dart/pull/3719)); four review findings remain open ([verification](verification.md#wp-703b-sdf-pose-attributes)) |
+| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | In progress: [#3719](https://github.com/dartsim/dart/pull/3719) merged; four review findings remain open ([verification](verification.md#wp-703b-sdf-pose-attributes)) |
 | WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
 | WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress: [#3720](https://github.com/dartsim/dart/pull/3720) added the rows and the baseline procedure; nightly Gazebo-preset sleeping rows and then the `dart7-base` pin follow M0's exit |
 | WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In progress: [#3725](https://github.com/dartsim/dart/pull/3725) merged the version file, shim test and header probe; [#3729](https://github.com/dartsim/dart/pull/3729) (in review) adds the gz API inventory, and [#3731](https://github.com/dartsim/dart/pull/3731) (draft) keeps the contact-surface header tree valid C++14 |

@@ -63,7 +63,7 @@ def test_load_model_and_add(world):
 
 
 @pytest.mark.xfail(
-    strict=True, reason="M1g/M5b: joint actuator channels and PositionServo are pending"
+    strict=True, reason="M1g/M5b: joint actuator channels, PositionServo and joint/DOF collections are pending"
 )
 def test_joint_position_servo(robot):
     servo = dart.PositionServo(kp=400, kd=40, effort_limit=80)
@@ -136,7 +136,7 @@ def test_capture_restore_state(world, robot):
 
 
 @pytest.mark.xfail(
-    strict=True, reason="M1i/M5b: WorldBatch remapping clones and set/step are pending"
+    strict=True, reason="M1i/M1g/M5b: WorldBatch clones, set/step and the position-target channel are pending"
 )
 def test_world_batch_set_step(world, robot):
     batch = dart.WorldBatch(world, count=64)

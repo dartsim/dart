@@ -242,7 +242,9 @@ Known gaps:
   - nightly: K = 1024, plus FCL, Bullet and the closed-loop joint-friction row;
   - a dartpy loop benchmark written in 6.x spelling, which the M5 codemod later
     converts (doubling as a codemod test);
-  - rows measure stepping plus reading transforms and contacts.
+  - rows measure stepping plus reading transforms and contacts;
+  - nightly Gazebo-preset sleeping rows, which cover the custom collision-filter
+    replay path Gazebo's default step uses.
 - **Added:** `--worlds K` steps K independent Worlds in sequence per outer
   step, with two generated scenes: a box resting on a floor (`contact`) and a
   four-bar linkage with joint friction and a ball-joint closure
@@ -286,8 +288,8 @@ Known gaps:
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
   on the same host and compares each detector against its own baseline.
 - **Gates:** [#3720](https://github.com/dartsim/dart/pull/3720) merged from
-  head `adf9a57f6` as `fc823113d` after CI passed on that head (20 checks
-  passed, 10 skipped), including Perf A/B.
+  head `adf9a57f6` as `fc823113d` while CI was still running; every check on
+  that head passed afterwards (20 passed, 10 skipped), including Perf A/B.
 - **Review passes:** Codex found no major issues on `bd4fe2625` and again on
   the merged head `adf9a57f6`.
 - **Status:** in progress. #3720 merged the rows and the procedure. After M0
@@ -356,7 +358,7 @@ Known gaps:
     arguments; only additive work that is not a must-have and misses `F`
     moves to 7.1;
   - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
-    land before `F` without delaying the remaining breaking changes;
+    land before `F` without delaying any other must-have, and so `F`;
   - C2 before `F`, so release candidates carry the final render API;
   - D13 as amended on 2026-10-12: FCL stays the C++ default in 7.0, while
     dartpy's `dart.World` and the MJCF world loader default to the DART

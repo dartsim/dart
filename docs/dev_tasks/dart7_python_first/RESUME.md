@@ -45,7 +45,10 @@ rendering and the Python render/viewer API, remains pending.
 3. In parallel with step 2: M5a's rename table v0, the published shape and
    query capability matrix, and a null-check fix in the skel parser's detector
    fallback, which dereferences the factory's result without checking it. The
-   matrix and M1b's strict shape rejection must land before M1f.
+   matrix and M1b's strict shape rejection must land before M1f. Before M1f,
+   confirm with the maintainer whether "the MJCF world loader" means only
+   `dart.io.load_world` or also the C++ `MjcfParser::readWorld`, which sets no
+   detector today and so inherits FCL.
 4. Resolve #3719's open review findings in a follow-up PR on main: rotated
    inertial poses, the SDF 1.4–1.6 version gate, soft-shape poses other than
    boxes, and empty quaternion poses. See WP-7.0.3b in
