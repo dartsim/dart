@@ -206,23 +206,33 @@ def test_voxel_grid_batch_occupancy(sensor_origin, layout):
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
 )
 @pytest.mark.parametrize(
-    "points",
+    "points, error",
     [
-        np.zeros(()),
-        np.zeros(3),
-        np.zeros((2, 2)),
-        np.zeros((2, 4)),
-        np.zeros((2, 3, 1)),
-        np.array([[1, 0, 0], [np.nan, 0, 0]]),
-        np.array([[np.inf, 0, 0]]),
-        np.array([[-np.inf, 0, 0]]),
+        (np.zeros(()), TypeError),
+        (np.zeros(3), TypeError),
+        (np.zeros((2, 2)), TypeError),
+        (np.zeros((2, 4)), TypeError),
+        (np.zeros((2, 3, 1)), TypeError),
+        (np.array([[1, 0, 0], [np.nan, 0, 0]]), ValueError),
+        (np.array([[np.inf, 0, 0]]), ValueError),
+        (np.array([[-np.inf, 0, 0]]), ValueError),
     ],
 )
-def test_voxel_grid_rejects_invalid_batch(points):
+def test_voxel_grid_rejects_invalid_batch(points, error):
     shape = dart.dynamics.VoxelGridShape()
-    with pytest.raises(ValueError):
+    with pytest.raises(error):
         shape.updateOccupancy(points=points)
     assert shape.getOccupancy([1, 0, 0]) == 0
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+def test_voxel_grid_takes_a_column_vector_as_one_point():
+    shape = dart.dynamics.VoxelGridShape(resolution=0.1)
+    point = np.array([[1.0], [0.0], [0.0]])
+    shape.updateOccupancy(point)
+    assert shape.getOccupancy(point) > 0.5
 
 
 @pytest.mark.skipif(

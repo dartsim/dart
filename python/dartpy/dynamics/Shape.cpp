@@ -314,14 +314,15 @@ void Shape(nb::module_& m)
       .def(
           "updateOccupancy",
           +[](dart::dynamics::VoxelGridShape* self,
+              // The (N, 3) shape is part of overload matching, so a single
+              // point given as a column vector reaches the overload above.
               nb::ndarray<
                   nb::numpy,
                   const double,
+                  nb::shape<-1, 3>,
                   nb::c_contig,
                   nb::device::cpu> points,
               const Eigen::Vector3d& sensorOrigin) {
-            if (points.ndim() != 2 || points.shape(1) != 3)
-              throw nb::value_error("points must have shape (N, 3)");
             validateVoxelPoint(self, sensorOrigin, "sensorOrigin");
 
             const auto view = points.view<nb::ndim<2>>();
