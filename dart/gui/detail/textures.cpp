@@ -158,29 +158,16 @@ void handleJpegError(j_common_ptr cinfo)
   longjmp(error->jumpBuffer, 1);
 }
 
-std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
+// Keep vector operations out of the setjmp frame, including after inlining.
+#if defined(__GNUC__)
+__attribute__((noinline))
+#endif
+void decodeJpegImage(
+    jpeg_decompress_struct& info,
+    FILE* file,
+    ImageData& output,
+    std::vector<std::uint8_t>& row)
 {
-  FILE* file = std::fopen(path.string().c_str(), "rb");
-  if (file == nullptr) {
-    std::cerr << "Failed to open JPEG texture: " << path.string() << "\n";
-    return std::nullopt;
-  }
-
-  jpeg_decompress_struct info{};
-  JpegErrorManager error;
-  info.err = jpeg_std_error(&error.base);
-  error.base.error_exit = handleJpegError;
-
-  ImageData output;
-  std::vector<std::uint8_t> row;
-  if (setjmp(error.jumpBuffer)) {
-    std::cerr << "Failed to read JPEG texture: " << path.string() << " ("
-              << error.message << ")\n";
-    jpeg_destroy_decompress(&info);
-    std::fclose(file);
-    return std::nullopt;
-  }
-
   jpeg_create_decompress(&info);
   jpeg_stdio_src(&info, file);
   jpeg_read_header(&info, TRUE);
@@ -232,6 +219,32 @@ std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
   }
 
   jpeg_finish_decompress(&info);
+}
+
+std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
+{
+  FILE* file = std::fopen(path.string().c_str(), "rb");
+  if (file == nullptr) {
+    std::cerr << "Failed to open JPEG texture: " << path.string() << "\n";
+    return std::nullopt;
+  }
+
+  jpeg_decompress_struct info{};
+  JpegErrorManager error;
+  info.err = jpeg_std_error(&error.base);
+  error.base.error_exit = handleJpegError;
+
+  ImageData output;
+  std::vector<std::uint8_t> row;
+  if (setjmp(error.jumpBuffer)) {
+    std::cerr << "Failed to read JPEG texture: " << path.string() << " ("
+              << error.message << ")\n";
+    jpeg_destroy_decompress(&info);
+    std::fclose(file);
+    return std::nullopt;
+  }
+
+  decodeJpegImage(info, file, output, row);
   jpeg_destroy_decompress(&info);
   std::fclose(file);
   return output;

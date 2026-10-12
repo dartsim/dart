@@ -11,11 +11,18 @@ import sys
 import tempfile
 from pathlib import Path
 
-SMOKE_TEST = r"""
+SMOKE_TIMEOUT = 10 * 60
+SMOKE_TEST = f"""
+import faulthandler
+
+faulthandler.enable()
+faulthandler.dump_traceback_later({SMOKE_TIMEOUT - 60}, exit=True)
+
 import dartpy as dart
 from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
 from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
+print("Wheel smoke: imports complete", flush=True)
 
 assert dart.collision.BulletCollisionDetector() is not None
 assert dart.collision.OdeCollisionDetector() is not None
@@ -66,27 +73,43 @@ option.collisionFilter = IgnoreAll()
 option.collisionFilter.calls = 0
 assert not group.collide(option)
 assert option.collisionFilter.calls > 0
+print("Wheel smoke: collision checks complete", flush=True)
 
 assert hasattr(dart.gui, "Viewer")
 node = dart.gui.WorldNode(world)
 viewer = dart.gui.Viewer()
+print("Wheel smoke: Viewer created", flush=True)
 viewer.addWorldNode(node)
 assert viewer.getNumWorldNodes() == 1
 assert node.getWorld().getName() == "wheel smoke"
 
-print("dartpy wheel smoke test passed")
+print("dartpy wheel smoke test passed; exiting", flush=True)
 """
 
 
 def run_command(
-    cmd: list[str], *, env: dict[str, str] | None = None
+    cmd: list[str], *, env: dict[str, str] | None = None, timeout: float = 30 * 60
 ) -> subprocess.CompletedProcess[str]:
-    print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
+    print(f"Running: {' '.join(cmd)}", flush=True)
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, env=env, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as error:
+        print(
+            f"Timed out after {timeout}s: {' '.join(cmd)}", file=sys.stderr, flush=True
+        )
+        # TimeoutExpired output can be bytes even with text=True.
+        for output, stream in ((error.stdout, sys.stdout), (error.stderr, sys.stderr)):
+            if output:
+                if isinstance(output, bytes):
+                    output = output.decode(errors="replace")
+                print(output, file=stream, flush=True)
+        raise
     if result.stdout:
-        print(result.stdout)
+        print(result.stdout, flush=True)
     if result.stderr:
-        print(result.stderr, file=sys.stderr)
+        print(result.stderr, file=sys.stderr, flush=True)
     if result.returncode != 0:
         raise subprocess.CalledProcessError(
             result.returncode,
@@ -142,7 +165,7 @@ def test_wheel(wheel_path: Path) -> None:
         venv_path = Path(tmpdir) / "test-env"
         python_path = _venv_python(venv_path)
 
-        print(f"Creating virtual environment at {venv_path}")
+        print(f"Creating virtual environment at {venv_path}", flush=True)
         run_command([sys.executable, "-m", "venv", str(venv_path)])
 
         run_command(
@@ -157,7 +180,9 @@ def test_wheel(wheel_path: Path) -> None:
         )
         run_command([str(python_path), "-m", "pip", "install", str(wheel_path)])
         run_command(
-            [str(python_path), "-I", "-c", SMOKE_TEST], env=_smoke_environment()
+            [str(python_path), "-I", "-c", SMOKE_TEST],
+            env=_smoke_environment(),
+            timeout=SMOKE_TIMEOUT,
         )
 
 
@@ -186,14 +211,14 @@ def main(argv: list[str]) -> int:
         wheels = sorted(Path(path) for path in glob.glob("dist/dartpy-*.whl"))
 
     if not wheels:
-        print("ERROR: No wheels found.")
+        print("ERROR: No wheels found.", flush=True)
         return 1
 
     for wheel_path in wheels:
-        print(f"Testing wheel: {wheel_path}")
+        print(f"Testing wheel: {wheel_path}", flush=True)
         test_wheel(wheel_path)
 
-    print(f"All {len(wheels)} wheel(s) tested successfully.")
+    print(f"All {len(wheels)} wheel(s) tested successfully.", flush=True)
     return 0
 
 

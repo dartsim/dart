@@ -1477,6 +1477,9 @@ void DemoHost::renderPanels()
     renderDiagnostics();
   ImGui::End();
 #else
+  // Keep the shared docking state used even with non-docking ImGui.
+  (void)mDockLayoutInitialized;
+  (void)mDockLayoutResetRequested;
   // Fixed-layout fallback for system (non-docking) ImGui builds. Region
   // heights follow the measured content from the previous frame so scaled-up
   // toolbars and diagnostics stay fully visible instead of clipping at
