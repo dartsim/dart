@@ -2,6 +2,16 @@
 
 ## DART 6
 
+### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestone/106)
+
+* Parsers
+
+  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a
+    fixed-size vector or pose has the wrong number of values, instead of
+    writing out of bounds or leaving values unset in release builds. An MJCF
+    weld `solref` with one value keeps the default for the other.
+    [#3698](https://github.com/dartsim/dart/pull/3698)
+
 ### [DART 6.20.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
