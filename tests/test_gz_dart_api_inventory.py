@@ -61,9 +61,22 @@ public:
   template<class T> void createShapeNodeWith();
   static Widget* create();
   static constexpr int kLimit = 3;
+  struct Properties { int mName; };
+protected:
+  bool mDirty;
 private:
   void privateOnly();
 };
+class Solver {
+public:
+  explicit Solver(int flags = 0);
+  virtual ~Solver() = default;
+};
+class DerivedSolver : public Solver { public: void solve(); };
+template <class... T> struct Compose { Compose() = default; };
+template <class A, class... R>
+struct Compose<A, R...> : Compose<R...> { Compose(); explicit Compose(A value); };
+using Props = Compose<int>;
 class Unused {};
 class StaticOnly { public: static void mutate(); };
 template<class T> class Pointer {
@@ -389,7 +402,7 @@ void build() {
         "dart::dynamics::Widget",
     }
     widget = constructors["dart::dynamics::Widget"]
-    assert widget["count"] == 10
+    assert widget["count"] == 12  # including the two base clauses
     assert [d["signature"] for d in widget["declarations"]] == [
         "Widget ( )",
         "explicit Widget ( int value )",
@@ -412,6 +425,165 @@ void build() {
         _entries(changed, "constructors")["dart::dynamics::Widget"]["declarations"]
         != widget["declarations"]
     )
+
+
+def test_implicit_constructions_reach_base_constructors(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """class Handler : public dart::dynamics::Solver { public: void extra(); };
+void build() {
+  auto handler = std::make_shared<Handler>();
+  auto solver = std::make_shared<dart::dynamics::DerivedSolver>();
+}
+""",
+    )
+    constructors = _entries(result, "constructors")
+    solver = constructors["dart::dynamics::Solver"]
+    assert solver["examples"] == ["dartsim/src/sample.cc:1"]
+    derived = constructors["dart::dynamics::DerivedSolver"]
+    assert [(d["class"], d["signature"]) for d in derived["declarations"]] == [
+        ("dart::dynamics::Solver", "explicit Solver ( int flags = 0 )")
+    ]
+
+    header = tmp_path / "dart" / "api.hpp"
+    header.write_text(header.read_text().replace("int flags = 0", "int flags"))
+    changed = _entries(
+        extractor.scan_sources(extractor.index_api(header.parent), tmp_path / "source"),
+        "constructors",
+    )
+    for name in ("dart::dynamics::Solver", "dart::dynamics::DerivedSolver"):
+        assert changed[name]["declarations"] != constructors[name]["declarations"]
+
+
+def test_constructions_spelled_from_the_global_namespace(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """struct Holder {
+  Holder() : widget(new ::dart::dynamics::Widget) {}
+  dart::dynamics::Widget* widget;
+};
+auto shared = std::make_shared<::dart::dynamics::Widget>(1);
+class Inherited : public ::dart::dynamics::Widget {
+  using ::dart::dynamics::Widget::Widget;
+};
+""",
+    )
+    assert _entries(result, "constructors")["dart::dynamics::Widget"]["count"] == 4
+
+
+def test_declarations_are_not_constructions(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """class Holder {
+  dart::dynamics::Widget makeWidget() const;
+  static dart::dynamics::Widget sWidget;
+public:
+  dart::dynamics::Widget makePublic() const;
+};
+typedef const dart::dynamics::Widget ConstWidget;
+extern dart::dynamics::Widget gWidget;
+dart::dynamics::Widget Holder::sWidget{1};
+class GzDetector {
+  static dart::collision::Detector::Registrar<GzDetector> sRegistrar;
+};
+class Derived : public dart::collision::DerivedDetector {
+  static Registrar<Derived> sRegistrar;
+};
+Derived::Registrar<Derived> Derived::sRegistrar{};
+""",
+    )
+    constructors = _entries(result, "constructors")
+    assert constructors["dart::dynamics::Widget"]["examples"] == [
+        "dartsim/src/sample.cc:9"
+    ]
+    assert constructors["dart::collision::Detector::Registrar"]["examples"] == [
+        "dartsim/src/sample.cc:16"
+    ]
+
+
+def test_constructors_of_class_template_specializations(extractor, api, tmp_path):
+    result = _scan(
+        extractor, api, tmp_path, "void f() { dart::dynamics::Props props(1); }\n"
+    )
+    declarations = _entries(result, "constructors")["dart::dynamics::Props"][
+        "declarations"
+    ]
+    assert {d["signature"] for d in declarations} == {
+        "Compose ( ) = default",
+        "Compose ( )",
+        "explicit Compose ( A value )",
+    }
+
+
+def test_nested_types_of_aliased_classes(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """namespace gz {
+struct Base { using DartWidget = dart::dynamics::Widget; };
+struct Feature : public virtual Base { void make(); };
+void Feature::make() {
+  DartWidget::Properties properties;
+  properties.mName = 1;
+}
+}
+""",
+    )
+    constructors = _entries(result, "constructors")
+    assert constructors["dart::dynamics::Widget::Properties"]["examples"] == [
+        "dartsim/src/sample.cc:5"
+    ]
+    assert _entries(result, "data_members")["mName"]["receiver_types"] == [
+        "dart::dynamics::Widget::Properties"
+    ]
+
+
+def test_fields_of_dart_bases_through_implicit_this(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """class Custom : public dart::dynamics::Widget {
+public:
+  void inlineUse() { mDirty = true; }
+  void outOfLine();
+  void shadowed();
+};
+void Custom::outOfLine() { mDirty = false; }
+void Custom::shadowed() { bool mDirty = false; mDirty = true; }
+void unrelated(bool mDirty) { mDirty = true; }
+class Other { bool mDirty; void use() { mDirty = true; } };
+""",
+    )
+    field = _entries(result, "data_members")["mDirty"]
+    assert field["examples"] == ["dartsim/src/sample.cc:3", "dartsim/src/sample.cc:7"]
+    assert field["receiver_types"] == ["dart::dynamics::Widget"]
+
+
+def test_third_party_objects_are_not_dart_receivers(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void use(const dart::collision::Contact& real) {
+  dContactGeom contact;
+  double x = contact.point[0];
+  aiScene* scene = new aiScene;
+  scene->mMeshes[0]->point = nullptr;
+  double y = real.point[0];
+}
+""",
+    )
+    point = _entries(result, "data_members")["point"]
+    assert point["examples"] == ["dartsim/src/sample.cc:6"]
+    assert point["unresolved_count"] == 0
 
 
 def test_public_data_member_accesses(extractor, api, tmp_path):
@@ -487,15 +659,35 @@ using Alias = dart::collision::Detector;
 void g() { Alias::getStaticType(); }
 }
 """,
-            "d.hh": "namespace gz { struct Base {\n"
-            "  using DartWidget = dart::dynamics::Widget;\n"
-            "}; }\n",
-            "e.cc": '#include "d.hh"\nvoid e() { DartWidget::compute(); }\n',
-            "f.cc": "void f() { DartWidget::clear(); }\n",
+            "d.hh": """namespace gz {
+struct Base { using DartWidget = dart::dynamics::Widget; };
+class GZ_VISIBLE Feature : public virtual Base { void e(); };
+}
+""",
+            "e.cc": '#include "d.hh"\n'
+            "namespace gz { void Feature::e() { DartWidget::compute(); } }\n",
+            "f.cc": """namespace gz {
+struct Other : Base { void f(); };
+void Other::f() { DartWidget::clear(); }
+}
+""",
             "g.cc": """using Inner = dart::collision::Detector;
 namespace inner {
 using Inner = dart::dynamics::Widget;
 void g() { Inner::setValue(1); }
+}
+""",
+            "h.cc": """namespace gz {
+struct S { using Ptr = dart::dynamics::Widget; void f(); };
+struct T { using Ptr = dart::collision::Detector; void g(); };
+void S::f() { Ptr::create(); }
+void T::g() { Ptr::create(); }
+}
+""",
+            "i.cc": """namespace first { using Alias = dart::dynamics::Widget; }
+namespace third {
+struct Alias { static void clear(); };
+void h() { Alias::clear(); }
 }
 """,
         },
@@ -506,6 +698,10 @@ void g() { Inner::setValue(1); }
     assert members["getStaticType"]["count"] == 2
     assert members["compute"]["examples"] == ["dartsim/src/e.cc:2"]
     assert members["setValue"]["examples"] == ["dartsim/src/g.cc:4"]
+    assert members["create"]["receiver_types"] == [
+        "dart::collision::Detector",
+        "dart::dynamics::Widget",
+    ]
     assert "clear" not in members
 
 
@@ -547,6 +743,14 @@ void separate() {
 #endif
   }
 }
+void optional(dart::dynamics::Widget* y) {
+  {
+#ifdef USE_DETECTOR
+    dart::collision::Detector* y = nullptr;
+#endif
+    y->getAndReset();
+  }
+}
 """,
     )
     members = _entries(result, "members")
@@ -558,6 +762,11 @@ void separate() {
         "dart::dynamics::Widget",
     ]
     assert members["compute"]["receiver_types"] == ["dart::dynamics::Widget"]
+    # Builds without USE_DETECTOR call it on the parameter.
+    assert members["getAndReset"]["receiver_types"] == [
+        "dart::collision::Detector",
+        "dart::dynamics::Widget",
+    ]
     assert "DART_VERSION_AT_LEAST" not in _entries(result, "macros")
     assert "dart::dynamics::Unused" not in _entries(result, "types")
 
@@ -600,6 +809,42 @@ void h() { measure(7.0); }
     assert _entries(scoped, "free_functions")["dart::math::measure"]["examples"] == [
         "dartsim/src/header.cc:2",
         "dartsim/src/shadowed.cc:3",
+    ]
+
+    overloads = _scan_files(
+        extractor,
+        api,
+        tmp_path / "overloads",
+        {
+            # A using-declaration adds to the overloads of its own scope.
+            "same.cc": """namespace gz {
+using dart::math::measure;
+double measure(int);
+void f() { measure(8.0); }
+}
+""",
+            # A block's using-declaration hides the enclosing namespace's.
+            "block.cc": """namespace gz {
+double measure(int);
+void f() {
+  using dart::math::measure;
+  measure(9.0);
+}
+}
+""",
+            "renamed.cc": "namespace dm = dart::math;\n"
+            "using namespace dm;\nvoid f() { measure(10.0); }\n",
+            # A member hides the imported function in out-of-line definitions.
+            "member.cc": "struct S { double measure(double); void f(); };\n"
+            "using namespace dart::math;\nvoid S::f() { measure(11.0); }\n",
+        },
+    )
+    function = _entries(overloads, "free_functions")["dart::math::measure"]
+    assert function["count"] == 3
+    assert function["examples"] == [
+        "dartsim/src/block.cc:5",
+        "dartsim/src/renamed.cc:3",
+        "dartsim/src/same.cc:4",
     ]
 
 

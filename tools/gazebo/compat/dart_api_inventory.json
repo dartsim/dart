@@ -5,6 +5,14 @@
       "constructors": [
         {
           "count": 1,
+          "declarations": [],
+          "examples": [
+            "dartsim/src/EntityManagementFeatures.cc:43"
+          ],
+          "name": "dart::collision::BodyNodeCollisionFilter"
+        },
+        {
+          "count": 2,
           "declarations": [
             {
               "class": "dart::collision::BulletCollisionDetector",
@@ -14,12 +22,13 @@
             }
           ],
           "examples": [
-            "dartsim/src/GzCollisionDetector.cc:406"
+            "dartsim/src/GzCollisionDetector.cc:406",
+            "dartsim/src/GzCollisionDetector.hh:140"
           ],
           "name": "dart::collision::BulletCollisionDetector"
         },
         {
-          "count": 1,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::collision::BulletCollisionGroup",
@@ -29,6 +38,7 @@
             }
           ],
           "examples": [
+            "dartsim/src/GzCollisionDetector.cc:381",
             "dartsim/src/GzCollisionDetector.cc:393"
           ],
           "name": "dart::collision::BulletCollisionGroup"
@@ -50,8 +60,8 @@
             }
           ],
           "examples": [
-            "dartsim/src/GzCollisionDetector.hh:136",
-            "dartsim/src/GzCollisionDetector.hh:171"
+            "dartsim/src/GzCollisionDetector.cc:133",
+            "dartsim/src/GzCollisionDetector.cc:418"
           ],
           "name": "dart::collision::CollisionDetector::Registrar"
         },
@@ -73,7 +83,7 @@
           "name": "dart::collision::CollisionOption"
         },
         {
-          "count": 1,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::collision::OdeCollisionDetector",
@@ -83,12 +93,13 @@
             }
           ],
           "examples": [
-            "dartsim/src/GzCollisionDetector.cc:128"
+            "dartsim/src/GzCollisionDetector.cc:128",
+            "dartsim/src/GzCollisionDetector.hh:91"
           ],
           "name": "dart::collision::OdeCollisionDetector"
         },
         {
-          "count": 1,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::collision::OdeCollisionGroup",
@@ -110,6 +121,7 @@
             }
           ],
           "examples": [
+            "dartsim/src/GzCollisionDetector.cc:153",
             "dartsim/src/GzCollisionDetector.cc:158"
           ],
           "name": "dart::collision::OdeCollisionGroup"
@@ -145,6 +157,21 @@
             "dartsim/src/SimulationFeatures.cc:210"
           ],
           "name": "dart::collision::RaycastResult"
+        },
+        {
+          "count": 1,
+          "declarations": [
+            {
+              "class": "dart::constraint::ContactSurfaceHandler",
+              "const": false,
+              "signature": "explicit ContactSurfaceHandler ( ContactSurfaceHandlerPtr parent = nullptr )",
+              "virtual": false
+            }
+          ],
+          "examples": [
+            "dartsim/src/SimulationFeatures.hh:67"
+          ],
+          "name": "dart::constraint::ContactSurfaceHandler"
         },
         {
           "count": 1,
@@ -185,7 +212,7 @@
           "name": "dart::constraint::WeldJointConstraint"
         },
         {
-          "count": 2,
+          "count": 3,
           "declarations": [
             {
               "class": "dart::common::detail::ComposeData",
@@ -196,12 +223,49 @@
             {
               "class": "dart::common::detail::ComposeData",
               "const": false,
+              "signature": "ComposeData ( CompositeType && composite )",
+              "virtual": false
+            },
+            {
+              "class": "dart::common::detail::ComposeData",
+              "const": false,
               "signature": "ComposeData ( const CompositeType & )",
+              "virtual": false
+            },
+            {
+              "class": "dart::common::detail::ComposeData",
+              "const": false,
+              "signature": "ComposeData ( const CompositeType & composite )",
+              "virtual": false
+            },
+            {
+              "class": "dart::common::detail::ComposeData",
+              "const": false,
+              "signature": "template < typename ... Args > ComposeData ( DelegateTag , const Args & ... args )",
+              "virtual": false
+            },
+            {
+              "class": "dart::common::detail::ComposeData",
+              "const": false,
+              "signature": "template < typename ... Args > ComposeData ( DelegateTag , const Data & arg1 , const Args & ... args )",
+              "virtual": false
+            },
+            {
+              "class": "dart::common::detail::ComposeData",
+              "const": false,
+              "signature": "template < typename ... Aspects > ComposeData ( const ComposeData < CompositeType , GetData , Aspects ... > & composite )",
+              "virtual": false
+            },
+            {
+              "class": "dart::common::detail::ComposeData",
+              "const": false,
+              "signature": "template < typename Arg1 , typename ... Args > ComposeData ( const Arg1 & arg1 , const Args & ... args )",
               "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/Base.hh:280",
+            "dartsim/src/EntityManagementFeatures.cc:889",
             "dartsim/src/SDFFeatures.cc:713"
           ],
           "name": "dart::dynamics::BodyNode::Properties"
@@ -307,7 +371,7 @@
           "name": "dart::dynamics::FreeJoint::Properties"
         },
         {
-          "count": 1,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::dynamics::HeightmapShape",
@@ -317,7 +381,8 @@
             }
           ],
           "examples": [
-            "dartsim/src/CustomHeightmapShape.cc:35"
+            "dartsim/src/CustomHeightmapShape.cc:35",
+            "dartsim/src/CustomHeightmapShape.hh:33"
           ],
           "name": "dart::dynamics::HeightmapShape"
         },
@@ -376,7 +441,7 @@
           "name": "dart::dynamics::JointPtr"
         },
         {
-          "count": 1,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::dynamics::MeshShape",
@@ -392,7 +457,8 @@
             }
           ],
           "examples": [
-            "dartsim/src/CustomMeshShape.cc:103"
+            "dartsim/src/CustomMeshShape.cc:103",
+            "dartsim/src/CustomMeshShape.hh:31"
           ],
           "name": "dart::dynamics::MeshShape"
         },
@@ -521,7 +587,7 @@
           "name": "dart::dynamics::WeldJoint::Properties"
         },
         {
-          "count": 1,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::simulation::World",
@@ -537,7 +603,8 @@
             }
           ],
           "examples": [
-            "dartsim/src/EntityManagementFeatures.cc:816"
+            "dartsim/src/EntityManagementFeatures.cc:816",
+            "test/plugins/DARTDoublePendulum.cc:69"
           ],
           "name": "dart::simulation::World"
         },
@@ -661,7 +728,7 @@
           "unresolved_count": 2
         },
         {
-          "count": 3,
+          "count": 2,
           "declarations": [
             {
               "class": "dart::collision::Contact",
@@ -678,7 +745,7 @@
           "receiver_types": [
             "dart::collision::Contact"
           ],
-          "unresolved_count": 2
+          "unresolved_count": 1
         },
         {
           "count": 3,
@@ -751,8 +818,10 @@
             "dartsim/src/SimulationFeatures.cc:456"
           ],
           "name": "mContactSurfaceMotionVelocity",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -805,8 +874,10 @@
             "dartsim/src/SimulationFeatures.cc:453"
           ],
           "name": "mFirstFrictionalDirection",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -864,30 +935,6 @@
           "unresolved_count": 1
         },
         {
-          "count": 2,
-          "declarations": [
-            {
-              "class": "dart::dynamics::detail::BodyNodeAspectProperties",
-              "const": false,
-              "signature": "double mFrictionCoeff",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::detail::DynamicsAspectProperties",
-              "const": false,
-              "signature": "double mFrictionCoeff",
-              "virtual": false
-            }
-          ],
-          "examples": [
-            "dartsim/src/SimulationFeatures.cc:410",
-            "dartsim/src/SimulationFeatures.cc:435"
-          ],
-          "name": "mFrictionCoeff",
-          "receiver_types": [],
-          "unresolved_count": 2
-        },
-        {
           "count": 1,
           "declarations": [
             {
@@ -924,31 +971,23 @@
           "unresolved_count": 0
         },
         {
-          "count": 3,
+          "count": 1,
           "declarations": [
             {
               "class": "dart::dynamics::Skeleton::Configuration",
               "const": false,
               "signature": "std :: vector < std :: size_t > mIndices",
               "virtual": false
-            },
-            {
-              "class": "dart::simulation::World",
-              "const": false,
-              "signature": "std :: vector < int > mIndices",
-              "virtual": false
             }
           ],
           "examples": [
-            "dartsim/src/CustomMeshShape.cc:180",
-            "dartsim/src/CustomMeshShape.cc:197",
             "test/plugins/DARTDoublePendulum.cc:295"
           ],
           "name": "mIndices",
           "receiver_types": [
             "dart::dynamics::Skeleton::Configuration"
           ],
-          "unresolved_count": 2
+          "unresolved_count": 0
         },
         {
           "count": 3,
@@ -1042,23 +1081,6 @@
           "unresolved_count": 1
         },
         {
-          "count": 1,
-          "declarations": [
-            {
-              "class": "dart::dynamics::MeshShape",
-              "const": false,
-              "signature": "std :: vector < MeshMaterial > mMaterials",
-              "virtual": false
-            }
-          ],
-          "examples": [
-            "dartsim/src/CustomMeshShape.cc:123"
-          ],
-          "name": "mMaterials",
-          "receiver_types": [],
-          "unresolved_count": 1
-        },
-        {
           "count": 2,
           "declarations": [
             {
@@ -1096,7 +1118,7 @@
           "unresolved_count": 1
         },
         {
-          "count": 10,
+          "count": 11,
           "declarations": [
             {
               "class": "dart::dynamics::detail::BodyNodeAspectProperties",
@@ -1242,20 +1264,16 @@
             "dartsim/src/SimulationFeatures.cc:433"
           ],
           "name": "mPrimaryFrictionCoeff",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 2,
           "declarations": [
             {
               "class": "dart::constraint::ContactSurfaceParams",
-              "const": false,
-              "signature": "double mPrimarySlipCompliance",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::detail::DynamicsAspectProperties",
               "const": false,
               "signature": "double mPrimarySlipCompliance",
               "virtual": false
@@ -1266,8 +1284,10 @@
             "dartsim/src/SimulationFeatures.cc:443"
           ],
           "name": "mPrimarySlipCompliance",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 8,
@@ -1315,18 +1335,6 @@
               "const": false,
               "signature": "double mRestitutionCoeff",
               "virtual": false
-            },
-            {
-              "class": "dart::dynamics::detail::BodyNodeAspectProperties",
-              "const": false,
-              "signature": "double mRestitutionCoeff",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::detail::DynamicsAspectProperties",
-              "const": false,
-              "signature": "double mRestitutionCoeff",
-              "virtual": false
             }
           ],
           "examples": [
@@ -1334,20 +1342,16 @@
             "dartsim/src/SimulationFeatures.cc:451"
           ],
           "name": "mRestitutionCoeff",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 2,
           "declarations": [
             {
               "class": "dart::constraint::ContactSurfaceParams",
-              "const": false,
-              "signature": "double mSecondaryFrictionCoeff",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::detail::DynamicsAspectProperties",
               "const": false,
               "signature": "double mSecondaryFrictionCoeff",
               "virtual": false
@@ -1358,20 +1362,16 @@
             "dartsim/src/SimulationFeatures.cc:439"
           ],
           "name": "mSecondaryFrictionCoeff",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 2,
           "declarations": [
             {
               "class": "dart::constraint::ContactSurfaceParams",
-              "const": false,
-              "signature": "double mSecondarySlipCompliance",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::detail::DynamicsAspectProperties",
               "const": false,
               "signature": "double mSecondarySlipCompliance",
               "virtual": false
@@ -1382,8 +1382,10 @@
             "dartsim/src/SimulationFeatures.cc:449"
           ],
           "name": "mSecondarySlipCompliance",
-          "receiver_types": [],
-          "unresolved_count": 2
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceParams"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -1456,7 +1458,7 @@
           "unresolved_count": 0
         },
         {
-          "count": 5,
+          "count": 1,
           "declarations": [
             {
               "class": "dart::collision::Contact",
@@ -1466,15 +1468,13 @@
             }
           ],
           "examples": [
-            "dartsim/src/GzCollisionDetector.cc:236",
-            "dartsim/src/GzCollisionDetector.cc:237",
             "dartsim/src/SimulationFeatures.cc:328"
           ],
           "name": "normal",
           "receiver_types": [
             "dart::collision::Contact"
           ],
-          "unresolved_count": 4
+          "unresolved_count": 0
         },
         {
           "count": 3,
@@ -2024,6 +2024,26 @@
           "receiver_types": [
             "dart::dynamics::Skeleton",
             "dart::dynamics::SkeletonPtr"
+          ],
+          "unresolved_count": 0
+        },
+        {
+          "classification": "accessor",
+          "count": 1,
+          "declarations": [
+            {
+              "class": "dart::constraint::ContactSurfaceHandler",
+              "const": true,
+              "signature": "virtual ContactSurfaceParams createParams ( const collision :: Contact & contact , size_t numContactsOnCollisionObject ) const",
+              "virtual": true
+            }
+          ],
+          "examples": [
+            "dartsim/src/SimulationFeatures.cc:386"
+          ],
+          "name": "createParams",
+          "receiver_types": [
+            "dart::constraint::ContactSurfaceHandler"
           ],
           "unresolved_count": 0
         },
@@ -7133,10 +7153,11 @@
           "name": "dart::collision::CollisionDetector"
         },
         {
-          "count": 2,
+          "count": 4,
           "examples": [
-            "dartsim/src/GzCollisionDetector.hh:136",
-            "dartsim/src/GzCollisionDetector.hh:171"
+            "dartsim/src/GzCollisionDetector.cc:133",
+            "dartsim/src/GzCollisionDetector.cc:418",
+            "dartsim/src/GzCollisionDetector.hh:136"
           ],
           "name": "dart::collision::CollisionDetector::Registrar"
         },
@@ -7277,8 +7298,9 @@
           "name": "dart::constraint::ContactConstraintPtr"
         },
         {
-          "count": 2,
+          "count": 3,
           "examples": [
+            "dartsim/src/SimulationFeatures.cc:386",
             "dartsim/src/SimulationFeatures.cc:498",
             "dartsim/src/SimulationFeatures.hh:67"
           ],
@@ -7331,7 +7353,7 @@
           "name": "dart::dynamics::BallJoint"
         },
         {
-          "count": 62,
+          "count": 61,
           "examples": [
             "dartsim/src/AddedMassFeatures_TEST.cc:139",
             "dartsim/src/AddedMassFeatures_TEST.cc:156",
@@ -7340,9 +7362,10 @@
           "name": "dart::dynamics::BodyNode"
         },
         {
-          "count": 2,
+          "count": 3,
           "examples": [
             "dartsim/src/Base.hh:280",
+            "dartsim/src/EntityManagementFeatures.cc:889",
             "dartsim/src/SDFFeatures.cc:713"
           ],
           "name": "dart::dynamics::BodyNode::Properties"
@@ -7453,6 +7476,13 @@
             "dartsim/src/ShapeFeatures.cc:416"
           ],
           "name": "dart::dynamics::HeightmapShape"
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/CustomHeightmapShape.cc:58"
+          ],
+          "name": "dart::dynamics::HeightmapShape::Vector3"
         },
         {
           "count": 1,

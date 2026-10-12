@@ -221,5 +221,6 @@ notification and attachment sensitivity to the prior resting pose. DART
 collision-group changes run
 `pixi run gz-compat-jetty raycast-probe`. `tools/gazebo/README.md` covers the
 steps, the comparison, the expected-failure files, and the benchmark drivers;
-`pixi run test-gz-compat-tools` tests the comparison script and the benchmark
-world generator.
+`pixi run test-gz-compat-tools` tests the comparison script, the benchmark
+world generator, the DART version override, and the DART C++ API inventory
+extractor.
