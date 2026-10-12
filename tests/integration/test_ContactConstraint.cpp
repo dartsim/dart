@@ -261,18 +261,63 @@ dynamics::BodyNode* addTiltedFixedPalm(dynamics::Skeleton& hand)
 // normal even on its own, so the row is singular without any cancellation.
 TEST(ContactConstraint, UnseparableSelfContactOnFixedBaseStaysAtRest)
 {
+  // Without friction rows, only the plates' own tangential responses reveal
+  // the motion that the normal lacks.
+  for (const double friction : {1.0, 0.0}) {
+    SCOPED_TRACE(::testing::Message() << "friction=" << friction);
+    auto world = simulation::World::create();
+    world->setGravity(Eigen::Vector3d::Zero());
+
+    auto hand = dynamics::Skeleton::create("hand");
+    auto* palm = addTiltedFixedPalm(*hand);
+    addCoaxialPlates(*hand, palm, friction);
+    world->addSkeleton(hand);
+
+    for (int i = 0; i < 500; ++i) {
+      world->step();
+      ASSERT_TRUE(hand->getPositions().allFinite()) << "step " << i;
+      ASSERT_LT(hand->getVelocities().cwiseAbs().maxCoeff(), 1.0)
+          << "step " << i;
+    }
+  }
+}
+
+//==============================================================================
+// A frictionless plate on a revolute joint whose axis is the normal of the
+// tilted static block it presses into. The two skeletons cannot cancel each
+// other's responses, but the plate alone cannot move along the normal either.
+TEST(ContactConstraint, UnseparableFrictionlessContactStaysAtRest)
+{
   auto world = simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
-  auto hand = dynamics::Skeleton::create("hand");
-  auto* palm = addTiltedFixedPalm(*hand);
-  addCoaxialPlates(*hand, palm);
-  world->addSkeleton(hand);
+  auto block = dynamics::Skeleton::create("block");
+  auto* blockBody = addTiltedFixedPalm(*block);
+  blockBody->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.0);
+  block->setMobile(false);
+  world->addSkeleton(block);
+
+  auto turntable = dynamics::Skeleton::create("turntable");
+  auto* base = addTiltedFixedPalm(*turntable);
+  base->removeAllShapeNodes();
+  dynamics::RevoluteJoint::Properties properties;
+  properties.mAxis = Eigen::Vector3d::UnitZ();
+  properties.mT_ParentBodyToJoint.translation().z() = 0.03;
+  auto* plate = addBox(
+      turntable
+          ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+              base, properties)
+          .second,
+      Eigen::Vector3d(0.2, 0.2, 0.02),
+      0.2);
+  plate->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.0);
+  world->addSkeleton(turntable);
 
   for (int i = 0; i < 500; ++i) {
     world->step();
-    ASSERT_TRUE(hand->getPositions().allFinite()) << "step " << i;
-    ASSERT_LT(hand->getVelocities().cwiseAbs().maxCoeff(), 1.0) << "step " << i;
+    ASSERT_TRUE(turntable->getPositions().allFinite()) << "step " << i;
+    ASSERT_LT(turntable->getVelocities().cwiseAbs().maxCoeff(), 1.0)
+        << "step " << i;
   }
 }
 
@@ -360,6 +405,43 @@ TEST(ContactConstraint, UnseparableWeldedSelfContactKeepsGroundContacts)
 }
 
 //==============================================================================
+// A link whose center of mass sits on its revolute axis, with a tiny moment of
+// inertia, carries a sphere 1 m out that presses into the ground. The axis is
+// 1e-13 rad off the ground normal, so the link is far more mobile along the
+// ground than along its normal, which the contact sees as less than 1e-12 of
+// the link's motion: the row is singular although its diagonal is 1e-10.
+TEST(ContactConstraint, LowInertiaLinkAgainstGroundStaysAtRest)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  addGround(*world);
+
+  auto arm = dynamics::Skeleton::create("arm");
+  dynamics::RevoluteJoint::Properties properties;
+  properties.mAxis = Eigen::Vector3d(0.0, 1e-13, 1.0).normalized();
+  properties.mT_ParentBodyToJoint.translation().z() = 0.02;
+  auto* link = arm->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                      nullptr, properties)
+                   .second;
+  auto* shapeNode = link->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(std::make_shared<dynamics::SphereShape>(0.025));
+  shapeNode->setRelativeTranslation(Eigen::Vector3d::UnitX());
+  dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(1e-16 * Eigen::Matrix3d::Identity());
+  link->setInertia(inertia);
+  world->addSkeleton(arm);
+
+  for (int i = 0; i < 500; ++i) {
+    world->step();
+    ASSERT_TRUE(arm->getPositions().allFinite()) << "step " << i;
+    ASSERT_LT(arm->getVelocities().cwiseAbs().maxCoeff(), 1.0) << "step " << i;
+  }
+}
+
+//==============================================================================
 // A light link welded to a heavier free body moves with that body, so its
 // ground contacts are ordinary and must keep supporting it, also with another
 // light body in the same contact group.
@@ -400,39 +482,104 @@ TEST(ContactConstraint, LightWeldedLinkKeepsGroundContacts)
 //==============================================================================
 // A sphere on a prismatic joint whose axis is almost parallel to the ground
 // can still move along the contact normal, so its tiny normal diagonal is a
-// real response and the contact must still stop the sphere. Large slip
-// compliance on the friction rows must not change that.
+// real response and the contact must still stop the sphere, whether its
+// scale comes from friction rows with large slip compliance or, without
+// friction, from the sphere's own tangential response.
 TEST(ContactConstraint, ShallowJointMotionStillStopsAtContact)
 {
-  auto world = simulation::World::create();
-  addGround(*world);
+  for (const bool frictionless : {false, true}) {
+    SCOPED_TRACE(::testing::Message() << "frictionless=" << frictionless);
+    auto world = simulation::World::create();
+    const auto ground = addGround(*world);
 
-  auto skeleton = dynamics::Skeleton::create("slider");
-  dynamics::PrismaticJoint::Properties properties;
-  properties.mAxis = Eigen::Vector3d(1.0, 0.0, 1e-10).normalized();
-  properties.mT_ParentBodyToJoint.translation().z() = 0.025;
-  auto* body = skeleton
-                   ->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
-                       nullptr, properties)
-                   .second;
-  auto* shapeNode = body->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(std::make_shared<dynamics::SphereShape>(0.025));
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.5);
-  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(10.0);
-  shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(10.0);
-  dynamics::Inertia inertia;
-  inertia.setMass(1.0);
-  inertia.setMoment(dynamics::SphereShape::computeInertia(0.025, 1.0));
-  body->setInertia(inertia);
-  skeleton->setVelocity(0, -1.0);
-  world->addSkeleton(skeleton);
+    auto skeleton = dynamics::Skeleton::create("slider");
+    dynamics::PrismaticJoint::Properties properties;
+    properties.mAxis = Eigen::Vector3d(1.0, 0.0, 1e-10).normalized();
+    properties.mT_ParentBodyToJoint.translation().z() = 0.025;
+    auto* body = skeleton
+                     ->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+                         nullptr, properties)
+                     .second;
+    auto* shapeNode = body->createShapeNodeWith<
+        VisualAspect,
+        CollisionAspect,
+        DynamicsAspect>(std::make_shared<dynamics::SphereShape>(0.025));
+    if (frictionless) {
+      shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
+      ground->getBodyNode(0)
+          ->getShapeNode(0)
+          ->getDynamicsAspect()
+          ->setFrictionCoeff(0.0);
+    } else {
+      shapeNode->getDynamicsAspect()->setFrictionCoeff(0.5);
+      shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(10.0);
+      shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(10.0);
+    }
+    dynamics::Inertia inertia;
+    inertia.setMass(1.0);
+    inertia.setMoment(dynamics::SphereShape::computeInertia(0.025, 1.0));
+    body->setInertia(inertia);
+    skeleton->setVelocity(0, -1.0);
+    world->addSkeleton(skeleton);
 
-  world->step();
-  world->step();
+    world->step();
+    world->step();
 
-  EXPECT_GT(skeleton->getVelocity(0), 0.0);
+    EXPECT_GT(skeleton->getVelocity(0), 0.0);
+  }
+}
+
+//==============================================================================
+// A sphere on a prismatic joint 1e-10 rad off the contact plane touches a very
+// light box that can only slide along that plane. The box's large sliding
+// response must not hide the sphere's accurate stiff response along the
+// normal, with or without friction, so the contact must still stop the sphere.
+TEST(ContactConstraint, LightSlidingBodyKeepsStiffContact)
+{
+  for (const double friction : {0.0, 0.5}) {
+    SCOPED_TRACE(::testing::Message() << "friction=" << friction);
+    auto world = simulation::World::create();
+    world->setGravity(Eigen::Vector3d::Zero());
+
+    auto box = dynamics::Skeleton::create("box");
+    dynamics::PrismaticJoint::Properties boxJoint;
+    boxJoint.mAxis = Eigen::Vector3d::UnitX();
+    addBox(
+        box->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+               nullptr, boxJoint)
+            .second,
+        Eigen::Vector3d(0.4, 0.4, 0.05),
+        1e-6)
+        ->getShapeNode(0)
+        ->getDynamicsAspect()
+        ->setFrictionCoeff(friction);
+    world->addSkeleton(box);
+
+    auto slider = dynamics::Skeleton::create("slider");
+    dynamics::PrismaticJoint::Properties sliderJoint;
+    sliderJoint.mAxis = Eigen::Vector3d(1.0, 0.0, 1e-10).normalized();
+    sliderJoint.mT_ParentBodyToJoint.translation().z() = 0.05;
+    auto* sphere = slider
+                       ->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+                           nullptr, sliderJoint)
+                       .second;
+    sphere
+        ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+            std::make_shared<dynamics::SphereShape>(0.025))
+        ->getDynamicsAspect()
+        ->setFrictionCoeff(friction);
+    dynamics::Inertia inertia;
+    inertia.setMass(1.0);
+    inertia.setMoment(dynamics::SphereShape::computeInertia(0.025, 1.0));
+    sphere->setInertia(inertia);
+    slider->setVelocity(0, -1.0);
+    world->addSkeleton(slider);
+
+    world->step();
+    world->step();
+
+    EXPECT_GT(slider->getVelocity(0), -0.5);
+  }
 }
 
 //==============================================================================
