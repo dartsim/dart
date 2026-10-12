@@ -1445,55 +1445,14 @@ void World::step(bool _resetCommand)
   StepContext context;
   context.resetCommand = _resetCommand;
   beginStep(context);
-  const bool deactivationEnabled = context.deactivationEnabled;
-
-  if (!deactivationEnabled) {
+  if (!context.deactivationEnabled) {
     stepWithoutDeactivation(context);
-    return;
+  } else if (!tryAllRestingFastPath(context)) {
+    advanceVelocities(context);
+    solveConstraints(context);
+    advancePositions(context);
+    finishDeactivationStep(context);
   }
-
-  if (tryAllRestingFastPath(context))
-    return;
-  const bool customFilterSleeping = context.customFilterSleeping;
-
-  advanceVelocities(context);
-  auto& disturbedThisStep = mDisturbedThisStepScratch;
-  solveConstraints(context);
-  auto& deactivationState = *mDeactivationState;
-  const bool collisionGroupUnchanged = context.collisionGroupUnchanged;
-  advancePositions(context);
-
-  // Rest-detection pass: decide which mobile skeletons are quiet enough to
-  // sleep, and wake any that have started moving again. This is a deterministic
-  // function of post-step cached speeds, dwell time, and the configured
-  // thresholds, so it does not depend on container or iteration order.
-  if (deactivationEnabled
-      && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
-    updateRestStates(disturbedThisStep);
-
-  mTime += mTimeStep;
-  mFrame++;
-
-  // A snapshot can only serve a next step on which a mobile body can freeze.
-  if (deactivationEnabled
-      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
-      && hasRestingOrCandidateMobileSkeleton(mSkeletons)) {
-    updateAllRestingKinematicSnapshot(_resetCommand);
-  } else {
-    invalidateAllRestingKinematicSnapshot();
-  }
-
-  if (deactivationEnabled)
-    updateLastStepRestingWorldState();
-  else
-    invalidateLastStepRestingWorldState();
-
-  updateRetainedContacts(
-      deactivationState,
-      *mConstraintSolver,
-      mSkeletons,
-      customFilterSleeping && collisionGroupUnchanged
-          && hasRestingMobileSkeleton());
 }
 
 //==============================================================================
@@ -1834,6 +1793,49 @@ void World::advancePositions(const StepContext& context)
           }
         });
   }
+}
+
+//==============================================================================
+void World::finishDeactivationStep(const StepContext& context)
+{
+  const bool _resetCommand = context.resetCommand;
+  const bool deactivationEnabled = context.deactivationEnabled;
+  const bool customFilterSleeping = context.customFilterSleeping;
+  const bool collisionGroupUnchanged = context.collisionGroupUnchanged;
+  auto& disturbedThisStep = mDisturbedThisStepScratch;
+  auto& deactivationState = *mDeactivationState;
+
+  // Rest-detection pass: decide which mobile skeletons are quiet enough to
+  // sleep, and wake any that have started moving again. This is a deterministic
+  // function of post-step cached speeds, dwell time, and the configured
+  // thresholds, so it does not depend on container or iteration order.
+  if (deactivationEnabled
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
+    updateRestStates(disturbedThisStep);
+
+  mTime += mTimeStep;
+  mFrame++;
+
+  // A snapshot can only serve a next step on which a mobile body can freeze.
+  if (deactivationEnabled
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
+      && hasRestingOrCandidateMobileSkeleton(mSkeletons)) {
+    updateAllRestingKinematicSnapshot(_resetCommand);
+  } else {
+    invalidateAllRestingKinematicSnapshot();
+  }
+
+  if (deactivationEnabled)
+    updateLastStepRestingWorldState();
+  else
+    invalidateLastStepRestingWorldState();
+
+  updateRetainedContacts(
+      deactivationState,
+      *mConstraintSolver,
+      mSkeletons,
+      customFilterSleeping && collisionGroupUnchanged
+          && hasRestingMobileSkeleton());
 }
 
 //==============================================================================

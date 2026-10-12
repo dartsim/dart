@@ -760,6 +760,10 @@ private:
   /// skeletons, then clears their forces and commands under step(true).
   void advancePositions(const StepContext& context);
 
+  /// Updates rest states and time, then saves what the next step compares
+  /// against.
+  void finishDeactivationStep(const StepContext& context);
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,
