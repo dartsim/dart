@@ -96,7 +96,9 @@ that heading to the closed milestone (`?closed=1`), and adds a short release
 summary under it. Its
 squash commit is the release candidate: once the gates below pass, tag it
 `vX.Y.Z` (annotated, message `DART X.Y.Z`) and publish the GitHub release
-`DART X.Y.Z`.
+`DART X.Y.Z`. Write its notes with each paragraph and list item on one line:
+GitHub renders every newline in release notes as a line break, so text copied
+from the hard-wrapped changelog breaks mid-sentence.
 
 Before tagging any DART X.Y.Z release, record passing compatibility evidence on
 the exact candidate SHA for the forced optional-dependency-off gate and
