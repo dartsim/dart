@@ -405,6 +405,43 @@ TEST(ContactConstraint, UnseparableWeldedSelfContactKeepsGroundContacts)
 }
 
 //==============================================================================
+// A link whose center of mass sits on its revolute axis, with a tiny moment of
+// inertia, carries a sphere 1 m out that presses into the ground. The axis is
+// 1e-13 rad off the ground normal, so the link is far more mobile along the
+// ground than along its normal, which the contact sees as less than 1e-12 of
+// the link's motion: the row is singular although its diagonal is 1e-10.
+TEST(ContactConstraint, LowInertiaLinkAgainstGroundStaysAtRest)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  addGround(*world);
+
+  auto arm = dynamics::Skeleton::create("arm");
+  dynamics::RevoluteJoint::Properties properties;
+  properties.mAxis = Eigen::Vector3d(0.0, 1e-13, 1.0).normalized();
+  properties.mT_ParentBodyToJoint.translation().z() = 0.02;
+  auto* link = arm->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                      nullptr, properties)
+                   .second;
+  auto* shapeNode = link->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(std::make_shared<dynamics::SphereShape>(0.025));
+  shapeNode->setRelativeTranslation(Eigen::Vector3d::UnitX());
+  dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(1e-16 * Eigen::Matrix3d::Identity());
+  link->setInertia(inertia);
+  world->addSkeleton(arm);
+
+  for (int i = 0; i < 500; ++i) {
+    world->step();
+    ASSERT_TRUE(arm->getPositions().allFinite()) << "step " << i;
+    ASSERT_LT(arm->getVelocities().cwiseAbs().maxCoeff(), 1.0) << "step " << i;
+  }
+}
+
+//==============================================================================
 // A light link welded to a heavier free body moves with that body, so its
 // ground contacts are ordinary and must keep supporting it, also with another
 // light body in the same contact group.

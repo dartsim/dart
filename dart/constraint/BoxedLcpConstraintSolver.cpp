@@ -378,6 +378,33 @@ double computeOwnTangentialResponse(
 }
 
 //==============================================================================
+// Returns the sum of `body`'s responses as a free body, with only its own
+// spatial inertia, at the world contact `point` along the world contact
+// `normal` and two directions perpendicular to it. Joints and attached bodies
+// can only make a body less mobile, so this bounds each of its own responses
+// there.
+double computeFreeBodyResponse(
+    const dynamics::BodyNode* body,
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& normal)
+{
+  const Eigen::LDLT<Eigen::Matrix6d> inertia(body->getSpatialInertia());
+  const Eigen::Isometry3d& transform = body->getWorldTransform();
+  const Eigen::Vector3d bodyPoint = transform.inverse() * point;
+  const Eigen::Vector3d tangent = normal.unitOrthogonal();
+  double response = 0.0;
+  for (const Eigen::Vector3d& direction :
+       {normal, tangent, Eigen::Vector3d(normal.cross(tangent))}) {
+    const Eigen::Vector3d bodyDirection
+        = transform.linear().transpose() * direction;
+    Eigen::Vector6d spatialDirection;
+    spatialDirection << bodyPoint.cross(bodyDirection), bodyDirection;
+    response += spatialDirection.dot(inertia.solve(spatialDirection));
+  }
+  return response;
+}
+
+//==============================================================================
 // Returns whether a contact's normal row is singular; see
 // kSingularContactRatio. `diagonal` is the row's assembled diagonal and the
 // sides carry their assembled responses, which `hasFrictionRows` says include
@@ -401,39 +428,44 @@ bool isSingularContactNormalRow(
   if (!(diagonal > 0.0))
     return diagonal <= 0.0;
 
-  // Most rows are far above round-off; skip the rest of the check for them.
-  double inverseMassSum = 0.0;
-  for (const ContactSide* side : {&sideA, &sideB}) {
-    if (side->skeleton)
-      inverseMassSum += 1.0 / side->body->getMass();
-  }
-  if (!(diagonal <= 1e-12 * inverseMassSum))
-    return false;
-
   // Bodies in different trees of a skeleton share no ancestor.
   const bool sharedTree
       = selfContact && sideA.skeleton && sideB.skeleton
         && sideA.body->getTreeIndex() == sideB.body->getTreeIndex();
-  for (ContactSide* side : {&sideA, &sideB}) {
-    if (!side->skeleton)
-      continue;
-    if (sharedTree) {
-      side->normalResponse
-          = computeOwnResponse(side->skeleton, side->body, side->spatialNormal);
+
+  if (sharedTree || !hasFrictionRows) {
+    // The rest needs probes. None of the conditions below can hold when the
+    // diagonal exceeds twice the singular fraction of the bodies' free-body
+    // responses, so skip the probes for those rows.
+    double bound = 0.0;
+    for (const ContactSide* side : {&sideA, &sideB}) {
+      if (side->skeleton) {
+        bound += 2.0 * kSingularContactRatio
+                 * computeFreeBodyResponse(side->body, point, normal);
+      }
     }
-    if (sharedTree || !hasFrictionRows) {
+    if (std::isfinite(bound) && diagonal > bound)
+      return false;
+
+    for (ContactSide* side : {&sideA, &sideB}) {
+      if (!side->skeleton)
+        continue;
+      if (sharedTree) {
+        side->normalResponse = computeOwnResponse(
+            side->skeleton, side->body, side->spatialNormal);
+      }
       side->tangentResponse = computeOwnTangentialResponse(
           side->skeleton, side->body, point, normal);
     }
-  }
 
-  // Two halves that cancel to round-off. Scale each response before adding so
-  // that large ones cannot overflow.
-  if (sharedTree) {
-    const double threshold = kSingularContactRatio * sideA.normalResponse
-                             + kSingularContactRatio * sideB.normalResponse;
-    if (std::isfinite(threshold) && diagonal <= threshold)
-      return true;
+    // Two halves that cancel to round-off. Scale each response before adding
+    // so that large ones cannot overflow.
+    if (sharedTree) {
+      const double threshold = kSingularContactRatio * sideA.normalResponse
+                               + kSingularContactRatio * sideB.normalResponse;
+      if (std::isfinite(threshold) && diagonal <= threshold)
+        return true;
+    }
   }
 
   // No moving body can move along the normal.
