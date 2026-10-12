@@ -103,8 +103,25 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(contact_surface_include_flag -I)
 else()
   # Clang's pedantic mode also rejects C++17 attributes and DART_NUM_ARGS's GNU
-  # comma elision, which every gz-physics compiler accepts in C++14 mode.
-  set(contact_surface_probe_flags -std=c++14 -fsyntax-only)
+  # comma elision, which every gz-physics compiler accepts in C++14 mode, so
+  # only Clang's other C++17 extensions fail. Clang 13 has no separate
+  # attribute group and keeps gz-physics's flags.
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(
+    -Wc++17-attribute-extensions
+    COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS
+  )
+  if(COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS)
+    set(
+      contact_surface_probe_flags
+      -std=c++14
+      -Werror=c++17-extensions
+      -Wno-error=c++17-attribute-extensions
+      -fsyntax-only
+    )
+  else()
+    set(contact_surface_probe_flags -std=c++14 -fsyntax-only)
+  endif()
   set(contact_surface_include_flag -I)
 endif()
 foreach(

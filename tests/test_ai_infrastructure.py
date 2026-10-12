@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -3063,6 +3064,7 @@ def _configure_semantic_graph_fixture(
     root: Path,
     generator: str | None = None,
     force_windows: bool = False,
+    cmake_arguments: tuple[str, ...] = (),
 ) -> Path:
     sources = {
         "CMakeLists.txt": """
@@ -3219,6 +3221,7 @@ testpaths = ["tests"]
         command[1:1] = ["-G", generator]
     if force_windows:
         command.append("-DWIN32=TRUE")
+    command.extend(cmake_arguments)
     result = subprocess.run(
         command,
         capture_output=True,
@@ -3384,7 +3387,15 @@ def _add_contact_surface_probe_fixture(root: Path):
         "  set(probe_flags -std=c++14 -pedantic-errors -fsyntax-only)\n"
         "  set(probe_include_flag -I)\n"
         "else()\n"
-        "  set(probe_flags -std=c++14 -fsyntax-only)\n"
+        "  include(CheckCXXCompilerFlag)\n"
+        "  check_cxx_compiler_flag(-Wc++17-attribute-extensions "
+        "COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS)\n"
+        "  if(COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS)\n"
+        "    set(probe_flags -std=c++14 -Werror=c++17-extensions "
+        "-Wno-error=c++17-attribute-extensions -fsyntax-only)\n"
+        "  else()\n"
+        "    set(probe_flags -std=c++14 -fsyntax-only)\n"
+        "  endif()\n"
         "  set(probe_include_flag -I)\n"
         "endif()\n"
         "foreach(include_dir ${PROJECT_SOURCE_DIR} ${DART_BINARY_DIR} ${probe_eigen})\n"
@@ -3459,6 +3470,43 @@ def test_cmake_semantic_graph_contact_surface_probe_keeps_gcc_pedantic(tmp_path)
     infra.check_cmake_test_graph(tmp_path, build, errors)
 
     assert any("only C++14 flags" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("supported", "removed", "expected"),
+    (
+        ("", None, None),
+        ("1", None, None),
+        ("1", " -Werror=c++17-extensions", "only C++14 flags"),
+    ),
+)
+def test_cmake_semantic_graph_contact_surface_probe_follows_clang_groups(
+    tmp_path, supported, removed, expected
+):
+    compiler = shutil.which("clang++")
+    if compiler is None:
+        pytest.skip("clang++ is unavailable")
+    build = _configure_semantic_graph_fixture(
+        tmp_path,
+        cmake_arguments=(
+            f"-DCMAKE_CXX_COMPILER={compiler}",
+            f"-DCOMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS={supported}",
+        ),
+    )
+    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
+    if removed is not None:
+        cmake.write_text(
+            cmake.read_text(encoding="utf-8").replace(removed, ""),
+            encoding="utf-8",
+        )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if expected is None:
+        assert errors == []
+    else:
+        assert any(expected in error for error in errors)
 
 
 def test_cmake_semantic_graph_contact_surface_probe_rejects_fake_source(tmp_path):

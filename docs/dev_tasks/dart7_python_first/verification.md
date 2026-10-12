@@ -299,23 +299,28 @@ Known gaps:
 - **WP-7.0.6b Gazebo gates (2026-10-11, on main `e629dd3de`):**
   - `ContactSurfaceProbe` compiles gz-physics's header-check source as C++14
     with only DART and Eigen include directories: `/std:c++14 /Zs` with MSVC,
-    `-std=c++14 -pedantic-errors -fsyntax-only` with GCC, and
-    `-std=c++14 -fsyntax-only` with other compilers. It fails when
-    `ContactSurface.hpp`'s include tree needs `std::optional` or, with GCC or
-    MSVC, uses a nested namespace definition.
-  - Windows CI on #3725 found seven nested namespace definitions in that
-    include tree, which MSVC rejects in C++14 mode; the include tree has had
-    them since DART 6.13 added the header. gz-physics 7 keeps CMake 3.5
-    policies, so its check compiles as C++14 and fails with MSVC. From
-    gz-physics 8, policy CMP0067 also applies `CMAKE_CXX_STANDARD` 17, whose
-    flag came after `-std=c++14` with GCC and Ninja (CMake 3.22 to 4.1), so
-    those checks compiled as C++17. The namespaces now use C++14 syntax. Of the
-    other constructs GCC's pedantic mode reported, C++17 compilers keep
+    `-std=c++14 -pedantic-errors -fsyntax-only` with GCC,
+    `-std=c++14 -Werror=c++17-extensions -Wno-error=c++17-attribute-extensions
+    -fsyntax-only` with compilers that have that attribute warning group (LLVM
+    Clang 14 and newer), and `-std=c++14 -fsyntax-only` otherwise. It fails when
+    `ContactSurface.hpp`'s include tree needs `std::optional` or, with MSVC,
+    GCC or such Clang, uses C++17 syntax such as a nested namespace definition.
+  - Windows CI on #3725, and on main after its squash merge, found seven nested
+    namespace definitions in that include tree, which MSVC rejects in C++14
+    mode. Five were there when DART 6.13 added the header; #3076 added the
+    `ConvexHull` pair in DART 6.20. gz-physics 7 keeps CMake 3.5 policies, so
+    its check compiles as C++14 and fails with MSVC. From gz-physics 8, policy
+    CMP0067 also applies `CMAKE_CXX_STANDARD` 17, whose flag came after
+    `-std=c++14` with GCC and Ninja (CMake 3.22 to 4.1), so those checks
+    compiled as C++17. The namespaces now use C++14 syntax. Of the other
+    constructs GCC's pedantic mode reported, C++17 compilers keep
     `Castable::is()`'s `if constexpr` and the logging comma fold while C++14
     parses see tag dispatch and a braced-list pack expansion, and the anonymous
     struct lost its unused union member. GCC 11 to 16 pass. Clang's pedantic
-    mode still reports C++17 attributes and `DART_NUM_ARGS`'s GNU comma
-    elision, so Clang keeps gz-physics's flags.
+    mode also reports C++17 attributes and `DART_NUM_ARGS`'s GNU comma
+    elision, so only Clang's other C++17 extensions are errors: Clang 14, 15,
+    16, 18 and 22 pass and reject the unfixed include tree, and Clang 13, which
+    cannot separate the attributes, keeps gz-physics's flags.
   - `test_GazeboShim` mirrors gz-physics main
     `4e2af8c733ac8396a9d2b4dcae1f7f6aa28c5668` and counts each override:
     detector subclasses through the factory, collision-group and ray-cast

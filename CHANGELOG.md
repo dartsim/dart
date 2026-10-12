@@ -166,11 +166,6 @@
     requests and version ranges keep their meaning.
     [#3725](https://github.com/dartsim/dart/pull/3725)
 
-  * Configure-time checks that compile `dart/constraint/ContactSurface.hpp` as
-    C++14 now pass with MSVC, so projects that detect contact-surface support
-    that way find it on Windows.
-    [#3725](https://github.com/dartsim/dart/pull/3725)
-
   * MSVC projects that link the installed `dart` CMake target inherit
     `/permissive-` and `/Zc:twoPhase-`, the conformance options DART is
     compiled with, so DART's templates compile in those projects:

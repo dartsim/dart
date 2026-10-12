@@ -2976,6 +2976,14 @@ def contact_surface_probe_command(
         flags, include_flag = ["/std:c++14", "/Zs"], "/I"
     elif family == "GNU":
         flags, include_flag = ["-std=c++14", "-pedantic-errors", "-fsyntax-only"], "-I"
+    elif cache.get("COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS") == "1":
+        flags = [
+            "-std=c++14",
+            "-Werror=c++17-extensions",
+            "-Wno-error=c++17-attribute-extensions",
+            "-fsyntax-only",
+        ]
+        include_flag = "-I"
     else:
         flags, include_flag = ["-std=c++14", "-fsyntax-only"], "-I"
     return [

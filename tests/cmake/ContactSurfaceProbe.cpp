@@ -7,10 +7,12 @@
 // Refresh by checking DART_HAS_CONTACT_SURFACE_HEADER and CMake's probe
 // template.
 // The ContactSurfaceProbe CTest checks syntax with only DART and Eigen include
-// directories: /std:c++14 /Zs with MSVC, -std=c++14 -pedantic-errors
-// -fsyntax-only with GCC, and -std=c++14 -fsyntax-only with other compilers.
-// GCC is pedantic so C++17 syntax, which MSVC rejects in C++14 mode, fails
-// there too; Clang's pedantic mode also rejects accepted extensions.
+// directories: /std:c++14 /Zs with MSVC; -std=c++14 -pedantic-errors
+// -fsyntax-only with GCC; -std=c++14 -Werror=c++17-extensions
+// -Wno-error=c++17-attribute-extensions -fsyntax-only with compilers that have
+// that attribute group (LLVM Clang 14 and newer); and -std=c++14 -fsyntax-only
+// otherwise. So C++17 syntax, which MSVC rejects in C++14 mode, fails with GCC
+// and Clang too. Clang's pedantic mode would also reject accepted extensions.
 #include <dart/constraint/ContactSurface.hpp>
 
 int main()

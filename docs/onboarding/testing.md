@@ -94,14 +94,17 @@ or GUI behavior.
   uses to detect `dart/constraint/ContactSurface.hpp`, as C++14 like
   gz-physics 7's check. One syntax-only compiler invocation uses only DART and
   Eigen include directories and no extra definitions: `/std:c++14 /Zs` with
-  MSVC, `-std=c++14 -pedantic-errors -fsyntax-only` with GCC, and
-  `-std=c++14 -fsyntax-only` with other compilers. Source and generated `dart/`
-  headers provide the installed include layout; the probe inherits no library
-  target flags or dependencies. MSVC rejects C++17 syntax such as nested
-  namespace definitions in C++14 mode, so GCC's pedantic errors catch it on
-  Linux too. Clang keeps gz-physics's flags because its pedantic mode also
-  rejects C++17 attributes and the GNU comma elision in `DART_NUM_ARGS`, which
-  gz-physics's compilers accept.
+  MSVC, `-std=c++14 -pedantic-errors -fsyntax-only` with GCC,
+  `-std=c++14 -Werror=c++17-extensions -Wno-error=c++17-attribute-extensions
+  -fsyntax-only` with compilers that have that attribute warning group (LLVM
+  Clang 14 and newer), and `-std=c++14 -fsyntax-only` otherwise. Source and
+  generated `dart/` headers provide the installed include layout; the probe
+  inherits no library target flags or dependencies. MSVC rejects C++17 syntax
+  such as nested namespace definitions in C++14 mode, so GCC and Clang reject
+  it too. Clang avoids its pedantic mode, which also rejects C++17 attributes
+  and the GNU comma elision in `DART_NUM_ARGS` that gz-physics's compilers
+  accept. Clang 13 cannot separate the attributes from other C++17 extensions,
+  so it keeps gz-physics's flags.
 - `test_GazeboShim` mirrors the gz-physics detector subclasses, factory
   registrars, collision-group accessors, ray-cast entry points, and
   `ContactSurfaceHandler` overrides. Counters prove dispatch through collision
