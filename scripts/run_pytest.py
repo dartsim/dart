@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -30,6 +31,30 @@ def _clear_pytest_environment() -> None:
         if name.upper().startswith("PYTEST_"):
             os.environ.pop(name)
     os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+
+
+def _write(text: str) -> None:
+    # Replay text that the parent's output encoding may not represent.
+    encoding = sys.stdout.encoding or "utf-8"
+    sys.stdout.write(text.encode(encoding, "replace").decode(encoding))
+    sys.stdout.flush()
+
+
+def _stop(child: subprocess.Popen) -> None:
+    """Interrupt a child runner and its workers; kill them if they hang."""
+    if child.poll() is None:
+        if os.name == "posix":
+            # Its own session lets the interrupt reach spawned workers too.
+            os.killpg(child.pid, signal.SIGINT)
+            try:
+                child.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                os.killpg(child.pid, signal.SIGKILL)
+        else:
+            subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(child.pid)], capture_output=True
+            )
+    child.wait()
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
@@ -107,6 +132,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     ],
                     stdout=child_output,
                     stderr=subprocess.STDOUT,
+                    **(
+                        {"start_new_session": True}
+                        if os.name == "posix"
+                        else {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+                    ),
                 )
 
     pythonpath_entries = [
@@ -147,24 +177,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
             child_result = 0
             if child:
                 if result == pytest.ExitCode.INTERRUPTED:
-                    child.terminate()
+                    _stop(child)
                 child_result = child.wait()
                 child_output.seek(0)
-                print(
-                    f"\n=== Concurrent pytest: {options.concurrent_node} ===",
-                    flush=True,
-                )
-                print(
-                    child_output.read().decode("utf-8", errors="replace"),
-                    end="",
-                    flush=True,
-                )
+                _write(f"\n=== Concurrent pytest: {options.concurrent_node} ===\n")
+                _write(child_output.read().decode("utf-8", errors="replace"))
             return int(result) or child_result
         finally:
             # A second interrupt can escape wait(); never leave the child running.
-            if selection_guard.child and selection_guard.child.poll() is None:
-                selection_guard.child.kill()
-                selection_guard.child.wait()
+            if selection_guard.child:
+                _stop(selection_guard.child)
 
 
 if __name__ == "__main__":
