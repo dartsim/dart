@@ -23,18 +23,41 @@ nb::object nativeInstance(
   return result;
 }
 
+/// Keeps `payload` alive for as long as `wrapper` exists.
+template <class Payload>
+void keepAlive(nb::handle wrapper, Payload payload)
+{
+  auto holder = std::make_unique<Payload>(std::move(payload));
+  nb::keep_alive_cb(wrapper, holder.get(), [](void* pointer) noexcept {
+    delete static_cast<Payload*>(pointer);
+  });
+  holder.release();
+}
+
+template <class T, class = void>
+struct HasRetained : std::false_type
+{
+};
+template <class T>
+struct HasRetained<
+    T,
+    std::void_t<decltype(std::declval<const T&>().retained())>> : std::true_type
+{
+};
+
 template <class Owner, class = decltype(std::declval<Owner>().get_shared())>
 nb::object nativeInstance(
     nb::handle requested, const Owner& owner, bool ready = true)
 {
   // DART's IK holder preserves its affiliated JacobianNode in addition to the
   // native shared_ptr. Retain both without replacing the native control block.
+  // An owner with retained() names the part to keep besides the native object,
+  // so the wrapper stays that object's only owner for the garbage collector.
   auto result = nativeInstance(requested, owner.get_shared(), ready);
-  auto holder = std::make_unique<Owner>(owner);
-  nb::keep_alive_cb(result, holder.get(), [](void* pointer) noexcept {
-    delete static_cast<Owner*>(pointer);
-  });
-  holder.release();
+  if constexpr (HasRetained<Owner>::value)
+    keepAlive(result, owner.retained());
+  else
+    keepAlive(result, owner);
   return result;
 }
 

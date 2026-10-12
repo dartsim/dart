@@ -1,5 +1,9 @@
 import math
 import platform
+import signal
+import subprocess
+import sys
+import textwrap
 
 import dartpy as dart
 import numpy as np
@@ -66,6 +70,146 @@ def test_solve_for_free_joint():
     tf_actual = ik.getTarget().getTransform().matrix()
     tf_expected = body0.getTransform().matrix()
     assert np.isclose(tf_actual, tf_expected).all()
+
+
+def test_whole_body_ik_reaches_end_effector_target_on_three_link_arm():
+    skel = dart.dynamics.Skeleton()
+    assert skel.getIK() is None
+    body = None
+    for index in range(3):
+        joint, body = skel.createRevoluteJointAndBodyNodePair(body)
+        joint.setAxis([0, 0, 1])
+        offset = dart.math.Isometry3()
+        offset.set_translation([0.4 if index else 0.0, 0, 0])
+        joint.setTransformFromParentBodyNode(offset)
+    ee = body.createEndEffector("tip")
+    offset = dart.math.Isometry3()
+    offset.set_translation([0.4, 0, 0])
+    ee.setRelativeTransform(offset)
+
+    skel.setPositions([0.25, -0.4, 0.3])
+    target = ee.getTransform()
+    skel.setPositions([0.05, -0.15, 0.1])
+    assert not np.allclose(ee.getTransform().matrix(), target.matrix())
+    assert ee.getIK() is None
+    ik = ee.getIK(True)
+    ik.getTarget().setTransform(target)
+    ik.getErrorMethod().setBounds(np.full(6, -1e-6), np.full(6, 1e-6))
+
+    whole_body = skel.getIK(True)
+    assert isinstance(whole_body, dart.dynamics.WholeBodyIK)
+    assert skel.getIK() is whole_body
+    assert skel.getIK(True) is whole_body
+    assert isinstance(whole_body, dart.dynamics.HierarchicalIK)
+    assert isinstance(whole_body, dart.common.Subject)
+    assert whole_body.getSkeleton().getNumDofs() == 3
+    assert whole_body.getProblem().getDimension() == 3
+    whole_body.getSolver().setNumMaxIterations(2000)
+    whole_body.refreshIKHierarchy()
+    assert whole_body.solveAndApply(True)
+    np.testing.assert_allclose(ee.getTransform().matrix(), target.matrix(), atol=1e-5)
+
+
+def test_end_effector_lookup_transforms_and_support_geometry():
+    skel = dart.dynamics.Skeleton()
+    _, body = skel.createFreeJointAndBodyNodePair()
+    ee = body.createEndEffector()
+    assert ee.getName() == "EndEffector"
+    assert skel.getNumEndEffectors() == 1
+    assert skel.getEndEffector(0).getName() == ee.getName()
+    assert skel.getEndEffector(ee.getName()).getName() == ee.getName()
+    assert skel.getEndEffector("missing") is None
+
+    current = dart.math.Isometry3()
+    current.set_translation([0.1, 0.2, 0.3])
+    default = dart.math.Isometry3()
+    default.set_translation([0.4, 0.5, 0.6])
+    ee.setRelativeTransform(current)
+    ee.setDefaultRelativeTransform(default)
+    np.testing.assert_allclose(ee.getRelativeTransform().matrix(), current.matrix())
+    ee.resetRelativeTransform()
+    np.testing.assert_allclose(ee.getRelativeTransform().matrix(), default.matrix())
+    ee.setDefaultRelativeTransform(current, True)
+    np.testing.assert_allclose(ee.getRelativeTransform().matrix(), current.matrix())
+
+    assert not ee.hasSupport()
+    assert ee.getSupport() is None
+    support = ee.getSupport(True)
+    assert ee.hasSupport()
+    assert isinstance(support, dart.dynamics.Support)
+    points = [[-0.2, 0, -0.1], [0.2, 0, -0.1], [0.2, 0, 0.1], [-0.2, 0, 0.1]]
+    support.setGeometry(points)
+    geometry = support.getGeometry()
+    assert isinstance(geometry, list)
+    np.testing.assert_allclose(geometry, points)
+    support.setActive(False)
+    assert not support.isActive()
+    support.setActive()
+    assert support.isActive()
+    support.setGeometry([])
+    assert support.getGeometry() == []
+
+
+@pytest.mark.parametrize("balance_method", ["SHIFT_SUPPORT", "SHIFT_COM"])
+@pytest.mark.parametrize(
+    "error_method", ["FROM_CENTROID", "FROM_EDGE", "OPTIMIZE_BALANCE"]
+)
+def test_balance_constraint_methods_evaluate_finite_error(balance_method, error_method):
+    skel = dart.dynamics.Skeleton()
+    skel.setGravity([0, -9.81, 0])
+    _, body = skel.createFreeJointAndBodyNodePair()
+    support = body.createEndEffector("foot").getSupport(True)
+    support.setGeometry([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1]])
+    support.setActive()
+    balance = dart.constraint.BalanceConstraint(skel.getIK(True))
+    assert isinstance(balance, dart.optimizer.Function)
+    cls = dart.constraint.BalanceConstraint
+    assert balance.getBalanceMethod() == cls.BalanceMethod.SHIFT_SUPPORT
+    assert balance.getErrorMethod() == cls.ErrorMethod.FROM_CENTROID
+    assert not hasattr(cls, "SHIFT_SUPPORT")
+    assert not hasattr(cls, "FROM_CENTROID")
+    balance = cls(
+        skel.getIK(),
+        balanceMethod=getattr(cls.BalanceMethod, balance_method),
+        errorMethod=getattr(cls.ErrorMethod, error_method),
+    )
+    balance.setBalanceMethod(getattr(cls.BalanceMethod, balance_method))
+    balance.setErrorMethod(getattr(cls.ErrorMethod, error_method))
+    assert balance.getBalanceMethod() == getattr(cls.BalanceMethod, balance_method)
+    assert balance.getErrorMethod() == getattr(cls.ErrorMethod, error_method)
+    balance.setOptimizationTolerance(2e-5)
+    balance.setPseudoInverseDamping(0.125)
+    assert balance.getOptimizationTolerance() == pytest.approx(2e-5)
+    assert balance.getPseudoInverseDamping() == pytest.approx(0.125)
+    # Put the COM beyond the support polygon, so eval exercises each error method.
+    skel.setPositions([0, 0, 0, 2, 0, 0])
+    support_points = [[-3, 0, -1], [-1, 0, -1], [-1, 0, 1], [-3, 0, 1]]
+    support.setGeometry(support_points)
+    value = balance.eval(skel.getPositions())
+    assert np.isfinite(value)
+    assert value > 0
+
+
+def test_whole_body_ik_objective_accessors():
+    class Objective(dart.optimizer.Function):
+        def eval(self, x):
+            return float(np.dot(x, x))
+
+    skel = dart.dynamics.Skeleton()
+    skel.createFreeJointAndBodyNodePair()
+    ik = skel.getIK(True)
+    assert ik.getObjective() is None
+    assert ik.getNullSpaceObjective() is None
+    objective = Objective()
+    ik.setObjective(objective)
+    ik.setNullSpaceObjective(objective)
+    assert ik.getObjective() is objective
+    assert ik.getNullSpaceObjective() is objective
+    assert ik.getObjective().eval(np.ones(6)) == 6
+    ik.setObjective(None)
+    ik.setNullSpaceObjective(None)
+    assert ik.getObjective() is None
+    assert ik.getNullSpaceObjective() is None
 
 
 def test_python_analytical_accepts_ssik_like_solutions():
@@ -192,11 +336,12 @@ class FailingSolver(dart.optimizer.Solver):
         return FailingSolver(self.constant)
 
 
-def test_do_not_apply_solution_on_failure():
+@pytest.mark.parametrize("whole_body", [False, True])
+def test_do_not_apply_solution_on_failure(whole_body):
     skel = dart.dynamics.Skeleton()
     [joint, body] = skel.createFreeJointAndBodyNodePair()
 
-    ik = body.getIK(True)
+    ik = skel.getIK(True) if whole_body else body.getIK(True)
     solver = FailingSolver(10)
     ik.setSolver(solver)
 
@@ -208,6 +353,52 @@ def test_do_not_apply_solution_on_failure():
 
     assert not ik.solveAndApply(allowIncompleteResult=True)
     assert not np.isclose(skel.getPositions(), np.zeros(dofs)).all()
+
+
+EXPIRED_IK_CASES = {
+    "stale_solver": """
+        import gc
+        import dartpy as dart
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        solver = ik.getSolver()
+        solver.setTolerance(0.0)
+        del ik, skeleton
+        gc.collect()
+        solver.solve()
+    """,
+    "hierarchy_constraint_as_objective": """
+        import gc
+        import dartpy as dart
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        problem = dart.optimizer.Problem(6)
+        problem.setObjective(ik.getProblem().getEqConstraint(0))
+        solver = dart.optimizer.GradientDescentSolver(problem)
+        del ik, skeleton
+        gc.collect()
+        solver.solve()
+    """,
+}
+
+
+@pytest.mark.parametrize("case", sorted(EXPIRED_IK_CASES))
+def test_solving_after_the_whole_body_ik_expires_does_not_crash(case):
+    # These segfaulted before HierarchicalIK::Constraint::evalGradient checked
+    # its weak module; run them in a child so a regression cannot kill pytest.
+    result = subprocess.run(
+        [sys.executable, "-c", textwrap.dedent(EXPIRED_IK_CASES[case])],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if result.returncode != 0:
+        # Builds with native assertions stop at the DART_ASSERT that follows
+        # the reported misuse (SIGABRT, or exit 3 from the MSVC runtime).
+        assert result.returncode in {-signal.SIGABRT, 3}, result.stderr
+        assert "expired HierarchicalIK" in result.stderr, result.stderr
 
 
 if __name__ == "__main__":
