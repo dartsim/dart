@@ -4,17 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import subprocess
 import sys
 
-# ``patches`` holds FreeBSD port patch files (unified diffs) whose names end in
-# ``.cmake`` (e.g. tools/freebsd/patches/patch-cmake_DARTMacros.cmake). They are
-# not CMake sources, so gersemi cannot parse them; skip the directory.
+# Hidden directories (``.git``, ``.pixi``, ``.deps``, and private untracked
+# checkouts or evidence) are always skipped. ``patches`` holds FreeBSD port
+# patch files (unified diffs) whose names end in ``.cmake`` (e.g.
+# tools/freebsd/patches/patch-cmake_DARTMacros.cmake). They are not CMake
+# sources, so gersemi cannot parse them; skip the directory.
 SKIP_DIRS = {
-    ".deps",
-    ".git",
-    ".pixi",
     "build",
     "external",
     "node_modules",
@@ -31,16 +31,19 @@ def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
     # around ``@VAR@`` tokens could corrupt the template before ``configure_file``
     # substitution runs.
     files = []
-    for path in root.rglob("CMakeLists.txt"):
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
-        files.append(path.relative_to(root))
-    for path in root.rglob("*.cmake"):
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
-        files.append(path.relative_to(root))
-    files = sorted(set(files))
-    return files
+    for directory, dirnames, filenames in os.walk(root):
+        # Prune in place so skipped trees are never walked.
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if name not in SKIP_DIRS and not name.startswith(".")
+        ]
+        files.extend(
+            (pathlib.Path(directory) / name).relative_to(root)
+            for name in filenames
+            if name == "CMakeLists.txt" or name.endswith(".cmake")
+        )
+    return sorted(files)
 
 
 def run_gersemi(root: pathlib.Path, files: list[pathlib.Path], check: bool) -> int:
