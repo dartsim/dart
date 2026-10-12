@@ -96,7 +96,12 @@ get_target_property(
 )
 if(MSVC)
   # Use the C++17 dialect and template parsing mode DART exports to MSVC users.
-  set(contact_surface_probe_flags /std:c++17 /permissive- /Zc:twoPhase- /Zs)
+  set(
+    contact_surface_probe_flags
+    /std:c++17
+    ${DART_MSVC_CXX_PARSING_OPTIONS}
+    /Zs
+  )
   set(contact_surface_include_flag /I)
 else()
   set(contact_surface_probe_flags -std=c++14 -fsyntax-only)

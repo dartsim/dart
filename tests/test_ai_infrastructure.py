@@ -3863,7 +3863,8 @@ def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeyp
 def test_contact_surface_probe_flags_follow_configured_compiler_state(
     tmp_path, compiler_id, simulate_id, expected, flags
 ):
-    compiler = tmp_path / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
+    build = tmp_path / "build"
+    compiler = build / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
     compiler.parent.mkdir(parents=True)
     compiler.write_text(
         f'set(CMAKE_CXX_COMPILER_ID "{compiler_id}")\n'
@@ -3879,7 +3880,7 @@ def test_contact_surface_probe_flags_follow_configured_compiler_state(
     }
     errors = []
 
-    actual = infra.cmake_compiler_uses_msvc_abi(tmp_path, cache, errors)
+    actual = infra.cmake_compiler_uses_msvc_abi(build, cache, errors)
 
     assert errors == []
     assert actual is expected
@@ -3903,25 +3904,38 @@ def test_contact_surface_probe_flags_follow_configured_compiler_state(
         }
     ]
 
-    command = infra.contact_surface_probe_command(
-        tmp_path, tmp_path, cache, trace, errors
-    )
+    command = infra.contact_surface_probe_command(tmp_path, build, cache, trace, errors)
 
     assert errors == []
     assert command is not None
     assert command[1 : 1 + len(flags)] == flags
-    probe_scope = ("if:MSVC",) if expected else ("else:MSVC",)
-    configured_flags = [
-        infra.cmake_argument_tokens(arguments)[1:]
-        for name, arguments, scope in infra.cmake_scoped_commands(
-            (ROOT / "tests/CMakeLists.txt").read_text(encoding="utf-8")
-        )
-        if name == "set"
-        and infra.cmake_argument_tokens(arguments)[:1]
-        == ["contact_surface_probe_flags"]
-        and scope == probe_scope
-    ]
-    assert configured_flags == [flags]
+    cmake = (ROOT / "tests/CMakeLists.txt").read_text(encoding="utf-8")
+    start = cmake.index("get_target_property(\n  contact_surface_eigen_includes")
+    probe = cmake[start : cmake.index("dart_format_add(cmake/ContactSurfaceProbe.cpp)")]
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(contact_surface_probe NONE)\n"
+        f'include("{ROOT.as_posix()}/cmake/dart_defs.cmake")\n'
+        "enable_testing()\n"
+        f"set(MSVC {'TRUE' if expected else 'FALSE'})\n"
+        'set(CMAKE_CXX_COMPILER "configured-cxx")\n'
+        "set(DART_SOURCE_DIR ${PROJECT_SOURCE_DIR})\n"
+        "set(DART_BINARY_DIR ${PROJECT_BINARY_DIR})\n"
+        "add_library(Eigen3::Eigen INTERFACE IMPORTED)\n"
+        "set_target_properties(Eigen3::Eigen PROPERTIES "
+        'INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/eigen/include")\n'
+        + probe,
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        ["cmake", "-S", str(tmp_path), "-B", str(build)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    generated = infra.generated_ctest_registrations(build, "Release", errors)
+    assert errors == []
+    assert generated["ContactSurfaceProbe"][0] == command
 
 
 def test_cmake_semantic_graph_probe_requires_fresh_file_api_reply(
