@@ -4,6 +4,15 @@ DART uses CMake through Pixi tasks. Dependency cleanup must preserve
 exported CMake package behavior unless a maintainer explicitly accepts a
 compatibility break.
 
+Shared compiler policy lives in `cmake/dart_defs.cmake`. MSVC setup runs before
+dependency discovery; GCC/Clang warning and build-type settings run afterward
+through `dart_configure_compiler_options()`. The shared MSVC C++ parsing options
+feed directory builds, exported header requirements, and the isolated header
+probe, with each caller retaining its existing compiler and language guards.
+The shared parsing list excludes warning and code-generation settings. The
+probe keeps its isolated flags, which the infrastructure checker independently
+validates.
+
 Important checks:
 
 - `pixi run config`
