@@ -747,6 +747,11 @@ private:
   /// such a filter, and returns true.
   bool tryAllRestingFastPath(StepContext& context);
 
+  /// Wakes resting skeletons that are disturbed or moving, clears the forces
+  /// and commands of those still resting under step(true), and integrates the
+  /// velocities of the awake ones.
+  void advanceVelocities(const StepContext& context);
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,

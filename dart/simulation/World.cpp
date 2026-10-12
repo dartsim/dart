@@ -1451,93 +1451,8 @@ void World::step(bool _resetCommand)
     return;
   const bool customFilterSleeping = context.customFilterSleeping;
 
-  // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
-  // step so the post-step rest-detection pass can treat it as non-quiet even
-  // after _resetCommand clears the actuation vectors below. Disturbance
-  // tracking is only needed while contact islands exist; unconstrained active
-  // scenes cannot sleep.
+  advanceVelocities(context);
   auto& disturbedThisStep = mDisturbedThisStepScratch;
-  disturbedThisStep.clear();
-  const bool trackDisturbances
-      = deactivationEnabled
-        && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
-  {
-    if (trackDisturbances)
-      disturbedThisStep.assign(mSkeletons.size(), false);
-  }
-
-  // The first-frame dwell credit is only for bodies that start at rest (see
-  // updateRestStates()), so note which skeletons start the first step moving.
-  if (mFrame == 0) {
-    auto& initiallyMoving = mInitiallyMovingSkeletonScratch;
-    initiallyMoving.assign(mSkeletons.size(), 0);
-    for (std::size_t i = 0; i < mSkeletons.size(); ++i)
-      initiallyMoving[i] = hasNonzeroGeneralizedVelocity(*mSkeletons[i]);
-  }
-
-  // Integrate velocity for unconstrained skeletons
-  {
-    parallelForIndexRange(
-        mSimulationThreadPool.get(),
-        mSkeletons.size(),
-        mNumSimulationThreads,
-        [&](std::size_t i) {
-          auto& skel = mSkeletons[i];
-          if (!skel->isMobile())
-            return;
-
-          const bool externallyDisturbed
-              = deactivationEnabled && (trackDisturbances || skel->isResting())
-                && skel->hasExternalDisturbance();
-          if (externallyDisturbed && !disturbedThisStep.empty())
-            disturbedThisStep[i] = 1;
-
-          // A resting skeleton skips forward dynamics (including gravity)
-          // unless a user-applied force/command is pending this step, in which
-          // case it is woken so the actuation is integrated rather than
-          // silently dropped. Gravity alone is not a disturbance, so a body
-          // resting on its support stays asleep.
-          if (deactivationEnabled && skel->isResting()) {
-            if (externallyDisturbed || hasNonzeroGeneralizedVelocity(*skel)) {
-              skel->setResting(false);
-              skel->setSleepCandidate(false);
-              if (!disturbedThisStep.empty())
-                disturbedThisStep[i] = 1;
-            } else {
-              if (_resetCommand) {
-                skel->clearInternalForces();
-                skel->clearExternalForces();
-                skel->resetCommands();
-              }
-              return;
-            }
-          }
-
-          skel->computeForwardDynamics();
-          skel->integrateVelocities(mTimeStep);
-
-          // A sleep candidate can briefly lose its support contact due to
-          // discrete collision jitter. Preserve that candidacy only while the
-          // integrated velocity is still inside the wake band; if the body is
-          // genuinely moving again, clear the stale candidate before the
-          // solver has a chance to freeze its next contact island.
-          if (skel->isSleepCandidate()) {
-            const double linWake = mDeactivationOptions.mWakeThresholdScale
-                                   * mDeactivationOptions.mLinearSpeedThreshold;
-            const double angWake
-                = mDeactivationOptions.mWakeThresholdScale
-                  * mDeactivationOptions.mAngularSpeedThreshold;
-            const double linSpeed = skel->computeMaxBodyLinearSpeed();
-            const double angSpeed = skel->computeMaxBodyAngularSpeed();
-            if (externallyDisturbed || linSpeed > linWake
-                || angSpeed > angWake) {
-              skel->setSleepCandidate(false);
-              if (!disturbedThisStep.empty())
-                disturbedThisStep[i] = 1;
-            }
-          }
-        });
-  }
 
   // Detect activated constraints and compute constraint impulses. The group
   // stamp also proves that contacts remain alive through this solve.
@@ -1798,6 +1713,101 @@ bool World::tryAllRestingFastPath(StepContext& context)
   }
 
   return false;
+}
+
+//==============================================================================
+void World::advanceVelocities(const StepContext& context)
+{
+  const bool _resetCommand = context.resetCommand;
+  const bool deactivationEnabled = context.deactivationEnabled;
+
+  // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
+  // step so the post-step rest-detection pass can treat it as non-quiet even
+  // after _resetCommand clears the actuation vectors below. Disturbance
+  // tracking is only needed while contact islands exist; unconstrained active
+  // scenes cannot sleep.
+  auto& disturbedThisStep = mDisturbedThisStepScratch;
+  disturbedThisStep.clear();
+  const bool trackDisturbances
+      = deactivationEnabled
+        && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
+  {
+    if (trackDisturbances)
+      disturbedThisStep.assign(mSkeletons.size(), false);
+  }
+
+  // The first-frame dwell credit is only for bodies that start at rest (see
+  // updateRestStates()), so note which skeletons start the first step moving.
+  if (mFrame == 0) {
+    auto& initiallyMoving = mInitiallyMovingSkeletonScratch;
+    initiallyMoving.assign(mSkeletons.size(), 0);
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+      initiallyMoving[i] = hasNonzeroGeneralizedVelocity(*mSkeletons[i]);
+  }
+
+  // Integrate velocity for unconstrained skeletons
+  {
+    parallelForIndexRange(
+        mSimulationThreadPool.get(),
+        mSkeletons.size(),
+        mNumSimulationThreads,
+        [&](std::size_t i) {
+          auto& skel = mSkeletons[i];
+          if (!skel->isMobile())
+            return;
+
+          const bool externallyDisturbed
+              = deactivationEnabled && (trackDisturbances || skel->isResting())
+                && skel->hasExternalDisturbance();
+          if (externallyDisturbed && !disturbedThisStep.empty())
+            disturbedThisStep[i] = 1;
+
+          // A resting skeleton skips forward dynamics (including gravity)
+          // unless a user-applied force/command is pending this step, in which
+          // case it is woken so the actuation is integrated rather than
+          // silently dropped. Gravity alone is not a disturbance, so a body
+          // resting on its support stays asleep.
+          if (deactivationEnabled && skel->isResting()) {
+            if (externallyDisturbed || hasNonzeroGeneralizedVelocity(*skel)) {
+              skel->setResting(false);
+              skel->setSleepCandidate(false);
+              if (!disturbedThisStep.empty())
+                disturbedThisStep[i] = 1;
+            } else {
+              if (_resetCommand) {
+                skel->clearInternalForces();
+                skel->clearExternalForces();
+                skel->resetCommands();
+              }
+              return;
+            }
+          }
+
+          skel->computeForwardDynamics();
+          skel->integrateVelocities(mTimeStep);
+
+          // A sleep candidate can briefly lose its support contact due to
+          // discrete collision jitter. Preserve that candidacy only while the
+          // integrated velocity is still inside the wake band; if the body is
+          // genuinely moving again, clear the stale candidate before the
+          // solver has a chance to freeze its next contact island.
+          if (skel->isSleepCandidate()) {
+            const double linWake = mDeactivationOptions.mWakeThresholdScale
+                                   * mDeactivationOptions.mLinearSpeedThreshold;
+            const double angWake
+                = mDeactivationOptions.mWakeThresholdScale
+                  * mDeactivationOptions.mAngularSpeedThreshold;
+            const double linSpeed = skel->computeMaxBodyLinearSpeed();
+            const double angSpeed = skel->computeMaxBodyAngularSpeed();
+            if (externallyDisturbed || linSpeed > linWake
+                || angSpeed > angWake) {
+              skel->setSleepCandidate(false);
+              if (!disturbedThisStep.empty())
+                disturbedThisStep[i] = 1;
+            }
+          }
+        });
+  }
 }
 
 //==============================================================================
