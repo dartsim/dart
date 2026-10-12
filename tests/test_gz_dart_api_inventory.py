@@ -354,6 +354,95 @@ void use() { GzDetector::getStaticType(); GzDetector::create(); }
     assert "create" not in members
 
 
+def test_implicit_virtual_overrides(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """using Widget = dart::dynamics::Widget;
+class GzImplicit : public dart::collision::DerivedDetector {
+public:
+  bool raycast(const Widget& target) const;
+protected:
+  void refresh(Widget* target);
+};
+class GzOverloads : public dart::collision::DerivedDetector {
+public:
+  bool raycast(Widget& target) const;
+  bool raycast(const Widget& target);
+  void refresh(const Widget* target);
+};
+""",
+    )
+    overrides = _entries(result, "overrides")
+    assert set(overrides) == {"GzImplicit::raycast", "GzImplicit::refresh"}
+    assert all(entry["count"] == 1 for entry in overrides.values())
+
+
+def test_implicit_override_parameter_and_member_qualifiers(extractor, tmp_path):
+    headers = tmp_path / "headers"
+    headers.mkdir()
+    (headers / "base.hpp").write_text(
+        """namespace dart {
+class Base {
+public:
+  virtual void update(int value = 1) const & = 0;
+  virtual void reset(unsigned int value) = 0;
+  virtual void byValue(const int value) = 0;
+  virtual void ping() volatile && = 0;
+};
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """class Good : public dart::Base {
+public:
+  void update(int renamed = 2) const &;
+  void reset(unsigned int);
+  void byValue(int);
+  void ping() volatile &&;
+};
+class Wrong : public dart::Base {
+public:
+  void update(int renamed) const &&;
+  void reset(unsigned int) const;
+  void byValue(int&);
+  void ping() &&;
+};
+""",
+    )
+    assert set(_entries(result, "overrides")) == {
+        "Good::update",
+        "Good::reset",
+        "Good::byValue",
+        "Good::ping",
+    }
+
+
+def test_explicit_virtual_override_retains_pointer_alias_candidates(
+    extractor, api, tmp_path
+):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """using WidgetPointer = dart::dynamics::Widget*;
+class ExplicitOverride : public dart::collision::Detector {
+  void refresh(WidgetPointer target) override;
+};
+class ExplicitVirtual : public dart::collision::Detector {
+  virtual void refresh(WidgetPointer target);
+};
+""",
+    )
+    overrides = _entries(result, "overrides")
+    assert set(overrides) == {"ExplicitOverride::refresh", "ExplicitVirtual::refresh"}
+    assert all(entry["count"] == 1 for entry in overrides.values())
+
+
 def test_constructions_record_constructor_declarations(extractor, api, tmp_path):
     result = _scan(
         extractor,
@@ -1139,3 +1228,339 @@ def test_checked_in_inventory_is_well_formed_and_sorted():
                     assert isinstance(declaration["const"], bool)
                     assert isinstance(declaration["virtual"], bool)
                     assert declaration["signature"]
+
+
+@pytest.mark.parametrize(
+    ("operator", "expression"),
+    [
+        ("operator->", "value->getValue()"),
+        ("operator[]", "value[0]->getValue()"),
+        ("operator()", "value(0)->getValue()"),
+    ],
+)
+def test_operator_syntax_on_known_dart_receivers(
+    extractor, api, tmp_path, operator, expression
+):
+    header = tmp_path / "dart" / "operators.hpp"
+    header.write_text(
+        """namespace dart::dynamics {
+struct Operators {
+  Operators(int value);
+  Widget* operator->() const;
+  Widget* operator[](int index) const;
+  Widget* operator()(int index) const;
+  Widget* get() const;
+};
+}
+"""
+    )
+    api = extractor.index_api(header.parent)
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        f"""void use(
+    dart::dynamics::Operators value, dart::dynamics::Operators* raw) {{
+  dart::dynamics::Operators constructed(1);
+  {expression};
+  raw->get();
+}}
+""",
+    )
+    members = _entries(result, "members")
+    entry = members[operator]
+    assert entry["count"] == 1
+    assert entry["unresolved_count"] == 0
+    assert entry["receiver_types"] == ["dart::dynamics::Operators"]
+    assert entry["declarations"][0]["const"]
+    assert members["getValue"]["receiver_types"] == ["dart::dynamics::Widget"]
+    assert set(members) == {operator, "getValue", "get"}
+
+
+def test_template_pointer_arrow_operator(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void use(
+    dart::dynamics::WidgetPtr custom,
+    dart::dynamics::Pointer<dart::dynamics::Widget>* raw,
+    dart::dynamics::WidgetSharedPtr standard) {
+  custom->getValue();
+  raw->get();
+  standard->getValue();
+}
+""",
+    )
+    entry = _entries(result, "members")["operator->"]
+    assert entry["count"] == 1
+    assert entry["receiver_types"] == ["dart::dynamics::WidgetPtr"]
+    assert {d["class"] for d in entry["declarations"]} == {"dart::dynamics::Pointer"}
+
+
+@pytest.mark.parametrize(
+    ("parameter", "expression"),
+    [
+        ("std::shared_ptr<dart::Handle> h", "h->touch()"),
+        ("dart::HandleShared h", "h->touch()"),
+        ("void* p", "static_cast<dart::Handle*>(p)->touch()"),
+        ("dart::HandleShared h", "h.get()->touch()"),
+    ],
+)
+def test_builtin_pointer_arrow_does_not_invoke_pointee_operator(
+    extractor, api, tmp_path, parameter, expression
+):
+    header = tmp_path / "dart" / "handle.hpp"
+    header.write_text(
+        """namespace dart {
+struct Handle {
+  dynamics::Widget* operator->() const;
+  void touch();
+};
+using HandleShared = std::shared_ptr<Handle>;
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(header.parent),
+        tmp_path,
+        f"void use({parameter}) {{ {expression}; }}\n",
+    )
+    members = _entries(result, "members")
+    assert "operator->" not in members
+    assert members["touch"]["count"] == 1
+    assert {d["class"] for d in members["touch"]["declarations"]} == {"dart::Handle"}
+
+
+def test_scoped_enum_constants_are_indexed_and_recorded(extractor, tmp_path):
+    headers = tmp_path / "headers"
+    headers.mkdir()
+    (headers / "enums.hpp").write_text(
+        """namespace dart {
+enum class Mode : int { Fast = (1, 2), Slow = 3 };
+enum struct State { Ready, Waiting };
+struct Holder { enum class Mode { Fast, Slow }; };
+}
+"""
+    )
+    api = extractor.index_api(headers)
+    assert set(api.data_members) == {"Fast", "Slow", "Ready", "Waiting"}
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void use() {
+  auto mode = dart::Mode::Fast;
+  auto other = dart::Holder::Mode::Fast;
+  auto state = dart::State::Ready;
+}
+""",
+    )
+    constants = _entries(result, "data_members")
+    assert set(constants) == {"Fast", "Ready"}
+    assert constants["Fast"]["count"] == 2
+    assert constants["Fast"]["receiver_types"] == [
+        "dart::Holder::Mode",
+        "dart::Mode",
+    ]
+    assert {d["class"] for d in constants["Fast"]["declarations"]} == {
+        "dart::Holder::Mode",
+        "dart::Mode",
+    }
+    assert all(
+        declaration["const"]
+        for entry in constants.values()
+        for declaration in entry["declarations"]
+    )
+    assert constants["Ready"]["receiver_types"] == ["dart::State"]
+
+
+def test_template_qualified_static_calls_and_return_receivers(extractor, tmp_path):
+    headers = tmp_path / "headers"
+    headers.mkdir()
+    (headers / "templates.hpp").write_text(
+        """namespace dart {
+struct Result { int value() const; };
+template<class T> struct Box {
+  static Result* create();
+  static void mutate();
+  static constexpr int limit = 1;
+};
+}
+"""
+    )
+    api = extractor.index_api(headers)
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void use() {
+  dart::Box<int>::mutate();
+  dart::Box<std::vector<int>>::mutate();
+  auto result = dart::Box<std::pair<int, double>>::create();
+  result->value();
+  dart::Box<int>::create()->value();
+  auto limit = dart::Box<std::vector<int>>::limit;
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["mutate"]["count"] == 2
+    assert members["mutate"]["receiver_types"] == ["dart::Box"]
+    assert members["create"]["count"] == 2
+    assert members["create"]["receiver_types"] == ["dart::Box"]
+    assert members["value"]["count"] == 2
+    assert members["value"]["receiver_types"] == ["dart::Result"]
+    assert _entries(result, "data_members")["limit"]["receiver_types"] == ["dart::Box"]
+
+
+def test_local_includes_propagate_dart_relevance_transitively(extractor, api, tmp_path):
+    source = tmp_path / "source"
+    snippets = {
+        "include/Owner.hh": """struct Owner {
+  dart::dynamics::Widget* engine;
+  void tick();
+};
+""",
+        "include/Bridge.hh": '#include "Owner.hh"\n',
+        "src/use.cc": """#include "Bridge.hh"
+void Owner::tick() { engine->getValue(); }
+""",
+        "src/unrelated.cc": "void unrelated() { engine->getValue(); }\n",
+    }
+    for name, snippet in snippets.items():
+        path = source / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(snippet)
+    result = extractor.scan_sources(api, source)
+    member = _entries(result, "members")["getValue"]
+    assert member["count"] == 1
+    assert member["receiver_types"] == ["dart::dynamics::Widget"]
+    assert member["unresolved_count"] == 0
+    assert member["examples"] == ["src/use.cc:2"]
+
+
+@pytest.mark.parametrize(
+    "snippet",
+    [
+        """namespace other { struct Widget { void getValue(); }; }
+namespace first {
+using namespace dart::dynamics;
+void f(Widget* w) { w->getValue(); }
+}
+namespace second {
+using namespace other;
+void f(Widget* w) { w->getValue(); }
+}
+""",
+        """namespace other { struct Widget { void getValue(); }; }
+namespace second {
+namespace dd = other;
+void f(dd::Widget* w) { w->getValue(); }
+}
+namespace first {
+namespace dd = dart::dynamics;
+void f(dd::Widget* w) { w->getValue(); }
+}
+""",
+        """namespace other { struct Widget { void getValue(); }; }
+void f() {
+ { using namespace dart::dynamics; Widget* w; w->getValue(); }
+ { using namespace other; Widget* w; w->getValue(); }
+}
+""",
+        """namespace other { struct Widget { void getValue(); }; }
+void f() {
+ { namespace dd = other; dd::Widget* w; w->getValue(); }
+ { namespace dd = dart::dynamics; dd::Widget* w; w->getValue(); }
+}
+""",
+    ],
+)
+def test_known_filewide_namespace_import_and_alias_limitation(
+    extractor, api, tmp_path, snippet
+):
+    result = _scan(extractor, api, tmp_path, snippet)
+    member = _entries(result, "members")["getValue"]
+    # Namespace directives and aliases currently retain an extra non-DART use.
+    assert member["count"] == 2
+    assert member["receiver_types"] == ["dart::dynamics::Widget"]
+    assert member["unresolved_count"] == 0
+
+
+def test_known_same_named_source_field_limitation(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """struct Other { void getValue(); };
+struct DartHolder { dart::dynamics::Widget* item; };
+struct OtherHolder { Other* item; void f(); };
+void OtherHolder::f() { item->getValue(); }
+void outside(OtherHolder* other) { other->item->getValue(); }
+""",
+    )
+    member = _entries(result, "members")["getValue"]
+    # Source fields share names across owners, conservatively retaining both uses.
+    assert member["count"] == 2
+    assert member["receiver_types"] == ["dart::dynamics::Widget"]
+    assert member["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    ("snippet", "expected"),
+    [
+        ("void f(dart::ArrowRaw h) { h->touch(); }", {"touch"}),
+        ("void f(dart::ArrowRawNext h) { h->touch(); }", {"touch"}),
+        (
+            "using Raw = dart::Arrow<int>*; void f(Raw h) { h->touch(); }",
+            {"touch"},
+        ),
+        (
+            "using Raw = dart::ArrowRaw; using Next = Raw; "
+            "void f(Next h) { h->touch(); }",
+            {"touch"},
+        ),
+        ("void f(dart::ArrowSharedNext h) { h->touch(); }", {"touch"}),
+        (
+            "using Shared = std::shared_ptr<dart::Arrow<int>>; "
+            "void f(Shared h) { h->touch(); }",
+            {"touch"},
+        ),
+        (
+            "using Shared = dart::ArrowShared; using Next = Shared; "
+            "void f(Next h) { h->touch(); }",
+            {"touch"},
+        ),
+        (
+            "void f(dart::ArrowRef h) { h->getValue(); }",
+            {"operator->", "getValue"},
+        ),
+        (
+            "using Ref = dart::Arrow<int*>&; void f(Ref h) { h->getValue(); }",
+            {"operator->", "getValue"},
+        ),
+    ],
+)
+def test_operator_arrow_preserves_pointer_and_reference_alias_identity(
+    extractor, api, tmp_path, snippet, expected
+):
+    (tmp_path / "dart" / "alias_operators.hpp").write_text(
+        """namespace dart {
+template<class T> struct Arrow {
+  dynamics::Widget* operator->() const;
+  void touch();
+};
+using ArrowRaw = Arrow<int>*;
+using ArrowRawNext = ArrowRaw;
+using ArrowRef = Arrow<int>&;
+using ArrowShared = std::shared_ptr<Arrow<int>>;
+using ArrowSharedNext = ArrowShared;
+}
+"""
+    )
+    result = _scan(extractor, extractor.index_api(tmp_path / "dart"), tmp_path, snippet)
+    members = _entries(result, "members")
+    assert set(members) == expected
+    assert all(entry["count"] == 1 for entry in members.values())

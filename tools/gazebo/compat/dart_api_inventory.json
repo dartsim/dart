@@ -5186,6 +5186,43 @@
           "unresolved_count": 0
         },
         {
+          "classification": "accessor",
+          "count": 231,
+          "declarations": [
+            {
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": true,
+              "signature": "BodyNodeT * operator -> ( ) const",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::TemplateJointPtr",
+              "const": true,
+              "signature": "JointT * operator -> ( ) const",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::TemplateNodePtr",
+              "const": true,
+              "signature": "NodeT * operator -> ( ) const",
+              "virtual": false
+            }
+          ],
+          "examples": [
+            "bullet-featherstone/src/SDFFeatures.cc:681",
+            "bullet-featherstone/src/SDFFeatures.cc:684",
+            "bullet-featherstone/src/SDFFeatures.cc:700"
+          ],
+          "name": "operator->",
+          "receiver_types": [
+            "dart::dynamics::BodyNodePtr",
+            "dart::dynamics::ConstBodyNodePtr",
+            "dart::dynamics::JointPtr",
+            "dart::dynamics::ShapeNodePtr"
+          ],
+          "unresolved_count": 0
+        },
+        {
           "classification": "mutation",
           "count": 1,
           "declarations": [

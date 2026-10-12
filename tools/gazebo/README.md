@@ -202,6 +202,15 @@ world generator.
 
 ## DART C++ API inventory
 
+The inventory is lexical and best-effort: it records uses it can resolve and
+retains conservative candidates for unresolved receivers. Known limitations
+include namespace using-directives and aliases treated file-wide, source fields
+keyed by name across owners, function-local type aliases, preprocessor
+conditions, and C++ template instantiation and overload resolution. Operator
+syntax is associated with declarations for `->`, `[]` and `()` when the receiver
+type is known. The Gazebo build and test lanes remain the authoritative
+compatibility check.
+
 [`compat/dart_api_inventory.json`](compat/dart_api_inventory.json) records the
 DART types, constructions, accessor and mutation calls, public and protected
 data-member accesses, free functions, macros, and virtual overrides used by
@@ -218,11 +227,10 @@ The lexical inventory retains declaration candidates for unresolved receivers
 (`unresolved_count`) and overloads, so a member name on a non-DART object can
 match a DART declaration. Bullet, ODE, and Assimp types (`bt`, `d`, and `ai`
 prefixes) and unknown members of non-DART objects are not DART receivers.
-Names resolve as C++ lookup finds them, from the innermost namespace or class,
+Type lookup uses tracked scopes, from the innermost namespace or class,
 including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
-The Gazebo gates remain the source and behavior checks.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
 
