@@ -95,6 +95,7 @@
   * An exception thrown by a collision filter during an ODE collision check
     now reaches the caller after ODE finishes the check, instead of unwinding
     through ODE and leaving its collision space locked.
+    [#3723](https://github.com/dartsim/dart/pull/3723)
 
 * Constraint
 
