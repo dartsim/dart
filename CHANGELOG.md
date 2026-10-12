@@ -77,10 +77,11 @@
     resource retriever and root-joint options.
     [#3653](https://github.com/dartsim/dart/pull/3653)
 
-  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a
-    fixed-size vector or pose has the wrong number of values, instead of
-    writing out of bounds or leaving values unset in release builds. An MJCF
-    weld `solref` with one value keeps the default for the other.
+  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
+    4- or 6-element vector or pose value has the wrong number of elements,
+    instead of writing out of bounds or leaving values unset in release
+    builds. An MJCF weld `solref` with one value keeps the default for the
+    other.
 
   * SDF model, link, joint, visual, and collision poses honor
     `rotation_format="quat_xyzw"` and Euler `degrees="true"`.
