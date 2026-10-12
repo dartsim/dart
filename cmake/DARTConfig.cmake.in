@@ -132,6 +132,14 @@ function(@PROJECT_NAME@_package_init)
     endif()
   endforeach()
 
+  # Directory-level legacy includes must prefer the bundled docking headers.
+  if(NOT @DART_USE_SYSTEM_IMGUI@
+      AND "gui" IN_LIST ARGN
+      AND @PROJECT_NAME_UPPERCASE@_gui_FOUND)
+    list(PREPEND @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS
+      "${@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS}/dart/external/imgui")
+  endif()
+
   @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
   @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
   @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
