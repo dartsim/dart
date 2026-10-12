@@ -1,5 +1,6 @@
 """Fast lexical and freshness checks for the DART C++ API inventory."""
 
+import ast
 import importlib.util
 import json
 import re
@@ -11,7 +12,15 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "gz_dart_api_inventory.py"
 INVENTORY = ROOT / "tools" / "gazebo" / "compat" / "dart_api_inventory.json"
-SECTIONS = ("types", "members", "free_functions", "macros", "overrides")
+SECTIONS = (
+    "types",
+    "members",
+    "constructors",
+    "data_members",
+    "free_functions",
+    "macros",
+    "overrides",
+)
 
 
 def _load():
@@ -36,6 +45,9 @@ def api(extractor, tmp_path):
 namespace dynamics {
 class Widget {
 public:
+  Widget();
+  explicit Widget(int value);
+  ~Widget();
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Widget)
   DART_SYNTHETIC_PROPERTY(double, Friction)
   int getValue();
@@ -48,6 +60,7 @@ public:
   void clear();
   template<class T> void createShapeNodeWith();
   static Widget* create();
+  static constexpr int kLimit = 3;
 private:
   void privateOnly();
 };
@@ -60,6 +73,7 @@ public:
 };
 using WidgetPtr = Pointer<Widget>;
 using WidgetSharedPtr = std::shared_ptr<Widget>;
+inline int Widget::getValue() { return 0; }
 }
 namespace collision {
 template<class T> struct Registration {};
@@ -76,6 +90,18 @@ class DerivedDetector : public Detector {};
 class DART_COLLISION_NATIVE_API Exported {
 public:
   void setExported(int value);
+};
+struct Option {
+  bool enableContact;
+  std::size_t maxNumContacts = 1000u;
+  const Exported* exported;
+  Option(bool enable = true) : enableContact(enable) {}
+private:
+  int hidden;
+};
+struct Contact {
+  Eigen::Vector3d point;
+  double penetrationDepth{0.0};
 };
 }
 namespace math {
@@ -95,12 +121,17 @@ double measure(double value);
     return extractor.index_api(headers)
 
 
-def _scan(extractor, api, tmp_path, snippet):
+def _scan_files(extractor, api, tmp_path, snippets):
     source = tmp_path / "source"
-    folder = source / "dartsim" / "src"
-    folder.mkdir(parents=True)
-    (folder / "sample.cc").write_text(snippet)
+    for name, snippet in snippets.items():
+        path = source / "dartsim" / "src" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(snippet)
     return extractor.scan_sources(api, source)
+
+
+def _scan(extractor, api, tmp_path, snippet):
+    return _scan_files(extractor, api, tmp_path, {"sample.cc": snippet})
 
 
 def _entries(result, section):
@@ -310,6 +341,264 @@ void use() { GzDetector::getStaticType(); GzDetector::create(); }
     assert "create" not in members
 
 
+def test_constructions_record_constructor_declarations(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """struct Holder {
+  dart::dynamics::Widget member;
+  dart::dynamics::WidgetSharedPtr shared;
+};
+class Derived : public dart::dynamics::Widget {
+public:
+  Derived() : dart::dynamics::Widget(2) {}
+};
+class Inherited : public dart::dynamics::Widget {
+public:
+  using dart::dynamics::Widget::Widget;
+};
+dart::dynamics::Widget make(
+    const dart::dynamics::Widget& reference, dart::dynamics::Widget copy);
+void build() {
+  dart::dynamics::Widget local(1);
+  dart::dynamics::Widget braced{1};
+  auto temporary = dart::dynamics::Widget(1);
+  auto pointer = new dart::dynamics::Widget(1);
+  auto shared = std::make_shared<dart::dynamics::Widget>(1);
+  dart::dynamics::Widget* raw = nullptr;
+  std::vector<dart::dynamics::Widget> widgets;
+  dart::dynamics::WidgetSharedPtr none;
+  dart::dynamics::StaticOnly implicit;
+  dart::collision::Option option;
+}
+""",
+    )
+    constructors = _entries(result, "constructors")
+    assert set(constructors) == {
+        "dart::collision::Option",
+        "dart::dynamics::StaticOnly",
+        "dart::dynamics::Widget",
+    }
+    widget = constructors["dart::dynamics::Widget"]
+    assert widget["count"] == 8
+    assert [d["signature"] for d in widget["declarations"]] == [
+        "Widget ( )",
+        "explicit Widget ( int value )",
+    ]
+    assert constructors["dart::dynamics::StaticOnly"]["declarations"] == []
+    assert [
+        d["signature"] for d in constructors["dart::collision::Option"]["declarations"]
+    ] == ["Option ( bool enable = true )"]
+
+    header = tmp_path / "dart" / "api.hpp"
+    header.write_text(
+        header.read_text().replace(
+            "Widget(int value)", "Widget(double scale, int value)"
+        )
+    )
+    changed = extractor.scan_sources(
+        extractor.index_api(header.parent), tmp_path / "source"
+    )
+    assert (
+        _entries(changed, "constructors")["dart::dynamics::Widget"]["declarations"]
+        != widget["declarations"]
+    )
+
+
+def test_public_data_member_accesses(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void use(dart::collision::Option& option,
+         const dart::collision::Contact* contact) {
+  option.enableContact = false;
+  option.maxNumContacts = 2;
+  double depth = contact->penetrationDepth;
+  auto point = contact->point;
+  contact->point.norm();
+  option.hidden = 1;
+  option.exported->setExported(1);
+  int limit = dart::dynamics::Widget::kLimit;
+}
+struct Local { bool enableContact; };
+void local(Local value) { value.enableContact = true; }
+""",
+    )
+    members = _entries(result, "data_members")
+    assert set(members) == {
+        "enableContact",
+        "exported",
+        "kLimit",
+        "maxNumContacts",
+        "penetrationDepth",
+        "point",
+    }
+    assert members["kLimit"]["receiver_types"] == ["dart::dynamics::Widget"]
+    assert members["kLimit"]["declarations"][0]["const"]
+    assert members["enableContact"]["count"] == 1
+    assert members["point"]["count"] == 2
+    assert members["enableContact"]["receiver_types"] == ["dart::collision::Option"]
+    assert members["enableContact"]["declarations"] == [
+        {
+            "class": "dart::collision::Option",
+            "const": False,
+            "signature": "bool enableContact",
+            "virtual": False,
+        }
+    ]
+    assert members["penetrationDepth"]["declarations"][0]["class"] == (
+        "dart::collision::Contact"
+    )
+
+    header = tmp_path / "dart" / "api.hpp"
+    header.write_text(header.read_text().replace("enableContact;", "contactOn;"))
+    renamed = extractor.scan_sources(
+        extractor.index_api(header.parent), tmp_path / "source"
+    )
+    assert "enableContact" not in _entries(renamed, "data_members")
+
+
+def test_aliases_are_scoped_to_their_files_and_namespaces(extractor, api, tmp_path):
+    result = _scan_files(
+        extractor,
+        api,
+        tmp_path,
+        {
+            "a.cc": "using Alias = dart::dynamics::Widget;\n"
+            "void a() { Alias::getValue(); }\n",
+            "b.cc": "using Alias = dart::collision::Detector;\n"
+            "void b() { Alias::getStaticType(); }\n",
+            "c.cc": """namespace first {
+using Alias = dart::dynamics::Widget;
+void f() { Alias::isReady(); }
+}
+namespace second {
+using Alias = dart::collision::Detector;
+void g() { Alias::getStaticType(); }
+}
+""",
+            "d.hh": "namespace gz { struct Base {\n"
+            "  using DartWidget = dart::dynamics::Widget;\n"
+            "}; }\n",
+            "e.cc": '#include "d.hh"\nvoid e() { DartWidget::compute(); }\n',
+            "f.cc": "void f() { DartWidget::clear(); }\n",
+        },
+    )
+    members = _entries(result, "members")
+    assert members["getValue"]["examples"] == ["dartsim/src/a.cc:2"]
+    assert members["isReady"]["examples"] == ["dartsim/src/c.cc:3"]
+    assert members["getStaticType"]["count"] == 2
+    assert members["compute"]["examples"] == ["dartsim/src/e.cc:2"]
+    assert "clear" not in members
+
+
+def test_inactive_and_alternative_preprocessor_branches(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void hidden(dart::dynamics::Widget* w) {
+#if 0
+  dart::collision::Detector* w = nullptr;
+#if DART_VERSION_AT_LEAST(1, 2, 3)
+  dart::dynamics::Unused unused;
+#endif
+#else
+  w->getValue();
+#endif
+}
+#if 1
+void kept(dart::dynamics::Widget* k) { k->setValue(1); }
+#elif USE_OTHER
+void dropped(dart::dynamics::Widget* k) { k->clear(); }
+#endif
+void alternatives() {
+#if USE_WIDGET
+  dart::dynamics::Widget* x = nullptr;
+#else
+  dart::collision::Detector* x = nullptr;
+#endif
+  x->isReady();
+}
+void separate() {
+  dart::dynamics::Widget* z = nullptr;
+  {
+#ifdef USE_DETECTOR
+    dart::collision::Detector* z = nullptr;
+#else
+    z->compute();
+#endif
+  }
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["getValue"]["receiver_types"] == ["dart::dynamics::Widget"]
+    assert members["setValue"]["count"] == 1
+    assert "clear" not in members
+    assert members["isReady"]["receiver_types"] == [
+        "dart::collision::Detector",
+        "dart::dynamics::Widget",
+    ]
+    assert members["compute"]["receiver_types"] == ["dart::dynamics::Widget"]
+    assert "DART_VERSION_AT_LEAST" not in _entries(result, "macros")
+    assert "dart::dynamics::Unused" not in _entries(result, "types")
+
+
+def test_imported_free_functions(extractor, api, tmp_path):
+    result = _scan_files(
+        extractor,
+        api,
+        tmp_path,
+        {
+            "directive.cc": "using namespace dart::math;\nvoid a() { measure(1.0); }\n",
+            "declaration.cc": "using dart::math::measure;\n"
+            "void b() { measure(2.0); }\n",
+            "partial.cc": "using namespace dart;\nvoid c() { math::measure(3.0); }\n",
+            "unrelated.cc": "void d() { measure(4.0); }\n",
+            "member.cc": "using namespace dart::dynamics;\nvoid e() { getValue(); }\n",
+        },
+    )
+    functions = _entries(result, "free_functions")
+    assert set(functions) == {"dart::math::measure"}
+    assert functions["dart::math::measure"]["examples"] == [
+        "dartsim/src/declaration.cc:2",
+        "dartsim/src/directive.cc:2",
+        "dartsim/src/partial.cc:2",
+    ]
+
+
+def test_subscripted_container_elements(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        """void use(std::vector<dart::dynamics::Widget*> widgets) {
+  widgets[0]->getValue();
+  widgets.at(1)->isReady();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["getValue"]["receiver_types"] == ["dart::dynamics::Widget"]
+    assert members["isReady"]["receiver_types"] == ["dart::dynamics::Widget"]
+
+
+def test_extractor_imports_are_used():
+    tree = ast.parse(SCRIPT.read_text())
+    imported = {
+        (alias.asname or alias.name).split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+        for alias in node.names
+    }
+    assert imported <= {
+        node.id for node in ast.walk(tree) if isinstance(node, ast.Name)
+    }
+
+
 def test_check_without_checkout_reports_skip(extractor, capsys):
     assert extractor.main(["--check"]) == 0
     assert "skip" in capsys.readouterr().out.lower()
@@ -379,6 +668,14 @@ def test_checked_in_inventory_is_well_formed_and_sorted():
         "resetPositions",
         "resetVelocities",
     } <= set(_entries(physics, "members"))
+    assert {
+        "dart::collision::OdeCollisionGroup",
+        "dart::dynamics::BoxShape",
+        "dart::simulation::World",
+    } <= set(_entries(physics, "constructors"))
+    assert {"FORCE", "collisionFilter", "mRayHits", "penetrationDepth"} <= set(
+        _entries(physics, "data_members")
+    )
     overrides = _entries(physics, "overrides")
     for suffix in (
         "GzOdeCollisionDetector::collide",
@@ -397,7 +694,7 @@ def test_checked_in_inventory_is_well_formed_and_sorted():
             names = [entry["name"] for entry in entries]
             assert names == sorted(set(names))
             for entry in entries:
-                if section == "types":
+                if section in {"types", "constructors"}:
                     assert entry["name"].startswith("dart::")
                 assert isinstance(entry["count"], int) and entry["count"] > 0
                 assert entry["examples"] == sorted(set(entry["examples"]))
@@ -409,6 +706,7 @@ def test_checked_in_inventory_is_well_formed_and_sorted():
                 )
                 if section == "members":
                     assert entry["classification"] in {"accessor", "mutation"}
+                if section in {"members", "data_members"}:
                     assert entry["declarations"]
                 if section == "macros":
                     assert isinstance(entry["declared_in_dart"], bool)

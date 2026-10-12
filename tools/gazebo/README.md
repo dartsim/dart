@@ -203,15 +203,27 @@ world generator.
 ## DART C++ API inventory
 
 [`compat/dart_api_inventory.json`](compat/dart_api_inventory.json) records the
-DART types, accessor and mutation calls, free functions, macros, and virtual
-overrides used by the gz-physics dartsim plugin, its direct DART test code,
-and directly by gz-sim. It includes source revisions, use counts, source
-locations, and matching DART header declarations with signatures, constness,
-and virtual status. The lexical inventory retains declaration candidates for
-unresolved receivers (`unresolved_count`) and overloads. The Gazebo gates
-remain the source and behavior checks.
+DART types, constructions, accessor and mutation calls, public and protected
+data-member accesses, free functions, macros, and virtual overrides used by
+the gz-physics dartsim plugin, its direct DART test code, and directly by
+gz-sim. It includes source revisions, use counts, source locations, and
+matching DART header declarations with signatures, constness, and virtual
+status. A construction lists the type's public and protected constructors; an
+empty list means it declares none. The lexical inventory retains
+declaration candidates for unresolved receivers (`unresolved_count`) and
+overloads, so a member name on a non-DART object can match a DART declaration.
+Type aliases resolve within their file, the scanned headers it includes, and
+their namespace or class. The Gazebo gates remain the source and behavior
+checks.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
+
+The extractor does not evaluate preprocessor conditions. It drops only the
+branches that a literal `#if 0` or `#if 1` rules out and scans every other
+branch, so the inventory can list uses that only a branch inactive in a given
+build makes. A variable declared in alternative branches of one conditional
+takes the types of all of them, but a type alias or class defined differently
+in alternative branches keeps its last definition.
 
 With clean source checkouts, regenerate and check it from the DART root:
 
