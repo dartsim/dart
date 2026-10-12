@@ -1663,14 +1663,18 @@ inline void World::advanceVelocities(const StepContext& context)
 }
 
 //==============================================================================
-inline void World::solveConstraints(StepContext& context)
+DART_FORCEINLINE void World::solveConstraints(StepContext& context)
 {
   // Detect activated constraints and compute constraint impulses. The group
   // stamp also proves that contacts remain alive through this solve.
-  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  // The context holds the group and filter until step() returns, as the
+  // locals did before this stage existed.
+  context.collisionGroup = mConstraintSolver->getCollisionGroup();
+  const auto& collisionGroup = context.collisionGroup;
   const std::size_t collisionGroupVersion = collisionGroup->getContentVersion();
-  const auto collisionFilter
+  context.collisionFilter
       = mConstraintSolver->getCollisionOption().collisionFilter;
+  const auto& collisionFilter = context.collisionFilter;
   auto& deactivationState = *mDeactivationState;
   if (isReplayed(deactivationState, collisionFilter.get())
       && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
@@ -1703,8 +1707,6 @@ inline void World::solveConstraints(StepContext& context)
       = mConstraintSolver->getCollisionGroup() == collisionGroup
         && collisionGroup->getContentVersion() == collisionGroupVersion;
 
-  context.collisionGroup = collisionGroup;
-  context.collisionFilter = collisionFilter;
   context.collisionGroupUnchanged = collisionGroupUnchanged;
 }
 
