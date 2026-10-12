@@ -521,15 +521,19 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
 
     BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
 
+    skelClone->registerBodyNode(newBody);
+  }
+
+  // Register all BodyNodes before IK modules build their DOF maps.
+  for (std::size_t i = 0; i < getNumBodyNodes(); ++i) {
     // The IK module gets cloned by the Skeleton and not by the BodyNode,
     // because IK modules rely on the Skeleton's structure and indexing. If the
     // IK was cloned by the BodyNode into a Skeleton that has a different
     // structure, then there is no guarantee that it will continue to work
     // correctly.
     if (getBodyNode(i)->getIK())
-      newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
-
-    skelClone->registerBodyNode(newBody);
+      skelClone->getBodyNode(i)->mIK
+          = getBodyNode(i)->getIK()->clone(skelClone->getBodyNode(i));
   }
 
   // Replace constructor-generated skins with cloned nodes in their original

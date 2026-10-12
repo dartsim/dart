@@ -1260,8 +1260,10 @@ void InverseKinematics::Analytical::constructDofMap()
     }
 
     if (mDofMap[i] == -1) {
+      // A node copied into a new BodyNode tree has no Skeleton yet.
+      const auto skeleton = mIK->getNode()->getSkeleton();
       DegreeOfFreedom* dof
-          = mIK->getNode()->getSkeleton()->getDof(analyticalDofs[i]);
+          = skeleton ? skeleton->getDof(analyticalDofs[i]) : nullptr;
       std::string name
           = (dof == nullptr) ? std::string("nonexistent") : dof->getName();
       dtwarn << "[InverseKinematics::Analytical::constructDofMap] Your "
