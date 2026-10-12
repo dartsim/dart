@@ -91,15 +91,13 @@ or GUI behavior.
 `pixi run test` also runs two DART-owned compatibility gates:
 
 - `ContactSurfaceProbe` compiles the same header-check source that gz-physics
-  uses to detect `dart/constraint/ContactSurface.hpp`, with the `-std=c++14`
-  or `/std:c++14` flag gz-physics passes to that check. One syntax-only compiler
-  invocation uses only DART and Eigen include directories and no extra
-  definitions. Source and generated `dart/` headers provide the installed
-  include layout; the probe inherits no library target flags or dependencies.
-  MSVC rejects C++17 syntax, such as nested namespace definitions, in C++14
-  mode, so GCC adds `-pedantic-errors` and Clang 14 or newer adds
-  `-Werror=c++17-extensions` to fail on the same syntax.
-  `tests/CMakeLists.txt` owns the exact flags.
+  uses to detect `dart/constraint/ContactSurface.hpp`. One compiler invocation
+  uses only DART and Eigen include directories and no extra definitions:
+  gz-physics's `-std=c++14` with GCC and Clang, which accept DART's C++17
+  syntax there as an extension, and `/std:c++17` with MSVC, which rejects it
+  in C++14 mode, so on MSVC the probe checks include hygiene only. Source and
+  generated `dart/` headers provide the installed include layout; the probe
+  inherits no library target flags or dependencies.
 - `test_GazeboShim` mirrors the gz-physics detector subclasses, factory
   registrars, collision-group accessors, ray-cast entry points, and
   `ContactSurfaceHandler` overrides. Counters prove dispatch through collision

@@ -79,10 +79,7 @@
 #include <cmath>
 #include <cstring>
 
-// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
-namespace dart {
-namespace math {
-namespace detail {
+namespace dart::math::detail {
 
 /// Internal vertex structure for convex hull computation (implementation
 /// detail) This struct is only used internally by the implementation and is not
@@ -90,7 +87,14 @@ namespace detail {
 template <typename S>
 struct ConvexHullVertex
 {
-  S x, y, z;
+  union
+  {
+    S v[3];
+    struct
+    {
+      S x, y, z;
+    };
+  };
 };
 
 namespace convex_hull_detail {
@@ -789,6 +793,4 @@ inline void computeConvexHull3D(
   computeConvexHull3D(nativeVertices, outFaces, numOutputTriangles);
 }
 
-} // namespace detail
-} // namespace math
-} // namespace dart
+} // namespace dart::math::detail

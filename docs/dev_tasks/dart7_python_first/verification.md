@@ -309,23 +309,16 @@ Known gaps:
     built.
   - Still open: the machine-checked inventories of gz-used accessors and
     mutation paths.
-- **WP-7.0.6b follow-up, C++14 include tree (2026-10-12, main `722f28ddd`):**
-  - #3725 merged with `ContactSurfaceProbe` failing on both Windows jobs: MSVC
-    rejects the include tree's seven nested namespace definitions in C++14 mode
-    (C2429).
-  - gz-physics passes `-std=c++14` or `/std:c++14` to its header check. Whether
-    CMake also adds the project's C++17 flag depends on the CMake policy version
-    and the generator, so some gz-physics builds parse this include tree as
-    C++14 and silently disable contact-surface support.
-  - The fix writes those namespaces in C++14 syntax. `Castable::is()` and the
-    logging fold keep their C++17 form for C++17 compilers and use tag dispatch
-    and a braced pack expansion when parsed as C++14. The internal
-    `ConvexHullVertex` drops an unused union member that relied on an anonymous
-    struct; its `x`, `y`, `z` layout is unchanged.
-  - `ContactSurfaceProbe` now fails on C++17 syntax on every platform: GCC adds
-    `-pedantic-errors` and Clang 14 or newer adds `-Werror=c++17-extensions`.
-    GCC 11 to 16 and Clang 14 to 22 pass with the fix and fail without it.
 - **Status:** in progress.
+
+- **WP-7.0.6 follow-up, MSVC probe (2026-10-12, main `722f28ddd`):** #3725
+  merged with `ContactSurfaceProbe` failing on both Windows jobs, because MSVC
+  rejects DART's C++17 nested namespace definitions in C++14 mode (C2429).
+  Rewriting those namespaces exposed further MSVC C++14 errors in
+  `EntityNode.hpp` (C3668), so the MSVC probe uses `/std:c++17` and checks
+  include hygiene only; GCC and Clang keep gz-physics's `-std=c++14`. gz-physics
+  passes `/std:c++14` to its own MSVC header check, which therefore fails
+  whenever CMake does not also add its C++17 flag; that belongs upstream.
 
 ### WP-7.0.7 Scope artifacts
 

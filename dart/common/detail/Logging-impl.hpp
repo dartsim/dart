@@ -45,9 +45,7 @@
   #include <string>
 #endif
 
-// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
-namespace dart {
-namespace common {
+namespace dart::common {
 
 #if DART_HAVE_spdlog
 namespace detail {
@@ -118,14 +116,7 @@ void print(
   os << "\033[1;" << color << "m" << header << "\033[0m " << format_str
      << " [args]: ";
   os << std::forward<Arg>(arg);
-  #if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
   ((os << ", " << std::forward<Args>(args)), ...);
-  #else
-  // C++14 header checks parse this form; braced lists evaluate in order.
-  const int printed[]
-      = {0, ((void)(os << ", " << std::forward<Args>(args)), 0)...};
-  (void)printed;
-  #endif
   os << std::endl;
 }
 
@@ -210,7 +201,6 @@ void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 #endif
 }
 
-} // namespace common
-} // namespace dart
+} // namespace dart::common
 
 #endif // DART_COMMON_DETAIL_LOGGING_IMPL_HPP_

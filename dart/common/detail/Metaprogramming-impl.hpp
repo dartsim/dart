@@ -37,10 +37,7 @@
 
 #include <type_traits>
 
-// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
-namespace dart {
-namespace common {
-namespace detail {
+namespace dart::common::detail {
 
 // Inspired by https://stackoverflow.com/a/6324863/3122234
 
@@ -87,8 +84,6 @@ struct has_member
   static bool const value = sizeof(f<Alias>(0)) == 2;
 };
 
-} // namespace detail
-} // namespace common
-} // namespace dart
+} // namespace dart::common::detail
 
 #endif // DART_COMMON_DETAIL_METAPROGRAMMING_HPP_

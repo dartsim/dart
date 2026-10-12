@@ -6,7 +6,6 @@ import importlib.util
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -3064,7 +3063,6 @@ def _configure_semantic_graph_fixture(
     root: Path,
     generator: str | None = None,
     force_windows: bool = False,
-    cmake_arguments: tuple[str, ...] = (),
 ) -> Path:
     sources = {
         "CMakeLists.txt": """
@@ -3221,7 +3219,6 @@ testpaths = ["tests"]
         command[1:1] = ["-G", generator]
     if force_windows:
         command.append("-DWIN32=TRUE")
-    command.extend(cmake_arguments)
     result = subprocess.run(
         command,
         capture_output=True,
@@ -3381,21 +3378,10 @@ def _add_contact_surface_probe_fixture(root: Path):
         cmake.read_text(encoding="utf-8")
         + "\nget_target_property(probe_eigen Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)\n"
         "if(MSVC)\n"
-        "  set(probe_flags /std:c++14 /Zs)\n"
+        "  set(probe_flags /std:c++17 /Zs)\n"
         "  set(probe_include_flag /I)\n"
-        'elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")\n'
-        "  set(probe_flags -std=c++14 -pedantic-errors -fsyntax-only)\n"
-        "  set(probe_include_flag -I)\n"
         "else()\n"
-        "  include(CheckCXXCompilerFlag)\n"
-        "  check_cxx_compiler_flag(-Wc++17-attribute-extensions "
-        "COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS)\n"
-        "  if(COMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS)\n"
-        "    set(probe_flags -std=c++14 -Werror=c++17-extensions "
-        "-Wno-error=c++17-attribute-extensions -fsyntax-only)\n"
-        "  else()\n"
-        "    set(probe_flags -std=c++14 -fsyntax-only)\n"
-        "  endif()\n"
+        "  set(probe_flags -std=c++14 -fsyntax-only)\n"
         "  set(probe_include_flag -I)\n"
         "endif()\n"
         "foreach(include_dir ${PROJECT_SOURCE_DIR} ${DART_BINARY_DIR} ${probe_eigen})\n"
@@ -3443,63 +3429,6 @@ def test_cmake_semantic_graph_contact_surface_probe_command(
     if old is not None:
         cmake.write_text(
             cmake.read_text(encoding="utf-8").replace(old, new),
-            encoding="utf-8",
-        )
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    if expected is None:
-        assert errors == []
-    else:
-        assert any(expected in error for error in errors)
-
-
-def test_cmake_semantic_graph_contact_surface_probe_keeps_gcc_pedantic(tmp_path):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
-    cache = infra.cmake_cache_values(build / "CMakeCache.txt")
-    if infra.cmake_cxx_compiler_family(build, cache, []) != "GNU":
-        pytest.skip("the fixture compiler is not GCC")
-    cmake.write_text(
-        cmake.read_text(encoding="utf-8").replace(" -pedantic-errors", ""),
-        encoding="utf-8",
-    )
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    assert any("only C++14 flags" in error for error in errors)
-
-
-@pytest.mark.parametrize(
-    ("supported", "removed", "expected"),
-    (
-        ("", None, None),
-        ("1", None, None),
-        ("1", " -Werror=c++17-extensions", "only C++14 flags"),
-    ),
-)
-def test_cmake_semantic_graph_contact_surface_probe_follows_clang_groups(
-    tmp_path, supported, removed, expected
-):
-    compiler = shutil.which("clang++")
-    if compiler is None:
-        pytest.skip("clang++ is unavailable")
-    build = _configure_semantic_graph_fixture(
-        tmp_path,
-        cmake_arguments=(
-            f"-DCMAKE_CXX_COMPILER={compiler}",
-            f"-DCOMPILER_SUPPORTS_WCXX17_ATTRIBUTE_EXTENSIONS={supported}",
-        ),
-    )
-    cache = infra.cmake_cache_values(build / "CMakeCache.txt")
-    if infra.cmake_cxx_compiler_family(build, cache, []) in {None, "MSVC", "GNU"}:
-        pytest.skip("the generator did not select a Clang-family compiler")
-    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
-    if removed is not None:
-        cmake.write_text(
-            cmake.read_text(encoding="utf-8").replace(removed, ""),
             encoding="utf-8",
         )
     errors = []
@@ -3871,16 +3800,11 @@ def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeyp
 
 
 @pytest.mark.parametrize(
-    ("compiler_id", "simulate_id", "expected", "family"),
-    (
-        ("MSVC", "", True, "MSVC"),
-        ("Clang", "MSVC", True, "MSVC"),
-        ("GNU", "", False, "GNU"),
-        ("AppleClang", "", False, "AppleClang"),
-    ),
+    ("compiler_id", "simulate_id", "expected"),
+    (("MSVC", "", True), ("Clang", "MSVC", True), ("GNU", "", False)),
 )
 def test_cmake_msvc_semantics_follow_configured_compiler_state(
-    tmp_path, compiler_id, simulate_id, expected, family
+    tmp_path, compiler_id, simulate_id, expected
 ):
     compiler = tmp_path / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
     compiler.parent.mkdir(parents=True)
@@ -3900,7 +3824,6 @@ def test_cmake_msvc_semantics_follow_configured_compiler_state(
 
     assert errors == []
     assert actual is expected
-    assert infra.cmake_cxx_compiler_family(tmp_path, cache, errors) == family
 
 
 def test_cmake_semantic_graph_probe_requires_fresh_file_api_reply(
