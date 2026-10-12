@@ -27,18 +27,21 @@ matching version tags.
 
    * - Platform
      - CPython wheels built by this branch
-   * - Linux x86_64
-     - 3.13 on regular wheel runs; 3.10, 3.11, 3.12, and 3.13 on release branch
-       and tag builds
+   * - Linux x86_64 and aarch64
+     - 3.13 on regular wheel runs; 3.12, 3.13, and 3.14 on nightly, release
+       branch, and tag builds
    * - macOS arm64
-     - 3.13 on regular wheel runs; 3.12 and 3.13 on release branch and tag
-       builds
+     - 3.13 on regular wheel runs; 3.12, 3.13, and 3.14 on nightly, release
+       branch, and tag builds
    * - Windows x86_64
-     - 3.13 on regular wheel runs; 3.12 and 3.13 on release branch and tag
-       builds
+     - 3.13 on regular wheel runs; 3.12, 3.13, and 3.14 on nightly, release
+       branch, and tag builds
    * - Other Python versions or platforms
      - Build from source with Python 3.10 or newer, or use conda-forge/Pixi when
        packages are available there
+
+Starting with DART 6.20.1, Python 3.10 and 3.11 no longer receive new wheels;
+``pip`` on those versions continues to install dartpy 6.20.0.
 
 The source-build platform requirements in the
 :doc:`DART build guide </dart/developer_guide/build>` differ from the wheel

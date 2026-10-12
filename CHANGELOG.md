@@ -4,15 +4,34 @@
 
 ### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestone/106)
 
+* Constraint
+
+  * Fix mimic joints enforced by the coupler constraint
+    (`Joint::setUseCouplerConstraint(true)`). Coupled joints no longer gain
+    energy, or diverge when the follower has more inertia than the leader;
+    per-DoF couplers on multi-DoF joints no longer crash; and a joint that
+    mimics only a later DoF now gets its constraint:
+    [#3702](https://github.com/dartsim/dart/pull/3702),
+    [#3700](https://github.com/dartsim/dart/pull/3700)
+
 * Parsers
 
-  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a
-    fixed-size vector or pose has the wrong number of values, instead of
-    writing out of bounds or leaving values unset in release builds. An MJCF
-    weld `solref` with one value keeps the default for the other.
+  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
+    4- or 6-element vector or pose value has the wrong number of elements,
+    instead of writing out of bounds or leaving values unset in release
+    builds. An MJCF weld `solref` with one value keeps the default for the
+    other.
     [#3698](https://github.com/dartsim/dart/pull/3698)
 
-### [DART 6.20.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/99?closed=1)
+* Python
+
+  * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,
+    aarch64), macOS (arm64) and Windows. Python 3.10 (end of life) and 3.11
+    no longer get wheels, so pip on those versions keeps installing dartpy
+    6.20.0. Source builds still support Python 3.10 and newer:
+    [#3704](https://github.com/dartsim/dart/pull/3704)
+
+### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
 performance. The 3,000-shape scene from
