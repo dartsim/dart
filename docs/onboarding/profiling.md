@@ -355,9 +355,10 @@ Each row's `input_sha` combines its scene/model input with its driver's workload
 hash, also recorded as `workload_sha`. A workload or input change between arms is
 a `behaviour-change`: performance deltas are withheld and a matching
 `Rebaseline-Rationale` is required, just as for changed behavior guards.
-`portable_step_bench` rows retain their existing input hashes because both arms
-use the common driver source from this checkout, covered by the environment's
-harness hash. `run` reads workload hashes from the install stamp, rather than
+`portable_step_bench` rows use the common driver source from this checkout in
+both arms. That source is covered by both the environment's harness hash and
+the row's workload hash; changing it changes the portable rows' input hashes
+identically in both arms. `run` reads workload hashes from the install stamp, rather than
 from the current checkout. `run` checks the stamp against the artifacts and
 commit and installed sample data; missing or stale provenance, including missing
 workload or sample-data hashes, is an infrastructure error. Saved records
@@ -472,6 +473,69 @@ Gate strict CPU regressions with:
 python3 scripts/check_soft_body_performance_regressions.py \
   build/soft-body-comparison/summary.json
 ```
+
+## Many-World Step Loops
+
+The portable driver uses DART 6.20 C++ APIs so the same workload can run
+against the pre-refactor revision and DART 7 revisions. Each outer step advances
+K independent Worlds in sequence, then reads every body's world transform and
+every contact's point, normal, force and penetration depth. Ir, allocations,
+requested bytes and wall milliseconds are reported per outer step across all K
+Worlds; divide by K for cost per World. Each World has its own explicitly
+selected collision detector and runs with one simulation thread.
+
+| Rows | Detectors | Tier | Warm-up / measured outer steps |
+| --- | --- | --- | --- |
+| `w1`, `w64` | DART, ODE | Per PR | 2 / 3 |
+| `w1`, `w64` | FCL, Bullet | Nightly | 2 / 3 |
+| `w1024` | DART, ODE, FCL, Bullet | Nightly | 2 / 3 |
+| `closed-loop-friction` | DART | Nightly | 100 / 100 |
+
+The contact scene is a generated floor and a free box with 1 mm initial
+overlap, at a 1 ms timestep. The friction scene is a generated closed linkage with
+revolute-joint Coulomb friction and a ball-joint closure constraint. Scene
+construction stays outside the measured region. Generated scenes are common
+to both revisions and covered by the harness fingerprint. Existing rows retain
+their scene settings and measurement boundary; omitting `--worlds` uses their
+original driver path. Extending the shared portable source changes the `gzb`
+and `robot` workload and input hashes in both arms; other existing rows' inputs
+are unchanged. Rebuild records with the same harness for comparisons.
+
+Build and measure just the new rows on the current revision:
+
+```bash
+pixi run python scripts/perf_regression.py local --smoke \
+  --rows w1,w64,w1024,closed-loop-friction
+```
+
+Select a detector with a row key, such as `--rows w64/ode`. A local smoke run
+records the head only; it establishes harness operation and qualification,
+without establishing a speed-up. Full `--rows nightly` comparisons include
+the per-PR rows and every nightly row. All new rows use Callgrind instruction
+slopes and the existing seven heap-layout perturbations. Measure each new
+per-PR row's full cost (eight native runs and two Callgrind runs per revision)
+before retaining it in that tier; move rows adding about two minutes or more
+to the nightly tier.
+
+## dartpy Step Loop
+
+[`tools/perf/dartpy_loop_bench.py`](../../tools/perf/dartpy_loop_bench.py) uses
+pyperf to time stepping plus reading body transforms and contacts from Python.
+It uses the current DART 6-style dartpy spelling so the DART 7 migration
+codemod can later convert this runnable workload. The detector is pinned to
+DART, and world setup and warm-up stay outside the timed loop.
+
+```bash
+pixi run build-py-dev
+pixi run perf-dartpy-loop -- --fast -o build/dartpy-loop.json
+```
+
+Use pyperf's normal repeated-process mode for wall-time evidence. `--fast` is
+a smoke check. Compare JSON results with `pixi run python -m pyperf compare_to
+<base.json> <head.json>`, using the same host, detector, workload, interpreter
+and dependencies. This benchmark includes Python binding and array-read costs;
+it is separate from the C++ instruction-count gate. Keep generated JSON outside
+Git.
 
 ## Tracy
 

@@ -90,6 +90,13 @@
     the element's default frame is explicitly rejected instead of silently
     misplacing the pose.
 
+* Collision
+
+  * An exception thrown by a collision filter during an ODE collision check
+    now reaches the caller after ODE finishes the check, instead of unwinding
+    through ODE and leaving its collision space locked.
+    [#3723](https://github.com/dartsim/dart/pull/3723)
+
 * Constraint
 
   * Fix simulations blowing up when no joint motion can resolve a contact
@@ -97,7 +104,8 @@
     on revolute joints whose shared axis is the contact normal. Such a contact
     now gets no normal impulse, and with the Dantzig solver alone it no longer
     zeroes the other contacts in its group.
-    [#3707](https://github.com/dartsim/dart/pull/3707)
+    [#3707](https://github.com/dartsim/dart/pull/3707),
+    [#3721](https://github.com/dartsim/dart/pull/3721)
 
 * Dynamics
 
