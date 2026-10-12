@@ -281,6 +281,7 @@ test-gz-compat-tools = { cmd = [
   "scripts/run_pytest.py",
   "tests/test_gz_compat_compare.py",
   "tests/test_gz_bench_worlds.py",
+  "tests/test_gz_dart_version.py",
   "-q",
 ] }
 
@@ -1004,7 +1005,9 @@ backward-cpp = ">=1.6"
 
 [feature.gazebo.tasks]
 config-dart-gz = { cmd = """
+    dart_version_arg="$(python scripts/gz_dart_version.py)" && \
     cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        "$dart_version_arg" \
         -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
         -DCMAKE_BUILD_TYPE=Release \

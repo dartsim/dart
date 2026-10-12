@@ -281,7 +281,35 @@ Known gaps:
 - **Baseline:** on 2026-10-11 at main `1b5722176`, a quick check compiled
   `dart/constraint/ContactSurface.hpp` as C++14, the dialect gz-physics probes
   with. The CTest makes this exact, with only DART and Eigen include paths.
-- **Status:** planned.
+- **WP-7.0.6a version plumbing (2026-10-11, on main `e629dd3de`):**
+  - `cmake/DARTConfigVersion.cmake.in` accepts requests from 6.0 through the
+    installed version and keeps `EXACT`, range bounds and the pointer-size
+    check. `test_DARTConfigVersion` renders 6.20.0, 7.0.0, 7.4.2, 8.0.0 and the
+    configured version, evaluates each request directly and through a real
+    `find_package`, and fails when the floor or the exact rule is removed.
+  - With `DART_VERSION_OVERRIDE=7.0.0`, an installed DART resolves
+    `find_package(DART 6.10 CONFIG REQUIRED COMPONENTS collision-bullet
+    collision-ode utils utils-urdf)` to 7.0.0 and prints the status line,
+    `6.10...<7` fails, and the SONAMEs are `7.0`.
+  - The Gazebo tasks take the override from main's release-target row when it
+    is newer than `package.xml`. `pixi run -e gazebo test-gz-physics` passes
+    with it active: 199 of 199 tests plus 4 performance tests.
+  - gz-physics and gz-sim use only lower-bound version guards (6.10 and 6.13),
+    which hold for 7.x. The reported engine name becomes `dartsim-7.0.0`.
+- **WP-7.0.6b Gazebo gates (2026-10-11, on main `e629dd3de`):**
+  - `ContactSurfaceProbe` compiles gz-physics's header-check source as C++14
+    with only DART and Eigen include directories; it fails when
+    `ContactSurface.hpp`'s include tree needs `std::optional`.
+  - `test_GazeboShim` mirrors gz-physics main
+    `4e2af8c733ac8396a9d2b4dcae1f7f6aa28c5668` and counts each override:
+    detector subclasses through the factory, collision-group and ray-cast
+    dispatch, `ContactSurfaceHandler` callbacks while stepping, and FCL defaults
+    after every factory creator is removed. Registering the base Bullet detector
+    makes it fail. Its Bullet and ODE cases run only when those components are
+    built.
+  - Still open: the machine-checked inventories of gz-used accessors and
+    mutation paths.
+- **Status:** in progress.
 
 ### WP-7.0.7 Scope artifacts
 
