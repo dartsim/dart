@@ -54,6 +54,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <limits>
 #include <typeinfo>
@@ -69,7 +70,7 @@ namespace {
 
 class PairIndex;
 
-void CollisionCallback(void* data, dGeomID o1, dGeomID o2);
+void CollisionCallback(void* data, dGeomID o1, dGeomID o2) noexcept;
 
 void reportContacts(
     int numContacts,
@@ -363,6 +364,9 @@ struct OdeCollisionCallbackData
   /// Whether the collision iteration can stop
   bool done;
 
+  /// Rethrow only after ODE releases its space locks.
+  std::exception_ptr exception;
+
   /// The total number of contacts collected by dSpaceCollide() or
   /// dSpaceCollide2(). This field is used to determine the binary contact
   /// result.
@@ -464,6 +468,9 @@ bool OdeCollisionDetector::collide(
   data.numObjects = odeGroup->getNumShapeFrames();
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
+  if (data.exception)
+    std::rethrow_exception(data.exception);
+
   data.numContacts += reportCylinderPlaneSupportContacts(
       odeGroup->getCylinderCollisionObjects(),
       odeGroup->getPlaneCollisionObjects(),
@@ -503,6 +510,9 @@ bool OdeCollisionDetector::collide(
       reinterpret_cast<dGeomID>(odeGroup2->getOdeSpaceId()),
       &data,
       CollisionCallback);
+  if (data.exception)
+    std::rethrow_exception(data.exception);
+
   data.numContacts += reportCylinderPlaneSupportContacts(
       odeGroup1->getCylinderCollisionObjects(),
       odeGroup2->getPlaneCollisionObjects(),
@@ -590,59 +600,63 @@ dWorldID OdeCollisionDetector::getOdeWorldId() const
 namespace {
 
 //==============================================================================
-void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
+void CollisionCallback(void* data, dGeomID o1, dGeomID o2) noexcept
 {
-  DART_ASSERT(!dGeomIsSpace(o1));
-  DART_ASSERT(!dGeomIsSpace(o2));
-
   auto cdData = static_cast<OdeCollisionCallbackData*>(data);
 
-  if (cdData->done)
+  if (cdData->done || cdData->exception)
     return;
 
-  auto& odeResult = cdData->contactGeoms;
-  auto* result = cdData->result;
-  const auto& option = cdData->option;
-  const auto& filter = option.collisionFilter;
+  try {
+    DART_ASSERT(!dGeomIsSpace(o1));
+    DART_ASSERT(!dGeomIsSpace(o2));
 
-  auto geomData1 = dGeomGetData(o1);
-  auto geomData2 = dGeomGetData(o2);
+    auto& odeResult = cdData->contactGeoms;
+    auto* result = cdData->result;
+    const auto& option = cdData->option;
+    const auto& filter = option.collisionFilter;
 
-  auto collObj1 = static_cast<OdeCollisionObject*>(geomData1);
-  auto collObj2 = static_cast<OdeCollisionObject*>(geomData2);
-  DART_ASSERT(collObj1);
-  DART_ASSERT(collObj2);
+    auto geomData1 = dGeomGetData(o1);
+    auto geomData2 = dGeomGetData(o2);
 
-  if (filter && filter->ignoresCollision(collObj1, collObj2))
-    return;
+    auto collObj1 = static_cast<OdeCollisionObject*>(geomData1);
+    auto collObj2 = static_cast<OdeCollisionObject*>(geomData2);
+    DART_ASSERT(collObj1);
+    DART_ASSERT(collObj2);
 
-  // Perform narrow-phase collision detection
-  const auto maxContactsPerPair = std::min<std::size_t>(
-      option.getEffectiveMaxNumContactsPerPair(), MAX_COLLIDE_RETURNS);
-  if (maxContactsPerPair == 0u)
-    return;
+    if (filter && filter->ignoresCollision(collObj1, collObj2))
+      return;
 
-  auto numc = dCollide(
-      o1,
-      o2,
-      static_cast<int>(maxContactsPerPair),
-      odeResult,
-      sizeof(odeResult[0]));
+    // Perform narrow-phase collision detection
+    const auto maxContactsPerPair = std::min<std::size_t>(
+        option.getEffectiveMaxNumContactsPerPair(), MAX_COLLIDE_RETURNS);
+    if (maxContactsPerPair == 0u)
+      return;
 
-  cdData->numContacts += numc;
-
-  if (result) {
-    reportContacts(
-        numc,
+    auto numc = dCollide(
+        o1,
+        o2,
+        static_cast<int>(maxContactsPerPair),
         odeResult,
-        collObj1,
-        collObj2,
-        option,
-        *result,
-        cdData->numPriorContacts,
-        cdData->history,
-        cdData->historyPairs,
-        cdData->numObjects);
+        sizeof(odeResult[0]));
+
+    cdData->numContacts += numc;
+
+    if (result) {
+      reportContacts(
+          numc,
+          odeResult,
+          collObj1,
+          collObj2,
+          option,
+          *result,
+          cdData->numPriorContacts,
+          cdData->history,
+          cdData->historyPairs,
+          cdData->numObjects);
+    }
+  } catch (...) {
+    cdData->exception = std::current_exception();
   }
 }
 
