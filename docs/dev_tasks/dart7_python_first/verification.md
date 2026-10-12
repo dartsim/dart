@@ -169,7 +169,7 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Status:** in progress. It changes behavior, so it targets main only.
+- **Status:** in review in [#3719](https://github.com/dartsim/dart/pull/3719). It changes behavior, so it targets main only.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -224,7 +224,7 @@ Known gaps:
     converts (doubling as a codemod test);
   - rows measure stepping plus reading transforms and contacts.
 - **Gate:** every milestone exit runs `local --base dart7-base --rows nightly`.
-- **Status:** planned.
+- **Status:** in progress.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 

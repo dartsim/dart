@@ -366,8 +366,8 @@ before the first release candidate.
 | WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
 | WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport in review ([#3717](https://github.com/dartsim/dart/pull/3717)) |
-| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | In progress |
-| WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); GUI sites follow in the Filament effort's PR |
+| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | In review ([#3719](https://github.com/dartsim/dart/pull/3719)) |
+| WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
 | WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress |
 | WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | Planned |
 | WP-7.0.7 | Record the freeze date, checkpoints, must-have list and acceptance tests | Planned |

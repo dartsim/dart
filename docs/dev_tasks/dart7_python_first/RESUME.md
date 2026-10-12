@@ -13,15 +13,15 @@ tracks the release, and main's release target reads 7.0.0.
 | [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Merged |
 
 M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696). Main uses
-Filament and the interim camelCase `dartpy.gui`. The Filament effort applies
-WP-7.0.4's finalization rule to the `python/dartpy/gui/` binding sites in its
-own follow-up PR. M6b, sensor rendering and the Python render/viewer API,
-remains pending.
+Filament and the interim camelCase `dartpy.gui`, and
+[#3713](https://github.com/dartsim/dart/pull/3713) applied WP-7.0.4's
+finalization rule to the `python/dartpy/gui/` binding sites. M6b, sensor
+rendering and the Python render/viewer API, remains pending.
 
 ## Next steps
 
-1. Land #3717, then publish the in-progress packets WP-7.0.3b (SDF pose
-   attributes) and WP-7.0.5 (performance baseline and many-World rows).
+1. Land #3717 and #3719 (WP-7.0.3b, SDF pose attributes), then publish
+   WP-7.0.5 (performance baseline and many-World rows).
 2. Open the follow-up packets: the ODE callback exception fix, the
    analytical-IK clone crash, a tokenized release-reference check (the
    regular-expression matcher misreads Markdown inside tokens, unusual
