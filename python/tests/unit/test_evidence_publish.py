@@ -132,23 +132,91 @@ def test_section_emits_local_references_and_context(tmp_path: Path) -> None:
     )
     assert code == 0
     text = out.read_text(encoding="utf-8")
+    visible, details = text.split("<details>", 1)
     assert "## Visual verification" in text
-    assert (
-        f"![contact markers at rest]({_sha256(tmp_path / 'shot.png')}.png)" in text
-    )
-    assert f"\n\n![]({_sha256(tmp_path / 'clip.mp4')}.mp4)\n\n" in text
+    still = f"![contact markers at rest]({_sha256(tmp_path / 'shot.png')}.png)"
+    video = f"![]({_sha256(tmp_path / 'clip.mp4')}.mp4)"
+    assert visible.index("no penetration at rest") < visible.index(still)
+    assert visible.index(still) < visible.index("stack stays upright")
+    assert visible.index("stack stays upright") < visible.index(video)
+    assert f"\n\n{video}\n\n" in visible
     assert "![settling clip]" not in text
     assert "UPLOAD-PLACEHOLDER" not in text
-    assert "**Environment**: Linux x86_64, llvmpipe" in text
-    assert "What to look for: yellow cross at interface" in text
-    assert "Why this artifact" in text
-    assert "static frame only" in text
-    assert "penetration depth tolerance" in text
-    assert "pixi run agent-capture" in text
-    assert "### Semantic review" in text
-    assert "settled pose and contact-count assertions passed" in text
-    assert "the box is upright" in text
-    assert "**Verdict**: pass" in text
+    assert "What to look for: yellow cross at interface" in visible
+    assert "static frame only" in visible
+    assert "penetration depth tolerance" in visible
+    assert "settled pose and contact-count assertions passed" in visible
+    assert "the box is upright" in visible
+    assert "**Environment**: Linux x86_64, llvmpipe" in details
+    assert "**Configuration**: box_on_ground, 200 steps" in details
+    assert "covers claim(s) C1; quality=0.900" in details
+    assert "pixi run agent-capture" in details
+    assert "the visible settled pose agrees with the measured oracle" in details
+    assert "**Verdict**: pass" in details
+    for mechanical in ("C1", "C2", "quality=", "**Environment**", "**Configuration**"):
+        assert mechanical not in visible
+
+
+def test_section_omits_empty_optional_content(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    assert evidence_publish.main(_publication_args(selection, out, manifest_out)) == 0
+
+    text = out.read_text(encoding="utf-8")
+    assert "**Configuration**" not in text
+    assert "**Limitations**" not in text
+    assert "```bash" not in text
+    assert "**What this evidence does not prove**" in text.split("<details>", 1)[0]
+
+
+def test_prose_is_unwrapped_but_commands_and_manifest_keep_newlines(
+    tmp_path: Path,
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    oracle = "pose assertions\npassed"
+    observation = "the box is upright\nat rest"
+    reconciliation = "image agrees\nwith oracle"
+    command = "pixi run agent-capture \\\n  --scene box_on_ground"
+
+    assert (
+        evidence_publish.main(
+            [
+                *_publication_args(selection, out, manifest_out),
+                "--environment",
+                "Linux\nsoftware renderer",
+                "--text-oracle",
+                oracle,
+                "--visible-observation",
+                observation,
+                "--reconciliation",
+                reconciliation,
+                "--limitation",
+                "software renderer\nonly",
+                "--reproduce",
+                command,
+            ]
+        )
+        == 0
+    )
+
+    text = out.read_text(encoding="utf-8")
+    visible, details = text.split("<details>", 1)
+    assert "- **Check**: pose assertions passed\n" in visible
+    assert "- **Observed**: the box is upright at rest\n" in visible
+    assert "- software renderer only\n" in visible
+    assert "**Environment**: Linux software renderer\n" in details
+    assert "- **Reconciliation**: image agrees with oracle\n" in details
+    assert f"```bash\n{command}\n```" in details
+    semantic_review = json.loads(manifest_out.read_text(encoding="utf-8"))[
+        "semantic_review"
+    ]
+    assert semantic_review["text_oracle"] == oracle
+    assert semantic_review["visible_observation"] == observation
+    assert semantic_review["reconciliation"] == reconciliation
 
 
 def test_non_passing_selection_fails_publication(tmp_path: Path) -> None:
@@ -176,7 +244,10 @@ def test_non_passing_selection_fails_publication(tmp_path: Path) -> None:
     assert manifest["status"] == "not_ready"
     assert "uncovered claims: C2" in manifest["note"]
     text = out.read_text(encoding="utf-8")
-    assert "✘ (no evidence)" in text  # uncovered claim surfaces to the reviewer
+    visible = text.split("<details>", 1)[0]
+    assert "✘ (no evidence)" in visible
+    assert "stack stays upright ✘ (no evidence)" in visible
+    assert "**Evidence incomplete.**" in visible
 
 
 @pytest.mark.parametrize(
@@ -804,7 +875,7 @@ def test_more_than_50_artifacts_fail_before_writing(
 
 @pytest.mark.parametrize(
     ("passing", "verdict"),
-    [(False, "pass"), (True, "fail"), (True, "uncertain")],
+    [(False, "pass"), (False, "fail"), (True, "fail"), (True, "uncertain")],
 )
 def test_failing_gates_yield_not_ready(
     tmp_path: Path, passing: bool, verdict: str
@@ -825,6 +896,13 @@ def test_failing_gates_yield_not_ready(
     assert manifest["pass"] is False
     assert manifest["attach_dir"] is None
     assert not (tmp_path / "section.md.attach").exists()
+    visible = out.read_text(encoding="utf-8").split("<details>", 1)[0]
+    if not passing:
+        assert "**Evidence incomplete.**" in visible
+        assert "✘ (no evidence)" in visible
+    if verdict != "pass":
+        assert f"**Verification: {verdict}**" in visible
+        assert "the visible settled pose agrees with the measured oracle" in visible
 
 
 @pytest.mark.parametrize(

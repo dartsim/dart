@@ -87,21 +87,48 @@ explicitly approves a breaking change.
 
 ## PR Descriptions
 
-Text-only descriptions make a PR's effect and value slow to assess. Every PR
-starts with a short `## Effect` section that a human reviewer can absorb in
-about a minute:
+Help a reviewer understand the problem, the resulting behavior, and whether
+the evidence supports it. Use [the PR template](../../.github/PULL_REQUEST_TEMPLATE.md)
+with **Summary** and **Testing** by default:
 
-- State what changes for users or which risk the change removes.
-- Give the headline measured result, naming the baseline, workload, metric,
-  and important limitations. If no measurement applies or was made, say so.
-- Show the key plot or visual beside the claim when applicable.
+- Keep Summary to one or two sentences or a few short bullets. Explain why the
+  change matters; use a concrete before/after example when it helps.
+- Add rationale the diff cannot explain, a reviewer note, related work, or
+  compatibility/migration guidance only when it affects the review. Material
+  risks and evidence gaps must remain visible.
+- In Testing, report meaningful checks beyond the PR's CI and relevant gaps,
+  including their impact. When CI covers the relevant verification, one short
+  statement is enough; keep routine local gate results in task evidence.
 
-Use [the PR template](../../.github/PULL_REQUEST_TEMPLATE.md) in this order:
-Effect, Motivation / Problem, Changes / Key Changes, optional Before / After,
-Testing, Breaking Changes, Related Issues / PRs. Put mechanism, method, and
-full data after Effect; write for users and downstream maintainers who do not
-know the implementation. Include compatibility, opt-in, or migration steps
-when relevant.
+Scale detail to the change. Omit routine file inventories, tool activity,
+repeated assurances, empty sections, and None/N/A placeholders. Discuss missing
+measurements or untouched behavior only when they limit a claim or affect a
+reviewer's decision. Rewrite the title and description around the final change
+when scope changes.
+
+Choose the smallest format that explains the claim; media is useful when it
+shows something the text cannot:
+
+| What the reviewer needs to understand | Preferred format |
+| ------------------------------------ | ---------------- |
+| Several distinct points | Short bullets |
+| A small comparison | Compact table |
+| Trends, scaling, or distributions | Plot |
+| A static visual difference | Matched before/after images |
+| Motion, timing, or interaction | Short video |
+
+Place evidence beside the claim it supports. For performance claims, name the
+baseline, workload, metric, and material limitations. Put long raw tables,
+environment/configuration details, and reproduction commands in descriptive
+`<details>` blocks; keep failures, uncertainty, and limiting caveats outside.
+
+For claims about model/scene structure, dynamics, collision/contact,
+constraints, simulation, or rendering, use `dart-verify-sim` and the
+[simulation evidence and publication flow](../ai/verification.md#simulation-verification-route).
+Its required evidence remains required even though other added sections are
+optional. Show visible simulation changes with matched cameras; compute-only
+improvements with unchanged motion use plots. Record why visual corroboration
+is unavailable or irrelevant and name replacement evidence when that applies.
 
 Write each paragraph and list item on one line, and separate paragraphs with a
 blank line. Unlike Markdown files in the repository, where a single newline is
@@ -109,20 +136,31 @@ a soft break, GitHub renders every newline in PR descriptions, comments,
 issues, and release notes as a line break, so text wrapped at a fixed width,
 as this repository's docs are, breaks mid-sentence.
 
-For meaningful API, workflow, behavior, or performance changes, include a
-concise Before / After comparison of user-visible outcomes. Small tables or
-bullets are fine; when performance A/B results, sweeps, or physics metrics
-would need many or large tables, plot the key comparisons as images and put
-the raw tables in collapsed `<details>` blocks with descriptive `<summary>`
-labels.
+This guidance follows [Google's description advice](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)
+and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes):
+explain the purpose and result, preserve useful rationale, and identify where
+reviewers should focus. A five-template spot check on 2026-10-12 found no
+`Effect` heading in [React](https://raw.githubusercontent.com/facebook/react/main/.github/PULL_REQUEST_TEMPLATE.md),
+[Kubernetes](https://raw.githubusercontent.com/kubernetes/kubernetes/master/.github/PULL_REQUEST_TEMPLATE.md),
+[PyTorch](https://raw.githubusercontent.com/pytorch/pytorch/main/.github/PULL_REQUEST_TEMPLATE.md),
+[VS Code](https://raw.githubusercontent.com/microsoft/vscode/main/.github/pull_request_template.md),
+or [CPython](https://raw.githubusercontent.com/python/cpython/main/.github/PULL_REQUEST_TEMPLATE.md).
+React and PyTorch use Summary; the others vary. This bounded sample supports
+our heading choice, not a claim about GitHub-wide prevalence. Older DART PRs
+are examples; this owner guidance takes precedence.
 
-For visible simulation improvements (motion, contact, settling, stability, or
-rendering), show before/after 3D highlights with the same camera. Follow the
-existing [simulation evidence and publication flow](../ai/verification.md#simulation-verification-route)
-through `dart-verify-sim`; compute-only improvements with unchanged motion use
-plots instead.
+## PR Author Checklist
 
-In Testing, list checks that the PR's CI does not run (reporter-toolchain
-reproductions, negative checks, hardware runs, or review passes), or explain why
-none were needed. Keep routine local gate results in task evidence. Mark
-non-applicable checklist items N/A with a reason, and name related work or None.
+Complete the applicable actions before publication; keep the checklist and
+routine decisions in author/task notes rather than copying them into the PR
+description:
+
+- [ ] Resolve and confirm the open release milestone from the fetched target's
+  [Release Management](release-management.md#release-target); set it on the PR.
+- [ ] Decide whether `CHANGELOG.md` needs an entry using
+  [Changelog](changelog.md); prepare any required entry and finalize its PR link
+  after publication.
+- [ ] Add or update meaningful tests for new functionality or changed behavior,
+  and run the required validation for the touched surface.
+- [ ] Document new methods/classes and any changed user workflow.
+- [ ] Add or update dartpy bindings when applicable.

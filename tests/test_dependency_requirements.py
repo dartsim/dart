@@ -100,7 +100,7 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
         ("octomap", "1.9.7", "octomap", False),
         ("spdlog", "1.9.2", "spdlog::spdlog", False),
         ("tinyxml2", "9.0.0", "tinyxml2::tinyxml2", False),
-        ("urdfdom", "3.0.1", "urdfdom", False),
+        ("urdfdom", "3.0.0", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
         ("imgui", "1.92.8", "imgui::imgui", True),
     ],
@@ -116,6 +116,8 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
     }
     if package == "tinyxml2" and version_kind == "older":
         versions["older"] = "8.0.0"
+    if package == "urdfdom" and version_kind == "older":
+        versions["older"] = "2.3.5"
     if package in ("tinyxml2", "urdfdom") and version_kind == "newer":
         versions["newer"] = f"{major + 1}.0.0"
     extra = ""
@@ -139,6 +141,54 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         assert minimum in result.stdout + result.stderr
     else:
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "libdir,pcdir",
+    [
+        ("lib", "lib/pkgconfig"),
+        ("lib", "libdata/pkgconfig"),
+        ("lib/x86_64-linux-gnu", "lib/x86_64-linux-gnu/pkgconfig"),
+    ],
+)
+@pytest.mark.parametrize(
+    "metadata", ["3.0.2", "3.0.0", "2.3.5", "invalid", "unrelated", None]
+)
+def test_urdfdom_without_cmake_version(tmp_path, monkeypatch, libdir, pcdir, metadata):
+    config_package(tmp_path, "urdfdom", None)
+    prefix = tmp_path / "prefix"
+    config_dir = prefix / libdir / "urdfdom/cmake"
+    config_dir.parent.mkdir(parents=True, exist_ok=True)
+    (prefix / "lib/cmake/urdfdom").rename(config_dir)
+    if metadata is not None:
+        pc_prefix = tmp_path / "prefix-other" if metadata == "unrelated" else prefix
+        pc_file = pc_prefix / pcdir / "urdfdom.pc"
+        pc_file.parent.mkdir(parents=True)
+        pc_file.write_text(
+            f"prefix={pc_prefix.as_posix()}\n"
+            "Name: urdfdom\nDescription: URDF parser\n"
+            f"Version: {'3.0.2' if metadata == 'unrelated' else metadata}\n"
+        )
+        monkeypatch.setenv("PKG_CONFIG_PATH", str(pc_file.parent))
+    accepted = metadata in ("3.0.2", "3.0.0")
+    result = configure(
+        tmp_path,
+        f'set(CMAKE_INCLUDE_PATH "{(tmp_path / "prefix-other" / pcdir).as_posix()}")\n'
+        "include(DARTFindurdfdom)\n"
+        f"if({'NOT urdfdom_FOUND' if accepted else 'urdfdom_FOUND OR URDFDOM_FOUND'})\n"
+        'message(FATAL_ERROR "Incorrect urdfdom version acceptance")\nendif()\n'
+        + (
+            f'if(NOT TARGET urdfdom OR NOT urdfdom_VERSION STREQUAL "{metadata}")\n'
+            'message(FATAL_ERROR "Missing urdfdom version or target")\nendif()\n'
+            if accepted
+            else ""
+        ),
+        cmake_args=(f"-Durdfdom_DIR={config_dir}/../cmake",),
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    if not accepted:
+        assert "urdfdom >= 3.0.0 is required" in output
 
 
 @pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1"])
