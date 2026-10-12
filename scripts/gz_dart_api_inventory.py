@@ -220,7 +220,7 @@ class Tokens:
         self.enclosing = []
         stack = []
         for i, value in enumerate(self.values):
-            self.enclosing.append(stack[-1][0] if stack else None)
+            self.enclosing.append(stack[-1][1] if stack else None)
             if value in ("(", "{", "["):
                 stack.append((value, i))
             elif value in (")", "}", "]") and stack:
@@ -475,13 +475,16 @@ class ApiIndex:
     standard_pointers: set = field(default_factory=set)
     wrappers: set = field(default_factory=set)
 
-    def resolve(self, name, scope=(), imports=(), aliases=None):
+    def spellings(self, name, scope=(), imports=()):
+        """Qualified spellings of `name`, from the innermost scope outward."""
         name = re.sub(r"\s+", "", name).lstrip(":")
-        candidates = [name]
-        for size in range(len(scope), -1, -1):
-            candidates.append("::".join(scope[:size] + (name,)))
-        candidates.extend(namespace + "::" + name for namespace in imports)
-        for candidate in candidates:
+        return [
+            *("::".join(scope[:size] + (name,)) for size in range(len(scope), -1, -1)),
+            *(namespace + "::" + name for namespace in imports),
+        ]
+
+    def resolve(self, name, scope=(), imports=(), aliases=None):
+        for candidate in self.spellings(name, scope, imports):
             if aliases and candidate in aliases:
                 return aliases[candidate]
             if candidate in self.types:
@@ -558,10 +561,18 @@ def names_in(values):
             i += 1
 
 
-def wraps(values, resolve):
+def wraps(values, direct):
     """Whether an alias definition is a pointer, reference or non-DART template."""
     named = [v for _, _, v in names_in(values) if v not in {"const", "typename"}]
-    return not named or not resolve(named[0]) or not {"*", "&", "&&"}.isdisjoint(values)
+    return not named or not direct(named[0]) or not {"*", "&", "&&"}.isdisjoint(values)
+
+
+def expand(name, namespace_aliases):
+    """Replace a namespace alias at the head of a qualified name."""
+    head, _, tail = name.partition("::")
+    if head not in namespace_aliases:
+        return name
+    return namespace_aliases[head] + ("::" + tail if tail else "")
 
 
 def template_end(values, index):
@@ -619,11 +630,16 @@ def constructs(tokens, start, end, declarations, heads):
     if before == "new" or values[after : after + 1] in (["("], ["{"]):
         return True
     variable = variable_after_type(values, end)
+    opening = tokens.enclosing[start]  # parameters are not constructions
     return (
         variable is not None
         and variable not in declarations
         and before != "typedef"
-        and tokens.enclosing[start] != "("
+        and (
+            opening is None
+            or values[opening] != "("
+            or values[opening - 1] in {"if", "for", "while", "switch", "constexpr"}
+        )
         and {"*", "&", "&&"}.isdisjoint(values[after:variable])
     )
 
@@ -861,10 +877,6 @@ def scan_sources(api, source_root):
         for function in functions:
             source_returns[function["name"].split("::")[-1]].append(function)
         imports = re.findall(r"\busing\s+namespace\s+([\w:]+)\s*;", clean)
-        if "dart" in imports:
-            imports += [
-                "dart::" + namespace for namespace in imports if namespace != "dart"
-            ]
         namespace_aliases = dict(
             re.findall(r"\bnamespace\s+(\w+)\s*=\s*([\w:]+)\s*;", clean)
         )
@@ -887,7 +899,7 @@ def scan_sources(api, source_root):
         ):
             source_macros.update(re.findall(r"\bDART_\w+", definitions))
 
-    # A file sees the aliases of the scanned headers it includes, transitively.
+    # A file sees the declarations of the scanned headers it includes, transitively.
     suffixes = defaultdict(list)
     for relative in includes:
         parts = relative.split("/")
@@ -907,27 +919,53 @@ def scan_sources(api, source_root):
                         seen.add(header)
                         pending.append(header)
         closure[relative] = sorted(seen - {relative}) + [relative]
+    own = {
+        path: (list(imports), dict(namespace_aliases), dict(tokens.using))
+        for path, tokens, _, _, _, imports, namespace_aliases in files
+    }
+    for path, tokens, _, _, _, imports, namespace_aliases in files:
+        imports.clear()
+        for header in reversed(closure[path]):  # the file's own first
+            spaces, renamed, used = own[header]
+            imports += [space for space in spaces if space not in imports]
+            for key, value in renamed.items():
+                namespace_aliases.setdefault(key, value)
+            for key, value in used.items():
+                tokens.using.setdefault(key, value)
+        if "dart" in imports:
+            imports += ["dart::" + space for space in imports if space != "dart"]
+    declared = defaultdict(lambda: defaultdict(set))
+    for path, _, _, functions, *_ in files:
+        for function in functions:
+            scope = function["class"] or function["name"].rpartition("::")[0]
+            declared[path][function["name"].split("::")[-1]].add(scope)
 
-    def publish(tokens, name, target, wrapped):
-        short = name.split("::")[-1]
-        tokens.aliases[name] = tokens.short_aliases[short] = target
-        (tokens.wrapped.add if wrapped else tokens.wrapped.discard)(short)
+    def shadowed(name, path, scope):
+        """Whether a function in a scope enclosing the call hides imported ones."""
+        return any(
+            owner and scope[: owner.count("::") + 1] == tuple(owner.split("::"))
+            for header in closure[path]
+            for owner in declared[header].get(name, ())
+        )
+
+    def publish(tokens, name, target, wrapper):
+        tokens.aliases[name] = target
+        tokens.short_aliases[name.split("::")[-1]] = (target, name)
+        (tokens.wrapped.add if wrapper else tokens.wrapped.discard)(name)
 
     def visible(relative, tokens):
         tokens.aliases, tokens.short_aliases, tokens.wrapped = {}, {}, set()
         for owner in closure[relative]:
-            for name, (target, wrapped) in targets[owner].items():
-                publish(tokens, name, target, wrapped)
+            for name, (target, wrapper) in targets[owner].items():
+                publish(tokens, name, target, wrapper)
 
     def resolve(name, tokens, index, imports, namespace_aliases):
-        head, _, tail = name.partition("::")
-        if head in namespace_aliases:
-            name = namespace_aliases[head] + ("::" + tail if tail else "")
+        name = expand(name, namespace_aliases)
         scope = tokens.scopes.get(index, ())
         # Lexically scoped aliases first, then any alias the file can see.
         resolved = api.resolve(name, scope, imports, tokens.aliases)
         if resolved or name in tokens.short_aliases:
-            return resolved or tokens.short_aliases[name]
+            return resolved or tokens.short_aliases[name][0]
         for size in range(len(scope), 0, -1):
             for base in sorted(local_bases.get("::".join(scope[:size]), ())):
                 resolved = api.resolve(
@@ -936,6 +974,16 @@ def scan_sources(api, source_root):
                 if resolved:
                     return resolved
         return None
+
+    def wrapped(name, tokens, index, imports, namespace_aliases):
+        """Whether `name` resolves through a source alias that wraps its type."""
+        name = expand(name, namespace_aliases)
+        for candidate in api.spellings(name, tokens.scopes.get(index, ()), imports):
+            if candidate in tokens.aliases:
+                return candidate in tokens.wrapped
+            if candidate in api.types:
+                return False
+        return tokens.short_aliases.get(name, (None, None))[1] in tokens.wrapped
 
     # Member fields are shared across headers and implementation files.
     for _ in range(3):
@@ -953,14 +1001,17 @@ def scan_sources(api, source_root):
                 for _, _, value in names_in(values):
                     resolved = resolve(value, tokens, index, imports, namespace_aliases)
                     if resolved:
-                        wrapped = wraps(
+                        wrapper = wraps(
                             values,
                             lambda value: resolve(
                                 value, tokens, index, imports, namespace_aliases
+                            )
+                            and not wrapped(
+                                value, tokens, index, imports, namespace_aliases
                             ),
                         )
-                        targets[path][name] = (resolved, wrapped)
-                        publish(tokens, name, resolved, wrapped)
+                        targets[path][name] = (resolved, wrapper)
+                        publish(tokens, name, resolved, wrapper)
                         break
             for cls in classes:
                 bases = set()
@@ -1011,7 +1062,7 @@ def scan_sources(api, source_root):
             constructed = api.constructible(resolved)
             if (
                 constructed
-                and name.split("::")[-1] not in tokens.wrapped
+                and not wrapped(name, tokens, start, imports, namespace_aliases)
                 and constructs(tokens, start, type_end, declaration_indices, heads)
             ):
                 row = add(
@@ -1100,10 +1151,7 @@ def scan_sources(api, source_root):
 
     def free_function(name, tokens, imports, namespace_aliases):
         """Resolve a call through using-declarations and using-directives."""
-        name = tokens.using.get(name, name)
-        head, _, tail = name.partition("::")
-        if head in namespace_aliases:
-            name = namespace_aliases[head] + ("::" + tail if tail else "")
+        name = expand(tokens.using.get(name, name), namespace_aliases)
         for candidate in (name, *(f"{space}::{name}" for space in imports)):
             if candidate in api.free_functions:
                 return candidate
@@ -1312,7 +1360,7 @@ def scan_sources(api, source_root):
                 free = not declarations and free_function(
                     name, tokens, imports, namespace_aliases
                 )
-                if free:
+                if free and not shadowed(name, path, scope):
                     add("free_functions", free, path, tokens.line(i))
             if j == i + 1:
                 declarations = [

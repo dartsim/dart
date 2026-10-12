@@ -360,6 +360,10 @@ public:
 };
 dart::dynamics::Widget make(
     const dart::dynamics::Widget& reference, dart::dynamics::Widget copy);
+namespace a { using T = dart::dynamics::Widget; }
+namespace b { using T = std::shared_ptr<dart::dynamics::Widget>; }
+using Pointer = std::shared_ptr<dart::collision::Detector>;
+using Chained = Pointer;
 void build() {
   dart::dynamics::Widget local(1);
   dart::dynamics::Widget braced{1};
@@ -371,6 +375,10 @@ void build() {
   dart::dynamics::WidgetSharedPtr none;
   dart::dynamics::StaticOnly implicit;
   dart::collision::Option option;
+  if (dart::dynamics::Widget scoped{1}; true) {}
+  a::T direct;
+  b::T wrapper;
+  Chained chained;
 }
 """,
     )
@@ -381,7 +389,7 @@ void build() {
         "dart::dynamics::Widget",
     }
     widget = constructors["dart::dynamics::Widget"]
-    assert widget["count"] == 8
+    assert widget["count"] == 10
     assert [d["signature"] for d in widget["declarations"]] == [
         "Widget ( )",
         "explicit Widget ( int value )",
@@ -484,6 +492,12 @@ void g() { Alias::getStaticType(); }
             "}; }\n",
             "e.cc": '#include "d.hh"\nvoid e() { DartWidget::compute(); }\n',
             "f.cc": "void f() { DartWidget::clear(); }\n",
+            "g.cc": """using Inner = dart::collision::Detector;
+namespace inner {
+using Inner = dart::dynamics::Widget;
+void g() { Inner::setValue(1); }
+}
+""",
         },
     )
     members = _entries(result, "members")
@@ -491,6 +505,7 @@ void g() { Alias::getStaticType(); }
     assert members["isReady"]["examples"] == ["dartsim/src/c.cc:3"]
     assert members["getStaticType"]["count"] == 2
     assert members["compute"]["examples"] == ["dartsim/src/e.cc:2"]
+    assert members["setValue"]["examples"] == ["dartsim/src/g.cc:4"]
     assert "clear" not in members
 
 
@@ -567,6 +582,24 @@ def test_imported_free_functions(extractor, api, tmp_path):
         "dartsim/src/declaration.cc:2",
         "dartsim/src/directive.cc:2",
         "dartsim/src/partial.cc:2",
+    ]
+
+    scoped = _scan_files(
+        extractor,
+        api,
+        tmp_path / "scoped",
+        {
+            "imports.hh": "using namespace dart::math;\n",
+            "header.cc": '#include "imports.hh"\nvoid f() { measure(5.0); }\n',
+            "shadowed.cc": """using dart::math::measure;
+namespace local { double measure(double); void g() { measure(6.0); } }
+void h() { measure(7.0); }
+""",
+        },
+    )
+    assert _entries(scoped, "free_functions")["dart::math::measure"]["examples"] == [
+        "dartsim/src/header.cc:2",
+        "dartsim/src/shadowed.cc:3",
     ]
 
 
