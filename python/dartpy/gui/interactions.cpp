@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/gil.hpp"
 // clang-format on
 #include "detail/eigen.hpp"
 #include "gui/ownership.hpp"
@@ -122,6 +123,19 @@ struct RetainingInit : nb::def_visitor<RetainingInit<Args...>>
 class IdentityWeakCache : public std::enable_shared_from_this<IdentityWeakCache>
 {
 public:
+  ~IdentityWeakCache()
+  {
+    if (nb::detail::cleanup_guard guard{})
+      mEntries.clear();
+    else {
+      // The interpreter is finalizing; intentionally leak the Python handles.
+      for (auto& entry : mEntries) {
+        entry.second.key.release();
+        entry.second.value.release();
+      }
+    }
+  }
+
   nb::object get(const nb::handle& object) const
   {
     const auto entry = mEntries.find(object.ptr());
@@ -288,12 +302,7 @@ public:
   bool handle(
       const gui::GUIEventAdapter& event, gui::GUIActionAdapter& viewer) override
   {
-    nb::gil_scoped_acquire gil;
-    // nanobind 3.1 cannot attach during Python >= 3.15 finalization (PEP 788);
-    // report it instead of inventing a handler result.
-    if (!gil.is_valid())
-      throw std::runtime_error(
-          "Cannot run a Python GUIEventHandler while Python is finalizing");
+    dartnb::GilScopedAcquire gil;
     nb::detail::ticket ticket(
         nb_trampoline, "handle", nb::detail::str_hash("handle"), true);
     // Native input and action adapters are stack-owned. Python handlers may

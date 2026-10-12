@@ -110,8 +110,8 @@
 * Python
 
   * Avoid crashes when native code releases Python objects, or calls Python
-    collision filters, analytical IK solvers or optimizer overrides, while
-    Python 3.15 or newer shuts down. Builds against the full Python API were
+    collision filters, analytical IK solvers, optimizer overrides or GUI event
+    handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
     affected; the stable-ABI wheels attach through an API that cannot fail
     this way.
 

@@ -143,6 +143,12 @@ int pickClear(PyObject* self)
 Ownership::~Ownership()
 {
   owners.erase(owner);
+  if (nb::detail::cleanup_guard guard{})
+    active.clear();
+  else
+    // The interpreter is finalizing; intentionally leak the Python handles.
+    for (auto& edge : active)
+      edge.wrapper.release();
 }
 
 void Ownership::clear(PyObject* self)
