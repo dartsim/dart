@@ -438,11 +438,13 @@ void build() {
   auto solver = std::make_shared<dart::dynamics::DerivedSolver>();
 }
 struct Tuple : std::tuple<int, dart::dynamics::Solver, bool> {};
+template <bool B = (sizeof(int) < sizeof(long))>
+struct Checked : public dart::dynamics::Solver {};
 """,
     )
     constructors = _entries(result, "constructors")
     solver = constructors["dart::dynamics::Solver"]
-    assert solver["examples"] == ["dartsim/src/sample.cc:1"]
+    assert solver["examples"] == ["dartsim/src/sample.cc:1", "dartsim/src/sample.cc:8"]
     derived = constructors["dart::dynamics::DerivedSolver"]
     assert [(d["class"], d["signature"]) for d in derived["declarations"]] == [
         ("dart::dynamics::Solver", "explicit Solver ( int flags = 0 )")
@@ -510,6 +512,25 @@ extern void use(dart::dynamics::Widget w = dart::dynamics::Widget(1));
     assert constructors["dart::collision::Detector::Registrar"]["examples"] == [
         "dartsim/src/sample.cc:16"
     ]
+
+
+def test_default_arguments_do_not_start_member_initializers(extractor, api, tmp_path):
+    header = tmp_path / "dart" / "api.hpp"
+    header.write_text(
+        header.read_text().replace(
+            "class Unused {};",
+            "class Ternary {\npublic:\n"
+            "  int pick(int n = (true) ? 1 : 2) const { return n; }\n"
+            "};\nclass Unused {};",
+        )
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(header.parent),
+        tmp_path,
+        "void f(dart::dynamics::Ternary* t) { t->pick(); }\n",
+    )
+    assert _entries(result, "members")["pick"]["count"] == 1
 
 
 def test_constructors_of_class_template_specializations(extractor, api, tmp_path):
@@ -874,9 +895,10 @@ namespace gz { using other::measure; void f() { measure(14.0); } }
 namespace math { void f() { measure(12.0); } }
 void g() { math::measure(13.0); }
 }
+namespace dart { using math::measure; void h() { measure(15.0); } }
 """,
     )
-    assert _entries(enclosed, "free_functions")["dart::math::measure"]["count"] == 2
+    assert _entries(enclosed, "free_functions")["dart::math::measure"]["count"] == 3
 
 
 def test_subscripted_container_elements(extractor, api, tmp_path):

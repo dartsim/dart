@@ -339,6 +339,22 @@ def qualifier_path(values):
     return tuple(path)
 
 
+def member_initializer(tokens, segment, index):
+    """Whether the `{` at `index` braces `m{...}` after a constructor's `(...) :`."""
+    values = tokens.values
+    if not (IDENTIFIER.match(values[index - 1]) or values[index - 1] == ">"):
+        return False
+    i, parameters = segment, False
+    while i < index:  # a top-level colon after the parameter list
+        if values[i] == "(" and i in tokens.pairs:
+            i, parameters = tokens.pairs[i] + 1, True
+            continue
+        if values[i] == ":" and parameters:
+            return True
+        i += 1
+    return False
+
+
 def scopes(tokens):
     """Collect namespace/class spans and direct member declaration prefixes.
 
@@ -442,12 +458,7 @@ def scopes(tokens):
                             continue
                         if k < end and values[k] == ";":
                             aliases.append((full_name, [full_name], i))
-            initializer = (  # `m{...}` in a constructor's member initializers
-                value == "{"
-                and (IDENTIFIER.match(values[i - 1]) or values[i - 1] == ">")
-                and ":" in values[segment:i]
-                and ")" in values[segment : values.index(":", segment, i)]
-            )
+            initializer = value == "{" and member_initializer(tokens, segment, i)
             if (value == "(" or initializer) and i in tokens.pairs:
                 for p in range(i, tokens.pairs[i] + 1):
                     tokens.scopes[p] = here
@@ -704,10 +715,11 @@ def constructs(tokens, start, end, declarations, heads):
     after = template_end(values, end)
     for head, body in heads:
         if head < start < body:  # a base's constructors run for the class's
+            nesting = sum((v == "<") - (v == ">") for v in values[head:start])
             return (
                 before in {":", ",", "public", "protected", "private", "virtual"}
                 and values[after : after + 1] in (["{"], [","])
-                and not in_template_argument(values, start)
+                and nesting == 0  # not a template argument
             )
     if before in {".", "->", "~", "operator"}:
         return False
@@ -1373,8 +1385,8 @@ def scan_sources(api, source_root):
         for short, target, where, start, stop, depth in tokens.using:
             if short == name and start < index < stop and scope[: len(where)] == where:
                 declared_at.add(depth)
-                if expand(target, namespace_aliases) in api.free_functions:
-                    found[depth].append(expand(target, namespace_aliases))
+                target = qualified_function(target, where, imports, namespace_aliases)
+                found[depth] += [target] if target else []
         found[0] += [
             f"{s}::{name}" for s in imports if f"{s}::{name}" in api.free_functions
         ]
