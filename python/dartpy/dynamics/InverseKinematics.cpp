@@ -96,8 +96,9 @@ public:
     // Note: constructDofMap() is intentionally not called here. Both
     // construction paths invoke it after the object is registered as the IK's
     // analytical method: InverseKinematics::setGradientMethod() and
-    // InverseKinematics::clone(). Calling it in the constructor would run it
-    // twice and double-emit the non-dependent-DOF warning.
+    // InverseKinematics::clone(), which leaves it to Skeleton for a copied
+    // Node until the copy joins its Skeleton. Calling it in the constructor
+    // would run it twice and double-emit the non-dependent-DOF warning.
   }
 
   ~PythonAnalyticalIk() override
@@ -825,9 +826,8 @@ void InverseKinematics(nb::module_& m)
 
             // Validate the registered DOF indices against the skeleton up
             // front. Otherwise a stale/incorrect index only warns in
-            // constructDofMap() and later segfaults in
-            // checkSolutionJointLimits(), which dereferences
-            // Skeleton::getDof(index) without a null check.
+            // constructDofMap(), and every later solve fails on the missing
+            // DOF.
             const dart::dynamics::JacobianNode* node = self->getNode();
             const auto skeleton = node ? node->getSkeleton() : nullptr;
             const std::size_t numDofs = skeleton ? skeleton->getNumDofs() : 0u;

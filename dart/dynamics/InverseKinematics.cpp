@@ -175,7 +175,10 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
   // of the error method.
   newIK->mGradientMethod = mGradientMethod->clone(newIK.get());
   newIK->mAnalytical = dynamic_cast<Analytical*>(newIK->mGradientMethod.get());
-  if (nullptr != newIK->mAnalytical)
+  // A Node copied by BodyNode::copyTo() has no Skeleton until the copied
+  // BodyNodes join one, so it has no DOFs to map yet. Skeleton then binds the
+  // copied IK module to the copy, which builds this map.
+  if (nullptr != newIK->mAnalytical && nullptr != _newNode->getSkeleton())
     newIK->mAnalytical->constructDofMap();
 
   newIK->mErrorMethod = mErrorMethod->clone(newIK.get());
@@ -1292,13 +1295,19 @@ void InverseKinematics::Analytical::constructDofMap()
 void InverseKinematics::Analytical::checkSolutionJointLimits()
 {
   const std::vector<std::size_t>& dofs = getDofs();
+  const SkeletonPtr skeleton = mIK->getNode()->getSkeleton();
   for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     Solution& s = mSolutions[i];
     const Eigen::VectorXd& q = s.mConfig;
 
     for (std::size_t j = 0; j < dofs.size(); ++j) {
-      DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->getDof(dofs[j]);
-      if (q[j] < dof->getPositionLowerLimit()
+      // A solver can name a DOF that the Skeleton lacks, such as a solver that
+      // stores DOF indices after its Node was copied. No position of a missing
+      // DOF is within limits.
+      const DegreeOfFreedom* dof = dofs[j] < skeleton->getNumDofs()
+                                       ? skeleton->getDof(dofs[j])
+                                       : nullptr;
+      if (dof == nullptr || q[j] < dof->getPositionLowerLimit()
           || dof->getPositionUpperLimit() < q[j]) {
         s.mValidity |= LIMIT_VIOLATED;
         break;

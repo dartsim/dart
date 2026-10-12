@@ -110,11 +110,13 @@
 * Dynamics
 
   * Fix crashes when cloning a skeleton, or copying a body node that has an
-    end effector, whose inverse kinematics uses an analytical solver. The
-    inverse kinematics of nodes copied by `BodyNode::copyTo()` or
-    `BodyNode::copyAs()` now solves for the copies of the original degrees of
-    freedom instead of the original skeleton's indices, leaving out degrees of
-    freedom whose joints were not copied.
+    end effector, whose inverse kinematics uses an analytical solver. Inverse
+    kinematics copied by `BodyNode::copyTo()` or `BodyNode::copyAs()` now
+    selects the copies of the original degrees of freedom, along with the ones
+    that a copy within the same skeleton still shares with the original, and
+    warns when none remain. An analytical solver that stores degree-of-freedom
+    indices, such as IkFast, keeps its indices, so the copy warns when they do
+    not name the copied degrees of freedom.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
   * Preserve the generated soft mesh and shape-node properties when cloning

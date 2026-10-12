@@ -181,3 +181,64 @@ TEST(IkFast, LoadWamArmIk)
     EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
   }
 }
+
+//==============================================================================
+TEST(IkFast, CopyWamArmIk)
+{
+  utils::DartLoader urdfParser;
+  urdfParser.addPackageDirectory(
+      "herb_description", DART_DATA_PATH "/urdf/wam");
+  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH "/urdf/wam/wam.urdf");
+  ASSERT_NE(wam, nullptr);
+  ASSERT_EQ(wam->getNumDofs(), 7u);
+
+  auto ik = wam->getBodyNode("/wam7")->createEndEffector("ee")->createIK();
+  const std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
+  ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
+      DART_TEST_IKFAST_LIBRARY, ikFastDofs, std::vector<std::size_t>{2});
+
+  // copyAs() keeps the DOF indices, so the copied IkFast still solves for the
+  // copied DOFs. Binding the copy reports nothing.
+  testing::internal::CaptureStderr();
+  const auto copy = wam->getRootBodyNode()->copyAs("wam_copy");
+  const std::string output = testing::internal::GetCapturedStderr();
+  EXPECT_TRUE(output.empty()) << output;
+
+  auto copiedEE = copy->getEndEffector("ee");
+  ASSERT_NE(copiedEE, nullptr);
+  auto copiedIkFast
+      = dynamic_cast<dynamics::IkFast*>(copiedEE->getIK()->getAnalytical());
+  ASSERT_NE(copiedIkFast, nullptr);
+  EXPECT_TRUE(copiedIkFast->isConfigured());
+  EXPECT_EQ(copiedIkFast->getDofs(), ikFastDofs);
+
+  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
+  target.translation() = Eigen::Vector3d(0, 0, 0.5);
+  const auto solutions = copiedIkFast->getSolutions(target);
+  std::size_t numValid = 0;
+  for (const auto& solution : solutions) {
+    if (solution.mValidity != InverseKinematics::Analytical::VALID)
+      continue;
+
+    ++numValid;
+    copy->setPositions(ikFastDofs, solution.mConfig);
+    EXPECT_TRUE(equals(target, copiedEE->getTransform(), 1e-2));
+  }
+  EXPECT_GT(numValid, 0u);
+
+  // Under a FreeJoint, the copied WAM DOFs follow the FreeJoint's DOFs, but
+  // IkFast keeps the WAM's indices, so the copy warns about them.
+  auto withBase = dynamics::Skeleton::create("wam_with_base");
+  auto base = withBase->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  testing::internal::CaptureStderr();
+  wam->getRootBodyNode()->copyTo(withBase, base.second);
+  const std::string warning = testing::internal::GetCapturedStderr();
+  EXPECT_NE(
+      warning.find("solves for the DOFs [0, 1, 3, 4, 5, 6], but the copies of "
+                   "the DOFs that it solved for are [6, 7, 9, 10, 11, 12]"),
+      std::string::npos)
+      << warning;
+  EXPECT_EQ(
+      withBase->getEndEffector("ee")->getIK()->getDofs(),
+      std::vector<std::size_t>({6, 7, 8, 9, 10, 11, 12}));
+}
