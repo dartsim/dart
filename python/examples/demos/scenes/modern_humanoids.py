@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import dartpy as dart
 import numpy as np
 
@@ -46,7 +48,7 @@ def _world(model_id: str, root_height: float):
         )
     )
     robot = loader.parseSkeleton(uri)
-    if robot is None:
+    if robot is None or robot.getNumDofs() == 0:
         raise RuntimeError(f"Unable to parse cached model: {uri}")
     transform = np.eye(4)
     transform[2, 3] = root_height
@@ -68,58 +70,67 @@ def g1_world():
     return _world("unitree-g1", 0.8)
 
 
-def _build(world) -> dart.viewer.SceneSetup:
+def _build(world, root_height) -> dart.viewer.SceneSetup:
     robot = world.getSkeleton(0)
     initial_pose = robot.getPositions().copy()
-    selected = 0
-
-    def select_joint(delta):
-        nonlocal selected
-        selected = (selected + delta) % robot.getNumDofs()
-        print(f"Selected joint: {robot.getDof(selected).getName()}")
-
-    def pose_joint(delta):
-        dof = robot.getDof(selected)
-        position = min(
-            dof.getPositionUpperLimit(),
-            max(dof.getPositionLowerLimit(), dof.getPosition() + delta),
-        )
-        dof.setPosition(position)
-        print(f"{dof.getName()}: {position:.3f} rad")
+    pending_joint = -1
+    pending_position = 0.0
+    reset = False
 
     panel = dart.viewer.Panel()
+    panel.add_text("Fixed base; kinematic joint inspection.")
     panel.add_text(
-        "Fixed base: [ / ] select a joint, - / = change its angle, t resets.",
-        wrap=True,
+        f"{robot.getNumBodyNodes()} bodies, {robot.getNumDofs()} joints to pose"
     )
-    panel.add_text(f"Initially selected joint: {robot.getDof(0).getName()}", wrap=True)
+    joint = panel.add_slider(
+        "Joint", 0, min=0, max=robot.getNumDofs() - 1, integer=True
+    )
+    joint_name = panel.add_text(robot.getDof(0).getName())
+    position = panel.add_slider("Position (rad)", 0.0, min=-math.pi, max=math.pi)
+    reset_pose = panel.add_button("Reset pose")
+
+    def pose_joint():
+        nonlocal pending_joint, pending_position
+        pending_joint = joint.value
+        pending_position = position.value
+
+    def reset_joint_positions():
+        nonlocal reset, pending_joint
+        reset = True
+        pending_joint = -1
+
+    def pre_refresh():
+        nonlocal reset, pending_joint
+        if reset:
+            robot.setPositions(initial_pose)
+            reset = False
+        if pending_joint >= 0:
+            robot.getDof(pending_joint).setPosition(pending_position)
+            pending_joint = -1
+        dof = robot.getDof(joint.value)
+        joint_name.label = dof.getName()
+        lower = dof.getPositionLowerLimit()
+        upper = dof.getPositionUpperLimit()
+        position.set_range(
+            lower if math.isfinite(lower) else -math.pi,
+            upper if math.isfinite(upper) else math.pi,
+        )
+        position.value = dof.getPosition()
+
+    position.on_change = pose_joint
+    reset_pose.on_change = reset_joint_positions
+    pre_refresh()
 
     return dart.viewer.SceneSetup(
         world,
+        pre_refresh=pre_refresh,
         shadows=False,
         camera_home=dart.viewer.CameraHome(
-            eye=[3.0, 2.5, 1.8],
-            center=[
-                0.0,
-                0.0,
-                robot.getRootBodyNode().getWorldTransform().translation()[2],
-            ],
+            eye=[6.0, 5.0, 3.0],
+            center=[0.0, 0.0, root_height - 0.6],
             up=[0.0, 0.0, 1.0],
         ),
         allow_simulation=False,
-        key_actions=[
-            dart.viewer.KeyAction("[", "Previous joint", lambda: select_joint(-1)),
-            dart.viewer.KeyAction("]", "Next joint", lambda: select_joint(1)),
-            dart.viewer.KeyAction(
-                "-", "Decrease joint angle", lambda: pose_joint(-0.1)
-            ),
-            dart.viewer.KeyAction(
-                "=", "Increase joint angle", lambda: pose_joint(0.1)
-            ),
-            dart.viewer.KeyAction(
-                "t", "Reset pose", lambda: robot.setPositions(initial_pose)
-            ),
-        ],
         panel=panel,
     )
 
@@ -134,27 +145,14 @@ def _scene_world(load):
 
 
 def build_atlas() -> dart.viewer.SceneSetup:
-    return _build(_scene_world(atlas_world))
+    return _build(_scene_world(atlas_world), 1.0)
 
 
 def build_g1() -> dart.viewer.SceneSetup:
-    return _build(_scene_world(g1_world))
+    return _build(_scene_world(g1_world), 0.8)
 
 
 def scenes():
-    return [
-        dart.viewer.Scene(
-            "atlas_v5",
-            title="Atlas v5 (No Head)",
-            category="Robots",
-            summary="Inspect a verified cached humanoid and pose its joints.",
-            factory=build_atlas,
-        ),
-        dart.viewer.Scene(
-            "unitree_g1",
-            title="Unitree G1 (29 DOF)",
-            category="Robots",
-            summary="Inspect a verified cached humanoid and pose its joints.",
-            factory=build_g1,
-        ),
-    ]
+    from . import atlas_v5, unitree_g1
+
+    return [*atlas_v5.scenes(), *unitree_g1.scenes()]
