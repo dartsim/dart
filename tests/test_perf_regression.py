@@ -58,6 +58,13 @@ def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_pa
         *{("S5", det, 1, 300) for det in module.DETECTORS},
         ("S6", "dart", 1, 20000),
         ("mf", "dart", 1, 50),
+        *{
+            (f"w{worlds}", det, 1, 3)
+            for worlds in (1, 64, 1024)
+            for det in module.DETECTORS
+            if worlds == 1024 or det in ("fcl", "bullet")
+        },
+        ("closed-loop-friction", "dart", 1, 100),
     }
     args = module.parser().parse_args(
         [
@@ -85,6 +92,134 @@ def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_pa
     s6 = module.select_rows("S6")[0]
     assert s6.checkpoint == 5000 and "--max-contacts" not in s6.args
     assert module.select_rows("mf")[0].warmup == 50
+
+
+def test_world_loop_rows_pin_detectors_and_outer_step_windows(tmp_path):
+    module = _load_runner()
+    quick = [row for row in module.ROWS if "--worlds" in row.args]
+    assert {row.key for row in quick} == {
+        f"w{worlds}/{det}" for worlds in (1, 64) for det in ("dart", "ode")
+    }
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    for row in module.select_rows("w1,w64,w1024,closed-loop-friction"):
+        command = module.row_command(
+            row, args, tmp_path / "world", row.warmup, row.steps
+        )
+        assert row.driver == module.PB and row.ir and row.perturb and row.threads == 1
+        assert command[command.index("--world-threads") + 1] == "1"
+        assert command[command.index("--detector") + 1] == row.det
+        assert module.row_result(row)["collection_signature"] == "stepWorldsAndRead"
+        if row.row.startswith("w"):
+            assert command[command.index("--worlds") + 1] == row.row[1:]
+            assert command[command.index("--scene") + 1] == "contact"
+            assert (row.warmup, row.steps) == (2, 3)
+        else:
+            assert command[command.index("--scene") + 1] == "closed-loop-friction"
+            assert command[command.index("--worlds") + 1] == "1"
+            assert (row.warmup, row.steps) == (100, 100)
+    for name in ("gzb", "robot"):
+        row = module.select_rows(name)[0]
+        assert "--worlds" not in row.args
+        assert (
+            module.row_result(row)["collection_signature"]
+            == module.COLLECTION_SIGNATURES[module.PB]
+        )
+
+
+def test_world_loop_instrumentation_counts_outer_steps(monkeypatch, tmp_path):
+    module = _load_runner()
+    row = module.select_rows("w64/dart")[0]
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    output = (
+        f"STEPALLOC steps=5 measured=3 allocs=12 bytes=120 libdart={tmp_path}/libdart.so\n"
+        "PERFTIME maxrss_kb=100\nAvg Step Time: 1 ms/step\n"
+        "Final State Hash: 0x1\nFinal State Finite: true\n"
+        "Final Contacts: 256\nFinal Contact Cap Hit: false\nFinal Resting: 0 / 64\n"
+    )
+    calls = []
+
+    def execute(command, env, log, timeout):
+        calls.append((command, env))
+        log.write_text(output)
+        if command[0] == module.VALGRIND:
+            assert "--toggle-collect=stepWorldsAndRead" in command
+            path = next(
+                item.split("=", 1)[1]
+                for item in command
+                if item.startswith("--callgrind-out-file=")
+            )
+            Path(path.replace("%p", "123")).write_text(
+                f"events: Ir\nsummary: 1234\nob={tmp_path}/libdart.so\n"
+            )
+        else:
+            assert env["PERF_WINDOW"] == "stepAndRead" and env["PERF_WARMUP"] == "2"
+        return output
+
+    monkeypatch.setattr(module, "execute", execute)
+    metrics = module.native(row, args, tmp_path)
+    assert metrics["allocs_per_step"] == 4 and metrics["bytes_per_step"] == 40
+    assert module.callgrind(row, args, tmp_path, row.warmup + row.steps) == {"Ir": 1234}
+    assert len(calls) == 2
+
+
+def test_loop_closure_failure_is_a_measured_correctness_failure(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    output = (
+        f"STEPALLOC steps=200 measured=100 allocs=0 bytes=0 libdart={tmp_path}/libdart.so\n"
+        "PERFTIME maxrss_kb=100\nAvg Step Time: 1 ms/step\n"
+        "Final State Hash: 0x1\nFinal State Finite: true\nTime Advanced: true\n"
+        "Final Contacts: 0\nFinal Contact Cap Hit: false\nFinal Resting: 0 / 1\n"
+        "Final Loop Closure Error: 0.001 m\nFinal Loop Closed: false\n"
+    )
+
+    def popen(command, **kwargs):
+        kwargs["stdout"].write(output)
+        return module.argparse.Namespace(returncode=1, wait=lambda **kwargs: None)
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    monkeypatch.setattr(
+        module, "callgrind", lambda *args: pytest.fail("invalid loop was profiled")
+    )
+    result = module.measure(
+        module.select_rows("closed-loop-friction")[0], args, tmp_path
+    )
+    assert result["status"] == "broken" and result["error"] == "loop closure failed"
+    assert "error_kind" not in result and "perturbations" not in result
+    assert result["head"]["guards"]["loop_closed"] is False
 
 
 def test_canonical_guard_is_measured_once_and_does_not_require_perturbation(
@@ -335,7 +470,10 @@ def test_nightly_requires_contact_pairs_and_saves_failures(
         ]
     ) == int(pairs is None)
     record = module.publication_record(tmp_path / "record.json", "nightly")
-    for row in record["results"][:-1]:
+    for row in record["results"]:
+        if not row["row"].startswith("S") and row["row"] != "mf":
+            assert row["status"] == "ok"
+            continue
         assert row["status"] == ("broken" if pairs is None else "ok")
         if pairs is None:
             assert row["error"] == "missing contact pair count"
@@ -4884,7 +5022,10 @@ def test_verdict_snippet_requires_complete_qualified_smoke_rows(
     assert json.loads((tmp_path / "head.json").read_text()) == (
         ab_head if mixed else arm
     )
-    assert bool((tmp_path / "smoke-failures.txt").read_text()) == bool(defect)
+    # Like the merge record, a head harness may add rows but not drop or repeat them.
+    assert bool((tmp_path / "smoke-failures.txt").read_text()) == (
+        defect not in (None, "extra")
+    )
 
 
 @pytest.mark.parametrize("status", [0, 1, 2])

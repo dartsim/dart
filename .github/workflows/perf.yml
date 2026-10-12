@@ -284,8 +284,9 @@ jobs:
               if smoke["measurement_exit"] == 1:
                   failures.append("the head harness reported FAIL")
               keys = [row_key(row) for row in smoke["head"]["results"]]
-              if set(keys) != {row.key for row in select_rows("")} or len(keys) != len(set(keys)):
-                  failures.append("the benchmark row set differs from the base defaults")
+              # Like the merge record: new rows are allowed, dropped or repeated base rows are not.
+              if not {row.key for row in select_rows("")}.issubset(keys) or len(keys) != len(set(keys)):
+                  failures.append("the head benchmark rows omit base defaults or repeat rows")
               rows = smoke["head"]["results"]
               if not rows or not all(row.get("status") == "ok" and row.get("perturbations") and row.get("gated") for row in rows):
                   failures.append("some rows did not run or did not pass their perturbation check")

@@ -205,6 +205,12 @@ ROWS += [
     Row("dyn", "", "BM_INTEGRATION_kinematics", DYN_ARGS, 20, 20),
     Row("lcp", "", "BM_UNIT_dantzig_lcp", LCP_ARGS, 100, 100),
 ]
+# One step advances every independent World and reads transforms and contacts.
+ROWS += [
+    Row(f"w{worlds}", det, PB, ("--scene", "contact", "--worlds", str(worlds)), 2, 3)
+    for worlds in (1, 64)
+    for det in ("dart", "ode")
+]
 ROWS += [
     Row(
         f"mt4-{name}",
@@ -313,6 +319,28 @@ NIGHTLY_ROWS += [
         50,
     ),
 ]
+NIGHTLY_ROWS += [
+    Row(f"w{worlds}", det, PB, ("--scene", "contact", "--worlds", str(worlds)), 2, 3)
+    for worlds in (1, 64, 1024)
+    for det in DETECTORS
+    if worlds == 1024 or det in ("fcl", "bullet")
+]
+NIGHTLY_ROWS += [
+    Row(
+        "closed-loop-friction",
+        "dart",
+        PB,
+        ("--scene", "closed-loop-friction", "--worlds", "1"),
+        100,
+        100,
+    ),
+]
+
+
+def collection_signature(row: Row) -> str:
+    if row.driver == PB and "--worlds" in row.args:
+        return "stepWorldsAndRead"
+    return COLLECTION_SIGNATURES[row.driver]
 
 
 def sha(data: bytes) -> str:
@@ -334,10 +362,12 @@ def failed_guards(text: str) -> bool:
     """True when complete guards describe a correctness failure."""
     try:
         finite = field(text, "Final State Finite")
-        return bool(guards(text)) and (
+        observed = guards(text)
+        return bool(observed) and (
             finite == "false"
             or finite == "true"
             and field(text, "Time Advanced") == "false"
+            or observed.get("loop_closed") is False
         )
     except ValueError:
         return False  # incomplete guards: the run itself failed
@@ -353,6 +383,8 @@ def guards(text: str) -> dict:
     }
     if re.search(r"^Final Contact Pairs:", text, re.MULTILINE):
         result["pairs"] = int(field(text, "Final Contact Pairs"))
+    if re.search(r"^Final Loop Closed:", text, re.MULTILINE):
+        result["loop_closed"] = field(text, "Final Loop Closed") == "true"
     return result
 
 
@@ -671,7 +703,7 @@ def callgrind(row: Row, args, world: Path, steps: int) -> dict[str, int]:
     ]
     command += [
         "--collect-atstart=no",
-        f"--toggle-collect={COLLECTION_SIGNATURES[row.driver]}",
+        f"--toggle-collect={collection_signature(row)}",
     ]
     if args.cache_sim:
         command += [
@@ -776,7 +808,7 @@ def row_result(row: Row, args=None) -> dict:
         ),
         "expected_ir": row.ir and not getattr(args, "native_only", False),
         "collection_signature": (
-            COLLECTION_SIGNATURES[row.driver]
+            collection_signature(row)
             if row.ir and not getattr(args, "native_only", False)
             else None
         ),
@@ -826,6 +858,9 @@ def measure(row: Row, args, world: Path) -> dict:
             return result
         if metrics.get("time_advanced") is False:
             result.update(status="broken", error="simulation time did not advance")
+            return result
+        if (metrics.get("guards") or {}).get("loop_closed") is False:
+            result.update(status="broken", error="loop closure failed")
             return result
         if args.perturb and row.perturb:
             result["perturbations"] = {}
@@ -3542,7 +3577,7 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument(
             "--nightly",
             action="store_true",
-            help="include canonical S1-S6 guards and mf",
+            help="include all nightly rows (S1-S6 guards, mf and World loops)",
         )
         item.add_argument("--shim", type=Path)
         item.add_argument("--heappad", type=Path)
