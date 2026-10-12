@@ -274,13 +274,15 @@ test-build-requirements = { cmd = [
 ] }
 
 # The Gazebo compatibility lanes' failure comparison, benchmark world generator,
-# and DART C++ API inventory; run after changing their tooling.
+# DART version override, and DART C++ API inventory; run after changing their
+# tooling.
 test-gz-compat-tools = { cmd = [
   "python",
   "-I",
   "scripts/run_pytest.py",
   "tests/test_gz_compat_compare.py",
   "tests/test_gz_bench_worlds.py",
+  "tests/test_gz_dart_version.py",
   "tests/test_gz_dart_api_inventory.py",
   "-q",
 ] }
@@ -1005,7 +1007,9 @@ backward-cpp = ">=1.6"
 
 [feature.gazebo.tasks]
 config-dart-gz = { cmd = """
+    dart_version_arg="$(python scripts/gz_dart_version.py)" && \
     cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        "$dart_version_arg" \
         -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
         -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
         -DCMAKE_BUILD_TYPE=Release \

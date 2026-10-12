@@ -79,35 +79,42 @@ initialize_component_helpers(${PROJECT_NAME})
 file(READ package.xml PACKAGE_XML)
 string(
   REGEX MATCH
-  "<version>[0-9]+\\.[0-9]+\\.[0-9]+</version>"
+  "<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>"
   DIRTY_VERSION_STRING
-  ${PACKAGE_XML}
+  "${PACKAGE_XML}"
 )
-string(
-  REGEX REPLACE
-  "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$"
-  "\\1"
-  DART_MAJOR_VERSION
-  "${DIRTY_VERSION_STRING}"
-)
-string(
-  REGEX REPLACE
-  "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$"
-  "\\2"
-  DART_MINOR_VERSION
-  "${DIRTY_VERSION_STRING}"
-)
-string(
-  REGEX REPLACE
-  "^<version>([0-9]+)\\.([0-9]+)\\.([0-9]+)</version>$"
-  "\\3"
-  DART_PATCH_VERSION
-  "${DIRTY_VERSION_STRING}"
-)
+set(DART_VERSION "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}")
 set(
-  DART_VERSION
-  "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}"
+  DART_VERSION_OVERRIDE
+  ""
+  CACHE STRING
+  "CI-only DART version override (X.Y.Z); never use for packaging"
 )
+if(NOT DART_VERSION_OVERRIDE STREQUAL "")
+  if(
+    NOT
+      DART_VERSION_OVERRIDE
+        MATCHES
+        "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+  )
+    message(
+      FATAL_ERROR
+      "DART_VERSION_OVERRIDE must be X.Y.Z without leading zeros"
+    )
+  endif()
+  if(DART_VERSION_OVERRIDE VERSION_LESS DART_VERSION)
+    message(
+      FATAL_ERROR
+      "DART_VERSION_OVERRIDE must not be older than package.xml (${DART_VERSION})"
+    )
+  endif()
+  message(STATUS "CI-only DART version override: ${DART_VERSION_OVERRIDE}")
+  set(DART_VERSION "${DART_VERSION_OVERRIDE}")
+endif()
+string(REPLACE "." ";" DART_VERSION_PARTS "${DART_VERSION}")
+list(GET DART_VERSION_PARTS 0 DART_MAJOR_VERSION)
+list(GET DART_VERSION_PARTS 1 DART_MINOR_VERSION)
+list(GET DART_VERSION_PARTS 2 DART_PATCH_VERSION)
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
@@ -677,10 +684,10 @@ configure_package_config_file(
   INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
   PATH_VARS INCLUDE_INSTALL_DIR
 )
-write_basic_config_version_file(
+configure_file(
+  ${DART_SOURCE_DIR}/cmake/DARTConfigVersion.cmake.in
   ${DART_VERSION_OUT}
-  VERSION ${${PROJECT_NAME_UPPERCASE}_VERSION}
-  COMPATIBILITY SameMajorVersion
+  @ONLY
 )
 install(
   FILES
