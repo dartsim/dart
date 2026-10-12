@@ -66,7 +66,6 @@ function(dart_demos_configure_memory_diagnostics target)
   endif()
 endfunction()
 
-set(required_components utils-urdf gui)
 set(
   required_libraries
   dart
@@ -74,6 +73,7 @@ set(
   dart-utils-urdf
   dart-gui
   dart_demos_wam_ikfast
+  dart-demo-models
 )
 
 function(dart_demos_collect_scene_srcs out_var)
@@ -133,21 +133,11 @@ if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui)
 endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
-  find_package(DART 6.19 REQUIRED COMPONENTS ${required_components} CONFIG)
-  include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
-  if(NOT DART_EXAMPLES_HAVE_FILAMENT_GUI)
-    message(
-      FATAL_ERROR
-      "dart-demos requires the Filament gui component (dart/gui/Viewer.hpp)"
-    )
-  endif()
-  find_package(
-    DART
-    6.19
-    QUIET
-    COMPONENTS collision-bullet collision-ode utils-assets
-    CONFIG
+  message(
+    STATUS
+    "dart-demos builds only in-source because it links the private dart-demo-models"
   )
+  return()
 endif()
 
 # Installed targets can exist even when their optional dependencies are missing.
@@ -159,31 +149,7 @@ if(
   set(DART_DEMOS_HAVE_MODEL_ASSETS TRUE)
 endif()
 
-# Exact allocator-region capture is available in the in-source DART 6.20
-# build. For standalone examples, inspect only the selected `dart` target's
-# include directory so another DART installation later on the compiler search
-# path cannot make the capability appear available accidentally.
-set(dart_demos_has_allocator_memory_layout 0)
-if(DART_IN_SOURCE_BUILD)
-  set(dart_demos_has_allocator_memory_layout 1)
-elseif(TARGET dart)
-  get_target_property(
-    dart_demos_dart_include_dirs
-    dart
-    INTERFACE_INCLUDE_DIRECTORIES
-  )
-  foreach(dart_demos_dart_include_dir ${dart_demos_dart_include_dirs})
-    if(
-      NOT dart_demos_dart_include_dir MATCHES "^\\$<"
-      AND
-        EXISTS
-          "${dart_demos_dart_include_dir}/dart/common/detail/AllocatorMemoryLayout.hpp"
-    )
-      set(dart_demos_has_allocator_memory_layout 1)
-      break()
-    endif()
-  endforeach()
-endif()
+set(dart_demos_has_allocator_memory_layout 1)
 
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
 # written: this demos project's own build dir, used as the ikfast target's
@@ -284,12 +250,12 @@ endif()
 
 # Globs every scene source, including one level of scene subdirectories (for
 # multi-file scenes, e.g. scenes/tinkertoy/), and conditionally adds
-# scenes/human_joint_limits/ only when TinyDNN + Threads were found. Shared by
-# both the in-source and standalone build paths below.
+# scenes/human_joint_limits/ only when TinyDNN + Threads were found. Used by
+# the in-source build below.
 
 # Links the optional TinyDNN + Threads and Python3 dependencies and defines
-# DART_DEMOS_HAVE_TINY_DNN / DART_DEMOS_HAVE_PYTHON when found. Shared by both
-# build paths below.
+# DART_DEMOS_HAVE_TINY_DNN / DART_DEMOS_HAVE_PYTHON when found. Used by the
+# in-source build below.
 function(dart_demos_configure_scenes_target target)
   if(DART_DEMOS_HAVE_MODEL_ASSETS)
     target_link_libraries(${target} PUBLIC dart-utils-assets)
@@ -482,39 +448,6 @@ if(DART_IN_SOURCE_BUILD)
   if(TARGET examples)
     add_dependencies(examples soft_bodies soft_cubes soft_open_chain)
   endif()
-else()
-  dart_demos_collect_scene_srcs(demos_scene_srcs)
-  add_library(dart-demos-scenes STATIC ${demos_scene_srcs})
-  target_link_libraries(dart-demos-scenes PUBLIC ${required_libraries})
-  target_include_directories(
-    dart-demos-scenes
-    PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
-  )
-  dart_demos_configure_scenes_target(dart-demos-scenes)
-
-  add_executable(${example_name} ${srcs})
-  target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
-  dart_demos_link_optional_collision_backends(${example_name})
-  dart_demos_configure_memory_diagnostics(${example_name})
-
-  foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
-    add_executable(${alias_scene} ${srcs})
-    set_target_properties(
-      ${alias_scene}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    )
-    target_compile_definitions(
-      ${alias_scene}
-      PRIVATE DART_DEMOS_DEFAULT_SCENE="${alias_scene}"
-    )
-    target_link_libraries(
-      ${alias_scene}
-      ${required_libraries}
-      dart-demos-scenes
-    )
-    dart_demos_link_optional_collision_backends(${alias_scene})
-    dart_demos_configure_memory_diagnostics(${alias_scene})
-  endforeach()
 endif()
 
 if(BUILD_TESTING AND TARGET dart-demos)

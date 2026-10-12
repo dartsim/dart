@@ -33,9 +33,9 @@
 // public active-point count; blue markers show the remainder. The scene is
 // programmatic and uses only the public adaptive-contact activation API.
 
-#include "AdaptiveSoftContactModel.hpp"
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
+#include "demo_models/AdaptiveSoftContactModel.hpp"
 
 #include <dart/dart.hpp>
 

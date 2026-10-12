@@ -49,10 +49,10 @@
 // feet's independent point-mass state and the gait phase, not just the
 // skeleton's generalized coordinates.
 
-#include "examples/demos/scenes/atlas_simbicon/Controller.hpp"
-#include "examples/demos/scenes/atlas_simbicon/State.hpp"
-#include "examples/demos/scenes/atlas_simbicon/StateMachine.hpp"
-#include "examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
+#include "demo_models/atlas_simbicon/Controller.hpp"
+#include "demo_models/atlas_simbicon/State.hpp"
+#include "demo_models/atlas_simbicon/StateMachine.hpp"
+#include "demo_models/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
 
 #include <dart/common/Macros.hpp>
 

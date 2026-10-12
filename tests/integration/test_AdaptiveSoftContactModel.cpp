@@ -28,7 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/demos/scenes/AdaptiveSoftContactModel.hpp"
+#include "demo_models/AdaptiveSoftContactModel.hpp"
 
 #include <gtest/gtest.h>
 
