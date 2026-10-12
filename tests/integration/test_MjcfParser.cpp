@@ -56,6 +56,7 @@
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
+#include "dart/utils/mjcf/detail/WeldAttributes.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -964,4 +965,22 @@ TEST(MjcfParserTest, StackedJointPreservesLogicalBodyAdjacency)
   result.clear();
   EXPECT_TRUE(collisionGroup->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, WeldSolrefAcceptsFewerValues)
+{
+  // MJCF allows fewer solref values than the maximum; the rest keep defaults.
+  tinyxml2::XMLDocument doc;
+  ASSERT_EQ(
+      doc.Parse(R"(<weld body1="a" solref="0.05"/>)"), tinyxml2::XML_SUCCESS);
+  WeldAttributes attributes;
+  EXPECT_TRUE(appendWeldAttributes(attributes, doc.RootElement()).empty());
+  EXPECT_DOUBLE_EQ(attributes.mSolRef[0], 0.05);
+  EXPECT_DOUBLE_EQ(attributes.mSolRef[1], 1.0);
+
+  ASSERT_EQ(
+      doc.Parse(R"(<weld body1="a" solref="1 2 3"/>)"), tinyxml2::XML_SUCCESS);
+  WeldAttributes invalid;
+  EXPECT_FALSE(appendWeldAttributes(invalid, doc.RootElement()).empty());
 }

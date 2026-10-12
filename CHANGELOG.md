@@ -14,6 +14,15 @@
     [#3702](https://github.com/dartsim/dart/pull/3702),
     [#3700](https://github.com/dartsim/dart/pull/3700)
 
+* Parsers
+
+  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
+    4- or 6-element vector or pose value has the wrong number of elements,
+    instead of writing out of bounds or leaving values unset in release
+    builds. An MJCF weld `solref` with one value keeps the default for the
+    other.
+    [#3698](https://github.com/dartsim/dart/pull/3698)
+
 * Python
 
   * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,

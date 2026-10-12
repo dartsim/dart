@@ -41,12 +41,47 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 namespace dart {
 namespace utils {
 
 namespace {
+
+template <typename Vector>
+Vector parseFixedSizeXmlVector(const std::string& str, const char* typeName)
+{
+  const std::vector<std::string> pieces = common::split(common::trim(str));
+  constexpr int size = Vector::SizeAtCompileTime;
+  if (pieces.size() != static_cast<std::size_t>(size)) {
+    const auto message = fmt::format(
+        "value [{}] must contain exactly {} elements for {}; got {}",
+        str,
+        size,
+        typeName,
+        pieces.size());
+    DART_ERROR("{}", message);
+    throw std::invalid_argument(message);
+  }
+
+  Vector result;
+  for (int i = 0; i < size; ++i) {
+    try {
+      result[i] = toDouble(pieces[i]);
+    } catch (std::exception& e) {
+      DART_ERROR(
+          "value [{}] is not a valid {} for {}[{}]: {}",
+          pieces[i],
+          std::is_integral_v<typename Vector::Scalar> ? "int" : "double",
+          typeName,
+          i,
+          e.what());
+      throw;
+    }
+  }
+  return result;
+}
 
 bool warnIfNullAttributeElement(
     const tinyxml2::XMLElement* element,
@@ -157,157 +192,37 @@ char toChar(const std::string& str)
 //==============================================================================
 Eigen::Vector2d toVector2d(const std::string& str)
 {
-  Eigen::Vector2d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 2);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector2d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return parseFixedSizeXmlVector<Eigen::Vector2d>(str, "Eigen::Vector2d");
 }
 
 //==============================================================================
 Eigen::Vector2i toVector2i(const std::string& str)
 {
-  Eigen::Vector2i ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 2);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector2i[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return parseFixedSizeXmlVector<Eigen::Vector2i>(str, "Eigen::Vector2i");
 }
 
 //==============================================================================
 Eigen::Vector3d toVector3d(const std::string& str)
 {
-  Eigen::Vector3d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 3);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector3d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return parseFixedSizeXmlVector<Eigen::Vector3d>(str, "Eigen::Vector3d");
 }
 
 //==============================================================================
 Eigen::Vector3i toVector3i(const std::string& str)
 {
-  Eigen::Vector3i ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 3);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid int for Eigen::Vector3i[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return parseFixedSizeXmlVector<Eigen::Vector3i>(str, "Eigen::Vector3i");
 }
 
 //==============================================================================
 Eigen::Vector4d toVector4d(const std::string& str)
 {
-  Eigen::Vector4d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 4);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector4d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return parseFixedSizeXmlVector<Eigen::Vector4d>(str, "Eigen::Vector4d");
 }
 
 //==============================================================================
 Eigen::Vector6d toVector6d(const std::string& str)
 {
-  Eigen::Vector6d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector6d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return parseFixedSizeXmlVector<Eigen::Vector6d>(str, "Eigen::Vector6d");
 }
 
 //==============================================================================
@@ -340,24 +255,8 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 Eigen::Isometry3d toIsometry3d(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d elements = Eigen::Vector6d::Zero();
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        elements[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for SE3[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
+  const Eigen::Vector6d elements
+      = parseFixedSizeXmlVector<Eigen::Vector6d>(str, "SE3");
 
   T.linear() = math::eulerXYZToMatrix(elements.tail<3>());
   T.translation() = elements.head<3>();
@@ -368,24 +267,8 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
 Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  Eigen::Vector6d elements = Eigen::Vector6d::Zero();
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        elements[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for SE3[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
+  const Eigen::Vector6d elements
+      = parseFixedSizeXmlVector<Eigen::Vector6d>(str, "SE3");
 
   Eigen::Vector3d reverseEulerAngles(
       elements.tail<3>()[2], elements.tail<3>()[1], elements.tail<3>()[0]);
