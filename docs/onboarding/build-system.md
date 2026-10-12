@@ -34,6 +34,32 @@ Gazebo compatibility covers rebuilding released `gz-physics` and `gz-sim`
 without source changes. Existing binary plugins must be rebuilt against the
 new library layout.
 
+## Package Version Compatibility
+
+The installed `DARTConfigVersion.cmake` accepts plain version requests from
+6.0 through the installed DART version, including requests for an earlier
+major version. Requests below 6.0 are incompatible. `EXACT` requires the full
+installed version. Version ranges follow CMake's `AnyNewerVersion` rules with
+the same 6.0 floor; an excluded upper bound such as `6.10...<7` rejects DART 7
+and newer. The version file retains CMake's pointer-size suitability check.
+When a request for an earlier major resolves to DART, the package prints a
+short status message unless `QUIET` is set.
+
+`package.xml` normally supplies every C++ version value. The CMake cache
+variable `DART_VERSION_OVERRIDE` defaults to empty and is **CI-only; never use
+it for packaging**. A nonempty override must be `X.Y.Z` and at least the
+`package.xml` version. It supplies `DART_VERSION`, its major/minor/patch
+values, generated headers, package files and the `MAJOR.MINOR` SOVERSION.
+For example, configure a compatibility build with
+`-DDART_VERSION_OVERRIDE=7.0.0`; reset with `-DDART_VERSION_OVERRIDE=`.
+
+The Gazebo compatibility tasks read the `main | Development` release target
+from [release management](release-management.md), fail if it cannot be read,
+and set the override when that target is newer than `package.xml`. This
+exercises the upcoming DART version before release packaging updates the
+metadata. Historical comparison sources without override support keep their
+own version.
+
 ## Headless Core
 
 `DART_BUILD_IO=OFF`, `DART_BUILD_GUI=OFF`, and `DART_BUILD_DARTPY=OFF` configure

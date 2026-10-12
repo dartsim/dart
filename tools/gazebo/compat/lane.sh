@@ -181,11 +181,19 @@ clone() (
 
 step_dart() {
   log "building DART from $dart_source"
+  local version_arg
+  local version_args=()
+  # Historical baseline sources predate the CI-only version override.
+  if grep -q DART_VERSION_OVERRIDE "$dart_source/CMakeLists.txt"; then
+    version_arg="$(python "$repo_root/scripts/gz_dart_version.py" "$dart_source")"
+    version_args=("$version_arg")
+  fi
   # The DART_SKIP_* options only exist in DART 6.19 (for the 6.19.4 baselines):
   # they keep its optional optimizer plugins, which gz-physics does not use,
   # from picking up host packages outside the environment. CMAKE_CXX_FLAGS is
   # passed explicitly so the build never keeps flags cached by older runs.
   cmake -G Ninja -S "$dart_source" -B "$variant_dir/dart-build" \
+    "${version_args[@]}" \
     --no-warn-unused-cli \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS:-}" \

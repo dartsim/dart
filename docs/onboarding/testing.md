@@ -52,8 +52,10 @@ rejects omitted test directories or unowned test sources, and admits inactive
 platform tests or the one compile-only C test only through exact branch-owned
 predicates and target contracts. It
 walks the active generated CTest subdirectory graph, maps registrations back to
-configured executables, rejects unapproved command filters or non-executing
-modes, selects only the requested branch of multi-config registrations, rejects
+configured executables, and admits the required package-version CMake script
+only with its exact source, output directory, version, pointer size and active
+CMake command. It rejects unapproved command filters or non-executing modes,
+selects only the requested branch of multi-config registrations, rejects
 result-neutralizing test properties or GTest environment modifications, and
 requires selected registrations to use a digit-bounded zero-test failure guard.
 Both `pixi run test` and the aggregate reach `tests_and_run`, which removes
@@ -84,6 +86,36 @@ For model, simulation, collision/contact, or Filament claims, also use
 For dependency minimization, run focused tests for the touched component and
 then broaden when the dependency affects shared package, collision, constraint,
 or GUI behavior.
+
+## Gazebo extension gates in CTest
+
+`pixi run test` also runs two DART-owned compatibility gates:
+
+- `ContactSurfaceProbe` compiles the same header-check source that gz-physics
+  uses to detect `dart/constraint/ContactSurface.hpp`. One compiler invocation
+  checks C++14 with only DART and Eigen include directories and no extra
+  definitions. Source and generated `dart/` headers provide the installed
+  include layout; the probe inherits no library target flags or dependencies.
+  It matches downstream compiler acceptance, including tolerated extensions.
+- `test_GazeboShim` mirrors the gz-physics detector subclasses, factory
+  registrars, collision-group accessors, ray-cast entry points, and
+  `ContactSurfaceHandler` overrides. Counters prove dispatch through collision
+  groups and `World::step`, including contact-constraint and surface-parameter
+  creation. With all factory creators removed, `World::create()` and both
+  `ConstraintSolver` constructors must still select FCL. Bullet and ODE cases
+  run only when their components are built; Bullet also checks the direct
+  `btCollisionWorld.h` include used by the plugin.
+
+The test-source comments pin the mirrored gz-physics main revision and describe
+how to refresh it. After building the tests, run these gates alone with:
+
+```bash
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R '^(ContactSurfaceProbe|test_GazeboShim)$' --output-on-failure
+```
+
+These gates cover DART extension contracts. Continue to use the downstream
+Gazebo suites below for plugin and application compatibility.
 
 ## GUI Visual Checks
 

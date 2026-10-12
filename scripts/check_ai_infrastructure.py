@@ -2919,14 +2919,82 @@ def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
         )
 
 
+def contact_surface_probe_command(
+    root: Path,
+    build_dir: Path,
+    cache: dict[str, str],
+    trace_records: list[dict[str, Any]],
+    errors: list[str],
+) -> list[str] | None:
+    """Admit only the installed-header probe's isolated C++14 compiler command."""
+    prefix = "CMake semantic test graph: ContactSurfaceProbe"
+    source = root / "tests/cmake/ContactSurfaceProbe.cpp"
+    try:
+        body = "\n".join(
+            line
+            for line in source.read_text(encoding="utf-8").splitlines()
+            if not line.lstrip().startswith("//")
+        )
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect probe source: {error}")
+        return None
+    if re.sub(r"\s+", "", body) != (
+        "#include<dart/constraint/ContactSurface.hpp>intmain(){return0;}"
+    ):
+        errors.append(f"{prefix}: source does not match the contact-surface probe")
+        return None
+    compiler = cache.get("CMAKE_CXX_COMPILER")
+    eigen_dir = cache.get("Eigen3_DIR")
+    if not compiler or not eigen_dir:
+        errors.append(f"{prefix}: configured compiler or Eigen package is unavailable")
+        return None
+    eigen_owner = Path(eigen_dir) / "Eigen3Targets.cmake"
+    eigen_includes = []
+    for record in trace_records:
+        arguments = record.get("args")
+        if (
+            record.get("cmd") != "set_target_properties"
+            or not isinstance(record.get("file"), str)
+            or not cmake_paths_match(record["file"], eigen_owner)
+            or not isinstance(arguments, list)
+            or arguments[:2] != ["Eigen3::Eigen", "PROPERTIES"]
+        ):
+            continue
+        for key, value in zip(arguments[2::2], arguments[3::2], strict=False):
+            if key == "INTERFACE_INCLUDE_DIRECTORIES" and isinstance(value, str):
+                eigen_includes.extend(value.split(";"))
+    if not eigen_includes or any(
+        not Path(include).is_absolute() or "$" in include for include in eigen_includes
+    ):
+        errors.append(f"{prefix}: configured Eigen include directories are unavailable")
+        return None
+    uses_msvc = cmake_compiler_uses_msvc_abi(build_dir, cache, errors)
+    if uses_msvc is None:
+        return None
+    flags = ["/std:c++14", "/Zs"] if uses_msvc else ["-std=c++14", "-fsyntax-only"]
+    include_flag = "/I" if uses_msvc else "-I"
+    return [
+        compiler,
+        *flags,
+        *(
+            f"{include_flag}{include}"
+            for include in (root.as_posix(), build_dir.as_posix(), *eigen_includes)
+        ),
+        source.as_posix(),
+    ]
+
+
 def check_cmake_ctest_inventory(
+    root: Path,
     build_dir: Path,
     configuration: str,
     ctest_executable: str,
     test_targets: dict[str, dict[str, Any]],
+    cache: dict[str, str],
+    trace_records: list[dict[str, Any]],
     errors: list[str],
 ) -> None:
-    """Require configured C++ targets to have executing CTest registrations."""
+    """Require executing CTest registrations for C++ targets and version checks."""
     prefix = "CMake semantic test graph"
     try:
         result = subprocess.run(
@@ -2969,8 +3037,66 @@ def check_cmake_ctest_inventory(
     generated_names = set(generated)
     if inventory_names != generated_names:
         errors.append(f"{prefix}: CTest JSON and generated registration names disagree")
+    if (
+        root.joinpath("tests/cmake/ContactSurfaceProbe.cpp").is_file()
+        and "ContactSurfaceProbe" not in generated_names
+    ):
+        errors.append(f"{prefix}: ContactSurfaceProbe is not registered with CTest")
+
+    version_test = "test_DARTConfigVersion"
+    if version_test not in generated_names:
+        errors.append(
+            f"{prefix}: required CMake script test `{version_test}` is missing"
+        )
+    version_arguments: tuple[str, ...] = ()
+    try:
+        version = cache.get("DART_VERSION_OVERRIDE")
+        if not version:
+            match = re.search(
+                r"<version>([0-9]+\.[0-9]+\.[0-9]+)</version>",
+                (root / "package.xml").read_text(encoding="utf-8"),
+            )
+            version = match.group(1) if match else ""
+        cmake_version = ".".join(
+            cache.get(f"CMAKE_CACHE_{part}_VERSION", "")
+            for part in ("MAJOR", "MINOR", "PATCH")
+        )
+        compiler = build_dir / "CMakeFiles" / cmake_version / "CMakeCXXCompiler.cmake"
+        pointer_size = next(
+            (
+                tokens[1]
+                for name, arguments in cmake_commands(
+                    compiler.read_text(encoding="utf-8")
+                )
+                if name == "set"
+                and len(tokens := cmake_argument_tokens(arguments)) == 2
+                and tokens[0] == "CMAKE_CXX_SIZEOF_DATA_PTR"
+            ),
+            "",
+        )
+        if (
+            not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)
+            or not pointer_size.isdigit()
+        ):
+            errors.append(
+                f"{prefix}: CMake script test version or pointer size is unavailable"
+            )
+        elif not (root / "tests/cmake/test_DARTConfigVersion.cmake").is_file():
+            errors.append(f"{prefix}: required CMake script test source is missing")
+        else:
+            version_arguments = (
+                f"-DSOURCE_DIR={root.as_posix()}",
+                f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/DARTConfigVersion",
+                f"-DDART_VERSION={version}",
+                f"-DCMAKE_SIZEOF_VOID_P={pointer_size}",
+                "-P",
+                f"{root.as_posix()}/tests/cmake/test_DARTConfigVersion.cmake",
+            )
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect CMake script test inputs: {error}")
 
     registered_tests: dict[str, tuple[list[str], Path]] = {}
+    approved_probes: set[str] = set()
     for test in tests:
         if not isinstance(test, dict):
             errors.append(f"{prefix}: CTest inventory contains an invalid test")
@@ -3022,11 +3148,40 @@ def check_cmake_ctest_inventory(
         )
         expected_arguments = tuple(selection_policy["arguments"])
         app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
+        if name == version_test:
+            expected_arguments = version_arguments
+            trusted_cmake = shutil.which("cmake")
+            if trusted_cmake is None or not all(
+                cmake_paths_match(candidate[0], Path(trusted_cmake))
+                for candidate in (generated_command, effective_command)
+            ):
+                errors.append(
+                    f"{prefix}: CMake script test `{name}` must use the active CMake executable"
+                )
         if app_arguments is not None:
             expected_arguments = tuple(
                 argument.replace("<build>", build_dir.as_posix())
                 for argument in app_arguments
             )
+        is_probe = name == "ContactSurfaceProbe"
+        if is_probe:
+            expected_probe = contact_surface_probe_command(
+                root, build_dir, cache, trace_records, errors
+            )
+            if expected_probe is not None:
+                expected_arguments = tuple(expected_probe[1:])
+                if all(
+                    executable_paths_match(candidate[0], expected_probe[0])
+                    and candidate[1:] == expected_probe[1:]
+                    for candidate in (generated_command, effective_command)
+                ):
+                    approved_probes.add(name)
+                else:
+                    errors.append(
+                        f"{prefix}: ContactSurfaceProbe must use the configured "
+                        "compiler with only C++14 flags, DART/Eigen includes, "
+                        "and its probe source"
+                    )
         if tuple(generated_command[1:]) != expected_arguments:
             errors.append(
                 f"{prefix}: CTest test `{name}` has unapproved command arguments "
@@ -3038,6 +3193,13 @@ def check_cmake_ctest_inventory(
             for item in (value if isinstance(value, list) else [value])
             if isinstance(item, str)
         ]
+        if is_probe and (
+            environment_values
+            or ctest_property_values(test, "ENVIRONMENT_MODIFICATION")
+        ):
+            errors.append(
+                f"{prefix}: ContactSurfaceProbe cannot modify its environment"
+            )
         selection_environment = tuple(
             item
             for item in environment_values
@@ -3068,7 +3230,10 @@ def check_cmake_ctest_inventory(
             if isinstance(item, str)
         ]
         selected = (
-            bool(expected_arguments or expected_environment) and app_arguments is None
+            bool(expected_arguments or expected_environment)
+            and app_arguments is None
+            and name != version_test
+            and not is_probe
         )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
             errors.append(
@@ -3109,7 +3274,9 @@ def check_cmake_ctest_inventory(
             return True
         return test_name == target_name and command[0] == target_name
 
-    matched_registrations: set[str] = set()
+    matched_registrations: set[str] = (
+        {version_test} & set(registered_tests)
+    ) | approved_probes
     unregistered = []
     for name, artifacts in target_artifacts.items():
         matches = {
@@ -3390,6 +3557,13 @@ def check_cmake_test_graph(
         root / "python" / "tests" / "CMakeLists.txt",
         *(root / "tests").rglob("CMakeLists.txt"),
     }
+    try:
+        eigen_dir = cmake_cache_values(cache_path).get("Eigen3_DIR")
+    except OSError as error:
+        errors.append(f"{prefix}: unable to read `{cache_path}`: {error}")
+        return
+    if eigen_dir:
+        trace_candidates.add(Path(eigen_dir) / "Eigen3Targets.cmake")
     traced_sources = sorted(path for path in trace_candidates if path.is_file())
     trace_arguments = [
         "--trace-expand",
@@ -3767,10 +3941,13 @@ def check_cmake_test_graph(
         errors.append(f"{prefix}: trusted CTest executable is unavailable")
     elif test_target_data:
         check_cmake_ctest_inventory(
+            root,
             build_dir,
             desired,
             ctest_executable,
             test_target_data,
+            cache,
+            trace_records,
             errors,
         )
 
