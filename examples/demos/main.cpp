@@ -34,7 +34,6 @@
 
 #include <dart/gui/app/App.hpp>
 
-#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -47,9 +46,8 @@
 int main(int argc, char** argv)
 {
   std::vector<std::string> args(argv, argv + argc);
-  if (!args.empty() && std::string(DART_DEMOS_DEFAULT_SCENE).size() > 0
-      && std::find(args.begin() + 1, args.end(), "--scene") == args.end()) {
+  // An alias's scene comes first, so a --scene the user passes overrides it.
+  if (!args.empty() && std::string(DART_DEMOS_DEFAULT_SCENE).size() > 0)
     args.insert(args.begin() + 1, {"--scene", DART_DEMOS_DEFAULT_SCENE});
-  }
   return dart::gui::app::runCommandLine(dart_demos::makeDemoScenes(), args);
 }

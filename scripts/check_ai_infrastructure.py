@@ -96,8 +96,8 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "owner": "tests/integration/CMakeLists.txt",
         "command": "dart_add_test",
         "scopes": ("if:TARGET dart-gui-app",),
-        # A vanilla system ImGui compiles the app out, and so does a GUI-off build.
-        "cache": ({"DART_USE_SYSTEM_IMGUI": "ON"}, {"DART_BUILD_GUI": "OFF"}),
+        # ImGui without docking compiles the app out, and so does a GUI-off build.
+        "cache": ({"DART_IMGUI_HAS_DOCK": "OFF"}, {"DART_BUILD_GUI": "OFF"}),
     },
     "tests/integration/test_ModelResourceRetriever.cpp": {
         "owner": "tests/integration/CMakeLists.txt",

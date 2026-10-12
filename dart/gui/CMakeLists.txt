@@ -109,9 +109,13 @@ file(
   _imgui_docking
   REGEX "^#define IMGUI_HAS_DOCK([ \t]|$)"
 )
+# Recorded for the AI-infrastructure checker, which approves an inactive
+# app-host test only when docking is really missing.
 if(_imgui_docking)
+  set(DART_IMGUI_HAS_DOCK ON CACHE INTERNAL "ImGui provides docking")
   add_subdirectory(app)
 else()
+  set(DART_IMGUI_HAS_DOCK OFF CACHE INTERNAL "ImGui provides docking")
   message(
     STATUS
     "ImGui lacks docking (IMGUI_HAS_DOCK): the demo app host (dart-gui-app) is compiled out; use the bundled ImGui (DART_USE_SYSTEM_IMGUI=OFF)"
