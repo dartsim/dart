@@ -57,6 +57,31 @@ When you run this script, it will perform a forward dynamic simulation of the 6-
 
 You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
 
+Interactive demo catalog
+------------------------
+
+The Python demo catalog runs on the native app host through
+``dartpy.viewer.run()``. It shares the C++ demo application's categorized
+navigator, simulation toolbar, dockable scene panels, and diagnostics.
+Scenes supply worlds, callbacks, and declarative panels; Python does not draw
+the UI. The catalog contains a subset of the C++ scene ids in the same order,
+while retaining the existing Python scene behavior.
+
+From a DART checkout:
+
+.. code-block:: shell
+
+   pixi run py-demos
+   pixi run py-demos -- --scene rigid_cubes
+   pixi run py-demos -- --list-scenes
+   pixi run py-demos -- --cycle-scenes --frames 2
+   pixi run py-demos -- --scene rigid_cubes --headless --shot cubes.png
+
+Listing and cycling scenes require no graphics device. The app host requires
+the bundled docking ImGui; a build using vanilla system ImGui omits
+``dartpy.viewer``. Rebuild with ``-DDART_USE_SYSTEM_IMGUI=OFF``;
+``pixi run config`` passes this option.
+
 Versioned humanoid models
 -------------------------
 
@@ -78,6 +103,13 @@ From a DART checkout, download the pinned catalog once and open a model demo:
 The demos inspect joint poses with a fixed base. Atlas v5 is the historical
 hydraulic robot without its head. These examples do not supply walking
 controllers or establish hardware fidelity.
+
+The humanoid scenes are registered only when ``ModelResourceRetriever`` is
+available. They use the verified cache offline and report missing assets as
+skipped scenes, so a scene cycle still succeeds before the models are prefetched.
+In the Python scene panels, ``[`` and ``]`` select a joint, ``-`` and ``=``
+change its angle within the model limits, and ``t`` resets the pose. Each action
+also has a panel button.
 
 Applications can explicitly retrieve models online on first use:
 

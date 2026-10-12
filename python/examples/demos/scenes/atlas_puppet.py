@@ -51,25 +51,24 @@ also unbound (fixed via ``createShapeNode(shape)`` + individual
 dartpy only exposes per-rotation-order (fixed via ``eulerXYZToMatrix``,
 order-irrelevant here since every call only rotates about Z).
 
-Key remap (navigator reserves 0-9 for direct scene select, 'p'/'r' for
-prev-scene/rebuild): the original's digit keys 1-4 (toggle a target) move to
-F1-F4; 'p' (print dof positions) moves to 'v'. w/a/s/d/q/e/f/z/t are
+Key remap retained from the earlier Python catalog: the original's digit
+keys 1-4 (toggle a target) move to F1-F4; 'p' (print dof positions) moves to
+'v'. w/a/s/d/q/e/f/z/t are
 unchanged (no collisions); 'o'/'x'/'c' are gone along with the
 posture/foot-support features they drove.
 """
 
+from __future__ import annotations
+
 import dartpy as dart
 import numpy as np
 
-from ..registry import SceneHandle
 
-
-class AtlasPuppetNode:
+class AtlasPuppetController:
     MOVE_Q, MOVE_W, MOVE_E, MOVE_A, MOVE_S, MOVE_D, MOVE_F, MOVE_Z = range(8)
     NUM_MOVE = 8
 
-    def __init__(self, world, atlas, targets):
-        super().__init__(world)
+    def __init__(self, atlas, targets):
         self.atlas = atlas
         self.targets = targets  # [(bodynode, ik, frame), ...]
         self.iter = 0
@@ -80,7 +79,7 @@ class AtlasPuppetNode:
         self.move_components = move_components
         self.any_movement = any(move_components)
 
-    def customPreRefresh(self):
+    def pre_refresh(self):
         if self.any_movement:
             old_tf = self.atlas.getBodyNode(0).getWorldTransform()
             new_tf = dart.math.Isometry3()
@@ -149,16 +148,12 @@ class AtlasPuppetNode:
 
 
 class AtlasPuppetInputHandler:
-    """Handles atlas_puppet's own keyboard layout. Not registered with the
-    viewer event system: the runner calls ``handle(ea, aa)`` on this instance
-    directly whenever atlas_puppet is the active scene.
-    """
+    """Scene event callback for held movement keys and target toggles."""
 
-    def __init__(self, atlas, world, teleop, targets, gui):
+    def __init__(self, atlas, world, teleop, targets):
         super().__init__()
         self.atlas = atlas
         self.world = world
-        self.gui = gui
         self.teleop = teleop
         self.targets = targets  # ordered [(bodynode, ik, frame), ...]
         self._initialize()
@@ -171,11 +166,11 @@ class AtlasPuppetInputHandler:
             t[1].getTarget().getRelativeTransform() for t in self.targets
         ]
         self.constraint_active = [False] * len(self.targets)
-        self.move_components = [False] * AtlasPuppetNode.NUM_MOVE
+        self.move_components = [False] * AtlasPuppetController.NUM_MOVE
 
-    def handle(self, ea, aa):
+    def handle(self, ea):
         event_type = ea.getEventType()
-        ea_cls = self.gui.GUIEventAdapter
+        ea_cls = dart.gui.GUIEventAdapter
 
         if event_type == ea_cls.KEYDOWN:
             key = ea.getKey()
@@ -215,14 +210,14 @@ class AtlasPuppetInputHandler:
                 return True
 
             move_keys = {
-                ord("w"): AtlasPuppetNode.MOVE_W,
-                ord("a"): AtlasPuppetNode.MOVE_A,
-                ord("s"): AtlasPuppetNode.MOVE_S,
-                ord("d"): AtlasPuppetNode.MOVE_D,
-                ord("q"): AtlasPuppetNode.MOVE_Q,
-                ord("e"): AtlasPuppetNode.MOVE_E,
-                ord("f"): AtlasPuppetNode.MOVE_F,
-                ord("z"): AtlasPuppetNode.MOVE_Z,
+                ord("w"): AtlasPuppetController.MOVE_W,
+                ord("a"): AtlasPuppetController.MOVE_A,
+                ord("s"): AtlasPuppetController.MOVE_S,
+                ord("d"): AtlasPuppetController.MOVE_D,
+                ord("q"): AtlasPuppetController.MOVE_Q,
+                ord("e"): AtlasPuppetController.MOVE_E,
+                ord("f"): AtlasPuppetController.MOVE_F,
+                ord("z"): AtlasPuppetController.MOVE_Z,
             }
             if key in move_keys:
                 self.move_components[move_keys[key]] = True
@@ -233,14 +228,14 @@ class AtlasPuppetInputHandler:
             key = ea.getKey()
 
             move_keys = {
-                ord("w"): AtlasPuppetNode.MOVE_W,
-                ord("a"): AtlasPuppetNode.MOVE_A,
-                ord("s"): AtlasPuppetNode.MOVE_S,
-                ord("d"): AtlasPuppetNode.MOVE_D,
-                ord("q"): AtlasPuppetNode.MOVE_Q,
-                ord("e"): AtlasPuppetNode.MOVE_E,
-                ord("f"): AtlasPuppetNode.MOVE_F,
-                ord("z"): AtlasPuppetNode.MOVE_Z,
+                ord("w"): AtlasPuppetController.MOVE_W,
+                ord("a"): AtlasPuppetController.MOVE_A,
+                ord("s"): AtlasPuppetController.MOVE_S,
+                ord("d"): AtlasPuppetController.MOVE_D,
+                ord("q"): AtlasPuppetController.MOVE_Q,
+                ord("e"): AtlasPuppetController.MOVE_E,
+                ord("f"): AtlasPuppetController.MOVE_F,
+                ord("z"): AtlasPuppetController.MOVE_Z,
             }
             if key in move_keys:
                 self.move_components[move_keys[key]] = False
@@ -316,7 +311,7 @@ def _setup_start_configuration(atlas):
     atlas.getDof("l_leg_kny").setPositionLowerLimit(10 * np.pi / 180.0)
 
 
-def _setup_ik_targets(atlas, gui):
+def _setup_ik_targets(atlas):
     """Whole-body IK on four BodyNodes directly (l_hand, r_hand, l_foot,
     r_foot). See the module docstring for why this targets the raw bodies
     instead of EndEffectors (unbound) -- the per-limb contact-offset
@@ -336,7 +331,7 @@ def _setup_ik_targets(atlas, gui):
         ("r_foot", "rf_target"),
     ):
         body = atlas.getBodyNode(body_name)
-        frame = gui.InteractiveFrame(dart.dynamics.Frame.World(), frame_name)
+        frame = dart.gui.InteractiveFrame(dart.dynamics.Frame.World(), frame_name)
 
         ik = body.getIK(True)
         ik.setTarget(frame)
@@ -354,63 +349,84 @@ def _setup_ik_targets(atlas, gui):
     return targets
 
 
-def build(gui=None) -> SceneHandle:
-    if gui is None:
-        gui = dart.gui
+def build() -> dart.viewer.SceneSetup:
     world = dart.simulation.World()
+    # Purely kinematic, as in the C++ scene: zero gravity keeps the pose when
+    # Step, cycles or captures force physics steps.
+    world.setGravity([0, 0, 0])
 
     atlas = _create_atlas()
     world.addSkeleton(atlas)
     world.addSkeleton(_create_ground())
 
     _setup_start_configuration(atlas)
-    targets = _setup_ik_targets(atlas, gui)
+    targets = _setup_ik_targets(atlas)
+    controller = AtlasPuppetController(atlas, targets)
+    handler = AtlasPuppetInputHandler(atlas, world, controller, targets)
 
-    class WorldNode(AtlasPuppetNode, gui.WorldNode):
-        pass
+    def on_activate(ctx):
+        for i in range(atlas.getNumBodyNodes()):
+            ctx.enable_drag_and_drop(
+                atlas.getBodyNode(i), use_external_ik=False, use_whole_body=False
+            )
+        for _body, _ik, frame in targets:
+            ctx.enable_drag_and_drop(frame)
+        ctx.add_event_handler(handler.handle)
 
-    node = WorldNode(world, atlas, targets)
-    handler = AtlasPuppetInputHandler(atlas, world, node, targets, gui)
-
-    drag_and_drop = [
-        (atlas.getBodyNode(i), False, False) for i in range(atlas.getNumBodyNodes())
-    ]
-    drag_and_drop.extend(frame for _body, _ik, frame in targets)
-
-    return SceneHandle(
-        node=node,
-        allow_simulation=False,
-        drag_and_drop=drag_and_drop,
-        extra_handler=handler,
-        camera_home=([5.34, 3.00, 2.41], [0.00, 0.00, 1.00], [-0.20, -0.08, 0.98]),
-        instructions=[
-            "Alt + Click:   Try to translate a body without changing its orientation\n",
-            "Ctrl + Click:  Try to rotate a body without changing its translation\n",
-            "Shift + Click: Move a body using only its parent joint\n",
-            "F1 -> F4:      Toggle the interactive target of a hand/foot\n",
-            "W A S D:       Move the robot around the scene\n",
-            "Q E:           Rotate the robot counter-clockwise and clockwise\n",
-            "F Z:           Shift the robot's elevation up and down\n",
-            "T:             Reset the robot to its relaxed posture\n",
-            "V:             Print all dof positions\n",
-            "Note: this is purely kinematic. Physical simulation is not allowed.\n",
-            "Note: each hand/foot target solves independently (no whole-body\n",
-            "posture objective is reachable from Python); see build() notes.\n",
-        ],
-        notes=(
-            "EndEffector is unbound in dartpy (no createEndEffector/support "
-            "polygon), so IK targets attach directly to l_hand/r_hand/l_foot/"
-            "r_foot BodyNodes instead, and the foot-support/BalanceConstraint "
-            "balancing feature is dropped (needs EndEffector-based support "
-            "polygons). Skeleton-level WholeBodyIK is also unreachable "
-            "(Skeleton.getIK() has no createIfNull overload and there is no "
-            "way to construct/attach one from Python), so the RelaxedPosture "
-            "objective and 'r'/hold-to-tighten-posture feature are dropped "
-            "too; each of the 4 targets solves independently via its own "
-            "per-BodyNode InverseKinematics instead of one joint whole-body "
-            "solve. SupportPolygonVisual is dropped too (it draws EndEffector "
-            "supports). "
-            "Keys remapped: 1-4 -> F1-F4, p -> v; o/x/c removed with the "
-            "features they drove."
-        ),
+    panel = dart.viewer.Panel()
+    for instruction in [
+        "Alt + Click:   Try to translate a body without changing its orientation\n",
+        "Ctrl + Click:  Try to rotate a body without changing its translation\n",
+        "Shift + Click: Move a body using only its parent joint\n",
+        "F1 -> F4:      Toggle the interactive target of a hand/foot\n",
+        "W A S D:       Move the robot around the scene\n",
+        "Q E:           Rotate the robot counter-clockwise and clockwise\n",
+        "F Z:           Shift the robot's elevation up and down\n",
+        "T:             Reset the robot to its relaxed posture\n",
+        "V:             Print all dof positions\n",
+        "Note: this is purely kinematic. Physical simulation is not allowed.\n",
+        "Note: each hand/foot target solves independently (no whole-body\n",
+        "posture objective is reachable from Python); see build() notes.\n",
+    ]:
+        panel.add_text(instruction.rstrip(), wrap=True)
+    panel.add_text(
+        "EndEffector is unbound in dartpy (no createEndEffector/support "
+        "polygon), so IK targets attach directly to l_hand/r_hand/l_foot/"
+        "r_foot BodyNodes instead, and the foot-support/BalanceConstraint "
+        "balancing feature is dropped (needs EndEffector-based support "
+        "polygons). Skeleton-level WholeBodyIK is also unreachable "
+        "(Skeleton.getIK() has no createIfNull overload and there is no "
+        "way to construct/attach one from Python), so the RelaxedPosture "
+        "objective and 'r'/hold-to-tighten-posture feature are dropped "
+        "too; each of the 4 targets solves independently via its own "
+        "per-BodyNode InverseKinematics instead of one joint whole-body "
+        "solve. SupportPolygonVisual is dropped too (it draws EndEffector "
+        "supports). "
+        "Keys remapped: 1-4 -> F1-F4, p -> v; o/x/c removed with the "
+        "features they drove.",
+        wrap=True,
     )
+
+    return dart.viewer.SceneSetup(
+        world,
+        pre_refresh=controller.pre_refresh,
+        on_activate=on_activate,
+        allow_simulation=False,
+        camera_home=dart.viewer.CameraHome(
+            eye=[5.34, 3.00, 2.41], center=[0.00, 0.00, 1.00], up=[-0.20, -0.08, 0.98]
+        ),
+        shadows=False,
+        panel=panel,
+    )
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "atlas_puppet",
+            title="Atlas Puppet",
+            category="Control & IK",
+            summary="Atlas whole-body IK puppet with balance and support overlays.",
+            factory=build,
+        )
+    ]

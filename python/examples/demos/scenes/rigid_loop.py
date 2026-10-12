@@ -4,17 +4,15 @@ Straight port of ``python/examples/rigid_loop/main.py``: a chain closed into
 a loop by a ball-joint constraint linking two non-adjacent links.
 """
 
+from __future__ import annotations
+
 import math
 
 import dartpy as dart
 import numpy as np
 
-from ..registry import SceneHandle
 
-
-def build(gui=None) -> SceneHandle:
-    if gui is None:
-        gui = dart.gui
+def build() -> dart.viewer.SceneSetup:
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/chain.skel")
     world.setGravity([0, -9.81, 0])
     world.setTimeStep(1.0 / 2000)
@@ -42,10 +40,29 @@ def build(gui=None) -> SceneHandle:
     constraint = dart.constraint.BallJointConstraint(bd1, bd2, joint_pos)
     world.getConstraintSolver().addConstraint(constraint)
 
-    node = gui.RealTimeWorldNode(world)
+    def on_activate(ctx):
+        grid = dart.gui.GridVisual()
+        grid.setPlaneType(dart.gui.GridVisual.PlaneType.ZX)
+        grid.setOffset([0, -0.55, 0])
+        ctx.add_attachment(grid)
 
-    return SceneHandle(
-        node=node,
-        grid=True,
-        camera_home=([0.6, 0.3, 0.6], [0, -0.2, 0], [0, 1, 0]),
+    return dart.viewer.SceneSetup(
+        world,
+        on_activate=on_activate,
+        shadows=False,
+        camera_home=dart.viewer.CameraHome(
+            eye=[0.6, 0.3, 0.6], center=[0, -0.2, 0], up=[0, 1, 0]
+        ),
     )
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "rigid_loop",
+            title="Rigid Loop",
+            category="Constraints & Joints",
+            summary="A chain closed into a loop with a ball-joint constraint.",
+            factory=build,
+        )
+    ]

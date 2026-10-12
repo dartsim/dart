@@ -1,9 +1,9 @@
 """Fixed-base inspection of verified Atlas v5 and Unitree G1 bundles."""
 
+from __future__ import annotations
+
 import dartpy as dart
 import numpy as np
-
-from ..registry import SceneHandle
 
 MODEL_URIS = {
     "atlas-v5": (
@@ -17,6 +17,10 @@ MODEL_URIS = {
 }
 
 
+class MissingModelsError(RuntimeError):
+    """The verified model cache lacks a model; the message says how to fetch it."""
+
+
 def _world(model_id: str, root_height: float):
     uri = MODEL_URIS[model_id]
     retriever = dart.utils.ModelResourceRetriever("", True)
@@ -24,7 +28,7 @@ def _world(model_id: str, root_height: float):
         if not retriever.getFilePath(uri):
             raise RuntimeError("Verified model cache is unavailable.")
     except RuntimeError as error:
-        raise RuntimeError(
+        raise MissingModelsError(
             f"{error} Prefetch with: pixi run fetch-robot-assets {model_id}"
         ) from error
     package = dart.utils.PackageResourceRetriever(retriever)
@@ -64,7 +68,7 @@ def g1_world():
     return _world("unitree-g1", 0.8)
 
 
-def _build(world) -> SceneHandle:
+def _build(world) -> dart.viewer.SceneSetup:
     robot = world.getSkeleton(0)
     initial_pose = robot.getPositions().copy()
     selected = 0
@@ -83,31 +87,74 @@ def _build(world) -> SceneHandle:
         dof.setPosition(position)
         print(f"{dof.getName()}: {position:.3f} rad")
 
-    return SceneHandle(
-        node=dart.gui.WorldNode(world),
-        camera_home=(
-            [3.0, 2.5, 1.8],
-            [0.0, 0.0, robot.getRootBodyNode().getWorldTransform().translation()[2]],
-            [0.0, 0.0, 1.0],
+    panel = dart.viewer.Panel()
+    panel.add_text(
+        "Fixed base: [ / ] select a joint, - / = change its angle, t resets.",
+        wrap=True,
+    )
+    panel.add_text(f"Initially selected joint: {robot.getDof(0).getName()}", wrap=True)
+
+    return dart.viewer.SceneSetup(
+        world,
+        shadows=False,
+        camera_home=dart.viewer.CameraHome(
+            eye=[3.0, 2.5, 1.8],
+            center=[
+                0.0,
+                0.0,
+                robot.getRootBodyNode().getWorldTransform().translation()[2],
+            ],
+            up=[0.0, 0.0, 1.0],
         ),
         allow_simulation=False,
-        key_actions={
-            ord("["): ("Previous joint", lambda: select_joint(-1)),
-            ord("]"): ("Next joint", lambda: select_joint(1)),
-            ord("-"): ("Decrease joint angle", lambda: pose_joint(-0.1)),
-            ord("="): ("Increase joint angle", lambda: pose_joint(0.1)),
-            ord("t"): ("Reset pose", lambda: robot.setPositions(initial_pose)),
-        },
-        instructions=[
-            "Fixed base: [ / ] select a joint, - / = change its angle, t resets.",
-            f"Initially selected joint: {robot.getDof(0).getName()}",
+        key_actions=[
+            dart.viewer.KeyAction("[", "Previous joint", lambda: select_joint(-1)),
+            dart.viewer.KeyAction("]", "Next joint", lambda: select_joint(1)),
+            dart.viewer.KeyAction(
+                "-", "Decrease joint angle", lambda: pose_joint(-0.1)
+            ),
+            dart.viewer.KeyAction(
+                "=", "Increase joint angle", lambda: pose_joint(0.1)
+            ),
+            dart.viewer.KeyAction(
+                "t", "Reset pose", lambda: robot.setPositions(initial_pose)
+            ),
         ],
+        panel=panel,
     )
 
 
-def build_atlas() -> SceneHandle:
-    return _build(atlas_world())
+def _scene_world(load):
+    # World factories stay usable without the app host (agent-capture); the
+    # host reports missing models as a skipped scene.
+    try:
+        return load()
+    except MissingModelsError as error:
+        raise dart.viewer.AssetsNotPrefetchedError(str(error)) from error
 
 
-def build_g1() -> SceneHandle:
-    return _build(g1_world())
+def build_atlas() -> dart.viewer.SceneSetup:
+    return _build(_scene_world(atlas_world))
+
+
+def build_g1() -> dart.viewer.SceneSetup:
+    return _build(_scene_world(g1_world))
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "atlas_v5",
+            title="Atlas v5 (No Head)",
+            category="Robots",
+            summary="Inspect a verified cached humanoid and pose its joints.",
+            factory=build_atlas,
+        ),
+        dart.viewer.Scene(
+            "unitree_g1",
+            title="Unitree G1 (29 DOF)",
+            category="Robots",
+            summary="Inspect a verified cached humanoid and pose its joints.",
+            factory=build_g1,
+        ),
+    ]
