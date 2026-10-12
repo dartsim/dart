@@ -28,7 +28,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above except CI Filament, on `main`; files `nightly-failure` issues |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory `release-6.*` wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
-| `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
+| `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S7 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
 | `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title, body, messages, file names and added lines of every PR commit with only the base branch's local-path checker; fetches PR git objects without checking out or executing PR code; skips with a notice until the checker exists on the base |
@@ -68,7 +68,7 @@ repository ruleset is configured by the maintainer, not in code.
   failure comment; it does not create a new comment. Comments identify their
   measurement time so a writer that reads a newer verdict leaves it untouched.
 - The nightly tier calls the same workflow from `nightly.yml`, measuring HEAD
-  only. It runs the quick rows, canonical S1–S6 native guards, layout
+  only. It runs the quick rows, canonical S1–S7 native guards, layout
   perturbations, scene estimated cycles, and the opt-in matrix-free row. S3
   and S4 include 1- and 4-thread captures alongside their canonical 16-thread
   captures. Failed perturbation checks make the row diagnostic and fail the
@@ -100,7 +100,7 @@ These tiers publish in this repository's `gh-pages` branch:
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
 | `performance/dart7-ir/` | Merge-only Ir and allocation chart for main's DART 7 line, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points. `performance/dart6-ir/` keeps the frozen pre-7.0 history |
-| `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
+| `performance/guards/main.md` | Latest generated nightly S1–S7 guard table, with revision and fingerprint; replaces manual live baseline tables |
 | `performance/records/main/<yyyy>/<date>-<sha12>-backfill.json` | Local A/B record with `runner.environment: local`, pushed once by a maintainer after review; never charted |
 | `performance/releases/<tag>.{json,md}` and `index.md` | Comparison with the previous tag; main candidates include a ledger of changes; per-row release index; JSON and markdown attached by hand to the GitHub release |
 
@@ -158,6 +158,7 @@ measurement windows. Current values are published in
 | S4 | 900 generated objects |
 | S5 | 90 generated objects, serial |
 | S6 | Penetration-creep and pile-sleep reproducer |
+| S7 | Settled 3k shapes through `--gz-preset` with the DART, Bullet and ODE detectors at 1 and 4 threads; sleeping through custom-filter decision replay |
 
 Read hash, contacts, pairs, resting, finite-state, cap-hit, and maximum
 penetration columns together. Hashes compare only within one detector.
@@ -246,7 +247,7 @@ evidence. `release-X.Y` branches are tracked by release records only.
 After merging workflow changes, verify the hosted behavior: dispatch the
 merge tier twice for the same `main` SHA and check identical Ir or different
 fingerprints (including host CPU metadata); inspect the record schema;
-compare the generated guard table with a manual S1–S6 capture run with the
+compare the generated guard table with a manual S1–S7 capture run with the
 harness's `LC_ALL` and `GLIBC_TUNABLES` settings; confirm that
 a CI-change PR nightly dry run writes nothing and a pixi-only merge is
 skipped.

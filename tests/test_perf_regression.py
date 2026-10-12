@@ -59,6 +59,11 @@ def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_pa
         ("S6", "dart", 1, 20000),
         ("mf", "dart", 1, 50),
         *{
+            (f"S7-t{threads}", det, threads, 3000)
+            for det in ("dart", "bullet", "ode")
+            for threads in (1, 4)
+        },
+        *{
             (f"w{worlds}", det, 1, 3)
             for worlds in (1, 64, 1024)
             for det in module.DETECTORS
@@ -89,9 +94,26 @@ def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_pa
                 ("S1", "S3")
             )
             assert ("--quiet" in command) == (row.row != "S6")
+            # Only S7 runs Gazebo's own ground and contact caps.
+            gazebo = row.row.startswith("S7")
+            assert ("--gz-preset" in command) == gazebo
+            overrides = {
+                "--sdf-plane-shapes",
+                "--max-contacts",
+                "--max-contacts-per-pair",
+            }
+            assert not (gazebo and overrides & set(command))
     s6 = module.select_rows("S6")[0]
     assert s6.checkpoint == 5000 and "--max-contacts" not in s6.args
     assert module.select_rows("mf")[0].warmup == 50
+    # The generated guard table publishes every canonical scene row.
+    scenes = [row for row in module.NIGHTLY_ROWS if row.row.startswith("S")]
+    record = _publication_fixture()
+    record["results"] = [
+        {**record["results"][0], "row": row.row, "det": row.det} for row in scenes
+    ]
+    table = module.guard_table(record)
+    assert all(f"\n| {row.row} | {row.det} |" in table for row in scenes)
 
 
 def test_world_loop_rows_pin_detectors_and_outer_step_windows(tmp_path):

@@ -319,6 +319,25 @@ NIGHTLY_ROWS += [
         50,
     ),
 ]
+# Gazebo's step path: --gz-preset installs a BodyNodeCollisionFilter subclass,
+# as gz-physics does, so bodies sleep through World::step's custom-filter
+# decision replay. The preset sets its own ground and contact caps and rejects
+# --sdf-plane-shapes, so these rows cannot reuse WORLD_ARGS.
+NIGHTLY_ROWS += [
+    Row(
+        f"S7-t{threads}",
+        det,
+        CB,
+        ("{world}", "--gz-preset"),
+        0,
+        3000,
+        ir=False,
+        threads=threads,
+        perturb=False,
+    )
+    for det in ("dart", "bullet", "ode")
+    for threads in (1, 4)
+]
 NIGHTLY_ROWS += [
     Row(f"w{worlds}", det, PB, ("--scene", "contact", "--worlds", str(worlds)), 2, 3)
     for worlds in (1, 64, 1024)
@@ -2499,7 +2518,7 @@ def guard_table(record: dict, previous: str = "") -> str:
         if line.startswith("| S")
     }
     for row in record["results"]:
-        if not re.match(r"^S[1-6](?:-|$)", row["row"]):
+        if not re.match(r"^S[1-7](?:-|$)", row["row"]):
             continue
         head = row["head"]
         guards = head.get("guards", {})
@@ -3577,7 +3596,7 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument(
             "--nightly",
             action="store_true",
-            help="include all nightly rows (S1-S6 guards, mf and World loops)",
+            help="include all nightly rows (S1-S7 guards, mf and World loops)",
         )
         item.add_argument("--shim", type=Path)
         item.add_argument("--heappad", type=Path)
