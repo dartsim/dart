@@ -46,6 +46,7 @@
 #include <dart/dynamics/ConeShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
 #include <dart/dynamics/EllipsoidShape.hpp>
+#include <dart/dynamics/HeightmapShape.hpp>
 #include <dart/dynamics/LineSegmentShape.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/MultiSphereConvexHullShape.hpp>
@@ -55,6 +56,7 @@
 #include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/SoftMeshShape.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/VoxelGridShape.hpp>
 
 #include <dart/math/Geometry.hpp>
 
@@ -225,6 +227,48 @@ void Shape(nb::module_& m)
       DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC          )
       .export_values();
   // clang-format on
+
+  dartnb::dart_class<dart::dynamics::HeightmapShapef, dart::dynamics::Shape>(
+      m, "HeightmapShapef")
+      .def(dartnb::init<>())
+      .def(
+          "setScale",
+          &dart::dynamics::HeightmapShapef::setScale,
+          nb::arg("scale"),
+          "Set the 3-vector scale; C++ ignores non-finite or non-positive "
+          "values.")
+      .def(
+          "getScale",
+          &dart::dynamics::HeightmapShapef::getScale,
+          nb::rv_policy::copy)
+      .def(
+          "setHeightField",
+          nb::overload_cast<
+              const dart::dynamics::HeightmapShapef::HeightField&>(
+              &dart::dynamics::HeightmapShapef::setHeightField),
+          nb::arg("heights"),
+          "Copy a 2-D float32 array without transposition: rows are depth "
+          "along "
+          "-y, columns are width along x, and values are z heights. "
+          "C++ ignores empty fields and non-finite heights.")
+      .def(
+          "getHeightField",
+          &dart::dynamics::HeightmapShapef::getHeightField,
+          nb::rv_policy::copy,
+          "Return an independent 2-D float32 array: rows along -y, columns "
+          "along x, and z heights as values, without transposition.")
+      .def("getMinHeight", &dart::dynamics::HeightmapShapef::getMinHeight)
+      .def("getMaxHeight", &dart::dynamics::HeightmapShapef::getMaxHeight)
+      .def_static(
+          "getStaticType", &dart::dynamics::HeightmapShapef::getStaticType);
+
+#if HAVE_OCTOMAP
+  dartnb::dart_class<dart::dynamics::VoxelGridShape, dart::dynamics::Shape>(
+      m, "VoxelGridShape")
+      .def(dartnb::init<double>(), nb::arg("resolution") = 0.01)
+      .def_static(
+          "getStaticType", &dart::dynamics::VoxelGridShape::getStaticType);
+#endif
 
   dartnb::dart_class<dart::dynamics::BoxShape, dart::dynamics::Shape>(
       m, "BoxShape")
