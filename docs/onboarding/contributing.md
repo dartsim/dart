@@ -104,9 +104,10 @@ know the implementation. Include compatibility, opt-in, or migration steps
 when relevant.
 
 Write each paragraph and list item on one line, and separate paragraphs with a
-blank line. GitHub renders every newline in PR descriptions, comments, issues,
-and release notes as a line break, so text wrapped at a fixed width, as this
-repository's docs are, breaks mid-sentence.
+blank line. Unlike Markdown files in the repository, where a single newline is
+a soft break, GitHub renders every newline in PR descriptions, comments,
+issues, and release notes as a line break, so text wrapped at a fixed width,
+as this repository's docs are, breaks mid-sentence.
 
 For meaningful API, workflow, behavior, or performance changes, include a
 concise Before / After comparison of user-visible outcomes. Small tables or
