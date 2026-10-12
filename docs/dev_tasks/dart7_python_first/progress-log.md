@@ -36,3 +36,13 @@
     inventory) and #3728 (WP-7.0.7) opened.
   - On the 6.20.x line, #3704 added wheels for Python 3.12 to 3.14 and #3730
     Linux wheels for Python 3.15.
+- **2026-10-12**
+  - #3731 (C++14 contact-surface header tree, a follow-up to #3725) opened as
+    a draft.
+  - The maintainer settled the API freeze: `F` waits for every must-have and
+    C2, and only additive work that is not a must-have and misses `F` moves to
+    7.1.
+  - The maintainer amended D13: FCL stays the C++ default in 7.0, and dartpy's
+    `dart.World` and the MJCF world loader default to the DART detector.
+  - The maintainer set M0's exit and the steps after it, the M1a PR shape, the
+    `dart7-base` ref and the step-path Gazebo gates.

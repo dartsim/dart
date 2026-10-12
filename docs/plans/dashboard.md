@@ -17,9 +17,12 @@ Priority order is document order. Active implementation handoff remains in
 - Scope: Main's next release becomes DART 7.0. That release is a clean Python
   API break; the C++ API stays compatible for the gz-used subset. Main's
   unreleased work ships in 7.0, and `release-6.20` is the 6.x maintenance line.
-- Next step: Finish M0: the gz API inventory, the scope artifacts, the SDF
-  pose review follow-up, the 6.20.x Python 3.15 wheels, and the `dart7-base`
-  pin right before the first M1 PR.
+- Next step: Exit M0 once the scope artifacts (#3728), the gz API inventory
+  (#3729), the C++14 contact-surface header follow-up (#3731) and the
+  analytical-IK copy fix (#3722) land. Then add nightly Gazebo-preset sleeping
+  rows, pin `dart7-base` and open the M1a stage-extraction PR. M5a's rename
+  table, the detector capability matrix and a skel-parser null-check fix run
+  in parallel.
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
@@ -77,18 +80,17 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Next
 - Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: DART 7.0 is the authorized release line for the default flip,
-  under PLAN-624's capability gate. Prerequisites:
+- Next step: Under PLAN-624's D13 amendment, the C++ `World` keeps FCL as its
+  default in 7.0 for Gazebo compatibility, while dartpy's `dart.World` and the
+  MJCF world loader default to the DART detector in 7.0. That Python switch
+  lands before PLAN-624's API freeze and only after:
   - a published shape and query capability matrix;
-  - strict rejection of shapes the native detector cannot handle (heightmaps
-    today);
-  - representative behavior comparisons;
-  - the deformable-body pre-default coverage gate.
+  - strict rejection, when a World compiles, of shapes the native detector
+    cannot handle (heightmaps today).
 
-  The switch ships in 7.0 only if these prerequisites pass before M1 starts.
-  It is scheduled first so later rebaselines start from the final default;
-  otherwise FCL stays the 7.0 default and the switch is a 7.x labeled change.
-  FCL remains a core dependency.
+  Switching the C++ default to DART is a labeled 7.x change that also needs
+  representative behavior comparisons against FCL and the deformable-body
+  pre-default coverage gate. FCL remains a core dependency.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.

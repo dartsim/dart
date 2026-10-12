@@ -18,10 +18,18 @@ def world():
 
 @pytest.fixture
 def robot(world):
+    # Joint offsets put the wrist off the origin and the palm off the wrist, so
+    # a link's world pose differs from its pose in the parent frame and from
+    # its parent's pose.
     robot = dart.dynamics.Skeleton("robot")
-    joint, link = robot.createRevoluteJointAndBodyNodePair()
+    joint, wrist = robot.createRevoluteJointAndBodyNodePair()
     joint.setName("shoulder_yaw")
-    link.setName("wrist")
+    joint.setAxis([1, 0, 0])
+    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0.1, 0, 0.4]))
+    wrist.setName("wrist")
+    joint, palm = robot.createRevoluteJointAndBodyNodePair(wrist)
+    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0, 0.2, 0.3]))
+    palm.setName("palm")
     world.addSkeleton(robot)
     return robot
 
@@ -99,20 +107,14 @@ def test_transform_composition():
     reason="M5: links, Link.world_transform and immutable Transform are pending",
 )
 def test_link_world_transform(robot):
-    # A non-root link behind a joint offset has a world pose that differs from
-    # its pose in the parent frame and has a translation. An x axis keeps the
-    # rotation from commuting with the z offset, so a reversed composition
-    # order also fails.
-    joint, palm = robot.createRevoluteJointAndBodyNodePair(robot.getBodyNode("wrist"))
-    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0, 0.2, 0.3]))
-    palm.setName("palm")
-    robot.getJoint("shoulder_yaw").setAxis([1, 0, 0])
+    # The x-axis shoulder keeps the rotation from commuting with the z offset,
+    # so a reversed composition order also fails.
     robot.setPositions(np.full(robot.getNumDofs(), 0.5))
     X_WP = robot.links["palm"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
-    X_WL = palm.getWorldTransform().matrix()
+    X_WL = robot.getBodyNode("palm").getWorldTransform().matrix()
     points = np.eye(3)
     expected = (points + (0, 0, 0.1)) @ X_WL[:3, :3].T + X_WL[:3, 3]
-    np.testing.assert_allclose(X_WP @ points, expected)
+    np.testing.assert_allclose(X_WP @ points, expected, rtol=0, atol=1e-12)
 
 
 @pytest.mark.xfail(

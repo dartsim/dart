@@ -169,12 +169,15 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Pull request:** [#3719](https://github.com/dartsim/dart/pull/3719),
-  merged. It changes behavior, so it targets main only.
-- **Evidence:** every SDF, world and model file under `data/` loads to
-  byte-identical state before and after the change.
-- **Review findings still open on main** (automated reviews: two on the first
-  commit, two on the final commit after the merge):
+- **Pull request:** [#3719](https://github.com/dartsim/dart/pull/3719), merged
+  from head `a2e914f18` as `9ea8f6834`. It changes behavior, so it targets
+  main only.
+- **Evidence:** CI passed on `a2e914f18` (16 checks passed, 10 skipped).
+  #3719's description reports that all 21 SDF, world and model files under
+  `data/` (783 poses) load to byte-identical state before and after the
+  change.
+- **Review findings still open on main** (Codex: two on the first commit; on
+  `a2e914f18`, a clean pass before the merge, then two findings after it):
   - inertial poses keep only their translation, so a rotated inertial frame
     loads an unrotated inertia tensor;
   - the version gate accepts only SDF 1.4–1.6, so files that declare the newer
@@ -185,7 +188,8 @@ Known gaps:
   - an empty `<pose rotation_format="quat_xyzw"/>` raises instead of reading
     as the identity.
 - **Status:** in progress. A follow-up PR resolves these findings; two clean
-  review passes on its final state complete the packet.
+  review passes on its final state complete the packet. It does not hold M0's
+  exit.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -273,18 +277,22 @@ Known gaps:
   and 4096 contacts for K = 1, 64 and 1024, and a loop-closure error of
   2e-12 m. The dartpy loop measured 114 microseconds per step and read. These
   are head-only smoke numbers, not a baseline.
-- **Baseline procedure:** immediately before the first M1 PR, record the last
-  main SHA as `dart7-base`, with its host and the per-row records from
+- **Baseline procedure:** right before the M1a PR, record the last main SHA as
+  `dart7-base`. It is a local git ref on the local performance host, not a
+  pushed tag. This project home records its SHA, the host and the per-row
+  records, measured there with the full nightly harness:
   `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
-  and compares each detector against its own baseline.
-- **Review passes:** two automated reviews of
-  [#3720](https://github.com/dartsim/dart/pull/3720) found no major issues,
-  the second on its final commit.
-- **Status:** in progress. #3720 merged the rows and the procedure. The
-  `dart7-base` pin, recorded right before the first M1 PR, completes the
-  packet.
+  on the same host and compares each detector against its own baseline.
+- **Gates:** [#3720](https://github.com/dartsim/dart/pull/3720) merged from
+  head `adf9a57f6` as `fc823113d` after CI passed on that head (20 checks
+  passed, 10 skipped), including Perf A/B.
+- **Review passes:** Codex found no major issues on `bd4fe2625` and again on
+  the merged head `adf9a57f6`.
+- **Status:** in progress. #3720 merged the rows and the procedure. After M0
+  exits, nightly Gazebo-preset sleeping rows and then the `dart7-base` pin,
+  right before the M1a PR, complete the packet.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
@@ -332,7 +340,9 @@ Known gaps:
 - **Status:** in progress.
   [#3725](https://github.com/dartsim/dart/pull/3725) merged WP-7.0.6a and
   WP-7.0.6b; [#3729](https://github.com/dartsim/dart/pull/3729), in review,
-  adds the inventories.
+  adds the inventories; [#3731](https://github.com/dartsim/dart/pull/3731), a
+  draft follow-up to #3725, keeps the contact-surface header tree valid C++14,
+  which main's Windows C++ jobs need to pass `ContactSurfaceProbe`.
 
 ### WP-7.0.7 Scope artifacts
 
@@ -340,17 +350,20 @@ Known gaps:
 - **Scope:**
   - the dependency/order/priority refinement dated 2026-10-11; historical
     evidence dates stay;
-  - API freeze `F`, declared after every breaking change has merged and C2 has
-    passed; the breaking changes include the breaking parts of otherwise
-    additive work, such as `step` rejecting `bool` arguments; additive work
-    that misses `F` moves to 7.1, and how that applies to the additive
-    must-haves is a pending maintainer decision;
+  - API freeze `F`, declared once every 7.0 must-have, breaking and additive,
+    has merged and C2 has passed; the breaking must-haves include the breaking
+    parts of otherwise additive work, such as `step` rejecting `bool`
+    arguments; only additive work that is not a must-have and misses `F`
+    moves to 7.1;
   - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
     land before `F` without delaying the remaining breaking changes;
   - C2 before `F`, so release candidates carry the final render API;
-  - the default-detector switch only if its prerequisites pass before M1
-    starts, scheduled first so later rebaselines start from the final default;
-    otherwise a labeled 7.x change;
+  - D13 as amended on 2026-10-12: FCL stays the C++ default in 7.0, while
+    dartpy's `dart.World` and the MJCF world loader default to the DART
+    detector (M1f), which lands after the capability matrix and M1b and
+    before `F`;
+  - the maintainer's 2026-10-12 settings for M0's exit, the M1a PR shape, the
+    `dart7-base` ref and the step-path Gazebo gates;
   - the M3 thresholds: at least 15% `Ir` gain on `dyn`/`robot`, improved K = 64
     wall time, and the flagged spike passing guards and the shim with `memcpy`
     snapshots at most 0.1× the gather cost; M2 stops below 10% gain from its
@@ -361,19 +374,18 @@ Known gaps:
   - the target-shape acceptance tests, marked `xfail(strict=True)`; the
     headless-render test needs a graphics device, so `pixi run test-gui` runs
     it instead of `pixi run test-py`.
-- **Evidence on 2026-10-11** (main `722f28ddd`):
+- **Evidence on 2026-10-12** (this branch, merged with main `722f28ddd`):
   - `pixi run test-py` collects the ten tests in
     `python/tests/acceptance/test_target_shape.py`, all XFAIL with no XPASS
-    (688 passed, 2 skipped, 10 XFAIL), and no longer collects the render test.
-  - Run against a minimal `Transform` and `links` adapter, the `Transform` and
-    link tests pass with a correct implementation and fail with a reversed
-    composition order, and the link test also fails when `world_transform`
-    returns the pose in the parent frame or the parent link's pose.
-  - The `pytest` step of `pixi run test-gui`, over `python/tests/unit/gui` and
-    `python/tests/integration`, collects
-    `python/tests/unit/gui/test_target_shape_render.py` as XFAIL (262 passed,
-    1 skipped, 1 XFAIL).
-  - With `--runxfail`, each test fails for its intended missing feature:
+    (688 passed, 2 skipped, 10 XFAIL), and does not collect the render test.
+  - `pixi run test-gui` passes: its CTest step passes 13 of 13 tests, and its
+    `pytest` step, over `python/tests/unit/gui` and `python/tests/integration`,
+    collects `python/tests/unit/gui/test_target_shape_render.py` as XFAIL with
+    no XPASS (262 passed, 1 skipped, 1 XFAIL).
+  - With xfail markers ignored, each test fails for its intended missing
+    feature. The command is
+    `pixi run python -I scripts/run_pytest.py --pythonpath build/default/cpp/Release/python/dartpy --runxfail`
+    with each test file:
 
   | Test | Observed failure |
   | --- | --- |
@@ -399,9 +411,8 @@ Known gaps:
     listed as optional although the acceptance criteria and the design doc
     require them; the freeze rule would have moved additive must-haves to 7.1;
     the design doc carried release-train state; and the resume handoff was
-    stale. The freeze-rule conflict awaits the maintainer decision recorded in
-    the [release rules](README.md#release-train-and-checkpoints); the others
-    were fixed.
+    stale. The freeze-rule conflict went to the maintainer, who settled it on
+    2026-10-12; the others were fixed.
   - The second review found that the first fix made `F` wait for every
     must-have, which changed the recorded rule that `F` follows the last
     breaking change. It also found that the handoff missed PRs merged since,
@@ -416,15 +427,32 @@ Known gaps:
     uses the PR description.
   - The third review found that the second fix's exemption of the additive
     must-haves from the move to 7.1 also changed the recorded rule without
-    approval. The recorded rule is restored, and the conflict is a pending
-    maintainer decision. It also found that `step` rejecting `bool` was
-    missing from the breaking changes, that M1e could not move to 7.1 while
-    the constraint module's 7.0 bindings wait for it, that the link test read
-    a root link, whose world pose equals its pose in the parent frame and has
-    no translation, that the standalone `Transform` test was gone, leaving
-    M5a's `Transform` PR no marker to remove, and that this record claimed
-    every second-review finding was fixed. These were fixed; the PR
-    description still waits for the approved push.
+    approval. The recorded rule was restored, and the conflict went to the
+    maintainer. It also found that `step` rejecting `bool` was missing from
+    the breaking changes, that M1e could not move to 7.1 while the constraint
+    module's 7.0 bindings wait for it, that the link test read a root link,
+    whose world pose equals its pose in the parent frame and has no
+    translation, that the standalone `Transform` test was gone, leaving M5a's
+    `Transform` PR no marker to remove, and that this record claimed every
+    second-review finding was fixed. These were fixed; the PR description
+    still waits for the approved push.
+  - On 2026-10-12 the maintainer settled the freeze rule as the project home
+    now states it, amended D13, and set M0's exit and the steps after it, the
+    M1a PR shape, the `dart7-base` ref and the step-path Gazebo gates. The
+    project home records these instead of a pending decision.
+  - The fourth review found that the link test compared an exact zero entry
+    with no absolute tolerance and kept the palm's parent link at the origin,
+    so a binding that dropped the parent's translation would pass; that the
+    adapter evidence named no command in this repository; and that WP-7.0.3b
+    and WP-7.0.5 lacked merge, CI and review evidence. The fixture now offsets
+    both links and the test uses `atol=1e-12`, the adapter claim is removed,
+    and both packets record that evidence while staying in progress. The
+    review's other findings were already fixed on this branch: no text calls
+    #3730 "in review", the GUI test package docstring names the render test,
+    the must-have list says `compile()` prepares M2's dense data as the design
+    doc requires, and the design doc carries no release-train state. A focused
+    Codex review of the fix found one issue, the adapter bullet still present
+    before the evidence update; it is removed.
 - **Pending maintainer action:** check PyPI's project history for deleted
   7.0.0 files, because PyPI never accepts a reused file name.
 - **Status:** in review.

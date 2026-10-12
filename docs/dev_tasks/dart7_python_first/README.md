@@ -103,19 +103,18 @@ batch.step(20)
 7.0 needs everything that the
 [acceptance criteria](#final-deliverable-and-acceptance) and the
 [design doc](../../design/dart7_python_api.md) require, plus the work those
-requirements wait for; this list summarizes it. How the API freeze `F` treats
-the additive must-haves awaits a maintainer decision; see the
+requirements wait for; this list summarizes it. Every must-have, breaking or
+additive, merges before the API freeze `F`; see the
 [release rules](#release-train-and-checkpoints).
 
-- **Every breaking Python change lands before `F`:** native renames from the
-  reviewed rename table (the `Multibody`/`Link`/`Dof` vocabulary,
-  `Collider`/`Visual` handles and named collections), the package layout with
-  its curated top level, read-only arrays, error types, `UPPER_CASE` enums,
-  keyword-only arguments, `Transform`/`Rotation`, raising loaders, and the
-  breaking parts of otherwise additive work, such as `step` rejecting `bool`
-  arguments. The default-detector switch ships in 7.0 only if its
-  [prerequisites](#default-detector-switch) pass before M1 starts; otherwise it
-  is a labeled 7.x change.
+- **Every breaking Python change:** native renames from the reviewed rename
+  table (the `Multibody`/`Link`/`Dof` vocabulary, `Collider`/`Visual` handles
+  and named collections), the package layout with its curated top level,
+  read-only arrays, error types, `UPPER_CASE` enums, keyword-only arguments,
+  `Transform`/`Rotation`, raising loaders, the breaking parts of otherwise
+  additive work, such as `step` rejecting `bool` arguments, and the DART
+  detector as the default of dartpy's `dart.World` and the MJCF world loader
+  ([M1f](#default-detector-switch)).
 - Type stubs (`.pyi` plus `py.typed`) in every wheel with stub-drift checks,
   and the `dartpy` logging bridge.
 - `io.load_model`/`io.load_world`, `World.add`, the `add_*` builders with
@@ -145,6 +144,9 @@ the additive must-haves awaits a maintainer decision; see the
   enters 7.0.
 - Record/replay L2/L3 (the recorder and replay) are optional for 7.0.
 - GPU execution is outside 7.0; the C++ vocabulary rename follows 7.0 (M8).
+- The C++ `World` keeps FCL as its default detector in 7.0; switching it to
+  DART is a labeled 7.x change (see the
+  [default-detector switch](#default-detector-switch)).
 - Items allowed to slip to 7.1: autoapi docs, notebooks, the example runner and
   the weekly Gazebo main lane (the gz-physics development branch).
 
@@ -152,9 +154,9 @@ the additive must-haves awaits a maintainer decision; see the
 
 The critical path starts with the baseline pin, then M1 stage extraction
 (M1a), the executor (M1d) and remapping clone (M1i), then `WorldBatch`. M5 and
-M6b run in parallel with that path. The gated default-detector switch (M1f)
-comes before the other M1 work, so later rebaselines start from the final
-default.
+M6b run in parallel with that path. The Python and MJCF default-detector
+switch (M1f) is off the critical path: it lands after the capability matrix
+and M1b's strict shape rejection, and before `F`.
 
 M3's C1 gate requires M2 to cut instruction counts (`Ir`) on the `dyn`/`robot`
 rows by at least 15% and improve K = 64 wall time. The flagged contiguous-state
@@ -218,20 +220,20 @@ deciding M3.
 | M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and the remaining rendering release gates |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
-Critical path: WP-7.0.1 rollover → baseline pin → (M1f) → M1a → M1d → M1i →
-`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6a → M6b →
-checkpoint C2. M5a starts when M0 exits.
+Critical path: WP-7.0.1 rollover → baseline pin → M1a → M1d → M1i →
+`WorldBatch`. In parallel: M6a → M6b → checkpoint C2. M5a starts when M0
+exits.
 
 ### M1 core seams
 
 | ID | Content | Notes |
 | --- | --- | --- |
-| M1f | Default collision-detector switch | Ships in 7.0 only if its [gate](#default-detector-switch) passes before M1 starts; otherwise a labeled 7.x change. Scheduled first, so later rebaselines start from the final default |
-| M1a | `World::step` split into internal stages (member objects or functions, no pimpl) | `getConstraintSolver()` is unchanged. Opens the quiet window |
-| M1b | `compile()`, `edit()`, the strict flag, per-World revisions and strict tiers | Mutation classes in the design doc |
+| M1a | `World::step` split into internal stages: private, non-virtual stage member functions and a forward-declared private `StepContext`, with no data member, vtable or layout change | One PR with one commit per stage; moved lines stay verbatim and the gates are bit-identical. `getConstraintSolver()` is unchanged. Opens the quiet window |
+| M1b | `compile()`, `edit()`, the strict flag, per-World revisions and strict tiers, including strict rejection of unsupported shapes when a World compiles | Mutation classes in the design doc. M1f waits for the shape rejection |
 | M1c | Snapshots, checkpoints, and the field and frame oracle | One PR per hidden-state gap; moving the solver's random-number state is a labeled numeric change |
 | M1d | One deterministic executor, GIL release, `step(n)` | Closes the quiet window. The 64-world row must show scaling from 1 to 8 threads before batch bindings start |
 | M1e | Typed solver selection in `WorldConfig` | Per-World solver parameters are opt-in; the process-wide statistics keep last-write-wins |
+| M1f | DART detector as the default of dartpy's `dart.World` and the MJCF world loader | A breaking Python default change, so a must-have before `F`. Lands after the published capability matrix and M1b's strict shape rejection. The C++ `World` keeps FCL; see the [switch](#default-detector-switch) |
 | M1g | Actuator channels, compliant motor rows, `StepHook` | |
 | M1h | Native sensors, without recording | |
 | M1i | Remapping clone | `WorldBatch` prerequisite |
@@ -276,12 +278,8 @@ no longer excluded from the Python formatters; a `--renames` mode for
 ## Release train and checkpoints
 
 WP-7.0.7 records the API freeze `F` and two checkpoints. `F` is declared once
-every breaking change has merged and C2 has passed, and additive work that
-misses `F` moves to 7.1. The [must-haves](#must-have) also include additive
-work, such as snapshots and checkpoints, `WorldBatch`, actuators and sensors.
-**Pending maintainer decision**, needed before `F` is declared: either `F` also
-waits for every must-have, or the additive must-haves are exempt from the move
-to 7.1.
+every [must-have](#must-have), breaking and additive, has merged and C2 has
+passed. Only additive work that is not a must-have and misses `F` moves to 7.1.
 
 - **C1: M3 go/no-go after the first three M2 kernel PRs**, applying the M2
   stop rule below. M3 goes into 7.0 only if all of these hold:
@@ -308,12 +306,12 @@ to 7.1.
 
 Release rules:
 
-- Every breaking change lands before `F`: renames, package layout, read-only
-  arrays, error types, enums, keyword-only options, `Transform`/`Rotation`,
-  raising loaders, the breaking parts of otherwise additive work such as `step`
-  rejecting `bool` arguments, and the default-detector switch if its gate
-  passes. Additive work that misses `F` moves to 7.1, subject to the pending
-  decision above.
+- Every must-have lands before `F`, including every breaking change: renames,
+  package layout, read-only arrays, error types, enums, keyword-only options,
+  `Transform`/`Rotation`, raising loaders, the breaking parts of otherwise
+  additive work such as `step` rejecting `bool` arguments, and the DART
+  detector as the Python and MJCF default. Only additive work that is not a
+  must-have and misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
   example runner, and the scheduled lane against the gz-physics development
@@ -336,19 +334,20 @@ The native detector differs from FCL in known ways: it targets four contacts
 per pair, keeps persistent manifolds, approximates ellipsoids and cones with
 meshes, and warns once and then skips heightmaps.
 
-The switch ships in 7.0 only if these prerequisites pass before M1 starts.
-It is scheduled first, so later rebaselines start from the final default.
-Otherwise the switch is a labeled 7.x change and FCL stays the 7.0 default.
+D13, as amended on 2026-10-12, splits the switch:
 
-Prerequisites:
+- **Python and MJCF, in 7.0 (M1f).** dartpy's `dart.World` and the MJCF world
+  loader default to the DART detector. This breaking Python default change is
+  a must-have that lands before `F`, and only after:
+  - a published shape and query capability matrix;
+  - strict rejection, when a World compiles (M1b), of shapes the native
+    detector cannot handle.
+- **C++, in 7.x.** The C++ `World` keeps FCL as its default in 7.0, for Gazebo
+  compatibility. Switching it to DART is a labeled 7.x change that also needs:
+  - representative behavior comparisons against FCL;
+  - PLAN-622's pre-default coverage gate.
 
-- a published shape and query capability matrix;
-- strict rejection, when a World compiles, of shapes the native detector
-  cannot handle;
-- representative behavior comparisons;
-- PLAN-622's pre-default coverage gate.
-
-Mechanics:
+Mechanics of the C++ switch:
 
 - The switch is one PR.
 - Both `ConstraintSolver` constructors call `DARTCollisionDetector::create()`
@@ -434,15 +433,26 @@ API, so it stays when the interim tests are ported.
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport merged ([#3717](https://github.com/dartsim/dart/pull/3717)) |
 | WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Merged ([#3719](https://github.com/dartsim/dart/pull/3719)); four review findings remain open ([verification](verification.md#wp-703b-sdf-pose-attributes)) |
 | WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
-| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress: [#3720](https://github.com/dartsim/dart/pull/3720) added the rows; the `dart7-base` pin is recorded right before the first M1 PR |
-| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In progress: [#3725](https://github.com/dartsim/dart/pull/3725) merged the version file, shim test and header probe; [#3729](https://github.com/dartsim/dart/pull/3729) (in review) adds the gz API inventory |
+| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress: [#3720](https://github.com/dartsim/dart/pull/3720) added the rows and the baseline procedure; nightly Gazebo-preset sleeping rows and then the `dart7-base` pin follow M0's exit |
+| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In progress: [#3725](https://github.com/dartsim/dart/pull/3725) merged the version file, shim test and header probe; [#3729](https://github.com/dartsim/dart/pull/3729) (in review) adds the gz API inventory, and [#3731](https://github.com/dartsim/dart/pull/3731) (draft) keeps the contact-surface header tree valid C++14 |
 | WP-7.0.7 | Record the API freeze, checkpoints, must-have list and acceptance tests | In review ([#3728](https://github.com/dartsim/dart/pull/3728)) |
-| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for Python 3.12 to 3.14 and [#3730](https://github.com/dartsim/dart/pull/3730) Linux Python 3.15 wheels; macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15 builds of `bullet-cpp` |
+| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for Python 3.12 to 3.14 and [#3730](https://github.com/dartsim/dart/pull/3730) Linux Python 3.15 wheels; macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15 builds of `bullet-cpp` and do not hold M0's exit |
 
 Each packet records its scope, non-goals, gates and evidence in
-[verification.md](verification.md) before it is marked done. M0 exits when
-every packet above is done, and M5a starts then. M1 starts right after the
-`dart7-base` pin, as the [critical path](#milestones) shows.
+[verification.md](verification.md) before it is marked done. M0 exits once
+[#3728](https://github.com/dartsim/dart/pull/3728) (WP-7.0.7),
+[#3729](https://github.com/dartsim/dart/pull/3729) (the gz API inventory),
+[#3731](https://github.com/dartsim/dart/pull/3731) (the C++14 follow-up to
+#3725) and [#3722](https://github.com/dartsim/dart/pull/3722) (the
+analytical-IK copy fix) land; #3725 and #3730 have merged. The macOS and
+Windows Python 3.15 wheels, #3719's review follow-up and the `dart7-base` pin
+do not hold M0's exit.
+
+After M0 exits, in order: a small PR adds nightly Gazebo-preset sleeping rows,
+which cover gz's custom-filter replay path; `dart7-base` is pinned; the M1a PR
+opens. In parallel: M5a's rename table v0, the published shape and query
+capability matrix, and a null-check fix in the skel parser's detector
+fallback.
 
 ## Gates
 
@@ -462,7 +472,13 @@ every packet above is done, and M5a starts then. M1 starts right after the
   - the gz shim test and the contact-surface header probe, which
     `pixi run test` runs (added in #3725);
   - the many-World rows (added in #3720);
-  - the snapshot and checkpoint oracle (arrives with M1c).
+  - the snapshot and checkpoint oracle (arrives with M1c);
+  - for every step-path core PR in the quiet window, starting with M1a,
+    `pixi run -e gazebo test-gz` plus the unpatched Ionic, Jetty and Harmonic
+    lanes (`pixi run gz-compat-ionic`, `gz-compat-jetty` and
+    `gz-compat-harmonic`) against a base variant (`GZ_COMPAT_BASE_VARIANT`)
+    with no `NEW` or `SLOW` results, and the sleep oracle
+    (`pixi run gz-compat-ionic sleep-oracle`) on head and base.
 - **Milestone exits:** the core gates with `--base dart7-base`.
 - **Python changes:**
   - stub-drift, new-`Any` and pyright checks (arrive with M5's stub PRs);
@@ -479,7 +495,8 @@ every packet above is done, and M5a starts then. M1 starts right after the
     collision-detector overrides (ray casts and `createCollisionGroup`), the
     detector registrar, the direct Bullet header include, and that
     unregistering every factory creator still leaves `World::create()` on the
-    selected default detector (FCL until the gated switch lands). It asserts that each override runs.
+    selected default detector (FCL, which stays the C++ default in 7.0). It
+    asserts that each override runs.
   - A CTest compiles `#include <dart/constraint/ContactSurface.hpp>` against the
     installed DART as C++14, the dialect gz-physics probes with, using only DART
     and Eigen include paths. Downstream feature
@@ -512,11 +529,7 @@ Every packet needs two clean review passes on its final state.
 ## Blockers and next actions
 
 - WP-7.0.8's macOS and Windows Python 3.15 wheels wait for conda-forge's
-  Python 3.15 builds of `bullet-cpp`. Pending maintainer decision: whether they
-  hold M0's exit, and with it M5a's start.
-- Pending maintainer decision, needed before `F` is declared: whether `F` also
-  waits for the additive must-haves, or they are exempt from the move to 7.1
-  (see the [release rules](#release-train-and-checkpoints)).
+  Python 3.15 builds of `bullet-cpp`; they do not hold M0's exit.
 - The "DART 7.0.0" milestone (#105, formerly "DART 6.21.0") tracks the release,
   and main's release target reads 7.0.0.
 - Publishing each packet needs maintainer approval.
