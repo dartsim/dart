@@ -14,6 +14,15 @@
     [#3702](https://github.com/dartsim/dart/pull/3702),
     [#3700](https://github.com/dartsim/dart/pull/3700)
 
+  * Fix simulations blowing up when no joint motion can resolve a contact
+    along its normal, such as overlapping links of a self-colliding skeleton
+    on revolute joints whose shared axis is the contact normal. Such a contact
+    now gets no normal impulse, and with the Dantzig solver alone it no longer
+    zeroes the other contacts in its group:
+    [#3716](https://github.com/dartsim/dart/pull/3716),
+    [#3707](https://github.com/dartsim/dart/pull/3707),
+    [#3721](https://github.com/dartsim/dart/pull/3721)
+
 * Parsers
 
   * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
