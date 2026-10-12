@@ -362,16 +362,16 @@ before the first release candidate.
 
 | ID | Objective | Status |
 | --- | --- | --- |
-| WP-7.0.1 | Roll main's release line and AI policy from DART 6 to 7.0 | In review |
+| WP-7.0.1 | Roll main's release line and AI policy from DART 6 to 7.0 | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
 | WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
-| WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | In review |
-| WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Ready to publish |
-| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Planned |
-| WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Ready to publish |
-| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | Planned |
+| WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
+| WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport in review ([#3717](https://github.com/dartsim/dart/pull/3717)) |
+| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | In review ([#3719](https://github.com/dartsim/dart/pull/3719)) |
+| WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
+| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress |
 | WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | Planned |
 | WP-7.0.7 | Record the freeze date, checkpoints, must-have list and acceptance tests | Planned |
-| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | Planned |
+| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) builds 6.20.1 wheels for Python 3.12 to 3.14 |
 
 Each packet records its scope, non-goals, gates and evidence in
 [verification.md](verification.md) before it is marked done.
@@ -443,10 +443,7 @@ Every packet needs two clean review passes on its final state.
 
 ## Blockers and next actions
 
-- The "DART 7.0.0" milestone (#105, formerly "DART 6.21.0") tracks the
-  release; the earlier milestone of that name is archived. Until WP-7.0.1
-  merges, main's CI rejects pull requests with that milestone, because the
-  release target still reads 6.21.0. WP-7.0.1 and WP-7.0.2 therefore ship
-  first, as one PR.
+- No blockers. The "DART 7.0.0" milestone (#105, formerly "DART 6.21.0")
+  tracks the release, and main's release target reads 7.0.0.
 - Publishing each packet needs maintainer approval.
 - See [RESUME.md](RESUME.md) for the immediate next steps.
