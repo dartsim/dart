@@ -529,6 +529,8 @@ DemoScene makeSsikIkGuiScene()
 
     DemoSceneSetup setup;
     setup.world = world;
+    // Purely kinematic: Play must not step physics under this scene.
+    setup.allowSimulation = false;
     setup.cameraHome = CameraHome{
         GuiVector3(2.6, -3.0, 1.6),
         GuiVector3(0.1, 0.0, 0.55),
@@ -536,16 +538,6 @@ DemoScene makeSsikIkGuiScene()
 
     setup.onActivate = [state, grid](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
-
-      // Purely kinematic: keep the host's global Play button from stepping
-      // physics under this scene (restored on teardown).
-      const bool resumeSimulation = viewer->isSimulating();
-      viewer->allowSimulation(false);
-      ctx.addTeardown([viewer, resumeSimulation] {
-        viewer->allowSimulation(true);
-        if (resumeSimulation)
-          viewer->simulate(true);
-      });
 
       ctx.addOwnedAttachment(grid);
 
