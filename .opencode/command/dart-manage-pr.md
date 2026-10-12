@@ -77,7 +77,8 @@ gh pr checks <PR_NUMBER>
      does not point reviewers to deleted dev-task evidence as still pending.
    - Check the body against `docs/onboarding/contributing.md` § "PR
      Descriptions": Effect first, key comparisons and evidence easy to assess,
-     and mechanism, method, and full data afterward.
+     mechanism, method, and full data afterward, and no paragraph or list item
+     hard-wrapped across lines.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub PR/issue Markdown attachments
      (`https://github.com/user-attachments/assets/...`), never committed to
