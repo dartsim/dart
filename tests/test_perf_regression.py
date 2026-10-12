@@ -97,6 +97,8 @@ def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_pa
             # Only S7 runs Gazebo's own ground and contact caps.
             gazebo = row.row.startswith("S7")
             assert ("--gz-preset" in command) == gazebo
+            # The driver rejects --gz-preset without an SDF scene.
+            assert not gazebo or str(tmp_path / "world") in command
             overrides = {
                 "--sdf-plane-shapes",
                 "--max-contacts",

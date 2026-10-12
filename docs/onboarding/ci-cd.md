@@ -162,8 +162,13 @@ measurement windows. Current values are published in
 
 Read hash, contacts, pairs, resting, finite-state, cap-hit, and maximum
 penetration columns together. Hashes compare only within one detector.
-These guard settings do not substitute for
+The S1–S6 guard settings do not substitute for
 [Gazebo-path measurements](profiling.md#preserve-downstream-compatibility).
+S7 runs the `--gz-preset` command those measurements use on `3k_shapes.sdf`,
+but its table rows leave out the contact-demand, starved-pair, sunk-body and
+changed-pose census; the row logs in the nightly evidence artifact keep it.
+S7's ODE rows hit the contact cap by design: they keep the 10000-contact cap
+that gz-physics sets, and this scene's ODE contact demand exceeds it.
 Historical baseline rows remain in Git history.
 
 This compact merge-record example uses illustrative values and one row:

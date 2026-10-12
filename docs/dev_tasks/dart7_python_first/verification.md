@@ -257,14 +257,41 @@ Known gaps:
   and 4096 contacts for K = 1, 64 and 1024, and a loop-closure error of
   2e-12 m. The dartpy loop measured 114 microseconds per step and read. These
   are head-only smoke numbers, not a baseline.
+- **Gazebo-preset rows:** nightly `S7-t1` and `S7-t4` run
+  `contact_benchmark --gz-preset` on the settled `3k_shapes.sdf` with the
+  DART, Bullet and ODE detectors at 1 and 4 threads. The preset installs a
+  `BodyNodeCollisionFilter` subclass, as gz-physics does, so bodies sleep
+  through `World::step`'s custom-filter decision replay, the step path
+  gz-physics uses by default. The rows reuse existing driver flags, so no
+  row's input hash changes. Measured on 2026-10-12 at main `722f28ddd` with
+  the rows added, on the local performance host:
+
+  | Detector | Hash | Resting | Cap hit | Recorder solves | Process time (s) |
+  | --- | --- | --- | --- | ---: | ---: |
+  | DART | `0xa6f5233706594236` | 3003/3003 | no | 4 | 2.5–2.7 |
+  | Bullet | `0xb02e822fcc3c1d04` | 2724/3003 | no | 3,000 | 150–232 |
+  | ODE | `0x53e83625f00d4813` | 3003/3003 | yes | 503 | 19–23 |
+
+  Two smoke runs gave identical guards, and each detector's 4-thread guards
+  equal its 1-thread guards. ODE's contact demand of 13,013 exceeds the
+  10,000-contact cap that gz-physics sets; no row has starved pairs or sunk
+  bodies. Recorder solves count the 1-thread steps, of 3,000, that solve
+  through the constraint stage's decision recorder; the other steps take the
+  all-resting fast path, so only the Bullet and ODE rows exercise the
+  recorder at length. With `DART_CUSTOM_FILTER_SLEEPING=0`, which turns replay
+  off, the 1-thread DART and ODE rows rest no body and their hashes change to
+  `0x29469c863f538cf2` and `0x7de27186a1a62f97`. Process time is one whole
+  driver run at host load 7–11; the Bullet rows took up to 417 s at load 60,
+  within the harness's 900 s per-row timeout.
 - **Baseline procedure:** immediately before the first M1 PR, record the last
   main SHA as `dart7-base`, with its host and the per-row records from
   `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
   and compares each detector against its own baseline.
-- **Status:** in progress: the harness is ready for review, and the
-  `dart7-base` pin waits for the start of M1.
+- **Status:** in progress: the rows landed in
+  [#3720](https://github.com/dartsim/dart/pull/3720), then the `S7` rows, and
+  the `dart7-base` pin waits for the start of M1.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
@@ -309,7 +336,8 @@ Known gaps:
     built.
   - Still open: the machine-checked inventories of gz-used accessors and
     mutation paths.
-- **Status:** in progress.
+- **Status:** in progress: 6a and 6b landed in
+  [#3725](https://github.com/dartsim/dart/pull/3725); the inventories remain.
 
 ### WP-7.0.7 Scope artifacts
 
