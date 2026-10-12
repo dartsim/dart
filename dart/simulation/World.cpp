@@ -1425,76 +1425,24 @@ void World::reset()
 }
 
 //==============================================================================
+// What one step() call passes between its stages. Nothing in it carries over
+// to the next step.
+struct World::StepContext
+{
+  bool resetCommand = true;
+  bool deactivationEnabled = false;
+};
+
+//==============================================================================
 void World::step(bool _resetCommand)
 {
-  if (!isInSimulationMode())
-    enterSimulationMode();
-  getMemoryManager().getFrameAllocator().reset();
-
-  const bool deactivationEnabled = mDeactivationOptions.mEnabled;
-
-  // Mirror the enable flag onto the solver so its island rest-detection / LCP
-  // skipping runs only when the feature is on (otherwise it is a strict no-op).
-  mConstraintSolver->setDeactivationActive(deactivationEnabled);
-  if (deactivationEnabled)
-    wakeRestingSkeletonsIfStepStateChanged();
+  StepContext context;
+  context.resetCommand = _resetCommand;
+  beginStep(context);
+  const bool deactivationEnabled = context.deactivationEnabled;
 
   if (!deactivationEnabled) {
-    {
-      parallelForIndexRange(
-          mSimulationThreadPool.get(),
-          mSkeletons.size(),
-          mNumSimulationThreads,
-          [&](std::size_t i) {
-            auto& skel = mSkeletons[i];
-            if (!skel->isMobile())
-              return;
-
-            skel->computeForwardDynamics();
-            skel->integrateVelocities(mTimeStep);
-          });
-    }
-
-    {
-      mConstraintSolver->solve();
-    }
-
-    {
-      parallelForIndexRange(
-          mSimulationThreadPool.get(),
-          mSkeletons.size(),
-          mNumSimulationThreads,
-          [&](std::size_t i) {
-            auto& skel = mSkeletons[i];
-            if (!skel->isMobile())
-              return;
-
-            if (skel->isImpulseApplied()) {
-              skel->computeImpulseForwardDynamics();
-              skel->setImpulseApplied(false);
-            }
-
-            if (skel->isPositionImpulseApplied()) {
-              skel->integratePositions(
-                  mTimeStep, skel->getPositionVelocityChanges());
-              skel->setPositionImpulseApplied(false);
-              skel->clearPositionVelocityChanges();
-            } else {
-              skel->integratePositions(mTimeStep);
-            }
-
-            if (_resetCommand && skel->checkExternalDisturbanceAndReset(true)) {
-              skel->clearInternalForces();
-              skel->clearExternalForces();
-              skel->resetCommands();
-            }
-          });
-    }
-
-    mTime += mTimeStep;
-    mFrame++;
-    invalidateAllRestingKinematicSnapshot();
-    invalidateLastStepRestingWorldState();
+    stepWithoutDeactivation(context);
     return;
   }
 
@@ -1756,6 +1704,85 @@ void World::step(bool _resetCommand)
       mSkeletons,
       customFilterSleeping && collisionGroupUnchanged
           && hasRestingMobileSkeleton());
+}
+
+//==============================================================================
+void World::beginStep(StepContext& context)
+{
+  if (!isInSimulationMode())
+    enterSimulationMode();
+  getMemoryManager().getFrameAllocator().reset();
+
+  const bool deactivationEnabled = mDeactivationOptions.mEnabled;
+  context.deactivationEnabled = deactivationEnabled;
+
+  // Mirror the enable flag onto the solver so its island rest-detection / LCP
+  // skipping runs only when the feature is on (otherwise it is a strict no-op).
+  mConstraintSolver->setDeactivationActive(deactivationEnabled);
+  if (deactivationEnabled)
+    wakeRestingSkeletonsIfStepStateChanged();
+}
+
+//==============================================================================
+void World::stepWithoutDeactivation(const StepContext& context)
+{
+  const bool _resetCommand = context.resetCommand;
+
+  {
+    parallelForIndexRange(
+        mSimulationThreadPool.get(),
+        mSkeletons.size(),
+        mNumSimulationThreads,
+        [&](std::size_t i) {
+          auto& skel = mSkeletons[i];
+          if (!skel->isMobile())
+            return;
+
+          skel->computeForwardDynamics();
+          skel->integrateVelocities(mTimeStep);
+        });
+  }
+
+  {
+    mConstraintSolver->solve();
+  }
+
+  {
+    parallelForIndexRange(
+        mSimulationThreadPool.get(),
+        mSkeletons.size(),
+        mNumSimulationThreads,
+        [&](std::size_t i) {
+          auto& skel = mSkeletons[i];
+          if (!skel->isMobile())
+            return;
+
+          if (skel->isImpulseApplied()) {
+            skel->computeImpulseForwardDynamics();
+            skel->setImpulseApplied(false);
+          }
+
+          if (skel->isPositionImpulseApplied()) {
+            skel->integratePositions(
+                mTimeStep, skel->getPositionVelocityChanges());
+            skel->setPositionImpulseApplied(false);
+            skel->clearPositionVelocityChanges();
+          } else {
+            skel->integratePositions(mTimeStep);
+          }
+
+          if (_resetCommand && skel->checkExternalDisturbanceAndReset(true)) {
+            skel->clearInternalForces();
+            skel->clearExternalForces();
+            skel->resetCommands();
+          }
+        });
+  }
+
+  mTime += mTimeStep;
+  mFrame++;
+  invalidateAllRestingKinematicSnapshot();
+  invalidateLastStepRestingWorldState();
 }
 
 //==============================================================================

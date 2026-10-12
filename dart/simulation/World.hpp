@@ -726,6 +726,18 @@ private:
   /// Number of full skeleton membership checks, for deterministic cost tests.
   std::size_t getSolverSkeletonOwnershipCheckCount() const;
 
+  /// State that one step() call passes between its stages; defined in
+  /// World.cpp.
+  struct StepContext;
+
+  /// Prepares the World for a step and mirrors the deactivation flag onto the
+  /// constraint solver. With deactivation on, also wakes resting skeletons
+  /// after edits made between steps.
+  void beginStep(StepContext& context);
+
+  /// Runs the whole step with deactivation off.
+  void stepWithoutDeactivation(const StepContext& context);
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,
