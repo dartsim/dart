@@ -322,10 +322,13 @@ Scene-specific notes:
   exists. On an empty asset cache they raise `AssetsNotPrefetchedError`, and
   `ssik_ik_gui` raises it when `ssik` is missing; the cycle reports both as
   skipped.
-- **Release wheels.** Wheels build without `DART_BUILD_UTILS_ASSETS`, so a
-  wheel's catalog lists 35 scenes, without `atlas_v5` and `unitree_g1`. The
-  wheel smoke test expects exactly that list; the 37-row parity evidence
-  comes from source builds with assets enabled.
+- **Builds without assets.** A dartpy built without
+  `DART_BUILD_UTILS_ASSETS`, such as a release wheel, has no
+  `ModelResourceRetriever`, so the catalog run against it lists 35 scenes,
+  without `atlas_v5` and `unitree_g1`. The catalog lives in the source tree
+  (`python/examples/demos`), not in the wheel: the wheel smoke test runs
+  `dartpy.viewer.run()` on a one-scene catalog of its own. The 37-row parity
+  evidence comes from source builds with assets enabled.
 - **agent-capture.** `modern_humanoids.atlas_world` and `g1_world` keep
   returning Worlds, so agent-capture's `--factory` contract still holds.
 - **ssik_ik_gui is a full port**, not just a move. It brings the 19-arm combo
