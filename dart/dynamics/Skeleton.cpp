@@ -2755,8 +2755,9 @@ static void bindCopiedInverseKinematics(
       if (dofs.empty() && !selected.empty()) {
         dtwarn << "[Skeleton::cloneBodyNodeTree] The copy of the JacobianNode ["
                << node->getName() << "] has none of the DOFs that its IK "
-               << "module selected, so the copied IK module has no DOFs to "
-               << "solve with.\n";
+               << "module selected. Like any IK module without DOFs, the "
+               << "copied IK module moves nothing and reports success for "
+               << "every target until it selects DOFs.\n";
       }
 
       if (dofs.size() == selected.size()) {
@@ -2789,35 +2790,42 @@ static void bindCopiedInverseKinematics(
 
       // An analytical solver names its own DOFs. They follow the copy when the
       // solver finds them from its Node, but a solver that stores DOF indices,
-      // such as IkFast, keeps the indices of the original Skeleton.
+      // such as IkFast, keeps the indices of the original Skeleton. Solving
+      // with those would read or move DOFs other than the copies, so the copy
+      // uses the default gradient method of an IK module instead. A solver can
+      // also solve for the DOFs that its IK module selects, so this compares
+      // them once the copy's selection is bound.
       const auto* original
           = paired ? dynamic_cast<const JacobianNode*>(originalNodes[n])
                    : nullptr;
       const auto originalIK = original ? original->getIK() : nullptr;
       const InverseKinematics::Analytical* analytical = ik.getAnalytical();
-      if (analytical == nullptr || originalIK == nullptr
-          || originalIK->getAnalytical() == nullptr)
-        continue;
+      if (analytical != nullptr && originalIK != nullptr
+          && originalIK->getAnalytical() != nullptr) {
+        std::vector<std::size_t> expected;
+        for (const std::size_t dof : originalIK->getAnalytical()->getDofs()) {
+          if (const auto copy = counterpart(dof))
+            expected.push_back(*copy);
+        }
 
-      std::vector<std::size_t> expected;
-      for (const std::size_t dof : originalIK->getAnalytical()->getDofs()) {
-        if (const auto copy = counterpart(dof))
-          expected.push_back(*copy);
-      }
-
-      // Read the DOFs before warning, since reading them can warn too
-      const std::vector<std::size_t>& solverDofs = analytical->getDofs();
-      if (solverDofs != expected) {
-        std::ostream& out = dtwarn;
-        out << "[Skeleton::cloneBodyNodeTree] The analytical IK solver ["
-            << analytical->getMethodName() << "] of the copied JacobianNode ["
-            << node->getName() << "] solves for the DOFs ";
-        printDofs(out, solverDofs);
-        out << ", but the copies of the DOFs that it solved for are ";
-        printDofs(out, expected);
-        out << ". A solver that stores DOF indices, such as IkFast, keeps the "
-            << "indices of the original Skeleton, so set it up again for the "
-            << "copy.\n";
+        // Read the DOFs before warning, since reading them can warn too
+        const std::vector<std::size_t> solverDofs = analytical->getDofs();
+        if (solverDofs != expected) {
+          std::ostream& out = dtwarn;
+          out << "[Skeleton::cloneBodyNodeTree] The analytical IK solver ["
+              << analytical->getMethodName() << "] of the copied JacobianNode ["
+              << node->getName() << "] solves for the DOFs ";
+          printDofs(out, solverDofs);
+          out << ", but the copies of the DOFs that it solved for are ";
+          printDofs(out, expected);
+          out << ". A solver that stores DOF indices, such as IkFast, keeps "
+              << "the indices of the original Skeleton, so the copied IK "
+              << "module uses JacobianDLS instead. Set the analytical solver "
+              << "up again for the copy.\n";
+          ik.setGradientMethod<InverseKinematics::JacobianDLS>(
+              InverseKinematics::JacobianDLS::Properties(
+                  analytical->getGradientMethodProperties()));
+        }
       }
     }
   }

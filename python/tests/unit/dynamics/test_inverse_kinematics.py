@@ -166,6 +166,29 @@ def test_python_analytical_rejects_out_of_range_dof():
         ik.setPythonAnalytical(solve, [len(dofs) + 5])
 
 
+def test_python_analytical_copy_uses_jacobian_dls_when_dofs_shift():
+    # The Python solver keeps the DOF indices that it was given, so only a copy
+    # that keeps those indices keeps the solver.
+    skel = dart.dynamics.Skeleton("original")
+    body = skel.createPrismaticJointAndBodyNodePair()[1]
+    ik = body.createShapeNode(dart.dynamics.SphereShape(0.1)).getOrCreateIK()
+    ik.setPythonAnalytical(lambda target: [], [0], "stored_dofs")
+
+    same = body.copyAs("same")
+    same_ik = same.getBodyNode(0).getShapeNode(0).getIK()
+    assert same_ik.getAnalytical() is not None
+    assert same_ik.getGradientMethod().getMethodName() == "stored_dofs"
+
+    shifted = dart.dynamics.Skeleton("shifted")
+    base = shifted.createPrismaticJointAndBodyNodePair()[1]
+    body.copyTo(shifted, base)
+    shifted_ik = shifted.getBodyNode(1).getShapeNode(0).getIK()
+    assert shifted_ik.getDofs() == [1]
+    assert shifted_ik.getAnalytical() is None
+    assert shifted_ik.getGradientMethod().getMethodName() == "JacobianDLS"
+    assert ik.getGradientMethod().getMethodName() == "stored_dofs"
+
+
 class FailingSolver(dart.optimizer.Solver):
     def __init__(self, constant):
         super(FailingSolver, self).__init__()

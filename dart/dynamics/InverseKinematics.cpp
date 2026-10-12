@@ -1264,7 +1264,8 @@ void InverseKinematics::Analytical::constructDofMap()
 
     if (mDofMap[i] == -1) {
       // A node copied into a new BodyNode tree has no Skeleton yet, and a
-      // copied solver can name a DOF that the destination Skeleton lacks.
+      // copied solver can name a DOF that the destination Skeleton lacks
+      // until Skeleton replaces the solver.
       const auto skeleton = mIK->getNode()->getSkeleton();
       DegreeOfFreedom* dof
           = (skeleton && analyticalDofs[i] < skeleton->getNumDofs())
@@ -1295,19 +1296,13 @@ void InverseKinematics::Analytical::constructDofMap()
 void InverseKinematics::Analytical::checkSolutionJointLimits()
 {
   const std::vector<std::size_t>& dofs = getDofs();
-  const SkeletonPtr skeleton = mIK->getNode()->getSkeleton();
   for (std::size_t i = 0; i < mSolutions.size(); ++i) {
     Solution& s = mSolutions[i];
     const Eigen::VectorXd& q = s.mConfig;
 
     for (std::size_t j = 0; j < dofs.size(); ++j) {
-      // A solver can name a DOF that the Skeleton lacks, such as a solver that
-      // stores DOF indices after its Node was copied. No position of a missing
-      // DOF is within limits.
-      const DegreeOfFreedom* dof = dofs[j] < skeleton->getNumDofs()
-                                       ? skeleton->getDof(dofs[j])
-                                       : nullptr;
-      if (dof == nullptr || q[j] < dof->getPositionLowerLimit()
+      DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->getDof(dofs[j]);
+      if (q[j] < dof->getPositionLowerLimit()
           || dof->getPositionUpperLimit() < q[j]) {
         s.mValidity |= LIMIT_VIOLATED;
         break;

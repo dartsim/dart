@@ -226,19 +226,85 @@ TEST(IkFast, CopyWamArmIk)
   }
   EXPECT_GT(numValid, 0u);
 
-  // Under a FreeJoint, the copied WAM DOFs follow the FreeJoint's DOFs, but
-  // IkFast keeps the WAM's indices, so the copy warns about them.
+  // Otherwise IkFast keeps the WAM's indices, which do not name the copied
+  // DOFs, so the copy uses JacobianDLS instead.
+  const auto copyWithStaleIkFast = [](const auto& copy,
+                                      const std::string& copiedDofs) {
+    testing::internal::CaptureStderr();
+    dynamics::EndEffector* ee = copy();
+    const std::string warning = testing::internal::GetCapturedStderr();
+    EXPECT_NE(
+        warning.find(
+            "but the copies of the DOFs that it solved for are " + copiedDofs
+            + ". A solver that stores DOF indices, such as IkFast, keeps "
+              "the indices of the original Skeleton, so the copied IK "
+              "module uses JacobianDLS instead."),
+        std::string::npos)
+        << warning;
+    EXPECT_NE(ee, nullptr);
+    if (ee != nullptr) {
+      EXPECT_EQ(ee->getIK()->getAnalytical(), nullptr);
+    }
+    return ee;
+  };
+
+  // Solving the copy reaches a target near the copied arm and moves only the
+  // copied arm, which is what its IK module selects.
+  const auto solveCopy = [](dynamics::EndEffector* ee) {
+    ASSERT_NE(ee, nullptr);
+    const auto& copiedIK = ee->getIK();
+    const auto skeleton = ee->getSkeleton();
+    const std::vector<std::size_t> dofs = copiedIK->getDofs();
+    ASSERT_EQ(dofs.size(), 7u);
+    Eigen::VectorXd goal(7);
+    goal << 0.3, 0.5, 0.2, 1.2, -0.4, 0.6, 0.2;
+    skeleton->setPositions(dofs, goal);
+    const Eigen::Isometry3d target = ee->getWorldTransform();
+    skeleton->setPositions(dofs, goal - Eigen::VectorXd::Constant(7, 0.05));
+    copiedIK->setTarget(dynamics::SimpleFrame::createShared(
+        dynamics::Frame::World(), "copy_target", target));
+    Eigen::VectorXd expected = skeleton->getPositions();
+    EXPECT_TRUE(copiedIK->solveAndApply(false));
+    EXPECT_TRUE(equals(target, ee->getWorldTransform(), 1e-5));
+    const Eigen::VectorXd positions = skeleton->getPositions();
+    for (const std::size_t dof : dofs)
+      expected[dof] = positions[dof];
+    EXPECT_TRUE(positions.isApprox(expected));
+  };
+
+  const Eigen::VectorXd wamPositions = wam->getPositions();
+
+  // Under a FreeJoint, the copied WAM DOFs follow the FreeJoint's DOFs
   auto withBase = dynamics::Skeleton::create("wam_with_base");
   auto base = withBase->createJointAndBodyNodePair<dynamics::FreeJoint>();
-  testing::internal::CaptureStderr();
-  wam->getRootBodyNode()->copyTo(withBase, base.second);
-  const std::string warning = testing::internal::GetCapturedStderr();
-  EXPECT_NE(
-      warning.find("solves for the DOFs [0, 1, 3, 4, 5, 6], but the copies of "
-                   "the DOFs that it solved for are [6, 7, 9, 10, 11, 12]"),
-      std::string::npos)
-      << warning;
+  solveCopy(copyWithStaleIkFast(
+      [&] {
+        wam->getRootBodyNode()->copyTo(withBase, base.second);
+        return withBase->getEndEffector("ee");
+      },
+      "[6, 7, 9, 10, 11, 12]"));
   EXPECT_EQ(
       withBase->getEndEffector("ee")->getIK()->getDofs(),
       std::vector<std::size_t>({6, 7, 8, 9, 10, 11, 12}));
+
+  // A copy within the WAM's Skeleton has new DOFs, which do not configure
+  // IkFast
+  solveCopy(copyWithStaleIkFast(
+      [&] {
+        wam->getRootBodyNode()->copyTo(nullptr);
+        return wam->getEndEffector(1);
+      },
+      "[7, 8, 10, 11, 12, 13]"));
+
+  // A copy of the last link alone lacks most of the DOFs of IkFast
+  dynamics::SkeletonPtr lastLink;
+  copyWithStaleIkFast(
+      [&] {
+        lastLink = wam->getBodyNode("/wam7")->copyAs("wam7_copy");
+        return lastLink->getEndEffector("ee");
+      },
+      "[0]");
+
+  EXPECT_TRUE(wam->getPositions().head(7).isApprox(wamPositions));
+  EXPECT_EQ(ik->getAnalytical()->getDofs(), ikFastDofs);
 }

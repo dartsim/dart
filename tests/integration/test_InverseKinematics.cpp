@@ -247,6 +247,46 @@ private:
 };
 
 //==============================================================================
+// Solves for the DOFs that its IK module selects, so its copies follow the
+// copied selection.
+class SelectedDofsIKCloneAnalytical : public PrismaticIKCloneAnalytical
+{
+public:
+  using PrismaticIKCloneAnalytical::PrismaticIKCloneAnalytical;
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIK) const override
+  {
+    return std::make_unique<SelectedDofsIKCloneAnalytical>(
+        newIK, getAnalyticalProperties());
+  }
+
+  const std::vector<std::size_t>& getDofs() const override
+  {
+    return getIK()->getDofs();
+  }
+
+  // Moves the parent Joint of the node's BodyNode as the base class does, and
+  // keeps the other selected DOFs where they are.
+  const std::vector<Solution>& computeSolutions(
+      const Eigen::Isometry3d& desiredTf) override
+  {
+    const JacobianNode* node = getIK()->getNode();
+    const std::size_t x
+        = node->getBodyNode()->getParentJoint()->getIndexInSkeleton(0);
+    const std::vector<std::size_t>& dofs = getDofs();
+    Eigen::VectorXd q = node->getSkeleton()->getPositions(dofs);
+    for (std::size_t i = 0; i < dofs.size(); ++i) {
+      if (dofs[i] == x)
+        q[i] = desiredTf.translation().x();
+    }
+    mSolutions.clear();
+    mSolutions.emplace_back(q);
+    checkSolutionJointLimits();
+    return mSolutions;
+  }
+};
+
+//==============================================================================
 void checkPrismaticIKClone(bool useEndEffector, bool useAnalytical)
 {
   auto original = Skeleton::create();
@@ -575,6 +615,8 @@ TEST(InverseKinematics, CopyEndEffectorWithStoredAnalyticalDofs)
   ik->setGradientMethod<FixedDofIKCloneAnalytical>();
   ik->getErrorMethod().setBounds(
       Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
+  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
+  target.translation().x() = 0.8;
 
   // The stored index still names the copied DOF while copyAs() keeps it.
   testing::internal::CaptureStderr();
@@ -584,68 +626,101 @@ TEST(InverseKinematics, CopyEndEffectorWithStoredAnalyticalDofs)
   const auto& sameIK = sameIndices->getEndEffector("copy_ik")->getIK();
   ASSERT_NE(sameIK->getAnalytical(), nullptr);
   EXPECT_EQ(sameIK->getAnalytical()->getDofs(), std::vector<std::size_t>({1}));
-  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
-  target.translation().x() = 0.8;
   sameIK->setTarget(
       SimpleFrame::createShared(Frame::World(), "copy_target", target));
   EXPECT_TRUE(sameIK->solveAndApply(false));
   EXPECT_NEAR(sameIndices->getPosition(1), 0.8, 1e-7);
-  EXPECT_DOUBLE_EQ(original->getPosition(1), 0.0);
 
-  // Under a base, the copied DOF has index 2, but the copied solver keeps
-  // naming index 1, which is now the copy of the root DOF.
+  // Otherwise the stored index names another DOF or none, so the copy solves
+  // with JacobianDLS instead, and only the copied DOF moves.
+  const auto checkReplacedSolver = [&](const SkeletonPtr& destination,
+                                       const std::string& warning,
+                                       std::size_t copiedDof) {
+    EXPECT_NE(
+        warning.find(
+            "solves for the DOFs [1], but the copies of the DOFs that it "
+            "solved for are ["
+            + std::to_string(copiedDof)
+            + "]. A solver that stores DOF indices, such as IkFast, keeps the "
+              "indices of the original Skeleton, so the copied IK module uses "
+              "JacobianDLS instead."),
+        std::string::npos)
+        << warning;
+    const auto& copiedIK = destination->getEndEffector("copy_ik")->getIK();
+    ASSERT_NE(copiedIK, nullptr);
+    EXPECT_EQ(copiedIK->getAnalytical(), nullptr);
+    EXPECT_EQ(copiedIK->getGradientMethod().getMethodName(), "JacobianDLS");
+    copiedIK->setTarget(
+        SimpleFrame::createShared(Frame::World(), "copy_target", target));
+    Eigen::VectorXd expectedPositions = destination->getPositions();
+    EXPECT_TRUE(copiedIK->solveAndApply(false));
+    EXPECT_TRUE(
+        copiedIK->getNode()->getWorldTransform().isApprox(target, 1e-7));
+    expectedPositions[copiedDof] = 0.8;
+    EXPECT_TRUE(destination->getPositions().isApprox(expectedPositions, 1e-7))
+        << destination->getPositions().transpose();
+  };
+
+  // Under a base, the copied DOF has index 2, and index 1 names the copy of
+  // the root DOF.
   auto shiftedIndices = Skeleton::create("shifted_indices");
   shiftedIndices->createJointAndBodyNodePair<PrismaticJoint>();
   testing::internal::CaptureStderr();
   root.second->copyTo(shiftedIndices, shiftedIndices->getBodyNode(0));
-  const std::string warning = testing::internal::GetCapturedStderr();
-  EXPECT_NE(
-      warning.find("solves for the DOFs [1], but the copies of the DOFs that "
-                   "it solved for are [2]"),
-      std::string::npos)
-      << warning;
-  const auto& shiftedIK = shiftedIndices->getEndEffector("copy_ik")->getIK();
-  EXPECT_EQ(shiftedIK->getDofs(), std::vector<std::size_t>({1, 2}));
-  ASSERT_NE(shiftedIK->getAnalytical(), nullptr);
+  checkReplacedSolver(
+      shiftedIndices, testing::internal::GetCapturedStderr(), 2);
   EXPECT_EQ(
-      shiftedIK->getAnalytical()->getDofs(), std::vector<std::size_t>({1}));
+      shiftedIndices->getEndEffector("copy_ik")->getIK()->getDofs(),
+      std::vector<std::size_t>({1, 2}));
+
+  // A copy of the end effector's BodyNode alone has no DOF with index 1
+  auto missingIndex = Skeleton::create("missing_index");
+  testing::internal::CaptureStderr();
+  pair.second->copyTo(missingIndex, nullptr);
+  checkReplacedSolver(missingIndex, testing::internal::GetCapturedStderr(), 0);
+  ASSERT_EQ(missingIndex->getNumDofs(), 1u);
+
+  // The original keeps its analytical solver and positions
+  ASSERT_NE(ik->getAnalytical(), nullptr);
+  EXPECT_EQ(ik->getAnalytical()->getDofs(), std::vector<std::size_t>({1}));
+  EXPECT_TRUE(original->getPositions().isZero());
 }
 
 //==============================================================================
-TEST(InverseKinematics, CopyEndEffectorWithMissingAnalyticalDof)
+TEST(InverseKinematics, CopyEndEffectorWithSelectedAnalyticalDofs)
 {
   auto original = Skeleton::create("original");
   auto root = original->createJointAndBodyNodePair<PrismaticJoint>();
+  root.first->setAxis(Eigen::Vector3d::UnitY());
   auto pair = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitX());
   auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
-  ik->setGradientMethod<FixedDofIKCloneAnalytical>();
+  ik->setGradientMethod<SelectedDofsIKCloneAnalytical>();
+  ik->getErrorMethod().setBounds(
+      Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
 
-  // The destination has no DOF with index 1, so binding the copy can only
-  // warn about the stored index.
-  auto destination = Skeleton::create("destination");
+  // The copy shifts the selected DOFs, and the copied solver solves for the
+  // copied selection, so the copy keeps it.
+  auto destination = createSkeletonWithDofs();
   testing::internal::CaptureStderr();
-  pair.second->copyTo(destination, nullptr);
-  const std::string warning = testing::internal::GetCapturedStderr();
-  EXPECT_NE(
-      warning.find("solves for the DOFs [1], but the copies of the DOFs that "
-                   "it solved for are [0]"),
-      std::string::npos)
-      << warning;
-  ASSERT_EQ(destination->getNumDofs(), 1u);
+  root.second->copyTo(destination, destination->getBodyNode(1));
+  const std::string output = testing::internal::GetCapturedStderr();
+  EXPECT_TRUE(output.empty()) << output;
   const auto& copiedIK = destination->getEndEffector("copy_ik")->getIK();
-  ASSERT_NE(copiedIK, nullptr);
-  EXPECT_EQ(copiedIK->getDofs(), std::vector<std::size_t>({0}));
-  auto* analytical = copiedIK->getAnalytical();
-  ASSERT_NE(analytical, nullptr);
-  EXPECT_EQ(analytical->getDofs(), std::vector<std::size_t>({1}));
-
-  // A solution for the missing DOF is outside its limits instead of reading
-  // a DOF that the destination lacks.
-  const auto& solutions
-      = analytical->computeSolutions(Eigen::Isometry3d::Identity());
-  ASSERT_EQ(solutions.size(), 1u);
+  ASSERT_NE(copiedIK->getAnalytical(), nullptr);
   EXPECT_EQ(
-      solutions[0].mValidity, InverseKinematics::Analytical::LIMIT_VIOLATED);
+      copiedIK->getAnalytical()->getDofs(), std::vector<std::size_t>({2, 3}));
+
+  Eigen::Isometry3d target = copiedIK->getNode()->getWorldTransform();
+  target.translation().x() = 0.8;
+  copiedIK->setTarget(
+      SimpleFrame::createShared(Frame::World(), "copy_target", target));
+  Eigen::VectorXd expectedPositions = destination->getPositions();
+  expectedPositions[3] = 0.8;
+  EXPECT_TRUE(copiedIK->solveAndApply(false));
+  EXPECT_TRUE(destination->getPositions().isApprox(expectedPositions, 1e-7))
+      << destination->getPositions().transpose();
+  EXPECT_TRUE(original->getPositions().isZero());
 }
 
 //==============================================================================
