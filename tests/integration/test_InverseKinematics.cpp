@@ -40,6 +40,7 @@
 #include "dart/dynamics/HierarchicalIK.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -61,6 +62,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 using namespace Eigen;
 using namespace dart;
@@ -284,6 +287,69 @@ public:
     checkSolutionJointLimits();
     return mSolutions;
   }
+};
+
+//==============================================================================
+// Solves for the DOFs that its node depends on, so its copies follow the copy.
+// Only its DOFs matter here, so it finds no solutions.
+class DependentDofsIKCloneAnalytical : public PrismaticIKCloneAnalytical
+{
+public:
+  using PrismaticIKCloneAnalytical::PrismaticIKCloneAnalytical;
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIK) const override
+  {
+    return std::make_unique<DependentDofsIKCloneAnalytical>(
+        newIK, getAnalyticalProperties());
+  }
+
+  const std::vector<std::size_t>& getDofs() const override
+  {
+    return getIK()->getNode()->getDependentGenCoordIndices();
+  }
+
+  const std::vector<Solution>& computeSolutions(
+      const Eigen::Isometry3d&) override
+  {
+    mSolutions.clear();
+    return mSolutions;
+  }
+};
+
+//==============================================================================
+// Stores the DOFs of a torso that turns about z and of an arm that slides along
+// x from one unit off the torso's axis, as IkFast stores the DOFs of an arm,
+// and solves for the position of a tool on the arm.
+class TorsoArmIKCloneAnalytical : public PrismaticIKCloneAnalytical
+{
+public:
+  using PrismaticIKCloneAnalytical::PrismaticIKCloneAnalytical;
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIK) const override
+  {
+    return std::make_unique<TorsoArmIKCloneAnalytical>(
+        newIK, getAnalyticalProperties());
+  }
+
+  const std::vector<std::size_t>& getDofs() const override
+  {
+    return mTorsoArmDofs;
+  }
+
+  const std::vector<Solution>& computeSolutions(
+      const Eigen::Isometry3d& desiredTf) override
+  {
+    const Eigen::Vector3d& position = desiredTf.translation();
+    mSolutions.clear();
+    mSolutions.emplace_back(Eigen::Vector2d(
+        std::atan2(position.y(), position.x()),
+        std::hypot(position.x(), position.y()) - 1.0));
+    checkSolutionJointLimits();
+    return mSolutions;
+  }
+
+private:
+  const std::vector<std::size_t> mTorsoArmDofs{0, 1};
 };
 
 //==============================================================================
@@ -606,40 +672,59 @@ TEST(InverseKinematics, CopyEndEffectorWithinSkeleton)
 //==============================================================================
 TEST(InverseKinematics, CopyEndEffectorWithinSkeletonKeepsUnrelatedDof)
 {
-  auto skeleton = Skeleton::create("original");
-  auto root = skeleton->createJointAndBodyNodePair<PrismaticJoint>();
-  auto pair = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
-  root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  for (const bool useAnalytical : {true, false}) {
+    SCOPED_TRACE(useAnalytical ? "Analytical" : "JacobianDLS");
+    auto skeleton = Skeleton::create("original");
+    auto root = skeleton->createJointAndBodyNodePair<PrismaticJoint>();
+    auto pair = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+    root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
 
-  // An IK module can select a DOF that its node does not depend on, such as
-  // the DOF of another branch that a null-space objective drives.
-  auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
-  ik->setDofs({0, 1, 2});
-  const Eigen::Vector3d weights(0.5, 1.0, 0.25);
-  ik->getGradientMethod().setComponentWeights(weights);
-  const Eigen::Vector3d seed(0.1, 0.6, -0.3);
-  ik->getProblem()->addSeed(seed);
+    // An IK module can select a DOF that its node does not depend on, such as
+    // the DOF of another branch that a null-space objective drives, and an
+    // analytical solver can solve for it too.
+    auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
+    ik->setDofs({0, 1, 2});
+    if (useAnalytical)
+      ik->setGradientMethod<SelectedDofsIKCloneAnalytical>();
+    const Eigen::Vector3d weights(0.5, 1.0, 0.25);
+    ik->getGradientMethod().setComponentWeights(weights);
+    const Eigen::Vector3d seed(0.1, 0.6, -0.3);
+    ik->getProblem()->addSeed(seed);
 
-  testing::internal::CaptureStderr();
-  pair.second->copyTo(root.second);
-  const std::string output = testing::internal::GetCapturedStderr();
-  EXPECT_TRUE(output.empty()) << output;
+    // Binding the copy reports nothing, although an analytical solver warns
+    // that it solves for a DOF that its node does not depend on.
+    testing::internal::CaptureStderr();
+    pair.second->copyTo(root.second);
+    const std::string output = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(output.find("[Skeleton::cloneBodyNodeTree]"), std::string::npos)
+        << output;
+    if (!useAnalytical) {
+      EXPECT_TRUE(output.empty()) << output;
+    }
 
-  // The copy keeps the DOFs that it shares with the original, with their
-  // weights and seed entries, and selects its own DOF in place of the
-  // original's.
-  ASSERT_EQ(skeleton->getNumDofs(), 4u);
-  EndEffector* copiedEE = skeleton->getEndEffector(1);
-  EXPECT_FALSE(copiedEE->dependsOn(2));
-  const auto& copiedIK = copiedEE->getIK();
-  EXPECT_EQ(copiedIK->getDofs(), std::vector<std::size_t>({0, 3, 2}));
-  EXPECT_EQ(
-      entries(copiedIK->getGradientMethod().getComponentWeights()),
-      entries(weights));
-  const auto& copiedSeeds = copiedIK->getProblem()->getSeeds();
-  ASSERT_EQ(copiedSeeds.size(), 1u);
-  EXPECT_EQ(entries(copiedSeeds[0]), entries(seed));
-  EXPECT_EQ(ik->getDofs(), std::vector<std::size_t>({0, 1, 2}));
+    // The copy keeps the DOFs that it shares with the original, with their
+    // weights and seed entries, and selects its own DOF in place of the
+    // original's. Its node depends on the shared DOF of the other branch as
+    // little as the original did, so the analytical solver still fits it.
+    ASSERT_EQ(skeleton->getNumDofs(), 4u);
+    EndEffector* copiedEE = skeleton->getEndEffector(1);
+    EXPECT_FALSE(copiedEE->dependsOn(2));
+    const auto& copiedIK = copiedEE->getIK();
+    EXPECT_EQ(copiedIK->getDofs(), std::vector<std::size_t>({0, 3, 2}));
+    EXPECT_EQ(
+        entries(copiedIK->getGradientMethod().getComponentWeights()),
+        entries(weights));
+    const auto& copiedSeeds = copiedIK->getProblem()->getSeeds();
+    ASSERT_EQ(copiedSeeds.size(), 1u);
+    EXPECT_EQ(entries(copiedSeeds[0]), entries(seed));
+    EXPECT_EQ(ik->getDofs(), std::vector<std::size_t>({0, 1, 2}));
+    if (useAnalytical) {
+      ASSERT_NE(copiedIK->getAnalytical(), nullptr);
+      EXPECT_EQ(
+          copiedIK->getAnalytical()->getDofs(),
+          std::vector<std::size_t>({0, 3, 2}));
+    }
+  }
 }
 
 //==============================================================================
@@ -717,7 +802,7 @@ TEST(InverseKinematics, CopyEndEffectorWithStoredAnalyticalDofs)
                                        std::size_t copiedDof) {
     EXPECT_NE(
         warning.find(
-            "solves for the DOFs [1], but the copies of the DOFs that it "
+            "solves for the DOFs [1], but the copies of the DOFs [1] that it "
             "solved for are ["
             + std::to_string(copiedDof)
             + "]. A solver that stores DOF indices, such as IkFast, keeps the "
@@ -800,6 +885,113 @@ TEST(InverseKinematics, CopyEndEffectorWithSelectedAnalyticalDofs)
   EXPECT_TRUE(destination->getPositions().isApprox(expectedPositions, 1e-7))
       << destination->getPositions().transpose();
   EXPECT_TRUE(original->getPositions().isZero());
+
+  // A copy of the end effector's BodyNode alone as a new tree of the original
+  // Skeleton no longer depends on the root DOF, which its selection keeps.
+  // The copied solver solves for that selection too, so the copy keeps it.
+  testing::internal::CaptureStderr();
+  BodyNode* copy = pair.second->copyTo(nullptr).second;
+  const std::string sameSkeletonOutput = testing::internal::GetCapturedStderr();
+  EXPECT_EQ(
+      sameSkeletonOutput.find("[Skeleton::cloneBodyNodeTree]"),
+      std::string::npos)
+      << sameSkeletonOutput;
+  const auto& sameIK = copy->getEndEffector(0)->getIK();
+  EXPECT_EQ(sameIK->getDofs(), std::vector<std::size_t>({0, 2}));
+  ASSERT_NE(sameIK->getAnalytical(), nullptr);
+  EXPECT_EQ(
+      sameIK->getAnalytical()->getDofs(), std::vector<std::size_t>({0, 2}));
+
+  Eigen::Isometry3d sameTarget = sameIK->getNode()->getWorldTransform();
+  sameTarget.translation().x() = 0.8;
+  sameIK->setTarget(
+      SimpleFrame::createShared(Frame::World(), "same_target", sameTarget));
+  EXPECT_TRUE(sameIK->solveAndApply(false));
+  EXPECT_TRUE(original->getPositions().isApprox(Eigen::Vector3d(0, 0, 0.8)))
+      << original->getPositions().transpose();
+}
+
+//==============================================================================
+TEST(InverseKinematics, CopyToolWithinSkeletonReplacesStaleAnalytical)
+{
+  // A torso that turns about z carries an arm that slides along x from one
+  // unit off its axis, with a tool welded to the arm, and a fixed arm along y.
+  auto skeleton = Skeleton::create("original");
+  auto torso = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  torso.first->setAxis(Eigen::Vector3d::UnitZ());
+  PrismaticJoint::Properties slide;
+  slide.mAxis = Eigen::Vector3d::UnitX();
+  slide.mT_ParentBodyToJoint.translation() = Eigen::Vector3d::UnitX();
+  BodyNode* arm
+      = torso.second->createChildJointAndBodyNodePair<PrismaticJoint>(slide)
+            .second;
+  BodyNode* tool = arm->createChildJointAndBodyNodePair<WeldJoint>().second;
+  WeldJoint::Properties fixed;
+  fixed.mT_ParentBodyToJoint.translation() = 2.0 * Eigen::Vector3d::UnitY();
+  BodyNode* fixedArm
+      = torso.second->createChildJointAndBodyNodePair<WeldJoint>(fixed).second;
+
+  // Both end effectors select the torso and arm DOFs. One solver stores them,
+  // as IkFast does, and the other solves for the DOFs that its node depends on.
+  auto storedIK = tool->createEndEffector("stored")->getIK(true);
+  storedIK->setDofs({0, 1});
+  storedIK->setGradientMethod<TorsoArmIKCloneAnalytical>();
+  auto dependentIK = tool->createEndEffector("dependent")->getIK(true);
+  dependentIK->setDofs({0, 1});
+  dependentIK->setGradientMethod<DependentDofsIKCloneAnalytical>();
+
+  testing::internal::CaptureStderr();
+  BodyNode* copy = tool->copyTo(fixedArm).second;
+  const std::string warning = testing::internal::GetCapturedStderr();
+
+  // The copies depend on the torso DOF alone, and each copied IK module keeps
+  // both selected DOFs, which it shares with the original.
+  EndEffector* storedCopy = copy->getEndEffector(0);
+  EndEffector* dependentCopy = copy->getEndEffector(1);
+  ASSERT_EQ(
+      storedCopy->getDependentGenCoordIndices(), std::vector<std::size_t>({0}));
+  EXPECT_EQ(storedCopy->getIK()->getDofs(), std::vector<std::size_t>({0, 1}));
+  EXPECT_EQ(
+      dependentCopy->getIK()->getDofs(), std::vector<std::size_t>({0, 1}));
+
+  // The solver that stores the arm DOF still solves for the original's chain,
+  // so the copy uses JacobianDLS instead.
+  EXPECT_NE(
+      warning.find(
+          "of the copied JacobianNode [" + storedCopy->getName()
+          + "] solves for the DOFs [0, 1], but the copies of the DOFs [0, 1] "
+            "that it solved for are [0]."),
+      std::string::npos)
+      << warning;
+  EXPECT_EQ(storedCopy->getIK()->getAnalytical(), nullptr);
+  EXPECT_NE(storedIK->getAnalytical(), nullptr);
+
+  // A quarter turn of the torso brings the copy to its target. The stale solver
+  // would turn the torso half a turn instead, which aims the original's arm at
+  // the target, and the copy would miss it.
+  const auto& copiedIK = storedCopy->getIK();
+  const Eigen::Isometry3d target
+      = Eigen::Isometry3d(Eigen::AngleAxisd(
+            math::constantsd::half_pi(), Eigen::Vector3d::UnitZ()))
+        * storedCopy->getWorldTransform();
+  copiedIK->setTarget(
+      SimpleFrame::createShared(Frame::World(), "copy_target", target));
+  copiedIK->getErrorMethod().setBounds(
+      Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
+  copiedIK->getSolver()->setNumMaxIterations(100);
+  EXPECT_TRUE(copiedIK->solveAndApply(false));
+  EXPECT_TRUE(storedCopy->getWorldTransform().isApprox(target, 1e-7));
+  EXPECT_NEAR(skeleton->getPosition(0), math::constantsd::half_pi(), 1e-7);
+  EXPECT_EQ(skeleton->getPosition(1), 0.0);
+
+  // The other solver follows the copy, which no longer depends on the arm DOF
+  EXPECT_EQ(
+      warning.find("[" + dependentCopy->getName() + "]"), std::string::npos)
+      << warning;
+  ASSERT_NE(dependentCopy->getIK()->getAnalytical(), nullptr);
+  EXPECT_EQ(
+      dependentCopy->getIK()->getAnalytical()->getDofs(),
+      std::vector<std::size_t>({0}));
 }
 
 //==============================================================================

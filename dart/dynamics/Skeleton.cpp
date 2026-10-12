@@ -52,7 +52,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <optional>
 #include <ostream>
 #include <queue>
 #include <string>
@@ -2709,21 +2708,17 @@ static void bindCopiedInverseKinematics(
       copiedDofs[original->getDof(j)] = copies[i]->getParentJoint()->getDof(j);
   }
 
-  // The index of the DOF that the copy uses in place of the DOF that had this
-  // index before the copy, if any. The DOFs of Joints that were not copied stay
-  // in the original Skeleton, so a copy into that Skeleton keeps them,
-  // including those that its Node does not depend on, which an IK module can
-  // select too.
-  const auto counterpart
-      = [&](std::size_t index) -> std::optional<std::size_t> {
+  // The DOF that the copy uses in place of the DOF that had this index before
+  // the copy, if any. The DOFs of Joints that were not copied stay in the
+  // original Skeleton, so a copy into that Skeleton shares them, including
+  // those that its Node does not depend on, which an IK module can select too.
+  const auto counterpart = [&](std::size_t index) -> const DegreeOfFreedom* {
     if (index >= originalDofs.size())
-      return std::nullopt;
+      return nullptr;
     const auto copy = copiedDofs.find(originalDofs[index]);
     if (copy != copiedDofs.end())
-      return copy->second->getIndexInSkeleton();
-    if (sameSkeleton)
-      return originalDofs[index]->getIndexInSkeleton();
-    return std::nullopt;
+      return copy->second;
+    return sameSkeleton ? originalDofs[index] : nullptr;
   };
 
   const auto printDofs
@@ -2750,8 +2745,8 @@ static void bindCopiedInverseKinematics(
       std::vector<std::size_t> dofs;
       std::vector<std::size_t> kept;
       for (std::size_t k = 0; k < selected.size(); ++k) {
-        if (const auto dof = counterpart(selected[k])) {
-          dofs.push_back(*dof);
+        if (const DegreeOfFreedom* dof = counterpart(selected[k])) {
+          dofs.push_back(dof->getIndexInSkeleton());
           kept.push_back(k);
         }
       }
@@ -2792,13 +2787,13 @@ static void bindCopiedInverseKinematics(
           ik.getProblem()->addSeed(keepEntries(seed));
       }
 
-      // An analytical solver names its own DOFs. They follow the copy when the
-      // solver finds them from its Node, but a solver that stores DOF indices,
-      // such as IkFast, keeps the indices of the original Skeleton. Solving
-      // with those would read or move DOFs other than the copies, so the copy
-      // uses the default gradient method of an IK module instead. A solver can
-      // also solve for the DOFs that its IK module selects, so this compares
-      // them once the copy's selection is bound.
+      // An analytical solver names its own DOFs. A solver that stores DOF
+      // indices, such as IkFast, keeps the indices of the original Skeleton,
+      // and solving with those would read or move DOFs other than the copies.
+      // A solver that finds its DOFs again, from its Node or from the DOFs
+      // that its IK module selects, follows the copy, so this compares them
+      // once the copy's selection is bound. A copy whose solver does not fit
+      // uses the default gradient method of an IK module instead.
       const auto* original
           = paired ? dynamic_cast<const JacobianNode*>(originalNodes[n])
                    : nullptr;
@@ -2806,21 +2801,47 @@ static void bindCopiedInverseKinematics(
       const InverseKinematics::Analytical* analytical = ik.getAnalytical();
       if (analytical != nullptr && originalIK != nullptr
           && originalIK->getAnalytical() != nullptr) {
+        // The counterparts of the DOFs that the original solver solved for,
+        // and those of them that model the copy's chain: a solver models the
+        // chain of its Node, so a DOF that the copy shares with the original
+        // fits only while the copy depends on it as the original does.
+        const std::vector<std::size_t> originalSolverDofs
+            = originalIK->getAnalytical()->getDofs();
+        std::vector<std::size_t> counterparts;
         std::vector<std::size_t> expected;
-        for (const std::size_t dof : originalIK->getAnalytical()->getDofs()) {
-          if (const auto copy = counterpart(dof))
-            expected.push_back(*copy);
+        for (const std::size_t index : originalSolverDofs) {
+          const DegreeOfFreedom* dof = counterpart(index);
+          if (dof == nullptr)
+            continue;
+          const std::size_t dofIndex = dof->getIndexInSkeleton();
+          counterparts.push_back(dofIndex);
+          if (dof != originalDofs[index]
+              || node->dependsOn(dofIndex) == original->dependsOn(dofIndex)) {
+            expected.push_back(dofIndex);
+          }
         }
 
-        // Read the DOFs before warning, since reading them can warn too
+        // Read the DOFs before warning, since reading them can warn too. A
+        // solver that still names the DOFs of the original solver may store
+        // them, so they must keep their meaning for the copy. Other DOFs must
+        // follow the copy's chain, or every counterpart, as the copied
+        // selection does. A solver that names no DOFs then, as IkFast does when
+        // it cannot configure, has nothing to solve for.
         const std::vector<std::size_t> solverDofs = analytical->getDofs();
-        if (solverDofs != expected) {
+        const bool fits = solverDofs == originalSolverDofs
+                              ? expected == originalSolverDofs
+                              : !solverDofs.empty()
+                                    && (solverDofs == expected
+                                        || solverDofs == counterparts);
+        if (!fits) {
           std::ostream& out = dtwarn;
           out << "[Skeleton::cloneBodyNodeTree] The analytical IK solver ["
               << analytical->getMethodName() << "] of the copied JacobianNode ["
               << node->getName() << "] solves for the DOFs ";
           printDofs(out, solverDofs);
-          out << ", but the copies of the DOFs that it solved for are ";
+          out << ", but the copies of the DOFs ";
+          printDofs(out, originalSolverDofs);
+          out << " that it solved for are ";
           printDofs(out, expected);
           out << ". A solver that stores DOF indices, such as IkFast, keeps "
               << "the indices of the original Skeleton, so the copied IK "

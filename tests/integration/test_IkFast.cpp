@@ -41,9 +41,11 @@
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/IkFast.hpp>
 #include <dart/dynamics/InverseKinematics.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
 #include <dart/dynamics/SharedLibraryIkFast.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
 
 #include <dart/math/Constants.hpp>
 
@@ -235,7 +237,7 @@ TEST(IkFast, CopyWamArmIk)
     const std::string warning = testing::internal::GetCapturedStderr();
     EXPECT_NE(
         warning.find(
-            "but the copies of the DOFs that it solved for are " + copiedDofs
+            "the DOFs [0, 1, 3, 4, 5, 6] that it solved for are " + copiedDofs
             + ". A solver that stores DOF indices, such as IkFast, keeps "
               "the indices of the original Skeleton, so the copied IK "
               "module uses JacobianDLS instead."),
@@ -304,6 +306,22 @@ TEST(IkFast, CopyWamArmIk)
         return lastLink->getEndEffector("ee");
       },
       "[0]");
+
+  // A tool welded to the arm and copied onto another branch of the WAM's
+  // Skeleton depends on none of the DOFs of IkFast. IkFast then does not
+  // configure, so it names no DOFs either.
+  auto tool = wam->getBodyNode("/wam7")
+                  ->createChildJointAndBodyNodePair<dynamics::WeldJoint>()
+                  .second;
+  tool->createEndEffector("tool")
+      ->createIK()
+      ->setGradientMethod<dynamics::SharedLibraryIkFast>(
+          DART_TEST_IKFAST_LIBRARY, ikFastDofs, std::vector<std::size_t>{2});
+  auto branch = wam->getRootBodyNode()
+                    ->createChildJointAndBodyNodePair<dynamics::RevoluteJoint>()
+                    .second;
+  copyWithStaleIkFast(
+      [&] { return tool->copyTo(branch).second->getEndEffector(0); }, "[]");
 
   EXPECT_TRUE(wam->getPositions().head(7).isApprox(wamPositions));
   EXPECT_EQ(ik->getAnalytical()->getDofs(), ikFastDofs);
