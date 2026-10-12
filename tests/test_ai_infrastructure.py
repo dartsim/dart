@@ -4469,15 +4469,16 @@ endif()
 
 
 @pytest.mark.parametrize(
-    ("system_imgui", "scope", "accepted"),
+    ("system_imgui", "gui", "scope", "accepted"),
     (
-        ("ON", "TARGET dart-gui-app", True),
-        ("OFF", "TARGET dart-gui-app", False),
-        ("ON", "FALSE", False),
+        ("ON", "ON", "TARGET dart-gui-app", True),
+        ("OFF", "OFF", "TARGET dart-gui-app", True),
+        ("OFF", "ON", "TARGET dart-gui-app", False),
+        ("ON", "ON", "FALSE", False),
     ),
 )
 def test_cmake_semantic_graph_probe_gui_app_inactive_policy(
-    tmp_path, system_imgui, scope, accepted
+    tmp_path, system_imgui, gui, scope, accepted
 ):
     build = _configure_semantic_graph_fixture(tmp_path)
     cmake = tmp_path / "CMakeLists.txt"
@@ -4485,6 +4486,7 @@ def test_cmake_semantic_graph_probe_gui_app_inactive_policy(
         cmake.read_text(encoding="utf-8").replace(
             "add_subdirectory(tests)",
             f'set(DART_USE_SYSTEM_IMGUI {system_imgui} CACHE BOOL "" FORCE)\n'
+            f'set(DART_BUILD_GUI {gui} CACHE BOOL "" FORCE)\n'
             "add_library(dart-gui INTERFACE)\nadd_subdirectory(tests)",
             1,
         ),

@@ -96,7 +96,8 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "owner": "tests/integration/CMakeLists.txt",
         "command": "dart_add_test",
         "scopes": ("if:TARGET dart-gui-app",),
-        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
+        # A vanilla system ImGui compiles the app out, and so does a GUI-off build.
+        "cache": ({"DART_USE_SYSTEM_IMGUI": "ON"}, {"DART_BUILD_GUI": "OFF"}),
     },
     "tests/integration/test_ModelResourceRetriever.cpp": {
         "owner": "tests/integration/CMakeLists.txt",
@@ -2174,8 +2175,14 @@ def inactive_cpp_test_is_approved(
     if policy is None:
         return False
     cache_predicates = policy.get("cache", {})
-    if not isinstance(cache_predicates, dict) or not all(
-        cache.get(variable) == value for variable, value in cache_predicates.items()
+    # A tuple lists alternative cache states, any one of which approves.
+    alternatives = (
+        cache_predicates if isinstance(cache_predicates, tuple) else (cache_predicates,)
+    )
+    if not any(
+        isinstance(predicates, dict)
+        and all(cache.get(variable) == value for variable, value in predicates.items())
+        for predicates in alternatives
     ):
         return False
     if policy.get("msvc"):
