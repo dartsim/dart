@@ -1431,6 +1431,7 @@ struct World::StepContext
 {
   bool resetCommand = true;
   bool deactivationEnabled = false;
+  bool customFilterSleeping = false;
 };
 
 //==============================================================================
@@ -1446,31 +1447,9 @@ void World::step(bool _resetCommand)
     return;
   }
 
-  const bool customFilterSleeping = mDeactivationState->mStepCustomBodyFilter;
-  const bool lastStepHadNoContacts
-      = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
-  bool allRestingFastPathReady = false;
-  if (deactivationEnabled && lastStepHadNoContacts) {
-    bool allRestingSnapshotStale = false;
-    allRestingFastPathReady
-        = isAllRestingFastPathReady(_resetCommand, &allRestingSnapshotStale);
-    if (allRestingSnapshotStale)
-      wakeRestingSkeletonsForWorldChange();
-  }
-
-  if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
-    if (customFilterSleeping) {
-      for (const auto& skel : mSkeletons) {
-        if (skel->isMobile() && skel->isResting())
-          clearRestingAccelerations(*skel);
-      }
-    }
-    mTime += mTimeStep;
-    mFrame++;
-    if (!mLastStepRestingWorldStateValid)
-      updateLastStepRestingWorldState();
+  if (tryAllRestingFastPath(context))
     return;
-  }
+  const bool customFilterSleeping = context.customFilterSleeping;
 
   // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
   // step so the post-step rest-detection pass can treat it as non-quiet even
@@ -1783,6 +1762,42 @@ void World::stepWithoutDeactivation(const StepContext& context)
   mFrame++;
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
+}
+
+//==============================================================================
+bool World::tryAllRestingFastPath(StepContext& context)
+{
+  const bool _resetCommand = context.resetCommand;
+  const bool deactivationEnabled = context.deactivationEnabled;
+
+  const bool customFilterSleeping = mDeactivationState->mStepCustomBodyFilter;
+  context.customFilterSleeping = customFilterSleeping;
+  const bool lastStepHadNoContacts
+      = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
+  bool allRestingFastPathReady = false;
+  if (deactivationEnabled && lastStepHadNoContacts) {
+    bool allRestingSnapshotStale = false;
+    allRestingFastPathReady
+        = isAllRestingFastPathReady(_resetCommand, &allRestingSnapshotStale);
+    if (allRestingSnapshotStale)
+      wakeRestingSkeletonsForWorldChange();
+  }
+
+  if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
+    if (customFilterSleeping) {
+      for (const auto& skel : mSkeletons) {
+        if (skel->isMobile() && skel->isResting())
+          clearRestingAccelerations(*skel);
+      }
+    }
+    mTime += mTimeStep;
+    mFrame++;
+    if (!mLastStepRestingWorldStateValid)
+      updateLastStepRestingWorldState();
+    return true;
+  }
+
+  return false;
 }
 
 //==============================================================================

@@ -738,6 +738,15 @@ private:
   /// Runs the whole step with deactivation off.
   void stepWithoutDeactivation(const StepContext& context);
 
+  /// Records whether a custom BodyNodeCollisionFilter lets skeletons sleep
+  /// this step. When the last solve found no contacts, runs the all-resting
+  /// readiness scan, which can clear residual forces and commands and wake
+  /// resting skeletons. If every mobile skeleton still rests and nothing
+  /// changed since the last step, advances time and the frame count without
+  /// integrating or solving, clears resting skeletons' accelerations under
+  /// such a filter, and returns true.
+  bool tryAllRestingFastPath(StepContext& context);
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,
