@@ -123,6 +123,11 @@
     mimics only a later DoF now gets its constraint.
     [#3700](https://github.com/dartsim/dart/pull/3700)
 
+  * Stop `HierarchicalIK` constraint gradients from crashing once their
+    `HierarchicalIK` has been destroyed; like the constraint value, the
+    gradient now reports the misuse and returns zero.
+    [#3751](https://github.com/dartsim/dart/pull/3751)
+
 * Python
 
   * Avoid crashes when native code releases Python objects, or calls Python
