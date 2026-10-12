@@ -43,9 +43,9 @@ DART 7.0 is released when all of these hold:
   - `WorldBatch`;
   - `dart.render`/`dart.viewer`.
 - **The acceptance tests pass from release-candidate wheels** in fresh
-  environments on Linux x86_64/aarch64, macOS arm64 and Windows x64. It covers:
-  load, compile, step, read state, snapshot round trip, headless render, and
-  batch.
+  environments on Linux x86_64/aarch64, macOS arm64 and Windows x64. They
+  cover: load, compile, step, read state, snapshot round trip, headless render,
+  and batch.
 - **`import dartpy` works without graphics libraries** in a slim container.
 - **Unmodified gz-physics and gz-sim pass** the Harmonic, Ionic and Jetty
   compatibility lanes, with no new failures or slow cases against baselines from
@@ -60,11 +60,14 @@ DART 7.0 is released when all of these hold:
 
 This script is the acceptance contract. WP-7.0.7 splits it into per-feature
 tests in `python/tests/acceptance/test_target_shape.py`, each marked
-`xfail(strict=True)`. Each feature PR removes its marker, so the test file
-doubles as a burn-down. The tests use existing constructors for independent
-setup until the package rename lands. The contract stays here instead of in
-`python/examples/target_shape.py`, alongside automatically discovered runnable
-examples, while its features are unimplemented.
+`xfail(strict=True)`. The headless-render test needs a graphics device, so it
+lives in `python/tests/unit/gui/test_target_shape_render.py`, which
+`pixi run test-gui` and `CI Filament` run and `pixi run test-py` leaves out.
+Each feature PR removes its marker, so the tests double as a burn-down. The
+tests use existing constructors for independent setup until the package rename
+lands. The contract stays here instead of in `python/examples/target_shape.py`,
+alongside automatically discovered runnable examples, while its features are
+unimplemented.
 
 ```python
 import numpy as np
@@ -97,31 +100,42 @@ batch.step(20)
 
 ### Must-have
 
-- **Every breaking Python change lands before the API freeze `F`:** native
-  renames from the reviewed rename table, the package layout, read-only arrays,
-  error types, `UPPER_CASE` enums, keyword-only arguments, `Transform`/`Rotation`
-  and raising loaders. The default-detector switch ships in 7.0 only if its
-  [prerequisites](#default-detector-switch) pass before M1 starts; otherwise it
-  is a labeled 7.x change.
+7.0 needs everything that the
+[acceptance criteria](#final-deliverable-and-acceptance) and the
+[design doc](../../design/dart7_python_api.md) require. The API freeze `F`
+waits for every item below, additive ones included:
+
+- **Breaking Python changes:** native renames from the reviewed rename table
+  (the `Multibody`/`Link`/`Dof` vocabulary, `Collider`/`Visual` handles and
+  named collections), the package layout with its curated top level, read-only
+  arrays, error types, `UPPER_CASE` enums, keyword-only arguments,
+  `Transform`/`Rotation` and raising loaders. The default-detector switch ships
+  in 7.0 only if its [prerequisites](#default-detector-switch) pass before M1
+  starts; otherwise it is a labeled 7.x change.
+- Type stubs (`.pyi` plus `py.typed`) in every wheel with stub-drift checks,
+  and the `dartpy` logging bridge.
+- `io.load_model`/`io.load_world`, `World.add`, the `add_*` builders with
+  keyword-only specs, and the `dart.data` sample data.
 - Editing vs compiled simulation modes, and GIL-free `step(n)` on the
   deterministic executor.
 - `WorldBatch` built from remapping clones.
 - `capture_state`/`restore_state` dynamic snapshots and exact checkpoints:
   record/replay levels L0 and L1.
-- Compliant `PositionServo`/`VelocityServo` actuators and native sensors.
-- `dart.render` and `dart.viewer` on Filament, with the interim camelCase GUI
-  module deleted. M6a merged the backend in #3696; M6b owns sensor rendering
-  and the Python API.
+- Compliant `PositionServo`/`VelocityServo` actuators, `StepHook` step hooks
+  and native sensors.
+- `dart.render`, `dart.viewer` and `dart.Material` on Filament, with the
+  interim camelCase GUI module deleted. M6a merged the backend in #3696; M6b
+  owns sensor rendering and the Python API.
 - The codemod and migration guide.
-- One `cp312-abi3` wheel per platform: Linux x86_64/aarch64, macOS arm64 and
-  Windows x64.
+- One `cp312-abi3` wheel per platform (Linux x86_64/aarch64, macOS arm64 and
+  Windows x64) that imports without graphics libraries.
 
 ### Also planned
 
-Additive work planned for 7.0 that moves to 7.1 if it misses `F`: step hooks,
-typed solver configuration, the `add_*` builders and keyword-only specs, the
-logging bridge, type stubs with `py.typed`, and dense articulated-body data
-(M2, behind its stop rule).
+Planned for 7.0 but required by neither the acceptance criteria nor the design
+doc: typed solver selection in `WorldConfig` (M1e) and dense articulated-body
+data (M2, behind its [stop rule](#release-train-and-checkpoints)). Either moves
+to 7.1 if it misses `F`.
 
 ### Deferrals
 
@@ -259,8 +273,9 @@ no longer excluded from the Python formatters; a `--renames` mode for
 ## Release train and checkpoints
 
 WP-7.0.7 records the API freeze `F` and two checkpoints. `F` is declared once
-every breaking change on the [must-have list](#must-have) has merged and C2 has
-passed. Additive work after `F` goes to 7.1.
+every item on the [must-have list](#must-have), additive ones included, has
+merged and C2 has passed. Only additive work outside that list moves to 7.1 if
+it misses `F`.
 
 - **C1: M3 go/no-go after the first three M2 kernel PRs**, applying the M2
   stop rule below. M3 goes into 7.0 only if all of these hold:
@@ -271,7 +286,7 @@ passed. Additive work after `F` goes to 7.1.
   3. a flagged spike limited to storing revolute and free-joint
      positions and velocities contiguously, passes the guards and the shim test,
      and its memory-copy snapshots cost at most 0.1× of the gather path;
-  4. M3 can land before `F` without delaying the remaining breaking changes.
+  4. M3 can land before `F` without delaying it.
 
   Otherwise M3 moves to 7.x and must be purely additive when it lands.
   Aspect-state semantics change only in 8.0.
@@ -287,10 +302,11 @@ passed. Additive work after `F` goes to 7.1.
 
 Release rules:
 
-- Every breaking change lands before `F`: renames, package layout, read-only
-  arrays, error types, enums, keyword-only options, `Transform`/`Rotation`,
-  raising loaders, and the default-detector switch if its gate passes. Additive
-  work that misses `F` moves to 7.1.
+- Every must-have lands before `F`, including every breaking change: renames,
+  package layout, read-only arrays, error types, enums, keyword-only options,
+  `Transform`/`Rotation`, raising loaders, and the default-detector switch if
+  its gate passes. Only additive work outside the must-have list moves to 7.1
+  if it misses `F`.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
   example runner, and the scheduled lane against the gz-physics development
@@ -406,13 +422,13 @@ before the API freeze `F`, so release candidates carry the final render API.
 | WP-7.0.1 | Roll main's release line and AI policy from DART 6 to 7.0 | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
 | WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
 | WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
-| WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport in review ([#3717](https://github.com/dartsim/dart/pull/3717)) |
+| WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport merged ([#3717](https://github.com/dartsim/dart/pull/3717)) |
 | WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Done ([#3719](https://github.com/dartsim/dart/pull/3719)) |
 | WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
 | WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | Done ([#3720](https://github.com/dartsim/dart/pull/3720)); the baseline pin waits for M1 |
-| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In review ([#3725](https://github.com/dartsim/dart/pull/3725)) |
-| WP-7.0.7 | Record the API freeze, checkpoints, must-have list and acceptance tests | In review |
-| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) builds 6.20.1 wheels for Python 3.12 to 3.14 |
+| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In review: [#3725](https://github.com/dartsim/dart/pull/3725) (version file, shim test and header probe) and [#3729](https://github.com/dartsim/dart/pull/3729) (gz API inventory) |
+| WP-7.0.7 | Record the API freeze, checkpoints, must-have list and acceptance tests | In review ([#3728](https://github.com/dartsim/dart/pull/3728)) |
+| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for Python 3.12 to 3.14; [#3730](https://github.com/dartsim/dart/pull/3730) (in review) adds Linux Python 3.15 wheels; macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15 builds of `bullet-cpp` |
 
 Each packet records its scope, non-goals, gates and evidence in
 [verification.md](verification.md) before it is marked done.

@@ -1,4 +1,9 @@
-"""DART 7.0 target shape; each feature PR removes its strict xfail marker."""
+"""DART 7.0 target shape; each feature PR removes its strict xfail marker.
+
+The headless-render part needs a graphics device, so it lives in
+python/tests/unit/gui/test_target_shape_render.py, which test-gui runs and
+test-py leaves out.
+"""
 
 import dartpy as dart
 import numpy as np
@@ -39,10 +44,13 @@ def test_edit_compile(world):
     assert world.is_compiled
 
 
-@pytest.mark.xfail(strict=True, reason="M5: io.load_model and dart.data are pending")
-def test_load_model_and_data():
+@pytest.mark.xfail(
+    strict=True, reason="M5: dart.data, io.load_model and World.add are pending"
+)
+def test_load_model_and_add(world):
     path = dart.data.path("urdf/KR5/KR5 sixx R650.urdf")
-    robot = dart.io.load_model(path)
+    robot = world.add(dart.io.load_model(path))
+    assert world.multibodies[robot.name] is robot
     assert robot.num_dofs == 6
 
 
@@ -68,11 +76,11 @@ def test_imu_sensor(world, robot):
 
 @pytest.mark.xfail(
     strict=True,
-    reason="M1d/M5b: step(n) is pending; the current argument accepts only bool",
+    reason="M1d/M5b: step(n) and step_count are pending; step accepts only bool",
 )
 def test_step_n(world):
     world.step(20)
-    assert world.getSimFrames() == 20
+    assert world.step_count == 20
 
 
 @pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
@@ -99,17 +107,6 @@ def test_capture_restore_state(world, robot):
     np.testing.assert_array_equal(robot.getPositions(), positions)
     np.testing.assert_array_equal(robot.getVelocities(), velocities)
     assert world.getTime() == time
-
-
-@pytest.mark.xfail(
-    strict=True, reason="M6b: dart.render.Renderer and Camera RGB capture are pending"
-)
-def test_renderer_rgb(world):
-    rgb = dart.render.Renderer(world).render(
-        dart.render.Camera.look_at(eye=(2, 0, 1), target=(0, 0, 0.5))
-    )
-    assert rgb.shape == (480, 640, 3)
-    assert rgb.dtype == np.uint8
 
 
 @pytest.mark.xfail(

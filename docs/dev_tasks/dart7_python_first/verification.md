@@ -169,7 +169,9 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Status:** in review in [#3719](https://github.com/dartsim/dart/pull/3719). It changes behavior, so it targets main only.
+- **Status:** done; merged in
+  [#3719](https://github.com/dartsim/dart/pull/3719). It changes behavior, so
+  it targets main only.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -263,8 +265,9 @@ Known gaps:
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
   and compares each detector against its own baseline.
-- **Status:** in progress: the harness is ready for review, and the
-  `dart7-base` pin waits for the start of M1.
+- **Status:** done; merged in
+  [#3720](https://github.com/dartsim/dart/pull/3720). The `dart7-base` pin
+  waits for the start of M1.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
@@ -285,13 +288,15 @@ Known gaps:
 
 ### WP-7.0.7 Scope artifacts
 
+- **Pull request:** [#3728](https://github.com/dartsim/dart/pull/3728).
 - **Scope:**
   - the dependency/order/priority refinement dated 2026-10-11; historical
     evidence dates stay;
-  - API freeze `F`, declared after every must-have breaking change has merged
-    and C2 has passed; additive work after `F` goes to 7.1;
+  - API freeze `F`, declared after every must-have, additive ones included,
+    has merged and C2 has passed; only additive work outside the must-have
+    list moves to 7.1 if it misses `F`;
   - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
-    land before `F` without delaying the remaining breaking changes;
+    land before `F` without delaying it;
   - C2 before `F`, so release candidates carry the final render API;
   - the default-detector switch only if its prerequisites pass before M1
     starts, scheduled first so later rebaselines start from the final default;
@@ -300,39 +305,61 @@ Known gaps:
     wall time, and the flagged spike passing guards and the shim with `memcpy`
     snapshots at most 0.1× the gather cost; M2 stops below 10% gain from its
     first three kernel PRs;
-  - the 7.0 must-have list and explicit deferrals;
-  - the target-shape acceptance tests, marked `xfail(strict=True)`.
-- **Evidence on 2026-10-11** (main `b3f922f57`):
-  `python/tests/acceptance/test_target_shape.py` collects ten tests, all
-  XFAIL with no XPASS, through `pixi run test-py` (688 passed, 2 skipped,
-  10 XFAIL). With `--runxfail`, each fails for its intended missing feature:
+  - the 7.0 must-have list, covering everything the acceptance criteria and
+    the design doc require, and explicit deferrals;
+  - the target-shape acceptance tests, marked `xfail(strict=True)`; the
+    headless-render test needs a graphics device, so `pixi run test-gui` runs
+    it instead of `pixi run test-py`.
+- **Evidence on 2026-10-11** (main `9e4bb4e6f`):
+  - `pixi run test-py` collects the nine tests in
+    `python/tests/acceptance/test_target_shape.py`, all XFAIL with no XPASS
+    (688 passed, 2 skipped, 9 XFAIL), and no longer collects the render test.
+  - The `pytest` step of `pixi run test-gui`, over `python/tests/unit/gui` and
+    `python/tests/integration`, collects
+    `python/tests/unit/gui/test_target_shape_render.py` as XFAIL (262 passed,
+    1 skipped, 1 XFAIL).
+  - With `--runxfail`, each test fails for its intended missing feature:
 
   | Test | Observed failure |
   | --- | --- |
   | World construction keywords | `AttributeError`: no `dart.World` |
   | edit/compile | `AttributeError`: no `World.compile` |
-  | loading and data | `AttributeError`: no `dart.data` |
+  | loading and `World.add` | `AttributeError`: no `dart.data` |
   | joint PositionServo | `AttributeError`: no `dart.PositionServo` |
   | IMU sensor | `AttributeError`: no `dart.sensors` |
-  | `step(n)` | `TypeError`: current overload accepts `bool`, rejects `20` |
+  | `step(n)` and `step_count` | `TypeError`: `step` accepts only a `bool`, not `20` |
   | Transform composition | `AttributeError`: no `dart.Transform` |
   | capture/restore state | `AttributeError`: no `World.capture_state` |
-  | Renderer RGB | `AttributeError`: no `dart.render` |
   | WorldBatch set/step | `AttributeError`: no `dart.WorldBatch` |
+  | Renderer RGB (`test-gui`) | `AttributeError`: no `dart.render` |
 
   `pyproject.toml` already sets `xfail_strict = true`, and each test also
   passes `strict=True`. The contract lives only in these tests, not in
   `python/examples/`, because that directory's examples run automatically.
+- **Review passes:** the first review found seven issues: the step test read
+  the legacy frame counter instead of `step_count`; the render test ran in the
+  device-free suite; the loader test skipped `World.add`; step hooks and type
+  stubs were listed as optional although the acceptance criteria and the
+  design doc require them; the freeze gate ignored additive must-haves; the
+  design doc carried release-train state; and the resume handoff was stale.
+  All were fixed.
 - **Pending maintainer action:** check PyPI's project history for deleted
   7.0.0 files, because PyPI never accepts a reused file name.
 - **Status:** in review.
 
 ### WP-7.0.8 Newer-Python wheels for 6.20.x
 
-- **Scope:** add Python 3.14 wheels, and later 3.15, on `release-6.20` through
-  `dart-backport-pr`. The migration guide states which Python versions
-  `dartpy<7` supports.
+- **Scope:** add Python 3.14 wheels, and later 3.15, as release-branch
+  packaging PRs on `release-6.20`. The migration guide states which Python
+  versions `dartpy<7` supports.
 - **Risk:** that line's bindings use a different binder, so the 3.15 wheels
   need their own review of GIL acquisition during finalization.
-- **Status:** in progress. [#3704](https://github.com/dartsim/dart/pull/3704) builds
-  6.20.1 wheels for Python 3.12 to 3.14; Python 3.15 wheels remain.
+- **Status:** in progress.
+  - [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for
+    Python 3.12 to 3.14.
+  - [#3730](https://github.com/dartsim/dart/pull/3730), in review, adds Linux
+    Python 3.15 wheels and runs a finalization test against every wheel. Its
+    review of that line's pybind11 bindings found no crash or hang during
+    finalization on Python 3.15, so the bindings are unchanged.
+  - macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15
+    builds of `bullet-cpp`.
