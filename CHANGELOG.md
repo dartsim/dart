@@ -49,7 +49,7 @@
 
   * dartpy publishes Python 3.15 wheels for Linux x86_64 and aarch64. macOS
     arm64 and Windows x64 follow once conda-forge's bullet-cpp builds for
-    Python 3.15.
+    Python 3.15. [#3730](https://github.com/dartsim/dart/pull/3730)
 
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
