@@ -199,53 +199,55 @@ TEST(IkFast, CopyWamArmIk)
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
       DART_TEST_IKFAST_LIBRARY, ikFastDofs, std::vector<std::size_t>{2});
 
-  // copyAs() keeps the DOF indices, so the copied IkFast still solves for the
-  // copied DOFs. Binding the copy reports nothing.
-  testing::internal::CaptureStderr();
-  const auto copy = wam->getRootBodyNode()->copyAs("wam_copy");
-  const std::string output = testing::internal::GetCapturedStderr();
-  EXPECT_TRUE(output.empty()) << output;
-
-  auto copiedEE = copy->getEndEffector("ee");
-  ASSERT_NE(copiedEE, nullptr);
-  auto copiedIkFast
-      = dynamic_cast<dynamics::IkFast*>(copiedEE->getIK()->getAnalytical());
-  ASSERT_NE(copiedIkFast, nullptr);
-  EXPECT_TRUE(copiedIkFast->isConfigured());
-  EXPECT_EQ(copiedIkFast->getDofs(), ikFastDofs);
+  // A whole-skeleton clone keeps the identical chain and its analytical solver.
+  const auto clone = wam->cloneSkeleton("wam_clone");
+  auto clonedEE = clone->getEndEffector("ee");
+  ASSERT_NE(clonedEE, nullptr);
+  auto clonedIkFast
+      = dynamic_cast<dynamics::IkFast*>(clonedEE->getIK()->getAnalytical());
+  ASSERT_NE(clonedIkFast, nullptr);
+  EXPECT_TRUE(clonedIkFast->isConfigured());
+  EXPECT_EQ(clonedIkFast->getDofs(), ikFastDofs);
 
   Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
   target.translation() = Eigen::Vector3d(0, 0, 0.5);
-  const auto solutions = copiedIkFast->getSolutions(target);
+  const auto solutions = clonedIkFast->getSolutions(target);
   std::size_t numValid = 0;
   for (const auto& solution : solutions) {
     if (solution.mValidity != InverseKinematics::Analytical::VALID)
       continue;
-
     ++numValid;
-    copy->setPositions(ikFastDofs, solution.mConfig);
-    EXPECT_TRUE(equals(target, copiedEE->getTransform(), 1e-2));
+    clone->setPositions(ikFastDofs, solution.mConfig);
+    EXPECT_TRUE(equals(target, clonedEE->getWorldTransform(), 1e-2));
   }
   EXPECT_GT(numValid, 0u);
 
-  // Otherwise IkFast keeps the WAM's indices, which do not name the copied
-  // DOFs, so the copy uses JacobianDLS instead.
-  const auto copyWithStaleIkFast = [](const auto& copy,
-                                      const std::string& copiedDofs) {
+  const auto copyWithJacobianDLS = [](const auto& copy) {
     testing::internal::CaptureStderr();
     dynamics::EndEffector* ee = copy();
     const std::string warning = testing::internal::GetCapturedStderr();
-    EXPECT_NE(
-        warning.find(
-            "the DOFs [0, 1, 3, 4, 5, 6] that it solved for are " + copiedDofs
-            + ". A solver that stores DOF indices, such as IkFast, keeps "
-              "the indices of the original Skeleton, so the copied IK "
-              "module uses JacobianDLS instead."),
-        std::string::npos)
-        << warning;
     EXPECT_NE(ee, nullptr);
     if (ee != nullptr) {
-      EXPECT_EQ(ee->getIK()->getAnalytical(), nullptr);
+      const std::string message
+          = "The copied IK module of the JacobianNode [" + ee->getName()
+            + "] uses JacobianDLS. Set the analytical solver up again for the "
+              "copy.\n";
+      const auto position = warning.find(message);
+      EXPECT_NE(position, std::string::npos) << warning;
+      if (position != std::string::npos) {
+        EXPECT_EQ(
+            warning.find(message, position + message.size()), std::string::npos)
+            << warning;
+      }
+      const auto& copiedIK = ee->getIK();
+      EXPECT_EQ(copiedIK->getAnalytical(), nullptr);
+      EXPECT_EQ(copiedIK->getGradientMethod().getMethodName(), "JacobianDLS");
+      const InverseKinematics::ErrorMethod::Properties defaults;
+      EXPECT_DOUBLE_EQ(
+          copiedIK->getErrorMethod().getErrorLengthClamp(),
+          defaults.mErrorLengthClamp);
+      EXPECT_TRUE(copiedIK->getErrorMethod().getErrorWeights().isApprox(
+          defaults.mErrorWeights));
     }
     return ee;
   };
@@ -274,42 +276,56 @@ TEST(IkFast, CopyWamArmIk)
     EXPECT_TRUE(positions.isApprox(expected));
   };
 
+  dynamics::SkeletonPtr copy;
+  solveCopy(copyWithJacobianDLS([&] {
+    copy = wam->getRootBodyNode()->copyAs("wam_copy");
+    return copy->getEndEffector("ee");
+  }));
+
+  // A welded base changes the chain without changing any DOF indices.
+  auto withFixedBase = dynamics::Skeleton::create("wam_with_fixed_base");
+  dynamics::WeldJoint::Properties fixed;
+  fixed.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(1.0, -0.5, 0.2);
+  fixed.mT_ParentBodyToJoint.linear()
+      = Eigen::AngleAxisd(0.4, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  auto fixedBase
+      = withFixedBase->createJointAndBodyNodePair<dynamics::WeldJoint>(
+          nullptr, fixed);
+  solveCopy(copyWithJacobianDLS([&] {
+    wam->getRootBodyNode()->copyTo(withFixedBase, fixedBase.second);
+    return withFixedBase->getEndEffector("ee");
+  }));
+  EXPECT_EQ(
+      withFixedBase->getEndEffector("ee")->getIK()->getDofs(), ik->getDofs());
+
   const Eigen::VectorXd wamPositions = wam->getPositions();
 
   // Under a FreeJoint, the copied WAM DOFs follow the FreeJoint's DOFs
   auto withBase = dynamics::Skeleton::create("wam_with_base");
   auto base = withBase->createJointAndBodyNodePair<dynamics::FreeJoint>();
-  solveCopy(copyWithStaleIkFast(
-      [&] {
-        wam->getRootBodyNode()->copyTo(withBase, base.second);
-        return withBase->getEndEffector("ee");
-      },
-      "[6, 7, 9, 10, 11, 12]"));
+  solveCopy(copyWithJacobianDLS([&] {
+    wam->getRootBodyNode()->copyTo(withBase, base.second);
+    return withBase->getEndEffector("ee");
+  }));
   EXPECT_EQ(
       withBase->getEndEffector("ee")->getIK()->getDofs(),
       std::vector<std::size_t>({6, 7, 8, 9, 10, 11, 12}));
 
-  // A copy within the WAM's Skeleton has new DOFs, which do not configure
-  // IkFast
-  solveCopy(copyWithStaleIkFast(
-      [&] {
-        wam->getRootBodyNode()->copyTo(nullptr);
-        return wam->getEndEffector(1);
-      },
-      "[7, 8, 10, 11, 12, 13]"));
+  // A copy within the WAM's Skeleton selects the new DOFs.
+  solveCopy(copyWithJacobianDLS([&] {
+    wam->getRootBodyNode()->copyTo(nullptr);
+    return wam->getEndEffector(1);
+  }));
 
   // A copy of the last link alone lacks most of the DOFs of IkFast
   dynamics::SkeletonPtr lastLink;
-  copyWithStaleIkFast(
-      [&] {
-        lastLink = wam->getBodyNode("/wam7")->copyAs("wam7_copy");
-        return lastLink->getEndEffector("ee");
-      },
-      "[0]");
+  copyWithJacobianDLS([&] {
+    lastLink = wam->getBodyNode("/wam7")->copyAs("wam7_copy");
+    return lastLink->getEndEffector("ee");
+  });
 
   // A tool welded to the arm and copied onto another branch of the WAM's
-  // Skeleton depends on none of the DOFs of IkFast. IkFast then does not
-  // configure, so it names no DOFs either.
+  // Skeleton depends on none of the DOFs of IkFast.
   auto tool = wam->getBodyNode("/wam7")
                   ->createChildJointAndBodyNodePair<dynamics::WeldJoint>()
                   .second;
@@ -320,8 +336,8 @@ TEST(IkFast, CopyWamArmIk)
   auto branch = wam->getRootBodyNode()
                     ->createChildJointAndBodyNodePair<dynamics::RevoluteJoint>()
                     .second;
-  copyWithStaleIkFast(
-      [&] { return tool->copyTo(branch).second->getEndEffector(0); }, "[]");
+  copyWithJacobianDLS(
+      [&] { return tool->copyTo(branch).second->getEndEffector(0); });
 
   EXPECT_TRUE(wam->getPositions().head(7).isApprox(wamPositions));
   EXPECT_EQ(ik->getAnalytical()->getDofs(), ikFastDofs);
