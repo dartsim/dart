@@ -109,8 +109,12 @@ default) requires Filament 1.77.3, GLFW 3.4, libpng, libjpeg, and Dear ImGui
 1.92.8 or newer. `DART_USE_SYSTEM_FILAMENT=ON` (the default) uses an installed
 Filament SDK; `OFF` uses DART's pinned private SDK, which Linux builds from
 source with Clang 20 or newer and Ninja, and macOS arm64 and 64-bit Windows
-download as prebuilt archives. `DART_USE_SYSTEM_IMGUI` selects the system or
-bundled ImGui configuration.
+download as prebuilt archives. The bundled ImGui, the default, is the Dear
+ImGui v1.92.8 docking release, which configure fetches with Git; its installed
+`dart/external/imgui/` headers use the docking layout. For offline configures,
+pass a local checkout of that tag with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
+`DART_USE_SYSTEM_IMGUI=ON` uses an installed ImGui instead; a vanilla system
+ImGui builds `dart-gui` without docking.
 
 Use `find_package(DART CONFIG REQUIRED COMPONENTS gui)`, link `dart-gui`, and
 include `dart/gui/gui.hpp`. ImGui compatibility headers keep their

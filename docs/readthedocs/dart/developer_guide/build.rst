@@ -183,7 +183,6 @@ environment as the dependency prefix. Then configure and build:
        -DDART_BUILD_PROFILE=ON \
        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-       -DDART_USE_SYSTEM_IMGUI=ON \
        -DDART_USE_SYSTEM_TRACY=ON
    cmake --build build/default/cpp/Release -j
 
@@ -242,7 +241,8 @@ include:
      - Enable the Tracy profiling backend for local developer profiling.
    * - ``DART_USE_SYSTEM_IMGUI``
      - ``OFF``
-     - Use a system ImGui package instead of the bundled compatibility target.
+     - Use a system ImGui package instead of the bundled Dear ImGui docking
+       release. A vanilla system ImGui builds the GUI without docking.
    * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
      - Use an installed nanobind 3.1 or newer instead of fetching nanobind

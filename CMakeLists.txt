@@ -278,11 +278,14 @@ dart_option(
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
-dart_option(
-  DART_IMGUI_DOCKING
-  "Fetch the Dear ImGui docking branch for the bundled build (enables the dockable demos workspace). Changes the bundled dart-external-imgui component's public ImGui ABI, so leave OFF for installs that must stay compatible with existing vanilla-bundled DART 6.20 clients"
-  OFF
-)
+# The bundled ImGui is always the docking release; drop the removed option.
+if(DEFINED DART_IMGUI_DOCKING)
+  message(
+    STATUS
+    "DART_IMGUI_DOCKING was removed: the bundled ImGui is the docking release"
+  )
+  unset(DART_IMGUI_DOCKING CACHE)
+endif()
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind >= 3.1" OFF)
