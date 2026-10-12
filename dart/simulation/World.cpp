@@ -1461,81 +1461,7 @@ void World::step(bool _resetCommand)
   solveConstraints(context);
   auto& deactivationState = *mDeactivationState;
   const bool collisionGroupUnchanged = context.collisionGroupUnchanged;
-
-  {
-    parallelForIndexRange(
-        mSimulationThreadPool.get(),
-        mSkeletons.size(),
-        mNumSimulationThreads,
-        [&](std::size_t i) {
-          auto& skel = mSkeletons[i];
-          if (!skel->isMobile())
-            return;
-
-          bool preservingFinalSleepSolve = false;
-
-          // A resting skeleton skips both the impulse-based forward dynamics
-          // and the position integration. The only exception is when an impulse
-          // was applied to it this step: that means a moving body contacted
-          // this island (the solver united them so the group was not
-          // all-resting and was solved), delivering the wake-up impulse to the
-          // previously-resting bodies. Such a skeleton must wake and be
-          // processed normally so the impulse is applied and the position is
-          // advanced. A newly sleep-eligible contact island also receives one
-          // final solved impulse before freezing so
-          // transmitted-wrench/body-force queries keep the last solved contact
-          // forces; that path processes the impulse but preserves the resting
-          // state.
-          if (deactivationEnabled && skel->isResting()) {
-            if (skel->isImpulseApplied()) {
-              if (skel->isSleepCandidate()) {
-                preservingFinalSleepSolve = true;
-              } else {
-                skel->setResting(false);
-                skel->setSleepCandidate(false);
-                if (!disturbedThisStep.empty())
-                  disturbedThisStep[i] = 1;
-              }
-            } else {
-              if (customFilterSleeping)
-                clearRestingAccelerations(*skel);
-              return;
-            }
-          }
-
-          if (skel->isImpulseApplied()) {
-            skel->computeImpulseForwardDynamics();
-            skel->setImpulseApplied(false);
-          }
-
-          if (!preservingFinalSleepSolve) {
-            if (skel->isPositionImpulseApplied()) {
-              skel->integratePositions(
-                  mTimeStep, skel->getPositionVelocityChanges());
-              skel->setPositionImpulseApplied(false);
-              skel->clearPositionVelocityChanges();
-            } else {
-              skel->integratePositions(mTimeStep);
-            }
-          }
-
-          if (preservingFinalSleepSolve && skel->getNumDofs() > 0) {
-            // Same per-DOF setter path as setVelocities(), without a vector.
-            for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
-              skel->setVelocity(dof, 0.0);
-            if (customFilterSleeping)
-              clearRestingAccelerations(*skel, true);
-            else
-              skel->computeForwardKinematics(false, true, false);
-          }
-
-          if (_resetCommand) {
-            skel->clearInternalForces();
-            skel->clearExternalForces();
-            skel->resetCommands();
-          }
-        });
-  }
+  advancePositions(context);
 
   // Rest-detection pass: decide which mobile skeletons are quiet enough to
   // sleep, and wake any that have started moving again. This is a deterministic
@@ -1824,6 +1750,90 @@ void World::solveConstraints(StepContext& context)
   context.collisionGroup = collisionGroup;
   context.collisionFilter = collisionFilter;
   context.collisionGroupUnchanged = collisionGroupUnchanged;
+}
+
+//==============================================================================
+void World::advancePositions(const StepContext& context)
+{
+  const bool _resetCommand = context.resetCommand;
+  const bool deactivationEnabled = context.deactivationEnabled;
+  const bool customFilterSleeping = context.customFilterSleeping;
+  auto& disturbedThisStep = mDisturbedThisStepScratch;
+
+  {
+    parallelForIndexRange(
+        mSimulationThreadPool.get(),
+        mSkeletons.size(),
+        mNumSimulationThreads,
+        [&](std::size_t i) {
+          auto& skel = mSkeletons[i];
+          if (!skel->isMobile())
+            return;
+
+          bool preservingFinalSleepSolve = false;
+
+          // A resting skeleton skips both the impulse-based forward dynamics
+          // and the position integration. The only exception is when an impulse
+          // was applied to it this step: that means a moving body contacted
+          // this island (the solver united them so the group was not
+          // all-resting and was solved), delivering the wake-up impulse to the
+          // previously-resting bodies. Such a skeleton must wake and be
+          // processed normally so the impulse is applied and the position is
+          // advanced. A newly sleep-eligible contact island also receives one
+          // final solved impulse before freezing so
+          // transmitted-wrench/body-force queries keep the last solved contact
+          // forces; that path processes the impulse but preserves the resting
+          // state.
+          if (deactivationEnabled && skel->isResting()) {
+            if (skel->isImpulseApplied()) {
+              if (skel->isSleepCandidate()) {
+                preservingFinalSleepSolve = true;
+              } else {
+                skel->setResting(false);
+                skel->setSleepCandidate(false);
+                if (!disturbedThisStep.empty())
+                  disturbedThisStep[i] = 1;
+              }
+            } else {
+              if (customFilterSleeping)
+                clearRestingAccelerations(*skel);
+              return;
+            }
+          }
+
+          if (skel->isImpulseApplied()) {
+            skel->computeImpulseForwardDynamics();
+            skel->setImpulseApplied(false);
+          }
+
+          if (!preservingFinalSleepSolve) {
+            if (skel->isPositionImpulseApplied()) {
+              skel->integratePositions(
+                  mTimeStep, skel->getPositionVelocityChanges());
+              skel->setPositionImpulseApplied(false);
+              skel->clearPositionVelocityChanges();
+            } else {
+              skel->integratePositions(mTimeStep);
+            }
+          }
+
+          if (preservingFinalSleepSolve && skel->getNumDofs() > 0) {
+            // Same per-DOF setter path as setVelocities(), without a vector.
+            for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
+              skel->setVelocity(dof, 0.0);
+            if (customFilterSleeping)
+              clearRestingAccelerations(*skel, true);
+            else
+              skel->computeForwardKinematics(false, true, false);
+          }
+
+          if (_resetCommand) {
+            skel->clearInternalForces();
+            skel->clearExternalForces();
+            skel->resetCommands();
+          }
+        });
+  }
 }
 
 //==============================================================================
