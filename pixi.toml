@@ -810,6 +810,7 @@ config = { cmd = """
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF" } }
 
+# Assumes the default multi-config generator layout, like the Windows test-gui.
 capture = { cmd = """
     cmake \
         --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
@@ -1290,7 +1291,9 @@ test-gui = { cmd = """
 ], env = { BUILD_TYPE = "Release" } }
 
 [feature.filament.target.win-64.tasks]
-# The Windows `config` tree is multi-config (Visual Studio by default).
+# Like test-gui below, these assume the default Visual Studio generator's
+# multi-config layout (bin/<config>); single-config generators such as Ninja
+# put dart-demos directly in bin/.
 demos = { cmd = """
     cmake \
         --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
