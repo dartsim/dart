@@ -28,7 +28,7 @@ and release-note density aligned with `docs/onboarding/changelog.md`.
 Interpret `$ARGUMENTS` as one of these modes when present:
 
 - `decide`: determine whether the current change needs a changelog entry and
-  record the reason for the PR checklist/body when no entry is needed.
+  record the reason in author/task notes when no entry is needed.
 - `draft`: write or revise the entry before a PR number exists.
 - `finalize`: add the PR link or adjust the entry after a PR exists, keeping the
   follow-up local until explicit maintainer/user approval permits a push.
@@ -43,7 +43,8 @@ If no mode is given, infer the smallest mode that satisfies the caller's need.
 ## Output Contract
 
 Every run must leave the caller with a concise, pasteable decision note. Use
-this shape in the response, PR body draft, or handoff text:
+this shape in the response or handoff text; PR descriptions follow the
+contributor owner rather than copying this decision log:
 
 ```markdown
 Changelog decision:
@@ -54,11 +55,11 @@ Changelog decision:
 - Decision: entry required | no entry required | entry deferred | audit only
 - Target section: <release/category, or N/A>
 - Entry text: <final or draft bullet, or N/A>
-- PR-body note: <exact no-entry reason or follow-up, or N/A>
+- Decision reason: <evidence-backed reason or required follow-up>
 - Follow-up: <PR link, maintainer approval, release audit, or none>
 ```
 
-For `no entry required`, the PR-body note must name the evidence-backed reason
+For `no entry required`, the decision note must name the evidence-backed reason
 rather than just saying "not needed." For `entry deferred`, say exactly what is
 missing, usually the PR number or release target. For `finalize`, confirm the
 entry still matches nearby `CHANGELOG.md` style after adding the PR link.

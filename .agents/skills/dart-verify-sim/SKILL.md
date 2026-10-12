@@ -102,7 +102,7 @@ benchmark's deterministic box trajectory.
 
 For PR before/after 3D highlights, matched captures, and compute-only plots,
 follow `docs/ai/verification.md` § "Simulation Verification Route". For their
-placement in the Effect section, follow `docs/onboarding/contributing.md`
+placement beside the supported claim, follow `docs/onboarding/contributing.md`
 § "PR Descriptions".
 
 Use `pixi run image-sheet` for motion. `image-verdict` checks pixel integrity and
@@ -111,7 +111,9 @@ optional reference differences; it does not inspect meaning.
 `pixi run evidence-publish` requires the text oracle, visible observation,
 text/image reconciliation, semantic verdict, and at least one explicit
 not-proven boundary before it marks the PR visual section ready. It renders local
-references without network access. Follow `docs/ai/verification.md`
+references without network access. The `Visual verification` section keeps
+claims, supporting media, observations, boundaries, and limiting caveats
+visible, with reproduction/environment details collapsed. Follow `docs/ai/verification.md`
 § "Visual Verification (Headless Capture)" for publication after
 explicit maintainer/user approval. Attachments use the same store as drag-and-drop,
 never release assets or tags; `--body-file` replaces the whole PR body.
