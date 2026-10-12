@@ -551,15 +551,24 @@ std::size_t Control::dispatch(
 //==============================================================================
 void Control::clearCallbacks()
 {
-  mOnChange = nullptr;
+  // A destroyed callback's captures may add controls, with callbacks of their
+  // own, anywhere in the tree: repeat until a pass drops none.
+  while (clearCallbacksPass()) {
+  }
+}
+
+//==============================================================================
+bool Control::clearCallbacksPass()
+{
+  bool dropped = std::exchange(mOnChange, nullptr) != nullptr;
   mPending = false;
   mUnreleasedEdit = false;
-  // A destroyed callback's captures may append controls, with callbacks of
-  // their own: index the live list, so appended children are cleared too.
+  // Index the live list, which a destroyed callback may grow.
   for (std::size_t i = 0; i < mChildren.size(); ++i) {
     const auto child = mChildren[i];
-    child->clearCallbacks();
+    dropped = child->clearCallbacksPass() || dropped;
   }
+  return dropped;
 }
 
 //==============================================================================

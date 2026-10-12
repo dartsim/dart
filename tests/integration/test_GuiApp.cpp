@@ -761,6 +761,58 @@ TEST(GuiAppControl, ClearingCallbacksSurvivesCapturesThatAddControls)
   EXPECT_EQ(group->getChildren().size(), 16u);
   // The appended controls' callbacks were cleared too.
   EXPECT_EQ(lateCapturesDestroyed, 8);
+
+  // Clearing a later group may add a callback to an earlier one.
+  auto first = panel->addGroup("First");
+  auto second = panel->addGroup("Second");
+  {
+    auto capture
+        = std::make_shared<Appends>(first.get(), &lateCapturesDestroyed);
+    second->addButton("b")->setOnChange([capture] {});
+  }
+  panel->clearCallbacks();
+  EXPECT_EQ(first->getChildren().size(), 1u);
+  EXPECT_EQ(lateCapturesDestroyed, 9);
+}
+
+//==============================================================================
+TEST(SceneContract, PanelOutlivesTheSceneCallables)
+{
+  // Once destroyed, each capture adds a control whose callback keeps the
+  // panel alive.
+  struct Appends
+  {
+    explicit Appends(std::weak_ptr<Control> panel) : panel(std::move(panel)) {}
+    ~Appends()
+    {
+      if (auto owner = panel.lock())
+        owner->addButton("late")->setOnChange([owner] {});
+    }
+    std::weak_ptr<Control> panel;
+  };
+  std::vector<std::weak_ptr<Control>> panels;
+  const Scene scene = makeScene("appends", [&] {
+    auto setup = emptySetup();
+    setup.panel = Control::makePanel();
+    panels.push_back(setup.panel);
+    auto key = std::make_shared<Appends>(setup.panel);
+    setup.keyActions.push_back({'k', "Key", [key] {
+                                }});
+    setup.onActivate = [panel = panels.back()](SceneContext& ctx) {
+      auto teardown = std::make_shared<Appends>(panel);
+      ctx.addTeardown([teardown] {});
+    };
+    return setup;
+  });
+  {
+    App host({scene}, std::nullopt);
+    testing::internal::CaptureStdout();
+    EXPECT_EQ(host.cycleScenes(1), 0);
+    testing::internal::GetCapturedStdout();
+  }
+  ASSERT_FALSE(panels.empty());
+  for (const auto& panel : panels)
+    EXPECT_TRUE(panel.expired());
 }
 
 //==============================================================================

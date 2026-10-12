@@ -208,6 +208,9 @@ public:
 private:
   Control(Kind kind, std::string label);
 
+  /// Drops the callbacks in one pass; returns whether it dropped any.
+  bool clearCallbacksPass();
+
   std::shared_ptr<Control> append(std::shared_ptr<Control> child);
   void requireGroup() const;
   Eigen::Vector4d sanitize(const Eigen::Vector4d& value) const;

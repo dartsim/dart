@@ -1026,9 +1026,13 @@ void App::teardownCurrentScene()
   mResumeSimulationOnTeardown = false;
 
   mCurrentWorld.reset();
-  mCurrentPanel.reset();
   mCurrentRenderPanel = nullptr;
   mCurrentKeyActions.clear();
+  // Destroying the scene's callables may have added panel callbacks, which
+  // could keep the panel alive in a cycle.
+  if (mCurrentPanel)
+    mCurrentPanel->clearCallbacks();
+  mCurrentPanel.reset();
   mCurrentCameraHome.reset();
   mCurrentSceneId.clear();
   mCurrentSceneTitle.clear();
