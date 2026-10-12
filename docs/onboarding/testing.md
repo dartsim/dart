@@ -92,10 +92,13 @@ or GUI behavior.
 
 - `ContactSurfaceProbe` compiles the same header-check source that gz-physics
   uses to detect `dart/constraint/ContactSurface.hpp`. One compiler invocation
-  checks C++14 with only DART and Eigen include directories and no extra
-  definitions. Source and generated `dart/` headers provide the installed
-  include layout; the probe inherits no library target flags or dependencies.
-  It matches downstream compiler acceptance, including tolerated extensions.
+  checks C++14 on Unix and C++17 with MSVC, which rejects the C++17 header
+  syntax that Unix compilers accept as extensions in C++14. It uses only DART
+  and Eigen include directories and no extra definitions. Source and generated
+  `dart/` headers provide the installed include layout; the probe inherits no
+  library target flags or dependencies.
+  The Unix check preserves downstream C++14 acceptance, including tolerated
+  extensions; the MSVC check uses DART's required C++17 dialect.
 - `test_GazeboShim` mirrors the gz-physics detector subclasses, factory
   registrars, collision-group accessors, ray-cast entry points, and
   `ContactSurfaceHandler` overrides. Counters prove dispatch through collision

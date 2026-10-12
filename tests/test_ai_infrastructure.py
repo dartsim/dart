@@ -3378,7 +3378,7 @@ def _add_contact_surface_probe_fixture(root: Path):
         cmake.read_text(encoding="utf-8")
         + "\nget_target_property(probe_eigen Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)\n"
         "if(MSVC)\n"
-        "  set(probe_flags /std:c++14 /Zs)\n"
+        "  set(probe_flags /std:c++17 /Zs)\n"
         "  set(probe_include_flag /I)\n"
         "else()\n"
         "  set(probe_flags -std=c++14 -fsyntax-only)\n"
@@ -3405,14 +3405,22 @@ def _add_contact_surface_probe_fixture(root: Path):
     ("old", "new", "expected"),
     (
         (None, None, None),
-        ("c++14", "c++17", "only C++14 flags"),
-        ("${probe_flags}", "${probe_flags} -DPROBE_BYPASS", "only C++14 flags"),
+        (
+            "${probe_flags}",
+            "${probe_flags} -std=c++20",
+            "only the platform probe flags",
+        ),
+        (
+            "${probe_flags}",
+            "${probe_flags} -DPROBE_BYPASS",
+            "only the platform probe flags",
+        ),
         (
             "${probe_flags}",
             "${probe_flags} -I${PROJECT_SOURCE_DIR}/extra",
-            "only C++14 flags",
+            "only the platform probe flags",
         ),
-        (" ${probe_eigen}", "", "only C++14 flags"),
+        (" ${probe_eigen}", "", "only the platform probe flags"),
         ("${CMAKE_CXX_COMPILER}", "${CMAKE_COMMAND}", "configured compiler"),
         (
             "add_test(NAME ContactSurfaceProbe",
@@ -3800,11 +3808,15 @@ def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeyp
 
 
 @pytest.mark.parametrize(
-    ("compiler_id", "simulate_id", "expected"),
-    (("MSVC", "", True), ("Clang", "MSVC", True), ("GNU", "", False)),
+    ("compiler_id", "simulate_id", "expected", "flags"),
+    (
+        ("MSVC", "", True, ["/std:c++17", "/Zs"]),
+        ("Clang", "MSVC", True, ["/std:c++17", "/Zs"]),
+        ("GNU", "", False, ["-std=c++14", "-fsyntax-only"]),
+    ),
 )
-def test_cmake_msvc_semantics_follow_configured_compiler_state(
-    tmp_path, compiler_id, simulate_id, expected
+def test_contact_surface_probe_flags_follow_configured_compiler_state(
+    tmp_path, compiler_id, simulate_id, expected, flags
 ):
     compiler = tmp_path / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
     compiler.parent.mkdir(parents=True)
@@ -3817,6 +3829,8 @@ def test_cmake_msvc_semantics_follow_configured_compiler_state(
         "CMAKE_CACHE_MAJOR_VERSION": "4",
         "CMAKE_CACHE_MINOR_VERSION": "3",
         "CMAKE_CACHE_PATCH_VERSION": "3",
+        "CMAKE_CXX_COMPILER": "configured-cxx",
+        "Eigen3_DIR": str(tmp_path / "eigen"),
     }
     errors = []
 
@@ -3824,6 +3838,44 @@ def test_cmake_msvc_semantics_follow_configured_compiler_state(
 
     assert errors == []
     assert actual is expected
+
+    source = tmp_path / "tests/cmake/ContactSurfaceProbe.cpp"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        (ROOT / "tests/cmake/ContactSurfaceProbe.cpp").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    trace = [
+        {
+            "cmd": "set_target_properties",
+            "file": str(tmp_path / "eigen/Eigen3Targets.cmake"),
+            "args": [
+                "Eigen3::Eigen",
+                "PROPERTIES",
+                "INTERFACE_INCLUDE_DIRECTORIES",
+                str(tmp_path / "eigen/include"),
+            ],
+        }
+    ]
+
+    command = infra.contact_surface_probe_command(
+        tmp_path, tmp_path, cache, trace, errors
+    )
+
+    assert errors == []
+    assert command is not None
+    assert command[1:3] == flags
+    probe_scope = ("if:MSVC",) if expected else ("else:MSVC",)
+    configured_flags = [
+        infra.cmake_argument_tokens(arguments)[1:]
+        for name, arguments, scope in infra.cmake_scoped_commands(
+            (ROOT / "tests/CMakeLists.txt").read_text(encoding="utf-8")
+        )
+        if name == "set"
+        and arguments.startswith("contact_surface_probe_flags ")
+        and scope == probe_scope
+    ]
+    assert configured_flags == [flags]
 
 
 def test_cmake_semantic_graph_probe_requires_fresh_file_api_reply(

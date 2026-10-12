@@ -95,7 +95,8 @@ get_target_property(
   INTERFACE_INCLUDE_DIRECTORIES
 )
 if(MSVC)
-  set(contact_surface_probe_flags /std:c++14 /Zs)
+  # MSVC rejects the C++17 header syntax that Unix compilers accept in C++14.
+  set(contact_surface_probe_flags /std:c++17 /Zs)
   set(contact_surface_include_flag /I)
 else()
   set(contact_surface_probe_flags -std=c++14 -fsyntax-only)
