@@ -1615,14 +1615,19 @@ TEST_F(JOINTS, COUPLER_CONSTRAINT_ROW_IS_BILATERAL)
   constraint.getInformation(&info);
   EXPECT_NEAR(b, 0.1 - 1.0, 1e-9);
 
-  // Limits that exclude zero still leave a satisfied row alone.
+  // Limits that exclude zero still leave a satisfied row alone: it asks for
+  // no correction, and its impulse bounds still allow no impulse.
   follower->setPosition(0, -0.2);
   follower->setVelocity(0, -1.4);
   follower->setVelocityLowerLimit(0, 20.0);
   follower->setVelocityUpperLimit(0, 30.0);
+  follower->setForceLowerLimit(0, 20.0);
+  follower->setForceUpperLimit(0, 30.0);
   constraint.update();
   constraint.getInformation(&info);
   EXPECT_NEAR(b, 0.0, 1e-9);
+  EXPECT_EQ(lo, 0.0);
+  EXPECT_NEAR(hi, 30.0 * 1e-3, 1e-12);
 
   // A reactive leader shares the follower's island.
   leaderSkeleton->resetUnion();
