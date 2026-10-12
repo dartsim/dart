@@ -50,6 +50,9 @@ rendering and the Python render/viewer API, remains pending.
 5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
    `bullet-cpp` builds for Python 3.15. Ask the maintainer whether they hold
    M0's exit, and with it M5a's start.
+6. Ask the maintainer whether the API freeze `F` also waits for the additive
+   must-haves, or they are exempt from the move to 7.1. The README's release
+   rules record the question; it must be settled before `F` is declared.
 
 ## Risks and recovery
 

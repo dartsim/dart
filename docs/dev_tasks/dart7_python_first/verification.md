@@ -341,8 +341,10 @@ Known gaps:
   - the dependency/order/priority refinement dated 2026-10-11; historical
     evidence dates stay;
   - API freeze `F`, declared after every breaking change has merged and C2 has
-    passed; the additive must-haves still ship in 7.0 if they land after `F`,
-    and other additive work that misses `F` moves to 7.1;
+    passed; the breaking changes include the breaking parts of otherwise
+    additive work, such as `step` rejecting `bool` arguments; additive work
+    that misses `F` moves to 7.1, and how that applies to the additive
+    must-haves is a pending maintainer decision;
   - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
     land before `F` without delaying the remaining breaking changes;
   - C2 before `F`, so release candidates carry the final render API;
@@ -354,14 +356,19 @@ Known gaps:
     snapshots at most 0.1× the gather cost; M2 stops below 10% gain from its
     first three kernel PRs;
   - the 7.0 must-have list, which summarizes everything the acceptance
-    criteria and the design doc require, and explicit deferrals;
+    criteria and the design doc require, plus the work those requirements
+    wait for, and explicit deferrals;
   - the target-shape acceptance tests, marked `xfail(strict=True)`; the
     headless-render test needs a graphics device, so `pixi run test-gui` runs
     it instead of `pixi run test-py`.
 - **Evidence on 2026-10-11** (main `722f28ddd`):
-  - `pixi run test-py` collects the nine tests in
+  - `pixi run test-py` collects the ten tests in
     `python/tests/acceptance/test_target_shape.py`, all XFAIL with no XPASS
-    (688 passed, 2 skipped, 9 XFAIL), and no longer collects the render test.
+    (688 passed, 2 skipped, 10 XFAIL), and no longer collects the render test.
+  - Run against a minimal `Transform` and `links` adapter, the `Transform` and
+    link tests pass with a correct implementation and fail with a reversed
+    composition order, and the link test also fails when `world_transform`
+    returns the pose in the parent frame or the parent link's pose.
   - The `pytest` step of `pixi run test-gui`, over `python/tests/unit/gui` and
     `python/tests/integration`, collects
     `python/tests/unit/gui/test_target_shape_render.py` as XFAIL (262 passed,
@@ -376,7 +383,8 @@ Known gaps:
   | joint PositionServo | `AttributeError`: no `dart.PositionServo` |
   | IMU sensor | `AttributeError`: no `dart.sensors` |
   | `step(n)` and `step_count` | `TypeError`: `step` accepts only a `bool`, not `20` |
-  | link `world_transform` composed with a `Transform` | `AttributeError`: the legacy `Skeleton` has no `links` |
+  | `Transform` composition | `AttributeError`: no `dart.Transform` |
+  | non-root link `world_transform` composed with a `Transform` | `AttributeError`: the legacy `Skeleton` has no `links` |
   | capture/restore state | `AttributeError`: no `World.capture_state` |
   | WorldBatch set/step | `AttributeError`: no `dart.WorldBatch` |
   | Renderer RGB (`test-gui`) | `AttributeError`: no `dart.render` |
@@ -391,17 +399,32 @@ Known gaps:
     listed as optional although the acceptance criteria and the design doc
     require them; the freeze rule would have moved additive must-haves to 7.1;
     the design doc carried release-train state; and the resume handoff was
-    stale. All were fixed.
+    stale. The freeze-rule conflict awaits the maintainer decision recorded in
+    the [release rules](README.md#release-train-and-checkpoints); the others
+    were fixed.
   - The second review found that the first fix made `F` wait for every
     must-have, which changed the recorded rule that `F` follows the last
-    breaking change and made the codemod, the migration guide and the wheels
-    gate the freeze. `F` again follows the last breaking change and C2, and
-    the additive must-haves are exempt from the move to 7.1 instead. It also
-    found that the handoff missed PRs merged since, that WP-7.0.3b and
-    WP-7.0.5 were marked done without their review record, that M2's dense
-    data was called optional although the design doc's mode contract requires
-    it, that no test read `Link.world_transform`, and that porting the interim
-    GUI tests could drop the render test. All were fixed.
+    breaking change. It also found that the handoff missed PRs merged since,
+    that WP-7.0.3b and WP-7.0.5 were marked done without their review record,
+    that M2's dense data was called optional although the design doc's mode
+    contract requires it, that no test read `Link.world_transform`, that
+    porting the interim GUI tests could drop the render test, that the
+    published PR description contradicts the branch and wraps its lines, and
+    that the first fix commit's message describes the superseded rule. All but
+    the last two were fixed: the description's replacement goes up with the
+    approved push, and the commit keeps its message because the squash merge
+    uses the PR description.
+  - The third review found that the second fix's exemption of the additive
+    must-haves from the move to 7.1 also changed the recorded rule without
+    approval. The recorded rule is restored, and the conflict is a pending
+    maintainer decision. It also found that `step` rejecting `bool` was
+    missing from the breaking changes, that M1e could not move to 7.1 while
+    the constraint module's 7.0 bindings wait for it, that the link test read
+    a root link, whose world pose equals its pose in the parent frame and has
+    no translation, that the standalone `Transform` test was gone, leaving
+    M5a's `Transform` PR no marker to remove, and that this record claimed
+    every second-review finding was fixed. These were fixed; the PR
+    description still waits for the approved push.
 - **Pending maintainer action:** check PyPI's project history for deleted
   7.0.0 files, because PyPI never accepts a reused file name.
 - **Status:** in review.

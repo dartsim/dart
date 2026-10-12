@@ -102,16 +102,18 @@ batch.step(20)
 
 7.0 needs everything that the
 [acceptance criteria](#final-deliverable-and-acceptance) and the
-[design doc](../../design/dart7_python_api.md) require; this list summarizes
-it. The additive must-haves still ship in 7.0 if they land after the API
-freeze `F`; see the [release rules](#release-train-and-checkpoints).
+[design doc](../../design/dart7_python_api.md) require, plus the work those
+requirements wait for; this list summarizes it. How the API freeze `F` treats
+the additive must-haves awaits a maintainer decision; see the
+[release rules](#release-train-and-checkpoints).
 
 - **Every breaking Python change lands before `F`:** native renames from the
   reviewed rename table (the `Multibody`/`Link`/`Dof` vocabulary,
   `Collider`/`Visual` handles and named collections), the package layout with
   its curated top level, read-only arrays, error types, `UPPER_CASE` enums,
-  keyword-only arguments, `Transform`/`Rotation` and raising loaders. The
-  default-detector switch ships in 7.0 only if its
+  keyword-only arguments, `Transform`/`Rotation`, raising loaders, and the
+  breaking parts of otherwise additive work, such as `step` rejecting `bool`
+  arguments. The default-detector switch ships in 7.0 only if its
   [prerequisites](#default-detector-switch) pass before M1 starts; otherwise it
   is a labeled 7.x change.
 - Type stubs (`.pyi` plus `py.typed`) in every wheel with stub-drift checks,
@@ -122,6 +124,8 @@ freeze `F`; see the [release rules](#release-train-and-checkpoints).
   first step, prepares the dense articulated-body data (M2), and GIL-free
   `step(n)` on the deterministic executor. The
   [M2 stop rule](#release-train-and-checkpoints) can end M2's kernel PRs early.
+- Typed solver selection in `WorldConfig` (M1e), which the constraint module's
+  7.0 bindings wait for.
 - `WorldBatch` built from remapping clones.
 - `capture_state`/`restore_state` dynamic snapshots and exact checkpoints:
   record/replay levels L0 and L1.
@@ -133,12 +137,6 @@ freeze `F`; see the [release rules](#release-train-and-checkpoints).
 - The codemod and migration guide.
 - One `cp312-abi3` wheel per platform (Linux x86_64/aarch64, macOS arm64 and
   Windows x64) that imports without graphics libraries.
-
-### Also planned
-
-Typed solver selection in `WorldConfig` (M1e) is planned for 7.0, although
-neither the acceptance criteria nor the design doc require it. It moves to 7.1
-if it misses `F`.
 
 ### Deferrals
 
@@ -265,7 +263,9 @@ M5a starts when M0 exits, in this order:
 Defects found on the way (missing `None` checks, dropped out-parameters,
 unregistered types) ship as separate PRs.
 
-M5b binds each M1 feature when it merges, directly in the 7.0 style. M5 does not
+M5b binds each M1 feature when it merges, directly in the 7.0 style. The
+constraint module's 7.0 bindings start after M1e and the simulation module's
+after M1d; their renames are breaking, so both land before `F`. M5 does not
 rename bindings that later milestones replace: recording (M4), aspect state
 (M3) and the interim GUI module (M6).
 
@@ -276,9 +276,12 @@ no longer excluded from the Python formatters; a `--renames` mode for
 ## Release train and checkpoints
 
 WP-7.0.7 records the API freeze `F` and two checkpoints. `F` is declared once
-every breaking change has merged and C2 has passed. The additive
-[must-haves](#must-have) still ship in 7.0 if they land after `F`; other
-additive work that misses `F` moves to 7.1.
+every breaking change has merged and C2 has passed, and additive work that
+misses `F` moves to 7.1. The [must-haves](#must-have) also include additive
+work, such as snapshots and checkpoints, `WorldBatch`, actuators and sensors.
+**Pending maintainer decision**, needed before `F` is declared: either `F` also
+waits for every must-have, or the additive must-haves are exempt from the move
+to 7.1.
 
 - **C1: M3 go/no-go after the first three M2 kernel PRs**, applying the M2
   stop rule below. M3 goes into 7.0 only if all of these hold:
@@ -307,9 +310,10 @@ Release rules:
 
 - Every breaking change lands before `F`: renames, package layout, read-only
   arrays, error types, enums, keyword-only options, `Transform`/`Rotation`,
-  raising loaders, and the default-detector switch if its gate passes. The
-  additive must-haves still ship in 7.0 if they land after `F`; other additive
-  work that misses `F` moves to 7.1.
+  raising loaders, the breaking parts of otherwise additive work such as `step`
+  rejecting `bool` arguments, and the default-detector switch if its gate
+  passes. Additive work that misses `F` moves to 7.1, subject to the pending
+  decision above.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
   example runner, and the scheduled lane against the gz-physics development
@@ -510,6 +514,9 @@ Every packet needs two clean review passes on its final state.
 - WP-7.0.8's macOS and Windows Python 3.15 wheels wait for conda-forge's
   Python 3.15 builds of `bullet-cpp`. Pending maintainer decision: whether they
   hold M0's exit, and with it M5a's start.
+- Pending maintainer decision, needed before `F` is declared: whether `F` also
+  waits for the additive must-haves, or they are exempt from the move to 7.1
+  (see the [release rules](#release-train-and-checkpoints)).
 - The "DART 7.0.0" milestone (#105, formerly "DART 6.21.0") tracks the release,
   and main's release target reads 7.0.0.
 - Publishing each packet needs maintainer approval.

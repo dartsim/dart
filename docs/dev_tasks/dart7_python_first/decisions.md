@@ -171,9 +171,8 @@ are removed; past dates on decisions and evidence stay.
 - D13's default-detector switch is gated on its prerequisites passing before
   M1 starts, so later rebaselines start from the final default.
 - The API freeze `F` is declared once every breaking change on the 7.0
-  must-have list has merged and C2 has passed. Additive work after `F` goes to
-  7.1, except the additive must-haves, such as snapshots and checkpoints,
-  which 7.0 already requires.
+  must-have list has merged and C2 has passed. Additive work that misses `F`
+  goes to 7.1.
 - C1, the M3 go/no-go, is decided after the first three M2 kernel PRs, at the
   M2 stop rule. M3 must be able to land before `F` without delaying the
   remaining breaking changes. Gazebo gates must stay green through those
@@ -182,4 +181,5 @@ are removed; past dates on decisions and evidence stay.
 - C2 passes before `F`, so release candidates carry the final render API.
 
 The [project home](README.md) owns the must-have list, checkpoint criteria and
-priority order.
+priority order. It also records an open question for the maintainer: how the
+7.1 rule applies to the additive must-haves.

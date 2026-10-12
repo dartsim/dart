@@ -83,19 +83,33 @@ def test_step_n(world):
     assert world.step_count == 20
 
 
+@pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
+def test_transform_composition():
+    # A quarter turn about x keeps the composition order observable.
+    half = np.pi / 4
+    parent = dart.Transform(
+        wxyz=(np.cos(half), np.sin(half), 0, 0), translation=(1, 2, 3)
+    )
+    composed = parent @ dart.Transform(translation=(0, 0, 0.1))
+    np.testing.assert_allclose(composed @ np.zeros(3), (1, 1.9, 3))
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="M5: links, Link.world_transform and immutable Transform are pending",
 )
 def test_link_world_transform(robot):
-    # An x axis keeps the rotation from commuting with the z offset, so the
-    # assertion also catches a reversed composition order.
+    # A non-root link behind a joint offset has a world pose that differs from
+    # its pose in the parent frame and has a translation. An x axis keeps the
+    # rotation from commuting with the z offset, so a reversed composition
+    # order also fails.
+    joint, palm = robot.createRevoluteJointAndBodyNodePair(robot.getBodyNode("wrist"))
+    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0, 0.2, 0.3]))
+    palm.setName("palm")
     robot.getJoint("shoulder_yaw").setAxis([1, 0, 0])
     robot.setPositions(np.full(robot.getNumDofs(), 0.5))
-    X_WP = robot.links["wrist"].world_transform @ dart.Transform(
-        translation=(0, 0, 0.1)
-    )
-    X_WL = robot.getBodyNode("wrist").getWorldTransform().matrix()
+    X_WP = robot.links["palm"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
+    X_WL = palm.getWorldTransform().matrix()
     points = np.eye(3)
     expected = (points + (0, 0, 0.1)) @ X_WL[:3, :3].T + X_WL[:3, 3]
     np.testing.assert_allclose(X_WP @ points, expected)
