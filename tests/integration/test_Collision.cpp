@@ -78,6 +78,7 @@
 #include <iostream>
 #include <memory>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -3797,6 +3798,111 @@ TEST_F(Collision, Factory)
 #if HAVE_ODE
 namespace {
 
+class OdeFilterError : public std::runtime_error
+{
+public:
+  using std::runtime_error::runtime_error;
+};
+
+struct ThrowingOdeFilter : CollisionFilter
+{
+  bool throwException = true;
+  mutable std::size_t calls = 0u;
+
+  bool ignoresCollision(
+      const CollisionObject*, const CollisionObject*) const override
+  {
+    ++calls;
+    if (throwException)
+      throw OdeFilterError("ODE collision filter failure");
+    return false;
+  }
+};
+
+void testOdeFilterException(bool crossGroups)
+{
+  std::vector<std::shared_ptr<SimpleFrame>> frames;
+  for (int i = 0; i < 4; ++i) {
+    auto frame = SimpleFrame::createShared(Frame::World());
+    frame->setShape(std::make_shared<SphereShape>(1.0));
+    frame->setTranslation(Eigen::Vector3d(0.5 * i, 0.0, 0.0));
+    frames.push_back(frame);
+  }
+
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto otherGroup = detector->createCollisionGroup();
+  auto freshDetector = OdeCollisionDetector::create();
+  auto freshGroup = freshDetector->createCollisionGroup();
+  auto freshOtherGroup = freshDetector->createCollisionGroup();
+  for (std::size_t i = 0; i < frames.size(); ++i) {
+    const bool useOtherGroup = crossGroups && i > 0u;
+    (useOtherGroup ? otherGroup : group)->addShapeFrame(frames[i].get());
+    (useOtherGroup ? freshOtherGroup : freshGroup)
+        ->addShapeFrame(frames[i].get());
+  }
+
+  const auto collide = [&](CollisionGroup* first,
+                           CollisionGroup* second,
+                           const CollisionOption& option,
+                           CollisionResult& result) {
+    return crossGroups ? first->collide(second, option, &result)
+                       : first->collide(option, &result);
+  };
+  CollisionOption option;
+  CollisionResult expected;
+  ASSERT_TRUE(
+      collide(freshGroup.get(), freshOtherGroup.get(), option, expected));
+  ASSERT_EQ(expected.getNumContacts(), crossGroups ? 3u : 6u);
+
+  auto filter = std::make_shared<ThrowingOdeFilter>();
+  option.collisionFilter = filter;
+  CollisionResult result;
+  try {
+    collide(group.get(), otherGroup.get(), option, result);
+    FAIL() << "Collision filter exception did not propagate";
+  } catch (const OdeFilterError& error) {
+    EXPECT_STREQ(error.what(), "ODE collision filter failure");
+  }
+  EXPECT_EQ(filter->calls, 1u);
+
+  filter->throwException = false;
+  const auto checkContacts = [&] {
+    result.clear();
+    ASSERT_TRUE(collide(group.get(), otherGroup.get(), option, result));
+    ASSERT_EQ(result.getNumContacts(), expected.getNumContacts());
+    for (const auto& contact : expected.getContacts()) {
+      EXPECT_TRUE(std::any_of(
+          result.getContacts().begin(),
+          result.getContacts().end(),
+          [&](const Contact& actual) {
+            const bool samePair
+                = actual.getShapeFrame1() == contact.getShapeFrame1()
+                  && actual.getShapeFrame2() == contact.getShapeFrame2();
+            const bool reversePair
+                = actual.getShapeFrame1() == contact.getShapeFrame2()
+                  && actual.getShapeFrame2() == contact.getShapeFrame1();
+            return (samePair || reversePair)
+                   && actual.point.isApprox(contact.point, 1e-12)
+                   && actual.normal.isApprox(
+                       samePair ? contact.normal : -contact.normal, 1e-12)
+                   && std::abs(
+                          actual.penetrationDepth - contact.penetrationDepth)
+                          < 1e-12;
+          }));
+    }
+  };
+
+  checkContacts();
+  EXPECT_GT(filter->calls, 1u);
+  for (std::size_t i = 0; i < frames.size(); ++i) {
+    auto& owner = crossGroups && i > 0u ? otherGroup : group;
+    owner->removeShapeFrame(frames[i].get());
+    owner->addShapeFrame(frames[i].get());
+  }
+  checkContacts();
+}
+
 void testOdeShapeReplacement(bool detectorFirst)
 {
   auto world = World::create();
@@ -3869,6 +3975,18 @@ void testOdeShapeReplacement(bool detectorFirst)
 }
 
 } // namespace
+
+//==============================================================================
+TEST_F(Collision, OdeFilterExceptionLeavesSpaceUsable)
+{
+  testOdeFilterException(false);
+}
+
+//==============================================================================
+TEST_F(Collision, OdeFilterExceptionLeavesBothSpacesUsable)
+{
+  testOdeFilterException(true);
+}
 
 //==============================================================================
 TEST_F(Collision, OdeShapeReplacementDetectorFirst)

@@ -392,6 +392,56 @@ def test_collision_filter_python_override(base):
     )
 
 
+@pytest.mark.skipif(
+    not hasattr(dart.collision, "OdeCollisionDetector"), reason="ODE is unavailable"
+)
+def test_ode_filter_exception():
+    run_isolated(
+        COLLISION_SCENE.replace("FCLCollisionDetector", "OdeCollisionDetector")
+        + textwrap.dedent(
+            """
+            class FilterError(RuntimeError):
+                pass
+
+            class Filter(dart.collision.BodyNodeCollisionFilter):
+                def ignoresCollision(self, object1, object2):
+                    self.calls += 1
+                    raise FilterError("Python collision filter failed")
+
+            baseline = dart.collision.CollisionResult()
+            assert group.collide(option, baseline)
+            assert baseline.getNumContacts() > 0
+
+            collision_filter = Filter()
+            collision_filter.calls = 0
+            option.collisionFilter = collision_filter
+            try:
+                group.collide(option)
+            except FilterError as error:
+                assert str(error) == "Python collision filter failed"
+            else:
+                raise AssertionError("collision filter exception was swallowed")
+            assert collision_filter.calls == 1
+
+            option.collisionFilter = None
+            result = dart.collision.CollisionResult()
+            assert group.collide(option, result)
+            assert result.getNumContacts() == baseline.getNumContacts()
+
+            group.removeAllShapeFrames()
+            assert group.getNumShapeFrames() == 0
+            for skel in skels:
+                group.addShapeFramesOf(skel)
+            assert group.getNumShapeFrames() == 2
+            result.clear()
+            assert group.collide(option, result)
+            assert result.getNumContacts() == baseline.getNumContacts()
+            print("done")
+            """
+        )
+    )
+
+
 @pytest.mark.parametrize("base", ["CompositeCollisionFilter", "BodyNodeCollisionFilter"])
 def test_collision_filter_cpp_fallback(base):
     run_isolated(
