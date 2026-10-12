@@ -93,19 +93,18 @@ gh pr checks <PR_NUMBER>
      branch; backports use `dart-backport-pr`.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Check the body against `docs/onboarding/contributing.md` § "PR
-     Descriptions": Effect first, key comparisons and evidence easy to assess,
-     mechanism, method, and full data afterward, and no paragraph or list item
-     hard-wrapped across lines.
+   - Follow `docs/onboarding/contributing.md` § "PR Descriptions" for the body
+     and complete its applicable "PR Author Checklist" actions before
+     publishing updates.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub PR/issue Markdown attachments
      (`https://github.com/user-attachments/assets/...`), never as release assets
      or tags or committed to the branch; if evidence files were committed only
      for the PR body, remove them and link an attachment URL instead (ask a
      maintainer to upload when tooling cannot).
-   - For claim-dependent 3D behavior, verify an optional `Visual verification`
-     subsection agrees with the text oracle and records claims, limitations,
-     view/debug layers, and reproduce commands.
+   - For claim-dependent 3D behavior, require `Visual verification` through
+     `dart-verify-sim` per `docs/ai/verification.md`, or a stated reason visual
+     corroboration is unavailable/irrelevant and named replacement evidence.
    - Inspect local state before editing: `git status --short --branch`,
      `git diff --stat`, `git diff --check`.
 2. Monitor CI:
