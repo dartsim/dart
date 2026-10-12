@@ -1,19 +1,13 @@
 // gz-physics main 4e2af8c733ac8396a9d2b4dcae1f7f6aa28c5668:
-// dartsim/CMakeLists.txt uses CMake's CheckIncludeFileCXX with this source and
-// CMAKE_REQUIRED_FLAGS /std:c++14 (MSVC) or -std=c++14 (other compilers).
-// gz-physics 7 keeps CMake 3.5 policies, so its check compiles as C++14. From
-// gz-physics 8, policy CMP0067 also applies CMAKE_CXX_STANDARD 17, whose flag
-// comes after -std=c++14, so with GCC that check compiles as C++17 (CMake 3.22
-// through at least 4.4, with Ninja or Makefiles).
-// Refresh by checking DART_HAS_CONTACT_SURFACE_HEADER and CMake's probe
-// template.
+// dartsim/CMakeLists.txt checks this header with CMake's CheckIncludeFileCXX
+// and CMAKE_REQUIRED_FLAGS /std:c++14 (MSVC) or -std=c++14 (other compilers).
+// Whether CMake also applies the project's C++17 flag depends on its policies
+// and generator, so this include tree stays valid C++14. Refresh by checking
+// DART_HAS_CONTACT_SURFACE_HEADER and CMake's probe template.
 // The ContactSurfaceProbe CTest checks syntax with only DART and Eigen include
-// directories: /std:c++14 /Zs with MSVC; -std=c++14 -pedantic-errors
-// -fsyntax-only with GCC; -std=c++14 -Werror=c++17-extensions
-// -Wno-error=c++17-attribute-extensions -fsyntax-only with compilers that have
-// that attribute group (LLVM Clang 14 and newer); and -std=c++14 -fsyntax-only
-// otherwise. So C++17 syntax, which MSVC rejects in C++14 mode, fails with GCC
-// and Clang too. Clang's pedantic mode would also reject accepted extensions.
+// directories. GCC uses -pedantic-errors and Clang 14 or newer uses
+// -Werror=c++17-extensions, so C++17 syntax that MSVC rejects in C++14 mode
+// fails on every platform; see tests/CMakeLists.txt for the exact flags.
 #include <dart/constraint/ContactSurface.hpp>
 
 int main()

@@ -309,44 +309,22 @@ Known gaps:
     built.
   - Still open: the machine-checked inventories of gz-used accessors and
     mutation paths.
-- **WP-7.0.6b C++14 include tree (2026-10-12, at `6b8171d53` on main
-  `722f28ddd`):**
-  - Main's Windows CI run 38208904382 (2026-10-11) at `722f28ddd`, the squash
-    merge of #3725, failed only `ContactSurfaceProbe` (1 of 179 tests) in both
-    C++ jobs, as run 38203058030 on #3725 had: MSVC rejects seven nested
-    namespace definitions in that include tree in C++14 mode (C2429). Five were
-    there when DART 6.13 added the header; #3076 added the `ConvexHull` pair in
-    DART 6.20.
-  - gz-physics 7 keeps CMake 3.5 policies, so its check compiles as C++14 and
-    fails with MSVC. From gz-physics 8, policy CMP0067 also applies
-    `CMAKE_CXX_STANDARD` 17, whose flag comes after `-std=c++14`, so with GCC
-    those checks compile as C++17. A scratch `CheckIncludeFileCXX` project with
-    gz-physics's settings measured both dialects with CMake 3.22, 3.28, 3.31
-    and 4.1 to 4.4, under Ninja and Makefiles. The Gazebo lane builds
-    gz-physics 8.0.0, whose configure log shows `-std=c++14 -std=c++17` for
-    this check, so that lane does not cover the C++14 parse;
-    `ContactSurfaceProbe` does.
-  - `fc375bbf4` writes the namespaces in C++14 syntax. Of the other constructs
-    GCC's pedantic mode reported, C++17 compilers keep `Castable::is()`'s
-    `if constexpr` and the logging comma fold while C++14 parses see tag
-    dispatch and a braced-list pack expansion, and `ConvexHullVertex` dropped
-    its unused `v[3]` union member and anonymous struct, keeping the same `x`,
-    `y`, `z` layout.
-  - `ContactSurfaceProbe` now makes one syntax-only compile with only DART and
-    Eigen include directories: `/std:c++14 /Zs` with MSVC,
-    `-std=c++14 -pedantic-errors -fsyntax-only` with GCC,
-    `-std=c++14 -Werror=c++17-extensions -Wno-error=c++17-attribute-extensions
-    -fsyntax-only` with compilers that have that attribute warning group (LLVM
-    Clang 14 and newer), and `-std=c++14 -fsyntax-only` otherwise. It fails when
-    the include tree needs `std::optional` or, with MSVC, GCC or such Clang,
-    uses C++17 syntax such as a nested namespace definition.
-  - With those flags, GCC 11.4, 12.4, 13.3, 14.4, 15.3 and 16.2 pass at
-    `6b8171d53` and report 10 errors at `722f28ddd`. Clang's pedantic mode also
-    reports C++17 attributes and `DART_NUM_ARGS`'s GNU comma elision, so only
-    Clang's other C++17 extensions are errors: Clang 14, 15, 16, 18 and 22 pass
-    at `6b8171d53` and report 9 errors at `722f28ddd`. Clang 13 cannot separate
-    the attributes, so those flags give it 18 errors at `6b8171d53`, and it
-    keeps gz-physics's flags.
+- **WP-7.0.6b follow-up, C++14 include tree (2026-10-12, main `722f28ddd`):**
+  - #3725 merged with `ContactSurfaceProbe` failing on both Windows jobs: MSVC
+    rejects the include tree's seven nested namespace definitions in C++14 mode
+    (C2429).
+  - gz-physics passes `-std=c++14` or `/std:c++14` to its header check. Whether
+    CMake also adds the project's C++17 flag depends on the CMake policy version
+    and the generator, so some gz-physics builds parse this include tree as
+    C++14 and silently disable contact-surface support.
+  - The fix writes those namespaces in C++14 syntax. `Castable::is()` and the
+    logging fold keep their C++17 form for C++17 compilers and use tag dispatch
+    and a braced pack expansion when parsed as C++14. The internal
+    `ConvexHullVertex` drops an unused union member that relied on an anonymous
+    struct; its `x`, `y`, `z` layout is unchanged.
+  - `ContactSurfaceProbe` now fails on C++17 syntax on every platform: GCC adds
+    `-pedantic-errors` and Clang 14 or newer adds `-Werror=c++17-extensions`.
+    GCC 11 to 16 and Clang 14 to 22 pass with the fix and fail without it.
 - **Status:** in progress.
 
 ### WP-7.0.7 Scope artifacts

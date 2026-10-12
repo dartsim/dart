@@ -161,6 +161,10 @@
 
 * Build
 
+  * `dart/constraint/ContactSurface.hpp` and the headers it includes parse as
+    C++14 again, so gz-physics's C++14 header check can detect contact-surface
+    support with MSVC.
+
   * The installed CMake package accepts version requests from 6.0 up to the
     installed version, so `find_package(DART 6.10)` finds DART 7. `EXACT`
     requests and version ranges keep their meaning.
