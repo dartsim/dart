@@ -2,6 +2,7 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
 
@@ -266,6 +267,54 @@ void Shape(nb::module_& m)
   dartnb::dart_class<dart::dynamics::VoxelGridShape, dart::dynamics::Shape>(
       m, "VoxelGridShape")
       .def(dartnb::init<double>(), nb::arg("resolution") = 0.01)
+      .def(
+          "updateOccupancy",
+          +[](dart::dynamics::VoxelGridShape* self,
+              const Eigen::Vector3d& point,
+              bool occupied) {
+            if (!point.allFinite())
+              throw nb::value_error("point must be finite");
+            self->updateOccupancy(point, occupied);
+          },
+          nb::arg("point"),
+          nb::arg("occupied") = true)
+      .def(
+          "updateOccupancy",
+          +[](dart::dynamics::VoxelGridShape* self,
+              nb::ndarray<
+                  nb::numpy,
+                  const double,
+                  nb::c_contig,
+                  nb::device::cpu> points,
+              const Eigen::Vector3d& sensorOrigin) {
+            if (points.ndim() != 2 || points.shape(1) != 3)
+              throw nb::value_error("points must have shape (N, 3)");
+            if (!sensorOrigin.allFinite())
+              throw nb::value_error("sensorOrigin must be finite");
+
+            const auto view = points.view<nb::ndim<2>>();
+            octomap::Pointcloud cloud;
+            cloud.reserve(points.shape(0));
+            for (std::size_t i = 0; i < points.shape(0); ++i) {
+              const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
+              if (!point.allFinite())
+                throw nb::value_error("points must be finite");
+              cloud.push_back(point.x(), point.y(), point.z());
+            }
+            self->updateOccupancy(
+                cloud, sensorOrigin, dart::dynamics::Frame::World());
+          },
+          nb::arg("points"),
+          nb::arg("sensorOrigin") = Eigen::Vector3d::Zero().eval())
+      .def(
+          "getOccupancy",
+          +[](const dart::dynamics::VoxelGridShape* self,
+              const Eigen::Vector3d& point) {
+            if (!point.allFinite())
+              throw nb::value_error("point must be finite");
+            return self->getOccupancy(point);
+          },
+          nb::arg("point"))
       .def_static(
           "getStaticType", &dart::dynamics::VoxelGridShape::getStaticType);
 #endif
