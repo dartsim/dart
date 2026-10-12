@@ -89,7 +89,8 @@
     on revolute joints whose shared axis is the contact normal. Such a contact
     now gets no normal impulse, and with the Dantzig solver alone it no longer
     zeroes the other contacts in its group.
-    [#3707](https://github.com/dartsim/dart/pull/3707)
+    [#3707](https://github.com/dartsim/dart/pull/3707),
+    [#3721](https://github.com/dartsim/dart/pull/3721)
 
 * Dynamics
 
