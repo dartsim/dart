@@ -37,6 +37,14 @@
 namespace dartnb {
 bool has_gc_wrapper(void* complete);
 namespace {
+struct RetainedSkeleton
+{
+  std::weak_ptr<dart::dynamics::Skeleton> owner;
+  const void* token;
+};
+
+std::unordered_map<void*, RetainedSkeleton> retained_skeletons;
+
 // A control block owns one Python reference, even when several C++ fields copy
 // it.
 std::unordered_map<const PythonPin*, std::size_t> edge_counts(
@@ -95,10 +103,45 @@ void enumerate_ik_optimizer_gc(Ik& owner, GcEdges& edges)
 }
 } // namespace
 
+void keepAliveSkeleton(
+    nb::handle wrapper,
+    void* complete,
+    std::shared_ptr<dart::dynamics::Skeleton> skeleton)
+{
+  struct Payload
+  {
+    void* complete;
+    std::shared_ptr<dart::dynamics::Skeleton> skeleton;
+  };
+  auto holder
+      = std::make_unique<Payload>(Payload{complete, std::move(skeleton)});
+  retained_skeletons[complete] = {holder->skeleton, holder.get()};
+  nb::keep_alive_cb(wrapper, holder.get(), [](void* pointer) noexcept {
+    auto* payload = static_cast<Payload*>(pointer);
+    auto found = retained_skeletons.find(payload->complete);
+    if (found != retained_skeletons.end() && found->second.token == payload)
+      retained_skeletons.erase(found);
+    delete payload;
+  });
+  holder.release();
+}
+
 bool gc_owner_is_exclusive(PyObject* self, void* complete)
 {
-  if (auto owner = native_owner(complete))
-    return owner.use_count() == 2; // Wrapper payload and this lookup.
+  if (auto owner = native_owner(complete)) {
+    if (owner.use_count() == 2) // Wrapper payload and this lookup.
+      return true;
+    auto retained = retained_skeletons.find(complete);
+    if (owner.use_count() != 3 || retained == retained_skeletons.end())
+      return false;
+    auto skeleton = retained->second.owner.lock();
+    // The additional IK owner must be this retained Skeleton, and its only
+    // native owners must be this wrapper's payload and the lookup above.
+    // A live Skeleton wrapper, World, body proxy, or other native alias blocks
+    // traversal, keeping the objective's single Python pin visible only here.
+    return skeleton && skeleton.use_count() == 2
+           && complete_address(skeleton->getIK().get()) == complete;
+  }
   // shortcut: BodyNodePtr hides aliases, so borrowed proxies stay conservative;
   // upgrade when a GC-visible native ownership graph can prove exclusivity.
   return nb::inst_state(self).second;

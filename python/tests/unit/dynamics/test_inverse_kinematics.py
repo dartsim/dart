@@ -355,6 +355,42 @@ def test_do_not_apply_solution_on_failure(whole_body):
     assert not np.isclose(skel.getPositions(), np.zeros(dofs)).all()
 
 
+@pytest.mark.parametrize("whole_body", [False, True])
+@pytest.mark.parametrize("allow_incomplete", [None, False, True])
+def test_cleared_solver_does_not_apply_an_empty_solution(whole_body, allow_incomplete):
+    call = (
+        "ik.solveAndApply()"
+        if allow_incomplete is None
+        else f"ik.solveAndApply(allowIncompleteResult={allow_incomplete!r})"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            textwrap.dedent(
+                f"""
+                import dartpy as dart
+                import numpy as np
+                skeleton = dart.dynamics.Skeleton()
+                body = skeleton.createFreeJointAndBodyNodePair()[1]
+                ik = skeleton.getIK(True) if {whole_body!r} else body.getIK(True)
+                positions = np.linspace(0.1, 0.6, 6)
+                skeleton.setPositions(positions)
+                ik.setSolver(None)
+                assert ik.getSolver() is None
+                assert not {call}
+                np.testing.assert_array_equal(skeleton.getPositions(), positions)
+                """
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "setPositions" not in result.stderr, result.stderr
+
+
 EXPIRED_IK_CASES = {
     "stale_solver": """
         import gc

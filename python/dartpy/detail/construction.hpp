@@ -9,6 +9,12 @@ namespace dartnb {
 // The native factory object and its shared_ptr control block stay in place.
 void attachFactoryInstance(nb::handle self, nb::handle prepared);
 
+// Record the affiliated Skeleton's native edge for GC ownership checks.
+void keepAliveSkeleton(
+    nb::handle wrapper,
+    void* complete,
+    std::shared_ptr<dart::dynamics::Skeleton> skeleton);
+
 template <class T>
 nb::object nativeInstance(
     nb::handle requested, const std::shared_ptr<T>& owner, bool ready = true)
@@ -52,11 +58,18 @@ nb::object nativeInstance(
   // DART's IK holder preserves its affiliated JacobianNode in addition to the
   // native shared_ptr. Retain both without replacing the native control block.
   // An owner with retained() names the part to keep besides the native object,
-  // so the wrapper stays that object's only owner for the garbage collector.
+  // so retaining its affiliation does not duplicate its native ownership.
   auto result = nativeInstance(requested, owner.get_shared(), ready);
-  if constexpr (HasRetained<Owner>::value)
-    keepAlive(result, owner.retained());
-  else
+  if constexpr (HasRetained<Owner>::value) {
+    auto retained = owner.retained();
+    if constexpr (std::is_same_v<
+                      decltype(retained),
+                      std::shared_ptr<dart::dynamics::Skeleton>>)
+      keepAliveSkeleton(
+          result, complete_address(owner.get()), std::move(retained));
+    else
+      keepAlive(result, std::move(retained));
+  } else
     keepAlive(result, owner);
   return result;
 }

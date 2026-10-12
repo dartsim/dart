@@ -33,6 +33,7 @@
 #include "TestHelpers.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
+#include "dart/constraint/BalanceConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/HierarchicalIK.hpp"
@@ -152,6 +153,67 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
   EXPECT_FALSE(ik->solveAndApply(true));
   EXPECT_FALSE(
       equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+}
+
+//==============================================================================
+TEST(InverseKinematics, DoNotApplySolutionWithoutSolver)
+{
+  auto skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd original = Eigen::VectorXd::Constant(6, 0.25);
+  skel->setPositions(original);
+
+  const auto check = [&skel, &original](const auto& ik) {
+    ik->setSolver(nullptr);
+    testing::internal::CaptureStderr();
+    EXPECT_FALSE(ik->solveAndApply());
+    for (bool allowIncompleteResult : {false, true}) {
+      EXPECT_FALSE(ik->solveAndApply(allowIncompleteResult));
+      Eigen::VectorXd solution;
+      EXPECT_FALSE(ik->solveAndApply(solution, allowIncompleteResult));
+      EXPECT_EQ(solution.size(), 0);
+      solution = Eigen::VectorXd::Zero(1);
+      EXPECT_FALSE(ik->solveAndApply(solution, allowIncompleteResult));
+      EXPECT_EQ(solution.size(), 1);
+    }
+    const auto warnings = testing::internal::GetCapturedStderr();
+    EXPECT_NE(warnings.find("is a nullptr"), std::string::npos);
+    EXPECT_EQ(warnings.find("setPositions"), std::string::npos);
+    EXPECT_TRUE(equals(skel->getPositions(), original));
+  };
+
+  check(skel->getBodyNode(0)->getIK(true));
+  check(skel->getIK(true));
+}
+
+//==============================================================================
+TEST(BalanceConstraint, HierarchyClonePreservesSettings)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  auto ik = source->getIK(true);
+  using Balance = constraint::BalanceConstraint;
+  auto balance = std::make_shared<Balance>(
+      ik, Balance::SHIFT_COM, Balance::OPTIMIZE_BALANCE);
+  balance->setName("configured balance");
+  balance->setOptimizationTolerance(2e-5);
+  balance->setPseudoInverseDamping(0.125);
+  ik->getProblem()->setObjective(balance);
+
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+  auto cloned = ik->clone(target);
+  auto copy = std::dynamic_pointer_cast<Balance>(
+      cloned->getProblem()->getObjective());
+  ASSERT_NE(copy, nullptr);
+  EXPECT_NE(copy, balance);
+  EXPECT_EQ(copy->getName(), balance->getName());
+  EXPECT_EQ(copy->getBalanceMethod(), balance->getBalanceMethod());
+  EXPECT_EQ(copy->getErrorMethod(), balance->getErrorMethod());
+  EXPECT_DOUBLE_EQ(
+      copy->getOptimizationTolerance(), balance->getOptimizationTolerance());
+  EXPECT_DOUBLE_EQ(
+      copy->getPseudoInverseDamping(), balance->getPseudoInverseDamping());
 }
 
 //==============================================================================

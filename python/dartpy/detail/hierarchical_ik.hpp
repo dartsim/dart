@@ -4,8 +4,8 @@
 
 namespace dartnb {
 /// Constructs a HierarchicalIK wrapper that also keeps its Skeleton alive,
-/// which HierarchicalIK holds only weakly. The wrapper stays the IK's only
-/// owner, so the garbage collector can traverse it.
+/// which HierarchicalIK holds only weakly. Record that native edge so GC can
+/// prove whether the Skeleton and its own whole-body IK have outside owners.
 template <class T>
 struct HierarchicalIKOwner
 {
@@ -42,7 +42,10 @@ nb::object hierarchicalIKInstance(const std::shared_ptr<T>& ik)
   retain_shared_owner(result, is_new, ik, complete_address(ik.get()));
   if (is_new)
     // As in nativeInstance: the Skeleton only, never a second IK owner.
-    keepAlive(result, HierarchicalIKOwner<T>{ik}.retained());
+    keepAliveSkeleton(
+        result,
+        complete_address(ik.get()),
+        HierarchicalIKOwner<T>{ik}.retained());
   return result;
 }
 } // namespace dartnb

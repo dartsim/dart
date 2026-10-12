@@ -60,7 +60,12 @@ BalanceConstraint::BalanceConstraint(
 optimizer::FunctionPtr BalanceConstraint::clone(
     const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const
 {
-  return std::make_shared<BalanceConstraint>(_newIK, mBalanceMethod);
+  auto clone = std::make_shared<BalanceConstraint>(
+      _newIK, mBalanceMethod, mErrorMethod);
+  clone->setName(getName());
+  clone->setOptimizationTolerance(mOptimizationTolerance);
+  clone->setPseudoInverseDamping(mDamping);
+  return clone;
 }
 
 //==============================================================================

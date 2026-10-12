@@ -172,7 +172,10 @@ def test_cloned_balance_constraint_uses_new_ik_and_skeleton(path, location):
         original = source.getIK(True)
         problem = original.getProblem()
         balance_method = dart.constraint.BalanceConstraint.BalanceMethod.SHIFT_COM
-        balance = dart.constraint.BalanceConstraint(original, balance_method)
+        error_method = dart.constraint.BalanceConstraint.ErrorMethod.FROM_EDGE
+        balance = dart.constraint.BalanceConstraint(original, balance_method, error_method)
+        balance.setOptimizationTolerance(2e-5)
+        balance.setPseudoInverseDamping(0.125)
         if {location!r} == 'objective':
             problem.setObjective(balance)
         elif {location!r} == 'eq':
@@ -191,6 +194,9 @@ def test_cloned_balance_constraint_uses_new_ik_and_skeleton(path, location):
         assert isinstance(value, dart.constraint.BalanceConstraint)
         assert value is not balance
         assert value.getBalanceMethod() == balance_method
+        assert value.getErrorMethod() == error_method
+        assert value.getOptimizationTolerance() == 2e-5
+        assert value.getPseudoInverseDamping() == 0.125
         del source, original, problem, balance, target
         for _ in range(3):
             gc.collect()
@@ -1042,6 +1048,97 @@ def test_python_owned_whole_body_ik_objective_cycle_collects(path):
         del objective, ik, skeleton
         gc.collect()
         assert all(ref() is None for ref in refs)
+        """
+    )
+
+
+@pytest.mark.parametrize("location", ["objective", "null_objective", "problem"])
+@pytest.mark.parametrize("outside", ["none", "ik", "skeleton", "body", "world", "balance"])
+def test_skeleton_owned_ik_back_reference_cycle_collects_without_outside_owners(
+    location, outside
+):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return float(self.owner.getSkeleton().getNumDofs() + np.dot(x, x))
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        objective = Objective()
+        objective.owner = ik
+        if {location!r} == 'objective':
+            ik.setObjective(objective)
+        elif {location!r} == 'null_objective':
+            ik.setNullSpaceObjective(objective)
+        else:
+            ik.getProblem().setObjective(objective)
+        if {outside!r} == 'ik':
+            live = ik
+        elif {outside!r} == 'skeleton':
+            live = skeleton
+        elif {outside!r} == 'body':
+            live = skeleton.getBodyNode(0)
+        elif {outside!r} == 'world':
+            live = dart.simulation.World()
+            live.addSkeleton(skeleton)
+        elif {outside!r} == 'balance':
+            live = dart.constraint.BalanceConstraint(ik)
+        refs = weakref.ref(objective), weakref.ref(ik), weakref.ref(skeleton)
+        del objective, ik, skeleton
+        gc.collect()
+        if {outside!r} != 'none':
+            assert refs[0]() is not None and refs[1]() is not None
+            assert refs[0]().eval(np.zeros(6)) == 6
+            del live
+            gc.collect()
+        collected = all(ref() is None for ref in refs)
+        if refs[0]() is not None:
+            refs[0]().owner = None
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        assert collected, 'Skeleton-owned IK back-reference cycle was retained'
+        """
+    )
+
+
+@pytest.mark.parametrize("outside", ["problem", "solver", "foreign_problem"])
+def test_skeleton_owned_ik_live_optimizer_owner_preserves_objective(outside):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return float(self.owner.getSkeleton().getNumDofs() + np.dot(x, x))
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        objective = Objective()
+        objective.owner = ik
+        ik.getProblem().setObjective(objective)
+        if {outside!r} == 'problem':
+            live = ik.getProblem()
+        elif {outside!r} == 'solver':
+            live = ik.getSolver()
+        else:
+            live = dart.optimizer.Problem(6)
+            live.setObjective(objective)
+        refs = weakref.ref(objective), weakref.ref(ik)
+        del objective, ik, skeleton
+        gc.collect()
+        assert all(ref() is not None for ref in refs)
+        fetched = live.getProblem().getObjective() if {outside!r} == 'solver' else live.getObjective()
+        assert fetched is refs[0]()
+        assert fetched.eval(np.zeros(6)) == 6
+        del fetched, live
+        gc.collect()
+        collected = all(ref() is None for ref in refs)
+        if refs[0]() is not None:
+            refs[0]().owner = None
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        assert collected, 'Skeleton-owned IK optimizer cycle was retained'
         """
     )
 

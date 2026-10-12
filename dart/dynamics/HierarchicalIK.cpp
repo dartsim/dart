@@ -118,10 +118,7 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 bool HierarchicalIK::solveAndApply(bool allowIncompleteResult)
 {
   Eigen::VectorXd solution;
-  const auto wasSolved = findSolution(solution);
-  if (wasSolved || allowIncompleteResult)
-    setPositions(solution);
-  return wasSolved;
+  return solveAndApply(solution, allowIncompleteResult);
 }
 
 //==============================================================================
@@ -129,7 +126,9 @@ bool HierarchicalIK::solveAndApply(
     Eigen::VectorXd& positions, bool allowIncompleteResult)
 {
   const auto wasSolved = findSolution(positions);
-  if (wasSolved || allowIncompleteResult)
+  const auto skel = getSkeleton();
+  if ((wasSolved || allowIncompleteResult) && skel
+      && positions.size() == static_cast<Eigen::Index>(skel->getNumDofs()))
     setPositions(positions);
   return wasSolved;
 }
