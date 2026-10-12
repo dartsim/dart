@@ -213,17 +213,13 @@ APPROVED_CTEST_SELECTIONS = {
         "environment": (),
     },
 }
+# Rendering tests need a graphics device, so `test`/`test-all` leave them to
+# `pixi run test-gui`: the `gui-device` CTest label and these Python modules.
+GUI_CTEST_EXCLUSION = "-DDART_CTEST_EXCLUDE_LABEL=gui-device"
 SLOW_TRANSFER_NODE = (
     "python/tests/unit/utils/test_model_resource_retriever.py::"
     "test_healthy_slow_transfer_survives_one_minute"
 )
-# Python selections use the runner's collection/body guards, rather than GTest.
-APPROVED_PYTEST_CTEST_SELECTIONS = {
-    "pytest": (f"--deselect={SLOW_TRANSFER_NODE}", "-v"),
-    "pytest_slow_transfer": ("--expect-node", SLOW_TRANSFER_NODE, "-v"),
-}
-# The C++ gate leaves Python to `pytest` and graphics to `test-gui`.
-DEFAULT_CTEST_EXCLUSION = "-DDART_CTEST_EXCLUDE_LABEL=gui-device|pytest"
 GUI_DEVICE_CTESTS = frozenset(
     {
         "test_FilamentBackend",
@@ -1242,7 +1238,7 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "${CMAKE_COMMAND}",
                         "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}",
                         "-DDART_CTEST_CONFIGURATION=$<CONFIG>",
-                        DEFAULT_CTEST_EXCLUSION,
+                        GUI_CTEST_EXCLUSION,
                         "-P",
                         "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake",
                     ),
@@ -1253,7 +1249,6 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "${unit_tests}",
                     ),
                     ("WORKING_DIRECTORY", "${DART_BINARY_DIR}"),
-                    ("VERBATIM",),
                 ),
                 (),
                 "cmake/DARTRunCTest.cmake",
@@ -1267,25 +1262,16 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                     ("pytest",),
                     (
                         "COMMAND",
-                        "${CMAKE_CTEST_COMMAND}",
-                        "--output-on-failure",
-                        "--no-tests=error",
-                        "--parallel",
-                        "4",
-                        "-C",
-                        "$<CONFIG>",
-                        "-L",
-                        "^pytest$",
-                    ),
-                    ("WORKING_DIRECTORY", "${CMAKE_CURRENT_BINARY_DIR}"),
-                    (
-                        "SOURCES",
-                        "${dartpy_test_files}",
-                        "${dartpy_test_utils}",
+                        "${Python3_EXECUTABLE}",
+                        "-I",
                         "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py",
+                        "--pythonpath",
+                        "${DART_PYTHONPATH}",
+                        "${dartpy_pytest_options}",
+                        "${dartpy_test_files}",
+                        "-v",
                     ),
                     ("DEPENDS", "dartpy"),
-                    ("VERBATIM",),
                 ),
                 ("if:DARTPY_PYTEST_FOUND",),
                 "scripts/run_pytest.py",
@@ -1299,109 +1285,6 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                 ),
                 ("else:DARTPY_PYTEST_FOUND",),
                 "pytest",
-            ),
-            (
-                "set",
-                f'dartpy_slow_transfer_node "{SLOW_TRANSFER_NODE}"',
-                (),
-                ("if:DARTPY_PYTEST_FOUND",),
-                "slow-transfer node",
-            ),
-            (
-                "enable_testing",
-                "",
-                (),
-                ("if:DARTPY_PYTEST_FOUND",),
-                "Python CTest enablement",
-            ),
-            (
-                "set",
-                "dartpy_pytest_selection",
-                (),
-                ("if:DARTPY_PYTEST_FOUND",),
-                "full Python selection",
-            ),
-            (
-                "set",
-                "dartpy_ctest_tests pytest",
-                (),
-                ("if:DARTPY_PYTEST_FOUND",),
-                "main Python registration",
-            ),
-            (
-                "set",
-                'dartpy_pytest_selection "--deselect=${dartpy_slow_transfer_node}"',
-                (),
-                ("if:DARTPY_PYTEST_FOUND", "if:DART_BUILD_UTILS_ASSETS"),
-                "slow-transfer deselection",
-            ),
-            (
-                "list",
-                "APPEND dartpy_ctest_tests pytest_slow_transfer",
-                (),
-                ("if:DARTPY_PYTEST_FOUND", "if:DART_BUILD_UTILS_ASSETS"),
-                "slow-transfer registration",
-            ),
-            *(
-                (
-                    "add_test",
-                    None,
-                    (
-                        ("NAME", name, "COMMAND"),
-                        (
-                            "COMMAND",
-                            "${Python3_EXECUTABLE}",
-                            "-I",
-                            "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py",
-                            "--pythonpath",
-                            "${DART_DARTPY_BUILD_DIR}",
-                            "--pythonpath",
-                            "${DART_PYTHON_BUILD_DIR}",
-                            *selection,
-                        ),
-                    ),
-                    ("if:DARTPY_PYTEST_FOUND",)
-                    + (
-                        ("if:DART_BUILD_UTILS_ASSETS",)
-                        if name == "pytest_slow_transfer"
-                        else ()
-                    ),
-                    (
-                        "scripts/run_pytest.py"
-                        if name == "pytest"
-                        else f"{name} runner selection"
-                    ),
-                )
-                for name, selection in (
-                    (
-                        "pytest",
-                        (
-                            "${dartpy_test_files}",
-                            "${dartpy_pytest_selection}",
-                            "-v",
-                        ),
-                    ),
-                    (
-                        "pytest_slow_transfer",
-                        (
-                            "${PROJECT_SOURCE_DIR}/${dartpy_slow_transfer_node}",
-                            "--expect-node",
-                            "${dartpy_slow_transfer_node}",
-                            "-v",
-                        ),
-                    ),
-                )
-            ),
-            (
-                "set_tests_properties",
-                None,
-                (
-                    ("${dartpy_ctest_tests}", "PROPERTIES"),
-                    ("LABELS", "pytest"),
-                    ("WORKING_DIRECTORY", "${CMAKE_CURRENT_SOURCE_DIR}"),
-                ),
-                ("if:DARTPY_PYTEST_FOUND",),
-                "Python CTest labels and directory",
             ),
         ),
     }
@@ -3011,7 +2894,7 @@ def ctest_property_values(test: dict[str, Any], name: str) -> list[Any]:
 
 
 def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
-    """Reserve broad-gate exclusions for their owning graphics/Python gates."""
+    """Only rendering registrations may be excluded from the broad test gate."""
     name = test["name"]
     labels = {
         label
@@ -3020,13 +2903,6 @@ def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
         for label in values
         if isinstance(label, str)
     }
-    if name not in APPROVED_PYTEST_CTEST_SELECTIONS and any(
-        "pytest" in label for label in labels
-    ):
-        errors.append(
-            f"CMake semantic test graph: test `{name}` cannot use reserved "
-            "Python CTest labels matching `pytest`"
-        )
     needs_device = name in GUI_DEVICE_CTESTS or name.startswith(
         "examples_demos_capture"
     )
@@ -3115,10 +2991,9 @@ def check_cmake_ctest_inventory(
     test_targets: dict[str, dict[str, Any]],
     cache: dict[str, str],
     trace_records: list[dict[str, Any]],
-    dartpy_output_dir: str,
     errors: list[str],
 ) -> None:
-    """Require guarded CTest registrations for every C++ and Python gate."""
+    """Require executing CTest registrations for C++ targets and version checks."""
     prefix = "CMake semantic test graph"
     try:
         result = subprocess.run(
@@ -3166,25 +3041,6 @@ def check_cmake_ctest_inventory(
         and "ContactSurfaceProbe" not in generated_names
     ):
         errors.append(f"{prefix}: ContactSurfaceProbe is not registered with CTest")
-    assets_value = cache.get("DART_BUILD_UTILS_ASSETS")
-    if assets_value is None:
-        errors.append(f"{prefix}: configured assets component is unavailable")
-    assets_enabled = (
-        assets_value is not None
-        and re.fullmatch(
-            r"(?i:|0|OFF|NO|FALSE|N|IGNORE|NOTFOUND|.*-NOTFOUND)", assets_value
-        )
-        is None
-    )
-    python_selections = (
-        APPROVED_PYTEST_CTEST_SELECTIONS if assets_enabled else {"pytest": ("-v",)}
-    )
-    actual_python = set(APPROVED_PYTEST_CTEST_SELECTIONS) & generated_names
-    if actual_python != set(python_selections):
-        errors.append(
-            f"{prefix}: Python CTest entries do not match the configured assets "
-            f"component: expected {sorted(python_selections)}, found {sorted(actual_python)}"
-        )
 
     version_test = "test_DARTConfigVersion"
     if version_test not in generated_names:
@@ -3240,7 +3096,6 @@ def check_cmake_ctest_inventory(
 
     registered_tests: dict[str, tuple[list[str], Path]] = {}
     approved_probes: set[str] = set()
-    approved_python: set[str] = set()
     for test in tests:
         if not isinstance(test, dict):
             errors.append(f"{prefix}: CTest inventory contains an invalid test")
@@ -3291,70 +3146,6 @@ def check_cmake_ctest_inventory(
             name, {"arguments": (), "environment": ()}
         )
         expected_arguments = tuple(selection_policy["arguments"])
-        is_python = name in python_selections
-        if is_python:
-            python_prefix = (
-                "-I",
-                (root / "scripts" / "run_pytest.py").as_posix(),
-                "--pythonpath",
-                Path(dartpy_output_dir).as_posix(),
-                "--pythonpath",
-                (build_dir / "python").as_posix(),
-            )
-            python_selection = python_selections[name]
-            positional = (
-                sorted(
-                    (root / relative).as_posix()
-                    for relative in default_pytest_sources(root)
-                )
-                if name == "pytest"
-                else [f"{root.as_posix()}/{SLOW_TRANSFER_NODE}"]
-            )
-            expected_arguments = (*python_prefix, *positional, *python_selection)
-            python_executable = cache.get("_Python3_EXECUTABLE") or cache.get(
-                "Python3_EXECUTABLE"
-            )
-            valid = isinstance(python_executable, str) and executable_paths_match(
-                python_executable, sys.executable
-            )
-            for candidate in (generated_command, effective_command):
-                candidate_sources = candidate[
-                    7 : len(candidate) - len(python_selection)
-                ]
-                valid = valid and (
-                    executable_paths_match(candidate[0], sys.executable)
-                    and len(candidate) == 1 + len(expected_arguments)
-                    and candidate[1:7:2] == list(python_prefix[::2])
-                    and all(
-                        cmake_paths_match(actual, Path(expected))
-                        for actual, expected in zip(
-                            candidate[2:7:2], python_prefix[1::2]
-                        )
-                    )
-                    and sorted(
-                        normalized_absolute_path(source, root / "python" / "tests")
-                        for source in candidate_sources
-                    )
-                    == sorted(
-                        normalized_absolute_path(source, root) for source in positional
-                    )
-                    and candidate[-len(python_selection) :] == list(python_selection)
-                )
-            labels = ctest_property_values(test, "LABELS")
-            working_directory = ctest_property_values(test, "WORKING_DIRECTORY")
-            valid = (
-                valid
-                and labels == [["pytest"]]
-                and len(working_directory) == 1
-                and cmake_paths_match(working_directory[0], root / "python" / "tests")
-            )
-            if valid:
-                approved_python.add(name)
-            else:
-                errors.append(
-                    f"{prefix}: Python CTest test `{name}` must use the isolated "
-                    "configured runner, exact suite partition, label, and directory"
-                )
         app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
         if name == version_test:
             expected_arguments = version_arguments
@@ -3390,7 +3181,7 @@ def check_cmake_ctest_inventory(
                         "compiler with only C++14 flags, DART/Eigen includes, "
                         "and its probe source"
                     )
-        if not is_python and tuple(generated_command[1:]) != expected_arguments:
+        if tuple(generated_command[1:]) != expected_arguments:
             errors.append(
                 f"{prefix}: CTest test `{name}` has unapproved command arguments "
                 f"{generated_command[1:]}"
@@ -3407,26 +3198,6 @@ def check_cmake_ctest_inventory(
         ):
             errors.append(
                 f"{prefix}: ContactSurfaceProbe cannot modify its environment"
-            )
-        if is_python and (
-            environment_values
-            or any(
-                ctest_property_values(test, property_name)
-                for property_name in (
-                    "ENVIRONMENT_MODIFICATION",
-                    "RUN_SERIAL",
-                    "RESOURCE_LOCK",
-                    "PROCESSORS",
-                    "DEPENDS",
-                    "FIXTURES_SETUP",
-                    "FIXTURES_REQUIRED",
-                    "FIXTURES_CLEANUP",
-                )
-            )
-        ):
-            errors.append(
-                f"{prefix}: Python CTest test `{name}` cannot modify its "
-                "environment or serialize the suite partition"
             )
         selection_environment = tuple(
             item
@@ -3462,7 +3233,6 @@ def check_cmake_ctest_inventory(
             and app_arguments is None
             and name != version_test
             and not is_probe
-            and not is_python
         )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
             errors.append(
@@ -3504,8 +3274,8 @@ def check_cmake_ctest_inventory(
         return test_name == target_name and command[0] == target_name
 
     matched_registrations: set[str] = (
-        ({version_test} & set(registered_tests)) | approved_probes | approved_python
-    )
+        {version_test} & set(registered_tests)
+    ) | approved_probes
     unregistered = []
     for name, artifacts in target_artifacts.items():
         matches = {
@@ -3603,7 +3373,7 @@ def check_cmake_test_target_trace(
         configuration_definition = (
             tests_arguments[4].partition("=")[2] if len(tests_arguments) > 4 else ""
         )
-        suffix = tests_arguments[8:-1]
+        suffix = tests_arguments[8:]
         if (
             tests_arguments[:2] != ["tests_and_run", "COMMAND"]
             or len(tests_arguments) < 9
@@ -3612,7 +3382,7 @@ def check_cmake_test_target_trace(
             or not executable_paths_match(ctest_definition, trusted_ctest)
             or not tests_arguments[4].startswith("-DDART_CTEST_CONFIGURATION=")
             or configuration_definition not in {"$<CONFIG>", "Release"}
-            or tests_arguments[5] != DEFAULT_CTEST_EXCLUSION
+            or tests_arguments[5] != GUI_CTEST_EXCLUSION
             or tests_arguments[6] != "-P"
             or not cmake_paths_match(
                 tests_arguments[7], root / "cmake" / "DARTRunCTest.cmake"
@@ -3623,7 +3393,6 @@ def check_cmake_test_target_trace(
             or suffix[-2:-1] != ["WORKING_DIRECTORY"]
             or not cmake_paths_match(suffix[-1], build_dir)
             or suffix.count("WORKING_DIRECTORY") != 1
-            or tests_arguments[-1] != "VERBATIM"
         ):
             errors.append(
                 f"{prefix}: expanded `tests_and_run` command does not invoke "
@@ -3631,66 +3400,128 @@ def check_cmake_test_target_trace(
             )
 
     pytest_arguments = target_arguments("pytest")
-    expected_pytest_arguments = [
-        "pytest",
-        "COMMAND",
-        ctest_executable,
-        "--output-on-failure",
-        "--no-tests=error",
-        "--parallel",
-        "4",
-        "-C",
-        "$<CONFIG>",
-        "-L",
-        "^pytest$",
-        "WORKING_DIRECTORY",
-        str(build_dir / "python" / "tests"),
-        "SOURCES",
-    ]
-    valid = (
-        pytest_arguments is not None
-        and len(pytest_arguments) > 16
-        and (
-            pytest_arguments[:2] == expected_pytest_arguments[:2]
-            and executable_paths_match(pytest_arguments[2], trusted_ctest or "")
-            and pytest_arguments[3:12] == expected_pytest_arguments[3:12]
-            and cmake_paths_match(pytest_arguments[12], build_dir / "python" / "tests")
-            and pytest_arguments[13:14] == ["SOURCES"]
-            and pytest_arguments[-3:] == ["DEPENDS", "dartpy", "VERBATIM"]
-            and pytest_arguments.count("COMMAND") == 1
-        )
+    python_executable = cache.get("_Python3_EXECUTABLE") or cache.get(
+        "Python3_EXECUTABLE"
     )
-    if valid:
-        traced_sources = [
-            normalized_absolute_path(source, root / "python" / "tests")
-            for argument in pytest_arguments[14:-3]
-            for source in argument.split(";")
-            if source
-        ]
-        expected_sources = {
-            normalized_absolute_path(relative, root)
-            for relative in default_pytest_sources(root)
-        } | {
-            normalized_absolute_path("python/tests/util.py", root),
-            normalized_absolute_path("scripts/run_pytest.py", root),
-        }
-        valid = (
-            len(traced_sources) == len(expected_sources)
-            and set(traced_sources) == expected_sources
-        )
-    if not valid:
+    if not isinstance(python_executable, str):
+        errors.append(f"{prefix}: configured Python executable is unavailable")
+    elif not executable_paths_match(python_executable, sys.executable):
         errors.append(
-            f"{prefix}: expanded `pytest` command does not invoke the "
-            "configured CTest interpreter over the guarded Python label"
+            f"{prefix}: configured Python executable does not match the "
+            "active Pixi environment"
         )
-    check_pytest_execution_options(root, errors)
-    check_pytest_source_policies(root, errors)
-    check_pytest_module_provenance(
-        sys.executable,
-        root / "python" / "tests",
-        os.pathsep.join((dartpy_output_dir, str(build_dir / "python"))),
-        errors,
-    )
+    elif pytest_arguments is not None:
+        command_indexes = [
+            index
+            for index, argument in enumerate(pytest_arguments)
+            if argument == "COMMAND"
+        ]
+        valid = len(command_indexes) == 2
+        if valid:
+            echo_index, pytest_index = command_indexes
+            valid = (
+                len(pytest_arguments) > echo_index + 3
+                and executable_paths_match(
+                    pytest_arguments[echo_index + 1], cmake_executable
+                )
+                and pytest_arguments[echo_index + 2 : echo_index + 4] == ["-E", "echo"]
+                and len(pytest_arguments) > pytest_index + 6
+                and executable_paths_match(
+                    pytest_arguments[pytest_index + 1], sys.executable
+                )
+                and pytest_arguments[pytest_index + 2] == "-I"
+                and cmake_paths_match(
+                    pytest_arguments[pytest_index + 3],
+                    root / "scripts" / "run_pytest.py",
+                )
+                and pytest_arguments[pytest_index + 4] == "--pythonpath"
+            )
+        if valid:
+            pythonpath_value = pytest_arguments[pytest_index + 5]
+            path_separator = ";" if r"\;" in pythonpath_value else os.pathsep
+            pythonpath_entries = split_cmake_path_list(pythonpath_value, path_separator)
+            resolved_pythonpath_entries = [
+                (dartpy_output_dir if entry == "$<TARGET_FILE_DIR:dartpy>" else entry)
+                for entry in pythonpath_entries
+            ]
+            normalized_pythonpath = {
+                normalized_absolute_path(entry, root / "python" / "tests")
+                for entry in resolved_pythonpath_entries
+                if entry
+            }
+            allowed_pythonpath = {
+                normalized_absolute_path(dartpy_output_dir, build_dir),
+                normalized_absolute_path(str(build_dir / "python"), root),
+            }
+            valid = (
+                bool(pythonpath_entries)
+                and all(pythonpath_entries)
+                and pythonpath_entries[0] == "$<TARGET_FILE_DIR:dartpy>"
+                and len(pythonpath_entries) == len(normalized_pythonpath)
+                and normalized_pythonpath == allowed_pythonpath
+            )
+            pythonpath_value = os.pathsep.join(resolved_pythonpath_entries)
+        if valid:
+            try:
+                working_index = pytest_arguments.index("WORKING_DIRECTORY")
+                sources_index = pytest_arguments.index("SOURCES")
+                depends_index = pytest_arguments.index("DEPENDS")
+            except ValueError:
+                valid = False
+            else:
+                valid = (
+                    pytest_index < working_index < sources_index < depends_index
+                    and len(pytest_arguments) > working_index + 1
+                    and Path(pytest_arguments[working_index + 1]).resolve()
+                    == (root / "python" / "tests").resolve()
+                )
+        if valid:
+            command_tail = [
+                entry
+                for argument in pytest_arguments[pytest_index + 6 : working_index]
+                for entry in argument.split(";")
+                if entry
+            ]
+            concurrent_options = (
+                ["--concurrent-node", SLOW_TRANSFER_NODE]
+                if re.fullmatch(
+                    r"(?i:|0|OFF|NO|FALSE|N|IGNORE|NOTFOUND|.*-NOTFOUND)",
+                    cache.get("DART_BUILD_UTILS_ASSETS", "OFF"),
+                )
+                is None
+                else []
+            )
+            valid = command_tail[: len(concurrent_options)] == concurrent_options
+            command_tail = command_tail[len(concurrent_options) :]
+            valid = valid and bool(command_tail) and command_tail[-1] == "-v"
+        if valid:
+            traced_sources = [
+                normalized_absolute_path(source, root / "python" / "tests")
+                for argument in command_tail[:-1]
+                for source in argument.split(";")
+                if source
+            ]
+            expected_sources = [
+                normalized_absolute_path(relative, root)
+                for relative in default_pytest_sources(root)
+            ]
+            valid = len(traced_sources) == len(expected_sources) and set(
+                traced_sources
+            ) == set(expected_sources)
+        if valid:
+            check_pytest_execution_options(root, errors)
+            check_pytest_source_policies(root, errors)
+            check_pytest_module_provenance(
+                sys.executable,
+                root / "python" / "tests",
+                pythonpath_value,
+                errors,
+            )
+        if not valid:
+            errors.append(
+                f"{prefix}: expanded `pytest` command does not invoke the "
+                "configured Python interpreter over the configured test sources"
+            )
 
 
 def check_cmake_test_graph(
@@ -4132,7 +3963,6 @@ def check_cmake_test_graph(
             test_target_data,
             cache,
             trace_records,
-            dartpy_output_dir,
             errors,
         )
 

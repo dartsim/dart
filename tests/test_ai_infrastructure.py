@@ -2209,13 +2209,16 @@ def _copy_test_gate_contract(root: Path) -> None:
 
 
 def _replace_required_pytest_command(cmake: Path, replacement: str) -> None:
-    text = cmake.read_text(encoding="utf-8")
-    test_start = text.index("  add_test(\n    NAME pytest\n")
-    command_start = text.index("    COMMAND\n", test_start)
-    command_end = text.index("  )\n", command_start)
-    cmake.write_text(
-        text[:command_start] + replacement + text[command_end:], encoding="utf-8"
+    marker = (
+        "    COMMAND\n"
+        '      "${Python3_EXECUTABLE}" -I '
+        '"${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"\n'
+        '      --pythonpath "${DART_PYTHONPATH}" ${dartpy_pytest_options}\n'
+        "      ${dartpy_test_files} -v\n"
     )
+    text = cmake.read_text(encoding="utf-8")
+    assert marker in text
+    cmake.write_text(text.replace(marker, replacement, 1), encoding="utf-8")
 
 
 @pytest.mark.parametrize(
@@ -2688,19 +2691,19 @@ def test_test_gate_contract_rejects_ctest_runner_drift(tmp_path):
     (
         (
             "tests/CMakeLists.txt",
-            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device|pytest"',
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device"',
             '"-DDART_CTEST_EXCLUDE_LABEL=unit"',
             "tests/CMakeLists.txt: missing `test-all` graph marker",
         ),
         (
             "tests/CMakeLists.txt",
-            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device|pytest"',
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device"',
             '"-DDART_CTEST_EXCLUDE_LABEL=gui"',
             "tests/CMakeLists.txt: missing `test-all` graph marker",
         ),
         (
             "tests/CMakeLists.txt",
-            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device|pytest"',
+            '"-DDART_CTEST_EXCLUDE_LABEL=gui-device"',
             "",
             "tests/CMakeLists.txt: missing `test-all` graph marker",
         ),
@@ -2808,7 +2811,7 @@ def test_ctest_broad_gate_runs_gui_logic_without_running_graphics(tmp_path):
         [
             "cmake",
             f"-DDART_CTEST_COMMAND={infra.shutil.which('ctest')}",
-            infra.DEFAULT_CTEST_EXCLUSION,
+            infra.GUI_CTEST_EXCLUSION,
             "-P",
             str(ROOT / "cmake/DARTRunCTest.cmake"),
         ],
@@ -3061,6 +3064,7 @@ def _configure_semantic_graph_fixture(
     root: Path,
     generator: str | None = None,
     force_windows: bool = False,
+    assets: bool = False,
 ) -> Path:
     sources = {
         "CMakeLists.txt": """
@@ -3076,10 +3080,7 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 enable_testing()
 set(BUILD_TESTING ON CACHE BOOL "")
 set(DART_BUILD_DARTPY ON CACHE BOOL "")
-set(DART_BUILD_UTILS_ASSETS ON CACHE BOOL "")
 add_library(dartpy MODULE python/dartpy.c)
-set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")
-set(DART_PYTHON_BUILD_DIR "${CMAKE_BINARY_DIR}/python")
 if(WIN32)
   set(
     DART_PYTHONPATH
@@ -3121,11 +3122,10 @@ add_custom_target(
     ${CMAKE_COMMAND}
     "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
     "-DDART_CTEST_CONFIGURATION=$<CONFIG>"
-    "-DDART_CTEST_EXCLUDE_LABEL=gui-device|pytest"
+    "-DDART_CTEST_EXCLUDE_LABEL=gui-device"
     -P "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
   WORKING_DIRECTORY "${DART_BINARY_DIR}"
-  VERBATIM
 )
 """.lstrip(),
         "tests/integration/CMakeLists.txt": """
@@ -3146,53 +3146,28 @@ set(unit_tests UNIT_semantic PARENT_SCOPE)
         "python/dartpy.c": "int dartpy_semantic_fixture(void) { return 0; }\n",
         "python/tests/CMakeLists.txt": """
 set(DARTPY_PYTEST_FOUND TRUE)
-set(dartpy_test_files test_semantic.py unit/utils/test_model_resource_retriever.py)
-set(dartpy_test_utils util.py)
+set(dartpy_test_files test_semantic.py)
+set(dartpy_test_utils)
 if(DARTPY_PYTEST_FOUND)
-  enable_testing()
-  set(
-    dartpy_slow_transfer_node
-    "python/tests/unit/utils/test_model_resource_retriever.py::test_healthy_slow_transfer_survives_one_minute"
-  )
-  set(dartpy_pytest_selection)
-  set(dartpy_ctest_tests pytest)
+  set(dartpy_pytest_options)
   if(DART_BUILD_UTILS_ASSETS)
-    set(dartpy_pytest_selection "--deselect=${dartpy_slow_transfer_node}")
-    add_test(
-      NAME pytest_slow_transfer
-      COMMAND
-        "${Python3_EXECUTABLE}" -I "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
-        --pythonpath "${DART_DARTPY_BUILD_DIR}"
-        --pythonpath "${DART_PYTHON_BUILD_DIR}"
-        "${PROJECT_SOURCE_DIR}/${dartpy_slow_transfer_node}"
-        --expect-node "${dartpy_slow_transfer_node}" -v
-    )
-    list(APPEND dartpy_ctest_tests pytest_slow_transfer)
+    set(dartpy_pytest_options --concurrent-node
+      "python/tests/unit/utils/test_model_resource_retriever.py::test_healthy_slow_transfer_survives_one_minute")
   endif()
-  add_test(
-    NAME pytest
-    COMMAND
-      "${Python3_EXECUTABLE}" -I "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
-      --pythonpath "${DART_DARTPY_BUILD_DIR}"
-      --pythonpath "${DART_PYTHON_BUILD_DIR}" ${dartpy_test_files}
-      ${dartpy_pytest_selection} -v
-  )
-  set_tests_properties(
-    ${dartpy_ctest_tests}
-    PROPERTIES LABELS pytest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  )
   add_custom_target(
     pytest
     COMMAND
-      "${CMAKE_CTEST_COMMAND}" --output-on-failure --no-tests=error --parallel 4
-      -C "$<CONFIG>" -L "^pytest$"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_COMMAND} -E echo
+      "Running pytest by: ${Python3_EXECUTABLE} -I ${PROJECT_SOURCE_DIR}/scripts/run_pytest.py --pythonpath ${DART_PYTHONPATH} [sources]"
+    COMMAND
+      "${Python3_EXECUTABLE}" -I "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
+      --pythonpath "${DART_PYTHONPATH}" ${dartpy_pytest_options} ${dartpy_test_files} -v
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES
       ${dartpy_test_files}
       ${dartpy_test_utils}
       "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
     DEPENDS dartpy
-    VERBATIM
   )
 else()
   add_custom_target(
@@ -3203,10 +3178,6 @@ else()
   )
 endif()
 """.lstrip(),
-        "python/tests/util.py": "",
-        "python/tests/unit/utils/test_model_resource_retriever.py": (
-            "def test_healthy_slow_transfer_survives_one_minute():\n    pass\n"
-        ),
         "python/tests/test_semantic.py": "def test_semantic():\n    pass\n",
         "cmake/DARTRunCTest.cmake": (ROOT / "cmake/DARTRunCTest.cmake").read_text(
             encoding="utf-8"
@@ -3230,6 +3201,15 @@ filterwarnings = ["error"]
 testpaths = ["tests"]
 """.lstrip(),
     }
+    if assets:
+        source, function = infra.SLOW_TRANSFER_NODE.split("::")
+        sources[source] = f"def {function}():\n    pass\n"
+        sources["python/tests/CMakeLists.txt"] = sources[
+            "python/tests/CMakeLists.txt"
+        ].replace(
+            "set(dartpy_test_files test_semantic.py)",
+            f"set(dartpy_test_files test_semantic.py {source.removeprefix('python/tests/')})",
+        )
     for relative, text in sources.items():
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -3255,6 +3235,8 @@ testpaths = ["tests"]
         command[1:1] = ["-G", generator]
     if force_windows:
         command.append("-DWIN32=TRUE")
+    if assets:
+        command.append("-DDART_BUILD_UTILS_ASSETS=ON")
     result = subprocess.run(
         command,
         capture_output=True,
@@ -3271,6 +3253,40 @@ def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     infra.check_cmake_test_graph(tmp_path, build, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize("failure", (None, "main", "child"))
+def test_cmake_concurrent_pytest_keeps_ctest_unchanged_and_propagates_failures(
+    tmp_path, failure
+):
+    build = _configure_semantic_graph_fixture(tmp_path, assets=True)
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    assert errors == []
+    inventory = subprocess.run(
+        ["ctest", "--test-dir", str(build), "--show-only=json-v1"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert all(
+        "pytest" not in test["name"] for test in json.loads(inventory.stdout)["tests"]
+    )
+    if failure:
+        source, function = (
+            ("python/tests/test_semantic.py", "test_semantic")
+            if failure == "main"
+            else infra.SLOW_TRANSFER_NODE.split("::")
+        )
+        (tmp_path / source).write_text(
+            f"def {function}():\n    assert False\n", encoding="utf-8"
+        )
+    result = subprocess.run(
+        ["cmake", "--build", str(build), "--target", "pytest"],
+        capture_output=True,
+        text=True,
+    )
+    assert (result.returncode == 0) == (failure is None), result.stdout + result.stderr
 
 
 @pytest.mark.parametrize("override", ("", "7.0.0", "7.4.2", "8.0.0"))
@@ -4683,8 +4699,8 @@ def test_cmake_semantic_graph_probe_rejects_pytest_non_execution_flags(tmp_path)
     build = _configure_semantic_graph_fixture(tmp_path)
     cmake.write_text(
         cmake.read_text(encoding="utf-8").replace(
-            "${dartpy_pytest_selection} -v",
-            "${dartpy_pytest_selection} -v --collect-only",
+            "${dartpy_test_files} -v",
+            "${dartpy_test_files} -v --collect-only",
             1,
         ),
         encoding="utf-8",
@@ -4697,7 +4713,6 @@ def test_cmake_semantic_graph_probe_rejects_pytest_non_execution_flags(tmp_path)
         "configured `pytest` does not originate from its validated source "
         "contract" in error
         or "expanded `pytest` command does not invoke" in error
-        or ("Python CTest test" in error and "must use the isolated" in error)
         for error in errors
     )
 
@@ -4730,254 +4745,8 @@ def test_cmake_semantic_graph_probe_rejects_unpinned_pytest_target(tmp_path, old
         "configured `pytest` does not originate from its validated source "
         "contract" in error
         or "expanded `pytest` command does not invoke" in error
-        or ("Python CTest test" in error and "must use the isolated" in error)
         for error in errors
     )
-
-
-@pytest.mark.parametrize(
-    ("old", "new", "expected"),
-    (
-        (
-            '"--deselect=${dartpy_slow_transfer_node}"',
-            '"--deselect=${dartpy_slow_transfer_node}_renamed"',
-            "Python CTest test `pytest` must use the isolated",
-        ),
-        (
-            '"${PROJECT_SOURCE_DIR}/${dartpy_slow_transfer_node}"',
-            '"${PROJECT_SOURCE_DIR}/python/tests/test_semantic.py"',
-            "Python CTest test `pytest_slow_transfer` must use the isolated",
-        ),
-        (
-            '--expect-node "${dartpy_slow_transfer_node}"',
-            "",
-            "Python CTest test `pytest_slow_transfer` must use the isolated",
-        ),
-        (
-            "PROPERTIES LABELS pytest",
-            "PROPERTIES LABELS omitted",
-            "Python CTest test `pytest` must use the isolated",
-        ),
-        (
-            "PROPERTIES LABELS pytest",
-            'PROPERTIES LABELS pytest ENVIRONMENT "PYTEST_ADDOPTS=--collect-only"',
-            "cannot modify its environment or serialize",
-        ),
-        (
-            "PROPERTIES LABELS pytest",
-            "PROPERTIES LABELS pytest RUN_SERIAL TRUE",
-            "cannot modify its environment or serialize",
-        ),
-        (
-            "PROPERTIES LABELS pytest",
-            "PROPERTIES LABELS pytest PROCESSORS 4",
-            "cannot modify its environment or serialize",
-        ),
-        (
-            "PROPERTIES LABELS pytest",
-            "PROPERTIES LABELS pytest FIXTURES_REQUIRED slow",
-            "cannot modify its environment or serialize",
-        ),
-        (
-            "--no-tests=error",
-            "",
-            "configured `pytest` does not originate from its validated source",
-        ),
-        (
-            "VERBATIM",
-            "",
-            "configured `pytest` does not originate from its validated source",
-        ),
-        (
-            '-L "^pytest$"',
-            '-L "^nothing$"',
-            "configured `pytest` does not originate from its validated source",
-        ),
-    ),
-)
-def test_cmake_semantic_graph_pins_the_python_suite_partition(
-    tmp_path, old, new, expected
-):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    cmake = tmp_path / "python" / "tests" / "CMakeLists.txt"
-    text = cmake.read_text(encoding="utf-8")
-    assert old in text
-    cmake.write_text(text.replace(old, new, 1), encoding="utf-8")
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    assert any(expected in error for error in errors)
-
-
-@pytest.mark.parametrize("ctest_name", ("pytest", "pytest_slow_transfer"))
-def test_cmake_pytest_gate_propagates_each_partition_failure(tmp_path, ctest_name):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    if ctest_name == "pytest":
-        source = tmp_path / "python" / "tests" / "test_semantic.py"
-        function = "test_semantic"
-    else:
-        source = (
-            tmp_path
-            / "python"
-            / "tests"
-            / "unit"
-            / "utils"
-            / "test_model_resource_retriever.py"
-        )
-        function = "test_healthy_slow_transfer_survives_one_minute"
-    source.write_text(f"def {function}():\n    assert False\n", encoding="utf-8")
-
-    result = subprocess.run(
-        ["cmake", "--build", str(build), "--target", "pytest", "--config", "Release"],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode != 0, result.stdout + result.stderr
-    assert f"{ctest_name} (Failed)" in result.stdout + result.stderr
-
-
-@pytest.mark.parametrize("root_testing", (True, False))
-def test_cmake_pytest_preserves_the_full_suite_without_assets(tmp_path, root_testing):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    root_cmake = tmp_path / "CMakeLists.txt"
-    configuration_arguments = ["-DDART_BUILD_UTILS_ASSETS=OFF"]
-    if not root_testing:
-        root_cmake.write_text(
-            root_cmake.read_text(encoding="utf-8").replace("enable_testing()\n", "", 1),
-            encoding="utf-8",
-        )
-        configuration_arguments.append("-DBUILD_TESTING=OFF")
-    slow_source = (
-        tmp_path
-        / "python"
-        / "tests"
-        / "unit"
-        / "utils"
-        / "test_model_resource_retriever.py"
-    )
-    slow_source.write_text(
-        "import pytest\n"
-        "@pytest.mark.skip(reason='assets component disabled')\n"
-        "def test_healthy_slow_transfer_survives_one_minute():\n    pass\n",
-        encoding="utf-8",
-    )
-    configure = subprocess.run(
-        ["cmake", "-S", str(tmp_path), "-B", str(build), *configuration_arguments],
-        capture_output=True,
-        text=True,
-    )
-    assert configure.returncode == 0, configure.stdout + configure.stderr
-    if root_testing:
-        errors = []
-        infra.check_cmake_test_graph(tmp_path, build, errors)
-        assert errors == []
-    inventory = subprocess.run(
-        [
-            "ctest",
-            "--test-dir",
-            str(build / "python" / "tests"),
-            "--show-only=json-v1",
-            "-C",
-            "Release",
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    tests = json.loads(inventory.stdout)["tests"]
-    assert [test["name"] for test in tests] == ["pytest"]
-    assert not any(
-        argument.startswith("--deselect") for argument in tests[0]["command"]
-    )
-    assert "unit/utils/test_model_resource_retriever.py" in tests[0]["command"]
-
-    result = subprocess.run(
-        ["cmake", "--build", str(build), "--target", "pytest", "--config", "Release"],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0, result.stdout + result.stderr
-    log = (
-        build / "python" / "tests" / "Testing" / "Temporary" / "LastTest.log"
-    ).read_text(encoding="utf-8")
-    assert "1 passed, 1 skipped" in log
-
-
-@pytest.mark.parametrize(
-    ("assets_enabled", "old", "new", "expected"),
-    (
-        (
-            True,
-            "if(DART_BUILD_UTILS_ASSETS)",
-            "if(FALSE)",
-            "Python CTest entries do not match",
-        ),
-        (
-            False,
-            "if(DART_BUILD_UTILS_ASSETS)",
-            "if(TRUE)",
-            "Python CTest entries do not match",
-        ),
-        (
-            False,
-            "set(dartpy_pytest_selection)",
-            'set(dartpy_pytest_selection "--deselect=${dartpy_slow_transfer_node}")',
-            "Python CTest test `pytest` must use the isolated",
-        ),
-        (
-            True,
-            'set(dartpy_pytest_selection "--deselect=${dartpy_slow_transfer_node}")',
-            "set(dartpy_pytest_selection)",
-            "Python CTest test `pytest` must use the isolated",
-        ),
-    ),
-)
-def test_cmake_semantic_graph_pins_assets_dependent_python_coverage(
-    tmp_path, assets_enabled, old, new, expected
-):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    if not assets_enabled:
-        configure = subprocess.run(
-            [
-                "cmake",
-                "-S",
-                str(tmp_path),
-                "-B",
-                str(build),
-                "-DDART_BUILD_UTILS_ASSETS=OFF",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        assert configure.returncode == 0, configure.stdout + configure.stderr
-    cmake = tmp_path / "python" / "tests" / "CMakeLists.txt"
-    text = cmake.read_text(encoding="utf-8")
-    assert old in text
-    cmake.write_text(text.replace(old, new, 1), encoding="utf-8")
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    assert any(expected in error for error in errors)
-
-
-@pytest.mark.parametrize("label", ("pytest", "pytest-extra"))
-def test_cmake_semantic_graph_reserves_python_labels(tmp_path, label):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    cmake = tmp_path / "tests" / "unit" / "CMakeLists.txt"
-    cmake.write_text(
-        cmake.read_text(encoding="utf-8")
-        + f"\nset_tests_properties(UNIT_semantic PROPERTIES LABELS {label})\n",
-        encoding="utf-8",
-    )
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    assert any("cannot use reserved Python CTest labels" in error for error in errors)
 
 
 def test_cmake_semantic_graph_probe_rejects_local_pytest_shadow(tmp_path):
@@ -5071,7 +4840,7 @@ def test_cmake_semantic_graph_pins_root_pytest_config(tmp_path):
 
     assert errors == []
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "100% tests passed, 0 tests failed out of 2" in result.stdout + result.stderr
+    assert "1 passed" in result.stdout + result.stderr
 
 
 def test_cmake_semantic_graph_uses_exact_test_directory_boundaries(tmp_path):
@@ -5211,11 +4980,11 @@ def test_cmake_semantic_graph_probe_rejects_pytest_fallback(tmp_path):
         ),
         (
             "add_subdirectory(python/tests)",
-            'set(DART_DARTPY_BUILD_DIR "${CMAKE_BINARY_DIR}/unrelated")\n',
+            'set(DART_PYTHONPATH "${CMAKE_BINARY_DIR}/unrelated")\n',
         ),
         (
             "add_subdirectory(python/tests)",
-            'set(DART_PYTHON_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")\n',
+            'set(DART_PYTHONPATH "$<TARGET_FILE_DIR:dartpy>")\n',
         ),
     ),
 )
@@ -7107,98 +6876,73 @@ def test_main_release_target_matches_branch_profile(tmp_path, version, expected)
         assert len(errors) == 1 and "branch profile `dart7`" in errors[0]
 
 
-_PYTEST_PARTITION_SLOW = "test_partition.py::test_slow"
-_PYTEST_PARTITION_FAST = "test_partition.py::test_fast"
-
-
-def _run_pytest_partition(tmp_path, *arguments, fail=False, prefix_sibling=False):
+def _run_concurrent_pytest(
+    tmp_path, *arguments, failure=None, overlap=False, prefix_sibling=False
+):
     source = tmp_path / "test_partition.py"
     source.write_text(
         "from pathlib import Path\n"
-        "CALLS = Path(__file__).with_suffix('.calls')\n"
-        "def record(name):\n"
-        "    with CALLS.open('a', encoding='utf-8') as output:\n"
-        "        output.write(name + '\\n')\n"
-        "def test_slow():\n"
-        "    record('slow')\n"
-        f"def test_{'slow_sibling' if prefix_sibling else 'fast'}():\n"
-        "    record('fast')\n"
-        f"    assert {not fail!r}\n",
+        "import time\n"
+        "ROOT = Path(__file__).parent\n"
+        "def run(name, tmp_path):\n"
+        "    with (ROOT / 'calls').open('a') as calls:\n"
+        "        calls.write(name + '\\n')\n"
+        "    (ROOT / name).write_text(str(tmp_path.parent))\n"
+        f"    if {overlap!r}:\n"
+        "        peer = ROOT / ('fast' if name == 'slow' else 'slow')\n"
+        "        deadline = time.monotonic() + 10\n"
+        "        while not peer.exists() and time.monotonic() < deadline:\n"
+        "            time.sleep(0.01)\n"
+        "        assert peer.exists(), 'bodies did not run concurrently'\n"
+        f"    assert name != {failure!r}\n"
+        "def test_slow(tmp_path):\n"
+        "    run('slow', tmp_path)\n"
+        f"def test_{'slow_sibling' if prefix_sibling else 'fast'}(tmp_path):\n"
+        "    run('fast', tmp_path)\n",
         encoding="utf-8",
     )
-    result = subprocess.run(
+    return subprocess.run(
         [
             sys.executable,
             "-I",
-            str(ROOT / "scripts" / "run_pytest.py"),
+            str(ROOT / "scripts/run_pytest.py"),
             "--rootdir",
             str(tmp_path),
+            "--concurrent-node",
+            "test_partition.py::test_slow",
             str(source),
             *arguments,
         ],
+        cwd=tmp_path,
         capture_output=True,
         text=True,
-        check=False,
+        timeout=30,
     )
-    calls = source.with_suffix(".calls")
-    return result, calls.read_text().splitlines() if calls.exists() else []
 
 
-def test_pytest_partition_exact_deselection_runs_only_the_complement(tmp_path):
-    result, calls = _run_pytest_partition(
-        tmp_path, "--deselect", _PYTEST_PARTITION_SLOW
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert calls == ["fast"]
+@pytest.mark.parametrize("failure", (None, "fast", "slow"))
+def test_pytest_concurrent_node_overlaps_once_and_propagates_failure(tmp_path, failure):
+    result = _run_concurrent_pytest(tmp_path, failure=failure, overlap=True)
+    assert result.returncode == (1 if failure else 0), result.stdout + result.stderr
+    assert sorted((tmp_path / "calls").read_text().splitlines()) == ["fast", "slow"]
+    assert (tmp_path / "fast").read_text() != (tmp_path / "slow").read_text()
+    assert "=== Concurrent pytest: test_partition.py::test_slow ===" in result.stdout
 
 
 @pytest.mark.parametrize(
-    "arguments",
-    [
-        ("--deselect", "test_partition.py::test_removed"),
-        ("--deselect", "test_partition.py::test_slow_renamed"),
-        ("--deselect", "test_partition.py::test_"),
-        ("--deselect", _PYTEST_PARTITION_SLOW, "-k", "missing"),
-    ],
+    ("arguments", "prefix_sibling"),
+    (
+        (("--concurrent-node", "test_partition.py::test_missing"), False),
+        (("--concurrent-node", "test_partition.py::test_s"), False),
+        (("-k", "missing"), False),
+        (("--deselect", "test_partition.py::test_fast"), False),
+        (("test_partition.py",), False),
+        ((), True),
+    ),
 )
-def test_pytest_partition_deselection_rejects_missing_prefix_or_extra_omissions(
-    tmp_path, arguments
+def test_pytest_concurrent_node_rejects_partition_violations(
+    tmp_path, arguments, prefix_sibling
 ):
-    result, calls = _run_pytest_partition(tmp_path, *arguments)
+    result = _run_concurrent_pytest(tmp_path, *arguments, prefix_sibling=prefix_sibling)
     assert result.returncode != 0
-    assert calls == []
-
-
-def test_pytest_partition_exact_deselection_rejects_prefix_side_effects(tmp_path):
-    result, calls = _run_pytest_partition(
-        tmp_path, "--deselect", _PYTEST_PARTITION_SLOW, prefix_sibling=True
-    )
-    assert result.returncode != 0
-    assert calls == []
-
-
-def test_pytest_partition_expected_node_runs_once(tmp_path):
-    result, calls = _run_pytest_partition(
-        tmp_path, "--expect-node", _PYTEST_PARTITION_SLOW, "-k", "slow"
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert calls == ["slow"]
-
-
-@pytest.mark.parametrize("arguments", [("-k", "missing"), ()])
-def test_pytest_partition_expected_node_rejects_zero_or_extra_nodes(
-    tmp_path, arguments
-):
-    result, calls = _run_pytest_partition(
-        tmp_path, "--expect-node", _PYTEST_PARTITION_SLOW, *arguments
-    )
-    assert result.returncode != 0
-    assert calls == []
-
-
-def test_pytest_partition_expected_node_propagates_body_failure(tmp_path):
-    result, calls = _run_pytest_partition(
-        tmp_path, "--expect-node", _PYTEST_PARTITION_FAST, "-k", "fast", fail=True
-    )
-    assert result.returncode == 1, result.stdout + result.stderr
-    assert calls == ["fast"]
+    assert not (tmp_path / "calls").exists()

@@ -9,12 +9,12 @@ pixi run test-all
 ```
 
 `pixi run test` builds the `tests_and_run` target and runs the C++ test suite.
-`pixi run test-py` runs the Python binding tests through CTest entries labeled
-`pytest`. With utils-assets enabled, the mandatory one-minute resource transfer
-regression runs concurrently with the remaining suite. Both use the isolated
-repository runner and independent
-pytest temporary directories. The C++ gate excludes this label so the aggregate
-runs each Python test once. `pixi run test-all` builds the
+`pixi run test-py` runs the Python binding tests. With utils-assets enabled,
+its runner overlaps the mandatory one-minute transfer with the remaining suite
+in an isolated child with its own pytest temporary directory, without adding
+CTest entries. The runner verifies that the main selection is exactly the
+collection minus the child's single node and fails if either run fails.
+`pixi run test-all` builds the
 default CMake `ALL` target. The branch configuration pins `BUILD_TESTING=ON`,
 and `ALL` depends on `tests_and_run` and `pytest`, so this aggregate also runs
 CTest and the Python binding tests. It does not run lint; run `pixi run lint`
@@ -61,18 +61,14 @@ only with its exact source, output directory, version, pointer size and active
 CMake command. It rejects unapproved command filters or non-executing modes,
 selects only the requested branch of multi-config registrations, rejects
 result-neutralizing test properties or GTest environment modifications, and
-requires selected C++ registrations to use a digit-bounded zero-test failure guard.
+requires selected registrations to use a digit-bounded zero-test failure guard.
 Both `pixi run test` and the aggregate reach `tests_and_run`, which removes
 every ambient `GTEST_*` variable before invoking CTest while branch-owned
 per-test selections remain explicit. Repository pytest gates use
 `scripts/run_pytest.py`; it removes every ambient `PYTEST_*` control, disables
 external plugin autoload, runs under Python isolation before adding only the
 task-owned import path, pins the root configuration, disables `conftest.py`,
-and fails if no test body executes. The main Python entry must deselect exactly
-the slow transfer's collected node; its selected nodes must equal the original
-collection minus that node. The split entry must collect exactly that same node.
-Renames, removals, extra selections, and extra deselections fail the gate.
-CMake derives the dartpy import location
+and fails if no test body executes. CMake derives the dartpy import location
 from `$<TARGET_FILE_DIR:dartpy>`, so Visual Studio, Xcode, and future
 multi-config generators use the selected configuration's extension module
 instead of a guessed build directory. The checker rejects explicit local

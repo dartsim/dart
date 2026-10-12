@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Sequence
 
@@ -37,7 +39,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--pythonpath", action="append", default=[])
-    parser.add_argument("--expect-node")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--expect-node")
+    selection.add_argument("--concurrent-node")
     options, pytest_arguments = parser.parse_known_args(
         arguments if arguments is not None else sys.argv[1:]
     )
@@ -45,8 +49,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
 
     import pytest
 
+    if options.concurrent_node:
+        pytest_arguments.extend(["--deselect", options.concurrent_node])
+
     class _SelectionGuard:
         error = None
+        child = None
 
         @pytest.hookimpl(hookwrapper=True, tryfirst=True)
         def pytest_collection_modifyitems(self, config, items):
@@ -54,7 +62,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
             deselected = config.getoption("deselect") or []
             yield
             selected = [item.nodeid for item in items]
-            if deselected and (
+            if options.concurrent_node and deselected != [options.concurrent_node]:
+                self.error = "concurrent selection must deselect only its child node"
+            elif deselected and (
                 len(original) != len(set(original))
                 or any(original.count(node) != 1 for node in deselected)
             ):
@@ -63,14 +73,39 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 node for node in original if node not in deselected
             ]:
                 self.error = "selection is not the exact deselection complement"
-            elif options.expect_node and selected != [options.expect_node]:
+            elif options.expect_node and (
+                original != [options.expect_node] or selected != original
+            ):
                 self.error = (
                     f"expected exactly one collected node: {options.expect_node}"
                 )
 
-        def pytest_collection_finish(self):
+        def pytest_collection_finish(self, session):
             if self.error:
                 raise pytest.UsageError(self.error)
+            if options.concurrent_node:
+                self.child = subprocess.Popen(
+                    [
+                        sys.executable,
+                        "-I",
+                        str(Path(__file__).resolve()),
+                        *[
+                            argument
+                            for entry in options.pythonpath
+                            for argument in ("--pythonpath", entry)
+                        ],
+                        str(session.config.rootpath / options.concurrent_node),
+                        "--rootdir",
+                        str(session.config.rootpath),
+                        "--expect-node",
+                        options.concurrent_node,
+                        "--basetemp",
+                        str(Path(child_directory) / "pytest"),
+                        "-v",
+                    ],
+                    stdout=child_output,
+                    stderr=subprocess.STDOUT,
+                )
 
     pythonpath_entries = [
         entry
@@ -85,19 +120,32 @@ def main(arguments: Sequence[str] | None = None) -> int:
         os.environ.pop("PYTHONPATH", None)
 
     guard = _ExecutionGuard()
-    result = pytest.main(
-        [
-            "-c",
-            str(ROOT / "pyproject.toml"),
-            "--noconftest",
-            *pytest_arguments,
-        ],
-        plugins=[guard, _SelectionGuard()],
-    )
-    if result == pytest.ExitCode.OK and guard.executed == 0:
-        print("ERROR: pytest completed without executing a test body", file=sys.stderr)
-        return int(pytest.ExitCode.TESTS_FAILED)
-    return int(result)
+    selection_guard = _SelectionGuard()
+    with (
+        tempfile.TemporaryDirectory(prefix="dart-pytest-") as child_directory,
+        tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as child_output,
+    ):
+        result = pytest.main(
+            [
+                "-c",
+                str(ROOT / "pyproject.toml"),
+                "--noconftest",
+                *pytest_arguments,
+            ],
+            plugins=[guard, selection_guard],
+        )
+        if result == pytest.ExitCode.OK and guard.executed == 0:
+            print(
+                "ERROR: pytest completed without executing a test body", file=sys.stderr
+            )
+            result = pytest.ExitCode.TESTS_FAILED
+        child_result = 0
+        if selection_guard.child:
+            child_result = selection_guard.child.wait()
+            child_output.seek(0)
+            print(f"\n=== Concurrent pytest: {options.concurrent_node} ===", flush=True)
+            print(child_output.read(), end="", flush=True)
+        return int(result) or child_result
 
 
 if __name__ == "__main__":
