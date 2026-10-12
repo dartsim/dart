@@ -53,7 +53,10 @@
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>
+#include <tinyxml2.h>
 
+#include <filesystem>
+#include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -71,34 +74,304 @@ using namespace dynamics;
 using namespace simulation;
 using namespace utils;
 
-//==============================================================================
-TEST(SdfParser, SevenValuePoseThrowsParseError)
-{
-  struct PoseResourceRetriever : PresentResourceRetriever
-  {
-    std::string readAll(const common::Uri&) override
-    {
-      // Use an accepted version so the quaternion pose reaches value parsing.
-      return R"(<sdf version="1.6">
-        <model name="quaternion_pose">
-          <pose rotation_format="quat_xyzw">1 2 3 0 0 0 1</pose>
-          <link name="body"/>
-        </model>
-      </sdf>)";
-    }
-  };
+namespace {
 
+struct SdfPoseResourceRetriever : PresentResourceRetriever
+{
+  std::string xml;
+
+  std::string readAll(const common::Uri&) override
+  {
+    return xml;
+  }
+};
+
+//==============================================================================
+SkeletonPtr readSdfPose(
+    const std::string& element,
+    const std::string& attributes,
+    const std::string& values)
+{
+  const auto pose = "<pose " + attributes + ">" + values + "</pose>";
+  auto retriever = std::make_shared<SdfPoseResourceRetriever>();
+  // Attribute semantics are from SDFormat 1.8+, while DART's version gate
+  // currently accepts 1.4-1.6. Keep the version gate independent of these
+  // tests.
+  retriever->xml = "<sdf version='1.6'><model name='pose_model'>"
+                  + (element == "model" ? pose
+                                        : "<pose>2 -1 3 0.1 -0.2 0.3</pose>")
+                  + "<link name='parent'><pose>5 6 7 0.3 -0.2 0.1</pose></link>"
+                    "<link name='child'>"
+                  + (element == "link" ? pose
+                                       : "<pose>0.4 0.5 0.6 0.2 0.1 -0.3</pose>")
+                  + "<inertial>"
+                  + (element == "inertial" ? pose : "")
+                  + "<mass>1</mass><inertia><ixx>1</ixx><iyy>2</iyy>"
+                    "<izz>3</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>"
+                    "</inertia></inertial>";
+  if (element == "visual" || element == "collision") {
+    retriever->xml += "<" + element + " name='shape'>" + pose
+                      + "<geometry><box><size>1 2 3</size></box></geometry></"
+                      + element + ">";
+  }
+  retriever->xml += "</link><joint name='joint' type='fixed'>"
+                    "<parent>parent</parent><child>child</child>"
+                    + (element == "joint" ? pose : "")
+                    + "</joint></model></sdf>";
   SdfParser::Options options;
-  options.mResourceRetriever = std::make_shared<PoseResourceRetriever>();
+  options.mResourceRetriever = retriever;
+  return SdfParser::readSkeleton("memory://pose.sdf", options);
+}
+
+//==============================================================================
+Eigen::Isometry3d sdfPoseTransform(
+    const SkeletonPtr& skeleton, const std::string& element)
+{
+  auto* child = skeleton->getBodyNode("child");
+  if (element == "model")
+    return skeleton->getBodyNode("parent")->getWorldTransform();
+  if (element == "link")
+    return child->getWorldTransform();
+  if (element == "joint")
+    return skeleton->getJoint("joint")->getTransformFromChildBodyNode();
+  if (element == "visual" || element == "collision")
+    return child->getShapeNode(0)->getRelativeTransform();
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = child->getLocalCOM();
+  return transform;
+}
+
+//==============================================================================
+void expectSdfPoseError(
+    const std::string& element,
+    const std::string& attributes,
+    const std::string& values,
+    std::initializer_list<const char*> diagnostics)
+{
   try {
-    SdfParser::readSkeleton("memory://quaternion_pose.sdf", options);
-    FAIL() << "Expected a parse error for a seven-value pose";
+    readSdfPose(element, attributes, values);
+    FAIL() << "Expected a pose parse error";
   } catch (const std::invalid_argument& error) {
     const std::string message = error.what();
-    EXPECT_NE(message.find("exactly 6"), std::string::npos);
-    EXPECT_NE(message.find("got 7"), std::string::npos);
-    EXPECT_NE(message.find("1 2 3 0 0 0 1"), std::string::npos);
+    for (const auto* diagnostic : diagnostics)
+      EXPECT_NE(message.find(diagnostic), std::string::npos) << message;
   }
+}
+
+constexpr const char* sdfPoseElements[]
+    = {"model", "link", "joint", "visual", "collision", "inertial"};
+
+} // namespace
+
+//==============================================================================
+TEST(SdfParser, QuaternionPosesMatchEuler)
+{
+  struct Rotation
+  {
+    const char* quaternion;
+    const char* euler;
+  };
+  const Rotation rotations[] = {
+      {"0 0 0 1", "0 0 0"},
+      {"2 0 0 2", "1.570796326794896619 0 0"},
+      {"0 2 0 2", "0 1.570796326794896619 0"},
+      {"0 0 2 2", "0 0 1.570796326794896619"},
+      {"0 0 1e-300 1e-300", "0 0 1.570796326794896619"},
+      {"0 0 1e300 1e300", "0 0 1.570796326794896619"},
+  };
+  for (const auto* element : sdfPoseElements) {
+    for (const auto& rotation : rotations) {
+      SCOPED_TRACE(element);
+      SCOPED_TRACE(rotation.quaternion);
+      const auto quaternion = readSdfPose(
+          element,
+          "rotation_format='quat_xyzw'",
+          std::string("1 2 3 ") + rotation.quaternion);
+      const auto euler = readSdfPose(
+          element,
+          "rotation_format='euler_rpy'",
+          std::string("1 2 3 ") + rotation.euler);
+      ASSERT_NE(quaternion, nullptr);
+      ASSERT_NE(euler, nullptr);
+      EXPECT_TRUE(
+          sdfPoseTransform(quaternion, element)
+              .matrix()
+              .isApprox(sdfPoseTransform(euler, element).matrix(), 1e-12));
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, EulerDegreesPosesMatchRadians)
+{
+  const std::string radians
+      = "1 2 3 0.523598775598298873 -0.785398163397448309 "
+        "1.047197551196597746";
+  for (const auto* element : sdfPoseElements) {
+    SCOPED_TRACE(element);
+    const auto reference = readSdfPose(element, "", radians);
+    ASSERT_NE(reference, nullptr);
+    for (const auto* degrees : {"true", "1", "TRUE", " true "}) {
+      SCOPED_TRACE(degrees);
+      const auto skeleton = readSdfPose(
+          element,
+          std::string("rotation_format='euler_rpy' degrees='") + degrees + "'",
+          "1 2 3 30 -45 60");
+      ASSERT_NE(skeleton, nullptr);
+      EXPECT_TRUE(
+          sdfPoseTransform(skeleton, element)
+              .matrix()
+              .isApprox(sdfPoseTransform(reference, element).matrix(), 1e-12));
+    }
+    for (const auto* degrees : {"false", "0"}) {
+      const auto skeleton = readSdfPose(
+          element, std::string("degrees='") + degrees + "'", radians);
+      ASSERT_NE(skeleton, nullptr);
+      EXPECT_TRUE(
+          sdfPoseTransform(skeleton, element)
+              .matrix()
+              .isApprox(sdfPoseTransform(reference, element).matrix(), 1e-12));
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, PoseRotationFormatsRequireMatchingCounts)
+{
+  const std::string values[]
+      = {"1 2 3 0 0", "1 2 3 0 0 0", "1 2 3 0 0 0 1", "1 2 3 0 0 0 1 8"};
+  for (const auto* element : sdfPoseElements) {
+    for (const auto* format : {"", "euler_rpy", "quat_xyzw"}) {
+      for (std::size_t i = 0; i < 4; ++i) {
+        SCOPED_TRACE(element);
+        SCOPED_TRACE(format);
+        SCOPED_TRACE(i + 5);
+        const auto attributes
+            = std::string(format).empty()
+                  ? ""
+                  : std::string("rotation_format='") + format + "'";
+        const auto validCount = std::string(format) == "quat_xyzw" ? 7u : 6u;
+        if (i + 5 == validCount) {
+          EXPECT_NE(readSdfPose(element, attributes, values[i]), nullptr);
+        } else {
+          expectSdfPoseError(
+              element, attributes, values[i], {"pose", "rotation_format"});
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, InvalidPoseAttributesThrow)
+{
+  for (const auto* element : sdfPoseElements) {
+    SCOPED_TRACE(element);
+    expectSdfPoseError(
+        element,
+        "rotation_format='quaternion'",
+        "1 2 3 0 0 0",
+        {"pose", "rotation_format", "quaternion"});
+    expectSdfPoseError(
+        element,
+        "rotation_format='quat_xyzw'",
+        "1 2 3 0 0 0 0",
+        {"pose", "rotation_format", "zero"});
+    expectSdfPoseError(
+        element,
+        "rotation_format='quat_xyzw' degrees='true'",
+        "1 2 3 0 0 0 1",
+        {"pose", "degrees", "quat_xyzw"});
+    expectSdfPoseError(
+        element, "degrees='sometimes'", "1 2 3 0 0 0", {"pose", "degrees"});
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, RelativeToAcceptsOnlyDefaultFrame)
+{
+  const char* frames[]
+      = {"world", "__model__", "child", "child", "child", "child"};
+  const char* otherFrames[] = {
+      "child", "pose_model", "parent", "__model__", "__model__", "__model__"};
+  for (std::size_t i = 0; i < 6; ++i) {
+    const auto* element = sdfPoseElements[i];
+    SCOPED_TRACE(element);
+    const auto reference = readSdfPose(element, "", "1 2 3 0.2 -0.3 0.4");
+    ASSERT_NE(reference, nullptr);
+    for (const auto* frame : {"", frames[i]}) {
+      SCOPED_TRACE(frame);
+      const auto skeleton = readSdfPose(
+          element,
+          std::string("relative_to='") + frame + "'",
+          "1 2 3 0.2 -0.3 0.4");
+      ASSERT_NE(skeleton, nullptr);
+      EXPECT_TRUE(
+          sdfPoseTransform(skeleton, element)
+              .matrix()
+              .isApprox(sdfPoseTransform(reference, element).matrix(), 1e-12));
+    }
+    for (const auto* frame : {"unknown_frame", otherFrames[i]}) {
+      SCOPED_TRACE(frame);
+      expectSdfPoseError(
+          element,
+          std::string("relative_to='") + frame + "'",
+          "1 2 3 0.2 -0.3 0.4",
+          {"pose",
+           "relative_to",
+           "does not support SDF frame semantics",
+           frame});
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, AllDataSdfFilesLoadAndReportPoseAttributes)
+{
+  std::size_t files = 0;
+  std::size_t attributes = 0;
+  for (const auto& entry :
+       std::filesystem::recursive_directory_iterator(DART_DATA_PATH)) {
+    const auto extension = entry.path().extension();
+    if (extension != ".sdf" && extension != ".world" && extension != ".model")
+      continue;
+    SCOPED_TRACE(entry.path().string());
+    ++files;
+    tinyxml2::XMLDocument document;
+    ASSERT_EQ(
+        document.LoadFile(entry.path().string().c_str()),
+        tinyxml2::XML_SUCCESS);
+    const auto* sdf = document.FirstChildElement("sdf");
+    ASSERT_NE(sdf, nullptr);
+    std::vector<const tinyxml2::XMLElement*> pending{sdf};
+    while (!pending.empty()) {
+      const auto* element = pending.back();
+      pending.pop_back();
+      if (std::string(element->Name()) == "pose") {
+        for (const auto* attribute :
+             {"rotation_format", "degrees", "relative_to"}) {
+          if (const auto* value = element->Attribute(attribute)) {
+            ++attributes;
+            std::cout
+                << entry.path().lexically_relative(DART_DATA_PATH).string()
+                << ": <pose> " << attribute << "=\"" << value << "\"\n";
+          }
+        }
+      }
+      for (const auto* child = element->FirstChildElement(); child;
+           child = child->NextSiblingElement())
+        pending.push_back(child);
+    }
+    if (sdf->FirstChildElement("world")) {
+      EXPECT_NE(SdfParser::readWorld(entry.path().string()), nullptr);
+    } else {
+      ASSERT_NE(sdf->FirstChildElement("model"), nullptr);
+      EXPECT_NE(SdfParser::readSkeleton(entry.path().string()), nullptr);
+    }
+  }
+  EXPECT_GT(files, 0u);
+  std::cout << "Scanned " << files << " data SDF/world/model files; found "
+            << attributes << " pose attributes.\n";
 }
 
 //==============================================================================
