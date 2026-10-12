@@ -3378,7 +3378,7 @@ def _add_contact_surface_probe_fixture(root: Path):
         cmake.read_text(encoding="utf-8")
         + "\nget_target_property(probe_eigen Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)\n"
         "if(MSVC)\n"
-        "  set(probe_flags /std:c++17 /Zs)\n"
+        "  set(probe_flags /std:c++17 /permissive- /Zc:twoPhase- /Zs)\n"
         "  set(probe_include_flag /I)\n"
         "else()\n"
         "  set(probe_flags -std=c++14 -fsyntax-only)\n"
@@ -3447,6 +3447,41 @@ def test_cmake_semantic_graph_contact_surface_probe_command(
         assert errors == []
     else:
         assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("compiler_id", "simulate_id"), (("MSVC", ""), ("Clang", "MSVC"))
+)
+@pytest.mark.parametrize("missing_flag", (None, "/permissive-", "/Zc:twoPhase-"))
+def test_contact_surface_probe_requires_msvc_parsing_flags(
+    tmp_path, monkeypatch, compiler_id, simulate_id, missing_flag
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
+    text = cmake.read_text(encoding="utf-8").replace("if(MSVC)", "if(TRUE)")
+    if missing_flag is not None:
+        text = text.replace(f" {missing_flag}", "")
+    cmake.write_text(text, encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def read_text(path, *args, **kwargs):
+        text = original_read_text(path, *args, **kwargs)
+        if path.name == "CMakeCXXCompiler.cmake" and path.is_relative_to(build):
+            text += (
+                f'\nset(CMAKE_CXX_COMPILER_ID "{compiler_id}")\n'
+                f'set(CMAKE_CXX_SIMULATE_ID "{simulate_id}")\n'
+            )
+        return text
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if missing_flag is None:
+        assert errors == []
+    else:
+        assert any("only the platform probe flags" in error for error in errors)
 
 
 def test_cmake_semantic_graph_contact_surface_probe_rejects_fake_source(tmp_path):
@@ -3810,8 +3845,18 @@ def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeyp
 @pytest.mark.parametrize(
     ("compiler_id", "simulate_id", "expected", "flags"),
     (
-        ("MSVC", "", True, ["/std:c++17", "/Zs"]),
-        ("Clang", "MSVC", True, ["/std:c++17", "/Zs"]),
+        (
+            "MSVC",
+            "",
+            True,
+            ["/std:c++17", "/permissive-", "/Zc:twoPhase-", "/Zs"],
+        ),
+        (
+            "Clang",
+            "MSVC",
+            True,
+            ["/std:c++17", "/permissive-", "/Zc:twoPhase-", "/Zs"],
+        ),
         ("GNU", "", False, ["-std=c++14", "-fsyntax-only"]),
     ),
 )
@@ -3864,7 +3909,7 @@ def test_contact_surface_probe_flags_follow_configured_compiler_state(
 
     assert errors == []
     assert command is not None
-    assert command[1:3] == flags
+    assert command[1 : 1 + len(flags)] == flags
     probe_scope = ("if:MSVC",) if expected else ("else:MSVC",)
     configured_flags = [
         infra.cmake_argument_tokens(arguments)[1:]
@@ -3872,7 +3917,8 @@ def test_contact_surface_probe_flags_follow_configured_compiler_state(
             (ROOT / "tests/CMakeLists.txt").read_text(encoding="utf-8")
         )
         if name == "set"
-        and arguments.startswith("contact_surface_probe_flags ")
+        and infra.cmake_argument_tokens(arguments)[:1]
+        == ["contact_surface_probe_flags"]
         and scope == probe_scope
     ]
     assert configured_flags == [flags]

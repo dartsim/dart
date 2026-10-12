@@ -98,7 +98,8 @@ or GUI behavior.
   `dart/` headers provide the installed include layout; the probe inherits no
   library target flags or dependencies.
   The Unix check preserves downstream C++14 acceptance, including tolerated
-  extensions; the MSVC check uses DART's required C++17 dialect.
+  extensions; the MSVC check uses DART's required C++17 dialect and exported
+  template-parsing options (`/permissive- /Zc:twoPhase-`).
 - `test_GazeboShim` mirrors the gz-physics detector subclasses, factory
   registrars, collision-group accessors, ray-cast entry points, and
   `ContactSurfaceHandler` overrides. Counters prove dispatch through collision

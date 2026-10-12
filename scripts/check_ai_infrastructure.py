@@ -2965,7 +2965,11 @@ def contact_surface_probe_command(
     uses_msvc = cmake_compiler_uses_msvc_abi(build_dir, cache, errors)
     if uses_msvc is None:
         return None
-    flags = ["/std:c++17", "/Zs"] if uses_msvc else ["-std=c++14", "-fsyntax-only"]
+    flags = (
+        ["/std:c++17", "/permissive-", "/Zc:twoPhase-", "/Zs"]
+        if uses_msvc
+        else ["-std=c++14", "-fsyntax-only"]
+    )
     include_flag = "/I" if uses_msvc else "-I"
     return [
         compiler,
