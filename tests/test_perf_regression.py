@@ -37,6 +37,7 @@ def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_pa
     module = _load_runner()
     quick = module.select_rows("")
     rows = module.select_rows("nightly")
+    assert module.select_rows("mt4") == [row for row in quick if row.parity]
     assert rows[: len(quick)] == quick
     assert len(rows) == len({row.key for row in rows})
     assert {
@@ -290,6 +291,77 @@ def test_canonical_guard_is_measured_once_and_does_not_require_perturbation(
     )
 
 
+@pytest.mark.parametrize("detector", ["dart", "bullet", "ode"])
+@pytest.mark.parametrize(
+    "changed", [None, "zero_resting", "hash", "contacts", "pairs", "cap_hit", "resting"]
+)
+def test_s7_requires_sleeping_and_thread_guard_parity(
+    monkeypatch, tmp_path, detector, changed
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--rows",
+            f"S7-t4/{detector}",
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "a" * 40)
+    monkeypatch.setattr(module, "fingerprint", lambda *args: {})
+
+    def native(row, args, world, config=""):
+        assert config == ""
+        observed = module.guards(
+            "Final State Hash: 0x1\nFinal State Finite: true\n"
+            "Final Contacts: 3\nFinal Contact Pairs: 1\n"
+            "Final Contact Cap Hit: false\nFinal Resting: 2 / 3 mobile\n"
+        )
+        if changed == "zero_resting":
+            observed["resting"] = "0/3"
+        elif row.threads == 4 and changed:
+            observed[changed] = {
+                "hash": "0x2",
+                "contacts": 4,
+                "pairs": 2,
+                "cap_hit": True,
+                "resting": "1/3",
+            }[changed]
+        return {"guards": observed, "time_advanced": True}
+
+    monkeypatch.setattr(module, "native", native)
+    record = module._measure_arm(args, {"workload_sources": {module.CB: "contact"}})
+    results = record["results"]
+    assert {row["row"] for row in results} == {"S7-t1", "S7-t4"}
+    assert all(row["status"] == ("broken" if changed else "ok") for row in results)
+    if changed:
+        error = (
+            "S7 sleeping failed: no body rests"
+            if changed == "zero_resting"
+            else "S7 guard parity missing or unequal"
+        )
+        assert all(row["error"] == error for row in results)
+        assert all("error_kind" not in row for row in results)
+    assert json.loads((tmp_path / "record.json").read_text()) == record
+    monkeypatch.setattr(module, "run_arm", lambda args: record)
+    assert module.main(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    ) == int(changed is not None)
+
+
 @pytest.mark.parametrize(
     "missing,penetration", [(False, "0.3"), (True, "0.3"), (False, "inf")]
 )
@@ -462,7 +534,7 @@ def test_nightly_requires_contact_pairs_and_saves_failures(
             "Final State Finite: true",
             "Final Contacts: 3",
             "Final Contact Cap Hit: false",
-            "Final Resting: 0/3",
+            "Final Resting: 1/3",
             *([] if pairs is None else [f"Final Contact Pairs: {pairs}"]),
         ]
     )

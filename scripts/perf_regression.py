@@ -333,6 +333,7 @@ NIGHTLY_ROWS += [
         3000,
         ir=False,
         threads=threads,
+        parity=f"S7-t1/{det}" if threads == 4 else "",
         perturb=False,
     )
     for det in ("dart", "bullet", "ode")
@@ -881,6 +882,12 @@ def measure(row: Row, args, world: Path) -> dict:
         if (metrics.get("guards") or {}).get("loop_closed") is False:
             result.update(status="broken", error="loop closure failed")
             return result
+        if (
+            row.row in ("S7-t1", "S7-t4")
+            and int(metrics["guards"]["resting"].split("/")[0]) == 0
+        ):
+            result.update(status="broken", error="S7 sleeping failed: no body rests")
+            return result
         if args.perturb and row.perturb:
             result["perturbations"] = {}
             for config in PERTURBATIONS:
@@ -1027,7 +1034,9 @@ def select_rows(names: str) -> list[Row]:
         matches = [
             row
             for row in [*ROWS, *NIGHTLY_ROWS]
-            if name in (row.key, row.row) or name == "mt4" and row.parity
+            if name in (row.key, row.row)
+            or name == "mt4"
+            and row.row.startswith("mt4-")
         ]
         if not matches:
             raise ValueError(f"unknown row {name}")
@@ -1459,17 +1468,22 @@ def _measure_arm(args, provenance) -> dict:
                 )
     by_key = {row_key(result): result for result in results}
     for result in results:
-        if result["parity"] and result["status"] == "ok":
+        s7 = result["row"] == "S7-t4"
+        if result["parity"] and (result["status"] == "ok" or s7):
             serial = by_key.get(result["parity"])
             # Compare every guard, including contacts, cap hit, resting and finite.
             if (
                 not serial
                 or serial["status"] != "ok"
+                or result["status"] != "ok"
                 or guard_evidence(serial["head"]) != guard_evidence(result["head"])
             ):
-                result.update(
-                    status="broken", error="mt4 guard parity missing or unequal"
-                )
+                for failed in ([serial, result] if s7 and serial else [result]):
+                    if failed["status"] == "ok":
+                        failed.update(
+                            status="broken",
+                            error=f"{'S7' if s7 else 'mt4'} guard parity missing or unequal",
+                        )
     record = {
         "schema": "dart-perf/1",
         "run": {

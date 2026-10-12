@@ -169,6 +169,10 @@ but its table rows leave out the contact-demand, starved-pair, sunk-body and
 changed-pose census; the row logs in the nightly evidence artifact keep it.
 S7's ODE rows hit the contact cap by design: they keep the 10000-contact cap
 that gz-physics sets, and this scene's ODE contact demand exceeds it.
+Every S7 row must finish with at least one resting body. Within each record,
+each detector's 1-thread and 4-thread guards must match; a mismatch marks both
+rows broken. These checks reject replay-off regressions even in head-only
+nightly smoke runs, which compare the record with itself.
 Historical baseline rows remain in Git history.
 
 This compact merge-record example uses illustrative values and one row:
