@@ -125,13 +125,13 @@ void validateVoxelRay(
         "the ray from sensorOrigin to a point crosses too many voxels for "
         "OctoMap");
   // OctoMap normalizes the ray in float, which fails for a length that
-  // overflows or underflows float.
+  // underflows to zero. The resolution cap keeps lengths far from overflow.
   if (cells > 0.0) {
     const float length = (to.cast<float>() - from.cast<float>()).norm();
-    if (!(std::isfinite(length) && length > 0.0f))
+    if (!(length > 0.0f))
       throw nb::value_error(
-          "the ray from sensorOrigin to a point is too long or too short for "
-          "OctoMap's float arithmetic");
+          "the ray from sensorOrigin to a point is too short for OctoMap's "
+          "float arithmetic");
   }
 }
 
@@ -328,8 +328,11 @@ void Shape(nb::module_& m)
       m, "VoxelGridShape")
       .def(
           dartnb::factory(+[](double resolution) {
-            if (!std::isfinite(resolution) || resolution <= 0.0)
-              throw nb::value_error("resolution must be finite and positive");
+            // OctoMap squares ray components in float; this cap keeps every
+            // ray between addressable points far below float's range.
+            if (!(resolution > 0.0 && resolution <= 1e6))
+              throw nb::value_error(
+                  "resolution must be positive and at most 1e6");
             return std::make_shared<dart::dynamics::VoxelGridShape>(resolution);
           }),
           nb::arg("resolution") = 0.01)

@@ -68,9 +68,11 @@ def test_voxel_grid_construction():
 @pytest.mark.skipif(
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
 )
-@pytest.mark.parametrize("resolution", [0, -0.1, np.nan, np.inf, -np.inf])
+@pytest.mark.parametrize(
+    "resolution", [0, -0.1, np.nan, np.inf, -np.inf, np.nextafter(1e6, 2e6), 1e18]
+)
 def test_voxel_grid_rejects_invalid_resolution(resolution):
-    with pytest.raises(ValueError, match="resolution must be finite and positive"):
+    with pytest.raises(ValueError, match="resolution must be positive and at most"):
         dart.dynamics.VoxelGridShape(resolution=resolution)
 
 
@@ -278,8 +280,18 @@ def test_voxel_grid_rejects_rays_longer_than_octomap_traces():
 @pytest.mark.skipif(
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
 )
-@pytest.mark.parametrize("resolution, coordinate", [(1e20, 1e20), (1e-25, 1e-24)])
-def test_voxel_grid_rejects_rays_float_cannot_measure(resolution, coordinate):
-    shape = dart.dynamics.VoxelGridShape(resolution=resolution)
+def test_voxel_grid_rejects_rays_float_cannot_measure():
+    shape = dart.dynamics.VoxelGridShape(resolution=1e-25)
     with pytest.raises(ValueError, match="float arithmetic"):
-        shape.updateOccupancy(points=np.array([[coordinate] * 3]))
+        shape.updateOccupancy(points=np.array([[1e-24] * 3]))
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+def test_voxel_grid_traces_across_the_grid_at_the_largest_resolution():
+    shape = dart.dynamics.VoxelGridShape(resolution=1e6)
+    inside = float(np.nextafter(np.float32(32768 * 1e6), np.float32(0)))
+    shape.updateOccupancy(points=np.array([[inside, 0, 0]]), sensorOrigin=[-inside, 0, 0])
+    assert shape.getOccupancy([inside, 0, 0]) > 0.5
+    assert 0 < shape.getOccupancy([0, 0, 0]) < 0.5
