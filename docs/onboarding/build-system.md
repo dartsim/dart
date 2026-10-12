@@ -118,10 +118,15 @@ ImGui builds `dart-gui` without docking.
 
 Use `find_package(DART CONFIG REQUIRED COMPONENTS gui)`, link `dart-gui`, and
 include `dart/gui/gui.hpp`. ImGui compatibility headers keep their
-`dart/external/imgui/` paths. The legacy `external-imgui` component and
-`dart-external-imgui` target forward to `dart-gui`; applications linked to the
-former ImGui shared library must rebuild. The OSG `gui-osg` component,
-`dart-gui-osg` target, and `dart/gui/osg` headers are removed; requesting
-`gui-osg` reports the migration instead of forwarding to `dart-gui`. The
+`dart/external/imgui/` paths; include ImGui as `<dart/external/imgui/imgui.h>`.
+If the install prefix also holds another ImGui, such as a Conda environment's,
+a bare `<imgui.h>` reaches the bundled header only when `dart-gui` precedes the
+other DART targets in `target_link_libraries`; otherwise it finds that ImGui,
+whose struct layout differs from the docking release. The legacy
+`external-imgui` component and `dart-external-imgui` target forward to
+`dart-gui`; applications linked to the former ImGui shared library must
+rebuild. The OSG `gui-osg` component, `dart-gui-osg` target, and `dart/gui/osg`
+headers are removed; requesting `gui-osg` reports the migration instead of
+forwarding to `dart-gui`. The
 [visualization guide](../readthedocs/dart/user_guide/visualization.rst) covers
 porting.
