@@ -54,6 +54,7 @@
 #include <atomic>
 #include <queue>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #define SET_ALL_FLAGS(X)                                                       \
@@ -2727,6 +2728,72 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
   }
 
   _newSkeleton->receiveBodyNodeTree(clones);
+
+  // The copied Nodes cloned their IK modules before the clones joined
+  // _newSkeleton, so those modules still select DOFs by their indices in this
+  // Skeleton. Select the copy of each DOF instead, and drop DOFs whose Joint
+  // was not copied. setDofs() also rebuilds the IK and analytical DOF maps.
+  std::unordered_map<std::size_t, std::size_t> copiedDofs;
+  for (std::size_t i = 0; i < tree.size(); ++i) {
+    // A requested parent Joint replaces the root's Joint instead of copying it
+    if (i == 0 && _parentJoint != nullptr)
+      continue;
+
+    const Joint* original = tree[i]->getParentJoint();
+    for (std::size_t j = 0; j < original->getNumDofs(); ++j) {
+      copiedDofs[original->getIndexInSkeleton(j)]
+          = clones[i]->getParentJoint()->getIndexInSkeleton(j);
+    }
+  }
+
+  for (BodyNode* clone : clones) {
+    for (Node* node : clone->getNodes()) {
+      auto* jacobianNode = dynamic_cast<JacobianNode*>(node);
+      if (jacobianNode == nullptr || jacobianNode->getIK() == nullptr)
+        continue;
+
+      InverseKinematics& ik = *jacobianNode->getIK();
+      const std::size_t numSelected = ik.getDofs().size();
+      std::vector<std::size_t> dofs;
+      std::vector<std::size_t> kept;
+      for (std::size_t k = 0; k < numSelected; ++k) {
+        const auto copy = copiedDofs.find(ik.getDofs()[k]);
+        if (copy != copiedDofs.end()) {
+          dofs.push_back(copy->second);
+          kept.push_back(k);
+        }
+      }
+
+      if (dofs.size() == numSelected) {
+        ik.setDofs(dofs);
+        continue;
+      }
+
+      // Gradient weights and solver seeds apply by position in the selection,
+      // so keep their entries for the kept DOFs. DOFs past the end of the
+      // weights keep their implicit weight of 1.
+      const auto keepEntries = [&kept](const Eigen::VectorXd& values) {
+        Eigen::VectorXd entries(values.size());
+        Eigen::Index count = 0;
+        for (const std::size_t k : kept) {
+          if (k < static_cast<std::size_t>(values.size()))
+            entries[count++] = values[k];
+        }
+        entries.conservativeResize(count);
+        return entries;
+      };
+
+      InverseKinematics::GradientMethod& gradient = ik.getGradientMethod();
+      gradient.setComponentWeights(keepEntries(gradient.getComponentWeights()));
+
+      // setDofs() clears the seeds once the selection shrinks
+      const std::vector<Eigen::VectorXd> seeds = ik.getProblem()->getSeeds();
+      ik.setDofs(dofs);
+      for (const Eigen::VectorXd& seed : seeds)
+        ik.getProblem()->addSeed(keepEntries(seed));
+    }
+  }
+
   return root;
 }
 

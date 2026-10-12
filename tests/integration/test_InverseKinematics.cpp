@@ -40,6 +40,7 @@
 #include "dart/dynamics/HierarchicalIK.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
@@ -51,6 +52,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -193,11 +195,16 @@ public:
         newIK, getAnalyticalProperties());
   }
 
+  // Solve for the parent Joint of the node's BodyNode, so that copies of this
+  // solver name the copied DOF.
   const std::vector<std::size_t>& getDofs() const override
   {
+    const Joint* joint = getIK()->getNode()->getBodyNode()->getParentJoint();
+    mDofs.assign(1, joint->getIndexInSkeleton(0));
     return mDofs;
   }
 
+  // Assumes a parent BodyNode frame with no x offset or rotation.
   const std::vector<Solution>& computeSolutions(
       const Eigen::Isometry3d& desiredTf) override
   {
@@ -209,7 +216,30 @@ public:
   }
 
 private:
-  const std::vector<std::size_t> mDofs{1};
+  mutable std::vector<std::size_t> mDofs;
+};
+
+//==============================================================================
+// Keeps naming the DOF with Skeleton index 1 wherever it is copied, as a
+// solver with a fixed DOF map does.
+class FixedDofIKCloneAnalytical : public PrismaticIKCloneAnalytical
+{
+public:
+  using PrismaticIKCloneAnalytical::PrismaticIKCloneAnalytical;
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIK) const override
+  {
+    return std::make_unique<FixedDofIKCloneAnalytical>(
+        newIK, getAnalyticalProperties());
+  }
+
+  const std::vector<std::size_t>& getDofs() const override
+  {
+    return mFixedDofs;
+  }
+
+private:
+  const std::vector<std::size_t> mFixedDofs{1};
 };
 
 //==============================================================================
@@ -288,6 +318,87 @@ void checkPrismaticIKClone(bool useEndEffector, bool useAnalytical)
   EXPECT_EQ(originalTransformUpdates, 0u);
 }
 
+//==============================================================================
+// Copies part of a chain of two prismatic joints whose end effector IK uses
+// both DOFs. Each copy must leave out the root Joint, so the copied IK keeps
+// only the copy of the end effector's own DOF.
+void checkPrismaticIKCopy(
+    bool useAnalytical,
+    const std::function<SkeletonPtr(BodyNode* root, BodyNode* body)>& copy)
+{
+  auto original = Skeleton::create("original");
+  auto root = original->createJointAndBodyNodePair<PrismaticJoint>();
+  root.first->setAxis(Eigen::Vector3d::UnitY());
+  auto pair = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitX());
+  original->setPositions(Eigen::Vector2d(0.2, 0.3));
+  const Eigen::VectorXd originalPositions = original->getPositions();
+
+  auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
+  if (useAnalytical)
+    ik->setGradientMethod<PrismaticIKCloneAnalytical>();
+  // Weights and seeds apply by position in the selection. A zero weight holds
+  // the root DOF, so the copy must not apply it to the DOF that it keeps.
+  const Eigen::Vector2d weights(0.0, 1.0);
+  ik->getGradientMethod().setComponentWeights(weights);
+  const Eigen::Vector2d seed(0.1, 0.6);
+  ik->getProblem()->addSeed(seed);
+  ik->getErrorMethod().setBounds(
+      Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
+  ik->getSolver()->setNumMaxIterations(100);
+  ASSERT_EQ(ik->getDofs(), std::vector<std::size_t>({0, 1}));
+  ASSERT_EQ(ik->getDofMap(), std::vector<int>({0, 1}));
+
+  const SkeletonPtr destination = copy(root.second, pair.second);
+  ASSERT_NE(destination, original);
+  EndEffector* copiedEE = destination->getEndEffector("copy_ik");
+  ASSERT_NE(copiedEE, nullptr);
+  const auto& copiedIK = copiedEE->getIK();
+  ASSERT_NE(copiedIK, nullptr);
+  EXPECT_EQ(copiedIK->getNode(), copiedEE);
+
+  const std::size_t copiedDof
+      = copiedEE->getBodyNode()->getParentJoint()->getIndexInSkeleton(0);
+  ASSERT_EQ(copiedIK->getDofs(), std::vector<std::size_t>({copiedDof}));
+  const std::vector<int>& dofMap = copiedIK->getDofMap();
+  ASSERT_EQ(dofMap.size(), copiedEE->getNumDependentGenCoords());
+  for (std::size_t i = 0; i < dofMap.size(); ++i) {
+    EXPECT_EQ(
+        dofMap[i],
+        copiedEE->getDependentGenCoordIndex(i) == copiedDof ? 0 : -1);
+  }
+  const Eigen::VectorXd& copiedWeights
+      = copiedIK->getGradientMethod().getComponentWeights();
+  ASSERT_EQ(copiedWeights.size(), 1);
+  EXPECT_EQ(copiedWeights[0], weights[1]);
+  const auto& copiedSeeds = copiedIK->getProblem()->getSeeds();
+  ASSERT_EQ(copiedSeeds.size(), 1u);
+  ASSERT_EQ(copiedSeeds[0].size(), 1);
+  EXPECT_EQ(copiedSeeds[0][0], seed[1]);
+  if (useAnalytical) {
+    ASSERT_NE(copiedIK->getAnalytical(), nullptr);
+    EXPECT_EQ(copiedIK->getAnalytical()->getDofs(), copiedIK->getDofs());
+  }
+
+  // The analytical solver only moves the DOF if its DOF map is valid.
+  Eigen::Isometry3d target = copiedEE->getWorldTransform();
+  target.translation().x() = 0.8;
+  copiedIK->setTarget(
+      SimpleFrame::createShared(Frame::World(), "copy_target", target));
+  Eigen::VectorXd expectedPositions = destination->getPositions();
+  ASSERT_TRUE(copiedIK->solveAndApply(false));
+  EXPECT_TRUE(copiedEE->getWorldTransform().isApprox(target, 1e-7));
+  expectedPositions[copiedDof] = destination->getPosition(copiedDof);
+  EXPECT_TRUE(destination->getPositions().isApprox(expectedPositions));
+
+  EXPECT_TRUE(original->getPositions().isApprox(originalPositions));
+  EXPECT_EQ(ik->getDofs(), std::vector<std::size_t>({0, 1}));
+  EXPECT_EQ(ik->getDofMap(), std::vector<int>({0, 1}));
+  EXPECT_TRUE(ik->getGradientMethod().getComponentWeights() == weights);
+  ASSERT_EQ(ik->getProblem()->getSeeds().size(), 1u);
+  EXPECT_TRUE(ik->getProblem()->getSeeds()[0] == seed);
+}
+
 } // namespace
 
 //==============================================================================
@@ -315,22 +426,70 @@ TEST(InverseKinematics, CloneEndEffectorWithJacobianDLS)
 }
 
 //==============================================================================
-TEST(InverseKinematics, CopyEndEffectorWithAnalytical)
+TEST(InverseKinematics, CopyEndEffectorIntoEmptySkeleton)
 {
-  auto original = Skeleton::create();
-  original->createJointAndBodyNodePair<PrismaticJoint>();
-  auto pair = original->createJointAndBodyNodePair<PrismaticJoint>();
-  auto* ee = pair.second->createEndEffector("copy_ik");
-  ee->getIK(true)->setGradientMethod<PrismaticIKCloneAnalytical>();
+  for (const bool useAnalytical : {true, false}) {
+    SCOPED_TRACE(useAnalytical ? "Analytical" : "JacobianDLS");
+    checkPrismaticIKCopy(useAnalytical, [](BodyNode*, BodyNode* body) {
+      auto destination = Skeleton::create("destination");
+      body->copyTo(destination, nullptr);
+      return destination;
+    });
+  }
+}
 
-  // The copied EndEffector's IK is cloned before its BodyNode joins a
-  // Skeleton.
+//==============================================================================
+TEST(InverseKinematics, CopyEndEffectorIntoSkeletonWithDofs)
+{
+  for (const bool useAnalytical : {true, false}) {
+    SCOPED_TRACE(useAnalytical ? "Analytical" : "JacobianDLS");
+    checkPrismaticIKCopy(useAnalytical, [](BodyNode*, BodyNode* body) {
+      // The copied DOF follows the destination's DOFs, so its index shifts.
+      auto destination = Skeleton::create("destination");
+      auto lift = destination->createJointAndBodyNodePair<PrismaticJoint>();
+      lift.first->setAxis(Eigen::Vector3d::UnitY());
+      auto slide
+          = lift.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+      slide.first->setAxis(Eigen::Vector3d::UnitZ());
+      destination->setPositions(Eigen::Vector2d(0.4, -0.25));
+      body->copyTo(destination, slide.second);
+      return destination;
+    });
+  }
+}
+
+//==============================================================================
+TEST(InverseKinematics, CopyEndEffectorWithMissingAnalyticalDof)
+{
+  auto original = Skeleton::create("original");
+  auto root = original->createJointAndBodyNodePair<PrismaticJoint>();
+  auto pair = root.second->createChildJointAndBodyNodePair<PrismaticJoint>();
+  auto ik = pair.second->createEndEffector("copy_ik")->getIK(true);
+  ik->setGradientMethod<FixedDofIKCloneAnalytical>();
+
+  // The destination has no DOF with index 1, so rebuilding the copy's
+  // analytical DOF map can only warn about it.
   auto destination = Skeleton::create("destination");
-  const auto copied = pair.second->copyTo(destination, nullptr);
-  ASSERT_NE(copied.second, nullptr);
-  ASSERT_EQ(destination->getNumEndEffectors(), 1u);
-  auto* copiedEE = destination->getEndEffector(0);
-  ASSERT_NE(copiedEE->getIK(), nullptr);
-  EXPECT_EQ(copiedEE->getIK()->getNode(), copiedEE);
-  EXPECT_NE(copiedEE->getIK()->getAnalytical(), nullptr);
+  pair.second->copyTo(destination, nullptr);
+  ASSERT_EQ(destination->getNumDofs(), 1u);
+  const auto& copiedIK = destination->getEndEffector("copy_ik")->getIK();
+  ASSERT_NE(copiedIK, nullptr);
+  EXPECT_EQ(copiedIK->getDofs(), std::vector<std::size_t>({0}));
+  ASSERT_NE(copiedIK->getAnalytical(), nullptr);
+  EXPECT_EQ(
+      copiedIK->getAnalytical()->getDofs(), std::vector<std::size_t>({1}));
+}
+
+//==============================================================================
+TEST(InverseKinematics, CopyEndEffectorWithNewRootJoint)
+{
+  for (const bool useAnalytical : {true, false}) {
+    SCOPED_TRACE(useAnalytical ? "Analytical" : "JacobianDLS");
+    checkPrismaticIKCopy(useAnalytical, [](BodyNode* root, BodyNode*) {
+      // The FreeJoint replaces the root Joint instead of copying it.
+      auto destination = Skeleton::create("destination");
+      root->copyTo<FreeJoint>(destination, nullptr);
+      return destination;
+    });
+  }
 }
