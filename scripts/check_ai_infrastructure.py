@@ -2108,10 +2108,10 @@ def cmake_trace_records(output: str) -> list[dict[str, Any]]:
     return records
 
 
-def cmake_compiler_uses_msvc_abi(
+def cmake_cxx_compiler_family(
     build_dir: Path, cache: dict[str, str], errors: list[str]
-) -> bool | None:
-    """Return CMake's MSVC-family compiler semantics from configured state."""
+) -> str | None:
+    """Return `MSVC` for MSVC-family compilers, else CMake's C++ compiler ID."""
     prefix = "CMake semantic test graph"
     version_parts = [
         cache.get("CMAKE_CACHE_MAJOR_VERSION"),
@@ -2147,10 +2147,17 @@ def cmake_compiler_uses_msvc_abi(
     if "CMAKE_CXX_COMPILER_ID" not in values:
         errors.append(f"{prefix}: configured C++ compiler identity is unavailable")
         return None
-    return (
-        values["CMAKE_CXX_COMPILER_ID"] == "MSVC"
-        or values.get("CMAKE_CXX_SIMULATE_ID") == "MSVC"
-    )
+    if values.get("CMAKE_CXX_SIMULATE_ID") == "MSVC":
+        return "MSVC"
+    return values["CMAKE_CXX_COMPILER_ID"]
+
+
+def cmake_compiler_uses_msvc_abi(
+    build_dir: Path, cache: dict[str, str], errors: list[str]
+) -> bool | None:
+    """Return CMake's MSVC-family compiler semantics from configured state."""
+    family = cmake_cxx_compiler_family(build_dir, cache, errors)
+    return None if family is None else family == "MSVC"
 
 
 def inactive_cpp_test_is_approved(
@@ -2962,11 +2969,15 @@ def contact_surface_probe_command(
     ):
         errors.append(f"{prefix}: configured Eigen include directories are unavailable")
         return None
-    uses_msvc = cmake_compiler_uses_msvc_abi(build_dir, cache, errors)
-    if uses_msvc is None:
+    family = cmake_cxx_compiler_family(build_dir, cache, errors)
+    if family is None:
         return None
-    flags = ["/std:c++14", "/Zs"] if uses_msvc else ["-std=c++14", "-fsyntax-only"]
-    include_flag = "/I" if uses_msvc else "-I"
+    if family == "MSVC":
+        flags, include_flag = ["/std:c++14", "/Zs"], "/I"
+    elif family == "GNU":
+        flags, include_flag = ["-std=c++14", "-pedantic-errors", "-fsyntax-only"], "-I"
+    else:
+        flags, include_flag = ["-std=c++14", "-fsyntax-only"], "-I"
     return [
         compiler,
         *flags,

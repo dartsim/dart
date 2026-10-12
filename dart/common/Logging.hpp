@@ -84,7 +84,9 @@
   #define DART_FATAL(...) (void)0
 #endif
 
-namespace dart::common {
+// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
+namespace dart {
+namespace common {
 
 /// \brief Logs for a trace message
 ///
@@ -139,7 +141,8 @@ void error(const S& format_str, Args&&... args);
 template <typename S, typename... Args>
 void fatal(const S& format_str, Args&&... args);
 
-} // namespace dart::common
+} // namespace common
+} // namespace dart
 
 #include <dart/common/detail/Logging-impl.hpp>
 

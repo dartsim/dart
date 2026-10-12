@@ -38,11 +38,17 @@
 #include <dart/common/Castable.hpp>
 #include <dart/common/Metaprogramming.hpp>
 
-namespace dart::common {
+#include <type_traits>
+
+// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
+namespace dart {
+namespace common {
 
 //==============================================================================
 DART_CREATE_MEMBER_CHECK(getType);
 DART_CREATE_MEMBER_CHECK(getStaticType);
+
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 
 //==============================================================================
 template <typename Base>
@@ -57,6 +63,41 @@ bool Castable<Base>::is() const
     return (dynamic_cast<const Derived*>(&base()) != nullptr);
   }
 }
+
+#else
+
+// C++14 header checks parse this form; it instantiates only the selected
+// overload, like the if constexpr above.
+namespace detail {
+
+//==============================================================================
+template <typename Derived, typename Base>
+bool castableIs(const Base& base, std::true_type)
+{
+  return (base.getType() == Derived::getStaticType());
+}
+
+//==============================================================================
+template <typename Derived, typename Base>
+bool castableIs(const Base& base, std::false_type)
+{
+  return (dynamic_cast<const Derived*>(&base) != nullptr);
+}
+
+} // namespace detail
+
+//==============================================================================
+template <typename Base>
+template <typename Derived>
+bool Castable<Base>::is() const
+{
+  constexpr bool compareTypes = has_member_getType<Base>::value
+                                && has_member_getStaticType<Derived>::value;
+  return detail::castableIs<Derived>(
+      base(), std::integral_constant<bool, compareTypes>());
+}
+
+#endif
 
 //==============================================================================
 template <typename Base>
@@ -106,6 +147,7 @@ Base& Castable<Base>::base()
   return *static_cast<Base*>(this);
 }
 
-} // namespace dart::common
+} // namespace common
+} // namespace dart
 
 #endif // DART_COMMON_DETAIL_CASTABLE_HPP_

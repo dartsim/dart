@@ -63,7 +63,10 @@
 
 #include <vector>
 
-namespace dart::math::detail {
+// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
+namespace dart {
+namespace math {
+namespace detail {
 
 /// Computes the 3D convex hull using an optimized quickhull algorithm
 ///
@@ -113,6 +116,8 @@ void computeConvexHull3D(
     std::vector<int>& outFaces,
     int& numOutFaces);
 
-} // namespace dart::math::detail
+} // namespace detail
+} // namespace math
+} // namespace dart
 
 #include <dart/math/detail/ConvexHull-impl.hpp>

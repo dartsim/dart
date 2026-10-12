@@ -97,7 +97,13 @@ get_target_property(
 if(MSVC)
   set(contact_surface_probe_flags /std:c++14 /Zs)
   set(contact_surface_include_flag /I)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # GCC accepts C++17 syntax in C++14 mode unless pedantic, but MSVC rejects it.
+  set(contact_surface_probe_flags -std=c++14 -pedantic-errors -fsyntax-only)
+  set(contact_surface_include_flag -I)
 else()
+  # Clang's pedantic mode also rejects C++17 attributes and DART_NUM_ARGS's GNU
+  # comma elision, which every gz-physics compiler accepts in C++14 mode.
   set(contact_surface_probe_flags -std=c++14 -fsyntax-only)
   set(contact_surface_include_flag -I)
 endif()

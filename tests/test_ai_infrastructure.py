@@ -3380,6 +3380,9 @@ def _add_contact_surface_probe_fixture(root: Path):
         "if(MSVC)\n"
         "  set(probe_flags /std:c++14 /Zs)\n"
         "  set(probe_include_flag /I)\n"
+        'elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")\n'
+        "  set(probe_flags -std=c++14 -pedantic-errors -fsyntax-only)\n"
+        "  set(probe_include_flag -I)\n"
         "else()\n"
         "  set(probe_flags -std=c++14 -fsyntax-only)\n"
         "  set(probe_include_flag -I)\n"
@@ -3439,6 +3442,23 @@ def test_cmake_semantic_graph_contact_surface_probe_command(
         assert errors == []
     else:
         assert any(expected in error for error in errors)
+
+
+def test_cmake_semantic_graph_contact_surface_probe_keeps_gcc_pedantic(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
+    cache = infra.cmake_cache_values(build / "CMakeCache.txt")
+    if infra.cmake_cxx_compiler_family(build, cache, []) != "GNU":
+        pytest.skip("the fixture compiler is not GCC")
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(" -pedantic-errors", ""),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any("only C++14 flags" in error for error in errors)
 
 
 def test_cmake_semantic_graph_contact_surface_probe_rejects_fake_source(tmp_path):
@@ -3800,11 +3820,16 @@ def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeyp
 
 
 @pytest.mark.parametrize(
-    ("compiler_id", "simulate_id", "expected"),
-    (("MSVC", "", True), ("Clang", "MSVC", True), ("GNU", "", False)),
+    ("compiler_id", "simulate_id", "expected", "family"),
+    (
+        ("MSVC", "", True, "MSVC"),
+        ("Clang", "MSVC", True, "MSVC"),
+        ("GNU", "", False, "GNU"),
+        ("AppleClang", "", False, "AppleClang"),
+    ),
 )
 def test_cmake_msvc_semantics_follow_configured_compiler_state(
-    tmp_path, compiler_id, simulate_id, expected
+    tmp_path, compiler_id, simulate_id, expected, family
 ):
     compiler = tmp_path / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
     compiler.parent.mkdir(parents=True)
@@ -3824,6 +3849,7 @@ def test_cmake_msvc_semantics_follow_configured_compiler_state(
 
     assert errors == []
     assert actual is expected
+    assert infra.cmake_cxx_compiler_family(tmp_path, cache, errors) == family
 
 
 def test_cmake_semantic_graph_probe_requires_fresh_file_api_reply(

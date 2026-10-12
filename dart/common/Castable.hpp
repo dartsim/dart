@@ -49,7 +49,9 @@
   }                                                                            \
   void _ANONYMOUS_FUNCTION_1()
 
-namespace dart::common {
+// gz-physics probes this include tree as C++14; see ContactSurfaceProbe.
+namespace dart {
+namespace common {
 
 /// A CRTP base class that provides an interface for easily casting to the
 /// derived types.
@@ -95,7 +97,8 @@ private:
   [[nodiscard]] Base& base();
 };
 
-} // namespace dart::common
+} // namespace common
+} // namespace dart
 
 #include <dart/common/detail/Castable-impl.hpp>
 
