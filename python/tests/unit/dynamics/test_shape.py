@@ -68,6 +68,103 @@ def test_voxel_grid_construction():
 @pytest.mark.skipif(
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
 )
+@pytest.mark.parametrize("resolution", [0, -0.1, np.nan, np.inf, -np.inf])
+def test_voxel_grid_rejects_invalid_resolution(resolution):
+    with pytest.raises(ValueError, match="resolution must be finite and positive"):
+        dart.dynamics.VoxelGridShape(resolution=resolution)
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+@pytest.mark.parametrize("coordinate", [0.01, 0.03, 0.06, -0.05])
+def test_voxel_grid_queries_updated_boundary_cell(coordinate):
+    shape = dart.dynamics.VoxelGridShape(resolution=0.01)
+    point = [coordinate, coordinate, coordinate]
+    shape.updateOccupancy(point)
+    assert shape.getOccupancy(point) > 0.5
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+@pytest.mark.parametrize("resolution", [0.01, 0.125, 0.25])
+@pytest.mark.parametrize("axis", [0, 1, 2])
+@pytest.mark.parametrize("path", ["single", "batch", "sensorOrigin", "query"])
+@pytest.mark.parametrize(
+    "invalid", [np.nan, np.inf, -np.inf, 1e39, -1e39, "below", "upper", "above"]
+)
+def test_voxel_grid_rejects_unaddressable_points(resolution, axis, path, invalid):
+    shape = dart.dynamics.VoxelGridShape(resolution=resolution)
+    # OctoMap's depth is 16; the negative bound is inclusive, positive exclusive.
+    bound = np.float32(32768 * resolution)
+    outside = float(np.nextafter(bound, np.float32(np.inf)))
+    upper = float(bound) if float(bound) >= 32768 * resolution else outside
+    if isinstance(invalid, str):
+        coordinate = {
+            "below": -outside,
+            "upper": upper,
+            "above": float(np.nextafter(np.float32(upper), np.float32(np.inf))),
+        }[invalid]
+        message = "lies outside the voxel grid"
+    else:
+        coordinate = invalid
+        message = "must be finite"
+    point = np.zeros(3)
+    point[axis] = coordinate
+    existing = [1, 1, 1]
+    untouched = [2, 2, 2]
+    shape.updateOccupancy(existing)
+    occupancy = shape.getOccupancy(existing)
+    name = "sensorOrigin" if path == "sensorOrigin" else "point"
+    with pytest.raises(ValueError, match=f"{name} {message}"):
+        if path == "single":
+            shape.updateOccupancy(point)
+        elif path == "batch":
+            shape.updateOccupancy(points=np.array([untouched, point]))
+        elif path == "sensorOrigin":
+            shape.updateOccupancy(points=np.array([untouched]), sensorOrigin=point)
+        else:
+            shape.getOccupancy(point)
+    assert shape.getOccupancy(existing) == occupancy
+    assert shape.getOccupancy(untouched) == 0
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+@pytest.mark.parametrize("resolution", [0.01, 0.125, 0.25])
+@pytest.mark.parametrize("axis", [0, 1, 2])
+@pytest.mark.parametrize("path", ["single", "batch", "sensorOrigin", "query"])
+@pytest.mark.parametrize("boundary", ["lower", "lower_inside", "upper_inside"])
+def test_voxel_grid_accepts_addressable_boundaries(resolution, axis, path, boundary):
+    shape = dart.dynamics.VoxelGridShape(resolution=resolution)
+    bound = np.float32(32768 * resolution)
+    inside = float(np.nextafter(bound, np.float32(0)))
+    coordinate = {
+        "lower": -float(bound),
+        "lower_inside": -inside,
+        "upper_inside": float(bound) if float(bound) < 32768 * resolution else inside,
+    }[boundary]
+    point = np.zeros(3)
+    point[axis] = coordinate
+    if path == "batch":
+        shape.updateOccupancy(points=np.array([point]), sensorOrigin=point)
+    elif path == "sensorOrigin":
+        endpoint = point.copy()
+        endpoint[axis] += 2 * resolution if coordinate < 0 else -2 * resolution
+        shape.updateOccupancy(points=np.array([endpoint]), sensorOrigin=point)
+        assert shape.getOccupancy(endpoint) > 0.5
+        assert 0 < shape.getOccupancy(point) < 0.5
+        return
+    else:
+        shape.updateOccupancy(point)
+    assert shape.getOccupancy(point) > 0.5
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
 @pytest.mark.parametrize("point", [[1, 0, 0], np.array([1, 0, 0], dtype=np.float64)])
 def test_voxel_grid_point_occupancy(point):
     shape = dart.dynamics.VoxelGridShape(resolution=0.1)

@@ -73,10 +73,38 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart {
 namespace python {
+
+#if HAVE_OCTOMAP
+namespace {
+
+void validateVoxelPoint(
+    const dart::dynamics::VoxelGridShape* shape,
+    const Eigen::Vector3d& point,
+    const char* name = "point")
+{
+  const Eigen::Vector3f narrowed = point.cast<float>();
+  if (!narrowed.allFinite())
+    throw nb::value_error((std::string(name) + " must be finite").c_str());
+
+  const auto octree = shape->getOctree();
+  const double factor = 1.0 / octree->getResolution();
+  const double maxKey = std::ldexp(1.0, octree->getTreeDepth() - 1);
+  for (int i = 0; i < 3; ++i) {
+    // OctoMap casts to int before checking bounds; validate in double first.
+    const double key = std::floor(factor * static_cast<double>(narrowed[i]));
+    if (!(key >= -maxKey && key < maxKey))
+      throw nb::value_error(
+          (std::string(name) + " lies outside the voxel grid").c_str());
+  }
+}
+
+} // namespace
+#endif
 
 DART_SUPPRESS_DEPRECATED_BEGIN
 
@@ -266,14 +294,19 @@ void Shape(nb::module_& m)
 #if HAVE_OCTOMAP
   dartnb::dart_class<dart::dynamics::VoxelGridShape, dart::dynamics::Shape>(
       m, "VoxelGridShape")
-      .def(dartnb::init<double>(), nb::arg("resolution") = 0.01)
+      .def(
+          dartnb::factory(+[](double resolution) {
+            if (!std::isfinite(resolution) || resolution <= 0.0)
+              throw nb::value_error("resolution must be finite and positive");
+            return std::make_shared<dart::dynamics::VoxelGridShape>(resolution);
+          }),
+          nb::arg("resolution") = 0.01)
       .def(
           "updateOccupancy",
           +[](dart::dynamics::VoxelGridShape* self,
               const Eigen::Vector3d& point,
               bool occupied) {
-            if (!point.allFinite())
-              throw nb::value_error("point must be finite");
+            validateVoxelPoint(self, point);
             self->updateOccupancy(point, occupied);
           },
           nb::arg("point"),
@@ -289,16 +322,14 @@ void Shape(nb::module_& m)
               const Eigen::Vector3d& sensorOrigin) {
             if (points.ndim() != 2 || points.shape(1) != 3)
               throw nb::value_error("points must have shape (N, 3)");
-            if (!sensorOrigin.allFinite())
-              throw nb::value_error("sensorOrigin must be finite");
+            validateVoxelPoint(self, sensorOrigin, "sensorOrigin");
 
             const auto view = points.view<nb::ndim<2>>();
             octomap::Pointcloud cloud;
             cloud.reserve(points.shape(0));
             for (std::size_t i = 0; i < points.shape(0); ++i) {
               const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
-              if (!point.allFinite())
-                throw nb::value_error("points must be finite");
+              validateVoxelPoint(self, point);
               cloud.push_back(point.x(), point.y(), point.z());
             }
             self->updateOccupancy(
@@ -310,8 +341,7 @@ void Shape(nb::module_& m)
           "getOccupancy",
           +[](const dart::dynamics::VoxelGridShape* self,
               const Eigen::Vector3d& point) {
-            if (!point.allFinite())
-              throw nb::value_error("point must be finite");
+            validateVoxelPoint(self, point);
             return self->getOccupancy(point);
           },
           nb::arg("point"))
