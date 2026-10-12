@@ -102,22 +102,26 @@ batch.step(20)
 
 7.0 needs everything that the
 [acceptance criteria](#final-deliverable-and-acceptance) and the
-[design doc](../../design/dart7_python_api.md) require. The API freeze `F`
-waits for every item below, additive ones included:
+[design doc](../../design/dart7_python_api.md) require; this list summarizes
+it. The additive must-haves still ship in 7.0 if they land after the API
+freeze `F`; see the [release rules](#release-train-and-checkpoints).
 
-- **Breaking Python changes:** native renames from the reviewed rename table
-  (the `Multibody`/`Link`/`Dof` vocabulary, `Collider`/`Visual` handles and
-  named collections), the package layout with its curated top level, read-only
-  arrays, error types, `UPPER_CASE` enums, keyword-only arguments,
-  `Transform`/`Rotation` and raising loaders. The default-detector switch ships
-  in 7.0 only if its [prerequisites](#default-detector-switch) pass before M1
-  starts; otherwise it is a labeled 7.x change.
+- **Every breaking Python change lands before `F`:** native renames from the
+  reviewed rename table (the `Multibody`/`Link`/`Dof` vocabulary,
+  `Collider`/`Visual` handles and named collections), the package layout with
+  its curated top level, read-only arrays, error types, `UPPER_CASE` enums,
+  keyword-only arguments, `Transform`/`Rotation` and raising loaders. The
+  default-detector switch ships in 7.0 only if its
+  [prerequisites](#default-detector-switch) pass before M1 starts; otherwise it
+  is a labeled 7.x change.
 - Type stubs (`.pyi` plus `py.typed`) in every wheel with stub-drift checks,
   and the `dartpy` logging bridge.
 - `io.load_model`/`io.load_world`, `World.add`, the `add_*` builders with
   keyword-only specs, and the `dart.data` sample data.
-- Editing vs compiled simulation modes, and GIL-free `step(n)` on the
-  deterministic executor.
+- Editing vs compiled simulation modes, where `compile()`, or a lazy world's
+  first step, prepares the dense articulated-body data (M2), and GIL-free
+  `step(n)` on the deterministic executor. The
+  [M2 stop rule](#release-train-and-checkpoints) can end M2's kernel PRs early.
 - `WorldBatch` built from remapping clones.
 - `capture_state`/`restore_state` dynamic snapshots and exact checkpoints:
   record/replay levels L0 and L1.
@@ -132,10 +136,9 @@ waits for every item below, additive ones included:
 
 ### Also planned
 
-Planned for 7.0 but required by neither the acceptance criteria nor the design
-doc: typed solver selection in `WorldConfig` (M1e) and dense articulated-body
-data (M2, behind its [stop rule](#release-train-and-checkpoints)). Either moves
-to 7.1 if it misses `F`.
+Typed solver selection in `WorldConfig` (M1e) is planned for 7.0, although
+neither the acceptance criteria nor the design doc require it. It moves to 7.1
+if it misses `F`.
 
 ### Deferrals
 
@@ -273,9 +276,9 @@ no longer excluded from the Python formatters; a `--renames` mode for
 ## Release train and checkpoints
 
 WP-7.0.7 records the API freeze `F` and two checkpoints. `F` is declared once
-every item on the [must-have list](#must-have), additive ones included, has
-merged and C2 has passed. Only additive work outside that list moves to 7.1 if
-it misses `F`.
+every breaking change has merged and C2 has passed. The additive
+[must-haves](#must-have) still ship in 7.0 if they land after `F`; other
+additive work that misses `F` moves to 7.1.
 
 - **C1: M3 go/no-go after the first three M2 kernel PRs**, applying the M2
   stop rule below. M3 goes into 7.0 only if all of these hold:
@@ -286,7 +289,7 @@ it misses `F`.
   3. a flagged spike limited to storing revolute and free-joint
      positions and velocities contiguously, passes the guards and the shim test,
      and its memory-copy snapshots cost at most 0.1× of the gather path;
-  4. M3 can land before `F` without delaying it.
+  4. M3 can land before `F` without delaying the remaining breaking changes.
 
   Otherwise M3 moves to 7.x and must be purely additive when it lands.
   Aspect-state semantics change only in 8.0.
@@ -302,11 +305,11 @@ it misses `F`.
 
 Release rules:
 
-- Every must-have lands before `F`, including every breaking change: renames,
-  package layout, read-only arrays, error types, enums, keyword-only options,
-  `Transform`/`Rotation`, raising loaders, and the default-detector switch if
-  its gate passes. Only additive work outside the must-have list moves to 7.1
-  if it misses `F`.
+- Every breaking change lands before `F`: renames, package layout, read-only
+  arrays, error types, enums, keyword-only options, `Transform`/`Rotation`,
+  raising loaders, and the default-detector switch if its gate passes. The
+  additive must-haves still ship in 7.0 if they land after `F`; other additive
+  work that misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
   example runner, and the scheduled lane against the gz-physics development
@@ -382,6 +385,8 @@ module as the interim `dartpy.gui`. Main may mix styles until M6b; the
 7.0 release may not. M6b builds `dart.render` and `dart.viewer` in the 7.0
 style, ports the tutorials, docs and tests, and deletes the interim module
 before the API freeze `F`, so release candidates carry the final render API.
+The target-shape render test in `python/tests/unit/gui/` already uses the 7.0
+API, so it stays when the interim tests are ported.
 
 **OSG removal:**
 
@@ -423,15 +428,17 @@ before the API freeze `F`, so release candidates carry the final render API.
 | WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
 | WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport merged ([#3717](https://github.com/dartsim/dart/pull/3717)) |
-| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Done ([#3719](https://github.com/dartsim/dart/pull/3719)) |
+| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | Merged ([#3719](https://github.com/dartsim/dart/pull/3719)); four review findings remain open ([verification](verification.md#wp-703b-sdf-pose-attributes)) |
 | WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
-| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | Done ([#3720](https://github.com/dartsim/dart/pull/3720)); the baseline pin waits for M1 |
-| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In review: [#3725](https://github.com/dartsim/dart/pull/3725) (version file, shim test and header probe) and [#3729](https://github.com/dartsim/dart/pull/3729) (gz API inventory) |
+| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress: [#3720](https://github.com/dartsim/dart/pull/3720) added the rows; the `dart7-base` pin is recorded right before the first M1 PR |
+| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In progress: [#3725](https://github.com/dartsim/dart/pull/3725) merged the version file, shim test and header probe; [#3729](https://github.com/dartsim/dart/pull/3729) (in review) adds the gz API inventory |
 | WP-7.0.7 | Record the API freeze, checkpoints, must-have list and acceptance tests | In review ([#3728](https://github.com/dartsim/dart/pull/3728)) |
-| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for Python 3.12 to 3.14; [#3730](https://github.com/dartsim/dart/pull/3730) (in review) adds Linux Python 3.15 wheels; macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15 builds of `bullet-cpp` |
+| WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for Python 3.12 to 3.14 and [#3730](https://github.com/dartsim/dart/pull/3730) Linux Python 3.15 wheels; macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15 builds of `bullet-cpp` |
 
 Each packet records its scope, non-goals, gates and evidence in
-[verification.md](verification.md) before it is marked done.
+[verification.md](verification.md) before it is marked done. M0 exits when
+every packet above is done, and M5a starts then. M1 starts right after the
+`dart7-base` pin, as the [critical path](#milestones) shows.
 
 ## Gates
 
@@ -448,15 +455,15 @@ Each packet records its scope, non-goals, gates and evidence in
     on the named performance host;
   - the step-allocation ratchet;
   - `pixi run -e gazebo test-gz`;
-  - the gz shim test and the contact-surface header probe (arrive with
-    WP-7.0.6);
-  - the many-World rows (arrive with WP-7.0.5);
+  - the gz shim test and the contact-surface header probe, which
+    `pixi run test` runs (added in #3725);
+  - the many-World rows (added in #3720);
   - the snapshot and checkpoint oracle (arrives with M1c).
 - **Milestone exits:** the core gates with `--base dart7-base`.
 - **Python changes:**
   - stub-drift, new-`Any` and pyright checks (arrive with M5's stub PRs);
   - the rename-aware `api_surface.py` diff;
-  - the Python-loop benchmark row (arrives with WP-7.0.5);
+  - the Python-loop benchmark, `pixi run perf-dartpy-loop` (added in #3720);
   - the example runner in test mode, once it exists;
   - the codemod round trip on non-GUI tutorial code.
 - **GUI changes:** `pixi run test-gui`, delivered in #3696; `CI Filament`
@@ -500,8 +507,11 @@ Every packet needs two clean review passes on its final state.
 
 ## Blockers and next actions
 
-- No blockers. The "DART 7.0.0" milestone (#105, formerly "DART 6.21.0")
-  tracks the release, and main's release target reads 7.0.0.
+- WP-7.0.8's macOS and Windows Python 3.15 wheels wait for conda-forge's
+  Python 3.15 builds of `bullet-cpp`. Pending maintainer decision: whether they
+  hold M0's exit, and with it M5a's start.
+- The "DART 7.0.0" milestone (#105, formerly "DART 6.21.0") tracks the release,
+  and main's release target reads 7.0.0.
 - Publishing each packet needs maintainer approval.
 - Pending maintainer action: check PyPI's project history for deleted 7.0.0
   files; PyPI never accepts a reused file name.

@@ -169,9 +169,23 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Status:** done; merged in
-  [#3719](https://github.com/dartsim/dart/pull/3719). It changes behavior, so
-  it targets main only.
+- **Pull request:** [#3719](https://github.com/dartsim/dart/pull/3719),
+  merged. It changes behavior, so it targets main only.
+- **Evidence:** every SDF, world and model file under `data/` loads to
+  byte-identical state before and after the change.
+- **Review findings still open on main** (automated reviews: two on the first
+  commit, two on the final commit after the merge):
+  - inertial poses keep only their translation, so a rotated inertial frame
+    loads an unrotated inertia tensor;
+  - the version gate accepts only SDF 1.4–1.6, so files that declare the newer
+    SDF versions defining these attributes are rejected before any pose is
+    read; the tests use SDF 1.6 documents;
+  - soft-shape spheres, ellipsoids and cylinders ignore the parsed pose; only
+    boxes apply it;
+  - an empty `<pose rotation_format="quat_xyzw"/>` raises instead of reading
+    as the identity.
+- **Status:** in progress. A follow-up PR resolves these findings; two clean
+  review passes on its final state complete the packet.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -265,9 +279,12 @@ Known gaps:
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
   and compares each detector against its own baseline.
-- **Status:** done; merged in
-  [#3720](https://github.com/dartsim/dart/pull/3720). The `dart7-base` pin
-  waits for the start of M1.
+- **Review passes:** two automated reviews of
+  [#3720](https://github.com/dartsim/dart/pull/3720) found no major issues,
+  the second on its final commit.
+- **Status:** in progress. #3720 merged the rows and the procedure. The
+  `dart7-base` pin, recorded right before the first M1 PR, completes the
+  packet.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
@@ -313,6 +330,9 @@ Known gaps:
   - Still open: the machine-checked inventories of gz-used accessors and
     mutation paths.
 - **Status:** in progress.
+  [#3725](https://github.com/dartsim/dart/pull/3725) merged WP-7.0.6a and
+  WP-7.0.6b; [#3729](https://github.com/dartsim/dart/pull/3729), in review,
+  adds the inventories.
 
 ### WP-7.0.7 Scope artifacts
 
@@ -320,11 +340,11 @@ Known gaps:
 - **Scope:**
   - the dependency/order/priority refinement dated 2026-10-11; historical
     evidence dates stay;
-  - API freeze `F`, declared after every must-have, additive ones included,
-    has merged and C2 has passed; only additive work outside the must-have
-    list moves to 7.1 if it misses `F`;
+  - API freeze `F`, declared after every breaking change has merged and C2 has
+    passed; the additive must-haves still ship in 7.0 if they land after `F`,
+    and other additive work that misses `F` moves to 7.1;
   - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
-    land before `F` without delaying it;
+    land before `F` without delaying the remaining breaking changes;
   - C2 before `F`, so release candidates carry the final render API;
   - the default-detector switch only if its prerequisites pass before M1
     starts, scheduled first so later rebaselines start from the final default;
@@ -333,12 +353,12 @@ Known gaps:
     wall time, and the flagged spike passing guards and the shim with `memcpy`
     snapshots at most 0.1× the gather cost; M2 stops below 10% gain from its
     first three kernel PRs;
-  - the 7.0 must-have list, covering everything the acceptance criteria and
-    the design doc require, and explicit deferrals;
+  - the 7.0 must-have list, which summarizes everything the acceptance
+    criteria and the design doc require, and explicit deferrals;
   - the target-shape acceptance tests, marked `xfail(strict=True)`; the
     headless-render test needs a graphics device, so `pixi run test-gui` runs
     it instead of `pixi run test-py`.
-- **Evidence on 2026-10-11** (main `9e4bb4e6f`):
+- **Evidence on 2026-10-11** (main `722f28ddd`):
   - `pixi run test-py` collects the nine tests in
     `python/tests/acceptance/test_target_shape.py`, all XFAIL with no XPASS
     (688 passed, 2 skipped, 9 XFAIL), and no longer collects the render test.
@@ -356,7 +376,7 @@ Known gaps:
   | joint PositionServo | `AttributeError`: no `dart.PositionServo` |
   | IMU sensor | `AttributeError`: no `dart.sensors` |
   | `step(n)` and `step_count` | `TypeError`: `step` accepts only a `bool`, not `20` |
-  | Transform composition | `AttributeError`: no `dart.Transform` |
+  | link `world_transform` composed with a `Transform` | `AttributeError`: the legacy `Skeleton` has no `links` |
   | capture/restore state | `AttributeError`: no `World.capture_state` |
   | WorldBatch set/step | `AttributeError`: no `dart.WorldBatch` |
   | Renderer RGB (`test-gui`) | `AttributeError`: no `dart.render` |
@@ -364,13 +384,24 @@ Known gaps:
   `pyproject.toml` already sets `xfail_strict = true`, and each test also
   passes `strict=True`. The contract lives only in these tests, not in
   `python/examples/`, because that directory's examples run automatically.
-- **Review passes:** the first review found seven issues: the step test read
-  the legacy frame counter instead of `step_count`; the render test ran in the
-  device-free suite; the loader test skipped `World.add`; step hooks and type
-  stubs were listed as optional although the acceptance criteria and the
-  design doc require them; the freeze gate ignored additive must-haves; the
-  design doc carried release-train state; and the resume handoff was stale.
-  All were fixed.
+- **Review passes:**
+  - The first review found seven issues: the step test read the legacy frame
+    counter instead of `step_count`; the render test ran in the device-free
+    suite; the loader test skipped `World.add`; step hooks and type stubs were
+    listed as optional although the acceptance criteria and the design doc
+    require them; the freeze rule would have moved additive must-haves to 7.1;
+    the design doc carried release-train state; and the resume handoff was
+    stale. All were fixed.
+  - The second review found that the first fix made `F` wait for every
+    must-have, which changed the recorded rule that `F` follows the last
+    breaking change and made the codemod, the migration guide and the wheels
+    gate the freeze. `F` again follows the last breaking change and C2, and
+    the additive must-haves are exempt from the move to 7.1 instead. It also
+    found that the handoff missed PRs merged since, that WP-7.0.3b and
+    WP-7.0.5 were marked done without their review record, that M2's dense
+    data was called optional although the design doc's mode contract requires
+    it, that no test read `Link.world_transform`, and that porting the interim
+    GUI tests could drop the render test. All were fixed.
 - **Pending maintainer action:** check PyPI's project history for deleted
   7.0.0 files, because PyPI never accepts a reused file name.
 - **Status:** in review.
@@ -385,9 +416,9 @@ Known gaps:
 - **Status:** in progress.
   - [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for
     Python 3.12 to 3.14.
-  - [#3730](https://github.com/dartsim/dart/pull/3730), in review, adds Linux
-    Python 3.15 wheels and runs a finalization test against every wheel. Its
-    review of that line's pybind11 bindings found no crash or hang during
-    finalization on Python 3.15, so the bindings are unchanged.
+  - [#3730](https://github.com/dartsim/dart/pull/3730) added Linux Python 3.15
+    wheels and runs a finalization test against every wheel. Its review of
+    that line's pybind11 bindings found no crash or hang during finalization
+    on Python 3.15, so the bindings are unchanged.
   - macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15
     builds of `bullet-cpp`.

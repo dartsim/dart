@@ -27,3 +27,12 @@
     parsing) and #3699 (GIL finalization) merged; the 6.20 backport of #3698
     opened as #3717 on the 6.20.1 patch line.
   - WP-7.0.3b and WP-7.0.5 started.
+  - #3717 (the 6.20 backport of #3698), #3719 (SDF pose attributes) and #3720
+    (many-World and dartpy loop rows) merged. Automated reviews raised four
+    findings on #3719 that it did not address.
+  - #3723 (ODE collision-callback exceptions) merged and was backported in
+    #3727; #3722 (analytical-IK clone crashes) opened.
+  - #3725 (Gazebo compatibility gates and version rules) merged; #3729 (gz API
+    inventory) and #3728 (WP-7.0.7) opened.
+  - On the 6.20.x line, #3704 added wheels for Python 3.12 to 3.14 and #3730
+    Linux wheels for Python 3.15.

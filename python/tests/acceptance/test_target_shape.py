@@ -83,12 +83,22 @@ def test_step_n(world):
     assert world.step_count == 20
 
 
-@pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
-def test_transform_composition():
-    parent = dart.Transform(translation=(1, 2, 3))
-    local = dart.Transform(translation=(0, 0, 0.1))
-    composed = parent @ local
-    np.testing.assert_allclose(composed @ np.zeros(3), (1, 2, 3.1))
+@pytest.mark.xfail(
+    strict=True,
+    reason="M5: links, Link.world_transform and immutable Transform are pending",
+)
+def test_link_world_transform(robot):
+    # An x axis keeps the rotation from commuting with the z offset, so the
+    # assertion also catches a reversed composition order.
+    robot.getJoint("shoulder_yaw").setAxis([1, 0, 0])
+    robot.setPositions(np.full(robot.getNumDofs(), 0.5))
+    X_WP = robot.links["wrist"].world_transform @ dart.Transform(
+        translation=(0, 0, 0.1)
+    )
+    X_WL = robot.getBodyNode("wrist").getWorldTransform().matrix()
+    points = np.eye(3)
+    expected = (points + (0, 0, 0.1)) @ X_WL[:3, :3].T + X_WL[:3, 3]
+    np.testing.assert_allclose(X_WP @ points, expected)
 
 
 @pytest.mark.xfail(

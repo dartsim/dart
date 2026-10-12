@@ -17,8 +17,9 @@ Priority order is document order. Active implementation handoff remains in
 - Scope: Main's next release becomes DART 7.0. That release is a clean Python
   API break; the C++ API stays compatible for the gz-used subset. Main's
   unreleased work ships in 7.0, and `release-6.20` is the 6.x maintenance line.
-- Next step: Complete M0: release-line rollover, project home, baseline pin,
-  compatibility shim and bug-fix packets.
+- Next step: Finish M0: the gz API inventory, the scope artifacts, the SDF
+  pose review follow-up, the 6.20.x Python 3.15 wheels, and the `dart7-base`
+  pin right before the first M1 PR.
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
