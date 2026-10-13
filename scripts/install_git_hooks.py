@@ -14,8 +14,8 @@ Scissors cleanup or verbose mode excludes text after Git's scissors line. No
 rebases, reverts, imports and sequencer operations before publication. It reads
 Git's ref updates from stdin, skips deletions, and scans messages and changes
 using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
-new refs choose the merge base that leaves the fewest commits to scan from
-locally available remote branch heads and the remote's default HEAD. Missing
+new refs scan, one at a time, only the commits that neither the remote's
+default HEAD nor any locally available remote branch head reaches. Missing
 existing-ref bases and default HEAD objects are fetched without changing refs
 or FETCH_HEAD. An empty remote or unrelated history scans the whole local
 history; lookup or scan errors block the push. Older branches without a
@@ -114,26 +114,28 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
             [ "$status" -le 1 ] || exit "$status"
         fi
         remote_heads=$(git ls-remote --heads "$2") || exit 1
-        candidate_shas=$(printf '%s\\n' "$base_sha" "$remote_heads" | awk '{print $1}') || exit 1
-        base_sha=
-        fewest_commits=
-        for candidate_sha in $candidate_shas; do
+        published=
+        for head_sha in $(printf '%s\\n' "$base_sha" "$remote_heads" | awk '{print $1}'); do
             # Only the default HEAD is fetched; other heads must exist locally.
-            GIT_NO_LAZY_FETCH=1 git cat-file -e "$candidate_sha^{commit}" 2>/dev/null || continue
-            candidate_base=$(git merge-base "$candidate_sha" "$local_sha")
-            status=$?
-            # Status 1 means unrelated histories; other errors must block.
-            [ "$status" -le 1 ] || exit "$status"
-            [ "$status" = 0 ] || continue
-            candidate_count=$(git rev-list --count "$candidate_base..$local_sha") || exit 1
-            if [ -z "$fewest_commits" ] || [ "$candidate_count" -lt "$fewest_commits" ]; then
-                base_sha=$candidate_base
-                fewest_commits=$candidate_count
-            fi
+            GIT_NO_LAZY_FETCH=1 git cat-file -e "$head_sha^{commit}" 2>/dev/null || continue
+            published="$published $head_sha"
         done
+        # Skip commits that any published head already reaches, so merging
+        # several published branches does not rescan them.
+        unpublished=$(git rev-list --topo-order --reverse "$local_sha" --not $published) || exit 1
+        total=$(git rev-list --count "$local_sha") || exit 1
+        if [ "$(printf '%s\\n' "$unpublished" | grep -c .)" = "$total" ]; then
+            # Nothing published is reachable: scan all local history at once.
+            scan_ranges=$local_sha
+        elif [ -n "$unpublished" ]; then
+            # Checkers of any version accept one commit as `<sha>^!`.
+            scan_ranges=$(printf '%s^!\\n' $unpublished)
+        else
+            scan_ranges=
+        fi
+    else
+        scan_ranges="$base_sha..$local_sha"
     fi
-    commit_range=$local_sha
-    [ -z "$base_sha" ] || commit_range="$base_sha..$local_sha"
     if ! select_checker "${checker_revision:-$local_sha}" scripts/check_local_paths.py; then
         echo "DART pre-push: cannot recover tracked checker — push blocked." >&2
         exit 1
@@ -142,13 +144,15 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
         echo "DART pre-push: local-path gate unavailable in this checkout; skipping scan." >&2
         continue
     fi
-    echo "DART pre-push: scanning $local_ref ($commit_range)..." >&2
-    if ! "$python_cmd" "$checker_path" --commit-range "$commit_range"; then
-        echo "DART pre-push: local-path hook FAILED — push blocked." >&2
-        echo "  Fix: remove local paths from pushed commits." >&2
-        echo "  Emergency bypass: DART_SKIP_HOOKS=1 git push ..." >&2
-        exit 1
-    fi
+    for commit_range in $scan_ranges; do
+        echo "DART pre-push: scanning $local_ref ($commit_range)..." >&2
+        if ! "$python_cmd" "$checker_path" --commit-range "$commit_range"; then
+            echo "DART pre-push: local-path hook FAILED — push blocked." >&2
+            echo "  Fix: remove local paths from pushed commits." >&2
+            echo "  Emergency bypass: DART_SKIP_HOOKS=1 git push ..." >&2
+            exit 1
+        fi
+    done
 done
 """
 

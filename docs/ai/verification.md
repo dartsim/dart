@@ -101,10 +101,11 @@ The pre-push hook reads Git's `<local ref> <local sha> <remote ref> <remote sha>
 stdin and runs `scripts/check_local_paths.py --commit-range <base>..<local sha>`
 for each updated ref. It scans every commit's message, names and added lines,
 including cherry-picked, rebased, reverted and imported commits. Existing refs
-use the remote SHA; new refs choose the merge base that leaves the fewest
-commits to scan from locally available remote branch heads and the remote's
-default HEAD. Missing existing-ref bases and default HEAD objects are fetched
-without changing refs or `FETCH_HEAD`.
+use the remote SHA; new refs scan, one at a time, only the commits that neither
+the remote's default HEAD nor any locally available remote branch head reaches.
+A merge commit is still compared with its first parent, so content already
+published on a merged branch can be reported again. Missing existing-ref bases
+and default HEAD objects are fetched without changing refs or `FETCH_HEAD`.
 An empty remote or unrelated history scans all local history. Deletions skip
 scanning. Foreign pre-push hooks receive the same stdin and their failures block
 the push. Older branches without checkers and unavailable interpreters print a
