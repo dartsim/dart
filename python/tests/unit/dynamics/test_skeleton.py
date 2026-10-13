@@ -19,5 +19,29 @@ def test_basic():
     assert skel.getBodyNodes()[0].getName() == body1.getName()
 
 
+def test_resting_and_island_index():
+    world = dart.simulation.World()
+    options = world.getDeactivationOptions()
+    options.mEnabled = True
+    world.setDeactivationOptions(options)
+    world.setGravity([0, 0, 0])
+
+    skel = dart.dynamics.Skeleton()
+    skel.createFreeJointAndBodyNodePair()
+    world.addSkeleton(skel)
+
+    assert skel.isResting() is False
+    assert skel.getIslandIndex() == -1
+    assert skel.setResting(resting=True) is None
+    assert skel.isResting() is True
+    assert skel.setResting(resting=False) is None
+    assert skel.isResting() is False
+
+    world.step()
+    index = skel.getIslandIndex()
+    assert isinstance(index, int)
+    assert index == -1 or 0 <= index < world.getNumSkeletons()
+
+
 if __name__ == "__main__":
     pytest.main()
