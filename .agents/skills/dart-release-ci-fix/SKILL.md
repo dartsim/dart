@@ -11,12 +11,13 @@ description: "DART Release CI Fix: debug and fix CI failures on DART development
 
 Use this skill to run the DART `dart-release-ci-fix` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-release-ci-fix <arguments>`
 - Codex: `$dart-release-ci-fix <arguments>`
+- Muse: load the `dart-release-ci-fix` skill
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

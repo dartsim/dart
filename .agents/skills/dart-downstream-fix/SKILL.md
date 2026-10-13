@@ -11,12 +11,13 @@ description: "DART Downstream Fix: fix a DART bug reported through gz-physics or
 
 Use this skill to run the DART `dart-downstream-fix` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-downstream-fix <arguments>`
 - Codex: `$dart-downstream-fix <arguments>`
+- Muse: load the `dart-downstream-fix` skill
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

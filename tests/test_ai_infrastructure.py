@@ -154,7 +154,6 @@ def release_reference_target(tmp_path):
             "docs/onboarding/contributing.md",
             "Release packaging targets release-7.0 directly.\n",
         ),
-        ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
         ("GEMINI.md", "The next release is currently DART 6.22.\n"),
         ("AGENTS.md", "The next release is DART 6.22.0.\n"),
         ("docs/README.md", "Next release: **DART 6.22.0**\n"),
@@ -1872,13 +1871,13 @@ def test_scoped_agent_instruction_files_are_required(tmp_path):
     for path in infra.required_paths(tmp_path):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("placeholder\n")
-    scoped = tmp_path / ".agents" / "AGENTS.md"
+    scoped = tmp_path / ".codex" / "AGENTS.md"
     scoped.unlink()
     errors = []
 
     infra.check_required_files(tmp_path, errors)
 
-    assert errors == ["missing required file: .agents/AGENTS.md"]
+    assert errors == ["missing required file: .codex/AGENTS.md"]
 
 
 @pytest.mark.parametrize(

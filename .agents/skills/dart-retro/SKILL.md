@@ -11,12 +11,13 @@ description: "DART Retro: run a retrospective and capture durable lessons"
 
 Use this skill to run the DART `dart-retro` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-retro <arguments>`
 - Codex: `$dart-retro <arguments>`
+- Muse: load the `dart-retro` skill
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

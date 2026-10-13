@@ -11,12 +11,13 @@ description: "DART Manage PR: manage an open DART pull request through CI, revie
 
 Use this skill to run the DART `dart-manage-pr` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-manage-pr <arguments>`
 - Codex: `$dart-manage-pr <arguments>`
+- Muse: load the `dart-manage-pr` skill
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

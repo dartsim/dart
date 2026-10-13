@@ -11,12 +11,13 @@ description: "DART Ultrawork: kick off a large or autonomous DART task with proj
 
 Use this skill to run the DART `dart-ultrawork` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-ultrawork <arguments>`
 - Codex: `$dart-ultrawork <arguments>`
+- Muse: load the `dart-ultrawork` skill
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,
