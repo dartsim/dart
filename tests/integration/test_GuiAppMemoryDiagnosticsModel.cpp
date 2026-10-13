@@ -621,15 +621,15 @@ TEST(MemoryDiagnosticsModel, GenerationChangeStartsANewLocalSegment)
 
 TEST(MemoryDiagnosticsModel, LinuxStatusParserChecksUnitsAndOverflow)
 {
-  const LinuxProcStatusMemory valid = parseLinuxProcStatus(
-      "Name:\tdart-demos\nVmHWM:\t42 kB\nVmRSS:\t17 kB\n");
+  const LinuxProcStatusMemory valid
+      = parseLinuxProcStatus("Name:\tpython\nVmHWM:\t42 kB\nVmRSS:\t17 kB\n");
   ASSERT_TRUE(valid.residentBytes);
   ASSERT_TRUE(valid.peakResidentBytes);
   EXPECT_EQ(*valid.residentBytes, 17u * 1024u);
   EXPECT_EQ(*valid.peakResidentBytes, 42u * 1024u);
 
   const LinuxProcStatusMemory missing
-      = parseLinuxProcStatus("Name:\tdart-demos\nThreads:\t1\n");
+      = parseLinuxProcStatus("Name:\tpython\nThreads:\t1\n");
   EXPECT_FALSE(missing.residentBytes);
   EXPECT_FALSE(missing.peakResidentBytes);
 

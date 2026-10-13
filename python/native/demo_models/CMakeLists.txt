@@ -35,6 +35,8 @@ add_library(
   dart-demo-models
   STATIC
   ContactArrowLayout.cpp
+  BoxedLcpSolver.cpp
+  HeightmapModel.cpp
   AdaptiveSoftContactModel.cpp
   SoftWormModel.cpp
   WorldHistory.cpp
@@ -42,6 +44,9 @@ add_library(
   ContactInverseDynamicsModel.cpp
   RelaxedPosture.cpp
   ssik_ik_gui/ArmSkeleton.cpp
+  BipedStandController.cpp
+  JointConstraintsController.cpp
+  OperationalSpaceController.cpp
 )
 target_link_libraries(dart-demo-models PUBLIC dart)
 set_source_files_properties(
@@ -52,6 +57,10 @@ target_include_directories(
   dart-demo-models
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
+
+if(HAVE_OCTOMAP)
+  target_sources(dart-demo-models PRIVATE PointCloudSensor.cpp)
+endif()
 
 if(TARGET dart-utils AND TARGET dart-utils-urdf)
   target_sources(

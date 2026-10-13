@@ -101,6 +101,12 @@ void targetControlsFromTransform(
 }
 
 //==============================================================================
+ArmSkeleton::~ArmSkeleton()
+{
+  clearInstances();
+}
+
+//==============================================================================
 void ArmSkeleton::setWorld(const dart::simulation::WorldPtr& world)
 {
   mWorld = world;
@@ -166,8 +172,10 @@ std::size_t ArmSkeleton::numDofs() const
 //==============================================================================
 void ArmSkeleton::clearInstances()
 {
-  for (const auto& skeleton : mInstances)
-    mWorld->removeSkeleton(skeleton);
+  if (mWorld) {
+    for (const auto& skeleton : mInstances)
+      mWorld->removeSkeleton(skeleton);
+  }
   mInstances.clear();
 }
 

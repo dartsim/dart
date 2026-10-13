@@ -3,15 +3,12 @@
 #
 # This file is provided under the "BSD-style" License.
 
-if(NOT DEFINED DART_DEMOS_EXECUTABLE OR DART_DEMOS_EXECUTABLE STREQUAL "")
-  message(FATAL_ERROR "DART_DEMOS_EXECUTABLE is required")
+if(NOT DEFINED DART_HOST_BINARY OR DART_HOST_BINARY STREQUAL "")
+  message(FATAL_ERROR "DART_HOST_BINARY is required")
 endif()
 
-if(NOT EXISTS "${DART_DEMOS_EXECUTABLE}")
-  message(
-    FATAL_ERROR
-    "Demo executable does not exist: ${DART_DEMOS_EXECUTABLE}"
-  )
+if(NOT EXISTS "${DART_HOST_BINARY}")
+  message(FATAL_ERROR "Host binary does not exist: ${DART_HOST_BINARY}")
 endif()
 
 # Check both UI/environment literals and C++ symbol fragments. This remains
@@ -29,7 +26,7 @@ set(
 
 foreach(marker IN LISTS memory_diagnostics_binary_markers)
   file(
-    STRINGS "${DART_DEMOS_EXECUTABLE}"
+    STRINGS "${DART_HOST_BINARY}"
     marker_matches
     REGEX "${marker}"
     LIMIT_COUNT 1
@@ -38,7 +35,7 @@ foreach(marker IN LISTS memory_diagnostics_binary_markers)
     message(
       FATAL_ERROR
       "Memory diagnostics marker '${marker}' is present in the default-OFF "
-      "demo executable: ${DART_DEMOS_EXECUTABLE}"
+      "host binary: ${DART_HOST_BINARY}"
     )
   endif()
 endforeach()

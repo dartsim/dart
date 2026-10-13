@@ -463,7 +463,7 @@ def test_soft_foot_environment_scripted_push(monkeypatch):
     assert model.force_duration == native.push_steps - 1
 
 
-# C++ debug-print-world: (name, bodies, soft bodies, point masses, DOFs).
+# Scene-port parity baseline: (name, bodies, soft bodies, point masses, DOFs).
 STRUCTURES = {
     "atlas_simbicon": [("ground_skeleton", 1, 0, 0, 0), ("drc_skeleton", 28, 0, 0, 33)],
     "adaptive_soft_contact": [

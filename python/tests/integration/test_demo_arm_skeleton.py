@@ -81,6 +81,19 @@ def test_native_chain_fk_and_sixteen_ghosts():
     assert world.getNumSkeletons() == 0
 
 
+def test_destroying_arm_removes_its_ghosts_from_the_world():
+    world = dart.simulation.World()
+    arm = dart._demos.ArmSkeleton(world)
+    arm.build(_chain())
+    arm.show_solutions([[0.1, 0.2], [0.3, 0.4]], 0)
+    assert world.getNumSkeletons() == 2
+    reference = weakref.ref(arm)
+    del arm
+    gc.collect()
+    assert reference() is None
+    assert world.getNumSkeletons() == 0
+
+
 def test_binding_rejects_invalid_world_chain_and_solution_without_mutation():
     with pytest.raises(ValueError):
         dart._demos.ArmSkeleton(None)

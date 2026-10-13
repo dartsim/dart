@@ -133,13 +133,16 @@ deformable substrate. What exists to reuse:
   traveling-wave SERVO gait is the actuated-soft-character reference;
   `setForces`/`addExtForce`/`setCommand` all available. No muscle model (not
   needed — SERVO joints + SoftBodyNode kv/ke springs cover it).
-- **Scene/test pattern** (copy verbatim): 3-part — GUI-free
-  `scenes/XxxModel.{hpp,cpp}` (free functions: createWorld/step/checksum/isFinite)
-  + thin `scenes/XxxScene.cpp` host adapter (`makeXxxScene()` → `DemoSceneSetup`,
-  registered in `Registry.cpp` + `Scenes.hpp`) + GUI-free
+- **Scene/test pattern**: 3-part — GUI-free
+  `python/native/demo_models/XxxModel.{hpp,cpp}` (free functions:
+  createWorld/step/checksum/isFinite), bound through `dartpy._demos`,
+  + thin `python/examples/demos/scenes/xxx.py` factory returning
+  `dartpy.viewer.SceneSetup`, registered in `registry.py`, + GUI-free
   `tests/integration/test_XxxModel.cpp` (locomotion + finite-state +
   cross-run-determinism, compiled into the `test_ConstraintSolver` target with an
-  `add_test --gtest_filter`). Headless PNG capture via `--headless --shot --steps`.
+  `add_test --gtest_filter`). Headless PNG capture via
+  `pixi run demos -- --scene <id> --headless --shot <output> --steps <n>`;
+  follow the [scene rules](../../../examples/README.md#adding-catalog-scenes).
 
 What must be **built/authored** for PR-3:
 - ~~soft-foot SIMBICON integration~~ — **shipped** by #3408/#3423 as

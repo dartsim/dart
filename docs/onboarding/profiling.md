@@ -575,14 +575,16 @@ before/after matrix separately.
 
 ## Interactive Memory Inspection
 
-Memory inspection is compiled out of `dart-demos` by default. After
+Memory inspection is compiled out of the private `dart-gui-app` host by default. After
 `pixi run config`, opt in by reconfiguring the same build with
 `-DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. The default-OFF build excludes the
 diagnostics sources, link dependencies, host state, environment probe, Memory
 tab, and frame-path calls; its post-link check rejects any diagnostics marker in
-the demo executable.
+the dartpy extension module. The option retains its existing name; its
+PUBLIC compile definition keeps host consumers consistent with `App`'s
+diagnostics-dependent layout.
 
-When compiled in, the consolidated `dart-demos` Memory tab is a diagnostic lead
+When compiled in, the Python catalog's native Memory tab is a diagnostic lead
 generator, not a heap or cache profiler. Its shared
 `dart/gui/app/memory_diagnostics_model.*` owns opt-in cadence, process probes,
 bounded history, reset, and compatible snapshot comparisons. The branch-local
