@@ -132,6 +132,23 @@ function(@PROJECT_NAME@_package_init)
     endif()
   endforeach()
 
+  # Directory-level legacy includes must prefer the bundled docking headers,
+  # whether gui is requested directly or through the legacy external-imgui.
+  set(requests_gui FALSE)
+  foreach(component ${ARGN})
+    get_property(dependencies DIRECTORY
+      PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
+    if(component STREQUAL "gui" OR "gui" IN_LIST dependencies)
+      set(requests_gui TRUE)
+    endif()
+  endforeach()
+  get_property(gui_found DIRECTORY
+    PROPERTY "@PROJECT_NAME_UPPERCASE@_gui_FOUND")
+  if(NOT @DART_USE_SYSTEM_IMGUI@ AND requests_gui AND gui_found)
+    list(PREPEND @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS
+      "${@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS}/dart/external/imgui")
+  endif()
+
   @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
   @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
   @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_LIBRARIES)

@@ -57,9 +57,17 @@
 
 #include <Eigen/Geometry>
 #define GLFW_INCLUDE_NONE
+#include <dart/config.hpp>
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <png.h>
+
+// The bundled ImGui is the docking release. A vanilla imgui.h here means the
+// include path resolved another ImGui's headers than the compiled sources.
+#if !DART_USE_SYSTEM_IMGUI && !defined(IMGUI_HAS_DOCK)
+  #error "The bundled Dear ImGui must be the docking release (v1.92.8-docking)"
+#endif
 
 #include <algorithm>
 #include <chrono>

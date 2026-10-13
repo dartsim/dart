@@ -28,7 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/demos/scenes/SoftWormModel.hpp"
+#include "demo_models/SoftWormModel.hpp"
 
 #include <gtest/gtest.h>
 
