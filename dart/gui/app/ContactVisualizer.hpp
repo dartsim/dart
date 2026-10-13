@@ -30,20 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
-#define DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
+#ifndef DART_GUI_APP_CONTACTVISUALIZER_HPP_
+#define DART_GUI_APP_CONTACTVISUALIZER_HPP_
 
-#include "GuiBackend.hpp"
 #include "demo_models/ContactArrowLayout.hpp"
 
 #include <dart/dart.hpp>
+#include <dart/external/imgui/imgui.h>
 
 #include <memory>
 #include <vector>
 
 #include <cstddef>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 //==============================================================================
 /// Host-level reusable contact-force visualizer, extracted from
@@ -60,10 +60,10 @@ public:
   static constexpr std::size_t kMaxArrows = 256;
 
   /// Binds to the newly-installed scene's world. Call from
-  /// DemoHost::installScene after `world` is set as the current world.
+  /// App::installScene after `world` is set as the current world.
   void onSceneInstalled(const dart::simulation::WorldPtr& world);
 
-  /// Releases the arrow pool. Call from DemoHost::teardownCurrentScene
+  /// Releases the arrow pool. Call from App::teardownCurrentScene
   /// before the world is destroyed.
   void reset();
 
@@ -94,13 +94,13 @@ private:
   dart::simulation::WorldPtr mWorld;
   bool mEnabled = true;
 
-  ContactArrowLayout mLayout;
+  dart_demos::ContactArrowLayout mLayout;
   double mShaftRadius = 0.0;
   std::vector<dart::dynamics::SimpleFramePtr> mFrames;
   std::vector<std::shared_ptr<dart::dynamics::ArrowShape>> mArrows;
   std::size_t mLastVisualizedCount = 0;
 };
 
-} // namespace dart_demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
+#endif // DART_GUI_APP_CONTACTVISUALIZER_HPP_

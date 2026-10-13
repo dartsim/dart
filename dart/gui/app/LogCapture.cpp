@@ -34,7 +34,7 @@
 
 #include <iostream>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -166,4 +166,4 @@ LogCapture::~LogCapture()
   std::cerr.rdbuf(mOldCerrBuf);
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

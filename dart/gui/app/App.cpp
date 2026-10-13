@@ -30,8 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "DemoHost.hpp"
+#include "App.hpp"
 
+#include "GuiOptions.hpp"
+#include "GuiScale.hpp"
 #include "Theme.hpp"
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
@@ -41,15 +43,13 @@
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <dart/external/imgui/imgui.h>
-#ifdef IMGUI_HAS_DOCK
-  // DockBuilder lives in the internal header on the docking branch. The
-  // compatibility copy exists for system ImGui builds too, so the include is
-  // valid either way; only the DockBuilder calls are docking-gated.
-  #include <dart/external/imgui/imgui_internal.h>
+#ifndef IMGUI_HAS_DOCK
+  #error "dart-gui-app requires the Dear ImGui docking release"
 #endif
-
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/SoftBodyNode.hpp>
+
+#include <dart/external/imgui/imgui_internal.h>
 
 #include <algorithm>
 #include <exception>
@@ -70,7 +70,7 @@
   #include <cstdlib>
 #endif
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -89,7 +89,7 @@ std::string toLower(const std::string& value)
 }
 
 //==============================================================================
-bool matchesFilter(const DemoScene& scene, const std::string& filterLower)
+bool matchesFilter(const Scene& scene, const std::string& filterLower)
 {
   if (filterLower.empty())
     return true;
@@ -115,11 +115,12 @@ std::string formatKeyActionLabel(const KeyAction& action)
 /// (i.e. RealTimeWorldNode::refresh() has actually run with simulate() on) and
 /// are therefore meaningful to display. Deterministic stepping paths --
 /// headless capture, --cycle-scenes, the paused/Step-button path -- all drive
-/// the world directly via DemoWorldNode::stepOnce(), bypassing refresh()'s
+/// the world directly via AppWorldNode::stepOnce(), bypassing refresh()'s
 /// wall-clock budget entirely, so mLowestRealTimeFactor is left at its
 /// never-updated +infinity default (and the smoothed/highest fields would
 /// otherwise misleadingly read 0.00 instead of "not measured").
-bool hasLiveRtfStats(const GuiViewer* viewer, const DemoWorldNode* worldNode)
+bool hasLiveRtfStats(
+    const dart::gui::Viewer* viewer, const AppWorldNode* worldNode)
 {
   return worldNode && viewer->isSimulating()
          && std::isfinite(worldNode->getLowestRealTimeFactor());
@@ -219,10 +220,10 @@ SceneCounts collectSceneCounts(const dart::simulation::WorldPtr& world)
 //==============================================================================
 /// Forwards ImGui rendering to the host; kept alive by the viewer's
 /// widget list once registered.
-class HostPanelWidget : public demo_gui::ImGuiWidget
+class HostPanelWidget : public dart::gui::ImGuiWidget
 {
 public:
-  explicit HostPanelWidget(DemoHost* host) : mHost(host) {}
+  explicit HostPanelWidget(App* host) : mHost(host) {}
 
   void render() override
   {
@@ -230,25 +231,22 @@ public:
   }
 
 private:
-  DemoHost* mHost;
+  App* mHost;
 };
 
 //==============================================================================
 /// Persistent (never torn down) key handler that dispatches to the active
 /// scene's key actions. Installed once at startup.
-class DemoKeyHandler : public demo_events::GUIEventHandler
+class DemoKeyHandler : public dart::gui::GUIEventHandler
 {
 public:
-  explicit DemoKeyHandler(DemoHost* host) : mHost(host) {}
+  explicit DemoKeyHandler(App* host) : mHost(host) {}
 
   bool handle(
-      const demo_events::GUIEventAdapter& ea,
-      demo_events::GUIActionAdapter&) override
+      const dart::gui::GUIEventAdapter& ea,
+      dart::gui::GUIActionAdapter&) override
   {
-    if (guiEventHandled(ea))
-      return false;
-
-    if (ea.getEventType() != demo_events::GUIEventAdapter::KEYDOWN)
+    if (ea.getEventType() != dart::gui::GUIEventAdapter::KEYDOWN)
       return false;
 
     // Never let typing in an ImGui field (e.g. the always-visible "Search
@@ -261,65 +259,64 @@ public:
   }
 
 private:
-  DemoHost* mHost;
+  App* mHost;
 };
 
 } // namespace
 
 //==============================================================================
-DemoHostContext::DemoHostContext(DemoHost& host) : mHost(host) {}
+SceneContext::SceneContext(App& host) : mHost(host) {}
 
 //==============================================================================
-GuiViewer* DemoHostContext::viewer() const
+dart::gui::Viewer* SceneContext::viewer() const
 {
   return mHost.getViewer();
 }
 
 //==============================================================================
-demo_gui::WorldNode* DemoHostContext::worldNode() const
+dart::gui::WorldNode* SceneContext::worldNode() const
 {
   return mHost.getWorldNode();
 }
 
 //==============================================================================
-void DemoHostContext::addTeardown(std::function<void()> teardown)
+void SceneContext::addTeardown(std::function<void()> teardown)
 {
   mHost.addTeardown(std::move(teardown));
 }
 
 //==============================================================================
-void DemoHostContext::addOwnedAttachment(
-    GuiPtr<demo_gui::ViewerAttachment> attachment)
+void SceneContext::addOwnedAttachment(
+    std::shared_ptr<dart::gui::ViewerAttachment> attachment)
 {
   auto* viewer = mHost.getViewer();
-  addGuiAttachment(*viewer, attachment);
-  addTeardown(
-      [viewer, attachment] { removeGuiAttachment(*viewer, attachment); });
+  viewer->addAttachment(attachment);
+  addTeardown([viewer, attachment] { viewer->removeAttachment(attachment); });
 }
 
 //==============================================================================
-void DemoHostContext::addEventHandler(
-    GuiPtr<demo_events::GUIEventHandler> handler)
+void SceneContext::addEventHandler(
+    std::shared_ptr<dart::gui::GUIEventHandler> handler)
 {
   auto* viewer = mHost.getViewer();
-  addGuiEventHandler(*viewer, handler);
-  addTeardown([viewer, handler] { removeGuiEventHandler(*viewer, handler); });
+  viewer->addEventHandler(handler);
+  addTeardown([viewer, handler] { viewer->removeEventHandler(handler); });
 }
 
 //==============================================================================
-void DemoHostContext::log(const std::string& message) const
+void SceneContext::log(const std::string& message) const
 {
   mHost.log(LogEntry::Level::Info, message);
 }
 
 //==============================================================================
-DemoWorldNode::DemoWorldNode(const dart::simulation::WorldPtr& world)
-  : demo_gui::RealTimeWorldNode(world), mStepCount(0)
+AppWorldNode::AppWorldNode(const dart::simulation::WorldPtr& world)
+  : dart::gui::RealTimeWorldNode(world), mStepCount(0)
 {
 }
 
 //==============================================================================
-void DemoWorldNode::setHooks(
+void AppWorldNode::setHooks(
     std::function<void()> preStep,
     std::function<void()> postStep,
     std::function<void()> preRefresh)
@@ -330,14 +327,14 @@ void DemoWorldNode::setHooks(
 }
 
 //==============================================================================
-void DemoWorldNode::setHookErrorSink(
+void AppWorldNode::setHookErrorSink(
     std::function<void(const std::string&, const std::string&)> sink)
 {
   mHookErrorSink = std::move(sink);
 }
 
 //==============================================================================
-void DemoWorldNode::stepOnce()
+void AppWorldNode::stepOnce()
 {
   customPreStep();
   if (getWorld())
@@ -346,20 +343,20 @@ void DemoWorldNode::stepOnce()
 }
 
 //==============================================================================
-std::size_t DemoWorldNode::getStepCount() const
+std::size_t AppWorldNode::getStepCount() const
 {
   return mStepCount;
 }
 
 //==============================================================================
-void DemoWorldNode::customPreStep()
+void AppWorldNode::customPreStep()
 {
   invokeHook(mPreStep, "preStep");
   beginStepTiming();
 }
 
 //==============================================================================
-void DemoWorldNode::customPostStep()
+void AppWorldNode::customPostStep()
 {
   endStepTiming();
   invokeHook(mPostStep, "postStep");
@@ -367,56 +364,56 @@ void DemoWorldNode::customPostStep()
 }
 
 //==============================================================================
-void DemoWorldNode::customPreRefresh()
+void AppWorldNode::customPreRefresh()
 {
   mStepCountAtRefreshStart = mStepCount;
   invokeHook(mPreRefresh, "preRefresh");
 }
 
 //==============================================================================
-void DemoWorldNode::customPostRefresh()
+void AppWorldNode::customPostRefresh()
 {
   mLastRefreshStepCount = mStepCount - mStepCountAtRefreshStart;
 }
 
 //==============================================================================
-std::size_t DemoWorldNode::getLastRefreshStepCount() const
+std::size_t AppWorldNode::getLastRefreshStepCount() const
 {
   return mLastRefreshStepCount;
 }
 
 //==============================================================================
-double DemoWorldNode::getLastStepMs() const
+double AppWorldNode::getLastStepMs() const
 {
   return mLastStepMs;
 }
 
 //==============================================================================
-double DemoWorldNode::getMovingAverageStepMs() const
+double AppWorldNode::getMovingAverageStepMs() const
 {
   return mMovingAverageStepMs;
 }
 
 //==============================================================================
-double DemoWorldNode::getMinStepMs() const
+double AppWorldNode::getMinStepMs() const
 {
   return mMinStepMs;
 }
 
 //==============================================================================
-double DemoWorldNode::getMaxStepMs() const
+double AppWorldNode::getMaxStepMs() const
 {
   return mMaxStepMs;
 }
 
 //==============================================================================
-std::size_t DemoWorldNode::getStepTimingSamples() const
+std::size_t AppWorldNode::getStepTimingSamples() const
 {
   return mStepTimingSamples;
 }
 
 //==============================================================================
-void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
+void AppWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 {
   if (!hook)
     return;
@@ -435,14 +432,14 @@ void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 }
 
 //==============================================================================
-void DemoWorldNode::beginStepTiming()
+void AppWorldNode::beginStepTiming()
 {
   mStepStart = std::chrono::steady_clock::now();
   mStepTimingActive = true;
 }
 
 //==============================================================================
-void DemoWorldNode::endStepTiming()
+void AppWorldNode::endStepTiming()
 {
   if (!mStepTimingActive)
     return;
@@ -467,8 +464,8 @@ void DemoWorldNode::endStepTiming()
 }
 
 //==============================================================================
-DemoHost::DemoHost(
-    std::vector<DemoScene> scenes,
+App::App(
+    std::vector<Scene> scenes,
     std::optional<double> guiScale,
     std::string collisionDetectorName,
     std::size_t simulationThreads)
@@ -476,7 +473,7 @@ DemoHost::DemoHost(
     mPerformanceStatsPanel(240u),
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
     mMemoryDiagnosticsSession([this] {
-      return dart::examples::demos::collectMemoryDiagnostics(
+      return dart::gui::app::collectMemoryDiagnostics(
           mCurrentWorld, mMemoryDiagnosticsGeneration);
     }),
 #endif
@@ -484,7 +481,7 @@ DemoHost::DemoHost(
     mSimulationThreads(static_cast<int>(std::min<std::size_t>(
         simulationThreads,
         static_cast<std::size_t>(std::numeric_limits<int>::max())))),
-    mGuiScale(dart_demos::sanitizeGuiScale(guiScale.value_or(1.0))),
+    mGuiScale(dart_examples::sanitizeGuiScale(guiScale.value_or(1.0))),
     mAutomaticGuiScale(!guiScale.has_value())
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
@@ -497,7 +494,7 @@ DemoHost::DemoHost(
 
   buildCategories();
   mAvailableCollisionDetectors = getAvailableCollisionDetectorNames();
-  mViewer = makeGui<GuiViewer>();
+  mViewer = std::make_shared<dart::gui::Viewer>();
 
   // Captures dart::common's dtmsg/dtwarn/dterr output (and any other
   // std::cout/std::cerr writes) into the same log the host already uses for
@@ -516,7 +513,7 @@ DemoHost::DemoHost(
 }
 
 //==============================================================================
-DemoHost::~DemoHost()
+App::~App()
 {
   mGuiScaleTheme.reset();
   // See the header comment: without this, whichever scene is still active at
@@ -526,7 +523,7 @@ DemoHost::~DemoHost()
 }
 
 //==============================================================================
-void DemoHost::buildCategories()
+void App::buildCategories()
 {
   mCategories.clear();
   mCategoryIndexByName.clear();
@@ -547,7 +544,7 @@ void DemoHost::buildCategories()
 }
 
 //==============================================================================
-const DemoScene* DemoHost::findScene(const std::string& id) const
+const Scene* App::findScene(const std::string& id) const
 {
   for (const auto& scene : mScenes) {
     if (scene.id == id)
@@ -557,64 +554,64 @@ const DemoScene* DemoHost::findScene(const std::string& id) const
 }
 
 //==============================================================================
-void DemoHost::setInitialScene(const std::string& id)
+void App::setInitialScene(const std::string& id)
 {
   mInitialSceneId = id;
 }
 
 //==============================================================================
-void DemoHost::setDebugSelectBodyName(const std::string& name)
+void App::setDebugSelectBodyName(const std::string& name)
 {
   mDebugSelectBodyName = name;
 }
 
 //==============================================================================
-void DemoHost::setDebugRecordProfile(bool on)
+void App::setDebugRecordProfile(bool on)
 {
   mDebugRecordProfile = on;
 }
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
 //==============================================================================
-void DemoHost::setDebugScrollMemoryPanelTicks(int ticks)
+void App::setDebugScrollMemoryPanelTicks(int ticks)
 {
   mDebugScrollMemoryPanelTicks = std::max(0, ticks);
 }
 #endif
 
 //==============================================================================
-void DemoHost::requestScenePanelTab(ScenePanelTab tab)
+void App::requestScenePanelTab(ScenePanelTab tab)
 {
   mRequestedScenePanelTab = tab;
   mHasRequestedScenePanelTab = true;
 }
 
 //==============================================================================
-std::size_t DemoHost::getActiveWorldNodeCount() const
+std::size_t App::getActiveWorldNodeCount() const
 {
   return mActiveWorldNodeCount;
 }
 
 //==============================================================================
-GuiViewer* DemoHost::getViewer() const
+dart::gui::Viewer* App::getViewer() const
 {
   return mViewer.get();
 }
 
 //==============================================================================
-DemoWorldNode* DemoHost::getWorldNode() const
+AppWorldNode* App::getWorldNode() const
 {
   return mWorldNode.get();
 }
 
 //==============================================================================
-void DemoHost::addTeardown(std::function<void()> teardown)
+void App::addTeardown(std::function<void()> teardown)
 {
   mExtraTeardowns.push_back(std::move(teardown));
 }
 
 //==============================================================================
-void DemoHost::log(LogEntry::Level level, const std::string& message)
+void App::log(LogEntry::Level level, const std::string& message)
 {
   mLog.push_back(LogEntry{level, message});
 
@@ -627,7 +624,7 @@ void DemoHost::log(LogEntry::Level level, const std::string& message)
 }
 
 //==============================================================================
-void DemoHost::syncCollisionDetectorSelectionFromWorld()
+void App::syncCollisionDetectorSelectionFromWorld()
 {
   mCurrentCollisionDetectorName = getWorldCollisionDetectorName(mCurrentWorld);
   mCollisionDetectorIndex = -1;
@@ -640,7 +637,7 @@ void DemoHost::syncCollisionDetectorSelectionFromWorld()
 }
 
 //==============================================================================
-bool DemoHost::setCollisionDetectorByName(const std::string& name)
+bool App::setCollisionDetectorByName(const std::string& name)
 {
   if (!mCurrentWorld || name.empty())
     return true;
@@ -673,7 +670,7 @@ bool DemoHost::setCollisionDetectorByName(const std::string& name)
 }
 
 //==============================================================================
-void DemoHost::applyRuntimeOptionsToWorld()
+void App::applyRuntimeOptionsToWorld()
 {
   if (!mCurrentWorld)
     return;
@@ -692,7 +689,7 @@ void DemoHost::applyRuntimeOptionsToWorld()
 }
 
 //==============================================================================
-void DemoHost::ensureViewerConfigured()
+void App::ensureViewerConfigured()
 {
   if (mViewerConfigured)
     return;
@@ -701,9 +698,9 @@ void DemoHost::ensureViewerConfigured()
   mViewer->setBackgroundColor(Eigen::Vector4d(0.58, 0.62, 0.65, 1.0));
   mViewer->setVerticalFieldOfView(30.0);
   if (!mAutomaticGuiScale)
-    dart_demos::setGuiScale(*mViewer, mGuiScale);
+    mViewer->setGuiScale(mGuiScale);
   mViewer->addWidget(std::make_shared<HostPanelWidget>(this));
-  addGuiEventHandler(*mViewer, makeGui<DemoKeyHandler>(this));
+  mViewer->addEventHandler(std::make_shared<DemoKeyHandler>(this));
 
   // Host-wide picking: plain left-click selects a body for the Inspector;
   // Ctrl+left-drag starts a spring-force drag (DragForce owns both, since it
@@ -717,12 +714,12 @@ void DemoHost::ensureViewerConfigured()
   // switches (unlike a scene's own attachments, which are torn down on
   // switch via ctx.addTeardown). Off by default -- most scenes already
   // render their own ground plane/floor.
-  mGridVisual = makeGui<demo_gui::GridVisual>();
+  mGridVisual = std::make_shared<dart::gui::GridVisual>();
   mGridVisual->display(false);
-  addGuiAttachment(*mViewer, mGridVisual);
+  mViewer->addAttachment(mGridVisual);
 }
 
-void DemoHost::initializeGuiTheme()
+void App::initializeGuiTheme()
 {
   if (mGuiScaleTheme || !mViewer->getImGuiContext())
     return;
@@ -735,23 +732,22 @@ void DemoHost::initializeGuiTheme()
 }
 
 //==============================================================================
-void DemoHost::applyShadowState()
+void App::applyShadowState()
 {
   if (!mWorldNode)
     return;
 
-  setGuiShadows(
-      *mWorldNode, *mViewer, mShadowsEnabled && mCurrentSceneWantsShadows);
+  mWorldNode->setShadowsEnabled(mShadowsEnabled && mCurrentSceneWantsShadows);
 }
 
 //==============================================================================
-void DemoHost::requestSceneSwitch(const std::string& id)
+void App::requestSceneSwitch(const std::string& id)
 {
   mPendingSceneId = id;
 }
 
 //==============================================================================
-void DemoHost::processPendingSwitch()
+void App::processPendingSwitch()
 {
   if (!mPendingSceneId.has_value())
     return;
@@ -760,7 +756,7 @@ void DemoHost::processPendingSwitch()
   mPendingSceneId.reset();
   mLastSwitchSkipReason.clear();
 
-  const DemoScene* scene = findScene(requestedId);
+  const Scene* scene = findScene(requestedId);
   if (!scene) {
     mLastSwitchFailed = true;
     log(LogEntry::Level::Error, "Unknown demo id '" + requestedId + "'");
@@ -770,7 +766,7 @@ void DemoHost::processPendingSwitch()
   mStatusLine = "Starting demo '" + scene->title + "'...";
   log(LogEntry::Level::Info, mStatusLine);
 
-  DemoSceneSetup setup;
+  SceneSetup setup;
   bool ok = true;
   std::string failureReason;
   try {
@@ -818,7 +814,7 @@ void DemoHost::processPendingSwitch()
 }
 
 //==============================================================================
-void DemoHost::teardownCurrentScene()
+void App::teardownCurrentScene()
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   // A snapshot must never retain comparison/history state from the World that
@@ -847,7 +843,7 @@ void DemoHost::teardownCurrentScene()
   mExtraTeardowns.clear();
 
   if (mWorldNode) {
-    removeGuiWorldNode(*mViewer, mWorldNode);
+    mViewer->removeWorldNode(mWorldNode);
     mWorldNode = nullptr;
     if (mActiveWorldNodeCount > 0)
       --mActiveWorldNodeCount;
@@ -862,8 +858,8 @@ void DemoHost::teardownCurrentScene()
 }
 
 //==============================================================================
-void DemoHost::installScene(
-    const DemoScene& scene, DemoSceneSetup setup, bool applyCameraHomePose)
+void App::installScene(
+    const Scene& scene, SceneSetup setup, bool applyCameraHomePose)
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   ++mMemoryDiagnosticsGeneration;
@@ -876,14 +872,14 @@ void DemoHost::installScene(
   mContactVisualizer.onSceneInstalled(mCurrentWorld);
   mCurrentSceneWantsShadows = setup.enableShadows;
 
-  mWorldNode = makeGui<DemoWorldNode>(mCurrentWorld);
+  mWorldNode = std::make_shared<AppWorldNode>(mCurrentWorld);
   applyShadowState();
 
   // Compose the host-level facilities (joint-slider edits, drag-force/
   // gizmo spring, contact-visualizer refresh) around the scene's own hooks.
   // Each facility call is internally exception-safe (never throws), so a
   // fault in one never disables the scene's own preStep/postStep/preRefresh
-  // the way DemoWorldNode::invokeHook's generic guard would if it were
+  // the way AppWorldNode::invokeHook's generic guard would if it were
   // tripped by host code.
   mWorldNode->setHooks(
       [this, scenePreStep = std::move(setup.preStep)] {
@@ -923,7 +919,7 @@ void DemoHost::installScene(
   mSavedGravity = mGravityEnabled ? mCurrentWorld->getGravity()
                                   : Eigen::Vector3d(0.0, 0.0, -9.81);
 
-  addGuiWorldNode(*mViewer, mWorldNode);
+  mViewer->addWorldNode(mWorldNode);
   ++mActiveWorldNodeCount;
 
   mCurrentRenderPanel = setup.renderPanel;
@@ -942,7 +938,7 @@ void DemoHost::installScene(
   }
 
   if (setup.onActivate) {
-    DemoHostContext ctx(*this);
+    SceneContext ctx(*this);
     try {
       setup.onActivate(ctx);
     } catch (const std::exception& e) {
@@ -959,21 +955,21 @@ void DemoHost::installScene(
   // the offscreen capture home keep using the scene's canonical view.
   if (applyCameraHomePose) {
     const CameraHome defaultHome{
-        GuiVector3(6.0, 8.0, 4.0),
-        GuiVector3(0.0, 0.0, 1.0),
-        GuiVector3(0.0, 0.0, 1.0)};
+        Eigen::Vector3d(6.0, 8.0, 4.0),
+        Eigen::Vector3d(0.0, 0.0, 1.0),
+        Eigen::Vector3d(0.0, 0.0, 1.0)};
     applyCameraHome(mCurrentCameraHome.value_or(defaultHome), true);
   }
 }
 
 //==============================================================================
-void DemoHost::installEmptyFallback()
+void App::installEmptyFallback()
 {
-  DemoScene fallback;
+  Scene fallback;
   fallback.id.clear();
   fallback.title = "(no demo loaded)";
 
-  DemoSceneSetup setup;
+  SceneSetup setup;
   setup.world = dart::simulation::World::create();
   setup.enableShadows = false;
 
@@ -983,14 +979,14 @@ void DemoHost::installEmptyFallback()
 }
 
 //==============================================================================
-void DemoHost::applyCameraHome(const CameraHome& home, bool viaManipulator)
+void App::applyCameraHome(const CameraHome& home, bool viaManipulator)
 {
   (void)viaManipulator;
   mViewer->setCameraHome(home.eye, home.center, home.up);
 }
 
 //==============================================================================
-void DemoHost::fitCameraToWorld()
+void App::fitCameraToWorld()
 {
   if (!mCurrentWorld)
     return;
@@ -1037,12 +1033,12 @@ void DemoHost::fitCameraToWorld()
 }
 
 //==============================================================================
-int DemoHost::listScenes() const
+int App::listScenes() const
 {
   for (const auto& category : mCategories) {
     std::cout << category.name << "\n";
     for (const auto index : category.sceneIndices) {
-      const DemoScene& scene = mScenes[index];
+      const Scene& scene = mScenes[index];
       std::cout << "  " << scene.id << "  -  " << scene.title;
       if (!scene.summary.empty())
         std::cout << ": " << scene.summary;
@@ -1053,17 +1049,16 @@ int DemoHost::listScenes() const
 }
 
 //==============================================================================
-int DemoHost::cycleScenes(
-    int framesPerScene, bool render, int width, int height)
+int App::cycleScenes(int framesPerScene, bool render, int width, int height)
 {
   bool anyFailure = false;
   std::size_t skipped = 0;
   if (render) {
     ensureViewerConfigured();
     const CameraHome home{
-        GuiVector3(6.0, 8.0, 4.0),
-        GuiVector3(0.0, 0.0, 1.0),
-        GuiVector3(0.0, 0.0, 1.0)};
+        Eigen::Vector3d(6.0, 8.0, 4.0),
+        Eigen::Vector3d(0.0, 0.0, 1.0),
+        Eigen::Vector3d(0.0, 0.0, 1.0)};
     if (!prepareOffscreenContext(width, height, home))
       return 1;
   }
@@ -1112,8 +1107,7 @@ int DemoHost::cycleScenes(
 }
 
 //==============================================================================
-bool DemoHost::prepareOffscreenContext(
-    int width, int height, const CameraHome& home)
+bool App::prepareOffscreenContext(int width, int height, const CameraHome& home)
 {
   mGuiScaleTheme.reset();
   mViewer->setCameraHome(home.eye, home.center, home.up);
@@ -1130,7 +1124,7 @@ bool DemoHost::prepareOffscreenContext(
 }
 
 //==============================================================================
-int DemoHost::runHeadlessShot(
+int App::runHeadlessShot(
     const std::string& shotPath,
     int steps,
     const std::string& sceneId,
@@ -1186,9 +1180,9 @@ int DemoHost::runHeadlessShot(
 #endif
 
   const CameraHome defaultHome{
-      GuiVector3(6.0, 8.0, 4.0),
-      GuiVector3(0.0, 0.0, 1.0),
-      GuiVector3(0.0, 0.0, 1.0)};
+      Eigen::Vector3d(6.0, 8.0, 4.0),
+      Eigen::Vector3d(0.0, 0.0, 1.0),
+      Eigen::Vector3d(0.0, 0.0, 1.0)};
   const CameraHome home = mCurrentCameraHome.value_or(defaultHome);
 
   if (!prepareOffscreenContext(width, height, home))
@@ -1251,7 +1245,7 @@ int DemoHost::runHeadlessShot(
 }
 
 //==============================================================================
-int DemoHost::run(std::optional<int> width, std::optional<int> height)
+int App::run(std::optional<int> width, std::optional<int> height)
 {
   ensureViewerConfigured();
 
@@ -1273,7 +1267,7 @@ int DemoHost::run(std::optional<int> width, std::optional<int> height)
   mViewer->setWindowTitle("DART demos");
   initializeGuiTheme();
   if (mAutomaticGuiScale)
-    mGuiScale = guiScale(*mViewer);
+    mGuiScale = mViewer->getGuiScale();
   mNextDpiCheck
       = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
 
@@ -1303,31 +1297,28 @@ int DemoHost::run(std::optional<int> width, std::optional<int> height)
 }
 
 //==============================================================================
-void DemoHost::setGuiScale(double scale)
+void App::setGuiScale(double scale)
 {
-  const double sanitized = dart_demos::sanitizeGuiScale(scale);
+  const double sanitized = dart_examples::sanitizeGuiScale(scale);
   if (std::abs(mGuiScale - sanitized) <= 1e-6)
     return;
   mGuiScale = sanitized;
-  dart_demos::setGuiScale(*mViewer, mGuiScale);
+  mViewer->setGuiScale(mGuiScale);
   mDockLayoutResetRequested = true;
-  mMeasuredToolbarHeight = 0.0f;
-  mMeasuredBottomHeight = 0.0f;
 }
 
 //==============================================================================
-void DemoHost::updateAutomaticGuiScale()
+void App::updateAutomaticGuiScale()
 {
-  const double detected = guiScale(*mViewer);
+  const double detected = mViewer->getGuiScale();
   if (std::abs(mGuiScale - detected) > 1e-6) {
     mGuiScale = detected;
     mDockLayoutResetRequested = true;
-    mMeasuredToolbarHeight = mMeasuredBottomHeight = 0.0f;
   }
 }
 
 //==============================================================================
-void DemoHost::invokeKeyAction(KeyAction& action)
+void App::invokeKeyAction(KeyAction& action)
 {
   if (!action.callback)
     return;
@@ -1346,7 +1337,7 @@ void DemoHost::invokeKeyAction(KeyAction& action)
 }
 
 //==============================================================================
-bool DemoHost::handleKey(int key)
+bool App::handleKey(int key)
 {
   for (auto& action : mCurrentKeyActions) {
     if (action.key == key) {
@@ -1375,7 +1366,7 @@ bool DemoHost::handleKey(int key)
 }
 
 //==============================================================================
-void DemoHost::renderPanels()
+void App::renderPanels()
 {
   if (mAutomaticGuiScale)
     updateAutomaticGuiScale();
@@ -1385,16 +1376,15 @@ void DemoHost::renderPanels()
   const float screenH = std::max(1.0f, io.DisplaySize.y);
 
   // The visible title tracks the scene, but the "###" suffix keeps the ImGui
-  // window identity stable so the panel keeps its dock slot (or fixed slot)
+  // window identity stable so the panel keeps its dock slot
   // across scene switches instead of spawning a fresh window per scene.
   const std::string panelTitle
       = (mCurrentSceneTitle.empty() ? std::string("Scene") : mCurrentSceneTitle)
-        + "###DemoScenePanel";
+        + "###ScenePanel";
 
-#ifdef IMGUI_HAS_DOCK
   // Real docking workspace (bundled docking-branch ImGui): a dockspace over
   // the viewport with a transparent central node for the 3D view. The default
-  // layout reproduces the fixed fallback below; every panel can be dragged,
+  // layout supplies the initial workspace; every panel can be dragged,
   // split, and re-tabbed, and View > "Reset layout" restores this
   // arrangement. The layout is rebuilt deterministically on startup so a
   // stale imgui.ini can never hide the chrome.
@@ -1476,62 +1466,10 @@ void DemoHost::renderPanels()
   if (ImGui::Begin("Diagnostics", nullptr, kDockedFlags))
     renderDiagnostics();
   ImGui::End();
-#else
-  // Fixed-layout fallback for system (non-docking) ImGui builds. Region
-  // heights follow the measured content from the previous frame so scaled-up
-  // toolbars and diagnostics stay fully visible instead of clipping at
-  // --gui-scale > 1 (the old fixed 58/156 px budgets assumed scale 1 row
-  // wrapping).
-  const float toolbarH = std::clamp(
-      mMeasuredToolbarHeight > 0.0f ? mMeasuredToolbarHeight : 58.0f * scale,
-      30.0f,
-      screenH * 0.35f);
-  const float bottomH = std::clamp(
-      mMeasuredBottomHeight > 0.0f ? mMeasuredBottomHeight : 156.0f * scale,
-      40.0f,
-      screenH * 0.40f);
-  const float leftW = std::min(260.0f * scale, screenW * 0.30f);
-  const float rightW = std::min(360.0f * scale, screenW * 0.34f);
-  const float middleH = std::max(1.0f, screenH - toolbarH - bottomH);
-
-  constexpr ImGuiWindowFlags kChromeFlags
-      = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
-        | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
-
-  ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(screenW, toolbarH), ImGuiCond_Always);
-  if (ImGui::Begin("Simulation", nullptr, kChromeFlags)) {
-    renderToolbar();
-    mMeasuredToolbarHeight
-        = ImGui::GetCursorPosY() + ImGui::GetStyle().WindowPadding.y;
-  }
-  ImGui::End();
-
-  ImGui::SetNextWindowPos(ImVec2(0.0f, toolbarH), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(leftW, middleH), ImGuiCond_Always);
-  if (ImGui::Begin("Demos", nullptr, kChromeFlags))
-    renderNavigator();
-  ImGui::End();
-
-  ImGui::SetNextWindowPos(ImVec2(screenW - rightW, toolbarH), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(rightW, middleH), ImGuiCond_Always);
-  if (ImGui::Begin(panelTitle.c_str(), nullptr, kChromeFlags))
-    renderScenePanel();
-  ImGui::End();
-
-  ImGui::SetNextWindowPos(ImVec2(0.0f, screenH - bottomH), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(screenW, bottomH), ImGuiCond_Always);
-  if (ImGui::Begin("Diagnostics", nullptr, kChromeFlags)) {
-    renderDiagnostics();
-    mMeasuredBottomHeight
-        = ImGui::GetCursorPosY() + ImGui::GetStyle().WindowPadding.y;
-  }
-  ImGui::End();
-#endif
 }
 
 //==============================================================================
-void DemoHost::renderToolbar()
+void App::renderToolbar()
 {
   const bool hasScene = mWorldNode != nullptr;
   const bool simulating = mViewer->isSimulating();
@@ -1639,7 +1577,7 @@ void DemoHost::renderToolbar()
 }
 
 //==============================================================================
-void DemoHost::renderRuntimeControls()
+void App::renderRuntimeControls()
 {
   const float scale = static_cast<float>(guiLayoutScale(mGuiScale));
 
@@ -1682,7 +1620,7 @@ void DemoHost::renderRuntimeControls()
 }
 
 //==============================================================================
-void DemoHost::renderViewMenu()
+void App::renderViewMenu()
 {
   ImGui::BeginDisabled(!mCurrentWorld);
   if (ImGui::Button("Fit scene"))
@@ -1708,7 +1646,7 @@ void DemoHost::renderViewMenu()
     if (ImGui::Combo(
             "Plane", &planeIndex, kPlaneNames, IM_ARRAYSIZE(kPlaneNames))) {
       mGridVisual->setPlaneType(
-          static_cast<demo_gui::GridVisual::PlaneType>(planeIndex));
+          static_cast<dart::gui::GridVisual::PlaneType>(planeIndex));
     }
 
     float cellSize = static_cast<float>(mGridVisual->getMinorLineStepSize());
@@ -1763,16 +1701,14 @@ void DemoHost::renderViewMenu()
     setGuiScale(guiScale);
   }
 
-#ifdef IMGUI_HAS_DOCK
   ImGui::Separator();
   if (ImGui::Button("Reset layout"))
     mDockLayoutResetRequested = true;
   ImGui::SetItemTooltip("Restore the default docked workspace layout.");
-#endif
 }
 
 //==============================================================================
-void DemoHost::renderNavigator()
+void App::renderNavigator()
 {
   ImGui::TextWrapped("%s", mStatusLine.c_str());
   ImGui::Separator();
@@ -1814,7 +1750,7 @@ void DemoHost::renderNavigator()
     if (ImGui::CollapsingHeader(
             category.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
       for (const auto index : category.sceneIndices) {
-        const DemoScene& scene = mScenes[index];
+        const Scene& scene = mScenes[index];
         if (!matchesFilter(scene, filterLower))
           continue;
 
@@ -1834,7 +1770,7 @@ void DemoHost::renderNavigator()
 }
 
 //==============================================================================
-void DemoHost::renderInspectorSection()
+void App::renderInspectorSection()
 {
   if (ImGui::CollapsingHeader("Scene Tree", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::BeginChild(
@@ -1866,7 +1802,7 @@ void DemoHost::renderInspectorSection()
 }
 
 //==============================================================================
-void DemoHost::renderSceneControlsSection()
+void App::renderSceneControlsSection()
 {
   if (mCurrentRenderPanel) {
     try {
@@ -1901,7 +1837,7 @@ void DemoHost::renderSceneControlsSection()
 }
 
 //==============================================================================
-void DemoHost::renderToolsSection()
+void App::renderToolsSection()
 {
   if (ImGui::CollapsingHeader(
           "Contact Visualizer", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -1919,15 +1855,15 @@ void DemoHost::renderToolsSection()
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
 //==============================================================================
-void DemoHost::renderMemorySection()
+void App::renderMemorySection()
 {
-  dart::examples::demos::renderMemoryDiagnostics(
+  dart::gui::app::renderMemoryDiagnostics(
       mMemoryDiagnosticsSession, ImGui::GetTime(), mGuiScale);
 }
 #endif
 
 //==============================================================================
-void DemoHost::renderScenePanel()
+void App::renderScenePanel()
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   bool memoryTabVisible = false;
@@ -1983,7 +1919,7 @@ void DemoHost::renderScenePanel()
 }
 
 //==============================================================================
-void DemoHost::renderDiagnostics()
+void App::renderDiagnostics()
 {
   std::size_t numDofs = 0;
   const SceneCounts counts = collectSceneCounts(mCurrentWorld);
@@ -2002,7 +1938,7 @@ void DemoHost::renderDiagnostics()
             ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
             : std::size_t{0};
 
-  demo_gui::PerformanceStatsData stats;
+  dart::gui::PerformanceStatsData stats;
   stats.frame = static_cast<int>(mWorldNode ? mWorldNode->getStepCount() : 0u);
   stats.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
   stats.sceneName = mCurrentSceneTitle;
@@ -2053,7 +1989,7 @@ void DemoHost::renderDiagnostics()
 }
 
 //==============================================================================
-void DemoHost::renderLogSection(float height)
+void App::renderLogSection(float height)
 {
   ImGui::Checkbox("Info", &mLogShowInfo);
   sameLineIfEnoughRoom(95.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
@@ -2098,4 +2034,4 @@ void DemoHost::renderLogSection(float height)
   ImGui::EndChild();
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

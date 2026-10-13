@@ -151,9 +151,13 @@ retain their cycles until Python back-references are cleared explicitly. This
 prevents GC from clearing simulation state still used by a live native owner.
 Directly constructed `InverseKinematics` objects also keep an internal native
 reference and require that cleanup; `getOrCreateIK()` owners can prove
-exclusivity when no other native references remain. An IK cycle whose Python
-child also retains its Skeleton has the body's additional IK reference and
-therefore requires explicit back-reference cleanup too.
+exclusivity when no other native references remain. Skeleton-owned whole-body
+IK wrappers also track their retained Skeleton: cycles through the IK wrapper
+collect when the wrapper and that Skeleton are the IK's only native owners,
+and the wrapper is the Skeleton's only native owner. Live Skeleton, body,
+World, or other native aliases keep these cycles conservative. A node IK cycle
+whose Python child also retains its Skeleton has the body's additional IK
+reference and therefore requires explicit back-reference cleanup too.
 A weak-owner registry alone cannot solve this: native `shared_ptr` aliases
 outside binding setters are invisible, and each shared pin owns only one
 Python reference. Reporting it once per owner would miscount GC references;

@@ -28,6 +28,12 @@ the constraint solver resolves contacts and joint constraints; dynamics state is
 integrated; Filament or dartpy presents the result. Keep ownership at these existing
 boundaries instead of adding task-local bypasses.
 
+The private `dart/gui/app/` host (`dart-gui-app`) owns the demo window,
+docking workspace, scene lifecycle, and command-line dispatch. It links
+`dart-gui` and the GUI-free `dart-demo-models`; it is never installed or exported.
+The C++ demo catalog uses compatibility shims in `examples/demos/`. A vanilla
+system ImGui compiles out this host while retaining `dart-gui` and dartpy.
+
 ## Compatibility Boundaries
 
 - Public headers and exported CMake components are release API. Moving an
