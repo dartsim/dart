@@ -7,7 +7,7 @@ if(urdfdom_FOUND)
 else()
   message(
     WARNING
-    "Looking for urdfdom >= 3.0.1 - NOT found, to use dart-utils-urdf, please install liburdfdom-dev"
+    "Looking for urdfdom >= 3.0.0 - NOT found, to use dart-utils-urdf, please install liburdfdom-dev"
   )
   return()
 endif()

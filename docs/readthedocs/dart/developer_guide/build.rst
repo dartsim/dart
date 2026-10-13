@@ -112,7 +112,7 @@ Optional components remain optional.
      - 9.0.0
      - XML parsers
    * - urdfdom
-     - 3.0.1
+     - 3.0.0
      - URDF parser
    * - spdlog
      - 1.9.2

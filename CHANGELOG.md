@@ -39,6 +39,12 @@
     other.
     [#3698](https://github.com/dartsim/dart/pull/3698)
 
+  * Restore `dart-utils-urdf` builds with urdfdom 3.x installations that ship
+    no CMake version file, such as Ubuntu 22.04 and FreeBSD packages. The
+    minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
+    3.0.0.
+    [#3733](https://github.com/dartsim/dart/pull/3733)
+
 * Python
 
   * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,
