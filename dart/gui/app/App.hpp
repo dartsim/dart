@@ -288,6 +288,8 @@ public:
   bool handleKey(int key);
 
 private:
+  friend class AppTestAccess;
+
   enum class ScenePanelTab
   {
     Scene,
@@ -356,6 +358,7 @@ private:
   /// Tears the active scene down and returns kStoppedExitCode.
   int stopRun();
   void ensureViewerConfigured();
+  void startSimulation();
   void initializeGuiTheme();
   void setGuiScale(double scale);
   void updateAutomaticGuiScale();

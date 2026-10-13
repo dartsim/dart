@@ -329,8 +329,23 @@ def test_run_rejects_a_nested_run():
 
 def test_scene_context_expires_after_teardown():
     contexts = []
-    assert cycle([make_scene(on_activate=contexts.append)]) == 0
+    captures = []
+
+    class Capture:
+        pass
+
+    def on_activate(ctx):
+        contexts.append(ctx)
+        capture = Capture()
+        captures.append(weakref.ref(capture))
+        ctx.add_teardown(lambda capture=capture: None)
+        ctx.add_event_handler(lambda event, capture=capture: False)
+
+    assert cycle([make_scene(on_activate=on_activate)]) == 0
     assert len(contexts) == 2
+    gc.collect()
+    # Saved contexts no longer keep their scenes' callbacks or captures alive.
+    assert [ref() for ref in captures] == [None, None]
     for context in contexts:
         with pytest.raises(RuntimeError):
             context.viewer
@@ -358,6 +373,46 @@ def test_scene_context_event_handlers_and_drag_and_drop(capfd):
     assert keys == [ord("k"), ord("k")]
     errors = capfd.readouterr().err
     assert "event handler failed" in errors and "handler failure" in errors
+
+
+@pytest.mark.parametrize(
+    "frame_type", [dart.dynamics.SimpleFrame, dart.gui.InteractiveFrame]
+)
+def test_scene_context_retains_drag_targets_until_teardown(frame_type):
+    contexts = []
+    refs = []
+    calls = []
+
+    def check_alive(hook):
+        gc.collect()
+        frame_ref, drag_ref = refs[-1]
+        assert frame_ref() is not None
+        assert drag_ref() is not None
+        assert drag_ref().getEntity() is frame_ref()
+        retained = gc.get_referents(contexts[-1])
+        assert any(obj is frame_ref() for obj in retained)
+        assert any(obj is drag_ref() for obj in retained)
+        calls.append(hook)
+
+    def on_activate(ctx):
+        # The previous scene releases its objects even if its context escapes.
+        assert all(ref() is None for pair in refs for ref in pair)
+        frame = frame_type(dart.dynamics.Frame.World(), "target")
+        drag = ctx.enable_drag_and_drop(frame)
+        refs.append((weakref.ref(frame), weakref.ref(drag)))
+        contexts.append(ctx)
+        ctx.add_teardown(lambda: check_alive("teardown"))
+
+    scene = make_scene(
+        on_activate=on_activate,
+        pre_refresh=lambda: check_alive("refresh"),
+        pre_step=lambda: check_alive("step"),
+    )
+    assert cycle([scene]) == 0
+    assert calls == ["refresh", "step", "refresh", "step", "teardown"] * 2
+    gc.collect()
+    assert len(contexts) == len(refs) == 2
+    assert all(ref() is None for pair in refs for ref in pair)
 
 
 def test_edit_drives_panel_callbacks_like_a_user():

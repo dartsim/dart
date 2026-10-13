@@ -231,17 +231,21 @@ struct PySceneContext
 {
   app::SceneContext native;
   std::vector<std::shared_ptr<Slot>> slots;
+  std::vector<nb::object> retained;
 
   int traverse(visitproc visit, void* arg) const
   {
     for (const auto& slot : slots)
       if (const int result = visitSlot(slot, visit, arg))
         return result;
+    for (const auto& object : retained)
+      Py_VISIT(object.ptr());
     return 0;
   }
   void clear()
   {
     slots.clear();
+    retained.clear();
   }
 };
 
@@ -313,6 +317,10 @@ void releaseScene()
   dartnb::GilScopedAcquire gil;
   if (const auto session = currentSession()) {
     session->activeSetup = nb::object();
+    // A context saved past teardown must not keep the scene's callables and
+    // what they capture alive; every one of them has run by now.
+    if (session->activeContext)
+      nb::cast<PySceneContext&>(session->activeContext).clear();
     session->activeContext = nb::object();
   }
 }
@@ -327,7 +335,7 @@ void activateScene(const std::shared_ptr<Slot>& held, app::SceneContext& ctx)
   // Registered first, so it runs after every other teardown of this scene.
   ctx.addTeardown(&releaseScene);
   session->activeSetup = held->fn;
-  session->activeContext = nb::cast(PySceneContext{ctx, {}});
+  session->activeContext = nb::cast(PySceneContext{ctx, {}, {}});
 
   const auto& setup = nb::cast<const PySceneSetup&>(session->activeSetup);
   if (!setup.panel.is_none())
@@ -823,7 +831,6 @@ void dart_viewer(nb::module_& m)
              bool useWholeBody) {
             auto* viewer = ctx.native.viewer();
             const nb::object pyViewer = nb::cast(ctx.native.viewerPtr());
-            // The interim dartpy.gui binding keeps the dragged objects alive.
             const nb::object drag
                 = nb::isinstance<dart::dynamics::BodyNode>(target)
                       ? pyViewer.attr("enableDragAndDrop")(
@@ -843,6 +850,8 @@ void dart_viewer(nb::module_& m)
               disable();
               throw;
             }
+            ctx.retained.push_back(nb::borrow(target));
+            ctx.retained.push_back(drag);
             return drag;
           },
           nb::arg("target"),

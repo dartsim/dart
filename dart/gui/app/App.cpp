@@ -1531,7 +1531,7 @@ int App::run(std::optional<int> width, std::optional<int> height)
     processPendingSwitch();
   }
 
-  mViewer->simulate(true);
+  startSimulation();
 
   while (!mViewer->done()) {
     if (stopRequested())
@@ -1549,6 +1549,15 @@ int App::run(std::optional<int> width, std::optional<int> height)
   }
 
   return 0;
+}
+
+//==============================================================================
+void App::startSimulation()
+{
+  // Preserve the interactive start request while the scene disallows Play.
+  if (mRestoreSimulationOnTeardown)
+    mResumeSimulationOnTeardown = true;
+  mViewer->simulate(true);
 }
 
 //==============================================================================
@@ -1747,8 +1756,10 @@ void App::renderToolbar()
 
   sameLineIfEnoughRoom(calcButtonWidth(simulating ? "Pause" : "Play"));
   ImGui::BeginDisabled(!hasScene);
+  ImGui::BeginDisabled(!mViewer->isAllowingSimulation());
   if (ImGui::Button(simulating ? "Pause" : "Play"))
     mViewer->simulate(!simulating);
+  ImGui::EndDisabled();
   sameLineIfEnoughRoom(calcButtonWidth("Step"));
   if (ImGui::Button("Step") && mWorldNode)
     mWorldNode->stepOnce();
