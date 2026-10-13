@@ -256,12 +256,14 @@ Release rules:
   work that misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
-  example runner's remaining scenes (the C++ `dart-demos` app stays until the
-  Python catalog reaches parity, D31b), and the scheduled lane against the
+  example runner's remaining parity gates (the C++ `dart-demos` app stays only
+  until WP-PD.18 removes it, D31b), and the scheduled lane against the
   gz-physics development branch.
 - While 7.0 waits for M6b and the remaining rendering gates, only fixes and
   M6b land on the release path. M6b includes the D31b demo host, the Python
   demo catalog that runs on it, and the core bindings its scenes need.
+  `pixi run demos`, `pixi run cycle-demos` and `pixi run capture` launch the
+  Python catalog (`python -m examples.demos`) against the built dartpy.
 - Release candidates publish `7.0.0rcN` to PyPI. The C++ version stays numeric;
   `DARTPY_VERSION_SUFFIX` carries the candidate tag.
 - The final release needs release-candidate feedback, the codemod run on at

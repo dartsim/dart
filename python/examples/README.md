@@ -11,19 +11,19 @@ not.
 dartpy ports of the former single-purpose scripts (rigid cubes/chains/loops,
 drag-and-drop, biped stand, operational-space control, Atlas puppet, ssik IK,
 and fixed-base Atlas v5 and Unitree G1 inspection) as selectable scenes.
-`dartpy.viewer.run()` runs the catalog on the same native app host as
-`dart-demos`, with a categorized navigator, simulation toolbar, dockable
-scene panels, and diagnostics. Python supplies worlds and callbacks; the
+`dartpy.viewer.run()` runs the catalog on the native app host, with a
+categorized navigator, simulation toolbar, dockable scene panels, and
+diagnostics. Python supplies worlds and callbacks; the
 native host draws the UI and renders the worlds with Filament.
 
 Run it:
 
-    $ pixi run py-demos
+    $ pixi run demos
 
 or manually, with dartpy (`pixi run build-py-dev` builds it):
 
     $ cd python
-    $ PYTHONPATH=../build/default/cpp/Release/python/dartpy python -m examples.demos
+    $ PYTHONPATH=../build/default/cpp/Release/python/dartpy pixi run python -m examples.demos
 
 Useful flags (`python -m examples.demos --help` for the full list):
 
@@ -46,7 +46,7 @@ are reported as skipped scenes and do not fail a scene cycle.
 The `ssik_ik_gui` scene browses 19 arms, edits or drags a target pose, and
 shows analytical IK solutions with optional translucent ghosts. Install its
 optional solver with `pixi run install-ssik`, then run
-`pixi run py-demos --scene ssik_ik_gui`. Missing `ssik` is reported as a skipped
+`pixi run demos -- --scene ssik_ik_gui`. Missing `ssik` is reported as a skipped
 scene. Its headless solver checks live in
 `python/tests/integration/test_demo_ssik.py`.
 
@@ -67,7 +67,7 @@ includes IO and `dartpy.gui`. `pixi run test` and `test-py` keep the GUI enabled
 and skip device-dependent rendering tests:
 
     $ pixi run py-ex hello_world
-    $ pixi run py-demos --scene ssik_ik_gui
+    $ pixi run demos -- --scene ssik_ik_gui
 
 or directly:
 

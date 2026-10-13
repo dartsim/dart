@@ -142,7 +142,7 @@ WP-PD.18.
 | WP-PD.14 | Port scene batch S5 | 6, 7 | Codex | Planned |
 | WP-PD.15 | Port scene batch S6a | 6, 7, 9 | Codex | Planned |
 | WP-PD.16 | Port scene batch S6b | 6, 7, 9 | Codex | Planned |
-| WP-PD.17 | Launch the Python catalog from the demo tasks | 10–16 | Codex | Planned |
+| WP-PD.17 | Launch the Python catalog from the demo tasks | 10–16 | Codex | Local, verified |
 | WP-PD.18 | Remove the C++ demo application | 17 | Codex | Planned |
 
 Packet scope:
@@ -448,10 +448,12 @@ These land in M6b's consolidation PR, following the program's hot-file rule.
 
 ## Current milestone
 
-WP-PD.0 (this folder and D31b) is in progress.
+This checkout includes the host, bindings and all Python scene ports through
+WP-PD.16. WP-PD.17 switches the Pixi launch tasks to that catalog; its requested
+checks and two local reviews passed (see [verification](verification.md)).
 
-Next action: land WP-PD.0. Then run WP-PD.1 in the main checkout while
-WP-PD.2 runs in parallel in a Codex worktree.
+Next action: remove the C++ app in WP-PD.18. The C++ app and its CTests remain
+available in this packet. WP-PD.17 is uncommitted as requested.
 
 Blockers: none. Every push and every PR waits for explicit maintainer
 approval.
