@@ -32,7 +32,7 @@ def _cmake_args_env(cmake_args: list[str]) -> str:
 
 
 def main(argv: list[str]) -> int:
-    use_system_imgui = argv[1].upper() if len(argv) > 1 else "ON"
+    use_system_imgui = argv[1].upper() if len(argv) > 1 else "OFF"
     if use_system_imgui not in {"ON", "OFF"}:
         print(
             f"Invalid use_system_imgui value '{use_system_imgui}'. Expected ON/OFF.",

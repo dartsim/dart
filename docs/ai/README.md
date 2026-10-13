@@ -1,9 +1,9 @@
 # DART AI Workflows
 
 This directory contains the DART AI operating model used by Codex,
-Claude Code, and OpenCode. It focuses on the workflows needed to develop the
-Python-first DART 7 line on `main` while keeping the Gazebo-facing C++ surface
-compatible.
+Claude Code, Muse, and OpenCode. It focuses on the workflows
+needed to develop the Python-first DART 7 line on `main` while keeping
+the Gazebo-facing C++ surface compatible.
 
 ## Visibility And Context Budget
 
@@ -43,9 +43,10 @@ Start with:
 ## Architecture And Setup
 
 Editable workflow and domain-skill sources live in `.claude/`. The sync tool
-generates current Codex skills under `.agents/skills/` and OpenCode commands
-under `.opencode/command/`. `.codex/` owns maintained Codex config, bounded
-read-only subagents, and the advisory PreToolUse hook. The installed git hooks are
+generates current Codex and Muse skills under `.agents/skills/` and
+OpenCode commands under `.opencode/command/`. `.codex/` owns maintained
+Codex config, bounded read-only subagents, and the advisory PreToolUse
+hook. The installed git hooks are
 the cross-tool commit safety path.
 
 ```bash
@@ -87,8 +88,8 @@ For documentation placement, use
 [`docs/information-architecture.md`](../information-architecture.md).
 For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
 
-Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in
-Claude/OpenCode when DART work should run as an autonomous
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in Claude, Muse
+Code, and OpenCode when DART work should run as an autonomous
 project from either a provided brief or one up-front decision interview. The
 workflow keeps `docs/dev_tasks/<task>/` as the project home and records
 acceptance criteria, risks, decisions, verification, progress, and handoff
@@ -100,7 +101,8 @@ handling.
 ## Updating Models And Coding Agents
 
 Use `$dart-model-upgrade` in Codex or `/dart-model-upgrade` in
-Claude/OpenCode when a request names a model, reasoning mode, coding-agent
+Claude, Muse, and OpenCode when a request names a model,
+reasoning mode, coding-agent
 release, migration, or compatibility audit. It captures the existing release
 harness as a control, refreshes primary guidance, isolates model, effort,
 prompt, configuration, and optional-agent changes, and records
@@ -143,6 +145,15 @@ bounded entry per validated lane:
   not try to select one.) If the refused task is legitimate DART work,
   restate it with its physics/simulation context made explicit, and surface
   it to a maintainer if it still refuses.
+- **Muse — Muse models.** Reads the root `AGENTS.md` and the
+  generated `.agents/skills/` natively; invoke DART workflows by their
+  `/dart-*` slash shortcut. The project pins no model or effort: reasoning effort is a
+  session-level setting (`--reasoning-effort`, default `high`), so reserve
+  `max`/`ultra` for one hard task. Validated on Muse 1.4.6
+  (`muse-wonder-full-1.0`) for rules and skill discovery; the
+  representative `dart-verify-sim` Filament investigation for this lane is
+  still outstanding, so treat its visual-debug claims as unproven until
+  that evidence exists.
 
 Treat these entries as replaceable versioned guidance, not a permanent model
 taxonomy.

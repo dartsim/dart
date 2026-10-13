@@ -1543,12 +1543,13 @@ description: {json.dumps(skill_description)}
 
 Use this skill to run the DART `{command_name}` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/{command_name} <arguments>`
 - Codex: `${command_name} <arguments>`
+- Muse: `/{command_name} <arguments>`
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

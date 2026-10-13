@@ -576,7 +576,7 @@ before/after matrix separately.
 ## Interactive Memory Inspection
 
 Memory inspection is compiled out of `dart-demos` by default. After
-`pixi run config-demos`, opt in by reconfiguring the same build with
+`pixi run config`, opt in by reconfiguring the same build with
 `-DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. The default-OFF build excludes the
 diagnostics sources, link dependencies, host state, environment probe, Memory
 tab, and frame-path calls; its post-link check rejects any diagnostics marker in

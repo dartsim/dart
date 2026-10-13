@@ -417,7 +417,6 @@ def repository_relative_path(root: Path, value: Any) -> Path | None:
 
 def required_paths(root: Path) -> list[Path]:
     paths = [
-        root / ".agents" / "AGENTS.md",
         root / ".agents" / "skills" / ".dart-generated.json",
         root / ".codex" / "AGENTS.md",
         root / ".codex" / "config.toml",
@@ -2998,7 +2997,7 @@ def check_cmake_ctest_inventory(
     trace_records: list[dict[str, Any]],
     errors: list[str],
 ) -> None:
-    """Require executing CTest registrations for C++ targets and version checks."""
+    """Require executing CTest registrations for C++ targets and package checks."""
     prefix = "CMake semantic test graph"
     try:
         result = subprocess.run(
@@ -3099,6 +3098,27 @@ def check_cmake_ctest_inventory(
     except OSError as error:
         errors.append(f"{prefix}: unable to inspect CMake script test inputs: {error}")
 
+    script_arguments = {version_test: version_arguments}
+    if cache.get("HAVE_ODE", "").upper() in ("1", "ON", "TRUE", "YES"):
+        ode_test = "test_DARTConfigODE"
+        ode_source = root / "tests/cmake/test_DARTConfigODE.cmake"
+        if ode_test not in generated_names:
+            errors.append(
+                f"{prefix}: required CMake script test `{ode_test}` is missing"
+            )
+        if not ode_source.is_file():
+            errors.append(
+                f"{prefix}: required CMake script test `{ode_test}` source is missing"
+            )
+        script_arguments[ode_test] = (
+            f"-DDART_BINARY_DIR={build_dir.as_posix()}",
+            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/DARTConfigODE",
+            f"-DTEST_CONFIG={configuration}",
+            f"-DTEST_PREFIX_PATH={cache.get('CMAKE_PREFIX_PATH', '')}",
+            "-P",
+            ode_source.as_posix(),
+        )
+
     registered_tests: dict[str, tuple[list[str], Path]] = {}
     approved_probes: set[str] = set()
     for test in tests:
@@ -3152,8 +3172,8 @@ def check_cmake_ctest_inventory(
         )
         expected_arguments = tuple(selection_policy["arguments"])
         app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
-        if name == version_test:
-            expected_arguments = version_arguments
+        if name in script_arguments:
+            expected_arguments = script_arguments[name]
             trusted_cmake = shutil.which("cmake")
             if trusted_cmake is None or not all(
                 cmake_paths_match(candidate[0], Path(trusted_cmake))
@@ -3236,7 +3256,7 @@ def check_cmake_ctest_inventory(
         selected = (
             bool(expected_arguments or expected_environment)
             and app_arguments is None
-            and name != version_test
+            and name not in script_arguments
             and not is_probe
         )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
@@ -3279,7 +3299,7 @@ def check_cmake_ctest_inventory(
         return test_name == target_name and command[0] == target_name
 
     matched_registrations: set[str] = (
-        {version_test} & set(registered_tests)
+        set(script_arguments) & set(registered_tests)
     ) | approved_probes
     unregistered = []
     for name, artifacts in target_artifacts.items():
@@ -4133,10 +4153,7 @@ def tracked_agent_files(root: Path) -> list[Path]:
                 for part in path.relative_to(root).parts
             )
         ]
-    for runtime_path in (
-        root / ".agents" / "AGENTS.md",
-        root / ".codex" / "AGENTS.md",
-    ):
+    for runtime_path in (root / ".codex" / "AGENTS.md",):
         if runtime_path.is_file() and runtime_path not in paths:
             paths.append(runtime_path)
     return paths
@@ -4429,7 +4446,6 @@ def release_reference_paths(root: Path) -> list[Path]:
     paths.update(
         root / relative
         for relative in (
-            "CLAUDE.md",
             "GEMINI.md",
             ".github/PULL_REQUEST_TEMPLATE.md",
             "docs/readthedocs/index.rst",
@@ -4621,9 +4637,21 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
             )
     if (root / ".codex" / "skills").exists():
         errors.append("legacy generated directory `.codex/skills/` must be absent")
+    for shadowed in (
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        ".agents/AGENTS.md",
+        ".claude/CLAUDE.md",
+    ):
+        if (root / shadowed).exists():
+            errors.append(
+                f"shadowed rules file `{shadowed}` must be absent; "
+                "keep shared guidance in `AGENTS.md`"
+            )
 
     agents = (root / "AGENTS.md").read_text(encoding="utf-8")
     for marker in (
+        "@docs/ai/principles.md",
         "## Quick Commands",
         "## Task-specific Context",
         "docs/onboarding/architecture.md",
@@ -5915,6 +5943,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
             "pixi": version("pixi"),
             "codex": version("codex"),
             "claude": version("claude"),
+            "muse": version("muse"),
             "opencode": version("opencode"),
         },
         "inventory": {
