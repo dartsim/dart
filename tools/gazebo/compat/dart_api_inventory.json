@@ -4597,7 +4597,7 @@
           ],
           "name": "addSkeleton",
           "receiver_types": [
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 0
         },
@@ -4685,8 +4685,7 @@
           ],
           "name": "clearExternalForces",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -4714,8 +4713,7 @@
           ],
           "name": "clearInternalForces",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -4893,8 +4891,7 @@
           ],
           "name": "createJointAndBodyNodePair",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -5306,9 +5303,7 @@
           ],
           "name": "getBodyNode",
           "receiver_types": [
-            "dart::dynamics::ConstSkeletonPtr",
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -5408,8 +5403,7 @@
           ],
           "name": "getBodyNodes",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -5432,10 +5426,9 @@
           ],
           "name": "getBoundingBox",
           "receiver_types": [
-            "dart::dynamics::ConstShapePtr",
             "dart::dynamics::HeightmapShape",
             "dart::dynamics::MeshShape",
-            "dart::dynamics::ShapePtr"
+            "dart::dynamics::Shape"
           ],
           "unresolved_count": 0
         },
@@ -5688,7 +5681,7 @@
           ],
           "name": "getConfiguration",
           "receiver_types": [
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6172,7 +6165,7 @@
           ],
           "name": "getJoint",
           "receiver_types": [
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6243,8 +6236,7 @@
           ],
           "name": "getJoints",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6471,11 +6463,10 @@
           "receiver_types": [
             "dart::dynamics::BodyNode",
             "dart::dynamics::BodyNodePtr",
-            "dart::dynamics::ConstSkeletonPtr",
             "dart::dynamics::Joint",
             "dart::dynamics::JointPtr",
             "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr",
+            "dart::simulation::World",
             "dart::simulation::WorldPtr"
           ],
           "unresolved_count": 4
@@ -6528,9 +6519,7 @@
           ],
           "name": "getNumBodyNodes",
           "receiver_types": [
-            "dart::dynamics::ConstSkeletonPtr",
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6589,7 +6578,7 @@
           "name": "getNumDofs",
           "receiver_types": [
             "dart::dynamics::JointPtr",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6618,8 +6607,7 @@
           ],
           "name": "getNumJoints",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6657,7 +6645,7 @@
           "receiver_types": [
             "dart::dynamics::BodyNode",
             "dart::dynamics::BodyNodePtr",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6680,7 +6668,7 @@
           ],
           "name": "getNumSkeletons",
           "receiver_types": [
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 1
         },
@@ -6703,9 +6691,7 @@
           ],
           "name": "getNumTrees",
           "receiver_types": [
-            "dart::dynamics::ConstSkeletonPtr",
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -6970,8 +6956,7 @@
           ],
           "name": "getPositions",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -7171,8 +7156,7 @@
           ],
           "name": "getRootBodyNode",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -7200,7 +7184,7 @@
           ],
           "name": "getRootJoint",
           "receiver_types": [
-            "dart::dynamics::ConstSkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -7369,9 +7353,7 @@
           "receiver_types": [
             "dart::dynamics::BodyNode",
             "dart::dynamics::BodyNodePtr",
-            "dart::dynamics::ConstSkeletonPtr",
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -7538,6 +7520,7 @@
             "dart::dynamics::BodyNodePtr",
             "dart::dynamics::ConstBodyNodePtr",
             "dart::dynamics::JointPtr",
+            "dart::simulation::World",
             "dart::simulation::WorldPtr"
           ],
           "unresolved_count": 6
@@ -8007,9 +7990,8 @@
           ],
           "name": "getType",
           "receiver_types": [
-            "dart::collision::CollisionDetectorPtr",
-            "dart::collision::ConstCollisionDetectorPtr",
-            "dart::constraint::ConstBoxedLcpSolverPtr",
+            "dart::collision::CollisionDetector",
+            "dart::constraint::BoxedLcpSolver",
             "dart::dynamics::Joint",
             "dart::dynamics::JointPtr"
           ],
@@ -8140,7 +8122,7 @@
             "dart::dynamics::BodyNode",
             "dart::dynamics::BodyNodePtr",
             "dart::dynamics::Frame",
-            "dart::dynamics::SimpleFramePtr"
+            "dart::dynamics::SimpleFrame"
           ],
           "unresolved_count": 0
         },
@@ -8240,8 +8222,7 @@
           ],
           "name": "isMobile",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -8411,8 +8392,7 @@
           ],
           "name": "raycast",
           "receiver_types": [
-            "dart::collision::CollisionDetectorPtr",
-            "dart::collision::ConstCollisionDetectorPtr"
+            "dart::collision::CollisionDetector"
           ],
           "unresolved_count": 0
         },
@@ -8531,7 +8511,7 @@
           ],
           "name": "reset",
           "receiver_types": [
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 0
         },
@@ -8553,8 +8533,7 @@
           ],
           "name": "resetAccelerations",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -8575,8 +8554,7 @@
           ],
           "name": "resetPositions",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -8598,8 +8576,7 @@
           ],
           "name": "resetVelocities",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -8852,7 +8829,7 @@
           ],
           "name": "setConstraintForceMixing",
           "receiver_types": [
-            "dart::constraint::ContactConstraintPtr"
+            "dart::constraint::ContactConstraint"
           ],
           "unresolved_count": 0
         },
@@ -8917,7 +8894,7 @@
           ],
           "name": "setErrorAllowance",
           "receiver_types": [
-            "dart::constraint::ContactConstraintPtr"
+            "dart::constraint::ContactConstraint"
           ],
           "unresolved_count": 0
         },
@@ -8938,7 +8915,7 @@
           ],
           "name": "setErrorReductionParameter",
           "receiver_types": [
-            "dart::constraint::ContactConstraintPtr"
+            "dart::constraint::ContactConstraint"
           ],
           "unresolved_count": 0
         },
@@ -9050,7 +9027,7 @@
           ],
           "name": "setForces",
           "receiver_types": [
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -9117,7 +9094,7 @@
           ],
           "name": "setGravity",
           "receiver_types": [
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 1
         },
@@ -9318,7 +9295,7 @@
           ],
           "name": "setMaxErrorReductionVelocity",
           "receiver_types": [
-            "dart::constraint::ContactConstraintPtr"
+            "dart::constraint::ContactConstraint"
           ],
           "unresolved_count": 0
         },
@@ -9340,8 +9317,7 @@
           ],
           "name": "setMobile",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -9451,7 +9427,7 @@
           "receiver_types": [
             "dart::dynamics::BodyNode",
             "dart::dynamics::Joint",
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 0
         },
@@ -9491,7 +9467,7 @@
           ],
           "name": "setParentFrame",
           "receiver_types": [
-            "dart::dynamics::SimpleFramePtr"
+            "dart::dynamics::SimpleFrame"
           ],
           "unresolved_count": 0
         },
@@ -9625,8 +9601,7 @@
           ],
           "name": "setPositions",
           "receiver_types": [
-            "dart::dynamics::Skeleton",
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -9856,7 +9831,7 @@
           ],
           "name": "setSelfCollisionCheck",
           "receiver_types": [
-            "dart::dynamics::SkeletonPtr"
+            "dart::dynamics::Skeleton"
           ],
           "unresolved_count": 0
         },
@@ -9962,7 +9937,7 @@
           ],
           "name": "setTimeStep",
           "receiver_types": [
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 1
         },
@@ -10014,7 +9989,7 @@
           "name": "setTransform",
           "receiver_types": [
             "dart::dynamics::FreeJoint",
-            "dart::dynamics::SimpleFramePtr"
+            "dart::dynamics::SimpleFrame"
           ],
           "unresolved_count": 0
         },
@@ -10146,7 +10121,7 @@
           ],
           "name": "step",
           "receiver_types": [
-            "dart::simulation::WorldPtr"
+            "dart::simulation::World"
           ],
           "unresolved_count": 1
         },

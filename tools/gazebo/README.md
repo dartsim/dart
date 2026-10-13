@@ -276,7 +276,9 @@ initializer dependencies. Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
 named bit-field widths are retained in `exception_specification_declarations`
-and `bit_width_declarations`. This records lexical evidence without computing C++
+and `bit_width_declarations`. Named array extents in fields and parameters are
+retained in `array_bound_declarations`, including initializer dependencies.
+This records lexical evidence without computing C++
 layout or evaluating constant expressions.
 The lexical inventory retains declaration candidates for unresolved receivers
 (`unresolved_count`) and overloads, so a member name on a non-DART object can
@@ -290,10 +292,14 @@ Chained source helper calls use return declarations from the receiver's class
 and its bases; sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
-Standard forwarding calls and `std::optional` accessors retain contained
-receiver shapes through value, pointer and array expressions.
+Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
+contained receiver shapes through value, pointer and array expressions. Returned
+standard smart pointers preserve their wrapper types through `get()` and `lock()`
+chains.
 Source class aliases retain DART bases, and member lookup respects source declarations and
-class using-declarations. Lambda parameters stay within their lambda body.
+class using-declarations. Lambda parameters and initialized captures stay within
+their lambda body; capture initializers use the enclosing scope.
+Automatic declarations, including `decltype(auto)`, retain inferred return types.
 Range-for variables retain the range's element types within the loop body.
 Control-statement declarations stay within the complete statement, including
 `else` branches, and grouping parentheses preserve receiver types. Conditional

@@ -5672,3 +5672,974 @@ template<class T> void use(dart::A* known, Factory<T>& factory) { auto it = know
     ).get("hit")
     assert hit is None or hit["receiver_types"] == []
     assert hit is None or hit["count"] == hit["unresolved_count"]
+
+
+@pytest.mark.parametrize(
+    ("case", "header", "changed", "source", "changes_inventory"),
+    [
+        (
+            "std::as_const",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            " void use(dart::Factory& f) { auto value=f.make(); std::as_const(value).hit(); }",
+            True,
+        ),
+        (
+            "::std::as_const",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            " void use(dart::Factory& f) { auto value=f.make(); ::std::as_const(value).hit(); }",
+            True,
+        ),
+        (
+            "utility::as_const",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace utility = std; void use(dart::Factory& f) { auto value=f.make(); utility::as_const(value).hit(); }",
+            True,
+        ),
+        (
+            "as_const",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "using std::as_const; void use(dart::Factory& f) { auto value=f.make(); as_const(value).hit(); }",
+            True,
+        ),
+        (
+            "decltype(auto)f.make()",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) value=f.make(); value.hit(); }",
+            True,
+        ),
+        (
+            "decltype(auto)f.ref()",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) value=f.ref(); value.hit(); }",
+            True,
+        ),
+        (
+            "decltype(auto)f.pointer()",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) value=f.pointer(); value->hit(); }",
+            True,
+        ),
+        (
+            "decltype(auto)std::move(f.make())",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) value=std::move(f.make()); value.hit(); }",
+            True,
+        ),
+        (
+            "int values[kSize];",
+            "namespace dart { constexpr int kSize=2; constexpr int kOther=kSize+1; struct A { int values[kSize]; }; }",
+            "namespace dart { constexpr int kSize=3; constexpr int kOther=kSize+1; struct A { int values[kSize]; }; }",
+            "static_assert(sizeof(dart::A::values)==sizeof(int)*2); void use(dart::A& a) { (void)a.values; }",
+            True,
+        ),
+        (
+            "int values[kSize][kOther];",
+            "namespace dart { constexpr int kSize=2; constexpr int kOther=kSize+1; struct A { int values[kSize][kOther]; }; }",
+            "namespace dart { constexpr int kSize=3; constexpr int kOther=kSize+1; struct A { int values[kSize][kOther]; }; }",
+            "static_assert(sizeof(dart::A::values)==sizeof(int)*6); void use(dart::A& a) { (void)a.values; }",
+            True,
+        ),
+        (
+            "int first[2], values[kSize];",
+            "namespace dart { constexpr int kSize=2; constexpr int kOther=kSize+1; struct A { int first[2], values[kSize]; }; }",
+            "namespace dart { constexpr int kSize=3; constexpr int kOther=kSize+1; struct A { int first[2], values[kSize]; }; }",
+            "static_assert(sizeof(dart::A::values)==sizeof(int)*2); void use(dart::A& a) { (void)a.values; }",
+            True,
+        ),
+        (
+            "static int values[kSize];",
+            "namespace dart { constexpr int kSize=2; constexpr int kOther=kSize+1; struct A { static int values[kSize]; }; }",
+            "namespace dart { constexpr int kSize=3; constexpr int kOther=kSize+1; struct A { static int values[kSize]; }; }",
+            "static_assert(sizeof(dart::A::values)==sizeof(int)*2); void use(dart::A& a) { (void)a.values; }",
+            True,
+        ),
+        (
+            "void hit(int (&values)[kSize]);",
+            "namespace dart { constexpr int kSize=2; constexpr int kOther=kSize+1; struct A { void hit(int (&values)[kSize]); }; }",
+            "namespace dart { constexpr int kSize=3; constexpr int kOther=kSize+1; struct A { void hit(int (&values)[kSize]); }; }",
+            "void use(dart::A& a) { int values[2]{}; a.hit(values); }",
+            True,
+        ),
+        (
+            "namespace array",
+            "namespace dart { constexpr int kSize=2; int values[kSize]; }",
+            "namespace dart { constexpr int kSize=3; int values[kSize]; }",
+            "static_assert(sizeof(dart::values)==sizeof(int)*2); void use() { (void)dart::values; }",
+            True,
+        ),
+        (
+            "as_const foreign",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "struct Foreign { void hit() const; }; void use(dart::A* known, Foreign& value) { std::as_const(value).hit(); }",
+            False,
+        ),
+        (
+            "decltype shadow",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "struct Foreign { void hit(); }; Foreign foreign(); void use(dart::A* known) { { decltype(auto) known=foreign(); known.hit(); } }",
+            False,
+        ),
+        (
+            "attribute control",
+            "namespace dart { constexpr int maybe_unused=2; struct A { [[maybe_unused]] int values[2]; }; }",
+            "namespace dart { constexpr int maybe_unused=3; struct A { [[maybe_unused]] int values[2]; }; }",
+            "void use(dart::A& a) { (void)a.values; }",
+            False,
+        ),
+        (
+            "unused array control",
+            "namespace dart { constexpr int kSize=2; struct A { int used; int ignored[kSize]; }; }",
+            "namespace dart { constexpr int kSize=3; struct A { int used; int ignored[kSize]; }; }",
+            "void use(dart::A& a) { (void)a.used; }",
+            False,
+        ),
+    ],
+)
+def test_cpp17_receiver_and_array_extent_mutations(
+    extractor, tmp_path, case, header, changed, source, changes_inventory
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, changed, source)
+    assert (after != before) == changes_inventory, case
+
+
+@pytest.mark.parametrize(
+    ("case", "header", "changed", "source", "changes_inventory"),
+    [
+        (
+            "decltype parens",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) value(f.make()); value.hit(); }",
+            True,
+        ),
+        (
+            "decltype braces",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) value{f.make()}; value.hit(); }",
+            True,
+        ),
+        (
+            "decltype grouped",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { decltype(auto) first=f.make(), second=f.make(); first.hit(); second.hit(); }",
+            True,
+        ),
+        (
+            "decltype if",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f, bool flag) { if (decltype(auto) value=f.make(); flag) value.hit(); }",
+            True,
+        ),
+        (
+            "decltype for",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { for (decltype(auto) value=f.make(); false;) value.hit(); }",
+            True,
+        ),
+        (
+            "as_const nested",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { auto value=f.make(); std::move(std::as_const(value)).hit(); }",
+            True,
+        ),
+        (
+            "as_const deref",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "void use(dart::Factory& f) { auto value=f.pointer(); std::as_const(*value).hit(); }",
+            True,
+        ),
+        (
+            "as_const imported directive",
+            "namespace dart { struct A { void hit() const; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "namespace dart { struct A { void hit() const = delete; }; struct Factory { A make(); A& ref(); A* pointer(); }; }",
+            "using namespace std; void use(dart::Factory& f) { auto value=f.make(); as_const(value).hit(); }",
+            True,
+        ),
+    ],
+)
+def test_cpp17_automatic_declaration_and_wrapper_forms(
+    extractor, tmp_path, case, header, changed, source, changes_inventory
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, changed, source)
+    assert (after != before) == changes_inventory, case
+
+
+def test_free_function_array_parameter_keeps_namespace_extent_constant(
+    extractor, tmp_path
+):
+    case, header, changed, source, changes_inventory = (
+        "free array parameter",
+        "namespace dart { constexpr int kSize=2; void hit(int (&values)[kSize]); }",
+        "namespace dart { constexpr int kSize=3; void hit(int (&values)[kSize]); }",
+        "void use() { int values[2]{}; dart::hit(values); }",
+        True,
+    )
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, changed, source)
+    assert after != before
+    declaration = _entries(before, "free_functions")["dart::hit"]["declarations"][0]
+    assert declaration["array_bound_declarations"][0]["class"] == "dart"
+
+
+LAMBDA_CAPTURE_API = """namespace dart {
+struct A { void hit() const {} };
+struct B { void other() const {} };
+struct Factory { A make(); A& ref(); A* pointer(); B other(); };
+}
+struct Foreign { void hit() const {} };
+Foreign foreign();
+template<class T> T unknown();
+"""
+
+LAMBDA_CAPTURE_CASES = [
+    (
+        "void use(dart::Factory& factory) { auto outer = factory.make(); auto fn = [item = outer] { auto child = item; child.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()] { auto child = item; child.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory, Foreign item) { auto first = [item = factory.make()] { item.hit(); }; first(); auto second = [other = item] { other.hit(); }; second(); item.hit(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [&item = factory.ref()] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.pointer()] { item->hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item{factory.make()}] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item(factory.make())] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make(), other = factory.other()] { item.hit(); other.other(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [&, item = factory.make()] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [=, item = factory.make()] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()](int count) { item.hit(); }; fn(1); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()](auto count) { item.hit(); }; fn(1); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()]() mutable noexcept(true) -> void { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = (factory.make(), factory.make())] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto item = factory.make(); auto fn = [item = item] { item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()] { auto inner = [child = item] { child.hit(); }; inner(); item.hit(); }; fn(); }",
+        2,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()] { auto inner = [item] { item.hit(); }; inner(); item.hit(); }; fn(); }",
+        2,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [item = factory.make()] { auto inner = [item = foreign()] { item.hit(); }; inner(); item.hit(); }; fn(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory, Foreign item) { auto first = [item = factory.make()] { item.hit(); }; first(); item.hit(); auto second = [item = foreign()] { item.hit(); }; second(); item.hit(); }",
+        1,
+    ),
+    (
+        "void use(dart::Factory& factory) { auto fn = [callback = [item = factory.make()] { item.hit(); }] { callback(); }; fn(); }",
+        1,
+    ),
+]
+
+
+@pytest.mark.parametrize("source, count", LAMBDA_CAPTURE_CASES)
+def test_lambda_init_captures_retain_body_receiver_dependencies(
+    extractor, tmp_path, source, count
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(LAMBDA_CAPTURE_API)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "members")["hit"]
+    assert row["count"] == count
+    assert row["receiver_types"] == ["dart::A"]
+    assert row["unresolved_count"] == 0
+    header.write_text(
+        LAMBDA_CAPTURE_API.replace(
+            "void hit() const {}", "void hit() const = delete;", 1
+        )
+    )
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after != before
+    if "other.other()" in source:
+        assert _entries(before, "members")["other"]["receiver_types"] == [
+            "dart::B",
+            "dart::Factory",
+        ]
+
+
+LAMBDA_CAPTURE_NEGATIVES = [
+    "void use(dart::Factory& factory) { auto fn = [item = foreign()] { item.hit(); }; fn(); }",
+    "void use(dart::A* item) { auto fn = [item = foreign()] { item.hit(); }; fn(); }",
+    "template<class T> void use(dart::A* item) { auto fn = [item = unknown<T>()] { item.hit(); }; }",
+    "void use(dart::Factory& factory, Foreign item) { auto fn = [item = foreign()] { item.hit(); }; fn(); item.hit(); }",
+]
+
+
+@pytest.mark.parametrize("source", LAMBDA_CAPTURE_NEGATIVES)
+def test_lambda_init_capture_foreign_and_unknown_shadows_do_not_resolve_outer_dart(
+    extractor, tmp_path, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(LAMBDA_CAPTURE_API)
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    row = _entries(result, "members").get("hit")
+    assert row is None or row["receiver_types"] == []
+    assert row is None or row["count"] == row["unresolved_count"]
+
+
+SMART_POINTER_HEADER = """
+namespace dart {
+struct Item { void hit() const; };
+using Shared = std::shared_ptr<Item>;
+using Unique = std::unique_ptr<Item>;
+using Weak = std::weak_ptr<Item>;
+using SharedAlias = Shared;
+struct Factory {
+ std::shared_ptr<Item> shared(); std::weak_ptr<Item> weak(); std::unique_ptr<Item> unique();
+ Shared alias(); Weak weakAlias(); SharedAlias aliasChain();
+ std::shared_ptr<Item>* sharedPointer(); std::weak_ptr<Item>* weakPointer();
+ std::optional<std::shared_ptr<Item>> optional();
+ std::vector<std::shared_ptr<Item>> sequence();
+};
+std::shared_ptr<Item> shared(); std::weak_ptr<Item> weak();
+}
+"""
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "f.shared().get()->hit()",
+        "f.shared()->hit()",
+        "(*f.shared()).hit()",
+        "f.weak().lock()->hit()",
+        "f.weak().lock().get()->hit()",
+        "f.unique().get()->hit()",
+        "f.unique()->hit()",
+        "(*f.unique()).hit()",
+        "f.alias().get()->hit()",
+        "f.weakAlias().lock()->hit()",
+        "f.aliasChain().get()->hit()",
+        "f.sharedPointer()->get()->hit()",
+        "f.weakPointer()->lock()->hit()",
+        "(*f.sharedPointer()).get()->hit()",
+        "(*f.weakPointer()).lock().get()->hit()",
+        "f.optional().value().get()->hit()",
+        "f.optional()->get()->hit()",
+        "f.sequence().front().get()->hit()",
+        "f.sequence().begin()->get()->hit()",
+        "(*f.sequence().begin())->hit()",
+        "dart::shared().get()->hit()",
+        "dart::weak().lock()->hit()",
+    ],
+)
+def test_smart_pointer_returns_preserve_wrapper_kind(extractor, tmp_path, expression):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(SMART_POINTER_HEADER)
+    before = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::Factory& f) { " + expression + "; }",
+    )
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::Item"] and hit["unresolved_count"] == 0
+    assert "get" not in _entries(before, "members") and "lock" not in _entries(
+        before, "members"
+    )
+    header.write_text(
+        SMART_POINTER_HEADER.replace("void hit() const;", "void hit(int) const;")
+    )
+    after = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::Factory& f) { " + expression + "; }",
+    )
+    assert _entries(after, "members")["hit"]["declarations"] != hit["declarations"]
+
+
+@pytest.mark.parametrize(
+    "imported",
+    [
+        "using namespace std;",
+        "using std::shared_ptr; using std::weak_ptr;",
+        "namespace s=std; using s::shared_ptr; using s::weak_ptr;",
+    ],
+)
+def test_smart_pointer_source_aliases_bindings_fields_and_imports(
+    extractor, tmp_path, imported
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(SMART_POINTER_HEADER)
+    source = (
+        imported
+        + """
+using Shared=shared_ptr<dart::Item>; using Alias=Shared;
+struct Source { shared_ptr<dart::Item> shared(); weak_ptr<dart::Item> weak(); Shared alias();
+ shared_ptr<dart::Item> field; weak_ptr<dart::Item> weakField; };
+void use(Source& f) {
+ f.shared().get()->hit(); f.weak().lock()->hit(); f.alias().get()->hit();
+ f.field.get()->hit(); f.weakField.lock()->hit();
+ shared_ptr<dart::Item> direct; direct.get()->hit(); Alias aliased; aliased.get()->hit();
+ auto automatic=f.shared(); automatic.get()->hit();
+}
+"""
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert (
+        hit["count"] == 8
+        and hit["unresolved_count"] == 0
+        and hit["receiver_types"] == ["dart::Item"]
+    )
+
+
+@pytest.mark.parametrize(
+    "expression", ["f.weak()->hit()", "f.weak().get()->hit()", "(*f.weak()).hit()"]
+)
+def test_weak_pointer_does_not_act_as_pointee_receiver(extractor, tmp_path, expression):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(SMART_POINTER_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::Factory& f, dart::Item* known) { " + expression + "; }",
+    )
+    assert "hit" not in _entries(result, "members")
+
+
+@pytest.mark.parametrize("kind", ["shared_ptr", "weak_ptr", "unique_ptr"])
+def test_foreign_smart_pointer_returns_remain_non_dart(extractor, tmp_path, kind):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(SMART_POINTER_HEADER)
+    chain = "lock().get()" if kind == "weak_ptr" else "get()"
+    source = (
+        "struct Foreign { void hit() const; }; std::"
+        + kind
+        + "<Foreign> make(); void use(dart::Item* known) { make()."
+        + chain
+        + "->hit(); }"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(result, "members")
+
+
+SMART_ARRAY_HEADER = """
+namespace dart {
+struct Item { void hit() const; Item& operator[](int); Item* operator->(); };
+using SharedArray=std::shared_ptr<Item[]>; using ArrayAlias=SharedArray;
+struct Factory {
+ std::shared_ptr<Item[]> shared(); std::unique_ptr<Item[]> unique(); std::weak_ptr<Item[]> weak();
+ std::optional<std::shared_ptr<Item[]>> optional(); std::vector<std::shared_ptr<Item[]>> sequence();
+ std::shared_ptr<Item[]>* sharedPointer(); std::shared_ptr<Item*[]> pointers(); ArrayAlias alias();
+};
+}
+"""
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "f.shared()[0].hit()",
+        "f.unique()[0].hit()",
+        "f.weak().lock()[0].hit()",
+        "[&]{ auto p=f.shared(); p[0].hit(); }()",
+        "[p=f.shared()] { p[0].hit(); }()",
+        "f.optional().value()[0].hit()",
+        "f.sequence()[0][0].hit()",
+        "f.shared().get()[0].hit()",
+        "f.unique().get()[0].hit()",
+        "f.weak().lock().get()[0].hit()",
+        "f.sharedPointer()[0][0].hit()",
+        "f.sharedPointer()[0].get()[0].hit()",
+        "f.pointers()[0]->hit()",
+        "f.alias()[0].hit()",
+        "f.sequence().begin()->get()[0].hit()",
+        "(*f.sequence().begin())[0].hit()",
+    ],
+)
+def test_smart_array_receivers_preserve_pointee_and_builtin_operators(
+    extractor, tmp_path, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(SMART_ARRAY_HEADER)
+    source = "void use(dart::Factory& f) { " + expression + "; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    members = _entries(before, "members")
+    hit = members["hit"]
+    assert hit["receiver_types"] == ["dart::Item"] and hit["unresolved_count"] == 0
+    assert "operator[]" not in members and "operator->" not in members
+    header.write_text(
+        SMART_ARRAY_HEADER.replace("void hit() const;", "void hit(int) const;")
+    )
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(after, "members")["hit"]["declarations"] != hit["declarations"]
+
+
+@pytest.mark.parametrize(
+    "expression", ["f.shared()[0].hit()", "f.unique()[0].hit()", "f.weak()[0].hit()"]
+)
+def test_nonarray_smart_subscript_does_not_become_pointee(
+    extractor, tmp_path, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(SMART_POINTER_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::Factory& f, dart::Item* known) { " + expression + "; }",
+    )
+    assert "hit" not in _entries(result, "members")
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "f.nested().get()->get()->hit()",
+        "f.optional().get()->value().hit()",
+        "f.sequence().get()->front()->hit()",
+    ],
+)
+def test_nested_smart_pointee_shapes_remain_wrapped(extractor, tmp_path, expression):
+    header = """namespace dart { struct Item { void hit() const; }; struct Factory {
+ std::shared_ptr<std::shared_ptr<Item>> nested(); std::shared_ptr<std::optional<Item>> optional();
+ std::shared_ptr<std::vector<std::shared_ptr<Item>>> sequence(); }; }"""
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(header)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::Factory& f) { " + expression + "; }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::Item"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "source, dart_receiver",
+    [
+        (
+            "struct Foreign { void hit() const; }; Foreign foreign(); void use(dart::A* known) { auto fn=[a=foreign()] { a.hit(); }; }",
+            False,
+        ),
+        (
+            "struct Foreign { void hit() const; }; Foreign foreign(); void use(dart::A* known) { auto fn=[a=foreign()] { auto x=a; auto inner=[b=x] { auto y=b; auto last=[c=y] { auto z=c; z.hit(); }; }; }; }",
+            False,
+        ),
+        (
+            "void use(dart::A& known) { auto fn=[a=known] { auto x=a; auto inner=[b=x] { auto y=b; auto last=[c=y] { auto z=c; z.hit(); }; }; }; }",
+            True,
+        ),
+    ],
+)
+def test_nested_capture_local_auto_composition_preserves_known_receiver(
+    extractor, tmp_path, source, dart_receiver
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { void hit() const; }; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "members").get("hit")
+    if dart_receiver:
+        assert row["receiver_types"] == ["dart::A"]
+        assert row["unresolved_count"] == 0
+    else:
+        assert row is None
+    header.write_text(text.replace("void hit() const;", "void hit(int) const;"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (after != before) is dart_receiver
+
+
+@pytest.mark.parametrize(
+    "comparison",
+    [
+        "flag < 2 ? f.make() : f.make()",
+        "flag > 2 ? f.make() : f.make()",
+        "(flag < 2 ? f.make() : f.make())",
+    ],
+)
+def test_capture_comparison_does_not_merge_following_capture(
+    extractor, tmp_path, comparison
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { void hit() const; }; struct B { void check() const; }; struct Factory { A make(); B other(); }; }"
+    header.write_text(text)
+    source = (
+        "void use(dart::Factory& f, int flag) { auto fn=[item="
+        + comparison
+        + ", other=f.other()] { item.hit(); other.check(); }; }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    rows = _entries(before, "members")
+    assert rows["hit"]["receiver_types"] == ["dart::A"]
+    assert rows["check"]["receiver_types"] == ["dart::B"]
+    assert rows["check"]["unresolved_count"] == 0
+    header.write_text(text.replace("void check() const;", "void check(int) const;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+@pytest.mark.parametrize(
+    "kind, source",
+    [
+        ("shared_ptr", "void use(dart::Factory& factory) { inspect(factory.make()); }"),
+        ("shared_ptr", "void use(std::shared_ptr<dart::A> value) { inspect(value); }"),
+        ("weak_ptr", "void use(dart::Factory& factory) { inspect(factory.make()); }"),
+        ("unique_ptr", "void use(dart::Factory& factory) { inspect(factory.make()); }"),
+        (
+            "shared_ptr",
+            "void use(dart::Factory& factory) { auto lambda=[value=factory.make()] { inspect(value); }; }",
+        ),
+    ],
+)
+def test_smart_receiver_kinds_preserve_argument_associated_namespace(
+    extractor, tmp_path, kind, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace dart { struct A { friend void inspect(std::"
+        + kind
+        + "<A>) {} }; struct Factory { std::"
+        + kind
+        + "<A> make(); }; }"
+    )
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert _entries(before, "free_functions")["dart::inspect"]["count"] == 1
+    header.write_text(text.replace("<A>) {}", "<A>, int) {}"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after != before
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "constexpr int N=2; inline constexpr int Names[N]{}; struct A { void run(const int (&values)[2]=Names); };",
+        "struct A { static constexpr int BASE=1; static constexpr int N=BASE+1; inline static constexpr int Names[N]{}; public: void run(const int (&values)[2]=Names); };",
+    ],
+)
+def test_used_default_array_constant_retains_bound_dependency(
+    extractor, tmp_path, definition
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { " + definition + " }"
+    header.write_text(text)
+    source = "void use(dart::A& a) { a.run(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "members")["run"]["declarations"][0]
+    defaults = row["default_argument_declarations"]
+    assert any(
+        " N " in d["signature"]
+        or d["signature"].startswith("constexpr int N ")
+        or d["signature"].startswith("static constexpr int N ")
+        for d in defaults
+    )
+    assert any(
+        d["signature"].endswith("N = 2") or "N = BASE + 1" in d["signature"]
+        for d in defaults
+    )
+    header.write_text(text.replace("N=2", "N=3").replace("BASE=1", "BASE=2"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after != before
+
+
+def test_foreign_smart_arguments_do_not_acquire_unrelated_dart_namespace(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { struct A { friend void inspect(std::shared_ptr<A>) {} }; }"
+    )
+    source = "namespace foreign { struct B { friend void inspect(std::shared_ptr<B>) {} }; } void use(dart::A* known, std::shared_ptr<foreign::B> value) { inspect(value); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert not before["free_functions"]
+    header.write_text(header.read_text().replace("<A>) {}", "<A>, int) {}"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        == before
+    )
+
+
+SMART_ADL_CASES = [
+    (
+        "shared_auto",
+        "std::shared_ptr<A>",
+        "void use(dart::Factory& f) { auto value=f.make(); inspect(value); }",
+    ),
+    (
+        "api_alias_variable",
+        "std::shared_ptr<A>",
+        "void use(dart::Alias value) { inspect(value); }",
+    ),
+    (
+        "source_alias_variable",
+        "std::shared_ptr<A>",
+        "using Shared=std::shared_ptr<dart::A>; using Alias=Shared; void use(Alias value) { inspect(value); }",
+    ),
+    (
+        "source_return",
+        "std::shared_ptr<A>",
+        "std::shared_ptr<dart::A> make(); void use() { inspect(make()); }",
+    ),
+    (
+        "weak_variable",
+        "std::weak_ptr<A>",
+        "void use(std::weak_ptr<dart::A> value) { inspect(value); }",
+    ),
+    (
+        "unique_variable",
+        "std::unique_ptr<A>",
+        "void use(std::unique_ptr<dart::A> value) { inspect(std::move(value)); }",
+    ),
+    (
+        "array_return",
+        "std::shared_ptr<A[]>",
+        "void use(dart::Factory& f) { inspect(f.make()); }",
+    ),
+    (
+        "nested_smart_return",
+        "std::shared_ptr<std::shared_ptr<A>>",
+        "void use(dart::Factory& f) { inspect(f.make()); }",
+    ),
+    (
+        "optional_smart_return",
+        "std::optional<std::shared_ptr<A>>",
+        "void use(dart::Factory& f) { inspect(f.make()); }",
+    ),
+    (
+        "sequence_smart_return",
+        "std::vector<std::shared_ptr<A>>",
+        "void use(dart::Factory& f) { inspect(f.make()); }",
+    ),
+    (
+        "smart_optional_return",
+        "std::shared_ptr<std::optional<A>>",
+        "void use(dart::Factory& f) { inspect(f.make()); }",
+    ),
+    (
+        "source_smart_field",
+        "std::shared_ptr<A>",
+        "struct Source { std::shared_ptr<dart::A> field; }; void use(Source& f) { inspect(f.field); }",
+    ),
+]
+
+
+def _smart_adl_header(wrapped):
+    return (
+        "namespace dart { struct A; using Wrapped="
+        + wrapped
+        + "; using Alias=Wrapped; struct A { friend void inspect(Wrapped); }; struct Factory { Wrapped make(); }; }"
+    )
+
+
+@pytest.mark.parametrize("name,wrapped,source", SMART_ADL_CASES)
+def test_smart_wrapped_arguments_keep_hidden_friend_adl(
+    extractor, tmp_path, name, wrapped, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = _smart_adl_header(wrapped)
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    friend = _entries(before, "free_functions")["dart::inspect"]
+    assert friend["declarations"]
+    header.write_text(text.replace("inspect(Wrapped);", "inspect(Wrapped, int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert (
+        _entries(after, "free_functions")["dart::inspect"]["declarations"]
+        != friend["declarations"]
+    )
+
+
+@pytest.mark.parametrize("kind", ["shared_ptr", "weak_ptr", "unique_ptr"])
+def test_foreign_smart_arguments_do_not_gain_dart_adl(extractor, tmp_path, kind):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = _smart_adl_header("std::shared_ptr<A>")
+    header.write_text(text)
+    source = (
+        "struct Foreign { friend void inspect(std::"
+        + kind
+        + "<Foreign>); }; std::"
+        + kind
+        + "<Foreign> make(); void use(dart::A* known) { inspect(make()); }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "dart::inspect" not in _entries(before, "free_functions")
+    header.write_text(text.replace("inspect(Wrapped);", "inspect(Wrapped, int);"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+def test_smart_argument_member_lookup_still_suppresses_adl(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = _smart_adl_header("std::shared_ptr<A>")
+    header.write_text(text)
+    source = "struct Source { void inspect(std::shared_ptr<dart::A>); void use(std::shared_ptr<dart::A> value) { inspect(value); } };"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "dart::inspect" not in _entries(result, "free_functions")
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "void use(dart::A* known) { std::unique_ptr<aiMesh> mesh; mesh->mFaces[0].mIndices[0]=1; }",
+        "void use(dart::A* known) { std::shared_ptr<aiMesh> mesh; mesh->mFaces[0].mIndices[0]=1; }",
+        "void use(dart::A* known) { std::weak_ptr<aiMesh> mesh; mesh.lock()->mFaces[0].mIndices[0]=1; }",
+        "void use(dart::A* known) { std::unique_ptr<aiMesh> mesh=std::make_unique<aiMesh>(); mesh->mFaces[0].mIndices[0]=1; }",
+        "void use(dart::A* known, aiMesh* mesh) { mesh->mFaces[0].mIndices[0]=1; }",
+    ],
+)
+def test_external_assimp_array_fields_do_not_become_dart_fields(
+    extractor, tmp_path, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    # External non-DART definitions are available to the compiler but are not
+    # collected by index_api or present in the scanned Gazebo source files.
+    text = "#include <memory>\nstruct aiFace { unsigned* mIndices; }; struct aiMesh { aiFace* mFaces; }; namespace dart { struct A { int mIndices; }; }"
+    header.write_text(text)
+    api = extractor.index_api(headers)
+    assert api.types == {"dart::A"}
+    before = _scan(extractor, api, tmp_path / "before", source)
+    assert not before["data_members"]
+    header.write_text(text.replace("int mIndices;", "double mIndices;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        == before
+    )
+
+
+@pytest.mark.parametrize(
+    "name", ["dDerived", "aiDerived", "btDerived", "SourceDerived"]
+)
+def test_known_source_derived_returns_override_external_prefix_heuristic(
+    extractor, tmp_path, name
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { void hit() const; }; }"
+    source = (
+        "struct "
+        + name
+        + ":dart::A {}; "
+        + name
+        + " make(); void use() { make().hit(); }"
+    )
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"]
+    assert hit["unresolved_count"] == 0
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+def test_smart_field_union_retains_custom_pointer_candidates(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { void hit(); }; template<class T> struct Ptr { T* operator->(); }; using APtr=Ptr<A>; }"
+    header.write_text(text)
+    source = "struct Info { dart::APtr item; }; struct Foreign {}; struct Other { std::shared_ptr<Foreign> item; }; template<class T> T* factory(); void use() { factory<Info>()->item->hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "members")["hit"]
+    assert row["receiver_types"] == ["dart::APtr"]
+    assert row["unresolved_count"] == 0
+    header.write_text(text.replace("void hit();", "void hit(int);"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
