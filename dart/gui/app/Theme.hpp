@@ -30,45 +30,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_PROFILER_HPP_
-#define DART_EXAMPLES_DEMOS_PROFILER_HPP_
+#ifndef DART_GUI_APP_THEME_HPP_
+#define DART_GUI_APP_THEME_HPP_
 
-#include <string>
+#include <dart/gui/Viewer.hpp>
 
-namespace dart_demos {
+#include <dart/external/imgui/imgui.h>
+
+namespace dart::gui::app {
 
 //==============================================================================
-/// Diagnostics-panel live profiler. Wraps dart::common::profile's built-in
-/// text backend (dart/common/Profile.hpp), which compiles to real
-/// functionality when DART_BUILD_PROFILE is on (pixi's config task turns it
-/// on) and to inert no-ops otherwise -- isTextProfilingEnabled() tells us
-/// which, so this class needs no #if of its own. Recording state persists
-/// across scene switches (it profiles the app/World::step machinery in
-/// general, not any one scene).
-class Profiler
+/// A restrained, cool-neutral dark palette with a single blue accent. Sets
+/// ImGui::GetStyle().Colors[]; call once before the first frame.
+void applyModernDarkColors();
+
+//==============================================================================
+/// Companion spacing/rounding metrics to applyModernDarkColors, ported from
+/// applyModernDarkMetrics. Docking-only bits (docking separators, dock
+/// preview colors) require the Dear ImGui docking release. Sets base
+/// (unscaled) style metrics; per-frame GUI scaling is applied on top of these
+/// by dart::gui::Viewer::setGuiScale() via
+/// ImGuiStyle::ScaleAllSizes, so callers should not pre-multiply these values
+/// by the GUI scale. Call once before the first frame, after
+/// applyModernDarkColors().
+void applyModernDarkMetrics();
+
+/// Restore this demo's themed metrics before each newly scaled frame.
+class GuiScaleTheme
 {
 public:
-  /// Renders the "Record profile" toggle and, while recording, the
-  /// monospaced summary text (refreshed every ~30 calls rather than every
-  /// frame, since re-formatting the full summary on every single frame would
-  /// itself be a needless cost). Call once per rendered frame from
-  /// DemoHost::renderDiagnostics.
-  void render();
-
-  /// Test/debug-only hook: forces the recording state without going through
-  /// the checkbox (used by main.cpp's hidden --debug-record-profile flag so
-  /// a headless capture can show the profiler actually recording). Mirrors
-  /// the checkbox handler's own resetProfile()-on-enable behavior.
-  void setRecordingForTest(bool on);
+  explicit GuiScaleTheme(const dart::gui::Viewer& handler);
+  ~GuiScaleTheme();
+  GuiScaleTheme(const GuiScaleTheme&) = delete;
+  GuiScaleTheme& operator=(const GuiScaleTheme&) = delete;
 
 private:
-  bool mRecording = false;
-  std::string mSummaryText;
-  int mFramesSinceRefresh = 0;
-
-  static constexpr int kRefreshEveryNFrames = 30;
+  const dart::gui::Viewer& mHandler;
+  ImGuiContext* mContext;
+  ImGuiStyle mBaseStyle;
+  ImGuiID mHookId;
+  double mAppliedScale = 0.0;
 };
 
-} // namespace dart_demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_PROFILER_HPP_
+#endif // DART_GUI_APP_THEME_HPP_

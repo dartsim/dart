@@ -154,7 +154,6 @@ def release_reference_target(tmp_path):
             "docs/onboarding/contributing.md",
             "Release packaging targets release-7.0 directly.\n",
         ),
-        ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
         ("GEMINI.md", "The next release is currently DART 6.22.\n"),
         ("AGENTS.md", "The next release is DART 6.22.0.\n"),
         ("docs/README.md", "Next release: **DART 6.22.0**\n"),
@@ -1874,13 +1873,39 @@ def test_scoped_agent_instruction_files_are_required(tmp_path):
     for path in infra.required_paths(tmp_path):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("placeholder\n")
-    scoped = tmp_path / ".agents" / "AGENTS.md"
+    scoped = tmp_path / ".codex" / "AGENTS.md"
     scoped.unlink()
     errors = []
 
     infra.check_required_files(tmp_path, errors)
 
-    assert errors == ["missing required file: .agents/AGENTS.md"]
+    assert errors == ["missing required file: .codex/AGENTS.md"]
+
+
+@pytest.mark.parametrize(
+    "shadowed",
+    [
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        ".agents/AGENTS.md",
+        ".claude/CLAUDE.md",
+    ],
+)
+def test_shadowed_rules_files_are_rejected(monkeypatch, shadowed):
+    target = ROOT / shadowed
+    original_exists = Path.exists
+
+    def exists(path, *args, **kwargs):
+        if path == target:
+            return True
+        return original_exists(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "exists", exists)
+    errors = []
+
+    infra.check_release_guidance(ROOT, errors)
+
+    assert any(f"shadowed rules file `{shadowed}`" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -4629,8 +4654,61 @@ endif()
     assert errors == []
 
 
+@pytest.mark.parametrize(
+    ("docking", "gui", "scope", "accepted"),
+    (
+        # ImGui without docking, as with a vanilla system ImGui.
+        ("OFF", "ON", "TARGET dart-gui-app", True),
+        # A GUI-off build never detects docking.
+        (None, "OFF", "TARGET dart-gui-app", True),
+        # Docking present, so the app-host test must be configured.
+        ("ON", "ON", "TARGET dart-gui-app", False),
+        ("OFF", "ON", "FALSE", False),
+    ),
+)
+def test_cmake_semantic_graph_probe_gui_app_inactive_policy(
+    tmp_path, docking, gui, scope, accepted
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    detected = (
+        ""
+        if docking is None
+        else f'set(DART_IMGUI_HAS_DOCK {docking} CACHE INTERNAL "")\n'
+    )
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_subdirectory(tests)",
+            detected + f'set(DART_BUILD_GUI {gui} CACHE BOOL "" FORCE)\n'
+            "add_library(dart-gui INTERFACE)\nadd_subdirectory(tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    integration = tmp_path / "tests/integration/CMakeLists.txt"
+    integration.write_text(
+        integration.read_text(encoding="utf-8")
+        + f'\nif({scope})\n  dart_add_test("integration" test_GuiApp)\nendif()\n',
+        encoding="utf-8",
+    )
+    (integration.parent / "test_GuiApp.cpp").write_text(
+        "int main(void) { return 0; }\n", encoding="utf-8"
+    )
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    if accepted:
+        assert errors == []
+    else:
+        assert any(
+            "neither configured nor explicitly approved as inactive" in error
+            for error in errors
+        )
+
+
 def _add_inactive_gui_sources(root: Path) -> Path:
     names = (
+        "GuiAppMemoryDiagnostics",
+        "GuiAppMemoryDiagnosticsModel",
         "GuiDescriptors",
         "GuiInteractions",
         "GuiViewer",
@@ -5582,6 +5660,14 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     report = infra.doctor_report(ROOT)
 
     assert report["schema_version"] == 1
+    assert set(report["tools"]) == {
+        "python",
+        "pixi",
+        "codex",
+        "claude",
+        "muse",
+        "opencode",
+    }
     assert report["profile"] == {
         "name": "dart7",
         "cpp_standard": "C++17",

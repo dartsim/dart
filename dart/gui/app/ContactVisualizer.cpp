@@ -34,7 +34,7 @@
 
 #include <algorithm>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -174,4 +174,4 @@ void ContactVisualizer::renderToggle()
       mLayout.getReferenceLength());
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

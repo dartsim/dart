@@ -30,21 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_DEMOHOST_HPP_
-#define DART_EXAMPLES_DEMOS_DEMOHOST_HPP_
+#ifndef DART_GUI_APP_APP_HPP_
+#define DART_GUI_APP_APP_HPP_
 
 #include "ContactVisualizer.hpp"
-#include "DemoScene.hpp"
 #include "DragForce.hpp"
 #include "Inspector.hpp"
 #include "LogCapture.hpp"
 #include "Profiler.hpp"
+#include "Scene.hpp"
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   #include "memory_diagnostics_model.hpp"
 #endif
 
-#include "GuiBackend.hpp"
+#include <dart/gui/GridVisual.hpp>
+#include <dart/gui/ImGuiWidget.hpp>
+#include <dart/gui/PerformanceStatsPanel.hpp>
+#include <dart/gui/RealTimeWorldNode.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <chrono>
 #include <deque>
@@ -54,7 +58,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 class GuiScaleTheme;
 
@@ -63,15 +67,15 @@ class GuiScaleTheme;
 /// wrapping each call so a throwing (or otherwise misbehaving) callback is
 /// logged once through the host's error sink and then disabled -- it never
 /// crashes the app or corrupts the frame loop.
-class DemoWorldNode : public demo_gui::RealTimeWorldNode
+class AppWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
-  explicit DemoWorldNode(const dart::simulation::WorldPtr& world);
+  explicit AppWorldNode(const dart::simulation::WorldPtr& world);
 
   /// Installs the active scene's step hooks (any may be empty). `preRefresh`
   /// is wired to customPreRefresh() and therefore runs once per rendered
   /// frame regardless of pause state; preStep/postStep only run while
-  /// simulating (see DemoScene.hpp).
+  /// simulating (see Scene.hpp).
   void setHooks(
       std::function<void()> preStep,
       std::function<void()> postStep,
@@ -153,11 +157,10 @@ struct LogEntry
 /// Persistent host chrome (window, theme, panel layout) survives scene
 /// switches; per-scene state (world node, widgets, drag-and-drop, event
 /// handlers) is torn down in full on every switch.
-class DemoHost
+class App
 {
 public:
-  DemoHost(
-      std::vector<DemoScene> scenes,
+  App(std::vector<Scene> scenes,
       std::optional<double> guiScale,
       std::string collisionDetectorName = {},
       std::size_t simulationThreads = 1u);
@@ -169,7 +172,7 @@ public:
   /// stack-local host on return) leaks its DnD/attachment/handler
   /// registrations into the viewer's own teardown, which for some resource
   /// types (e.g. InteractiveFrameDnD) crashes instead of merely leaking.
-  ~DemoHost();
+  ~App();
 
   /// Runs interactively: opens a window and blocks until it is closed.
   /// Returns a process exit code.
@@ -227,12 +230,12 @@ public:
   std::size_t getActiveWorldNodeCount() const;
 
   //----------------------------------------------------------------------------
-  // The following are called by DemoHostContext and the host's own ImGui
+  // The following are called by SceneContext and the host's own ImGui
   // panel widget / key handler; not part of the app-facing API.
   //----------------------------------------------------------------------------
 
-  GuiViewer* getViewer() const;
-  DemoWorldNode* getWorldNode() const;
+  dart::gui::Viewer* getViewer() const;
+  AppWorldNode* getWorldNode() const;
   void addTeardown(std::function<void()> teardown);
   void log(LogEntry::Level level, const std::string& message);
 
@@ -265,7 +268,7 @@ private:
   };
 
   void buildCategories();
-  const DemoScene* findScene(const std::string& id) const;
+  const Scene* findScene(const std::string& id) const;
 
   /// Queues a scene switch to be executed by processPendingSwitch(). Safe to
   /// call from inside an ImGui panel callback; the switch itself never runs
@@ -290,9 +293,7 @@ private:
   /// at the scene's home framing; Rebuild/Reset of the already-active demo
   /// passes false so only the physics resets, never the user's camera pose.
   void installScene(
-      const DemoScene& scene,
-      DemoSceneSetup setup,
-      bool applyCameraHomePose = true);
+      const Scene& scene, SceneSetup setup, bool applyCameraHomePose = true);
 
   /// Installs a minimal, guaranteed-safe empty world. Used only when the very
   /// first scene selection fails and there is no previous scene to fall back
@@ -328,12 +329,12 @@ private:
   bool setCollisionDetectorByName(const std::string& name);
   void syncCollisionDetectorSelectionFromWorld();
 
-  std::vector<DemoScene> mScenes;
+  std::vector<Scene> mScenes;
   std::vector<CategoryGroup> mCategories;
   std::unordered_map<std::string, std::size_t> mCategoryIndexByName;
 
-  GuiPtr<GuiViewer> mViewer;
-  GuiPtr<DemoWorldNode> mWorldNode;
+  std::shared_ptr<dart::gui::Viewer> mViewer;
+  std::shared_ptr<AppWorldNode> mWorldNode;
   dart::simulation::WorldPtr mCurrentWorld;
   std::function<void()> mCurrentRenderPanel;
   std::vector<KeyAction> mCurrentKeyActions;
@@ -360,9 +361,9 @@ private:
   DragForce mDragForce;
   ContactVisualizer mContactVisualizer;
   Profiler mProfiler;
-  demo_gui::PerformanceStatsPanel mPerformanceStatsPanel;
+  dart::gui::PerformanceStatsPanel mPerformanceStatsPanel;
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
-  dart::examples::demos::DiagnosticSession mMemoryDiagnosticsSession;
+  dart::gui::app::DiagnosticSession mMemoryDiagnosticsSession;
   std::uint64_t mMemoryDiagnosticsGeneration = 0;
 #endif
 
@@ -378,11 +379,11 @@ private:
 
   // View utilities (toolbar "View" menu). Shadows/grid/headlights/GUI scale
   // are host chrome that persists across scene switches; mCurrentSceneWants
-  // Shadows tracks the active scene's own DemoSceneSetup::enableShadows so
+  // Shadows tracks the active scene's own SceneSetup::enableShadows so
   // toggling the host's global mShadowsEnabled can be combined with it.
   bool mShadowsEnabled = true;
   bool mCurrentSceneWantsShadows = true;
-  GuiPtr<demo_gui::GridVisual> mGridVisual;
+  std::shared_ptr<dart::gui::GridVisual> mGridVisual;
 
   double mGuiScale;
   bool mAutomaticGuiScale;
@@ -401,19 +402,14 @@ private:
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;
 
-  /// Docked-workspace state (docking-branch ImGui builds): the default layout
-  /// is rebuilt on the first frame and whenever View > "Reset layout" sets the
-  /// reset flag. maybe_unused: only IMGUI_HAS_DOCK code paths read them, and
-  /// non-docking builds (system ImGui) compile those out; keeping the members
-  /// unconditional avoids an ABI split between the two build flavors.
-  [[maybe_unused]] bool mDockLayoutInitialized = false;
-  [[maybe_unused]] bool mDockLayoutResetRequested = false;
-  /// Fixed-layout fallback (non-docking builds): chrome heights measured from
-  /// the previous frame's content so scaled toolbars/diagnostics never clip.
-  float mMeasuredToolbarHeight = 0.0f;
-  float mMeasuredBottomHeight = 0.0f;
+  /// Rebuilt on the first frame and whenever View > "Reset layout" is selected.
+  bool mDockLayoutInitialized = false;
+  bool mDockLayoutResetRequested = false;
 };
 
-} // namespace dart_demos
+int runCommandLine(
+    std::vector<Scene> scenes, const std::vector<std::string>& argv);
 
-#endif // DART_EXAMPLES_DEMOS_DEMOHOST_HPP_
+} // namespace dart::gui::app
+
+#endif // DART_GUI_APP_APP_HPP_

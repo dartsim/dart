@@ -128,6 +128,10 @@
     as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
+  * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
+    heightmap without a height field reports finite heights and bounds.
+    [#3744](https://github.com/dartsim/dart/pull/3744)
+
   * `VoxelGridShape::updateOccupancy()` now writes a single point through
     OctoMap's double-precision update, so a point on a voxel boundary lands
     in the cell that `getOccupancy()` reads.
@@ -146,6 +150,15 @@
     per-DoF couplers on multi-DoF joints no longer crash; and a joint that
     mimics only a later DoF now gets its constraint.
     [#3700](https://github.com/dartsim/dart/pull/3700)
+
+  * Preserve hierarchy-level objectives and `BalanceConstraint` settings when
+    cloning IK hierarchies, and allow cloning with a cleared solver. Skip
+    applying IK solutions with the wrong number of joint positions,
+    including empty results from a cleared solver. Stop `HierarchicalIK`
+    constraint gradients from crashing once their `HierarchicalIK` has been
+    destroyed; like the constraint value, the gradient now reports the misuse
+    and returns zero.
+    [#3751](https://github.com/dartsim/dart/pull/3751)
 
 * Python
 

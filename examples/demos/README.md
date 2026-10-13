@@ -10,8 +10,9 @@ counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 
 DART 7 uses Filament for every GUI example. `pixi run cycle-demos`
 exercises scene replacement without creating a graphics context. All scenes
-share `DemoHost` and use the renderer-independent `dart::gui` API. Manual CMake
-builds need the GUI (`DART_BUILD_GUI=ON`, the default) and a Filament SDK.
+share the private `dart::gui::app::App` host and use the renderer-independent
+`dart::gui` API. Manual CMake builds need the GUI (`DART_BUILD_GUI=ON`, the
+default) and a Filament SDK.
 
 The deformable-body flagship scenes are available as
 `--scene adaptive_soft_contact` and `--scene soft_worm`.
@@ -43,14 +44,14 @@ macOS uses native Retina rendering with logical window coordinates.
 
 ## Architecture
 
-- **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
-  (`Theme.*`), the scene registry, and the persistent chrome (simulation
-  toolbar, `Demos` navigator, `Diagnostics` panel, and the visual-debugging
-  panels). It swaps the active scene at runtime. The bundled ImGui is the
-  docking release, so the chrome opens as a dockable workspace — panels can
-  be dragged, split, and re-tabbed, and View > "Reset layout" restores the
-  default arrangement; builds against a vanilla system ImGui keep the fixed
-  layout, sized from measured content so it stays intact at any `--gui-scale`.
+- **Host** (`dart/gui/app/App.*`, `Cli.cpp`): the private, non-installed
+  `dart-gui-app` static library owns the one window, ImGui theme (`Theme.*`),
+  scene lifecycle, and persistent chrome (simulation toolbar, `Demos`
+  navigator, `Diagnostics` panel, and visual-debugging panels). `main.cpp`
+  supplies the C++ scene catalog to `runCommandLine()`. The chrome opens as a
+  dockable workspace: panels can be dragged, split, and re-tabbed, and
+  View > "Reset layout" restores the default arrangement. A vanilla system
+  ImGui compiles out the host and demos; use bundled docking ImGui instead.
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked

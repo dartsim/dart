@@ -6,39 +6,35 @@ movement.
 
 Significantly reworked from the original, which builds its whole IK rig on
 ``dart.dynamics.EndEffector`` (per-limb offset transforms, foot Support
-polygons feeding a ``BalanceConstraint``). ``EndEffector`` is not bound in
-dartpy at all -- no ``createEndEffector``, no ``EndEffector`` class, nothing
-beyond ``Skeleton.getNumEndEffectors()``. Since ``BalanceConstraint`` computes
-its cost from
-``Skeleton::getSupportPolygon()``, which is itself built from active
-EndEffector supports, it is unusable with zero EndEffectors (empty support
-polygon) -- not merely cosmetically degraded, so this port drops it rather
-than risk NaNs from an empty-polygon balance term.
+polygons feeding a ``BalanceConstraint``). End effectors, supports,
+``BalanceConstraint``, and Skeleton-level ``WholeBodyIK`` are bound in dartpy
+now, but this port still targets the raw BodyNodes: rebuilding the
+EndEffector rig (offset transforms, support polygons, balance term, and the
+``SupportPolygonVisual``) is a behavior change to the scene, not a binding
+gap. Note that a ``BalanceConstraint`` computes its cost from
+``Skeleton::getSupportPolygon()``, built from active EndEffector supports,
+so it only makes sense together with that rig; with zero supports the
+empty-polygon balance term risks NaNs rather than merely degrading.
 
-What this port keeps, using only already-bound APIs (no new bindings):
-whole-body IK on four BodyNodes directly (l_hand, r_hand, l_foot, r_foot)
-via ``BodyNode.getIK(True)`` -- the same ``InverseKinematics`` machinery the
-original used, just attached to the raw body instead of an EndEffector --
-draggable ``InteractiveFrame`` targets, the F1-F4 per-target
-constrain/release toggle, WASD/QE/FZ base movement, and 't' reset to the
-relaxed pose.
+What this port keeps: whole-body IK on four BodyNodes directly (l_hand,
+r_hand, l_foot, r_foot) via ``BodyNode.getIK(True)`` -- the same
+``InverseKinematics`` machinery the original used, just attached to the raw
+body instead of an EndEffector -- draggable ``InteractiveFrame`` targets,
+the F1-F4 per-target constrain/release toggle, WASD/QE/FZ base movement,
+and 't' reset to the relaxed pose.
 
-Dropped entirely (needs EndEffector, unreachable from Python): per-hand/foot
-contact-offset transforms (targets track the raw body frame instead), the
-foot Support polygons, the 'x'/'c' foot-support toggle, the
-``BalanceConstraint``, and ``SupportPolygonVisual`` (it draws EndEffector
-supports).
+Still dropped compared to the original: per-hand/foot contact-offset
+transforms (targets track the raw body frame instead), the foot Support
+polygons, the 'x'/'c' foot-support toggle, the ``BalanceConstraint``, and
+``SupportPolygonVisual`` (it draws EndEffector supports).
 
 Also dropped: the original's ``RelaxedPosture`` objective + 'r'-key
-hold-to-tighten-posture. That objective was installed on
-``atlas.getIK(True)`` -- a Skeleton-level ``WholeBodyIK``, not the
-per-BodyNode ``InverseKinematics`` used above. dartpy only binds
-``Skeleton.getIK()`` with no ``createIfNull`` overload and no way to
-construct/attach a ``WholeBodyIK`` from Python, so there is no reachable way
-to install a whole-skeleton objective at all. Each of the 4 targets instead
-solves independently through its own per-BodyNode IK, each still using
-``useWholeBody()``, so simultaneously-dragged targets converge by
-alternating rather than one joint optimization.
+hold-to-tighten-posture, installed on the Skeleton-level ``WholeBodyIK``
+from ``atlas.getIK(True)``. That API is reachable from Python now, but this
+port keeps each of the 4 targets solving independently through its own
+per-BodyNode IK, each still using ``useWholeBody()``, so
+simultaneously-dragged targets converge by alternating rather than one
+joint optimization.
 
 The standalone example also has three more latent breakages fixed here with
 already-bound APIs: a generic ``Skeleton.createJointAndBodyNodePair(parent,
@@ -318,8 +314,8 @@ def _setup_start_configuration(atlas):
 
 def _setup_ik_targets(atlas, gui):
     """Whole-body IK on four BodyNodes directly (l_hand, r_hand, l_foot,
-    r_foot). See the module docstring for why this targets the raw bodies
-    instead of EndEffectors (unbound) -- the per-limb contact-offset
+    r_foot). See the module docstring for why this port targets the raw
+    bodies instead of EndEffectors -- the per-limb contact-offset
     transforms and foot Support polygons the original attached to each
     EndEffector are dropped along with it.
     """
@@ -394,22 +390,20 @@ def build(gui=None) -> SceneHandle:
             "T:             Reset the robot to its relaxed posture\n",
             "V:             Print all dof positions\n",
             "Note: this is purely kinematic. Physical simulation is not allowed.\n",
-            "Note: each hand/foot target solves independently (no whole-body\n",
-            "posture objective is reachable from Python); see build() notes.\n",
+            "Note: each hand/foot target solves independently (this port\n",
+            "installs no whole-body posture objective); see build() notes.\n",
         ],
         notes=(
-            "EndEffector is unbound in dartpy (no createEndEffector/support "
-            "polygon), so IK targets attach directly to l_hand/r_hand/l_foot/"
-            "r_foot BodyNodes instead, and the foot-support/BalanceConstraint "
-            "balancing feature is dropped (needs EndEffector-based support "
-            "polygons). Skeleton-level WholeBodyIK is also unreachable "
-            "(Skeleton.getIK() has no createIfNull overload and there is no "
-            "way to construct/attach one from Python), so the RelaxedPosture "
-            "objective and 'r'/hold-to-tighten-posture feature are dropped "
-            "too; each of the 4 targets solves independently via its own "
-            "per-BodyNode InverseKinematics instead of one joint whole-body "
-            "solve. SupportPolygonVisual is dropped too (it draws EndEffector "
-            "supports). "
+            "This port attaches IK targets directly to the l_hand/r_hand/"
+            "l_foot/r_foot BodyNodes instead of rebuilding the original "
+            "EndEffector rig, so the foot Support polygons, "
+            "BalanceConstraint balancing, and SupportPolygonVisual are "
+            "dropped, as are the RelaxedPosture objective and "
+            "'r'/hold-to-tighten-posture; each of the 4 targets solves "
+            "independently via its own per-BodyNode InverseKinematics "
+            "instead of one joint whole-body solve. EndEffector, supports, "
+            "BalanceConstraint, and Skeleton-level WholeBodyIK are bound in "
+            "dartpy, so these are porting scope choices, not API gaps. "
             "Keys remapped: 1-4 -> F1-F4, p -> v; o/x/c removed with the "
             "features they drove."
         ),
