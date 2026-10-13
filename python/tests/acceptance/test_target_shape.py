@@ -82,7 +82,18 @@ def test_world_config_solver_selection():
     strict=True, reason="M1b/M5b: edit/compile modes and frozen topology enforcement are pending"
 )
 def test_edit_compile(world, robot):
+    # M1b/M5b settle builder spelling; the owned-object guard must protect
+    # structural mutations as well as World membership changes.
+    add_link = robot.add_link
+    parent = robot.links["palm"]
+    spec = dart.dynamics.RevoluteJointSpec(axis=(0, 0, 1))
+    before = (list(robot.links), robot.num_dofs)
     world.compile()
+    assert world.is_compiled
+    with pytest.raises(Exception) as frozen_link:
+        add_link("frozen_child", parent=parent, joint=spec)
+    assert type(frozen_link.value).__name__ == "ModelFrozenError"
+    assert (list(robot.links), robot.num_dofs) == before
     assert world.is_compiled
     # The design names the error but leaves its public module to M5.
     with pytest.raises(Exception) as frozen:
@@ -91,6 +102,10 @@ def test_edit_compile(world, robot):
     assert robot in world.multibodies
     with world.edit():
         assert not world.is_compiled
+        child = add_link("editable_child", parent=parent, joint=spec)
+        assert child in robot.links
+        assert len(robot.links) == len(before[0]) + 1
+        assert robot.num_dofs == before[1] + 1
         world.remove(robot)
     assert world.is_compiled
     assert robot not in world.multibodies
@@ -469,6 +484,62 @@ def test_world_busy_during_step(world, robot):
         active.set()
         worker.join(timeout=5)
         assert not worker.is_alive()
+
+
+@pytest.mark.xfail(strict=True, reason="M1d/M1g/M5b: StepHook and re-entrant stepping guards are pending")
+def test_world_rejects_reentrant_step(world, robot):
+    entries = 0
+
+    def during_step(current):
+        nonlocal entries
+        entries += 1
+        # Bound a broken implementation to one nested call, rather than
+        # letting the acceptance check recurse until the process fails.
+        if entries > 1:
+            return
+        count, time = current.step_count, current.time
+        positions = robot.getPositions().copy()
+        velocities = robot.getVelocities().copy()
+        # The design requires rejection but leaves its exception type to M1d.
+        with pytest.raises(Exception):
+            current.step()
+        assert (current.step_count, current.time) == (count, time)
+        np.testing.assert_array_equal(robot.getPositions(), positions)
+        np.testing.assert_array_equal(robot.getVelocities(), velocities)
+
+    # Constructor/callback spelling remains provisional M1g.
+    world.hooks.add(dart.StepHook(during_step, every=1))
+    world.step()
+    assert entries == 1
+    assert world.step_count == 1
+
+
+@pytest.mark.xfail(strict=True, reason="M5b: final World lifecycle properties are pending")
+def test_world_reset(world, robot, contact_box):
+    robot.setVelocities(np.ones(robot.getNumDofs()))
+    initial = robot.getPositions().copy()
+    for _ in range(3):
+        world.step()
+    assert not np.array_equal(robot.getPositions(), initial)
+    assert world.time > 0 and world.step_count > 0
+    assert world.getLastCollisionResult().getNumContacts() > 0
+    assert np.linalg.norm(contact_box.getConstraintForces()) > 0
+    members = list(world.multibodies)
+    states = [(model.getPositions().copy(), model.getVelocities().copy()) for model in (robot, contact_box)]
+    # Existing reset semantics clear clocks/history/impulses, preserving q/v.
+    # The final design lists reset without redefining it as an initial-state reset.
+    world.reset()
+    assert world.time == 0 and world.step_count == 0
+    assert list(world.multibodies) == members
+    assert world.getLastCollisionResult().getNumContacts() == 0
+    for model, (positions, velocities) in zip((robot, contact_box), states):
+        np.testing.assert_array_equal(model.getPositions(), positions)
+        np.testing.assert_array_equal(model.getVelocities(), velocities)
+        np.testing.assert_array_equal(model.getConstraintForces(), np.zeros(model.getNumDofs()))
+    world.step()
+    assert world.step_count == 1
+    assert world.time == pytest.approx(world.getTimeStep())
+    assert not np.array_equal(robot.getPositions(), states[0][0])
 
 
 @pytest.mark.xfail(strict=True, reason="M1g/M5b: StepHook and the World hook registry are pending")

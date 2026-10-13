@@ -730,16 +730,16 @@ Known gaps:
   | Owner | Representative target-shape oracle or separate release gate |
   | --- | --- |
   | M1a / WP-7.0.5 | Completed stage/baseline evidence; core bit-identical and performance gates |
-  | M1b | Compiled edit/frozen mutation and unsupported-shape rejection |
+  | M1b | Compiled edit/frozen membership and owned-object mutation; unsupported-shape rejection |
   | M1c | Snapshot channels/time/compatible clone/structural rejection; exact contact/sleep checkpoint replay |
-  | M1d | Counted-vs-serial motion, bool rejection, GIL progress and synchronized busy reads |
+  | M1d | Counted-vs-serial motion, bool rejection, GIL progress, synchronized busy reads and bounded re-entrant rejection |
   | M1e / M1f | Typed nondefault primary solver; Python World and MJCF DART detector defaults |
   | M1g | Both bounded compliant servos, persistent channels and global hook decimation |
   | M1h | IMU orientation, joint-state motion, gravity-dependent support wrench and changing contacts |
   | M1i | Distinct batch targets/serial clones, source isolation and a remapped stateless hook |
   | M2 | Compiled preparation plus allocation, numeric and performance gates in the core feature PRs |
   | M3 / M4 | Optional/gated work; they do not block the required snapshot/checkpoint contracts |
-  | M5 native API | Named collections, readonly copies, Transform/Rotation, loaders/builders/ownership, named errors and logging |
+  | M5 native API | Named collections, readonly copies, Transform/Rotation, loaders/builders/ownership, reset lifecycle, named errors and logging |
   | M5 package/tooling | Rename inventory, private-extension/wheel audits, stub-drift/new-Any/pyright checks and codemod round trips in their dedicated PRs |
   | M6b | RGB, metric depth, node segmentation lookup, Material, passive sync and bounded managed viewing |
   | M7 / WP-7.0.6 / WP-7.0.8 | Fresh RC-wheel acceptance/slim import, Gazebo compatibility and separately owned maintenance wheels |
@@ -772,6 +772,25 @@ Known gaps:
     Lint, check-lint and public-path checks pass. The last full Python run
     remains `740426529` (1,597 passed, 26 skipped, 38 strict XFAILs); these
     assertion-only refinements do not change native code or fixture counts.
+- **Representative core lifecycle follow-up** (`2711784c9` review):
+  - The frozen-mode gate also tries owned `add_link`, requires rejection
+    without changing links/DOFs, and verifies that `edit()` permits that change.
+    The callable and specification resolve before the rejection context.
+  - A same-thread hook attempts one nested step, bounding recursion in broken
+    implementations. Rejection must preserve counters/time/state, and the
+    original outer step must complete exactly once.
+  - The reset gate steps a moving robot alongside the contact fixture, then
+    requires clocks, contact history and constraint impulses to clear while
+    positions, velocities and membership are preserved. Motion resumes after
+    reset. These are existing native reset semantics, not a new initial-state
+    reset policy. The exact fixture/assertions passed a native preflight using
+    existing time/frame/membership getters in place of the final properties.
+  - Focused guarded pytest reports two native passes and 42 strict XFAILs;
+    `--runxfail` reports 42 intended pending-feature failures and two native
+    passes. Lint, check-lint and public-path checks pass. The last full Python
+    run remains `740426529`; no native implementation changed in this follow-up.
+    These additional representative checks still leave full mutation,
+    concurrency, clone-scene and release matrices with their feature owners.
 
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
