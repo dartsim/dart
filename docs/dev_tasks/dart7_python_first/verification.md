@@ -169,7 +169,9 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Status:** in review in [#3719](https://github.com/dartsim/dart/pull/3719). It changes behavior, so it targets main only.
+- **Status:** merged in [#3719](https://github.com/dartsim/dart/pull/3719).
+  Its remaining pose-consumer and admission defects are covered by the
+  follow-up below. It changes behavior, so it targets main only.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -325,8 +327,8 @@ Known gaps:
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
   and compares each detector against its own baseline.
-- **Status:** in progress: the harness is ready for review, and the
-  `dart7-base` pin waits for the start of M1.
+- **Status:** harness merged in #3720/#3749; `dart7-base` is pinned and its
+  full nightly smoke is complete. The record is under M1a below.
 
 ### WP-7.0.6 Compatibility harness and version plumbing
 
@@ -369,9 +371,95 @@ Known gaps:
     after every factory creator is removed. Registering the base Bullet detector
     makes it fail. Its Bullet and ODE cases run only when those components are
     built.
-  - Still open: the machine-checked inventories of gz-used accessors and
-    mutation paths.
-- **Status:** in progress.
+  - The machine-checked inventories of gz-used accessors and mutation paths
+    are in review in [#3729](https://github.com/dartsim/dart/pull/3729).
+- **Status:** safety and version plumbing merged; the inventory's integration
+  remains open.
+
+#### WP-7.0.3b follow-up: pose consumers and version admission
+
+- **Current reality (2026-10-13):** the original packet merged in #3719,
+  but four review findings remain in main `e378f985f`: rotated inertial poses
+  discard tensor orientation; sphere/ellipsoid/cylinder soft shapes discard
+  their pose; version admission rejects the 1.9 schema defining quaternion
+  and degree poses; empty poses throw instead of using the default identity.
+- **Scope:** `dart/utils/sdf/SdfParser.cpp`, its integration tests, a
+  reproducible model artifact and documentation. No installed-header,
+  component, layout or step-path changes. Preserve old default-frame and
+  identity-pose loads; corrected inertia/soft poses are labeled bug fixes.
+- **Acceptance:** rotated COM-frame moments equal `R I R^T` in the link frame
+  without a parallel-axis shift; every soft rest point receives its local
+  pose exactly once; both loaders accept actual supported modern versions;
+  empty poses default to identity after attribute validation, and invalid
+  counts, attributes, quaternion norms and unsupported frames still fail.
+- **Gates:** focused SDF regression, `pixi run build`, `pixi run test`,
+  `pixi run test-py`, `pixi run test-gui`, `pixi run -e gazebo test-gz`,
+  lint/check-lint, plus assessed Filament geometry/inertia evidence and two
+  clean final reviews.
+- **Regression evidence:** four new tests fail on the original parser and
+  pass with the fix (`build/sdf-pose-red.log`, `build/sdf-pose-green.log`).
+  Expanded cases check every soft rest point for box, sphere, ellipsoid and
+  cylinder; independent off-diagonal inertia values and unchanged COM;
+  empty/whitespace poses with invalid attributes; both loaders and the explicit
+  1.4–1.9 version allowlist; both universal-joint axes; unknown joint links;
+  modern frame-composition rejection and preserved legacy admission.
+- **Completed gates:** `pixi run build`; final `pixi run test-all` after
+  formatting and the final regression additions: 195/195 CTest cases and
+  1,596 Python tests pass. The 26 Python skips are 24 optional `ssik` cases
+  and two Python 3.15 shutdown cases; this environment is Python 3.14.
+  `pixi run test-gui` with the pinned Vulkan software driver also passes:
+  10/10 CTest cases and 529 Python cases, with 25 skips for the same optional
+  `ssik` dependency and Python 3.15 GUI-shutdown requirement.
+  `pixi run -e gazebo test-gz` exits zero: 199 non-performance plus four
+  performance gz-physics CTests, the DART plugin link check, and one gz-sim
+  entity-system CTest containing two GTest cases pass. This is the repository's
+  patched forward gate, not the unpatched release compatibility lanes.
+  The initial aggregate ended with SIGTERM before downstream tests; its log
+  is retained separately and is not counted as passing.
+- **Model oracle:** the durable fixture is
+  `data/sdf/test/pose_frames.world`; its integration regression checks two
+  skeletons, inertia, COM, all 114 soft rest points and their centroid.
+  An isolated C++ executable also reports the before/after values in
+  `build/sdf-pose-evidence/{before,after}-oracle.json`. The old moment is
+  `diag(0.04, 0.16, 0.18)` and the old rest centroid is approximately zero.
+  The fixed moment is `[[0.1, -0.06, 0], [-0.06, 0.1, 0], [0, 0, 0.18]]`
+  and the centroid is `(0.3, 0.3, 0.2)`, with maximum errors below
+  `1.2e-16`. COM remains `(0.15, 0, 0)` and both loads contain 114 points.
+- **Matched visual evidence:**
+  `build/sdf-pose-evidence/{before,after}/capture_main.png`, matching capture
+  sidecars, pixel-integrity verdicts and `comparison.png`. Both native
+  Filament captures use Vulkan llvmpipe, 1,200 by 800 pixels, zero steps,
+  body frames, inertia boxes and labels, with identical explicit cameras.
+  Parent and independent reviewer opened the images: rigid geometry stays
+  fixed while the inertia box rotates; the soft ellipsoid shifts and rotates
+  relative to its unchanged body frame. Both integrity verdicts pass.
+  These observations agree with the text oracle; they do not prove dynamics,
+  numeric precision or general SDFormat frame support.
+- **Comparison boundary:** the before library recompiles only the parser
+  from main `e378f985f` with the current build's flags and unchanged IO objects,
+  then loads it through `LD_PRELOAD`. It is a matched parser substitution,
+  not a clean historical engine build. Reproduction commands and source/library
+  digests are in `build/sdf-pose-before/{reproduce.py,provenance.json}`;
+  loaded-library mappings verify each run. The isolated text oracle can be
+  repeated with
+  `pixi run python build/sdf-pose-evidence/reproduce_text_oracle.py`.
+- **Reviews:** two independent post-fix source reviews are clean. The second
+  also assessed both native captures and identified the required GUI gate,
+  which is included above.
+- **Changelog decision:** a standalone IO bug-fix entry is required and added;
+  this is outside the consolidated M1 feature entry.
+- **Final checks:** `pixi run lint`, `pixi run check-lint`, the local-path
+  scanner and `git diff --check` pass. The complete offline PR body and
+  staged evidence attachment are under `build/sdf-pose-evidence/`; screenshots
+  and transient baseline/oracle files stay outside Git.
+- **Principle audit:** admission and numeric evidence precede claims;
+  installed headers, components, layouts and stepping paths are unchanged;
+  publication text excludes private paths; runtime and visual limits remain
+  explicit; existing open packet branches retain their ownership.
+- **Status:** implementation, verification and two independent reviews are
+  complete locally. Publication
+  requires approval. This follow-up does not establish full SDFormat schema
+  support or DART 7 program completion.
 
 ### WP-7.0.7 Scope artifacts
 
@@ -381,7 +469,9 @@ Known gaps:
   - the target-shape acceptance tests, marked `xfail(strict=True)`;
   - a maintainer check of the PyPI project history for deleted 7.0.0 files,
     because PyPI never accepts a reused file name.
-- **Status:** planned.
+- **Status:** in review in [#3728](https://github.com/dartsim/dart/pull/3728).
+  Its branch owns the updated dependency gates and strict target-shape tests;
+  the maintainer-only PyPI history check remains required.
 
 ### WP-7.0.8 Newer-Python wheels for 6.20.x
 
@@ -610,10 +700,18 @@ with 24 workers; no source fix was needed.
 
 ## M1a: World step stages
 
+- **Status:** merged in [#3775](https://github.com/dartsim/dart/pull/3775).
 - **Objective:** split `World::step` into private inlined stages while keeping
   stepping bit-identical to main.
 - **Baseline:** `dart7-base` is pinned to main `c3134f51b86d` as a local tag.
-  Its full nightly smoke record is being measured on the local performance host.
+  Its full nightly smoke finished on 2026-10-13 at 05:16:54 UTC on the
+  local Threadripper 3970X performance host (GCC 13.3, glibc 2.39,
+  Valgrind 3.22): PASS, all 78 rows `ok`, comprising 31 gated and 47
+  diagnostic rows. The run used native and harness revision
+  `c3134f51b86d0c147d505aebc3c6e1cf9d92e5c3`; all S7 detector/thread rows
+  are present. The completed record's SHA-256 is
+  `cfbb7bda672844f883febc66789b45da622f00e4785df01141ee5e13c3d693fc`.
+  This establishes the pre-refactor baseline, not later milestone performance.
 - **Nightly A/B:** at `a751424b3` against main `6cca697a2`, PASS: 31 neutral
   and 41 diagnostic rows; Ir geomean +0.009%, highest `s2r/dart` at +0.062%.
   Guards and allocations are identical.

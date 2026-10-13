@@ -1,6 +1,46 @@
 # Resume
 
-## Current state (2026-10-11)
+## Current reality (2026-10-13)
+
+This section supersedes the historical handoff below. The resumed checkout
+started detached at `dart7-base`; the current local packet branch is
+`fix/sdf-pose-followup`, based on fetched main `e378f985f`.
+
+- M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775). The
+  `dart7-base` nightly smoke has finished: all 78 rows pass; its pinned SHA,
+  host and record digest are in [verification.md](verification.md#m1a-world-step-stages).
+- Demo consolidation merged in [#3780](https://github.com/dartsim/dart/pull/3780).
+  It supplies the managed viewer host; M6b's render API remains required.
+- [#3728](https://github.com/dartsim/dart/pull/3728) (scope and acceptance)
+  and [#3729](https://github.com/dartsim/dart/pull/3729) (gz API inventory)
+  remain open. Their existing branches own those changes; do not duplicate
+  their implementations. Their newer decisions replace date-relative gates
+  with dependencies and retain FCL for C++ while gating the Python DART
+  detector default on the capability matrix and M1b shape rejection.
+- The recorded M0 exit waits for those two PRs even though M1a has merged.
+  Reconcile that sequencing at their integration; do not infer that the
+  completed M1a waived the remaining M0 acceptance.
+- The completed local packet fixes the four confirmed WP-7.0.3b pose gaps:
+  rotated inertia, non-box soft geometry, modern-version admission and empty
+  poses. It changes only the SDF parser, regression evidence and its docs;
+  public headers, class layouts and stepping kernels remain untouched. Core,
+  Python, GUI and the patched forward Gazebo gates pass, and two independent
+  reviews are clean. The verification owner records exact counts, skipped
+  cases, matched native captures and the isolated baseline's limits.
+- The full program still requires M1b through M1i, gated M2, M5, the remaining
+  M6b and M7 release acceptance. Keep this project home until those criteria,
+  required reviews and durable promotion are complete.
+
+Immediate next action: publish the locally verified SDF packet after approval,
+then execute the separately scoped M1b World-local preparation packet once
+the recorded M0 sequencing is reconciled. Its independent reproduction spike
+can proceed without changing production code or waiving the M0 exit.
+Keep existing #3728 and #3729 branches as their integration owners. Continue
+the missing packets; pending publication is not program completion.
+Publishing still requires explicit approval; the offline PR body and selected
+visual attachment are under `build/sdf-pose-evidence/`.
+
+## Historical handoff (2026-10-11)
 
 M0 is active. The GitHub milestone "DART 7.0.0" (#105, formerly "DART 6.21.0")
 tracks the release, and main's release target reads 7.0.0.
@@ -25,7 +65,7 @@ owners and M6b's remaining scope are linked in
 [changelog drafts](changelog-drafts.md) wait for M6b's consolidation PR;
 packet evidence is in [verification.md](verification.md#demo-consolidation-evidence).
 
-## Next steps
+## Historical next steps
 
 1. Land #3717 and #3719 (WP-7.0.3b, SDF pose attributes), then publish
    WP-7.0.5 (performance baseline and many-World rows).
