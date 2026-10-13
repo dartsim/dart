@@ -153,6 +153,306 @@ def _entries(result, section):
     return {entry["name"]: entry for entry in result[section]}
 
 
+def test_value_owning_std_array_constructor_dependencies(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text("namespace dart { struct A { A(); }; }")
+    snippet = """#include <array>
+#include <memory>
+#include <vector>
+using Value = dart::A;
+using Pointer = dart::A*;
+std::array<dart::A, 2> global;
+struct Holder {
+  std::array<Value, 2> member;
+  static std::array<dart::A, 2> declarationOnly;
+};
+extern std::array<dart::A, 2> external;
+void f(std::array<dart::A, 2> parameter,
+       std::array<dart::A, 2>& reference,
+       std::array<dart::A, 2>* pointer) {
+  std::array<dart::A, 2> local;
+  auto temporary = std::array<dart::A, 2>{};
+  std::array<dart::A, 0> empty;
+  std::array<dart::A, (0u)> parenthesizedEmpty;
+  std::array<dart::A*, 2> rawPointers;
+  std::array<Pointer, 2> aliasedPointers;
+  std::array<std::shared_ptr<dart::A>, 2> smartPointers;
+  std::array<std::vector<dart::A>, 2> vectors;
+  std::vector<dart::A> vector;
+}
+"""
+    original = _scan(extractor, extractor.index_api(headers), tmp_path, snippet)
+    row = _entries(original, "constructors")["dart::A"]
+    assert row["count"] == 4
+    assert row["declarations"][0]["access"] == "public"
+    header.write_text("namespace dart { class A { A(); }; }")
+    changed = _scan(extractor, extractor.index_api(headers), tmp_path, snippet)
+    assert (
+        _entries(changed, "constructors")["dart::A"]["declarations"]
+        != row["declarations"]
+    )
+
+
+@pytest.mark.parametrize(
+    "snippet, count",
+    [
+        ("std::array<std::array<dart::A, 2>, 3> values;", 1),
+        ("std::array<std::array<dart::A, 0>, 3> values;", 0),
+        ("std::array<std::array<dart::A, 2>, 0> values;", 0),
+        ("std::array<dart::A const, 2> values;", 1),
+        ("std::array<const dart::A, 2> values;", 1),
+        ("std::array<dart::A, 0x0ULL> values;", 0),
+        ("std::array<dart::A, (1 < 2 ? 2 : 0)> values;", 1),
+        ("std::array<dart::A, (1 > 2 ? 0 : 2)> values;", 1),
+        ("std::array<dart::A, 2> values[3];", 1),
+        ("auto values = new std::array<dart::A, 2>;", 1),
+        ("extern std::array<dart::A, 2> values{};", 1),
+        ("struct S { inline static std::array<dart::A, 2> values; };", 1),
+        ("struct S : std::array<dart::A, 2> {};", 1),
+        ("struct S : std::array<std::vector<dart::A>, 2> {};", 0),
+        ("std::vector<std::array<dart::A, 2>> values;", 0),
+        ("std::array<dart::A, 2> factory();", 0),
+        ("void f(std::array<dart::A, 2>& values) {}", 0),
+        ("std::array<dart::A, 2>* values;", 0),
+    ],
+)
+def test_std_array_construction_shapes(extractor, tmp_path, snippet, count):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { A(); }; }")
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, snippet)
+    assert _entries(result, "constructors").get("dart::A", {}).get("count", 0) == count
+
+
+def test_c_style_cast_receivers_preserve_target_shape(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+struct Target { void other(); };
+struct A { void hit() const; A* get(); Target* operator->(); };
+struct Callable { A* operator()(int); };
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """struct Foreign { void hit(); Foreign* make(); };
+struct Derived : dart::A {};
+using APtr = dart::A*;
+void f(Foreign* raw, dart::A* known, dart::Callable factory) {
+  ((dart::A*)raw)->hit();
+  (((const dart::A*)(raw)))->hit();
+  ((APtr)raw)->hit();
+  ((Derived*)raw)->hit();
+  ((dart::A&)*raw)->other();
+  ((Derived&)*raw)->other();
+  ((Foreign*)known)->hit();
+  ((raw))->hit();
+  ((raw)->make())->hit();
+  ((known))->hit();
+  (((known)->get()))->hit();
+  ((factory)(1))->hit();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["hit"]["count"] == 7
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 2
+    assert members["other"]["count"] == 2
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+
+
+def test_grouped_function_declarators(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        """namespace dart {
+struct A {
+  virtual void start(), stop() const;
+  A* first(), *second();
+  A* raw(), value();
+  int number(), *pointer();
+  int field, getter();
+  int method(), otherField;
+  A(int x, int y) : x(x), y(y) {}
+  int x, y;
+};
+void begin(), end();
+}
+"""
+    )
+    api = extractor.index_api(headers)
+    assert set(api.members) >= {"start", "stop", "first", "second", "number", "pointer"}
+    assert api.members["stop"][0]["const"]
+    assert not api.members["start"][0]["const"]
+    assert api.members["first"][0]["return_tokens"] == ["A", "*"]
+    assert api.members["second"][0]["return_tokens"] == ["A", "*"]
+    assert api.members["value"][0]["return_tokens"] == ["A"]
+    assert len(api.constructors["dart::A"]) == 1
+    assert set(api.data_members) >= {"field", "otherField"}
+    assert set(api.members) >= {"getter", "method"}
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        "void f(dart::A& a) { a.stop(); a.second()->start(); dart::end(); }",
+    )
+    members = _entries(result, "members")
+    assert (
+        members["stop"]["declarations"][0]["signature"] == "virtual void stop ( ) const"
+    )
+    assert members["start"]["unresolved_count"] == 0
+    assert set(_entries(result, "free_functions")) == {"dart::end"}
+    header.write_text(header.read_text().replace("stop() const", "stop(int) const"))
+    changed = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void f(dart::A& a) { a.stop(); a.second()->start(); dart::end(); }",
+    )
+    assert (
+        _entries(changed, "members")["stop"]["declarations"]
+        != members["stop"]["declarations"]
+    )
+
+
+@pytest.mark.parametrize(
+    "initializer",
+    ["1 < 2", "low < high", "2 > 1", "high > low", "make<int, int>(1 < 2)"],
+)
+def test_grouped_declarations_with_initializer_comparisons(
+    extractor, tmp_path, initializer
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { constexpr int low = 1, high = 2; "
+        "template<class T, class U> int make(bool); "
+        f"struct A {{ int first = {initializer}, second, getter(); }}; }}"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void f(dart::A& a) { a.second = a.getter(); }",
+    )
+    assert (
+        _entries(result, "data_members")["second"]["declarations"][0]["signature"]
+        == "int second"
+    )
+    assert (
+        _entries(result, "members")["getter"]["declarations"][0]["signature"]
+        == "int getter ( )"
+    )
+
+
+def test_source_derived_pointer_bindings_keep_builtin_arrow(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Target { void other(); }; "
+        "struct A { void hit() const; Target* operator->(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """struct Derived : dart::A {};
+struct Foreign { void hit(); };
+using Ptr = Derived*;
+using PtrAlias = Ptr;
+using Value = Derived;
+using ConstPtr = const Derived*;
+using ConstPtrAlias = ConstPtr;
+typedef const Derived* OldPtr;
+void f(Derived* raw, Derived*& pointerRef, Ptr one, PtrAlias two,
+       Derived& value, Value& valueAlias, Foreign* foreign,
+       ConstPtr three, OldPtr four, Derived const* five, ConstPtrAlias six) {
+  raw->hit(); pointerRef->hit(); one->hit(); two->hit();
+  three->hit(); four->hit(); five->hit(); six->hit();
+  value->other(); valueAlias->other(); foreign->hit();
+  Derived* pointers[2]; pointers[0]->hit();
+  PtrAlias matrix[2][3]; matrix[0][0]->hit();
+  Derived values[2]; values[0]->other();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["hit"]["count"] == 10
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 3
+    assert members["other"]["count"] == 3
+
+
+@pytest.mark.parametrize("included", [False, True])
+def test_source_class_aliases_keep_file_and_include_visibility(
+    extractor, tmp_path, included
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    declarations = "namespace n { struct Derived : dart::A {}; using Alias = Derived; }"
+    snippets = {
+        "a.cc": ('#include "types.hpp"' if included else declarations)
+        + "\nvoid a(n::Alias value) { value.hit(); }",
+        "b.cc": "namespace n { struct Foreign { void hit(); }; using Alias = Foreign; }"
+        "\nvoid b(n::Alias value) { value.hit(); }",
+    }
+    if included:
+        snippets["types.hpp"] = declarations
+    result = _scan_files(extractor, extractor.index_api(headers), tmp_path, snippets)
+    row = _entries(result, "members")["hit"]
+    assert row["count"] == 1
+    assert row["unresolved_count"] == 0
+    assert row["examples"] == ["dartsim/src/a.cc:2"]
+
+
+def test_hidden_friends_are_namespace_functions(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart { namespace ns {
+class A { friend void inspect(A&); };
+struct External { void member(); };
+struct FriendOwner { friend void External::member(); };
+struct Holder {
+  class Nested { friend void nested(Nested&) {} friend Nested* identity(Nested&); };
+};
+} }
+"""
+    )
+    api = extractor.index_api(headers)
+    assert "inspect" not in api.members
+    assert "nested" not in api.members
+    assert [entry["class"] for entry in api.members["member"]] == ["dart::ns::External"]
+    assert "dart::ns::inspect" in api.free_functions
+    assert "dart::ns::nested" in api.free_functions
+    assert api.free_functions["dart::ns::identity"][0]["declaration_scope"] == (
+        "dart",
+        "ns",
+        "Holder",
+        "Nested",
+    )
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        "void f(dart::ns::A& a, dart::ns::Holder::Nested& n) { inspect(a); nested(n); }",
+    )
+    assert set(_entries(result, "free_functions")) == {
+        "dart::ns::inspect",
+        "dart::ns::nested",
+    }
+
+
 def test_calls_counts_classification_and_ignored_text(extractor, api, tmp_path):
     result = _scan(
         extractor,

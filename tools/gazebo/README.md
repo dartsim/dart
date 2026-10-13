@@ -263,6 +263,9 @@ at its base clause, because each of its constructors calls a base constructor.
 For brace constructions of classes without declared constructors,
 `brace_member_declarations` retains public non-static fields in declaration
 order. This is lexical field evidence, without proving C++ aggregate eligibility.
+Constructed `std::array` values also retain their value elements' constructor
+dependencies, including nested arrays; literal zero extents and pointer elements
+do not construct those elements. Unknown extent expressions remain conservative.
 The lexical inventory retains declaration candidates for unresolved receivers
 (`unresolved_count`) and overloads, so a member name on a non-DART object can
 match a DART declaration. Bullet, ODE, and Assimp types (`bt`, `d`, and `ai`
@@ -277,15 +280,18 @@ aliases retain DART bases, and member lookup respects source declarations and
 class using-declarations. Lambda parameters stay within their lambda body.
 Range-for variables retain the range's element types within the loop body.
 Control-statement declarations stay within the complete statement, including
-`else` branches, and grouping parentheses preserve receiver types.
+`else` branches, and grouping parentheses preserve receiver types. C-style
+casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
-Data declarations retain grouped names and array dimensions;
-qualified free-function references count even when they are not calls.
+Function and data declarations retain grouped names and each declarator's type;
+data declarations retain array dimensions.
+Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
 Namespace-scope constants and variables retain their declarations in
 `variables`; unqualified free-function calls also search the DART namespaces
-associated with their argument types and bases.
+associated with their argument types and bases. Friend function declarations
+belong to the enclosing namespace, including those in private class sections.
 Referenced class templates retain their parameter declarations, including
 forward-declaration defaults. Direct DART includes are listed in `headers`
 with their source-header availability, and attributed declarations remain
