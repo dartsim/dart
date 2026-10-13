@@ -61,6 +61,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <string>
 
 #include <cstddef>
@@ -163,6 +165,99 @@ double contactAvg(const StandOutcome& o)
 }
 
 } // namespace
+
+//==============================================================================
+TEST(SoftFootSimbiconModelTest, ControllerRejectsUnknownStateMachine)
+{
+  const sfs::Model model = sfs::createModel(sfs::Feet::Rigid);
+  auto* initial = model.controller->getCurrentState();
+  try {
+    model.controller->changeStateMachine("missing state machine", 0.0);
+    FAIL() << "unknown state-machine name was accepted";
+  } catch (const std::invalid_argument& error) {
+    EXPECT_NE(
+        std::string(error.what()).find("missing state machine"),
+        std::string::npos);
+  }
+  EXPECT_EQ(model.controller->getCurrentState(), initial);
+  EXPECT_NO_THROW(model.controller->changeStateMachine("standing", 0.0));
+  EXPECT_EQ(model.controller->getCurrentState()->getName(), "standing");
+}
+
+//==============================================================================
+TEST(SoftFootSimbiconModelTest, ControllerRejectsOutOfRangeStateMachineIndex)
+{
+  const sfs::Model model = sfs::createModel(sfs::Feet::Rigid);
+  auto* initial = model.controller->getCurrentState();
+  EXPECT_THROW(
+      model.controller->changeStateMachine(std::size_t{4}, 0.0),
+      std::out_of_range);
+  EXPECT_THROW(
+      model.controller->changeStateMachine(
+          std::numeric_limits<std::size_t>::max(), 0.0),
+      std::out_of_range);
+  EXPECT_EQ(model.controller->getCurrentState(), initial);
+  EXPECT_NO_THROW(model.controller->changeStateMachine(std::size_t{3}, 0.0));
+  EXPECT_EQ(model.controller->getCurrentState()->getName(), "running");
+}
+
+//==============================================================================
+TEST(SoftFootSimbiconModelTest, ControllerRejectsNullDependencies)
+{
+  const sfs::Model model = sfs::createModel(sfs::Feet::Rigid);
+  EXPECT_THROW(
+      dart_demos::atlas_simbicon::Controller(
+          nullptr, model.world->getConstraintSolver()),
+      std::invalid_argument);
+  EXPECT_THROW(
+      dart_demos::atlas_simbicon::Controller(model.atlas, nullptr),
+      std::invalid_argument);
+}
+
+//==============================================================================
+TEST(SoftFootSimbiconModelTest, ControllerRejectsEveryMissingBodyAndDof)
+{
+  const sfs::Model model = sfs::createModel(sfs::Feet::Rigid);
+  const auto expectMissing = [&](const char* name) {
+    try {
+      dart_demos::atlas_simbicon::Controller controller(
+          model.atlas, model.world->getConstraintSolver());
+      FAIL() << "missing dependency '" << name << "' was accepted";
+    } catch (const std::invalid_argument& error) {
+      EXPECT_NE(std::string(error.what()).find(name), std::string::npos);
+    }
+  };
+
+  for (const char* name : {"pelvis", "l_foot", "r_foot", "l_uleg", "r_uleg"}) {
+    SCOPED_TRACE(name);
+    auto* body = model.atlas->getBodyNode(name);
+    ASSERT_NE(body, nullptr);
+    body->setName("missing_body");
+    expectMissing(name);
+    body->setName(name);
+  }
+  for (const char* name :
+       {"l_leg_hpx",
+        "r_leg_hpx",
+        "l_leg_hpy",
+        "r_leg_hpy",
+        "back_bky",
+        "l_leg_kny",
+        "r_leg_kny",
+        "l_leg_aky",
+        "r_leg_aky",
+        "l_arm_shx",
+        "r_arm_shx",
+        "l_arm_shy",
+        "r_arm_shy"}) {
+    SCOPED_TRACE(name);
+    auto* dof = model.atlas->getDof(name);
+    ASSERT_NE(dof, nullptr);
+    dof->setName("missing_dof");
+    expectMissing(name);
+    dof->setName(name);
+  }
+}
 
 //==============================================================================
 // Gate 1: the soft-foot biped stays finite + standing under the controller for

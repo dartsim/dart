@@ -6,6 +6,7 @@ is done only after two clean review passes on its final state.
 
 ## 2026-10-12: WP-PD.0, decision and project home
 
+- **State:** merged in #3732.
 - **Change:**
   - D31b in the DART 7 decisions, plus the program README notes on the
     milestone, release path and interim bindings.
@@ -25,7 +26,7 @@ is done only after two clean review passes on its final state.
   check-lint aggregate includes `check-ai-commands` and the semantic
   `check-ai-infra` checks. The pre-commit AI gate and the local-path gate also
   passed.
-- **Reviews:** every pushed head of #3732 first gets two consecutive clean
+- **Reviews:** every pushed head of #3732 had two consecutive clean
   local passes (`codex review --base origin/main`, gpt-6.1-sol at ultra
   effort). The GitHub reviews of the first three heads raised findings that
   the following commits fixed: runnable parity and wheel gates, the active
@@ -74,5 +75,57 @@ Published as stack #3748: #3745 (WP-PD.1), #3746 (WP-PD.2) and #3747
   pass. A review found that GC could clear an IK module that moved to a live
   Skeleton; the traversal now counts only nodes still in the hierarchy's own
   Skeleton, with a regression test.
-- **API snapshots:** #3735 makes `api_surface.py --snapshot` read
+- **API snapshots:** merged #3735 makes `api_surface.py --snapshot` read
   non-arithmetic enums, so the binding PRs can diff the API surface.
+- **Release-target check:** merged #3759 skips stacked PR bases.
+
+## 2026-10-12: WP-PD.4 (#3758), panels and scene contract
+
+- **Tests:** `test_GuiApp` has 31 cases.
+- **Teardown review:** callable destruction could add panel callbacks during
+  teardown.
+- **Teardown fix:** panel callbacks are cleared until none remain.
+- **macOS CI failure:** caused by ImGui swapping Ctrl and Cmd under scripted
+  input.
+- **Input fix:** the test context turns off that swap.
+- **Inputs:** the grid and heightmap fields of later batches gained ImGui's
+  fast step.
+- **Reviews:** two clean local passes on the final head.
+
+## 2026-10-12: WP-PD.5 (#3761), viewer bindings
+
+- **Tests:** `test_viewer.py` passes all 32 tests on the final head.
+- **GUI:** `pixi run test-gui` passes on the final head: 14 C++ tests and
+  299 Python tests passed, with 1 skipped.
+- **API snapshot:** exactly 99 `dartpy.viewer` entries added.
+- **Wheel:** the Linux wheel is 17.6 MB with the viewer.
+- **Headless:** the wheel's headless checks pass.
+- **Vanilla lane:** dartpy builds without the viewer.
+- **Reviews:** two clean local passes.
+
+## 2026-10-12: WP-PD.6 (#3755), model bindings
+
+- **Review finding:** a dropped model left its pelvis weld in a surviving
+  World.
+- **Fix:** controllers handed to Python now unharness the pelvis with their
+  last owner.
+- **Local reviews:** two clean passes.
+- **GitHub review:** clean.
+
+## 2026-10-12: WP-PD.7, S1 and S2 (#3762, #3763, #3764)
+
+- **World reports:** all 19 scenes match the C++ app's
+  `--debug-print-world` report.
+- **Seeded scenes:** the comparison uses the counts oracle.
+- **Humanoids:** the comparison uses cached robot assets.
+- **Captures:** every pair shows the same scene, camera and objects.
+- **Reviews:** each PR had two clean local passes.
+
+## 2026-10-12: S5 (WP-PD.14, #3765)
+
+- **World reports:** all seven scenes match the C++ app.
+- **Captures:** all seven scenes match the C++ captures.
+- **Python cycle:** 29 scenes cycle.
+- **C++ cycle:** all 37 scenes cycle.
+- **WorldHistory:** moved into the model library with four C++ cases.
+- **Reviews:** two clean local passes.
