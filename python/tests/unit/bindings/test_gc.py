@@ -1052,6 +1052,36 @@ def test_python_owned_whole_body_ik_objective_cycle_collects(path):
     )
 
 
+@pytest.mark.parametrize("node", ["body", "end_effector"])
+@pytest.mark.parametrize("refresh", [False, True])
+def test_skeleton_owned_ik_node_objective_cycle_collects(node, refresh):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return 0.0
+        skeleton = dart.dynamics.Skeleton()
+        body = skeleton.createFreeJointAndBodyNodePair()[1]
+        if {node!r} == 'end_effector':
+            body.createEndEffector('tip')
+            module = skeleton.getEndEffector(0).getIK(True)
+        else:
+            module = body.getIK(True)
+        ik = skeleton.getIK(True)
+        objective = Objective()
+        objective.owner = ik
+        module.setObjective(objective)
+        if {refresh!r}:
+            ik.refreshIKHierarchy()
+        refs = weakref.ref(objective), weakref.ref(ik), weakref.ref(skeleton)
+        del objective, module, ik, body, skeleton
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        """
+    )
+
+
 @pytest.mark.parametrize("location", ["objective", "null_objective", "problem"])
 @pytest.mark.parametrize("outside", ["none", "ik", "skeleton", "body", "world", "balance"])
 def test_skeleton_owned_ik_back_reference_cycle_collects_without_outside_owners(
