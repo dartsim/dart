@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -25,6 +26,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <cmath>
@@ -511,6 +513,55 @@ TEST(GuiAppControl, ReleaseNotifiesOnlyAcceptedEdits)
   EXPECT_EQ(calls, 0);
   slider->release();
   slider->release();
+  EXPECT_EQ(panel->dispatch({}), 0u);
+  EXPECT_EQ(calls, 1);
+}
+
+//==============================================================================
+TEST(GuiAppControl, SliderTextEntryRejectsNonFiniteAndClampsFiniteValues)
+{
+  auto panel = Control::makePanel();
+  auto slider = panel->addSlider("gain", 0.5, 0.0, 1.0);
+  int calls = 0;
+  slider->setOnChange([&] { ++calls; });
+
+  ScopedImGuiFrameContext context;
+  ImVec2 center;
+  context.frame([&] {
+    panel->render();
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    center = ImVec2(0.5f * (min.x + max.x), 0.5f * (min.y + max.y));
+  });
+  ImGuiIO& io = ImGui::GetIO();
+  const auto enterText = [&](const char* text) {
+    const std::vector<std::function<void()>> inputs = {
+        [&] { io.AddMousePosEvent(center.x, center.y); },
+        [&] {
+          io.AddKeyEvent(ImGuiMod_Ctrl, true);
+          io.AddMouseButtonEvent(0, true);
+        },
+        [&] { io.AddMouseButtonEvent(0, false); },
+        [&] { io.AddKeyEvent(ImGuiMod_Ctrl, false); },
+        [&] { io.AddInputCharactersUTF8(text); },
+        [&] { io.AddKeyEvent(ImGuiKey_Enter, true); },
+        [&] { io.AddKeyEvent(ImGuiKey_Enter, false); },
+        [] {},
+    };
+    for (const auto& input : inputs) {
+      input();
+      context.frame([&] { panel->render(); });
+      EXPECT_EQ(panel->dispatch({}), 0u);
+    }
+  };
+
+  enterText("inf");
+  EXPECT_DOUBLE_EQ(slider->getValue().x(), 0.5);
+  EXPECT_EQ(calls, 0);
+
+  enterText("2");
+  EXPECT_DOUBLE_EQ(slider->getValue().x(), 1.0);
+  EXPECT_EQ(calls, 1);
   EXPECT_EQ(panel->dispatch({}), 0u);
   EXPECT_EQ(calls, 1);
 }
@@ -1372,6 +1423,42 @@ TEST(LogCapture, SinkWritesToTheOtherStreamAreNotCapturedAgain)
     EXPECT_EQ(lines, (std::vector<std::string>{"first", "second"}));
     EXPECT_EQ(fromCout ? out : err, "first\n");
     EXPECT_EQ(fromCout ? err : out, "echo: first\nsecond\necho: second\n");
+  }
+}
+
+//==============================================================================
+TEST(LogCapture, OtherThreadsAreCapturedWhileASinkIsActive)
+{
+  for (const bool fromCout : {false, true}) {
+    std::promise<void> sinkEntered;
+    std::promise<void> releaseSink;
+    auto released = releaseSink.get_future();
+    bool otherCaptured = false;
+    bool capturedWhileBlocked = false;
+    testing::internal::CaptureStdout();
+    testing::internal::CaptureStderr();
+    {
+      LogCapture capture([&](CapturedLogLevel, const std::string& line) {
+        if (line == "blocked") {
+          sinkEntered.set_value();
+          released.wait();
+        } else if (line == "other") {
+          otherCaptured = true;
+        }
+      });
+      std::thread blocked(
+          [&] { (fromCout ? std::cout : std::cerr) << "blocked\n"; });
+      sinkEntered.get_future().wait();
+      std::thread other(
+          [&] { (fromCout ? std::cerr : std::cout) << "other\n"; });
+      other.join();
+      capturedWhileBlocked = otherCaptured;
+      releaseSink.set_value();
+      blocked.join();
+    }
+    testing::internal::GetCapturedStderr();
+    testing::internal::GetCapturedStdout();
+    EXPECT_TRUE(capturedWhileBlocked) << "fromCout=" << fromCout;
   }
 }
 
