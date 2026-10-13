@@ -71,11 +71,11 @@ def test_load_world_mjcf_detector_default(tmp_path):
 
 @pytest.mark.xfail(strict=True, reason="M1e/M5b: WorldConfig typed solver selection is pending")
 def test_world_config_solver_selection():
-    # M1e/M5b settle the selector and construction spelling. Select a primary
-    # PGS solver, not the current Dantzig primary with a PGS fallback.
+    # M1e/M5b settle the selector, construction and primary_solver observer
+    # spelling. Select a primary PGS solver, not Dantzig with a PGS fallback.
     config = dart.simulation.WorldConfig(primary_solver=dart.constraint.SolverType.PGS)
     world = dart.World(config=config)
-    assert isinstance(world.solver.getBoxedLcpSolver(), dart.constraint.PgsBoxedLcpSolver)
+    assert isinstance(world.solver.primary_solver, dart.constraint.PgsBoxedLcpSolver)
 
 
 @pytest.mark.xfail(
@@ -574,6 +574,7 @@ def test_capture_restore_state(world, robot):
     clone_robot.dofs.position_targets = -targets
     clone_robot.dofs.velocity_targets = -velocity_targets
     clone.restore_state(state)
+    np.testing.assert_array_equal(clone.gravity, (0, 0, 0))
     np.testing.assert_array_equal(clone_robot.getPositions(), positions)
     np.testing.assert_array_equal(clone_robot.getVelocities(), velocities)
     np.testing.assert_array_equal(clone_robot.dofs.position_targets, targets)

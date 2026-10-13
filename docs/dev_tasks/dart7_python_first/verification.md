@@ -762,6 +762,16 @@ Known gaps:
     native gates pass. The rebuilt native `test_SdfParser` also passes.
     Full `pixi run test-py` reports 1,597 passed, 26 skipped and 38 strict
     XFAILs with no XPASS. Lint, check-lint and public-path checks pass.
+- **Snapshot parameter and solver-observer follow-up** (`740426529` review):
+  - Restoring dynamic state into the differently configured clone must leave
+    its gravity unchanged. This rejects restoration that overwrites parameters.
+  - The typed primary-solver oracle uses an explicitly provisional snake_case
+    observer on `world.solver`, so it does not require a legacy camelCase API.
+  - Focused guarded pytest still reports two native passes and 40 strict
+    XFAILs; `--runxfail` reports 40 intended failures and two native passes.
+    Lint, check-lint and public-path checks pass. The last full Python run
+    remains `740426529` (1,597 passed, 26 skipped, 38 strict XFAILs); these
+    assertion-only refinements do not change native code or fixture counts.
 
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
