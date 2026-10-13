@@ -32,6 +32,8 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <cassert>
@@ -90,6 +92,28 @@ extern "C" __attribute__((noinline)) double stepWorldsAndRead(
 }
 
 namespace {
+
+template <typename T, typename = void>
+struct HasIsResting : std::false_type
+{
+};
+
+template <typename T>
+struct HasIsResting<
+    T,
+    std::void_t<decltype(std::declval<const T&>().isResting())>> : std::true_type
+{
+};
+
+template <typename T>
+bool isResting(const T& skeleton)
+{
+  if constexpr (HasIsResting<T>::value)
+    return skeleton.isResting();
+  else
+    // Revisions without deactivation never put skeletons to sleep.
+    return false;
+}
 
 dart::simulation::WorldPtr makeScene(const std::string& scene)
 {
@@ -367,11 +391,6 @@ int main(int argc, char** argv)
         options.mEnabled = false;
         world->setDeactivationOptions(options);
       }
-#else
-      if (noSleep) {
-        std::puts("UNSUPPORTED: DeactivationOptions");
-        return dart::simulation::WorldPtr{};
-      }
 #endif
 
       return world;
@@ -471,7 +490,7 @@ int main(int argc, char** argv)
         const auto skeleton = world->getSkeleton(s);
         if (skeleton->isMobile()) {
           ++mobile;
-          resting += skeleton->isResting();
+          resting += isResting(*skeleton);
           const Eigen::VectorXd q = skeleton->getPositions();
           const Eigen::VectorXd v = skeleton->getVelocities();
           finite = finite && q.allFinite() && v.allFinite();
