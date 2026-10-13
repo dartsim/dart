@@ -38,6 +38,9 @@ namespace dart::gui::app {
 
 namespace {
 
+// Both stream buffers share recursion state only within the current thread.
+thread_local bool inLogCaptureSink = false;
+
 //==============================================================================
 /// Strips ANSI SGR escape sequences ("\033[...m") from `text`.
 std::string stripAnsi(const std::string& text)
@@ -91,14 +94,8 @@ class LogCapture::TeeBuf : public std::streambuf
 {
 public:
   TeeBuf(
-      std::streambuf* original,
-      CapturedLogLevel fallbackLevel,
-      LineSink sink,
-      bool& inSink)
-    : mOriginal(original),
-      mFallbackLevel(fallbackLevel),
-      mSink(std::move(sink)),
-      mInSink(inSink)
+      std::streambuf* original, CapturedLogLevel fallbackLevel, LineSink sink)
+    : mOriginal(original), mFallbackLevel(fallbackLevel), mSink(std::move(sink))
   {
   }
 
@@ -111,7 +108,7 @@ protected:
       return traits_type::not_eof(c);
 
     // Writes the sink makes are forwarded but never captured again.
-    if (mInSink)
+    if (inLogCaptureSink)
       return c;
 
     const char ch = traits_type::to_char_type(c);
@@ -126,7 +123,7 @@ protected:
   {
     if (mOriginal)
       mOriginal->sputn(s, n);
-    if (mInSink)
+    if (inLogCaptureSink)
       return n;
     for (std::streamsize i = 0; i < n; ++i) {
       if (s[i] == '\n')
@@ -143,7 +140,7 @@ private:
     if (mLineBuf.empty())
       return;
 
-    mInSink = true;
+    inLogCaptureSink = true;
     try {
       if (mSink) {
         const CapturedLogLevel level = sniffSeverity(mLineBuf, mFallbackLevel);
@@ -152,7 +149,7 @@ private:
     } catch (...) {
       // The log console must never crash the app, even if the sink throws.
     }
-    mInSink = false;
+    inLogCaptureSink = false;
     mLineBuf.clear();
   }
 
@@ -160,16 +157,15 @@ private:
   CapturedLogLevel mFallbackLevel;
   LineSink mSink;
   std::string mLineBuf;
-  bool& mInSink;
 };
 
 //==============================================================================
 LogCapture::LogCapture(LineSink sink)
 {
   mCoutBuf = std::make_unique<TeeBuf>(
-      std::cout.rdbuf(), CapturedLogLevel::Info, sink, mInSink);
+      std::cout.rdbuf(), CapturedLogLevel::Info, sink);
   mCerrBuf = std::make_unique<TeeBuf>(
-      std::cerr.rdbuf(), CapturedLogLevel::Warning, sink, mInSink);
+      std::cerr.rdbuf(), CapturedLogLevel::Warning, sink);
   mOldCoutBuf = std::cout.rdbuf(mCoutBuf.get());
   mOldCerrBuf = std::cerr.rdbuf(mCerrBuf.get());
 }

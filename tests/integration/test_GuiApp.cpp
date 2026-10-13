@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -25,6 +26,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <cmath>
@@ -1372,6 +1374,42 @@ TEST(LogCapture, SinkWritesToTheOtherStreamAreNotCapturedAgain)
     EXPECT_EQ(lines, (std::vector<std::string>{"first", "second"}));
     EXPECT_EQ(fromCout ? out : err, "first\n");
     EXPECT_EQ(fromCout ? err : out, "echo: first\nsecond\necho: second\n");
+  }
+}
+
+//==============================================================================
+TEST(LogCapture, OtherThreadsAreCapturedWhileASinkIsActive)
+{
+  for (const bool fromCout : {false, true}) {
+    std::promise<void> sinkEntered;
+    std::promise<void> releaseSink;
+    auto released = releaseSink.get_future();
+    bool otherCaptured = false;
+    bool capturedWhileBlocked = false;
+    testing::internal::CaptureStdout();
+    testing::internal::CaptureStderr();
+    {
+      LogCapture capture([&](CapturedLogLevel, const std::string& line) {
+        if (line == "blocked") {
+          sinkEntered.set_value();
+          released.wait();
+        } else if (line == "other") {
+          otherCaptured = true;
+        }
+      });
+      std::thread blocked(
+          [&] { (fromCout ? std::cout : std::cerr) << "blocked\n"; });
+      sinkEntered.get_future().wait();
+      std::thread other(
+          [&] { (fromCout ? std::cerr : std::cout) << "other\n"; });
+      other.join();
+      capturedWhileBlocked = otherCaptured;
+      releaseSink.set_value();
+      blocked.join();
+    }
+    testing::internal::GetCapturedStderr();
+    testing::internal::GetCapturedStdout();
+    EXPECT_TRUE(capturedWhileBlocked) << "fromCout=" << fromCout;
   }
 }
 
