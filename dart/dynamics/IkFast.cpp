@@ -258,7 +258,9 @@ auto IkFast::getDofs() const -> const std::vector<std::size_t>&
       dtwarn << "[IkFast::getDofs] This analytical IK was not able "
              << "to configure properly, so it will not be able to compute "
              << "solutions. Returning an empty list of dofs.\n";
-      DART_ASSERT(mDofs.empty());
+      // Keep mDofs, since a later call configures again with them
+      static const std::vector<std::size_t> noDofs;
+      return noDofs;
     }
   }
 
