@@ -220,6 +220,9 @@ public:
     io.DisplaySize = ImVec2(800.0f, 600.0f);
     io.DeltaTime = 1.0f / 60.0f;
     io.IniFilename = nullptr;
+    // Scripted input presses Ctrl itself; macOS behaviors would swap it for
+    // Cmd, so Ctrl+click would never reach the widgets.
+    io.ConfigMacOSXBehaviors = false;
     // The test never uploads textures; claiming the capability lets ImGui
     // manage the font atlas itself.
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
