@@ -141,6 +141,17 @@ lane:
 | `STALE` | an accepted difference that now passes; drop the entry |
 | `FIXED` | an expected failure that ran and passed |
 
+gz-sim `INTEGRATION_reset_sensors` is a known test race, not a DART
+regression: right after `server.Run()`, `ResetFixture.HandleReset` reads the
+last asynchronous air-pressure message (`reset_sensors.cc` lines 259 and 352)
+and sometimes gets the previous 100 Hz sample, for example 100360.66 versus
+100362.99 Pa, while its altitude check passes. In 20 interleaved Harmonic-lane
+runs each, the 6.20.0 candidate and DART 6.19.5 both failed 4 times with
+identical values. The lane reports it `FLAKY` when the retry passes and `NEW`
+when both attempts fail (about 4% of lane runs). If `NEW` names only this
+failure, rerun the lane before investigating; any other case or value pattern
+in that test is a real failure. The fix belongs in gz-sim's test.
+
 `compare` requires an existing, readable expected-failure file; only
 `--write-baseline` may create a missing one. Timing multipliers
 (`--max-seconds-scale`, including its environment default, and
