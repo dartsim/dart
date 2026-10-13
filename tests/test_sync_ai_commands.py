@@ -56,7 +56,6 @@ def test_manifest_owned_cleanup_preserves_unrelated_skill(tmp_path, monkeypatch)
     assert not (target / "dart-alpha").exists()
     assert unrelated.read_text() == "personal content\n"
     assert json.loads(manifest_path.read_text())["paths"] == []
-    (tmp_path / ".opencode" / "command").mkdir(parents=True)
     assert sync.check_capability_parity(tmp_path)
 
 
@@ -277,7 +276,7 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
     commands.mkdir(parents=True)
     (commands / "dart-sample.md").write_text(
         "Use `dart-nonexistent-workflow`, `/dart-missing-slash`, and "
-        "`$dart-missing-codex decide` with the `dart-demos` app, "
+        "`$dart-missing-codex decide`, "
         "`/dart-sample`, and `$dart-sample audit`.\n"
         "```bash\n/dart-missing-fenced x\n$dart-sample run\n"
         "ls /tmp/dart-not-a-capability\n```\n"
@@ -314,7 +313,10 @@ def test_checked_in_sources_mention_only_existing_capabilities():
     )
 
 
-def test_unknown_capability_scan_uses_only_the_explicit_ledger(tmp_path):
+def test_unknown_capability_scan_uses_only_the_explicit_ledger(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sync, "NON_CAPABILITY_DART_NAMES", frozenset({"dart-component"})
+    )
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
     (tmp_path / "dart").mkdir()
@@ -322,7 +324,7 @@ def test_unknown_capability_scan_uses_only_the_explicit_ledger(tmp_path):
         "set(components dart-gui-osg)\n", encoding="utf-8"
     )
     (commands / "dart-sample.md").write_text(
-        "Link `dart-gui-osg` and run the `dart-demos` app from `dart-sample`.\n",
+        "Link `dart-gui-osg` and use the `dart-component` library from `dart-sample`.\n",
         encoding="utf-8",
     )
 
@@ -334,11 +336,14 @@ def test_unknown_capability_scan_uses_only_the_explicit_ledger(tmp_path):
     ]
 
 
-def test_unknown_capability_scan_never_exempts_invocation_forms(tmp_path):
+def test_unknown_capability_scan_never_exempts_invocation_forms(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sync, "NON_CAPABILITY_DART_NAMES", frozenset({"dart-component"})
+    )
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
     (commands / "dart-sample.md").write_text(
-        "Run `/dart-demos` or `$dart-demos` from `dart-sample`.\n",
+        "Run `/dart-component` or `$dart-component` from `dart-sample`.\n",
         encoding="utf-8",
     )
 
@@ -346,7 +351,7 @@ def test_unknown_capability_scan_never_exempts_invocation_forms(tmp_path):
 
     # Even ledger names are workflow references when written as invocations.
     assert errors == [
-        ".claude/commands/dart-sample.md: unknown capability `dart-demos`"
+        ".claude/commands/dart-sample.md: unknown capability `dart-component`"
     ]
 
 
@@ -372,13 +377,16 @@ def test_ledger_does_not_mask_current_or_retired_capabilities(tmp_path, monkeypa
     ]
 
 
-def test_source_path_references_are_always_validated(tmp_path):
+def test_source_path_references_are_always_validated(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sync, "NON_CAPABILITY_DART_NAMES", frozenset({"dart-component"})
+    )
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
     (commands / "dart-sample.md").write_text(
         "See `.claude/skills/dart-missing-skill` (no slash), "
         "(see .claude/skills/dart-missing-paren) and the ledger path "
-        "`.claude/skills/dart-demos`, plus the sibling links "
+        "`.claude/skills/dart-component`, plus the sibling links "
         "[next](./dart-missing-sibling.md) and [dir](./dart-missing-dir/).\n",
         encoding="utf-8",
     )
@@ -387,7 +395,7 @@ def test_source_path_references_are_always_validated(tmp_path):
 
     prefix = ".claude/commands/dart-sample.md: unknown capability "
     assert errors == [
-        prefix + "`dart-demos`",
+        prefix + "`dart-component`",
         prefix + "`dart-missing-dir`",
         prefix + "`dart-missing-paren`",
         prefix + "`dart-missing-sibling`",

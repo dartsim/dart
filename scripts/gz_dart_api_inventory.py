@@ -633,8 +633,8 @@ def scopes(tokens):
                                 tokens.pairs[i],
                             )
                     functions.append(method)
-                elif owner and access != "private":
-                    member = data_member(prefix, owner)
+                elif owner is None or access != "private":
+                    member = data_member(prefix, owner or "::".join(namespace))
                     if member:
                         fields.append(member)
                 if prefix and "using" in prefix and "=" in prefix:
@@ -681,6 +681,7 @@ class ApiIndex:
     constructors: dict = field(default_factory=dict)
     declares_constructor: set = field(default_factory=set)
     data_members: dict = field(default_factory=lambda: defaultdict(list))
+    variables: dict = field(default_factory=lambda: defaultdict(list))
     free_functions: dict = field(default_factory=lambda: defaultdict(list))
     aliases: dict = field(default_factory=dict)
     macros: set = field(default_factory=set)
@@ -1103,8 +1104,13 @@ def index_api(header_root):
             ):
                 api.free_functions[function["name"]].append(function)
         for member in fields:
-            if member["class"].startswith("dart::"):
-                api.data_members[member["name"]].append(member)
+            if member["class"] == "dart" or member["class"].startswith("dart::"):
+                if member["class"] in api.classes:
+                    api.data_members[member["name"]].append(member)
+                else:
+                    api.variables[member["class"] + "::" + member["name"]].append(
+                        member
+                    )
     for name, values in pending_aliases:
         scope = tuple(name.split("::")[:-1])
         for _, _, value in names_in(values):
@@ -1174,6 +1180,7 @@ def scan_sources(api, source_root):
             "members",
             "constructors",
             "data_members",
+            "variables",
             "free_functions",
             "macros",
             "overrides",
@@ -1604,7 +1611,7 @@ def scan_sources(api, source_root):
         row["receiver_types"].update(dart_receivers)
         row["unresolved_count"] += not bool(dart_receivers)
 
-    def free_function(name, tokens, index, path, namespace_aliases):
+    def free_function(name, tokens, index, path, imports, namespace_aliases):
         """The DART functions that an unqualified call can reach.
 
         Lookup stops at the innermost scope that declares the name: a function
@@ -1638,7 +1645,34 @@ def scan_sources(api, source_root):
                 if scope[: len(owner)] == owner:
                     declared_at.add(len(owner))
         depths = declared_at | {depth for depth, items in found.items() if items}
-        return sorted(set(found[max(depths, default=0)]))
+        result = set(found[max(depths, default=0)])
+        if any("::".join(scope[:size]) in source_classes for size in declared_at):
+            return sorted(result)  # member lookup suppresses ADL
+        opening = template_end(tokens.values, index + 1)
+        closing = tokens.pairs.get(opening)
+        if closing is not None:
+            start = i = opening + 1
+            while i <= closing:
+                if i == closing or tokens.values[i] == ",":
+                    types = receiver(tokens, i - 1, imports, namespace_aliases)
+                    for offset, _, argument in names_in(tokens.values[start:i]):
+                        resolved = resolve(
+                            argument, tokens, start + offset, imports, namespace_aliases
+                        )
+                        if resolved:
+                            types.add(resolved)
+                    for owner in set().union(*(api.ancestors(t) for t in types)):
+                        namespace = owner.rpartition("::")[0]
+                        while namespace in api.classes:
+                            namespace = namespace.rpartition("::")[0]
+                        candidate = namespace + "::" + name
+                        if candidate in api.free_functions:
+                            result.add(candidate)
+                    start = i + 1
+                elif tokens.values[i] in {"(", "[", "{"} and i in tokens.pairs:
+                    i = tokens.pairs[i]
+                i += 1
+        return sorted(result)
 
     def qualified_function(name, scope, tokens, index, namespace_aliases):
         here = tokens.scopes.get(index, ())
@@ -1863,10 +1897,28 @@ def scan_sources(api, source_root):
             call = j < len(values) and values[j] == "("
             access = values[i - 1] if i and values[i - 1] in {".", "->"} else None
             qualifier = None
-            if i and values[i - 1] == "::" and (call or tokens.source_relevant):
+            if i and values[i - 1] == "::":
                 qualifier = "::".join(qualifier_path(values, i))
                 resolved = resolve(qualifier, tokens, i, imports, namespace_aliases)
             if not call:
+                if qualifier is not None:
+                    for candidate in api.spellings(
+                        expand(qualifier + "::" + name, namespace_aliases),
+                        tokens.scopes.get(i, ()),
+                        imports,
+                    ):
+                        if candidate in api.variables:
+                            add(
+                                "variables",
+                                candidate,
+                                path,
+                                tokens.line(i),
+                                declarations=[
+                                    public_declaration(d)
+                                    for d in api.variables[candidate]
+                                ],
+                            )
+                            break
                 if access and tokens.source_relevant:
                     inferred = receiver(tokens, i - 2, imports, namespace_aliases)
                     if access == "->":
@@ -1953,7 +2005,9 @@ def scan_sources(api, source_root):
                 if inferred:
                     declarations = candidates(name, inferred)
                 if not declarations:
-                    for free in free_function(name, tokens, i, path, namespace_aliases):
+                    for free in free_function(
+                        name, tokens, i, path, imports, namespace_aliases
+                    ):
                         add("free_functions", free, path, tokens.line(i))
             if j == i + 1:
                 declarations = [

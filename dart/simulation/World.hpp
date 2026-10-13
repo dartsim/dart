@@ -726,6 +726,44 @@ private:
   /// Number of full skeleton membership checks, for deterministic cost tests.
   std::size_t getSolverSkeletonOwnershipCheckCount() const;
 
+  /// State that one step() call passes between its stages; defined in
+  /// World.cpp.
+  struct StepContext;
+
+  /// Prepares the World for a step and mirrors the deactivation flag onto the
+  /// constraint solver. With deactivation on, also wakes resting skeletons
+  /// after edits made between steps.
+  inline void beginStep(StepContext& context);
+
+  /// Runs the whole step with deactivation off.
+  inline void stepWithoutDeactivation(const StepContext& context);
+
+  /// Records whether a custom BodyNodeCollisionFilter lets skeletons sleep
+  /// this step. When the last solve found no contacts, runs the all-resting
+  /// readiness scan, which can clear residual forces and commands and wake
+  /// resting skeletons. If every mobile skeleton still rests and nothing
+  /// changed since the last step, advances time and the frame count without
+  /// integrating or solving, clears resting skeletons' accelerations under
+  /// such a filter, and returns true.
+  inline bool tryAllRestingFastPath(StepContext& context);
+
+  /// Wakes resting skeletons that are disturbed or moving, clears the forces
+  /// and commands of those still resting under step(true), and integrates the
+  /// velocities of the awake ones.
+  inline void advanceVelocities(const StepContext& context);
+
+  /// Solves constraints once, recording the collision filter's decisions
+  /// when a later step may replay them.
+  inline void solveConstraints(StepContext& context);
+
+  /// Applies constraint impulses and integrates the positions of awake
+  /// skeletons, then clears their forces and commands under step(true).
+  inline void advancePositions(const StepContext& context);
+
+  /// Updates rest states and time, then saves what the next step compares
+  /// against.
+  inline void finishDeactivationStep(const StepContext& context);
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,

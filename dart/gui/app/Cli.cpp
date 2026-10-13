@@ -31,14 +31,16 @@
  */
 
 // runCommandLine(): the demo app's command-line options and dispatch. See
-// examples/demos/README.md for the host architecture.
+// docs/onboarding/architecture.md for the host architecture.
 
 #include "App.hpp"
 #include "GuiOptions.hpp"
 
+#include <atomic>
 #include <charconv>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 #include <cstdlib>
@@ -65,7 +67,7 @@ struct Options
   bool cycleScenes = false;
   int cycleFrames = 30;
   bool headless = false;
-  std::string shotPath = "dart-demos.png";
+  std::string shotPath = "demos.png";
   int steps = 150;
   std::string sceneId;
   std::optional<int> width;
@@ -101,7 +103,7 @@ void printUsage(const char* prog)
       << "  --headless      Render one frame off-screen to a PNG and exit "
          "(no window).\n"
       << "  --shot <path>   Output PNG path for --headless (default "
-         "dart-demos.png).\n"
+         "demos.png).\n"
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
@@ -122,33 +124,31 @@ void printUsage(const char* prog)
 }
 
 //==============================================================================
-bool parseWindowExtent(const char* value, std::optional<int>& extent)
+/// Parses a whole decimal integer in [min, max]; otherwise reports `what` and
+/// returns nothing.
+std::optional<int> parseBoundedInt(
+    const std::string& value, const char* what, int min, int max)
 {
   int parsed = 0;
-  const auto* end = value + std::strlen(value);
-  const auto result = std::from_chars(value, end, parsed);
-  if (result.ec != std::errc() || result.ptr != end || parsed <= 0) {
-    std::cerr << "Invalid window dimension '" << value
-              << "'. Expected a positive integer.\n";
-    return false;
+  const char* end = value.data() + value.size();
+  const auto result = std::from_chars(value.data(), end, parsed);
+  if (result.ec != std::errc() || result.ptr != end || parsed < min
+      || parsed > max) {
+    std::cerr << "Invalid " << what << " '" << value
+              << "'. Expected an integer from " << min << " to " << max
+              << ".\n";
+    return std::nullopt;
   }
-  extent = parsed;
-  return true;
+  return parsed;
 }
 
-//==============================================================================
-std::size_t parseThreadCount(const char* value, std::size_t fallback)
-{
-  if (value == nullptr || value[0] == '\0')
-    return fallback;
-
-  char* end = nullptr;
-  const auto parsed = std::strtoull(value, &end, 10);
-  if (end == value)
-    return fallback;
-
-  return static_cast<std::size_t>(parsed);
-}
+constexpr int kMaxFrames = 1000000;
+constexpr int kMaxSteps = 10000000;
+constexpr int kMaxExtent = 16384;
+constexpr int kMaxThreads = 256;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+constexpr int kMaxScrollTicks = 1000;
+#endif
 
 //==============================================================================
 /// Parses command-line options.
@@ -157,8 +157,13 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
   const int argc = static_cast<int>(argv.size());
   if (const char* detectorEnv = std::getenv("COLLISION_DETECTOR"))
     opt.collisionDetectorName = detectorEnv;
-  if (const char* threadsEnv = std::getenv("THREADS"))
-    opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
+  // An invalid THREADS value is reported and the default kept.
+  if (const char* threadsEnv = std::getenv("THREADS");
+      threadsEnv != nullptr && threadsEnv[0] != '\0') {
+    if (const auto threads
+        = parseBoundedInt(threadsEnv, "THREADS value", 0, kMaxThreads))
+      opt.simulationThreads = static_cast<std::size_t>(*threads);
+  }
   // Use the shared GUI scale environment override; the
   // --gui-scale flag below overrides it.
   if (const char* guiScaleEnv = std::getenv("DART_GUI_SCALE");
@@ -187,7 +192,11 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
     } else if (std::strcmp(a, "--frames") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.cycleFrames = std::stoi(argv[++i]);
+      const auto frames
+          = parseBoundedInt(argv[++i], "frame count", 0, kMaxFrames);
+      if (!frames)
+        return ParseResult::Error;
+      opt.cycleFrames = *frames;
     } else if (std::strcmp(a, "--headless") == 0) {
       opt.headless = true;
     } else if (std::strcmp(a, "--shot") == 0) {
@@ -197,16 +206,22 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
     } else if (std::strcmp(a, "--steps") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.steps = std::stoi(argv[++i]);
+      const auto steps = parseBoundedInt(argv[++i], "step count", 0, kMaxSteps);
+      if (!steps)
+        return ParseResult::Error;
+      opt.steps = *steps;
     } else if (std::strcmp(a, "--width") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      if (!parseWindowExtent(argv[++i].c_str(), opt.width))
+      opt.width = parseBoundedInt(argv[++i], "window dimension", 1, kMaxExtent);
+      if (!opt.width)
         return ParseResult::Error;
     } else if (std::strcmp(a, "--height") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      if (!parseWindowExtent(argv[++i].c_str(), opt.height))
+      opt.height
+          = parseBoundedInt(argv[++i], "window dimension", 1, kMaxExtent);
+      if (!opt.height)
         return ParseResult::Error;
     } else if (std::strcmp(a, "--gui-scale") == 0) {
       if (needsValue(i) == ParseResult::Error)
@@ -223,8 +238,11 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
     } else if (std::strcmp(a, "--threads") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.simulationThreads
-          = parseThreadCount(argv[++i].c_str(), opt.simulationThreads);
+      const auto threads
+          = parseBoundedInt(argv[++i], "thread count", 0, kMaxThreads);
+      if (!threads)
+        return ParseResult::Error;
+      opt.simulationThreads = static_cast<std::size_t>(*threads);
     } else if (std::strcmp(a, "--debug-select-body") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -235,7 +253,11 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
     } else if (std::strcmp(a, "--debug-scroll-memory-panel") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.debugScrollMemoryPanelTicks = std::stoi(argv[++i]);
+      const auto ticks
+          = parseBoundedInt(argv[++i], "tick count", 0, kMaxScrollTicks);
+      if (!ticks)
+        return ParseResult::Error;
+      opt.debugScrollMemoryPanelTicks = *ticks;
 #endif
     } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
       printUsage(argv[0].c_str());
@@ -253,8 +275,23 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
 
 //==============================================================================
 int dart::gui::app::runCommandLine(
-    std::vector<Scene> scenes, const std::vector<std::string>& argv)
+    std::vector<Scene> scenes,
+    const std::vector<std::string>& argv,
+    std::function<bool()> stopRequested,
+    std::function<bool(const std::exception&)> isStopException)
 {
+  // The host redirects the process-wide output streams; one run at a time.
+  static std::atomic<bool> running{false};
+  if (running.exchange(true))
+    throw std::logic_error("runCommandLine() is already running");
+  struct Release
+  {
+    ~Release()
+    {
+      running = false;
+    }
+  } release;
+
   Options opt;
   const ParseResult parseResult = parseArgs(argv, opt);
   if (parseResult == ParseResult::Help)
@@ -274,6 +311,8 @@ int dart::gui::app::runCommandLine(
     host.setDebugSelectBodyName(opt.debugSelectBody);
   if (opt.debugRecordProfile)
     host.setDebugRecordProfile(true);
+  host.setStopRequested(std::move(stopRequested));
+  host.setStopException(std::move(isStopException));
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   if (opt.debugScrollMemoryPanelTicks > 0)
     host.setDebugScrollMemoryPanelTicks(opt.debugScrollMemoryPanelTicks);

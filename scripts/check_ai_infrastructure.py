@@ -52,7 +52,6 @@ REFERENCE_ROOTS = (
     ".agents/",
     ".claude/",
     ".codex/",
-    ".opencode/",
     "dart/",
     "docs/",
     "python/",
@@ -231,39 +230,18 @@ GUI_DEVICE_CTESTS = frozenset(
         "test_FilamentNative",
         "test_GuiParity",
         "test_GuiMesh",
-        "examples_demos_cycle_render",
         "offscreen_capture_smoke",
     }
 )
-GUI_APP_CTEST_ARGUMENTS = {
-    "examples_demos_cycle": ("--cycle-scenes", "--frames", "2"),
-    "examples_demos_cycle_render": (
-        "--cycle-scenes",
-        "--headless",
-        "--frames",
-        "2",
-        "--width",
-        "160",
-        "--height",
-        "120",
-    ),
-    "examples_demos_capture": (
-        "--headless",
-        "--scene",
-        "hello_world",
-        "--steps",
-        "5",
-        "--width",
-        "320",
-        "--height",
-        "240",
-        "--shot",
-        "<build>/examples/demos/hello-world.png",
-    ),
-}
 GUI_ONLY_PYTHON_TESTS = frozenset(
     f"python/tests/unit/gui/test_{name}.py"
-    for name in ("agent_capture", "agent_debug_overlay", "filament", "gui_offscreen")
+    for name in (
+        "agent_capture",
+        "agent_debug_overlay",
+        "filament",
+        "gui_offscreen",
+        "viewer_render",
+    )
 )
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 DART_VERSION_QUALIFIER = (
@@ -2912,9 +2890,7 @@ def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
         for label in values
         if isinstance(label, str)
     }
-    needs_device = name in GUI_DEVICE_CTESTS or name.startswith(
-        "examples_demos_capture"
-    )
+    needs_device = name in GUI_DEVICE_CTESTS
     if needs_device and not {"gui", "gui-device"}.issubset(labels):
         errors.append(
             f"CMake semantic test graph: graphics test `{name}` must have "
@@ -3180,7 +3156,6 @@ def check_cmake_ctest_inventory(
             name, {"arguments": (), "environment": ()}
         )
         expected_arguments = tuple(selection_policy["arguments"])
-        app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
         if name in script_arguments:
             expected_arguments = script_arguments[name]
             trusted_cmake = shutil.which("cmake")
@@ -3191,11 +3166,6 @@ def check_cmake_ctest_inventory(
                 errors.append(
                     f"{prefix}: CMake script test `{name}` must use the active CMake executable"
                 )
-        if app_arguments is not None:
-            expected_arguments = tuple(
-                argument.replace("<build>", build_dir.as_posix())
-                for argument in app_arguments
-            )
         is_probe = name == "ContactSurfaceProbe"
         if is_probe:
             expected_probe = contact_surface_probe_command(
@@ -3264,7 +3234,6 @@ def check_cmake_ctest_inventory(
         ]
         selected = (
             bool(expected_arguments or expected_environment)
-            and app_arguments is None
             and name not in script_arguments
             and not is_probe
         )
@@ -3844,14 +3813,6 @@ def check_cmake_test_graph(
                 relative_source == "tests/benchmark/integration"
                 and name == "offscreen_capture_smoke"
             )
-            or (
-                relative_source == "examples/demos"
-                and name
-                in {
-                    "dart-demos",
-                    "UNIT_examples_demos_SceneCycle",
-                }
-            )
         ):
             json_file = entry.get("jsonFile")
             if not isinstance(json_file, str):
@@ -4066,7 +4027,7 @@ def check_cmake_test_graph(
 def check_path_references(root: Path, errors: list[str]) -> None:
     required_pattern = re.compile(r"@([A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+)")
     backtick_pattern = re.compile(
-        r"`((?:\.agents/|\.claude/|\.codex/|\.opencode/|dart/|docs/|"
+        r"`((?:\.agents/|\.claude/|\.codex/|dart/|docs/|"
         r"python/|scripts/|tests/)[^`\s]+)`"
     )
     for path in source_paths(root):
@@ -4453,7 +4414,6 @@ def release_reference_paths(root: Path) -> list[Path]:
     paths.update(
         root / relative
         for relative in (
-            "GEMINI.md",
             ".github/PULL_REQUEST_TEMPLATE.md",
             "docs/readthedocs/index.rst",
             "docs/readthedocs/dart/developer_guide/build.rst",
@@ -5951,7 +5911,6 @@ def doctor_report(root: Path) -> dict[str, Any]:
             "codex": version("codex"),
             "claude": version("claude"),
             "muse": version("muse"),
-            "opencode": version("opencode"),
         },
         "inventory": {
             "source_commands": _path_inventory(commands, root),

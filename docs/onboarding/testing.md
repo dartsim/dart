@@ -20,8 +20,7 @@ These gates build the GUI but leave out GUI tests that need a graphics device:
 CTest tests labeled `gui-device` and the Python rendering tests. Device-free
 GUI tests still run in these gates. The `gui` label covers all GUI tests.
 For GUI, Filament, `dartpy.gui`, or GUI example changes, also run
-`pixi run test-gui`. It builds the tests, dartpy, and `dart-demos` in the same
-tree, runs
+`pixi run test-gui`. It builds the tests and dartpy in the same tree, runs
 `ctest -L gui -LE filament-native`, then runs `python/tests/unit/gui` and
 `python/tests/integration`. Linux capture uses Vulkan and needs no display
 server; to use the Pixi environment's Mesa Lavapipe driver as CI does, set
@@ -45,8 +44,8 @@ CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
 to depend directly on `tests_and_run` and `pytest`, requires those targets to
 cover every configured C++ and Python test except the `gui-device`-labeled
-CTest tests and the four GUI-only Python modules (`test_filament`, `test_gui_offscreen`,
-`test_agent_capture`, `test_agent_debug_overlay`), which it requires
+CTest tests and the five GUI-only Python modules (`test_filament`, `test_gui_offscreen`,
+`test_agent_capture`, `test_agent_debug_overlay`, `test_viewer_render`), which it requires
 `pixi run test-gui` to run, rejects omitted test directories or unowned test
 sources, and admits inactive platform tests or the one compile-only
 C test only through exact branch-owned predicates and target contracts. It
@@ -81,6 +80,51 @@ targets. Native hosted CI remains the platform-specific execution proof.
 For model, simulation, collision/contact, or Filament claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in
 [`docs/ai/verification.md`](../ai/verification.md).
+
+## Demo Catalog Verification
+
+The Python catalog is the only demo app. `pixi run cycle-demos` constructs,
+steps, and tears down every registered scene without a graphics context.
+Its strict cycle exits nonzero if a callback fails. Device-free `test_GuiApp`
+and Python viewer tests cover the host, CLI, lifecycle, controls, callback
+failures, garbage collection, and interrupts. The native model tests remain
+in the C++ suite; `test_GuiAppMemoryDiagnostics` covers the opt-in diagnostic
+model. Rendered catalog and viewer checks run through `pixi run test-gui`.
+
+Provision `ssik` and cached robot assets with `pixi run install-ssik` and
+`pixi run fetch-robot-assets` before claiming a full 37-scene cycle. Otherwise
+ssik and missing cached humanoids are skipped; without optional bindings,
+the corresponding scenes are absent from the catalog. Read the cycle's
+scene and skip counts as well as its exit status.
+
+The consolidation established each Python port's parity against the C++
+catalog before that app was removed. Preserve that method for later scene
+changes:
+
+1. Record the revisions and use the same scene, detector, threads, step
+   count, camera, and capture dimensions on both versions. Compare
+   construction counts (skeletons, body nodes, soft bodies, point masses,
+   DOFs, and constraints) exactly for deterministic scenes; compare counts
+   rather than random state for randomly generated scenes. Assert counts in
+   scene tests or inspect the constructed Python World.
+2. Capture both versions to separate output paths, for example with
+   `pixi run demos -- --scene <id> --headless --steps 200 --width 960 --height 600 --shot <output>.png`.
+   Compose the pair with `pixi run image-sheet`, then assess it semantically
+   with `dart-verify-sim`. Images corroborate the numerical oracle and stay
+   outside the repository.
+3. Script each key and panel callback through the scene's tests; step and
+   assert the effect, such as a moved target, toggled support, new solution,
+   or changed force. For mouse interactions, script the event handler's
+   pick and drag and verify that the spring force moves the picked body.
+   Add an interaction capture when the effect is visible.
+
+For changes to the private libraries, also configure a vanilla-ImGui build
+with `-DDART_USE_SYSTEM_IMGUI=ON` and build `tests` and dartpy: the host is
+compiled out, dartpy still imports, and the catalog gives a rebuild hint.
+Configure a GUI-off build with
+`-DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF`, build `tests`, and run the
+affected model tests. These checks preserve the library boundaries described
+in [the architecture owner](architecture.md#python-demo-catalog).
 
 For dependency minimization, run focused tests for the touched component and
 then broaden when the dependency affects shared package, collision, constraint,
@@ -163,10 +207,11 @@ as `##soft_mesh_alpha`, and size sliders or inputs from
 
 ## Simulation Allocation Gates
 
-Changes that touch `World::step`, `World::enterSimulationMode`,
-`MemoryManager`, profiler storage, or constraint-solver scratch must preserve
-the DART-owned zero-allocation contract for same-shape simulation steps using
-the `dart` detector after preparation.
+Changes that touch `World::step` or its private stages (see
+[World step stages](architecture.md#world-step-stages)),
+`World::enterSimulationMode`, `MemoryManager`, profiler storage, or
+constraint-solver scratch must preserve the DART-owned zero-allocation contract
+for same-shape simulation steps using the `dart` detector after preparation.
 
 Run the focused allocation gate before broadening:
 
@@ -193,10 +238,10 @@ simulation-loop behavior changes. It is the forward lane: it applies
 `tools/gazebo/patches/` to gz-physics first, so it does not prove that released
 Gazebo still works.
 
-For collision, contact, constraint-solver, sleeping, or `World::step` changes,
-and before a release, also run the unpatched lanes, which build released
-gz-physics and gz-sim against this checkout, run both full suites, and fail on
-any failure DART 6.19.4 did not have:
+For collision, contact, constraint-solver, sleeping, `World::step`, or
+step-stage changes, and before a release, also run the unpatched lanes, which
+build released gz-physics and gz-sim against this checkout, run both full
+suites, and fail on any failure DART 6.19.4 did not have:
 
 ```bash
 pixi run gz-compat-ionic       # gz-physics 8.4.0, gz-sim 9.5.0

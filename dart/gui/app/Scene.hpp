@@ -33,6 +33,8 @@
 #ifndef DART_GUI_APP_SCENE_HPP_
 #define DART_GUI_APP_SCENE_HPP_
 
+#include "Control.hpp"
+
 #include <dart/gui/GUIEventHandler.hpp>
 #include <dart/gui/Viewer.hpp>
 #include <dart/gui/WorldNode.hpp>
@@ -40,6 +42,7 @@
 #include <dart/dart.hpp>
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -79,6 +82,14 @@ struct KeyAction
 /// Camera pose applied when a scene becomes active.
 struct CameraHome
 {
+  /// Throws std::invalid_argument unless the vectors are finite, `eye` and
+  /// `center` differ, and `up` is not parallel to the view direction, the
+  /// pose Viewer::setCameraHome() accepts.
+  CameraHome(
+      const Eigen::Vector3d& eye,
+      const Eigen::Vector3d& center,
+      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ());
+
   Eigen::Vector3d eye;
   Eigen::Vector3d center;
   Eigen::Vector3d up;
@@ -89,16 +100,25 @@ struct CameraHome
 /// viewer-level resources (attachments, custom event handlers, gizmo-typed
 /// drag-and-drop, ...). Everything registered through this context is torn
 /// down automatically the next time the host switches away from the scene.
+///
+/// A context, and every copy of it, expires once its scene's teardowns have
+/// run; any later call throws std::logic_error instead of reaching the next
+/// scene or a destroyed host.
 class SceneContext
 {
 public:
-  explicit SceneContext(App& host);
+  SceneContext(App& host, std::weak_ptr<const void> activation);
 
   /// The viewer the scene is being installed into.
   dart::gui::Viewer* viewer() const;
 
   /// The world node that was just created for this scene.
   dart::gui::WorldNode* worldNode() const;
+
+  /// Shared handles to the viewer and world node, for owners such as
+  /// language bindings that must keep them alive.
+  std::shared_ptr<dart::gui::Viewer> viewerPtr() const;
+  std::shared_ptr<dart::gui::WorldNode> worldNodePtr() const;
 
   /// Registers an arbitrary teardown action to run when this scene is torn
   /// down (on switch, rebuild/reset, or app shutdown).
@@ -116,8 +136,16 @@ public:
   /// Appends a line to the host's diagnostics log console.
   void log(const std::string& message) const;
 
+  /// Reports a failed callback that the host does not invoke itself, such as
+  /// an event handler its owner disabled. It is logged and counted like a
+  /// failed scene hook, so a strict scene cycle fails.
+  void reportFailure(const std::string& what, const std::string& error) const;
+
 private:
-  App& mHost;
+  App& host() const;
+
+  App* mHost;
+  std::weak_ptr<const void> mActivation;
 };
 
 //==============================================================================
@@ -144,9 +172,9 @@ struct SceneSetup
   /// anything that must only run once per physics step. Optional.
   std::function<void()> preRefresh;
 
-  /// Draws the scene-specific controls the host embeds in its right-hand
-  /// panel. Optional.
-  std::function<void()> renderPanel;
+  /// Declarative scene controls the host draws in its Scene tab (see
+  /// Control::makePanel()). Change callbacks run between frames. Optional.
+  std::shared_ptr<Control> panel;
 
   /// Keyboard shortcuts, mirrored as panel buttons.
   std::vector<KeyAction> keyActions;
@@ -157,13 +185,10 @@ struct SceneSetup
   /// Whether the host should enable shadows for this scene's world.
   bool enableShadows = true;
 
-  /// Frames to enable drag-and-drop on (SimpleFrameDnD: unconstrained
-  /// free-drag). This is the right tool for a plain SimpleFrame that only needs
-  /// a free-drag. For an InteractiveFrame whose per-axis/plane gizmo tools
-  /// should be draggable, call Viewer::enableDragAndDrop(InteractiveFrame*)
-  /// (InteractiveFrameDnD) from onActivate and release it via
-  /// ctx.addTeardown(disableDragAndDrop) before the world is destroyed.
-  std::vector<dart::dynamics::SimpleFramePtr> dragFrames;
+  /// Whether Play may simulate this scene. Kinematic scenes set false; the
+  /// host restores simulation, and resumes it if it was running, on teardown.
+  /// Step, scene cycling and headless captures still step the world.
+  bool allowSimulation = true;
 
   /// Optional hook for anything else a scene needs to register (extra
   /// attachments, custom event handlers, ...).

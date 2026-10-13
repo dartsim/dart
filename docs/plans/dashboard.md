@@ -17,6 +17,10 @@ Priority order is document order. Active implementation handoff remains in
 - Scope: Main's next release becomes DART 7.0. That release is a clean Python
   API break; the C++ API stays compatible for the gz-used subset. Main's
   unreleased work ships in 7.0, and `release-6.20` is the 6.x maintenance line.
+- Demo consolidation: D31b's Python catalog replaces the C++ app; its
+  temporary project home is retired. See the
+  [host and model architecture](../onboarding/architecture.md#python-demo-catalog)
+  and [remaining M6b scope](../dev_tasks/dart7_python_first/README.md#demo-consolidation-d31b).
 - Next step: Complete M0: release-line rollover, project home, baseline pin,
   compatibility shim and bug-fix packets.
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per

@@ -392,3 +392,254 @@ Known gaps:
   need their own review of GIL acquisition during finalization.
 - **Status:** in progress. [#3704](https://github.com/dartsim/dart/pull/3704) builds
   6.20.1 wheels for Python 3.12 to 3.14; Python 3.15 wheels remain.
+
+
+## Demo consolidation evidence
+
+The following records moved from the retired demo project home. They describe
+the named earlier packets, including the C++ app and transitional tests that
+WP-PD.18 removes; commands and source names here are historical evidence.
+Current gates live in [catalog verification](../../onboarding/testing.md#demo-catalog-verification).
+
+### 2026-10-12: WP-PD.0, decision and project home
+
+- **Change:**
+  - D31b in the DART 7 decisions, plus the program README notes on the
+    milestone, release path and interim bindings.
+  - A Rendering bullet in `docs/design/dart7_python_api.md`.
+  - The PLAN-622 GUI-example policy, in the dashboard and in the
+    deformable-body project home.
+  - This project home.
+- **Design evidence:**
+  - read-only exploration (six slices plus a completeness critic);
+  - a design workflow with four sections, an adversarial verifier per
+    section, and an integration critic;
+  - an independent Codex design and a Codex review of the plan.
+
+  Every finding that changed the plan was verified against the source at
+  `9e4bb4e6f`.
+- **Checks:** `pixi run lint` and `pixi run check-lint` passed. The
+  check-lint aggregate includes `check-ai-commands` and the semantic
+  `check-ai-infra` checks. The pre-commit AI gate and the local-path gate also
+  passed.
+- **Reviews:** every pushed head of #3732 first gets two consecutive clean
+  local passes (`codex review --base origin/main`, gpt-6.1-sol at ultra
+  effort). The GitHub reviews of the first three heads raised findings that
+  the following commits fixed: runnable parity and wheel gates, the active
+  setup's retention, the architecture table, the scene batches' helper
+  owners, the active context's retention, the wheel catalog, the exact
+  SIMBICON files, and this record. Later heads added the drawing-callback
+  non-goal, the build-tree C++ parity command, the optional inputs a
+  full-catalog run needs, tinkertoy's pick-and-drag check, the Pixi
+  interpreter for parity runs, a world oracle for the humanoid scenes, and
+  separate capture paths for the two apps.
+
+### 2026-10-12: WP-PD.1 to WP-PD.3, the host stack
+
+Published as stack #3748: #3745 (WP-PD.1), #3746 (WP-PD.2) and #3747
+(WP-PD.3). Each PR's Testing section holds the commands and results.
+
+- **WP-PD.1:** the default build, `test-gui`, `test-py`, the vanilla ImGui
+  lane, the Linux wheel with its headless checks, and the GUI install test
+  for bundled and system ImGui all pass. Reviews raised the bundled-header
+  precedence for installed consumers and a consumer test that broke system
+  ImGui builds; both are fixed and documented.
+- **WP-PD.2:** the four model tests, `cycle-demos`, and the GUI-off and IO-off
+  lanes pass; the 16 model files move unchanged.
+- **WP-PD.3:** the host tests, `cycle-demos`, `test-gui`, the memory
+  diagnostics lanes, the vanilla and GUI-off lanes, the install guard and 28
+  before/after command-line runs pass. A `sleeping` capture differs from its
+  base only in the two FPS readouts.
+- **Reviews:** two consecutive clean local passes on each final head. The
+  GitHub reviews then found that a copied `examples` directory no longer
+  builds `dart-demos`, now documented as source-tree only (#3746), and that
+  the checker rejected `test_GuiApp` as inactive in GUI-off builds (#3747).
+  Both are fixed.
+
+### 2026-10-12: WP-PD.8 and WP-PD.9, model bindings
+
+- **WP-PD.8 (#3737):** resting state, `HeightmapShapef` and `VoxelGridShape`
+  with occupancy updates. A review found uninitialized heightmap bounds in
+  C++, fixed separately in #3744. Later reviews hardened the voxel inputs
+  against OctoMap's limits: points must be finite and addressable after
+  float narrowing, rays must fit OctoMap's key buffer and have a nonzero
+  float length, and resolution is capped at 1e6 so ray lengths cannot
+  overflow float. They also fixed a C++ query that read the wrong boundary
+  cell.
+- **WP-PD.9 (#3751):** whole-body IK bindings plus a C++ guard for expired
+  hierarchy constraints. `test`, `test-py`, the GC probes and the Gazebo gate
+  pass. A review found that GC could clear an IK module that moved to a live
+  Skeleton; the traversal now counts only nodes still in the hierarchy's own
+  Skeleton, with a regression test.
+- **API snapshots:** #3735 makes `api_surface.py --snapshot` read
+  non-arithmetic enums, so the binding PRs can diff the API surface.
+
+### 2026-10-12: WP-PD.17, Python demo launch tasks
+
+- **Change:** `demos`, `cycle-demos` and `capture`, including Windows
+  variants, build dartpy and launch `python -m examples.demos`. The task
+  working directory is `python/`; the command returns to the repository root
+  with both dartpy and the source catalog on `PYTHONPATH`, preserving every
+  relative CLI output path, including a forwarded `--shot` override.
+  `py-demos` is removed. User docs, Python scene links and Korean PO/MO
+  catalogs use the Python app. The C++ app, aliases and CTests remain for
+  WP-PD.18.
+- **Checks passed:**
+  - `pixi run config`, then `pixi run build-py-dev` on the fresh build;
+  - `pixi run python -m pip install ssik` (8.1.0, environment only);
+  - `pixi run lint`, `pixi run sync-ai-commands` and
+    `pixi run check-ai-commands`;
+  - `pixi run test-ai-infra`: 1,968 passed;
+  - `pixi run cycle-demos`: 37 scenes, twice, two frames each, zero skipped;
+  - `pixi run demos -- --list-scenes`: 37 unique scene IDs;
+  - `pixi run capture sleeping`: repository-root `capture.png`, 640×480,
+    simulation time 2.5 seconds;
+  - `pixi run capture soft_bodies -- --steps 50`: the same output path,
+    frame 50 and simulation time 0.05 seconds;
+  - additional captures with absolute and relative paths containing spaces,
+    and a forwarded `--shot` overriding the positional output;
+  - `pixi run test-py`: 1,610 passed, two Python 3.15-only skips;
+  - `pixi run test-gui`: all 14 CTests passed; Python GUI and integration
+    tests reported 550 passed and one Python 3.15-only skip;
+  - `pixi run docs-build` and `pixi run docs-build-ko`, repeated after the
+    review corrections;
+  - changed-file local-path scan and `git diff --check`;
+  - final `pixi run lint` and `pixi run check-lint`, including the configured
+    semantic AI infrastructure check.
+- **Visual assessment:** `pixi run image-verdict capture.png` passed for
+  Sleeping. Native image inspection showed the Sleeping scene label,
+  colored stacks and native workspace. The subsequent Soft Bodies image
+  showed translucent embedded shapes and frame 50. These images corroborate
+  the launcher and capture output; they do not re-establish scene parity or
+  dynamics correctness. The catalog cycle and Python tests provide the text
+  evidence. The default 640×480 workspace clips some panel labels, but the
+  scene is visible. Images remain untracked.
+- **Reviews:** two role-separated read-only reviews of the final task/docs
+  diff are clean after correcting the configure-task name, humanoid slider
+  instructions and manual dartpy build prerequisites. Windows definitions
+  were read twice; they use the multi-config dartpy path and the existing
+  `build-py-dev --config` build.
+- **Limitations:** Windows runtime cannot be checked on this host. No commit
+  or publication is authorized. The C++ app's removal belongs to WP-PD.18.
+
+## 2026-10-12: WP-PD.18, C++ demo retirement
+
+- **Change:** Delete the C++ application and all 53 files under
+  `examples/demos/`, its aliases and four CTests, and both neural-net files
+  under `data/humanJointLimits/`. Remove the host's raw panel callback,
+  frame-list drag setup, and construction-dump option. Retain the private
+  host and native model libraries, their tests, and the other C++ examples.
+  Direct headless CLI captures now default to `demos.png`; the Pixi capture
+  task still defaults to `capture.png`.
+- **References:** Update the example CMake list, Filament CI target and CTest
+  lists, Linux and Windows GUI tasks, infrastructure checker and fixtures,
+  sync capability ledger and fixtures, dartpy's compiled-out diagnostics
+  checker, host comments and memory fixtures, and Python catalog tests.
+  Top-level/tests CMake and coverage, Doxygen, lint, and format lists have
+  no app-specific references left to remove; their retained rules still
+  cover the private libraries and other examples.
+- **Promotion:** Architecture owns private targets and build gates;
+  `examples/README.md` owns scene rules, coordinates and helper placement;
+  Python-bindings guidance owns callbacks and declarative panel validation;
+  testing owns construction, interaction and capture parity; profiling owns
+  memory diagnostics. Update onboarding/build/CI, public visualization and
+  example pages, Korean PO/MO, AI verification skill and generated adapter,
+  dashboard, D31b/program handoffs and older task entrypoints. Move the
+  deferred entries unchanged into [changelog drafts](changelog-drafts.md),
+  preserve earlier evidence above as historical, and delete the demo project
+  home. `CHANGELOG.md` is unchanged: its entry is deferred to M6b's
+  consolidation PR by maintainer instruction.
+
+| Command | Result |
+| --- | --- |
+| `pixi run config` | Passed first on the fresh worktree and after removal |
+| `pixi run python -m pip install ssik` | Installed 8.1.0 in the environment only |
+| `pixi run lint` | Passed |
+| `pixi run build` | Passed |
+| `pixi run test` | 194 CTests passed |
+| `pixi run build-py-dev` | Passed, including the default diagnostics marker check |
+| `pixi run test-py` | 1,610 passed; two Python 3.15-only skips |
+| `pixi run cycle-demos` | 37 scenes x2, two frames each, zero skipped |
+| `pixi run test-gui` | 10 CTests and 550 Python tests passed; one Python 3.15-only skip |
+| `pixi run test-ai-infra` | 1,960 passed after correcting the removed-CTest guard |
+| `pixi run sync-ai-commands` | Passed |
+| `pixi run check-ai-commands` | Passed |
+| `pixi run docs-build` | Passed |
+| `pixi run docs-build-ko` | Passed; regenerated the changed Korean example catalog |
+| `pixi run exercise-agent-scenarios` | Passed |
+| `pixi run check-lint` | Passed, including the configured semantic infrastructure check |
+| Changed-file local-path scan and `git diff --check` | Passed |
+| `pixi run capture sleeping build/default/pd18-sleeping.png -- --width 960 --height 600` | Passed; 150 frames, simulation time 2.5 seconds |
+| `pixi run image-verdict build/default/pd18-sleeping.png` | Passed |
+
+Additional build lanes use the same Pixi dependencies and Release options:
+
+```bash
+pixi run sh -c 'cmake -G Ninja -S . -B build/default/cpp/pd18-vanilla -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" -DDART_BUILD_DARTPY=ON -DDART_BUILD_UTILS_ASSETS=ON -DDART_BUILD_PROFILE=ON -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_TRACY=ON'
+pixi run cmake --build build/default/cpp/pd18-vanilla --target tests --parallel 24
+pixi run sh -c 'cmake -G Ninja -S . -B build/default/cpp/pd18-gui-off -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF -DDART_BUILD_UTILS_ASSETS=ON -DDART_BUILD_PROFILE=ON -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_TRACY=ON'
+pixi run cmake --build build/default/cpp/pd18-gui-off --target tests --parallel 24
+pixi run ctest --test-dir build/default/cpp/pd18-gui-off -R '^test_(ContactArrowLayout|AdaptiveSoftContactModel|SoftWormModel|SoftFootSimbiconModel)$' --output-on-failure
+```
+
+Both configures and `tests` builds passed. Vanilla ImGui reports the host
+and viewer binding compiled out. All four GUI-off model CTests passed.
+The initial four-worker builds were intentionally interrupted and restarted
+with 24 workers; no source fix was needed.
+
+- **Infrastructure correction:** The first full suite exposed a remaining
+  reference to the deleted `app_arguments` variable. Remove that guard;
+  the original run was stopped after 102 failures and 879 passes. A focused
+  semantic run passed 82 cases before an intentional stop to avoid duplicating
+  the restarted full suite. The final 1,960-test run is clean. The worker's
+  initial focused ledger/label/reference check also passed 10 cases.
+- **Visual assessment:** Native image inspection shows the Sleeping scene,
+  the 37/37 navigator, colored stacks, controls, toolbar and diagnostics in
+  the native workspace. At 960x600, the docked viewport crops part of a stack;
+  this does not establish scene or dynamics
+  parity anew. The cycle and tests provide the correctness evidence, while
+  the capture corroborates the remaining Python app and host. The image
+  stays in the ignored build tree.
+- **Reviews:** Two independent read-only reviews found no confirmed defects
+  in the final implementation, reference cleanup and promotions after the
+  checker fix. The final evidence and construction-count wording also receive
+  a narrow review.
+- **Limitations:** Linux verification only; Windows/macOS runtime, wheels,
+  vanilla dartpy runtime and downstream Gazebo suites were not run for this
+  private application removal.
+
+## M1a: World step stages
+
+- **Objective:** split `World::step` into private inlined stages while keeping
+  stepping bit-identical to main.
+- **Baseline:** `dart7-base` is pinned to main `c3134f51b86d` as a local tag.
+  Its full nightly smoke record is being measured on the local performance host.
+- **Nightly A/B:** at `a751424b3` against main `6cca697a2`, PASS: 31 neutral
+  and 41 diagnostic rows; Ir geomean +0.009%, highest `s2r/dart` at +0.062%.
+  Guards and allocations are identical.
+- **Correction:** the first full A/B failed `s2r/dart` at +2.49% because the
+  seven stage calls went through the PLT under `-fPIC`. Inlining the stages
+  and holding the solve's group and filter once fixed it.
+- **S7 A/B (2026-10-12):** main `c3134f51b86d` against merged head
+  `8afe3251455d`, using
+  `pixi run python scripts/perf_regression.py local --base origin/main --head HEAD --rows S7-t1,S7-t4 --jobs 8`
+  with a separate private staging root: PASS, six diagnostic rows (no Ir gate).
+  All guards and resting counts match base and agree across one and four
+  threads: DART and ODE rest 3003/3003 bodies; Bullet rests 2724/3003.
+  Allocation counts and requested bytes are identical to base in all six rows.
+- **Other evidence:** StepAllocation counts are byte-identical to the base
+  build; the moved-line audit is clean.
+- **Gates (2026-10-12):** on merged head `8afe3251455d` (main
+  `c3134f51b86d`), `pixi run lint`, `pixi run check-lint`, `pixi run build` and
+  `pixi run test` pass; 185/185 CTests, including StepAllocation.
+- **Gazebo:** the Jetty and Harmonic lanes pass against a base variant. Ionic
+  had one load-dependent failure, gz-physics `JointSetPositionWithContact`,
+  which passed 15/15 through CTest on both base and head. The sleep oracle
+  reports the same two pre-existing mismatches on base and head; it needs the
+  C-only probe fix from [#3756](https://github.com/dartsim/dart/pull/3756) to
+  configure. `test-gz`: 199/199 + 4/4 + 1/1.
+- **Reviews:** two adversarial passes and a local Codex review, all clean.
+- **Follow-up for M1d:** the load-dependent result suggests nondeterministic
+  parallel chunking.
+- **Changelog decision:** no entry required; the diff against main preserves
+  API and behavior and documents an internal refactor.

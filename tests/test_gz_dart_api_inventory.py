@@ -17,6 +17,7 @@ SECTIONS = (
     "members",
     "constructors",
     "data_members",
+    "variables",
     "free_functions",
     "macros",
     "overrides",
@@ -1038,6 +1039,99 @@ namespace dart { using math::measure; void h() { measure(15.0); } }
     }
 
 
+def test_argument_dependent_free_function_lookup(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+namespace dynamics {
+struct Widget {};
+void inspect(const Widget&);
+struct Holder { struct Nested {}; };
+void nested(const Holder::Nested&);
+}
+namespace collision {
+struct Derived : dynamics::Widget {};
+void inspect(const Derived&);
+}
+namespace unrelated { void inspect(int); }
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """void f(dart::dynamics::Widget& value,
+          dart::collision::Derived* derived,
+          dart::dynamics::Holder::Nested value2) {
+  inspect(value);
+  inspect(*derived);
+  inspect(dart::dynamics::Widget());
+  nested(value2);
+  inspect(1);
+}
+struct S {
+  void inspect(const dart::dynamics::Widget&);
+  void g(dart::dynamics::Widget value) { inspect(value); }
+};
+""",
+    )
+    functions = _entries(result, "free_functions")
+    assert set(functions) == {
+        "dart::dynamics::inspect",
+        "dart::collision::inspect",
+        "dart::dynamics::nested",
+    }
+    assert functions["dart::dynamics::inspect"]["count"] == 3
+    assert functions["dart::collision::inspect"]["count"] == 1
+    assert functions["dart::dynamics::nested"]["count"] == 1
+
+
+def test_namespace_variables_preserve_declarations(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        """namespace dart {
+constexpr int LIMIT = 3;
+namespace dynamics {
+inline constexpr std::size_t INVALID_INDEX = std::numeric_limits<std::size_t>::max();
+extern int current;
+struct Unused { static const int INVALID_INDEX = 1; };
+}
+}
+namespace other { constexpr int LIMIT = 1; }
+"""
+    )
+    source = """void f() {
+  auto limit = dart::LIMIT;
+  auto index = dart::dynamics::INVALID_INDEX;
+  dart::dynamics::current = 1;
+  auto other = other::LIMIT;
+}
+"""
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    variables = _entries(result, "variables")
+    assert set(variables) == {
+        "dart::LIMIT",
+        "dart::dynamics::INVALID_INDEX",
+        "dart::dynamics::current",
+    }
+    assert all(row["count"] == 1 and row["declarations"] for row in variables.values())
+    assert variables["dart::dynamics::INVALID_INDEX"]["declarations"][0]["const"]
+    assert not variables["dart::dynamics::current"]["declarations"][0]["const"]
+    assert not result["data_members"]
+    header.write_text(header.read_text().replace("LIMIT = 3", "LIMIT = 4"))
+    changed = _scan(
+        extractor, extractor.index_api(headers), tmp_path / "changed", source
+    )
+    assert (
+        _entries(changed, "variables")["dart::LIMIT"]["declarations"]
+        != variables["dart::LIMIT"]["declarations"]
+    )
+
+
 @pytest.mark.parametrize(
     ("imported_namespace", "qualifier"), [("dart::math", ""), ("dart", "math::")]
 )
@@ -1220,7 +1314,7 @@ def test_checked_in_inventory_is_well_formed_and_sorted():
                 )
                 if section == "members":
                     assert entry["classification"] in {"accessor", "mutation"}
-                if section in {"members", "data_members"}:
+                if section in {"members", "data_members", "variables"}:
                     assert entry["declarations"]
                 if section == "macros":
                     assert isinstance(entry["declared_in_dart"], bool)

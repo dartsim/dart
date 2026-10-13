@@ -25,14 +25,15 @@ pixi run fetch-robot-assets                   # both models
 pixi run fetch-robot-assets unitree-g1         # one model
 pixi run fetch-robot-assets --offline          # verify the existing cache
 pixi run demos -- --scene atlas_v5
-pixi run py-demos -- --scene unitree_g1
+pixi run demos -- --scene unitree_g1
 ```
 
-The C++ scenes provide a joint slider and reset button, alongside the existing
-body and geometry inspector. In Python, `[` and `]` select a joint, `-` and `=`
-change its angle within the model limits, and `t` resets the pose. Both scenes
-have a fixed base and disable physics simulation. Scene factories use the
-verified cache offline, so switching scenes never starts a download.
+The Python catalog runs on the native app host through `dartpy.viewer`.
+Its scene panel provides joint and position sliders and a reset button,
+alongside the body and geometry inspector. Both scenes have a fixed base and
+disable physics simulation. Scene factories use the verified cache offline, so
+switching scenes never starts a download. Missing assets are reported as
+skipped scenes; `pixi run cycle-demos` still succeeds.
 
 `dart::utils::ModelResourceRetriever` and `dartpy.utils.ModelResourceRetriever`
 accept `model://<id>/<revision>/<relative-file>` URIs. The revision is the full

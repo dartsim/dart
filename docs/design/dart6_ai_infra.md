@@ -89,7 +89,8 @@ The release workflow is the cumulative result of these merged changes:
 - [#3304](https://github.com/dartsim/dart/pull/3304) established usable
   translucent, dynamic soft-body visualization. Preserve the demonstrated
   translucent rendering behavior; its older standalone capture entrypoint has since converged into
-  `dart-demos`.
+  the Python catalog (`pixi run demos -- --scene soft_bodies`) on the native
+  Filament host.
 - [#3314](https://github.com/dartsim/dart/pull/3314) added the GLX-pbuffer
   `OffscreenViewer`, default camera, dartpy bindings, and initial
   verdict/golden/sheet tools. Preserve the C++17/nanobind API and adapt its

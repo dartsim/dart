@@ -52,6 +52,8 @@
 
 #include <chrono>
 #include <deque>
+#include <exception>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -85,6 +87,11 @@ public:
   /// this to log the failure and update the status line.
   void setHookErrorSink(
       std::function<void(const std::string&, const std::string&)> sink);
+
+  /// Polled after each preStep hook. Once it returns true the node stops
+  /// simulating and takes no further step, so a real-time catch-up in
+  /// refresh() ends at once instead of running out its step budget.
+  void setStopRequested(std::function<bool()> stopRequested);
 
   /// Runs exactly one deterministic simulation step by invoking the same
   /// pre/post hooks that refresh() would. Used by the Step toolbar button and
@@ -124,6 +131,8 @@ private:
   std::function<void()> mPostStep;
   std::function<void()> mPreRefresh;
   std::function<void(const std::string&, const std::string&)> mHookErrorSink;
+  std::function<bool()> mStopRequested;
+  bool mStepStopped = false;
   std::size_t mStepCount;
   std::size_t mStepCountAtRefreshStart = 0;
   std::size_t mLastRefreshStepCount = 0;
@@ -153,7 +162,8 @@ struct LogEntry
 
 //==============================================================================
 /// Owns the single Viewer window, the scene registry, and the safe
-/// runtime scene-switching machinery described in examples/demos/README.md.
+/// runtime scene-switching machinery described in
+/// docs/onboarding/architecture.md.
 /// Persistent host chrome (window, theme, panel layout) survives scene
 /// switches; per-scene state (world node, widgets, drag-and-drop, event
 /// handlers) is torn down in full on every switch.
@@ -175,8 +185,21 @@ public:
   ~App();
 
   /// Runs interactively: opens a window and blocks until it is closed.
-  /// Returns a process exit code.
+  /// Returns a process exit code, or kStoppedExitCode when stopped.
   int run(std::optional<int> width = {}, std::optional<int> height = {});
+
+  /// Exit code of a run, cycle or capture that setStopRequested() ended.
+  static constexpr int kStoppedExitCode = 130;
+
+  /// Polled once per frame, cycle step and capture step; returning true ends
+  /// the run after tearing the active scene down.
+  void setStopRequested(std::function<bool()> stopRequested);
+
+  /// Classifies an exception that escapes a --cycle-scenes frame, such as one
+  /// from a viewer attachment a language binding implemented. Returning true
+  /// makes it a stop rather than a failed scene: the run then ends at its
+  /// next stop poll, which the classifier must make return true.
+  void setStopException(std::function<bool(const std::exception&)> isStop);
 
   /// Prints the catalog grouped by category (first-appearance order) and
   /// returns 0.
@@ -184,11 +207,13 @@ public:
 
   /// Advances through every scene in the catalog, `framesPerScene` steps
   /// each, twice in a row (the repeat proves rapid re-switching does not leak
-  /// world nodes). Without `render` no window or GPU context is required;
-  /// with it, every step also renders a display-free `width` x `height`
-  /// frame, so scene replacement exercises renderer resource churn. Returns 0
-  /// if every scene's factory (and render) succeeded or lacked prefetched
-  /// assets and the world-node bookkeeping stayed balanced, nonzero otherwise.
+  /// world nodes). Without `render` no window or GPU context is required and
+  /// each step also runs the scene's preRefresh; with it, every step renders a
+  /// display-free `width` x `height` frame, so scene replacement exercises
+  /// renderer resource churn. The last scene is torn down at the end. Returns
+  /// 0 if every scene's factory (and render) succeeded or lacked prefetched
+  /// assets, no scene callback had to be disabled, and the world-node
+  /// bookkeeping stayed balanced; nonzero otherwise.
   int cycleScenes(
       int framesPerScene, bool render = false, int width = 0, int height = 0);
 
@@ -207,7 +232,7 @@ public:
   /// catalog".
   void setInitialScene(const std::string& id);
 
-  /// Test/debug-only hooks (main.cpp's hidden --debug-* flags) so a headless
+  /// Test/debug-only hooks (Cli.cpp's hidden --debug-* flags) so a headless
   /// capture can exercise UI state that normally requires interactive input:
   /// a body selected in the Inspector, and the Profiler actively recording.
   /// Memory diagnostics use the DART_DEMOS_MEMORY_DIAGNOSTICS=1 environment
@@ -215,6 +240,7 @@ public:
   /// Applied by runHeadlessShot() right after the scene installs.
   void setDebugSelectBodyName(const std::string& name);
   void setDebugRecordProfile(bool on);
+
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   /// Number of wheel-down ticks runHeadlessShot() injects into the viewer
   /// event queue while hovering the scene panel, capturing one frame per tick
@@ -229,6 +255,10 @@ public:
   /// whenever a scene is active; used by cycleScenes() as a leak audit.
   std::size_t getActiveWorldNodeCount() const;
 
+  /// Number of scene callbacks (hooks, key actions, panel callbacks,
+  /// onActivate, teardowns) that threw and were disabled since construction.
+  std::size_t getCallbackFailureCount() const;
+
   //----------------------------------------------------------------------------
   // The following are called by SceneContext and the host's own ImGui
   // panel widget / key handler; not part of the app-facing API.
@@ -236,8 +266,15 @@ public:
 
   dart::gui::Viewer* getViewer() const;
   AppWorldNode* getWorldNode() const;
+  std::shared_ptr<dart::gui::Viewer> getViewerPtr() const;
+  std::shared_ptr<AppWorldNode> getWorldNodePtr() const;
+
+  /// Throws std::logic_error while the active scene is being torn down.
   void addTeardown(std::function<void()> teardown);
   void log(LogEntry::Level level, const std::string& message);
+
+  /// Logs and counts a disabled scene callback; see invokeSceneCallback().
+  void reportCallbackFailure(const std::string& what, const std::string& error);
 
   /// Draws the Demos navigator, Simulation toolbar, and Diagnostics panels,
   /// plus the active scene's own panel. Called once per frame by the host's
@@ -251,6 +288,8 @@ public:
   bool handleKey(int key);
 
 private:
+  friend class AppTestAccess;
+
   enum class ScenePanelTab
   {
     Scene,
@@ -302,7 +341,24 @@ private:
 
   void applyCameraHome(const CameraHome& home, bool viaManipulator);
 
+  /// Logs a failure, and also prints it in display-free runs.
+  void reportFailure(const std::string& message);
+
+  /// Runs one scene callback; a throw is logged, counted, and disables it.
+  void invokeSceneCallback(
+      std::function<void()>& callback, const std::string& what);
+
+  /// Runs queued panel change callbacks and panel key-action clicks. Called
+  /// between frames and steps in every mode, never from inside ImGui
+  /// rendering.
+  void processPanelEvents();
+
+  bool stopRequested() const;
+
+  /// Tears the active scene down and returns kStoppedExitCode.
+  int stopRun();
   void ensureViewerConfigured();
+  void startSimulation();
   void initializeGuiTheme();
   void setGuiScale(double scale);
   void updateAutomaticGuiScale();
@@ -336,10 +392,25 @@ private:
   std::shared_ptr<dart::gui::Viewer> mViewer;
   std::shared_ptr<AppWorldNode> mWorldNode;
   dart::simulation::WorldPtr mCurrentWorld;
-  std::function<void()> mCurrentRenderPanel;
+  std::shared_ptr<Control> mCurrentPanel;
   std::vector<KeyAction> mCurrentKeyActions;
+  std::optional<std::size_t> mPendingKeyAction;
   std::optional<CameraHome> mCurrentCameraHome;
   std::vector<std::function<void()>> mExtraTeardowns;
+
+  /// Owned for as long as the active scene is installed; SceneContext copies
+  /// hold it weakly, so they expire when the scene's teardowns have run.
+  std::shared_ptr<const void> mActivation;
+  bool mTearingDown = false;
+  bool mResumeSimulationOnTeardown = false;
+  bool mRestoreSimulationOnTeardown = false;
+  bool mEchoErrors = false;
+  std::size_t mCallbackFailures = 0;
+  std::function<bool()> mStopRequested;
+  mutable bool mStopLatched = false;
+  std::function<bool(const std::exception&)> mIsStopException;
+  const std::chrono::steady_clock::time_point mStartTime
+      = std::chrono::steady_clock::now();
 
   std::string mCurrentSceneId;
   std::string mCurrentSceneTitle;
@@ -384,6 +455,8 @@ private:
   bool mShadowsEnabled = true;
   bool mCurrentSceneWantsShadows = true;
   std::shared_ptr<dart::gui::GridVisual> mGridVisual;
+  std::shared_ptr<dart::gui::ImGuiWidget> mPanelWidget;
+  std::shared_ptr<dart::gui::GUIEventHandler> mKeyHandler;
 
   double mGuiScale;
   bool mAutomaticGuiScale;
@@ -407,8 +480,18 @@ private:
   bool mDockLayoutResetRequested = false;
 };
 
+/// Parses the demo app's command line (argv[0] is the program name) and runs
+/// the list, cycle, headless capture or interactive mode it selects on an
+/// App built from `scenes`. Returns the process exit code. `stopRequested`
+/// and `isStopException` work as App::setStopRequested() and
+/// App::setStopException() describe. Throws std::logic_error if
+/// another call is still running, because the host captures the
+/// process-wide output streams.
 int runCommandLine(
-    std::vector<Scene> scenes, const std::vector<std::string>& argv);
+    std::vector<Scene> scenes,
+    const std::vector<std::string>& argv,
+    std::function<bool()> stopRequested = {},
+    std::function<bool(const std::exception&)> isStopException = {});
 
 } // namespace dart::gui::app
 

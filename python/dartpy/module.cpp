@@ -51,6 +51,9 @@ void dart_simulation(nb::module_& m);
 void dart_utils(nb::module_& m);
 void dart_gui(nb::module_& m);
 void bind_gui_probe(nb::module_& m);
+#ifdef DARTPY_HAS_VIEWER
+void dart_viewer(nb::module_& m);
+#endif
 void bind_demos(nb::module_& m);
 
 NB_MODULE(dartpy, m)
@@ -76,6 +79,9 @@ NB_MODULE(dartpy, m)
   dart_utils(m);
   dart_gui(m);
   bind_gui_probe(m);
+#ifdef DARTPY_HAS_VIEWER
+  dart_viewer(m);
+#endif
   bind_demos(m);
 }
 

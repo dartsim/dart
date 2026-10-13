@@ -108,6 +108,42 @@ holds them; removing one releases it. The viewer's GC slots detach these native
 edges before clearing Python references. `enableDragAndDrop` returns wrappers
 that share ownership of the native interaction.
 
+### Viewer app callbacks
+
+`dartpy.viewer` binds the private app host in `dart/gui/app`; a vanilla
+system ImGui compiles out both. The host never owns a Python reference. Each
+callable belongs to the Python object that accepted it: a `Scene`,
+`SceneSetup`, `KeyAction` or `Control`, or the `SceneContext` for teardowns
+and event handlers. That object shows it to the cyclic GC, while the host
+holds weak handles. A `Control` also keeps the wrappers of its children, so a
+callback set on a child outlives the child's Python name. During `run()`, a
+session keeps the installed scene's setup and context alive until the
+scene's last teardown.
+
+`run()` accepts the main thread only and releases the GIL while the host
+runs; each callback takes it back. An ordinary exception from a callback is
+logged with its traceback, disables only that callback, and makes
+`--cycle-scenes` exit nonzero. `KeyboardInterrupt`, `SystemExit` and other
+`BaseException`s stop the run instead: the scene is torn down, with only
+teardowns still called, and `run()` re-raises the exception. The host polls
+for Ctrl+C once per frame and per step, and an interrupt also ends a
+real-time catch-up between steps. Event handlers follow the same rules,
+although the viewer calls them, not the host. `SceneContext.add_attachment`
+takes native visuals only, such as `dartpy.gui.GridVisual`: Python never
+draws, so per-frame Python logic belongs in `pre_refresh`. A
+`BaseException` from an interim `dartpy.gui` override that a scene installs
+on the viewer directly still stops the run.
+
+The host clears a panel's callbacks at teardown, and a scene's activation
+reconnects them from the Python callables, so a factory may return the same
+`Panel` each time. `Control.edit()` applies a value as a user edit does, or
+clicks a button, which lets scripted tests drive the host's own dispatch.
+Panel values are validated in C++; decimal precision is expressed as a
+number rather than a printf format string. See
+[scene rules](../../examples/README.md#adding-catalog-scenes) and
+[catalog verification](testing.md#demo-catalog-verification) when extending
+the source-tree app.
+
 ### Binding infrastructure
 
 The cast registry records C++ inheritance edges and computes new paths

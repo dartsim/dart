@@ -159,8 +159,8 @@ only with new evidence and maintainer approval.
 - **D31a. Interim GUI bindings.** M6a lands with the Filament effort's tested
   camelCase GUI bindings as an interim, undocumented module. M6b replaces them
   with the 7.0 API and deletes them before the first release candidate.
-- **D31b. The demo host becomes the managed viewer's core.** The C++
-  `dart-demos` host moves into private C++ linked into the dartpy extension,
+- **D31b. The demo host becomes the managed viewer's core.** The native
+  host lives in private C++ linked into the dartpy extension,
   with no installed headers, package components or gz-facing API. The host
   covers the docking ImGui workspace, scene navigator, scene panels,
   inspector, contact and drag tools, profiler, log console, and headless
@@ -170,10 +170,30 @@ only with new evidence and maintainer approval.
   - Python declares scenes, key actions, light step hooks and declarative
     panel controls. There is no Python ImGui API. Heavy controllers and
     models stay native behind the private `dartpy._demos`.
-  - The Python demo catalog becomes D22's example runner. The C++ `dart-demos`
-    app is removed once the catalog reaches parity.
+  - The Python demo catalog is D22's example runner. All 37 retained scenes
+    reached parity before WP-PD.18 removed the C++ app and its aliases.
+    The TinyDNN-only `human_joint_limits` scene is retired: no supported
+    environment provided its dependency or a running parity oracle. The
+    duplicate `hello_world_gui` and `contacts_pointcloud` scenes are retired
+    in favor of the main catalog and its contact visualizer.
   - Bundled ImGui uses the docking release; with a vanilla system ImGui the
     host is compiled out. This is a labeled 7.0 build change.
   - Evidence: maintaining a C++ and a Python demo app duplicated every scene
-    and host feature. The packets and the parity matrix live in the
-    [demo consolidation project home](../dart7_python_demos/README.md).
+    and host feature. The former consolidation project's local decisions
+    are now owned by [architecture](../../onboarding/architecture.md#python-demo-catalog),
+    [scene rules](../../../examples/README.md#adding-catalog-scenes),
+    [callback contracts](../../onboarding/python-bindings.md#viewer-app-callbacks),
+    [memory diagnostics](../../onboarding/profiling.md#interactive-memory-inspection),
+    and [parity methodology](../../onboarding/testing.md#demo-catalog-verification).
+    The construction-count oracle was transitional and was removed with
+    the C++ app. Scene tests now carry those assertions directly.
+  - Existing CLI recipes keep their flags and strict bounded integers.
+    `--cycle-scenes` fails on callback errors. Ordinary exceptions disable
+    and count one callback; interrupts stop the loop and are re-raised only
+    after teardown. Panels remain declarative C++ control trees, with
+    numeric precision instead of printf formats.
+  - The WAM solver is linked into `dart-demo-models` without exported IKFast
+    symbols or a LAPACK dependency; ssik runs directly from Python instead
+    of an embedded-interpreter bridge. The memory-diagnostics option keeps
+    its existing name and defaults to off. `DART_IMGUI_DOCKING` is removed;
+    the ImGui provider determines host availability.

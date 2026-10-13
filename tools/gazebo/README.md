@@ -259,6 +259,9 @@ enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
+Namespace-scope constants and variables retain their declarations in
+`variables`; unqualified free-function calls also search the DART namespaces
+associated with their argument types and bases.
 
 The extractor does not evaluate preprocessor conditions. It drops only the
 branches that a literal `#if 0` or `#if 1` rules out and scans every other
@@ -282,6 +285,9 @@ main branch. A check with only gz-physics retains the recorded gz-sim scan and
 reports that it was not rescanned. Without a checkout, the command explicitly
 reports a skipped check. Run `pixi run test-gz-compat-tools` after extractor
 changes.
+
+The `CI gz-physics` inventory job checks out both recorded Gazebo revisions
+and runs the freshness command on every pull request and main-branch push.
 
 ## Drivers
 

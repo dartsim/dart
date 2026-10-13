@@ -7759,7 +7759,8 @@
           ],
           "name": "dart::utils::DartLoader"
         }
-      ]
+      ],
+      "variables": []
     },
     "gz-sim": {
       "constructors": [],
@@ -7779,7 +7780,8 @@
       "members": [],
       "overrides": [],
       "sha": "e08ab4e6b8a488f8aeaac6616aff891b390f743b",
-      "types": []
+      "types": [],
+      "variables": []
     }
   }
 }

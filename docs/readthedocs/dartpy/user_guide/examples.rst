@@ -57,6 +57,35 @@ When you run this script, it will perform a forward dynamic simulation of the 6-
 
 You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
 
+Interactive demo catalog
+------------------------
+
+The Python demo catalog runs on the native app host through
+``dartpy.viewer.run()``. The host provides a categorized navigator,
+simulation toolbar, dockable scene panels, and diagnostics.
+Scenes supply worlds, callbacks, and declarative panels; Python does not draw
+the UI. All former C++ scenes are available as Python scenes, except the
+retired ``human_joint_limits`` scene.
+The C++ demo application and its alias executables are removed. Open the
+soft-body scenes with ``pixi run demos -- --scene soft_bodies``,
+``--scene soft_cubes``, or ``--scene soft_open_chain``.
+
+From a DART checkout:
+
+.. code-block:: shell
+
+   pixi run demos
+   pixi run demos -- --scene rigid_cubes
+   pixi run demos -- --list-scenes
+   pixi run cycle-demos
+   pixi run capture rigid_cubes
+   pixi run demos -- --scene rigid_cubes --headless --shot cubes.png
+
+Listing and cycling scenes require no graphics device. The app host requires
+the bundled docking ImGui; a build using vanilla system ImGui omits
+``dartpy.viewer``. Rebuild with ``-DDART_USE_SYSTEM_IMGUI=OFF``;
+``pixi run config`` passes this option.
+
 Versioned humanoid models
 -------------------------
 
@@ -71,13 +100,19 @@ From a DART checkout, download the pinned catalog once and open a model demo:
 .. code-block:: shell
 
    pixi run fetch-robot-assets
-   pixi run py-demos -- --scene unitree_g1
-   pixi run py-demos -- --scene atlas_v5
+   pixi run demos -- --scene unitree_g1
+   pixi run demos -- --scene atlas_v5
    pixi run test-robot-assets -- --offline
 
 The demos inspect joint poses with a fixed base. Atlas v5 is the historical
 hydraulic robot without its head. These examples do not supply walking
 controllers or establish hardware fidelity.
+
+The humanoid scenes are registered only when ``ModelResourceRetriever`` is
+available. They use the verified cache offline and report missing assets as
+skipped scenes, so a scene cycle still succeeds before the models are prefetched.
+The Python scene panels provide joint and position sliders to change joint
+angles within the model limits, plus a reset button.
 
 Applications can explicitly retrieve models online on first use:
 
@@ -181,20 +216,21 @@ expects:
     if solutions:
         skeleton.setPositions(np.asarray(solutions[0].mConfig))
 
-A complete, runnable demo -- which builds the DART skeleton from the solver's
-product-of-exponentials chain, drives a draggable ``InteractiveFrame`` target in
-a ``dart.gui.Viewer``, and re-solves the IK live as you drag -- is available at
-``python/examples/ssik_analytical_ik/main.py``. It also ships a headless smoke
-test over all ssik prebuilt arms:
+A complete demo is the ``ssik_ik_gui`` scene in the Python demo catalog,
+implemented in ``python/examples/demos/scenes/ssik_ik_gui.py``. It builds native
+DART skeletons from the solver's product-of-exponentials chain and offers 19
+arms, position and roll/pitch/yaw controls, a draggable target, solver options,
+seed selection, solution diagnostics, and up to 16 solution skeletons.
+Select **Read dragged** to copy the dragged target into the controls, then
+**Solve** to solve. **Seed from selection** seeds the next solve from the
+selected solution. Install the optional solver before running:
 
 .. code-block:: shell
 
-   pixi run py-ex ssik_analytical_ik                                   # default arm (UR5)
-   python python/examples/ssik_analytical_ik/main.py --arm franka_panda_ik
-   python python/examples/ssik_analytical_ik/main.py --list           # list available arms
-   python python/examples/ssik_analytical_ik/main.py --self-test      # headless check
+   pixi run install-ssik
+   pixi run demos -- --scene ssik_ik_gui
+   pixi run dartpy -m pytest python/tests/integration/test_demo_ssik.py -q
 
-A C++ counterpart embeds a Python interpreter to drive the same solver from
-a Filament/ImGui application: the ``ssik_ik_gui`` scene in the consolidated
-``dart-demos`` catalog (``pixi run demos``, then select it from the catalog,
-or launch it directly with ``bin/dart-demos --scene ssik_ik_gui``).
+The tests check forward kinematics and DART's Python analytical IK integration
+over all 19 arms. When ``ssik`` is unavailable, scene cycles report this scene
+as skipped.

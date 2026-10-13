@@ -1,9 +1,11 @@
 """Fixed-base inspection of verified Atlas v5 and Unitree G1 bundles."""
 
+from __future__ import annotations
+
+import math
+
 import dartpy as dart
 import numpy as np
-
-from ..registry import SceneHandle
 
 MODEL_URIS = {
     "atlas-v5": (
@@ -17,6 +19,10 @@ MODEL_URIS = {
 }
 
 
+class MissingModelsError(RuntimeError):
+    """The verified model cache lacks a model; the message says how to fetch it."""
+
+
 def _world(model_id: str, root_height: float):
     uri = MODEL_URIS[model_id]
     retriever = dart.utils.ModelResourceRetriever("", True)
@@ -24,7 +30,7 @@ def _world(model_id: str, root_height: float):
         if not retriever.getFilePath(uri):
             raise RuntimeError("Verified model cache is unavailable.")
     except RuntimeError as error:
-        raise RuntimeError(
+        raise MissingModelsError(
             f"{error} Prefetch with: pixi run fetch-robot-assets {model_id}"
         ) from error
     package = dart.utils.PackageResourceRetriever(retriever)
@@ -42,7 +48,7 @@ def _world(model_id: str, root_height: float):
         )
     )
     robot = loader.parseSkeleton(uri)
-    if robot is None:
+    if robot is None or robot.getNumDofs() == 0:
         raise RuntimeError(f"Unable to parse cached model: {uri}")
     transform = np.eye(4)
     transform[2, 3] = root_height
@@ -64,50 +70,89 @@ def g1_world():
     return _world("unitree-g1", 0.8)
 
 
-def _build(world) -> SceneHandle:
+def _build(world, root_height) -> dart.viewer.SceneSetup:
     robot = world.getSkeleton(0)
     initial_pose = robot.getPositions().copy()
-    selected = 0
+    pending_joint = -1
+    pending_position = 0.0
+    reset = False
 
-    def select_joint(delta):
-        nonlocal selected
-        selected = (selected + delta) % robot.getNumDofs()
-        print(f"Selected joint: {robot.getDof(selected).getName()}")
+    panel = dart.viewer.Panel()
+    panel.add_text("Fixed base; kinematic joint inspection.")
+    panel.add_text(
+        f"{robot.getNumBodyNodes()} bodies, {robot.getNumDofs()} joints to pose"
+    )
+    joint = panel.add_slider(
+        "Joint", 0, min=0, max=robot.getNumDofs() - 1, integer=True
+    )
+    joint_name = panel.add_text(robot.getDof(0).getName())
+    position = panel.add_slider("Position (rad)", 0.0, min=-math.pi, max=math.pi)
+    reset_pose = panel.add_button("Reset pose")
 
-    def pose_joint(delta):
-        dof = robot.getDof(selected)
-        position = min(
-            dof.getPositionUpperLimit(),
-            max(dof.getPositionLowerLimit(), dof.getPosition() + delta),
+    def pose_joint():
+        nonlocal pending_joint, pending_position
+        pending_joint = joint.value
+        pending_position = position.value
+
+    def reset_joint_positions():
+        nonlocal reset, pending_joint
+        reset = True
+        pending_joint = -1
+
+    def pre_refresh():
+        nonlocal reset, pending_joint
+        if reset:
+            robot.setPositions(initial_pose)
+            reset = False
+        if pending_joint >= 0:
+            robot.getDof(pending_joint).setPosition(pending_position)
+            pending_joint = -1
+        dof = robot.getDof(joint.value)
+        joint_name.label = dof.getName()
+        lower = dof.getPositionLowerLimit()
+        upper = dof.getPositionUpperLimit()
+        position.set_range(
+            lower if math.isfinite(lower) else -math.pi,
+            upper if math.isfinite(upper) else math.pi,
         )
-        dof.setPosition(position)
-        print(f"{dof.getName()}: {position:.3f} rad")
+        position.value = dof.getPosition()
 
-    return SceneHandle(
-        node=dart.gui.WorldNode(world),
-        camera_home=(
-            [3.0, 2.5, 1.8],
-            [0.0, 0.0, robot.getRootBodyNode().getWorldTransform().translation()[2]],
-            [0.0, 0.0, 1.0],
+    position.on_change = pose_joint
+    reset_pose.on_change = reset_joint_positions
+    pre_refresh()
+
+    return dart.viewer.SceneSetup(
+        world,
+        pre_refresh=pre_refresh,
+        shadows=False,
+        camera_home=dart.viewer.CameraHome(
+            eye=[6.0, 5.0, 3.0],
+            center=[0.0, 0.0, root_height - 0.6],
+            up=[0.0, 0.0, 1.0],
         ),
         allow_simulation=False,
-        key_actions={
-            ord("["): ("Previous joint", lambda: select_joint(-1)),
-            ord("]"): ("Next joint", lambda: select_joint(1)),
-            ord("-"): ("Decrease joint angle", lambda: pose_joint(-0.1)),
-            ord("="): ("Increase joint angle", lambda: pose_joint(0.1)),
-            ord("t"): ("Reset pose", lambda: robot.setPositions(initial_pose)),
-        },
-        instructions=[
-            "Fixed base: [ / ] select a joint, - / = change its angle, t resets.",
-            f"Initially selected joint: {robot.getDof(0).getName()}",
-        ],
+        panel=panel,
     )
 
 
-def build_atlas() -> SceneHandle:
-    return _build(atlas_world())
+def _scene_world(load):
+    # World factories stay usable without the app host (agent-capture); the
+    # host reports missing models as a skipped scene.
+    try:
+        return load()
+    except MissingModelsError as error:
+        raise dart.viewer.AssetsNotPrefetchedError(str(error)) from error
 
 
-def build_g1() -> SceneHandle:
-    return _build(g1_world())
+def build_atlas() -> dart.viewer.SceneSetup:
+    return _build(_scene_world(atlas_world), 1.0)
+
+
+def build_g1() -> dart.viewer.SceneSetup:
+    return _build(_scene_world(g1_world), 0.8)
+
+
+def scenes():
+    from . import atlas_v5, unitree_g1
+
+    return [*atlas_v5.scenes(), *unitree_g1.scenes()]

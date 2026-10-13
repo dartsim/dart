@@ -11,11 +11,11 @@ description: "DART Changelog: decide, draft, finalize, or audit DART changelog e
 
 Use this skill to run the DART `dart-changelog` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-changelog <arguments>`
+- Claude Code: `/dart-changelog <arguments>`
 - Codex: `$dart-changelog <arguments>`
 - Muse: `/dart-changelog <arguments>`
 
@@ -156,7 +156,7 @@ Other workflows should call this routine whenever they touch behavior or docs
 that may need release notes. The caller keeps ownership of the overall task,
 validation, PR body, and approval boundary; `dart-changelog` owns the changelog
 decision, wording, placement, evidence-link hygiene, and the pasteable decision
-note that lets Claude, Codex, OpenCode, and manual contributors record the same
+note that lets Claude, Codex, Muse, and manual contributors record the same
 outcome.
 
 ## Output
