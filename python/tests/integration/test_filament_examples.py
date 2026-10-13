@@ -215,9 +215,9 @@ def test_modern_humanoid_callbacks_without_external_model_cache(
     assert isinstance(setup, viewer.SceneSetup)
     assert setup.world is world
     assert setup.allow_simulation is False
-    actions = {action.key: action for action in setup.key_actions}
-    for key in "[]=t":
-        actions[ord(key)].callback()
+    assert not setup.key_actions
+    assert isinstance(setup.panel, viewer.Control)
+    setup.pre_refresh()
     assert robot.getPosition(0) == 0.0
 
 
