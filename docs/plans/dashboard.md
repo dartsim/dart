@@ -23,8 +23,9 @@ Priority order is document order. Active implementation handoff remains in
   and [remaining M6b scope](../dev_tasks/dart7_python_first/README.md#demo-consolidation-d31b).
 - Next step: Exit M0 once the scope artifacts (#3728) and the gz API inventory
   (#3729) land. #3741 replaced the closed #3731; #3722, #3749 and #3750 have
-  merged. Then pin `dart7-base` and open the M1a stage-extraction PR. M5a's
-  rename table and the detector capability matrix run in parallel.
+  merged. The `dart7-base` pin and M1a (#3775) are complete; continue M1b
+  and the remaining core seams. M5a's rename table and the detector
+  capability matrix run in parallel.
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.

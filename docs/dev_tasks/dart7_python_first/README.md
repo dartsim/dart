@@ -154,8 +154,8 @@ additive, merges before the API freeze `F`; see the
 
 ### Priority and thresholds
 
-The remaining critical path starts with the baseline pin, then M1 stage
-extraction (M1a), the executor (M1d) and remapping clone (M1i), then
+The remaining critical path starts with the M1 seams, including edit/compile
+(M1b), the executor (M1d) and remapping clone (M1i), then
 `WorldBatch`, M5b's simulation bindings and the acceptance tests. M5 and
 M6b run in parallel with that path. The Python and MJCF default-detector
 switch (M1f) is off the critical path: it lands after the capability matrix

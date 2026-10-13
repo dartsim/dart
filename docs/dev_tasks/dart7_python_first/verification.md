@@ -744,6 +744,25 @@ Known gaps:
   | M6b | RGB, metric depth, node segmentation lookup, Material, passive sync and bounded managed viewing |
   | M7 / WP-7.0.6 / WP-7.0.8 | Fresh RC-wheel acceptance/slim import, Gazebo compatibility and separately owned maintenance wheels |
 
+- **Loader/default scope and roadmap follow-up on 2026-10-13** (`c04a253b4` review):
+  - The dashboard and critical-path summary now start with the remaining M1
+    seams instead of repeating the completed baseline pin and M1a.
+  - The existing unmarked direct MJCF parse test requires FCL. This protects
+    the C++ parser/direct binding while the strict future Python-wrapper
+    marker separately requires DART.
+  - A new strict loader marker requires a two-model SDF file to raise without
+    `model=`. Selecting each name returns the corresponding one-link or
+    two-link model and proves detached ownership by adding it to a World.
+    The exact fixed-joint fixture was independently loaded through the built
+    native SDF parser, confirming both model names and body-name order.
+  - Both independent read-only reviews of these three fixes are clean.
+    Focused acceptance, GUI markers and the direct MJCF regression report
+    two passed native gates and 40 strict XFAILs with no XPASS. With
+    `--runxfail`, the 40 intended pending-feature failures remain and both
+    native gates pass. The rebuilt native `test_SdfParser` also passes.
+    Full `pixi run test-py` reports 1,597 passed, 26 skipped and 38 strict
+    XFAILs with no XPASS. Lint, check-lint and public-path checks pass.
+
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
     counter instead of `step_count`; the render test ran in the device-free

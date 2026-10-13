@@ -152,6 +152,30 @@ def test_loader_failures(tmp_path):
         load_model(path)
 
 
+@pytest.mark.xfail(strict=True, reason="M5: multi-model rejection and named model selection are pending")
+def test_load_model_selection(tmp_path, world):
+    load_model = dart.io.load_model
+    path = tmp_path / "models.sdf"
+    path.write_text(
+        '<sdf version="1.6"><world name="models">'
+        '<model name="first"><link name="first_link"/></model>'
+        '<model name="second"><link name="second_root"/>'
+        '<link name="second_child"/><joint name="second_joint" type="fixed">'
+        '<parent>second_root</parent><child>second_child</child></joint></model>'
+        '</world></sdf>'
+    )
+    # Resolve the pending callable before rejection, so its absence cannot
+    # satisfy the required ambiguity error. Exception types belong to M5.
+    with pytest.raises(Exception):
+        load_model(path)
+    for name, links in (("first", ["first_link"]), ("second", ["second_root", "second_child"])):
+        model = load_model(path, model=name)
+        assert model.name == name
+        assert list(model.links.names) == links
+        assert world.add(model) is model
+        assert world.multibodies[name] == model
+
+
 @pytest.mark.xfail(strict=True, reason="M5: live add_* builders and immutable keyword-only specifications are pending")
 def test_live_model_builders(world):
     # M5 settles collider/visual options and ownership spelling. The live
