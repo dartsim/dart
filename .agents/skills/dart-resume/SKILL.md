@@ -11,11 +11,11 @@ description: "DART Resume: continue unfinished work through its acceptance crite
 
 Use this skill to run the DART `dart-resume` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-resume <arguments>`
+- Claude Code: `/dart-resume <arguments>`
 - Codex: `$dart-resume <arguments>`
 - Muse: `/dart-resume <arguments>`
 

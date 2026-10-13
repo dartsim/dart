@@ -1,7 +1,7 @@
 # Agent Guidelines for DART
 
 This file is the single shared rules file and repository pointer board for
-Claude Code, Codex, Muse, and OpenCode; keep shared guidance here (see
+Claude Code, Codex, and Muse; keep shared guidance here (see
 `docs/onboarding/ai-tools.md`). Start every task with
 `docs/ai/principles.md`, then load only the owner docs needed for the work.
 
@@ -91,8 +91,8 @@ the repository root to the working directory.
 ## AI Capability Sources
 
 Editable workflows and domain skills live in `.claude/commands/` and
-`.claude/skills/`. Generated Codex, Muse, and OpenCode adapters live in
-`.agents/skills/` and `.opencode/command/`; do not hand-edit them. Treat
+`.claude/skills/`. Generated Codex and Muse adapters live in
+`.agents/skills/`; do not hand-edit them. Treat
 only paths listed by `.agents/skills/.dart-generated.json`, plus the
 manifest itself, as DART-generated output: preserve unrelated skills in the
 shared `.agents/skills/` directory, and let sync remove only
@@ -110,9 +110,9 @@ read-only, so run Git mutations (switch, commit, merge) and
 `sync-ai-commands` from an unsandboxed shell there (see
 `docs/onboarding/ai-tools.md`).
 
-Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in Claude, Muse
-Code, and OpenCode for large, multi-session, or explicitly autonomous
-work. Its project home is `docs/dev_tasks/<task>/`.
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in Claude and Muse
+Code for large, multi-session, or explicitly autonomous work. Its
+project home is `docs/dev_tasks/<task>/`.
 
 ## Before Every Commit
 
