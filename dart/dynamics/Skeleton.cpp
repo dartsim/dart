@@ -52,8 +52,10 @@
 
 #include <algorithm>
 #include <atomic>
+#include <ostream>
 #include <queue>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #define SET_ALL_FLAGS(X)                                                       \
@@ -521,15 +523,19 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
 
     BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
 
+    skelClone->registerBodyNode(newBody);
+  }
+
+  // Register all BodyNodes before IK modules build their DOF maps.
+  for (std::size_t i = 0; i < getNumBodyNodes(); ++i) {
     // The IK module gets cloned by the Skeleton and not by the BodyNode,
     // because IK modules rely on the Skeleton's structure and indexing. If the
     // IK was cloned by the BodyNode into a Skeleton that has a different
     // structure, then there is no guarantee that it will continue to work
     // correctly.
     if (getBodyNode(i)->getIK())
-      newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
-
-    skelClone->registerBodyNode(newBody);
+      skelClone->getBodyNode(i)->mIK
+          = getBodyNode(i)->getIK()->clone(skelClone->getBodyNode(i));
   }
 
   // Replace constructor-generated skins with cloned nodes in their original
@@ -2681,6 +2687,111 @@ bool Skeleton::moveBodyNodeTree(
 }
 
 //==============================================================================
+// Binds the IK modules of copied Nodes to the DOFs of the copy. Each Node
+// cloned its IK module before the copied BodyNodes joined their Skeleton, so
+// the module still selects DOFs by their indices in originalDofs, the DOFs of
+// the original Skeleton before the copy. setDofs() also rebuilds the IK
+// DOF map.
+static void bindCopiedInverseKinematics(
+    const std::vector<const DegreeOfFreedom*>& originalDofs,
+    const std::vector<const BodyNode*>& originals,
+    const std::vector<BodyNode*>& copies,
+    bool replacedRootJoint,
+    bool sameSkeleton)
+{
+  // The copy of each copied DOF. A requested parent Joint replaces the root's
+  // Joint instead of copying it.
+  std::unordered_map<const DegreeOfFreedom*, const DegreeOfFreedom*> copiedDofs;
+  for (std::size_t i = replacedRootJoint ? 1 : 0; i < originals.size(); ++i) {
+    const Joint* original = originals[i]->getParentJoint();
+    for (std::size_t j = 0; j < original->getNumDofs(); ++j)
+      copiedDofs[original->getDof(j)] = copies[i]->getParentJoint()->getDof(j);
+  }
+
+  // The DOF that the copy uses in place of the DOF that had this index before
+  // the copy, if any. The DOFs of Joints that were not copied stay in the
+  // original Skeleton, so a copy into that Skeleton shares them, including
+  // those that its Node does not depend on, which an IK module can select too.
+  const auto counterpart = [&](std::size_t index) -> const DegreeOfFreedom* {
+    if (index >= originalDofs.size())
+      return nullptr;
+    const auto copy = copiedDofs.find(originalDofs[index]);
+    if (copy != copiedDofs.end())
+      return copy->second;
+    return sameSkeleton ? originalDofs[index] : nullptr;
+  };
+
+  for (BodyNode* copy : copies) {
+    for (Node* copiedNode : copy->getNodes()) {
+      auto* node = dynamic_cast<JacobianNode*>(copiedNode);
+      if (node == nullptr || node->getIK() == nullptr)
+        continue;
+
+      InverseKinematics& ik = *node->getIK();
+      if (const auto* analytical = ik.getAnalytical()) {
+        dtwarn << "[Skeleton::cloneBodyNodeTree] The copied IK module of the "
+               << "JacobianNode [" << node->getName()
+               << "] uses JacobianDLS. Set the analytical solver up again "
+               << "for the copy.\n";
+        ik.setGradientMethod<InverseKinematics::JacobianDLS>(
+            InverseKinematics::JacobianDLS::Properties(
+                analytical->getGradientMethodProperties()));
+        // Analytical methods override these settings for their equations.
+        const InverseKinematics::ErrorMethod::Properties defaults;
+        ik.getErrorMethod().setErrorLengthClamp(defaults.mErrorLengthClamp);
+        ik.getErrorMethod().setErrorWeights(defaults.mErrorWeights);
+      }
+
+      const std::vector<std::size_t> selected = ik.getDofs();
+      std::vector<std::size_t> dofs;
+      std::vector<std::size_t> kept;
+      for (std::size_t k = 0; k < selected.size(); ++k) {
+        if (const DegreeOfFreedom* dof = counterpart(selected[k])) {
+          dofs.push_back(dof->getIndexInSkeleton());
+          kept.push_back(k);
+        }
+      }
+
+      if (dofs.empty() && !selected.empty()) {
+        dtwarn << "[Skeleton::cloneBodyNodeTree] The copy of the JacobianNode ["
+               << node->getName() << "] has none of the DOFs that its IK "
+               << "module selected. Like any IK module without DOFs, the "
+               << "copied IK module moves nothing and reports success for "
+               << "every target until it selects DOFs.\n";
+      }
+
+      if (dofs.size() == selected.size()) {
+        ik.setDofs(dofs);
+      } else {
+        // Gradient weights and solver seeds apply by position in the
+        // selection, so keep their entries for the kept DOFs. DOFs past the
+        // end of the weights keep their implicit weight of 1.
+        const auto keepEntries = [&kept](const Eigen::VectorXd& values) {
+          Eigen::VectorXd entries(values.size());
+          Eigen::Index count = 0;
+          for (const std::size_t k : kept) {
+            if (k < static_cast<std::size_t>(values.size()))
+              entries[count++] = values[k];
+          }
+          entries.conservativeResize(count);
+          return entries;
+        };
+
+        InverseKinematics::GradientMethod& gradient = ik.getGradientMethod();
+        gradient.setComponentWeights(
+            keepEntries(gradient.getComponentWeights()));
+
+        // setDofs() clears the seeds once the selection shrinks
+        const std::vector<Eigen::VectorXd> seeds = ik.getProblem()->getSeeds();
+        ik.setDofs(dofs);
+        for (const Eigen::VectorXd& seed : seeds)
+          ik.getProblem()->addSeed(keepEntries(seed));
+      }
+    }
+  }
+}
+
+//==============================================================================
 std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     Joint* _parentJoint,
     const BodyNode* _bodyNode,
@@ -2722,7 +2833,11 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     }
   }
 
+  const std::vector<const DegreeOfFreedom*> dofs = getDofs();
   _newSkeleton->receiveBodyNodeTree(clones);
+  bindCopiedInverseKinematics(
+      dofs, tree, clones, _parentJoint != nullptr, _newSkeleton.get() == this);
+
   return root;
 }
 

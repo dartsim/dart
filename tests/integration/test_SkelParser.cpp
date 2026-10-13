@@ -32,6 +32,8 @@
 
 #include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -549,4 +551,143 @@ TEST(SkelParser, Shapes)
   // Mesh
   skel = world->getSkeleton("mesh skeleton");
   EXPECT_NE(skel, nullptr);
+}
+
+namespace {
+
+// Restores the collision detector factory's creators when a test ends, even
+// after a failed assertion.
+struct DetectorFactoryRestorer
+{
+  collision::CollisionDetector::Factory saved{
+      *collision::CollisionDetector::getFactory()};
+  ~DetectorFactoryRestorer()
+  {
+    *collision::CollisionDetector::getFactory() = saved;
+  }
+};
+
+WorldPtr readWorldWithPhysics(const std::string& physics)
+{
+  return SkelParser::readWorldXML(
+      "<skel version=\"1.0\"><world name=\"world\"><physics>" + physics
+      + "</physics></world></skel>");
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SkelParser, LoadsWorldWithoutFclDetectorCreator)
+{
+  // A host can unregister the detector factory's creators, for example before
+  // it unloads the plugin that registered them.
+  using collision::CollisionDetector;
+  using collision::FCLCollisionDetector;
+  const auto& key = FCLCollisionDetector::getStaticType();
+  DetectorFactoryRestorer restorer;
+  auto* factory = CollisionDetector::getFactory();
+  factory->unregisterCreator(key);
+  ASSERT_FALSE(factory->canCreate(key));
+
+  const auto expectFcl = [](const WorldPtr& world,
+                            FCLCollisionDetector::PrimitiveShape type) {
+    ASSERT_NE(world, nullptr);
+    const auto fcl = std::dynamic_pointer_cast<FCLCollisionDetector>(
+        world->getCollisionDetector());
+    ASSERT_NE(fcl, nullptr);
+    EXPECT_EQ(fcl->getPrimitiveShapeType(), type);
+    EXPECT_EQ(
+        fcl->getContactPointComputationMethod(), FCLCollisionDetector::DART);
+    world->step();
+  };
+
+  const auto expectFclWorlds = [&](const std::string& creator) {
+    SCOPED_TRACE(creator);
+    expectFcl(
+        SkelParser::readWorld("dart://sample/skel/test/single_pendulum.skel"),
+        FCLCollisionDetector::MESH);
+
+    // An fcl, unknown, or omitted collision_detector also loads FCL.
+    for (const std::string detector :
+         {"<collision_detector>fcl</collision_detector>",
+          "<collision_detector>unknown</collision_detector>",
+          ""}) {
+      SCOPED_TRACE(detector);
+      expectFcl(
+          readWorldWithPhysics(detector), FCLCollisionDetector::PRIMITIVE);
+    }
+  };
+
+  testing::internal::CaptureStderr();
+  expectFclWorlds("no fcl creator");
+
+  // An "fcl" creator that returns no detector or another detector type gets
+  // the same fallback.
+  factory->registerCreator(
+      key, [] { return collision::CollisionDetectorPtr(); });
+  expectFclWorlds("fcl creator returns null");
+  factory->registerCreator(
+      key, [] { return collision::DARTCollisionDetector::create(); });
+  expectFclWorlds("fcl creator returns DART");
+
+  // The fallback warns once per process and no other test reaches it, so only
+  // the first run of this test prints the warning.
+  static bool firstRun = true;
+  const auto log = testing::internal::GetCapturedStderr();
+  const auto warning = log.find("creating one directly");
+  if (firstRun) {
+    EXPECT_NE(warning, std::string::npos);
+    EXPECT_EQ(log.rfind("creating one directly"), warning);
+  } else {
+    EXPECT_EQ(warning, std::string::npos);
+  }
+  firstRun = false;
+}
+
+//==============================================================================
+TEST(SkelParser, ConfiguresRegisteredFclDetector)
+{
+  // A host can register its own "fcl" creator; the parser must configure the
+  // detector that creator returns instead of creating another one.
+  using collision::FCLCollisionDetector;
+  std::shared_ptr<FCLCollisionDetector> created;
+  auto initialShape = FCLCollisionDetector::PRIMITIVE;
+  DetectorFactoryRestorer restorer;
+  collision::CollisionDetector::getFactory()->registerCreator(
+      FCLCollisionDetector::getStaticType(), [&] {
+        created = FCLCollisionDetector::create();
+        created->setPrimitiveShapeType(initialShape);
+        created->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+        return created;
+      });
+
+  const auto expectConfigured = [&](const std::string& physics,
+                                    FCLCollisionDetector::PrimitiveShape type) {
+    SCOPED_TRACE(physics);
+    // Start from the other shape type and FCL contacts so that the parser's
+    // settings show.
+    initialShape = type == FCLCollisionDetector::MESH
+                       ? FCLCollisionDetector::PRIMITIVE
+                       : FCLCollisionDetector::MESH;
+    created = nullptr;
+    const auto world = readWorldWithPhysics(physics);
+    ASSERT_NE(world, nullptr);
+    ASSERT_NE(created, nullptr);
+    EXPECT_EQ(world->getCollisionDetector(), created);
+    EXPECT_EQ(created->getPrimitiveShapeType(), type);
+    EXPECT_EQ(
+        created->getContactPointComputationMethod(),
+        FCLCollisionDetector::DART);
+  };
+
+  expectConfigured(
+      "<collision_detector>fcl_mesh</collision_detector>",
+      FCLCollisionDetector::MESH);
+  expectConfigured(
+      "<collision_detector>fcl</collision_detector>",
+      FCLCollisionDetector::PRIMITIVE);
+  expectConfigured(
+      "<collision_detector>unknown</collision_detector>",
+      FCLCollisionDetector::PRIMITIVE);
+  expectConfigured("", FCLCollisionDetector::PRIMITIVE);
 }
