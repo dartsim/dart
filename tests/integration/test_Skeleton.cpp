@@ -583,11 +583,33 @@ TEST(Skeleton, Persistence)
   EXPECT_TRUE(weakSkel.lock() == nullptr);
 }
 
+struct NodeLifetime
+{
+  WeakSkeletonPtr skeleton;
+  WeakBodyNodePtr body;
+  bool destroyed = false;
+  bool skeletonAlive = false;
+  bool bodyAlive = false;
+};
+
 class GenericNode final : public dart::dynamics::Node,
                           public AccessoryNode<GenericNode>
 {
 public:
-  GenericNode(BodyNode* bn, const std::string& name) : Node(bn), mName(name) {}
+  GenericNode(
+      BodyNode* bn, const std::string& name, NodeLifetime* lifetime = nullptr)
+    : Node(bn), mName(name), mLifetime(lifetime)
+  {
+  }
+
+  ~GenericNode() override
+  {
+    if (mLifetime) {
+      mLifetime->destroyed = true;
+      mLifetime->skeletonAlive = !mLifetime->skeleton.expired();
+      mLifetime->bodyAlive = !mLifetime->body.expired();
+    }
+  }
 
   const std::string& setName(const std::string& newName) override
   {
@@ -607,7 +629,132 @@ protected:
   }
 
   std::string mName;
+  NodeLifetime* mLifetime;
 };
+
+using GenericNodePtr = TemplateNodePtr<GenericNode, BodyNode>;
+
+GenericNodePtr createRemovedNode(NodeLifetime& lifetime)
+{
+  auto skeleton = Skeleton::create();
+  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+  lifetime.skeleton = skeleton;
+  lifetime.body = body;
+  auto* node = body->createNode<GenericNode>("node", &lifetime);
+  GenericNodePtr owner = node;
+  node->remove();
+  return owner;
+}
+
+void expectNodeDestroyedBeforeParent(const NodeLifetime& lifetime)
+{
+  EXPECT_TRUE(lifetime.destroyed);
+  EXPECT_TRUE(lifetime.skeletonAlive);
+  EXPECT_TRUE(lifetime.bodyAlive);
+  EXPECT_TRUE(lifetime.skeleton.expired());
+  EXPECT_TRUE(lifetime.body.expired());
+}
+
+TEST(Skeleton, NodePtrDestructionKeepsParentAlive)
+{
+  NodeLifetime lifetime;
+  {
+    auto owner = createRemovedNode(lifetime);
+    EXPECT_FALSE(lifetime.destroyed);
+    EXPECT_FALSE(lifetime.skeleton.expired());
+    EXPECT_FALSE(lifetime.body.expired());
+  }
+  expectNodeDestroyedBeforeParent(lifetime);
+
+  NodeLifetime constLifetime;
+  {
+    ConstNodePtr owner = createRemovedNode(constLifetime);
+  }
+  expectNodeDestroyedBeforeParent(constLifetime);
+}
+
+TEST(Skeleton, NodePtrResetKeepsParentAlive)
+{
+  for (bool useSet : {false, true}) {
+    SCOPED_TRACE(useSet);
+    NodeLifetime lifetime;
+    auto owner = createRemovedNode(lifetime);
+    if (useSet)
+      owner.set(nullptr);
+    else
+      owner = nullptr;
+    EXPECT_EQ(owner.get(), nullptr);
+    expectNodeDestroyedBeforeParent(lifetime);
+  }
+}
+
+TEST(Skeleton, NodePtrRetargetKeepsParentAlive)
+{
+  for (int assignment = 0; assignment < 4; ++assignment) {
+    SCOPED_TRACE(assignment);
+    NodeLifetime oldLifetime;
+    NodeLifetime newLifetime;
+    auto owner = createRemovedNode(oldLifetime);
+    auto replacement = createRemovedNode(newLifetime);
+    auto* newNode = replacement.get();
+    if (assignment == 0)
+      owner = replacement.get();
+    else if (assignment == 1)
+      owner.set(replacement.get());
+    else if (assignment == 2)
+      owner = replacement;
+    else
+      owner = std::move(replacement);
+
+    EXPECT_EQ(owner.get(), newNode);
+    expectNodeDestroyedBeforeParent(oldLifetime);
+    EXPECT_FALSE(newLifetime.destroyed);
+    replacement = nullptr;
+    owner = nullptr;
+    expectNodeDestroyedBeforeParent(newLifetime);
+  }
+}
+
+TEST(Skeleton, NodePtrCopiesAndMovesKeepParentAlive)
+{
+  NodeLifetime lifetime;
+  {
+    auto owner = createRemovedNode(lifetime);
+    auto* node = owner.get();
+    auto copy = owner;
+    auto moved = std::move(owner);
+    EXPECT_EQ(copy.get(), node);
+    EXPECT_EQ(moved.get(), node);
+    owner = nullptr;
+    copy = nullptr;
+    EXPECT_FALSE(lifetime.destroyed);
+    ConstNodePtr constOwner = moved;
+    ConstNodePtr assigned;
+    assigned = moved;
+    moved = nullptr;
+    constOwner = nullptr;
+    EXPECT_FALSE(lifetime.destroyed);
+  }
+  expectNodeDestroyedBeforeParent(lifetime);
+}
+
+TEST(Skeleton, NodePtrSelfAssignmentKeepsOwnership)
+{
+  NodeLifetime lifetime;
+  auto owner = createRemovedNode(lifetime);
+  auto* node = owner.get();
+  auto& alias = owner;
+  owner = alias;
+  owner = std::move(alias);
+  owner = owner.get();
+  owner.set(owner.get());
+  EXPECT_EQ(owner.get(), node);
+  EXPECT_FALSE(lifetime.destroyed);
+  EXPECT_FALSE(lifetime.skeleton.expired());
+  EXPECT_FALSE(lifetime.body.expired());
+  owner = nullptr;
+  expectNodeDestroyedBeforeParent(lifetime);
+}
 
 TEST(Skeleton, NodePersistence)
 {

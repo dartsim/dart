@@ -435,6 +435,36 @@ def test_pick_owners_in_python_cycles_are_collected():
     assert reference() is None
 
 
+def test_pick_retains_removed_shape_until_collection():
+    _run_gui_subprocess(
+        """
+        world = dart.simulation.World()
+        skeleton = dart.dynamics.Skeleton()
+        body = skeleton.createWeldJointAndBodyNodePair()[1]
+        body.setName("picked body")
+        shape = body.createShapeNode(dart.dynamics.BoxShape([1, 1, 1]))
+        shape.getVisualAspect(True)
+        world.addSkeleton(skeleton)
+        viewer = dart.gui.Viewer()
+        viewer.addWorldNode(dart.gui.WorldNode(world))
+        viewer.setCameraHome([0, 0, 4], [0, 0, 0], [0, 1, 0])
+        picks = viewer.computeIntersections(dart.gui.GUIEventAdapter(
+            dart.gui.GUIEventAdapter.MOVE, x=800, y=500))
+        assert picks
+        body.removeAllShapeNodes()
+        world.removeSkeleton(skeleton)
+        del shape, body, skeleton, world, viewer
+        gc.collect()
+        assert picks[0].frame.isRemoved()
+        assert picks[0].frame.getBodyNode().getName() == "picked body"
+        gc.collect()
+        del picks
+        gc.collect()
+        print("ready")
+        """
+    )
+
+
 @pytest.mark.parametrize("frame_kind", ["simple", "interactive"])
 def test_pick_frame_owner_is_usable_after_wrapper_collection(frame_kind):
     _run_gui_subprocess(
