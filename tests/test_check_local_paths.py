@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import textwrap
+import time
 from pathlib import Path
 
 import pytest
@@ -52,15 +53,15 @@ def test_auto_comment_char_recovers_only_paired_scissors_instruction(
 @pytest.mark.parametrize(
     "path",
     (
-        ".sisyphus/plans/example.md",
-        "../.sisyphus/notes/example.md",
-        "checkout/.ab/control/example.json",
+        ".sisyphus" "/plans/example.md",  # path-fixture
+        "../.sisyphus" "/notes/example.md",  # path-fixture
+        "checkout/.ab" "/control/example.json",  # path-fixture
         ".ab/example.json",
         "/tmp/claude-example/example/notes.md",
         ".claude/projects/example/notes.md",
         "scratchpad/example.md",
         "checkout/scratchpad/example.md",
-        "task_2/scripts/example.py",
+        "task_2" "/scripts/example.py",  # path-fixture
         "checkout/task_12-example/example",
         "/home/example/worktree/file.md",
         "/home/example",
@@ -101,7 +102,7 @@ def test_auto_comment_char_recovers_only_paired_scissors_instruction(
         r"C:\\Users\\example\\worktree\\file.md",
         "C:/Users/example/worktree/file.md",
         r"checkout\.ab\example.json",
-        r"task_3\scripts\example.py",
+        "task_3" r"\scripts\example.py",  # path-fixture
     ),
 )
 def test_private_paths_are_reported_with_line_and_match(path, capsys):
@@ -341,6 +342,25 @@ def test_public_url_with_balanced_parentheses_is_fully_masked(capsys):
     assert not capsys.readouterr().out
 
 
+@pytest.mark.parametrize("prefix", ["", "123", "+.-", "123+.-"])
+@pytest.mark.parametrize("scheme", ["https", "http", "file", "vscode"])
+def test_uri_scheme_leading_non_letters_keep_masking(prefix, scheme, capsys):
+    uri = f"{scheme}://example.com/home/example/private.md"
+    assert checker.scan_text(prefix + uri) == (scheme not in {"http", "https"})
+    assert capsys.readouterr().out == (
+        "" if scheme in {"http", "https"} else "1: /home/example/private.md\n"
+    )
+
+
+@pytest.mark.parametrize("character", ["a", "0"])
+@pytest.mark.parametrize("tail", ["", " https://example.com/home/example/public.md"])
+def test_long_scheme_character_runs_scan_quickly(character, tail, capsys):
+    start = time.process_time()
+    assert not checker.scan_text(character * 200_000 + tail)
+    assert time.process_time() - start < 1.0
+    assert not capsys.readouterr().out
+
+
 def test_public_url_leaves_unbalanced_markdown_parenthesis(capsys):
     assert checker.scan_text("[text](https://example.com/x)/home/example/x")
     assert capsys.readouterr().out == "1: /home/example/x\n"
@@ -392,11 +412,12 @@ def test_json_escaped_slashes_only_are_normalized(capsys):
 
 def test_reports_all_leaks_and_file_line(capsys):
     assert checker.scan_text(
-        "summary\n/home/example/checkout and .sisyphus/plans/example.md\n",
+        "summary\n/home/example/checkout and .sisyphus"
+        "/plans/example.md\n",  # path-fixture
         "notes.md",
     )
     assert capsys.readouterr().out.splitlines() == [
-        "notes.md:2: .sisyphus/plans/example.md",
+        "notes.md:2: .sisyphus" + "/plans/example.md",  # path-fixture
         "notes.md:2: /home/example/checkout",
     ]
 
@@ -419,7 +440,9 @@ def test_urls_do_not_hide_adjacent_paths_or_file_urls(capsys):
 
 def test_allowlist_is_limited_to_exact_file_and_matched_fixture():
     assert not checker.scan_text(".sisyphus" "/\n", ".gitignore")  # path-fixture
-    assert checker.scan_text(".sisyphus/plans/example.md\n", ".gitignore")
+    assert checker.scan_text(
+        ".sisyphus" "/plans/example.md\n", ".gitignore"
+    )  # path-fixture
     assert checker.scan_text(".sisyphus" "/\n", "nested/.gitignore")  # path-fixture
     assert not checker.scan_text(
         "/home/example/fixture\n", "tests/test_check_local_paths.py"
@@ -429,6 +452,36 @@ def test_allowlist_is_limited_to_exact_file_and_matched_fixture():
         "/root/path-fixture\n", "tests/test_check_local_paths.py"
     )
     assert checker.scan_text(".sisyphus" "/\n")  # path-fixture
+
+
+@pytest.mark.parametrize(
+    "root",
+    [
+        "/home",
+        "/workspace",
+        ".sisyphus",
+        ".ab",
+        ".claude/projects",
+        "scratchpad",
+        "task_2",
+        "C:/Users",
+        "//corp-fs/Users",
+        "//wsl.localhost/example/home",
+    ],
+)
+def test_checker_test_exemption_requires_synthetic_root_component(root, capsys):
+    filename = "tests/test_check_local_paths.py"
+    assert not checker.scan_text(f"{root}/example/private.md", filename)
+    assert not capsys.readouterr().out
+    path = f"{root}/" + "example"[::-1] + "/example/private.md"
+    assert checker.scan_text(path, filename)
+    assert capsys.readouterr().out == f"{filename}:1: {path}\n"
+
+
+def test_checker_fixture_source_passes(capsys):
+    filename = "tests/test_check_local_paths.py"
+    assert not checker.scan_text((ROOT / filename).read_text(), filename)
+    assert not capsys.readouterr().out
 
 
 def _cli(*args, cwd, text=None):
@@ -463,13 +516,15 @@ def repo(tmp_path):
 
 
 def test_stdin_and_text_file_scan_title_body_without_executing_shell(tmp_path):
-    text = "$(touch injected)\n`touch injected`\n.sisyphus/plans/example.md\n"
+    text = (
+        "$(touch injected)\n`touch injected`\n.sisyphus" "/plans/example.md\n"
+    )  # path-fixture
     title_body = tmp_path / "pr-body.md"
     title_body.write_text(text)
     for args, input_text in ((("--stdin",), text), (("--text-file", title_body), None)):
         result = _cli(*args, cwd=tmp_path, text=input_text)
         assert result.returncode == 1, result.stderr
-        assert result.stdout == "3: .sisyphus/plans/example.md\n"
+        assert result.stdout == "3: .sisyphus" "/plans/example.md\n"  # path-fixture
         assert not (tmp_path / "injected").exists()
     assert _cli("--stdin", cwd=tmp_path, text="Public summary\n").returncode == 0
 
@@ -1156,6 +1211,32 @@ def test_staged_binary_cannot_hide_embedded_path(repo):
     assert "binary.dat:1: /home/example/metadata" in result.stdout
 
 
+@pytest.mark.parametrize("bom", checker.UTF16_BOMS + checker.UTF32_BOMS)
+@pytest.mark.parametrize("mode", ["--staged", "--commit-range"])
+def test_bom_cannot_hide_utf8_path(repo, bom, mode):
+    (repo / "notes.txt").write_text("Public summary\n")
+    base = _commit(repo)
+    path = repo / "notes.txt"
+    data = bom + b"see /home/example/private.md\n"
+    path.write_bytes(data)
+    _git(repo, "add", path.name)
+    args = (mode,)
+    prefix = ""
+    if mode == "--staged":
+        path.write_text("Public worktree hides staged leak\n")
+    else:
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
+        prefix = head + ":"
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == prefix + "notes.txt:1: /home/example/private.md\n"
+    texts = checker.content_decodings(data)
+    assert checker.decode(data) in texts
+    assert data.decode("utf-8", errors="replace") in texts
+    assert len(texts) == len(set(texts))
+
+
 @pytest.mark.parametrize(
     "data",
     [b"\x00\xff" * 20, b"\x00\x00" * 20, b"x\x00" * 5 + b"\xff\x00" * 5],
@@ -1742,7 +1823,9 @@ def test_files_scan_does_not_require_git(tmp_path):
 
 def test_staged_only_checks_added_index_lines_and_reports_new_line_numbers(repo):
     tracked = repo / "notes with spaces.md"
-    tracked.write_text(".sisyphus/plans/example.md\nremoved\npublic\n")
+    tracked.write_text(
+        ".sisyphus" "/plans/example.md\nremoved\npublic\n"
+    )  # path-fixture
     _git(repo, "add", tracked.name)
     _git(
         repo,
@@ -1755,13 +1838,16 @@ def test_staged_only_checks_added_index_lines_and_reports_new_line_numbers(repo)
         "-qm",
         "base",
     )
-    tracked.write_text(".sisyphus/plans/example.md\npublic\nnew summary\n")
+    tracked.write_text(
+        ".sisyphus" "/plans/example.md\npublic\nnew summary\n"
+    )  # path-fixture
     _git(repo, "add", tracked.name)
     tracked.write_text("/home/example/unstaged\n")
     assert _cli("--staged", cwd=repo).returncode == 0
 
     tracked.write_text(
-        ".sisyphus/plans/example.md\npublic\n/tmp/claude-example/example/log\n"
+        ".sisyphus"
+        "/plans/example.md\npublic\n/tmp/claude-example/example/log\n"  # path-fixture
     )
     _git(repo, "add", tracked.name)
     tracked.write_text("Public worktree hides staged leak\n")
@@ -1781,26 +1867,34 @@ def test_staged_new_file_allows_gitignore_and_checker_fixtures(repo):
     _git(repo, "add", ".")
     assert _cli("--staged", cwd=repo).returncode == 0
     assert _cli("--all-tracked", cwd=repo).returncode == 0
-    (repo / ".gitignore").write_text(".sisyphus/\n/home/example/ignored\n")
+    (repo / ".gitignore").write_text(
+        ".sisyphus" "/\n/home/example/ignored\n"
+    )  # path-fixture
     _git(repo, "add", ".gitignore")
     assert _cli("--staged", cwd=repo).returncode == 1
 
 
 @pytest.mark.parametrize("mode", ("--files", "--all-tracked", "--staged"))
 @pytest.mark.parametrize(
+    "descendant",
+    ["client", "project/example", "example user", "example-repo", "path-fixture"],
+)
+@pytest.mark.parametrize(
     "beside", ["", "/home/example/fixture ", "example ", "# path-fixture "]
 )
-def test_checker_test_exemption_rejects_non_fixture_home(repo, mode, beside):
+def test_checker_test_exemption_rejects_non_fixture_home(
+    repo, mode, beside, descendant
+):
     fixture = repo / "tests" / "test_check_local_paths.py"
     fixture.parent.mkdir()
     # Construct a non-fixture user without publishing a real home path.
-    path = "/home/" + "example"[::-1] + "/client/private.md"
+    path = "/home/" + "example"[::-1] + f"/{descendant}/private.md"
     fixture.write_text(beside + path + "\n")
     _git(repo, "add", ".")
     args = (mode, fixture) if mode == "--files" else (mode,)
     result = _cli(*args, cwd=repo)
     assert result.returncode == 1, result.stderr
-    assert result.stdout == f"tests/test_check_local_paths.py:1: {path}\n"
+    assert result.stdout == f"tests/test_check_local_paths.py:1: {path.split()[0]}\n"
 
 
 @pytest.mark.skipif(os.name != "posix", reason="symlink creation needs privileges")
