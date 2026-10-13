@@ -16,7 +16,13 @@ same claim end to end through the core Filament capture/debug path.
 
 ## Owner And Evidence Contract
 
-Read `docs/ai/verification.md`. Record:
+Read `docs/ai/verification.md`.
+
+For Python catalog scene changes, also follow
+`docs/onboarding/testing.md` § "Demo Catalog Verification" for construction,
+scripted controls, and matched-capture parity evidence.
+
+Record:
 
 1. a text correctness oracle (focused behavioral test, poses/velocities,
    contact trace, or `pixi run bm-boxes-headless` checksum comparison);

@@ -2793,14 +2793,10 @@ def test_default_pytest_target_leaves_rendering_modules_to_test_gui():
     ("name", "labels", "expected_error"),
     (
         ("test_FilamentBackend", ["gui", "gui-device"], False),
-        ("examples_demos_capture", ["gui", "gui-device"], False),
-        ("examples_demos_capture_extra", ["gui", "gui-device"], False),
         ("test_GuiViewer", ["gui"], False),
-        ("examples_demos_cycle", ["gui"], False),
         ("test_GuiMesh", ["gui"], True),
         ("test_FilamentNative", ["gui-device"], True),
         ("test_GuiDescriptors", ["gui", "gui-device"], True),
-        ("examples_demos_cycle", ["gui", "gui-device"], True),
     ),
 )
 def test_ctest_gui_labels_only_exclude_device_dependent_tests(
@@ -3640,83 +3636,6 @@ def test_repository_ctest_initialization_generates_the_full_dart_subtree(
         assert errors == []
         assert set(registrations) == {"semantic"}
         assert (build / "dart/child/CTestTestfile.cmake").is_file()
-
-
-def _add_demo_semantic_fixture(root: Path, labels: str = "gui", frames: str = "2"):
-    cmake = root / "CMakeLists.txt"
-    cmake.write_text(
-        cmake.read_text(encoding="utf-8") + "\nadd_subdirectory(examples/demos)\n",
-        encoding="utf-8",
-    )
-    demos = root / "examples/demos"
-    demos.mkdir(parents=True)
-    demos.joinpath("main.cpp").write_text(
-        "int main() { return 0; }\n", encoding="utf-8"
-    )
-    demos.joinpath("CMakeLists.txt").write_text(
-        "add_executable(dart-demos main.cpp)\n"
-        "add_dependencies(tests_and_run dart-demos)\n"
-        f"add_test(NAME examples_demos_cycle COMMAND dart-demos --cycle-scenes --frames {frames})\n"
-        f'set_tests_properties(examples_demos_cycle PROPERTIES LABELS "{labels}")\n',
-        encoding="utf-8",
-    )
-    return demos
-
-
-@pytest.mark.parametrize(
-    ("labels", "frames", "expected"),
-    (
-        ("gui", "2", None),
-        ("gui;gui-device", "2", "cannot have the `gui-device` label"),
-        ("gui", "0", "unapproved command arguments"),
-    ),
-)
-def test_cmake_semantic_graph_includes_demo_labels_and_arguments(
-    tmp_path, labels, frames, expected
-):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    _add_demo_semantic_fixture(tmp_path, labels, frames)
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    if expected is None:
-        assert errors == []
-    else:
-        assert any(
-            expected in error and "examples_demos_cycle" in error for error in errors
-        )
-
-
-def test_cmake_broad_gate_runs_demo_tests_from_the_dart_build_root(tmp_path):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    demos = _add_demo_semantic_fixture(tmp_path)
-    demos.joinpath("main.cpp").write_text(
-        '#include <fstream>\nint main() { std::ofstream("demo-ran") << "ran"; return 0; }\n',
-        encoding="utf-8",
-    )
-    errors = []
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-    assert errors == []
-
-    result = subprocess.run(
-        [
-            "cmake",
-            "--build",
-            str(build),
-            "--target",
-            "tests_and_run",
-            "--config",
-            "Release",
-            "--parallel",
-            "2",
-        ],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert (build / "examples/demos/demo-ran").is_file()
 
 
 @pytest.mark.parametrize("poison_variable", (False, True))
@@ -5928,6 +5847,16 @@ def test_muse_hook_requires_lowercase_bash_matcher_and_shared_wiring(tmp_path):
 
     assert ".muse/hooks.json: matcher must be `^bash$`" in errors
 
+    data["hooks"]["PreToolUse"][0]["matcher"] = "^bash$"
+    data["hooks"]["PreToolUse"][0]["hooks"][0]["command"] = infra.CODEX_HOOK_COMMAND
+    hooks_path.write_text(json.dumps(data))
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    # Muse must convert root-lookup and launcher errors to its blocking exit.
+    assert ".muse/hooks.json: hook command wiring is stale" in errors
+
     hooks_path.write_text(
         json.dumps({"hooks": {"PreToolUse": [{"matcher": "^bash$", "hooks": [1]}]}})
     )
@@ -5936,6 +5865,33 @@ def test_muse_hook_requires_lowercase_bash_matcher_and_shared_wiring(tmp_path):
     infra.check_hooks(tmp_path, errors)
 
     assert ".muse/hooks.json: expected one bounded PreToolUse hook" in errors
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Exercises the POSIX hook command")
+@pytest.mark.parametrize("failure", ("outside", "missing", "guard"))
+def test_muse_hook_blocks_root_lookup_and_launcher_failures(tmp_path, failure):
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    if failure == "guard":
+        guard = repo / ".claude/hooks/pre-commit-guard.sh"
+        guard.parent.mkdir(parents=True)
+        guard.write_text("#!/bin/sh\nexit 1\n")
+        guard.chmod(0o755)
+    command = json.loads((ROOT / ".muse/hooks.json").read_text())["hooks"][
+        "PreToolUse"
+    ][0]["hooks"][0]["command"]
+    payload = json.dumps({"tool_input": {"command": f'git -C "{repo}" commit -m test'}})
+
+    result = subprocess.run(
+        ["sh", "-c", command],
+        cwd=tmp_path if failure == "outside" else repo,
+        input=payload,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "DART guard: hook failed; blocking" in result.stderr
 
 
 def test_release_hook_validation_rejects_unsafe_suffix_and_extra_keys(tmp_path):

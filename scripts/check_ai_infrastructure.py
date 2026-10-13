@@ -230,36 +230,9 @@ GUI_DEVICE_CTESTS = frozenset(
         "test_FilamentNative",
         "test_GuiParity",
         "test_GuiMesh",
-        "examples_demos_cycle_render",
         "offscreen_capture_smoke",
     }
 )
-GUI_APP_CTEST_ARGUMENTS = {
-    "examples_demos_cycle": ("--cycle-scenes", "--frames", "2"),
-    "examples_demos_cycle_render": (
-        "--cycle-scenes",
-        "--headless",
-        "--frames",
-        "2",
-        "--width",
-        "160",
-        "--height",
-        "120",
-    ),
-    "examples_demos_capture": (
-        "--headless",
-        "--scene",
-        "hello_world",
-        "--steps",
-        "5",
-        "--width",
-        "320",
-        "--height",
-        "240",
-        "--shot",
-        "<build>/examples/demos/hello-world.png",
-    ),
-}
 GUI_ONLY_PYTHON_TESTS = frozenset(
     f"python/tests/unit/gui/test_{name}.py"
     for name in (
@@ -353,6 +326,10 @@ CODEX_HOOK_COMMAND_WINDOWS = (
 )
 CODEX_HOOK_TIMEOUT = 15
 CODEX_HOOK_STATUS = "Checking DART commit command"
+# Muse blocks only exit 2, so root-lookup and launcher failures must map to it.
+MUSE_HOOK_COMMAND = CODEX_HOOK_COMMAND + (
+    ' || { echo "DART guard: hook failed; blocking" >&2; exit 2; }'
+)
 CLAUDE_HOOK_COMMAND = '"${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-commit-guard.sh"'
 WINDOWS_LAUNCHER_MARKERS = (
     "scripts/pretool_guard_bridge.py",
@@ -1065,7 +1042,12 @@ def check_codex_config(root: Path, errors: list[str]) -> None:
 
 
 def _check_guard_hook_file(
-    root: Path, errors: list[str], relative: str, matcher: str
+    root: Path,
+    errors: list[str],
+    relative: str,
+    matcher: str,
+    expected_command: str,
+    expected_windows: str,
 ) -> None:
     hooks_path = root / relative
     if hooks_path.exists():
@@ -1114,10 +1096,10 @@ def _check_guard_hook_file(
                 )
             if not hook or hook.get("type") != "command":
                 errors.append(f"{relative}: hook type must be command")
-            if command != CODEX_HOOK_COMMAND:
+            if command != expected_command:
                 errors.append(f"{relative}: hook command wiring is stale")
             command_windows = hook.get("commandWindows", "") if hook else ""
-            if command_windows != CODEX_HOOK_COMMAND_WINDOWS:
+            if command_windows != expected_windows:
                 errors.append(f"{relative}: Windows hook command wiring is stale")
             timeout = hook.get("timeout") if hook else None
             if type(timeout) is not int or timeout != CODEX_HOOK_TIMEOUT:
@@ -1130,10 +1112,24 @@ def _check_guard_hook_file(
 
 
 def check_hooks(root: Path, errors: list[str]) -> None:
-    _check_guard_hook_file(root, errors, ".codex/hooks.json", "^Bash$")
+    _check_guard_hook_file(
+        root,
+        errors,
+        ".codex/hooks.json",
+        "^Bash$",
+        CODEX_HOOK_COMMAND,
+        CODEX_HOOK_COMMAND_WINDOWS,
+    )
     # Muse names its shell tool `bash` (lowercase), unlike
-    # Claude Code and Codex (`Bash`); the guard command wiring is shared.
-    _check_guard_hook_file(root, errors, ".muse/hooks.json", "^bash$")
+    # Claude Code and Codex (`Bash`), and requires exit 2 to block a call.
+    _check_guard_hook_file(
+        root,
+        errors,
+        ".muse/hooks.json",
+        "^bash$",
+        MUSE_HOOK_COMMAND,
+        CODEX_HOOK_COMMAND_WINDOWS,
+    )
 
     settings_path = root / ".claude" / "settings.json"
     if settings_path.exists():
@@ -2923,9 +2919,7 @@ def check_ctest_gui_labels(test: dict[str, Any], errors: list[str]) -> None:
         for label in values
         if isinstance(label, str)
     }
-    needs_device = name in GUI_DEVICE_CTESTS or name.startswith(
-        "examples_demos_capture"
-    )
+    needs_device = name in GUI_DEVICE_CTESTS
     if needs_device and not {"gui", "gui-device"}.issubset(labels):
         errors.append(
             f"CMake semantic test graph: graphics test `{name}` must have "
@@ -3191,7 +3185,6 @@ def check_cmake_ctest_inventory(
             name, {"arguments": (), "environment": ()}
         )
         expected_arguments = tuple(selection_policy["arguments"])
-        app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
         if name in script_arguments:
             expected_arguments = script_arguments[name]
             trusted_cmake = shutil.which("cmake")
@@ -3202,11 +3195,6 @@ def check_cmake_ctest_inventory(
                 errors.append(
                     f"{prefix}: CMake script test `{name}` must use the active CMake executable"
                 )
-        if app_arguments is not None:
-            expected_arguments = tuple(
-                argument.replace("<build>", build_dir.as_posix())
-                for argument in app_arguments
-            )
         is_probe = name == "ContactSurfaceProbe"
         if is_probe:
             expected_probe = contact_surface_probe_command(
@@ -3275,7 +3263,6 @@ def check_cmake_ctest_inventory(
         ]
         selected = (
             bool(expected_arguments or expected_environment)
-            and app_arguments is None
             and name not in script_arguments
             and not is_probe
         )
@@ -3854,14 +3841,6 @@ def check_cmake_test_graph(
             or (
                 relative_source == "tests/benchmark/integration"
                 and name == "offscreen_capture_smoke"
-            )
-            or (
-                relative_source == "examples/demos"
-                and name
-                in {
-                    "dart-demos",
-                    "UNIT_examples_demos_SceneCycle",
-                }
             )
         ):
             json_file = entry.get("jsonFile")

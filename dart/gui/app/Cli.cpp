@@ -31,7 +31,7 @@
  */
 
 // runCommandLine(): the demo app's command-line options and dispatch. See
-// examples/demos/README.md for the host architecture.
+// docs/onboarding/architecture.md for the host architecture.
 
 #include "App.hpp"
 #include "GuiOptions.hpp"
@@ -67,7 +67,7 @@ struct Options
   bool cycleScenes = false;
   int cycleFrames = 30;
   bool headless = false;
-  std::string shotPath = "dart-demos.png";
+  std::string shotPath = "demos.png";
   int steps = 150;
   std::string sceneId;
   std::optional<int> width;
@@ -81,7 +81,6 @@ struct Options
   // actively recording).
   std::string debugSelectBody;
   bool debugRecordProfile = false;
-  bool debugPrintWorld = false;
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   int debugScrollMemoryPanelTicks = 0;
 #endif
@@ -104,7 +103,7 @@ void printUsage(const char* prog)
       << "  --headless      Render one frame off-screen to a PNG and exit "
          "(no window).\n"
       << "  --shot <path>   Output PNG path for --headless (default "
-         "dart-demos.png).\n"
+         "demos.png).\n"
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
@@ -250,8 +249,6 @@ ParseResult parseArgs(const std::vector<std::string>& argv, Options& opt)
       opt.debugSelectBody = argv[++i];
     } else if (std::strcmp(a, "--debug-record-profile") == 0) {
       opt.debugRecordProfile = true;
-    } else if (std::strcmp(a, "--debug-print-world") == 0) {
-      opt.debugPrintWorld = true;
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
     } else if (std::strcmp(a, "--debug-scroll-memory-panel") == 0) {
       if (needsValue(i) == ParseResult::Error)
@@ -314,7 +311,6 @@ int dart::gui::app::runCommandLine(
     host.setDebugSelectBodyName(opt.debugSelectBody);
   if (opt.debugRecordProfile)
     host.setDebugRecordProfile(true);
-  host.setDebugPrintWorld(opt.debugPrintWorld);
   host.setStopRequested(std::move(stopRequested));
   host.setStopException(std::move(isStopException));
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS

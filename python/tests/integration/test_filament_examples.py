@@ -1,9 +1,7 @@
 """The native app host runs Python demo scenes without a graphics device."""
 
 import importlib.util
-import re
 import runpy
-import subprocess
 import sys
 from pathlib import Path
 
@@ -29,37 +27,17 @@ def _demo_scenes():
     return make_demo_scenes()
 
 
-def _cpp_catalog_ids():
-    # Prefer the C++ catalog from the same build as the imported dartpy module.
-    build = Path(dart.__file__).resolve().parents[2]
-    binary = build / "bin" / "dart-demos"
-    if sys.platform == "win32":
-        binary = binary.with_suffix(".exe")
-    if binary.is_file():
-        result = subprocess.run(
-            [str(binary), "--list-scenes"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=30,
-        )
-        ids = set(re.findall(r"^  ([a-z][a-z0-9_]*)  -  ", result.stdout, re.M))
-        assert ids, result.stdout
-        return ids
-
-    # Registry.cpp's complete catalog, including optional scenes, when the
-    # dartpy-only build has not produced dart-demos. Update as that catalog grows.
-    return set(
-        "empty hello_world simple_frames boxes rigid_cubes rigid_chain "
-        "add_delete_skels simulation_event_handler rigid_shapes sleeping "
-        "hardcoded_design rigid_loop box_stacking dynamic_joint_constraints "
-        "tinkertoy human_joint_limits joint_constraints hybrid_dynamics "
-        "biped_stand operational_space_control contact_inverse_dynamics "
-        "ssik_ik_gui wam_ikfast atlas_puppet atlas_simbicon mixed_chain "
-        "adaptive_soft_contact soft_worm soft_foot_simbicon soft_bodies "
-        "soft_cubes soft_open_chain atlas_v5 unitree_g1 vehicle heightmap "
-        "point_cloud drag_and_drop".split()
-    )
+CATALOG_IDS = set(
+    "empty hello_world simple_frames boxes rigid_cubes rigid_chain "
+    "add_delete_skels simulation_event_handler rigid_shapes sleeping "
+    "hardcoded_design rigid_loop box_stacking dynamic_joint_constraints "
+    "tinkertoy joint_constraints hybrid_dynamics "
+    "biped_stand operational_space_control contact_inverse_dynamics "
+    "ssik_ik_gui wam_ikfast atlas_puppet atlas_simbicon mixed_chain "
+    "adaptive_soft_contact soft_worm soft_foot_simbicon soft_bodies "
+    "soft_cubes soft_open_chain atlas_v5 unitree_g1 vehicle heightmap "
+    "point_cloud drag_and_drop".split()
+)
 
 
 @requires_app_host
@@ -67,7 +45,14 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
     scenes = _demo_scenes()
     ids = [scene.id for scene in scenes]
     assert ids and len(ids) == len(set(ids))
-    assert set(ids) <= _cpp_catalog_ids()
+    expected = CATALOG_IDS.copy()
+    if not hasattr(dart._demos, "ArmSkeleton"):
+        expected.remove("ssik_ik_gui")
+    if not hasattr(dart.utils, "ModelResourceRetriever"):
+        expected.difference_update(HUMANOID_IDS)
+    if not hasattr(dart.dynamics, "VoxelGridShape"):
+        expected.remove("point_cloud")
+    assert set(ids) == expected
     assert all(isinstance(scene, viewer.Scene) for scene in scenes)
     if hasattr(dart.utils, "ModelResourceRetriever"):
         assert HUMANOID_IDS <= set(ids)
@@ -116,13 +101,16 @@ def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
     assert "OK" in output
 
 
-def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(capsys):
-    path = ROOT / "python" / "examples" / "ssik_analytical_ik" / "main.py"
-    spec = importlib.util.spec_from_file_location("ssik_example", path)
-    example = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(example)
-    assert example.main(["--list"]) == 0
-    assert "franka_panda_ik" in capsys.readouterr().out
+@requires_app_host
+def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(monkeypatch, capfd):
+    monkeypatch.setitem(sys.modules, "ssik", None)
+    scene = next(scene for scene in _demo_scenes() if scene.id == "ssik_ik_gui")
+    assert viewer.run([scene], ["examples.demos", "--list-scenes"]) == 0
+    assert "ssik Analytical IK" in capfd.readouterr().out
+    with pytest.raises(viewer.AssetsNotPrefetchedError, match="ssik"):
+        scene.factory()
+    assert viewer.run([scene], ["examples.demos", "--cycle-scenes", "--frames", "2"]) == 0
+    assert "demo 'ssik_ik_gui' skipped:" in capfd.readouterr().out
 
 
 @requires_app_host
@@ -173,7 +161,11 @@ def test_neutral_demo_callbacks_and_deterministic_steps(scene):
     runs = []
     for _ in range(2):
         dart.math.Random.setSeed(42)
-        setup = scene.factory()
+        try:
+            setup = scene.factory()
+        except viewer.AssetsNotPrefetchedError as error:
+            # Optional scenes, such as ssik_ik_gui without ssik, skip as in cycles.
+            pytest.skip(str(error))
         assert isinstance(setup, viewer.SceneSetup)
         world = setup.world
         assert isinstance(world, dart.simulation.World)

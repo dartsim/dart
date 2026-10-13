@@ -1,49 +1,52 @@
 # DART Examples README
 
-Most of DART's C++ example programs live in one consolidated application,
-`demos`, so there is a single place to browse and run them. A handful of
-examples remain standalone because they serve a purpose the consolidated
-catalog does not: a minimal "first program", a console-only regression check,
+Most of DART's former C++ GUI examples now have Python scenes in one
+consolidated application, `python/examples/demos/`, so there is a single place
+to browse and run them. A handful of C++ examples remain standalone because
+they serve a purpose the consolidated catalog does not: a minimal "first
+program", a console-only regression check,
 a benchmark, and a CI-load-bearing microbenchmark harness.
 
 ## `demos`: the consolidated example catalog
 
-`demos/` hosts `dart-demos`, a Filament/ImGui application that bundles every
-former single-purpose GUI example (add/delete skeletons, box stacking, rigid
-chains/cubes/loops, joint constraints, humanoid controllers, soft bodies,
+The Python catalog runs on the native Filament/ImGui app host through
+`dartpy.viewer`. It bundles the former single-purpose GUI examples
+(add/delete skeletons, box stacking, rigid chains/cubes/loops, joint
+constraints, humanoid controllers, soft bodies,
 drag-and-drop, IK, and more) as selectable scenes in one window.
 
-Build and run it:
+Build dartpy and run the catalog:
 
     $ pixi run demos
 
 The UI automatically follows desktop DPI, and the default window uses the
 primary monitor's content scale. Use View > **GUI scale** or `--gui-scale 1.5`
-for a manual override; see [display scaling](demos/README.md#display-scaling)
+for a manual override; see [display scaling](../docs/readthedocs/dart/user_guide/visualization.rst)
 for platform behavior.
 
 The flagship deformable-body scenes can be opened directly:
 
-    $ pixi run demos --scene adaptive_soft_contact
-    $ pixi run demos --scene soft_worm
+    $ pixi run demos -- --scene adaptive_soft_contact
+    $ pixi run demos -- --scene soft_worm
 
-Soft-body scene aliases are also available for compatibility with the former
-standalone examples:
+Open the former standalone soft-body examples by scene id:
 
-    $ pixi run ex soft_bodies -- --collision-detector dart --threads 16
-    $ pixi run ex soft_cubes -- --collision-detector fcl --threads 1
-    $ pixi run ex soft_open_chain -- --collision-detector dart --threads 4
+    $ pixi run demos -- --scene soft_bodies --collision-detector dart --threads 16
+    $ pixi run demos -- --scene soft_cubes --collision-detector fcl --threads 1
+    $ pixi run demos -- --scene soft_open_chain --collision-detector dart --threads 4
 
 Use `dart` or `fcl` for apples-to-apples soft-body comparisons. The
 consolidated `dart` detector covers `SoftMeshShape` in these scenes.
 
-or, from a manual build directory (the default `DART_BUILD_GUI=ON` needs a
-Filament SDK):
+For a manual source build, configure with `-DDART_BUILD_DARTPY=ON` and
+`-DDART_USE_SYSTEM_IMGUI=OFF`, then build dartpy and run the package from
+`python/` (the default `DART_BUILD_GUI=ON` needs a Filament SDK):
 
-    $ cmake --build build --target dart-demos
-    $ ./build/bin/dart-demos
+    $ cmake --build build --target dartpy
+    $ cd python
+    $ PYTHONPATH=../build/python/dartpy python -m examples.demos
 
-Useful flags (`./dart-demos --help` for the full list):
+Useful flags (`pixi run demos -- --help` for the full list):
 
     --list-scenes            Print the catalog grouped by category and exit.
     --scene <id>              Start on a specific scene (e.g. --scene boxes).
@@ -51,9 +54,45 @@ Useful flags (`./dart-demos --help` for the full list):
 
 `pixi run cycle-demos` runs that smoke test without a graphics context.
 
-Each scene's source lives under `demos/scenes/`; scene ids match their
-original standalone example names (e.g. `demos/scenes/BoxesScene.cpp` is
+Each scene's source lives under `python/examples/demos/scenes/`; scene ids match
+their original standalone example names (e.g. `scenes/boxes.py` is
 `--scene boxes`).
+
+## Adding catalog scenes
+
+Add scenes under `python/examples/demos/scenes/` and register them in
+`registry.py`. Use `dartpy.viewer.Scene` factories returning `SceneSetup`;
+declare a `Panel`, `KeyAction`s, and camera home in the setup. C++ draws the
+controls and validates edits. Put light simulation hooks in `pre_step` or
+`post_step`, and per-frame logic in `pre_refresh` so it runs even while the
+scene tab is hidden. Use `SceneContext` for native attachments, event
+handlers, drag and drop, and teardown. Heavy controllers, sensors, histories,
+and model helpers belong in `python/native/demo_models/`, bound through the
+private `dartpy._demos` module.
+
+Preserve each port's physical setup, controls, and coordinate convention.
+Use `scenes/common.py`'s `reorient_z_up` for Y-up SKEL models that need the
+catalog's Z-up view; vehicle, Atlas SIMBICON, and soft-foot SIMBICON retain
+their Y-up worlds. The humanoid factories `atlas_world` and `g1_world` keep
+returning Worlds for `agent-capture --factory`.
+
+Gate registration on optional binding availability: `point_cloud` needs
+`VoxelGridShape`; the humanoids need `ModelResourceRetriever`. A factory
+raises `AssetsNotPrefetchedError` for unavailable cached robot models or the
+optional `ssik` package, so catalog cycling reports a skip. A source build
+with assets and OctoMap supports 37 scenes; a build without the asset
+retriever omits Atlas v5 and Unitree G1. Wheels include the host and native
+helpers, while the catalog stays in the source tree. Its wheel smoke test
+uses a small test-owned scene.
+
+The WAM IKFast solver is linked into the native model library and needs no
+runtime shared-library lookup or LAPACK dependency. The ssik scene calls the
+Python solver directly through DART's `setPythonAnalytical` integration.
+The unbuilt TinyDNN-only `human_joint_limits` scene and the duplicate
+`hello_world_gui` and `contacts_pointcloud` selectors are retired.
+
+Follow [catalog verification](../docs/onboarding/testing.md#demo-catalog-verification)
+for construction, behavior, and assessed capture evidence.
 
 ## Standalone examples
 
@@ -81,10 +120,6 @@ version. Without it, including with an older GLUT GUI, `hello_world` is skipped
 and the other examples still build. Configuring a GUI example individually
 requires the Filament component and fails clearly when it is absent.
 `contact_benchmark` still builds without it, but its GUI modes are unavailable.
-
-`demos` builds only inside the DART source tree (`pixi run demos`), because it
-links private libraries that DART does not install. A copied `examples`
-directory skips it with a configure message.
 
 Copy this directory to your workspace (e.g., in Linux):
 
