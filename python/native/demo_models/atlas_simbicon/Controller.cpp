@@ -37,6 +37,8 @@
 #include "TerminalCondition.hpp"
 #include "dart/common/Macros.hpp"
 
+#include <stdexcept>
+
 namespace dart_demos {
 namespace atlas_simbicon {
 
@@ -57,6 +59,38 @@ Controller::Controller(
     mWeldJointConstraintRightFoot(nullptr),
     mVerbosity(false)
 {
+  if (!mAtlasRobot)
+    throw std::invalid_argument("SIMBICON requires an Atlas skeleton");
+  if (!mConstratinSolver)
+    throw std::invalid_argument("SIMBICON requires a constraint solver");
+
+  // Validate State's dependencies before allocating any state machines.
+  for (const char* name : {"pelvis", "l_foot", "r_foot", "l_uleg", "r_uleg"}) {
+    if (!mAtlasRobot->getBodyNode(name)) {
+      throw std::invalid_argument(
+          std::string("SIMBICON requires body node '") + name + "'");
+    }
+  }
+  for (const char* name :
+       {"l_leg_hpx",
+        "r_leg_hpx",
+        "l_leg_hpy",
+        "r_leg_hpy",
+        "back_bky",
+        "l_leg_kny",
+        "r_leg_kny",
+        "l_leg_aky",
+        "r_leg_aky",
+        "l_arm_shx",
+        "r_arm_shx",
+        "l_arm_shy",
+        "r_arm_shy"}) {
+    if (!mAtlasRobot->getDof(name)) {
+      throw std::invalid_argument(
+          std::string("SIMBICON requires DOF '") + name + "'");
+    }
+  }
+
   mCoronalLeftHip = mAtlasRobot->getDof("l_leg_hpx")->getIndexInSkeleton();
   mCoronalRightHip = mAtlasRobot->getDof("r_leg_hpx")->getIndexInSkeleton();
   mSagitalLeftHip = mAtlasRobot->getDof("l_leg_hpy")->getIndexInSkeleton();
@@ -124,14 +158,17 @@ void Controller::changeStateMachine(
 void Controller::changeStateMachine(const std::string& name, double currentTime)
 {
   StateMachine* stateMachine = _findStateMachine(name);
-  DART_ASSERT(stateMachine != nullptr && "Invalid state machine.");
+  if (!stateMachine)
+    throw std::invalid_argument(
+        "Unknown SIMBICON state machine '" + name + "'");
   changeStateMachine(stateMachine, currentTime);
 }
 
 //==============================================================================
 void Controller::changeStateMachine(std::size_t idx, double currentTime)
 {
-  DART_ASSERT(idx <= mStateMachines.size() && "Invalid index of StateMachine.");
+  if (idx >= mStateMachines.size())
+    throw std::out_of_range("Invalid SIMBICON state machine index");
   changeStateMachine(mStateMachines[idx], currentTime);
 }
 
