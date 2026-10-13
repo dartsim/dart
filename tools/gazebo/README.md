@@ -224,6 +224,7 @@ retains conservative candidates for unresolved receivers. Known limitations:
   declaration visibility are not tracked.
 - Destructor and managed-lifetime requirements are not recorded.
 - Implicit and contextual conversion operators are not recorded.
+- Structured-binding element types are not inferred.
 - Preprocessor conditions are not generally evaluated.
 - C++ template instantiation and overload resolution are not performed.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
@@ -275,6 +276,8 @@ and its bases; sequence returns retain their DART element types. Source class
 aliases retain DART bases, and member lookup respects source declarations and
 class using-declarations. Lambda parameters stay within their lambda body.
 Range-for variables retain the range's element types within the loop body.
+Control-statement declarations stay within the complete statement, including
+`else` branches, and grouping parentheses preserve receiver types.
 Chained DART data-member accesses use the member's declared type.
 Data declarations retain grouped names and array dimensions;
 qualified free-function references count even when they are not calls.

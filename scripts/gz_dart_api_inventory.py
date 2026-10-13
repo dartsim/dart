@@ -11,6 +11,7 @@ Known limitations:
 - DART headers are indexed globally; transitive include availability and per-source declaration visibility are not tracked.
 - Destructor and managed-lifetime requirements are not recorded.
 - Implicit and contextual conversion operators are not recorded.
+- Structured-binding element types are not inferred.
 - Preprocessor conditions are not generally evaluated.
 - C++ template instantiation and overload resolution are not performed.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
@@ -1158,6 +1159,12 @@ def bind_variable(tokens, index, types, span=None):
                 and opening - 1 in tokens.pairs
             )
         ):
+            control = opening - 1 - (values[opening - 1] == "constexpr")
+            if control >= 0 and values[control] in {"if", "while", "for", "switch"}:
+                stop = statement_end(tokens, control)
+                if stop - opening < end - start:
+                    start, end = opening, stop
+                continue
             body = closing + 1
             while body < len(values) and values[body] in {
                 "const",
@@ -2081,6 +2088,27 @@ def scan_sources(api, source_root):
                 while function >= 0 and angle:
                     angle += (values[function] == ">") - (values[function] == "<")
                     function -= 1
+            if function < 0 or not (
+                IDENTIFIER.match(values[function])
+                and values[function]
+                not in {
+                    "return",
+                    "co_return",
+                    "throw",
+                    "if",
+                    "while",
+                    "for",
+                    "switch",
+                    "sizeof",
+                    "alignof",
+                    "decltype",
+                    "noexcept",
+                }
+                or values[function] in {")", "]", "}"}
+            ):
+                return receiver(
+                    tokens, before - 1, imports, namespace_aliases, depth + 1
+                )
             if function >= 0:
                 method = values[function]
                 if function > 0 and values[function - 1] in {"->", "."}:
@@ -2192,6 +2220,9 @@ def scan_sources(api, source_root):
                 j = i + 1
                 while j < len(values) and values[j] in {"const", "&", "&&", "*"}:
                     j += 1
+                if values[j : j + 1] == ["["]:
+                    # shortcut: structured bindings are omitted; add ordered decomposition when downstream uses require it.
+                    continue
                 if j + 1 >= len(values):
                     continue
                 if values[j + 1] == ":":

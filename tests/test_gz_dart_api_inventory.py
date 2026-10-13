@@ -2200,6 +2200,109 @@ def test_foreign_range_elements_do_not_gain_dart_members(extractor, tmp_path):
     assert members["get"]["receiver_types"] == []
 
 
+def test_grouped_receivers_preserve_return_and_pointer_types(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { struct Target { void other(); }; struct A { void hit(); Target* operator->(); }; struct Callable { A operator()(); }; struct Factory { A make(); A* pointer(); std::vector<A*> items(); Callable callable(); }; }"
+    )
+    source = "void use(dart::Factory* factory) { (factory->make()).hit(); ((factory->pointer()))->hit(); (factory->items()).front()->hit(); (factory->callable())().hit(); (factory->make())->other(); return (factory->make()).hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    members = _entries(before, "members")
+    assert members["hit"]["count"] == 5
+    assert members["hit"]["receiver_types"] == ["dart::A"]
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 1
+    assert members["operator()"]["receiver_types"] == ["dart::Callable"]
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+    header.write_text(header.read_text().replace("void hit();", "void hit(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after["members"] != before["members"]
+
+
+@pytest.mark.parametrize(
+    "statement,inner_count",
+    [
+        ("if (dart::A* item = nullptr) item->hit();", 1),
+        ("if (dart::A* item = nullptr) item->hit(); else item->hit();", 2),
+        ("if (dart::A* item = nullptr) { item->hit(); } else { item->hit(); }", 2),
+        ("while (dart::A* item = nullptr) item->hit();", 1),
+        ("for (dart::A* item = nullptr; false;) item->hit();", 1),
+        (
+            "for (; dart::A* item = nullptr;) if (true) item->hit(); else item->hit();",
+            2,
+        ),
+        ("switch (dart::A* item = nullptr; 0) { default: item->hit(); }", 1),
+    ],
+)
+def test_control_declarations_end_with_complete_statement(
+    extractor, tmp_path, statement, inner_count
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { void inner(); }; struct B { void outer(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::B* item) { "
+        + statement.replace("hit", "inner")
+        + " item->outer(); }",
+    )
+    members = _entries(result, "members")
+    assert members["inner"]["count"] == inner_count
+    assert members["inner"]["receiver_types"] == ["dart::A"]
+    assert members["outer"]["count"] == 1
+    assert members["outer"]["receiver_types"] == ["dart::B"]
+    assert all(member["unresolved_count"] == 0 for member in members.values())
+
+
+def test_grouped_foreign_receiver_does_not_gain_dart_member(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct Known { void hit(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "struct Foreign { void hit(); }; struct Factory { Foreign make(); }; void use(dart::Known* known, Factory factory) { ((factory.make())).hit(); (known)->hit(); }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 1
+    assert hit["receiver_types"] == ["dart::Known"]
+    assert hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "if (Foreign* item = nullptr) { item->hit(); } else { item->hit(); }",
+        "while (Foreign* item = nullptr) item->hit();",
+    ],
+)
+def test_foreign_control_declaration_shadows_and_restores_dart_receiver(
+    extractor, tmp_path, statement
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct B { void hit(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "struct Foreign { void hit(); }; void use(dart::B* item) { "
+        + statement
+        + " item->hit(); }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 1
+    assert hit["receiver_types"] == ["dart::B"]
+    assert hit["unresolved_count"] == 0
+
+
 def test_template_qualified_static_calls_and_return_receivers(extractor, tmp_path):
     headers = tmp_path / "headers"
     headers.mkdir()
