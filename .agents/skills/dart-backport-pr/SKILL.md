@@ -11,11 +11,11 @@ description: "DART Backport PR: backport a merged main PR to a stabilization or 
 
 Use this skill to run the DART `dart-backport-pr` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-backport-pr <arguments>`
+- Claude Code: `/dart-backport-pr <arguments>`
 - Codex: `$dart-backport-pr <arguments>`
 - Muse: `/dart-backport-pr <arguments>`
 

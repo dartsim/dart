@@ -103,8 +103,7 @@
         "AGENTS.md",
         "docs",
         ".claude",
-        ".agents/skills",
-        ".opencode/command"
+        ".agents/skills"
       ],
       "focused_gates": [
         "pixi run check-ai-commands",

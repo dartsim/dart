@@ -154,7 +154,6 @@ def release_reference_target(tmp_path):
             "docs/onboarding/contributing.md",
             "Release packaging targets release-7.0 directly.\n",
         ),
-        ("GEMINI.md", "The next release is currently DART 6.22.\n"),
         ("AGENTS.md", "The next release is DART 6.22.0.\n"),
         ("docs/README.md", "Next release: **DART 6.22.0**\n"),
         ("docs/plans/dashboard.md", "The upcoming release will be DART 6.22.0.\n"),
@@ -5585,7 +5584,6 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
         "codex",
         "claude",
         "muse",
-        "opencode",
     }
     assert report["profile"] == {
         "name": "dart7",

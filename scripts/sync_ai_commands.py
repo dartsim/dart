@@ -3,8 +3,8 @@
 
 Different AI coding tools read from different directories:
 - Claude Code: .claude/commands/, .claude/skills/
-- OpenCode: .opencode/command/, plus skills from .claude/skills/ and .agents/skills/
-- Codex: .agents/skills/ (domain skills plus command-derived workflow skills)
+- Codex and Muse: .agents/skills/ (domain skills plus
+  command-derived workflow skills)
 
 This script keeps them in sync using .claude/ as the current editable source
 for workflow commands and domain skills.
@@ -300,19 +300,18 @@ def format_names(names: set[str]) -> str:
 def check_capability_parity(repo_root: Path) -> bool:
     """Verify supported agents expose the same effective DART capabilities."""
     claude_commands = list_command_names(repo_root / ".claude" / "commands")
-    opencode_commands = list_command_names(repo_root / ".opencode" / "command")
     shared_skills, shared_skill_errors = list_skill_names(
         repo_root / ".claude" / "skills"
     )
-    codex_skills, codex_skill_errors = list_generated_skill_names(
+    generated_skills, generated_skill_errors = list_generated_skill_names(
         repo_root / ".agents" / "skills"
     )
 
     expected = claude_commands | shared_skills
     agent_sets = {
         "Claude Code": claude_commands | shared_skills,
-        "OpenCode": opencode_commands | shared_skills,
-        "Codex": codex_skills,
+        "Codex": generated_skills,
+        "Muse": generated_skills,
     }
 
     ok = True
@@ -320,9 +319,9 @@ def check_capability_parity(repo_root: Path) -> bool:
     if shared_skill_errors:
         ok = False
         print_skill_name_errors(".claude/skills", shared_skill_errors)
-    if codex_skill_errors:
+    if generated_skill_errors:
         ok = False
-        print_skill_name_errors(".agents/skills", codex_skill_errors)
+        print_skill_name_errors(".agents/skills", generated_skill_errors)
 
     if claude_commands & shared_skills:
         ok = False
@@ -358,7 +357,6 @@ def validate_style_and_budget(repo_root: Path) -> bool:
     ]
     command_dirs = [
         (".claude/commands", repo_root / ".claude" / "commands"),
-        (".opencode/command", repo_root / ".opencode" / "command"),
     ]
 
     for label, skill_dir, generated_only in skill_dirs:
@@ -578,8 +576,7 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
         source_refs = (
             set(
                 re.findall(
-                    r"(?:\.claude/commands/|\.opencode/command/)"
-                    r"(dart-[a-z0-9-]*[a-z0-9])\.md",
+                    r"(?:\.claude/commands/)" r"(dart-[a-z0-9-]*[a-z0-9])\.md",
                     source_content,
                 )
             )
@@ -1450,79 +1447,8 @@ def add_auto_gen_header(content: str, source_path: str) -> str:
     return header + "\n\n" + content
 
 
-def sync_flat_files(
-    source_dir: Path,
-    target_dir: Path,
-    pattern: str,
-    label: str,
-    check_only: bool = False,
-) -> tuple[bool, int, int, int]:
-    """Sync flat files from source to target directory.
-
-    Returns:
-        Tuple of (all_synced, synced_count, skipped_count, orphan_count)
-    """
-    if not source_dir.exists():
-        print(f"Source directory not found: {source_dir}")
-        return False, -1, 0, 0
-
-    if not check_only:
-        target_dir.mkdir(parents=True, exist_ok=True)
-
-    source_files = sorted(source_dir.glob(pattern))
-    all_synced = True
-    synced_count = 0
-    skipped_count = 0
-
-    for source_file in source_files:
-        target_file = target_dir / source_file.name
-        source_content = source_file.read_text(encoding="utf-8")
-        source_rel_path = source_file.relative_to(get_repo_root())
-
-        if target_file.exists():
-            target_content = target_file.read_text(encoding="utf-8")
-            target_content_stripped = strip_auto_gen_header(target_content)
-            if source_content == target_content_stripped and has_auto_gen_header(
-                target_content
-            ):
-                skipped_count += 1
-                continue
-
-        all_synced = False
-
-        if check_only:
-            status = "MISMATCH" if target_file.exists() else "MISSING"
-            print(f"  {status}: {source_file.name}")
-        else:
-            content_with_header = add_auto_gen_header(
-                source_content, str(source_rel_path)
-            )
-            target_file.write_text(content_with_header, encoding="utf-8")
-            print(f"  SYNCED:   {source_file.name}")
-            synced_count += 1
-
-    # Check for orphaned files
-    if target_dir.exists():
-        target_files = set(f.name for f in target_dir.glob(pattern))
-        source_names = set(f.name for f in source_files)
-        orphaned = target_files - source_names
-
-        for orphan in sorted(orphaned):
-            all_synced = False
-            orphan_path = target_dir / orphan
-            if check_only:
-                print(f"  ORPHAN:   {orphan}")
-            else:
-                orphan_path.unlink()
-                print(f"  REMOVED:  {orphan}")
-    else:
-        orphaned = set()
-
-    return all_synced, synced_count, skipped_count, len(orphaned)
-
-
 def render_codex_command_skill(command_path: Path) -> str:
-    """Render a Claude/OpenCode command as a Codex skill."""
+    """Render a Claude command as a generated skill."""
     command_name = command_path.stem
     command_content = command_path.read_text(encoding="utf-8")
     meta = parse_command_frontmatter(command_content)
@@ -1543,11 +1469,11 @@ description: {json.dumps(skill_description)}
 
 Use this skill to run the DART `{command_name}` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/{command_name} <arguments>`
+- Claude Code: `/{command_name} <arguments>`
 - Codex: `${command_name} <arguments>`
 - Muse: `/{command_name} <arguments>`
 
@@ -1825,21 +1751,6 @@ def sync_all(check_only: bool = False) -> bool:
     repo_root = get_repo_root()
     all_synced = True
 
-    # 1. Sync commands: .claude/commands/ -> .opencode/command/
-    print("Commands (.claude/commands/ -> .opencode/command/):")
-    synced, s, k, o = sync_flat_files(
-        repo_root / ".claude" / "commands",
-        repo_root / ".opencode" / "command",
-        "*.md",
-        "commands",
-        check_only,
-    )
-    if s < 0 or (check_only and not synced):
-        all_synced = False
-    if not check_only:
-        print(f"  Total: {s} synced, {k} unchanged, {o} orphans removed")
-    print()
-
     print("Skills + command workflows (.claude/ -> .agents/skills/):")
     synced, s, k, o = sync_codex_skills(
         repo_root / ".claude" / "skills",
@@ -1853,7 +1764,7 @@ def sync_all(check_only: bool = False) -> bool:
         print(f"  Total: {s} synced, {k} unchanged, {o} orphans removed")
     print()
 
-    print("Effective capability parity (Claude Code, OpenCode, Codex):")
+    print("Effective capability parity (Claude Code, Codex, Muse):")
     if not check_capability_parity(repo_root):
         all_synced = False
     print()

@@ -207,10 +207,11 @@ as `##soft_mesh_alpha`, and size sliders or inputs from
 
 ## Simulation Allocation Gates
 
-Changes that touch `World::step`, `World::enterSimulationMode`,
-`MemoryManager`, profiler storage, or constraint-solver scratch must preserve
-the DART-owned zero-allocation contract for same-shape simulation steps using
-the `dart` detector after preparation.
+Changes that touch `World::step` or its private stages (see
+[World step stages](architecture.md#world-step-stages)),
+`World::enterSimulationMode`, `MemoryManager`, profiler storage, or
+constraint-solver scratch must preserve the DART-owned zero-allocation contract
+for same-shape simulation steps using the `dart` detector after preparation.
 
 Run the focused allocation gate before broadening:
 
@@ -237,10 +238,10 @@ simulation-loop behavior changes. It is the forward lane: it applies
 `tools/gazebo/patches/` to gz-physics first, so it does not prove that released
 Gazebo still works.
 
-For collision, contact, constraint-solver, sleeping, or `World::step` changes,
-and before a release, also run the unpatched lanes, which build released
-gz-physics and gz-sim against this checkout, run both full suites, and fail on
-any failure DART 6.19.4 did not have:
+For collision, contact, constraint-solver, sleeping, `World::step`, or
+step-stage changes, and before a release, also run the unpatched lanes, which
+build released gz-physics and gz-sim against this checkout, run both full
+suites, and fail on any failure DART 6.19.4 did not have:
 
 ```bash
 pixi run gz-compat-ionic       # gz-physics 8.4.0, gz-sim 9.5.0

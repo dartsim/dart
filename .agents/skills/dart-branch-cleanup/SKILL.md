@@ -11,11 +11,11 @@ description: "DART Branch Cleanup: analyze or clean stale repository branches"
 
 Use this skill to run the DART `dart-branch-cleanup` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-branch-cleanup <arguments>`
+- Claude Code: `/dart-branch-cleanup <arguments>`
 - Codex: `$dart-branch-cleanup <arguments>`
 - Muse: `/dart-branch-cleanup <arguments>`
 
