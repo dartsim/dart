@@ -5646,7 +5646,7 @@
         },
         {
           "classification": "accessor",
-          "count": 225,
+          "count": 209,
           "declarations": [
             {
               "class": "dart::dynamics::TemplateBodyNodePtr",

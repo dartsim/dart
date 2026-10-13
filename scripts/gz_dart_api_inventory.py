@@ -287,13 +287,17 @@ def qualified(values):
 def declaration(values, owner, macros=()):
     """Read a declaration prefix, before its semicolon or inline body."""
     square = brace = 0
+    excluded_until = -1
     for opening, value in enumerate(values):
         square += (value == "[") - (value == "]")
         brace += (value == "{") - (value == "}")
-        if square or brace or value != "(" or opening == 0:
+        if square or brace or opening <= excluded_until or value != "(" or opening == 0:
             continue
         name_index = opening - 1
         name = values[name_index]
+        if name in {"decltype", "noexcept", "alignas"}:
+            excluded_until = Tokens(" ".join(values)).pairs.get(opening, opening)
+            continue
         for spelling in (
             ("operator", "->"),
             ("operator", "[", "]"),
@@ -716,6 +720,8 @@ def scopes(tokens):
                     method["index"] = segment
                     method["name_index"] += segment
                     method["access"] = access
+                    if value == "{" and i in tokens.pairs:
+                        method["body"] = i
                     path = qualifier_path(method["return_tokens"])
                     if owner is None:
                         method["name"] = "::".join(namespace + path + (method["name"],))
@@ -1382,6 +1388,8 @@ def scan_sources(api, source_root):
     fields = defaultdict(set)
     local_bases = {}
     source_returns = defaultdict(list)
+    source_functions = defaultdict(lambda: defaultdict(list))
+    alias_declarations = defaultdict(dict)
     source_macros = set()
     referenced = set()
     tables = {
@@ -1432,6 +1440,7 @@ def scan_sources(api, source_root):
             re.findall(r"^\s*#\s*define\s+(DART_\w+)", clean, re.MULTILINE)
         )
         tokens = Tokens(clean)
+        tokens.source_path = relative
         tokens.macros = api.macros | set(
             re.findall(r"^\s*#\s*define\s+(\w+)", clean, re.MULTILINE)
         )
@@ -1524,10 +1533,16 @@ def scan_sources(api, source_root):
             if entry[5] < BLOCK
         ]
     declared = defaultdict(lambda: defaultdict(set))
-    for path, _, _, functions, *_ in files:
+    for path, tokens, _, functions, aliases, imports, namespace_aliases in files:
+        context = (path, tokens, imports, namespace_aliases)
+        for name, values, index in aliases:
+            alias_declarations[path][name] = (values, index, context)
         for function in functions:
+            function["source"] = context
             scope = function["class"] or function["name"].rpartition("::")[0]
             source_returns[(scope, function["name"].split("::")[-1])].append(function)
+            if not function["class"]:
+                source_functions[path][function["name"]].append(function)
             declared[path][function["name"].split("::")[-1]].add(
                 tuple(scope.split("::")) if scope else ()
             )
@@ -1785,7 +1800,7 @@ def scan_sources(api, source_root):
                 if in_template_argument(values, start)
                 else variable_after_type(values, type_end)
             )
-            if j is not None:
+            if j is not None and j not in declaration_indices:
                 owner = api.owner(resolved)
                 if owner:
                     types = {resolved}
@@ -1813,7 +1828,7 @@ def scan_sources(api, source_root):
                 or name in {"int", "double", "float", "bool", "char", "size_t"}
             ):
                 j = variable_after_type(values, end)
-                if j is None:
+                if j is None or j in declaration_indices:
                     continue
                 contained = set(local_bases.get(name, ()))
                 source_owner = source_class(
@@ -1849,6 +1864,44 @@ def scan_sources(api, source_root):
                 bind_variable(tokens, j, contained)
                 if is_field(tokens, j, classes):
                     fields[values[j]].update(contained)
+
+        # Unknown parameter types still hide a same-named namespace function.
+        parameters = []
+        for function in functions:
+            body = function.get("body")
+            if body is None:
+                continue
+            opening = function["name_index"] + len(
+                TOKEN.findall(function["name"].split("::")[-1])
+            )
+            parameters.append((opening, (opening, tokens.pairs[body])))
+        parameters += [
+            (opening, None)
+            for opening, closing in tokens.pairs.items()
+            if opening < closing
+            and values[opening] == "("
+            and values[opening - 1 : opening] == ["]"]
+            and opening - 1 in tokens.pairs
+        ]
+        for opening, span in parameters:
+            closing = tokens.pairs.get(opening)
+            if closing is None:
+                continue
+            start = i = opening + 1
+            angle = 0
+            while i <= closing:
+                if i == closing or values[i] == "," and angle == 0:
+                    parameter = data_member(values[start:i], None)
+                    if parameter and parameter["return_tokens"][-1:] != ["::"]:
+                        index = start + parameter["name_index"]
+                        if not any(binding[2] == index for binding in tokens.bindings):
+                            bind_variable(tokens, index, set(), span)
+                    start = i + 1
+                elif values[i] in {"(", "[", "{"} and i in tokens.pairs:
+                    i = tokens.pairs[i]
+                else:
+                    angle += (values[i] == "<") - (values[i] == ">")
+                i += 1
 
     relevant_files = {path for path, tokens, *_ in files if tokens.source_relevant}
     for path, tokens, *_ in files:
@@ -2013,7 +2066,7 @@ def scan_sources(api, source_root):
                 i += 1
         return sorted(result)
 
-    def qualified_function(name, scope, tokens, index, namespace_aliases):
+    def scoped_imports(tokens, index, namespace_aliases):
         here = tokens.scopes.get(index, ())
         imports = [
             expand(target.lstrip(":"), namespace_aliases)
@@ -2022,12 +2075,71 @@ def scan_sources(api, source_root):
         ]
         if "dart" in imports:
             imports += ["dart::" + space for space in imports if space != "dart"]
+        return imports
+
+    def qualified_function(name, scope, tokens, index, namespace_aliases):
+        imports = scoped_imports(tokens, index, namespace_aliases)
         for candidate in api.spellings(expand(name, namespace_aliases), scope, imports):
             if candidate in api.free_functions:
                 return candidate
         return None
 
-    def returns(declarations):
+    def source_function(name, tokens, index, path, namespace_aliases):
+        """Visible scanned free functions, retaining their declaration context."""
+        if any(
+            b[3] == name
+            and b[0] <= index <= b[1]
+            and b[2] <= index
+            and set(tokens.branches[b[2]]) <= set(tokens.branches[index])
+            for b in tokens.bindings
+        ):
+            return []
+        scope = tokens.scopes.get(index, ())
+        available = defaultdict(list)
+        for header in closure[path]:
+            for full_name, declarations in source_functions[header].items():
+                if full_name.rpartition("::")[0] not in source_classes:
+                    available[full_name] += declarations
+        imports = scoped_imports(tokens, index, namespace_aliases)
+        if "::" in name:
+            for candidate in api.spellings(
+                expand(name, namespace_aliases), scope, imports
+            ):
+                if candidate in available:
+                    return available[candidate]
+            return []
+        found = defaultdict(list)
+        declared_at = set()
+        for header in closure[path]:
+            for owner in declared[header].get(name, ()):
+                if scope[: len(owner)] == owner:
+                    declared_at.add(len(owner))
+                    found[len(owner)] += available["::".join(owner + (name,))]
+        for short, target, where, start, stop, depth in tokens.using:
+            if not (start < index < stop and scope[: len(where)] == where):
+                continue
+            if short not in {None, name}:
+                continue
+            spelling = target + "::" + name if short is None else target
+            matches = next(
+                (
+                    available[c]
+                    for c in api.spellings(
+                        expand(spelling, namespace_aliases), where, imports
+                    )
+                    if c in available
+                ),
+                [],
+            )
+            if short is not None:
+                declared_at.add(depth)
+            found[0 if short is None else depth] += matches
+        depths = declared_at | {depth for depth, items in found.items() if items}
+        return found[max(depths, default=0)]
+
+    def returns(declarations, depth=0):
+        if depth > 8:
+            return set()
         result = set()
         for item in declarations:
             return_tokens = item.get("return_tokens", ())
@@ -2036,6 +2148,101 @@ def scan_sources(api, source_root):
                 if item["class"]
                 else tuple(item["name"].split("::")[:-1])
             )
+            context = item.get("source")
+            if context:
+                path, tokens, imports, namespace_aliases = context
+                index = item["index"]
+                end = len(return_tokens)
+                for _ in qualifier_path(return_tokens):
+                    end -= 2
+                    if return_tokens[end] == ">":
+                        angle = 1
+                        while end > 0 and angle:
+                            end -= 1
+                            angle += (return_tokens[end] == ">") - (
+                                return_tokens[end] == "<"
+                            )
+                        end -= 1
+                return_tokens = return_tokens[:end]
+                if "auto" in return_tokens or "decltype" in return_tokens:
+                    continue
+                resolve_return = lambda value: resolve(
+                    value, tokens, index, imports, namespace_aliases
+                )
+                pointer_return = lambda value: pointer_alias(
+                    value, tokens, index, imports, namespace_aliases
+                )
+                alias = None
+                for start, _, value in names_in(return_tokens):
+                    if in_template_argument(return_tokens, start):
+                        continue
+                    for candidate in api.spellings(
+                        expand(value, namespace_aliases),
+                        tokens.scopes.get(index, ()),
+                        imports,
+                    ):
+                        alias = next(
+                            (
+                                alias_declarations[header][candidate]
+                                for header in closure[path]
+                                if candidate in alias_declarations[header]
+                            ),
+                            None,
+                        )
+                        if alias:
+                            break
+                    if alias:
+                        break
+                if alias:
+                    values, alias_index, alias_context = alias
+                    inferred = returns(
+                        [
+                            {
+                                **item,
+                                "return_tokens": values,
+                                "index": alias_index,
+                                "source": alias_context,
+                            }
+                        ],
+                        depth + 1,
+                    )
+                    result.update(inferred)
+                    if inferred and raw_pointer(return_tokens):
+                        result.add(RAW_POINTER)
+                    continue
+            else:
+                resolve_return = lambda value: api.resolve(value, scope)
+                pointer_return = (
+                    lambda value: resolve_return(value)
+                    in api.raw_pointers | api.standard_pointers
+                )
+            if context:
+                pointer = next(
+                    (
+                        end
+                        for start, end, value in names_in(return_tokens)
+                        if value
+                        in {"std::shared_ptr", "std::unique_ptr", "std::weak_ptr"}
+                        and not in_template_argument(return_tokens, start)
+                    ),
+                    None,
+                )
+                if pointer is not None:
+                    pointee = returns(
+                        [
+                            {
+                                **item,
+                                "return_tokens": first_template_argument(
+                                    return_tokens, pointer
+                                ),
+                            }
+                        ],
+                        depth + 1,
+                    )
+                    result.update(pointee)
+                    if pointee:
+                        result.add(RAW_POINTER)
+                    continue
             sequence = next(
                 (
                     end
@@ -2053,22 +2260,55 @@ def scan_sources(api, source_root):
                 None,
             )
             if sequence is not None:
+                argument = first_template_argument(return_tokens, sequence)
                 contained = container_elements(
-                    first_template_argument(return_tokens, sequence),
+                    argument,
                     api,
-                    lambda value: api.resolve(value, scope),
+                    resolve_return,
+                    pointer_return,
                 )
-                result.update(contained or {"__non_dart__"})
+                if not contained and context:
+                    foreign = returns([{**item, "return_tokens": argument}], depth + 1)
+                    contained = {"__non_dart__"} if "__non_dart__" in foreign else set()
+                result.update(contained if context else contained or {"__non_dart__"})
                 continue
-            for _, _, value in names_in(return_tokens):
-                resolved = api.resolve(value, scope)
+            for start, _, value in names_in(return_tokens):
+                resolved = resolve_return(value)
                 owner = api.owner(resolved)
                 if owner:
                     result.add(resolved)
-                    if raw_pointer(return_tokens) or resolved in (
-                        api.raw_pointers | api.standard_pointers
+                    if (
+                        raw_pointer(return_tokens)
+                        or pointer_return(value)
+                        or any(
+                            target
+                            in {"std::shared_ptr", "std::unique_ptr", "std::weak_ptr"}
+                            and not in_template_argument(return_tokens, start)
+                            for start, _, target in names_in(return_tokens)
+                        )
                     ):
                         result.add(RAW_POINTER)
+                elif context and not in_template_argument(return_tokens, start):
+                    source_owner = source_class(
+                        value, tokens.scopes.get(index, ()), imports, namespace_aliases
+                    )
+                    if source_owner:
+                        result.update(
+                            local_bases.get(source_owner, ()) or {"__non_dart__"}
+                        )
+                        result.add(SOURCE_CLASS + source_owner)
+                        if raw_pointer(return_tokens):
+                            result.add(RAW_POINTER)
+                    elif value in {
+                        "void",
+                        "int",
+                        "double",
+                        "float",
+                        "bool",
+                        "char",
+                        "size_t",
+                    }:
+                        result.add("__non_dart__")
         return result
 
     def arrow_types(types):
@@ -2167,6 +2407,16 @@ def scan_sources(api, source_root):
                     )
                     if free:
                         return returns(api.free_functions[free])
+                spelling = (
+                    "::".join(qualifier_path(values, function)) + "::" + method
+                    if function > 0 and values[function - 1] == "::"
+                    else method
+                )
+                source_declarations = source_function(
+                    spelling, tokens, function, tokens.source_path, namespace_aliases
+                )
+                if source_declarations:
+                    return returns(source_declarations)
                 if method in {"dynamic_cast", "static_cast"}:
                     for _, _, value in names_in(values[function + 1 : opening]):
                         resolved = resolve(
@@ -2367,10 +2617,34 @@ def scan_sources(api, source_root):
                     )
                     if free:
                         add("free_functions", free, path, tokens.line(i))
-                    for candidate in api.spellings(
-                        expand(qualifier + "::" + name, namespace_aliases),
-                        tokens.scopes.get(i, ()),
-                        imports,
+                shadowed = any(
+                    b[3] == name
+                    and b[0] <= i <= b[1]
+                    and b[2] <= i
+                    and set(tokens.branches[b[2]]) <= set(tokens.branches[i])
+                    for b in tokens.bindings
+                )
+                if qualifier is not None or access is None and not shadowed:
+                    scope = tokens.scopes.get(i, ())
+                    spellings = (
+                        [qualifier + "::" + name] if qualifier is not None else [name]
+                    )
+                    if qualifier is None:
+                        spellings += [
+                            target
+                            for short, target, where, start, stop, _ in tokens.using
+                            if short == name
+                            and start < i < stop
+                            and scope[: len(where)] == where
+                        ]
+                    for candidate in dict.fromkeys(
+                        candidate
+                        for spelling in spellings
+                        for candidate in api.spellings(
+                            expand(spelling, namespace_aliases),
+                            scope,
+                            scoped_imports(tokens, i, namespace_aliases),
+                        )
                     ):
                         if candidate in api.variables:
                             add(

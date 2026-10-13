@@ -2303,6 +2303,245 @@ def test_foreign_control_declaration_shadows_and_restores_dart_receiver(
     assert hit["unresolved_count"] == 0
 
 
+def test_namespace_directives_expose_variables_without_local_leakage(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { constexpr int LIMIT = 3; namespace math { constexpr int AXIS = 1; } }"
+    )
+    source = "namespace first { using namespace dart; void use() { auto x = LIMIT; { int LIMIT = 4; auto local = LIMIT; } } } namespace second { void use() { int LIMIT = 5; auto local = LIMIT; } } namespace third { using namespace dart::math; void use() { auto axis = AXIS; } }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    variables = _entries(before, "variables")
+    assert set(variables) == {"dart::LIMIT", "dart::math::AXIS"}
+    assert all(row["count"] == 1 for row in variables.values())
+    header.write_text(header.read_text().replace("LIMIT = 3", "LIMIT = 6"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after["variables"] != before["variables"]
+
+
+@pytest.mark.parametrize(
+    "return_type",
+    [
+        "decltype(makeValue())",
+        "decltype((makeValue()))",
+        "decltype(makeValue(choose(1)))",
+    ],
+)
+def test_decltype_operands_are_not_method_declarators(extractor, tmp_path, return_type):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { int choose(int); int makeValue(int value = 0); struct A { "
+        + return_type
+        + " getValue() const; int ordinary(); }; }"
+    )
+    api = extractor.index_api(headers)
+    assert set(api.members) == {"getValue", "ordinary"}
+    source = "void use(dart::A* value) { value->getValue(); }"
+    before = _scan(extractor, api, tmp_path / "before", source)
+    value = _entries(before, "members")["getValue"]
+    assert value["unresolved_count"] == 0
+    assert (
+        value["declarations"][0]["signature"]
+        == " ".join(extractor.TOKEN.findall(return_type)) + " getValue ( ) const"
+    )
+    header.write_text(header.read_text().replace("getValue()", "getValue(int)"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after["members"] != before["members"]
+
+
+def test_source_return_aliases_preserve_declaration_scope_and_shape(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Target { void other(); }; struct A { void hit(); Target* operator->(); }; }"
+    )
+    source = """namespace app {
+using APtr = dart::A*;
+using Shared = std::shared_ptr<dart::A>;
+using AVec = std::vector<APtr>;
+struct Factory {
+  using Local = APtr;
+  Local make(); AVec items(); std::vector<APtr> also(); Shared shared();
+  void hit();
+};
+Factory::Local Factory::make() { return nullptr; }
+struct Derived : dart::A {};
+struct Adapters { Derived* derived(); };
+APtr free();
+void use(Factory factory, Adapters adapter) {
+  factory.make()->hit(); factory.items().front()->hit();
+  factory.also().at(0)->hit(); factory.shared()->hit();
+  adapter.derived()->hit(); auto value = free(); value->hit();
+}
+}
+"""
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    members = _entries(result, "members")
+    assert set(members) == {"hit"}
+    assert members["hit"]["count"] == 6
+    assert members["hit"]["receiver_types"] == ["dart::A"]
+    assert members["hit"]["unresolved_count"] == 0
+
+
+def test_source_return_aliases_use_included_header_context(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "aliases.hh").write_text(
+        "namespace app { using A = dart::A; using APtr = A*; using AVec = std::vector<APtr>; struct Factory { APtr make(); AVec items(); }; }"
+    )
+    (source / "use.cc").write_text(
+        '#include "aliases.hh"\nvoid use(app::Factory factory) { factory.make()->hit(); factory.items().front()->hit(); }'
+    )
+    result = extractor.scan_sources(extractor.index_api(headers), source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 2
+    assert hit["receiver_types"] == ["dart::A"]
+    assert hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize("call", ["foreign()", "util::foreign()", "renamed::foreign()"])
+def test_known_foreign_free_function_returns_suppress_dart_candidates(
+    extractor, tmp_path, call
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "struct Foreign { void hit(); }; Foreign foreign(); namespace util { Foreign foreign(); } namespace renamed = util; void use(dart::A* known) { auto value = "
+        + call
+        + "; value.hit(); }",
+    )
+    assert result["members"] == []
+
+
+def test_source_free_function_imports_and_callable_shadowing(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { void hit(); }; struct Callable { A* operator()(); }; }"
+    )
+    source = """struct Foreign { void hit(); };
+namespace util { Foreign foreign(); }
+using namespace util;
+void use(dart::A* known) { auto value = foreign(); value.hit(); }
+void shadow(dart::Callable foreign) { foreign()->hit(); }
+namespace other {
+using util::foreign;
+void use(dart::A* known) { foreign().hit(); }
+}
+"""
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 1
+    assert hit["receiver_types"] == ["dart::A"]
+    assert hit["unresolved_count"] == 0
+
+
+def test_unknown_callable_parameter_hides_known_foreign_function(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    source = """struct Foreign { void hit(); }; Foreign factory();
+template<class Callable> void use(dart::A* known, Callable factory) {
+  auto value = factory(); value.hit();
+}
+template<class Callable> struct Wrapper {
+  dart::A* known;
+  Wrapper(dart::A* input, Callable factory) : known(input) {
+    auto value = factory(); value.hit();
+  }
+  void after() { factory().hit(); }
+};
+void lambda(dart::A* known) {
+  auto call = [](auto factory) mutable { auto value = factory(); value.hit(); };
+  factory().hit();
+}
+void after(dart::A* known) { factory().hit(); }
+"""
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == hit["unresolved_count"] == 3
+    assert hit["receiver_types"] == []
+
+
+@pytest.mark.parametrize("wrapper", ["shared_ptr", "unique_ptr", "weak_ptr"])
+def test_known_foreign_standard_pointer_returns_suppress_dart_candidates(
+    extractor, tmp_path, wrapper
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    expression = "foreign().lock()" if wrapper == "weak_ptr" else "foreign()"
+    source = (
+        "struct Foreign { void hit(); }; std::"
+        + wrapper
+        + "<Foreign> foreign(); void use(dart::A* known) { "
+        + expression
+        + "->hit(); }"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert result["members"] == []
+
+
+def test_out_of_line_template_owner_is_not_a_source_return_type(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "struct Foreign { void hit(); }; template<class T> struct Factory : dart::A { Foreign make(); }; template<class T> Foreign Factory<T>::make() { return {}; } void use(Factory<int> factory) { factory.make().hit(); }",
+    )
+    assert result["members"] == []
+
+
+@pytest.mark.parametrize(
+    "return_type",
+    ["T", "auto", "decltype(unknown())", "std::vector<T>", "std::shared_ptr<T>"],
+)
+def test_unknown_source_free_function_returns_remain_conservative(
+    extractor, tmp_path, return_type
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
+    definition = "struct Foreign { void hit(); }; "
+    definition += "Foreign unknown(); " if "decltype" in return_type else ""
+    definition += "template<class T> " + return_type + " foreign()"
+    definition += " { return T{}; }" if return_type == "auto" else ";"
+    expression = (
+        "foreign<Foreign>().front()"
+        if "vector" in return_type
+        else "foreign<Foreign>()"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        definition
+        + " void use(dart::A* known) { auto value = "
+        + expression
+        + ("; value->hit(); }" if "ptr" in return_type else "; value.hit(); }"),
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == hit["unresolved_count"] == 1
+    assert hit["receiver_types"] == []
+
+
 def test_template_qualified_static_calls_and_return_receivers(extractor, tmp_path):
     headers = tmp_path / "headers"
     headers.mkdir()
