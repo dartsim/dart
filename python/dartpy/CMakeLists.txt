@@ -80,7 +80,13 @@ foreach(dartpy_library ${dartpy_libraries})
     )
   endif()
 endforeach()
-target_link_libraries(dartpy PRIVATE ${dartpy_libraries} tsl::robin_map)
+target_link_libraries(
+  dartpy
+  PRIVATE ${dartpy_libraries} dart-demo-models tsl::robin_map
+)
+if(TARGET dart-utils AND TARGET dart-utils-urdf)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_SIMBICON_DEMOS)
+endif()
 if(TARGET dart-utils-assets)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
 endif()
