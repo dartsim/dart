@@ -11,11 +11,11 @@ description: "DART Docs Update: update docs or AI instruction visibility without
 
 Use this skill to run the DART `dart-docs-update` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-docs-update <arguments>`
+- Claude Code: `/dart-docs-update <arguments>`
 - Codex: `$dart-docs-update <arguments>`
 - Muse: `/dart-docs-update <arguments>`
 
@@ -46,8 +46,8 @@ Update documentation: $ARGUMENTS
    - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit
-   generated `.opencode/command/` files or manifest-owned `.agents/skills/`
-   paths. `.codex/` is maintained runtime configuration.
+   manifest-owned `.agents/skills/` paths. `.codex/` is maintained runtime
+   configuration.
 4. Classify new or moved docs by lifecycle first, then audience, then topic,
    using `docs/information-architecture.md`
 5. Update indexes and cross-references that point to changed docs. For AI docs,

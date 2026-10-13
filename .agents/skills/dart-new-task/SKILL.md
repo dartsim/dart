@@ -11,11 +11,11 @@ description: "DART New Task: start a feature, bugfix, refactor, docs, build, or 
 
 Use this skill to run the DART `dart-new-task` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-new-task <arguments>`
+- Claude Code: `/dart-new-task <arguments>`
 - Codex: `$dart-new-task <arguments>`
 - Muse: `/dart-new-task <arguments>`
 

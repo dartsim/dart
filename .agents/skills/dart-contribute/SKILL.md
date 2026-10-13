@@ -66,7 +66,7 @@ Commit messages are checked through the managed `commit-msg` hook. The PR
 Text workflow is the backstop for commits that use `--no-verify` or otherwise
 skip local hooks.
 
-Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[opencode]`.
+Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[muse]`.
 
 Describe private plans in prose or link public PRs/issues; keep private, local,
 and machine-specific paths out of published text. Before every `gh pr create`

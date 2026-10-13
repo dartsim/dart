@@ -4,7 +4,6 @@ The DART development branch uses a small cross-agent workflow surface:
 
 - `.claude/commands/`: editable workflow command sources.
 - `.claude/skills/`: editable domain-skill sources.
-- `.opencode/command/`: generated OpenCode command files.
 - `.agents/skills/`: generated Codex and Muse workflow and domain
   skills, with a DART-owned manifest that preserves unrelated skills.
 - `.codex/config.toml`: bounded project-local Codex concurrency defaults.
@@ -59,8 +58,8 @@ prompts, adapters, agents, hooks, scripts, and tests. Keep the result
 progressively disclosed: audit owner paths and representative live state
 without loading every plan, task, or handbook page into every session.
 
-Use `.claude/` as the editable source. Do not hand-edit generated `.agents/` or
-`.opencode/` files; rerun the sync script instead. `.codex/` is maintained
+Use `.claude/` as the editable source. Do not hand-edit generated `.agents/`
+files; rerun the sync script instead. `.codex/` is maintained
 runtime configuration, not generated adapter output.
 
 Use `dart-retro` after a completed DART session only when the

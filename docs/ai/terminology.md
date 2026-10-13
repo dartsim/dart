@@ -15,7 +15,7 @@ generated adapter docs.
 | Workflow                     | A repeatable DART procedure with required reading, steps, output, and gates.                      | `.claude/commands/`, `docs/ai/workflows.md`         |
 | Workflow source              | The editable source file for a user-invoked DART workflow.                                        | `.claude/commands/`                                 |
 | Domain skill                 | On-demand DART domain knowledge or procedure, usually a lightweight pointer to full docs.         | `.claude/skills/`                                   |
-| Generated adapter entrypoint | A tool-specific file generated from an editable DART source.                                      | `.agents/skills/`, `.opencode/command/`             |
+| Generated adapter entrypoint | A tool-specific file generated from an editable DART source.                                      | `.agents/skills/`             |
 | Agent profile                | A bounded Codex subagent contract with explicit input, output, and sandbox limits.                | `.codex/agents/`                                    |
 | Project hook                 | Fast advisory automation loaded by a trusted agent client.                                        | `.codex/hooks.json`, `.claude/settings.json`        |
 | Orchestrator                 | The role that decomposes, sequences, and reviews work packets.                                    | `docs/ai/orchestration.md`                          |
@@ -40,6 +40,5 @@ generated adapter docs.
 
 DART keeps `.claude/commands/` as the editable workflow source and
 `.claude/skills/` as the editable domain-skill source. Generated
-`.agents/skills/` and `.opencode/command/` files are entrypoints, not sources of
-truth. `.codex/` contains maintained runtime configuration. Change the editable
+`.agents/skills/` files are entrypoints, not sources of truth. `.codex/` contains maintained runtime configuration. Change the editable
 source, then run the AI adapter sync checks.

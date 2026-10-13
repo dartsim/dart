@@ -1,9 +1,9 @@
 # DART AI Workflows
 
 This directory contains the DART AI operating model used by Codex,
-Claude Code, Muse, and OpenCode. It focuses on the workflows
-needed to develop the Python-first DART 7 line on `main` while keeping
-the Gazebo-facing C++ surface compatible.
+Claude Code, and Muse. It focuses on the workflows needed to
+develop the Python-first DART 7 line on `main` while keeping the
+Gazebo-facing C++ surface compatible.
 
 ## Visibility And Context Budget
 
@@ -43,11 +43,10 @@ Start with:
 ## Architecture And Setup
 
 Editable workflow and domain-skill sources live in `.claude/`. The sync tool
-generates current Codex and Muse skills under `.agents/skills/` and
-OpenCode commands under `.opencode/command/`. `.codex/` owns maintained
-Codex config, bounded read-only subagents, and the advisory PreToolUse
-hook. The installed git hooks are
-the cross-tool commit safety path.
+generates current Codex and Muse skills under
+`.agents/skills/`. `.codex/` owns maintained Codex config, bounded
+read-only subagents, and the advisory PreToolUse hook. The installed
+git hooks are the cross-tool commit safety path.
 
 ```bash
 pixi run ai-setup
@@ -88,8 +87,8 @@ For documentation placement, use
 [`docs/information-architecture.md`](../information-architecture.md).
 For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
 
-Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in Claude, Muse
-Code, and OpenCode when DART work should run as an autonomous
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in Claude and
+Muse when DART work should run as an autonomous
 project from either a provided brief or one up-front decision interview. The
 workflow keeps `docs/dev_tasks/<task>/` as the project home and records
 acceptance criteria, risks, decisions, verification, progress, and handoff
@@ -101,8 +100,8 @@ handling.
 ## Updating Models And Coding Agents
 
 Use `$dart-model-upgrade` in Codex or `/dart-model-upgrade` in
-Claude, Muse, and OpenCode when a request names a model,
-reasoning mode, coding-agent
+Claude and Muse when a request names a model, reasoning mode,
+coding-agent
 release, migration, or compatibility audit. It captures the existing release
 harness as a control, refreshes primary guidance, isolates model, effort,
 prompt, configuration, and optional-agent changes, and records
