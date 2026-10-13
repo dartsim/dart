@@ -500,6 +500,45 @@ Known gaps:
     - PR-body note: Documentation and strict-xfail acceptance coverage only;
       released library behavior is unchanged.
     - Follow-up: none
+- **Unresolved-thread sweep on 2026-10-12** (main `2189f8b82` merged locally):
+  - All 22 unresolved #3728 threads were checked against the merged branch:
+    17 were already fixed and five required acceptance-test changes. No
+    GitHub comments, thread resolutions or pushes were made.
+  - The batch test now starts with zero velocity and zero gravity and requires
+    positive target-driven shoulder motion. The existing native fixture stays
+    exactly at zero without a target, so passive motion cannot satisfy it.
+  - Separate strict-XFAIL cases cover unsupported collision heightmaps at
+    compile time, GIL-free stepping, and exact checkpoint restoration and
+    per-frame replay with parameter-mismatch rejection. Checkpoints use the
+    native DART detector and compare serialized fields and public state, not
+    native memory. M1c still owns the full contact and hidden-history oracle.
+    The dynamic snapshot test reads the final `world.time` property.
+  - The GIL oracle passes three native calls that release the GIL and rejects
+    three native calls that hold it; both paths clean up the worker thread.
+  - The focused guarded pytest command above, over the acceptance and render
+    modules, reports 15 XFAIL with no XPASS. With `--runxfail`, all 15 fail for
+    their intended missing APIs: the new cases reach missing `World.compile`,
+    integer-count stepping and `World.capture_checkpoint`, respectively.
+    These results validate the pending acceptance contracts, not their future
+    simulation implementations; no visual evidence applies to this test-only
+    change.
+  - `pixi run test-gz-compat-tools` passes all 76 tests. No #3729 inventory
+    scanner thread or scanner change is part of this #3728 sweep.
+  - `pixi run test-py` passes: 1,178 passed, two skipped and 14 XFAIL, with no
+    XPASS. `pixi run build`, `pixi run lint` and `pixi run check-lint` also pass.
+  - Two role-separated local review passes checked the final acceptance
+    assertions against the design and then checked failure paths and cleanup;
+    neither found a remaining issue.
+  - Changelog decision:
+    - Mode: decide
+    - Base evidence: `origin/main` at `2189f8b82`
+    - Scope evidence: #3728 unresolved-thread sweep diff
+    - Decision: no entry required
+    - Target section: N/A
+    - Entry text: N/A
+    - PR-body note: Strict-XFAIL acceptance coverage and verification notes
+      only; released behavior is unchanged.
+    - Follow-up: none
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
     counter instead of `step_count`; the render test ran in the device-free

@@ -8,6 +8,11 @@ python/tests/unit/gui/test_target_shape_render.py, which test-gui runs and
 test-py leaves out.
 """
 
+import pickle
+import sys
+import threading
+import time
+
 import dartpy as dart
 import numpy as np
 import pytest
@@ -82,6 +87,23 @@ def test_edit_compile(world, robot):
 
 
 @pytest.mark.xfail(
+    strict=True, reason="M1b/M5b: compile-time rejection of unsupported DART detector shapes is pending"
+)
+def test_compile_rejects_unsupported_shape(world, robot):
+    shape = dart.dynamics.HeightmapShapef()
+    shape.setHeightField(np.zeros((2, 2), dtype=np.float32))
+    node = robot.getRootBodyNode().createShapeNode(shape)
+    node.createCollisionAspect()
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    compile_world = world.compile
+    # No public error type is specified yet; compile must reject, not warn and skip.
+    with pytest.raises(Exception):
+        compile_world()
+
+
+@pytest.mark.xfail(
     strict=True, reason="M5: dart.data, io.load_model and World.add are pending"
 )
 def test_load_model_and_add(world):
@@ -132,6 +154,39 @@ def test_step_n(world):
         world.step(True)
 
 
+@pytest.mark.xfail(strict=True, reason="M1d/M5b: GIL-free step(n) is pending")
+def test_step_releases_gil(world, robot):
+    active = threading.Event()
+    finished = threading.Event()
+    progress = 0
+
+    def count_during_step():
+        nonlocal progress
+        active.wait()
+        while not finished.is_set():
+            progress += 1
+            time.sleep(0.001)
+
+    worker = threading.Thread(target=count_during_step)
+    worker.start()
+    interval = sys.getswitchinterval()
+    try:
+        # Prevent Python bytecode handoffs before and after the native call.
+        sys.setswitchinterval(60)
+        active.set()
+        try:
+            world.step(100_000)
+        finally:
+            finished.set()
+        assert progress > 0
+    finally:
+        finished.set()
+        active.set()
+        sys.setswitchinterval(interval)
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+
+
 @pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
 def test_transform_composition():
     # A quarter turn about x keeps the composition order observable.
@@ -176,7 +231,7 @@ def test_capture_restore_state(world, robot):
     robot.setVelocities(np.ones(robot.getNumDofs()))
     positions = robot.getPositions().copy()
     velocities = robot.getVelocities().copy()
-    time = world.getTime()
+    time = world.time
     state = world.capture_state()
     robot.dofs.position_targets = np.full(robot.getNumDofs(), -0.5)
     np.testing.assert_array_equal(robot.dofs.position_targets, -targets)
@@ -186,25 +241,69 @@ def test_capture_restore_state(world, robot):
     np.testing.assert_array_equal(robot.getPositions(), positions)
     np.testing.assert_array_equal(robot.getVelocities(), velocities)
     np.testing.assert_array_equal(robot.dofs.position_targets, targets)
-    assert world.getTime() == time
+    assert world.time == time
+
+
+@pytest.mark.xfail(
+    strict=True, reason="M1c/M5b: exact checkpoints, bit-identical replay and mismatch rejection are pending"
+)
+def test_capture_restore_checkpoint(world, robot):
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    robot.setVelocities(np.ones(robot.getNumDofs()))
+    world.step()
+    checkpoint = world.capture_checkpoint()
+
+    def frame():
+        # Compare serialized fields and bit-exact public state, not native memory.
+        return (
+            pickle.dumps(world.capture_checkpoint(), protocol=5),
+            world.time,
+            world.step_count,
+            robot.getPositions().tobytes(),
+            robot.getVelocities().tobytes(),
+            robot.getAccelerations().tobytes(),
+            robot.getForces().tobytes(),
+        )
+
+    initial = frame()
+    expected = []
+    for _ in range(10):
+        world.step()
+        expected.append(frame())
+    assert expected[-1] != initial
+    world.restore_state(pickle.loads(pickle.dumps(checkpoint, protocol=5)))
+    assert frame() == initial
+    for expected_frame in expected:
+        world.step()
+        assert frame() == expected_frame
+
+    world.setGravity([0, 0, 0])
+    before_rejection = frame()
+    with pytest.raises(Exception) as mismatch:
+        world.restore_state(checkpoint)
+    assert type(mismatch.value).__name__ == "CheckpointMismatchError"
+    assert frame() == before_rejection
 
 
 @pytest.mark.xfail(
     strict=True, reason="M1i/M1g/M5b: WorldBatch clones, set/step and the position-target channel are pending"
 )
 def test_world_batch_set_step(world, robot):
+    world.setGravity([0, 0, 0])
+    robot.setVelocities(np.zeros(robot.getNumDofs()))
     servo = dart.PositionServo(kp=400, kd=40, effort_limit=80)
     robot.joints["shoulder_yaw"].actuator = servo
     batch = dart.WorldBatch(world, count=64)
     assert batch.positions.shape == (64, robot.getNumDofs())
-    batch.set("velocities", np.ones_like(batch.positions))
+    batch.set("velocities", np.zeros_like(batch.positions))
     batch.set("position_targets", np.full_like(batch.positions, 0.5))
     batch.step(20)
-    robot.setVelocities(np.ones(robot.getNumDofs()))
     robot.dofs.position_targets = np.full(robot.getNumDofs(), 0.5)
     for _ in range(20):
         world.step()
-    assert np.any(robot.getPositions() != 0)
+    assert robot.getPositions()[0] > 0
     np.testing.assert_array_equal(
         batch.positions, np.tile(robot.getPositions(), (64, 1))
     )
