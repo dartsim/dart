@@ -13,7 +13,13 @@ try {
     $payload = $env:DART_HOOK_PAYLOAD
   }
   $pipelineInput = if ($payload.Length -gt 0) { @($payload) } else { @() }
-  $repoRoot = (git rev-parse --show-toplevel)
+  $repoRoot = $env:CLAUDE_PROJECT_DIR
+  if (-not $repoRoot) {
+    $repoRoot = $env:CODEX_PROJECT_DIR
+  }
+  if (-not $repoRoot) {
+    $repoRoot = (git rev-parse --show-toplevel)
+  }
   if (-not $repoRoot) {
     throw "git did not return a repository root"
   }

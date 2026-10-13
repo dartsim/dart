@@ -144,6 +144,9 @@ CLAUDE.local.md
 # ignored.
 .opencode/
 
+.muse/*
+!.muse/hooks.json
+
 !.codex/
 .codex/*
 !.codex/agents/

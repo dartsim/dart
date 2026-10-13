@@ -54,4 +54,19 @@ def test_renderer_outputs(tmp_path):
         for link in model.links:
             scene_objects.append(link)
             scene_objects.extend(link.visuals)
-    assert any(owner is item for item in scene_objects)
+    assert any(owner == item for item in scene_objects)
+
+
+@pytest.mark.xfail(strict=True, reason="M6b: final passive open and managed launch viewer entry points are pending")
+def test_viewer_entry_points():
+    world = dart.simulation.World()
+    # M6b settles lifetime and bounded-run options. The provisional shape uses
+    # the current viewer's headless bounded-step test strategy, avoiding an
+    # interactive run while requiring construction through both final names.
+    with dart.viewer.open(world, headless=True) as viewer:
+        world.step()
+        count = world.step_count
+        viewer.sync()
+        assert world.step_count == count
+    dart.viewer.launch(world, headless=True, steps=2)
+    assert world.step_count == count + 2

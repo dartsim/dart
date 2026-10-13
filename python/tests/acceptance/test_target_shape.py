@@ -8,6 +8,7 @@ python/tests/unit/gui/test_target_shape_render.py, which test-gui runs and
 test-py leaves out.
 """
 
+import logging
 import pickle
 import sys
 import threading
@@ -68,6 +69,15 @@ def test_load_world_mjcf_detector_default(tmp_path):
     assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
 
 
+@pytest.mark.xfail(strict=True, reason="M1e/M5b: WorldConfig typed solver selection is pending")
+def test_world_config_solver_selection():
+    # M1e/M5b settle the selector and construction spelling. Select a primary
+    # PGS solver, not the current Dantzig primary with a PGS fallback.
+    config = dart.simulation.WorldConfig(primary_solver=dart.constraint.SolverType.PGS)
+    world = dart.World(config=config)
+    assert isinstance(world.solver.getBoxedLcpSolver(), dart.constraint.PgsBoxedLcpSolver)
+
+
 @pytest.mark.xfail(
     strict=True, reason="M1b/M5b: edit/compile modes and frozen topology enforcement are pending"
 )
@@ -111,6 +121,111 @@ def test_load_model_and_add(world):
     robot = world.add(dart.io.load_model(path))
     assert world.multibodies[robot.name] is robot
     assert robot.num_dofs == 6
+    assert len(world.multibodies) == 1
+    assert world.multibodies[0] == robot
+    assert list(world.multibodies) == [robot]
+    assert list(world.multibodies.names) == [robot.name]
+    with pytest.raises(KeyError) as missing:
+        world.multibodies["missing_model"]
+    assert robot.name in str(missing.value)
+    duplicate = dart.io.load_model(path)
+    assert duplicate.name == robot.name
+    membership = list(world.multibodies)
+    with pytest.raises(Exception) as conflict:
+        world.add(duplicate)
+    assert type(conflict.value).__name__ == "NameConflictError"
+    assert list(world.multibodies) == membership
+    assert duplicate not in world.multibodies
+
+
+@pytest.mark.xfail(strict=True, reason="M5: raising model/world loaders and MJCF world-only loading are pending")
+def test_loader_failures(tmp_path):
+    load_model = dart.io.load_model
+    load_world = dart.io.load_world
+    for loader, name in ((load_model, "missing.urdf"), (load_world, "missing.xml")):
+        # The exception classes belong to M5; a null return must not succeed.
+        with pytest.raises(Exception):
+            loader(tmp_path / name)
+    path = tmp_path / "world.xml"
+    path.write_text('<mujoco><worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>')
+    with pytest.raises(Exception):
+        load_model(path)
+
+
+@pytest.mark.xfail(strict=True, reason="M5: live add_* builders and immutable keyword-only specifications are pending")
+def test_live_model_builders(world):
+    # M5 settles collider/visual options and ownership spelling. The live
+    # builder and immutable keyword-only joint specification are required.
+    spec = dart.dynamics.RevoluteJointSpec(axis=(0, 0, 1))
+    with pytest.raises(TypeError):
+        dart.dynamics.RevoluteJointSpec((0, 0, 1))
+    with pytest.raises(Exception):
+        spec.axis = (1, 0, 0)
+    model = dart.dynamics.Multibody(name="built")
+    link = model.add_link("root", parent=None, joint=spec)
+    shape = dart.dynamics.BoxShape([0.2] * 3)
+    collider = link.add_collider(shape=shape)
+    visual = link.add_visual(shape=shape)
+    assert model.links["root"] == link
+    assert model.num_dofs == 1
+    for collection in (model.links, model.joints, model.dofs):
+        assert len(collection) == 1
+        item = collection[0]
+        assert list(collection) == [item]
+        assert collection[collection.names[0]] == item
+        with pytest.raises(KeyError) as missing:
+            collection["missing_member"]
+        assert collection.names[0] in str(missing.value)
+    assert list(link.colliders) == [collider]
+    assert list(link.visuals) == [visual]
+    assert world.add(model) is model
+    other = dart.simulation.World()
+    with pytest.raises(Exception):
+        other.add(model)
+    assert model in world.multibodies and model not in other.multibodies
+    rigid_link = world.add_rigid_body(name="rigid")
+    assert isinstance(rigid_link, dart.dynamics.Link)
+    owners = [owner for owner in world.multibodies if rigid_link in owner.links]
+    assert len(owners) == 1
+    assert len(owners[0].links) == 1
+    world.compile()
+    world.step()
+
+
+@pytest.mark.xfail(strict=True, reason="M5: native diagnostics forwarded to Python's dartpy logger are pending")
+def test_native_logging_bridge(caplog):
+    sentinel = "dart7 acceptance native warning sentinel"
+    # This existing binding invokes C++ common::warn directly; it does not
+    # rely on a parser/geometry error whose 7.0 behavior changes.
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        dart.common.warn(sentinel)
+    assert any(
+        record.name == "dartpy"
+        and record.levelno == logging.WARNING
+        and sentinel in record.getMessage()
+        for record in caplog.records
+    )
+
+
+@pytest.mark.xfail(strict=True, reason="M5/M6b: Material PBR values and Visual material assignment are pending")
+def test_material_visual_assignment(robot):
+    # M6b settles constructor spelling; these core PBR values and assignment
+    # must also work without constructing a renderer or viewer.
+    material = dart.Material(
+        base_color=(1, 0, 0, 1), metallic=0.25, roughness=0.4, emissive=(0.05, 0, 0)
+    )
+    np.testing.assert_array_equal(material.base_color, (1, 0, 0, 1))
+    assert material.metallic == pytest.approx(0.25)
+    assert material.roughness == pytest.approx(0.4)
+    np.testing.assert_allclose(material.emissive, (0.05, 0, 0))
+    node = robot.getRootBodyNode().createShapeNode(dart.dynamics.BoxShape([0.2] * 3))
+    node.createVisualAspect()
+    visual = robot.links["wrist"].visuals[0]
+    visual.material = material
+    np.testing.assert_array_equal(visual.material.base_color, material.base_color)
+    assert visual.material.metallic == material.metallic
+    assert visual.material.roughness == material.roughness
+    np.testing.assert_array_equal(visual.material.emissive, material.emissive)
 
 
 @pytest.mark.xfail(
@@ -138,6 +253,27 @@ def test_joint_position_servo(world, robot, target, kd):
     )
 
 
+@pytest.mark.xfail(strict=True, reason="M1g/M5b: VelocityServo and persistent velocity targets are pending")
+@pytest.mark.parametrize("target,kd", [(100, 40), (-100, 40), (0.05, 40), (0.05, 0)])
+def test_joint_velocity_servo(world, robot, target, kd):
+    world.setGravity([0, 0, 0])
+    h = world.getTimeStep()
+    inverse_mass = robot.getInvMassMatrix().copy()
+    # M1g settles constructor and channel spelling. K=0 in the compliant-row
+    # equation leaves bounded implicit velocity damping, including zero gain.
+    servo = dart.VelocityServo(kd=kd, effort_limit=80)
+    robot.joints["shoulder_yaw"].actuator = servo
+    robot.dofs.velocity_targets = np.array([target, 0.0])
+    impulse = np.clip(
+        h * kd * target / (1 + h * kd * inverse_mass[0, 0]), -h * 80, h * 80
+    )
+    world.step()
+    assert robot.getConstraintForces()[0] == pytest.approx(impulse / h)
+    np.testing.assert_allclose(
+        robot.getVelocities(), inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
+    )
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="M1h/M5b: native IMUSensor readings and the World sensor registry are pending",
@@ -156,6 +292,64 @@ def test_imu_sensor(world, robot):
     np.testing.assert_allclose(
         imu.orientation.wxyz, (np.cos(half), np.sin(half), 0, 0), rtol=0, atol=1e-12
     )
+
+
+@pytest.mark.xfail(strict=True, reason="M1h/M5b: native JointStateSensor registration and samples are pending")
+def test_joint_state_sensor(world, robot):
+    world.setGravity([0, 0, 0])
+    joint = robot.getJoint("shoulder_yaw")
+    joint.setPosition(0, 0.2)
+    joint.setVelocity(0, 0.7)
+    # M1h settles attachment and reading spelling for the named sensor types.
+    sensor = dart.sensors.JointStateSensor(joint=joint)
+    assert world.sensors.add(sensor) is sensor
+    assert sensor in world.sensors
+    world.step()
+    assert joint.getPosition(0) != 0.2
+    assert sensor.position == pytest.approx(joint.getPosition(0))
+    assert sensor.velocity == pytest.approx(joint.getVelocity(0))
+
+
+@pytest.mark.xfail(strict=True, reason="M1h/M5b: native ForceTorqueSensor registration and samples are pending")
+def test_force_torque_sensor(world):
+    world.setGravity([0, 0, -9.81])
+    model = dart.dynamics.Skeleton("supported_body")
+    joint, body = model.createWeldJointAndBodyNodePair()
+    body.setMass(2)
+    world.addSkeleton(model)
+    # Attachment and reading spelling are provisional M1h; the support wrench
+    # must follow gravity. Magnitude avoids imposing an unstated sign convention.
+    sensor = dart.sensors.ForceTorqueSensor(joint=joint)
+    assert world.sensors.add(sensor) is sensor
+    assert sensor in world.sensors
+    for gravity in (9.81, 4.905):
+        world.setGravity([0, 0, -gravity])
+        world.step()
+        assert np.linalg.norm(sensor.force) == pytest.approx(2 * gravity)
+        assert np.linalg.norm(sensor.force) == pytest.approx(
+            np.linalg.norm(body.getBodyForce()[3:])
+        )
+        np.testing.assert_allclose(sensor.torque, np.zeros(3), rtol=0, atol=1e-12)
+
+
+@pytest.mark.xfail(strict=True, reason="M1h/M5b: native ContactSensor registration and samples are pending")
+def test_contact_sensor(world, contact_box):
+    # Attachment and contact payload spelling are provisional M1h.
+    sensor = dart.sensors.ContactSensor(link=contact_box.getRootBodyNode())
+    assert world.sensors.add(sensor) is sensor
+    assert sensor in world.sensors
+    world.step()
+    contacts = world.getLastCollisionResult()
+    expected = sorted(tuple(contacts.getContact(i).force) for i in range(contacts.getNumContacts()))
+    actual = sorted(tuple(contact.force) for contact in sensor.contacts)
+    assert actual and any(np.linalg.norm(force) > 0 for force in actual)
+    np.testing.assert_array_equal(actual, expected)
+    positions = contact_box.getPositions().copy()
+    positions[5] = 0.5
+    contact_box.setPositions(positions)
+    world.step()
+    assert world.getLastCollisionResult().getNumContacts() == 0
+    assert not sensor.contacts
 
 
 @pytest.mark.xfail(
@@ -271,7 +465,7 @@ def test_step_hook_every(world, robot):
 
 
 @pytest.mark.xfail(strict=True, reason="M5b: DOF state and target properties with read-only copies are pending")
-@pytest.mark.parametrize("channel", ["positions", "velocities", "position_targets"])
+@pytest.mark.parametrize("channel", ["positions", "velocities", "position_targets", "velocity_targets"])
 def test_dof_arrays_are_read_only_copies(robot, channel):
     expected = np.full(robot.getNumDofs(), 0.5)
     setattr(robot.dofs, channel, expected)
@@ -301,6 +495,21 @@ def test_transform_composition():
     np.testing.assert_array_equal(parent @ np.zeros(3), (1, 2, 3))
 
 
+@pytest.mark.xfail(strict=True, reason="M5: immutable Rotation values and point application are pending")
+def test_rotation_value():
+    half = np.pi / 4
+    # Construction spelling is provisional M5; the rotation convention and
+    # immutable quaternion value are required independently of sensor output.
+    rotation = dart.Rotation(wxyz=(np.cos(half), np.sin(half), 0, 0))
+    np.testing.assert_allclose(rotation @ np.array([0, 1, 0]), (0, 0, 1), rtol=0, atol=1e-12)
+    before = rotation.wxyz.copy()
+    with pytest.raises(ValueError):
+        rotation.wxyz[0] = 0
+    with pytest.raises(Exception):
+        rotation.wxyz = (1, 0, 0, 0)
+    np.testing.assert_array_equal(rotation.wxyz, before)
+
+
 @pytest.mark.xfail(
     strict=True,
     reason="M5: links, Link.world_transform and immutable Transform are pending",
@@ -325,7 +534,9 @@ def test_capture_restore_state(world, robot):
         kp=400, kd=40, effort_limit=80
     )
     targets = np.full(robot.getNumDofs(), 0.5)
+    velocity_targets = np.full(robot.getNumDofs(), 0.25)
     robot.dofs.position_targets = targets
+    robot.dofs.velocity_targets = velocity_targets
     robot.setVelocities(np.ones(robot.getNumDofs()))
     positions = robot.getPositions().copy()
     velocities = robot.getVelocities().copy()
@@ -337,10 +548,12 @@ def test_capture_restore_state(world, robot):
     clone_robot.setPositions(-positions + 0.2)
     clone_robot.setVelocities(-velocities)
     clone_robot.dofs.position_targets = -targets
+    clone_robot.dofs.velocity_targets = -velocity_targets
     clone.restore_state(state)
     np.testing.assert_array_equal(clone_robot.getPositions(), positions)
     np.testing.assert_array_equal(clone_robot.getVelocities(), velocities)
     np.testing.assert_array_equal(clone_robot.dofs.position_targets, targets)
+    np.testing.assert_array_equal(clone_robot.dofs.velocity_targets, velocity_targets)
     assert clone.time == time
     # Equal array sizes do not imply a matching structural digest.
     different = world.clone()
@@ -353,10 +566,12 @@ def test_capture_restore_state(world, robot):
     different_robot.setPositions(np.full(robot.getNumDofs(), 0.25))
     different_robot.setVelocities(-velocities)
     different_robot.dofs.position_targets = -targets
+    different_robot.dofs.velocity_targets = -velocity_targets
     before = (
         different_robot.getPositions().tobytes(),
         different_robot.getVelocities().tobytes(),
         different_robot.dofs.position_targets.tobytes(),
+        different_robot.dofs.velocity_targets.tobytes(),
         different.time,
     )
     with pytest.raises(Exception):
@@ -365,9 +580,11 @@ def test_capture_restore_state(world, robot):
         different_robot.getPositions().tobytes(),
         different_robot.getVelocities().tobytes(),
         different_robot.dofs.position_targets.tobytes(),
+        different_robot.dofs.velocity_targets.tobytes(),
         different.time,
     ) == before
     robot.dofs.position_targets = np.full(robot.getNumDofs(), -0.5)
+    robot.dofs.velocity_targets = -velocity_targets
     np.testing.assert_array_equal(robot.dofs.position_targets, -targets)
     world.step()
     assert not np.array_equal(robot.getPositions(), positions)
@@ -375,6 +592,7 @@ def test_capture_restore_state(world, robot):
     np.testing.assert_array_equal(robot.getPositions(), positions)
     np.testing.assert_array_equal(robot.getVelocities(), velocities)
     np.testing.assert_array_equal(robot.dofs.position_targets, targets)
+    np.testing.assert_array_equal(robot.dofs.velocity_targets, velocity_targets)
     assert world.time == time
 
 
@@ -514,3 +732,29 @@ def test_world_batch_set_step(world, robot):
     np.testing.assert_array_equal(batch.positions, expected)
     # The source is a template; stepping its independent clones leaves it alone.
     np.testing.assert_array_equal(robot.getPositions(), np.zeros(robot.getNumDofs()))
+
+
+@pytest.mark.xfail(strict=True, reason="M1i/M1g/M5b: remapping clones with World-bound step hooks are pending")
+def test_world_batch_remaps_hook(world, robot):
+    world.setGravity([0, 0, 0])
+    robot.joints["shoulder_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    robot.dofs.position_targets = np.zeros(robot.getNumDofs())
+
+    def drive(current):
+        # Stateless and bound through the callback's World, not a source model
+        # captured in a closure. M1g settles the callback signature.
+        current.getSkeleton("robot").dofs.position_targets = np.array([0.5, 0])
+
+    world.hooks.add(dart.StepHook(drive, every=1))
+    before_time = world.time
+    batch = dart.WorldBatch(world, count=3)
+    batch.step(20)
+    assert world.time == before_time
+    np.testing.assert_array_equal(robot.getPositions(), np.zeros(robot.getNumDofs()))
+    np.testing.assert_array_equal(robot.dofs.position_targets, np.zeros(robot.getNumDofs()))
+    # Step the actual source as oracle: a shallow clone that drops the hook
+    # cannot make both the batch and a cloned serial oracle fail identically.
+    for _ in range(20):
+        world.step()
+    assert robot.getPositions()[0] > 0
+    np.testing.assert_array_equal(batch.positions, np.tile(robot.getPositions(), (3, 1)))

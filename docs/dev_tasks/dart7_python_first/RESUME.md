@@ -1,6 +1,16 @@
 # Resume
 
-## Current state (2026-10-12)
+## Current state (2026-10-13)
+
+M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775); its
+`dart7-base` nightly smoke passed all 78 rows, with the pinned source, host
+and digest in [verification](verification.md#m1a-world-step-stages).
+The SDF pose follow-up merged in [#3782](https://github.com/dartsim/dart/pull/3782),
+completing WP-7.0.3b. The independent
+[M1b preparation spike](verification.md#m1b-preparation-scope-spike)
+records unrelated-World invalidation and the passing shared-Skeleton protection
+case; it does not change production code or waive M0's remaining scope and
+inventory acceptance. The existing #3728 and #3729 branches own that work.
 
 M0 is active. The GitHub milestone "DART 7.0.0" (#105, formerly "DART 6.21.0")
 tracks the release, and main's release target reads 7.0.0.
@@ -10,9 +20,9 @@ tracks the release, and main's release target reads 7.0.0.
 | [#3697](https://github.com/dartsim/dart/pull/3697) | WP-7.0.1 and WP-7.0.2 | Merged |
 | [#3698](https://github.com/dartsim/dart/pull/3698) | WP-7.0.3 | Merged |
 | [#3717](https://github.com/dartsim/dart/pull/3717) | WP-7.0.3 backport to `release-6.20` | Merged, for DART 6.20.1 |
-| [#3719](https://github.com/dartsim/dart/pull/3719) | WP-7.0.3b | Merged; four review findings remain open |
+| [#3719](https://github.com/dartsim/dart/pull/3719) and [#3782](https://github.com/dartsim/dart/pull/3782) | WP-7.0.3b and its four-gap follow-up | Merged; packet complete |
 | [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Merged |
-| [#3720](https://github.com/dartsim/dart/pull/3720) | WP-7.0.5 | Merged; the `dart7-base` pin follows M0's exit |
+| [#3720](https://github.com/dartsim/dart/pull/3720) | WP-7.0.5 | Merged; `dart7-base` is pinned and all 78 smoke rows passed |
 | [#3749](https://github.com/dartsim/dart/pull/3749) | WP-7.0.5: nightly Gazebo-preset sleeping rows | Merged |
 | [#3725](https://github.com/dartsim/dart/pull/3725) | WP-7.0.6: version file, gz shim test and contact-surface header probe | Merged |
 | [#3729](https://github.com/dartsim/dart/pull/3729) | WP-7.0.6: gz API inventory | In review |
@@ -48,24 +58,19 @@ packet evidence is in [verification.md](verification.md#demo-consolidation-evide
 1. Land #3728 (WP-7.0.7) and #3729 (gz API inventory); M0 exits then.
    #3741 merged the header-probe fix, replacing the closed #3731, and #3722
    merged the analytical-IK copy fix. Backport #3722 to `release-6.20`.
-2. After M0 exits, pin `dart7-base`, following WP-7.0.5's baseline procedure
-   in [verification.md](verification.md); then open the M1a PR. #3749 already
-   merged the nightly Gazebo-preset sleeping rows, which cover gz's
-   custom-filter replay path.
+2. After M0 exits, continue M1b and the remaining core seams. M1a already
+   merged and `dart7-base` is pinned; preserve that completed baseline.
+   #3749's nightly Gazebo-preset sleeping rows cover gz's custom-filter replay.
 3. In parallel with step 2: M5a's rename table v0 and the published shape and
    query capability matrix. #3750 merged the skel-parser detector fallback
    null-check fix. The matrix and M1b's strict shape rejection must land
    before M1f.
-4. Resolve #3719's open review findings in a follow-up PR on main: rotated
-   inertial poses, the SDF 1.4–1.6 version gate, soft-shape poses other than
-   boxes, and empty quaternion poses. See WP-7.0.3b in
-   [verification.md](verification.md). It does not hold M0's exit.
-5. Open the remaining follow-up packets: a tokenized release-reference check
+4. Open the remaining follow-up packets: a tokenized release-reference check
    (the regular-expression matcher misreads Markdown inside tokens, unusual
    parameter separators and version suffixes, as its 6.x predecessor did), and
    a DART 7 wall-time dashboard (the DART 6 dashboard now tracks `release-6.*`
    only).
-6. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
+5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
    `bullet-cpp` builds for Python 3.15. They do not hold M0's exit.
 
 ## Risks and recovery

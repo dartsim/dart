@@ -125,6 +125,8 @@ Eigen::Isometry3d readSdfPose(
 
   const std::string text = poseElement->GetText() ? poseElement->GetText() : "";
   const auto values = common::split(text);
+  if (values.empty())
+    return Eigen::Isometry3d::Identity();
   const std::size_t count = format == "euler_rpy" ? 6u : 7u;
   if (values.size() != count) {
     throw std::invalid_argument(
@@ -364,17 +366,55 @@ simulation::WorldPtr readSdfFile(
 }
 
 //==============================================================================
+void checkFrameScope(const tinyxml2::XMLElement& scope)
+{
+  const std::string name = scope.Name();
+  for (const char* element : {"frame", "include"}) {
+    if (scope.FirstChildElement(element)) {
+      throw std::invalid_argument(
+          "<" + name + "><" + element
+          + ">: DART does not support SDF frame composition");
+    }
+  }
+  if (name == "model") {
+    if (scope.FirstChildElement("model")) {
+      throw std::invalid_argument("DART does not support nested SDF models");
+    }
+    if (const char* attribute = scope.Attribute("placement_frame")) {
+      const std::string frame = common::trim(attribute);
+      if (!frame.empty() && frame != "__model__") {
+        throw std::invalid_argument(
+            "<model> placement_frame [" + frame
+            + "]: DART does not support SDF placement frames");
+      }
+    }
+  }
+}
+
+//==============================================================================
 bool checkVersion(
     const tinyxml2::XMLElement& sdfElement, const common::Uri& uri)
 {
   const std::string version = getAttributeString(&sdfElement, "version");
   // TODO: We need version aware SDF parser (see #264)
-  // We support 1.4 ~ 1.6.
-  if (version != "1.4" && version != "1.5" && version != "1.6") {
+  if (version != "1.4" && version != "1.5" && version != "1.6"
+      && version != "1.7" && version != "1.8" && version != "1.9") {
     dtwarn << "[SdfParser] The file format of [" << uri.toString()
            << "] was found to be [" << version << "], but we only support SDF "
-           << "1.4, 1.5, and 1.6!\n";
+           << "versions 1.4 through 1.9!\n";
     return false;
+  }
+
+  if (version == "1.7" || version == "1.8" || version == "1.9") {
+    for (const auto* model = sdfElement.FirstChildElement("model"); model;
+         model = model->NextSiblingElement("model"))
+      checkFrameScope(*model);
+    if (const auto* world = sdfElement.FirstChildElement("world")) {
+      checkFrameScope(*world);
+      for (const auto* model = world->FirstChildElement("model"); model;
+           model = model->NextSiblingElement("model"))
+        checkFrameScope(*model);
+    }
   }
 
   return true;
@@ -954,9 +994,11 @@ SDFBodyNode readBodyNode(
     }
 
     // offset
+    Eigen::Matrix3d inertiaRotation = Eigen::Matrix3d::Identity();
     if (hasElement(inertiaElement, "pose")) {
       Eigen::Isometry3d T = readSdfPose(inertiaElement, bodyName);
       properties.mInertia.setLocalCOM(T.translation());
+      inertiaRotation = T.linear();
     }
 
     // inertia
@@ -972,6 +1014,9 @@ SDFBodyNode readBodyNode(
       double iyz = getValueDouble(moiElement, "iyz");
 
       properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
+      properties.mInertia.setMoment(
+          inertiaRotation * properties.mInertia.getMoment()
+          * inertiaRotation.transpose());
     } else if (massSpecified) {
       // Keep the inertia physically meaningful by matching the moment scale
       // to the specified mass; geometry is unknown, so use an isotropic guess.
@@ -1078,6 +1123,12 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
           radius, height, nSlices, nStacks, nRings, totalMass);
     } else {
       dterr << "Unknown soft shape.\n";
+    }
+
+    // The box helper already applies T; the other helpers produce local points.
+    if (!hasElement(geometryEle, "box")) {
+      for (auto& point : softProperties.mPointProps)
+        point.mX0 = T * point.mX0;
     }
 
     // kv
@@ -1419,10 +1470,9 @@ SDFJoint readJoint(
       parent_it = _sdfBodyNodes.find(strParent);
 
       if (parent_it == _sdfBodyNodes.end()) {
-        dterr << "[SdfParser::readJoint] Cannot find a Link named ["
-              << strParent << "] requested as the parent of the Joint named ["
-              << name << "]\n";
-        DART_ASSERT(0);
+        throw std::invalid_argument(
+            "<joint> [" + name + "] parent [" + strParent
+            + "]: DART requires a direct link name or world");
       }
     }
   } else {
@@ -1441,9 +1491,9 @@ SDFJoint readJoint(
     child_it = _sdfBodyNodes.find(strChild);
 
     if (child_it == _sdfBodyNodes.end()) {
-      dterr << "[SdfParser::readJoint] Cannot find a Link named [" << strChild
-            << "] requested as the child of the Joint named [" << name << "]\n";
-      DART_ASSERT(0);
+      throw std::invalid_argument(
+          "<joint> [" + name + "] child [" + strChild
+          + "]: DART requires a direct link name");
     }
   } else {
     dterr << "[SdfParser::readJoint] You must set the child link for the Joint "
@@ -1562,6 +1612,22 @@ static bool readAxisElement(
 
   // xyz
   Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+  if (const char* attribute
+      = getElement(axisElement, "xyz")->Attribute("expressed_in")) {
+    const std::string frame = common::trim(attribute);
+    if (!frame.empty()) {
+      if (hasElement(axisElement, "use_parent_model_frame")) {
+        throw std::invalid_argument(
+            "<axis><xyz> expressed_in conflicts with use_parent_model_frame");
+      }
+      if (frame != "__model__") {
+        throw std::invalid_argument(
+            "<axis><xyz> expressed_in [" + frame
+            + "]: DART does not support SDF frame semantics for that frame");
+      }
+      useParentModelFrame = true;
+    }
+  }
   if (useParentModelFrame) {
     xyz = _parentModelFrame.rotation() * xyz;
   }
