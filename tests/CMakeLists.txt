@@ -148,6 +148,17 @@ add_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
 )
 
+if(TARGET dart-collision-ode)
+  add_test(
+    NAME test_DARTConfigODE
+    COMMAND
+      "${CMAKE_COMMAND}" "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+      "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigODE"
+      "-DTEST_CONFIG=$<CONFIG>" "-DTEST_PREFIX_PATH=${CMAKE_PREFIX_PATH}" -P
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigODE.cmake"
+  )
+endif()
+
 # Print tests
 dart_get_tests(integration_tests "integration")
 dart_get_tests(regression_tests "regression")

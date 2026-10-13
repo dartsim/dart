@@ -2,6 +2,7 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
 
@@ -46,6 +47,7 @@
 #include <dart/dynamics/ConeShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
 #include <dart/dynamics/EllipsoidShape.hpp>
+#include <dart/dynamics/HeightmapShape.hpp>
 #include <dart/dynamics/LineSegmentShape.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/MultiSphereConvexHullShape.hpp>
@@ -55,6 +57,7 @@
 #include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/SoftMeshShape.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/VoxelGridShape.hpp>
 
 #include <dart/math/Geometry.hpp>
 
@@ -70,10 +73,74 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart {
 namespace python {
+
+#if HAVE_OCTOMAP
+namespace {
+
+// Single points reach OctoMap as doubles, while rays and point clouds are
+// narrowed to float first; validate the coordinates OctoMap will use.
+void validateVoxelPoint(
+    const dart::dynamics::VoxelGridShape* shape,
+    const Eigen::Vector3d& point,
+    bool narrowed,
+    const char* name = "point")
+{
+  const Eigen::Vector3d used
+      = narrowed ? point.cast<float>().cast<double>() : point;
+  if (!used.allFinite())
+    throw nb::value_error((std::string(name) + " must be finite").c_str());
+
+  const auto octree = shape->getOctree();
+  const double factor = 1.0 / octree->getResolution();
+  const double maxKey = std::ldexp(1.0, octree->getTreeDepth() - 1);
+  for (int i = 0; i < 3; ++i) {
+    // OctoMap casts to int before checking bounds; validate in double first.
+    const double key = std::floor(factor * used[i]);
+    if (!(key >= -maxKey && key < maxKey))
+      throw nb::value_error(
+          (std::string(name) + " lies outside the voxel grid").c_str());
+  }
+}
+
+// OctoMap traces each sensor ray into a fixed buffer of KeyRay::maxSize keys,
+// which a longer ray overruns; reject such rays before inserting anything.
+void validateVoxelRay(
+    const dart::dynamics::VoxelGridShape* shape,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to)
+{
+  const double factor = 1.0 / shape->getOctree()->getResolution();
+  const auto key = [factor](double coordinate) {
+    return std::floor(
+        factor * static_cast<double>(static_cast<float>(coordinate)));
+  };
+  double cells = 0.0;
+  for (int i = 0; i < 3; ++i)
+    cells += std::abs(key(to[i]) - key(from[i]));
+  // The traversal adds at most one key per crossed cell, plus rounding slack.
+  static const std::size_t maxKeys = octomap::KeyRay().sizeMax();
+  if (cells + 4.0 > static_cast<double>(maxKeys))
+    throw nb::value_error(
+        "the ray from sensorOrigin to a point crosses too many voxels for "
+        "OctoMap");
+  // OctoMap normalizes the ray in float, which fails for a length that
+  // underflows to zero. The resolution cap keeps lengths far from overflow.
+  if (cells > 0.0) {
+    const float length = (to.cast<float>() - from.cast<float>()).norm();
+    if (!(length > 0.0f))
+      throw nb::value_error(
+          "the ray from sensorOrigin to a point is too short for OctoMap's "
+          "float arithmetic");
+  }
+}
+
+} // namespace
+#endif
 
 DART_SUPPRESS_DEPRECATED_BEGIN
 
@@ -225,6 +292,103 @@ void Shape(nb::module_& m)
       DARTPY_DEFINE_DATA_VARIANCE(DYNAMIC          )
       .export_values();
   // clang-format on
+
+  dartnb::dart_class<dart::dynamics::HeightmapShapef, dart::dynamics::Shape>(
+      m, "HeightmapShapef")
+      .def(dartnb::init<>())
+      .def(
+          "setScale",
+          &dart::dynamics::HeightmapShapef::setScale,
+          nb::arg("scale"),
+          "Set the 3-vector scale; C++ ignores non-finite or non-positive "
+          "values.")
+      .def(
+          "getScale",
+          &dart::dynamics::HeightmapShapef::getScale,
+          nb::rv_policy::copy)
+      .def(
+          "setHeightField",
+          nb::overload_cast<
+              const dart::dynamics::HeightmapShapef::HeightField&>(
+              &dart::dynamics::HeightmapShapef::setHeightField),
+          nb::arg("heights"),
+          "Copy a 2-D float32 array without transposition: rows are depth "
+          "along "
+          "-y, columns are width along x, and values are z heights. "
+          "C++ ignores empty fields and non-finite heights.")
+      .def(
+          "getHeightField",
+          &dart::dynamics::HeightmapShapef::getHeightField,
+          nb::rv_policy::copy,
+          "Return an independent 2-D float32 array: rows along -y, columns "
+          "along x, and z heights as values, without transposition.")
+      .def("getMinHeight", &dart::dynamics::HeightmapShapef::getMinHeight)
+      .def("getMaxHeight", &dart::dynamics::HeightmapShapef::getMaxHeight)
+      .def_static(
+          "getStaticType", &dart::dynamics::HeightmapShapef::getStaticType);
+
+#if HAVE_OCTOMAP
+  dartnb::dart_class<dart::dynamics::VoxelGridShape, dart::dynamics::Shape>(
+      m, "VoxelGridShape")
+      .def(
+          dartnb::factory(+[](double resolution) {
+            // OctoMap squares ray components in float, so the upper bound
+            // keeps every ray between addressable points far below float's
+            // range; the lower bound keeps 1 / resolution finite.
+            if (!(resolution >= 1e-6 && resolution <= 1e6))
+              throw nb::value_error("resolution must be within [1e-6, 1e6]");
+            return std::make_shared<dart::dynamics::VoxelGridShape>(resolution);
+          }),
+          nb::arg("resolution") = 0.01)
+      .def(
+          "updateOccupancy",
+          +[](dart::dynamics::VoxelGridShape* self,
+              const Eigen::Vector3d& point,
+              bool occupied) {
+            validateVoxelPoint(self, point, false);
+            self->updateOccupancy(point, occupied);
+          },
+          nb::arg("point"),
+          nb::arg("occupied") = true)
+      .def(
+          "updateOccupancy",
+          +[](dart::dynamics::VoxelGridShape* self,
+              // The (N, 3) shape is part of overload matching, so a single
+              // point given as a column vector reaches the overload above.
+              nb::ndarray<
+                  nb::numpy,
+                  const double,
+                  nb::shape<-1, 3>,
+                  nb::c_contig,
+                  nb::device::cpu> points,
+              const Eigen::Vector3d& sensorOrigin) {
+            validateVoxelPoint(self, sensorOrigin, true, "sensorOrigin");
+
+            const auto view = points.view<nb::ndim<2>>();
+            octomap::Pointcloud cloud;
+            cloud.reserve(points.shape(0));
+            for (std::size_t i = 0; i < points.shape(0); ++i) {
+              const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
+              validateVoxelPoint(self, point, true);
+              validateVoxelRay(self, sensorOrigin, point);
+              cloud.push_back(point.x(), point.y(), point.z());
+            }
+            self->updateOccupancy(
+                cloud, sensorOrigin, dart::dynamics::Frame::World());
+          },
+          nb::arg("points"),
+          nb::arg("sensorOrigin") = Eigen::Vector3d::Zero().eval())
+      .def(
+          "getOccupancy",
+          +[](const dart::dynamics::VoxelGridShape* self,
+              const Eigen::Vector3d& point) {
+            validateVoxelPoint(self, point, false);
+            return self->getOccupancy(point);
+          },
+          nb::arg("point"))
+      .def_static(
+          "getStaticType", &dart::dynamics::VoxelGridShape::getStaticType);
+#endif
 
   dartnb::dart_class<dart::dynamics::BoxShape, dart::dynamics::Shape>(
       m, "BoxShape")
