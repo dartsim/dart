@@ -10,6 +10,7 @@ class ResourceRetriever;
 }
 namespace dynamics {
 class ContactInverseDynamics;
+class HierarchicalIK;
 class Shape;
 class SimpleFrame;
 } // namespace dynamics
@@ -18,8 +19,9 @@ class Problem;
 class Solver;
 } // namespace optimizer
 namespace constraint {
+class BalanceConstraint;
 class ConstraintSolver;
-}
+} // namespace constraint
 namespace utils {
 class CompositeResourceRetriever;
 class DartLoader;
@@ -99,10 +101,12 @@ auto enumerate_gc(T& owner, GcEdges& edges)
   enumerate_reference_frame_gc(owner.mReferenceFrame, edges);
 }
 void enumerate_gc(dart::collision::CollisionOption&, GcEdges&);
+void enumerate_gc(dart::constraint::BalanceConstraint&, GcEdges&);
 void enumerate_gc(dart::constraint::ConstraintSolver&, GcEdges&);
 void enumerate_gc(dart::utils::CompositeResourceRetriever&, GcEdges&);
 void enumerate_gc(dart::utils::DartLoader&, GcEdges&);
 void enumerate_gc(dart::dynamics::InverseKinematics&, GcEdges&);
+void enumerate_gc(dart::dynamics::HierarchicalIK&, GcEdges&);
 void enumerate_gc(dart::simulation::World&, GcEdges&);
 void enumerate_gc(dart::dynamics::Skeleton&, GcEdges&);
 void enumerate_gc(dart::dynamics::BodyNode&, GcEdges&);
@@ -130,6 +134,8 @@ auto& gc_owner(T& value)
     return static_cast<dart::dynamics::BodyNode&>(value);
   else if constexpr (std::is_base_of_v<dart::dynamics::Shape, T>)
     return static_cast<dart::dynamics::Shape&>(value);
+  else if constexpr (std::is_base_of_v<dart::dynamics::HierarchicalIK, T>)
+    return static_cast<dart::dynamics::HierarchicalIK&>(value);
   else
     return value;
 }

@@ -33,6 +33,7 @@
 #include "TestHelpers.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/config.hpp"
+#include "dart/constraint/BalanceConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -49,6 +50,7 @@
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/MathTypes.hpp"
+#include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/Problem.hpp"
 #include "dart/optimizer/Solver.hpp"
 
@@ -165,6 +167,191 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
   EXPECT_FALSE(ik->solveAndApply(true));
   EXPECT_FALSE(
       equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+}
+
+//==============================================================================
+TEST(InverseKinematics, DoNotApplySolutionWithoutSolver)
+{
+  auto skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd original = Eigen::VectorXd::Constant(6, 0.25);
+  skel->setPositions(original);
+
+  const auto check = [&skel, &original](const auto& ik) {
+    ik->setSolver(nullptr);
+    testing::internal::CaptureStderr();
+    EXPECT_FALSE(ik->solveAndApply());
+    for (bool allowIncompleteResult : {false, true}) {
+      EXPECT_FALSE(ik->solveAndApply(allowIncompleteResult));
+      Eigen::VectorXd solution;
+      EXPECT_FALSE(ik->solveAndApply(solution, allowIncompleteResult));
+      EXPECT_EQ(solution.size(), 0);
+      solution = Eigen::VectorXd::Zero(1);
+      EXPECT_FALSE(ik->solveAndApply(solution, allowIncompleteResult));
+      EXPECT_EQ(solution.size(), 1);
+    }
+    const auto warnings = testing::internal::GetCapturedStderr();
+    EXPECT_NE(warnings.find("is a nullptr"), std::string::npos);
+    EXPECT_EQ(warnings.find("setPositions"), std::string::npos);
+    EXPECT_TRUE(equals(skel->getPositions(), original));
+  };
+
+  check(skel->getBodyNode(0)->getIK(true));
+  check(skel->getIK(true));
+}
+
+//==============================================================================
+TEST(HierarchicalIK, CloneWithoutSolver)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+
+  const auto check = [&target](const auto& cloned) {
+    ASSERT_NE(cloned, nullptr);
+    EXPECT_EQ(cloned->getSkeleton(), target);
+    EXPECT_EQ(cloned->getSolver(), nullptr);
+    EXPECT_EQ(cloned->getObjective(), nullptr);
+    EXPECT_EQ(cloned->getNullSpaceObjective(), nullptr);
+  };
+
+  auto wholeBody = source->getIK(true);
+  wholeBody->setSolver(nullptr);
+  check(wholeBody->clone(target));
+  check(wholeBody->cloneWholeBodyIK(target));
+
+  auto composite = CompositeIK::create(source);
+  composite->setSolver(nullptr);
+  check(composite->clone(target));
+  check(composite->cloneCompositeIK(target));
+}
+
+//==============================================================================
+TEST(WholeBodyIK, ClonePreservesSharedObjectives)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  auto ik = source->getIK(true);
+  auto objective = std::make_shared<optimizer::ModularFunction>();
+  objective->setCostFunction(
+      [](const Eigen::VectorXd& x) { return x.squaredNorm(); });
+  objective->setGradientFunction(
+      [](const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) {
+        grad = 2 * x;
+      });
+  auto nullSpaceObjective = std::make_shared<optimizer::ModularFunction>();
+  nullSpaceObjective->setCostFunction(
+      [](const Eigen::VectorXd& x) { return 2 * x.squaredNorm(); });
+  nullSpaceObjective->setGradientFunction(
+      [](const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) {
+        grad = 4 * x;
+      });
+  ik->setObjective(objective);
+  ik->setNullSpaceObjective(nullSpaceObjective);
+
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.25);
+  const auto check = [&](const auto& cloned) {
+    EXPECT_EQ(cloned->getObjective(), objective);
+    EXPECT_EQ(cloned->getNullSpaceObjective(), nullSpaceObjective);
+    EXPECT_TRUE(cloned->hasNullSpaceObjective());
+    auto aggregate = cloned->getProblem()->getObjective();
+    ASSERT_NE(aggregate, nullptr);
+    EXPECT_DOUBLE_EQ(aggregate->eval(x), 3 * x.squaredNorm());
+    Eigen::VectorXd grad = Eigen::VectorXd::Zero(6);
+    aggregate->evalGradient(x, grad);
+    EXPECT_TRUE(equals(grad, (6 * x).eval()));
+  };
+  check(ik->clone(target));
+  check(ik->cloneWholeBodyIK(target));
+}
+
+//==============================================================================
+TEST(WholeBodyIK, CloneRebindsObjectives)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd original = Eigen::VectorXd::Constant(6, -0.25);
+  source->setPositions(original);
+  auto ik = source->getIK(true);
+  auto objective = std::make_shared<constraint::BalanceConstraint>(ik);
+  auto nullSpaceObjective = std::make_shared<constraint::BalanceConstraint>(ik);
+  ik->setObjective(objective);
+  ik->setNullSpaceObjective(nullSpaceObjective);
+
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.25);
+  const auto check = [&](const auto& cloned) {
+    EXPECT_NE(cloned->getObjective(), objective);
+    EXPECT_NE(cloned->getNullSpaceObjective(), nullSpaceObjective);
+    for (const auto& function :
+         {cloned->getObjective(), cloned->getNullSpaceObjective()}) {
+      ASSERT_NE(
+          std::dynamic_pointer_cast<constraint::BalanceConstraint>(function),
+          nullptr);
+      target->resetPositions();
+      function->eval(x);
+      EXPECT_TRUE(equals(target->getPositions(), x));
+      EXPECT_TRUE(equals(source->getPositions(), original));
+    }
+  };
+  check(ik->clone(target));
+  check(ik->cloneWholeBodyIK(target));
+}
+
+//==============================================================================
+TEST(BalanceConstraint, HierarchyClonePreservesSettings)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  auto ik = source->getIK(true);
+  using Balance = constraint::BalanceConstraint;
+  auto balance = std::make_shared<Balance>(
+      ik, Balance::SHIFT_COM, Balance::OPTIMIZE_BALANCE);
+  balance->setName("configured balance");
+  balance->setOptimizationTolerance(2e-5);
+  balance->setPseudoInverseDamping(0.125);
+  ik->getProblem()->setObjective(balance);
+
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+  auto cloned = ik->clone(target);
+  auto copy = std::dynamic_pointer_cast<Balance>(
+      cloned->getProblem()->getObjective());
+  ASSERT_NE(copy, nullptr);
+  EXPECT_NE(copy, balance);
+  EXPECT_EQ(copy->getName(), balance->getName());
+  EXPECT_EQ(copy->getBalanceMethod(), balance->getBalanceMethod());
+  EXPECT_EQ(copy->getErrorMethod(), balance->getErrorMethod());
+  EXPECT_DOUBLE_EQ(
+      copy->getOptimizationTolerance(), balance->getOptimizationTolerance());
+  EXPECT_DOUBLE_EQ(
+      copy->getPseudoInverseDamping(), balance->getPseudoInverseDamping());
+}
+
+//==============================================================================
+TEST(InverseKinematics, ExpiredHierarchyConstraintGradientIsGuarded)
+{
+  optimizer::FunctionPtr constraint;
+  {
+    auto skel = Skeleton::create();
+    skel->createJointAndBodyNodePair<FreeJoint>();
+    constraint = skel->getIK(true)->getProblem()->getEqConstraint(0);
+  }
+  // The Skeleton, and with it its whole-body IK, no longer exist.
+  ASSERT_NE(constraint, nullptr);
+  const Eigen::VectorXd x = Eigen::VectorXd::Zero(6);
+  Eigen::VectorXd grad = Eigen::VectorXd::Ones(6);
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+#ifdef NDEBUG
+  constraint->evalGradient(x, gradMap);
+  EXPECT_TRUE(grad.isZero());
+#elif GTEST_HAS_DEATH_TEST
+  EXPECT_DEATH(constraint->evalGradient(x, gradMap), "");
+#endif
 }
 
 //==============================================================================
