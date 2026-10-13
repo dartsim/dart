@@ -587,7 +587,9 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
 void HierarchicalIK::copyOverSetup(
     const std::shared_ptr<HierarchicalIK>& _otherIK) const
 {
-  _otherIK->setSolver(mSolver->clone());
+  _otherIK->setObjective(cloneIkFunc(mObjective, _otherIK));
+  _otherIK->setNullSpaceObjective(cloneIkFunc(mNullSpaceObjective, _otherIK));
+  _otherIK->setSolver(mSolver ? mSolver->clone() : nullptr);
 
   const std::shared_ptr<optimizer::Problem>& newProblem
       = _otherIK->getProblem();

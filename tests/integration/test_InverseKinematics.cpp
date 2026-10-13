@@ -42,6 +42,7 @@
 #include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/MathTypes.hpp"
+#include "dart/optimizer/Function.hpp"
 #include "dart/optimizer/Problem.hpp"
 #include "dart/optimizer/Solver.hpp"
 
@@ -184,6 +185,108 @@ TEST(InverseKinematics, DoNotApplySolutionWithoutSolver)
 
   check(skel->getBodyNode(0)->getIK(true));
   check(skel->getIK(true));
+}
+
+//==============================================================================
+TEST(HierarchicalIK, CloneWithoutSolver)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+
+  const auto check = [&target](const auto& cloned) {
+    ASSERT_NE(cloned, nullptr);
+    EXPECT_EQ(cloned->getSkeleton(), target);
+    EXPECT_EQ(cloned->getSolver(), nullptr);
+    EXPECT_EQ(cloned->getObjective(), nullptr);
+    EXPECT_EQ(cloned->getNullSpaceObjective(), nullptr);
+  };
+
+  auto wholeBody = source->getIK(true);
+  wholeBody->setSolver(nullptr);
+  check(wholeBody->clone(target));
+  check(wholeBody->cloneWholeBodyIK(target));
+
+  auto composite = CompositeIK::create(source);
+  composite->setSolver(nullptr);
+  check(composite->clone(target));
+  check(composite->cloneCompositeIK(target));
+}
+
+//==============================================================================
+TEST(WholeBodyIK, ClonePreservesSharedObjectives)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  auto ik = source->getIK(true);
+  auto objective = std::make_shared<optimizer::ModularFunction>();
+  objective->setCostFunction(
+      [](const Eigen::VectorXd& x) { return x.squaredNorm(); });
+  objective->setGradientFunction(
+      [](const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) {
+        grad = 2 * x;
+      });
+  auto nullSpaceObjective = std::make_shared<optimizer::ModularFunction>();
+  nullSpaceObjective->setCostFunction(
+      [](const Eigen::VectorXd& x) { return 2 * x.squaredNorm(); });
+  nullSpaceObjective->setGradientFunction(
+      [](const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) {
+        grad = 4 * x;
+      });
+  ik->setObjective(objective);
+  ik->setNullSpaceObjective(nullSpaceObjective);
+
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.25);
+  const auto check = [&](const auto& cloned) {
+    EXPECT_EQ(cloned->getObjective(), objective);
+    EXPECT_EQ(cloned->getNullSpaceObjective(), nullSpaceObjective);
+    EXPECT_TRUE(cloned->hasNullSpaceObjective());
+    auto aggregate = cloned->getProblem()->getObjective();
+    ASSERT_NE(aggregate, nullptr);
+    EXPECT_DOUBLE_EQ(aggregate->eval(x), 3 * x.squaredNorm());
+    Eigen::VectorXd grad = Eigen::VectorXd::Zero(6);
+    aggregate->evalGradient(x, grad);
+    EXPECT_TRUE(equals(grad, (6 * x).eval()));
+  };
+  check(ik->clone(target));
+  check(ik->cloneWholeBodyIK(target));
+}
+
+//==============================================================================
+TEST(WholeBodyIK, CloneRebindsObjectives)
+{
+  auto source = Skeleton::create();
+  source->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd original = Eigen::VectorXd::Constant(6, -0.25);
+  source->setPositions(original);
+  auto ik = source->getIK(true);
+  auto objective = std::make_shared<constraint::BalanceConstraint>(ik);
+  auto nullSpaceObjective = std::make_shared<constraint::BalanceConstraint>(ik);
+  ik->setObjective(objective);
+  ik->setNullSpaceObjective(nullSpaceObjective);
+
+  auto target = Skeleton::create();
+  target->createJointAndBodyNodePair<FreeJoint>();
+  const Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.25);
+  const auto check = [&](const auto& cloned) {
+    EXPECT_NE(cloned->getObjective(), objective);
+    EXPECT_NE(cloned->getNullSpaceObjective(), nullSpaceObjective);
+    for (const auto& function :
+         {cloned->getObjective(), cloned->getNullSpaceObjective()}) {
+      ASSERT_NE(
+          std::dynamic_pointer_cast<constraint::BalanceConstraint>(function),
+          nullptr);
+      target->resetPositions();
+      function->eval(x);
+      EXPECT_TRUE(equals(target->getPositions(), x));
+      EXPECT_TRUE(equals(source->getPositions(), original));
+    }
+  };
+  check(ik->clone(target));
+  check(ik->cloneWholeBodyIK(target));
 }
 
 //==============================================================================

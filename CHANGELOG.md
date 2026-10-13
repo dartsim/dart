@@ -123,8 +123,9 @@
     mimics only a later DoF now gets its constraint.
     [#3700](https://github.com/dartsim/dart/pull/3700)
 
-  * Preserve `BalanceConstraint` settings when cloning IK hierarchies, and
-    skip applying IK solutions with the wrong number of joint positions,
+  * Preserve hierarchy-level objectives and `BalanceConstraint` settings when
+    cloning IK hierarchies, and allow cloning with a cleared solver. Skip
+    applying IK solutions with the wrong number of joint positions,
     including empty results from a cleared solver. Stop `HierarchicalIK`
     constraint gradients from crashing once their `HierarchicalIK` has been
     destroyed; like the constraint value, the gradient now reports the misuse

@@ -212,6 +212,63 @@ def test_whole_body_ik_objective_accessors():
     assert ik.getNullSpaceObjective() is None
 
 
+@pytest.mark.parametrize("clone_method", ["clone", "cloneWholeBodyIK"])
+def test_whole_body_ik_clone_without_solver(clone_method):
+    # Keep a null-solver regression from crashing the whole pytest process.
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            textwrap.dedent(
+                f"""
+                import dartpy as dart
+                skeleton = dart.dynamics.Skeleton()
+                skeleton.createFreeJointAndBodyNodePair()
+                ik = skeleton.getIK(True)
+                ik.setSolver(None)
+                target = dart.dynamics.Skeleton()
+                target.createFreeJointAndBodyNodePair()
+                cloned = ik.{clone_method}(target)
+                assert cloned.getSolver() is None
+                assert cloned.getProblem().getDimension() == 6
+                """
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("clone_method", ["clone", "cloneWholeBodyIK"])
+def test_whole_body_ik_clone_preserves_objectives(clone_method):
+    class Objective(dart.optimizer.Function):
+        def eval(self, x):
+            return float(np.dot(x, x))
+
+    skel = dart.dynamics.Skeleton()
+    skel.createFreeJointAndBodyNodePair()
+    ik = skel.getIK(True)
+    objective = Objective()
+    null_space_objective = Objective()
+    ik.setObjective(objective)
+    ik.setNullSpaceObjective(null_space_objective)
+
+    target = dart.dynamics.Skeleton()
+    target.createFreeJointAndBodyNodePair()
+    cloned = getattr(ik, clone_method)(target)
+    assert cloned.getObjective() is objective
+    assert cloned.getNullSpaceObjective() is null_space_objective
+
+    ik.setObjective(None)
+    ik.setNullSpaceObjective(None)
+    assert cloned.getObjective() is objective
+    assert cloned.getNullSpaceObjective() is null_space_objective
+    assert cloned.getObjective().eval(np.ones(6)) == 6
+    assert cloned.getNullSpaceObjective().eval(np.ones(6)) == 6
+
+
 def test_python_analytical_accepts_ssik_like_solutions():
     skel, body, ik, dofs = _create_free_joint_ik()
     expected = np.linspace(0.1, 0.6, len(dofs))
