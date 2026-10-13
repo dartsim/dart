@@ -292,6 +292,8 @@ public:
   bool handleKey(int key);
 
 private:
+  friend class AppTestAccess;
+
   enum class ScenePanelTab
   {
     Scene,
@@ -361,6 +363,7 @@ private:
   int stopRun();
   void printWorld() const;
   void ensureViewerConfigured();
+  void startSimulation();
   void initializeGuiTheme();
   void setGuiScale(double scale);
   void updateAutomaticGuiScale();
