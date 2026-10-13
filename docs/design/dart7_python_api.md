@@ -139,6 +139,11 @@ every new member needs a use case:
 - sub-objects: `world.collision`, `world.solver`, `world.sensors`,
   `world.hooks` and `world.constraints`.
 
+The separate keyword-only overload `World(*, config=...)` consumes a typed
+`WorldConfig`; mixing it with individual constructor options raises `TypeError`.
+Python configuration defaults select DART, while the C++ defaults remain FCL.
+M1e/M5 settle the bound configuration fields without exposing allocator internals.
+
 dartpy's `dart.World` and `dart.io.load_world` for MJCF default to the native
 DART collision detector, exposed through `world.collision.detector`. The
 MJCF switch belongs only in `dart.io.load_world`; the C++

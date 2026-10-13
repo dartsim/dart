@@ -731,15 +731,15 @@ Known gaps:
   | --- | --- |
   | M1a / WP-7.0.5 | Completed stage/baseline evidence; core bit-identical and performance gates |
   | M1b | Compiled edit/frozen membership and owned-object mutation; edited-DOF stepping after recompilation; unsupported-shape rejection |
-  | M1c | Snapshot channels/time/compatible clone/structural rejection; exact contact/sleep checkpoint replay |
+  | M1c | Snapshot channels/time/compatible clone/structural rejection; exact contact/sleep and hook-state checkpoint replay; parameter/topology/solver mismatch rejection |
   | M1d | Counted-vs-serial motion, bool rejection, GIL progress, synchronized busy reads and bounded re-entrant rejection |
   | M1e / M1f | Typed nondefault primary solver; Python World and MJCF DART detector defaults |
   | M1g | Both bounded compliant servos, persistent channels and global hook decimation |
   | M1h | IMU orientation, joint-state motion, gravity-dependent support wrench and changing contacts |
-  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook and selected-row snapshot broadcasting |
+  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook, selected-row snapshot broadcasting and per-clone parameters |
   | M2 | Compiled preparation plus allocation, numeric and performance gates in the core feature PRs |
   | M3 / M4 | Optional/gated work; they do not block the required snapshot/checkpoint contracts |
-  | M5 native API | Named collections, readonly copies, Transform/Rotation, loaders/builders/ownership, manual constraints, Collider identity/shared-node capabilities, reset lifecycle, named errors and logging |
+  | M5 native API | Named model/frame collections, readonly copies, Transform validation and Rotation, configurable loaders/builders/ownership, manual constraints, Collider identity/shared-node capabilities, reset lifecycle, named errors and logging |
   | M5 package/tooling | Rename inventory, private-extension/wheel audits, stub-drift/new-Any/pyright checks and codemod round trips in their dedicated PRs |
   | M6b | RGB, metric depth, node segmentation lookup, Material, passive sync, bounded managed viewing and legacy GUI import removal |
   | M7 / WP-7.0.6 / WP-7.0.8 | Fresh RC-wheel acceptance/slim import, Gazebo compatibility and separately owned maintenance wheels |
@@ -815,6 +815,33 @@ Known gaps:
     pending-feature failures and two native passes. Lint, check-lint and
     public-path checks pass. The last full Python run remains `740426529`;
     these representative tests add no native implementation.
+- **Configuration and persistence follow-up** (`e4b7b44e0` review):
+  - The design explicitly defines a separate keyword-only `World(config=...)`
+    overload, exclusive with individual constructor options. Its typed PGS
+    marker also requires the Python DART default and rejects positional or
+    mixed configuration. Native allocator fields are outside the Python API.
+  - Selected clones receive distinct time steps through `set_parameter` and
+    match serial Worlds with those parameters; the template stays unchanged.
+    Transform validation rejects non-finite input, invalid matrices,
+    reflections, shear and conflicting forms, with an explicit normalization
+    projection case. Constructor spellings/tolerances remain with M5.
+  - Checkpoints reject same-size structural and distinct primary-solver
+    mismatches without partial restoration. A callable with declared Python
+    state drives changing controls through exact replay; undeclarable hook
+    state must make capture fail. Build/platform/extension compatibility and
+    the full configuration matrix remain feature-owner release obligations.
+  - Detached SimpleFrames exercise collection lookup, ownership rejection,
+    removal and transfer. The loader resolves a package URI to a real mesh
+    and distinguishes fixed zero-DOF from floating six-DOF root models.
+  - Native probes confirm the package mesh/mobility fixture, frame membership
+    setup, distinct solver types, per-row time-step motion and six exact
+    replay frames from the stateful control fixture. Current native Worlds
+    allow shared frame membership; the final Python ownership guard is pending.
+  - Two independent source reviews are clean. Focused guarded pytest reports
+    two native passes and 50 strict XFAILs; `--runxfail` reports 50 intended
+    pending-feature failures and two native passes. Lint, check-lint and
+    public-path checks pass. The last full Python run remains `740426529`;
+    these representative checks do not implement the future runtime features.
 
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame

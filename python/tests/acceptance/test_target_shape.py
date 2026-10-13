@@ -72,11 +72,18 @@ def test_load_world_mjcf_detector_default(tmp_path):
 
 @pytest.mark.xfail(strict=True, reason="M1e/M5b: WorldConfig typed solver selection is pending")
 def test_world_config_solver_selection():
-    # M1e/M5b settle the selector, construction and primary_solver observer
-    # spelling. Select a primary PGS solver, not Dantzig with a PGS fallback.
+    # M1e/M5b settle the selector and primary_solver observer spelling. Select
+    # a primary PGS solver, not Dantzig with a PGS fallback. The separate
+    # configuration constructor excludes individual World options.
     config = dart.simulation.WorldConfig(primary_solver=dart.constraint.SolverType.PGS)
     world = dart.World(config=config)
     assert isinstance(world.solver.primary_solver, dart.constraint.PgsBoxedLcpSolver)
+    assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
+    constructor = dart.World
+    with pytest.raises(TypeError):
+        constructor(config)
+    with pytest.raises(TypeError):
+        constructor(config=config, time_step=0.002)
 
 
 @pytest.mark.xfail(
@@ -177,6 +184,54 @@ def test_loader_failures(tmp_path):
     path.write_text('<mujoco><worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>')
     with pytest.raises(Exception):
         load_model(path)
+
+
+@pytest.mark.xfail(strict=True, reason="M5: load_model fixed_base and explicit package-directory resolution are pending")
+def test_load_model_options(tmp_path):
+    load_model = dart.io.load_model
+    package = tmp_path / "package"
+    package.mkdir()
+    (package / "mesh.obj").write_text(
+        "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+        "f 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n"
+    )
+    path = tmp_path / "robot.urdf"
+    path.write_text(
+        '<robot name="packaged"><link name="root"><visual><geometry>'
+        '<mesh filename="package://fixture/mesh.obj"/>'
+        '</geometry></visual></link></robot>'
+    )
+    with pytest.raises(Exception):
+        load_model(path)
+    # M5 settles mapping spelling; explicit package resolution must preserve
+    # the actual mesh, and the fixed_base option must change root mobility.
+    for fixed, dofs in ((True, 0), (False, 6)):
+        model = load_model(path, fixed_base=fixed, package_dirs={"fixture": package})
+        assert model.num_dofs == dofs
+        assert len(model.links) == 1
+        assert len(model.links[0].visuals) == 1
+        assert isinstance(model.links[0].visuals[0].shape, dart.dynamics.MeshShape)
+
+
+@pytest.mark.xfail(strict=True, reason="M5b: World.add/remove and detached ownership for SimpleFrame are pending")
+def test_world_frame_membership(world):
+    frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "marker")
+    assert world.add(frame) == frame
+    assert len(world.frames) == 1
+    assert world.frames[0] == frame
+    assert world.frames["marker"] == frame
+    assert list(world.frames) == [frame]
+    assert list(world.frames.names) == ["marker"]
+    other = dart.simulation.World()
+    add = other.add
+    with pytest.raises(Exception):
+        add(frame)
+    assert list(world.frames) == [frame]
+    assert len(other.frames) == 0
+    world.remove(frame)
+    assert len(world.frames) == 0
+    assert other.add(frame) == frame
+    assert list(other.frames) == [frame]
 
 
 @pytest.mark.xfail(strict=True, reason="M5: multi-model rejection and named model selection are pending")
@@ -660,6 +715,7 @@ def test_dof_arrays_are_read_only_copies(robot, channel):
 
 @pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
 def test_transform_composition():
+    transform = dart.Transform
     # A quarter turn about x keeps the composition order observable.
     half = np.pi / 4
     parent = dart.Transform(
@@ -672,6 +728,23 @@ def test_transform_composition():
         parent.wxyz[0] = 0
     np.testing.assert_array_equal(parent.wxyz, quaternion)
     np.testing.assert_array_equal(parent @ np.zeros(3), (1, 2, 3))
+    # M5 calibrates tolerances and settles constructor forms. These gross
+    # invalid inputs must raise ValueError rather than enter the simulation.
+    reflection = np.diag([-1, 1, 1])
+    shear = np.array([[1, 0.25, 0], [0, 1, 0], [0, 0, 1]])
+    for options in (
+        {"translation": (np.inf, 0, 0)},
+        {"wxyz": (np.nan, 0, 0, 0)},
+        {"rotation": np.diag([2, 1, 1])},
+        {"rotation": reflection},
+        {"rotation": np.eye(3), "wxyz": (1, 0, 0, 0)},
+        {"rotation": reflection, "normalize": True},
+        {"rotation": shear, "normalize": True},
+    ):
+        with pytest.raises(ValueError):
+            transform(**options)
+    projected = transform(rotation=1.001 * np.eye(3), normalize=True)
+    np.testing.assert_allclose(projected @ np.eye(3), np.eye(3), rtol=0, atol=1e-12)
 
 
 @pytest.mark.xfail(strict=True, reason="M5: immutable Rotation values and point application are pending")
@@ -781,6 +854,11 @@ def test_capture_restore_state(world, robot):
 )
 def test_capture_restore_checkpoint(world, contact_box):
     robot = contact_box
+    native_solver = dart.constraint.BoxedLcpConstraintSolver()
+    primary = native_solver.getBoxedLcpSolver()
+    alternate = native_solver.getSecondaryBoxedLcpSolver()
+    assert primary.getType() != alternate.getType()
+    world.getConstraintSolver().setBoxedLcpSolver(primary)
     options = world.getDeactivationOptions()
     options.mEnabled = True
     options.mTimeUntilSleep = 5 * world.getTimeStep()
@@ -828,12 +906,88 @@ def test_capture_restore_checkpoint(world, contact_box):
         world.step()
         assert frame() == expected_frame
 
+    # Equal state-array sizes cannot make incompatible topology or a different
+    # primary solver eligible for exact restoration. Resolve APIs before raises.
+    for change in ("topology", "solver"):
+        different = world.clone()
+        if change == "topology":
+            with different.edit():
+                fixed = dart.dynamics.Skeleton("checkpoint_extra_fixed")
+                fixed.createWeldJointAndBodyNodePair()
+                different.addSkeleton(fixed)
+        else:
+            different.getConstraintSolver().setBoxedLcpSolver(alternate)
+            assert different.getConstraintSolver().getBoxedLcpSolver().getType() != primary.getType()
+        restore = different.restore_state
+        before = pickle.dumps(different.capture_checkpoint(), protocol=5)
+        with pytest.raises(Exception) as mismatch:
+            restore(checkpoint)
+        assert type(mismatch.value).__name__ == "CheckpointMismatchError"
+        assert pickle.dumps(different.capture_checkpoint(), protocol=5) == before
+
     world.setGravity([0, 0, 0])
     before_rejection = frame()
     with pytest.raises(Exception) as mismatch:
         world.restore_state(checkpoint)
     assert type(mismatch.value).__name__ == "CheckpointMismatchError"
     assert frame() == before_rejection
+
+
+class _CheckpointControl:
+    def __init__(self):
+        self.calls = 0
+
+    def __call__(self, current):
+        self.calls += 1
+        current.getSkeleton("robot").setVelocities([0.01 * self.calls, -0.005 * self.calls])
+
+    def __getstate__(self):
+        return {"calls": self.calls}
+
+    def __setstate__(self, state):
+        self.calls = state["calls"]
+
+
+class _UnsupportedCheckpointControl(_CheckpointControl):
+    def __getstate__(self):
+        raise TypeError("hook state cannot be serialized")
+
+
+@pytest.mark.xfail(strict=True, reason="M1c/M1g: serializable hook checkpoint state and unsupported-state rejection are pending")
+def test_checkpoint_hook_state(world, robot):
+    world.setGravity([0, 0, 0])
+    control = _CheckpointControl()
+    # M1g settles the wrapper/callback spelling; the callable's declared
+    # Python state must affect exact replay rather than being silently dropped.
+    world.hooks.add(dart.StepHook(control, every=1))
+    for _ in range(3):
+        world.step()
+    assert control.calls == 3
+    checkpoint = world.capture_checkpoint()
+
+    def frame():
+        return (
+            robot.getPositions().tobytes(),
+            robot.getVelocities().tobytes(),
+            world.time,
+            pickle.dumps(world.capture_checkpoint(), protocol=5),
+        )
+
+    initial = frame()
+    expected = []
+    for _ in range(6):
+        world.step()
+        expected.append(frame())
+    assert expected[-1] != initial
+    world.restore_state(pickle.loads(pickle.dumps(checkpoint, protocol=5)))
+    assert frame() == initial
+    for expected_frame in expected:
+        world.step()
+        assert frame() == expected_frame
+    world.hooks.add(dart.StepHook(_UnsupportedCheckpointControl(), every=1))
+    capture = world.capture_checkpoint
+    with pytest.raises(Exception):
+        capture()
 
 
 @pytest.fixture
@@ -941,6 +1095,34 @@ def test_world_batch_restore_state(world, robot):
     np.testing.assert_array_equal(batch.velocities, expected_velocities)
     np.testing.assert_array_equal(robot.getPositions(), source_positions)
     np.testing.assert_array_equal(robot.getVelocities(), source_velocities)
+
+
+@pytest.mark.xfail(strict=True, reason="M1i: per-clone batch parameters without recompilation are pending")
+def test_world_batch_parameters(world, robot):
+    world.setGravity([0, 0, 0])
+    robot.setVelocities([0.5, -0.25])
+    positions = robot.getPositions().copy()
+    velocities = robot.getVelocities().copy()
+    time_step = world.getTimeStep()
+    batch = dart.WorldBatch(world, count=4)
+    # M1i settles argument spelling; distinct per-row time steps must affect
+    # execution, rather than silently retaining the template's configuration.
+    batch.set_parameter("time_step", np.array([2, 4]) * time_step, indices=[0, 2])
+    batch.step(20)
+    expected = []
+    for multiplier in (2, 1, 4, 1):
+        serial = world.clone()
+        serial.setTimeStep(multiplier * time_step)
+        for _ in range(20):
+            serial.step()
+        expected.append(serial.getSkeleton("robot").getPositions().copy())
+    assert not np.array_equal(expected[0], expected[1])
+    assert not np.array_equal(expected[0], expected[2])
+    np.testing.assert_array_equal(batch.positions, expected)
+    assert world.getTimeStep() == time_step
+    assert world.getTime() == 0
+    np.testing.assert_array_equal(robot.getPositions(), positions)
+    np.testing.assert_array_equal(robot.getVelocities(), velocities)
 
 
 @pytest.mark.xfail(strict=True, reason="M1i/M1g/M5b: remapping clones with World-bound step hooks are pending")
