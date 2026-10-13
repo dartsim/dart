@@ -9,7 +9,15 @@
           "examples": [
             "dartsim/src/EntityManagementFeatures.cc:43"
           ],
-          "name": "dart::collision::BodyNodeCollisionFilter"
+          "name": "dart::collision::BodyNodeCollisionFilter",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::collision::CollisionFilter",
+              "const": true,
+              "signature": "virtual bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
@@ -20,13 +28,76 @@
               "const": false,
               "signature": "BulletCollisionDetector ( )",
               "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "CollisionDetector ( ) = default",
+              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/GzCollisionDetector.cc:406",
             "dartsim/src/GzCollisionDetector.hh:140"
           ],
-          "name": "dart::collision::BulletCollisionDetector"
+          "name": "dart::collision::BulletCollisionDetector",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual double distance ( CollisionGroup * group , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual double distance ( CollisionGroup * group1 , CollisionGroup * group2 , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": true,
+              "signature": "virtual std :: shared_ptr < CollisionDetector > cloneWithoutCollisionObjects ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual std :: unique_ptr < CollisionObject > createCollisionObject ( const dynamics :: ShapeFrame * shapeFrame ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual void refreshCollisionObject ( CollisionObject * object ) = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
@@ -37,13 +108,65 @@
               "const": false,
               "signature": "BulletCollisionGroup ( const CollisionDetectorPtr & collisionDetector )",
               "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "CollisionGroup ( const CollisionDetectorPtr & collisionDetector )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::collision::CollisionGroup::ShapeFrameObserver",
+              "const": false,
+              "signature": "explicit ShapeFrameObserver ( CollisionGroup * group = nullptr )",
+              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/GzCollisionDetector.cc:381",
             "dartsim/src/GzCollisionDetector.cc:393"
           ],
-          "name": "dart::collision::BulletCollisionGroup"
+          "name": "dart::collision::BulletCollisionGroup",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void addCollisionObjectToEngine ( CollisionObject * object ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void addCollisionObjectsToEngine ( const std :: vector < CollisionObject * > & collObjects ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void initializeEngineData ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void removeAllCollisionObjectsFromEngine ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void removeCollisionObjectFromEngine ( CollisionObject * object ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void updateCollisionGroupEngineData ( ) = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
@@ -92,6 +215,13 @@
           "declarations": [
             {
               "access": "protected",
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "CollisionDetector ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "protected",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "OdeCollisionDetector ( )",
@@ -102,11 +232,81 @@
             "dartsim/src/GzCollisionDetector.cc:128",
             "dartsim/src/GzCollisionDetector.hh:91"
           ],
-          "name": "dart::collision::OdeCollisionDetector"
+          "name": "dart::collision::OdeCollisionDetector",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual double distance ( CollisionGroup * group , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual double distance ( CollisionGroup * group1 , CollisionGroup * group2 , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": true,
+              "signature": "virtual std :: shared_ptr < CollisionDetector > cloneWithoutCollisionObjects ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual std :: unique_ptr < CollisionObject > createCollisionObject ( const dynamics :: ShapeFrame * shapeFrame ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionDetector",
+              "const": false,
+              "signature": "virtual void refreshCollisionObject ( CollisionObject * object ) = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
           "declarations": [
+            {
+              "access": "public",
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "CollisionGroup ( const CollisionDetectorPtr & collisionDetector )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::collision::CollisionGroup::ShapeFrameObserver",
+              "const": false,
+              "signature": "explicit ShapeFrameObserver ( CollisionGroup * group = nullptr )",
+              "virtual": false
+            },
             {
               "access": "public",
               "class": "dart::collision::OdeCollisionGroup",
@@ -133,7 +333,45 @@
             "dartsim/src/GzCollisionDetector.cc:153",
             "dartsim/src/GzCollisionDetector.cc:158"
           ],
-          "name": "dart::collision::OdeCollisionGroup"
+          "name": "dart::collision::OdeCollisionGroup",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void addCollisionObjectToEngine ( CollisionObject * object ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void addCollisionObjectsToEngine ( const std :: vector < CollisionObject * > & collObjects ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void initializeEngineData ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void removeAllCollisionObjectsFromEngine ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void removeCollisionObjectFromEngine ( CollisionObject * object ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "virtual void updateCollisionGroupEngineData ( ) = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
@@ -191,20 +429,77 @@
           "examples": [
             "dartsim/src/WorldFeatures.cc:184"
           ],
-          "name": "dart::constraint::DantzigBoxedLcpSolver"
+          "name": "dart::constraint::DantzigBoxedLcpSolver",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::constraint::BoxedLcpSolver",
+              "const": false,
+              "signature": "virtual bool solve ( int n , double * A , double * x , double * b , int nub , double * lo , double * hi , int * findex , bool earlyTermination = false ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::BoxedLcpSolver",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
-          "declarations": [],
+          "declarations": [
+            {
+              "access": "public",
+              "class": "dart::constraint::PgsBoxedLcpSolver::Option",
+              "const": false,
+              "signature": "Option ( int maxIteration = 3 0 , double deltaXTolerance = 1 e - 6 , double relativeDeltaXTolerance = 1 e - 3 , double epsilonForDivision = 1 e - 9 , bool randomizeConstraintOrder = false )",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/WorldFeatures.cc:188",
             "dartsim/src/WorldFeatures.cc:250"
           ],
-          "name": "dart::constraint::PgsBoxedLcpSolver"
+          "name": "dart::constraint::PgsBoxedLcpSolver",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::constraint::BoxedLcpSolver",
+              "const": false,
+              "signature": "virtual bool solve ( int n , double * A , double * x , double * b , int nub , double * lo , double * hi , int * findex , bool earlyTermination = false ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::BoxedLcpSolver",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
           "declarations": [
+            {
+              "access": "protected",
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "ConstraintBase ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::constraint::DynamicJointConstraint",
+              "const": false,
+              "signature": "DynamicJointConstraint ( dynamics :: BodyNode * body1 , dynamics :: BodyNode * body2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::constraint::DynamicJointConstraint",
+              "const": false,
+              "signature": "explicit DynamicJointConstraint ( dynamics :: BodyNode * body )",
+              "virtual": false
+            },
             {
               "access": "public",
               "class": "dart::constraint::WeldJointConstraint",
@@ -223,7 +518,63 @@
           "examples": [
             "dartsim/src/Base.hh:295"
           ],
-          "name": "dart::constraint::WeldJointConstraint"
+          "name": "dart::constraint::WeldJointConstraint",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": true,
+              "signature": "virtual bool isActive ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": true,
+              "signature": "virtual dynamics :: SkeletonPtr getRootSkeleton ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void applyImpulse ( double * lambda ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void applyUnitImpulse ( std :: size_t index ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void excite ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void getInformation ( ConstraintInfo * info ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void getVelocityChange ( double * vel , bool withCfm ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void unexcite ( ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::constraint::ConstraintBase",
+              "const": false,
+              "signature": "virtual void update ( ) = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 3,
@@ -335,9 +686,51 @@
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::BoxShape",
               "const": false,
               "signature": "explicit BoxShape ( const Eigen :: Vector3d & _size )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
               "virtual": false
             }
           ],
@@ -346,16 +739,90 @@
             "dartsim/src/SDFFeatures.cc:299",
             "dartsim/src/SDFFeatures.cc:351"
           ],
-          "name": "dart::dynamics::BoxShape"
+          "name": "dart::dynamics::BoxShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::CapsuleShape",
               "const": false,
               "signature": "CapsuleShape ( double radius , double height )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
               "virtual": false
             }
           ],
@@ -363,16 +830,90 @@
             "dartsim/src/SDFFeatures.cc:325",
             "dartsim/src/ShapeFeatures.cc:157"
           ],
-          "name": "dart::dynamics::CapsuleShape"
+          "name": "dart::dynamics::CapsuleShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::CylinderShape",
               "const": false,
               "signature": "CylinderShape ( double _radius , double _height )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
               "virtual": false
             }
           ],
@@ -380,16 +921,310 @@
             "dartsim/src/SDFFeatures.cc:308",
             "dartsim/src/ShapeFeatures.cc:284"
           ],
-          "name": "dart::dynamics::CylinderShape"
+          "name": "dart::dynamics::CylinderShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 3,
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( const Cloneable & doNotCopy ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( Composite && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( const Composite & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "CompositeJoiner ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Args > CompositeJoiner ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Base2Args > CompositeJoiner ( NoArgTag , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg , typename ... Base2Args > CompositeJoiner ( Base1Arg && arg1 , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg > CompositeJoiner ( Base1Arg && arg1 , NoArgTag )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeTrackingAspect",
+              "const": false,
+              "signature": "CompositeTrackingAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( EmbedStateAndProperties && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( const EmbedStateAndProperties & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndProperties ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndPropertiesOnTopOf",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndPropertiesOnTopOf ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const EmbeddedStateAndPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties , const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state , const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::RequiresAspect",
+              "const": false,
+              "signature": "RequiresAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::SpecializedForAspect",
+              "const": false,
+              "signature": "SpecializedForAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( const EmbeddedPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedPropertiesAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedPropertiesAspect ( DelegateTag , const PropertiesData & properties , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedPropertiesAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( const EmbeddedStateAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedStateAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedStateAspect ( DelegateTag , const StateData & state , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedStateAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const Properties & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const ThisClass & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::detail::FreeJointProperties",
               "const": false,
               "signature": "FreeJointProperties ( const GenericJoint < math :: SE3Space > :: Properties & genericJointProperties = GenericJoint < math :: SE3Space > :: Properties ( ) , const FreeJointUniqueProperties & freeJointProperties = FreeJointUniqueProperties ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::detail::FreeJointUniqueProperties",
+              "const": false,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::dynamics::detail::CoordinateChart",
+                  "const": true,
+                  "enum_declaration": "enum class CoordinateChart : int",
+                  "enum_type": "dart::dynamics::detail::CoordinateChart",
+                  "signature": "EXP_MAP = 0",
+                  "virtual": false
+                }
+              ],
+              "signature": "FreeJointUniqueProperties ( CoordinateChart _chart = CoordinateChart :: EXP_MAP )",
               "virtual": false
             }
           ],
@@ -398,16 +1233,84 @@
             "dartsim/src/EntityManagementFeatures.cc:886",
             "dartsim/src/SDFFeatures.cc:730"
           ],
-          "name": "dart::dynamics::FreeJoint::Properties"
+          "name": "dart::dynamics::FreeJoint::Properties",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::common::Aspect",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::GenericJoint",
+              "const": true,
+              "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 2,
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::HeightmapShape",
               "const": false,
               "signature": "HeightmapShape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
               "virtual": false
             }
           ],
@@ -415,7 +1318,39 @@
             "dartsim/src/CustomHeightmapShape.cc:35",
             "dartsim/src/CustomHeightmapShape.hh:33"
           ],
-          "name": "dart::dynamics::HeightmapShape"
+          "name": "dart::dynamics::HeightmapShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
@@ -452,6 +1387,34 @@
           "declarations": [
             {
               "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "TemplateBodyNodePtr ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "TemplateBodyNodePtr ( BodyNodeT * _ptr )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "TemplateBodyNodePtr ( const TemplateBodyNodePtr & _bnp )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "template < class OtherBodyNodeT > TemplateBodyNodePtr ( const TemplateBodyNodePtr < OtherBodyNodeT > & _bnp )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::TemplateJointPtr",
               "const": false,
               "signature": "TemplateJointPtr ( ) = default",
@@ -482,6 +1445,55 @@
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Uri",
+              "const": false,
+              "signature": "Uri ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Uri",
+              "const": false,
+              "signature": "Uri ( const char * _input )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Uri",
+              "const": false,
+              "signature": "Uri ( const std :: string & _input )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::UriComponent",
+              "const": false,
+              "signature": "UriComponent ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::UriComponent",
+              "const": false,
+              "signature": "UriComponent ( reference_const_type _value )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < math :: TriMesh < double > > mesh , const common :: Uri & uri , common :: ResourceRetrieverPtr resourceRetriever )",
@@ -498,6 +1510,16 @@
               "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::dynamics::MeshShape::MeshOwnership",
+                  "const": true,
+                  "enum_declaration": "enum class MeshOwnership",
+                  "enum_type": "dart::dynamics::MeshShape::MeshOwnership",
+                  "signature": "Imported",
+                  "virtual": false
+                }
+              ],
               "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , const aiScene * mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr , MeshOwnership ownership = MeshOwnership :: Imported )",
               "virtual": false
             },
@@ -507,17 +1529,98 @@
               "const": false,
               "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < const aiScene > mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr )",
               "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::MeshShape::MeshHandle",
+              "const": false,
+              "signature": "MeshHandle ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
+              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/CustomMeshShape.cc:103",
             "dartsim/src/CustomMeshShape.hh:31"
           ],
-          "name": "dart::dynamics::MeshShape"
+          "name": "dart::dynamics::MeshShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
           "declarations": [
+            {
+              "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
             {
               "access": "public",
               "class": "dart::dynamics::PlaneShape",
@@ -531,48 +1634,692 @@
               "const": false,
               "signature": "PlaneShape ( const Eigen :: Vector3d & _normal , double _offset )",
               "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
+              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/ShapeFeatures.cc:572"
           ],
-          "name": "dart::dynamics::PlaneShape"
+          "name": "dart::dynamics::PlaneShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
           "declarations": [
+            {
+              "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( const Cloneable & doNotCopy ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( Composite && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( const Composite & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "CompositeJoiner ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Args > CompositeJoiner ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Base2Args > CompositeJoiner ( NoArgTag , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg , typename ... Base2Args > CompositeJoiner ( Base1Arg && arg1 , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg > CompositeJoiner ( Base1Arg && arg1 , NoArgTag )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeTrackingAspect",
+              "const": false,
+              "signature": "CompositeTrackingAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( EmbedStateAndProperties && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( const EmbedStateAndProperties & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndProperties ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndPropertiesOnTopOf",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndPropertiesOnTopOf ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const EmbeddedStateAndPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties , const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state , const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::RequiresAspect",
+              "const": false,
+              "signature": "RequiresAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::SpecializedForAspect",
+              "const": false,
+              "signature": "SpecializedForAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( const EmbeddedPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedPropertiesAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedPropertiesAspect ( DelegateTag , const PropertiesData & properties , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedPropertiesAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( const EmbeddedStateAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedStateAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedStateAspect ( DelegateTag , const StateData & state , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedStateAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const Properties & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const ThisClass & ) = delete",
+              "virtual": false
+            },
             {
               "access": "public",
               "class": "dart::dynamics::detail::PrismaticJointProperties",
               "const": false,
               "signature": "PrismaticJointProperties ( const GenericJoint < math :: R1Space > :: Properties & genericJointProperties = GenericJoint < math :: R1Space > :: Properties ( ) , const PrismaticJointUniqueProperties & prismaticProperties = PrismaticJointUniqueProperties ( ) )",
               "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::detail::PrismaticJointUniqueProperties",
+              "const": false,
+              "signature": "PrismaticJointUniqueProperties ( const Eigen :: Vector3d & _axis = Eigen :: Vector3d :: UnitZ ( ) )",
+              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/JointFeatures.cc:809"
           ],
-          "name": "dart::dynamics::PrismaticJoint::Properties"
+          "name": "dart::dynamics::PrismaticJoint::Properties",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::common::Aspect",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::GenericJoint",
+              "const": true,
+              "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( const Cloneable & doNotCopy ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( Composite && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( const Composite & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "CompositeJoiner ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Args > CompositeJoiner ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Base2Args > CompositeJoiner ( NoArgTag , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg , typename ... Base2Args > CompositeJoiner ( Base1Arg && arg1 , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg > CompositeJoiner ( Base1Arg && arg1 , NoArgTag )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeTrackingAspect",
+              "const": false,
+              "signature": "CompositeTrackingAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( EmbedStateAndProperties && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( const EmbedStateAndProperties & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndProperties ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndPropertiesOnTopOf",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndPropertiesOnTopOf ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const EmbeddedStateAndPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties , const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state , const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::RequiresAspect",
+              "const": false,
+              "signature": "RequiresAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::SpecializedForAspect",
+              "const": false,
+              "signature": "SpecializedForAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( const EmbeddedPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedPropertiesAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedPropertiesAspect ( DelegateTag , const PropertiesData & properties , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedPropertiesAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( const EmbeddedStateAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedStateAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedStateAspect ( DelegateTag , const StateData & state , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedStateAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const Properties & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const ThisClass & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::detail::RevoluteJointProperties",
               "const": false,
               "signature": "RevoluteJointProperties ( const GenericJoint < math :: R1Space > :: Properties & genericJointProperties = GenericJoint < math :: R1Space > :: Properties ( ) , const RevoluteJointUniqueProperties & revoluteProperties = RevoluteJointUniqueProperties ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::detail::RevoluteJointUniqueProperties",
+              "const": false,
+              "signature": "RevoluteJointUniqueProperties ( const Eigen :: Vector3d & _axis = Eigen :: Vector3d :: UnitZ ( ) )",
               "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/JointFeatures.cc:733"
           ],
-          "name": "dart::dynamics::RevoluteJoint::Properties"
+          "name": "dart::dynamics::RevoluteJoint::Properties",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::common::Aspect",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::GenericJoint",
+              "const": true,
+              "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
           "declarations": [
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "TemplateBodyNodePtr ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "TemplateBodyNodePtr ( BodyNodeT * _ptr )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "TemplateBodyNodePtr ( const TemplateBodyNodePtr & _bnp )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateBodyNodePtr",
+              "const": false,
+              "signature": "template < class OtherBodyNodeT > TemplateBodyNodePtr ( const TemplateBodyNodePtr < OtherBodyNodeT > & _bnp )",
+              "virtual": false
+            },
             {
               "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
@@ -619,9 +2366,51 @@
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::VersionCounter",
+              "const": false,
+              "signature": "VersionCounter ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "Shape ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Shape",
+              "const": false,
+              "signature": "explicit Shape ( ShapeType _type )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::SphereShape",
               "const": false,
               "signature": "explicit SphereShape ( double radius )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "BoundingBox ( const Eigen :: Vector3d & min , const Eigen :: Vector3d & max )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::math::BoundingBox",
+              "const": false,
+              "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
               "virtual": false
             }
           ],
@@ -629,23 +2418,333 @@
             "dartsim/src/SDFFeatures.cc:317",
             "dartsim/src/ShapeFeatures.cc:394"
           ],
-          "name": "dart::dynamics::SphereShape"
+          "name": "dart::dynamics::SphereShape",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual ShapePtr clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual const std :: string & getType ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateBoundingBox ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::Shape",
+              "const": true,
+              "signature": "virtual void updateVolume ( ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
           "declarations": [
             {
               "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "Cloneable ( const Cloneable & doNotCopy ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( Composite && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::Composite",
+              "const": false,
+              "signature": "Composite ( const Composite & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "CompositeJoiner ( ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Args > CompositeJoiner ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename ... Base2Args > CompositeJoiner ( NoArgTag , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg , typename ... Base2Args > CompositeJoiner ( Base1Arg && arg1 , Base2Args && ... args2 )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeJoiner",
+              "const": false,
+              "signature": "template < typename Base1Arg > CompositeJoiner ( Base1Arg && arg1 , NoArgTag )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::CompositeTrackingAspect",
+              "const": false,
+              "signature": "CompositeTrackingAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( EmbedStateAndProperties && ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "EmbedStateAndProperties ( const EmbedStateAndProperties & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndProperties",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndProperties ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbedStateAndPropertiesOnTopOf",
+              "const": false,
+              "signature": "template < typename ... Args > EmbedStateAndPropertiesOnTopOf ( Args && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const EmbeddedStateAndPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const PropertiesData & properties , const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::EmbeddedStateAndPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedStateAndPropertiesAspect ( const StateData & state , const PropertiesData & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::RequiresAspect",
+              "const": false,
+              "signature": "RequiresAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::SpecializedForAspect",
+              "const": false,
+              "signature": "SpecializedForAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "EmbeddedPropertiesAspect ( const EmbeddedPropertiesAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedPropertiesAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedPropertiesAspect ( DelegateTag , const PropertiesData & properties , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedPropertiesAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedPropertiesAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "EmbeddedStateAspect ( const EmbeddedStateAspect & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... BaseArgs > EmbeddedStateAspect ( DelegateTag , BaseArgs && ... args )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename ... RemainingArgs > EmbeddedStateAspect ( DelegateTag , const StateData & state , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::detail::EmbeddedStateAspect",
+              "const": false,
+              "signature": "template < typename T , typename ... RemainingArgs > EmbeddedStateAspect ( const T & arg1 , RemainingArgs && ... remainingArgs )",
+              "virtual": false
+            },
+            {
+              "access": "protected",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const Properties & properties )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::GenericJoint",
+              "const": false,
+              "signature": "GenericJoint ( const ThisClass & ) = delete",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::dynamics::detail::UniversalJointProperties",
               "const": false,
               "signature": "UniversalJointProperties ( const GenericJoint < math :: R2Space > :: Properties & genericJointProperties = GenericJoint < math :: R2Space > :: Properties ( ) , const UniversalJointUniqueProperties & universalProperties = UniversalJointUniqueProperties ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::detail::UniversalJointUniqueProperties",
+              "const": false,
+              "signature": "UniversalJointUniqueProperties ( const Eigen :: Vector3d & _axis1 = Eigen :: Vector3d :: UnitX ( ) , const Eigen :: Vector3d & _axis2 = Eigen :: Vector3d :: UnitY ( ) )",
               "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/SDFFeatures.cc:240"
           ],
-          "name": "dart::dynamics::UniversalJoint::Properties"
+          "name": "dart::dynamics::UniversalJoint::Properties",
+          "pure_virtual_declarations": [
+            {
+              "class": "dart::common::Aspect",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": true,
+              "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::common::Cloneable",
+              "const": false,
+              "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
+              "virtual": true
+            },
+            {
+              "class": "dart::dynamics::GenericJoint",
+              "const": true,
+              "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
+              "virtual": true
+            }
+          ]
         },
         {
           "count": 1,
@@ -655,6 +2754,36 @@
               "class": "dart::dynamics::WeldJoint::Properties",
               "const": false,
               "signature": "Properties ( const Joint :: Properties & _properties = Joint :: Properties ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::ZeroDofJoint::Properties",
+              "const": false,
+              "signature": "Properties ( const Joint :: Properties & _properties = Joint :: Properties ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::detail::JointProperties",
+              "const": false,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::dynamics::detail",
+                  "const": true,
+                  "enum_declaration": "enum ActuatorType",
+                  "enum_type": "dart::dynamics::detail::ActuatorType",
+                  "signature": "FORCE",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail",
+                  "const": true,
+                  "signature": "const ActuatorType DefaultActuatorType = FORCE",
+                  "virtual": false
+                }
+              ],
+              "signature": "JointProperties ( const std :: string & _name = , const Eigen :: Isometry3d & _T_ParentBodyToJoint = Eigen :: Isometry3d :: Identity ( ) , const Eigen :: Isometry3d & _T_ChildBodyToJoint = Eigen :: Isometry3d :: Identity ( ) , bool _isPositionLimitEnforced = false , ActuatorType _actuatorType = DefaultActuatorType , const Joint * _mimicJoint = nullptr , double _mimicMultiplier = 1 . 0 , double _mimicOffset = 0 . 0 )",
               "virtual": false
             }
           ],
@@ -666,6 +2795,20 @@
         {
           "count": 2,
           "declarations": [
+            {
+              "access": "public",
+              "class": "dart::common::NameManager",
+              "const": false,
+              "signature": "NameManager ( const std :: string & _managerName = , const std :: string & _defaultName = )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::common::SlotRegister",
+              "const": false,
+              "signature": "SlotRegister ( SignalType & signal )",
+              "virtual": false
+            },
             {
               "access": "public",
               "class": "dart::simulation::World",
@@ -692,9 +2835,47 @@
           "declarations": [
             {
               "access": "public",
+              "class": "dart::dynamics::Inertia",
+              "const": false,
+              "signature": "Inertia ( const Eigen :: Matrix6d & _spatialInertiaTensor )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Inertia",
+              "const": false,
+              "signature": "Inertia ( double _mass , double _comX , double _comY , double _comZ , double _Ixx , double _Iyy , double _Izz , double _Ixy , double _Ixz , double _Iyz )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::Inertia",
+              "const": false,
+              "signature": "Inertia ( double _mass = 1 , const Eigen :: Vector3d & _com = Eigen :: Vector3d :: Zero ( ) , const Eigen :: Matrix3d & _momentOfInertia = Eigen :: Matrix3d :: Identity ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
               "class": "dart::utils::DartLoader",
               "const": false,
               "signature": "explicit DartLoader ( const Options & options = Options ( ) )",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::utils::DartLoader::Options",
+              "const": false,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::utils::DartLoader::RootJointType",
+                  "const": true,
+                  "enum_declaration": "enum class RootJointType",
+                  "enum_type": "dart::utils::DartLoader::RootJointType",
+                  "signature": "FLOATING = 0",
+                  "virtual": false
+                }
+              ],
+              "signature": "Options ( common :: ResourceRetrieverPtr resourceRetriever = nullptr , RootJointType defaultRootJointType = RootJointType :: FLOATING , const dynamics :: Inertia & defaultInertia = dynamics :: Inertia ( ) )",
               "virtual": false
             }
           ],
@@ -3223,12 +5404,32 @@
             {
               "class": "dart::dynamics::Skeleton",
               "const": true,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::dynamics::Skeleton",
+                  "const": true,
+                  "enum_declaration": "enum ConfigFlags",
+                  "enum_type": "dart::dynamics::Skeleton::ConfigFlags",
+                  "signature": "CONFIG_ALL = 0 xFF",
+                  "virtual": false
+                }
+              ],
               "signature": "Configuration getConfiguration ( const std :: vector < std :: size_t > & indices , int flags = CONFIG_ALL ) const",
               "virtual": false
             },
             {
               "class": "dart::dynamics::Skeleton",
               "const": true,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::dynamics::Skeleton",
+                  "const": true,
+                  "enum_declaration": "enum ConfigFlags",
+                  "enum_type": "dart::dynamics::Skeleton::ConfigFlags",
+                  "signature": "CONFIG_ALL = 0 xFF",
+                  "virtual": false
+                }
+              ],
               "signature": "Configuration getConfiguration ( int flags = CONFIG_ALL ) const",
               "virtual": false
             }
@@ -5702,6 +7903,24 @@
             {
               "class": "dart::utils::DartLoader",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "class": "dart::utils::DartLoader",
+                  "const": true,
+                  "enum_declaration": "enum Flags",
+                  "enum_type": "dart::utils::DartLoader::Flags",
+                  "signature": "DEFAULT = NONE",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::utils::DartLoader",
+                  "const": true,
+                  "enum_declaration": "enum Flags",
+                  "enum_type": "dart::utils::DartLoader::Flags",
+                  "signature": "NONE = 0",
+                  "virtual": false
+                }
+              ],
               "signature": "( ) dynamics :: SkeletonPtr parseSkeleton ( const common :: Uri & uri , const common :: ResourceRetrieverPtr & resourceRetriever , unsigned int flags = DEFAULT )",
               "virtual": false
             },
@@ -7870,6 +10089,12 @@
           "name": "dart::constraint::WeldJointConstraintPtr"
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 2,
           "examples": [
             "dartsim/src/SDFFeatures.cc:1203",
@@ -7903,6 +10128,16 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            },
+            {
+              "class": "dart::dynamics::JacobianNode",
+              "signature": "alignas ( Frame )"
+            }
+          ],
           "count": 61,
           "examples": [
             "dartsim/src/AddedMassFeatures_TEST.cc:139",
@@ -8124,6 +10359,16 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            },
+            {
+              "class": "dart::dynamics::ShapeFrame",
+              "signature": "alignas ( Frame )"
+            }
+          ],
           "count": 11,
           "examples": [
             "dartsim/src/Base_TEST.cc:68",
@@ -8157,6 +10402,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 4,
           "examples": [
             "dartsim/src/Base.hh:138",
@@ -8246,6 +10497,16 @@
           "name": "dart::dynamics::DegreeOfFreedom"
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            },
+            {
+              "class": "dart::dynamics::ShapeFrame",
+              "signature": "alignas ( Frame )"
+            }
+          ],
           "count": 10,
           "examples": [
             "dartsim/src/SDFFeatures.cc:935",
@@ -8288,6 +10549,12 @@
           "name": "dart::dynamics::Frame"
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 21,
           "examples": [
             "dartsim/src/Base.hh:291",
@@ -8322,6 +10589,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 3,
           "examples": [
             "dartsim/src/Base.hh:287",
@@ -8382,6 +10655,12 @@
           "name": "dart::dynamics::Inertia"
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 12,
           "examples": [
             "dartsim/src/Base.hh:142",
@@ -8496,6 +10775,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 6,
           "examples": [
             "dartsim/src/JointFeatures.cc:772",
@@ -8531,6 +10816,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 1,
           "examples": [
             "dartsim/src/JointFeatures.cc:809"
@@ -8563,6 +10854,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 8,
           "examples": [
             "dartsim/src/JointFeatures.cc:696",
@@ -8598,6 +10895,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 1,
           "examples": [
             "dartsim/src/JointFeatures.cc:733"
@@ -8630,6 +10933,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 2,
           "examples": [
             "dartsim/src/SDFFeatures.cc:1227",
@@ -8780,6 +11089,16 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            },
+            {
+              "class": "dart::dynamics::ShapeFrame",
+              "signature": "alignas ( Frame )"
+            }
+          ],
           "count": 6,
           "examples": [
             "dartsim/src/Base.hh:370",
@@ -8813,6 +11132,16 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            },
+            {
+              "class": "dart::dynamics::ShapeFrame",
+              "signature": "alignas ( Frame )"
+            }
+          ],
           "count": 7,
           "examples": [
             "dartsim/src/Base.hh:101",
@@ -8846,6 +11175,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 10,
           "examples": [
             "dartsim/src/Base.hh:139",
@@ -8922,6 +11257,12 @@
           "name": "dart::dynamics::Skeleton::Configuration"
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 31,
           "examples": [
             "dartsim/src/Base.hh:137",
@@ -9003,6 +11344,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 2,
           "examples": [
             "dartsim/src/SDFFeatures.cc:232",
@@ -9037,6 +11384,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 1,
           "examples": [
             "dartsim/src/SDFFeatures.cc:240"
@@ -9069,6 +11422,16 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            },
+            {
+              "class": "dart::dynamics::ShapeFrame",
+              "signature": "alignas ( Frame )"
+            }
+          ],
           "count": 1,
           "examples": [
             "dartsim/src/SDFFeatures.cc:1073"
@@ -9165,6 +11528,12 @@
           ]
         },
         {
+          "alignment_declarations": [
+            {
+              "class": "dart::common::Virtual",
+              "signature": "alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) )"
+            }
+          ],
           "count": 5,
           "examples": [
             "dartsim/src/JointFeatures.cc:607",

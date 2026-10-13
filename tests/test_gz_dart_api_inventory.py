@@ -153,6 +153,338 @@ def _entries(result, section):
     return {entry["name"]: entry for entry in result[section]}
 
 
+@pytest.mark.parametrize("initializer", ["({})", "{{{}}}"])
+def test_direct_auto_initializers_retain_return_shapes(
+    extractor, tmp_path, initializer
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Item { void hit(); }; struct Factory { Item make(); Item* pointer(); std::vector<Item*> items(); }; }"
+    )
+    source = "void use(dart::Factory& factory) { "
+    for name, expression, call in (
+        ("value", "factory.make()", "value.hit();"),
+        ("pointer", "factory.pointer()", "pointer->hit();"),
+        ("items", "factory.items()", "items.front()->hit();"),
+    ):
+        source += "auto " + name + initializer.format(expression) + "; " + call
+    source += " }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 3
+    assert hit["receiver_types"] == ["dart::Item"]
+    assert hit["unresolved_count"] == 0
+
+
+def test_direct_auto_initializers_preserve_foreign_and_unknown_shadowing(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct Item { void hit(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """struct Foreign { void hit(); };
+struct Factory { Foreign make(); };
+void use(dart::Item* outer, Factory& factory) {
+  auto value = outer;
+  { auto value(factory.make()); value.hit(); }
+  { auto value{factory.make()}; value.hit(); }
+  value->hit();
+}
+template<class Factory> void unknown(dart::Item* known, Factory factory) {
+  auto value(factory()); value.hit();
+}
+""",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 2
+    assert hit["unresolved_count"] == 1
+
+
+@pytest.mark.parametrize("initializer", [" = {}", "({})", "{{{}}}"])
+def test_grouped_auto_initializers_retain_each_return_shape(
+    extractor, tmp_path, initializer
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { struct Item { void hit(); }; struct Factory { Item make(); Item* pointer(); std::vector<Item*> items(); }; }"
+    )
+    source = "void use(dart::Factory& factory) { "
+    for name, expression, call in (
+        ("value", "factory.make()", "{}.hit();"),
+        ("pointer", "factory.pointer()", "{}->hit();"),
+        ("items", "factory.items()", "{}.front()->hit();"),
+    ):
+        source += "auto " + name + initializer.format(expression)
+        source += ", second_" + name + initializer.format(expression) + "; "
+        source += call.format(name) + call.format("second_" + name)
+    source += " }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 6
+    assert hit["receiver_types"] == ["dart::Item"]
+    assert hit["unresolved_count"] == 0
+    header.write_text(header.read_text().replace("void hit();", "void hit(int);"))
+    changed = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(changed, "members")["hit"]["declarations"] != hit["declarations"]
+
+
+def test_grouped_auto_bindings_preserve_control_and_lambda_shadows(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct Item { void hit(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """struct Foreign { void hit(); };
+struct Factory { Foreign make(); };
+void use(dart::Item* outer, Factory& factory) {
+  auto first = outer, value = outer;
+  { auto first(factory.make()), value(factory.make()); value.hit(); }
+  value->hit();
+  if (auto first = factory.make(), value = factory.make(); true) value.hit();
+  else value.hit();
+  value->hit();
+  for (auto first{factory.make()}, value{factory.make()}; false;) value.hit();
+  value->hit();
+  auto lambda = [&] { auto first(factory.make()), value(factory.make()); value.hit(); };
+  value->hit();
+}
+""",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 4
+    assert hit["receiver_types"] == ["dart::Item"]
+    assert hit["unresolved_count"] == 0
+
+
+def test_grouped_auto_array_aliases_keep_raw_pointer_dispatch(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Target { void other(); }; struct Item { void hit(); Target* operator->(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """void use() {
+  dart::Item values[2];
+  auto first = values, second = values;
+  first->hit(); second->hit(); second[0]->other();
+  auto third(values), fourth(values);
+  third->hit(); fourth->hit();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["hit"]["count"] == 4
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 1
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+
+
+def test_fixed_array_decay_keeps_builtin_arrow_and_value_elements(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Target { void other(); }; struct Item { void hit(); Target* operator->(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """void use() {
+  dart::Item values[2]; values->hit();
+  auto pointer = values; pointer->hit(); pointer[0]->other();
+  dart::Item grid[2][3]; grid[0]->hit(); grid[0][0]->other();
+  std::array<dart::Item, 2> owned; owned[0]->other();
+  std::vector<dart::Item> sequence; sequence.front()->other();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["hit"]["count"] == 3
+    assert members["hit"]["receiver_types"] == ["dart::Item"]
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 4
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+
+
+def test_namespace_variable_receivers_preserve_types_and_shadowing(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Item { void hit(); }; extern Item global; extern Item* pointer; extern std::vector<Item*> items; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """struct Foreign { void hit(); };
+namespace d = dart;
+using dart::global;
+void use() {
+  dart::global.hit(); d::pointer->hit(); dart::items.front()->hit();
+  global.hit();
+  { Foreign global; global.hit(); dart::global.hit(); }
+  global.hit();
+}
+""",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 6
+    assert hit["receiver_types"] == ["dart::Item"]
+    assert hit["unresolved_count"] == 0
+
+
+def test_namespace_variable_imports_stop_at_the_innermost_declaration(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Item { void hit(); }; extern Item global; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """namespace foreign { struct Foreign { void hit(); }; extern Foreign global; }
+using dart::global;
+void use() {
+  global.hit();
+  { using foreign::global; global.hit(); }
+  global.hit();
+}
+""",
+    )
+    assert _entries(result, "variables")["dart::global"]["count"] == 3
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 2
+    assert hit["unresolved_count"] == 0
+
+
+def test_type_using_declarations_keep_scopes_and_include_visibility(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Item { Item(); void hit(); }; }"
+    )
+    result = _scan_files(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        {
+            "using.hh": "using dart::Item;",
+            "included.cc": """#include "using.hh"
+namespace foreign { struct Item { void hit(); }; }
+void use() {
+  Item first; first.hit();
+  { using foreign::Item; Item local; local.hit(); }
+  Item second; second.hit();
+}
+namespace own {
+struct Item { void hit(); };
+void use() { Item local; local.hit(); }
+}
+""",
+            "unrelated.cc": """namespace other { struct Item { void hit(); }; }
+using other::Item;
+void use() { Item local; local.hit(); }
+""",
+        },
+    )
+    constructors = _entries(result, "constructors")
+    assert set(constructors) == {"dart::Item"}
+    assert constructors["dart::Item"]["count"] == 2
+    hit = _entries(result, "members")["hit"]
+    assert hit["count"] == 2
+    assert hit["unresolved_count"] == 0
+
+
+def test_namespace_and_member_array_receivers_preserve_dimensions(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+struct Target { void other(); };
+struct Item { void hit(); Target* operator->(); };
+extern Item globals[2][3];
+extern Item* pointers[2];
+struct Holder {
+  Item values[2][3];
+  Item* pointers[2];
+  std::vector<Item> sequence;
+  std::array<Item, 2> owned;
+};
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """void use(dart::Holder& holder) {
+  dart::globals[0]->hit(); dart::globals[0][0]->other();
+  dart::pointers[0]->hit();
+  holder.values[0]->hit(); holder.values[0][0]->other();
+  holder.pointers[0]->hit();
+  holder.sequence.front()->other(); holder.owned[0]->other();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["hit"]["count"] == 4
+    assert members["hit"]["receiver_types"] == ["dart::Item"]
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 4
+    assert members["other"]["count"] == 4
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+
+
+def test_type_using_declarations_respect_inherited_names_and_inner_blocks(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+struct Item { Item(); void hit(); };
+struct Base { struct Item { Item(); void own(); }; };
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """using dart::Item;
+struct Derived : dart::Base {
+  void inherited() { Item value; value.own(); }
+  void imported() { using dart::Item; Item value; value.hit(); }
+};
+""",
+    )
+    members = _entries(result, "members")
+    assert members["own"]["receiver_types"] == ["dart::Base::Item"]
+    assert members["hit"]["receiver_types"] == ["dart::Item"]
+    assert members["own"]["unresolved_count"] == 0
+    assert members["hit"]["unresolved_count"] == 0
+    constructors = _entries(result, "constructors")
+    assert constructors["dart::Base::Item"]["count"] == 1
+    assert constructors["dart::Item"]["count"] == 1
+
+
 def test_value_owning_std_array_constructor_dependencies(extractor, tmp_path):
     headers = tmp_path / "dart"
     headers.mkdir()
@@ -904,6 +1236,145 @@ extern void use(dart::dynamics::Widget w = dart::dynamics::Widget(1));
         "dartsim/src/sample.cc:16"
     ]
     assert _entries(result, "members")["getStaticType"]["count"] == 1
+
+
+@pytest.mark.parametrize(
+    ("definition", "use", "section", "entry", "owners"),
+    [
+        (
+            "constexpr int BASE = 1; constexpr int DEFAULT = BASE * 2; void run(int = DEFAULT);",
+            "dart::run();",
+            "free_functions",
+            "dart::run",
+            {"dart"},
+        ),
+        (
+            "struct A { static constexpr int DEFAULT = 1; void run(int = DEFAULT); };",
+            "dart::A a; a.run();",
+            "members",
+            "run",
+            {"dart::A"},
+        ),
+        (
+            "class A { static constexpr int DEFAULT = 1; public: void run(int = DEFAULT); };",
+            "dart::A a; a.run();",
+            "members",
+            "run",
+            {"dart::A"},
+        ),
+        (
+            "struct Base { static constexpr int DEFAULT = 1; }; struct A : Base { void run(int = DEFAULT); };",
+            "dart::A a; a.run();",
+            "members",
+            "run",
+            {"dart::Base"},
+        ),
+        (
+            "enum class Mode { Default = 1 }; void run(Mode = Mode::Default);",
+            "dart::run();",
+            "free_functions",
+            "dart::run",
+            {"dart::Mode"},
+        ),
+        (
+            "constexpr int DEFAULT = 1; struct A { A(int = DEFAULT); };",
+            "dart::A a;",
+            "constructors",
+            "dart::A",
+            {"dart"},
+        ),
+        (
+            "struct A { static constexpr int DEFAULT = 1; int operator()(int = DEFAULT); };",
+            "dart::A a; a();",
+            "members",
+            "operator()",
+            {"dart::A"},
+        ),
+        (
+            "class A { static constexpr int DEFAULT = 1; friend void run(A&, int = DEFAULT) {} };",
+            "dart::A a; run(a);",
+            "free_functions",
+            "dart::run",
+            {"dart::A"},
+        ),
+    ],
+)
+def test_used_defaults_retain_constant_dependencies(
+    extractor, tmp_path, definition, use, section, entry, owners
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text("namespace dart { " + definition + " }")
+    before = _scan(
+        extractor, extractor.index_api(headers), tmp_path, "void f() { " + use + " }"
+    )
+    row = _entries(before, section)[entry]
+    dependencies = (
+        row.get("default_argument_declarations")
+        or row["declarations"][0]["default_argument_declarations"]
+    )
+    assert {d["class"] for d in dependencies} == owners
+    if "BASE * 2" in definition:
+        assert len(dependencies) == 2
+    header.write_text(header.read_text().replace("= 1", "= 2"))
+    after = extractor.scan_sources(extractor.index_api(headers), tmp_path / "source")
+    assert after != before
+    assert _entries(after, section)[entry]["count"] == row["count"]
+    assert not before["variables"]  # dependency evidence is not a source use
+
+
+def test_default_constant_lookup_excludes_foreign_and_shadowed_names(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace foreign { constexpr int DEFAULT = 1; } "
+        "namespace dart { constexpr int DEFAULT = 99; "
+        "void foreignDefault(int = foreign::DEFAULT); "
+        "namespace inner { constexpr int DEFAULT = 2; void run(int = DEFAULT); } "
+        "namespace mutableScope { int DEFAULT = 2; void run(int = DEFAULT); } "
+        "struct A { static int DEFAULT; void run(int = DEFAULT); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void f() { dart::foreignDefault(); dart::inner::run(); "
+        "dart::mutableScope::run(); dart::A a; a.run(); }",
+    )
+    functions = _entries(result, "free_functions")
+    assert "default_argument_declarations" not in functions["dart::foreignDefault"]
+    assert "default_argument_declarations" not in functions["dart::mutableScope::run"]
+    assert (
+        "default_argument_declarations"
+        not in _entries(result, "members")["run"]["declarations"][0]
+    )
+    dependencies = functions["dart::inner::run"]["default_argument_declarations"]
+    assert [(d["class"], d["signature"]) for d in dependencies] == [
+        ("dart::inner", "constexpr int DEFAULT = 2")
+    ]
+
+
+def test_default_constant_initializer_cycles_are_bounded(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { extern const int B; const int A = B; "
+        "const int B = A; void run(int = A); }"
+    )
+    result = _scan(
+        extractor, extractor.index_api(headers), tmp_path, "void f() { dart::run(); }"
+    )
+    dependencies = _entries(result, "free_functions")["dart::run"][
+        "default_argument_declarations"
+    ]
+    assert {d["signature"] for d in dependencies} == {
+        "extern const int B",
+        "const int A = B",
+        "const int B = A",
+    }
 
 
 def test_default_arguments_do_not_start_member_initializers(extractor, api, tmp_path):
@@ -1857,6 +2328,49 @@ class __attribute__((deprecated)) Gnu { public: void run(); };
     assert "dart::common::Timer" in real_api.types
     assert any(
         method["class"] == "dart::common::Timer" for method in real_api.members["start"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("definition", "change", "owner"),
+    [
+        ("struct alignas(16) A {};", ("16", "32"), "dart::A"),
+        ("struct alignas(16) A; struct A {};", ("16", "32"), "dart::A"),
+        ("struct alignas(8) alignas(16) A {};", ("16", "32"), "dart::A"),
+        (
+            "struct alignas(16) Align {}; struct alignas(Align) A {};",
+            ("16", "32"),
+            "dart::Align",
+        ),
+        ("constexpr int ALIGN = 16; struct alignas(ALIGN) A {};", ("16", "32"), "dart"),
+        (
+            "struct alignas(16) B {}; struct A { private: B member; };",
+            ("16", "32"),
+            "dart::B",
+        ),
+    ],
+)
+def test_alignment_metadata_retains_specifier_dependencies(
+    extractor, tmp_path, definition, change, owner
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text("namespace dart { " + definition + " }")
+    before = _scan(
+        extractor, extractor.index_api(headers), tmp_path, "void f(dart::A* a) {}"
+    )
+    evidence = _entries(before, "types")["dart::A"]["alignment_declarations"]
+    assert any(
+        d["class"] == owner and "16" in d["signature"].replace(" ", "")
+        for d in evidence
+    )
+    header.write_text(header.read_text().replace(*change))
+    after = extractor.scan_sources(extractor.index_api(headers), tmp_path / "source")
+    assert after != before
+    assert any(
+        d["class"] == owner and "32" in d["signature"].replace(" ", "")
+        for d in _entries(after, "types")["dart::A"]["alignment_declarations"]
     )
 
 
@@ -3030,3 +3544,437 @@ using ArrowSharedNext = ArrowShared;
     members = _entries(result, "members")
     assert set(members) == expected
     assert all(entry["count"] == 1 for entry in members.values())
+
+
+@pytest.mark.parametrize(
+    "holder",
+    [
+        "struct A { B value; };",
+        "class A { B value; };",
+        "class A { protected: B value; };",
+        "struct A { B values[2][3]; };",
+        "struct A { using Value = B; Value value; };",
+        "struct A { std::array<B, 2> values; };",
+        "class A { B value; public: A() = default; };",
+        "class A { B value; public: A() {} };",
+        "struct C { B value; }; struct A { C value; };",
+        "struct A : B { A() = default; };",
+    ],
+)
+def test_construction_retains_owned_member_dependencies(extractor, tmp_path, holder):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "#include <array>\nnamespace dart { struct B { B(); }; " + holder + " }"
+    header.write_text(text)
+    source = "void use() { dart::A value; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    declarations = _entries(before, "constructors")["dart::A"]["declarations"]
+    assert any(
+        d["class"] == "dart::B" and d["signature"] == "B ( )" for d in declarations
+    )
+    header.write_text(text.replace("B();", "B(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert _entries(after, "constructors")["dart::A"]["declarations"] != declarations
+
+
+@pytest.mark.parametrize(
+    "holder, source",
+    [
+        ("struct A { B* value = nullptr; };", "void use() { dart::A value; }"),
+        ("struct A { B* values[2]{}; };", "void use() { dart::A value; }"),
+        ("struct A { static B value; };", "void use() { dart::A value; }"),
+        (
+            "struct A { using Pointer = B*; Pointer value = nullptr; };",
+            "void use() { dart::A value; }",
+        ),
+        ("struct A { std::array<B, 0> values; };", "void use() { dart::A value; }"),
+        ("struct A { std::vector<B> values; };", "void use() { dart::A value; }"),
+        (
+            "struct A { B& value; A(B& input) : value(input) {} };",
+            "void use(dart::B& input) { dart::A value(input); }",
+        ),
+    ],
+)
+def test_construction_excludes_unconstructed_member_dependencies(
+    extractor, tmp_path, holder, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "#include <array>\n#include <vector>\nnamespace dart { struct B { B(); }; "
+        + holder
+        + " }"
+    )
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert all(
+        d["class"] != "dart::B"
+        for d in _entries(before, "constructors")["dart::A"]["declarations"]
+    )
+    header.write_text(text.replace("B();", "B(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after == before
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "struct A { virtual void required() = 0; };",
+        "class A { virtual void required() = 0; };",
+        "struct Root { virtual void required(); }; struct A : Root { void required() = 0; };",
+        "struct Root { virtual void required() = 0; }; struct A : Root {};",
+    ],
+)
+@pytest.mark.parametrize(
+    "source",
+    [
+        "struct Derived : dart::A {}; void use() { Derived value; }",
+        "struct Middle : dart::A {}; struct Derived : Middle {}; void use() { Derived value; }",
+        "void use() { dart::A value; }",
+        "namespace dart { struct Holder { A member; }; } void use() { dart::Holder value; }",
+    ],
+)
+def test_construction_retains_pure_virtual_dependencies(
+    extractor, tmp_path, definition, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    holder = "struct Holder { A member; };" if "dart::Holder" in source else ""
+    if holder:
+        source = "void use() { dart::Holder value; }"
+    header.write_text(
+        "namespace dart { " + definition.replace(" = 0", "") + holder + " }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert all("pure_virtual_declarations" not in row for row in before["constructors"])
+    header.write_text("namespace dart { " + definition + holder + " }")
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    requirements = [
+        d
+        for row in after["constructors"]
+        for d in row.get("pure_virtual_declarations", [])
+    ]
+    assert requirements
+    assert all(d["signature"].endswith("= 0") for d in requirements)
+    assert after != before
+
+
+def test_pointer_only_use_does_not_claim_pure_virtual_construction(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    source = "void use(dart::A* value) {}"
+    header.write_text("namespace dart { struct A { virtual void required(); }; }")
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    header.write_text("namespace dart { struct A { virtual void required() = 0; }; }")
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after == before
+
+
+@pytest.mark.parametrize("initializer", ["= BASE", "{BASE}", "(BASE)", "((BASE + 1))"])
+def test_default_constants_retain_each_initializer_form(
+    extractor, tmp_path, initializer
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace dart { constexpr int BASE = 1; constexpr int DEFAULT "
+        + initializer
+        + "; void run(int = DEFAULT); }"
+    )
+    header.write_text(text)
+    before = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path / "before",
+        "void use() { dart::run(); }",
+    )
+    dependencies = _entries(before, "free_functions")["dart::run"][
+        "default_argument_declarations"
+    ]
+    assert len(dependencies) == 2
+    assert any(d["signature"] == "constexpr int BASE = 1" for d in dependencies)
+    header.write_text(text.replace("BASE = 1", "BASE = 2"))
+    after = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path / "after",
+        "void use() { dart::run(); }",
+    )
+    assert after != before
+
+
+def test_direct_constant_indexing_preserves_function_declarations(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { constexpr int BASE(1); constexpr int DEFAULT(BASE); using Alias = int; constexpr int plain(int); constexpr int alias(Alias); constexpr int deduced(decltype(BASE)); constexpr int defaulted(int = BASE); const int variadic(...); void run(int = DEFAULT); }"
+    )
+    api = extractor.index_api(headers)
+    assert {"dart::BASE", "dart::DEFAULT"} <= set(api.variables)
+    assert {
+        "dart::plain",
+        "dart::alias",
+        "dart::deduced",
+        "dart::defaulted",
+        "dart::variadic",
+        "dart::run",
+    } == set(api.free_functions)
+    result = _scan(extractor, api, tmp_path, "void use() { dart::run(); }")
+    assert (
+        len(
+            _entries(result, "free_functions")["dart::run"][
+                "default_argument_declarations"
+            ]
+        )
+        == 2
+    )
+
+
+@pytest.mark.parametrize(
+    "kind, before_value, after_value",
+    [
+        ("bool", "true", "false"),
+        ("int", "0x10", "0x20"),
+        ("int", "1U", "2U"),
+        ("double", "1e-3", "2e-3"),
+    ],
+)
+def test_direct_literal_constants_retain_used_defaults(
+    extractor, tmp_path, kind, before_value, after_value
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace dart { constexpr "
+        + kind
+        + " DEFAULT("
+        + before_value
+        + "); void run("
+        + kind
+        + " = DEFAULT); }"
+    )
+    header.write_text(text)
+    source = "void use() { dart::run(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert (
+        len(
+            _entries(before, "free_functions")["dart::run"][
+                "default_argument_declarations"
+            ]
+        )
+        == 1
+    )
+    header.write_text(text.replace(before_value, after_value))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+def test_braced_class_constant_retains_initializer_dependencies(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { static constexpr int BASE = 1; static constexpr int DEFAULT{BASE}; void run(int = DEFAULT); }; }"
+    header.write_text(text)
+    source = "void use(dart::A& value) { value.run(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    dependencies = _entries(before, "members")["run"]["declarations"][0][
+        "default_argument_declarations"
+    ]
+    assert len(dependencies) == 2
+    header.write_text(text.replace("BASE = 1", "BASE = 2"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+@pytest.mark.parametrize("specifier", ["alignof(B) * 2", "sizeof(B) * 2", "B"])
+def test_alignment_expressions_retain_type_dependencies(extractor, tmp_path, specifier):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace dart { struct alignas(16) B {}; struct alignas("
+        + specifier
+        + ") A {}; }"
+    )
+    header.write_text(text)
+    source = "void use() { dart::A value; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    evidence = _entries(before, "types")["dart::A"]["alignment_declarations"]
+    assert {d["class"] for d in evidence} == {"dart::A", "dart::B"}
+    header.write_text(text.replace("alignas(16)", "alignas(32)"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+@pytest.mark.parametrize(
+    "specifier", ["B*", "alignof(B*) * 2", "sizeof(B*) * 2", "Pointer"]
+)
+def test_alignment_pointer_types_do_not_depend_on_pointee_alignment(
+    extractor, tmp_path, specifier
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace dart { struct alignas(16) B {}; using Pointer = B*; struct alignas("
+        + specifier
+        + ") A {}; }"
+    )
+    header.write_text(text)
+    source = "void use() { dart::A value; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert {
+        d["class"]
+        for d in _entries(before, "types")["dart::A"]["alignment_declarations"]
+    } == {"dart::A"}
+    header.write_text(text.replace("alignas(16)", "alignas(32)"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        == before
+    )
+
+
+def test_alignment_uses_enclosing_declaration_scope(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { constexpr int Alignment = 16; struct alignas(Alignment) A { static constexpr int Alignment = 64; }; }"
+    header.write_text(text)
+    source = "void use() { dart::A value; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    evidence = _entries(before, "types")["dart::A"]["alignment_declarations"]
+    assert any(d["class"] == "dart" and "Alignment" in d["signature"] for d in evidence)
+    assert not any("64" in d["signature"] for d in evidence)
+    header.write_text(text.replace("Alignment = 16", "Alignment = 32"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+    header.write_text(text.replace("Alignment = 64", "Alignment = 128"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "control", source)
+        == before
+    )
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "struct B { B(); }; struct Base { using Owned = B; }; struct A : Base { Owned member; };",
+        "struct Base { struct B { B(); }; }; struct A : Base { B member; };",
+        "struct B { B(); }; struct Root { using Owned = B; }; struct Base : Root {}; struct A : Base { Owned member; };",
+    ],
+)
+def test_owned_members_resolve_inherited_nested_types(extractor, tmp_path, definition):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { " + definition + " }"
+    header.write_text(text)
+    source = "void use() { dart::A value; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert any(
+        d["class"].endswith("::B")
+        for d in _entries(before, "constructors")["dart::A"]["declarations"]
+    )
+    header.write_text(text.replace("B();", "B(int);"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+def test_owned_inherited_type_hides_outer_namespace_type(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct B { B(); }; struct Base { struct B { B() = default; }; }; struct A : Base { B member; }; }"
+    header.write_text(text)
+    source = "void use() { dart::A value; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    declarations = _entries(before, "constructors")["dart::A"]["declarations"]
+    assert {d["class"] for d in declarations} == {"dart::Base::B"}
+    header.write_text(text.replace("B();", "B(int);"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        == before
+    )
+
+
+def test_enum_data_declarations_have_no_parameter_defaults(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { enum class E { Value = 1 }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use() { auto value = dart::E::Value; }",
+    )
+    assert all(
+        "default_argument_declarations" not in d
+        for row in result["data_members"]
+        for d in row["declarations"]
+    )
+
+
+@pytest.mark.parametrize(
+    "prefix, base, imported",
+    [
+        ("", "dart::A", "dart::A::A"),
+        ("", "dart::A", "A::A"),
+        ("using Alias = dart::A;", "Alias", "Alias::A"),
+        ("namespace d = dart;", "d::A", "d::A::A"),
+    ],
+)
+def test_inherited_constructor_import_does_not_hide_base_type(
+    extractor, tmp_path, prefix, base, imported
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { A(); void hit(); }; }"
+    header.write_text(text)
+    source = (
+        prefix
+        + " struct Derived : "
+        + base
+        + " { using "
+        + imported
+        + "; void use() { A value; value.hit(); } };"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "members")["hit"]
+    assert row["receiver_types"] == ["dart::A"]
+    assert row["unresolved_count"] == 0
+    assert _entries(before, "constructors")["dart::A"]["count"] >= 2
+    header.write_text(text.replace("hit()", "hit(int)"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+def test_block_type_import_with_repeated_namespace_name_still_resolves(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { A(); void hit(); }; }"
+    )
+    source = "namespace same { using same = dart::A; } struct Derived { void use() { using same::same; same value; value.hit(); } };"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(result, "members")["hit"]["receiver_types"] == ["dart::A"]

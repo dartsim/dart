@@ -35,13 +35,18 @@ including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it. Type aliases declared inside function bodies are not collected.
 
-A construction lists the constructors that the type declares, including those
-of its class template specializations, or, when it declares none, those of the
-bases that its implicit constructor calls. A Gazebo class derived from a DART
-class constructs that base, so its base clause counts as a construction.
+A construction lists the constructors of the type, its bases and owned
+non-static members, including class template specializations. These are
+conservative candidates; overload resolution is not performed. A Gazebo class
+derived from a DART class constructs that base, so its base clause counts as a
+construction and retains the base's pure-virtual declarations.
 Brace constructions of classes without declared constructors also retain public
 non-static fields in declaration order as `brace_member_declarations`. This is
 lexical field evidence; it does not establish C++ aggregate eligibility.
+Referenced types retain normalized alignment specifiers and their type/constant
+dependencies. Used declarations retain constants named in parameter defaults.
+These are lexical dependencies, without computing C++ layout or evaluating
+constant expressions.
 
 Preprocessor conditions are not evaluated, except that a literal `#if 0` or
 `#if 1` drops the branches it rules out. Every other branch is scanned, so the
@@ -88,6 +93,7 @@ INCLUDE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*[<"]([^>"\n]+)[>"]', re.MULTIL
 THIRD_PARTY = re.compile(r"(?:bt|d|ai)[A-Z]")  # Bullet, ODE and Assimp types
 BLOCK = 1 << 30  # lookup depth of a block scope, past any namespace or class
 RAW_POINTER = "__raw_pointer__"
+RAW_ARRAY = "__raw_array__"
 SOURCE_CLASS = "__source_class__:"
 NOT_DATA = {
     "(",
@@ -256,6 +262,7 @@ class Tokens:
     using: list = field(default_factory=list)
     template_headers: dict = field(default_factory=lambda: defaultdict(set))
     enum_headers: dict = field(default_factory=lambda: defaultdict(set))
+    alignment_headers: dict = field(default_factory=lambda: defaultdict(set))
     macros: set = field(default_factory=set)
 
     def __post_init__(self):
@@ -443,8 +450,10 @@ def data_member(values, owner):
             break
     tokens = Tokens(" ".join(declarator))
     end = len(declarator)
+    dimensions = 0
     while end and declarator[end - 1] == "]" and end - 1 in tokens.pairs:
         end = tokens.pairs[end - 1]
+        dimensions += 1
     if (
         len(declarator[:end]) < 2
         or not IDENTIFIER.match(declarator[end - 1])
@@ -463,6 +472,7 @@ def data_member(values, owner):
         "name_index": end - 1,
         "static": "static" in top,
         "return_tokens": declarator[: end - 1],
+        "array_dimensions": dimensions,
         "signature": " ".join(values),
         "const": "constexpr" in top or "const" in top[pointer + 1 :],
         "virtual": False,
@@ -606,10 +616,20 @@ def scopes(tokens):
                     continue
             if value in {"class", "struct", "enum"} and i + 1 < end:
                 j = i + 1
+                alignments = []
                 scoped_enum = value == "enum" and values[j] in {"class", "struct"}
                 if scoped_enum:
                     j += 1
                 while j < end:
+                    if (
+                        values[j] == "alignas"
+                        and j + 1 in tokens.pairs
+                        and values[j + 1] == "("
+                    ):
+                        stop = tokens.pairs[j + 1] + 1
+                        alignments.append(" ".join(values[j:stop]))
+                        j = stop
+                        continue
                     if values[j] in {"[", "("} and j in tokens.pairs:
                         j = tokens.pairs[j] + 1
                     elif j + 1 < end and (
@@ -637,6 +657,7 @@ def scopes(tokens):
                         full_name = "::".join(
                             (owner or "::".join(namespace), name)
                         ).strip(":")
+                        tokens.alignment_headers[full_name].update(alignments)
                         if value == "enum":
                             tokens.enum_headers[full_name].add(" ".join(values[i:k]))
                         if values[segment : segment + 2] == ["template", "<"]:
@@ -770,13 +791,12 @@ def scopes(tokens):
                                 tokens.pairs[i],
                             )
                     functions.append(method)
-                if owner is None or access != "private":
-                    fields.extend(
-                        {**member, "access": access}
-                        for member in data_declarations(
-                            prefix, owner or "::".join(namespace)
-                        )
+                fields.extend(
+                    {**member, "access": access}
+                    for member in data_declarations(
+                        prefix, owner or "::".join(namespace)
                     )
+                )
                 if prefix and "using" in prefix and "=" in prefix:
                     equals = prefix.index("=")
                     using = prefix.index("using")
@@ -819,6 +839,7 @@ class ApiIndex:
     types: set = field(default_factory=set)
     type_templates: dict = field(default_factory=lambda: defaultdict(set))
     type_enums: dict = field(default_factory=lambda: defaultdict(set))
+    type_alignments: dict = field(default_factory=lambda: defaultdict(set))
     classes: dict = field(default_factory=dict)
     members: dict = field(default_factory=lambda: defaultdict(list))
     constructors: dict = field(default_factory=dict)
@@ -874,23 +895,50 @@ class ApiIndex:
             name = self.aliases[name]
         return name if name in self.constructors else None
 
-    def constructor_declarations(self, name):
-        """The constructor declarations a construction of class `name` depends on.
+    def construction_dependencies(self, name):
+        """Class subobjects constructed as part of a value of `name`.
 
-        A class that declares no constructor has an implicit one, which calls
-        the constructors of its bases.
+        Bases and owned fields are constructed even when their containing
+        constructor is explicitly declared or defaulted.
         """
-        result, pending, seen = [], [name], set()
+        pending, seen = [name], set()
         while pending:
             current = pending.pop(0)
             if current in seen:
                 continue
             seen.add(current)
-            result += self.constructors.get(current, [])
-            if current not in self.declares_constructor:
-                bases = self.classes.get(current, {}).get("bases", ())
-                pending += [base for base in map(self.owner, bases) if base]
-        return result
+            cls = self.classes.get(current, {})
+            pending += [base for base in map(self.owner, cls.get("bases", ())) if base]
+            owners, bases = [current], list(cls.get("bases", ()))
+            while bases:
+                owner = self.owner(bases.pop(0))
+                if owner and owner not in owners:
+                    owners.append(owner)
+                    bases.extend(self.classes[owner].get("bases", ()))
+            for member in cls.get("fields", ()):
+                if member.get("static") or not member.get("return_tokens"):
+                    continue
+                tokens = Tokens(member["signature"] + " ;")
+                for start, end, spelling in names_in(tokens.values):
+                    resolved = next(
+                        (
+                            candidate
+                            for owner in owners
+                            if (candidate := owner + "::" + spelling) in self.types
+                        ),
+                        None,
+                    ) or self.resolve(spelling, tuple(current.split("::")))
+                    dependency = self.constructible(resolved)
+                    if dependency and constructs(tokens, start, end, set(), []):
+                        pending.append(dependency)
+        return sorted(seen)
+
+    def constructor_declarations(self, name):
+        return [
+            declaration
+            for owner in self.construction_dependencies(name)
+            for declaration in self.constructors.get(owner, ())
+        ]
 
     def ancestors(self, name):
         result = set()
@@ -908,6 +956,123 @@ class ApiIndex:
                 result.add(current)
                 pending.extend(self.classes[current]["bases"])
         return result
+
+    def constant_declarations(self, name, scope):
+        """Indexed constants visible in a declaration's class/namespace scope."""
+        spellings = (
+            [name.lstrip(":")] if name.startswith("::") else self.spellings(name, scope)
+        )
+        for candidate in spellings:
+            direct = self.variables.get(candidate, ())
+            if direct:
+                return [d for d in direct if d.get("const")]
+            owner, _, member = candidate.rpartition("::")
+            pending, seen = [self.owner(owner)], set()
+            while pending:
+                current = pending.pop(0)
+                if not current or current in seen:
+                    continue
+                seen.add(current)
+                cls = self.classes[current]
+                found = [d for d in cls.get("fields", ()) if d["name"] == member]
+                if found:
+                    return [d for d in found if d.get("const")]
+                pending.extend(map(self.owner, cls.get("bases", ())))
+        return []
+
+    def constant_dependencies(self, values, scope):
+        """Retain lexical constant references, including their initializers."""
+        result, pending, seen = [], [(values, scope)], set()
+        while pending:
+            expression, where = pending.pop(0)
+            for start, _, name in names_in(expression):
+                if start and expression[start - 1] in {".", "->"}:
+                    continue
+                if start and expression[start - 1] == "::":
+                    name = "::" + name
+                for item in self.constant_declarations(name, where):
+                    key = (item["class"], item["signature"])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    result.append(public_declaration(item))
+                    tokens = TOKEN.findall(item["signature"])
+                    initializer = tokens[len(item.get("return_tokens", ())) + 1 :]
+                    if initializer and initializer[0] in {"=", "{", "("}:
+                        pending.append(
+                            (
+                                initializer[1:],
+                                tuple(item["class"].split("::")),
+                            )
+                        )
+        return sorted(result, key=lambda d: (d["class"], d["signature"]))
+
+    def default_argument_declarations(self, item):
+        """Constant evidence from a used declaration's parameter defaults."""
+        if "return_tokens" not in item:
+            return []
+        tokens = Tokens(item["signature"])
+        values = tokens.values
+        opening = len(item["return_tokens"]) + len(
+            TOKEN.findall(item["name"].rsplit("::", 1)[-1])
+        )
+        closing = tokens.pairs.get(opening)
+        if closing is None or values[opening] != "(":
+            return []
+        expression, default = [], False
+        index = opening + 1
+        while index < closing:
+            value = values[index]
+            stop = index + 1
+            if value in {"(", "[", "{"} and index in tokens.pairs:
+                stop = tokens.pairs[index] + 1
+            elif value == "<":
+                end = template_end(values, index)
+                if end <= closing and values[end - 1] == ">":
+                    stop = end
+            if value == ",":
+                default = False
+            elif value == "=":
+                default = True
+            elif default:
+                expression.extend(values[index:stop])
+            index = stop
+        scope = item.get("declaration_scope") or tuple(
+            (item["class"] or item["name"].rpartition("::")[0]).split("::")
+        )
+        return self.constant_dependencies(expression, scope)
+
+    def alignment_declarations(self, name):
+        """Alignment spellings and their owned-type/constant dependencies."""
+        result, pending, seen = [], [name], set()
+        while pending:
+            current = pending.pop(0)
+            if not current or current in seen:
+                continue
+            seen.add(current)
+            if current in self.aliases:
+                pending.append(self.aliases[current])
+            pending.extend(
+                self.construction_dependencies(self.owner(current) or current)
+            )
+            scope = tuple(current.split("::")[:-1])
+            for signature in sorted(self.type_alignments.get(current, ())):
+                result.append({"class": current, "signature": signature})
+                expression = TOKEN.findall(signature)[2:-1]
+                result.extend(self.constant_dependencies(expression, scope))
+                for _, end, spelling in names_in(expression):
+                    resolved = self.resolve(spelling, scope)
+                    after = template_end(expression, end)
+                    while expression[after : after + 1] in (["const"], ["volatile"]):
+                        after += 1
+                    if resolved not in self.raw_pointers and expression[
+                        after : after + 1
+                    ] != ["*"]:
+                        pending.append(self.owner(resolved))
+        return sorted(
+            {json.dumps(d, sort_keys=True): d for d in result}.values(),
+            key=lambda d: (d["class"], d["signature"]),
+        )
 
 
 def names_in(values):
@@ -1015,7 +1180,7 @@ def array_types(tokens, index, types):
     """Retain each declared array dimension around the element's type markers."""
     index += 1
     while tokens.values[index : index + 1] == ["["] and index in tokens.pairs:
-        types = {"__element__:" + value for value in types}
+        types = {"__element__:" + value for value in types} | {RAW_ARRAY}
         index = tokens.pairs[index] + 1
     return types
 
@@ -1340,15 +1505,30 @@ def index_api(header_root):
         for name, declarations in tokens.enum_headers.items():
             if name.startswith("dart::"):
                 api.type_enums[name].update(declarations)
+        for name, declarations in tokens.alignment_headers.items():
+            if name.startswith("dart::"):
+                api.type_alignments[name].update(declarations)
         for cls in classes:
             if cls["name"].startswith("dart::"):
                 api.types.add(cls["name"])
                 # Specializations and alternative definitions share one entry.
                 entry = api.classes.setdefault(
-                    cls["name"], {"bases_raw": [], "bases": [], "final": False}
+                    cls["name"],
+                    {
+                        "bases_raw": [],
+                        "bases": [],
+                        "final": False,
+                        "fields": [],
+                        "pure_virtuals": [],
+                    },
                 )
                 entry["bases_raw"] += cls["bases"]
                 entry["final"] |= cls["final"]
+                entry["pure_virtuals"] += [
+                    method
+                    for method in cls["members"]
+                    if re.search(r"=\s*0$", method["signature"])
+                ]
                 if cls["kind"] != "enum":
                     api.constructors.setdefault(cls["name"], [])
         for name, values, _ in aliases:
@@ -1380,7 +1560,9 @@ def index_api(header_root):
         for member in fields:
             if member["class"] == "dart" or member["class"].startswith("dart::"):
                 if member["class"] in api.classes:
-                    api.data_members[member["name"]].append(member)
+                    api.classes[member["class"]]["fields"].append(member)
+                    if member.get("access") != "private":
+                        api.data_members[member["name"]].append(member)
                     if member.get("access") == "public" and not member.get("static"):
                         api.brace_fields[member["class"]].append(member)
                 else:
@@ -1422,6 +1604,54 @@ def index_api(header_root):
         for name, declarations in api.free_functions.items()
         if name not in api.types
     }
+    changed = True
+    while changed:
+        changed = False
+        for name, declarations in list(api.free_functions.items()):
+            for item in declarations[:]:
+                if "body" in item:
+                    continue
+                tokens = Tokens(item["signature"])
+                opening = len(item["return_tokens"]) + 1
+                closing = tokens.pairs.get(opening)
+                if closing is None:
+                    continue
+                expression = tokens.values[opening + 1 : closing]
+                scope = tuple(name.split("::")[:-1])
+                literals = {"true", "false", "nullptr"}
+                references = [
+                    spelling
+                    for start, _, spelling in names_in(expression)
+                    if spelling not in literals
+                    and not (start and expression[start - 1].isdigit())
+                ]
+                if (
+                    not expression
+                    or any(value in {",", "="} for value in expression)
+                    or not (
+                        references
+                        or any(
+                            value.isdigit() or value in literals for value in expression
+                        )
+                    )
+                    or not all(
+                        api.constant_declarations(value, scope) for value in references
+                    )
+                ):
+                    continue
+                member = data_member(
+                    item["return_tokens"]
+                    + [name.rsplit("::", 1)[-1], "="]
+                    + expression,
+                    "::".join(scope),
+                )
+                if member and member["const"]:
+                    member["signature"] = item["signature"]
+                    api.variables[name].append(member)
+                    declarations.remove(item)
+                    changed = True
+            if not declarations:
+                del api.free_functions[name]
     return api
 
 
@@ -1477,7 +1707,25 @@ def scan_sources(api, source_root):
         )
     }
 
+    def used_declaration(item):
+        result = public_declaration(item)
+        defaults = api.default_argument_declarations(item)
+        if defaults:
+            result["default_argument_declarations"] = defaults
+        return result
+
     def add(section, name, path, line, **metadata):
+        if section == "free_functions":
+            defaults = [
+                dependency
+                for item in api.free_functions.get(name, ())
+                for dependency in api.default_argument_declarations(item)
+            ]
+            if defaults:
+                metadata["default_argument_declarations"] = sorted(
+                    {json.dumps(d, sort_keys=True): d for d in defaults}.values(),
+                    key=lambda d: (d["class"], d["signature"]),
+                )
         row = tables[section].setdefault(
             name, {"name": name, "count": 0, "examples": set(), **metadata}
         )
@@ -1701,10 +1949,8 @@ def scan_sources(api, source_root):
         """
         name = expand(re.sub(r"\s+", "", name).lstrip(":"), namespace_aliases)
         scope = tokens.scopes.get(index, ())
-        found = api.find(name, scope, imports, tokens.aliases)
-        if found[0]:
-            return found
-        for size in range(len(scope), 0, -1):
+
+        def inherited(size):
             enclosing = "::".join(scope[:size])
             for parent in ancestry.get(enclosing, ()):
                 if f"{parent}::{name}" in tokens.aliases:
@@ -1713,6 +1959,67 @@ def scan_sources(api, source_root):
                 found = api.find(name, tuple(base.split("::")), imports, tokens.aliases)
                 if found[0]:
                     return found
+            return None, None
+
+        def constructor_using(target, where, depth):
+            if depth != len(where) or "::".join(where) not in source_classes:
+                return False
+            owner, _, member = expand(target, namespace_aliases).rpartition("::")
+            if member == owner.rsplit("::", 1)[-1]:
+                return True
+            resolved = api.owner(api.resolve(owner, where, imports, tokens.aliases))
+            return bool(resolved and member == resolved.rsplit("::", 1)[-1])
+
+        using = [
+            (depth, target, where)
+            for short, target, where, start, stop, depth in tokens.using
+            if short == name
+            and start < index < stop
+            and scope[: len(where)] == where
+            and not constructor_using(target, where, depth)
+        ]
+        if using:
+            depth = max(entry[0] for entry in using)
+            local = next(
+                (
+                    candidate
+                    for candidate in api.spellings(name, scope)
+                    if candidate in api.types
+                    or candidate in tokens.aliases
+                    or candidate in source_classes
+                    or any(
+                        candidate in alias_declarations[header]
+                        for header in closure[tokens.source_path]
+                    )
+                ),
+                None,
+            )
+            local_depth = len(local.split("::")) - 1 if local else 0
+            for size in range(len(scope), max(depth, local_depth), -1):
+                found = inherited(size)
+                if found[0]:
+                    return found
+            if local is None or depth >= len(local.split("::")) - 1:
+                for level, target, where in using:
+                    if level == depth:
+                        found = api.find(
+                            expand(target, namespace_aliases),
+                            where,
+                            imports,
+                            tokens.aliases,
+                        )
+                        if found[0]:
+                            return found
+                return None, None
+            if local not in api.types and local not in tokens.aliases:
+                return None, None
+        found = api.find(name, scope, imports, tokens.aliases)
+        if found[0]:
+            return found
+        for size in range(len(scope), 0, -1):
+            found = inherited(size)
+            if found[0]:
+                return found
         head, _, nested = name.rpartition("::")
         if head:
             outer = lookup(head, tokens, index, imports, namespace_aliases)[0]
@@ -1862,6 +2169,7 @@ def scan_sources(api, source_root):
                     for declaration in api.type_enums.get(owner, ())
                 }
             )
+            alignments = api.alignment_declarations(resolved)
             add(
                 "types",
                 resolved,
@@ -1870,6 +2178,7 @@ def scan_sources(api, source_root):
                 **({"template_declarations": templates} if templates else {}),
                 **({"final_classes": final_classes} if final_classes else {}),
                 **({"enum_declarations": enums} if enums else {}),
+                **({"alignment_declarations": alignments} if alignments else {}),
             )
             tokens.source_relevant = True
             referenced.update(api.ancestors(resolved))
@@ -1887,9 +2196,18 @@ def scan_sources(api, source_root):
                     declarations=[],
                 )
                 row["declarations"].extend(
-                    {**public_declaration(d), "access": d["access"]}
+                    {**used_declaration(d), "access": d["access"]}
                     for d in api.constructor_declarations(constructed)
                 )
+                pure_virtuals = [
+                    used_declaration(method)
+                    for owner in api.construction_dependencies(constructed)
+                    for method in api.classes.get(owner, {}).get("pure_virtuals", ())
+                ]
+                if pure_virtuals:
+                    row.setdefault("pure_virtual_declarations", []).extend(
+                        pure_virtuals
+                    )
                 after = template_end(values, type_end)
                 variable = variable_after_type(values, type_end)
                 if variable is not None:
@@ -2115,7 +2433,7 @@ def scan_sources(api, source_root):
             receiver_types=set(),
             unresolved_count=0,
         )
-        row["declarations"].extend(public_declaration(d) for d in declarations)
+        row["declarations"].extend(used_declaration(d) for d in declarations)
         dart_receivers = {t for t in inferred if t.startswith("dart::")}
         row["receiver_types"].update(dart_receivers)
         row["unresolved_count"] += not bool(dart_receivers)
@@ -2259,6 +2577,14 @@ def scan_sources(api, source_root):
             return set()
         result = set()
         for item in declarations:
+            if item.get("array_dimensions"):
+                inferred = returns([{**item, "array_dimensions": 0}], depth + 1)
+                for _ in range(item["array_dimensions"]):
+                    inferred = {"__element__:" + value for value in inferred} | {
+                        RAW_ARRAY
+                    }
+                result.update(inferred)
+                continue
             return_tokens = item.get("return_tokens", ())
             scope = item.get("declaration_scope") or (
                 tuple(item["class"].split("::"))
@@ -2432,7 +2758,59 @@ def scan_sources(api, source_root):
                         result.add("__non_dart__")
         return result
 
+    def namespace_variable(tokens, index, namespace_aliases):
+        """A visible DART namespace variable, excluding lexical local shadows."""
+        values = tokens.values
+        name = values[index]
+        if not IDENTIFIER.match(name) or index and values[index - 1] in {".", "->"}:
+            return None
+        qualifier = (
+            "::".join(qualifier_path(values, index))
+            if index and values[index - 1] == "::"
+            else None
+        )
+        if qualifier is None and any(
+            b[3] == name
+            and b[0] <= index <= b[1]
+            and b[2] <= index
+            and set(tokens.branches[b[2]]) <= set(tokens.branches[index])
+            for b in tokens.bindings
+        ):
+            return None
+        scope = tokens.scopes.get(index, ())
+        imports = scoped_imports(tokens, index, namespace_aliases)
+        if qualifier is not None:
+            for candidate in api.spellings(
+                expand(qualifier + "::" + name, namespace_aliases), scope, imports
+            ):
+                if candidate in api.variables:
+                    return candidate
+            return None
+        found = defaultdict(list)
+        declared_at = set()
+        for size in range(len(scope), -1, -1):
+            candidate = "::".join(scope[:size] + (name,))
+            if candidate in api.variables:
+                found[size].append(candidate)
+        for candidate in api.spellings(name, (), imports):
+            if candidate in api.variables:
+                found[0].append(candidate)
+        for short, target, where, start, stop, depth in tokens.using:
+            if short == name and start < index < stop and scope[: len(where)] == where:
+                declared_at.add(depth)
+                found[depth] += [
+                    candidate
+                    for candidate in api.spellings(
+                        expand(target, namespace_aliases), where, imports
+                    )
+                    if candidate in api.variables
+                ][:1]
+        depths = declared_at | {depth for depth, items in found.items() if items}
+        return next(iter(found[max(depths, default=0)]), None)
+
     def arrow_types(types):
+        if RAW_ARRAY in types:
+            return elements(types) | {RAW_POINTER}
         return returns(candidates("operator->", types)) or types
 
     def receiver(tokens, before, imports, namespace_aliases, depth=0):
@@ -2629,7 +3007,12 @@ def scan_sources(api, source_root):
             types = returns(declarations)
             if types:
                 return types
+        variable = namespace_variable(tokens, before, namespace_aliases)
+        if variable and before and values[before - 1] == "::":
+            return returns(api.variables[variable])
         types = variable_types(tokens, before, fields)
+        if variable:
+            types |= returns(api.variables[variable])
         if not types and before > 1 and values[before - 1] in {"->", "."}:
             if "__non_dart__" in owner:  # an unknown field of a non-DART object
                 return {"__non_dart__"}
@@ -2648,7 +3031,7 @@ def scan_sources(api, source_root):
                 if values[j : j + 1] == ["["]:
                     # shortcut: structured bindings are omitted; add ordered decomposition when downstream uses require it.
                     continue
-                if j + 1 >= len(values):
+                if j + 1 >= len(values) or not IDENTIFIER.match(values[j]):
                     continue
                 if values[j + 1] == ":":
                     opening = tokens.enclosing[i]
@@ -2672,14 +3055,23 @@ def scan_sources(api, source_root):
                         (opening, statement_end(tokens, closing + 1)),
                     )
                     continue
-                if values[j + 1] != "=":
-                    continue
-                end = j + 2
-                while end < len(values) and values[end] != ";":
-                    end += 1
-                if end < len(values):
-                    inferred = receiver(tokens, end - 1, imports, namespace_aliases)
-                    bind_variable(tokens, j, inferred)
+                stop = statement_end(tokens, i)
+                for part, offset in declarators(values[i:stop], None):
+                    name = 1
+                    while name < len(part) and part[name] in {"const", "&", "&&", "*"}:
+                        name += 1
+                    if name + 1 >= len(part) or not IDENTIFIER.match(part[name]):
+                        continue
+                    j = i + offset + name
+                    if values[j + 1] in {"(", "{"} and j + 1 in tokens.pairs:
+                        end = tokens.pairs[j + 1]
+                    elif values[j + 1] == "=":
+                        end = i + offset + len(part)
+                    else:
+                        continue
+                    if end < len(values):
+                        inferred = receiver(tokens, end - 1, imports, namespace_aliases)
+                        bind_variable(tokens, j, inferred)
 
     for path, tokens, classes, functions, _, imports, namespace_aliases in files:
         values = tokens.values
@@ -2734,7 +3126,7 @@ def scan_sources(api, source_root):
                     )
                     row["signatures"].add(item["signature"])
                     row["declarations"].extend(
-                        public_declaration(d) for d in declarations
+                        used_declaration(d) for d in declarations
                     )
         for i, name in enumerate(values):
             syntax_operator = {
@@ -2792,47 +3184,17 @@ def scan_sources(api, source_root):
                     )
                     if free:
                         add("free_functions", free, path, tokens.line(i))
-                shadowed = any(
-                    b[3] == name
-                    and b[0] <= i <= b[1]
-                    and b[2] <= i
-                    and set(tokens.branches[b[2]]) <= set(tokens.branches[i])
-                    for b in tokens.bindings
-                )
-                if qualifier is not None or access is None and not shadowed:
-                    scope = tokens.scopes.get(i, ())
-                    spellings = (
-                        [qualifier + "::" + name] if qualifier is not None else [name]
+                variable = namespace_variable(tokens, i, namespace_aliases)
+                if variable:
+                    add(
+                        "variables",
+                        variable,
+                        path,
+                        tokens.line(i),
+                        declarations=[
+                            public_declaration(d) for d in api.variables[variable]
+                        ],
                     )
-                    if qualifier is None:
-                        spellings += [
-                            target
-                            for short, target, where, start, stop, _ in tokens.using
-                            if short == name
-                            and start < i < stop
-                            and scope[: len(where)] == where
-                        ]
-                    for candidate in dict.fromkeys(
-                        candidate
-                        for spelling in spellings
-                        for candidate in api.spellings(
-                            expand(spelling, namespace_aliases),
-                            scope,
-                            scoped_imports(tokens, i, namespace_aliases),
-                        )
-                    ):
-                        if candidate in api.variables:
-                            add(
-                                "variables",
-                                candidate,
-                                path,
-                                tokens.line(i),
-                                declarations=[
-                                    public_declaration(d)
-                                    for d in api.variables[candidate]
-                                ],
-                            )
-                            break
                 if access and tokens.source_relevant:
                     inferred = receiver(tokens, i - 2, imports, namespace_aliases)
                     if access == "->":
@@ -2954,11 +3316,11 @@ def scan_sources(api, source_root):
             for key in ("receiver_types", "signatures"):
                 if key in row:
                     row[key] = sorted(row[key])
-            if "declarations" in row:
-                row["declarations"] = sorted(
-                    {
-                        json.dumps(d, sort_keys=True): d for d in row["declarations"]
-                    }.values(),
+            for key in ("declarations", "pure_virtual_declarations"):
+                if key not in row:
+                    continue
+                row[key] = sorted(
+                    {json.dumps(d, sort_keys=True): d for d in row[key]}.values(),
                     key=lambda d: (d["class"], d["signature"]),
                 )
             if section == "members":

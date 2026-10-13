@@ -253,19 +253,23 @@ status. Referenced types retain `final_classes` from their class dependencies,
 so making a DART base final changes the inventory. Enum types and enumerator
 declarations retain their normalized enum headers, including underlying types;
 unscoped enumerators are also indexed in their enclosing namespace or class.
-A construction, including an array declaration, lists the
-constructors and their access, including private and deleted declarations, that the
-type declares, including those of its class template specializations. When the
-type declares none, it lists those of the bases that its implicit constructor
-calls, so an empty list means that no class in that chain declares one. A
-Gazebo class derived from a DART class counts as a construction of that base
-at its base clause, because each of its constructors calls a base constructor.
+A construction, including an array declaration, lists the constructors and
+their access, including private and deleted declarations, of the type, its
+bases and owned non-static members, including class template specializations.
+These are conservative candidates without overload resolution. A Gazebo class
+derived from a DART class counts as a construction of that base at its base
+clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
 `brace_member_declarations` retains public non-static fields in declaration
 order. This is lexical field evidence, without proving C++ aggregate eligibility.
 Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
+Referenced types retain normalized alignment specifiers and their type/constant
+dependencies in `alignment_declarations`. Used declarations retain constants
+named in parameter defaults in `default_argument_declarations`, including their
+initializer dependencies. This records lexical evidence without computing C++
+layout or evaluating constant expressions.
 The lexical inventory retains declaration candidates for unresolved receivers
 (`unresolved_count`) and overloads, so a member name on a non-DART object can
 match a DART declaration. Bullet, ODE, and Assimp types (`bt`, `d`, and `ai`
