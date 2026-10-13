@@ -57,9 +57,6 @@ aarch64 wheel and the publish runs themselves remain.
 
 ## Known follow-ups (not blockers)
 
-- `config` and `config-demos` share `build/<env>/cpp/Release` (system versus
-  bundled docking ImGui), so alternating `test-gui` and `demos` reconfigures
-  that tree.
 - Historical contact benchmarks requiring the removed GUI component fail with
   an infrastructure error; use the `release-6.20` harness for comparisons.
 - Explicit `--width/--height` demo windows open at the origin instead of
