@@ -3013,7 +3013,7 @@ def check_cmake_ctest_inventory(
     trace_records: list[dict[str, Any]],
     errors: list[str],
 ) -> None:
-    """Require executing CTest registrations for C++ targets and version checks."""
+    """Require executing CTest registrations for C++ targets and package checks."""
     prefix = "CMake semantic test graph"
     try:
         result = subprocess.run(
@@ -3114,6 +3114,27 @@ def check_cmake_ctest_inventory(
     except OSError as error:
         errors.append(f"{prefix}: unable to inspect CMake script test inputs: {error}")
 
+    script_arguments = {version_test: version_arguments}
+    if cache.get("HAVE_ODE", "").upper() in ("1", "ON", "TRUE", "YES"):
+        ode_test = "test_DARTConfigODE"
+        ode_source = root / "tests/cmake/test_DARTConfigODE.cmake"
+        if ode_test not in generated_names:
+            errors.append(
+                f"{prefix}: required CMake script test `{ode_test}` is missing"
+            )
+        if not ode_source.is_file():
+            errors.append(
+                f"{prefix}: required CMake script test `{ode_test}` source is missing"
+            )
+        script_arguments[ode_test] = (
+            f"-DDART_BINARY_DIR={build_dir.as_posix()}",
+            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/DARTConfigODE",
+            f"-DTEST_CONFIG={configuration}",
+            f"-DTEST_PREFIX_PATH={cache.get('CMAKE_PREFIX_PATH', '')}",
+            "-P",
+            ode_source.as_posix(),
+        )
+
     registered_tests: dict[str, tuple[list[str], Path]] = {}
     approved_probes: set[str] = set()
     for test in tests:
@@ -3167,8 +3188,8 @@ def check_cmake_ctest_inventory(
         )
         expected_arguments = tuple(selection_policy["arguments"])
         app_arguments = GUI_APP_CTEST_ARGUMENTS.get(name)
-        if name == version_test:
-            expected_arguments = version_arguments
+        if name in script_arguments:
+            expected_arguments = script_arguments[name]
             trusted_cmake = shutil.which("cmake")
             if trusted_cmake is None or not all(
                 cmake_paths_match(candidate[0], Path(trusted_cmake))
@@ -3251,7 +3272,7 @@ def check_cmake_ctest_inventory(
         selected = (
             bool(expected_arguments or expected_environment)
             and app_arguments is None
-            and name != version_test
+            and name not in script_arguments
             and not is_probe
         )
         if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
@@ -3294,7 +3315,7 @@ def check_cmake_ctest_inventory(
         return test_name == target_name and command[0] == target_name
 
     matched_registrations: set[str] = (
-        {version_test} & set(registered_tests)
+        set(script_arguments) & set(registered_tests)
     ) | approved_probes
     unregistered = []
     for name, artifacts in target_artifacts.items():
