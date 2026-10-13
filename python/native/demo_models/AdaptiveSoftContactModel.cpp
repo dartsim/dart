@@ -30,7 +30,11 @@
 
 #include "AdaptiveSoftContactModel.hpp"
 
+#include <algorithm>
+#include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <cmath>
 
@@ -252,6 +256,43 @@ double surfacePoseDelta(const Model& lhs, const Model& rhs)
       = lhsTransform.linear().transpose() * rhsTransform.linear();
   const double rotationDelta = Eigen::AngleAxisd(relativeRotation).angle();
   return translationDelta + kSoftBodyRadius * rotationDelta;
+}
+
+//==============================================================================
+std::vector<bool> estimateActivePoints(const Model& model)
+{
+  std::vector<Eigen::Vector3d> contactPoints;
+  for (const auto& contact :
+       model.world->getLastCollisionResult().getContacts()) {
+    if (contact.point.allFinite())
+      contactPoints.push_back(contact.point);
+  }
+
+  const std::size_t count = model.softBody->getNumPointMasses();
+  std::vector<std::pair<double, std::size_t>> ranked;
+  ranked.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    const Eigen::Vector3d position
+        = model.softBody->getPointMass(i)->getWorldPosition();
+    if (!position.allFinite()) {
+      ranked.emplace_back(std::numeric_limits<double>::infinity(), i);
+      continue;
+    }
+    double distance = contactPoints.empty()
+                          ? position.z()
+                          : std::numeric_limits<double>::infinity();
+    for (const auto& contactPoint : contactPoints)
+      distance = std::min(distance, (position - contactPoint).squaredNorm());
+    ranked.emplace_back(distance, i);
+  }
+  std::stable_sort(ranked.begin(), ranked.end());
+
+  std::vector<bool> active(count, false);
+  const std::size_t numActive
+      = std::min(model.softBody->getNumActivePointMasses(), count);
+  for (std::size_t i = 0; i < numActive; ++i)
+    active[ranked[i].second] = true;
+  return active;
 }
 
 } // namespace adaptive_soft_contact_model

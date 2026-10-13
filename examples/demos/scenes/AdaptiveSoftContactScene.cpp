@@ -40,7 +40,6 @@
 #include <dart/dart.hpp>
 
 #include <algorithm>
-#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -100,41 +99,14 @@ void applySettings(AdaptiveSoftContactState& state)
 //==============================================================================
 void updatePointMarkers(AdaptiveSoftContactState& state)
 {
-  std::vector<Eigen::Vector3d> contactPoints;
-  for (const auto& contact :
-       state.model.world->getLastCollisionResult().getContacts()) {
-    if (contact.point.allFinite())
-      contactPoints.push_back(contact.point);
-  }
-
-  std::vector<std::pair<double, std::size_t>> ranked;
-  ranked.reserve(state.pointMarkers.size());
+  const std::vector<bool> active
+      = adaptive_model::estimateActivePoints(state.model);
   for (std::size_t i = 0; i < state.pointMarkers.size(); ++i) {
     const Eigen::Vector3d position
         = state.model.softBody->getPointMass(i)->getWorldPosition();
-    if (!position.allFinite()) {
-      ranked.emplace_back(std::numeric_limits<double>::infinity(), i);
-      continue;
-    }
-    state.pointMarkers[i]->setRelativeTranslation(position);
-    double distance = contactPoints.empty()
-                          ? position.z()
-                          : std::numeric_limits<double>::infinity();
-    for (const auto& contactPoint : contactPoints)
-      distance = std::min(distance, (position - contactPoint).squaredNorm());
-    ranked.emplace_back(distance, i);
-  }
-  std::stable_sort(ranked.begin(), ranked.end());
-
-  std::vector<bool> highlighted(state.pointMarkers.size(), false);
-  const std::size_t active = std::min(
-      state.model.softBody->getNumActivePointMasses(),
-      state.pointMarkers.size());
-  for (std::size_t i = 0; i < active; ++i)
-    highlighted[ranked[i].second] = true;
-
-  for (std::size_t i = 0; i < state.pointMarkers.size(); ++i) {
-    const Eigen::Vector4d color = highlighted[i]
+    if (position.allFinite())
+      state.pointMarkers[i]->setRelativeTranslation(position);
+    const Eigen::Vector4d color = active[i]
                                       ? Eigen::Vector4d(1.0, 0.78, 0.08, 1.0)
                                       : Eigen::Vector4d(0.08, 0.18, 0.48, 0.45);
     state.pointMarkers[i]->getVisualAspect(true)->setColor(color);
