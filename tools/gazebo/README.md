@@ -231,8 +231,6 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
-- Non-constructor public-to-protected access changes are not recorded.
-- Used free-function declarations and signatures are not recorded.
 - Used type-alias target definitions are not recorded.
 - Qualified member-function references without calls are not recorded.
 - Dependent `receiver->template method<T>()` calls are not recognized.
@@ -249,7 +247,9 @@ data-member accesses, free functions, macros, and virtual overrides used by
 the gz-physics dartsim plugin, its direct DART test code, and directly by
 gz-sim. It includes source revisions, use counts, source locations, and
 matching DART header declarations with signatures, constness, and virtual
-status. Referenced types retain `final_classes` from their class dependencies,
+status. Used members also retain their declared access; free-function entries
+retain their declaration candidates. Referenced types retain `final_classes`
+from their class dependencies,
 so making a DART base final changes the inventory. Enum types and enumerator
 declarations retain their normalized enum headers, including underlying types;
 unscoped and anonymous enumerators are also indexed in their enclosing namespace
@@ -261,8 +261,8 @@ These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
 `std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
 `new`.
-A Gazebo class derived from a DART class counts as a construction of that base at its base
-clause and retains its dependencies' pure-virtual declarations.
+A Gazebo class derived from a DART class counts as a construction of that base
+at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
 `brace_member_declarations` retains public non-static fields in declaration
 order. This is lexical field evidence, without proving C++ aggregate eligibility.
@@ -287,14 +287,17 @@ including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
 Chained source helper calls use return declarations from the receiver's class
-and its bases; sequence returns retain their DART element types.
+and its bases; sequence returns retain their DART element types through
+begin/end iterators and their const and reverse variants. Iterator arrows and
+dereferences preserve pointer elements as pointers.
 Standard forwarding calls and `std::optional` accessors retain contained
 receiver shapes through value, pointer and array expressions.
 Source class aliases retain DART bases, and member lookup respects source declarations and
 class using-declarations. Lambda parameters stay within their lambda body.
 Range-for variables retain the range's element types within the loop body.
 Control-statement declarations stay within the complete statement, including
-`else` branches, and grouping parentheses preserve receiver types. C-style
+`else` branches, and grouping parentheses preserve receiver types. Conditional
+expressions retain both operand candidates without resolving their common type. C-style
 casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;

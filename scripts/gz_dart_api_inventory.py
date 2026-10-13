@@ -18,8 +18,6 @@ Known limitations:
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
-- Non-constructor public-to-protected access changes are not recorded.
-- Used free-function declarations and signatures are not recorded.
 - Used type-alias target definitions are not recorded.
 - Qualified member-function references without calls are not recorded.
 - Dependent `receiver->template method<T>()` calls are not recognized.
@@ -46,7 +44,9 @@ lexical field evidence; it does not establish C++ aggregate eligibility.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies, and class annotations such as export macro spellings. Used
 declarations retain constants named in parameter defaults, exception conditions
-and bit-field widths.
+and bit-field widths. Members retain declared access, and free functions retain
+all indexed signature candidates. Conditional receivers keep both operand
+candidates; sequence iterators preserve their element shapes.
 These are lexical dependencies, without computing C++ layout or evaluating
 constant expressions.
 
@@ -96,6 +96,7 @@ THIRD_PARTY = re.compile(r"(?:bt|d|ai)[A-Z]")  # Bullet, ODE and Assimp types
 BLOCK = 1 << 30  # lookup depth of a block scope, past any namespace or class
 RAW_POINTER = "__raw_pointer__"
 RAW_ARRAY = "__raw_array__"
+ITERATOR = "__iterator__"
 OPTIONAL = "__optional__:"
 SOURCE_CLASS = "__source_class__:"
 NOT_DATA = {
@@ -1387,10 +1388,13 @@ def constructs(tokens, start, end, declarations, heads):
             break  # an owning array argument can depend on its constructors, too
     if before in {".", "->", "~", "operator"}:
         return False
+    element = lead
+    while element and values[element - 1] in {"const", "volatile"}:
+        element -= 1
     if (
-        before == "<"
-        and lead > 1
-        and values[lead - 2]
+        element > 1
+        and values[element - 1] == "<"
+        and values[element - 2]
         in {
             "make_shared",
             "make_unique",
@@ -1399,14 +1403,23 @@ def constructs(tokens, start, end, declarations, heads):
             "make_from_tuple",
         }
     ):
-        closing = template_end(values, lead - 1)
+        argument = first_template_argument(values, element - 1)
+        if raw_pointer(argument):
+            return False
+        argument_tokens = Tokens(" ".join(argument))
+        for index, value in enumerate(argument):
+            if value not in {"*", "&", "&&"} or in_template_argument(argument, index):
+                continue
+            enclosing = argument_tokens.enclosing[index]
+            while enclosing is not None and argument[enclosing] != "[":
+                enclosing = argument_tokens.enclosing[enclosing]
+            if enclosing is None:
+                return False
+        closing = template_end(values, element - 1)
         return values[closing : closing + 1] == ["("]
     if before == "using":  # inherited constructors
         return values[end : end + 2] == ["::", values[end - 1]]
     if in_template_argument(values, start):
-        element = lead
-        while element and values[element - 1] in {"const", "volatile"}:
-            element -= 1
         if values[max(0, element - 4) : element] == ["std", "::", "optional", "<"]:
             closing = template_end(values, element - 1)
             return (
@@ -1934,6 +1947,8 @@ def scan_sources(api, source_root):
 
     def used_declaration(item):
         result = public_declaration(item)
+        if item.get("class") in api.classes and "access" in item:
+            result["access"] = item["access"]
         defaults = api.default_argument_declarations(item)
         if defaults:
             result["default_argument_declarations"] = defaults
@@ -1949,6 +1964,9 @@ def scan_sources(api, source_root):
 
     def add(section, name, path, line, **metadata):
         if section == "free_functions":
+            metadata["declarations"] = [
+                used_declaration(item) for item in api.free_functions.get(name, ())
+            ]
             defaults = [
                 dependency
                 for item in api.free_functions.get(name, ())
@@ -3257,6 +3275,10 @@ def scan_sources(api, source_root):
         return next(iter(found[max(depths, default=0)]), None)
 
     def arrow_types(types):
+        if ITERATOR in types:
+            values = elements(types)
+            # Iterator arrow addresses the element, not a pointer element's pointee.
+            return {"__non_dart__"} if RAW_POINTER in values else values | {RAW_POINTER}
         if RAW_ARRAY in types:
             return elements(types) | {RAW_POINTER}
         if (
@@ -3275,9 +3297,42 @@ def scan_sources(api, source_root):
         }
 
     def expression_receiver(tokens, start, end, imports, namespace_aliases, depth=0):
+        if start > end or depth > 8:
+            return set()
+        question, nesting = None, 0
+        index = start
+        while index <= end:
+            value = tokens.values[index]
+            if value in {"(", "[", "{"} and index in tokens.pairs:
+                index = tokens.pairs[index] + 1
+                continue
+            if value == "?":
+                if question is None:
+                    question = index
+                nesting += 1
+            elif value == ":" and question is not None:
+                nesting -= 1
+                if nesting == 0:
+                    # Keep both candidates without attempting common-type conversions.
+                    return expression_receiver(
+                        tokens,
+                        question + 1,
+                        index - 1,
+                        imports,
+                        namespace_aliases,
+                        depth + 1,
+                    ) | expression_receiver(
+                        tokens,
+                        index + 1,
+                        end,
+                        imports,
+                        namespace_aliases,
+                        depth + 1,
+                    )
+            index += 1
         types = receiver(tokens, end, imports, namespace_aliases, depth + 1)
         while tokens.values[start : start + 1] == ["*"]:
-            if RAW_ARRAY in types:
+            if ITERATOR in types or RAW_ARRAY in types:
                 types = elements(types)
             elif RAW_POINTER in types:
                 types = types - {RAW_POINTER}
@@ -3410,6 +3465,19 @@ def scan_sources(api, source_root):
                         return optional_values(types)
                     if method in {"at", "back", "front"} and elements(types):
                         return elements(types)
+                    if method in {
+                        "begin",
+                        "cbegin",
+                        "rbegin",
+                        "crbegin",
+                        "end",
+                        "cend",
+                        "rend",
+                        "crend",
+                    } and elements(types):
+                        return {ITERATOR} | {
+                            value for value in types if value.startswith("__element__:")
+                        }
                     types = source_member_types(
                         types, method, tokens, function, imports, namespace_aliases
                     )

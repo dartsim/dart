@@ -377,6 +377,135 @@ def test_api_suffixed_declaration_generators_still_expand(extractor, tmp_path, m
 
 
 @pytest.mark.parametrize(
+    ("declaration", "changed", "source"),
+    [
+        ("int run(int);", "int run(int, int);", "void use() { dart::run(1); }"),
+        ("int run(int);", "void run(int);", "void use() { int value = dart::run(1); }"),
+        ("int run(int);", "double run(int);", "int (*callback)(int) = dart::run;"),
+        (
+            "int run(int = kDefault) noexcept(kNoThrow);",
+            "int run(int, int) noexcept(kNoThrow);",
+            "void use() { dart::run(); }",
+        ),
+        (
+            "int run(int); double run(double);",
+            "int run(int, int); double run(double);",
+            "void use() { int (*callback)(int) = dart::run; }",
+        ),
+    ],
+)
+def test_free_function_candidates_retain_signature_changes(
+    extractor, tmp_path, declaration, changed, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    prefix = (
+        "namespace dart { constexpr int kDefault = 1; constexpr bool kNoThrow = true; "
+    )
+    header.write_text(prefix + declaration + " }")
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    row = _entries(before, "free_functions")["dart::run"]
+    assert row["declarations"]
+    assert all(item["class"] is None for item in row["declarations"])
+    if "kDefault" in declaration:
+        assert (
+            row["declarations"][0]["default_argument_declarations"]
+            == row["default_argument_declarations"]
+        )
+        assert (
+            row["declarations"][0]["exception_specification_declarations"]
+            == row["exception_specification_declarations"]
+        )
+    header.write_text(prefix + changed + " }")
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert (
+        _entries(after, "free_functions")["dart::run"]["declarations"]
+        != row["declarations"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("declaration", "source", "section", "name"),
+    [
+        ("void hit();", "void use(dart::A& a) { a.hit(); }", "members", "hit"),
+        ("virtual void hit();", "void use(dart::A& a) { a.hit(); }", "members", "hit"),
+        ("static void hit();", "void use() { dart::A::hit(); }", "members", "hit"),
+        (
+            "int value;",
+            "void use(dart::A& a) { (void)a.value; }",
+            "data_members",
+            "value",
+        ),
+        (
+            "static int value;",
+            "void use() { (void)dart::A::value; }",
+            "data_members",
+            "value",
+        ),
+        (
+            "unsigned value : 3;",
+            "void use(dart::A& a) { (void)a.value; }",
+            "data_members",
+            "value",
+        ),
+    ],
+)
+def test_used_member_candidates_retain_public_and_protected_access(
+    extractor, tmp_path, declaration, source, section, name
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { class A { public: " + declaration + " }; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    declarations = _entries(before, section)[name]["declarations"]
+    assert {item["access"] for item in declarations} == {"public"}
+    header.write_text(text.replace("public:", "protected:"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert {
+        item["access"] for item in _entries(after, section)[name]["declarations"]
+    } == {"protected"}
+    assert after != before
+
+
+def test_hidden_friend_signatures_ignore_class_access_sections(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { class A { private: friend int run(A); }; }"
+    header.write_text(text)
+    before = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::A a) { run(a); }",
+    )
+    row = _entries(before, "free_functions")["dart::run"]
+    assert row["declarations"]
+    assert all(
+        item["class"] is None and "access" not in item for item in row["declarations"]
+    )
+    header.write_text(text.replace("private:", "public:"))
+    after = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::A a) { run(a); }",
+    )
+    assert after == before
+    header.write_text(text.replace("run(A)", "run(A, int)"))
+    changed = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::A a) { run(a); }",
+    )
+    assert changed != before
+
+
+@pytest.mark.parametrize(
     ("namespace", "class_name"),
     [("dart", "A"), ("dart", "DART_CLASS_NAME"), ("DART_NAMESPACE", "A")],
 )
@@ -1775,6 +1904,7 @@ void local(Local value) { value.enableContact = true; }
     assert members["enableContact"]["declarations"] == [
         {
             "class": "dart::collision::Option",
+            "access": "public",
             "const": False,
             "signature": "bool enableContact",
             "virtual": False,
@@ -5281,3 +5411,264 @@ def test_optional_alias_engagement_uses_declaration_context(
     header.write_text(text.replace("A();", "A() = delete;"))
     after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
     assert (after != before) is engaged
+
+
+VALUE_FACTORIES = [
+    "std::make_shared<{target}>()",
+    "std::make_unique<{target}>()",
+    "std::allocate_shared<{target}>(std::allocator<std::remove_cv_t<{target}>>{{}})",
+    "std::make_optional<{target}>()",
+    "std::make_from_tuple<{target}>(std::tuple<>{{}})",
+]
+POINTER_FACTORIES = VALUE_FACTORIES[:3] + [
+    "std::make_optional<{target}>(nullptr)",
+    "std::make_from_tuple<{target}>(std::tuple<decltype(nullptr)>{{nullptr}})",
+]
+FACTORY_API_HEADER = "#include <memory>\n#include <optional>\n#include <tuple>\n#include <array>\n#include <type_traits>\nnamespace dart { struct A { A(); }; template<class T> struct Box { Box(); }; }"
+
+
+@pytest.mark.parametrize("factory", POINTER_FACTORIES)
+@pytest.mark.parametrize("target", ["dart::A*", "dart::A(*)()"])
+def test_factory_pointer_targets_do_not_construct_returned_class(
+    extractor, tmp_path, factory, target
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(FACTORY_API_HEADER)
+    source = "void use() { auto value = " + factory.format(target=target) + "; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert not before["constructors"]
+    header.write_text(FACTORY_API_HEADER.replace("A();", "A() = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        == before
+    )
+
+
+@pytest.mark.parametrize("factory", VALUE_FACTORIES)
+@pytest.mark.parametrize(
+    "target", ["dart::A", "const dart::A", "volatile dart::A", "const volatile dart::A"]
+)
+def test_factory_cv_value_targets_retain_constructor_dependencies(
+    extractor, tmp_path, factory, target
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(FACTORY_API_HEADER)
+    source = "void use() { auto value = " + factory.format(target=target) + "; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert _entries(before, "constructors")["dart::A"]["count"] == 1
+    header.write_text(FACTORY_API_HEADER.replace("A();", "A() = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "void use(dart::A& original) { auto& value = std::make_from_tuple<dart::A&>(std::tuple<dart::A&>{original}); }",
+        "void use(dart::A& original) { auto&& value = std::make_from_tuple<dart::A&&>(std::tuple<dart::A&&>{std::move(original)}); }",
+    ],
+)
+def test_tuple_factory_reference_target_does_not_construct(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(FACTORY_API_HEADER)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert not before["constructors"]
+    header.write_text(FACTORY_API_HEADER.replace("A();", "A() = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        == before
+    )
+
+
+@pytest.mark.parametrize("factory", VALUE_FACTORIES)
+def test_factory_nested_pointer_argument_does_not_hide_value_constructor(
+    extractor, tmp_path, factory
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(FACTORY_API_HEADER)
+    source = (
+        "void use() { auto value = "
+        + factory.format(target="dart::Box<dart::A*>")
+        + "; }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert set(_entries(before, "constructors")) == {"dart::Box"}
+    header.write_text(FACTORY_API_HEADER.replace("Box();", "Box() = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+@pytest.mark.parametrize("factory", VALUE_FACTORIES)
+def test_factory_owned_array_value_keeps_element_construction(
+    extractor, tmp_path, factory
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(FACTORY_API_HEADER)
+    source = (
+        "void use() { auto value = "
+        + factory.format(target="std::array<dart::A, sizeof(void*)>")
+        + "; }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert _entries(before, "constructors")["dart::A"]["count"] == 1
+    header.write_text(FACTORY_API_HEADER.replace("A();", "A() = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+def test_unique_factory_array_value_keeps_element_construction(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(FACTORY_API_HEADER)
+    source = "void use() { auto value = std::make_unique<dart::A[]>(2); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert _entries(before, "constructors")["dart::A"]["count"] == 1
+    header.write_text(FACTORY_API_HEADER.replace("A();", "A() = delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+def _scan_receiver_api(extractor, tmp_path, header, source):
+    headers = tmp_path / "dart"
+    headers.mkdir(exist_ok=True)
+    (headers / "api.hpp").write_text(header)
+    return _scan(extractor, extractor.index_api(headers), tmp_path, source)
+
+
+CONDITIONAL_API = """namespace dart {
+struct A { void hit(); };
+struct B { operator A(); void hit(); };
+A makeA(); B makeB();
+}"""
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "flag ? dart::makeA() : dart::makeB()",
+        "(flag ? dart::makeA() : dart::makeB())",
+        "flag ? (other ? dart::makeB() : dart::makeA()) : dart::makeB()",
+        "flag ? other ? dart::makeB() : dart::makeA() : dart::makeB()",
+        "flag ? dart::makeB() : other ? dart::makeA() : dart::makeB()",
+        "std::move(flag ? dart::makeA() : dart::makeB())",
+    ],
+)
+def test_conditional_receiver_mutation(extractor, tmp_path, expression):
+    source = "void use(bool flag, bool other) { auto x = " + expression + "; x.hit(); }"
+    changed = CONDITIONAL_API.replace(
+        "struct A { void hit();", "struct A { void hit() = delete;"
+    )
+    before = _scan_receiver_api(extractor, tmp_path, CONDITIONAL_API, source)
+    hit = _entries(before, "members")["hit"]
+    assert "dart::A" in hit["receiver_types"]
+    assert any(d["class"] == "dart::A" for d in hit["declarations"])
+    assert _scan_receiver_api(extractor, tmp_path, changed, source) != before
+
+
+ITERATOR_API = """namespace dart {
+struct Target { void other(); };
+struct A { void hit() const; Target* operator->(); };
+struct Factory { std::vector<A> values(); std::vector<A*> pointers(); std::array<A, 2> array(); std::array<A*, 2> pointerArray(); };
+}"""
+
+
+@pytest.mark.parametrize(
+    "method", ["begin", "cbegin", "rbegin", "crbegin", "end", "cend", "rend", "crend"]
+)
+@pytest.mark.parametrize(
+    "container, access",
+    [
+        ("values", "it->hit()"),
+        ("pointers", "(*it)->hit()"),
+        ("array", "(*it).hit()"),
+        ("pointerArray", "auto p = *it; p->hit()"),
+    ],
+)
+def test_iterator_receiver_mutation(extractor, tmp_path, method, container, access):
+    source = (
+        "void use(dart::Factory& factory) { auto it = factory."
+        + container
+        + "()."
+        + method
+        + "(); "
+        + ("--it; " if method.endswith("end") else "")
+        + access
+        + "; }"
+    )
+    changed = ITERATOR_API.replace("void hit() const;", "void hit() const = delete;")
+    before = _scan_receiver_api(extractor, tmp_path, ITERATOR_API, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"]
+    assert hit["unresolved_count"] == 0
+    assert "operator->" not in _entries(before, "members")
+    assert _scan_receiver_api(extractor, tmp_path, changed, source) != before
+
+
+def test_conditional_foreign_and_unknown_controls(extractor, tmp_path):
+    header = CONDITIONAL_API
+    source = """struct Foreign { void hit(); }; Foreign one(); Foreign two();
+void use(dart::A& known, bool flag) { auto x = flag ? one() : two(); x.hit(); }
+template<class T> void unknown(dart::A& known, bool flag, T& a, T& b) { auto x = flag ? a : b; x.hit(); }
+"""
+    hit = _entries(
+        _scan_receiver_api(extractor, tmp_path, header, source), "members"
+    ).get("hit")
+    assert hit is None or hit["receiver_types"] == []
+    assert hit is None or hit["count"] == hit["unresolved_count"]
+
+
+def test_foreign_container_iterators_do_not_supply_dart_receiver(extractor, tmp_path):
+    source = """struct Foreign { void hit() const; }; struct Factory { std::vector<Foreign> values(); std::array<Foreign, 2> array(); };
+void use(dart::A& known, Factory& factory) { auto it = factory.values().begin(); it->hit(); auto a = factory.array().cbegin(); (*a).hit(); }
+"""
+    assert "hit" not in _entries(
+        _scan_receiver_api(extractor, tmp_path, ITERATOR_API, source), "members"
+    )
+
+
+def test_dereferenced_iterator_uses_element_own_arrow_operator(extractor, tmp_path):
+    source = "void use(dart::Factory& factory) { auto it = factory.values().begin(); (*it)->other(); }"
+    changed = ITERATOR_API.replace("void other();", "void other() = delete;")
+    before = _scan_receiver_api(extractor, tmp_path, ITERATOR_API, source)
+    members = _entries(before, "members")
+    assert members["operator->"]["receiver_types"] == ["dart::A"]
+    assert members["operator->"]["count"] == 1
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+    assert _scan_receiver_api(extractor, tmp_path, changed, source) != before
+
+
+def test_pointer_element_iterator_arrow_does_not_reach_pointee(extractor, tmp_path):
+    source = "void use(dart::Factory& factory) { auto it = factory.pointers().begin(); it->hit(); }"
+    assert "hit" not in _entries(
+        _scan_receiver_api(extractor, tmp_path, ITERATOR_API, source), "members"
+    )
+
+
+def test_unknown_iterator_does_not_acquire_outer_dart_binding(extractor, tmp_path):
+    source = """template<class T> struct Factory { std::vector<T> values(); };
+template<class T> void use(dart::A* known, Factory<T>& factory) { auto it = known; { auto it = factory.values().begin(); it->hit(); } }
+"""
+    hit = _entries(
+        _scan_receiver_api(extractor, tmp_path, ITERATOR_API, source), "members"
+    ).get("hit")
+    assert hit is None or hit["receiver_types"] == []
+    assert hit is None or hit["count"] == hit["unresolved_count"]

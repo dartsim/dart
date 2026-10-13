@@ -12,6 +12,7 @@
           "name": "dart::collision::BodyNodeCollisionFilter",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionFilter",
               "const": true,
               "signature": "virtual bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const = 0",
@@ -44,54 +45,63 @@
           "name": "dart::collision::BulletCollisionDetector",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual double distance ( CollisionGroup * group , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual double distance ( CollisionGroup * group1 , CollisionGroup * group2 , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": true,
               "signature": "virtual std :: shared_ptr < CollisionDetector > cloneWithoutCollisionObjects ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual std :: unique_ptr < CollisionObject > createCollisionObject ( const dynamics :: ShapeFrame * shapeFrame ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual void refreshCollisionObject ( CollisionObject * object ) = 0",
@@ -131,36 +141,42 @@
           "name": "dart::collision::BulletCollisionGroup",
           "pure_virtual_declarations": [
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void addCollisionObjectToEngine ( CollisionObject * object ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void addCollisionObjectsToEngine ( const std :: vector < CollisionObject * > & collObjects ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void initializeEngineData ( ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void removeAllCollisionObjectsFromEngine ( ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void removeCollisionObjectFromEngine ( CollisionObject * object ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void updateCollisionGroupEngineData ( ) = 0",
@@ -235,54 +251,63 @@
           "name": "dart::collision::OdeCollisionDetector",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual double distance ( CollisionGroup * group , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual double distance ( CollisionGroup * group1 , CollisionGroup * group2 , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": true,
               "signature": "virtual std :: shared_ptr < CollisionDetector > cloneWithoutCollisionObjects ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual std :: unique_ptr < CollisionObject > createCollisionObject ( const dynamics :: ShapeFrame * shapeFrame ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual void refreshCollisionObject ( CollisionObject * object ) = 0",
@@ -336,36 +361,42 @@
           "name": "dart::collision::OdeCollisionGroup",
           "pure_virtual_declarations": [
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void addCollisionObjectToEngine ( CollisionObject * object ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void addCollisionObjectsToEngine ( const std :: vector < CollisionObject * > & collObjects ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void initializeEngineData ( ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void removeAllCollisionObjectsFromEngine ( ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void removeCollisionObjectFromEngine ( CollisionObject * object ) = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::collision::CollisionGroup",
               "const": false,
               "signature": "virtual void updateCollisionGroupEngineData ( ) = 0",
@@ -432,12 +463,14 @@
           "name": "dart::constraint::DantzigBoxedLcpSolver",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpSolver",
               "const": false,
               "signature": "virtual bool solve ( int n , double * A , double * x , double * b , int nub , double * lo , double * hi , int * findex , bool earlyTermination = false ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpSolver",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
@@ -463,12 +496,14 @@
           "name": "dart::constraint::PgsBoxedLcpSolver",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpSolver",
               "const": false,
               "signature": "virtual bool solve ( int n , double * A , double * x , double * b , int nub , double * lo , double * hi , int * findex , bool earlyTermination = false ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpSolver",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
@@ -521,54 +556,63 @@
           "name": "dart::constraint::WeldJointConstraint",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": true,
               "signature": "virtual bool isActive ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": true,
               "signature": "virtual dynamics :: SkeletonPtr getRootSkeleton ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void applyImpulse ( double * lambda ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void applyUnitImpulse ( std :: size_t index ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void excite ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void getInformation ( ConstraintInfo * info ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void getVelocityChange ( double * vel , bool withCfm ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void unexcite ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": false,
               "signature": "virtual void update ( ) = 0",
@@ -742,30 +786,35 @@
           "name": "dart::dynamics::BoxShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -833,30 +882,35 @@
           "name": "dart::dynamics::CapsuleShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -924,30 +978,35 @@
           "name": "dart::dynamics::CylinderShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -1236,24 +1295,28 @@
           "name": "dart::dynamics::FreeJoint::Properties",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::common::Aspect",
               "const": true,
               "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": true,
               "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": false,
               "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::GenericJoint",
               "const": true,
               "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
@@ -1321,30 +1384,35 @@
           "name": "dart::dynamics::HeightmapShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -1581,30 +1649,35 @@
           "name": "dart::dynamics::MeshShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -1678,30 +1751,35 @@
           "name": "dart::dynamics::PlaneShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -1978,24 +2056,28 @@
           "name": "dart::dynamics::PrismaticJoint::Properties",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::common::Aspect",
               "const": true,
               "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": true,
               "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": false,
               "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::GenericJoint",
               "const": true,
               "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
@@ -2272,24 +2354,28 @@
           "name": "dart::dynamics::RevoluteJoint::Properties",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::common::Aspect",
               "const": true,
               "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": true,
               "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": false,
               "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::GenericJoint",
               "const": true,
               "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
@@ -2429,30 +2515,35 @@
           "name": "dart::dynamics::SphereShape",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual Eigen :: Matrix3d computeInertia ( double mass ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual ShapePtr clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateBoundingBox ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual void updateVolume ( ) const = 0",
@@ -2729,24 +2820,28 @@
           "name": "dart::dynamics::UniversalJoint::Properties",
           "pure_virtual_declarations": [
             {
+              "access": "public",
               "class": "dart::common::Aspect",
               "const": true,
               "signature": "virtual std :: unique_ptr < Aspect > cloneAspect ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": true,
               "signature": "virtual std :: unique_ptr < T > clone ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::common::Cloneable",
               "const": false,
               "signature": "virtual void copy ( const T & anotherCloneable ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::GenericJoint",
               "const": true,
               "signature": "virtual JacobianMatrix getRelativeJacobianStatic ( const Vector & positions ) const = 0",
@@ -2919,6 +3014,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "static constexpr ActuatorType FORCE = detail :: FORCE",
@@ -2939,6 +3035,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "static constexpr ActuatorType SERVO = detail :: SERVO",
@@ -2959,6 +3056,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionOption",
               "const": false,
               "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
@@ -2979,6 +3077,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::Contact",
               "const": false,
               "signature": "CollisionObject * collisionObject1",
@@ -3000,6 +3099,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::Contact",
               "const": false,
               "signature": "CollisionObject * collisionObject2",
@@ -3021,6 +3121,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::Contact",
               "const": false,
               "signature": "Eigen :: Vector3d force",
@@ -3041,18 +3142,21 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::PrismaticJointUniqueProperties",
               "const": false,
               "signature": "Eigen :: Vector3d mAxis",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::detail::RevoluteJointUniqueProperties",
               "const": false,
               "signature": "Eigen :: Vector3d mAxis",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::detail::UniversalJointUniqueProperties",
               "const": false,
               "signature": "std :: array < Eigen :: Vector3d , 2 > mAxis",
@@ -3076,6 +3180,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RayHit",
               "const": false,
               "signature": "const CollisionObject * mCollisionObject",
@@ -3097,6 +3202,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "Eigen :: Vector3d mContactSurfaceMotionVelocity { DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY }",
@@ -3117,6 +3223,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mDampingCoefficients",
@@ -3134,6 +3241,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RaycastOption",
               "const": false,
               "signature": "bool mEnableAllHits",
@@ -3153,6 +3261,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "Eigen :: Vector3d mFirstFrictionalDirection { DART_DEFAULT_FRICTION_DIR }",
@@ -3173,6 +3282,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mForceLowerLimits",
@@ -3190,6 +3300,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mForceUpperLimits",
@@ -3207,6 +3318,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RayHit",
               "const": false,
               "signature": "double mFraction",
@@ -3228,6 +3340,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mFrictions",
@@ -3245,6 +3358,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::BodyNodeAspectProperties",
               "const": false,
               "signature": "bool mGravityMode",
@@ -3264,6 +3378,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton::Configuration",
               "const": false,
               "signature": "std :: vector < std :: size_t > mIndices",
@@ -3283,6 +3398,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::BodyNodeAspectProperties",
               "const": false,
               "signature": "Inertia mInertia",
@@ -3304,6 +3420,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": false,
               "signature": "mutable bool mIsBoundingBoxDirty",
@@ -3321,6 +3438,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::BodyNodeAspectProperties",
               "const": false,
               "signature": "bool mIsCollidable",
@@ -3340,6 +3458,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::JointProperties",
               "const": false,
               "signature": "bool mIsPositionLimitEnforced",
@@ -3357,6 +3476,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::dynamics::Shape",
               "const": false,
               "signature": "mutable bool mIsVolumeDirty",
@@ -3374,6 +3494,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::PgsBoxedLcpSolver::Option",
               "const": false,
               "signature": "int mMaxIteration",
@@ -3394,6 +3515,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "MeshHandle mMesh",
@@ -3411,18 +3533,21 @@
           "count": 11,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::BodyNodeAspectProperties",
               "const": false,
               "signature": "std :: string mName",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::detail::EntityNodeProperties",
               "const": false,
               "signature": "std :: string mName",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::detail::JointProperties",
               "const": false,
               "signature": "std :: string mName",
@@ -3448,6 +3573,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RayHit",
               "const": false,
               "signature": "Eigen :: Vector3d mNormal",
@@ -3469,6 +3595,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RayHit",
               "const": false,
               "signature": "Eigen :: Vector3d mPoint",
@@ -3490,6 +3617,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "EuclideanPoint mPositionLowerLimits",
@@ -3507,6 +3635,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "EuclideanPoint mPositionUpperLimits",
@@ -3524,6 +3653,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton::Configuration",
               "const": false,
               "signature": "Eigen :: VectorXd mPositions",
@@ -3543,6 +3673,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "double mPrimaryFrictionCoeff { DART_DEFAULT_FRICTION_COEFF }",
@@ -3563,6 +3694,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "double mPrimarySlipCompliance { DART_DEFAULT_SLIP_COMPLIANCE }",
@@ -3583,6 +3715,7 @@
           "count": 8,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RaycastResult",
               "const": false,
               "signature": "std :: vector < RayHit > mRayHits",
@@ -3604,6 +3737,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "EuclideanPoint mRestPositions",
@@ -3621,6 +3755,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "double mRestitutionCoeff { DART_DEFAULT_RESTITUTION_COEFF }",
@@ -3641,6 +3776,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "double mSecondaryFrictionCoeff { DART_DEFAULT_FRICTION_COEFF }",
@@ -3661,6 +3797,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
               "signature": "double mSecondarySlipCompliance { DART_DEFAULT_SLIP_COMPLIANCE }",
@@ -3681,6 +3818,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mSpringStiffnesses",
@@ -3698,6 +3836,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mVelocityLowerLimits",
@@ -3715,6 +3854,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::GenericJointUniqueProperties",
               "const": false,
               "signature": "Vector mVelocityUpperLimits",
@@ -3732,6 +3872,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionOption",
               "const": false,
               "signature": "std :: size_t maxNumContacts",
@@ -3751,6 +3892,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::Contact",
               "const": false,
               "signature": "Eigen :: Vector3d normal",
@@ -3770,6 +3912,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::Contact",
               "const": false,
               "signature": "double penetrationDepth",
@@ -3790,6 +3933,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::Contact",
               "const": false,
               "signature": "Eigen :: Vector3d point",
@@ -3809,6 +3953,14 @@
       "free_functions": [
         {
           "count": 1,
+          "declarations": [
+            {
+              "class": null,
+              "const": false,
+              "signature": "Eigen :: Vector6d dAdT ( const Eigen :: Isometry3d & _T , const Eigen :: Vector6d & _F )",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/JointFeatures.cc:866"
           ],
@@ -4300,6 +4452,7 @@
           "count": 9,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": false,
               "signature": "static Frame * World ( )",
@@ -4322,6 +4475,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "void addConstraint ( const ConstraintBasePtr & constraint )",
@@ -4342,6 +4496,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionResult",
               "const": false,
               "signature": "void addContact ( const Contact & contact )",
@@ -4362,6 +4517,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "void addContactSurfaceHandler ( ContactSurfaceHandlerPtr handler )",
@@ -4382,6 +4538,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void addExtForce ( const Eigen :: Vector3d & force , const Eigen :: Vector3d & offset = Eigen :: Vector3d :: Zero ( ) , bool isForceLocal = false , bool isOffsetLocal = true )",
@@ -4404,6 +4561,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void addExtTorque ( const Eigen :: Vector3d & torque , bool isLocal = false )",
@@ -4425,6 +4583,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "std :: string addSkeleton ( const dynamics :: SkeletonPtr & _skeleton )",
@@ -4447,12 +4606,14 @@
           "count": 8,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": false,
               "signature": "virtual ShapeNode * asShapeNode ( )",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": true,
               "signature": "virtual const ShapeNode * asShapeNode ( ) const",
@@ -4475,12 +4636,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionResult",
               "const": false,
               "signature": "void clear ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::collision::RaycastResult",
               "const": false,
               "signature": "void clear ( )",
@@ -4503,12 +4666,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual void clearExternalForces ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "void clearExternalForces ( ) override",
@@ -4530,12 +4695,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual void clearInternalForces ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "void clearInternalForces ( ) override",
@@ -4557,36 +4724,42 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
@@ -4610,48 +4783,56 @@
           "count": 10,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::DARTCollisionDetector",
               "const": false,
               "signature": "static std :: shared_ptr < DARTCollisionDetector > create ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::collision::FCLCollisionDetector",
               "const": false,
               "signature": "static std :: shared_ptr < FCLCollisionDetector > create ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::detail::CompositeData",
               "const": false,
               "signature": "template < class AspectT , typename ... Args > typename GetData < AspectT > :: Type & create ( Args && ... args )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "static SkeletonPtr create ( const AspectPropertiesData & properties )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "static SkeletonPtr create ( const std :: string & _name = )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "static std :: shared_ptr < World > create ( const WorldConfig & config )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "static std :: shared_ptr < World > create ( const std :: string & name = )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "template < typename ... Args > static WorldPtr create ( Args && ... args )",
@@ -4677,6 +4858,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceHandler",
               "const": true,
               "signature": "virtual ContactConstraintPtr createConstraint ( collision :: Contact & contact , size_t numContactsOnCollisionObject , double timeStep ) const",
@@ -4697,6 +4879,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "template < class JointType , class NodeType = BodyNode > std :: pair < JointType * , NodeType * > createJointAndBodyNodePair ( BodyNode * _parent = nullptr , const typename JointType :: Properties & _jointProperties = typename JointType :: Properties ( ) , const typename NodeType :: Properties & _bodyProperties = typename NodeType :: Properties ( ) )",
@@ -4720,6 +4903,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceHandler",
               "const": true,
               "signature": "virtual ContactSurfaceParams createParams ( const collision :: Contact & contact , size_t numContactsOnCollisionObject ) const",
@@ -4740,12 +4924,14 @@
           "count": 12,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "template < class ... Aspects > ShapeNode * createShapeNodeWith ( const ShapePtr & shape )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "template < class ... Aspects > ShapeNode * createShapeNodeWith ( const ShapePtr & shape , const std :: string & name )",
@@ -4769,6 +4955,7 @@
           "count": 6,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::SimpleFrame",
               "const": false,
               "signature": "template < typename ... Args > static std :: shared_ptr < SimpleFrame > createShared ( Args && ... args )",
@@ -4791,6 +4978,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Entity",
               "const": true,
               "signature": "bool descendsFrom ( const Frame * _someFrame ) const",
@@ -4811,12 +4999,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "template < typename Func > void eachShapeNode ( Func func )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "template < typename Func > void eachShapeNode ( Func func ) const",
@@ -4837,18 +5027,21 @@
           "count": 26,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateBodyNodePtr",
               "const": true,
               "signature": "BodyNodeT * get ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateJointPtr",
               "const": true,
               "signature": "JointT * get ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
               "const": true,
               "signature": "NodeT * get ( ) const",
@@ -4874,6 +5067,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getAcceleration ( std :: size_t _index ) const = 0",
@@ -4894,12 +5088,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "ActuatorType getActuatorType ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "ActuatorType getActuatorType ( std :: size_t index ) const",
@@ -4921,6 +5117,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector3d getAngularAcceleration ( const Frame * _relativeTo = Frame :: World ( ) , const Frame * _inCoordinatesOf = Frame :: World ( ) ) const",
@@ -4941,6 +5138,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector3d getAngularVelocity ( const Frame * _relativeTo = Frame :: World ( ) , const Frame * _inCoordinatesOf = Frame :: World ( ) ) const",
@@ -4965,12 +5163,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::PrismaticJoint",
               "const": true,
               "signature": "const Eigen :: Vector3d & getAxis ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::RevoluteJoint",
               "const": true,
               "signature": "const Eigen :: Vector3d & getAxis ( ) const",
@@ -4994,6 +5194,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const Eigen :: Vector6d & getBodyForce ( ) const",
@@ -5014,72 +5215,84 @@
           "count": 14,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Marker",
               "const": false,
               "signature": "( ) BodyNode * getBodyNode ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Marker",
               "const": true,
               "signature": "( ) const BodyNode * getBodyNode ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual BodyNode * getBodyNode ( const std :: string & name ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual BodyNode * getBodyNode ( std :: size_t _idx ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual const BodyNode * getBodyNode ( const std :: string & name ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual const BodyNode * getBodyNode ( std :: size_t _idx ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": false,
               "signature": "BodyNode * getBodyNode ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": true,
               "signature": "const BodyNode * getBodyNode ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "BodyNode * getBodyNode ( const std :: string & name ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "BodyNode * getBodyNode ( std :: size_t _idx ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const BodyNode * getBodyNode ( const std :: string & name ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const BodyNode * getBodyNode ( std :: size_t _idx ) const override",
@@ -5104,12 +5317,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": false,
               "signature": "BodyNodePtr getBodyNodePtr ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": true,
               "signature": "ConstBodyNodePtr getBodyNodePtr ( ) const",
@@ -5132,48 +5347,56 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "( ) virtual const std :: vector < BodyNode * > & getBodyNodes ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "( ) virtual const std :: vector < const BodyNode * > & getBodyNodes ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual std :: vector < BodyNode * > getBodyNodes ( const std :: string & name ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual std :: vector < const BodyNode * > getBodyNodes ( const std :: string & name ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "const std :: vector < BodyNode * > & getBodyNodes ( ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const std :: vector < const BodyNode * > & getBodyNodes ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "std :: vector < BodyNode * > getBodyNodes ( const std :: string & name ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: vector < const BodyNode * > getBodyNodes ( const std :: string & name ) const override",
@@ -5195,6 +5418,7 @@
           "count": 6,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "const math :: BoundingBox & getBoundingBox ( ) const",
@@ -5220,6 +5444,7 @@
           "count": 5,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpConstraintSolver",
               "const": true,
               "signature": "ConstBoxedLcpSolverPtr getBoxedLcpSolver ( ) const",
@@ -5242,12 +5467,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::collision::BulletCollisionGroup",
               "const": false,
               "signature": "btCollisionWorld * getBulletCollisionWorld ( )",
               "virtual": false
             },
             {
+              "access": "protected",
               "class": "dart::collision::BulletCollisionGroup",
               "const": true,
               "signature": "const btCollisionWorld * getBulletCollisionWorld ( ) const",
@@ -5266,6 +5493,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "Eigen :: Vector3d getCOM ( const Frame * _withRespectTo = Frame :: World ( ) ) const",
@@ -5286,24 +5514,28 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "BodyNode * getChildBodyNode ( std :: size_t _index )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const BodyNode * getChildBodyNode ( std :: size_t _index ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "BodyNode * getChildBodyNode ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "const BodyNode * getChildBodyNode ( ) const",
@@ -5327,12 +5559,14 @@
           "count": 7,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "collision :: CollisionDetectorPtr getCollisionDetector ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": true,
               "signature": "collision :: ConstCollisionDetectorPtr getCollisionDetector ( ) const",
@@ -5355,12 +5589,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "collision :: CollisionGroupPtr getCollisionGroup ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": true,
               "signature": "collision :: ConstCollisionGroupPtr getCollisionGroup ( ) const",
@@ -5382,12 +5618,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "collision :: CollisionOption & getCollisionOption ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": true,
               "signature": "const collision :: CollisionOption & getCollisionOption ( ) const",
@@ -5410,6 +5648,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "default_argument_declarations": [
@@ -5426,6 +5665,7 @@
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "default_argument_declarations": [
@@ -5457,12 +5697,14 @@
           "count": 21,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "const constraint :: ConstraintSolver * getConstraintSolver ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "constraint :: ConstraintSolver * getConstraintSolver ( )",
@@ -5485,12 +5727,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionResult",
               "const": false,
               "signature": "Contact & getContact ( std :: size_t index )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionResult",
               "const": true,
               "signature": "const Contact & getContact ( std :: size_t index ) const",
@@ -5511,6 +5755,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionResult",
               "const": true,
               "signature": "const std :: vector < Contact > & getContacts ( ) const",
@@ -5532,6 +5777,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getCoulombFriction ( ) const",
@@ -5552,6 +5798,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getDampingCoefficient ( ) const",
@@ -5572,24 +5819,28 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::GenericJoint",
               "const": false,
               "signature": "DegreeOfFreedom * getDof ( std :: size_t index ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::GenericJoint",
               "const": true,
               "signature": "const DegreeOfFreedom * getDof ( std :: size_t _index ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual DegreeOfFreedom * getDof ( std :: size_t _index ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual const DegreeOfFreedom * getDof ( std :: size_t _index ) const = 0",
@@ -5613,12 +5864,14 @@
           "count": 6,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": false,
               "signature": "inline DynamicsAspect * getDynamicsAspect ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": true,
               "signature": "inline const DynamicsAspect * getDynamicsAspect ( ) const",
@@ -5642,6 +5895,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "static Factory * getFactory ( )",
@@ -5662,12 +5916,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getForce ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getForce ( std :: size_t _index ) const = 0",
@@ -5691,12 +5947,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getForceLowerLimit ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getForceLowerLimit ( std :: size_t _index ) const = 0",
@@ -5720,12 +5978,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getForceUpperLimit ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getForceUpperLimit ( std :: size_t _index ) const = 0",
@@ -5749,12 +6009,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const Eigen :: Vector3d & getGravity ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "const Eigen :: Vector3d & getGravity ( ) const",
@@ -5774,6 +6036,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "bool getGravityMode ( ) const",
@@ -5795,12 +6058,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::CapsuleShape",
               "const": true,
               "signature": "double getHeight ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::CylinderShape",
               "const": true,
               "signature": "double getHeight ( ) const",
@@ -5823,6 +6088,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::AccessoryNode",
               "const": true,
               "signature": "std :: size_t getIndexInBodyNode ( ) const",
@@ -5843,48 +6109,56 @@
           "count": 13,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual Joint * getJoint ( const std :: string & name ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual Joint * getJoint ( std :: size_t _idx ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual const Joint * getJoint ( const std :: string & name ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual const Joint * getJoint ( std :: size_t _idx ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "Joint * getJoint ( const std :: string & name ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "Joint * getJoint ( std :: size_t _idx ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const Joint * getJoint ( const std :: string & name ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const Joint * getJoint ( std :: size_t _idx ) const override",
@@ -5907,48 +6181,56 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "( ) virtual std :: vector < Joint * > getJoints ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "( ) virtual std :: vector < const Joint * > getJoints ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "virtual std :: vector < Joint * > getJoints ( const std :: string & name ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual std :: vector < const Joint * > getJoints ( const std :: string & name ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "std :: vector < Joint * > getJoints ( ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "std :: vector < Joint * > getJoints ( const std :: string & name ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: vector < const Joint * > getJoints ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: vector < const Joint * > getJoints ( const std :: string & name ) const override",
@@ -5971,18 +6253,21 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "collision :: CollisionResult & getLastCollisionResult ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": true,
               "signature": "const collision :: CollisionResult & getLastCollisionResult ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "const collision :: CollisionResult & getLastCollisionResult ( ) const",
@@ -6001,12 +6286,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector3d getLinearAcceleration ( const Eigen :: Vector3d & _offset , const Frame * _relativeTo = Frame :: World ( ) , const Frame * _inCoordinatesOf = Frame :: World ( ) ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector3d getLinearAcceleration ( const Frame * _relativeTo = Frame :: World ( ) , const Frame * _inCoordinatesOf = Frame :: World ( ) ) const",
@@ -6027,12 +6314,14 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector3d getLinearVelocity ( const Eigen :: Vector3d & _offset , const Frame * _relativeTo = Frame :: World ( ) , const Frame * _inCoordinatesOf = Frame :: World ( ) ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector3d getLinearVelocity ( const Frame * _relativeTo = Frame :: World ( ) , const Frame * _inCoordinatesOf = Frame :: World ( ) ) const",
@@ -6057,6 +6346,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::math::BoundingBox",
               "const": true,
               "signature": "inline const Eigen :: Vector3d & getMax ( ) const",
@@ -6079,6 +6369,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::math::BoundingBox",
               "const": true,
               "signature": "inline const Eigen :: Vector3d & getMin ( ) const",
@@ -6101,60 +6392,70 @@
           "count": 95,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const std :: string & getName ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "const std :: string & getName ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Entity",
               "const": true,
               "signature": "virtual const std :: string & getName ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::EntityNode",
               "const": true,
               "signature": "const std :: string & getName ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "const std :: string & getName ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual const std :: string & getName ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": true,
               "signature": "virtual const std :: string & getName ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SimpleFrame",
               "const": true,
               "signature": "const std :: string & getName ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const std :: string & getName ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "const std :: string & getName ( ) const",
@@ -6184,6 +6485,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::PlaneShape",
               "const": true,
               "signature": "const Eigen :: Vector3d & getNormal ( ) const",
@@ -6205,12 +6507,14 @@
           "count": 19,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual std :: size_t getNumBodyNodes ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: size_t getNumBodyNodes ( ) const override",
@@ -6235,6 +6539,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionResult",
               "const": true,
               "signature": "std :: size_t getNumContacts ( ) const",
@@ -6255,18 +6560,21 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual std :: size_t getNumDofs ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual std :: size_t getNumDofs ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: size_t getNumDofs ( ) const override",
@@ -6290,12 +6598,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "virtual std :: size_t getNumJoints ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: size_t getNumJoints ( ) const override",
@@ -6318,18 +6628,21 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "std :: size_t getNumShapeNodes ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: size_t getNumShapeNodes ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: size_t getNumShapeNodes ( std :: size_t treeIndex ) const",
@@ -6353,6 +6666,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "std :: size_t getNumSkeletons ( ) const",
@@ -6375,6 +6689,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "std :: size_t getNumTrees ( ) const",
@@ -6399,6 +6714,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::collision::OdeCollisionGroup",
               "const": true,
               "signature": "dSpaceID getOdeSpaceId ( ) const",
@@ -6421,6 +6737,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::PlaneShape",
               "const": true,
               "signature": "double getOffset ( ) const",
@@ -6441,6 +6758,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::PgsBoxedLcpSolver",
               "const": true,
               "signature": "const Option & getOption ( ) const",
@@ -6460,12 +6778,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "BodyNode * getParentBodyNode ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const BodyNode * getParentBodyNode ( ) const",
@@ -6486,12 +6806,14 @@
           "count": 12,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "Joint * getParentJoint ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const Joint * getParentJoint ( ) const",
@@ -6515,6 +6837,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::ScrewJoint",
               "const": true,
               "signature": "double getPitch ( ) const",
@@ -6535,12 +6858,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getPosition ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getPosition ( std :: size_t _index ) const = 0",
@@ -6564,12 +6889,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getPositionLowerLimit ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getPositionLowerLimit ( std :: size_t _index ) const = 0",
@@ -6593,12 +6920,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getPositionUpperLimit ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getPositionUpperLimit ( std :: size_t _index ) const = 0",
@@ -6622,12 +6951,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "Eigen :: VectorXd getPositions ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": true,
               "signature": "Eigen :: VectorXd getPositions ( const std :: vector < std :: size_t > & _indices ) const",
@@ -6649,6 +6980,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": true,
               "signature": "inline const double & getPrimarySlipCompliance ( ) const",
@@ -6669,18 +7001,21 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::CapsuleShape",
               "const": true,
               "signature": "double getRadius ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::CylinderShape",
               "const": true,
               "signature": "double getRadius ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SphereShape",
               "const": true,
               "signature": "double getRadius ( ) const",
@@ -6705,36 +7040,42 @@
           "count": 6,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::WeldJointConstraint",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getRelativeTransform ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getRelativeTransform ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FixedFrame",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getRelativeTransform ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "virtual const Eigen :: Isometry3d & getRelativeTransform ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getRelativeTransform ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SimpleFrame",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getRelativeTransform ( ) const override",
@@ -6758,6 +7099,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getRestPosition ( ) const",
@@ -6778,12 +7120,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "( ) double getRestitutionCoeff ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": true,
               "signature": "inline const double & getRestitutionCoeff ( ) const",
@@ -6806,12 +7150,14 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "BodyNode * getRootBodyNode ( std :: size_t _treeIdx = 0 )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const BodyNode * getRootBodyNode ( std :: size_t _treeIdx = 0 ) const",
@@ -6835,12 +7181,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "Joint * getRootJoint ( std :: size_t treeIdx = 0 u )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const Joint * getRootJoint ( std :: size_t treeIdx = 0 u ) const",
@@ -6861,6 +7209,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": true,
               "signature": "const Eigen :: Vector3d & getScale ( ) const",
@@ -6881,6 +7230,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": true,
               "signature": "inline const double & getSecondarySlipCompliance ( ) const",
@@ -6901,12 +7251,14 @@
           "count": 24,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": true,
               "signature": "ConstShapePtr getShape ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": false,
               "signature": "ShapePtr getShape ( )",
@@ -6929,6 +7281,7 @@
           "count": 5,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionObject",
               "const": true,
               "signature": "const dynamics :: ShapeFrame * getShapeFrame ( ) const",
@@ -6951,48 +7304,56 @@
           "count": 6,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "ShapeNode * getShapeNode ( std :: size_t index )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const ShapeNode * getShapeNode ( std :: size_t index ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "ShapeNode * getShapeNode ( const std :: string & name )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "ShapeNode * getShapeNode ( std :: size_t index )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "ShapeNode * getShapeNode ( std :: size_t treeIndex , std :: size_t nodeIndex )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const ShapeNode * getShapeNode ( const std :: string & name ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const ShapeNode * getShapeNode ( std :: size_t index ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "const ShapeNode * getShapeNode ( std :: size_t treeIndex , std :: size_t nodeIndex ) const",
@@ -7019,12 +7380,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "( ) const std :: vector < ShapeNode * > getShapeNodes ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "( ) const std :: vector < const ShapeNode * > getShapeNodes ( ) const",
@@ -7045,6 +7408,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BoxShape",
               "const": true,
               "signature": "const Eigen :: Vector3d & getSize ( ) const",
@@ -7065,84 +7429,98 @@
           "count": 34,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "ConstSkeletonPtr getSkeleton ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "SkeletonPtr getSkeleton ( ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "ConstSkeletonPtr getSkeleton ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": false,
               "signature": "SkeletonPtr getSkeleton ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "SkeletonPtr getSkeleton ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "std :: shared_ptr < const Skeleton > getSkeleton ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": false,
               "signature": "virtual std :: shared_ptr < Skeleton > getSkeleton ( )",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": true,
               "signature": "virtual std :: shared_ptr < const Skeleton > getSkeleton ( ) const",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "ConstSkeletonPtr getSkeleton ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "SkeletonPtr getSkeleton ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SkeletonRefCountingBase",
               "const": false,
               "signature": "std :: shared_ptr < Skeleton > getSkeleton ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SkeletonRefCountingBase",
               "const": true,
               "signature": "std :: shared_ptr < const Skeleton > getSkeleton ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "dynamics :: SkeletonPtr getSkeleton ( const std :: string & _name ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "dynamics :: SkeletonPtr getSkeleton ( std :: size_t _index ) const",
@@ -7169,6 +7547,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "const Eigen :: Matrix6d & getSpatialInertia ( ) const",
@@ -7191,6 +7570,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": true,
               "signature": "const Eigen :: Matrix6d & getSpatialTensor ( ) const",
@@ -7211,24 +7591,28 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector6d getSpatialVelocity ( const Eigen :: Vector3d & _offset ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector6d getSpatialVelocity ( const Eigen :: Vector3d & _offset , const Frame * _relativeTo , const Frame * _inCoordinatesOf ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Vector6d getSpatialVelocity ( const Frame * _relativeTo , const Frame * _inCoordinatesOf ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "const Eigen :: Vector6d & getSpatialVelocity ( ) const",
@@ -7249,6 +7633,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getSpringStiffness ( ) const",
@@ -7269,18 +7654,21 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "static const std :: string & getStaticType ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "static const std :: string & getStaticType ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "static const std :: string & getStaticType ( )",
@@ -7306,18 +7694,21 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": true,
               "signature": "double getTimeStep ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "double getTimeStep ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": true,
               "signature": "double getTimeStep ( ) const",
@@ -7337,18 +7728,21 @@
           "count": 5,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionObject",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getTransform ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Isometry3d getTransform ( const Frame * _withRespectTo = Frame :: World ( ) ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "Eigen :: Isometry3d getTransform ( const Frame * withRespectTo , const Frame * inCoordinatesOf ) const",
@@ -7372,6 +7766,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getTransformFromChildBodyNode ( ) const",
@@ -7395,6 +7790,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getTransformFromParentBodyNode ( ) const",
@@ -7415,162 +7811,189 @@
           "count": 17,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::DARTCollisionDetector",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::FCLCollisionDetector",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpSolver",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintBase",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::ContactConstraint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::DantzigBoxedLcpSolver",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::PgsBoxedLcpSolver",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::constraint::WeldJointConstraint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BallJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BoxShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::CapsuleShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::CylinderShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::HeightmapShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::PlaneShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::PrismaticJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::RevoluteJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ScrewJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Shape",
               "const": true,
               "signature": "virtual const std :: string & getType ( ) const = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SphereShape",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::UniversalJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::WeldJoint",
               "const": true,
               "signature": "const std :: string & getType ( ) const override",
@@ -7597,12 +8020,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getVelocity ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": true,
               "signature": "virtual double getVelocity ( std :: size_t _index ) const = 0",
@@ -7626,6 +8051,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getVelocityLowerLimit ( ) const",
@@ -7647,6 +8073,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DegreeOfFreedom",
               "const": true,
               "signature": "double getVelocityUpperLimit ( ) const",
@@ -7668,12 +8095,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": false,
               "signature": "inline VisualAspect * getVisualAspect ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeFrame",
               "const": true,
               "signature": "inline const VisualAspect * getVisualAspect ( ) const",
@@ -7694,6 +8123,7 @@
           "count": 19,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Frame",
               "const": true,
               "signature": "const Eigen :: Isometry3d & getWorldTransform ( ) const",
@@ -7719,6 +8149,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RaycastResult",
               "const": true,
               "signature": "bool hasHit ( ) const",
@@ -7740,12 +8171,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BodyNodeCollisionFilter",
               "const": true,
               "signature": "bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionFilter",
               "const": true,
               "signature": "virtual bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const = 0",
@@ -7766,12 +8199,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": true,
               "signature": "bool isCollidable ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::CollisionAspect",
               "const": true,
               "signature": "bool isCollidable ( ) const",
@@ -7793,6 +8228,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": true,
               "signature": "bool isMobile ( ) const",
@@ -7814,6 +8250,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateWeakBodyNodePtr",
               "const": true,
               "signature": "TemplateBodyNodePtr < BodyNodeT > lock ( ) const",
@@ -7832,24 +8269,28 @@
           "count": 10,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "bool moveTo ( BodyNode * _newParent )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "bool moveTo ( const SkeletonPtr & _newSkeleton , BodyNode * _newParent )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "template < class JointType > JointType * moveTo ( BodyNode * _newParent , const typename JointType :: Properties & _joint = typename JointType :: Properties ( ) )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "template < class JointType > JointType * moveTo ( const SkeletonPtr & _newSkeleton , BodyNode * _newParent , const typename JointType :: Properties & _joint = typename JointType :: Properties ( ) )",
@@ -7872,18 +8313,21 @@
           "count": 209,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateBodyNodePtr",
               "const": true,
               "signature": "BodyNodeT * operator -> ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateJointPtr",
               "const": true,
               "signature": "JointT * operator -> ( ) const",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
               "const": true,
               "signature": "NodeT * operator -> ( ) const",
@@ -7909,6 +8353,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::utils::DartLoader",
               "const": false,
               "default_argument_declarations": [
@@ -7933,6 +8378,7 @@
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::utils::DartLoader",
               "const": false,
               "signature": "dynamics :: SkeletonPtr parseSkeleton ( const common :: Uri & uri )",
@@ -7953,6 +8399,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool raycast ( CollisionGroup * group , const Eigen :: Vector3d & from , const Eigen :: Vector3d & to , const RaycastOption & option = RaycastOption ( ) , RaycastResult * result = nullptr )",
@@ -7974,18 +8421,21 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::AccessoryNode",
               "const": false,
               "signature": "void remove ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "SkeletonPtr remove ( const std :: string & _name = )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeNode",
               "const": false,
               "signature": "void remove ( )",
@@ -8006,6 +8456,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "void removeConstraint ( const ConstraintBasePtr & constraint )",
@@ -8026,6 +8477,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "bool removeContactSurfaceHandler ( const ContactSurfaceHandlerPtr & handler )",
@@ -8046,6 +8498,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "void removeSkeleton ( const dynamics :: SkeletonPtr & _skeleton )",
@@ -8066,6 +8519,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "void reset ( )",
@@ -8086,6 +8540,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void resetAccelerations ( )",
@@ -8108,6 +8563,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void resetPositions ( )",
@@ -8129,6 +8585,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void resetVelocities ( )",
@@ -8151,6 +8608,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setAcceleration ( std :: size_t _index , double _acceleration ) = 0",
@@ -8171,12 +8629,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "void setActuatorType ( ActuatorType _actuatorType )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "void setActuatorType ( std :: size_t index , ActuatorType actuatorType )",
@@ -8198,6 +8658,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "void setAngularVelocity ( const Eigen :: Vector3d & newAngularVelocity , const Frame * relativeTo = Frame :: World ( ) , const Frame * inCoordinatesOf = Frame :: World ( ) )",
@@ -8219,12 +8680,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::PrismaticJoint",
               "const": false,
               "signature": "void setAxis ( const Eigen :: Vector3d & _axis )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::RevoluteJoint",
               "const": false,
               "signature": "void setAxis ( const Eigen :: Vector3d & _axis )",
@@ -8247,6 +8710,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::BoxedLcpConstraintSolver",
               "const": false,
               "signature": "void setBoxedLcpSolver ( BoxedLcpSolverPtr lcpSolver )",
@@ -8268,12 +8732,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void setCollidable ( bool _isCollidable )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::CollisionAspect",
               "const": false,
               "signature": "void setCollidable ( const bool & value )",
@@ -8295,12 +8761,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "( ) void setCollisionDetector ( collision :: CollisionDetector * collisionDetector )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "void setCollisionDetector ( const std :: shared_ptr < collision :: CollisionDetector > & collisionDetector )",
@@ -8322,12 +8790,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::VisualAspect",
               "const": false,
               "signature": "void setColor ( const Eigen :: Vector3d & color )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::VisualAspect",
               "const": false,
               "signature": "void setColor ( const Eigen :: Vector4d & color )",
@@ -8348,6 +8818,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setCommand ( std :: size_t _index , double _command ) = 0",
@@ -8369,6 +8840,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactConstraint",
               "const": false,
               "signature": "static void setConstraintForceMixing ( double cfm )",
@@ -8389,6 +8861,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setCoulombFriction ( std :: size_t _index , double _friction ) = 0",
@@ -8409,6 +8882,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setDampingCoefficient ( std :: size_t _index , double _coeff ) = 0",
@@ -8431,6 +8905,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactConstraint",
               "const": false,
               "signature": "static void setErrorAllowance ( double allowance )",
@@ -8451,6 +8926,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactConstraint",
               "const": false,
               "signature": "static void setErrorReductionParameter ( double erp )",
@@ -8471,6 +8947,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "inline void setFirstFrictionDirection ( const Eigen :: Vector3d & value )",
@@ -8491,6 +8968,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "void setFirstFrictionDirectionFrame ( const Frame * value )",
@@ -8511,6 +8989,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setForceLowerLimit ( std :: size_t _index , double _force ) = 0",
@@ -8531,6 +9010,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setForceUpperLimit ( std :: size_t _index , double _force ) = 0",
@@ -8551,12 +9031,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void setForces ( const Eigen :: VectorXd & _forces )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void setForces ( const std :: vector < std :: size_t > & _index , const Eigen :: VectorXd & _forces )",
@@ -8577,12 +9059,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "( ) void setFrictionCoeff ( double coeff )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "void setFrictionCoeff ( const double & value )",
@@ -8605,18 +9089,21 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "void setGravity ( const Eigen :: Vector3d & _gravity )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "void setGravity ( const Eigen :: Vector3d & _gravity )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "void setGravity ( double x , double y , double z )",
@@ -8639,6 +9126,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void setGravityMode ( bool _gravityMode )",
@@ -8661,12 +9149,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::HeightmapShape",
               "const": false,
               "signature": "void setHeightField ( const HeightField & heights )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::HeightmapShape",
               "const": false,
               "signature": "void setHeightField ( const std :: size_t & width , const std :: size_t & depth , const std :: vector < S > & heights )",
@@ -8685,6 +9175,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void setInertia ( const Inertia & inertia )",
@@ -8706,6 +9197,7 @@
           "count": 5,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "void setLimitEnforcement ( bool enforced )",
@@ -8729,6 +9221,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "void setLinearVelocity ( const Eigen :: Vector3d & newLinearVelocity , const Frame * relativeTo = Frame :: World ( ) , const Frame * inCoordinatesOf = Frame :: World ( ) )",
@@ -8751,12 +9244,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void setLocalCOM ( const Eigen :: Vector3d & _com )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "void setLocalCOM ( const Eigen :: Vector3d & _com )",
@@ -8780,12 +9275,14 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void setMass ( double mass )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "void setMass ( double _mass )",
@@ -8809,6 +9306,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactConstraint",
               "const": false,
               "signature": "static void setMaxErrorReductionVelocity ( double erv )",
@@ -8829,6 +9327,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "void setMobile ( bool _isMobile )",
@@ -8851,12 +9350,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "void setMoment ( const Eigen :: Matrix3d & _moment )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "void setMoment ( double _Ixx , double _Iyy , double _Izz , double _Ixy , double _Ixz , double _Iyz )",
@@ -8878,6 +9379,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "void setMomentOfInertia ( double _Ixx , double _Iyy , double _Izz , double _Ixy = 0 . 0 , double _Ixz = 0 . 0 , double _Iyz = 0 . 0 )",
@@ -8898,36 +9400,42 @@
           "count": 6,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "const std :: string & setName ( const std :: string & _name ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Entity",
               "const": false,
               "signature": "virtual const std :: string & setName ( const std :: string & _name ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::EntityNode",
               "const": false,
               "signature": "const std :: string & setName ( const std :: string & newName ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "const std :: string & setName ( const std :: string & _name , bool _renameDofs = true )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Node",
               "const": false,
               "signature": "virtual const std :: string & setName ( const std :: string & newName ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "const std :: string & setName ( const std :: string & _newName )",
@@ -8952,6 +9460,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::PgsBoxedLcpSolver",
               "const": false,
               "signature": "void setOption ( const Option & option )",
@@ -8970,6 +9479,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Detachable",
               "const": false,
               "signature": "virtual void setParentFrame ( Frame * _newParentFrame )",
@@ -8990,6 +9500,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::ScrewJoint",
               "const": false,
               "signature": "void setPitch ( double _pitch )",
@@ -9008,6 +9519,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setPosition ( std :: size_t _index , double _position ) = 0",
@@ -9028,6 +9540,7 @@
           "count": 5,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "( ) void setPositionLimitEnforced ( bool enforced )",
@@ -9051,6 +9564,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setPositionLowerLimit ( std :: size_t _index , double _position ) = 0",
@@ -9071,6 +9585,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setPositionUpperLimit ( std :: size_t _index , double _position ) = 0",
@@ -9091,12 +9606,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void setPositions ( const Eigen :: VectorXd & _positions )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MetaSkeleton",
               "const": false,
               "signature": "void setPositions ( const std :: vector < std :: size_t > & _indices , const Eigen :: VectorXd & _positions )",
@@ -9118,6 +9635,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "inline void setPrimarySlipCompliance ( const double & value )",
@@ -9139,36 +9657,42 @@
           "count": 13,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::WeldJointConstraint",
               "const": false,
               "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & _tf )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FixedFrame",
               "const": false,
               "signature": "virtual void setRelativeTransform ( const Eigen :: Isometry3d & transform )",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FixedJacobianNode",
               "const": false,
               "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & newRelativeTf ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & newTransform )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::ShapeNode",
               "const": false,
               "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & transform ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SimpleFrame",
               "const": false,
               "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & _newRelTransform )",
@@ -9193,6 +9717,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setRestPosition ( std :: size_t _index , double _q0 ) = 0",
@@ -9213,12 +9738,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BodyNode",
               "const": false,
               "signature": "( ) void setRestitutionCoeff ( double coeff )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "inline void setRestitutionCoeff ( const double & value )",
@@ -9241,18 +9768,21 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::HeightmapShape",
               "const": false,
               "signature": "void setScale ( const Vector3 & scale )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "void setScale ( const Eigen :: Vector3d & scale )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "void setScale ( double scale )",
@@ -9271,6 +9801,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "inline void setSecondaryFrictionCoeff ( const double & value )",
@@ -9291,6 +9822,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::DynamicsAspect",
               "const": false,
               "signature": "inline void setSecondarySlipCompliance ( const double & value )",
@@ -9312,6 +9844,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "void setSelfCollisionCheck ( bool enable )",
@@ -9332,12 +9865,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "void setSpatialTensor ( const Eigen :: Matrix6d & _spatial )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "void setSpatialTensor ( const Eigen :: Matrix6d & _spatial , bool _printWarnings )",
@@ -9358,6 +9893,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "void setSpatialVelocity ( const Eigen :: Vector6d & newSpatialVelocity , const Frame * relativeTo , const Frame * inCoordinatesOf )",
@@ -9378,6 +9914,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setSpringStiffness ( std :: size_t _index , double _k ) = 0",
@@ -9398,18 +9935,21 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ConstraintSolver",
               "const": false,
               "signature": "virtual void setTimeStep ( double _timeStep )",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Skeleton",
               "const": false,
               "signature": "void setTimeStep ( double _timeStep )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "void setTimeStep ( double _timeStep )",
@@ -9431,30 +9971,35 @@
           "count": 5,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "( ) static void setTransform ( BodyNode * bodyNode , const Eigen :: Isometry3d & tf , const Frame * withRespectTo = Frame :: World ( ) )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "( ) static void setTransform ( Joint * joint , const Eigen :: Isometry3d & tf , const Frame * withRespectTo = Frame :: World ( ) )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "( ) static void setTransform ( Skeleton * skeleton , const Eigen :: Isometry3d & tf , const Frame * withRespectTo = Frame :: World ( ) , bool applyToAllRootBodies = true )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::FreeJoint",
               "const": false,
               "signature": "void setTransform ( const Eigen :: Isometry3d & newTransform , const Frame * withRespectTo = Frame :: World ( ) )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::SimpleFrame",
               "const": false,
               "signature": "void setTransform ( const Eigen :: Isometry3d & _newTransform , const Frame * _withRespectTo = Frame :: World ( ) )",
@@ -9478,6 +10023,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setTransformFromChildBodyNode ( const Eigen :: Isometry3d & _T )",
@@ -9500,6 +10046,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setTransformFromParentBodyNode ( const Eigen :: Isometry3d & _T )",
@@ -9522,6 +10069,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setVelocity ( std :: size_t _index , double _velocity ) = 0",
@@ -9542,6 +10090,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setVelocityLowerLimit ( std :: size_t _index , double _velocity ) = 0",
@@ -9562,6 +10111,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Joint",
               "const": false,
               "signature": "virtual void setVelocityUpperLimit ( std :: size_t _index , double _velocity ) = 0",
@@ -9582,6 +10132,7 @@
           "count": 9,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "void step ( bool _resetCommand = true )",
@@ -9604,6 +10155,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::common::Factory",
               "const": false,
               "signature": "void unregisterAllCreators ( )",
@@ -9629,24 +10181,28 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
@@ -9671,12 +10227,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) = 0",
@@ -9699,24 +10257,28 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
@@ -9741,12 +10303,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) = 0",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "std :: unique_ptr < CollisionGroup > createCollisionGroup ( ) override",
@@ -9769,6 +10333,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
               "signature": "virtual bool raycast ( CollisionGroup * group , const Eigen :: Vector3d & from , const Eigen :: Vector3d & to , const RaycastOption & option = RaycastOption ( ) , RaycastResult * result = nullptr )",
@@ -9791,12 +10356,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BodyNodeCollisionFilter",
               "const": true,
               "signature": "bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const override",
               "virtual": true
             },
             {
+              "access": "public",
               "class": "dart::collision::CollisionFilter",
               "const": true,
               "signature": "virtual bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const = 0",
@@ -9818,6 +10385,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceHandler",
               "const": true,
               "signature": "virtual ContactConstraintPtr createConstraint ( collision :: Contact & contact , size_t numContactsOnCollisionObject , double timeStep ) const",
@@ -9839,6 +10407,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceHandler",
               "const": true,
               "signature": "virtual ContactSurfaceParams createParams ( const collision :: Contact & contact , size_t numContactsOnCollisionObject ) const",
