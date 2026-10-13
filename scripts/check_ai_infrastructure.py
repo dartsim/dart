@@ -429,6 +429,7 @@ def required_paths(root: Path) -> list[Path]:
         root / ".codex" / "AGENTS.md",
         root / ".codex" / "config.toml",
         root / ".codex" / "hooks.json",
+        root / ".muse" / "hooks.json",
         root / ".claude" / "hooks" / "pre-commit-guard.ps1",
         root / "docs" / "ai" / "agent-scenarios.json",
         root / "docs" / "ai" / "branch-profile.json",
@@ -1063,8 +1064,10 @@ def check_codex_config(root: Path, errors: list[str]) -> None:
             )
 
 
-def check_hooks(root: Path, errors: list[str]) -> None:
-    hooks_path = root / ".codex" / "hooks.json"
+def _check_guard_hook_file(
+    root: Path, errors: list[str], relative: str, matcher: str
+) -> None:
+    hooks_path = root / relative
     if hooks_path.exists():
         try:
             data = read_json(hooks_path)
@@ -1074,10 +1077,10 @@ def check_hooks(root: Path, errors: list[str]) -> None:
             )
         else:
             if not isinstance(data, dict) or set(data) != {"hooks"}:
-                errors.append(".codex/hooks.json: root keys must equal hooks")
+                errors.append(f"{relative}: root keys must equal hooks")
             hooks = data.get("hooks") if isinstance(data, dict) else None
             if not isinstance(hooks, dict) or set(hooks) != {"PreToolUse"}:
-                errors.append(".codex/hooks.json: only a PreToolUse hook is allowed")
+                errors.append(f"{relative}: only a PreToolUse hook is allowed")
             entries = hooks.get("PreToolUse") if isinstance(hooks, dict) else None
             entry = entries[0] if isinstance(entries, list) and entries else None
             handlers = entry.get("hooks") if isinstance(entry, dict) else None
@@ -1090,14 +1093,12 @@ def check_hooks(root: Path, errors: list[str]) -> None:
                 or len(handlers) != 1
                 or not isinstance(hook, dict)
             ):
-                errors.append(".codex/hooks.json: expected one bounded PreToolUse hook")
+                errors.append(f"{relative}: expected one bounded PreToolUse hook")
                 hook = None
             if isinstance(entry, dict) and set(entry) != {"matcher", "hooks"}:
-                errors.append(
-                    ".codex/hooks.json: matcher keys must equal hooks, matcher"
-                )
-            if not isinstance(entry, dict) or entry.get("matcher") != "^Bash$":
-                errors.append(".codex/hooks.json: matcher must be `^Bash$`")
+                errors.append(f"{relative}: matcher keys must equal hooks, matcher")
+            if not isinstance(entry, dict) or entry.get("matcher") != matcher:
+                errors.append(f"{relative}: matcher must be `{matcher}`")
             command = hook.get("command", "") if hook else ""
             expected_keys = {
                 "type",
@@ -1108,26 +1109,31 @@ def check_hooks(root: Path, errors: list[str]) -> None:
             }
             if isinstance(hook, dict) and set(hook) != expected_keys:
                 errors.append(
-                    ".codex/hooks.json: handler keys must equal command, "
+                    f"{relative}: handler keys must equal command, "
                     "commandWindows, statusMessage, timeout, type"
                 )
             if not hook or hook.get("type") != "command":
-                errors.append(".codex/hooks.json: hook type must be command")
+                errors.append(f"{relative}: hook type must be command")
             if command != CODEX_HOOK_COMMAND:
-                errors.append(".codex/hooks.json: hook command wiring is stale")
+                errors.append(f"{relative}: hook command wiring is stale")
             command_windows = hook.get("commandWindows", "") if hook else ""
             if command_windows != CODEX_HOOK_COMMAND_WINDOWS:
-                errors.append(".codex/hooks.json: Windows hook command wiring is stale")
+                errors.append(f"{relative}: Windows hook command wiring is stale")
             timeout = hook.get("timeout") if hook else None
             if type(timeout) is not int or timeout != CODEX_HOOK_TIMEOUT:
-                errors.append(
-                    f".codex/hooks.json: timeout must equal {CODEX_HOOK_TIMEOUT}"
-                )
+                errors.append(f"{relative}: timeout must equal {CODEX_HOOK_TIMEOUT}")
             status = hook.get("statusMessage") if hook else None
             if status != CODEX_HOOK_STATUS:
                 errors.append(
-                    ".codex/hooks.json: statusMessage must equal the canonical text"
+                    f"{relative}: statusMessage must equal the canonical text"
                 )
+
+
+def check_hooks(root: Path, errors: list[str]) -> None:
+    _check_guard_hook_file(root, errors, ".codex/hooks.json", "^Bash$")
+    # Muse names its shell tool `bash` (lowercase), unlike
+    # Claude Code and Codex (`Bash`); the guard command wiring is shared.
+    _check_guard_hook_file(root, errors, ".muse/hooks.json", "^bash$")
 
     settings_path = root / ".claude" / "settings.json"
     if settings_path.exists():

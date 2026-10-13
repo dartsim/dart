@@ -5909,6 +5909,35 @@ def test_hooks_require_cross_platform_commands(tmp_path):
     assert ".claude/settings.json: invalid or stale hook wiring" in errors
 
 
+def test_muse_hook_requires_lowercase_bash_matcher_and_shared_wiring(tmp_path):
+    hooks_path = tmp_path / ".muse" / "hooks.json"
+    hooks_path.parent.mkdir(parents=True)
+    hooks_path.write_text((ROOT / ".muse" / "hooks.json").read_text())
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    assert not any(error.startswith(".muse/hooks.json") for error in errors)
+
+    data = json.loads(hooks_path.read_text())
+    data["hooks"]["PreToolUse"][0]["matcher"] = "^Bash$"
+    hooks_path.write_text(json.dumps(data))
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    assert ".muse/hooks.json: matcher must be `^bash$`" in errors
+
+    hooks_path.write_text(
+        json.dumps({"hooks": {"PreToolUse": [{"matcher": "^bash$", "hooks": [1]}]}})
+    )
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    assert ".muse/hooks.json: expected one bounded PreToolUse hook" in errors
+
+
 def test_release_hook_validation_rejects_unsafe_suffix_and_extra_keys(tmp_path):
     for relative in (
         ".codex/hooks.json",

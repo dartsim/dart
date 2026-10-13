@@ -51,7 +51,9 @@ includes configuration, prompts, generated adapters, runtime tooling, durable
 `docs/` context, session handoffs, and a representative DART Filament
 visual-debug investigation.
 
-Inspect project hooks with `/hooks`. Project hooks are advisory and may be
+Inspect project hooks with `/hooks` in Claude Code and Codex; Muse
+Code has no hook-inspection command, so fix `.muse/hooks.json` and start
+a new session to reload it. Project hooks are advisory and may be
 skipped in an untrusted repository. `pixi run install-hooks` installs the
 cross-tool `pre-commit`, `commit-msg` and `pre-push` git hooks.
 
@@ -104,7 +106,10 @@ would happen).
   those steps from an unsandboxed shell — a normal terminal, another
   client, or a maintainer-approved unsandboxed Muse run — and
   keep editing sources and running read-only inspection in Muse
-  Code as usual.
+  Code as usual. The trusted project hook at `.muse/hooks.json` runs
+  the shared commit guard outside that sandbox (matcher `^bash$`, the
+  lowercase name of its shell tool), the same wiring Claude Code and
+  Codex use.
 - Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
   layer.
 

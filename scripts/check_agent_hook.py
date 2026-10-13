@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run DART's fast commit-command and staged-file agent hook profiles.
 
-The ``auto`` profile consumes a Codex/Claude PreToolUse JSON payload and
+The ``auto`` profile consumes a Codex/Claude/Muse PreToolUse JSON payload and
 delegates commit detection to the release branch's well-tested POSIX guard.
 On native Windows, ``scripts/pretool_guard_bridge.py`` locates Git Bash and
 forwards the unchanged payload to that same guard. The ``staged`` profile is
@@ -29,6 +29,7 @@ AI_PATH_PREFIXES = (
     ".claude/settings.json",
     ".claude/skills/",
     ".codex/",
+    ".muse/hooks.json",
     ".github/workflows/",
     ".gitignore",
     "AGENTS.md",
