@@ -116,13 +116,16 @@ def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
     assert "OK" in output
 
 
-def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(capsys):
-    path = ROOT / "python" / "examples" / "ssik_analytical_ik" / "main.py"
-    spec = importlib.util.spec_from_file_location("ssik_example", path)
-    example = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(example)
-    assert example.main(["--list"]) == 0
-    assert "franka_panda_ik" in capsys.readouterr().out
+@requires_app_host
+def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(monkeypatch, capfd):
+    monkeypatch.setitem(sys.modules, "ssik", None)
+    scene = next(scene for scene in _demo_scenes() if scene.id == "ssik_ik_gui")
+    assert viewer.run([scene], ["examples.demos", "--list-scenes"]) == 0
+    assert "ssik Analytical IK" in capfd.readouterr().out
+    with pytest.raises(viewer.AssetsNotPrefetchedError, match="ssik"):
+        scene.factory()
+    assert viewer.run([scene], ["examples.demos", "--cycle-scenes", "--frames", "2"]) == 0
+    assert "demo 'ssik_ik_gui' skipped:" in capfd.readouterr().out
 
 
 @requires_app_host
@@ -173,7 +176,11 @@ def test_neutral_demo_callbacks_and_deterministic_steps(scene):
     runs = []
     for _ in range(2):
         dart.math.Random.setSeed(42)
-        setup = scene.factory()
+        try:
+            setup = scene.factory()
+        except viewer.AssetsNotPrefetchedError as error:
+            # Optional scenes, such as ssik_ik_gui without ssik, skip as in cycles.
+            pytest.skip(str(error))
         assert isinstance(setup, viewer.SceneSetup)
         world = setup.world
         assert isinstance(world, dart.simulation.World)

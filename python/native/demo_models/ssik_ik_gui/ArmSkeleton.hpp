@@ -30,17 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_SCENES_SSIK_IK_GUI_ARMSKELETON_HPP_
-#define DART_EXAMPLES_DEMOS_SCENES_SSIK_IK_GUI_ARMSKELETON_HPP_
-
-#include "SsikBridge.hpp"
+#ifndef DART_PYTHON_NATIVE_DEMO_MODELS_SSIK_IK_GUI_ARMSKELETON_HPP_
+#define DART_PYTHON_NATIVE_DEMO_MODELS_SSIK_IK_GUI_ARMSKELETON_HPP_
 
 #include <dart/dart.hpp>
 
+#include <array>
+#include <limits>
+#include <string>
 #include <vector>
 
 namespace dart_demos {
 namespace ssik_ik_gui {
+
+//==============================================================================
+struct ArmSpec
+{
+  std::string label;
+  std::string module;
+};
+
+//==============================================================================
+/// The 19 arms bundled with the optional ssik package, in the original's
+/// combo-box order.
+std::vector<ArmSpec> getArmSpecs();
+
+//==============================================================================
+/// One joint of an ssik product-of-exponentials chain: the fixed transforms
+/// before/after the joint and its rotation axis. Forward kinematics composes
+/// tLeft * exp(axis * q) * tRight per joint.
+struct JointSpec
+{
+  Eigen::Isometry3d tLeft = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tRight = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+  bool prismatic = false;
+};
+
+struct SsikSolution
+{
+  Eigen::VectorXd q;
+  double fkResidual = std::numeric_limits<double>::quiet_NaN();
+  std::string refinementUsed;
+  bool hasFkPose = false;
+  Eigen::Isometry3d fkPose = Eigen::Isometry3d::Identity();
+};
+
+//==============================================================================
+Eigen::Isometry3d makeTargetTransform(
+    const std::array<float, 3>& xyz, const std::array<float, 3>& rpyDegrees);
+
+void targetControlsFromTransform(
+    const Eigen::Isometry3d& tf,
+    std::array<float, 3>& xyz,
+    std::array<float, 3>& rpyDegrees);
 
 //==============================================================================
 /// Renders IK solutions as real DART skeletons built from the arm's
@@ -52,6 +95,9 @@ class ArmSkeleton
 {
 public:
   void setWorld(const dart::simulation::WorldPtr& world);
+
+  const dart::simulation::WorldPtr& getWorld() const;
+  std::size_t numDofs() const;
 
   /// Selects the chain for subsequent solutions. An empty chain clears the
   /// arm.
@@ -67,7 +113,6 @@ private:
   static constexpr double kJointRadius = 0.045;
   static constexpr std::size_t kMaxInstances = 16;
 
-  std::size_t numDofs() const;
   void clearInstances();
   void setConfig(
       const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& q);
@@ -91,4 +136,4 @@ private:
 } // namespace ssik_ik_gui
 } // namespace dart_demos
 
-#endif // DART_EXAMPLES_DEMOS_SCENES_SSIK_IK_GUI_ARMSKELETON_HPP_
+#endif // DART_PYTHON_NATIVE_DEMO_MODELS_SSIK_IK_GUI_ARMSKELETON_HPP_

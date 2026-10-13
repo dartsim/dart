@@ -338,32 +338,6 @@ std::string consumePythonError()
 }
 
 //==============================================================================
-std::vector<ArmSpec> getArmSpecs()
-{
-  return {
-      {"Universal Robots UR5", "ur5_ik"},
-      {"KUKA Puma 560", "puma560_ik"},
-      {"Kinova JACO 2", "jaco2_ik"},
-      {"KUKA iiwa14", "iiwa14_ik"},
-      {"Kinova Gen3", "gen3_ik"},
-      {"Franka Panda", "franka_panda_ik"},
-      {"UFactory xArm7", "xarm7_ik"},
-      {"UFactory xArm6", "xarm6_ik"},
-      {"Unitree Z1", "z1_ik"},
-      {"AgileX PiPER", "piper_ik"},
-      {"Flexiv Rizon 4", "rizon4_ik"},
-      {"Kassow KR810", "kassow_kr810_ik"},
-      {"Flexiv Rizon 10", "rizon10_ik"},
-      {"FANUC CRX-10iA/L", "fanuc_crx10ial_ik"},
-      {"I2RT YAM", "yam_ik"},
-      {"I2RT big_yam", "big_yam_ik"},
-      {"Franka Research 3", "fr3_ik"},
-      {"OpenArm left", "openarm_left_ik"},
-      {"OpenArm right", "openarm_right_ik"},
-  };
-}
-
-//==============================================================================
 SsikPythonBridge::SsikPythonBridge()
 {
   ensurePythonInitialized();

@@ -30,6 +30,7 @@ from .scenes import (
     soft_foot_simbicon,
     soft_open_chain,
     soft_worm,
+    ssik_ik_gui,
     tinkertoy,
     unitree_g1,
     vehicle,
@@ -67,6 +68,8 @@ def make_demo_scenes():
         soft_cubes,
         soft_open_chain,
     ]
+    if hasattr(dart._demos, "ArmSkeleton"):
+        modules.insert(modules.index(wam_ikfast), ssik_ik_gui)
     if hasattr(dart.utils, "ModelResourceRetriever"):
         modules.extend([atlas_v5, unitree_g1])
     modules.extend([vehicle, drag_and_drop])
