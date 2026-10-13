@@ -125,23 +125,23 @@ WP-PD.18.
 
 | ID | Title | Depends on | Lane | Status |
 | --- | --- | --- | --- | --- |
-| WP-PD.0 | Record the demo-host decision and project home | — | Claude | Draft PR #3732 |
-| WP-PD.1 | Bundle the Dear ImGui docking release | 0 | Claude | Draft PR #3745 |
-| WP-PD.2 | Move the GUI-free demo models into `dart-demo-models` | 0 | Codex | Draft PR #3746 |
-| WP-PD.3 | Move the demo host into private `dart/gui/app` | 1, 2 | Codex | Draft PR #3747 |
-| WP-PD.4 | Add declarative panels and the Python-ready scene contract | 3 | Claude | Local, in review |
-| WP-PD.5 | Bind the host as `dartpy.viewer` | 4 | Claude | Local, in review |
-| WP-PD.6 | Bind the models as `dartpy._demos` | 2 | Codex | Planned |
-| WP-PD.7 | Run the Python catalog on the native host | 5 | Claude | Planned |
-| WP-PD.8 | Bind resting state, `HeightmapShapef` and `VoxelGridShape` | 0 | Codex | Draft PR #3737 |
+| WP-PD.0 | Record the demo-host decision and project home | — | Claude | Merged (#3732) |
+| WP-PD.1 | Bundle the Dear ImGui docking release | 0 | Claude | Ready PR #3745 |
+| WP-PD.2 | Move the GUI-free demo models into `dart-demo-models` | 0 | Codex | Ready PR #3746 |
+| WP-PD.3 | Move the demo host into private `dart/gui/app` | 1, 2 | Codex | Ready PR #3747 |
+| WP-PD.4 | Add declarative panels and the Python-ready scene contract | 3 | Claude | Ready PR #3758 |
+| WP-PD.5 | Bind the host as `dartpy.viewer` | 4 | Claude | Draft PR #3761 |
+| WP-PD.6 | Bind the models as `dartpy._demos` | 2 | Codex | Draft PR #3755 |
+| WP-PD.7 | Run the Python catalog on the native host | 5 | Claude | Draft PR #3762 |
+| WP-PD.8 | Bind resting state, `HeightmapShapef` and `VoxelGridShape` | 0 | Codex | Ready PR #3737 |
 | WP-PD.9 | Bind end effectors, supports, whole-body IK and balance constraints | 0 | Codex | Draft PR #3751 |
-| WP-PD.10 | Port scene batch S1 | 7 | Codex | Planned |
-| WP-PD.11 | Port scene batch S2 | 7 | Codex | Planned |
-| WP-PD.12 | Port scene batch S3 | 6, 7, 8 | Codex | Planned |
-| WP-PD.13 | Port scene batch S4 | 6, 7, 8 | Codex | Planned |
-| WP-PD.14 | Port scene batch S5 | 6, 7 | Codex | Planned |
-| WP-PD.15 | Port scene batch S6a | 6, 7, 9 | Codex | Planned |
-| WP-PD.16 | Port scene batch S6b | 6, 7, 9 | Codex | Planned |
+| WP-PD.10 | Port scene batch S1 | 7 | Codex | Draft PR #3763 |
+| WP-PD.11 | Port scene batch S2 | 7 | Codex | Draft PR #3764 |
+| WP-PD.12 | Port scene batch S3 | 6, 7, 8 | Codex | Local, in review |
+| WP-PD.13 | Port scene batch S4 | 6, 7, 8 | Codex | In progress, on S3 |
+| WP-PD.14 | Port scene batch S5 | 6, 7 | Codex | Draft PR #3765 |
+| WP-PD.15 | Port scene batch S6a | 6, 7, 9 | Codex | Local, in review, on S5 |
+| WP-PD.16 | Port scene batch S6b | 6, 7, 9 | Codex | In progress, on S6a |
 | WP-PD.17 | Launch the Python catalog from the demo tasks | 10–16 | Codex | Planned |
 | WP-PD.18 | Remove the C++ demo application | 17 | Codex | Planned |
 
@@ -271,41 +271,41 @@ in `python/examples/demos/scenes/`. Column key:
 
 | Scene id | C++ source | Python module | Batch | Native or bindings needed | Oracle | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| empty | `EmptyScene.cpp` | `empty.py` | S1 | core | exact | Open |
-| hello_world | `HelloWorldScene.cpp` | `hello_world.py` | S1 | core | counts | Open |
-| simple_frames | `SimpleFramesScene.cpp` | `simple_frames.py` | S1 | core | exact | Open |
-| boxes | `BoxesScene.cpp` | `boxes.py` | S1 | core | counts | Open |
-| rigid_cubes | `RigidCubesScene.cpp` | `rigid_cubes.py` | S1 | core; rewrite to C++ keys and Z-up | exact | Open |
-| rigid_chain | `RigidChainScene.cpp` | `rigid_chain.py` | S1 | core; rewrite to the C++ damping law | counts | Open |
-| add_delete_skels | `AddDeleteSkelsScene.cpp` | `add_delete_skels.py` | S1 | core | counts | Open |
-| simulation_event_handler | `SimulationEventHandlerScene.cpp` | `simulation_event_handler.py` | S1 | core | exact | Open |
-| rigid_shapes | `RigidShapesScene.cpp` | `rigid_shapes.py` | S1 | core | counts | Open |
-| hardcoded_design | `HardcodedDesignScene.cpp` | `hardcoded_design.py` | S2 | core | exact | Open |
-| rigid_loop | `RigidLoopScene.cpp` | `rigid_loop.py` | S2 | core; rewrite to the C++ damping law | counts | Open |
-| dynamic_joint_constraints | `DynamicJointConstraintsScene.cpp` | `dynamic_joint_constraints.py` | S2 | core | exact | Open |
-| tinkertoy | `tinkertoy/` | `tinkertoy.py` | S2 | core (`GUIEventHandler` + `computeIntersections`) | exact | Open |
-| hybrid_dynamics | `HybridDynamicsScene.cpp` | `hybrid_dynamics.py` | S2 | core | exact | Open |
-| mixed_chain | `MixedChainScene.cpp` | `mixed_chain.py` | S2 | core | counts | Open |
-| vehicle | `VehicleScene.cpp` | `vehicle.py` | S2 | core | exact | Open |
-| atlas_v5 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | assets | Open |
-| unitree_g1 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | assets | Open |
-| drag_and_drop | `DragAndDropScene.cpp` | `drag_and_drop.py` | WP-PD.7 | core | exact | Open |
-| sleeping | `SleepingScene.cpp` | `sleeping.py` | S3 | WP-PD.8 resting bindings | exact | Open |
-| box_stacking | `BoxStackingScene.cpp` | `box_stacking.py` | S3 | `_demos.set_boxed_lcp_solver` | counts | Open |
-| heightmap | `HeightmapScene.cpp` | `heightmap.py` | S3 | WP-PD.8 `HeightmapShapef` | counts | Open |
+| empty | `EmptyScene.cpp` | `empty.py` | S1 | core | exact | Ported (#3763) |
+| hello_world | `HelloWorldScene.cpp` | `hello_world.py` | S1 | core | counts | Ported (#3763) |
+| simple_frames | `SimpleFramesScene.cpp` | `simple_frames.py` | S1 | core | exact | Ported (#3763) |
+| boxes | `BoxesScene.cpp` | `boxes.py` | S1 | core | counts | Ported (#3763) |
+| rigid_cubes | `RigidCubesScene.cpp` | `rigid_cubes.py` | S1 | core; rewrite to C++ keys and Z-up | exact | Ported (#3763) |
+| rigid_chain | `RigidChainScene.cpp` | `rigid_chain.py` | S1 | core; rewrite to the C++ damping law | counts | Ported (#3763) |
+| add_delete_skels | `AddDeleteSkelsScene.cpp` | `add_delete_skels.py` | S1 | core | counts | Ported (#3763) |
+| simulation_event_handler | `SimulationEventHandlerScene.cpp` | `simulation_event_handler.py` | S1 | core | exact | Ported (#3763) |
+| rigid_shapes | `RigidShapesScene.cpp` | `rigid_shapes.py` | S1 | core | counts | Ported (#3763) |
+| hardcoded_design | `HardcodedDesignScene.cpp` | `hardcoded_design.py` | S2 | core | exact | Ported (#3764) |
+| rigid_loop | `RigidLoopScene.cpp` | `rigid_loop.py` | S2 | core; rewrite to the C++ damping law | counts | Ported (#3764) |
+| dynamic_joint_constraints | `DynamicJointConstraintsScene.cpp` | `dynamic_joint_constraints.py` | S2 | core | exact | Ported (#3764) |
+| tinkertoy | `tinkertoy/` | `tinkertoy.py` | S2 | core (`GUIEventHandler` + `computeIntersections`) | exact | Ported (#3764) |
+| hybrid_dynamics | `HybridDynamicsScene.cpp` | `hybrid_dynamics.py` | S2 | core | exact | Ported (#3764) |
+| mixed_chain | `MixedChainScene.cpp` | `mixed_chain.py` | S2 | core | counts | Ported (#3764) |
+| vehicle | `VehicleScene.cpp` | `vehicle.py` | S2 | core | exact | Ported (#3764) |
+| atlas_v5 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | assets | Ported (#3764) |
+| unitree_g1 | `ModernHumanoidsScene.cpp` | `modern_humanoids.py` | S2 | core; panel replaces keys | assets | Ported (#3764) |
+| drag_and_drop | `DragAndDropScene.cpp` | `drag_and_drop.py` | WP-PD.7 | core | exact | Ported (#3762) |
+| sleeping | `SleepingScene.cpp` | `sleeping.py` | S3 | WP-PD.8 resting bindings | exact | Ported, local |
+| box_stacking | `BoxStackingScene.cpp` | `box_stacking.py` | S3 | `_demos.set_boxed_lcp_solver` | counts | Ported, local |
+| heightmap | `HeightmapScene.cpp` | `heightmap.py` | S3 | WP-PD.8 `HeightmapShapef` | counts | Ported, local |
 | biped_stand | `BipedStandScene.cpp` | `biped_stand.py` | S4 | `_demos.BipedStandController` | exact | Open |
 | joint_constraints | `JointConstraintsScene.cpp` | `joint_constraints.py` | S4 | `_demos.JointConstraintsController` | exact | Open |
 | operational_space_control | `OperationalSpaceControlScene.cpp` | `operational_space_control.py` | S4 | `_demos.OperationalSpaceController` | exact | Open |
 | point_cloud | `PointCloudScene.cpp` | `point_cloud.py` | S4 | `_demos.PointCloudSensor`, WP-PD.8 `VoxelGridShape` | counts | Open |
-| atlas_simbicon | `atlas_simbicon/` | `atlas_simbicon.py` | S5 | `_demos.simbicon.Controller` | exact | Open |
-| soft_foot_simbicon | `soft_foot_simbicon/` | `soft_foot_simbicon.py` | S5 | `_demos.soft_foot_simbicon` | exact | Open |
-| adaptive_soft_contact | `AdaptiveSoftContactScene.cpp` | `adaptive_soft_contact.py` | S5 | `_demos.adaptive_soft_contact` | exact | Open |
-| soft_worm | `SoftWormScene.cpp` | `soft_worm.py` | S5 | `_demos.soft_worm` | exact | Open |
-| soft_bodies | `SoftBodiesScene.cpp` | `soft_bodies.py` | S5 | `_demos.WorldHistory` | exact | Open |
-| soft_cubes | `SoftBodiesScene.cpp` | `soft_bodies.py` | S5 | `_demos.WorldHistory` | exact | Open |
-| soft_open_chain | `SoftBodiesScene.cpp` | `soft_bodies.py` | S5 | `_demos.WorldHistory` | exact | Open |
-| wam_ikfast | `wam_ikfast/` | `wam_ikfast.py` | S6a | WP-PD.9; `_demos.set_wam_ikfast` | exact | Open |
-| contact_inverse_dynamics | `ContactInverseDynamicsScene.cpp` | `contact_inverse_dynamics.py` | S6a | WP-PD.9 `getIK(True)` | exact | Open |
+| atlas_simbicon | `atlas_simbicon/` | `atlas_simbicon.py` | S5 | `_demos.simbicon.Controller` | exact | Ported (#3765) |
+| soft_foot_simbicon | `soft_foot_simbicon/` | `soft_foot_simbicon.py` | S5 | `_demos.soft_foot_simbicon` | exact | Ported (#3765) |
+| adaptive_soft_contact | `AdaptiveSoftContactScene.cpp` | `adaptive_soft_contact.py` | S5 | `_demos.adaptive_soft_contact` | exact | Ported (#3765) |
+| soft_worm | `SoftWormScene.cpp` | `soft_worm.py` | S5 | `_demos.soft_worm` | exact | Ported (#3765) |
+| soft_bodies | `SoftBodiesScene.cpp` | `soft_bodies.py` | S5 | `_demos.WorldHistory` | exact | Ported (#3765) |
+| soft_cubes | `SoftBodiesScene.cpp` | `soft_bodies.py` | S5 | `_demos.WorldHistory` | exact | Ported (#3765) |
+| soft_open_chain | `SoftBodiesScene.cpp` | `soft_bodies.py` | S5 | `_demos.WorldHistory` | exact | Ported (#3765) |
+| wam_ikfast | `wam_ikfast/` | `wam_ikfast.py` | S6a | WP-PD.9; `_demos.set_wam_ikfast` | exact | Ported, local |
+| contact_inverse_dynamics | `ContactInverseDynamicsScene.cpp` | `contact_inverse_dynamics.py` | S6a | WP-PD.9 `getIK(True)` | exact | Ported, local |
 | atlas_puppet | `AtlasPuppetScene.cpp` | `atlas_puppet.py` | S6b | WP-PD.9; `_demos.RelaxedPosture` | exact | Open |
 | ssik_ik_gui | `ssik_ik_gui/` | `ssik_ik_gui.py` | S6b | core `setPythonAnalytical` plus `ssik` | exact | Open |
 | human_joint_limits | `human_joint_limits/` | — | — | dropped (L5) | — | Dropped |
@@ -448,10 +448,13 @@ These land in M6b's consolidation PR, following the program's hot-file rule.
 
 ## Current milestone
 
-WP-PD.0 (this folder and D31b) is in progress.
+WP-PD.0 is merged. WP-PD.1 through WP-PD.4 and WP-PD.8 are ready for review,
+the other published packets are draft PRs, and the remaining
+scene batches are in review or in progress; [RESUME](RESUME.md) has the state
+of each packet.
 
-Next action: land WP-PD.0. Then run WP-PD.1 in the main checkout while
-WP-PD.2 runs in parallel in a Codex worktree.
+Next action: publish the remaining scene batches, then WP-PD.17 and
+WP-PD.18.
 
-Blockers: none. Every push and every PR waits for explicit maintainer
-approval.
+Blockers: none. The maintainer approved creating draft PRs; marking a PR
+ready and merging still wait for explicit maintainer approval.
