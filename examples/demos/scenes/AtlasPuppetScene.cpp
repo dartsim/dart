@@ -32,7 +32,7 @@
 
 // Ported from examples/atlas_puppet: a purely kinematic Atlas whole-body IK
 // puppet. Four end effectors (l_hand, r_hand, l_foot, r_foot) can each be
-// driven by a draggable InteractiveFrame target; a AtlasPuppetRelaxedPosture
+// driven by a draggable InteractiveFrame target; a RelaxedPosture
 // objective and BalanceConstraint keep the robot upright while W/A/S/D/Q/E/F/Z
 // walk it around the scene and 'R' asks the solver to optimize posture/balance.
 //
@@ -64,6 +64,7 @@
 
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
+#include "demo_models/RelaxedPosture.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -85,70 +86,6 @@ using dart::dynamics::Frame;
 using dart::dynamics::SkeletonPtr;
 
 constexpr double kAtlasPuppetDisplayElevation = 0.05;
-
-//==============================================================================
-/// Ported verbatim from the original's AtlasPuppetRelaxedPosture: a soft
-/// objective that nudges the posture back inside [lower, upper] (or all the way
-/// to `ideal` while `enforceIdealPosture` is held true, i.e. while 'r' is
-/// held).
-class AtlasPuppetRelaxedPosture : public dart::optimizer::Function
-{
-public:
-  AtlasPuppetRelaxedPosture(
-      const Eigen::VectorXd& idealPosture,
-      const Eigen::VectorXd& lower,
-      const Eigen::VectorXd& upper,
-      const Eigen::VectorXd& weights)
-    : enforceIdealPosture(false),
-      mIdeal(idealPosture),
-      mLower(lower),
-      mUpper(upper),
-      mWeights(weights)
-  {
-    mResultVector.setZero(mIdeal.size());
-  }
-
-  double eval(const Eigen::VectorXd& x) override
-  {
-    computeResultVector(x);
-    return 0.5 * mResultVector.dot(mResultVector);
-  }
-
-  void evalGradient(
-      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
-  {
-    computeResultVector(x);
-    grad.setZero();
-    const int smaller = std::min<int>(mResultVector.size(), grad.size());
-    for (int i = 0; i < smaller; ++i)
-      grad[i] = mResultVector[i];
-  }
-
-  void computeResultVector(const Eigen::VectorXd& x)
-  {
-    mResultVector.setZero();
-    if (enforceIdealPosture) {
-      for (int i = 0; i < x.size() && i < mIdeal.size(); ++i)
-        mResultVector[i] = mWeights[i] * (x[i] - mIdeal[i]);
-    } else {
-      for (int i = 0; i < x.size() && i < mIdeal.size(); ++i) {
-        if (x[i] < mLower[i])
-          mResultVector[i] = mWeights[i] * (x[i] - mLower[i]);
-        else if (mUpper[i] < x[i])
-          mResultVector[i] = mWeights[i] * (x[i] - mUpper[i]);
-      }
-    }
-  }
-
-  bool enforceIdealPosture;
-
-protected:
-  Eigen::VectorXd mResultVector;
-  Eigen::VectorXd mIdeal;
-  Eigen::VectorXd mLower;
-  Eigen::VectorXd mUpper;
-  Eigen::VectorXd mWeights;
-};
 
 //==============================================================================
 enum AtlasPuppetMoveComponent
@@ -183,7 +120,7 @@ struct AtlasPuppetState
   dart::common::aligned_vector<Eigen::Isometry3d> defaultTargetTf;
   std::vector<bool> constraintActive;
 
-  std::shared_ptr<AtlasPuppetRelaxedPosture> posture;
+  std::shared_ptr<RelaxedPosture> posture;
   std::shared_ptr<dart::constraint::BalanceConstraint> balance;
 
   std::size_t consecutiveFailures = 0;
@@ -390,7 +327,7 @@ void setupAtlasPuppetWholeBodySolver(const SkeletonPtr& atlas)
   upperPosture[7] = 0.1;
   upperPosture[8] = 0.1;
 
-  auto objective = std::make_shared<AtlasPuppetRelaxedPosture>(
+  auto objective = std::make_shared<RelaxedPosture>(
       atlas->getPositions(), lowerPosture, upperPosture, weights);
   atlas->getIK()->setObjective(objective);
 
@@ -642,7 +579,7 @@ DemoScene makeAtlasPuppetScene()
       }
     });
 
-    state->posture = std::dynamic_pointer_cast<AtlasPuppetRelaxedPosture>(
+    state->posture = std::dynamic_pointer_cast<RelaxedPosture>(
         atlas->getIK(true)->getObjective());
     state->balance
         = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(

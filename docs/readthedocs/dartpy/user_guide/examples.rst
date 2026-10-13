@@ -213,20 +213,22 @@ expects:
     if solutions:
         skeleton.setPositions(np.asarray(solutions[0].mConfig))
 
-A complete, runnable demo -- which builds the DART skeleton from the solver's
-product-of-exponentials chain, drives a draggable ``InteractiveFrame`` target in
-a ``dart.gui.Viewer``, and re-solves the IK live as you drag -- is available at
-``python/examples/ssik_analytical_ik/main.py``. It also ships a headless smoke
-test over all ssik prebuilt arms:
+A complete demo is the ``ssik_ik_gui`` scene in the Python demo catalog,
+implemented in ``python/examples/demos/scenes/ssik_ik_gui.py``. It builds native
+DART skeletons from the solver's product-of-exponentials chain and offers 19
+arms, position and roll/pitch/yaw controls, a draggable target, solver options,
+seed selection, solution diagnostics, and up to 16 solution skeletons.
+Select **Read dragged** to copy the dragged target into the controls, then
+**Solve** to solve. **Seed from selection** seeds the next solve from the
+selected solution. Install the optional solver before running:
 
 .. code-block:: shell
 
-   pixi run py-ex ssik_analytical_ik                                   # default arm (UR5)
-   python python/examples/ssik_analytical_ik/main.py --arm franka_panda_ik
-   python python/examples/ssik_analytical_ik/main.py --list           # list available arms
-   python python/examples/ssik_analytical_ik/main.py --self-test      # headless check
+   pixi run install-ssik
+   pixi run py-demos --scene ssik_ik_gui
+   pixi run dartpy -m pytest python/tests/integration/test_demo_ssik.py -q
 
-A C++ counterpart embeds a Python interpreter to drive the same solver from
-a Filament/ImGui application: the ``ssik_ik_gui`` scene in the consolidated
-``dart-demos`` catalog (``pixi run demos``, then select it from the catalog,
-or launch it directly with ``bin/dart-demos --scene ssik_ik_gui``).
+The tests check forward kinematics and DART's Python analytical IK integration
+over all 19 arms. When ``ssik`` is unavailable, scene cycles report this scene
+as skipped. The C++ counterpart remains available in ``dart-demos`` and embeds
+Python to call the same solver.

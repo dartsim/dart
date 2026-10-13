@@ -37,10 +37,79 @@
 namespace dart_demos {
 namespace ssik_ik_gui {
 
+namespace {
+constexpr double kArmSkeletonPi = 3.14159265358979323846;
+} // namespace
+
+//==============================================================================
+std::vector<ArmSpec> getArmSpecs()
+{
+  return {
+      {"Universal Robots UR5", "ur5_ik"},
+      {"KUKA Puma 560", "puma560_ik"},
+      {"Kinova JACO 2", "jaco2_ik"},
+      {"KUKA iiwa14", "iiwa14_ik"},
+      {"Kinova Gen3", "gen3_ik"},
+      {"Franka Panda", "franka_panda_ik"},
+      {"UFactory xArm7", "xarm7_ik"},
+      {"UFactory xArm6", "xarm6_ik"},
+      {"Unitree Z1", "z1_ik"},
+      {"AgileX PiPER", "piper_ik"},
+      {"Flexiv Rizon 4", "rizon4_ik"},
+      {"Kassow KR810", "kassow_kr810_ik"},
+      {"Flexiv Rizon 10", "rizon10_ik"},
+      {"FANUC CRX-10iA/L", "fanuc_crx10ial_ik"},
+      {"I2RT YAM", "yam_ik"},
+      {"I2RT big_yam", "big_yam_ik"},
+      {"Franka Research 3", "fr3_ik"},
+      {"OpenArm left", "openarm_left_ik"},
+      {"OpenArm right", "openarm_right_ik"},
+  };
+}
+
+//==============================================================================
+Eigen::Isometry3d makeTargetTransform(
+    const std::array<float, 3>& xyz, const std::array<float, 3>& rpyDegrees)
+{
+  const double roll = rpyDegrees[0] * kArmSkeletonPi / 180.0;
+  const double pitch = rpyDegrees[1] * kArmSkeletonPi / 180.0;
+  const double yaw = rpyDegrees[2] * kArmSkeletonPi / 180.0;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(xyz[0], xyz[1], xyz[2]);
+  tf.linear() = (Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ())
+                 * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()))
+                    .toRotationMatrix();
+  return tf;
+}
+
+//==============================================================================
+void targetControlsFromTransform(
+    const Eigen::Isometry3d& tf,
+    std::array<float, 3>& xyz,
+    std::array<float, 3>& rpyDegrees)
+{
+  xyz[0] = static_cast<float>(tf.translation().x());
+  xyz[1] = static_cast<float>(tf.translation().y());
+  xyz[2] = static_cast<float>(tf.translation().z());
+
+  const Eigen::Vector3d zyx = tf.linear().eulerAngles(2, 1, 0);
+  rpyDegrees[0] = static_cast<float>(zyx[2] * 180.0 / kArmSkeletonPi);
+  rpyDegrees[1] = static_cast<float>(zyx[1] * 180.0 / kArmSkeletonPi);
+  rpyDegrees[2] = static_cast<float>(zyx[0] * 180.0 / kArmSkeletonPi);
+}
+
 //==============================================================================
 void ArmSkeleton::setWorld(const dart::simulation::WorldPtr& world)
 {
   mWorld = world;
+}
+
+//==============================================================================
+const dart::simulation::WorldPtr& ArmSkeleton::getWorld() const
+{
+  return mWorld;
 }
 
 //==============================================================================
