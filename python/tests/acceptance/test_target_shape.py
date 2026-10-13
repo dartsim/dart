@@ -116,11 +116,26 @@ def test_load_model_and_add(world):
 @pytest.mark.xfail(
     strict=True, reason="M1g/M5b: joint actuator channels, PositionServo and joint/DOF collections are pending"
 )
-def test_joint_position_servo(robot):
-    servo = dart.PositionServo(kp=400, kd=40, effort_limit=80)
-    robot.joints["shoulder_yaw"].actuator = servo
-    robot.dofs.position_targets = np.zeros(robot.getNumDofs())
-    assert isinstance(robot.joints["shoulder_yaw"].actuator, dart.PositionServo)
+@pytest.mark.parametrize("target,kd", [(10, 40), (-10, 40), (0.05, 40), (0.05, 0)])
+def test_joint_position_servo(world, robot, target, kd):
+    world.setGravity([0, 0, 0])
+    h = world.getTimeStep()
+    inverse_mass = robot.getInvMassMatrix().copy()
+    servo = dart.PositionServo(kp=400, kd=kd, effort_limit=80)
+    joint = robot.joints["shoulder_yaw"]
+    joint.actuator = servo
+    robot.dofs.position_targets = np.array([target, 0.0])
+    # With zero initial velocity and gravity, only this scalar motor row acts.
+    impulse = np.clip(
+        h * 400 * target / (1 + (h * kd + h * h * 400) * inverse_mass[0, 0]),
+        -h * 80,
+        h * 80,
+    )
+    world.step()
+    assert robot.getConstraintForces()[0] == pytest.approx(impulse / h)
+    np.testing.assert_allclose(
+        robot.getVelocities(), inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
+    )
 
 
 @pytest.mark.xfail(
@@ -147,9 +162,21 @@ def test_imu_sensor(world, robot):
     strict=True,
     reason="M1d/M5b: step(n), step_count and rejection of bool arguments are pending",
 )
-def test_step_n(world):
+def test_step_n(world, robot):
+    world.setGravity([0, 0, 0])
+    robot.setVelocities(np.ones(robot.getNumDofs()))
+    initial = robot.getPositions().copy()
+    serial = world.clone()
     world.step(20)
     assert world.step_count == 20
+    for _ in range(20):
+        serial.step()
+    assert serial.step_count == world.step_count
+    assert serial.time == world.time
+    assert not np.array_equal(robot.getPositions(), initial)
+    serial_robot = serial.getSkeleton("robot")
+    np.testing.assert_array_equal(robot.getPositions(), serial_robot.getPositions())
+    np.testing.assert_array_equal(robot.getVelocities(), serial_robot.getVelocities())
     with pytest.raises(TypeError):
         world.step(True)
 
@@ -247,16 +274,29 @@ def test_capture_restore_state(world, robot):
 @pytest.mark.xfail(
     strict=True, reason="M1c/M5b: exact checkpoints, bit-identical replay and mismatch rejection are pending"
 )
-def test_capture_restore_checkpoint(world, robot):
-    world.getConstraintSolver().setCollisionDetector(
-        dart.collision.DARTCollisionDetector()
-    )
-    robot.setVelocities(np.ones(robot.getNumDofs()))
-    world.step()
+def test_capture_restore_checkpoint(world, contact_box):
+    robot = contact_box
+    options = world.getDeactivationOptions()
+    options.mEnabled = True
+    options.mTimeUntilSleep = 5 * world.getTimeStep()
+    world.setDeactivationOptions(options)
+    for _ in range(2):
+        world.step()
+    assert not robot.isResting()
     checkpoint = world.capture_checkpoint()
 
     def frame():
-        # Compare serialized fields and bit-exact public state, not native memory.
+        contacts = world.getLastCollisionResult()
+        contact_state = tuple(
+            (
+                contact.point.tobytes(),
+                contact.normal.tobytes(),
+                contact.force.tobytes(),
+                contact.penetrationDepth,
+            )
+            for contact in (contacts.getContact(i) for i in range(contacts.getNumContacts()))
+        )
+        # Serialized fields plus solver outputs and sleep transitions are the oracle.
         return (
             pickle.dumps(world.capture_checkpoint(), protocol=5),
             world.time,
@@ -265,13 +305,17 @@ def test_capture_restore_checkpoint(world, robot):
             robot.getVelocities().tobytes(),
             robot.getAccelerations().tobytes(),
             robot.getForces().tobytes(),
+            (robot.getConstraintForces() * world.getTimeStep()).tobytes(),
+            contact_state,
+            robot.isResting(),
         )
 
     initial = frame()
     expected = []
-    for _ in range(10):
+    for _ in range(20):
         world.step()
         expected.append(frame())
+    assert robot.isResting()
     assert expected[-1] != initial
     world.restore_state(pickle.loads(pickle.dumps(checkpoint, protocol=5)))
     assert frame() == initial
@@ -285,6 +329,55 @@ def test_capture_restore_checkpoint(world, robot):
         world.restore_state(checkpoint)
     assert type(mismatch.value).__name__ == "CheckpointMismatchError"
     assert frame() == before_rejection
+
+
+@pytest.fixture
+def contact_box(world):
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    options = world.getDeactivationOptions()
+    options.mEnabled = False
+    world.setDeactivationOptions(options)
+    ground = dart.dynamics.Skeleton("ground")
+    joint, body = ground.createWeldJointAndBodyNodePair()
+    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0, 0, -0.05]))
+    node = body.createShapeNode(dart.dynamics.BoxShape([2, 2, 0.1]))
+    node.createVisualAspect()
+    node.createCollisionAspect()
+    node.createDynamicsAspect()
+    ground.setMobile(False)
+    world.addSkeleton(ground)
+    box = dart.dynamics.Skeleton("box")
+    joint, body = box.createFreeJointAndBodyNodePair()
+    joint.setPositions([0, 0, 0, 0, 0, 0.3])
+    node = body.createShapeNode(dart.dynamics.BoxShape([0.2, 0.2, 0.2]))
+    node.createVisualAspect()
+    node.createCollisionAspect()
+    node.createDynamicsAspect()
+    world.addSkeleton(box)
+    for _ in range(2000):
+        world.step()
+    return box
+
+
+def test_checkpoint_contact_scene(world, contact_box):
+    # This setup gate runs without xfail, so a broken scene cannot hide behind M1c.
+    result = world.getLastCollisionResult()
+    assert result.getNumContacts() > 0
+    assert any(np.linalg.norm(result.getContact(i).force) > 0 for i in range(result.getNumContacts()))
+    assert np.linalg.norm(contact_box.getConstraintForces()) > 0
+    assert not contact_box.isResting()
+    options = world.getDeactivationOptions()
+    options.mEnabled = True
+    options.mTimeUntilSleep = 5 * world.getTimeStep()
+    world.setDeactivationOptions(options)
+    for _ in range(2):
+        world.step()
+    assert not contact_box.isResting()
+    for _ in range(20):
+        world.step()
+    assert contact_box.isResting()
 
 
 @pytest.mark.xfail(

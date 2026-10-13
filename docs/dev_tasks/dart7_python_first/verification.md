@@ -80,6 +80,37 @@ Known gaps:
 - **Milestones:** done on 2026-10-11 at the maintainer's request. The archived
   milestone #18 became "DART 7.0.0 (archived 2015-2025)", and #105 ("DART
   6.21.0") became "DART 7.0.0".
+- **Contact, counted-step and servo review follow-up on 2026-10-13**:
+  - Merged current main through `95282f1b9`, preserving the scope/freeze gates
+    alongside the landed Python demo retirement and its durable owner links.
+  - Counted stepping now compares positions, velocities, time and step count
+    against twenty single steps of a clone containing a moving articulated
+    body. Counter-only implementations cannot satisfy this oracle.
+  - PositionServo covers both effort limits and unsaturated damped and
+    undamped motion. The expected impulse follows the design's compliant-row
+    equation and the native inverse mass matrix; generalized constraint forces
+    report effort separately from ordinary joint forces.
+  - Checkpoints capture a contacting free box after two sleep-enabled steps,
+    while it is still awake. Replay compares contact geometry and forces,
+    generalized impulses, state and the transition to sleep, so restoring must
+    preserve the partially accumulated dwell timer. The independent local
+    review suggested this partial-timer case and found no other issue.
+  - The scene's unmarked setup gate checks nonzero contacts, contact forces
+    and generalized constraint forces, then verifies sleep. Its static ground
+    is explicitly immobile. Two thousand ordinary settling steps let the
+    contact solver correct impact penetration without weakening sleep rules.
+  - Focused guarded pytest reports one passed setup gate and seventeen strict
+    XFAILs, with no XPASS. With `--runxfail`, those seventeen cases fail for
+    their intended missing APIs and the setup gate still passes.
+  - `pixi run test-py` passes: 1,597 passed, 26 skipped and 17 XFAILs, with
+    no XPASS. `pixi run build`, `pixi run lint`, `pixi run check-lint`,
+    `pixi run check-ai-commands` and the upstream hook regression suite
+    (281 passed) succeed. The contact fixture
+    checks current native setup; the future actuator/checkpoint implementations
+    remain unimplemented. Visual evidence is irrelevant to these pending
+    acceptance-contract changes; no simulation implementation changes.
+  - Changelog decision: no entry required; this follow-up changes tests and
+    documentation, with no released behavior change.
 - **Review passes:**
   - The first review found two issues: the rollover cited PLAN-624 before it
     existed (now stacked on WP-7.0.2), and the identity-variation test never
