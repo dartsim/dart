@@ -39,6 +39,10 @@ namespace dart::python {
 void bind_soft_worm(nb::module_& m);
 void bind_world_history(nb::module_& m);
 void bind_adaptive_soft_contact(nb::module_& m);
+void bind_wam_ikfast(nb::module_& m);
+void bind_contact_inverse_dynamics(nb::module_& m);
+void bind_relaxed_posture(nb::module_& m);
+void bind_arm_skeleton(nb::module_& m);
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
 void bind_simbicon(nb::module_& m);
 void bind_soft_foot_simbicon(nb::module_& m);
@@ -51,6 +55,10 @@ void bind_demos(nb::module_& m)
   bind_soft_worm(demos);
   bind_world_history(demos);
   bind_adaptive_soft_contact(demos);
+  bind_wam_ikfast(demos);
+  bind_contact_inverse_dynamics(demos);
+  bind_relaxed_posture(demos);
+  bind_arm_skeleton(demos);
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
   bind_simbicon(demos);
   bind_soft_foot_simbicon(demos);

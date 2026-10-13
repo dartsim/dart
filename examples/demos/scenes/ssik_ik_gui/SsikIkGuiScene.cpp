@@ -64,8 +64,8 @@
 #include "SsikBridge.hpp"
 // clang-format on
 #include "../Scenes.hpp"
-#include "ArmSkeleton.hpp"
 #include "GuiBackend.hpp"
+#include "demo_models/ssik_ik_gui/ArmSkeleton.hpp"
 
 #include <dart/dart.hpp>
 
@@ -84,41 +84,6 @@ namespace dart_demos {
 namespace {
 
 using namespace ssik_ik_gui; // NOLINT: scene-local convenience.
-
-constexpr double kPi = 3.14159265358979323846;
-
-//==============================================================================
-Eigen::Isometry3d makeTransform(
-    const std::array<float, 3>& xyz, const std::array<float, 3>& rpyDegrees)
-{
-  const double roll = rpyDegrees[0] * kPi / 180.0;
-  const double pitch = rpyDegrees[1] * kPi / 180.0;
-  const double yaw = rpyDegrees[2] * kPi / 180.0;
-
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(xyz[0], xyz[1], xyz[2]);
-  tf.linear() = (Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ())
-                 * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
-                 * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()))
-                    .toRotationMatrix();
-  return tf;
-}
-
-//==============================================================================
-void setTargetControlsFromTransform(
-    const Eigen::Isometry3d& tf,
-    std::array<float, 3>& xyz,
-    std::array<float, 3>& rpyDegrees)
-{
-  xyz[0] = static_cast<float>(tf.translation().x());
-  xyz[1] = static_cast<float>(tf.translation().y());
-  xyz[2] = static_cast<float>(tf.translation().z());
-
-  const Eigen::Vector3d zyx = tf.linear().eulerAngles(2, 1, 0);
-  rpyDegrees[0] = static_cast<float>(zyx[2] * 180.0 / kPi);
-  rpyDegrees[1] = static_cast<float>(zyx[1] * 180.0 / kPi);
-  rpyDegrees[2] = static_cast<float>(zyx[0] * 180.0 / kPi);
-}
 
 //==============================================================================
 std::string formatVector(const Eigen::VectorXd& vector)
@@ -180,7 +145,7 @@ struct SsikState
 void syncTargetFrame(SsikState& state)
 {
   state.target->setTransform(
-      makeTransform(state.targetXyz, state.targetRpyDegrees));
+      makeTargetTransform(state.targetXyz, state.targetRpyDegrees));
   // Record the panel-driven pose so the drag-detection in renderPanel only
   // reacts to direct gizmo dragging, not to our own control edits.
   state.appliedTargetTf = state.target->getTransform();
@@ -255,7 +220,7 @@ void loadSelectedArm(SsikState& state)
         = "Install ssik in this Python environment to use this scene: " + error;
     state.info = ArmInfo();
     state.arm.build({});
-    setTargetControlsFromTransform(
+    targetControlsFromTransform(
         state.info.home, state.targetXyz, state.targetRpyDegrees);
     syncTargetFrame(state);
     state.solvedFrame->setTransform(
@@ -266,7 +231,7 @@ void loadSelectedArm(SsikState& state)
   state.loaded = true;
   state.seed = Eigen::VectorXd::Zero(state.info.dof);
   state.arm.build(state.info.chain);
-  setTargetControlsFromTransform(
+  targetControlsFromTransform(
       state.info.home, state.targetXyz, state.targetRpyDegrees);
   syncTargetFrame(state);
   state.solvedFrame->setTransform(state.info.home);
@@ -360,7 +325,7 @@ void renderTargetControls(SsikState& state)
   }
 
   if (ImGui::Button("Home target")) {
-    setTargetControlsFromTransform(
+    targetControlsFromTransform(
         state.info.home, state.targetXyz, state.targetRpyDegrees);
     syncTargetFrame(state);
     if (state.autoSolve)
@@ -369,7 +334,7 @@ void renderTargetControls(SsikState& state)
   itemTooltip("Reset the target to the arm's home (rest) pose.");
   ImGui::SameLine();
   if (ImGui::Button("Read dragged")) {
-    setTargetControlsFromTransform(
+    targetControlsFromTransform(
         state.target->getTransform(), state.targetXyz, state.targetRpyDegrees);
     if (state.autoSolve)
       solveCurrent(state);
@@ -565,7 +530,7 @@ DemoScene makeSsikIkGuiScene()
       // ContactInverseDynamicsScene.cpp's file comment).
       const Eigen::Isometry3d targetTf = state->target->getTransform();
       if (!targetTf.isApprox(state->appliedTargetTf, 1e-9)) {
-        setTargetControlsFromTransform(
+        targetControlsFromTransform(
             targetTf, state->targetXyz, state->targetRpyDegrees);
         state->appliedTargetTf = targetTf;
         if (state->autoSolve)

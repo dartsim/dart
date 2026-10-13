@@ -205,6 +205,21 @@ dart_format_add(${soft_demo_model_test_sources})
 dart_add_test("integration" test_WorldHistory)
 target_link_libraries(test_WorldHistory dart-demo-models)
 
+dart_add_test("integration" test_RelaxedPosture)
+target_link_libraries(test_RelaxedPosture dart-demo-models)
+
+dart_add_test("integration" test_ArmSkeleton)
+target_link_libraries(test_ArmSkeleton dart-demo-models)
+
+if(TARGET dart-utils)
+  dart_add_test("integration" test_ContactInverseDynamicsModel)
+  target_link_libraries(
+    test_ContactInverseDynamicsModel
+    dart-demo-models
+    dart-utils
+  )
+endif()
+
 # The soft-foot locomotion model drives the Atlas soft-feet SDF with the
 # existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
 # components are optional, so the gate only exists when both are built.
@@ -318,13 +333,8 @@ if(TARGET dart-utils-urdf)
     target_link_libraries(test_DartLoader dart-utils-urdf)
   endif()
 
-  dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
-  target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
-  target_compile_definitions(
-    SharedLibraryWamIkFast
-    PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY
-  )
-  target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+  dart_add_test("integration" test_WamIkFast)
+  target_link_libraries(test_WamIkFast dart-demo-models dart-utils-urdf)
 
   dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
   target_link_libraries(GeneratedWamIkFast PUBLIC dart)
@@ -341,15 +351,11 @@ if(TARGET dart-utils-urdf)
       PRIVATE DART_TEST_IKFAST_LIBRARY="$<TARGET_FILE_NAME:GeneratedWamIkFast>"
     )
     target_link_libraries(test_IkFast dart-utils-urdf)
-    add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    add_dependencies(test_IkFast GeneratedWamIkFast)
   endif()
 endif()
 
-dart_format_add(
-  GeneratedWamIkFast.cpp
-  SharedLibraryWamIkFast.hpp
-  SharedLibraryWamIkFast.cpp
-)
+dart_format_add(GeneratedWamIkFast.cpp)
 
 dart_add_test("integration" test_Distance)
 if(TARGET dart-collision-bullet)

@@ -1,292 +1,171 @@
-"""Control & IK > atlas_puppet.
+"""Atlas whole-body IK puppet with draggable end-effector targets and supports."""
 
-Port of ``python/examples/atlas_puppet/main.py``: a purely kinematic Atlas
-whole-body IK puppet, with draggable hand/foot targets and WASD-style base
-movement.
-
-Significantly reworked from the original, which builds its whole IK rig on
-``dart.dynamics.EndEffector`` (per-limb offset transforms, foot Support
-polygons feeding a ``BalanceConstraint``). ``EndEffector`` is not bound in
-dartpy at all -- no ``createEndEffector``, no ``EndEffector`` class, nothing
-beyond ``Skeleton.getNumEndEffectors()``. Since ``BalanceConstraint`` computes
-its cost from
-``Skeleton::getSupportPolygon()``, which is itself built from active
-EndEffector supports, it is unusable with zero EndEffectors (empty support
-polygon) -- not merely cosmetically degraded, so this port drops it rather
-than risk NaNs from an empty-polygon balance term.
-
-What this port keeps, using only already-bound APIs (no new bindings):
-whole-body IK on four BodyNodes directly (l_hand, r_hand, l_foot, r_foot)
-via ``BodyNode.getIK(True)`` -- the same ``InverseKinematics`` machinery the
-original used, just attached to the raw body instead of an EndEffector --
-draggable ``InteractiveFrame`` targets, the F1-F4 per-target
-constrain/release toggle, WASD/QE/FZ base movement, and 't' reset to the
-relaxed pose.
-
-Dropped entirely (needs EndEffector, unreachable from Python): per-hand/foot
-contact-offset transforms (targets track the raw body frame instead), the
-foot Support polygons, the 'x'/'c' foot-support toggle, the
-``BalanceConstraint``, and ``SupportPolygonVisual`` (it draws EndEffector
-supports).
-
-Also dropped: the original's ``RelaxedPosture`` objective + 'r'-key
-hold-to-tighten-posture. That objective was installed on
-``atlas.getIK(True)`` -- a Skeleton-level ``WholeBodyIK``, not the
-per-BodyNode ``InverseKinematics`` used above. dartpy only binds
-``Skeleton.getIK()`` with no ``createIfNull`` overload and no way to
-construct/attach a ``WholeBodyIK`` from Python, so there is no reachable way
-to install a whole-skeleton objective at all. Each of the 4 targets instead
-solves independently through its own per-BodyNode IK, each still using
-``useWholeBody()``, so simultaneously-dragged targets converge by
-alternating rather than one joint optimization.
-
-The standalone example also has three more latent breakages fixed here with
-already-bound APIs: a generic ``Skeleton.createJointAndBodyNodePair(parent,
-jointProperties, bodyProperties)`` call and a constructible
-``WeldJoint.Properties`` type, neither bound (fixed via
-``createWeldJointAndBodyNodePair(parent)`` +
-``setTransformFromParentBodyNode``); ``BodyNode.createShapeNodeWith(...)``,
-also unbound (fixed via ``createShapeNode(shape)`` + individual
-``create*Aspect()`` calls); and ``dart.math.eulerToMatrix(...)``, which
-dartpy only exposes per-rotation-order (fixed via ``eulerXYZToMatrix``,
-order-irrelevant here since every call only rotates about Z).
-
-Key remap retained from the earlier Python catalog: the original's digit
-keys 1-4 (toggle a target) move to F1-F4; 'p' (print dof positions) moves to
-'v'. w/a/s/d/q/e/f/z/t are
-unchanged (no collisions); 'o'/'x'/'c' are gone along with the
-posture/foot-support features they drove.
-"""
-
-from __future__ import annotations
+from functools import partial
 
 import dartpy as dart
 import numpy as np
 
 
-class AtlasPuppetController:
-    MOVE_Q, MOVE_W, MOVE_E, MOVE_A, MOVE_S, MOVE_D, MOVE_F, MOVE_Z = range(8)
-    NUM_MOVE = 8
-
-    def __init__(self, atlas, targets):
-        self.atlas = atlas
-        self.targets = targets  # [(bodynode, ik, frame), ...]
-        self.iter = 0
-        self.move_components = [False] * self.NUM_MOVE
-        self.any_movement = False
-
-    def setMovement(self, move_components):
-        self.move_components = move_components
-        self.any_movement = any(move_components)
-
-    def pre_refresh(self):
-        if self.any_movement:
-            old_tf = self.atlas.getBodyNode(0).getWorldTransform()
-            new_tf = dart.math.Isometry3()
-
-            forward = old_tf.rotation()[:, 0]
-            forward[2] = 0.0
-            if np.linalg.norm(forward) > 1e-10:
-                forward = forward / np.linalg.norm(forward)
-            else:
-                forward[:] = 0.0
-
-            left = old_tf.rotation()[:, 1]
-            left[2] = 0.0
-            if np.linalg.norm(left) > 1e-10:
-                left = left / np.linalg.norm(left)
-            else:
-                left[:] = 0.0
-
-            up = np.array([0.0, 0.0, 1.0])
-
-            linear_step = 0.01
-            elevation_step = 0.2 * linear_step
-            rotational_step = 2.0 * np.pi / 180.0
-
-            m = self.move_components
-            if m[self.MOVE_W]:
-                new_tf.set_translation(new_tf.translation() + linear_step * forward)
-            if m[self.MOVE_S]:
-                new_tf.set_translation(new_tf.translation() - linear_step * forward)
-            if m[self.MOVE_A]:
-                new_tf.set_translation(new_tf.translation() + linear_step * left)
-            if m[self.MOVE_D]:
-                new_tf.set_translation(new_tf.translation() - linear_step * left)
-            if m[self.MOVE_F]:
-                new_tf.set_translation(new_tf.translation() + elevation_step * up)
-            if m[self.MOVE_Z]:
-                new_tf.set_translation(new_tf.translation() - elevation_step * up)
-            if m[self.MOVE_Q]:
-                rot = dart.math.eulerXYZToMatrix([0, 0, rotational_step])
-                new_tf.set_rotation(np.matmul(rot, new_tf.rotation()))
-            if m[self.MOVE_E]:
-                rot = dart.math.eulerXYZToMatrix([0, 0, -rotational_step])
-                new_tf.set_rotation(np.matmul(rot, new_tf.rotation()))
-
-            new_tf.set_translation(new_tf.translation() + old_tf.translation())
-            new_tf.set_rotation(np.matmul(new_tf.rotation(), old_tf.rotation()))
-
-            positions = dart.dynamics.FreeJoint.convertToPositions(new_tf)
-            self.atlas.getJoint(0).setPositions(positions)
-
-        # No Skeleton-level WholeBodyIK is reachable from Python (see module
-        # docstring), so each target is solved independently rather than as
-        # one joint whole-body optimization; each still uses useWholeBody()
-        # internally, so simultaneously-engaged targets converge by
-        # alternating rather than jointly.
-        all_solved = True
-        for _body, ik, _frame in self.targets:
-            if not ik.solveAndApply(True):
-                all_solved = False
-        if all_solved:
-            self.iter = 0
-        else:
-            self.iter += 1
-        if self.iter == 1000:
-            print("Failing!")
-
-
-class AtlasPuppetInputHandler:
-    """Scene event callback for held movement keys and target toggles."""
-
-    def __init__(self, atlas, world, teleop, targets):
-        super().__init__()
+class _Puppet:
+    def __init__(self, atlas, world, posture, balance):
         self.atlas = atlas
         self.world = world
-        self.teleop = teleop
-        self.targets = targets  # ordered [(bodynode, ik, frame), ...]
-        self._initialize()
-
-    def _initialize(self):
-        self.rest_config = self.atlas.getPositions()
-
-        self.default_bounds = [t[1].getErrorMethod().getBounds() for t in self.targets]
-        self.default_target_tf = [
-            t[1].getTarget().getRelativeTransform() for t in self.targets
+        self.posture = posture
+        self.balance = balance
+        self.rest_config = atlas.getPositions().copy()
+        self.end_effectors = [atlas.getEndEffector(index) for index in range(4)]
+        self.default_bounds = [
+            tuple(bound.copy() for bound in ee.getIK().getErrorMethod().getBounds())
+            for ee in self.end_effectors
         ]
-        self.constraint_active = [False] * len(self.targets)
-        self.move_components = [False] * AtlasPuppetController.NUM_MOVE
+        self.default_target_tf = [
+            ee.getIK().getTarget().getRelativeTransform() for ee in self.end_effectors
+        ]
+        self.constraint_active = [False] * 4
+        self.movement = {key: False for key in "qweasdfz"}
+        self.consecutive_failures = 0
+        self.reported_failing = False
+        self.log = None
+        self.panel = dart.viewer.Panel()
+        self.status = self.panel.add_text("")
+        self.panel.add_text(
+            "Purely kinematic (physics stepping is disabled for this scene). "
+            "Alt+drag translates a body, Ctrl+drag rotates it, Shift+drag "
+            "moves it via its parent joint. W/A/S/D move the robot, Q/E "
+            "rotate it, F/Z change elevation; hold 'r' to optimize posture "
+            "and balance. Green = support polygon, blue/red ball = center of "
+            "mass, green ball = centroid.",
+            wrap=True,
+        )
+        self._refresh_status()
 
-    def handle(self, ea):
-        event_type = ea.getEventType()
-        ea_cls = dart.gui.GUIEventAdapter
+    def _refresh_status(self):
+        self.status.label = "Targets: " + "  ".join(
+            f"{ee.getName()} {'on' if active else 'off'}"
+            for ee, active in zip(self.end_effectors, self.constraint_active)
+        )
 
-        if event_type == ea_cls.KEYDOWN:
-            key = ea.getKey()
+    def pre_refresh(self):
+        if any(self.movement.values()):
+            old_tf = self.atlas.getBodyNode(0).getWorldTransform()
+            forward = old_tf.rotation()[:, 0].copy()
+            left = old_tf.rotation()[:, 1].copy()
+            for direction in (forward, left):
+                direction[2] = 0.0
+                norm = np.linalg.norm(direction)
+                direction[:] = direction / norm if norm > 1e-10 else 0.0
+            movement = self.movement
+            delta = (
+                0.01 * (movement["w"] - movement["s"]) * forward
+                + 0.01 * (movement["a"] - movement["d"]) * left
+                + np.array([0.0, 0.0, 0.002 * (movement["f"] - movement["z"])])
+            )
+            rotation = dart.math.eulerXYZToMatrix(
+                [0.0, 0.0, np.deg2rad(2.0) * (movement["q"] - movement["e"])]
+            )
+            tf = dart.math.Isometry3()
+            tf.set_translation(delta + old_tf.translation())
+            tf.set_rotation(rotation @ old_tf.rotation())
+            self.atlas.getJoint(0).setPositions(
+                dart.dynamics.FreeJoint.convertToPositions(tf)
+            )
+        if self.atlas.getIK(True).solveAndApply(True):
+            self.consecutive_failures = 0
+            self.reported_failing = False
+        else:
+            self.consecutive_failures += 1
+        if self.consecutive_failures >= 1000 and not self.reported_failing:
+            self.reported_failing = True
+            if self.log is not None:
+                self.log("atlas_puppet: IK solver has failed 1000 consecutive times.")
+        self._refresh_status()
 
-            if key == ord("v"):
-                for i in range(self.atlas.getNumDofs()):
-                    print(
-                        f"{self.atlas.getDof(i).getName()}: "
-                        f"{self.atlas.getDof(i).getPosition()}"
-                    )
-                print("  -- -- -- -- -- ")
-                return True
-
-            if key == ord("t"):
-                for i in range(self.atlas.getNumDofs()):
-                    if i < 2 or 4 < i:
-                        self.atlas.getDof(i).setPosition(self.rest_config[i])
-                return True
-
-            target_keys = (ea_cls.KEY_F1, ea_cls.KEY_F2, ea_cls.KEY_F3, ea_cls.KEY_F4)
-            if key in target_keys:
-                index = target_keys.index(key)
-                if index < len(self.targets):
-                    body, ik, _frame = self.targets[index]
-                    if self.constraint_active[index]:
-                        self.constraint_active[index] = False
-                        ik.getErrorMethod().setBounds(*self.default_bounds[index])
-                        ik.getTarget().setRelativeTransform(
-                            self.default_target_tf[index]
-                        )
-                        self.world.removeSimpleFrame(ik.getTarget())
-                    else:
-                        self.constraint_active[index] = True
-                        ik.getErrorMethod().setBounds()
-                        ik.getTarget().setTransform(body.getTransform())
-                        self.world.addSimpleFrame(ik.getTarget())
-                return True
-
-            move_keys = {
-                ord("w"): AtlasPuppetController.MOVE_W,
-                ord("a"): AtlasPuppetController.MOVE_A,
-                ord("s"): AtlasPuppetController.MOVE_S,
-                ord("d"): AtlasPuppetController.MOVE_D,
-                ord("q"): AtlasPuppetController.MOVE_Q,
-                ord("e"): AtlasPuppetController.MOVE_E,
-                ord("f"): AtlasPuppetController.MOVE_F,
-                ord("z"): AtlasPuppetController.MOVE_Z,
-            }
-            if key in move_keys:
-                self.move_components[move_keys[key]] = True
-                self.teleop.setMovement(self.move_components)
-                return True
-
-        if event_type == ea_cls.KEYUP:
-            key = ea.getKey()
-
-            move_keys = {
-                ord("w"): AtlasPuppetController.MOVE_W,
-                ord("a"): AtlasPuppetController.MOVE_A,
-                ord("s"): AtlasPuppetController.MOVE_S,
-                ord("d"): AtlasPuppetController.MOVE_D,
-                ord("q"): AtlasPuppetController.MOVE_Q,
-                ord("e"): AtlasPuppetController.MOVE_E,
-                ord("f"): AtlasPuppetController.MOVE_F,
-                ord("z"): AtlasPuppetController.MOVE_Z,
-            }
-            if key in move_keys:
-                self.move_components[move_keys[key]] = False
-                self.teleop.setMovement(self.move_components)
-                return True
-
+    def handle_event(self, event):
+        event_type = event.getEventType()
+        down = event_type == dart.gui.GUIEventAdapter.KEYDOWN
+        if not down and event_type != dart.gui.GUIEventAdapter.KEYUP:
+            return False
+        key = event.getKey()
+        if key == ord("r"):
+            self.posture.enforce_ideal_posture = down
+            method = dart.constraint.BalanceConstraint.ErrorMethod
+            self.balance.setErrorMethod(
+                method.OPTIMIZE_BALANCE if down else method.FROM_CENTROID
+            )
+            return True
+        if key in map(ord, self.movement):
+            self.movement[chr(key)] = down
+            return True
         return False
+
+    def toggle_target(self, index):
+        ee = self.end_effectors[index]
+        ik = ee.getIK()
+        target = ik.getTarget()
+        self.constraint_active[index] = not self.constraint_active[index]
+        if self.constraint_active[index]:
+            ik.getErrorMethod().setBounds()
+            target.setTransform(ee.getTransform())
+            self.world.addSimpleFrame(target)
+        else:
+            ik.getErrorMethod().setBounds(*self.default_bounds[index])
+            target.setRelativeTransform(self.default_target_tf[index])
+            self.world.removeSimpleFrame(target)
+
+    def toggle_support(self, name):
+        support = self.atlas.getEndEffector(name).getSupport()
+        support.setActive(not support.isActive())
+
+    def reset_to_rest(self):
+        for index in range(self.atlas.getNumDofs()):
+            if index < 2 or index > 4:
+                self.atlas.getDof(index).setPosition(self.rest_config[index])
+
+    def print_dof_values(self):
+        if self.log is not None:
+            for index in range(self.atlas.getNumDofs()):
+                dof = self.atlas.getDof(index)
+                self.log(f"{dof.getName()}: {dof.getPosition():.6g}")
+
+    def on_activate(self, ctx):
+        self.log = ctx.log
+        for index in range(self.atlas.getNumBodyNodes()):
+            ctx.enable_drag_and_drop(
+                self.atlas.getBodyNode(index),
+                use_external_ik=False,
+                use_whole_body=False,
+            )
+        for ee in self.end_effectors:
+            ctx.enable_drag_and_drop(ee.getIK().getTarget())
+        ctx.add_attachment(dart.gui.SupportPolygonVisual(self.atlas, elevation=0.05))
+        ctx.add_event_handler(self.handle_event)
 
 
 def _create_ground():
     ground = dart.dynamics.Skeleton("ground")
+    joint, body = ground.createWeldJointAndBodyNodePair()
     tf = dart.math.Isometry3()
-    thickness = 0.01
-    tf.set_translation([0, 0, -thickness / 2.0])
-
-    # The original standalone example builds a WeldJoint::Properties with a
-    # custom parent-to-joint transform and passes it to a generic
-    # createJointAndBodyNodePair(parent, jointProperties, bodyProperties).
-    # Neither the generic method nor a constructible WeldJoint.Properties
-    # type is bound in dartpy (only per-type createWeldJointAndBodyNodePair
-    # overloads are, and none take a properties object dartpy can construct)
-    # -- so this port creates the joint with defaults and sets the transform
-    # via the separately-bound setTransformFromParentBodyNode instead.
-    joint, bn = ground.createWeldJointAndBodyNodePair(None)
+    tf.set_translation([0.0, 0.0, -0.005])
     joint.setTransformFromParentBodyNode(tf)
-    bn.setName("ground_body")
-
-    # Likewise, BodyNode.createShapeNodeWith(...) (aspect-bundling) is
-    # unbound; only createShapeNode(shape[, name]) is, so aspects are
-    # attached individually via the ShapeFrame API instead.
-    shape_node = bn.createShapeNode(dart.dynamics.BoxShape([10, 10, thickness]))
-    shape_node.createVisualAspect()
-    shape_node.createCollisionAspect()
-    shape_node.createDynamicsAspect()
-    shape_node.getVisualAspect().setColor([0.2, 0.2, 1.0, 1.0])
+    shape = body.createShapeNode(dart.dynamics.BoxShape([10.0, 10.0, 0.01]))
+    shape.createVisualAspect().setColor([0.1, 0.1, 0.9, 0.2])
+    shape.createCollisionAspect()
+    shape.createDynamicsAspect()
     return ground
 
 
 def _create_atlas():
-    urdf = dart.utils.DartLoader()
-    atlas = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
-
-    scale = 0.25
-    box_shape = dart.dynamics.BoxShape([scale * 1.0, scale * 1.0, scale * 0.5])
+    uri = "dart://sample/sdf/atlas/atlas_v3_no_head.urdf"
+    atlas = dart.utils.DartLoader().parseSkeleton(uri)
+    if atlas is None:
+        raise RuntimeError(f"failed to load {uri}")
+    shape = atlas.getBodyNode(0).createShapeNode(
+        dart.dynamics.BoxShape([0.25, 0.25, 0.125])
+    )
+    shape.createVisualAspect().setColor([0.0, 0.0, 0.0, 1.0])
     tf = dart.math.Isometry3()
     tf.set_translation([0.0, 0.0, 0.1])
-
-    shape_node = atlas.getBodyNode(0).createShapeNode(box_shape)
-    shape_node.createVisualAspect()
-    shape_node.getVisualAspect().setColor([0.0, 0.0, 0.0, 1.0])
-    shape_node.setRelativeTransform(tf)
+    shape.setRelativeTransform(tf)
     return atlas
 
 
@@ -311,112 +190,113 @@ def _setup_start_configuration(atlas):
     atlas.getDof("l_leg_kny").setPositionLowerLimit(10 * np.pi / 180.0)
 
 
-def _setup_ik_targets(atlas):
-    """Whole-body IK on four BodyNodes directly (l_hand, r_hand, l_foot,
-    r_foot). See the module docstring for why this targets the raw bodies
-    instead of EndEffectors (unbound) -- the per-limb contact-offset
-    transforms and foot Support polygons the original attached to each
-    EndEffector are dropped along with it.
-    """
-
-    linear_bounds = np.full(3, np.inf)
-    angular_bounds = np.full(3, np.inf)
-    rootjoint_weights = 0.01 * np.ones(6)
-
-    targets = []
-    for body_name, frame_name in (
-        ("l_hand", "lh_target"),
-        ("r_hand", "rh_target"),
-        ("l_foot", "lf_target"),
-        ("r_foot", "rf_target"),
-    ):
-        body = atlas.getBodyNode(body_name)
-        frame = dart.gui.InteractiveFrame(dart.dynamics.Frame.World(), frame_name)
-
-        ik = body.getIK(True)
-        ik.setTarget(frame)
+def _setup_end_effectors(atlas):
+    infinity = np.full(3, np.inf)
+    hand_tf = dart.math.Isometry3()
+    hand_tf.set_translation([0.0009, 0.1254, 0.012])
+    hand_tf.set_rotation(dart.math.eulerXYZToMatrix([0.0, 0.0, np.pi / 2.0]))
+    for side, frame_name in (("l", "lh_target"), ("r", "rh_target")):
+        if side == "r":
+            hand_tf.set_translation([-0.0009, -0.1254, 0.012])
+            hand_tf.set_rotation(np.linalg.inv(hand_tf.rotation()))
+        ee = atlas.getBodyNode(f"{side}_hand").createEndEffector(f"{side}_hand")
+        ee.setDefaultRelativeTransform(hand_tf, True)
+        ik = ee.getIK(True)
+        ik.setTarget(dart.gui.InteractiveFrame(dart.dynamics.Frame.World(), frame_name))
         ik.useWholeBody()
-        ik.getGradientMethod().setComponentWeights(rootjoint_weights)
+        ik.getGradientMethod().setComponentWeights(0.01 * np.ones(6))
+        ik.getErrorMethod().setLinearBounds(-infinity, infinity)
+        ik.getErrorMethod().setAngularBounds(-infinity, infinity)
+
+    support = [
+        [-0.03 - 0.186, -0.03, 0.0],
+        [0.10 - 0.186, -0.03, 0.0],
+        [0.10 - 0.186, 0.03, 0.0],
+        [-0.03 - 0.186, 0.03, 0.0],
+    ]
+    foot_tf = dart.math.Isometry3()
+    foot_tf.set_translation([0.186, 0.0, -0.08])
+    linear_bounds = np.array([np.inf, np.inf, 1e-8])
+    angular_bounds = np.array([1e-8, 1e-8, np.inf])
+    for side, frame_name in (("l", "lf_target"), ("r", "rf_target")):
+        ee = atlas.getBodyNode(f"{side}_foot").createEndEffector(f"{side}_foot")
+        ee.setRelativeTransform(foot_tf)
+        ik = ee.getIK(True)
+        ik.setTarget(dart.gui.InteractiveFrame(dart.dynamics.Frame.World(), frame_name))
+        ik.setHierarchyLevel(1)
         ik.getErrorMethod().setLinearBounds(-linear_bounds, linear_bounds)
         ik.getErrorMethod().setAngularBounds(-angular_bounds, angular_bounds)
-        solver = ik.getSolver()
-        if hasattr(solver, "setNumMaxIterations"):
-            solver.setNumMaxIterations(10)
-        frame.setTransform(body.getTransform())
+        ee.getSupport(True).setGeometry(support)
+        ee.getSupport().setActive()
+    atlas.getDof(5).setPosition(
+        -atlas.getEndEffector("r_foot").getWorldTransform().translation()[2]
+    )
+    for name in ("l_foot", "r_foot"):
+        ee = atlas.getEndEffector(name)
+        ee.getIK().getTarget().setTransform(ee.getTransform())
 
-        targets.append((body, ik, frame))
 
-    return targets
+def _setup_whole_body_solver(atlas):
+    ik = atlas.getIK(True)
+    ik.getSolver().setNumMaxIterations(10)
+    weights = 0.01 * np.ones(atlas.getNumDofs())
+    weights[2:5] = 0.0
+    weights[6:9] *= 0.2
+    lower = np.full(atlas.getNumDofs(), -np.inf)
+    upper = np.full(atlas.getNumDofs(), np.inf)
+    indices = [0, 1, 5, 6, 7, 8]
+    lower[indices] = [-0.35, -0.35, 0.600, -0.1, -0.1, -0.1]
+    upper[indices] = [0.35, 0.35, 0.885, 0.1, 0.1, 0.1]
+    posture = dart._demos.RelaxedPosture(atlas.getPositions(), lower, upper, weights)
+    ik.setObjective(posture)
+    balance = dart.constraint.BalanceConstraint(ik)
+    ik.getProblem().addEqConstraint(balance)
+    balance.setErrorMethod(dart.constraint.BalanceConstraint.ErrorMethod.FROM_CENTROID)
+    balance.setBalanceMethod(
+        dart.constraint.BalanceConstraint.BalanceMethod.SHIFT_SUPPORT
+    )
+    return posture, balance
 
 
 def build() -> dart.viewer.SceneSetup:
     world = dart.simulation.World()
-    # Purely kinematic, as in the C++ scene: zero gravity keeps the pose when
-    # Step, cycles or captures force physics steps.
-    world.setGravity([0, 0, 0])
-
+    world.setGravity([0.0, 0.0, 0.0])
     atlas = _create_atlas()
     world.addSkeleton(atlas)
     world.addSkeleton(_create_ground())
-
     _setup_start_configuration(atlas)
-    targets = _setup_ik_targets(atlas)
-    controller = AtlasPuppetController(atlas, targets)
-    handler = AtlasPuppetInputHandler(atlas, world, controller, targets)
-
-    def on_activate(ctx):
-        for i in range(atlas.getNumBodyNodes()):
-            ctx.enable_drag_and_drop(
-                atlas.getBodyNode(i), use_external_ik=False, use_whole_body=False
-            )
-        for _body, _ik, frame in targets:
-            ctx.enable_drag_and_drop(frame)
-        ctx.add_event_handler(handler.handle)
-
-    panel = dart.viewer.Panel()
-    for instruction in [
-        "Alt + Click:   Try to translate a body without changing its orientation\n",
-        "Ctrl + Click:  Try to rotate a body without changing its translation\n",
-        "Shift + Click: Move a body using only its parent joint\n",
-        "F1 -> F4:      Toggle the interactive target of a hand/foot\n",
-        "W A S D:       Move the robot around the scene\n",
-        "Q E:           Rotate the robot counter-clockwise and clockwise\n",
-        "F Z:           Shift the robot's elevation up and down\n",
-        "T:             Reset the robot to its relaxed posture\n",
-        "V:             Print all dof positions\n",
-        "Note: this is purely kinematic. Physical simulation is not allowed.\n",
-        "Note: each hand/foot target solves independently (no whole-body\n",
-        "posture objective is reachable from Python); see build() notes.\n",
-    ]:
-        panel.add_text(instruction.rstrip(), wrap=True)
-    panel.add_text(
-        "EndEffector is unbound in dartpy (no createEndEffector/support "
-        "polygon), so IK targets attach directly to l_hand/r_hand/l_foot/"
-        "r_foot BodyNodes instead, and the foot-support/BalanceConstraint "
-        "balancing feature is dropped (needs EndEffector-based support "
-        "polygons). Skeleton-level WholeBodyIK is also unreachable "
-        "(Skeleton.getIK() has no createIfNull overload and there is no "
-        "way to construct/attach one from Python), so the RelaxedPosture "
-        "objective and 'r'/hold-to-tighten-posture feature are dropped "
-        "too; each of the 4 targets solves independently via its own "
-        "per-BodyNode InverseKinematics instead of one joint whole-body "
-        "solve. SupportPolygonVisual is dropped too (it draws EndEffector "
-        "supports). "
-        "Keys remapped: 1-4 -> F1-F4, p -> v; o/x/c removed with the "
-        "features they drove.",
-        wrap=True,
+    _setup_end_effectors(atlas)
+    state = _Puppet(atlas, world, *_setup_whole_body_solver(atlas))
+    keys = [
+        dart.viewer.KeyAction(
+            str(index + 1),
+            f"Toggle {ee.getName()} target",
+            partial(state.toggle_target, index),
+        )
+        for index, ee in enumerate(state.end_effectors)
+    ]
+    keys.extend(
+        [
+            dart.viewer.KeyAction(
+                "x", "Toggle l_foot support", partial(state.toggle_support, "l_foot")
+            ),
+            dart.viewer.KeyAction(
+                "c", "Toggle r_foot support", partial(state.toggle_support, "r_foot")
+            ),
+            dart.viewer.KeyAction("t", "Reset to rest pose", state.reset_to_rest),
+            dart.viewer.KeyAction("p", "Print DOF values", state.print_dof_values),
+        ]
     )
-
     return dart.viewer.SceneSetup(
         world,
-        pre_refresh=controller.pre_refresh,
-        on_activate=on_activate,
+        pre_refresh=state.pre_refresh,
+        on_activate=state.on_activate,
+        key_actions=keys,
+        panel=state.panel,
         allow_simulation=False,
         camera_home=dart.viewer.CameraHome(
             eye=[5.34, 3.00, 2.41], center=[0.00, 0.00, 1.00], up=[-0.20, -0.08, 0.98]
         ),
-        shadows=False,
-        panel=panel,
     )
 
 
