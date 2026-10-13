@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -5828,6 +5829,266 @@ def test_hooks_require_cross_platform_commands(tmp_path):
     assert ".claude/settings.json: invalid or stale hook wiring" in errors
 
 
+def test_muse_hook_requires_lowercase_bash_matcher_and_shared_wiring(tmp_path):
+    hooks_path = tmp_path / ".muse" / "hooks.json"
+    hooks_path.parent.mkdir(parents=True)
+    hooks_path.write_text((ROOT / ".muse" / "hooks.json").read_text())
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    assert not any(error.startswith(".muse/hooks.json") for error in errors)
+
+    data = json.loads(hooks_path.read_text())
+    data["hooks"]["PreToolUse"][0]["matcher"] = "^Bash$"
+    hooks_path.write_text(json.dumps(data))
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    assert ".muse/hooks.json: matcher must be `^bash$`" in errors
+
+    data["hooks"]["PreToolUse"][0]["matcher"] = "^bash$"
+    data["hooks"]["PreToolUse"][0]["hooks"][0]["command"] = infra.CODEX_HOOK_COMMAND
+    hooks_path.write_text(json.dumps(data))
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    # Muse must convert root-lookup and launcher errors to its blocking exit.
+    assert ".muse/hooks.json: hook command wiring is stale" in errors
+
+    data = json.loads((ROOT / ".muse/hooks.json").read_text())
+    del data["hooks"]["PreToolUse"][0]["hooks"][0]["onFailure"]
+    hooks_path.write_text(json.dumps(data))
+    errors = []
+    infra.check_hooks(tmp_path, errors)
+    assert ".muse/hooks.json: failure handler wiring is stale" in errors
+
+    for event in ("SessionStart", "SessionEnd"):
+        data = json.loads((ROOT / ".muse/hooks.json").read_text())
+        del data["hooks"][event]
+        hooks_path.write_text(json.dumps(data))
+        errors = []
+        infra.check_hooks(tmp_path, errors)
+        assert f".muse/hooks.json: {event} wiring is stale" in errors
+
+    hooks_path.write_text(
+        json.dumps({"hooks": {"PreToolUse": [{"matcher": "^bash$", "hooks": [1]}]}})
+    )
+    errors = []
+
+    infra.check_hooks(tmp_path, errors)
+
+    assert ".muse/hooks.json: expected one bounded PreToolUse hook" in errors
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Exercises the POSIX hook command")
+@pytest.mark.parametrize("failure", ("outside", "missing", "guard"))
+def test_muse_hook_blocks_root_lookup_and_launcher_failures(tmp_path, failure):
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    if failure == "guard":
+        guard = repo / ".claude/hooks/pre-commit-guard.sh"
+        guard.parent.mkdir(parents=True)
+        guard.write_text("#!/bin/sh\nexit 1\n")
+        guard.chmod(0o755)
+    command = json.loads((ROOT / ".muse/hooks.json").read_text())["hooks"][
+        "PreToolUse"
+    ][0]["hooks"][0]["command"]
+    payload = json.dumps({"tool_input": {"command": f'git -C "{repo}" commit -m test'}})
+
+    result = subprocess.run(
+        ["sh", "-c", command],
+        cwd=tmp_path if failure == "outside" else repo,
+        input=payload,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "DART guard: hook failed; blocking" in result.stderr
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Exercises the POSIX hook command")
+@pytest.mark.parametrize("command", ("pwd", "git status", "echo hello"))
+def test_muse_hook_allows_noncommit_outside_checkout(tmp_path, command):
+    result = subprocess.run(
+        shlex.split(infra.MUSE_HOOK_COMMAND),
+        cwd=tmp_path,
+        input=json.dumps({"tool_input": {"command": command}}),
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Exercises the POSIX hook command")
+def test_muse_hook_uses_posix_shell_and_forwards_payload(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    guard = tmp_path / ".claude/hooks/pre-commit-guard.sh"
+    guard.parent.mkdir(parents=True)
+    guard.write_text("#!/bin/sh\ncat\n")
+    guard.chmod(0o755)
+    args = shlex.split(infra.MUSE_HOOK_COMMAND)
+    assert args[:2] == ["sh", "-c"] and len(args) == 3
+    payload = json.dumps({"tool_input": {"command": "git commit -m test"}})
+
+    result = subprocess.run(
+        args, cwd=tmp_path, input=payload, capture_output=True, text=True
+    )
+
+    assert result.returncode == 0
+    assert result.stdout == payload
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Exercises the POSIX hook command")
+def test_muse_failure_handler_blocks_with_reason(tmp_path):
+    handler = json.loads((ROOT / ".muse/hooks.json").read_text())["hooks"][
+        "PreToolUse"
+    ][0]["hooks"][0]["onFailure"]
+    result = subprocess.run(
+        shlex.split(handler["command"]),
+        cwd=tmp_path,
+        input=json.dumps({"tool_input": {"command": "git commit -m test"}}),
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "hook failed or timed out; blocking" in result.stderr
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Exercises the POSIX hook commands")
+@pytest.mark.parametrize(
+    ("command", "blocked"),
+    (
+        ("echo commit", False),
+        ("git log --grep=commit", False),
+        ('echo "git commit"', False),
+        ("git -C ../repo commit -m test", True),
+        (r"git -C ../repo com\mit -m test", True),
+        ("git -C ../other commit -m test", False),
+    ),
+)
+def test_muse_session_root_preserves_guard_classification_outside_checkout(
+    tmp_path, command, blocked
+):
+    repo = tmp_path / "repo"
+    other = tmp_path / "other"
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    for path in (repo, other):
+        subprocess.run(["git", "init", "-q", str(path)], check=True)
+        (path / "bad.txt").write_text("trailing whitespace \n")
+        subprocess.run(["git", "-C", str(path), "add", "bad.txt"], check=True)
+    guard = repo / ".claude/hooks/pre-commit-guard.sh"
+    guard.parent.mkdir(parents=True)
+    guard.write_text((ROOT / ".claude/hooks/pre-commit-guard.sh").read_text())
+    guard.chmod(0o755)
+    env = dict(
+        os.environ,
+        HOME=str(tmp_path),
+        MUSE_SESSION_ID="test-session",
+        DART_HOOK_PYTHON=sys.executable,
+    )
+    cache = tmp_path / ".cache/dart-muse-hooks/test-session.root"
+    start = infra.MUSE_HOOK_LIFECYCLE["SessionStart"][0]["hooks"][0]
+    result = subprocess.run(
+        shlex.split(start["command"]),
+        cwd=repo,
+        env=env,
+        input="{}",
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert cache.read_text() == str(repo)
+    assert cache.stat().st_mode & 0o777 == 0o600
+    assert cache.parent.stat().st_mode & 0o777 == 0o700
+    sibling = cache.with_name("another-session.root")
+    sibling.write_text("preserved")
+
+    result = subprocess.run(
+        shlex.split(infra.MUSE_HOOK_COMMAND),
+        cwd=outside,
+        env=env,
+        input=json.dumps({"tool_input": {"command": command}}),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == (2 if blocked else 0), result.stderr
+    if blocked:
+        assert "staged diff check FAILED" in result.stderr
+    else:
+        assert result.stderr == ""
+
+    end = infra.MUSE_HOOK_LIFECYCLE["SessionEnd"][0]["hooks"][0]
+    result = subprocess.run(
+        shlex.split(end["command"]),
+        cwd=outside,
+        env=env,
+        input="{}",
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert not cache.exists()
+    assert sibling.read_text() == "preserved"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Requires native Windows PowerShell")
+def test_muse_windows_cache_uses_home_from_cleared_environment(tmp_path):
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    guard = repo / ".claude/hooks/pre-commit-guard.ps1"
+    guard.parent.mkdir(parents=True)
+    guard.write_text('Write-Output "cached guard ran"\nexit 0\n')
+    env = {
+        name: os.environ[name]
+        for name in ("PATH", "SystemRoot", "WINDIR", "COMSPEC", "PATHEXT")
+        if name in os.environ
+    }
+    env.update(HOME=str(tmp_path), MUSE_SESSION_ID="windows-test-session")
+    cache = tmp_path / ".cache/dart-muse-hooks/windows-test-session.root"
+    start = infra.MUSE_HOOK_LIFECYCLE["SessionStart"][0]["hooks"][0]
+    end = infra.MUSE_HOOK_LIFECYCLE["SessionEnd"][0]["hooks"][0]
+    try:
+        result = subprocess.run(
+            ["cmd", "/C", start["commandWindows"]],
+            cwd=repo,
+            env=env,
+            input="{}",
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert Path(cache.read_text()).resolve() == repo
+        result = subprocess.run(
+            ["cmd", "/C", infra.MUSE_HOOK_COMMAND_WINDOWS],
+            cwd=tmp_path,
+            env=env,
+            input=json.dumps({"tool_input": {"command": "echo commit"}}),
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "cached guard ran" in result.stdout
+    finally:
+        subprocess.run(
+            ["cmd", "/C", end["commandWindows"]],
+            cwd=tmp_path,
+            env=env,
+            input="{}",
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    assert not cache.exists()
+
+
 def test_release_hook_validation_rejects_unsafe_suffix_and_extra_keys(tmp_path):
     for relative in (
         ".codex/hooks.json",
@@ -6354,7 +6615,7 @@ def test_native_pretool_forwards_payload_to_shared_guard(
         str(guard),
     ]
     assert calls[0][1]["input"] == payload
-    assert calls[0][1]["cwd"] == tmp_path
+    assert "cwd" not in calls[0][1]
     assert calls[0][1]["env"]["CLAUDE_PROJECT_DIR"] == str(tmp_path)
     assert calls[0][1]["env"]["CODEX_PROJECT_DIR"] == str(tmp_path)
     assert calls[0][1]["env"]["DART_HOOK_PYTHON"] == str(
@@ -6370,6 +6631,35 @@ def test_native_pretool_noncommit_bypasses_missing_git_bash(
     payload = json.dumps({"tool_input": {"command": command}}).encode()
 
     assert bridge.forward(tmp_path, payload) == 0
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="Exercises the shared guard with POSIX Bash"
+)
+def test_native_pretool_resolves_relative_git_paths_from_tool_cwd(
+    tmp_path, monkeypatch
+):
+    root = tmp_path / "project"
+    outside = tmp_path / "outside"
+    other = outside / "other"
+    other.mkdir(parents=True)
+    for repo in (root, other):
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    guard = root / ".claude/hooks/pre-commit-guard.sh"
+    guard.parent.mkdir(parents=True)
+    guard.write_text((ROOT / ".claude/hooks/pre-commit-guard.sh").read_text())
+    gate = root / "scripts/check_agent_hook.py"
+    gate.parent.mkdir()
+    gate.write_text("import sys\nprint('gate reached', file=sys.stderr)\nsys.exit(2)\n")
+    monkeypatch.chdir(outside)
+    monkeypatch.delenv("DART_SKIP_HOOKS", raising=False)
+    monkeypatch.delenv("DART_HOOK_DRY_RUN", raising=False)
+    for command, expected in (
+        ("git -C other commit --no-verify -m test", 0),
+        ("git -C ../project commit --no-verify -m test", 2),
+    ):
+        payload = json.dumps({"tool_input": {"command": command}}).encode()
+        assert bridge.run_guard(root, payload, Path("/bin/bash")) == expected
 
 
 @pytest.mark.parametrize(

@@ -1,8 +1,9 @@
 #!/bin/sh
-# DART Claude Code/Codex PreToolUse guard for Bash `git commit` calls.
+# DART Claude Code/Codex/Muse PreToolUse guard for Bash `git commit` calls.
 #
-# Wired via .claude/settings.json and .codex/hooks.json. It enforces the
-# fast staged-file gate for agent sessions even before `pixi run install-hooks` has
+# Wired via .claude/settings.json, .codex/hooks.json, and .muse/hooks.json.
+# It enforces the fast staged-file gate for agent sessions even before
+# `pixi run install-hooks` has
 # been run, so an agent cannot commit past the gate by forgetting it.
 #
 # Contract:

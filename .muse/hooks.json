@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'payload=$(cat); case \"$payload\" in *commit*|*g*i*t*c*o*m*m*i*t*) ;; *) exit 0 ;; esac; repo_root=; case \"${MUSE_SESSION_ID:-}\" in \"\"|*[!A-Za-z0-9-]*) ;; *) repo_root=$(cat \"$HOME/.cache/dart-muse-hooks/$MUSE_SESSION_ID.root\" 2>/dev/null) ;; esac; if [ -z \"$repo_root\" ]; then repo_root=\"$(git rev-parse --show-toplevel)\"; fi; [ -n \"$repo_root\" ] && printf \"%s\" \"$payload\" | CLAUDE_PROJECT_DIR=\"$repo_root\" CODEX_PROJECT_DIR=\"$repo_root\" \"$repo_root/.claude/hooks/pre-commit-guard.sh\" || { echo \"DART guard: hook failed; blocking\" >&2; exit 2; }'",
+            "commandWindows": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"$payload = [Console]::In.ReadToEnd(); if ($payload -notmatch '(?s)commit|g.*i.*t.*c.*o.*m.*m.*i.*t') { exit 0 }; $ErrorActionPreference = 'Stop'; try { $repoRoot = $null; $cacheHome = $env:HOME; if (-not $cacheHome) { $cacheHome = [Environment]::GetFolderPath('UserProfile') }; if ($env:MUSE_SESSION_ID -match '^[A-Za-z0-9-]+$') { $cache = Join-Path $cacheHome ('.cache/dart-muse-hooks/' + $env:MUSE_SESSION_ID + '.root'); if (Test-Path -LiteralPath $cache) { $repoRoot = Get-Content -LiteralPath $cache -Raw } }; if (-not $repoRoot) { $repoRoot = git rev-parse --show-toplevel }; if (-not $repoRoot) { throw 'git did not return a repository root' }; $env:CLAUDE_PROJECT_DIR = $repoRoot.Trim(); $env:CODEX_PROJECT_DIR = $repoRoot.Trim(); $payload | & (Join-Path $repoRoot.Trim() '.claude/hooks/pre-commit-guard.ps1'); if (-not $? -or $LASTEXITCODE -ne 0) { throw 'guard failed' }; exit 0 } catch { [Console]::Error.WriteLine('DART guard: hook failed; blocking'); exit 2 }\"",
+            "timeout": 15,
+            "statusMessage": "Checking DART commit command",
+            "onFailure": {
+              "type": "command",
+              "command": "sh -c 'cat >/dev/null; echo \"DART guard: hook failed or timed out; blocking\" >&2; exit 2'",
+              "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$null = [Console]::In.ReadToEnd(); [Console]::Error.WriteLine('DART guard: hook failed or timed out; blocking'); exit 2\"",
+              "timeout": 2
+            }
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'cat >/dev/null; umask 077; case \"${MUSE_SESSION_ID:-}\" in \"\"|*[!A-Za-z0-9-]*) exit 2 ;; esac; repo_root=$(git rev-parse --show-toplevel) && [ -x \"$repo_root/.claude/hooks/pre-commit-guard.sh\" ] && mkdir -p \"$HOME/.cache/dart-muse-hooks\" && printf \"%s\" \"$repo_root\" >\"$HOME/.cache/dart-muse-hooks/$MUSE_SESSION_ID.root\"'",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$null = [Console]::In.ReadToEnd(); $ErrorActionPreference = 'Stop'; try { $cacheHome = $env:HOME; if (-not $cacheHome) { $cacheHome = [Environment]::GetFolderPath('UserProfile') }; if ($env:MUSE_SESSION_ID -notmatch '^[A-Za-z0-9-]+$') { throw 'missing session ID' }; $repoRoot = git rev-parse --show-toplevel; if (-not $repoRoot -or -not (Test-Path -LiteralPath (Join-Path $repoRoot '.claude/hooks/pre-commit-guard.ps1'))) { throw 'missing guard' }; $cacheDir = Join-Path $cacheHome '.cache/dart-muse-hooks'; $null = New-Item -ItemType Directory -Force -Path $cacheDir; [IO.File]::WriteAllText((Join-Path $cacheDir ($env:MUSE_SESSION_ID + '.root')), $repoRoot); exit 0 } catch { [Console]::Error.WriteLine('DART guard: session setup failed'); exit 2 }\"",
+            "timeout": 15,
+            "onFailure": {
+              "type": "command",
+              "command": "sh -c 'cat >/dev/null; echo \"DART guard: hook failed or timed out; blocking\" >&2; exit 2'",
+              "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$null = [Console]::In.ReadToEnd(); [Console]::Error.WriteLine('DART guard: hook failed or timed out; blocking'); exit 2\"",
+              "timeout": 2
+            }
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'cat >/dev/null; case \"${MUSE_SESSION_ID:-}\" in \"\"|*[!A-Za-z0-9-]*) exit 0 ;; esac; rm -f \"$HOME/.cache/dart-muse-hooks/$MUSE_SESSION_ID.root\"'",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$null = [Console]::In.ReadToEnd(); $cacheHome = $env:HOME; if (-not $cacheHome) { $cacheHome = [Environment]::GetFolderPath('UserProfile') }; if ($env:MUSE_SESSION_ID -match '^[A-Za-z0-9-]+$') { $cache = Join-Path $cacheHome ('.cache/dart-muse-hooks/' + $env:MUSE_SESSION_ID + '.root'); Remove-Item -LiteralPath $cache -Force -ErrorAction SilentlyContinue }; exit 0\"",
+            "timeout": 2
+          }
+        ]
+      }
+    ]
+  }
+}
