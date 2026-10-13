@@ -200,3 +200,24 @@ TEST(AdaptiveSoftContactModelTest, PreservesDeterministicComparisonContract)
             << first.finalAllActivePositionChecksum
             << " repeat_deterministic=true\n";
 }
+
+//==============================================================================
+TEST(AdaptiveSoftContactModelTest, EstimatesAsManyActivePointsAsTheBodyReports)
+{
+  auto model = model::createModel(true);
+  const std::size_t total = model.softBody->getNumPointMasses();
+  const auto partial = [&] {
+    const std::size_t active = model.softBody->getNumActivePointMasses();
+    return active > 0 && active < total;
+  };
+  // Step until contact activates only part of the soft body.
+  for (int i = 0; i < 5000 && !partial(); ++i)
+    ASSERT_TRUE(model::step(model));
+  ASSERT_TRUE(partial());
+
+  const std::vector<bool> active = model::estimateActivePoints(model);
+  ASSERT_EQ(active.size(), model.softBody->getNumPointMasses());
+  const auto marked = static_cast<std::size_t>(
+      std::count(active.begin(), active.end(), true));
+  EXPECT_EQ(marked, model.softBody->getNumActivePointMasses());
+}
