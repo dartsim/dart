@@ -1518,6 +1518,14 @@
                   "enum_type": "dart::dynamics::MeshShape::MeshOwnership",
                   "signature": "Imported",
                   "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::MeshShape::MeshOwnership",
+                  "const": true,
+                  "enum_declaration": "enum class MeshOwnership",
+                  "enum_type": "dart::dynamics::MeshShape::MeshOwnership",
+                  "signature": "None",
+                  "virtual": false
                 }
               ],
               "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , const aiScene * mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr , MeshOwnership ownership = MeshOwnership :: Imported )",

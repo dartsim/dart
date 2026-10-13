@@ -252,12 +252,16 @@ matching DART header declarations with signatures, constness, and virtual
 status. Referenced types retain `final_classes` from their class dependencies,
 so making a DART base final changes the inventory. Enum types and enumerator
 declarations retain their normalized enum headers, including underlying types;
-unscoped enumerators are also indexed in their enclosing namespace or class.
+unscoped and anonymous enumerators are also indexed in their enclosing namespace
+or class. Used enumerators retain initializer and preceding-value dependencies.
 A construction, including an array declaration, lists the constructors and
 their access, including private and deleted declarations, of the type, its
 bases and owned non-static members, including class template specializations.
-These are conservative candidates without overload resolution. A Gazebo class
-derived from a DART class counts as a construction of that base at its base
+These are conservative candidates without overload resolution.
+Construction helpers include `std::allocate_shared`, `std::make_optional` and
+`std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
+`new`.
+A Gazebo class derived from a DART class counts as a construction of that base at its base
 clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
 `brace_member_declarations` retains public non-static fields in declaration
@@ -268,7 +272,11 @@ do not construct those elements. Unknown extent expressions remain conservative.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
-initializer dependencies. This records lexical evidence without computing C++
+initializer dependencies. Class annotations, including export macro spellings,
+are retained in `annotation_declarations` even when an export macro expands to
+nothing on the scanned platform. Constants in `noexcept(...)` conditions and
+named bit-field widths are retained in `exception_specification_declarations`
+and `bit_width_declarations`. This records lexical evidence without computing C++
 layout or evaluating constant expressions.
 The lexical inventory retains declaration candidates for unresolved receivers
 (`unresolved_count`) and overloads, so a member name on a non-DART object can
@@ -279,8 +287,10 @@ including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
 Chained source helper calls use return declarations from the receiver's class
-and its bases; sequence returns retain their DART element types. Source class
-aliases retain DART bases, and member lookup respects source declarations and
+and its bases; sequence returns retain their DART element types.
+Standard forwarding calls and `std::optional` accessors retain contained
+receiver shapes through value, pointer and array expressions.
+Source class aliases retain DART bases, and member lookup respects source declarations and
 class using-declarations. Lambda parameters stay within their lambda body.
 Range-for variables retain the range's element types within the loop body.
 Control-statement declarations stay within the complete statement, including
