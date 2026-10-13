@@ -202,6 +202,9 @@ set_tests_properties(
 )
 dart_format_add(${soft_demo_model_test_sources})
 
+dart_add_test("integration" test_WorldHistory)
+target_link_libraries(test_WorldHistory dart-demo-models)
+
 # The soft-foot locomotion model drives the Atlas soft-feet SDF with the
 # existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
 # components are optional, so the gate only exists when both are built.

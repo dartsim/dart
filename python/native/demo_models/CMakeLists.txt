@@ -37,6 +37,7 @@ add_library(
   ContactArrowLayout.cpp
   AdaptiveSoftContactModel.cpp
   SoftWormModel.cpp
+  WorldHistory.cpp
 )
 target_link_libraries(dart-demo-models PUBLIC dart)
 target_include_directories(

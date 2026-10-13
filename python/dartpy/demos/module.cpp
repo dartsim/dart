@@ -37,6 +37,7 @@
 namespace dart::python {
 
 void bind_soft_worm(nb::module_& m);
+void bind_world_history(nb::module_& m);
 void bind_adaptive_soft_contact(nb::module_& m);
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
 void bind_simbicon(nb::module_& m);
@@ -48,6 +49,7 @@ void bind_demos(nb::module_& m)
   auto demos = m.def_submodule(
       "_demos", "Private GUI-free demo models; outside the SemVer contract.");
   bind_soft_worm(demos);
+  bind_world_history(demos);
   bind_adaptive_soft_contact(demos);
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
   bind_simbicon(demos);
