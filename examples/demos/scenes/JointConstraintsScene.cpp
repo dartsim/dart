@@ -59,12 +59,12 @@
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
+#include "demo_models/JointConstraintsController.hpp"
 
 #include <dart/utils/utils.hpp>
 
 #include <dart/dart.hpp>
 
-#include <algorithm>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -77,100 +77,17 @@ using dart::dynamics::SkeletonPtr;
 
 const char* const kJointConstraintsPelvisName = "h_pelvis";
 const char* const kJointConstraintsSpineName = "h_spine";
-const char* const kJointConstraintsLeftHeelName = "h_heel_left";
-
-//==============================================================================
-/// SPD tracking controller state, ported from examples/joint_constraints'
-/// Controller class.
-struct SpdController
-{
-  Eigen::MatrixXd kp;
-  Eigen::MatrixXd kd;
-  Eigen::VectorXd desiredDofs;
-  Eigen::VectorXd
-      constrForces; // Never fed from the solver, as in the original.
-  double preOffset = 0.0;
-  double timestep = 0.001;
-};
-
-//==============================================================================
-SpdController makeJointConstraintsController(
-    const SkeletonPtr& skel, double timestep)
-{
-  SpdController controller;
-  const int nDof = static_cast<int>(skel->getNumDofs());
-  controller.kp = Eigen::MatrixXd::Zero(nDof, nDof);
-  controller.kd = Eigen::MatrixXd::Zero(nDof, nDof);
-  controller.constrForces = Eigen::VectorXd::Zero(nDof);
-  controller.desiredDofs = skel->getPositions();
-  controller.timestep = timestep;
-
-  // Root 6 dofs keep zero gains (uncontrolled); lower body + lower back get
-  // stiffer gains than the upper body, exactly as the original tuned them.
-  for (int i = 6; i < std::min(22, nDof); ++i)
-    controller.kp(i, i) = 200.0;
-  for (int i = 22; i < nDof; ++i)
-    controller.kp(i, i) = 20.0;
-  for (int i = 6; i < std::min(22, nDof); ++i)
-    controller.kd(i, i) = 100.0;
-  for (int i = 22; i < nDof; ++i)
-    controller.kd(i, i) = 10.0;
-
-  return controller;
-}
-
-//==============================================================================
-Eigen::VectorXd computeTorques(
-    const SkeletonPtr& skel, SpdController& controller)
-{
-  const Eigen::VectorXd q = skel->getPositions();
-  const Eigen::VectorXd dq = skel->getVelocities();
-  const double dt = controller.timestep;
-
-  const Eigen::MatrixXd invM
-      = (skel->getMassMatrix() + controller.kd * dt).inverse();
-  const Eigen::VectorXd p
-      = -controller.kp * (q + dq * dt - controller.desiredDofs);
-  const Eigen::VectorXd d = -controller.kd * dq;
-  const Eigen::VectorXd qddot = invM
-                                * (-skel->getCoriolisAndGravityForces() + p + d
-                                   + controller.constrForces);
-  Eigen::VectorXd torques = p + d - controller.kd * qddot * dt;
-
-  // Ankle strategy for the sagittal plane: com[0]/cop[0] are the world-frame
-  // X coordinates, invariant under the Y-up -> Z-up reorientation (see file
-  // comment), so this logic is byte-for-byte identical to the original.
-  auto* heel = skel->getBodyNode(kJointConstraintsLeftHeelName);
-  if (heel && torques.size() > 26) {
-    const Eigen::Vector3d com = skel->getCOM();
-    const Eigen::Vector3d cop
-        = heel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
-    const double diff0 = com[0] - cop[0];
-    if (diff0 < 0.1) {
-      const double offset = com[0] - cop[0];
-      constexpr double k1 = 20.0;
-      constexpr double k2 = 10.0;
-      constexpr double kdAnkle = 100.0;
-      torques[17] += -k1 * offset + kdAnkle * (controller.preOffset - offset);
-      torques[25] += -k2 * offset + kdAnkle * (controller.preOffset - offset);
-      torques[19] += -k1 * offset + kdAnkle * (controller.preOffset - offset);
-      torques[26] += -k2 * offset + kdAnkle * (controller.preOffset - offset);
-      controller.preOffset = offset;
-    }
-  }
-
-  // Illegal (uncontrolled) root torques are always zeroed, as in the original.
-  for (int i = 0; i < std::min(6, static_cast<int>(torques.size())); ++i)
-    torques[i] = 0.0;
-
-  return torques;
-}
 
 //==============================================================================
 /// Per-instance state captured by this scene's preStep/key-action lambdas.
 struct JointConstraintsState
 {
-  SpdController controller;
+  JointConstraintsState(const SkeletonPtr& skel, double timestep)
+    : controller(skel, timestep)
+  {
+  }
+
+  JointConstraintsController controller;
   Eigen::Vector3d perturbationForce = Eigen::Vector3d::Zero();
   int impulseDuration = 0;
 
@@ -235,10 +152,7 @@ DemoScene makeJointConstraintsScene()
 
     // Initial pose: global orientation/position y, hips, knees, ankles, lower
     // back -- unaffected by the reorientation (see file comment). The indices
-    // are hardcoded up to 21, so guard the DOF layout the same way
-    // makeJointConstraintsController and computeTorques guard theirs (every
-    // other hardcoded-index path here is clamped or checked); a smaller
-    // skeleton would otherwise index out of range.
+    // are hardcoded up to 21, so guard the asset layout before setting them.
     const std::vector<std::size_t> genCoordIds
         = {1, 4, 6, 9, 10, 13, 16, 17, 21};
     if (skel->getNumDofs() < 22)
@@ -248,9 +162,8 @@ DemoScene makeJointConstraintsScene()
     initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
     skel->setPositions(genCoordIds, initConfig);
 
-    auto state = std::make_shared<JointConstraintsState>();
-    state->controller
-        = makeJointConstraintsController(skel, world->getTimeStep());
+    auto state
+        = std::make_shared<JointConstraintsState>(skel, world->getTimeStep());
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -272,7 +185,7 @@ DemoScene makeJointConstraintsScene()
       if (spine)
         spine->addExtForce(state->perturbationForce);
 
-      skel->setForces(computeTorques(skel, state->controller));
+      skel->setForces(state->controller.computeTorques(skel));
 
       if (state->impulseDuration > 0) {
         --state->impulseDuration;

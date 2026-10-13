@@ -19,8 +19,10 @@ from .scenes import (
     heightmap,
     hello_world,
     hybrid_dynamics,
+    joint_constraints,
     mixed_chain,
     operational_space_control,
+    point_cloud,
     rigid_chain,
     rigid_cubes,
     rigid_loop,
@@ -58,6 +60,7 @@ def make_demo_scenes():
         box_stacking,
         dynamic_joint_constraints,
         tinkertoy,
+        joint_constraints,
         hybrid_dynamics,
         biped_stand,
         operational_space_control,
@@ -77,5 +80,8 @@ def make_demo_scenes():
         modules.insert(modules.index(wam_ikfast), ssik_ik_gui)
     if hasattr(dart.utils, "ModelResourceRetriever"):
         modules.extend([atlas_v5, unitree_g1])
-    modules.extend([vehicle, heightmap, drag_and_drop])
+    modules.extend([vehicle, heightmap])
+    if hasattr(dart.dynamics, "VoxelGridShape"):
+        modules.append(point_cloud)
+    modules.append(drag_and_drop)
     return [scene for module in modules for scene in module.scenes()]

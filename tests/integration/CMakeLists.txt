@@ -226,6 +226,39 @@ if(TARGET dart-utils)
   )
 endif()
 
+if(TARGET dart-utils)
+  foreach(
+    demo_model_test
+    BipedStandController
+    JointConstraintsController
+    OperationalSpaceController
+  )
+    dart_add_test("integration" test_${demo_model_test})
+    target_link_libraries(test_${demo_model_test} dart-demo-models dart-utils)
+    set_tests_properties(
+      test_${demo_model_test}
+      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+    )
+  endforeach()
+  if(HAVE_OCTOMAP)
+    dart_add_test("integration" test_PointCloudSensor)
+    target_link_libraries(test_PointCloudSensor dart-demo-models dart-utils)
+    set_tests_properties(
+      test_PointCloudSensor
+      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+    )
+  else()
+    dart_format_add(test_PointCloudSensor.cpp)
+  endif()
+else()
+  dart_format_add(
+    test_BipedStandController.cpp
+    test_JointConstraintsController.cpp
+    test_OperationalSpaceController.cpp
+    test_PointCloudSensor.cpp
+  )
+endif()
+
 # The soft-foot locomotion model drives the Atlas soft-feet SDF with the
 # existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
 # components are optional, so the gate only exists when both are built.
