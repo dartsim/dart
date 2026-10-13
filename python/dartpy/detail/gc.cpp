@@ -19,6 +19,8 @@
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/ContactInverseDynamics.hpp>
+#include <dart/dynamics/EndEffector.hpp>
+#include <dart/dynamics/HierarchicalIK.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
@@ -35,6 +37,14 @@
 namespace dartnb {
 bool has_gc_wrapper(void* complete);
 namespace {
+struct RetainedSkeleton
+{
+  std::weak_ptr<dart::dynamics::Skeleton> owner;
+  const void* token;
+};
+
+std::unordered_map<void*, RetainedSkeleton> retained_skeletons;
+
 // A control block owns one Python reference, even when several C++ fields copy
 // it.
 std::unordered_map<const PythonPin*, std::size_t> edge_counts(
@@ -72,12 +82,66 @@ void descend(
       enumerate_gc(*owner, edges);
   }
 }
+
+template <class Ik>
+void enumerate_ik_optimizer_gc(Ik& owner, GcEdges& edges)
+{
+  edges.add(owner.getObjective(), [&owner] { owner.setObjective(nullptr); });
+  edges.add(owner.getNullSpaceObjective(), [&owner] {
+    owner.setNullSpaceObjective(nullptr);
+  });
+  const auto& solver = owner.getSolver();
+  descend(solver, edges, [&owner] { owner.setSolver(nullptr); });
+  const auto& problem = owner.getProblem();
+  // Count the solver's Problem alias only after proving its native ownership.
+  const long problem_references
+      = 1
+        + (solver && edges.seen.count(complete_address(solver.get()))
+           && solver->getProblem() == problem);
+  descend(
+      problem, edges, [] {}, problem_references);
+}
 } // namespace
+
+void keepAliveSkeleton(
+    nb::handle wrapper,
+    void* complete,
+    std::shared_ptr<dart::dynamics::Skeleton> skeleton)
+{
+  struct Payload
+  {
+    void* complete;
+    std::shared_ptr<dart::dynamics::Skeleton> skeleton;
+  };
+  auto holder
+      = std::make_unique<Payload>(Payload{complete, std::move(skeleton)});
+  retained_skeletons[complete] = {holder->skeleton, holder.get()};
+  nb::keep_alive_cb(wrapper, holder.get(), [](void* pointer) noexcept {
+    auto* payload = static_cast<Payload*>(pointer);
+    auto found = retained_skeletons.find(payload->complete);
+    if (found != retained_skeletons.end() && found->second.token == payload)
+      retained_skeletons.erase(found);
+    delete payload;
+  });
+  holder.release();
+}
 
 bool gc_owner_is_exclusive(PyObject* self, void* complete)
 {
-  if (auto owner = native_owner(complete))
-    return owner.use_count() == 2; // Wrapper payload and this lookup.
+  if (auto owner = native_owner(complete)) {
+    if (owner.use_count() == 2) // Wrapper payload and this lookup.
+      return true;
+    auto retained = retained_skeletons.find(complete);
+    if (owner.use_count() != 3 || retained == retained_skeletons.end())
+      return false;
+    auto skeleton = retained->second.owner.lock();
+    // The additional IK owner must be this retained Skeleton, and its only
+    // native owners must be this wrapper's payload and the lookup above.
+    // A live Skeleton wrapper, World, body proxy, or other native alias blocks
+    // traversal, keeping the objective's single Python pin visible only here.
+    return skeleton && skeleton.use_count() == 2
+           && complete_address(skeleton->getIK().get()) == complete;
+  }
   // shortcut: BodyNodePtr hides aliases, so borrowed proxies stay conservative;
   // upgrade when a GC-visible native ownership graph can prove exclusivity.
   return nb::inst_state(self).second;
@@ -207,18 +271,41 @@ void enumerate_gc(
 
 void enumerate_gc(dart::dynamics::InverseKinematics& owner, GcEdges& edges)
 {
-  edges.add(owner.getObjective(), [&owner] { owner.setObjective(nullptr); });
-  edges.add(owner.getNullSpaceObjective(), [&owner] {
-    owner.setNullSpaceObjective(nullptr);
-  });
-  descend(owner.getSolver(), edges, [&owner] { owner.setSolver(nullptr); });
-  descend(owner.getProblem(), edges, [] {});
+  enumerate_ik_optimizer_gc(owner, edges);
   auto& error = owner.getErrorMethod();
   if (!has_gc_wrapper(complete_address(&error)))
     enumerate_gc(error, edges);
   edges.add(owner.getTarget(), [&owner] {
     owner.setTarget(std::make_shared<dart::dynamics::SimpleFrame>());
   });
+}
+
+void enumerate_gc(dart::dynamics::HierarchicalIK& owner, GcEdges& edges)
+{
+  enumerate_ik_optimizer_gc(owner, edges);
+  std::unordered_map<const void*, long> module_references;
+  for (const auto& level : owner.getIKHierarchy())
+    for (const auto& ik : level)
+      ++module_references[complete_address(ik.get())];
+  // Each module can be owned both by its node and by the cached hierarchy.
+  // The node's reference belongs to this graph only when this hierarchy is its
+  // Skeleton's own whole-body IK, which the Skeleton's graph reaches, and the
+  // node is still in that Skeleton. A separate hierarchy, or a body moved to
+  // another Skeleton, shares the module with a live owner outside this graph.
+  const dart::dynamics::Skeleton* skeleton = nullptr;
+  if (const auto affiliated = owner.getSkeleton();
+      affiliated && affiliated->getIK().get() == &owner)
+    skeleton = affiliated.get();
+  for (const auto& level : owner.getIKHierarchy())
+    for (const auto& ik : level) {
+      auto* node = ik->getNode();
+      const bool ownedByNode = skeleton && node && node->getIK() == ik
+                               && node->getSkeleton().get() == skeleton;
+      const long references
+          = module_references.at(complete_address(ik.get())) + ownedByNode;
+      descend(
+          ik, edges, [] {}, references);
+    }
 }
 
 void enumerate_gc(dart::dynamics::ShapeFrame& owner, GcEdges& edges)
@@ -263,10 +350,17 @@ void enumerate_gc(dart::dynamics::BodyNode& owner, GcEdges& edges)
 
 void enumerate_gc(dart::dynamics::Skeleton& owner, GcEdges& edges)
 {
+  descend(owner.getIK(), edges, [&owner] { owner.clearIK(); });
   for (std::size_t i = 0; i < owner.getNumBodyNodes(); ++i) {
     auto* body = owner.getBodyNode(i);
     if (!has_gc_wrapper(complete_address(body)))
       enumerate_gc(*body, edges);
+  }
+  for (std::size_t i = 0; i < owner.getNumEndEffectors(); ++i) {
+    auto* end_effector = owner.getEndEffector(i);
+    descend(end_effector->getIK(), edges, [end_effector] {
+      end_effector->clearIK();
+    });
   }
 }
 

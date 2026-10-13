@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/hierarchical_ik.hpp"
 // clang-format on
 
 #include <nanobind/stl/pair.h>
@@ -44,6 +45,7 @@
 #include <dart/dynamics/BallJoint.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/DegreeOfFreedom.hpp>
+#include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/EulerJoint.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
@@ -615,10 +617,11 @@ void Skeleton(nb::module_& m)
           })
       .def(
           "getIK",
-          +[](const dart::dynamics::Skeleton* self)
-              -> std::shared_ptr<const dart::dynamics::WholeBodyIK> {
-            return self->getIK();
-          })
+          +[](dart::dynamics::Skeleton* self, bool createIfNull) {
+            return dartnb::hierarchicalIKInstance(self->getIK(createIfNull));
+          },
+          nb::arg("createIfNull") = false,
+          nb::sig("def getIK(self, createIfNull: bool = False) -> dartpy.dynamics.WholeBodyIK | None"))
       .def(
           "clearIK",
           +[](dart::dynamics::Skeleton* self)
@@ -656,6 +659,20 @@ void Skeleton(nb::module_& m)
           +[](dart::dynamics::Skeleton* self,
               const std::string& name) -> dart::dynamics::ShapeNode* {
             return self->getShapeNode(name);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("name"))
+      .def(
+          "getEndEffector",
+          +[](dart::dynamics::Skeleton* self, std::size_t index) {
+            return self->getEndEffector(index);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("index"))
+      .def(
+          "getEndEffector",
+          +[](dart::dynamics::Skeleton* self, const std::string& name) {
+            return self->getEndEffector(name);
           },
           nb::rv_policy::reference_internal,
           nb::arg("name"))

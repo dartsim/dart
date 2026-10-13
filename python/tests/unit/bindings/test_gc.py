@@ -10,6 +10,325 @@ import pytest
 from ._support import run_isolated
 
 
+@pytest.mark.parametrize(
+    "wrapper", ["whole_body_ik", "end_effector", "support", "balance_constraint"]
+)
+def test_whole_body_wrappers_keep_their_skeleton_alive(wrapper):
+    run_isolated(
+        f"""
+        skeleton = dart.dynamics.Skeleton(name='retained_whole_body_owner')
+        joint, body = skeleton.createFreeJointAndBodyNodePair()
+        ee = body.createEndEffector('retained_tip')
+        support = ee.getSupport(True)
+        support.setGeometry([[-3, 0, -1], [-1, 0, -1], [-1, 0, 1], [-3, 0, 1]])
+        support.setActive()
+        ik = skeleton.getIK(True)
+        constraint = dart.constraint.BalanceConstraint(ik)
+        value = {{'whole_body_ik': ik, 'end_effector': ee,
+                  'support': support, 'balance_constraint': constraint}}[{wrapper!r}]
+        del skeleton, joint, body, ee, support, ik, constraint
+        for _ in range(3):
+            gc.collect()
+        if {wrapper!r} == 'whole_body_ik':
+            assert value.getSkeleton().getName() == 'retained_whole_body_owner'
+            value.refreshIKHierarchy()
+            assert value.getProblem().getDimension() == 6
+            assert value.solveAndApply(True)
+        elif {wrapper!r} == 'end_effector':
+            assert value.getName() == 'retained_tip'
+            tf = dart.math.Isometry3()
+            tf.set_translation([0.1, 0.2, 0.3])
+            value.setRelativeTransform(tf)
+            np.testing.assert_allclose(value.getTransform().translation(), [0.1, 0.2, 0.3])
+            assert value.getIK(True).getDofs() == list(range(6))
+        elif {wrapper!r} == 'support':
+            assert value.isActive()
+            value.setGeometry([[1, 2, 3]])
+            np.testing.assert_allclose(value.getGeometry(), [[1, 2, 3]])
+            value.setActive(False)
+            assert not value.isActive()
+        else:
+            error = value.eval(np.zeros(6))
+            assert np.isfinite(error) and error > 0
+            value.setPseudoInverseDamping(0.125)
+            assert value.getPseudoInverseDamping() == 0.125
+        del value
+        gc.collect()
+        """
+    )
+
+
+@pytest.mark.parametrize(
+    "path", ["constructor", "create", "subclass", "clone", "cloneWholeBodyIK"]
+)
+def test_whole_body_factory_and_clone_wrappers_retain_affiliated_skeleton(path):
+    run_isolated(
+        f"""
+        skeleton = dart.dynamics.Skeleton(name='factory_owner')
+        skeleton.createFreeJointAndBodyNodePair()
+        if {path!r} == 'constructor':
+            value = dart.dynamics.WholeBodyIK(skeleton)
+        elif {path!r} == 'create':
+            value = dart.dynamics.WholeBodyIK.create(skeleton)
+        elif {path!r} == 'subclass':
+            class PythonIK(dart.dynamics.WholeBodyIK):
+                def __init__(self, *, owner, label):
+                    super().__init__(owner)
+                    self.label = label
+            value = PythonIK(owner=skeleton, label='translated')
+            assert value.label == 'translated'
+        else:
+            source = dart.dynamics.Skeleton(name='source')
+            source.createFreeJointAndBodyNodePair()
+            original = source.getIK(True)
+            value = getattr(original, {path!r})(skeleton)
+            del original, source
+        del skeleton
+        for _ in range(3):
+            gc.collect()
+        assert isinstance(value, dart.dynamics.WholeBodyIK)
+        assert value.getSkeleton().getName() == 'factory_owner'
+        value.refreshIKHierarchy()
+        assert value.getProblem().getDimension() == 6
+        assert value.solveAndApply(True)
+        del value
+        gc.collect()
+        """
+    )
+
+
+@pytest.mark.parametrize(
+    "location", ["objective", "null_objective", "problem", "eq", "ineq"]
+)
+def test_balance_constraint_rewrapped_from_native_owner_uses_live_ik(location):
+    run_isolated(
+        f"""
+        import weakref
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.setGravity([0, -9.81, 0])
+        ee = skeleton.createFreeJointAndBodyNodePair()[1].createEndEffector('foot')
+        support = ee.getSupport(True)
+        support.setGeometry([[-3, 0, -1], [-1, 0, -1], [-1, 0, 1], [-3, 0, 1]])
+        support.setActive()
+        del ee, support
+        ik = skeleton.getIK(True)
+        problem = ik.getProblem()
+        original = dart.constraint.BalanceConstraint(ik)
+        ref = weakref.ref(original)
+        if {location!r} == 'objective':
+            ik.setObjective(original)
+        elif {location!r} == 'null_objective':
+            ik.setNullSpaceObjective(original)
+        elif {location!r} == 'problem':
+            problem.setObjective(original)
+        elif {location!r} == 'eq':
+            problem.removeAllEqConstraints()
+            problem.addEqConstraint(original)
+        else:
+            problem.addIneqConstraint(original)
+        del original
+        gc.collect()
+        assert ref() is None, 'the constructor wrapper must disappear before rewrapping'
+        if {location!r} == 'objective':
+            value = ik.getObjective()
+        elif {location!r} == 'null_objective':
+            value = ik.getNullSpaceObjective()
+        elif {location!r} == 'problem':
+            value = problem.getObjective()
+        elif {location!r} == 'eq':
+            value = problem.getEqConstraint(0)
+        else:
+            value = problem.getIneqConstraint(0)
+        assert isinstance(value, dart.constraint.BalanceConstraint)
+        del skeleton, problem
+        for _ in range(3):
+            gc.collect()
+        error = value.eval(np.zeros(6))
+        assert np.isfinite(error) and error > 0
+        del ik
+        gc.collect()
+        assert value.eval(np.zeros(6)) == 0.0
+        del value
+        gc.collect()
+        """,
+        assertion="no longer exists",
+    )
+
+
+@pytest.mark.parametrize("path", ["clone", "cloneWholeBodyIK"])
+@pytest.mark.parametrize("location", ["objective", "eq", "ineq"])
+def test_cloned_balance_constraint_uses_new_ik_and_skeleton(path, location):
+    run_isolated(
+        f"""
+        def make_skeleton():
+            skeleton = dart.dynamics.Skeleton()
+            skeleton.setGravity([0, -9.81, 0])
+            ee = skeleton.createFreeJointAndBodyNodePair()[1].createEndEffector('foot')
+            support = ee.getSupport(True)
+            support.setGeometry([[-3, 0, -1], [-1, 0, -1], [-1, 0, 1], [-3, 0, 1]])
+            support.setActive()
+            return skeleton
+        source = make_skeleton()
+        original = source.getIK(True)
+        problem = original.getProblem()
+        balance_method = dart.constraint.BalanceConstraint.BalanceMethod.SHIFT_COM
+        error_method = dart.constraint.BalanceConstraint.ErrorMethod.FROM_EDGE
+        balance = dart.constraint.BalanceConstraint(original, balance_method, error_method)
+        balance.setOptimizationTolerance(2e-5)
+        balance.setPseudoInverseDamping(0.125)
+        if {location!r} == 'objective':
+            problem.setObjective(balance)
+        elif {location!r} == 'eq':
+            problem.removeAllEqConstraints()
+            problem.addEqConstraint(balance)
+        else:
+            problem.addIneqConstraint(balance)
+        target = make_skeleton()
+        cloned = getattr(original, {path!r})(target)
+        if {location!r} == 'objective':
+            value = cloned.getProblem().getObjective()
+        elif {location!r} == 'eq':
+            value = cloned.getProblem().getEqConstraint(0)
+        else:
+            value = cloned.getProblem().getIneqConstraint(0)
+        assert isinstance(value, dart.constraint.BalanceConstraint)
+        assert value is not balance
+        assert value.getBalanceMethod() == balance_method
+        assert value.getErrorMethod() == error_method
+        assert value.getOptimizationTolerance() == 2e-5
+        assert value.getPseudoInverseDamping() == 0.125
+        del source, original, problem, balance, target
+        for _ in range(3):
+            gc.collect()
+        error = value.eval(np.zeros(6))
+        assert np.isfinite(error) and error > 0
+        del cloned
+        gc.collect()
+        assert value.eval(np.zeros(6)) == 0.0
+        del value
+        gc.collect()
+        """,
+        assertion="no longer exists",
+    )
+
+
+def test_balance_constraint_rewrapped_from_foreign_problem_with_expired_ik_returns_zero():
+    run_isolated(
+        """
+        import weakref
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        problem = dart.optimizer.Problem(6)
+        balance = dart.constraint.BalanceConstraint(ik)
+        refs = weakref.ref(balance), weakref.ref(ik), weakref.ref(skeleton)
+        problem.setObjective(balance)
+        del balance, ik, skeleton
+        for _ in range(3):
+            gc.collect()
+        assert all(ref() is None for ref in refs)
+        value = problem.getObjective()
+        assert isinstance(value, dart.constraint.BalanceConstraint)
+        assert value.eval(np.zeros(6)) == 0.0
+        del value
+        del problem
+        gc.collect()
+        """,
+        assertion="no longer exists",
+    )
+
+
+@pytest.mark.parametrize(
+    "location",
+    [
+        "whole_body_objective",
+        "whole_body_null_objective",
+        "whole_body_problem",
+        "whole_body_solver",
+        "end_effector_objective",
+        "end_effector_problem",
+        "end_effector_solver",
+        "end_effector_target",
+    ],
+)
+@pytest.mark.parametrize("native_alias", [False, True])
+def test_whole_body_and_end_effector_python_children_collect(location, native_alias):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return float(self.owner.getNumDofs() + np.dot(x, x))
+        class Solver(dart.optimizer.GradientDescentSolver):
+            pass
+        class Target(dart.dynamics.SimpleFrame):
+            pass
+        for _ in range(5):
+            skeleton = dart.dynamics.Skeleton()
+            skeleton.createFreeJointAndBodyNodePair()[1].createEndEffector('tip')
+            hierarchy = skeleton.getIK(True)
+            if {location!r}.startswith('end_effector'):
+                module = skeleton.getEndEffector(0).getIK(True)
+            else:
+                module = hierarchy
+            if {location!r}.endswith('solver'):
+                child = Solver()
+                module.setSolver(child)
+            elif {location!r}.endswith('target'):
+                child = Target()
+                child.setName('cycle_target')
+                module.setTarget(child)
+            else:
+                child = Objective()
+                if {location!r}.endswith('null_objective'):
+                    module.setNullSpaceObjective(child)
+                elif {location!r}.endswith('problem'):
+                    module.getProblem().setObjective(child)
+                else:
+                    module.setObjective(child)
+            child.owner = skeleton
+            # The refreshed hierarchy and EndEffector both own the same native IK.
+            hierarchy.refreshIKHierarchy()
+            refs = weakref.ref(child), weakref.ref(skeleton)
+            if {native_alias!r}:
+                live = dart.simulation.World()
+                live.addSkeleton(skeleton)
+            del child, module, hierarchy, skeleton
+            gc.collect()
+            if {native_alias!r}:
+                assert tuple(ref() is not None for ref in refs) == (True, True)
+                module = live.getSkeleton(0).getIK()
+                if {location!r}.startswith('end_effector'):
+                    module = live.getSkeleton(0).getEndEffector(0).getIK()
+                if {location!r}.endswith('solver'):
+                    fetched = module.getSolver()
+                    assert fetched.getProblem().getDimension() == 6
+                elif {location!r}.endswith('target'):
+                    fetched = module.getTarget()
+                    assert fetched.getName() == 'cycle_target'
+                elif {location!r}.endswith('null_objective'):
+                    fetched = module.getNullSpaceObjective()
+                    assert fetched.eval(np.zeros(6)) == 6
+                elif {location!r}.endswith('problem'):
+                    fetched = module.getProblem().getObjective()
+                    assert fetched.eval(np.zeros(6)) == 6
+                else:
+                    fetched = module.getObjective()
+                    assert fetched.eval(np.zeros(6)) == 6
+                assert fetched is refs[0]()
+                assert fetched.owner is refs[1]()
+                del fetched, module, live
+                gc.collect()
+            collected = all(ref() is None for ref in refs)
+            if refs[0]() is not None:
+                refs[0]().owner = None
+            gc.collect()
+            assert all(ref() is None for ref in refs)
+            assert collected, 'whole-body or end-effector IK cycle was retained'
+        """
+    )
+
+
 def _task_space_owner(kind, frame):
     if kind in {"unique_properties", "properties"}:
         name = (
@@ -674,4 +993,180 @@ def test_multiple_cpp_owners_preserve_a_shared_python_pin_until_cleanup():
             gc.collect()
             assert ref() is None
         """
+    )
+
+
+def test_gc_keeps_ik_modules_that_moved_to_a_live_skeleton():
+    run_isolated(
+        """
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return float(self.owner.getNumDofs() + np.dot(x, x))
+        source = dart.dynamics.Skeleton()
+        root = source.createFreeJointAndBodyNodePair()[1]
+        moved = source.createFreeJointAndBodyNodePair(root)[1]
+        module = moved.getIK(True)
+        objective = Objective()
+        objective.owner = source
+        module.setObjective(objective)
+        # The whole-body hierarchy caches the module before the body moves.
+        source.getIK(True).refreshIKHierarchy()
+        destination = dart.dynamics.Skeleton()
+        assert moved.moveTo(destination, None)
+        source_ref = weakref.ref(source)
+        del objective, module, moved, root, source
+        gc.collect()
+        # The live destination body still owns the module and its objective,
+        # which keeps the source Skeleton alive.
+        kept = destination.getBodyNode(0).getIK().getObjective()
+        assert kept is not None
+        assert kept.eval(np.zeros(6)) == 6
+        assert source_ref() is not None
+        """
+    )
+
+
+@pytest.mark.parametrize("path", ["create", "constructor"])
+def test_python_owned_whole_body_ik_objective_cycle_collects(path):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return 0.0
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        if {path!r} == "create":
+            ik = dart.dynamics.WholeBodyIK.create(skeleton)
+        else:
+            ik = dart.dynamics.WholeBodyIK(skeleton)
+        objective = Objective()
+        objective.owner = ik
+        ik.setObjective(objective)
+        refs = weakref.ref(objective), weakref.ref(ik)
+        del objective, ik, skeleton
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        """
+    )
+
+
+@pytest.mark.parametrize("location", ["objective", "null_objective", "problem"])
+@pytest.mark.parametrize("outside", ["none", "ik", "skeleton", "body", "world", "balance"])
+def test_skeleton_owned_ik_back_reference_cycle_collects_without_outside_owners(
+    location, outside
+):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return float(self.owner.getSkeleton().getNumDofs() + np.dot(x, x))
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        objective = Objective()
+        objective.owner = ik
+        if {location!r} == 'objective':
+            ik.setObjective(objective)
+        elif {location!r} == 'null_objective':
+            ik.setNullSpaceObjective(objective)
+        else:
+            ik.getProblem().setObjective(objective)
+        if {outside!r} == 'ik':
+            live = ik
+        elif {outside!r} == 'skeleton':
+            live = skeleton
+        elif {outside!r} == 'body':
+            live = skeleton.getBodyNode(0)
+        elif {outside!r} == 'world':
+            live = dart.simulation.World()
+            live.addSkeleton(skeleton)
+        elif {outside!r} == 'balance':
+            live = dart.constraint.BalanceConstraint(ik)
+        refs = weakref.ref(objective), weakref.ref(ik), weakref.ref(skeleton)
+        del objective, ik, skeleton
+        gc.collect()
+        if {outside!r} != 'none':
+            assert refs[0]() is not None and refs[1]() is not None
+            assert refs[0]().eval(np.zeros(6)) == 6
+            del live
+            gc.collect()
+        collected = all(ref() is None for ref in refs)
+        if refs[0]() is not None:
+            refs[0]().owner = None
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        assert collected, 'Skeleton-owned IK back-reference cycle was retained'
+        """
+    )
+
+
+@pytest.mark.parametrize("outside", ["problem", "solver", "foreign_problem"])
+def test_skeleton_owned_ik_live_optimizer_owner_preserves_objective(outside):
+    run_isolated(
+        f"""
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return float(self.owner.getSkeleton().getNumDofs() + np.dot(x, x))
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        objective = Objective()
+        objective.owner = ik
+        ik.getProblem().setObjective(objective)
+        if {outside!r} == 'problem':
+            live = ik.getProblem()
+        elif {outside!r} == 'solver':
+            live = ik.getSolver()
+        else:
+            live = dart.optimizer.Problem(6)
+            live.setObjective(objective)
+        refs = weakref.ref(objective), weakref.ref(ik)
+        del objective, ik, skeleton
+        gc.collect()
+        assert all(ref() is not None for ref in refs)
+        fetched = live.getProblem().getObjective() if {outside!r} == 'solver' else live.getObjective()
+        assert fetched is refs[0]()
+        assert fetched.eval(np.zeros(6)) == 6
+        del fetched, live
+        gc.collect()
+        collected = all(ref() is None for ref in refs)
+        if refs[0]() is not None:
+            refs[0]().owner = None
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        assert collected, 'Skeleton-owned IK optimizer cycle was retained'
+        """
+    )
+
+
+@pytest.mark.parametrize("path", ["create", "constructor", "clone"])
+def test_separate_hierarchy_leaves_a_live_skeletons_modules_alone(path):
+    run_isolated(
+        f"""
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return 0.0
+        skeleton = dart.dynamics.Skeleton()
+        body = skeleton.createFreeJointAndBodyNodePair()[1]
+        module = body.getIK(True)
+        if {path!r} == "create":
+            hierarchy = dart.dynamics.WholeBodyIK.create(skeleton)
+        elif {path!r} == "constructor":
+            hierarchy = dart.dynamics.WholeBodyIK(skeleton)
+        else:
+            hierarchy = skeleton.getIK(True).clone(skeleton)
+        # The separate hierarchy caches the module the live body owns.
+        hierarchy.refreshIKHierarchy()
+        objective = Objective()
+        objective.owner = hierarchy
+        module.setObjective(objective)
+        del objective, hierarchy, module
+        gc.collect()
+        assert body.getIK().getObjective() is not None
+        """,
+        allow_leaks=True,
     )

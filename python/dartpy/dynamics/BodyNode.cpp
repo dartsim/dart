@@ -46,6 +46,7 @@
 #include <dart/dynamics/BallJoint.hpp>
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/DegreeOfFreedom.hpp>
+#include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/EulerJoint.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
@@ -1003,6 +1004,14 @@ void BodyNode(nb::module_& m)
       .def(
           "removeAllShapeNodes",
           +[](dart::dynamics::BodyNode* self) { self->removeAllShapeNodes(); })
+      .def(
+          "createEndEffector",
+          +[](dart::dynamics::BodyNode* self,
+              const std::string& name) -> dart::dynamics::EndEffector* {
+            return self->createEndEffector(name);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("name") = "EndEffector")
       .def(
           "getNumEndEffectors",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {
