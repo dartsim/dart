@@ -50,6 +50,7 @@ void FbfFrictionSolver(nb::module_& sm);
 
 void ConstraintSolver(nb::module_& sm);
 void BoxedLcpConstraintSolver(nb::module_& sm);
+void BalanceConstraint(nb::module_& sm);
 
 void dart_constraint(nb::module_& m)
 {
@@ -68,6 +69,7 @@ void dart_constraint(nb::module_& m)
 
   ConstraintSolver(sm);
   BoxedLcpConstraintSolver(sm);
+  BalanceConstraint(sm);
 }
 
 } // namespace python

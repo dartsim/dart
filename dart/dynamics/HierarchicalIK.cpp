@@ -118,10 +118,7 @@ bool HierarchicalIK::findSolution(Eigen::VectorXd& positions)
 bool HierarchicalIK::solveAndApply(bool allowIncompleteResult)
 {
   Eigen::VectorXd solution;
-  const auto wasSolved = findSolution(solution);
-  if (wasSolved || allowIncompleteResult)
-    setPositions(solution);
-  return wasSolved;
+  return solveAndApply(solution, allowIncompleteResult);
 }
 
 //==============================================================================
@@ -129,7 +126,9 @@ bool HierarchicalIK::solveAndApply(
     Eigen::VectorXd& positions, bool allowIncompleteResult)
 {
   const auto wasSolved = findSolution(positions);
-  if (wasSolved || allowIncompleteResult)
+  const auto skel = getSkeleton();
+  if ((wasSolved || allowIncompleteResult) && skel
+      && positions.size() == static_cast<Eigen::Index>(skel->getNumDofs()))
     setPositions(positions);
   return wasSolved;
 }
@@ -493,6 +492,13 @@ void HierarchicalIK::Constraint::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
   const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
+  if (nullptr == hik) {
+    dterr << "[HierarchicalIK::Constraint::evalGradient] Attempting to use a "
+          << "Constraint function of an expired HierarchicalIK module!\n";
+    DART_ASSERT(false);
+    _grad.setZero();
+    return;
+  }
 
   const IKHierarchy& hierarchy = hik->getIKHierarchy();
   const SkeletonPtr& skel = hik->getSkeleton();
@@ -581,7 +587,9 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
 void HierarchicalIK::copyOverSetup(
     const std::shared_ptr<HierarchicalIK>& _otherIK) const
 {
-  _otherIK->setSolver(mSolver->clone());
+  _otherIK->setObjective(cloneIkFunc(mObjective, _otherIK));
+  _otherIK->setNullSpaceObjective(cloneIkFunc(mNullSpaceObjective, _otherIK));
+  _otherIK->setSolver(mSolver ? mSolver->clone() : nullptr);
 
   const std::shared_ptr<optimizer::Problem>& newProblem
       = _otherIK->getProblem();
