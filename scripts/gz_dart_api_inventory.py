@@ -34,6 +34,9 @@ A construction lists the constructors that the type declares, including those
 of its class template specializations, or, when it declares none, those of the
 bases that its implicit constructor calls. A Gazebo class derived from a DART
 class constructs that base, so its base clause counts as a construction.
+Brace constructions of classes without declared constructors also retain public
+non-static fields in declaration order as `brace_member_declarations`. This is
+lexical field evidence; it does not establish C++ aggregate eligibility.
 
 Preprocessor conditions are not evaluated, except that a literal `#if 0` or
 `#if 1` drops the branches it rules out. Every other branch is scanned, so the
@@ -447,6 +450,7 @@ def data_member(values, owner):
         "class": owner,
         "name": declarator[end - 1],
         "name_index": end - 1,
+        "static": "static" in top,
         "signature": " ".join(values),
         "const": "constexpr" in top or "const" in top[pointer + 1 :],
         "virtual": False,
@@ -700,7 +704,10 @@ def scopes(tokens):
                     functions.append(method)
                 elif owner is None or access != "private":
                     fields.extend(
-                        data_declarations(prefix, owner or "::".join(namespace))
+                        {**member, "access": access}
+                        for member in data_declarations(
+                            prefix, owner or "::".join(namespace)
+                        )
                     )
                 if prefix and "using" in prefix and "=" in prefix:
                     equals = prefix.index("=")
@@ -747,6 +754,7 @@ class ApiIndex:
     constructors: dict = field(default_factory=dict)
     declares_constructor: set = field(default_factory=set)
     data_members: dict = field(default_factory=lambda: defaultdict(list))
+    brace_fields: dict = field(default_factory=lambda: defaultdict(list))
     variables: dict = field(default_factory=lambda: defaultdict(list))
     free_functions: dict = field(default_factory=lambda: defaultdict(list))
     aliases: dict = field(default_factory=dict)
@@ -1050,6 +1058,22 @@ def first_template_argument(values, start):
     return values[start + 1 : end]
 
 
+def container_elements(argument, api, resolve_type, pointer_type=None):
+    """DART element markers, including the element's raw-pointer identity."""
+    result = set()
+    pointer = raw_pointer(argument)
+    for _, _, value in names_in(argument):
+        resolved = resolve_type(value)
+        if api.owner(resolved):
+            result.add("__element__:" + resolved)
+            pointer |= resolved in api.raw_pointers or bool(
+                pointer_type and pointer_type(value)
+            )
+    if result and pointer:
+        result.add("__element__:" + RAW_POINTER)
+    return result
+
+
 def bind_variable(tokens, index, types):
     """Explicit declarations shadow same-named fields and other functions."""
     values = tokens.values
@@ -1060,7 +1084,13 @@ def bind_variable(tokens, index, types):
         if values[opening] == "{" and closing - opening < end - start:
             start, end = opening, closing
         elif (
-            values[opening] == "(" and opening and IDENTIFIER.match(values[opening - 1])
+            values[opening] == "("
+            and opening
+            and (
+                IDENTIFIER.match(values[opening - 1])
+                or values[opening - 1] == "]"
+                and opening - 1 in tokens.pairs
+            )
         ):
             body = closing + 1
             while body < len(values) and values[body] in {
@@ -1068,6 +1098,7 @@ def bind_variable(tokens, index, types):
                 "override",
                 "final",
                 "noexcept",
+                "mutable",
             }:
                 body += 1
             if body < len(values) and values[body] == "{" and body in tokens.pairs:
@@ -1180,6 +1211,8 @@ def index_api(header_root):
             if member["class"] == "dart" or member["class"].startswith("dart::"):
                 if member["class"] in api.classes:
                     api.data_members[member["name"]].append(member)
+                    if member.get("access") == "public" and not member.get("static"):
+                        api.brace_fields[member["class"]].append(member)
                 else:
                     api.variables[member["class"] + "::" + member["name"]].append(
                         member
@@ -1608,6 +1641,23 @@ def scan_sources(api, source_root):
                     public_declaration(d)
                     for d in api.constructor_declarations(constructed)
                 )
+                after = template_end(values, type_end)
+                variable = variable_after_type(values, type_end)
+                if variable is not None:
+                    after = variable + 1
+                if (
+                    constructed not in api.declares_constructor
+                    and api.brace_fields.get(constructed)
+                    and not any(head < start < body for head, body in heads)
+                    and (
+                        values[after : after + 1] == ["{"]
+                        or values[after : after + 2] == ["=", "{"]
+                    )
+                ):
+                    row["brace_member_declarations"] = [
+                        {"name": member["name"], **public_declaration(member)}
+                        for member in api.brace_fields[constructed]
+                    ]
             j = (
                 None
                 if in_template_argument(values, start)
@@ -1640,6 +1690,8 @@ def scan_sources(api, source_root):
                 source_owner = source_class(
                     name, tokens.scopes.get(start, ()), imports, namespace_aliases
                 )
+                if source_owner:
+                    contained.update(local_bases.get(source_owner, ()))
                 if name in {"std::shared_ptr", "std::unique_ptr", "std::weak_ptr"}:
                     for offset, _, value in names_in(values[end:j]):
                         resolved = resolve(
@@ -1650,12 +1702,18 @@ def scan_sources(api, source_root):
                     if contained:
                         contained.add(RAW_POINTER)
                 if not contained:
-                    for _, _, value in names_in(first_template_argument(values, end)):
-                        resolved = resolve(
-                            value, tokens, start, imports, namespace_aliases
+                    contained.update(
+                        container_elements(
+                            first_template_argument(values, end),
+                            api,
+                            lambda value: resolve(
+                                value, tokens, start, imports, namespace_aliases
+                            ),
+                            lambda value: pointer_alias(
+                                value, tokens, start, imports, namespace_aliases
+                            ),
                         )
-                        if api.owner(resolved):
-                            contained.add("__element__:" + resolved)
+                    )
                 contained = contained or {"__non_dart__"}
                 if source_owner:
                     contained.add(SOURCE_CLASS + source_owner)
@@ -1697,6 +1755,54 @@ def scan_sources(api, source_root):
                 for size in range(1, len(scope) + 1)
             )
         )
+
+    def source_member_bases(
+        owner, name, tokens, index, imports, namespace_aliases, depth=0
+    ):
+        """DART bases visible after source members and class using-declarations."""
+        if depth > 8:
+            return set()
+        for cls in [owner, *ancestry.get(owner, ())]:
+            brought = set()
+            for short, target, where, *_ in tokens.using:
+                if short == name and where == tuple(cls.split("::")):
+                    spelling = target.rpartition("::")[0]
+                    base = api.resolve(
+                        expand(spelling, namespace_aliases),
+                        where,
+                        imports,
+                        tokens.aliases,
+                    )
+                    brought.update(api.ancestors(base))
+                    parent = source_class(spelling, where, imports, namespace_aliases)
+                    if parent:
+                        brought.update(
+                            source_member_bases(
+                                parent,
+                                name,
+                                tokens,
+                                index,
+                                imports,
+                                namespace_aliases,
+                                depth + 1,
+                            )
+                        )
+            if (cls, name) in source_returns or brought:
+                return brought
+        return set(local_bases.get(owner, ()))
+
+    def source_member_types(types, name, tokens, index, imports, namespace_aliases):
+        result = set(types)
+        for marker in types:
+            if marker.startswith(SOURCE_CLASS):
+                owner = marker.removeprefix(SOURCE_CLASS)
+                result.difference_update(local_bases.get(owner, ()))
+                result.update(
+                    source_member_bases(
+                        owner, name, tokens, index, imports, namespace_aliases
+                    )
+                )
+        return result
 
     def record(section, name, declarations, inferred, path, index, tokens):
         if not declarations:
@@ -1800,6 +1906,30 @@ def scan_sources(api, source_root):
                 if item["class"]
                 else tuple(item["name"].split("::")[:-1])
             )
+            sequence = next(
+                (
+                    end
+                    for start, end, value in names_in(item["return_tokens"])
+                    if value
+                    in {
+                        "std::vector",
+                        "std::array",
+                        "std::deque",
+                        "std::list",
+                        "std::forward_list",
+                    }
+                    and not in_template_argument(item["return_tokens"], start)
+                ),
+                None,
+            )
+            if sequence is not None:
+                contained = container_elements(
+                    first_template_argument(item["return_tokens"], sequence),
+                    api,
+                    lambda value: api.resolve(value, scope),
+                )
+                result.update(contained or {"__non_dart__"})
+                continue
             for _, _, value in names_in(item["return_tokens"]):
                 resolved = api.resolve(value, scope)
                 owner = api.owner(resolved)
@@ -1842,6 +1972,9 @@ def scan_sources(api, source_root):
                         }
                     if method in {"at", "back", "front"} and elements(types):
                         return elements(types)
+                    types = source_member_types(
+                        types, method, tokens, function, imports, namespace_aliases
+                    )
                     declarations = candidates(method, types, values[function - 1])
                     if not declarations:
                         explicit = values[function + 1 : opening]
@@ -2116,24 +2249,26 @@ def scan_sources(api, source_root):
                 inferred = receiver(tokens, i - 2, imports, namespace_aliases)
                 if access == "->":
                     inferred = arrow_types(inferred)
+                inferred = source_member_types(
+                    inferred, name, tokens, i, imports, namespace_aliases
+                )
                 declarations = candidates(name, inferred, access if inferred else None)
             elif qualifier is not None:
                 if resolved:
                     inferred = {resolved}
                     declarations = candidates(name, inferred)
                 else:
-                    bases = local_bases.get(qualifier, set()) or local_bases.get(
-                        qualifier.split("::")[-1], set()
+                    owner = source_class(
+                        qualifier, tokens.scopes.get(i, ()), imports, namespace_aliases
                     )
-                    local_members = {
-                        m["name"]
-                        for _, _, classes, _, _, _, _ in files
-                        for cls in classes
-                        if cls["name"] == qualifier
-                        or cls["name"].endswith("::" + qualifier)
-                        for m in cls["members"]
-                    }
-                    if bases and name not in local_members:
+                    bases = (
+                        source_member_bases(
+                            owner, name, tokens, i, imports, namespace_aliases
+                        )
+                        if owner
+                        else set()
+                    )
+                    if bases:
                         inferred = bases
                         declarations = candidates(name, inferred)
                     free = qualified_function(
@@ -2147,6 +2282,14 @@ def scan_sources(api, source_root):
                         add("free_functions", free, path, tokens.line(i))
             else:
                 inferred = enclosing_bases(tokens, i)
+                scope = tokens.scopes.get(i, ())
+                for size in range(len(scope), 0, -1):
+                    owner = "::".join(scope[:size])
+                    if owner in source_classes:
+                        inferred = source_member_bases(
+                            owner, name, tokens, i, imports, namespace_aliases
+                        )
+                        break
                 if inferred:
                     declarations = candidates(name, inferred)
                 if not declarations:

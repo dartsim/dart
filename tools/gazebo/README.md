@@ -249,6 +249,9 @@ type declares none, it lists those of the bases that its implicit constructor
 calls, so an empty list means that no class in that chain declares one. A
 Gazebo class derived from a DART class counts as a construction of that base
 at its base clause, because each of its constructors calls a base constructor.
+For brace constructions of classes without declared constructors,
+`brace_member_declarations` retains public non-static fields in declaration
+order. This is lexical field evidence, without proving C++ aggregate eligibility.
 The lexical inventory retains declaration candidates for unresolved receivers
 (`unresolved_count`) and overloads, so a member name on a non-DART object can
 match a DART declaration. Bullet, ODE, and Assimp types (`bt`, `d`, and `ai`
@@ -258,7 +261,10 @@ including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
 Chained source helper calls use return declarations from the receiver's class
-and its bases. Data declarations retain grouped names and array dimensions;
+and its bases; sequence returns retain their DART element types. Source class
+aliases retain DART bases, and member lookup respects source declarations and
+class using-declarations. Lambda parameters stay within their lambda body.
+Data declarations retain grouped names and array dimensions;
 qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).

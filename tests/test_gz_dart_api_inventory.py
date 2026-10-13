@@ -1364,6 +1364,166 @@ void inspect(ForeignWrapper& foreign) {
     assert not _entries(result, "members")
 
 
+def test_source_members_hide_dart_base_overloads(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct A { void foo(int); }; }")
+    result = _scan_files(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path / "sources",
+        {
+            "classes.hh": """struct Hidden : dart::A { void foo(); void run(); };
+struct Inherited : Hidden { void run() { foo(); } };
+struct Visible : dart::A { using dart::A::foo; void foo(); void run(); };
+struct Base : dart::A {};
+struct UsesBase : Base { using Base::foo; void foo(); void run() { foo(4); } };
+""",
+            "classes.cc": '#include "classes.hh"\nvoid Hidden::run() { foo(); Hidden::foo(); }\nvoid Visible::run() { foo(1); Visible::foo(2); }\nvoid call(Hidden& hidden, Visible& visible) { hidden.foo(); visible.foo(3); }\n',
+        },
+    )
+    row = _entries(result, "members")["foo"]
+    assert row["count"] == 4
+    assert row["receiver_types"] == ["dart::A"]
+    assert row["unresolved_count"] == 0
+
+
+def test_aliases_of_source_classes_retain_dart_bases(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { void mutate(); static void staticCall(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """namespace local {
+struct Derived : dart::A {};
+using Alias = Derived;
+}
+void use(local::Alias value) { value.mutate(); local::Alias::staticCall(); }
+""",
+    )
+    members = _entries(result, "members")
+    assert set(members) == {"mutate", "staticCall"}
+    assert all(
+        row["receiver_types"] == ["dart::A"] and row["unresolved_count"] == 0
+        for row in members.values()
+    )
+
+
+def test_lambda_parameters_do_not_hide_outer_receivers(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { void hit(); }; struct B { void hit(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """void use(dart::A* p) {
+  [](dart::B* p) mutable { p->hit(); };
+  p->hit();
+}
+""",
+    )
+    row = _entries(result, "members")["hit"]
+    assert row["count"] == 2
+    assert row["receiver_types"] == ["dart::A", "dart::B"]
+    assert {item["class"] for item in row["declarations"]} == {"dart::A", "dart::B"}
+    assert row["unresolved_count"] == 0
+
+
+def test_brace_constructions_retain_ordered_public_fields(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        """namespace dart {
+struct Options { static int global; bool enabled; int count, other; int values[2]; };
+struct Widget { Widget(int); int unrelated; };
+struct Unused { int unrelated; };
+}
+"""
+    )
+    source = "void use() { dart::Options defaulted; auto temporary = dart::Options{true, 4, 5, {6, 7}}; dart::Options direct{true, 4}; dart::Options copied = {true, 4}; dart::Widget widget{1}; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    constructors = _entries(before, "constructors")
+    layout = constructors["dart::Options"]["brace_member_declarations"]
+    assert [member["name"] for member in layout] == [
+        "enabled",
+        "count",
+        "other",
+        "values",
+    ]
+    assert constructors["dart::Options"]["count"] == 4
+    assert constructors["dart::Options"]["declarations"] == []
+    assert "brace_member_declarations" not in constructors["dart::Widget"]
+    assert "dart::Unused" not in constructors
+    header.write_text(
+        header.read_text().replace(
+            "bool enabled; int count, other;", "int count, other; bool enabled;"
+        )
+    )
+    reordered = _scan(
+        extractor, extractor.index_api(headers), tmp_path / "reordered", source
+    )
+    assert (
+        _entries(reordered, "constructors")["dart::Options"][
+            "brace_member_declarations"
+        ]
+        != layout
+    )
+    header.write_text(
+        header.read_text().replace("int count, other;", "float count, other;")
+    )
+    retyped = _scan(
+        extractor, extractor.index_api(headers), tmp_path / "retyped", source
+    )
+    assert retyped != reordered
+
+
+def test_container_returns_retain_the_element_receiver(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+struct Target { void other(); };
+struct Item { void mutate(); int front(); Target* operator->(); };
+struct Factory { std::vector<Item*> make(); std::vector<Item> valueMake(); };
+std::vector<Item*> sequence();
+}
+"""
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """void use(dart::Factory* factory) {
+  factory->make().front()->mutate();
+  factory->make().back()->mutate();
+  factory->make().at(0)->mutate();
+  auto items = factory->make();
+  items[0]->mutate();
+  dart::sequence().front()->mutate();
+  std::vector<dart::Item*> direct;
+  direct.front()->mutate();
+  factory->valueMake().front()->other();
+}
+""",
+    )
+    members = _entries(result, "members")
+    assert members["mutate"]["count"] == 6
+    assert members["mutate"]["receiver_types"] == ["dart::Item"]
+    assert members["mutate"]["unresolved_count"] == 0
+    assert "front" not in members
+    assert members["operator->"]["count"] == 1
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+    assert members["other"]["unresolved_count"] == 0
+
+
 @pytest.mark.parametrize(
     ("imported_namespace", "qualifier"), [("dart::math", ""), ("dart", "math::")]
 )
