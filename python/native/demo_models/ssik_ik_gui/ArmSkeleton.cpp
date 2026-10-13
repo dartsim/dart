@@ -38,7 +38,7 @@ namespace dart_demos {
 namespace ssik_ik_gui {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+constexpr double kArmSkeletonPi = 3.14159265358979323846;
 } // namespace
 
 //==============================================================================
@@ -71,9 +71,9 @@ std::vector<ArmSpec> getArmSpecs()
 Eigen::Isometry3d makeTargetTransform(
     const std::array<float, 3>& xyz, const std::array<float, 3>& rpyDegrees)
 {
-  const double roll = rpyDegrees[0] * kPi / 180.0;
-  const double pitch = rpyDegrees[1] * kPi / 180.0;
-  const double yaw = rpyDegrees[2] * kPi / 180.0;
+  const double roll = rpyDegrees[0] * kArmSkeletonPi / 180.0;
+  const double pitch = rpyDegrees[1] * kArmSkeletonPi / 180.0;
+  const double yaw = rpyDegrees[2] * kArmSkeletonPi / 180.0;
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(xyz[0], xyz[1], xyz[2]);
@@ -95,9 +95,9 @@ void targetControlsFromTransform(
   xyz[2] = static_cast<float>(tf.translation().z());
 
   const Eigen::Vector3d zyx = tf.linear().eulerAngles(2, 1, 0);
-  rpyDegrees[0] = static_cast<float>(zyx[2] * 180.0 / kPi);
-  rpyDegrees[1] = static_cast<float>(zyx[1] * 180.0 / kPi);
-  rpyDegrees[2] = static_cast<float>(zyx[0] * 180.0 / kPi);
+  rpyDegrees[0] = static_cast<float>(zyx[2] * 180.0 / kArmSkeletonPi);
+  rpyDegrees[1] = static_cast<float>(zyx[1] * 180.0 / kArmSkeletonPi);
+  rpyDegrees[2] = static_cast<float>(zyx[0] * 180.0 / kArmSkeletonPi);
 }
 
 //==============================================================================
