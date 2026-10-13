@@ -126,7 +126,7 @@ class AtlasPuppetController:
             positions = dart.dynamics.FreeJoint.convertToPositions(new_tf)
             self.atlas.getJoint(0).setPositions(positions)
 
-        # No Skeleton-level WholeBodyIK is reachable from Python (see module
+        # This port installs no Skeleton-level WholeBodyIK (see the module
         # docstring), so each target is solved independently rather than as
         # one joint whole-body optimization; each still uses useWholeBody()
         # internally, so simultaneously-engaged targets converge by
