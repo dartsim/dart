@@ -414,6 +414,48 @@ def test_pre_push_new_ref_excludes_published_release_commits(tmp_path, leak):
         )
 
 
+@pytest.mark.parametrize("removal", ["delete", "rename"])
+def test_pre_push_new_ref_recovers_checker_when_release_base_lacks_it(
+    tmp_path, removal
+):
+    repo, env, git = _push_repo(tmp_path)
+    checker_revision = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "-b", "release")
+    git("rm", "scripts/check_local_paths.py")
+    git("commit", "-qm", "Release without checker")
+    git("push", "origin", "release")
+    release_tip = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "main")
+    git("commit", "--allow-empty", "-qm", "Main-only change")
+    git("push", "origin", "main")
+    git("checkout", "-b", "topic", "release")
+    git("checkout", "main", "--", "scripts/check_local_paths.py")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+    if removal == "delete":
+        git("rm", "scripts/check_local_paths.py")
+    else:
+        git(
+            "mv", "scripts/check_local_paths.py", "scripts/renamed_check_local_paths.py"
+        )
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0, result.stderr
+    assert (
+        f"using tracked scripts/check_local_paths.py from {checker_revision}"
+        in result.stderr
+    )
+    assert f"DART pre-push: scanning HEAD ({release_tip}..{head})" in result.stderr
+    assert private_path in result.stdout
+    assert "push blocked" in result.stderr
+    assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+
+
 def test_pre_push_new_ref_skips_unavailable_nondefault_branch_heads(tmp_path):
     repo, env, git = _push_repo(tmp_path)
     other = tmp_path / "other"

@@ -105,7 +105,14 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
             git fetch --no-tags --no-write-fetch-head "$2" "$base_sha" || exit 1
         fi
     fi
+    checker_revision=$base_sha
     if [ "$new_ref" = 1 ]; then
+        if [ -n "$checker_revision" ]; then
+            checker_revision=$(git merge-base "$checker_revision" "$local_sha")
+            status=$?
+            # Status 1 means unrelated histories; other errors must block.
+            [ "$status" -le 1 ] || exit "$status"
+        fi
         remote_heads=$(git ls-remote --heads "$2") || exit 1
         candidate_shas=$(printf '%s\\n' "$base_sha" "$remote_heads" | awk '{print $1}') || exit 1
         base_sha=
@@ -127,7 +134,7 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
     fi
     commit_range=$local_sha
     [ -z "$base_sha" ] || commit_range="$base_sha..$local_sha"
-    if ! select_checker "${base_sha:-$local_sha}" scripts/check_local_paths.py; then
+    if ! select_checker "${checker_revision:-$local_sha}" scripts/check_local_paths.py; then
         echo "DART pre-push: cannot recover tracked checker — push blocked." >&2
         exit 1
     fi
