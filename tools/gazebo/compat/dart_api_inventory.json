@@ -813,7 +813,7 @@
           "receiver_types": [
             "dart::collision::RayHit"
           ],
-          "unresolved_count": 2
+          "unresolved_count": 0
         },
         {
           "count": 2,
@@ -944,7 +944,7 @@
           "receiver_types": [
             "dart::collision::RayHit"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -1185,7 +1185,7 @@
           "receiver_types": [
             "dart::collision::RayHit"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "count": 4,
@@ -1206,7 +1206,7 @@
           "receiver_types": [
             "dart::collision::RayHit"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -4653,12 +4653,6 @@
           "count": 5,
           "declarations": [
             {
-              "class": "dart::collision::CollisionGroup",
-              "const": true,
-              "signature": "const dynamics :: ShapeFrame * getShapeFrame ( std :: size_t index ) const",
-              "virtual": false
-            },
-            {
               "class": "dart::collision::CollisionObject",
               "const": true,
               "signature": "const dynamics :: ShapeFrame * getShapeFrame ( ) const",
@@ -4674,7 +4668,7 @@
           "receiver_types": [
             "dart::collision::CollisionObject"
           ],
-          "unresolved_count": 3
+          "unresolved_count": 0
         },
         {
           "classification": "accessor",
@@ -6483,7 +6477,7 @@
             "dart::dynamics::BodyNode",
             "dart::dynamics::Inertia"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -6512,7 +6506,7 @@
             "dart::dynamics::BodyNode",
             "dart::dynamics::Inertia"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -6581,7 +6575,7 @@
           "receiver_types": [
             "dart::dynamics::Inertia"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -7606,6 +7600,9 @@
             "dartsim/src/GzCollisionDetector.cc:418",
             "dartsim/src/GzCollisionDetector.hh:136"
           ],
+          "final_classes": [
+            "dart::common::FactoryRegistrar"
+          ],
           "name": "dart::collision::CollisionDetector::Registrar",
           "template_declarations": [
             "template < typename KeyT , typename BaseT , typename DerivedT , typename HeldT = std :: shared_ptr < BaseT > , typename ... Args > class FactoryRegistrar"
@@ -7843,6 +7840,14 @@
             "dartsim/src/AddedMassFeatures_TEST.cc:156",
             "dartsim/src/AddedMassFeatures_TEST.cc:173"
           ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
+          ],
           "name": "dart::dynamics::BodyNode",
           "template_declarations": [
             "template < class ... OtherBases > class CompositeJoiner",
@@ -7898,6 +7903,14 @@
             "dartsim/src/Base.hh:280",
             "dartsim/src/EntityManagementFeatures.cc:889",
             "dartsim/src/SDFFeatures.cc:713"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::BodyNode::Properties",
           "template_declarations": [
@@ -7958,6 +7971,14 @@
             "dartsim/src/Base.hh:141",
             "dartsim/src/Base.hh:71",
             "test/plugins/DARTDoublePendulum.cc:317"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::BodyNodePtr",
           "template_declarations": [
@@ -8040,6 +8061,11 @@
             "dartsim/src/SDFFeatures.cc:935",
             "dartsim/src/ShapeFeatures.cc:101"
           ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::VisualAspect"
+          ],
           "name": "dart::dynamics::CollisionAspect",
           "template_declarations": [
             "template < class ... OtherBases > class CompositeJoiner",
@@ -8067,6 +8093,14 @@
             "dartsim/src/Base.hh:138",
             "dartsim/src/Base.hh:568",
             "dartsim/src/FreeGroupFeatures.cc:36"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::ConstSkeletonPtr",
           "template_declarations": [
@@ -8148,6 +8182,11 @@
             "dartsim/src/SDFFeatures.cc:935",
             "dartsim/src/ShapeFeatures.cc:102",
             "dartsim/src/ShapeFeatures.cc:163"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::DynamicsAspect",
           "template_declarations": [
@@ -8304,6 +8343,14 @@
           "examples": [
             "dartsim/src/Base.hh:143",
             "dartsim/src/Base.hh:93"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::JointPtr",
           "template_declarations": [
@@ -8554,6 +8601,11 @@
             "dartsim/src/Base.hh:145",
             "dartsim/src/Base.hh:419"
           ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::VisualAspect"
+          ],
           "name": "dart::dynamics::ShapeNode",
           "template_declarations": [
             "template < class ... OtherBases > class CompositeJoiner",
@@ -8587,6 +8639,14 @@
           "count": 1,
           "examples": [
             "dartsim/src/Base.hh:111"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::ShapeNodePtr",
           "template_declarations": [
@@ -8657,6 +8717,11 @@
             "dartsim/src/Base_TEST.cc:217",
             "dartsim/src/Base_TEST.cc:62"
           ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::VisualAspect"
+          ],
           "name": "dart::dynamics::SimpleFrame",
           "template_declarations": [
             "template < class ... OtherBases > class CompositeJoiner",
@@ -8685,6 +8750,11 @@
             "dartsim/src/Base.hh:369",
             "dartsim/src/Base.hh:94"
           ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::VisualAspect"
+          ],
           "name": "dart::dynamics::SimpleFramePtr",
           "template_declarations": [
             "template < class ... OtherBases > class CompositeJoiner",
@@ -8712,6 +8782,14 @@
             "dartsim/src/Base.hh:139",
             "dartsim/src/Base.hh:178",
             "dartsim/src/Base_TEST.cc:216"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::Skeleton",
           "template_declarations": [
@@ -8780,6 +8858,14 @@
             "dartsim/src/Base.hh:137",
             "dartsim/src/Base.hh:289",
             "dartsim/src/Base.hh:99"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::SkeletonPtr",
           "template_declarations": [
@@ -8918,6 +9004,11 @@
           "examples": [
             "dartsim/src/SDFFeatures.cc:1073"
           ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::VisualAspect"
+          ],
           "name": "dart::dynamics::VisualAspect",
           "template_declarations": [
             "template < class ... OtherBases > class CompositeJoiner",
@@ -8945,6 +9036,14 @@
             "test/plugins/DARTDoublePendulum.cc:61",
             "test/plugins/DARTDoublePendulum.cc:62",
             "test/plugins/DARTDoublePendulum.cc:64"
+          ],
+          "final_classes": [
+            "dart::dynamics::CollisionAspect",
+            "dart::dynamics::DynamicsAspect",
+            "dart::dynamics::EndEffector",
+            "dart::dynamics::Marker",
+            "dart::dynamics::Support",
+            "dart::dynamics::VisualAspect"
           ],
           "name": "dart::dynamics::WeakBodyNodePtr",
           "template_declarations": [

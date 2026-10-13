@@ -243,7 +243,9 @@ data-member accesses, free functions, macros, and virtual overrides used by
 the gz-physics dartsim plugin, its direct DART test code, and directly by
 gz-sim. It includes source revisions, use counts, source locations, and
 matching DART header declarations with signatures, constness, and virtual
-status. A construction lists the public and protected constructors that the
+status. Referenced types retain `final_classes` from their class dependencies,
+so making a DART base final changes the inventory. A construction lists the
+public and protected constructors that the
 type declares, including those of its class template specializations. When the
 type declares none, it lists those of the bases that its implicit constructor
 calls, so an empty list means that no class in that chain declares one. A
@@ -264,6 +266,7 @@ Chained source helper calls use return declarations from the receiver's class
 and its bases; sequence returns retain their DART element types. Source class
 aliases retain DART bases, and member lookup respects source declarations and
 class using-declarations. Lambda parameters stay within their lambda body.
+Chained DART data-member accesses use the member's declared type.
 Data declarations retain grouped names and array dimensions;
 qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current

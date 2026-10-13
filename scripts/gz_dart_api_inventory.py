@@ -250,6 +250,7 @@ class Tokens:
     raw_pointers: set = field(default_factory=set)
     using: list = field(default_factory=list)
     template_headers: dict = field(default_factory=lambda: defaultdict(set))
+    macros: set = field(default_factory=set)
 
     def __post_init__(self):
         matches = list(TOKEN.finditer(self.text))
@@ -277,7 +278,7 @@ def qualified(values):
     return "".join(values).lstrip(":")
 
 
-def declaration(values, owner):
+def declaration(values, owner, macros=()):
     """Read a declaration prefix, before its semicolon or inline body."""
     square = brace = 0
     for opening, value in enumerate(values):
@@ -302,7 +303,7 @@ def declaration(values, owner):
             or name in {"operator", "decltype", "noexcept", "alignas"}
         ):
             continue
-        if name.isupper() or name.startswith("DART_"):
+        if name in macros:
             continue
         depth = 1
         closing = opening + 1
@@ -451,6 +452,7 @@ def data_member(values, owner):
         "name": declarator[end - 1],
         "name_index": end - 1,
         "static": "static" in top,
+        "return_tokens": declarator[: end - 1],
         "signature": " ".join(values),
         "const": "constexpr" in top or "const" in top[pointer + 1 :],
         "virtual": False,
@@ -565,19 +567,26 @@ def scopes(tokens):
                 j = i + 1
                 if value == "enum" and values[j] in {"class", "struct"}:
                     j += 1
-                while j + 1 < end and (  # export macros such as `DART_API`
-                    values[j].startswith("DART_")
-                    or values[j].isupper()
-                    and IDENTIFIER.match(values[j + 1])
-                    and values[j + 1] != "final"
-                ):
-                    j += 1
-                if j + 1 < end and values[j] == "alignas" and j + 1 in tokens.pairs:
-                    j = tokens.pairs[j + 1] + 1
+                while j < end:
+                    if values[j] in {"[", "("} and j in tokens.pairs:
+                        j = tokens.pairs[j] + 1
+                    elif j + 1 < end and (
+                        values[j] in {"alignas", "__attribute__", "__declspec"}
+                        or (values[j].startswith("DART_") or values[j].isupper())
+                        and (
+                            values[j + 1] == "("
+                            or IDENTIFIER.match(values[j + 1])
+                            and values[j + 1] != "final"
+                        )
+                    ):
+                        j += 1
+                    else:
+                        break
                 if j < end and IDENTIFIER.match(values[j]):
                     name = values[j]
                     k = template_end(values, j + 1)  # a specialization's arguments
-                    if k < end and values[k] == "final":
+                    final = k < end and values[k] == "final"
+                    if final:
                         k += 1
                     if k < end and values[k] in {"{", ":", ";"}:
                         parent_start = k + 1
@@ -619,6 +628,7 @@ def scopes(tokens):
                             entry = {
                                 "name": full_name,
                                 "kind": value,
+                                "final": final,
                                 "bases": parents,
                                 "members": [],
                                 "index": i,
@@ -682,7 +692,7 @@ def scopes(tokens):
                 continue
             if value in {";", "{"}:
                 prefix = values[segment:i]
-                method = declaration(prefix, owner)
+                method = declaration(prefix, owner, tokens.macros)
                 inside, scope = i, here
                 if method:
                     method["index"] = segment
@@ -1101,6 +1111,15 @@ def bind_variable(tokens, index, types):
                 "mutable",
             }:
                 body += 1
+                if body < len(values) and values[body] == "(" and body in tokens.pairs:
+                    body = tokens.pairs[body] + 1
+            if body < len(values) and values[body] == "->":
+                body += 1
+                while body < len(values) and values[body] not in {"{", ";", "="}:
+                    if values[body] in {"(", "["} and body in tokens.pairs:
+                        body = tokens.pairs[body] + 1
+                    else:
+                        body += 1
             if body < len(values) and values[body] == "{" and body in tokens.pairs:
                 if tokens.pairs[body] - opening < end - start:
                     start, end = opening, tokens.pairs[body]
@@ -1146,6 +1165,7 @@ def index_api(header_root):
     pending_aliases = []
     macros = {}
     headers = []
+    declaration_macros = set()
     for path in source_files(Path(header_root)):
         if path.suffix not in {
             ".h",
@@ -1161,6 +1181,9 @@ def index_api(header_root):
             "dart/" + path.relative_to(header_root).as_posix().removesuffix(".in")
         )
         clean = preprocess(strip_comments_and_strings(text))[0]
+        declaration_macros.update(
+            re.findall(r"^\s*#\s*define\s+(\w+)", clean, re.MULTILINE)
+        )
         api.macros.update(
             re.findall(r"^\s*#\s*define\s+(DART_\w+)", clean, re.MULTILINE)
         )
@@ -1168,6 +1191,7 @@ def index_api(header_root):
         headers.append(strip_directives(clean))
     for clean in headers:
         tokens = Tokens(" ".join(expand_macros(TOKEN.findall(clean), macros)))
+        tokens.macros = declaration_macros
         classes, functions, aliases, fields = scopes(tokens)
         for name, declarations in tokens.template_headers.items():
             if name.startswith("dart::"):
@@ -1176,9 +1200,11 @@ def index_api(header_root):
             if cls["name"].startswith("dart::"):
                 api.types.add(cls["name"])
                 # Specializations and alternative definitions share one entry.
-                api.classes.setdefault(cls["name"], {"bases_raw": [], "bases": []})[
-                    "bases_raw"
-                ] += cls["bases"]
+                entry = api.classes.setdefault(
+                    cls["name"], {"bases_raw": [], "bases": [], "final": False}
+                )
+                entry["bases_raw"] += cls["bases"]
+                entry["final"] |= cls["final"]
                 if cls["kind"] != "enum":
                     api.constructors.setdefault(cls["name"], [])
         for name, values, _ in aliases:
@@ -1327,6 +1353,9 @@ def scan_sources(api, source_root):
             re.findall(r"^\s*#\s*define\s+(DART_\w+)", clean, re.MULTILINE)
         )
         tokens = Tokens(clean)
+        tokens.macros = api.macros | set(
+            re.findall(r"^\s*#\s*define\s+(\w+)", clean, re.MULTILINE)
+        )
         line = 0
         newlines = [match.start() for match in re.finditer("\n", clean)]
         for offset in tokens.offsets:
@@ -1615,12 +1644,18 @@ def scan_sources(api, source_root):
                     for declaration in api.type_templates.get(owner, ())
                 }
             )
+            final_classes = sorted(
+                owner
+                for owner in api.ancestors(resolved) | {resolved}
+                if api.classes.get(owner, {}).get("final")
+            )
             add(
                 "types",
                 resolved,
                 path,
                 tokens.line(start),
                 **({"template_declarations": templates} if templates else {}),
+                **({"final_classes": final_classes} if final_classes else {}),
             )
             tokens.source_relevant = True
             referenced.update(api.ancestors(resolved))
@@ -1901,6 +1936,7 @@ def scan_sources(api, source_root):
     def returns(declarations):
         result = set()
         for item in declarations:
+            return_tokens = item.get("return_tokens", ())
             scope = (
                 tuple(item["class"].split("::"))
                 if item["class"]
@@ -1909,7 +1945,7 @@ def scan_sources(api, source_root):
             sequence = next(
                 (
                     end
-                    for start, end, value in names_in(item["return_tokens"])
+                    for start, end, value in names_in(return_tokens)
                     if value
                     in {
                         "std::vector",
@@ -1918,24 +1954,24 @@ def scan_sources(api, source_root):
                         "std::list",
                         "std::forward_list",
                     }
-                    and not in_template_argument(item["return_tokens"], start)
+                    and not in_template_argument(return_tokens, start)
                 ),
                 None,
             )
             if sequence is not None:
                 contained = container_elements(
-                    first_template_argument(item["return_tokens"], sequence),
+                    first_template_argument(return_tokens, sequence),
                     api,
                     lambda value: api.resolve(value, scope),
                 )
                 result.update(contained or {"__non_dart__"})
                 continue
-            for _, _, value in names_in(item["return_tokens"]):
+            for _, _, value in names_in(return_tokens):
                 resolved = api.resolve(value, scope)
                 owner = api.owner(resolved)
                 if owner:
                     result.add(resolved)
-                    if raw_pointer(item["return_tokens"]) or resolved in (
+                    if raw_pointer(return_tokens) or resolved in (
                         api.raw_pointers | api.standard_pointers
                     ):
                         result.add(RAW_POINTER)
@@ -2043,9 +2079,18 @@ def scan_sources(api, source_root):
                 or elements(types)
                 or (types - {RAW_POINTER})
             )
+        if before > 1 and values[before - 1] in {"->", "."}:
+            owner = receiver(tokens, before - 2, imports, namespace_aliases, depth + 1)
+            if values[before - 1] == "->":
+                owner = arrow_types(owner)
+            declarations = candidates(
+                value, owner, values[before - 1], api.data_members
+            )
+            types = returns(declarations)
+            if types:
+                return types
         types = variable_types(tokens, before, fields)
         if not types and before > 1 and values[before - 1] in {"->", "."}:
-            owner = receiver(tokens, before - 2, imports, namespace_aliases, depth + 1)
             if "__non_dart__" in owner:  # an unknown field of a non-DART object
                 return {"__non_dart__"}
         return types

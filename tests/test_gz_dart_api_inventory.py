@@ -1413,7 +1413,16 @@ void use(local::Alias value) { value.mutate(); local::Alias::staticCall(); }
     )
 
 
-def test_lambda_parameters_do_not_hide_outer_receivers(extractor, tmp_path):
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "mutable",
+        "-> void",
+        "noexcept(true) -> void",
+        "mutable noexcept(true) -> decltype((void)dart::B{})",
+    ],
+)
+def test_lambda_parameters_do_not_hide_outer_receivers(extractor, tmp_path, suffix):
     headers = tmp_path / "dart"
     headers.mkdir()
     (headers / "api.hpp").write_text(
@@ -1423,8 +1432,9 @@ def test_lambda_parameters_do_not_hide_outer_receivers(extractor, tmp_path):
         extractor,
         extractor.index_api(headers),
         tmp_path,
-        """void use(dart::A* p) {
-  [](dart::B* p) mutable { p->hit(); };
+        "void use(dart::A* p) {\n"
+        + f"  [](dart::B* p) {suffix} {{ p->hit(); }};\n"
+        + """
   p->hit();
 }
 """,
@@ -1522,6 +1532,113 @@ std::vector<Item*> sequence();
     assert members["operator->"]["count"] == 1
     assert members["other"]["receiver_types"] == ["dart::Target"]
     assert members["other"]["unresolved_count"] == 0
+
+
+def test_class_attributes_preserve_the_class_and_members(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """#define DART_DEPRECATED(version) [[deprecated]]
+namespace dart {
+class DART_DEPRECATED(1.0) Legacy { public: void run(); };
+class alignas(16) [[vendor::hint(choose(1))]] Aligned { public: void run(); };
+class __attribute__((deprecated)) Gnu { public: void run(); };
+}
+"""
+    )
+    api = extractor.index_api(headers)
+    assert {"dart::Legacy", "dart::Aligned", "dart::Gnu"} <= api.types
+    assert {method["class"] for method in api.members["run"]} == {
+        "dart::Legacy",
+        "dart::Aligned",
+        "dart::Gnu",
+    }
+    real_api = extractor.index_api(ROOT / "dart")
+    assert "dart::common::Timer" in real_api.types
+    assert any(
+        method["class"] == "dart::common::Timer" for method in real_api.members["start"]
+    )
+
+
+def test_uppercase_declarations_are_not_assumed_to_be_macros(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        """#define MARKER()
+namespace dart { struct API { API(int); void RUN(); MARKER(); }; }
+"""
+    )
+    before = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path / "before",
+        "void use(dart::API* api) { dart::API value(1); api->RUN(); }",
+    )
+    assert _entries(before, "members")["RUN"]["count"] == 1
+    assert _entries(before, "constructors")["dart::API"]["declarations"]
+    assert "MARKER" not in extractor.index_api(headers).members
+    header.write_text(
+        header.read_text()
+        .replace("RUN()", "RUN(int)")
+        .replace("API(int)", "API(int, int)")
+    )
+    after = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path / "after",
+        "void use(dart::API* api) { dart::API value(1); api->RUN(); }",
+    )
+    assert after != before
+
+
+def test_data_member_types_resolve_chained_receivers(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        """namespace dart {
+struct Target { void other(); };
+struct B { void hit(); Target* operator->(); };
+struct Foreign { void hit(double); };
+struct A { B child; B* pointer{nullptr}; std::vector<B*> children; };
+struct Unused { Foreign child; };
+}
+"""
+    )
+    source = "void use(dart::A& a) { a.child.hit(); a.pointer->hit(); a.child->other(); a.children.front()->hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    members = _entries(before, "members")
+    assert members["hit"]["count"] == 3
+    assert members["hit"]["receiver_types"] == ["dart::B"]
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+    assert members["operator->"]["count"] == 1
+    header.write_text(header.read_text().replace("void hit();", "void hit(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after != before
+
+
+def test_referenced_class_final_status_detects_inheritance_breaks(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { struct A { A(); }; struct D : A {}; using Alias = A; struct Unused final {}; }"
+    )
+    source = "using SourceAlias = dart::A; struct Derived : SourceAlias {}; void use(dart::D* derived, dart::Alias* alias);"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert all("final_classes" not in row for row in before["types"])
+    header.write_text(header.read_text().replace("struct A {", "struct A final {"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert _entries(after, "constructors") == _entries(before, "constructors")
+    assert after != before
+    types = _entries(after, "types")
+    assert "dart::Unused" not in types
+    assert all(
+        types[name]["final_classes"] == ["dart::A"]
+        for name in ("dart::A", "dart::D", "dart::Alias")
+    )
 
 
 @pytest.mark.parametrize(
