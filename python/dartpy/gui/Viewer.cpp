@@ -678,3 +678,11 @@ void dart_gui_filament(nb::module_& m)
 
 } // namespace python
 } // namespace dart
+
+//==============================================================================
+bool dartnb::gui::isPythonAttachment(
+    const dart::gui::ViewerAttachment& attachment)
+{
+  return dynamic_cast<const dart::python::PyViewerAttachment*>(&attachment)
+         != nullptr;
+}
