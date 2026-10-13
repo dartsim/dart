@@ -90,6 +90,12 @@
     the element's default frame is explicitly rejected instead of silently
     misplacing the pose.
 
+  * Loading a SKEL world no longer crashes when the collision detector
+    factory cannot create `fcl`, for example after an application
+    unregisters the factory's creators. The parser creates the FCL detector
+    directly instead and warns once.
+    [#3750](https://github.com/dartsim/dart/pull/3750)
+
 * Collision
 
   * An exception thrown by a collision filter during an ODE collision check
