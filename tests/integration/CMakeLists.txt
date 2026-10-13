@@ -414,8 +414,49 @@ if(TARGET dart-utils)
   endif()
 endif()
 
+if(TARGET dart-gui-app)
+  dart_add_test("integration" test_GuiApp)
+  target_link_libraries(test_GuiApp dart-gui-app)
+  target_include_directories(
+    test_GuiApp
+    PRIVATE "${PROJECT_SOURCE_DIR}/examples"
+  )
+  set_tests_properties(test_GuiApp PROPERTIES LABELS "gui")
+else()
+  dart_format_add(test_GuiApp.cpp)
+endif()
+
 # GUI contracts include actual renderer tests when the optional component is built.
 if(TARGET dart-gui)
+  dart_add_test("integration" test_GuiAppMemoryDiagnostics)
+  dart_add_test("integration" test_GuiAppMemoryDiagnosticsModel)
+  foreach(
+    memory_test
+    test_GuiAppMemoryDiagnostics
+    test_GuiAppMemoryDiagnosticsModel
+  )
+    target_sources(
+      ${memory_test}
+      PRIVATE
+        "${PROJECT_SOURCE_DIR}/dart/gui/app/memory_diagnostics.cpp"
+        "${PROJECT_SOURCE_DIR}/dart/gui/app/memory_diagnostics_model.cpp"
+    )
+    target_link_libraries(${memory_test} dart-gui)
+    target_compile_features(${memory_test} PRIVATE cxx_std_17)
+    target_compile_definitions(
+      ${memory_test}
+      PRIVATE
+        DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=1
+        DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=1
+    )
+    if(WIN32)
+      target_link_libraries(${memory_test} Psapi)
+    endif()
+    set_tests_properties(
+      ${memory_test}
+      PROPERTIES LABELS "gui;memory-diagnostics"
+    )
+  endforeach()
   find_package(PNG REQUIRED)
   find_package(JPEG REQUIRED)
   find_package(glfw3 REQUIRED)
@@ -490,6 +531,8 @@ if(TARGET dart-gui)
 else()
   # Lint formats the GUI tests in GUI-off configurations too.
   dart_format_add(
+    test_GuiAppMemoryDiagnostics.cpp
+    test_GuiAppMemoryDiagnosticsModel.cpp
     test_GuiDescriptors.cpp
     test_GuiInteractions.cpp
     test_GuiViewer.cpp

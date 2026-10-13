@@ -92,6 +92,13 @@ SCENARIO_KEYS = {
 SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 ROUTE_KEYS = {"kind", "name", "path"}
 APPROVED_INACTIVE_CPP_TESTS = {
+    "tests/integration/test_GuiApp.cpp": {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": ("if:TARGET dart-gui-app",),
+        # ImGui without docking compiles the app out, and so does a GUI-off build.
+        "cache": ({"DART_IMGUI_HAS_DOCK": "OFF"}, {"DART_BUILD_GUI": "OFF"}),
+    },
     "tests/integration/test_ModelResourceRetriever.cpp": {
         "owner": "tests/integration/CMakeLists.txt",
         "command": "dart_add_test",
@@ -145,6 +152,8 @@ APPROVED_INACTIVE_CPP_TESTS = {
             "cache": {"DART_BUILD_GUI": "OFF"},
         }
         for name in (
+            "GuiAppMemoryDiagnostics",
+            "GuiAppMemoryDiagnosticsModel",
             "GuiDescriptors",
             "GuiInteractions",
             "GuiViewer",
@@ -411,7 +420,6 @@ def repository_relative_path(root: Path, value: Any) -> Path | None:
 
 def required_paths(root: Path) -> list[Path]:
     paths = [
-        root / ".agents" / "AGENTS.md",
         root / ".agents" / "skills" / ".dart-generated.json",
         root / ".codex" / "AGENTS.md",
         root / ".codex" / "config.toml",
@@ -2166,8 +2174,14 @@ def inactive_cpp_test_is_approved(
     if policy is None:
         return False
     cache_predicates = policy.get("cache", {})
-    if not isinstance(cache_predicates, dict) or not all(
-        cache.get(variable) == value for variable, value in cache_predicates.items()
+    # A tuple lists alternative cache states, any one of which approves.
+    alternatives = (
+        cache_predicates if isinstance(cache_predicates, tuple) else (cache_predicates,)
+    )
+    if not any(
+        isinstance(predicates, dict)
+        and all(cache.get(variable) == value for variable, value in predicates.items())
+        for predicates in alternatives
     ):
         return False
     if policy.get("msvc"):
@@ -3835,8 +3849,6 @@ def check_cmake_test_graph(
                 and name
                 in {
                     "dart-demos",
-                    "UNIT_examples_demos_GuiScaling",
-                    "UNIT_examples_demos_MemoryDiagnostics",
                     "UNIT_examples_demos_SceneCycle",
                 }
             )
@@ -4148,10 +4160,7 @@ def tracked_agent_files(root: Path) -> list[Path]:
                 for part in path.relative_to(root).parts
             )
         ]
-    for runtime_path in (
-        root / ".agents" / "AGENTS.md",
-        root / ".codex" / "AGENTS.md",
-    ):
+    for runtime_path in (root / ".codex" / "AGENTS.md",):
         if runtime_path.is_file() and runtime_path not in paths:
             paths.append(runtime_path)
     return paths
@@ -4444,7 +4453,6 @@ def release_reference_paths(root: Path) -> list[Path]:
     paths.update(
         root / relative
         for relative in (
-            "CLAUDE.md",
             "GEMINI.md",
             ".github/PULL_REQUEST_TEMPLATE.md",
             "docs/readthedocs/index.rst",
@@ -4636,9 +4644,21 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
             )
     if (root / ".codex" / "skills").exists():
         errors.append("legacy generated directory `.codex/skills/` must be absent")
+    for shadowed in (
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        ".agents/AGENTS.md",
+        ".claude/CLAUDE.md",
+    ):
+        if (root / shadowed).exists():
+            errors.append(
+                f"shadowed rules file `{shadowed}` must be absent; "
+                "keep shared guidance in `AGENTS.md`"
+            )
 
     agents = (root / "AGENTS.md").read_text(encoding="utf-8")
     for marker in (
+        "@docs/ai/principles.md",
         "## Quick Commands",
         "## Task-specific Context",
         "docs/onboarding/architecture.md",
@@ -5930,6 +5950,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
             "pixi": version("pixi"),
             "codex": version("codex"),
             "claude": version("claude"),
+            "muse": version("muse"),
             "opencode": version("opencode"),
         },
         "inventory": {

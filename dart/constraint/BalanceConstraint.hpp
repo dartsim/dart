@@ -96,6 +96,10 @@ public:
   optimizer::FunctionPtr clone(
       const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
 
+  /// Get the HierarchicalIK that this constraint computes its error from,
+  /// or nullptr if that module no longer exists.
+  std::shared_ptr<dynamics::HierarchicalIK> getIK() const;
+
   // Documentation inherited
   double eval(const Eigen::VectorXd& _x) override;
 

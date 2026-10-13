@@ -30,27 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_INSPECTOR_HPP_
-#define DART_EXAMPLES_DEMOS_INSPECTOR_HPP_
+#ifndef DART_GUI_APP_INSPECTOR_HPP_
+#define DART_GUI_APP_INSPECTOR_HPP_
 
-#include "GuiBackend.hpp"
+#include <dart/gui/WorldNode.hpp>
 
 #include <dart/common/Observer.hpp>
 
 #include <dart/dart.hpp>
+#include <dart/external/imgui/imgui.h>
 
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 //==============================================================================
 /// Host-owned scene tree + body inspector: skeletons -> bodies (tree) with a
 /// single host-owned selection, a detail view (world/relative transform,
 /// velocities, mass, per-joint position/velocity/limits with paused-only
 /// clamped sliders), and per-body wireframe/hide/highlight visual toggles. One
-/// instance is owned by DemoHost and reset() on every scene switch (the
+/// instance is owned by App and reset() on every scene switch (the
 /// BodyNode/DegreeOfFreedom pointers it tracks belong to
 /// the world that is about to be destroyed).
 ///
@@ -68,7 +69,7 @@ public:
   /// active scene is torn down.
   void reset();
 
-  /// The currently selected body, or nullptr if none. Read by DemoHost to
+  /// The currently selected body, or nullptr if none. Read by App to
   /// drive the "Attach gizmo" affordance and the host-wide drag-force pick.
   dart::dynamics::BodyNode* getSelection() const
   {
@@ -88,10 +89,10 @@ public:
   /// Renders the detail view for the current selection: transforms,
   /// velocities, mass, per-joint sliders (editable only while `paused`), and
   /// the wireframe/hidden toggles. `worldNode` is the active scene's
-  /// group (DemoHost::getWorldNode()), used to locate the selected body's
+  /// group (App::getWorldNode()), used to locate the selected body's
   /// rendered nodes for the wireframe toggle; may be nullptr (the toggle is
   /// then a no-op checkbox).
-  void renderDetail(bool paused, GuiGroup* worldNode);
+  void renderDetail(bool paused, dart::gui::WorldNode* worldNode);
 
   /// Applies every pending joint-position edit queued by renderDetail's
   /// sliders (clamped to limits, isfinite-checked) and clears the queue.
@@ -119,7 +120,9 @@ private:
   void renderBodyRow(dart::dynamics::BodyNode* body);
   void renderJointRow(dart::dynamics::Joint* joint);
   void setWireframe(
-      dart::dynamics::BodyNode* body, bool enabled, GuiGroup* worldNode);
+      dart::dynamics::BodyNode* body,
+      bool enabled,
+      dart::gui::WorldNode* worldNode);
   void setHidden(dart::dynamics::BodyNode* body, bool hidden);
   void snapshotHighlightColors();
   void restoreHighlight();
@@ -141,6 +144,6 @@ private:
   std::unordered_map<dart::dynamics::DegreeOfFreedom*, double> mPendingEdits;
 };
 
-} // namespace dart_demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_INSPECTOR_HPP_
+#endif // DART_GUI_APP_INSPECTOR_HPP_

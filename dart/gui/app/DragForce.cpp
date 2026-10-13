@@ -36,7 +36,7 @@
 
 #include <cmath>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 using dart::dynamics::BodyNode;
@@ -44,7 +44,7 @@ using dart::dynamics::BodyNode;
 
 //==============================================================================
 /// Persistent (never torn down) mouse handler, the same lifetime pattern as
-/// DemoHost's DemoKeyHandler: installed once at startup and intentionally
+/// App's DemoKeyHandler: installed once at startup and intentionally
 /// never deleted (DefaultEventHandler's destructor does not delete its
 /// registered MouseEventHandlers, and this one must outlive every scene
 /// switch, so there is no natural per-scene owner to hand it to -- a single,
@@ -56,7 +56,7 @@ using dart::dynamics::BodyNode;
 /// (end the drag); the continuous per-frame target/force computation lives in
 /// DragForce::applyPreStep/applyPreRefresh instead, driven by the world's own
 /// frame loop rather than by mouse-event cadence.
-class DragForce::MouseHandler : public demo_gui::MouseEventHandler
+class DragForce::MouseHandler : public dart::gui::MouseEventHandler
 {
 public:
   MouseHandler(
@@ -75,14 +75,14 @@ public:
     if (ImGui::GetIO().WantCaptureMouse)
       return;
 
-    const auto event = mEventHandler->getButtonEvent(demo_gui::LEFT_MOUSE);
+    const auto event = mEventHandler->getButtonEvent(dart::gui::LEFT_MOUSE);
 
-    if (event == demo_gui::BUTTON_PUSH) {
+    if (event == dart::gui::BUTTON_PUSH) {
       const bool ctrl = (mEventHandler->getModKeyMask()
-                         & demo_events::GUIEventAdapter::MODKEY_CTRL)
+                         & dart::gui::GUIEventAdapter::MODKEY_CTRL)
                         != 0;
       const auto& picks = mEventHandler->getButtonPicks(
-          demo_gui::LEFT_MOUSE, demo_gui::BUTTON_PUSH);
+          dart::gui::LEFT_MOUSE, dart::gui::BUTTON_PUSH);
 
       BodyNode* body = nullptr;
       Eigen::Vector3d point = Eigen::Vector3d::Zero();
@@ -97,7 +97,7 @@ public:
       } else if (mOnPlainClickSelect) {
         mOnPlainClickSelect(body); // body may be nullptr: click-to-deselect.
       }
-    } else if (event == demo_gui::BUTTON_RELEASE) {
+    } else if (event == dart::gui::BUTTON_RELEASE) {
       mOwner->endDrag();
     }
   }
@@ -115,7 +115,8 @@ DragForce::~DragForce() = default;
 
 //==============================================================================
 void DragForce::installMouseHandler(
-    GuiViewer* viewer, std::function<void(BodyNode*)> onPlainClickSelect)
+    dart::gui::Viewer* viewer,
+    std::function<void(BodyNode*)> onPlainClickSelect)
 {
   mViewer = viewer;
   mMouseHandler = new MouseHandler(this, std::move(onPlainClickSelect));
@@ -131,7 +132,7 @@ void DragForce::onSceneInstalled(const dart::simulation::WorldPtr& world)
 }
 
 //==============================================================================
-void DragForce::reset(GuiViewer* viewer)
+void DragForce::reset(dart::gui::Viewer* viewer)
 {
   endDrag();
   detachGizmo(viewer);
@@ -176,7 +177,7 @@ Eigen::Vector3d DragForce::computeDragTarget() const
     return mDragAnchorWorld;
 
   return mDragAnchorWorld
-         + deh->getDeltaCursor(mDragAnchorWorld, demo_gui::UNCONSTRAINED);
+         + deh->getDeltaCursor(mDragAnchorWorld, dart::gui::UNCONSTRAINED);
 }
 
 //==============================================================================
@@ -305,14 +306,16 @@ void DragForce::applyPreRefresh(bool paused)
 
 //==============================================================================
 void DragForce::attachGizmo(
-    BodyNode* body, const dart::simulation::WorldPtr& world, GuiViewer* viewer)
+    BodyNode* body,
+    const dart::simulation::WorldPtr& world,
+    dart::gui::Viewer* viewer)
 {
   detachGizmo(viewer);
   if (!body || !world)
     return;
 
   mGizmoBody = body;
-  mGizmoFrame = std::make_shared<demo_gui::InteractiveFrame>(
+  mGizmoFrame = std::make_shared<dart::gui::InteractiveFrame>(
       dart::dynamics::Frame::World(),
       "gizmo_" + body->getName(),
       body->getWorldTransform());
@@ -322,7 +325,7 @@ void DragForce::attachGizmo(
 }
 
 //==============================================================================
-void DragForce::detachGizmo(GuiViewer* viewer)
+void DragForce::detachGizmo(dart::gui::Viewer* viewer)
 {
   if (mGizmoDnd && viewer) {
     viewer->disableDragAndDrop(mGizmoDnd);
@@ -405,4 +408,4 @@ void DragForce::renderTunables(double guiScale)
       "Plain left-click selects a body in the Inspector.");
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

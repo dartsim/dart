@@ -4,62 +4,14 @@ set(example_name dart-demos)
 
 project(${example_name})
 
-option(
-  DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
-  "Build memory diagnostics into the consolidated GUI demos"
-  OFF
-)
-
-set(
-  demos_memory_diagnostics_sources
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
-)
-set(
-  demos_memory_diagnostics_headers
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.hpp"
-)
-
-function(dart_demos_configure_memory_diagnostics target)
-  if(DEFINED dart_demos_has_allocator_memory_layout)
-    set(
-      dart_demos_target_has_allocator_memory_layout
-      ${dart_demos_has_allocator_memory_layout}
-    )
-  elseif(DART_IN_SOURCE_BUILD)
-    set(dart_demos_target_has_allocator_memory_layout 1)
-  else()
-    set(dart_demos_target_has_allocator_memory_layout 0)
-  endif()
-  target_compile_definitions(
-    ${target}
-    PRIVATE
-      DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=$<BOOL:${DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS}>
-      DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=${dart_demos_target_has_allocator_memory_layout}
-  )
-  if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
-    if(WIN32)
-      if(ARGN)
-        target_link_libraries(${target} ${ARGN} Psapi)
-      else()
-        target_link_libraries(${target} Psapi)
-      endif()
-    endif()
-  else()
-    get_target_property(dart_demos_target_sources ${target} SOURCES)
-    list(
-      FILTER dart_demos_target_sources
-      EXCLUDE
-      REGEX "(^|[/\\\\])memory_diagnostics(_model)?\\.(cpp|hpp)$"
-    )
-    set_property(TARGET ${target} PROPERTY SOURCES ${dart_demos_target_sources})
+function(dart_demos_check_memory_diagnostics_compiled_out target)
+  if(NOT DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
     add_custom_command(
       TARGET ${target}
       POST_BUILD
       COMMAND
         ${CMAKE_COMMAND} "-DDART_DEMOS_EXECUTABLE=$<TARGET_FILE:${target}>" -P
-        "${CMAKE_CURRENT_LIST_DIR}/tests/check_memory_diagnostics_compiled_out.cmake"
+        "${DART_SOURCE_DIR}/dart/gui/app/tests/check_memory_diagnostics_compiled_out.cmake"
       COMMENT "Verifying memory diagnostics are absent from ${target}"
       VERBATIM
     )
@@ -74,6 +26,7 @@ set(
   dart-gui
   dart_demos_wam_ikfast
   dart-demo-models
+  dart-gui-app
 )
 
 function(dart_demos_collect_scene_srcs out_var)
@@ -149,8 +102,6 @@ if(
   set(DART_DEMOS_HAVE_MODEL_ASSETS TRUE)
 endif()
 
-set(dart_demos_has_allocator_memory_layout 1)
-
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
 # written: this demos project's own build dir, used as the ikfast target's
 # LIBRARY_OUTPUT_DIRECTORY (in scenes/wam_ikfast/ikfast/CMakeLists.txt, which
@@ -200,22 +151,6 @@ function(dart_demos_link_optional_collision_backends target)
       force_link_collision_backend(${target})
     endif()
   endforeach()
-endfunction()
-
-function(dart_demos_configure_memory_diagnostics_library target)
-  target_compile_definitions(
-    ${target}
-    PRIVATE
-      DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=1
-      DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=${dart_demos_has_allocator_memory_layout}
-  )
-  if(WIN32)
-    if(ARGN)
-      target_link_libraries(${target} ${ARGN} Psapi)
-    else()
-      target_link_libraries(${target} Psapi)
-    endif()
-  endif()
 endfunction()
 
 # Optional TinyDNN + Threads dependency for the human_joint_limits scene
@@ -287,106 +222,6 @@ function(dart_demos_configure_scenes_target target)
 endfunction()
 
 file(GLOB srcs "*.cpp" "*.hpp")
-if(NOT DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
-  list(
-    REMOVE_ITEM srcs
-    ${demos_memory_diagnostics_sources}
-    ${demos_memory_diagnostics_headers}
-  )
-endif()
-
-if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
-  dart_format_add(
-    ${demos_memory_diagnostics_sources}
-    ${demos_memory_diagnostics_headers}
-  )
-endif()
-
-# The app feature remains default-OFF, but GUI test builds still compile
-# and exercise the collector/model through this test-only library.
-if(BUILD_TESTING AND TARGET dart-gui)
-  add_library(
-    demos_memory_diagnostics
-    STATIC
-    ${demos_memory_diagnostics_sources}
-    ${demos_memory_diagnostics_headers}
-  )
-  target_include_directories(
-    demos_memory_diagnostics
-    PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
-  )
-  target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui)
-  dart_demos_configure_memory_diagnostics_library(
-    demos_memory_diagnostics
-    PRIVATE
-  )
-  target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_17)
-  set_target_properties(
-    demos_memory_diagnostics
-    PROPERTIES POSITION_INDEPENDENT_CODE ON
-  )
-
-  if(
-    BUILD_TESTING
-    AND COMMAND dart_add_test
-    AND
-      EXISTS "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
-  )
-    if(NOT TARGET GTest::gtest)
-      find_package(GTest MODULE REQUIRED)
-    endif()
-    dart_add_test(
-      "unit"
-      UNIT_examples_demos_MemoryDiagnostics
-      "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
-      "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics.cpp"
-    )
-    target_link_libraries(
-      UNIT_examples_demos_MemoryDiagnostics
-      demos_memory_diagnostics
-    )
-    set_tests_properties(
-      UNIT_examples_demos_MemoryDiagnostics
-      PROPERTIES LABELS "examples;gui;memory-diagnostics"
-    )
-    if(TARGET tests)
-      add_dependencies(tests UNIT_examples_demos_MemoryDiagnostics)
-    endif()
-    if(TARGET tests_and_run)
-      add_dependencies(tests_and_run UNIT_examples_demos_MemoryDiagnostics)
-    endif()
-  endif()
-endif()
-
-if(BUILD_TESTING AND TARGET dart-gui AND COMMAND dart_add_test)
-  if(NOT TARGET GTest::gtest)
-    find_package(GTest MODULE REQUIRED)
-  endif()
-  dart_add_test(
-    "unit"
-    UNIT_examples_demos_GuiScaling
-    tests/test_gui_scaling.cpp
-    Theme.cpp
-  )
-  target_include_directories(
-    UNIT_examples_demos_GuiScaling
-    PRIVATE "${CMAKE_CURRENT_LIST_DIR}"
-  )
-  target_link_libraries(UNIT_examples_demos_GuiScaling dart-gui)
-  set_tests_properties(
-    UNIT_examples_demos_GuiScaling
-    PROPERTIES
-      LABELS "examples;gui;dpi"
-      FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
-  )
-  if(TARGET tests)
-    add_dependencies(tests UNIT_examples_demos_GuiScaling)
-  endif()
-  if(TARGET tests_and_run)
-    add_dependencies(tests_and_run UNIT_examples_demos_GuiScaling)
-  endif()
-endif()
-
 # The scene ports (examples/demos/scenes/*.cpp) live in a subdirectory, so they
 # cannot be picked up by dart_build_target_in_source()'s non-recursive
 # `file(GLOB srcs "*.cpp" "*.hpp")`. Compile them into a small static library
@@ -423,7 +258,7 @@ if(DART_IN_SOURCE_BUILD)
 
   if(TARGET ${example_name})
     dart_demos_link_optional_collision_backends(${example_name})
-    dart_demos_configure_memory_diagnostics(${example_name})
+    dart_demos_check_memory_diagnostics_compiled_out(${example_name})
   endif()
 
   foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
@@ -442,7 +277,7 @@ if(DART_IN_SOURCE_BUILD)
       dart-demos-scenes
     )
     dart_demos_link_optional_collision_backends(${alias_scene})
-    dart_demos_configure_memory_diagnostics(${alias_scene})
+    dart_demos_check_memory_diagnostics_compiled_out(${alias_scene})
   endforeach()
 
   if(TARGET examples)
@@ -451,18 +286,23 @@ if(DART_IN_SOURCE_BUILD)
 endif()
 
 if(BUILD_TESTING AND TARGET dart-demos)
-  if(COMMAND dart_add_test)
-    set(demos_host_test_srcs ${srcs})
-    list(FILTER demos_host_test_srcs EXCLUDE REGEX "(main|Registry)\\.cpp$")
+  # Its only remaining case needs Linux and the model assets; elsewhere the
+  # executable would run zero tests.
+  if(
+    COMMAND dart_add_test
+    AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
+    AND DART_DEMOS_HAVE_MODEL_ASSETS
+  )
+    if(NOT TARGET GTest::gtest)
+      find_package(GTest MODULE REQUIRED)
+    endif()
     dart_add_test(
       "unit"
       UNIT_examples_demos_SceneCycle
       tests/test_scene_cycle.cpp
-      ${demos_host_test_srcs}
     )
     target_link_libraries(UNIT_examples_demos_SceneCycle dart-demos-scenes)
     dart_demos_link_optional_collision_backends(UNIT_examples_demos_SceneCycle)
-    dart_demos_configure_memory_diagnostics(UNIT_examples_demos_SceneCycle)
     set_tests_properties(
       UNIT_examples_demos_SceneCycle
       PROPERTIES LABELS "examples;gui"
@@ -473,6 +313,8 @@ if(BUILD_TESTING AND TARGET dart-demos)
     if(TARGET tests_and_run)
       add_dependencies(tests_and_run UNIT_examples_demos_SceneCycle)
     endif()
+  elseif(COMMAND dart_format_add)
+    dart_format_add(tests/test_scene_cycle.cpp)
   endif()
   if(TARGET tests)
     add_dependencies(tests dart-demos)

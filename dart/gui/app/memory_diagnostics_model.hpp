@@ -8,8 +8,8 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
-#define DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
+#ifndef DART_GUI_APP_MEMORY_DIAGNOSTICS_MODEL_HPP_
+#define DART_GUI_APP_MEMORY_DIAGNOSTICS_MODEL_HPP_
 
 #include <functional>
 #include <optional>
@@ -20,7 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 
 inline constexpr char kMemoryDiagnosticsSchema[] = "dart.memory-diagnostics.v2";
 inline constexpr char kProcessResidentBytesKey[] = "process.resident_bytes";
@@ -347,6 +347,6 @@ private:
   std::size_t mHistoryCount{0};
 };
 
-} // namespace dart::examples::demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
+#endif // DART_GUI_APP_MEMORY_DIAGNOSTICS_MODEL_HPP_
