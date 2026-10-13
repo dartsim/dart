@@ -46,12 +46,11 @@ macOS uses native Retina rendering with logical window coordinates.
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
   (`Theme.*`), the scene registry, and the persistent chrome (simulation
   toolbar, `Demos` navigator, `Diagnostics` panel, and the visual-debugging
-  panels). It swaps the active scene at runtime. On docking-ImGui builds
-  (`pixi run demos`, whose `config-demos` step selects the bundled docking
-  ImGui) the chrome opens as a dockable workspace — panels can be dragged,
-  split, and re-tabbed, and View > "Reset layout" restores the default
-  arrangement; system-ImGui builds keep the fixed layout, sized from measured
-  content so it stays intact at any `--gui-scale`.
+  panels). It swaps the active scene at runtime. The bundled ImGui is the
+  docking release, so the chrome opens as a dockable workspace — panels can
+  be dragged, split, and re-tabbed, and View > "Reset layout" restores the
+  default arrangement; builds against a vanilla system ImGui keep the fixed
+  layout, sized from measured content so it stays intact at any `--gui-scale`.
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked
@@ -83,7 +82,7 @@ Memory tab, per-frame branch, collector code, or diagnostics-only platform
 link. Enable the feature explicitly in the existing Pixi-configured build:
 
 ```bash
-pixi run config-demos
+pixi run config
 pixi run cmake -S . -B build/default/cpp/Release \
   -DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON
 pixi run cmake --build build/default/cpp/Release --target dart-demos

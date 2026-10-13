@@ -95,6 +95,11 @@ public:
   /// If you have a ray cloud, then using updateOccupancy(PointClout, ...) is
   /// more efficient.
   ///
+  /// Rays and point clouds are inserted at float precision, as OctoMap stores
+  /// them, while getOccupancy() looks up cells at double precision. A ray
+  /// endpoint that lies exactly on a voxel boundary may therefore be stored
+  /// in the neighboring cell of the one getOccupancy() reads.
+  ///
   /// \param from Origin of sensor in global coordinates.
   /// \param to Endpoint of measurement in global coordinates.
   void updateOccupancy(const Eigen::Vector3d& from, const Eigen::Vector3d& to);

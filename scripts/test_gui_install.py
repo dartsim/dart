@@ -40,6 +40,16 @@ def main() -> None:
     original.rename(relocated)
     if (relocated / "include/dart/gui/detail").exists():
         raise RuntimeError("Private GUI implementation headers were installed")
+    cache = (build_dir / "CMakeCache.txt").read_text()
+    use_system_imgui = re.search(
+        r"^DART_USE_SYSTEM_IMGUI:BOOL=(.*)$", cache, re.MULTILINE
+    ).group(1)
+    if use_system_imgui == "OFF":
+        # Both target and legacy-variable consumers must prefer the bundled
+        # docking headers over another ImGui in the same prefix.
+        (relocated / "include/imgui.h").write_text(
+            '#error "<imgui.h> resolved to a non-DART ImGui header"\n'
+        )
 
     licenses = relocated / "share/licenses/dart/filament"
     notice_manifest = (source_dir / "cmake/DARTFilamentNotices.cmake").read_text()
@@ -91,6 +101,7 @@ def main() -> None:
             "-G",
             "Ninja",
             "-DCMAKE_BUILD_TYPE=Release",
+            f"-DDART_TEST_USE_SYSTEM_IMGUI={use_system_imgui}",
             f"-DDART_DIR={relocated / 'share/dart/cmake'}",
             "-DCMAKE_PREFIX_PATH=" + ";".join(str(path) for path in prefixes),
         ],
