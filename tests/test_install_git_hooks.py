@@ -230,10 +230,14 @@ def test_pre_push_blocks_cherry_picked_local_path(tmp_path, leak, new_ref):
 
 def test_pre_push_allows_clean_updates_and_branch_deletion(tmp_path):
     repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
     assert _install(repo, env).returncode == 0
     git("commit", "--allow-empty", "-qm", "Public change")
+    head = git("rev-parse", "HEAD").stdout.strip()
     pushed = git("push", "origin", "main", "HEAD:refs/heads/topic")
     assert pushed.stderr.count("DART pre-push: scanning") == 2
+    # The existing ref scans its range; the new ref scans only its unpublished commit.
+    assert pushed.stderr.count(f"({base}..{head})") == 2
     result = git("push", "origin", ":refs/heads/topic")
     assert "--commit-range" not in result.stderr
     assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
@@ -262,7 +266,12 @@ def test_pre_push_fetches_missing_remote_base_without_changing_refs(tmp_path, ne
     assert _install(repo, env).returncode == 0
     target = "topic" if new_ref else "main"
     result = git("push", "--force", "origin", f"HEAD:refs/heads/{target}")
-    assert "DART pre-push: scanning" in result.stderr
+    remote_tip = git("-C", str(tmp_path / "other"), "rev-parse", "HEAD").stdout.strip()
+    # The base is fetched either way; a new ref at a published commit has nothing to scan.
+    assert (
+        git("cat-file", "-e", f"{remote_tip}^{{commit}}", check=False).returncode == 0
+    )
+    assert ("DART pre-push: scanning" in result.stderr) is not new_ref
     assert fetch_head.read_text() == "Keep existing fetch state\n"
     # A successful push may update its tracking ref, but fetching the base must not.
     if new_ref:
@@ -353,10 +362,11 @@ def test_pre_push_skips_unavailable_gate_and_honors_local_hook(
         git("push", "origin", ":refs/heads/topic")
 
 
-def test_pre_push_new_ref_uses_remote_default_branch_merge_base(tmp_path):
+def test_pre_push_new_ref_skips_commits_on_remote_default_branch(tmp_path):
     repo, env, git = _push_repo(tmp_path)
     private_path = "/home/" + "example/private.md"
     git("commit", "--allow-empty", "-qm", private_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
     git("push", "origin", "HEAD:refs/heads/trunk")
     git(
         "--git-dir",
@@ -367,9 +377,424 @@ def test_pre_push_new_ref_uses_remote_default_branch_merge_base(tmp_path):
     )
     assert _install(repo, env).returncode == 0
     git("commit", "--allow-empty", "-qm", "Public change")
+    head = git("rev-parse", "HEAD").stdout.strip()
     result = git("push", "origin", "HEAD:refs/heads/topic")
-    assert "DART pre-push: scanning" in result.stderr
+    assert f"DART pre-push: scanning HEAD ({base}..{head})" in result.stderr
     assert private_path not in result.stdout
+
+
+@pytest.mark.parametrize("leak", [False, True])
+def test_pre_push_new_ref_excludes_published_release_commits(tmp_path, leak):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    published_path = "/home/" + "example/published.md"
+    (repo / "published.md").write_text(published_path + "\n")
+    git("add", "published.md")
+    git("commit", "-qm", "Published release fixture")
+    git("push", "origin", "release")
+    release_tip = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "main")
+    git("commit", "--allow-empty", "-qm", "Main-only change")
+    git("push", "origin", "main")
+    git("checkout", "-b", "topic", "release")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n" if leak else "Public summary\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert f"DART pre-push: scanning HEAD ({release_tip}..{head})" in result.stderr
+    assert published_path not in result.stdout
+    if leak:
+        assert result.returncode != 0
+        assert private_path in result.stdout
+        assert "push blocked" in result.stderr
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+    else:
+        assert result.returncode == 0, result.stderr
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout.strip() == (
+            f"{head}\trefs/heads/topic"
+        )
+
+
+@pytest.mark.parametrize("leak", [False, True])
+def test_pre_push_new_ref_merging_published_branches_scans_only_new_commits(
+    tmp_path, leak
+):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    published_path = "/home/" + "example/published.md"
+    (repo / "published.md").write_text(published_path + "\n")
+    git("add", "published.md")
+    git("commit", "-qm", "Published release fixture")
+    fixture_commit = git("rev-parse", "HEAD").stdout.strip()
+    git("rm", "-q", "published.md")
+    git("commit", "-qm", "Remove the published fixture")
+    git("push", "origin", "release")
+    git("checkout", "main")
+    git("commit", "--allow-empty", "-qm", "Main-only change")
+    git("push", "origin", "main")
+    # A new branch merging two published branches must not rescan either history.
+    git("checkout", "-b", "topic")
+    git("merge", "-q", "--no-edit", "release")
+    merge = git("rev-parse", "HEAD").stdout.strip()
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n" if leak else "Public summary\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert f"DART pre-push: scanning HEAD ({merge}^!)" in result.stderr
+    assert f"DART pre-push: scanning HEAD ({head}^!)" in result.stderr
+    assert fixture_commit not in result.stderr
+    assert published_path not in result.stdout
+    if leak:
+        assert result.returncode != 0
+        assert private_path in result.stdout
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+    else:
+        assert result.returncode == 0, result.stderr
+
+
+def test_pre_push_new_ref_keeps_stale_tracking_tip_published(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    published_path = "/home/" + "example/published.md"
+    (repo / "published.md").write_text(published_path + "\n")
+    git("add", "published.md")
+    git("commit", "-qm", "Published release fixture")
+    git("push", "origin", "release")
+    fixture_commit = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "-b", "topic")
+    (repo / "notes.md").write_text("Public summary\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    # The remote release branch advances to a commit this clone does not have.
+    other = tmp_path / "other"
+    git("clone", "-q", "--branch", "release", str(tmp_path / "remote.git"), str(other))
+    git(
+        "-C",
+        str(other),
+        "-c",
+        "user.name=DART Test",
+        "-c",
+        "user.email=test@example.com",
+        "commit",
+        "--allow-empty",
+        "-qm",
+        "Later release change",
+    )
+    git("-C", str(other), "push", "-q", "origin", "release")
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode == 0, result.stderr
+    assert f"DART pre-push: scanning HEAD ({fixture_commit}..{head})" in result.stderr
+    assert published_path not in result.stdout
+
+
+def test_pre_push_new_ref_ignores_tracking_tips_of_another_push_repository(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Fetch-only change")
+    git("push", "origin", "release")
+    leak = git("rev-parse", "HEAD").stdout.strip()
+    # Pushes go to another repository whose release branch never received it.
+    git("init", "-q", "--bare", str(tmp_path / "push.git"))
+    git(
+        "--git-dir",
+        str(tmp_path / "push.git"),
+        "fetch",
+        "-q",
+        str(tmp_path / "remote.git"),
+        "main:main",
+        "main:release",
+    )
+    git("remote", "set-url", "--push", "origin", str(tmp_path / "push.git"))
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0
+    assert f"..{leak})" in result.stderr
+    assert private_path in result.stdout
+    assert git("ls-remote", str(tmp_path / "push.git"), "refs/heads/topic").stdout == ""
+
+
+def test_pre_push_new_ref_scans_a_linear_branch_in_one_run(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
+    for index in range(5):
+        git("commit", "--allow-empty", "-qm", f"Topic change {index}")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic")
+
+    # One checker run covers the whole unpublished range.
+    assert result.stderr.count("DART pre-push: scanning") == 1
+    assert f"DART pre-push: scanning HEAD ({base}..{head})" in result.stderr
+
+
+def test_pre_push_new_ref_ignores_tracking_tips_left_by_a_previous_url(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
+    other = tmp_path / "other.git"
+    git("init", "-q", "--bare", str(other))
+    git(
+        "push",
+        "-q",
+        str(other),
+        f"{base}:refs/heads/main",
+        f"{base}:refs/heads/release",
+    )
+    git("checkout", "-b", "release")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Published to the first repository only")
+    git("push", "origin", "release")
+    git("commit", "--allow-empty", "-qm", "Clean descendant")
+    # The retargeted remote keeps refs/remotes/origin/release from the old URL.
+    git("remote", "set-url", "origin", str(other))
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0
+    assert private_path in result.stdout
+    assert git("ls-remote", str(other), "refs/heads/topic").stdout == ""
+
+
+def test_pre_push_new_ref_blocks_when_text_tools_fail(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    git("commit", "--allow-empty", "-qm", "Published release change")
+    git("push", "origin", "release")
+    git("checkout", "main")
+    git("commit", "--allow-empty", "-qm", "Main-only change")
+    git("push", "origin", "main")
+    git("checkout", "-b", "topic")
+    git("merge", "-q", "--no-edit", "release")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    assert _install(repo, env).returncode == 0
+    # Selecting per-commit ranges must not depend on tools that can fail.
+    broken = tmp_path / "broken-bin"
+    broken.mkdir()
+    for tool in ("sed", "grep"):
+        (broken / tool).write_text("#!/bin/sh\nexit 23\n")
+        (broken / tool).chmod(0o755)
+    env["PATH"] = f"{broken}{os.pathsep}{env['PATH']}"
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0
+    assert private_path in result.stdout
+    assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+
+
+@pytest.mark.parametrize("removal", ["delete", "rename"])
+def test_pre_push_new_ref_recovers_checker_when_release_base_lacks_it(
+    tmp_path, removal
+):
+    repo, env, git = _push_repo(tmp_path)
+    checker_revision = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "-b", "release")
+    git("rm", "scripts/check_local_paths.py")
+    git("commit", "-qm", "Release without checker")
+    git("push", "origin", "release")
+    release_tip = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "main")
+    git("commit", "--allow-empty", "-qm", "Main-only change")
+    git("push", "origin", "main")
+    git("checkout", "-b", "topic", "release")
+    git("checkout", "main", "--", "scripts/check_local_paths.py")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+    if removal == "delete":
+        git("rm", "scripts/check_local_paths.py")
+    else:
+        git(
+            "mv", "scripts/check_local_paths.py", "scripts/renamed_check_local_paths.py"
+        )
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0, result.stderr
+    assert (
+        f"using tracked scripts/check_local_paths.py from {checker_revision}"
+        in result.stderr
+    )
+    assert f"DART pre-push: scanning HEAD ({release_tip}..{head})" in result.stderr
+    assert private_path in result.stdout
+    assert "push blocked" in result.stderr
+    assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+
+
+def test_pre_push_new_ref_skips_unavailable_nondefault_branch_heads(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    other = tmp_path / "other"
+    git("clone", str(tmp_path / "remote.git"), str(other))
+    git("-C", str(other), "checkout", "-b", "remote-only")
+    git(
+        "-C",
+        str(other),
+        "-c",
+        "user.name=DART Test",
+        "-c",
+        "user.email=test@example.com",
+        "commit",
+        "--allow-empty",
+        "-qm",
+        "Remote-only change",
+    )
+    git("-C", str(other), "push", "origin", "remote-only")
+    remote_tip = git("-C", str(other), "rev-parse", "HEAD").stdout.strip()
+    assert git("cat-file", "-e", f"{remote_tip}^{{commit}}", check=False).returncode
+    base = git("rev-parse", "HEAD").stdout.strip()
+    git("commit", "--allow-empty", "-qm", "Public topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    fetch_head = repo / ".git/FETCH_HEAD"
+    fetch_head.write_text("Keep existing fetch state\n")
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic")
+
+    assert f"DART pre-push: scanning HEAD ({base}..{head})" in result.stderr
+    assert git("cat-file", "-e", f"{remote_tip}^{{commit}}", check=False).returncode
+    assert fetch_head.read_text() == "Keep existing fetch state\n"
+
+
+@pytest.mark.parametrize("leak", [False, True])
+def test_pre_push_new_ref_does_not_lazy_fetch_other_branch_heads(tmp_path, leak):
+    repo, env, git = _push_repo(tmp_path)
+    env.pop("GIT_NO_LAZY_FETCH", None)
+    remote = tmp_path / "remote.git"
+    for setting in ("uploadpack.allowFilter", "uploadpack.allowAnySHA1InWant"):
+        git("--git-dir", str(remote), "config", setting, "true")
+    git("checkout", "-b", "remote-only")
+    git("commit", "--allow-empty", "-qm", "Remote-only change")
+    git("push", "origin", "remote-only")
+    remote_tip = git("rev-parse", "HEAD").stdout.strip()
+    partial = tmp_path / "partial"
+    clone = git(
+        "clone",
+        "--filter=blob:none",
+        "--single-branch",
+        "--branch=main",
+        remote.as_uri(),
+        str(partial),
+        check=False,
+    )
+    if "unknown option" in clone.stderr or "filtering not recognized" in clone.stderr:
+        pytest.skip("local Git does not support filtered partial clones")
+    assert clone.returncode == 0, clone.stderr
+    assert (
+        git(
+            "-C", str(partial), "config", "--get", "remote.origin.promisor"
+        ).stdout.strip()
+        == "true"
+    )
+
+    def probe_remote_tip():
+        return subprocess.run(
+            ["git", "cat-file", "-e", f"{remote_tip}^{{commit}}"],
+            cwd=partial,
+            env={**env, "GIT_NO_LAZY_FETCH": "1"},
+            capture_output=True,
+        )
+
+    if probe_remote_tip().returncode == 0:
+        pytest.skip("local Git does not support GIT_NO_LAZY_FETCH")
+    git("-C", str(partial), "config", "user.name", "DART Test")
+    git("-C", str(partial), "config", "user.email", "test@example.com")
+    base = git("-C", str(partial), "rev-parse", "HEAD").stdout.strip()
+    private_path = "/home/" + "example/private.md"
+    (partial / "notes.md").write_text(
+        private_path + "\n" if leak else "Public summary\n"
+    )
+    git("-C", str(partial), "add", "notes.md")
+    git("-C", str(partial), "commit", "-qm", "Topic change")
+    head = git("-C", str(partial), "rev-parse", "HEAD").stdout.strip()
+    assert _install(partial, env).returncode == 0
+
+    result = git(
+        "-C", str(partial), "push", "origin", "HEAD:refs/heads/topic", check=False
+    )
+
+    assert f"DART pre-push: scanning HEAD ({base}..{head})" in result.stderr
+    assert probe_remote_tip().returncode != 0
+    if leak:
+        assert result.returncode != 0
+        assert private_path in result.stdout
+        assert "push blocked" in result.stderr
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+    else:
+        assert result.returncode == 0, result.stderr
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout.strip() == (
+            f"{head}\trefs/heads/topic"
+        )
+
+
+@pytest.mark.parametrize(
+    "command,option",
+    [
+        ("ls-remote", "--symref"),
+        ("ls-remote", "--heads"),
+        ("merge-base", None),
+        ("rev-list", "--count"),
+        ("--literal-pathspecs", "rev-list"),
+    ],
+)
+def test_pre_push_new_ref_fails_closed_on_lookup_or_scan_error(
+    tmp_path, command, option
+):
+    repo, env, git = _push_repo(tmp_path)
+    git("commit", "--allow-empty", "-qm", "Public topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+    real_git = shutil.which("git")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    executable = bin_dir / "git"
+    condition = f'[ "$1" = {shlex.quote(command)} ]'
+    if option:
+        condition += f' && [ "$2" = {shlex.quote(option)} ]'
+    executable.write_text(
+        f"#!/bin/sh\nif {condition}; then exit 23; fi\n"
+        f'exec {shlex.quote(real_git)} "$@"\n'
+    )
+    executable.chmod(0o755)
+    env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+
+    result = subprocess.run(
+        [str(_hook(repo, "pre-push")), "origin", str(tmp_path / "remote.git")],
+        cwd=repo,
+        env=env,
+        input=f"HEAD {head} refs/heads/topic {'0' * 40}\n",
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
 
 
 @pytest.mark.parametrize("history", ["empty-remote", "unrelated"])
@@ -387,9 +812,11 @@ def test_pre_push_without_merge_base_scans_all_local_history(tmp_path, history):
         git("checkout", "--orphan", "isolated")
     private_path = "/home/" + "example/private.md"
     git("commit", "--allow-empty", "-qm", private_path)
+    head = git("rev-parse", "HEAD").stdout.strip()
     assert _install(repo, env).returncode == 0
     result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
     assert result.returncode != 0
+    assert f"DART pre-push: scanning HEAD ({head})" in result.stderr
     assert private_path in result.stdout
     assert "push blocked" in result.stderr
 
