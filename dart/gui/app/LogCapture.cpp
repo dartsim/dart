@@ -91,8 +91,14 @@ class LogCapture::TeeBuf : public std::streambuf
 {
 public:
   TeeBuf(
-      std::streambuf* original, CapturedLogLevel fallbackLevel, LineSink sink)
-    : mOriginal(original), mFallbackLevel(fallbackLevel), mSink(std::move(sink))
+      std::streambuf* original,
+      CapturedLogLevel fallbackLevel,
+      LineSink sink,
+      bool& inSink)
+    : mOriginal(original),
+      mFallbackLevel(fallbackLevel),
+      mSink(std::move(sink)),
+      mInSink(inSink)
   {
   }
 
@@ -154,16 +160,16 @@ private:
   CapturedLogLevel mFallbackLevel;
   LineSink mSink;
   std::string mLineBuf;
-  bool mInSink = false;
+  bool& mInSink;
 };
 
 //==============================================================================
 LogCapture::LogCapture(LineSink sink)
 {
   mCoutBuf = std::make_unique<TeeBuf>(
-      std::cout.rdbuf(), CapturedLogLevel::Info, sink);
+      std::cout.rdbuf(), CapturedLogLevel::Info, sink, mInSink);
   mCerrBuf = std::make_unique<TeeBuf>(
-      std::cerr.rdbuf(), CapturedLogLevel::Warning, sink);
+      std::cerr.rdbuf(), CapturedLogLevel::Warning, sink, mInSink);
   mOldCoutBuf = std::cout.rdbuf(mCoutBuf.get());
   mOldCerrBuf = std::cerr.rdbuf(mCerrBuf.get());
 }

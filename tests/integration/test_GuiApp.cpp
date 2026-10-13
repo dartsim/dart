@@ -31,6 +31,21 @@
 #include <cstdio>
 
 namespace dart::gui::app {
+
+class AppTestAccess
+{
+public:
+  static void startSimulation(App& host)
+  {
+    host.startSimulation();
+  }
+
+  static void renderToolbar(App& host)
+  {
+    host.renderToolbar();
+  }
+};
+
 namespace {
 
 class GuiScaleThemeTest : public ::testing::Test
@@ -339,6 +354,23 @@ TEST(GuiAppControl, BuildersValidateAndSanitizeValues)
   EXPECT_THROW(text->addButton("child"), std::logic_error);
   EXPECT_THROW(text->setRange(0.0, 1.0), std::logic_error);
   EXPECT_THROW(text->push(1.0), std::logic_error);
+}
+
+//==============================================================================
+TEST(GuiAppControl, Vec3DragSpeedMustFitInFloat)
+{
+  auto panel = Control::makePanel();
+  const double limit = std::numeric_limits<float>::max();
+  const double tooLarge
+      = std::nextafter(limit, std::numeric_limits<double>::infinity());
+  for (const double sign : {-1.0, 1.0}) {
+    EXPECT_NO_THROW(
+        panel->addVec3("limit", Eigen::Vector3d::Zero(), sign * limit));
+    EXPECT_THROW(
+        panel->addVec3("overflow", Eigen::Vector3d::Zero(), sign * tooLarge),
+        std::invalid_argument);
+  }
+  EXPECT_NO_THROW(panel->addVec3("zero", Eigen::Vector3d::Zero(), 0.0));
 }
 
 //==============================================================================
@@ -964,6 +996,111 @@ TEST(SceneContract, KinematicScenesDisablePlayUntilTornDown)
 }
 
 //==============================================================================
+TEST(SceneContract, ToolbarDisablesPlayButAllowsStepForKinematicScenes)
+{
+  ScopedImGuiFrameContext context;
+  App* host = nullptr;
+  const auto checkToolbar = [&](bool allowSimulation) {
+    auto setup = emptySetup();
+    setup.allowSimulation = allowSimulation;
+    setup.onActivate = [&, allowSimulation](SceneContext& ctx) {
+      ctx.viewer()->simulate(false);
+      ImVec2 play;
+      ImVec2 step;
+      const auto draw = [&] {
+        ImGui::SetWindowSize(ImVec2(780.0f, 400.0f));
+        const ImVec2 start = ImGui::GetCursorScreenPos();
+        const auto& style = ImGui::GetStyle();
+        const float playWidth
+            = ImGui::CalcTextSize("Play").x + 2.0f * style.FramePadding.x;
+        const float stepWidth
+            = ImGui::CalcTextSize("Step").x + 2.0f * style.FramePadding.x;
+        const float playX
+            = start.x + ImGui::CalcTextSize("DART").x
+              + ImGui::CalcTextSize("demos").x
+              + ImGui::CalcTextSize(allowSimulation ? "dynamic" : "kinematic").x
+              + 3.0f * style.ItemSpacing.x;
+        play = ImVec2(
+            playX + 0.5f * playWidth, start.y + 0.5f * ImGui::GetFrameHeight());
+        step = ImVec2(
+            playX + playWidth + style.ItemSpacing.x + 0.5f * stepWidth, play.y);
+        AppTestAccess::renderToolbar(*host);
+      };
+      context.frame(draw);
+      context.frame(draw);
+      auto& io = ImGui::GetIO();
+      io.AddMousePosEvent(play.x, play.y);
+      context.frame(draw);
+      io.AddMouseButtonEvent(0, true);
+      context.frame([&] {
+        draw();
+        EXPECT_EQ(ImGui::IsAnyItemActive(), allowSimulation);
+      });
+      io.AddMouseButtonEvent(0, false);
+      context.frame(draw);
+      EXPECT_EQ(ctx.viewer()->isSimulating(), allowSimulation);
+
+      if (!allowSimulation) {
+        const double time = ctx.worldNode()->getWorld()->getTime();
+        io.AddMousePosEvent(step.x, step.y);
+        context.frame(draw);
+        io.AddMouseButtonEvent(0, true);
+        context.frame(draw);
+        io.AddMouseButtonEvent(0, false);
+        context.frame(draw);
+        EXPECT_GT(ctx.worldNode()->getWorld()->getTime(), time);
+      }
+    };
+    return setup;
+  };
+  App app(
+      {makeScene("kinematic", [&] { return checkToolbar(false); }),
+       makeScene("dynamic", [&] { return checkToolbar(true); })},
+      1.0);
+  host = &app;
+  EXPECT_EQ(app.cycleScenes(0), 0);
+}
+
+//==============================================================================
+TEST(SceneContract, InteractiveStartOnKinematicSceneResumesDynamicSimulation)
+{
+  for (const bool requestStart : {false, true}) {
+    for (const bool ownerAllowsSimulation : {false, true}) {
+      App* host = nullptr;
+      int dynamicActivations = 0;
+      const Scene kinematic = makeScene("kinematic", [&] {
+        auto setup = emptySetup();
+        setup.allowSimulation = false;
+        setup.onActivate = [&](SceneContext& ctx) {
+          EXPECT_FALSE(ctx.viewer()->isSimulating());
+          if (requestStart)
+            AppTestAccess::startSimulation(*host);
+          EXPECT_FALSE(ctx.viewer()->isSimulating());
+        };
+        return setup;
+      });
+      const Scene dynamic = makeScene("dynamic", [&] {
+        auto setup = emptySetup();
+        setup.onActivate = [&](SceneContext& ctx) {
+          ++dynamicActivations;
+          EXPECT_EQ(
+              ctx.viewer()->isAllowingSimulation(), ownerAllowsSimulation);
+          EXPECT_EQ(
+              ctx.viewer()->isSimulating(),
+              requestStart && ownerAllowsSimulation);
+        };
+        return setup;
+      });
+      App app({kinematic, dynamic}, 1.0);
+      host = &app;
+      app.getViewer()->allowSimulation(ownerAllowsSimulation);
+      EXPECT_EQ(app.cycleScenes(0), 0);
+      EXPECT_EQ(dynamicActivations, 2);
+    }
+  }
+}
+
+//==============================================================================
 TEST(SceneContract, RetainedViewerNoLongerReachesTheHost)
 {
   std::shared_ptr<dart::gui::Viewer> viewer;
@@ -1211,6 +1348,31 @@ TEST(LogCapture, SinkWritesAreForwardedButNotCapturedAgain)
   const std::string output = testing::internal::GetCapturedStderr();
   EXPECT_EQ(lines, 1);
   EXPECT_NE(output.find("echo: Error first"), std::string::npos);
+}
+
+//==============================================================================
+TEST(LogCapture, SinkWritesToTheOtherStreamAreNotCapturedAgain)
+{
+  for (const bool fromCout : {false, true}) {
+    std::vector<std::string> lines;
+    testing::internal::CaptureStdout();
+    testing::internal::CaptureStderr();
+    {
+      LogCapture capture([&](CapturedLogLevel, const std::string& line) {
+        lines.push_back(line);
+        // Bound recursive echoes so a regression fails without hanging.
+        if (lines.size() < 5)
+          (fromCout ? std::cerr : std::cout) << "echo: " << line << '\n';
+      });
+      (fromCout ? std::cout : std::cerr) << "first\n";
+      (fromCout ? std::cerr : std::cout) << "second\n";
+    }
+    const auto err = testing::internal::GetCapturedStderr();
+    const auto out = testing::internal::GetCapturedStdout();
+    EXPECT_EQ(lines, (std::vector<std::string>{"first", "second"}));
+    EXPECT_EQ(fromCout ? out : err, "first\n");
+    EXPECT_EQ(fromCout ? err : out, "echo: first\nsecond\necho: second\n");
+  }
 }
 
 //==============================================================================
