@@ -7,7 +7,7 @@ baseline and becomes ready for multi-physics, batched and replayable simulation.
 tracks its roadmap status. The durable API and engine rules live in the
 [DART 7 Python API design](../../design/dart7_python_api.md).
 
-- [Decisions](decisions.md): the maintainer decisions D0–D32 and D31a, with
+- [Decisions](decisions.md): the maintainer decisions D0–D32, D31a and D31b, with
   their rationale.
 - [Verification](verification.md): evidence, review passes and gates per
   packet.
@@ -166,7 +166,7 @@ batch.step(20)
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
 | M5 | dartpy 7.0 API | Planned | [Order](#m5-dartpy-70-api); the rename table needs maintainer approval first |
 | M6a | Filament backend port | Merged in #3696 | [Interface](#m6a-interface); remaining release gates below |
-| M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release |
+| M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release; includes the D31b demo host ([demo consolidation](../dart7_python_demos/README.md)) |
 | M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and the remaining rendering release gates |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
@@ -256,10 +256,12 @@ Release rules:
   work that misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
-  example runner, and the scheduled lane against the gz-physics development
-  branch.
+  example runner's remaining scenes (the C++ `dart-demos` app stays until the
+  Python catalog reaches parity, D31b), and the scheduled lane against the
+  gz-physics development branch.
 - While 7.0 waits for M6b and the remaining rendering gates, only fixes and
-  M6b land on the release path.
+  M6b land on the release path. M6b includes the D31b demo host, the Python
+  demo catalog that runs on it, and the core bindings its scenes need.
 - Release candidates publish `7.0.0rcN` to PyPI. The C++ version stays numeric;
   `DARTPY_VERSION_SUFFIX` carries the candidate tag.
 - The final release needs release-candidate feedback, the codemod run on at
@@ -324,7 +326,9 @@ remains a release gate.
 module as the interim `dartpy.gui`. Main may mix styles until M6b; the
 7.0 release may not. M6b builds `dart.render` and `dart.viewer` in the 7.0
 style, ports the tutorials, docs and tests, and deletes the interim module
-before the first release candidate.
+before the first release candidate. New viewer bindings land in the 7.0 style
+as `dartpy.viewer` (D31b). Demo scenes may use interim `dartpy.gui`
+primitives until M6b ports them.
 
 **OSG removal:**
 
