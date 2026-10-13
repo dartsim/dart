@@ -47,6 +47,7 @@ void SimpleFrame(nb::module_& sm);
 void Node(nb::module_& sm);
 void JacobianNode(nb::module_& sm);
 void ShapeNode(nb::module_& sm);
+void EndEffector(nb::module_& sm);
 
 void DegreeOfFreedom(nb::module_& sm);
 
@@ -75,6 +76,7 @@ void Chain(nb::module_& sm);
 void Skeleton(nb::module_& sm);
 
 void InverseKinematics(nb::module_& sm);
+void HierarchicalIK(nb::module_& sm);
 void ContactInverseDynamics(nb::module_& sm);
 void Inertia(nb::module_& sm);
 
@@ -92,6 +94,7 @@ void dart_dynamics(nb::module_& m)
   Node(sm);
   JacobianNode(sm);
   ShapeNode(sm);
+  EndEffector(sm);
 
   DegreeOfFreedom(sm);
 
@@ -120,6 +123,7 @@ void dart_dynamics(nb::module_& m)
   Skeleton(sm);
 
   InverseKinematics(sm);
+  HierarchicalIK(sm);
   ContactInverseDynamics(sm);
 
   Inertia(sm);

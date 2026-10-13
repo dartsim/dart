@@ -38,7 +38,7 @@
   #include <unistd.h>
 #endif
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -1050,4 +1050,4 @@ void DiagnosticSession::clearGenerationLocalState() noexcept
   mObservedResidentPeakBytes.reset();
 }
 
-} // namespace dart::examples::demos
+} // namespace dart::gui::app

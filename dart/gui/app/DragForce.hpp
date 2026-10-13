@@ -30,18 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_DRAGFORCE_HPP_
-#define DART_EXAMPLES_DEMOS_DRAGFORCE_HPP_
+#ifndef DART_GUI_APP_DRAGFORCE_HPP_
+#define DART_GUI_APP_DRAGFORCE_HPP_
 
-#include "GuiBackend.hpp"
+#include <dart/gui/DragAndDrop.hpp>
+#include <dart/gui/InteractiveFrame.hpp>
+#include <dart/gui/MouseEventHandler.hpp>
+#include <dart/gui/Viewer.hpp>
 
 #include <dart/dart.hpp>
+#include <dart/external/imgui/imgui.h>
 
 #include <functional>
 #include <memory>
 #include <string>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 //==============================================================================
 /// Host-wide drag-force interaction plus gizmo-on-selection, since both are
@@ -60,7 +64,7 @@ namespace dart_demos {
 ///    drives the same spring machinery continuously toward the gizmo's
 ///    current pose instead of the momentary cursor drag.
 ///
-/// One instance is owned by DemoHost for the process lifetime. Its mouse
+/// One instance is owned by App for the process lifetime. Its mouse
 /// handler is installed once (ensureViewerConfigured()); onSceneInstalled()/
 /// reset() rebind it to each scene's world.
 ///
@@ -81,16 +85,16 @@ public:
   /// handler exists. `onPlainClickSelect` is invoked with the picked body (or
   /// nullptr for a miss) on a plain (non-Ctrl) left-click.
   void installMouseHandler(
-      GuiViewer* viewer,
+      dart::gui::Viewer* viewer,
       std::function<void(dart::dynamics::BodyNode*)> onPlainClickSelect);
 
   /// Binds the force-line visual to the newly-installed scene's world. Call
-  /// from DemoHost::installScene after `world` is set as the current world.
+  /// from App::installScene after `world` is set as the current world.
   void onSceneInstalled(const dart::simulation::WorldPtr& world);
 
   /// Releases the gizmo and clears momentary-drag state. Call from
-  /// DemoHost::teardownCurrentScene before the world is destroyed.
-  void reset(GuiViewer* viewer);
+  /// App::teardownCurrentScene before the world is destroyed.
+  void reset(dart::gui::Viewer* viewer);
 
   /// Applies the momentary drag spring and/or the gizmo spring (while
   /// running). Call from the host's composed preStep.
@@ -111,10 +115,10 @@ public:
   void attachGizmo(
       dart::dynamics::BodyNode* body,
       const dart::simulation::WorldPtr& world,
-      GuiViewer* viewer);
+      dart::gui::Viewer* viewer);
 
   /// Detaches the gizmo, if attached.
-  void detachGizmo(GuiViewer* viewer);
+  void detachGizmo(dart::gui::Viewer* viewer);
 
   /// Renders the compact "Drag: <body> |F|=.. N" toolbar status line.
   void renderToolbarStatus(double guiScale) const;
@@ -143,7 +147,7 @@ private:
       const Eigen::Vector3d& target);
   void teleportToGizmo();
 
-  GuiViewer* mViewer = nullptr;
+  dart::gui::Viewer* mViewer = nullptr;
   dart::simulation::WorldPtr mWorld;
 
   // Momentary Ctrl+drag state.
@@ -154,8 +158,8 @@ private:
 
   // Gizmo-on-selection state.
   dart::dynamics::BodyNode* mGizmoBody = nullptr;
-  demo_gui::InteractiveFramePtr mGizmoFrame;
-  demo_gui::InteractiveFrameDnD* mGizmoDnd = nullptr;
+  dart::gui::InteractiveFramePtr mGizmoFrame;
+  dart::gui::InteractiveFrameDnD* mGizmoDnd = nullptr;
 
   // Shared force-line visual, lazily bound to the active world.
   dart::dynamics::SimpleFramePtr mLineFrame;
@@ -174,6 +178,6 @@ private:
   MouseHandler* mMouseHandler = nullptr;
 };
 
-} // namespace dart_demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_DRAGFORCE_HPP_
+#endif // DART_GUI_APP_DRAGFORCE_HPP_

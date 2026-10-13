@@ -8,7 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#include "../memory_diagnostics_model.hpp"
+#include <dart/gui/app/memory_diagnostics_model.hpp>
 
 #include <gtest/gtest.h>
 
@@ -21,7 +21,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 namespace {
 
 DiagnosticMetric makeMetric(
@@ -741,4 +741,4 @@ TEST(MemoryDiagnosticsModel, GenericGuidanceKeepsQualityClaimsCautious)
 }
 
 } // namespace
-} // namespace dart::examples::demos
+} // namespace dart::gui::app

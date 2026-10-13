@@ -32,12 +32,14 @@
 
 #include "Inspector.hpp"
 
+#include <dart/gui/Viewer.hpp>
+
 #include <algorithm>
 #include <utility>
 
 #include <cmath>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -181,7 +183,7 @@ void Inspector::renderJointRow(Joint* joint)
 }
 
 //==============================================================================
-void Inspector::renderDetail(bool paused, GuiGroup* worldNode)
+void Inspector::renderDetail(bool paused, dart::gui::WorldNode* worldNode)
 {
   if (!mSelected) {
     ImGui::TextWrapped("No body selected. Click a body in the tree above.");
@@ -288,7 +290,8 @@ void Inspector::applyQueuedEdits()
 }
 
 //==============================================================================
-void Inspector::setWireframe(BodyNode* body, bool enabled, GuiGroup* worldNode)
+void Inspector::setWireframe(
+    BodyNode* body, bool enabled, dart::gui::WorldNode* worldNode)
 {
   mBodyVisualState[body].wireframe = enabled;
   if (!worldNode)
@@ -360,4 +363,4 @@ void Inspector::updateHighlight(double wallTimeSeconds)
   }
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

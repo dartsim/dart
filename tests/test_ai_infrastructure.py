@@ -4654,8 +4654,61 @@ endif()
     assert errors == []
 
 
+@pytest.mark.parametrize(
+    ("docking", "gui", "scope", "accepted"),
+    (
+        # ImGui without docking, as with a vanilla system ImGui.
+        ("OFF", "ON", "TARGET dart-gui-app", True),
+        # A GUI-off build never detects docking.
+        (None, "OFF", "TARGET dart-gui-app", True),
+        # Docking present, so the app-host test must be configured.
+        ("ON", "ON", "TARGET dart-gui-app", False),
+        ("OFF", "ON", "FALSE", False),
+    ),
+)
+def test_cmake_semantic_graph_probe_gui_app_inactive_policy(
+    tmp_path, docking, gui, scope, accepted
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    detected = (
+        ""
+        if docking is None
+        else f'set(DART_IMGUI_HAS_DOCK {docking} CACHE INTERNAL "")\n'
+    )
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_subdirectory(tests)",
+            detected + f'set(DART_BUILD_GUI {gui} CACHE BOOL "" FORCE)\n'
+            "add_library(dart-gui INTERFACE)\nadd_subdirectory(tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    integration = tmp_path / "tests/integration/CMakeLists.txt"
+    integration.write_text(
+        integration.read_text(encoding="utf-8")
+        + f'\nif({scope})\n  dart_add_test("integration" test_GuiApp)\nendif()\n',
+        encoding="utf-8",
+    )
+    (integration.parent / "test_GuiApp.cpp").write_text(
+        "int main(void) { return 0; }\n", encoding="utf-8"
+    )
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    if accepted:
+        assert errors == []
+    else:
+        assert any(
+            "neither configured nor explicitly approved as inactive" in error
+            for error in errors
+        )
+
+
 def _add_inactive_gui_sources(root: Path) -> Path:
     names = (
+        "GuiAppMemoryDiagnostics",
+        "GuiAppMemoryDiagnosticsModel",
         "GuiDescriptors",
         "GuiInteractions",
         "GuiViewer",
