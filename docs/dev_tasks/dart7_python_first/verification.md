@@ -731,18 +731,26 @@ Known gaps:
   | --- | --- |
   | M1a / WP-7.0.5 | Completed stage/baseline evidence; core bit-identical and performance gates |
   | M1b | Compiled edit/frozen membership and owned-object mutation; edited-DOF stepping after recompilation; unsupported-shape rejection |
-  | M1c | Snapshot channels/time/compatible clone/structural rejection; exact contact/sleep and hook-state checkpoint replay; parameter/topology/solver mismatch rejection |
+  | M1c | Snapshot channels/time/compatible clone and independently rebuilt World/structural rejection; exact contact/sleep and hook-state checkpoint replay; parameter/topology/solver mismatch rejection |
   | M1d | Counted-vs-serial motion, bool rejection, GIL progress, synchronized busy reads and bounded re-entrant rejection |
   | M1e / M1f | Typed nondefault primary solver; Python World and MJCF DART detector defaults |
-  | M1g | Both bounded compliant servos from nonzero state, persistent channels and global hook decimation |
+  | M1g | Both bounded compliant servos from nonzero state and against a hard limit, persistent channels and global hook decimation |
   | M1h | IMU orientation, joint-state motion, gravity-dependent support wrench and changing contacts |
-  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook, selected-row snapshot broadcasting of all channels/time and per-clone parameters |
+  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook, scalar/indices/mask writes, selected-row snapshot broadcasting of all channels/time and per-clone parameters |
   | M2 | Compiled preparation plus allocation, numeric and performance gates in the core feature PRs |
   | M3 / M4 | Optional/gated work; they do not block the required snapshot/checkpoint contracts |
   | M5 native API | Named model/frame collections, readonly copies, Transform validation and Rotation, configurable loaders/builders/ownership, manual constraints, Collider identity/shared-node capabilities, reset lifecycle, named errors and logging |
   | M5 package/tooling | Rename inventory, private-extension/wheel audits, stub-drift/new-Any/pyright checks and codemod round trips in their dedicated PRs |
-  | M6b | RGB, metric depth, node segmentation lookup, Material, passive sync, bounded managed viewing and legacy GUI import removal |
+  | M6b | RGB color precedence, asymmetric camera axes, metric depth, multiple-object node segmentation lookup, Material, passive sync, bounded managed viewing and legacy GUI import removal |
   | M7 / WP-7.0.6 / WP-7.0.8 | Fresh RC-wheel acceptance/slim import, Gazebo compatibility and separately owned maintenance wheels |
+
+  Required qualification beyond these M0 representative smoke tests remains
+  with the feature PR that removes each marker: M1c must test checkpoint
+  magic/version metadata and persisted earlier-7.y formats; M1h/M1i must test
+  nonzero seeded sensor-noise replay; M5 must test defined errors from retained
+  capability handles after aspect detachment; M6b must test cameras following
+  moving attached frames. Those APIs and serialized formats are settled by
+  their owners, rather than invented by this planning scaffold.
 
 - **Loader/default scope and roadmap follow-up on 2026-10-13** (`c04a253b4` review):
   - The dashboard and critical-path summary now start with the remaining M1
@@ -872,6 +880,43 @@ Known gaps:
     the current missing final facade produces 11 intended API/logging failures
     and 39 setup errors; both native gates pass. Lint, check-lint and public-path
     gates pass. The last full Python run remains `740426529`.
+
+- **Representative contract and qualification-scope follow-up on 2026-10-13**
+  (`84f97f938` and `6af40c8e6` reviews):
+  - Independently reconstructing the same final robot must accept a dynamic
+    snapshot, restoring its perturbed state and clock without clone lineage.
+    Batch writes now exercise scalar broadcast, noncontiguous indices and a
+    boolean mask, observing selected and untouched rows and the source.
+  - Both servos face a hard prismatic upper limit, with saturated and
+    unsaturated targets. The provisional isolated effort observer must report
+    the bounded row effort while the limit holds motion; an unrestricted
+    reference moves. Native fixture evidence holds position/velocity within
+    `1e-9` under outward effort, with the matching limit reaction. No aggregate
+    force field is treated as the isolated motor effort.
+  - The MJCF wrapper must preserve nondefault file time step and gravity.
+    The current direct native parser still returns its default World settings;
+    this is a pending wrapper contract, not a native behavior claim. The
+    unmarked direct-parser FCL regression is retained unchanged.
+  - Gravity and Material color exports reject writes and preserve previously
+    returned arrays after later updates. Both named quaternion orders are
+    compared with an asymmetric rotation. A clone created after registration
+    must retain the manual constraint's anchor behavior.
+  - Three distinguishable rendered objects require separate segmentation
+    ownership. Off-center centroids check both camera axes; green explicit
+    Material overrides red legacy RGBA, while blue legacy RGBA remains blue.
+    Native parsing confirms the three named bodies and optical-basis geometry;
+    GPU rendering remains pending and was not executed.
+  - Four review suggestions concern required feature qualification beyond
+    this M0 scaffold: detached-handle errors (M5), seeded-noise replay
+    (M1h/M1i), versioned/older-7.y persistence fixtures (M1c), and moving
+    frame-attached cameras (M6b). The matrix and both test modules explicitly
+    require their owners to add those gates before removing feature markers.
+    No unsettled API or serialized format is invented here.
+  - Two independent final source reviews are clean. Focused guarded pytest
+    reports two native passes and 56 strict XFAILs, no XPASS. `--runxfail`
+    reports 11 intended API/logging failures and 45 setup errors from the
+    absent final World API; both native gates pass. Lint, check-lint and
+    public-path checks pass. The last full Python run remains `740426529`.
 
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame

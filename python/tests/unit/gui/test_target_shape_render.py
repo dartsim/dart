@@ -2,6 +2,8 @@
 
 The PR that removes a marker must make its test exercise the full contract in
 docs/design/dart7_python_api.md.
+M6b must add moving frame-attached-camera qualification before removing its
+marker; the free-camera smoke scene does not replace that required gate.
 
 Rendering needs a graphics device, so test-gui runs this module and test-py
 leaves it out. The device-free target-shape tests live in
@@ -17,16 +19,24 @@ import pytest
     strict=True, reason="M6b/M5: dart.render RGB, metric depth, segmentation and io.load_world are pending"
 )
 def test_renderer_outputs(tmp_path):
-    camera = dart.render.Camera.look_at(eye=(2, 0, 0.5), target=(0, 0, 0.5))
+    # M6b settles look_at's explicit-up spelling. Looking along -X with +Z up
+    # maps world +Y to image right and world +Z to image up.
+    camera = dart.render.Camera.look_at(eye=(2, 0, 0.5), target=(0, 0, 0.5), up=(0, 0, 1))
     empty = dart.render.Renderer(dart.World())
     background = empty.render(camera)
     path = tmp_path / "box.xml"
     path.write_text(
         '<mujoco><worldbody><body name="box" pos="0 0 0.5">'
         '<geom type="box" size="0.3 0.3 0.3" rgba="1 0 0 1"/>'
+        '</body><body name="upper_right" pos="0 0.45 0.8">'
+        '<geom type="box" size="0.08 0.08 0.08" rgba="1 0 0 1"/>'
+        '</body><body name="lower_left" pos="0 -0.45 0.2">'
+        '<geom type="box" size="0.08 0.08 0.08" rgba="0 0 1 1"/>'
         '</body></worldbody></mujoco>'
     )
     world = dart.io.load_world(path)
+    upper = world.multibodies["upper_right"]
+    upper.links[0].visuals[0].material = dart.Material(base_color=(0, 1, 0, 1))
     renderer = dart.render.Renderer(world)
     rgb = renderer.render(camera)
     assert rgb.shape == (480, 640, 3)
@@ -55,6 +65,30 @@ def test_renderer_outputs(tmp_path):
             scene_objects.append(link)
             scene_objects.extend(link.visuals)
     assert any(owner == item for item in scene_objects)
+    # Segmentation links the asymmetric geometry to its pixels, independent
+    # of RGB lighting. Distinct quadrants reject either mirrored camera axis.
+    def pixels_for(model):
+        objects = [model]
+        for link in model.links:
+            objects.append(link)
+            objects.extend(link.visuals)
+        foreground = np.setdiff1d(np.unique(segmentation), np.unique(background_ids))
+        identifiers = [int(value) for value in foreground
+                       if any(renderer.lookup_segmentation(int(value)) == item for item in objects)]
+        rows, columns = np.nonzero(np.isin(segmentation, identifiers))
+        assert len(rows) > 32
+        return rows, columns
+
+    for name, quadrant, channel in (("upper_right", (-1, 1), 1), ("lower_left", (1, -1), 2)):
+        rows, columns = pixels_for(world.multibodies[name])
+        assert quadrant[0] * (np.mean(rows) - 240) > 0
+        assert quadrant[1] * (np.mean(columns) - 320) > 0
+        # Interior pixel colors tolerate shading but must preserve the named
+        # dominant channel. Green overrides the asset's red legacy RGBA;
+        # blue uses the legacy RGBA when no explicit Material is assigned.
+        color = np.median(rgb[rows, columns], axis=0)
+        assert color[channel] > 32
+        assert color[channel] > max(np.delete(color, channel)) + 16
 
 
 @pytest.mark.xfail(strict=True, reason="M6b: final passive open and managed launch viewer entry points are pending")

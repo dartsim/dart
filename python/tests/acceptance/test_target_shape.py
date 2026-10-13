@@ -2,6 +2,9 @@
 
 The PR that removes a marker must make its test exercise the full contract in
 docs/design/dart7_python_api.md.
+M1c owns versioned persistence and older-format fixtures; M1h/M1i own seeded
+noise replay; M5 owns detached-capability errors; M6b owns moving frame-attached
+cameras. These required feature-PR gates are beyond the M0 smoke scaffolding.
 
 Future tests use the final facade. Builder/solver/sleep/array computation
 spellings not yet fixed by that design are provisional M1/M5 signatures.
@@ -32,8 +35,7 @@ def world():
     return dart.World()
 
 
-@pytest.fixture
-def robot(world):
+def _make_robot(world):
     # M5 settles joint-spec pose spelling; preserve this independent physical
     # fixture through the final facade, without retaining legacy aliases.
     robot = dart.Multibody(name="robot")
@@ -44,6 +46,11 @@ def robot(world):
         axis=(0, 0, 1), parent_transform=dart.Transform(translation=(0, 0.2, 0.3))))
     world.add(robot)
     return robot
+
+
+@pytest.fixture
+def robot(world):
+    return _make_robot(world)
 
 
 @pytest.mark.xfail(
@@ -71,10 +78,13 @@ def test_world_construction_keywords():
 def test_load_world_mjcf_detector_default(tmp_path):
     path = tmp_path / "world.xml"
     path.write_text(
-        '<mujoco><worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>'
+        '<mujoco><option timestep="0.002" gravity="0 0 -4.905"/>'
+        '<worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>'
     )
     world = dart.io.load_world(path)
     assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
+    assert world.time_step == 0.002
+    np.testing.assert_array_equal(world.gravity, (0, 0, -4.905))
 
 
 @pytest.mark.xfail(strict=True, reason="M1e/M5b: WorldConfig typed solver selection is pending")
@@ -362,10 +372,14 @@ def test_manual_constraint_registry(world):
     with world.edit():
         world.constraints.add(constraint)
     assert constraint in world.constraints
+    constrained = world.clone()
     for _ in range(20):
         world.step()
         reference.step()
+        constrained.step()
     np.testing.assert_allclose(body.world_transform @ np.zeros(3), anchor, rtol=0, atol=1e-9)
+    cloned_body = constrained.multibodies["anchored"].links[0]
+    np.testing.assert_allclose(cloned_body.world_transform @ np.zeros(3), anchor, rtol=0, atol=1e-9)
     free_body = reference.multibodies["anchored"].links[0]
     assert (free_body.world_transform @ np.zeros(3))[0] > anchor[0] + 0.01
 
@@ -402,6 +416,14 @@ def test_material_visual_assignment(robot):
     assert visual.material.metallic == material.metallic
     assert visual.material.roughness == material.roughness
     np.testing.assert_array_equal(visual.material.emissive, material.emissive)
+    color = material.base_color
+    assert not color.flags.writeable
+    with pytest.raises(ValueError):
+        color[0] = 0
+    # M6b settles Material value editing; old exports remain independent.
+    material.base_color = (0, 1, 0, 1)
+    np.testing.assert_array_equal(color, (1, 0, 0, 1))
+    np.testing.assert_array_equal(material.base_color, (0, 1, 0, 1))
 
 
 @pytest.mark.xfail(
@@ -460,6 +482,42 @@ def test_joint_velocity_servo(world, robot, target, kd):
     np.testing.assert_allclose(
         robot.dofs.velocities, free_velocities + inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
     )
+
+
+@pytest.mark.xfail(strict=True, reason="M1g/M5b: bounded servo rows coupled to hard position limits are pending")
+@pytest.mark.parametrize("kind,target,effort", [("position", 10, 80), ("position", 0.11, 4),
+                                             ("velocity", 100, 80), ("velocity", 0.1, 4)])
+def test_servo_position_limit_priority(world, kind, target, effort):
+    world.gravity = [0, 0, 0]
+    model = dart.Multibody(name="slider")
+    model.add_link("body", joint=dart.dynamics.PrismaticJointSpec(axis=(1, 0, 0)))
+    world.add(model)
+    joint = model.joints[0]
+    # M1g/M5 settle limit setters and the isolated actuator-effort observer.
+    # Aggregate constraint forces can cancel motor and limit reactions.
+    joint.position_limits = (-1, 0.1)
+    joint.limits_enabled = True
+    model.dofs.positions = [0.1]
+    reference = world.clone()
+    free = reference.multibodies["slider"]
+    free.joints[0].limits_enabled = False
+    for current in (model, free):
+        if kind == "position":
+            current.joints[0].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+            current.dofs.position_targets = [target]
+        else:
+            current.joints[0].actuator = dart.VelocityServo(kd=40, effort_limit=80)
+            current.dofs.velocity_targets = [target]
+    for _ in range(10):
+        world.step()
+        reference.step()
+        np.testing.assert_allclose(model.dofs.positions, [0.1], rtol=0, atol=1e-9)
+        np.testing.assert_allclose(model.dofs.velocities, [0], rtol=0, atol=1e-9)
+        # At the hard stop v+ is zero: the compliant row reports its full
+        # bounded b/h effort, balanced by the limit reaction. The unsaturated
+        # cases differ from the free-motion row's inverse-mass denominator.
+        assert joint.actuator.effort == pytest.approx(effort, abs=1e-6)
+    assert free.dofs.positions[0] > 0.1 + 1e-6
 
 
 @pytest.mark.xfail(
@@ -722,6 +780,20 @@ def test_dof_arrays_are_read_only_copies(robot, channel):
     np.testing.assert_array_equal(array, expected)
 
 
+@pytest.mark.xfail(strict=True, reason="M5: non-DOF array properties with read-only copies are pending")
+def test_gravity_is_read_only_copy(world):
+    expected = np.array([0.5, -0.25, -4.905])
+    world.gravity = expected
+    gravity = world.gravity
+    np.testing.assert_array_equal(gravity, expected)
+    assert not gravity.flags.writeable
+    with pytest.raises(ValueError):
+        gravity[0] = 0
+    world.gravity = -expected
+    np.testing.assert_array_equal(gravity, expected)
+    np.testing.assert_array_equal(world.gravity, -expected)
+
+
 @pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
 def test_transform_composition():
     transform = dart.Transform
@@ -769,6 +841,14 @@ def test_rotation_value():
     with pytest.raises(Exception):
         rotation.wxyz = (1, 0, 0, 0)
     np.testing.assert_array_equal(rotation.wxyz, before)
+    asymmetric = np.array([1, 2, 3, 4], dtype=float) / np.sqrt(30)
+    reordered = asymmetric[[1, 2, 3, 0]]
+    for value_type in (dart.Rotation, dart.Transform):
+        scalar_first = value_type(wxyz=asymmetric)
+        scalar_last = value_type(xyzw=reordered)
+        np.testing.assert_allclose(scalar_first @ np.eye(3), scalar_last @ np.eye(3), rtol=0, atol=1e-15)
+        np.testing.assert_allclose(scalar_last.wxyz, asymmetric, rtol=0, atol=1e-15)
+        np.testing.assert_allclose(scalar_first.xyzw, reordered, rtol=0, atol=1e-15)
 
 
 @pytest.mark.xfail(
@@ -800,6 +880,7 @@ def test_capture_restore_state(world, robot):
     )
     targets = np.full(robot.num_dofs, 0.5)
     velocity_targets = np.full(robot.num_dofs, 0.25)
+    robot.dofs.positions = [0.2, -0.3]
     robot.dofs.position_targets = targets
     robot.dofs.velocity_targets = velocity_targets
     robot.dofs.velocities = np.ones(robot.num_dofs)
@@ -821,6 +902,23 @@ def test_capture_restore_state(world, robot):
     np.testing.assert_array_equal(clone_robot.dofs.position_targets, targets)
     np.testing.assert_array_equal(clone_robot.dofs.velocity_targets, velocity_targets)
     assert clone.time == time
+    # Matching digests cannot depend on clone lineage or native object identity.
+    rebuilt = dart.World()
+    rebuilt_robot = _make_robot(rebuilt)
+    rebuilt_robot.joints["shoulder_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    rebuilt.step(3)
+    assert rebuilt.time != time
+    rebuilt_robot.dofs.positions = -positions
+    rebuilt_robot.dofs.velocities = -velocities
+    rebuilt_robot.dofs.position_targets = -targets
+    rebuilt_robot.dofs.velocity_targets = -velocity_targets
+    rebuilt.restore_state(state)
+    for channel, expected in (
+        ("positions", positions), ("velocities", velocities),
+        ("position_targets", targets), ("velocity_targets", velocity_targets),
+    ):
+        np.testing.assert_array_equal(getattr(rebuilt_robot.dofs, channel), expected)
+    assert rebuilt.time == time
     # Equal array sizes do not imply a matching structural digest.
     different = world.clone()
     different_robot = different.multibodies["robot"]
@@ -1080,6 +1178,23 @@ def test_world_batch_restore_state(world, robot):
     for name in channels:
         np.testing.assert_array_equal(getattr(robot.dofs, name), source[name])
     assert world.time == source["time"]
+
+
+@pytest.mark.xfail(strict=True, reason="M1i: scalar and selected WorldBatch writes are pending")
+def test_world_batch_selected_writes(world, robot):
+    batch = dart.WorldBatch(world, count=4)
+    expected = np.full((4, robot.num_dofs), 0.5)
+    batch.set("positions", 0.5)
+    np.testing.assert_array_equal(batch.positions, expected)
+    selected = np.array([[-0.2, 0.3], [0.4, -0.5]])
+    batch.set("positions", selected, indices=[0, 2])
+    expected[[0, 2]] = selected
+    np.testing.assert_array_equal(batch.positions, expected)
+    mask = np.array([False, True, False, True])
+    batch.set("positions", -0.75, mask=mask)
+    expected[mask] = -0.75
+    np.testing.assert_array_equal(batch.positions, expected)
+    np.testing.assert_array_equal(robot.dofs.positions, np.zeros(robot.num_dofs))
 
 
 @pytest.mark.xfail(strict=True, reason="M1i: per-clone batch parameters without recompilation are pending")
