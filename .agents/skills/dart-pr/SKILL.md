@@ -11,12 +11,13 @@ description: "DART PR: create a branch, commit, push, and open a DART pull reque
 
 Use this skill to run the DART `dart-pr` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex and for OpenCode's skill loader.
+Codex, Muse, and OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-pr <arguments>`
 - Codex: `$dart-pr <arguments>`
+- Muse: `/dart-pr <arguments>`
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

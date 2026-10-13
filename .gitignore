@@ -130,6 +130,7 @@ compile_commands.json
 compile_flags.txt
 
 # AI tool local state
+CLAUDE.local.md
 .omc/
 .omo/
 .omx/
