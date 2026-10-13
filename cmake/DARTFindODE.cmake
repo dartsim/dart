@@ -94,8 +94,6 @@ if(ODE_FOUND OR ode_FOUND)
   endforeach()
 
   if(NOT _dart_ode_has_libccd_box_cyl)
-    include(CheckCXXSourceCompiles)
-
     set(_dart_ode_includes "")
     if(TARGET ODE::ODE)
       get_target_property(
@@ -112,7 +110,8 @@ if(ODE_FOUND OR ode_FOUND)
       set(CMAKE_REQUIRED_INCLUDES "${_dart_ode_includes}")
     endif()
 
-    check_cxx_source_compiles(
+    set(
+      _dart_ode_probe_source
       "
 #include <ode/odeconfig.h>
 #ifndef dLIBCCD_BOX_CYL
@@ -120,8 +119,23 @@ if(ODE_FOUND OR ode_FOUND)
 #endif
 int main(void) { return 0; }
 "
-      _dart_ode_has_libccd_box_cyl_macro
     )
+    get_property(_dart_ode_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if("CXX" IN_LIST _dart_ode_languages)
+      include(CheckCXXSourceCompiles)
+      check_cxx_source_compiles(
+        "${_dart_ode_probe_source}"
+        _dart_ode_has_libccd_box_cyl_macro
+      )
+    elseif("C" IN_LIST _dart_ode_languages)
+      include(CheckCSourceCompiles)
+      check_c_source_compiles(
+        "${_dart_ode_probe_source}"
+        _dart_ode_has_libccd_box_cyl_macro
+      )
+    endif()
+    unset(_dart_ode_languages)
+    unset(_dart_ode_probe_source)
 
     unset(CMAKE_REQUIRED_INCLUDES)
     unset(_dart_ode_includes)

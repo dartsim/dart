@@ -49,7 +49,7 @@ foreach(has_macro 0 1)
   else()
     file(WRITE "${ode_dir}/include/ode/odeconfig.h" "/* libccd disabled */\n")
   endif()
-  foreach(languages CXX "C;CXX")
+  foreach(languages C CXX "C;CXX")
     string(REPLACE ";" "-" case_name "${languages}-${has_macro}")
     execute_process(
       COMMAND
