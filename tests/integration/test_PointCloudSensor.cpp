@@ -189,6 +189,23 @@ TEST(PointCloudSensorTest, BoxSamplingAndMissingMeshFallbackAreBounded)
   }
 }
 
+TEST(PointCloudSensorTest, EmptyRobotUsesBoxFallback)
+{
+  auto robot = dart::dynamics::Skeleton::create();
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  auto points = std::make_shared<dart::dynamics::PointCloudShape>();
+  auto voxels = std::make_shared<dart::dynamics::VoxelGridShape>(0.05);
+  dart_demos::PointCloudSensor sensor(robot, frame, points, voxels);
+
+  sensor.update(0.001);
+  ASSERT_EQ(points->getNumPoints(), 500);
+  for (const auto& point : points->getPoints()) {
+    EXPECT_GE(point.minCoeff(), -0.5);
+    EXPECT_LE(point.maxCoeff(), 0.5);
+  }
+}
+
 TEST(
     PointCloudSensorTest,
     RejectsUnaddressablePointsAndOversizedRaysBeforeInsertion)
