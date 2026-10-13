@@ -214,6 +214,77 @@ def test_step_releases_gil(world, robot):
         assert not worker.is_alive()
 
 
+@pytest.mark.xfail(
+    strict=True, reason="M1d/M1g/M5b: StepHook and WorldBusyError access guards are pending"
+)
+def test_world_busy_during_step(world, robot):
+    active = threading.Event()
+    read_finished = threading.Event()
+    errors = []
+
+    def read_during_step():
+        if not active.wait(timeout=5):
+            return
+        try:
+            _ = world.time
+        except Exception as error:
+            errors.append(type(error).__name__)
+        else:
+            errors.append("unguarded read")
+        finally:
+            read_finished.set()
+
+    def during_step(current):
+        # Event.wait releases the GIL while this callback keeps the World in
+        # its stepping boundary, excluding valid idle reads before and after.
+        active.set()
+        assert read_finished.wait(timeout=5)
+
+    hook = dart.StepHook(during_step, every=1)
+    world.hooks.add(hook)
+    worker = threading.Thread(target=read_during_step)
+    worker.start()
+    try:
+        world.step()
+        assert errors == ["WorldBusyError"]
+    finally:
+        active.set()
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+
+
+@pytest.mark.xfail(strict=True, reason="M1g/M5b: StepHook and the World hook registry are pending")
+def test_step_hook_every(world, robot):
+    calls = []
+
+    # M1g settles the callback signature; decimation and global boundaries are
+    # the acceptance contract regardless of the final registration spelling.
+    hook = dart.StepHook(lambda world: calls.append(world.step_count), every=3)
+    world.hooks.add(hook)
+    world.step(4)
+    first = calls.copy()
+    world.step(5)
+    assert first and len(calls) == 3
+    assert np.diff(calls).tolist() == [3, 3]
+    assert calls[0] in (0, 3)
+    assert all(count % 3 == 0 for count in calls)
+
+
+@pytest.mark.xfail(strict=True, reason="M5b: DOF state and target properties with read-only copies are pending")
+@pytest.mark.parametrize("channel", ["positions", "velocities", "position_targets"])
+def test_dof_arrays_are_read_only_copies(robot, channel):
+    expected = np.full(robot.getNumDofs(), 0.5)
+    setattr(robot.dofs, channel, expected)
+    array = getattr(robot.dofs, channel)
+    assert not array.flags.writeable
+    with pytest.raises(ValueError):
+        array[0] = -0.5
+    np.testing.assert_array_equal(getattr(robot.dofs, channel), expected)
+    # Changing native storage must not mutate an already returned copy.
+    setattr(robot.dofs, channel, -expected)
+    np.testing.assert_array_equal(array, expected)
+
+
 @pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
 def test_transform_composition():
     # A quarter turn about x keeps the composition order observable.
@@ -260,6 +331,42 @@ def test_capture_restore_state(world, robot):
     velocities = robot.getVelocities().copy()
     time = world.time
     state = world.capture_state()
+    clone = world.clone()
+    clone_robot = clone.getSkeleton("robot")
+    clone.setGravity([0, 0, 0])
+    clone_robot.setPositions(-positions + 0.2)
+    clone_robot.setVelocities(-velocities)
+    clone_robot.dofs.position_targets = -targets
+    clone.restore_state(state)
+    np.testing.assert_array_equal(clone_robot.getPositions(), positions)
+    np.testing.assert_array_equal(clone_robot.getVelocities(), velocities)
+    np.testing.assert_array_equal(clone_robot.dofs.position_targets, targets)
+    assert clone.time == time
+    # Equal array sizes do not imply a matching structural digest.
+    different = world.clone()
+    different_robot = different.getSkeleton("robot")
+    with different.edit():
+        fixed = dart.dynamics.Skeleton("extra_fixed_model")
+        fixed.createWeldJointAndBodyNodePair()
+        different.addSkeleton(fixed)
+    assert fixed.getNumDofs() == 0
+    different_robot.setPositions(np.full(robot.getNumDofs(), 0.25))
+    different_robot.setVelocities(-velocities)
+    different_robot.dofs.position_targets = -targets
+    before = (
+        different_robot.getPositions().tobytes(),
+        different_robot.getVelocities().tobytes(),
+        different_robot.dofs.position_targets.tobytes(),
+        different.time,
+    )
+    with pytest.raises(Exception):
+        different.restore_state(state)
+    assert (
+        different_robot.getPositions().tobytes(),
+        different_robot.getVelocities().tobytes(),
+        different_robot.dofs.position_targets.tobytes(),
+        different.time,
+    ) == before
     robot.dofs.position_targets = np.full(robot.getNumDofs(), -0.5)
     np.testing.assert_array_equal(robot.dofs.position_targets, -targets)
     world.step()
@@ -391,12 +498,19 @@ def test_world_batch_set_step(world, robot):
     batch = dart.WorldBatch(world, count=64)
     assert batch.positions.shape == (64, robot.getNumDofs())
     batch.set("velocities", np.zeros_like(batch.positions))
-    batch.set("position_targets", np.full_like(batch.positions, 0.5))
+    targets = np.zeros_like(batch.positions)
+    targets[:, 0] = np.linspace(-0.5, 0.5, 64)
+    batch.set("position_targets", targets)
     batch.step(20)
-    robot.dofs.position_targets = np.full(robot.getNumDofs(), 0.5)
-    for _ in range(20):
-        world.step()
-    assert robot.getPositions()[0] > 0
-    np.testing.assert_array_equal(
-        batch.positions, np.tile(robot.getPositions(), (64, 1))
-    )
+    expected = []
+    for target in targets:
+        serial = world.clone()
+        serial_robot = serial.getSkeleton("robot")
+        serial_robot.dofs.position_targets = target
+        for _ in range(20):
+            serial.step()
+        expected.append(serial_robot.getPositions().copy())
+    assert expected[0][0] < 0 < expected[-1][0]
+    np.testing.assert_array_equal(batch.positions, expected)
+    # The source is a template; stepping its independent clones leaves it alone.
+    np.testing.assert_array_equal(robot.getPositions(), np.zeros(robot.getNumDofs()))

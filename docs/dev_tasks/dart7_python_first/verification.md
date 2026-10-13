@@ -80,37 +80,6 @@ Known gaps:
 - **Milestones:** done on 2026-10-11 at the maintainer's request. The archived
   milestone #18 became "DART 7.0.0 (archived 2015-2025)", and #105 ("DART
   6.21.0") became "DART 7.0.0".
-- **Contact, counted-step and servo review follow-up on 2026-10-13**:
-  - Merged current main through `95282f1b9`, preserving the scope/freeze gates
-    alongside the landed Python demo retirement and its durable owner links.
-  - Counted stepping now compares positions, velocities, time and step count
-    against twenty single steps of a clone containing a moving articulated
-    body. Counter-only implementations cannot satisfy this oracle.
-  - PositionServo covers both effort limits and unsaturated damped and
-    undamped motion. The expected impulse follows the design's compliant-row
-    equation and the native inverse mass matrix; generalized constraint forces
-    report effort separately from ordinary joint forces.
-  - Checkpoints capture a contacting free box after two sleep-enabled steps,
-    while it is still awake. Replay compares contact geometry and forces,
-    generalized impulses, state and the transition to sleep, so restoring must
-    preserve the partially accumulated dwell timer. The independent local
-    review suggested this partial-timer case and found no other issue.
-  - The scene's unmarked setup gate checks nonzero contacts, contact forces
-    and generalized constraint forces, then verifies sleep. Its static ground
-    is explicitly immobile. Two thousand ordinary settling steps let the
-    contact solver correct impact penetration without weakening sleep rules.
-  - Focused guarded pytest reports one passed setup gate and seventeen strict
-    XFAILs, with no XPASS. With `--runxfail`, those seventeen cases fail for
-    their intended missing APIs and the setup gate still passes.
-  - `pixi run test-py` passes: 1,597 passed, 26 skipped and 17 XFAILs, with
-    no XPASS. `pixi run build`, `pixi run lint`, `pixi run check-lint`,
-    `pixi run check-ai-commands` and the upstream hook regression suite
-    (281 passed) succeed. The contact fixture
-    checks current native setup; the future actuator/checkpoint implementations
-    remain unimplemented. Visual evidence is irrelevant to these pending
-    acceptance-contract changes; no simulation implementation changes.
-  - Changelog decision: no entry required; this follow-up changes tests and
-    documentation, with no released behavior change.
 - **Review passes:**
   - The first review found two issues: the rollover cited PLAN-624 before it
     existed (now stacked on WP-7.0.2), and the identity-variation test never
@@ -570,6 +539,64 @@ Known gaps:
     - PR-body note: Strict-XFAIL acceptance coverage and verification notes
       only; released behavior is unchanged.
     - Follow-up: none
+- **Contact, counted-step and servo review follow-up on 2026-10-13**:
+  - Merged current main through `95282f1b9`, preserving the scope/freeze gates
+    alongside the landed Python demo retirement and its durable owner links.
+  - Counted stepping now compares positions, velocities, time and step count
+    against twenty single steps of a clone containing a moving articulated
+    body. Counter-only implementations cannot satisfy this oracle.
+  - PositionServo covers both effort limits and unsaturated damped and
+    undamped motion. The expected impulse follows the design's compliant-row
+    equation and the native inverse mass matrix; generalized constraint forces
+    report effort separately from ordinary joint forces.
+  - Checkpoints capture a contacting free box after two sleep-enabled steps,
+    while it is still awake. Replay compares contact geometry and forces,
+    generalized impulses, state and the transition to sleep, so restoring must
+    preserve the partially accumulated dwell timer. The independent local
+    review suggested this partial-timer case and found no other issue.
+  - The scene's unmarked setup gate checks nonzero contacts, contact forces
+    and generalized constraint forces, then verifies sleep. Its static ground
+    is explicitly immobile. Two thousand ordinary settling steps let the
+    contact solver correct impact penetration without weakening sleep rules.
+  - Focused guarded pytest reports one passed setup gate and seventeen strict
+    XFAILs, with no XPASS. With `--runxfail`, those seventeen cases fail for
+    their intended missing APIs and the setup gate still passes.
+  - `pixi run test-py` passes: 1,597 passed, 26 skipped and 17 XFAILs, with
+    no XPASS. `pixi run build`, `pixi run lint`, `pixi run check-lint`,
+    `pixi run check-ai-commands` and the upstream hook regression suite
+    (281 passed) succeed. The contact fixture
+    checks current native setup; the future actuator/checkpoint implementations
+    remain unimplemented. Visual evidence is irrelevant to these pending
+    acceptance-contract changes; no simulation implementation changes.
+  - Changelog decision: no entry required; this follow-up changes tests and
+    documentation, with no released behavior change.
+- **Acceptance completeness follow-up on 2026-10-13** (`013621e441` review):
+  - Batch rows now have 64 distinct shoulder targets, each compared with its
+    own serial clone. The source World must remain unchanged.
+  - Snapshots restore to a compatible clone after a parameter change. Adding
+    a zero-DOF fixed model leaves array sizes unchanged but changes topology;
+    restoring must raise and leave positions, velocities, targets and time
+    unchanged.
+  - Three strict-XFAIL cases require read-only copies of DOF positions,
+    velocities and persistent position targets. Element writes must raise,
+    and later native changes must not modify a returned copy.
+  - A StepHook marker checks `every=3` across two counted calls. A separate
+    busy-access marker holds a stepping hook at a worker barrier, so the
+    worker's read must raise `WorldBusyError`. The GIL-progress test remains
+    independent. Local review caught and removed an idle-read timing race.
+  - Rendering checks floating-point metric depth at the box's front face
+    (1.7 meters), integer segmentation distinct from the empty scene, and
+    lookup of the corresponding scene object, alongside visible RGB output.
+    M1g and M6b settle callback and export-selector signatures; the tests
+    label those spellings provisional while keeping behavioral requirements.
+  - An independent read-only review of all six fixes found no remaining
+    issue. These remain pending API contracts, not runtime acceptance claims.
+  - Final focused guarded pytest, including the render module, reports one
+    passed setup gate and 23 strict XFAILs with no XPASS. `--runxfail` fails
+    those 23 cases at their intended missing APIs; the setup gate passes.
+    `pixi run test-py` reports 1,597 passed, 26 skipped and 22 strict XFAILs
+    with no XPASS. `pixi run lint` and `pixi run check-lint` pass. Rendering
+    remains in the device gate; its future API is unimplemented.
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
     counter instead of `step_count`; the render test ran in the device-free
