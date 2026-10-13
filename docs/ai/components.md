@@ -5,8 +5,8 @@ The DART development branch uses a small cross-agent workflow surface:
 - `.claude/commands/`: editable workflow command sources.
 - `.claude/skills/`: editable domain-skill sources.
 - `.opencode/command/`: generated OpenCode command files.
-- `.agents/skills/`: generated Codex workflow and domain skills, with a
-  DART-owned manifest that preserves unrelated skills.
+- `.agents/skills/`: generated Codex and Muse workflow and domain
+  skills, with a DART-owned manifest that preserves unrelated skills.
 - `.codex/config.toml`: bounded project-local Codex concurrency defaults.
 - `.codex/agents/`: maintained read-only specialist profiles.
 - `.codex/hooks.json`: fast advisory Codex commit-command hook.

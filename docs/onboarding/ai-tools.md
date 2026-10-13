@@ -1,7 +1,7 @@
 # AI Tooling And Review Rules
 
-This development branch supports Claude Code, OpenCode, and Codex workflow
-entrypoints generated from `.claude/` sources.
+This development branch supports Claude Code, Codex, Muse, and
+OpenCode workflow entrypoints generated from `.claude/` sources.
 
 ## Source And Generated Files
 
@@ -10,9 +10,9 @@ entrypoints generated from `.claude/` sources.
 - Do not hand-edit `.agents/skills/` or `.opencode/command/`; run
   `pixi run sync-ai-commands` instead.
 - Check parity with `pixi run check-ai-commands`.
-- Use canonical DART capability names in prompt-driven goal modes: Claude goal
-  text should name `/dart-ultrawork`, and Codex goal text can name
-  `$dart-ultrawork`. If Claude goal text starts with `ulw:` or the common typo
+- Use canonical DART capability names in prompt-driven goal modes: Claude and
+  Muse goal text should name `/dart-ultrawork`, and Codex goal text can
+  name `$dart-ultrawork`. If Claude goal text starts with `ulw:` or the common typo
   `ultrawok:`, normalize it to the canonical `/dart-ultrawork` workflow. These
   are prompt-level shorthands, not separate shared capabilities.
 
@@ -38,8 +38,10 @@ reference material as apply/adapt/omit against the branch's compatibility
 surface.
 
 **Tested Versions**: Claude Code CLI 2.1.296 (Claude Opus 5.5), Codex CLI
-0.162.0, OpenCode 1.18.35, 2026-10-10 — discovery, config, and hook checks
-exercised locally on this branch.
+0.162.0, Muse 1.4.6 (muse-wonder-full-1.0), OpenCode 1.18.35,
+2026-10-12 — discovery, config, and hook checks exercised locally on this
+branch; Muse rules/skill discovery additionally probed with
+headless `muse exec --provider echo` runs in isolated workspaces.
 
 Use `dart-model-upgrade` for future model or coding-agent changes; its audit
 includes configuration, prompts, generated adapters, runtime tooling, durable
@@ -64,16 +66,56 @@ commits.
 
 ## Other Clients And Manual Fallback
 
-Claude Code uses the editable `.claude/` commands and skills. `CLAUDE.md` and
-`GEMINI.md` import `AGENTS.md` and `docs/ai/principles.md` with `@` lines
-because, by default, Claude Code reads `AGENTS.md` natively only when no
-`CLAUDE.md` exists and Gemini CLI reads only `GEMINI.md`; a prose "read
-`AGENTS.md`" redirect leaves both files unloaded. OpenCode runs the generated
-`.opencode/command/` adapters as `/dart-*` commands and discovers skills in both
-`.claude/skills/` and `.agents/skills/`. The generated domain-skill copies are
-identical to their sources, so OpenCode's duplicate-skill-name warnings for them
-are expected. Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
-layer. Other clients that read `AGENTS.md` can follow the same owner docs and
+The root `AGENTS.md` is the single shared rules file for every client. It
+carries a bare `@docs/ai/principles.md` line next to its prose pointer:
+clients that expand `@` imports (Claude Code, Gemini CLI) load the
+principles with it, and clients that do not (Codex, Muse) read the
+line as a path pointer. Keep shared guidance in `AGENTS.md`; a root
+`CLAUDE.md`, a personal `CLAUDE.local.md`, an `AGENTS.md` inside
+`.agents/`, or a `CLAUDE.md` inside `.claude/` would shadow it per
+client below, so none of them exists and `pixi run ai-doctor` enforces
+their absence (the gitignored `CLAUDE.local.md` can only ever appear
+in a local checkout, which is exactly where the silent shadowing
+would happen).
+
+- Claude Code uses the editable `.claude/` commands and skills. By
+  default it reads `AGENTS.md` natively only when no `CLAUDE.md` exists
+  and expands `@` imports inside it, which is why this branch ships no
+  root `CLAUDE.md`. A personal `CLAUDE.local.md` at the repository root
+  also counts as a `CLAUDE.md` and stops Claude from reading
+  `AGENTS.md`; keep personal notes outside the root rules slot (the
+  doctor flags the file so the shadowing is not silent).
+- Muse reads `AGENTS.md` chains from the workspace up to the
+  `.git` boundary and discovers the generated `.agents/skills/` skills
+  natively; invoke DART workflows by their `/dart-*` slash shortcut.
+  Per directory it loads
+  only one rules file — `AGENTS.md` wins over a sibling `CLAUDE.md` or
+  the `AGENTS.md` inside `.agents/`, and the shadowed file warns at
+  startup — and it does not expand `@` imports. Identical domain skills
+  under `.claude/skills/` are shadowed by their `.agents/skills/`
+  copies; that shadowing is expected, as with OpenCode below. Its
+  default shell sandbox keeps `.git/` and `.agents/` read-only inside
+  the writable workspace, so workflow steps that mutate Git state
+  (branch switch, commit, base-branch merge) or regenerate adapters
+  (`pixi run sync-ai-commands`) fail there with read-only errors; run
+  those steps from an unsandboxed shell — a normal terminal, another
+  client, or a maintainer-approved unsandboxed Muse run — and
+  keep editing sources and running read-only inspection in Muse
+  Code as usual.
+- Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
+  layer.
+- OpenCode runs the generated `.opencode/command/` adapters as
+  `/dart-*` commands and discovers skills in both `.claude/skills/` and
+  `.agents/skills/`. The generated domain-skill copies are identical
+  to their sources, so OpenCode's duplicate-skill-name warnings for
+  them are expected.
+- Gemini CLI reads only `GEMINI.md`, which imports `AGENTS.md` with an
+  `@` line; `AGENTS.md` in turn imports `docs/ai/principles.md`, so the
+  principles load once (a second direct import in `GEMINI.md` would not
+  be deduplicated and would load them twice). A prose
+  "read `AGENTS.md`" redirect would leave both files unloaded.
+
+Other clients that read `AGENTS.md` can follow the same owner docs and
 `pixi run ...` gates without a tool-specific command surface. Never make
 correctness depend only on a project hook or one client's private state; the
 public docs, direct commands, and installed git hooks remain the fallback
