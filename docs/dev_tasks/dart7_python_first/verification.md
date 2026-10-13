@@ -222,7 +222,9 @@ Known gaps:
   - nightly: K = 1024, plus FCL, Bullet and the closed-loop joint-friction row;
   - a dartpy loop benchmark written in 6.x spelling, which the M5 codemod later
     converts (doubling as a codemod test);
-  - rows measure stepping plus reading transforms and contacts.
+  - rows measure stepping plus reading transforms and contacts;
+  - nightly Gazebo-preset sleeping rows, which cover the custom collision-filter
+    replay path Gazebo's default step uses.
 - **Added:** `--worlds K` steps K independent Worlds in sequence per outer
   step, with two generated scenes: a box resting on a floor (`contact`) and a
   four-bar linkage with joint friction and a ball-joint closure
@@ -257,6 +259,66 @@ Known gaps:
   and 4096 contacts for K = 1, 64 and 1024, and a loop-closure error of
   2e-12 m. The dartpy loop measured 114 microseconds per step and read. These
   are head-only smoke numbers, not a baseline.
+- **Baseline procedure:** immediately before the first M1 PR, record the last
+  main SHA as `dart7-base`, with its host and the per-row records from
+  `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
+  Each milestone exit runs
+  `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
+  and compares each detector against its own baseline.
+- **Gazebo-preset rows:** nightly `S7-t1` and `S7-t4` run
+  `contact_benchmark --gz-preset` on the settled `3k_shapes.sdf` with the
+  DART, Bullet and ODE detectors at 1 and 4 threads. The preset installs a
+  `BodyNodeCollisionFilter` subclass, as gz-physics does, so bodies sleep
+  through `World::step`'s custom-filter decision replay, the step path
+  gz-physics uses by default. The rows reuse existing driver flags, so no
+  row's input hash changes. Measured on 2026-10-12 at main `722f28ddd` with
+  the rows added, on the local performance host:
+
+  | Detector | Hash | Resting | Cap hit | Recorder solves | Process time (s) |
+  | --- | --- | --- | --- | ---: | ---: |
+  | DART | `0xa6f5233706594236` | 3003/3003 | no | 4 | 2.5–2.7 |
+  | Bullet | `0xb02e822fcc3c1d04` | 2724/3003 | no | 3,000 | 150–232 |
+  | ODE | `0x53e83625f00d4813` | 3003/3003 | yes | 503 | 19–23 |
+
+  Two smoke runs gave identical guards, and each detector's 4-thread guards
+  equal its 1-thread guards. ODE's contact demand of 13,013 exceeds the
+  10,000-contact cap that gz-physics sets; no row has starved pairs or sunk
+  bodies. Recorder solves count the 1-thread steps, of 3,000, that solve
+  through the constraint stage's decision recorder; the other steps take the
+  all-resting fast path, so only the Bullet and ODE rows exercise the
+  recorder at length. With `DART_CUSTOM_FILTER_SLEEPING=0`, which turns replay
+  off, the 1-thread DART and ODE rows rest no body and their hashes change to
+  `0x29469c863f538cf2` and `0x7de27186a1a62f97`. The S7 oracle now marks any
+  row with zero final resting bodies broken, and marks both thread rows
+  broken when a detector's guards differ within one record. Thus a head-only
+  nightly smoke run rejects those replay-off results without a baseline.
+  Focused regression tests cover zero resting bodies, mismatched guards and
+  passing guards for all three detectors. This is a text-only harness change;
+  rendered frames cannot prove the row status or guard-parity verdict.
+  Changelog decision: no entry required; the change fixes internal CI guard
+  enforcement without changing released library behavior or user commands.
+  Process time is one whole driver run at host load 7–11; the Bullet rows
+  took up to 417 s at load 60,
+  within the harness's 900 s per-row timeout. Run four at a time on two
+  physical cores with both SMT threads, like `--jobs 4` on the hosted
+  runner's four vCPUs, and sharing those cores with other host work, the six
+  rows kept their guards and the slowest, 1-thread Bullet, took 311 s. No
+  hosted run has measured them yet. A row that times out makes the nightly
+  verdict ERROR and skips that night's publication for every row, so confirm
+  the fit with a nightly `perf.yml` dispatch on the branch, which publishes
+  nothing off main, or by watching the first nightly after merge.
+  Oracle follow-up validation for [#3749](https://github.com/dartsim/dart/pull/3749)
+  used native revision `41d045267` after merging `origin/main`, with the
+  updated harness in the worktree:
+  `pixi run python scripts/perf_regression.py local --smoke --head HEAD --rows S7-t1,S7-t4`
+  passed, with all six rows `ok` and identical thread guards for each detector.
+  DART and ODE rested 3003/3003 bodies, and Bullet rested 2724/3003; their
+  hashes match the table above. A private staging root avoided another
+  worktree's nightly lock; jobs stayed at 4 and the per-row timeout at 900 s.
+  `pixi run python -I scripts/run_pytest.py tests/test_perf_regression.py -q`
+  passed all 878 tests. `pixi run lint` and `pixi run check-lint` passed.
+  Compatibility and acceptance review passes were clean after preserving
+  the existing quick `mt4` selection separately from S7 parity metadata.
 - **Baseline procedure:** immediately before the first M1 PR, record the last
   main SHA as `dart7-base`, with its host and the per-row records from
   `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
