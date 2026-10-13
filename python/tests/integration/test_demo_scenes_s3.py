@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
-# C++ debug-print-world: (name, bodies, soft bodies, point masses, DOFs).
+# Scene-port parity baseline: (name, bodies, soft bodies, point masses, DOFs).
 STRUCTURES = {
     "sleeping": [("floor", 1, 0, 0, 0)]
     + [(f"box{i}", 1, 0, 0, 6) for i in range(16)]

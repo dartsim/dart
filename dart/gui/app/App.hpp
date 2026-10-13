@@ -162,7 +162,8 @@ struct LogEntry
 
 //==============================================================================
 /// Owns the single Viewer window, the scene registry, and the safe
-/// runtime scene-switching machinery described in examples/demos/README.md.
+/// runtime scene-switching machinery described in
+/// docs/onboarding/architecture.md.
 /// Persistent host chrome (window, theme, panel layout) survives scene
 /// switches; per-scene state (world node, widgets, drag-and-drop, event
 /// handlers) is torn down in full on every switch.
@@ -231,7 +232,7 @@ public:
   /// catalog".
   void setInitialScene(const std::string& id);
 
-  /// Test/debug-only hooks (main.cpp's hidden --debug-* flags) so a headless
+  /// Test/debug-only hooks (Cli.cpp's hidden --debug-* flags) so a headless
   /// capture can exercise UI state that normally requires interactive input:
   /// a body selected in the Inspector, and the Profiler actively recording.
   /// Memory diagnostics use the DART_DEMOS_MEMORY_DIAGNOSTICS=1 environment
@@ -240,11 +241,6 @@ public:
   void setDebugSelectBodyName(const std::string& name);
   void setDebugRecordProfile(bool on);
 
-  /// Prints the world's skeleton, body, soft-body, point-mass, DOF and
-  /// constraint counts after the --headless settle steps, so captures of the
-  /// same scene from two catalogs can be compared. Temporary: removed with
-  /// the C++ catalog.
-  void setDebugPrintWorld(bool on);
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   /// Number of wheel-down ticks runHeadlessShot() injects into the viewer
   /// event queue while hovering the scene panel, capturing one frame per tick
@@ -359,7 +355,6 @@ private:
 
   /// Tears the active scene down and returns kStoppedExitCode.
   int stopRun();
-  void printWorld() const;
   void ensureViewerConfigured();
   void initializeGuiTheme();
   void setGuiScale(double scale);
@@ -395,7 +390,6 @@ private:
   std::shared_ptr<AppWorldNode> mWorldNode;
   dart::simulation::WorldPtr mCurrentWorld;
   std::shared_ptr<Control> mCurrentPanel;
-  std::function<void()> mCurrentRenderPanel;
   std::vector<KeyAction> mCurrentKeyActions;
   std::optional<std::size_t> mPendingKeyAction;
   std::optional<CameraHome> mCurrentCameraHome;
@@ -470,7 +464,6 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
-  bool mDebugPrintWorld = false;
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   bool mDebugMemoryDiagnostics = false;
   int mDebugScrollMemoryPanelTicks = 0;

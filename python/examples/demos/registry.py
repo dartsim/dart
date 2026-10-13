@@ -1,4 +1,4 @@
-"""Python scene modules in the native C++ catalog's order."""
+"""Python scene modules in demo catalog order."""
 
 import dartpy as dart
 

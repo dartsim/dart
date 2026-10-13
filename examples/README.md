@@ -21,7 +21,7 @@ Build dartpy and run the catalog:
 
 The UI automatically follows desktop DPI, and the default window uses the
 primary monitor's content scale. Use View > **GUI scale** or `--gui-scale 1.5`
-for a manual override; see [display scaling](demos/README.md#display-scaling)
+for a manual override; see [display scaling](../docs/readthedocs/dart/user_guide/visualization.rst)
 for platform behavior.
 
 The flagship deformable-body scenes can be opened directly:
@@ -58,8 +58,41 @@ Each scene's source lives under `python/examples/demos/scenes/`; scene ids match
 their original standalone example names (e.g. `scenes/boxes.py` is
 `--scene boxes`).
 
-The C++ app in `demos/` and its tests are kept only until WP-PD.18 removes
-them. The Pixi demo tasks use the Python catalog.
+## Adding catalog scenes
+
+Add scenes under `python/examples/demos/scenes/` and register them in
+`registry.py`. Use `dartpy.viewer.Scene` factories returning `SceneSetup`;
+declare a `Panel`, `KeyAction`s, and camera home in the setup. C++ draws the
+controls and validates edits. Put light simulation hooks in `pre_step` or
+`post_step`, and per-frame logic in `pre_refresh` so it runs even while the
+scene tab is hidden. Use `SceneContext` for native attachments, event
+handlers, drag and drop, and teardown. Heavy controllers, sensors, histories,
+and model helpers belong in `python/native/demo_models/`, bound through the
+private `dartpy._demos` module.
+
+Preserve each port's physical setup, controls, and coordinate convention.
+Use `scenes/common.py`'s `reorient_z_up` for Y-up SKEL models that need the
+catalog's Z-up view; vehicle, Atlas SIMBICON, and soft-foot SIMBICON retain
+their Y-up worlds. The humanoid factories `atlas_world` and `g1_world` keep
+returning Worlds for `agent-capture --factory`.
+
+Gate registration on optional binding availability: `point_cloud` needs
+`VoxelGridShape`; the humanoids need `ModelResourceRetriever`. A factory
+raises `AssetsNotPrefetchedError` for unavailable cached robot models or the
+optional `ssik` package, so catalog cycling reports a skip. A source build
+with assets and OctoMap supports 37 scenes; a build without the asset
+retriever omits Atlas v5 and Unitree G1. Wheels include the host and native
+helpers, while the catalog stays in the source tree. Its wheel smoke test
+uses a small test-owned scene.
+
+The WAM IKFast solver is linked into the native model library and needs no
+runtime shared-library lookup or LAPACK dependency. The ssik scene calls the
+Python solver directly through DART's `setPythonAnalytical` integration.
+The unbuilt TinyDNN-only `human_joint_limits` scene and the duplicate
+`hello_world_gui` and `contacts_pointcloud` selectors are retired.
+
+Follow [catalog verification](../docs/onboarding/testing.md#demo-catalog-verification)
+for construction, behavior, and assessed capture evidence.
 
 ## Standalone examples
 
@@ -87,10 +120,6 @@ version. Without it, including with an older GLUT GUI, `hello_world` is skipped
 and the other examples still build. Configuring a GUI example individually
 requires the Filament component and fails clearly when it is absent.
 `contact_benchmark` still builds without it, but its GUI modes are unavailable.
-
-The retained C++ `dart-demos` target builds only inside the DART source tree,
-because it links private libraries that DART does not install. A copied `examples`
-directory skips it with a configure message.
 
 Copy this directory to your workspace (e.g., in Linux):
 

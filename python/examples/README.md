@@ -35,7 +35,11 @@ Useful flags (`python -m examples.demos --help` for the full list):
 Each scene's source lives under `demos/scenes/` and contributes a
 `dartpy.viewer.Scene` whose factory returns a `SceneSetup`. Instructions
 appear in its panel, and scene key actions also appear as buttons. The
-catalog follows the C++ scene order, metadata, and behavior.
+catalog preserves the former C++ scene order, metadata, and behavior. It is
+the only demo application; its host and heavy model helpers remain native.
+Follow the [scene rules](../../examples/README.md#adding-catalog-scenes) and
+[catalog verification](../../docs/onboarding/testing.md#demo-catalog-verification)
+when adding or changing a scene.
 
 The app host requires the bundled docking ImGui. If `dartpy.viewer` is absent,
 rebuild with `-DDART_USE_SYSTEM_IMGUI=OFF` (`pixi run config` passes this option).

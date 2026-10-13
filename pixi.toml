@@ -1251,7 +1251,7 @@ cycle-demos = { cmd = "cd .. && python -m examples.demos --cycle-scenes --frames
 test-gui = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tests dartpy dart-demos \
+        --target tests dartpy \
         --parallel \
     && ctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -L gui \
         -LE filament-native --output-on-failure \
@@ -1275,7 +1275,7 @@ test-gui = { cmd = """
     cmake \
         --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
         --config "$BUILD_TYPE" \
-        --target tests dartpy dart-demos \
+        --target tests dartpy \
         --parallel \
     && ctest --test-dir "build/$PIXI_ENVIRONMENT_NAME/cpp" -C "$BUILD_TYPE" -L gui \
         -LE filament-native --output-on-failure \

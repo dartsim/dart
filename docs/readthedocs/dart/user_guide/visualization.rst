@@ -33,8 +33,11 @@ Python tests, with:
 The demo task builds dartpy and runs ``python -m examples.demos``. Python
 scenes use ``dartpy.viewer`` to run the native app host, with its navigator,
 simulation toolbar, dockable panels, and diagnostics.
+The catalog is Python-only; its private C++ host and native model libraries
+are linked into dartpy and are not installed as C++ application components.
 
-``pixi run test`` and ``pixi run test-all`` skip these GUI tests. After
+``pixi run test`` and ``pixi run test-all`` run device-free GUI and host tests,
+and skip those that need a graphics device. After
 ``test-gui``, run the native-window tests in a desktop session with
 ``ctest --test-dir build/default/cpp/Release -L filament-native``. Linux viewer
 windows use X11, through XWayland on Wayland desktops.
@@ -48,6 +51,9 @@ SDK, built from source on Linux and downloaded prebuilt on macOS arm64 and
 1.92.8 or newer; see the :doc:`build requirements </dart/developer_guide/build>`.
 ``DART_BUILD_DARTPY`` builds the Python bindings, which always include
 ``dartpy.gui`` and therefore require ``DART_BUILD_GUI``.
+Bundled ImGui supplies docking. A vanilla system ImGui selected with
+``DART_USE_SYSTEM_IMGUI=ON`` retains ``dart-gui`` and ``dartpy.gui`` but omits
+the app host and ``dartpy.viewer``.
 
 An installed C++ application links the ``gui`` component:
 

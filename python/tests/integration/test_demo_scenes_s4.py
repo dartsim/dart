@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
-# C++ debug-print-world: (name, bodies, soft bodies, point masses, DOFs).
+# Scene-port parity baseline: (name, bodies, soft bodies, point masses, DOFs).
 STRUCTURES = {
     "biped_stand": [("ground skeleton", 1, 0, 0, 6), ("fullbody1", 20, 0, 0, 37)],
     "joint_constraints": [

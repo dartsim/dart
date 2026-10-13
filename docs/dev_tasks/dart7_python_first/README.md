@@ -13,6 +13,8 @@ tracks its roadmap status. The durable API and engine rules live in the
   packet.
 - [Progress log](progress-log.md): completed chunks.
 - [Resume](RESUME.md): the next-session handoff.
+- [Deferred changelog drafts](changelog-drafts.md): demo entries for M6b's
+  milestone consolidation PR.
 
 ## North star
 
@@ -166,7 +168,7 @@ batch.step(20)
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
 | M5 | dartpy 7.0 API | Planned | [Order](#m5-dartpy-70-api); the rename table needs maintainer approval first |
 | M6a | Filament backend port | Merged in #3696 | [Interface](#m6a-interface); remaining release gates below |
-| M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release; includes the D31b demo host ([demo consolidation](../dart7_python_demos/README.md)) |
+| M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release; the D31b [demo consolidation](#demo-consolidation-d31b) is complete locally |
 | M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and the remaining rendering release gates |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
@@ -255,9 +257,8 @@ Release rules:
   raising loaders, and the default-detector switch if its gate passes. Additive
   work that misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
-- Items allowed to slip to 7.1: the generated API reference, notebooks, the
-  example runner's remaining parity gates (the C++ `dart-demos` app stays only
-  until WP-PD.18 removes it, D31b), and the scheduled lane against the
+- Items allowed to slip to 7.1: the generated API reference, notebooks, and
+  the scheduled lane against the
   gz-physics development branch.
 - While 7.0 waits for M6b and the remaining rendering gates, only fixes and
   M6b land on the release path. M6b includes the D31b demo host, the Python
@@ -331,6 +332,29 @@ style, ports the tutorials, docs and tests, and deletes the interim module
 before the first release candidate. New viewer bindings land in the 7.0 style
 as `dartpy.viewer` (D31b). Demo scenes may use interim `dartpy.gui`
 primitives until M6b ports them.
+
+### Demo consolidation (D31b)
+
+WP-PD.0–WP-PD.18 deliver one Python catalog on the private native app host:
+all 37 retained scenes are ported, the Pixi launch tasks use that catalog,
+and the C++ application, aliases, and transitional host features are removed.
+The demo project home is retired. Durable facts now live in
+[architecture](../../onboarding/architecture.md#python-demo-catalog),
+[scene rules](../../../examples/README.md#adding-catalog-scenes),
+[callback ownership](../../onboarding/python-bindings.md#viewer-app-callbacks),
+and [catalog verification](../../onboarding/testing.md#demo-catalog-verification).
+The [changelog drafts](changelog-drafts.md) wait for M6b's consolidation PR;
+the packet verification remains in [the program record](verification.md).
+
+This closes demo consolidation, not M6b's sensor or render/viewer API work.
+M6b still owns `dart.render`, the final viewer API, and migration of the
+interim `dartpy.gui` primitives (InteractiveFrame, drag and drop, GridVisual,
+SupportPolygonVisual, DebugOverlay, and GUIEventHandler). Pre-existing host
+gaps also remain: LogCapture misses spdlog and Python output and is not
+thread-safe, Copy does not reach the system clipboard, and `GuiScaleTheme`
+duplicates Viewer scaling. A native host loop releases the GIL; until the
+program's World-busy guard lands, other Python threads can still touch its
+World.
 
 **OSG removal:**
 

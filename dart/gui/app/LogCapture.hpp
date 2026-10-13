@@ -53,7 +53,7 @@ enum class CapturedLogLevel
 /// forwarded to the original stream buffer unchanged (so console output is
 /// completely unaffected), while complete lines -- with ANSI color escapes
 /// stripped -- are also collected and handed to `sink`. This is how
-/// dart-demos captures dart::common's dtmsg/dtwarn/dterr output into its log
+/// the app host captures dart::common's dtmsg/dtwarn/dterr output into its log
 /// console without any dart/ changes: those macros
 /// (dart/common/Console.hpp) write straight to std::cout/std::cerr with an
 /// SGR color prefix (see colorMsg/colorErr in dart/common/Console.cpp), which
