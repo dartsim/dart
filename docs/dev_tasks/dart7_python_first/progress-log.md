@@ -27,3 +27,23 @@
     parsing) and #3699 (GIL finalization) merged; the 6.20 backport of #3698
     opened as #3717 on the 6.20.1 patch line.
   - WP-7.0.3b and WP-7.0.5 started.
+- **2026-10-13**
+  - Reconciled the detached `dart7-base` checkout with fetched main:
+    M1a (#3775) and demo consolidation (#3780) are merged; scope/acceptance
+    (#3728) and the gz API inventory (#3729) remain on their existing branches.
+  - Confirmed the completed baseline's 78 passing rows and recorded its
+    pinned source, host and record digest in the verification owner.
+  - Reproduced and fixed four remaining SDF pose gaps on
+    `fix/sdf-pose-followup`, including strict admission boundaries for modern
+    schema versions. Added a self-contained fixture and native viewer example.
+  - Final core aggregate passes: 195 CTest and 1,596 Python cases. Matched
+    native Filament captures agree with independent numeric model oracles;
+    two independent source reviews are clean. GUI and the patched forward
+    Gazebo gate, lint, check-lint and public-path checks also pass. The offline
+    PR body and selected visual attachment are prepared for approval.
+  - Kept the full program active: missing implementation, integration and
+    release acceptance still prevent project-home retirement.
+  - An independent M1b preparation spike confirms that editing unrelated
+    World B incorrectly invalidates prepared World A. The shared-Skeleton
+    protection case passes. Production implementation waits for the recorded
+    sequencing to be reconciled; the evidence is retained in the task owner.

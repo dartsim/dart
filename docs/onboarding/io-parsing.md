@@ -7,6 +7,33 @@ headers as compatibility surfaces.
 Run focused IO tests when touching parser code, model-loading dependencies, or
 package metadata used by IO components.
 
+## SDF Pose Subset
+
+`SdfParser` admits versions 1.4 through 1.9 for its supported model subset.
+It honors Euler, degree and `quat_xyzw` poses, including empty identity poses,
+rotates COM-frame inertia tensors into the link frame, and applies soft-shape
+poses to every rest point. The
+[SDFormat 1.9 link specification](https://sdformat.org/spec/1.9/link/)
+defines the pose formats and inertia-frame convention.
+
+This is not full SDFormat schema support. Poses may name only their default
+frame. Joint axes may use their joint frame or `expressed_in="__model__"`;
+combining a nonempty `expressed_in` with legacy `use_parent_model_frame`
+raises. In newly admitted 1.7–1.9 documents, frame declarations, includes,
+nested models and non-model placement frames raise `std::invalid_argument`
+instead of silently dropping geometry or frame semantics. Unqualified schema
+versions still return `nullptr`.
+
+The self-contained `data/sdf/test/pose_frames.world` and
+`python/examples/sdf_pose/main.py` illustrate the local geometry and
+inertia frames. Capture with:
+
+```bash
+pixi run agent-capture -- --factory python.examples.sdf_pose.main:make_world \
+    --steps 0 --layers body_frames inertia_boxes labels --auto-views 1 \
+    --out build/sdf-pose-evidence
+```
+
 ## Online Robot Models
 
 The optional `utils-assets` component supplies `ModelResourceRetriever` in C++
