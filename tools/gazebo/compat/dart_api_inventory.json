@@ -821,7 +821,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "Eigen :: Vector3d mContactSurfaceMotionVelocity",
+              "signature": "Eigen :: Vector3d mContactSurfaceMotionVelocity { DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY }",
               "virtual": false
             }
           ],
@@ -877,7 +877,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "Eigen :: Vector3d mFirstFrictionalDirection",
+              "signature": "Eigen :: Vector3d mFirstFrictionalDirection { DART_DEFAULT_FRICTION_DIR }",
               "virtual": false
             }
           ],
@@ -1267,7 +1267,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "double mPrimaryFrictionCoeff",
+              "signature": "double mPrimaryFrictionCoeff { DART_DEFAULT_FRICTION_COEFF }",
               "virtual": false
             }
           ],
@@ -1287,7 +1287,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "double mPrimarySlipCompliance",
+              "signature": "double mPrimarySlipCompliance { DART_DEFAULT_SLIP_COMPLIANCE }",
               "virtual": false
             }
           ],
@@ -1345,7 +1345,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "double mRestitutionCoeff",
+              "signature": "double mRestitutionCoeff { DART_DEFAULT_RESTITUTION_COEFF }",
               "virtual": false
             }
           ],
@@ -1365,7 +1365,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "double mSecondaryFrictionCoeff",
+              "signature": "double mSecondaryFrictionCoeff { DART_DEFAULT_FRICTION_COEFF }",
               "virtual": false
             }
           ],
@@ -1385,7 +1385,7 @@
             {
               "class": "dart::constraint::ContactSurfaceParams",
               "const": false,
-              "signature": "double mSecondarySlipCompliance",
+              "signature": "double mSecondarySlipCompliance { DART_DEFAULT_SLIP_COMPLIANCE }",
               "virtual": false
             }
           ],
@@ -3822,7 +3822,7 @@
         },
         {
           "classification": "accessor",
-          "count": 96,
+          "count": 95,
           "declarations": [
             {
               "class": "dart::dynamics::BodyNode",
@@ -3926,7 +3926,7 @@
         },
         {
           "classification": "accessor",
-          "count": 20,
+          "count": 19,
           "declarations": [
             {
               "class": "dart::dynamics::MetaSkeleton",
@@ -4074,7 +4074,7 @@
         },
         {
           "classification": "accessor",
-          "count": 5,
+          "count": 4,
           "declarations": [
             {
               "class": "dart::simulation::World",
@@ -4086,13 +4086,13 @@
           "examples": [
             "dartsim/src/AddedMassFeatures_TEST.cc:132",
             "dartsim/src/SDFFeatures_TEST.cc:325",
-            "dartsim/src/SDFFeatures_TEST.cc:972"
+            "test/plugins/DARTDoublePendulum.cc:156"
           ],
           "name": "getNumSkeletons",
           "receiver_types": [
             "dart::simulation::WorldPtr"
           ],
-          "unresolved_count": 0
+          "unresolved_count": 1
         },
         {
           "classification": "accessor",
@@ -4790,7 +4790,7 @@
         },
         {
           "classification": "accessor",
-          "count": 35,
+          "count": 34,
           "declarations": [
             {
               "class": "dart::dynamics::BodyNode",
@@ -4890,7 +4890,7 @@
             "dart::dynamics::JointPtr",
             "dart::simulation::WorldPtr"
           ],
-          "unresolved_count": 3
+          "unresolved_count": 6
         },
         {
           "classification": "accessor",

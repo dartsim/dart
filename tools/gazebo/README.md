@@ -257,6 +257,9 @@ Type lookup uses tracked scopes, from the innermost namespace or class,
 including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
+Chained source helper calls use return declarations from the receiver's class
+and its bases. Data declarations retain grouped names and array dimensions;
+qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
 Namespace-scope constants and variables retain their declarations in

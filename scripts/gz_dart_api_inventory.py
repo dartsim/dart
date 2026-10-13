@@ -80,6 +80,7 @@ INCLUDE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*[<"]([^>"\n]+)[>"]', re.MULTIL
 THIRD_PARTY = re.compile(r"(?:bt|d|ai)[A-Z]")  # Bullet, ODE and Assimp types
 BLOCK = 1 << 30  # lookup depth of a block scope, past any namespace or class
 RAW_POINTER = "__raw_pointer__"
+SOURCE_CLASS = "__source_class__:"
 NOT_DATA = {
     "(",
     ":",
@@ -275,10 +276,11 @@ def qualified(values):
 
 def declaration(values, owner):
     """Read a declaration prefix, before its semicolon or inline body."""
-    square = 0
+    square = brace = 0
     for opening, value in enumerate(values):
         square += (value == "[") - (value == "]")
-        if square or value != "(" or opening == 0:
+        brace += (value == "{") - (value == "}")
+        if square or brace or value != "(" or opening == 0:
             continue
         name_index = opening - 1
         name = values[name_index]
@@ -417,33 +419,67 @@ def member_signature(item, resolve_type):
 
 
 def data_member(values, owner):
-    """Read a data-member declaration, before its semicolon or brace initializer."""
+    """Read one data declarator, including its array dimensions."""
     declarator = values
     angle = 0
     for end, token in enumerate(values):
         angle += (token == "<") - (token == ">")
-        if token == "=" and angle == 0:
+        if token in {"=", "{"} and angle == 0:
             declarator = values[:end]
             break
+    tokens = Tokens(" ".join(declarator))
+    end = len(declarator)
+    while end and declarator[end - 1] == "]" and end - 1 in tokens.pairs:
+        end = tokens.pairs[end - 1]
     if (
-        len(declarator) < 2
-        or not IDENTIFIER.match(declarator[-1])
-        or not NOT_DATA.isdisjoint(declarator)
+        len(declarator[:end]) < 2
+        or not IDENTIFIER.match(declarator[end - 1])
+        or not NOT_DATA.isdisjoint(declarator[:end])
     ):
         return None
     top, angle = [], 0  # the type's tokens outside template arguments
-    for token in declarator[:-1]:
+    for token in declarator[: end - 1]:
         if angle == 0:
             top.append(token)
         angle += (token == "<") - (token == ">")
     pointer = max((k for k, t in enumerate(top) if t in {"*", "&", "&&"}), default=-1)
     return {
         "class": owner,
-        "name": declarator[-1],
+        "name": declarator[end - 1],
+        "name_index": end - 1,
         "signature": " ".join(values),
         "const": "constexpr" in top or "const" in top[pointer + 1 :],
         "virtual": False,
     }
+
+
+def data_declarations(values, owner):
+    """Split grouped declarators while retaining their shared type."""
+    tokens = Tokens(" ".join(values))
+    parts, start, i, angle = [], 0, 0, 0
+    while i <= len(values):
+        if i == len(values) or values[i] == "," and angle == 0:
+            parts.append(values[start:i])
+            start = i + 1
+        elif values[i] in {"(", "[", "{"} and i in tokens.pairs:
+            i = tokens.pairs[i]
+        else:
+            angle += (values[i] == "<") - (values[i] == ">")
+        i += 1
+    first = data_member(parts[0], owner)
+    if not first:
+        return []
+    end = first["name_index"]
+    shared = parts[0][:end]
+    angle = 0
+    for i, token in enumerate(shared):
+        if angle == 0 and token in {"*", "&", "&&"}:
+            shared = shared[:i]
+            break
+        angle += (token == "<") - (token == ">")
+    return [first] + [
+        member for part in parts[1:] if (member := data_member(shared + part, owner))
+    ]
 
 
 def qualifier_path(values, end=None):
@@ -629,7 +665,12 @@ def scopes(tokens):
                             continue
                         if k < end and values[k] == ";":
                             aliases.append((full_name, [full_name], i))
-            initializer = value == "{" and member_initializer(tokens, segment, i)
+            initializer = value == "{" and (
+                member_initializer(tokens, segment, i)
+                or bool(
+                    data_declarations(values[segment:i], owner or "::".join(namespace))
+                )
+            )
             if (value == "(" or initializer) and i in tokens.pairs:
                 for p in range(i, tokens.pairs[i] + 1):
                     tokens.scopes[p] = here
@@ -658,9 +699,9 @@ def scopes(tokens):
                             )
                     functions.append(method)
                 elif owner is None or access != "private":
-                    member = data_member(prefix, owner or "::".join(namespace))
-                    if member:
-                        fields.append(member)
+                    fields.extend(
+                        data_declarations(prefix, owner or "::".join(namespace))
+                    )
                 if prefix and "using" in prefix and "=" in prefix:
                     equals = prefix.index("=")
                     using = prefix.index("using")
@@ -1260,8 +1301,6 @@ def scan_sources(api, source_root):
                 line += 1
             tokens.branches.append(branches[line])
         classes, functions, source_aliases, _ = scopes(tokens)
-        for function in functions:
-            source_returns[function["name"].split("::")[-1]].append(function)
         imports = re.findall(r"\busing\s+namespace\s+([\w:]+)\s*;", clean)
         namespace_aliases = dict(
             re.findall(r"\bnamespace\s+(\w+)\s*=\s*([\w:]+)\s*;", clean)
@@ -1347,6 +1386,7 @@ def scan_sources(api, source_root):
     for path, _, _, functions, *_ in files:
         for function in functions:
             scope = function["class"] or function["name"].rpartition("::")[0]
+            source_returns[(scope, function["name"].split("::")[-1])].append(function)
             declared[path][function["name"].split("::")[-1]].add(
                 tuple(scope.split("::")) if scope else ()
             )
@@ -1597,6 +1637,9 @@ def scan_sources(api, source_root):
                 if j is None:
                     continue
                 contained = set(local_bases.get(name, ()))
+                source_owner = source_class(
+                    name, tokens.scopes.get(start, ()), imports, namespace_aliases
+                )
                 if name in {"std::shared_ptr", "std::unique_ptr", "std::weak_ptr"}:
                     for offset, _, value in names_in(values[end:j]):
                         resolved = resolve(
@@ -1613,9 +1656,12 @@ def scan_sources(api, source_root):
                         )
                         if api.owner(resolved):
                             contained.add("__element__:" + resolved)
-                bind_variable(tokens, j, contained or {"__non_dart__"})
+                contained = contained or {"__non_dart__"}
+                if source_owner:
+                    contained.add(SOURCE_CLASS + source_owner)
+                bind_variable(tokens, j, contained)
                 if is_field(tokens, j, classes):
-                    fields[values[j]].update(contained or {"__non_dart__"})
+                    fields[values[j]].update(contained)
 
     relevant_files = {path for path, tokens, *_ in files if tokens.source_relevant}
     for path, tokens, *_ in files:
@@ -1801,11 +1847,21 @@ def scan_sources(api, source_root):
                         explicit = values[function + 1 : opening]
                         if "std" in explicit and "vector" in explicit:
                             return {"__non_dart__"}
-                        source_types = returns(source_returns.get(method, ()))
+                        source_declarations = []
+                        for marker in types:
+                            if not marker.startswith(SOURCE_CLASS):
+                                continue
+                            owner = marker.removeprefix(SOURCE_CLASS)
+                            for owner in [owner, *ancestry.get(owner, ())]:
+                                declarations = source_returns.get((owner, method), ())
+                                if declarations:
+                                    source_declarations.extend(declarations)
+                                    break
+                        source_types = returns(source_declarations)
                         if source_types:
                             return source_types
-                        if types == {"__non_dart__"}:
-                            return types
+                        if "__non_dart__" in types:
+                            return {"__non_dart__"}
                     return returns(declarations)
                 if function > 0 and values[function - 1] == "::":
                     qualifier = "::".join(qualifier_path(values, function))
@@ -1857,8 +1913,8 @@ def scan_sources(api, source_root):
         types = variable_types(tokens, before, fields)
         if not types and before > 1 and values[before - 1] in {"->", "."}:
             owner = receiver(tokens, before - 2, imports, namespace_aliases, depth + 1)
-            if owner == {"__non_dart__"}:  # an unknown field of a non-DART object
-                return owner
+            if "__non_dart__" in owner:  # an unknown field of a non-DART object
+                return {"__non_dart__"}
         return types
 
     # Propagate ordinary auto aliases from explicit DART fields and return values.
@@ -1977,6 +2033,20 @@ def scan_sources(api, source_root):
                 resolved = resolve(qualifier, tokens, i, imports, namespace_aliases)
             if not call:
                 if qualifier is not None:
+                    begin = i - len(TOKEN.findall(qualifier)) - 1
+                    free = (
+                        None
+                        if "using" in values[max(0, begin - 2) : begin]
+                        else qualified_function(
+                            qualifier + "::" + name,
+                            tokens.scopes.get(i, ()),
+                            tokens,
+                            i,
+                            namespace_aliases,
+                        )
+                    )
+                    if free:
+                        add("free_functions", free, path, tokens.line(i))
                     for candidate in api.spellings(
                         expand(qualifier + "::" + name, namespace_aliases),
                         tokens.scopes.get(i, ()),

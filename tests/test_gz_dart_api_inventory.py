@@ -589,7 +589,7 @@ class GzDetector {
 class Derived : public dart::collision::DerivedDetector {
   static Registrar<Derived> sRegistrar;
 };
-Derived::Registrar<Derived> Derived::sRegistrar{};
+Derived::Registrar<Derived> Derived::sRegistrar{Derived::getStaticType(), []() { return 0; }};
 extern dart::dynamics::Widget gDefined{};
 extern void use(dart::dynamics::Widget w = dart::dynamics::Widget(1));
 """,
@@ -603,6 +603,7 @@ extern void use(dart::dynamics::Widget w = dart::dynamics::Widget(1));
     assert constructors["dart::collision::Detector::Registrar"]["examples"] == [
         "dartsim/src/sample.cc:16"
     ]
+    assert _entries(result, "members")["getStaticType"]["count"] == 1
 
 
 def test_default_arguments_do_not_start_member_initializers(extractor, api, tmp_path):
@@ -1245,6 +1246,122 @@ def test_direct_dart_includes_detect_removed_headers(extractor, tmp_path):
     after = _scan(extractor, extractor.index_api(headers), tmp_path / "changed", source)
     assert not _entries(after, "headers")["dart/empty.hpp"]["source_present"]
     assert before != after
+
+
+def test_grouped_and_array_data_declarators(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+struct Data {
+  int x, y;
+  int values[3], counts[2][4];
+  int* pointer, scalar;
+  std::array<int, 2> array, other;
+  static int make();
+  int first{make()}, second{2};
+};
+}
+"""
+    )
+    api = extractor.index_api(headers)
+    assert set(api.data_members) == {
+        "x",
+        "y",
+        "values",
+        "counts",
+        "pointer",
+        "scalar",
+        "array",
+        "other",
+        "first",
+        "second",
+    }
+    assert api.data_members["scalar"][0]["signature"] == "int scalar"
+    assert api.data_members["counts"][0]["signature"] == "int counts [ 2 ] [ 4 ]"
+    assert api.data_members["other"][0]["signature"] == "std :: array < int , 2 > other"
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        "int init{dart::Data::make()}; void f(dart::Data& data) { data.x = 1; data.values[0] = 2; }",
+    )
+    assert set(_entries(result, "data_members")) == {"x", "values"}
+    assert _entries(result, "members")["make"]["count"] == 1
+
+
+def test_qualified_free_function_references(extractor, api, tmp_path):
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        "void f() { auto callback = &dart::math::measure; auto direct = dart::math::measure; }",
+    )
+    assert _entries(result, "free_functions")["dart::math::measure"]["count"] == 2
+
+
+def test_source_method_returns_stay_with_the_receiver_class(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        """namespace dart {
+struct First { void setName(int); };
+struct Second { void setName(double); };
+}
+"""
+    )
+    sources = {
+        "helpers.hh": """struct A { dart::First* make(); };
+struct B { dart::Second* make(); };
+struct Derived : A {};
+struct Override : B { dart::First* make(); };
+namespace one { struct A { dart::First* make(); }; }
+namespace two { struct A { dart::Second* make(); }; }
+using Alias = one::A;
+struct DartDerived : dart::Second { dart::First* make(); };
+""",
+        "helpers.cc": '#include "helpers.hh"\ndart::First* A::make() { return nullptr; }\ndart::Second* B::make() { return nullptr; }\n',
+        "client.cc": '#include "helpers.hh"\nvoid f(A a, Derived derived, Override custom, Alias alias, DartDerived local) { a.make()->setName(1); derived.make()->setName(2); custom.make()->setName(3); alias.make()->setName(4); local.make()->setName(5); }\n',
+    }
+    before = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "before", sources
+    )
+    row = _entries(before, "members")["setName"]
+    assert row["count"] == 5
+    assert row["receiver_types"] == ["dart::First"]
+    assert {item["class"] for item in row["declarations"]} == {"dart::First"}
+    assert row["unresolved_count"] == 0
+    header.write_text(header.read_text().replace("setName(double)", "setName(float)"))
+    after = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "after", sources
+    )
+    assert _entries(after, "members")["setName"] == row
+    assert after == before
+
+
+def test_foreign_helper_return_does_not_borrow_a_dart_return(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Widget { int getValue(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        """#include <dart/api.hpp>
+struct RealWrapper { dart::Widget* getWidget(); };
+struct ForeignWidget { int getValue(); };
+struct ForeignWrapper { ForeignWidget* getWidget(); };
+void inspect(ForeignWrapper& foreign) {
+  auto value = foreign.getWidget();
+  value->getValue();
+  foreign.getWidget()->getValue();
+}
+""",
+    )
+    assert not _entries(result, "members")
 
 
 @pytest.mark.parametrize(
