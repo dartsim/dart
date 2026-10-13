@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,60 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
-#define DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
+#include "demo_models/WamIkFast.hpp"
 
-#include "dart/common/SharedLibrary.hpp"
-#include "dart/dynamics/IkFast.hpp"
+#include <dart/dynamics/InverseKinematics.hpp>
 
-class SharedLibraryWamIkFast : public dart::dynamics::IkFast
+namespace dart::python {
+
+void bind_wam_ikfast(nb::module_& demos)
 {
-public:
-  SharedLibraryWamIkFast(
-      dart::dynamics::InverseKinematics* ik,
-      const std::vector<std::size_t>& dofMap,
-      const std::vector<std::size_t>& freeDofMap,
-      const std::string& methodName = "IKFast",
-      const Analytical::Properties& properties = Analytical::Properties());
+  demos.def(
+      "set_wam_ikfast",
+      [](dart::dynamics::InverseKinematics* ik) {
+        if (!ik)
+          throw nb::value_error("ik must not be None");
+        dart_demos::setWamIkFast(*ik);
+      },
+      nb::arg("ik").none(),
+      "Install the linked WAM analytical IKFast method on an end effector's "
+      "IK.");
+}
 
-  // Documentation inherited.
-  auto clone(dart::dynamics::InverseKinematics* newIK) const
-      -> std::unique_ptr<GradientMethod> override;
-
-protected:
-  // Documentation inherited.
-  int getNumFreeParameters() const override;
-
-  // Documentation inherited.
-  int* getFreeParameters() const override;
-
-  // Documentation inherited.
-  int getNumJoints() const override;
-
-  // Documentation inherited.
-  int getIkRealSize() const override;
-
-  // Documentation inherited.
-  int getIkType() const override;
-
-  // Documentation inherited.
-  bool computeIk(
-      const IkReal* targetTranspose,
-      const IkReal* targetRotation,
-      const IkReal* freeParams,
-      ikfast::IkSolutionListBase<IkReal>& solutions) override;
-
-  // Documentation inherited.
-  void computeFk(
-      const IkReal* parameters,
-      IkReal* targetTranspose,
-      IkReal* targetRotation) override;
-
-  // Documentation inherited.
-  const char* getKinematicsHash() override;
-
-  // Documentation inherited.
-  const char* getIkFastVersion() override;
-};
-
-#endif // DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
+} // namespace dart::python

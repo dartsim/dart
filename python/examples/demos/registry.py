@@ -10,6 +10,7 @@ from .scenes import (
     atlas_v5,
     biped_stand,
     boxes,
+    contact_inverse_dynamics,
     drag_and_drop,
     dynamic_joint_constraints,
     empty,
@@ -32,6 +33,7 @@ from .scenes import (
     tinkertoy,
     unitree_g1,
     vehicle,
+    wam_ikfast,
 )
 
 
@@ -53,6 +55,8 @@ def make_demo_scenes():
         hybrid_dynamics,
         biped_stand,
         operational_space_control,
+        contact_inverse_dynamics,
+        wam_ikfast,
         atlas_puppet,
         atlas_simbicon,
         mixed_chain,
