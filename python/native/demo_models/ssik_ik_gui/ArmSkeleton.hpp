@@ -94,6 +94,10 @@ void targetControlsFromTransform(
 class ArmSkeleton
 {
 public:
+  /// Removes every generated instance skeleton from the world, so no
+  /// ghosts outlive the helper that created them.
+  ~ArmSkeleton();
+
   void setWorld(const dart::simulation::WorldPtr& world);
 
   const dart::simulation::WorldPtr& getWorld() const;
