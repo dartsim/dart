@@ -69,17 +69,18 @@ remeasure the full scenario after each change. Pair cache, SIMD, or threading
 claims with hardware-counter evidence as described in
 [the performance CI owner](ci-cd.md#performance-records-and-guards).
 
-### Report the Effect
+### Report the Results
 
 Follow [PR Descriptions](contributing.md#pr-descriptions): lead with what users
 get, the speed-up versus a named DART baseline revision, real-time factor
 (simulated seconds / measured wall seconds), and behavior results. State
 whether the speed-up uses engine or end-to-end time. Show time-series plots for
 transients and comparison plots with repeat ranges; keep raw samples/tables
-available behind the plots. Record CPU/hardware, affinity and SMT policy,
+available in collapsed details behind the plots. Record CPU/hardware, affinity and SMT policy,
 governor, threads, compiler/dependency versions, build flags, exact baseline
-and candidate revisions, reproduction commands, windows, and caveats. Bound
-the claim to measured workloads and explain unavailable or noisy evidence.
+and candidate revisions, reproduction commands, and windows in those details.
+Bound the claim to measured workloads and keep material caveats and
+unavailable or noisy evidence visible.
 
 Public comparisons use DART revisions only (old versus new). Cross-engine
 tooling, artifacts, and results stay in private workspaces, outside the public
@@ -575,7 +576,7 @@ before/after matrix separately.
 ## Interactive Memory Inspection
 
 Memory inspection is compiled out of `dart-demos` by default. After
-`pixi run config-demos`, opt in by reconfiguring the same build with
+`pixi run config`, opt in by reconfiguring the same build with
 `-DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. The default-OFF build excludes the
 diagnostics sources, link dependencies, host state, environment probe, Memory
 tab, and frame-path calls; its post-link check rejects any diagnostics marker in
@@ -626,7 +627,7 @@ question.
 ## Reporting
 
 Follow [Performance Methodology](#performance-methodology) for measurement,
-behavior guards, attribution, and Effect-first evidence.
+behavior guards, attribution, and evidence beside the supported claim.
 
 For Gazebo-path claims, use `--gz-preset` as described in
 [Preserve Downstream Compatibility](#preserve-downstream-compatibility).

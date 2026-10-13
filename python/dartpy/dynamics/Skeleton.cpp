@@ -342,6 +342,12 @@ void Skeleton(nb::module_& m)
           +[](const dart::dynamics::Skeleton* self) -> bool {
             return self->isMobile();
           })
+      .def("isResting", &dart::dynamics::Skeleton::isResting)
+      .def(
+          "setResting",
+          &dart::dynamics::Skeleton::setResting,
+          nb::arg("resting"))
+      .def("getIslandIndex", &dart::dynamics::Skeleton::getIslandIndex)
       .def(
           "setTimeStep",
           +[](dart::dynamics::Skeleton* self, double _timeStep) -> void {

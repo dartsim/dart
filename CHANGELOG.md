@@ -90,6 +90,12 @@
     the element's default frame is explicitly rejected instead of silently
     misplacing the pose.
 
+  * Loading a SKEL world no longer crashes when the collision detector
+    factory cannot create `fcl`, for example after an application
+    unregisters the factory's creators. The parser creates the FCL detector
+    directly instead and warns once.
+    [#3750](https://github.com/dartsim/dart/pull/3750)
+
 * Collision
 
   * An exception thrown by a collision filter during an ODE collision check
@@ -108,6 +114,24 @@
     [#3721](https://github.com/dartsim/dart/pull/3721)
 
 * Dynamics
+
+  * Fix crashes when cloning a skeleton, or copying a body node that has an
+    end effector, whose inverse kinematics uses an analytical solver. Inverse
+    kinematics copied by `BodyNode::copyTo()` or `BodyNode::copyAs()` now
+    selects the copies of the original degrees of freedom, keeps the selected
+    ones that were not copied when the copy stays in the same skeleton, and
+    warns when none remain. Copies with analytical solvers warn and use
+    `JacobianDLS` with normal iterative error settings, preserving user bounds
+    and task-space regions. Set up the analytical solver again for the copy;
+    whole-skeleton clones keep their analytical solvers.
+    `IkFast::getDofs()` now returns an empty list when IkFast cannot configure,
+    as its warning says, instead of failing an assertion.
+    [#3722](https://github.com/dartsim/dart/pull/3722)
+
+  * `VoxelGridShape::updateOccupancy()` now writes a single point through
+    OctoMap's double-precision update, so a point on a voxel boundary lands
+    in the cell that `getOccupancy()` reads.
+    [#3737](https://github.com/dartsim/dart/pull/3737)
 
   * Preserve the generated soft mesh and shape-node properties when cloning
     soft-body skeletons, avoiding duplicate null meshes during collision checks.
@@ -160,6 +184,15 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Allow C++-only projects to find the installed CMake package with the
+    `collision-ode` component without enabling C.
+    [#3756](https://github.com/dartsim/dart/pull/3756)
+
+  * Restore URDF support and `dart-io` builds with urdfdom 3.x installations
+    that ship no CMake version file, such as Ubuntu 22.04 and FreeBSD packages.
+    The minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
+    3.0.0.
 
   * The installed CMake package accepts version requests from 6.0 up to the
     installed version, so `find_package(DART 6.10)` finds DART 7. `EXACT`

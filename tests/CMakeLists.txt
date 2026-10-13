@@ -95,7 +95,13 @@ get_target_property(
   INTERFACE_INCLUDE_DIRECTORIES
 )
 if(MSVC)
-  set(contact_surface_probe_flags /std:c++14 /Zs)
+  # Use the C++17 dialect and template parsing mode DART exports to MSVC users.
+  set(
+    contact_surface_probe_flags
+    /std:c++17
+    ${DART_MSVC_CXX_PARSING_OPTIONS}
+    /Zs
+  )
   set(contact_surface_include_flag /I)
 else()
   set(contact_surface_probe_flags -std=c++14 -fsyntax-only)
@@ -141,6 +147,17 @@ add_test(
     "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}" -P
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
 )
+
+if(TARGET dart-collision-ode)
+  add_test(
+    NAME test_DARTConfigODE
+    COMMAND
+      "${CMAKE_COMMAND}" "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+      "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigODE"
+      "-DTEST_CONFIG=$<CONFIG>" "-DTEST_PREFIX_PATH=${CMAKE_PREFIX_PATH}" -P
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigODE.cmake"
+  )
+endif()
 
 # Print tests
 dart_get_tests(integration_tests "integration")

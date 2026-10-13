@@ -33,8 +33,8 @@
 #ifndef DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
 #define DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
 
-#include "ContactArrowLayout.hpp"
 #include "GuiBackend.hpp"
+#include "demo_models/ContactArrowLayout.hpp"
 
 #include <dart/dart.hpp>
 

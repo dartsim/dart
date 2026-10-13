@@ -1472,6 +1472,8 @@ def test_release_target_rejects_invalid_tables(
         ("docs/topic", "", "docs/topic", True),
         ("", "", "", True),
         ("release-6.20", "main", "", True),
+        # A stacked PR's base is another topic branch.
+        ("docs/topic", "refactor/topic", "123/merge", True),
     ],
 )
 def test_release_target_checks_known_base_branch(
@@ -3071,6 +3073,7 @@ project(test_graph C CXX)
 set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(DART_VERSION 6.20.0)
 set(DART_VERSION_OVERRIDE "" CACHE STRING "")
+set(HAVE_ODE TRUE CACHE BOOL "")
 if(DART_VERSION_OVERRIDE)
   set(DART_VERSION "${DART_VERSION_OVERRIDE}")
 endif()
@@ -3110,6 +3113,16 @@ add_test(
     "-DDART_VERSION=${DART_VERSION}"
     "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
+)
+add_test(
+  NAME test_DARTConfigODE
+  COMMAND
+    "${CMAKE_COMMAND}"
+    "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigODE"
+    "-DTEST_CONFIG=$<CONFIG>"
+    "-DTEST_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigODE.cmake"
 )
 add_subdirectory(integration)
 add_subdirectory(regression)
@@ -3181,6 +3194,7 @@ endif()
         "tests/cmake/test_DARTConfigVersion.cmake": (
             ROOT / "tests/cmake/test_DARTConfigVersion.cmake"
         ).read_text(encoding="utf-8"),
+        "tests/cmake/test_DARTConfigODE.cmake": 'message(STATUS "ODE fixture executed")\n',
         "package.xml": "<package><version>6.20.0</version></package>\n",
         "scripts/run_pytest.py": (ROOT / "scripts/run_pytest.py").read_text(
             encoding="utf-8"
@@ -3235,6 +3249,41 @@ def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     infra.check_cmake_test_graph(tmp_path, build, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (
+            "NAME test_DARTConfigODE",
+            "NAME missing_ode_test",
+            "required CMake script test `test_DARTConfigODE` is missing",
+        ),
+        (
+            "-DDART_BINARY_DIR=${DART_BINARY_DIR}",
+            "-DDART_BINARY_DIR=${DART_BINARY_DIR}/wrong",
+            "unapproved command arguments",
+        ),
+        (
+            "-DTEST_CONFIG=$<CONFIG>",
+            "-DTEST_CONFIG=wrong",
+            "unapproved command arguments",
+        ),
+    ),
+)
+def test_cmake_semantic_graph_rejects_changed_ode_script_test(
+    tmp_path, old, new, expected
+):
+    _configure_semantic_graph_fixture(tmp_path)
+    cmake_file = tmp_path / "tests/CMakeLists.txt"
+    cmake_file.write_text(
+        cmake_file.read_text(encoding="utf-8").replace(old, new), encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, tmp_path / "build", errors)
+
+    assert any(expected in error for error in errors), errors
 
 
 @pytest.mark.parametrize("override", ("", "7.0.0", "7.4.2", "8.0.0"))
@@ -3378,7 +3427,7 @@ def _add_contact_surface_probe_fixture(root: Path):
         cmake.read_text(encoding="utf-8")
         + "\nget_target_property(probe_eigen Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)\n"
         "if(MSVC)\n"
-        "  set(probe_flags /std:c++14 /Zs)\n"
+        "  set(probe_flags /std:c++17 /permissive- /Zc:twoPhase- /Zs)\n"
         "  set(probe_include_flag /I)\n"
         "else()\n"
         "  set(probe_flags -std=c++14 -fsyntax-only)\n"
@@ -3405,14 +3454,22 @@ def _add_contact_surface_probe_fixture(root: Path):
     ("old", "new", "expected"),
     (
         (None, None, None),
-        ("c++14", "c++17", "only C++14 flags"),
-        ("${probe_flags}", "${probe_flags} -DPROBE_BYPASS", "only C++14 flags"),
+        (
+            "${probe_flags}",
+            "${probe_flags} -std=c++20",
+            "only the platform probe flags",
+        ),
+        (
+            "${probe_flags}",
+            "${probe_flags} -DPROBE_BYPASS",
+            "only the platform probe flags",
+        ),
         (
             "${probe_flags}",
             "${probe_flags} -I${PROJECT_SOURCE_DIR}/extra",
-            "only C++14 flags",
+            "only the platform probe flags",
         ),
-        (" ${probe_eigen}", "", "only C++14 flags"),
+        (" ${probe_eigen}", "", "only the platform probe flags"),
         ("${CMAKE_CXX_COMPILER}", "${CMAKE_COMMAND}", "configured compiler"),
         (
             "add_test(NAME ContactSurfaceProbe",
@@ -3439,6 +3496,41 @@ def test_cmake_semantic_graph_contact_surface_probe_command(
         assert errors == []
     else:
         assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("compiler_id", "simulate_id"), (("MSVC", ""), ("Clang", "MSVC"))
+)
+@pytest.mark.parametrize("missing_flag", (None, "/permissive-", "/Zc:twoPhase-"))
+def test_contact_surface_probe_requires_msvc_parsing_flags(
+    tmp_path, monkeypatch, compiler_id, simulate_id, missing_flag
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake, _ = _add_contact_surface_probe_fixture(tmp_path)
+    text = cmake.read_text(encoding="utf-8").replace("if(MSVC)", "if(TRUE)")
+    if missing_flag is not None:
+        text = text.replace(f" {missing_flag}", "")
+    cmake.write_text(text, encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def read_text(path, *args, **kwargs):
+        text = original_read_text(path, *args, **kwargs)
+        if path.name == "CMakeCXXCompiler.cmake" and path.is_relative_to(build):
+            text += (
+                f'\nset(CMAKE_CXX_COMPILER_ID "{compiler_id}")\n'
+                f'set(CMAKE_CXX_SIMULATE_ID "{simulate_id}")\n'
+            )
+        return text
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if missing_flag is None:
+        assert errors == []
+    else:
+        assert any("only the platform probe flags" in error for error in errors)
 
 
 def test_cmake_semantic_graph_contact_surface_probe_rejects_fake_source(tmp_path):
@@ -3800,13 +3892,28 @@ def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeyp
 
 
 @pytest.mark.parametrize(
-    ("compiler_id", "simulate_id", "expected"),
-    (("MSVC", "", True), ("Clang", "MSVC", True), ("GNU", "", False)),
+    ("compiler_id", "simulate_id", "expected", "flags"),
+    (
+        (
+            "MSVC",
+            "",
+            True,
+            ["/std:c++17", "/permissive-", "/Zc:twoPhase-", "/Zs"],
+        ),
+        (
+            "Clang",
+            "MSVC",
+            True,
+            ["/std:c++17", "/permissive-", "/Zc:twoPhase-", "/Zs"],
+        ),
+        ("GNU", "", False, ["-std=c++14", "-fsyntax-only"]),
+    ),
 )
-def test_cmake_msvc_semantics_follow_configured_compiler_state(
-    tmp_path, compiler_id, simulate_id, expected
+def test_contact_surface_probe_flags_follow_configured_compiler_state(
+    tmp_path, compiler_id, simulate_id, expected, flags
 ):
-    compiler = tmp_path / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
+    build = tmp_path / "build"
+    compiler = build / "CMakeFiles" / "4.3.3" / "CMakeCXXCompiler.cmake"
     compiler.parent.mkdir(parents=True)
     compiler.write_text(
         f'set(CMAKE_CXX_COMPILER_ID "{compiler_id}")\n'
@@ -3817,13 +3924,67 @@ def test_cmake_msvc_semantics_follow_configured_compiler_state(
         "CMAKE_CACHE_MAJOR_VERSION": "4",
         "CMAKE_CACHE_MINOR_VERSION": "3",
         "CMAKE_CACHE_PATCH_VERSION": "3",
+        "CMAKE_CXX_COMPILER": "configured-cxx",
+        "Eigen3_DIR": str(tmp_path / "eigen"),
     }
     errors = []
 
-    actual = infra.cmake_compiler_uses_msvc_abi(tmp_path, cache, errors)
+    actual = infra.cmake_compiler_uses_msvc_abi(build, cache, errors)
 
     assert errors == []
     assert actual is expected
+
+    source = tmp_path / "tests/cmake/ContactSurfaceProbe.cpp"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        (ROOT / "tests/cmake/ContactSurfaceProbe.cpp").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    trace = [
+        {
+            "cmd": "set_target_properties",
+            "file": str(tmp_path / "eigen/Eigen3Targets.cmake"),
+            "args": [
+                "Eigen3::Eigen",
+                "PROPERTIES",
+                "INTERFACE_INCLUDE_DIRECTORIES",
+                str(tmp_path / "eigen/include"),
+            ],
+        }
+    ]
+
+    command = infra.contact_surface_probe_command(tmp_path, build, cache, trace, errors)
+
+    assert errors == []
+    assert command is not None
+    assert command[1 : 1 + len(flags)] == flags
+    cmake = (ROOT / "tests/CMakeLists.txt").read_text(encoding="utf-8")
+    start = cmake.index("get_target_property(\n  contact_surface_eigen_includes")
+    probe = cmake[start : cmake.index("dart_format_add(cmake/ContactSurfaceProbe.cpp)")]
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(contact_surface_probe NONE)\n"
+        f'include("{ROOT.as_posix()}/cmake/dart_defs.cmake")\n'
+        "enable_testing()\n"
+        f"set(MSVC {'TRUE' if expected else 'FALSE'})\n"
+        'set(CMAKE_CXX_COMPILER "configured-cxx")\n'
+        "set(DART_SOURCE_DIR ${PROJECT_SOURCE_DIR})\n"
+        "set(DART_BINARY_DIR ${PROJECT_BINARY_DIR})\n"
+        "add_library(Eigen3::Eigen INTERFACE IMPORTED)\n"
+        "set_target_properties(Eigen3::Eigen PROPERTIES "
+        'INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/eigen/include")\n'
+        + probe,
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        ["cmake", "-S", str(tmp_path), "-B", str(build)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    generated = infra.generated_ctest_registrations(build, "Release", errors)
+    assert errors == []
+    assert generated["ContactSurfaceProbe"][0] == command
 
 
 def test_cmake_semantic_graph_probe_requires_fresh_file_api_reply(
