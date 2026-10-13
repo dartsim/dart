@@ -34,6 +34,32 @@ docking workspace, scene lifecycle, and command-line dispatch. It links
 The C++ demo catalog uses compatibility shims in `examples/demos/`. A vanilla
 system ImGui compiles out this host while retaining `dart-gui` and dartpy.
 
+### World step stages
+
+`World::step(bool)` stays the exported, non-virtual entry point: Gazebo calls
+it, the allocation shim interposes it, and Callgrind collects inside it. It
+dispatches to private, non-virtual stages that share a private
+`World::StepContext`, defined in `World.cpp` and kept on the stack for one call:
+
+- `beginStep` prepares simulation mode, resets the frame allocator, reads the
+  deactivation flag once and mirrors it onto the constraint solver, and, with
+  deactivation on, wakes resting skeletons after edits made between steps.
+- With deactivation off, `stepWithoutDeactivation` runs the whole step.
+- With deactivation on, `tryAllRestingFastPath` records whether a custom
+  `BodyNodeCollisionFilter` lets skeletons sleep this step, a flag later stages
+  read. When the last solve found no contacts, it runs the all-resting
+  readiness scan, which can clear residual forces and commands and wake resting
+  skeletons. If every mobile skeleton still rests and nothing changed since the
+  last step, it advances time and the frame count without integrating or
+  solving, clears resting skeletons' accelerations under such a filter, and
+  returns true. Otherwise `advanceVelocities`, `solveConstraints`,
+  `advancePositions`, and `finishDeactivationStep` run in that order.
+
+Every path returns through the end of `World::step`, the one completed-step
+boundary. The constraint solver runs once per step outside the fast path and
+never on it. `StepContext` carries nothing to the next step; it keeps the
+solve's collision group and filter alive until `World::step` returns.
+
 ## Compatibility Boundaries
 
 - Public headers and exported CMake components are release API. Moving an

@@ -277,6 +277,9 @@ public:
   void addTeardown(std::function<void()> teardown);
   void log(LogEntry::Level level, const std::string& message);
 
+  /// Logs and counts a disabled scene callback; see invokeSceneCallback().
+  void reportCallbackFailure(const std::string& what, const std::string& error);
+
   /// Draws the Demos navigator, Simulation toolbar, and Diagnostics panels,
   /// plus the active scene's own panel. Called once per frame by the host's
   /// ImGuiWidget.

@@ -15,15 +15,14 @@ drag it, which is what actually exercises the task-space controller
 interactively.
 """
 
+from __future__ import annotations
+
 import dartpy as dart
 import numpy as np
 
-from ..registry import SceneHandle
 
-
-class OperationalSpaceControlNode:
-    def __init__(self, world, kr5, target):
-        super().__init__(world)
+class OperationalSpaceController:
+    def __init__(self, kr5, target):
         self.kr5 = kr5
         self.dofs = kr5.getNumDofs()
         self.ee = kr5.getBodyNode("palm")
@@ -31,7 +30,7 @@ class OperationalSpaceControlNode:
         self.Kp = np.eye(3) * 50.0
         self.Kd = np.eye(self.dofs) * 5.0
 
-    def customPreStep(self):
+    def pre_step(self):
         m = self.kr5.getMassMatrix()
 
         j = self.ee.getLinearJacobian()
@@ -62,9 +61,7 @@ class OperationalSpaceControlNode:
         self.kr5.setForces(forces1 + forces2 + forces3)
 
 
-def build(gui=None) -> SceneHandle:
-    if gui is None:
-        gui = dart.gui
+def build() -> dart.viewer.SceneSetup:
     world = dart.simulation.World()
 
     urdf_parser = dart.utils.DartLoader()
@@ -82,18 +79,41 @@ def build(gui=None) -> SceneHandle:
     target.createVisualAspect().setColor([0.9, 0.1, 0.1])
     world.addSimpleFrame(target)
 
-    class WorldNode(OperationalSpaceControlNode, gui.RealTimeWorldNode):
-        pass
+    controller = OperationalSpaceController(kr5, target)
 
-    node = WorldNode(world, kr5, target)
+    def on_activate(ctx):
+        grid = dart.gui.GridVisual()
+        grid.setPlaneType(dart.gui.GridVisual.PlaneType.ZX)
+        grid.setOffset([0, -0.55, 0])
+        ctx.add_attachment(grid)
+        ctx.enable_drag_and_drop(target)
 
-    return SceneHandle(
-        node=node,
-        grid=True,
-        drag_and_drop=[target],
-        camera_home=([2.0, 1.0, 2.0], [0.0, 0.0, 0.0], [-0.24, 0.94, -0.25]),
-        notes=(
-            "Target frame made visible + draggable (was an invisible, fixed "
-            "SimpleFrame in the original standalone example)."
-        ),
+    panel = dart.viewer.Panel()
+    panel.add_text(
+        "Target frame made visible + draggable (was an invisible, fixed "
+        "SimpleFrame in the original standalone example).",
+        wrap=True,
     )
+
+    return dart.viewer.SceneSetup(
+        world,
+        pre_step=controller.pre_step,
+        on_activate=on_activate,
+        camera_home=dart.viewer.CameraHome(
+            eye=[2.0, 1.0, 2.0], center=[0.0, 0.0, 0.0], up=[-0.24, 0.94, -0.25]
+        ),
+        shadows=False,
+        panel=panel,
+    )
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "operational_space_control",
+            title="Operational Space Control",
+            category="Control & IK",
+            summary="KR5 arm chasing a draggable target with task-space control.",
+            factory=build,
+        )
+    ]

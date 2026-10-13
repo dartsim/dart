@@ -25,8 +25,8 @@ Update documentation: $ARGUMENTS
    - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit
-   generated `.opencode/command/` files or manifest-owned `.agents/skills/`
-   paths. `.codex/` is maintained runtime configuration.
+   manifest-owned `.agents/skills/` paths. `.codex/` is maintained runtime
+   configuration.
 4. Classify new or moved docs by lifecycle first, then audience, then topic,
    using `docs/information-architecture.md`
 5. Update indexes and cross-references that point to changed docs. For AI docs,

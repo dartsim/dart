@@ -198,6 +198,12 @@ double Control::getMax() const
 }
 
 //==============================================================================
+bool Control::isInteger() const
+{
+  return mInteger;
+}
+
+//==============================================================================
 void Control::setRange(double min, double max)
 {
   if (mKind != Kind::Slider && mKind != Kind::Input && mKind != Kind::Vec3)

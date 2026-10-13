@@ -1,29 +1,73 @@
-"""Rigid Body > rigid_cubes.
+"""Rigid cube stack with directional, decaying force controls."""
 
-Port of ``python/examples/rigid_cubes/main.py``: a cube-stack skeleton
-dropped onto a ground plane. Note: the C++ ``rigid_cubes`` demo scene adds
-directional impulse forces, contact-force visualization, and playback on top
-of this; this port keeps the original standalone example's simpler feature
-set (id/category/title reused from the C++ catalog so the two runners agree
-on what "rigid_cubes" means, but the summary below describes what the Python
-port actually does).
-"""
+from __future__ import annotations
 
 import dartpy as dart
+import numpy as np
 
-from ..registry import SceneHandle
+from .common import reorient_z_up
 
 
-def build(gui=None) -> SceneHandle:
-    if gui is None:
-        gui = dart.gui
+def build() -> dart.viewer.SceneSetup:
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/cubes.skel")
-    world.setGravity([0, -9.81, 0])
+    if world is None:
+        raise RuntimeError("failed to load dart://sample/skel/cubes.skel")
+    reorient_z_up(world)
+    force = np.zeros(3)
 
-    node = gui.RealTimeWorldNode(world)
+    def pre_step():
+        nonlocal force
+        if world.getNumSkeletons() > 1:
+            world.getSkeleton(1).getBodyNode(0).addExtForce(force)
+        force /= 2.0
 
-    return SceneHandle(
-        node=node,
-        shadow=True,
-        camera_home=([0.8, 0.0, 0.8], [0, -0.25, 0], [0, 0.5, 0]),
+    def apply_force(value):
+        force[:] = value
+
+    panel = dart.viewer.Panel()
+    skeletons = panel.add_text(f"Skeletons: {world.getNumSkeletons()}")
+    panel.add_text(
+        "Force keys apply a 500 N impulse to the second skeleton's first "
+        "body, decaying by half each step. Contact forces are visualized "
+        "host-wide via Diagnostics > Contact Visualizer.",
+        wrap=True,
     )
+
+    def pre_refresh():
+        skeletons.label = f"Skeletons: {world.getNumSkeletons()}"
+
+    return dart.viewer.SceneSetup(
+        world,
+        pre_step=pre_step,
+        pre_refresh=pre_refresh,
+        key_actions=[
+            dart.viewer.KeyAction(
+                key, label, lambda value=value: apply_force(value)
+            )
+            for key, label, value in [
+                ("1", "Force -X", [-500, 0, 0]),
+                ("2", "Force +X", [500, 0, 0]),
+                ("3", "Force +Y", [0, 500, 0]),
+                ("4", "Force -Y", [0, -500, 0]),
+            ]
+        ],
+        panel=panel,
+        camera_home=dart.viewer.CameraHome(
+            eye=[1.1, 1.1, 0.55], center=[0, 0, -0.3], up=[0, 0, 1]
+        ),
+    )
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "rigid_cubes",
+            title="Rigid Cubes",
+            category="Rigid Body",
+            summary=(
+                "A loaded cube stack; apply directional impulses and visualize "
+                "live contact forces."
+            ),
+            factory=build,
+        )
+    ]

@@ -74,6 +74,23 @@ viewer.addWorldNode(node)
 assert viewer.getNumWorldNodes() == 1
 assert node.getWorld().getName() == "wheel smoke"
 
+# The private demo app host runs display-free. A wheel built against a
+# vanilla system ImGui compiles it out.
+if hasattr(dart, "viewer"):
+    steps = []
+    scene = dart.viewer.Scene(
+        "smoke",
+        title="Smoke",
+        category="Wheel",
+        factory=lambda: dart.viewer.SceneSetup(
+            dart.simulation.World(), pre_step=lambda: steps.append(None)
+        ),
+    )
+    assert dart.viewer.run([scene], ["smoke", "--cycle-scenes", "--frames", "2"]) == 0
+    assert len(steps) == 4
+else:
+    print("dartpy.viewer is compiled out of this wheel (no docking ImGui)")
+
 print("dartpy wheel smoke test passed")
 """
 

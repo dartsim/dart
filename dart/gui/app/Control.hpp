@@ -108,6 +108,9 @@ public:
   double getMin() const;
   double getMax() const;
 
+  /// Whether a Slider or Input holds whole numbers.
+  bool isInteger() const;
+
   /// Sets the range of a Slider, Input or Vec3 and clamps the current value.
   /// Throws std::invalid_argument unless min <= max and a Slider's bounds lie
   /// within half of its value type's span; integer ranges are clipped to int.

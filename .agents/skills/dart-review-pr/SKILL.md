@@ -11,11 +11,11 @@ description: "DART Review PR: review a PR or address review feedback"
 
 Use this skill to run the DART `dart-review-pr` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-review-pr <arguments>`
+- Claude Code: `/dart-review-pr <arguments>`
 - Codex: `$dart-review-pr <arguments>`
 - Muse: `/dart-review-pr <arguments>`
 

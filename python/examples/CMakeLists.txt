@@ -46,10 +46,10 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/demos/__main__.py")
     py_example_demos
     COMMAND
       ${CMAKE_COMMAND} -E echo
-      "Running: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} -m examples.demos --cycle"
+      "Running: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} -m examples.demos --cycle-scenes --frames 2"
     COMMAND
       ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH}"
-      ${Python3_EXECUTABLE} -m examples.demos --cycle
+      ${Python3_EXECUTABLE} -m examples.demos --cycle-scenes --frames 2
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
     SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/demos/__main__.py
   )
