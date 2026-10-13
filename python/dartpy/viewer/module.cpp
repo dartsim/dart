@@ -317,8 +317,10 @@ void releaseScene()
   dartnb::GilScopedAcquire gil;
   if (const auto session = currentSession()) {
     session->activeSetup = nb::object();
+    // A context saved past teardown must not keep the scene's callables and
+    // what they capture alive; every one of them has run by now.
     if (session->activeContext)
-      nb::cast<PySceneContext&>(session->activeContext).retained.clear();
+      nb::cast<PySceneContext&>(session->activeContext).clear();
     session->activeContext = nb::object();
   }
 }

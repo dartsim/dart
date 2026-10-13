@@ -329,8 +329,23 @@ def test_run_rejects_a_nested_run():
 
 def test_scene_context_expires_after_teardown():
     contexts = []
-    assert cycle([make_scene(on_activate=contexts.append)]) == 0
+    captures = []
+
+    class Capture:
+        pass
+
+    def on_activate(ctx):
+        contexts.append(ctx)
+        capture = Capture()
+        captures.append(weakref.ref(capture))
+        ctx.add_teardown(lambda capture=capture: None)
+        ctx.add_event_handler(lambda event, capture=capture: False)
+
+    assert cycle([make_scene(on_activate=on_activate)]) == 0
     assert len(contexts) == 2
+    gc.collect()
+    # Saved contexts no longer keep their scenes' callbacks or captures alive.
+    assert [ref() for ref in captures] == [None, None]
     for context in contexts:
         with pytest.raises(RuntimeError):
             context.viewer
