@@ -148,7 +148,8 @@ std::shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& point, bool occupied)
 {
-  mOctree->updateNode(toPoint3d(point), occupied);
+  // OctoMap's double overload addresses the cell that getOccupancy() reads.
+  mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
 
   incrementVersion();
 }
