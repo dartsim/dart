@@ -4373,6 +4373,10 @@ def check_release_target(root: Path, errors: list[str]) -> None:
     check_release_changelog(root, version, errors)
 
     expected_branch = os.environ.get("GITHUB_BASE_REF")
+    # A stacked PR targets another topic branch; the bottom PR of its stack,
+    # which targets the release line, carries this check.
+    if expected_branch and not re.fullmatch(r"main|release-\d+\.\d+", expected_branch):
+        return
     if not expected_branch:
         checkout = subprocess.run(
             ["git", "branch", "--show-current"],
