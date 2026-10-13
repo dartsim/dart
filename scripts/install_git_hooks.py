@@ -13,16 +13,18 @@ Scissors cleanup or verbose mode excludes text after Git's scissors line. No
 ``git commit``, and ``pre-push`` checks commits created by merges, cherry-picks,
 rebases, reverts, imports and sequencer operations before publication. It reads
 Git's ref updates from stdin, skips deletions, and scans messages and changes
-using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
-new refs scan, one at a time, only the commits that neither the remote's
-default HEAD nor any locally available remote branch head, or its
-remote-tracking tip while that branch still exists, reaches. Missing
-existing-ref bases and default HEAD objects are fetched without changing refs
-or FETCH_HEAD. An empty remote or unrelated history scans the whole local
-history; lookup or scan errors block the push. Older branches without a
-checker or compatible Python skip the scan with a notice. A checker removed
-from the worktree is recovered from HEAD or the push base; recovery errors
-block the operation. Foreign pre-push hooks receive the same stdin. Behaviour:
+using ``check_local_paths.py --commit-range``. Existing refs use the remote
+SHA; new refs scan only the commits that neither the remote's default HEAD nor
+any locally available remote branch head, or its remote-tracking tip while that
+branch still exists and the remote fetches from the push destination, reaches,
+as one range when a single published base covers them and otherwise one commit
+at a time. Missing existing-ref bases and default HEAD objects are fetched
+without changing refs or FETCH_HEAD. An empty remote or unrelated history scans
+the whole local history; lookup or scan errors block the push. Older branches
+without a checker or compatible Python skip the scan with a notice. A checker
+removed from the worktree is recovered from HEAD or the push base; recovery
+errors block the operation. Foreign pre-push hooks receive the same stdin.
+Behaviour:
 
 * Each managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
@@ -118,26 +120,48 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
         published=
         # A remote-tracking tip stays a published boundary after its branch
         # advances to a commit this clone lacks, while the branch still exists.
-        tracking_refs=$(git for-each-ref --format='%(objectname) refs/heads/%(refname:lstrip=3)' "refs/remotes/$1/") || exit 1
+        # Tracking refs describe the fetch repository, so trust them only when
+        # it is the push destination. Tips under custom fetch refspecs are not
+        # consulted; that only widens the scan.
+        tracking_refs=
+        if [ "$(git remote get-url "$1" 2>/dev/null)" = "$2" ]; then
+            tracking_refs=$(git for-each-ref --format='%(objectname) refs/heads/%(refname:lstrip=3)' "refs/remotes/$1/") || exit 1
+        fi
         tracking_tips=$({ printf '%s\\n' "$remote_heads" --; printf '%s\\n' "$tracking_refs"; } |
             awk '$0 == "--" { tracking = 1; next } !tracking { live[$2] = 1; next } live[$2] { print $1 }') || exit 1
+        best_base=
+        fewest_commits=
         for head_sha in $(printf '%s\\n' "$base_sha" "$remote_heads" "$tracking_tips" | awk '{print $1}'); do
             # Only the default HEAD is fetched; other heads must exist locally.
             GIT_NO_LAZY_FETCH=1 git cat-file -e "$head_sha^{commit}" 2>/dev/null || continue
             published="$published $head_sha"
+            head_base=$(git merge-base "$head_sha" "$local_sha")
+            status=$?
+            # Status 1 means unrelated histories; other errors must block.
+            [ "$status" -le 1 ] || exit "$status"
+            [ "$status" = 0 ] || continue
+            head_count=$(git rev-list --count "$head_base..$local_sha") || exit 1
+            if [ -z "$fewest_commits" ] || [ "$head_count" -lt "$fewest_commits" ]; then
+                best_base=$head_base
+                fewest_commits=$head_count
+            fi
         done
         # Skip commits that any published head already reaches, so merging
         # several published branches does not rescan them.
         unpublished=$(git rev-list --topo-order --reverse "$local_sha" --not $published) || exit 1
-        total=$(git rev-list --count "$local_sha") || exit 1
-        if [ "$(printf '%s\\n' "$unpublished" | grep -c .)" = "$total" ]; then
-            # Nothing published is reachable: scan all local history at once.
+        unpublished_count=$(printf '%s\\n' "$unpublished" | grep -c .)
+        if [ -z "$best_base" ]; then
+            # Nothing published is related: scan all local history at once.
             scan_ranges=$local_sha
-        elif [ -n "$unpublished" ]; then
-            # Checkers of any version accept one commit as `<sha>^!`.
-            scan_ranges=$(printf '%s^!\\n' $unpublished)
-        else
+        elif [ "$unpublished_count" = 0 ]; then
+            # Every commit is already published.
             scan_ranges=
+        elif [ "$unpublished_count" = "$fewest_commits" ]; then
+            # One range holds exactly the unpublished commits: scan it at once.
+            scan_ranges="$best_base..$local_sha"
+        else
+            # Checkers of any version accept one commit as `<sha>^!`.
+            scan_ranges=$(printf '%s\\n' $unpublished | sed 's/$/^!/')
         fi
     else
         scan_ranges="$base_sha..$local_sha"
