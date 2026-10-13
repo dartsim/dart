@@ -21,7 +21,8 @@ establish full paper parity or robust push-recovery superiority.
 
 Follow main's AGENTS.md compatibility rules, preserving the Gazebo-facing C++
 API and behavior and keeping unrelated changes out of this parity task.
-Work remains CPU-first. New GUI examples use `dart-demos`.
+Work remains CPU-first. New GUI examples are Python scenes in the demo catalog
+(`python/examples/demos`), with heavy models kept native (D31b).
 Promote any new durable findings before deleting this folder at completion.
 
 ## Acceptance
