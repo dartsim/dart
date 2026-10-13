@@ -61,7 +61,8 @@ Priority order is document order. Active implementation handoff remains in
   Also complete normalized performance acceptance, multicore scaling evidence
   or an approved negative disposition, pre-default detector coverage gates,
   and a complete paired benchmark artifact or approved disposition. New GUI
-  examples belong in `dart-demos`.
+  examples are Python scenes in the demo catalog (`python/examples/demos`),
+  with heavy controllers and models kept native (D31b).
 - Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
   one-thread and host-capped multi-thread determinism/scaling; allocation and
   Gazebo gates before any collision, constraint, or backend-default change.
