@@ -294,7 +294,7 @@ def test_live_model_builders(world):
         assert list(collection) == [item]
         assert collection[collection.names[0]] == item
         with pytest.raises(KeyError) as missing:
-            collection["missing_member"]
+            _ = collection["missing_member"]
         assert collection.names[0] in str(missing.value)
     assert list(link.colliders) == [collider]
     assert list(link.visuals) == [visual]
@@ -1088,6 +1088,8 @@ def test_checkpoint_hook_state(world, robot):
     for expected_frame in expected:
         world.step()
         assert frame() == expected_frame
+    # Stepping and checkpoint replay prepare a lazy World without freezing it.
+    assert not world.is_compiled
     world.hooks.add(dart.simulation.StepHook(_UnsupportedCheckpointControl(), every=1))
     capture = world.capture_checkpoint
     with pytest.raises(Exception):
@@ -1108,6 +1110,8 @@ def contact_box(world):
     box.dofs.positions = np.array([0, 0, 0, 0, 0, 0.3])
     for _ in range(2000):
         world.step()
+    # Only explicit compile() freezes topology; ordinary steps stay lazy.
+    assert not world.is_compiled
     return box
 
 

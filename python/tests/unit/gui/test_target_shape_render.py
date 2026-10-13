@@ -87,8 +87,9 @@ def test_renderer_outputs(tmp_path):
         # dominant channel. Green overrides the asset's red legacy RGBA;
         # blue uses the legacy RGBA when no explicit Material is assigned.
         color = np.median(rgb[rows, columns], axis=0)
+        other_maximum = max(np.delete(color, channel))
         assert color[channel] > 32
-        assert color[channel] > max(np.delete(color, channel)) + 16
+        assert color[channel] > other_maximum + 16
 
 
 @pytest.mark.xfail(strict=True, reason="M6b: final passive open and managed launch viewer entry points are pending")
