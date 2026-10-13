@@ -63,7 +63,8 @@ jobs:
         run: >-
           pixi run -e gui-ci cmake --build ${{ env.BUILD_DIR }} --parallel 4
           --target test_GuiDescriptors test_GuiInteractions test_GuiImageDecoders test_GuiViewer test_GuiParity test_GuiMesh test_FilamentBackend offscreen_capture_smoke dartpy dart-demos
-          UNIT_examples_demos_GuiScaling UNIT_examples_demos_MemoryDiagnostics UNIT_examples_demos_SceneCycle test_Issue2671
+          test_GuiApp test_GuiAppMemoryDiagnostics test_GuiAppMemoryDiagnosticsModel test_Issue2671
+          ${{ runner.os == 'Linux' && 'UNIT_examples_demos_SceneCycle' || '' }}
       - name: Windows isolated software WGL
         if: runner.os == 'Windows'
         shell: pwsh
@@ -84,7 +85,7 @@ jobs:
         run: >-
           env -u DISPLAY -u WAYLAND_DISPLAY pixi run -e gui-ci ctest
           --test-dir ${{ env.BUILD_DIR }} --output-on-failure
-          --no-tests=error -R '^(test_FilamentBackend|test_GuiParity|test_GuiMesh|test_GuiImageDecoders|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue2671$)'
+          --no-tests=error -R '^(test_GuiApp|test_GuiAppMemoryDiagnostics.*|test_FilamentBackend|test_GuiParity|test_GuiMesh|test_GuiImageDecoders|examples_demos_(cycle|capture)|UNIT_examples_demos_|test_Issue2671$)'
       - name: Linux native window and capture
         if: runner.os == 'Linux'
         run: >-

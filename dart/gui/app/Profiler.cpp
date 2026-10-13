@@ -32,11 +32,11 @@
 
 #include "Profiler.hpp"
 
-#include "GuiBackend.hpp"
-
 #include <dart/common/Profile.hpp>
 
-namespace dart_demos {
+#include <dart/external/imgui/imgui.h>
+
+namespace dart::gui::app {
 
 //==============================================================================
 void Profiler::render()
@@ -88,4 +88,4 @@ void Profiler::setRecordingForTest(bool on)
   mRecording = on;
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

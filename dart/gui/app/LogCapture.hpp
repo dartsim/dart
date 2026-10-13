@@ -30,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_LOGCAPTURE_HPP_
-#define DART_EXAMPLES_DEMOS_LOGCAPTURE_HPP_
+#ifndef DART_GUI_APP_LOGCAPTURE_HPP_
+#define DART_GUI_APP_LOGCAPTURE_HPP_
 
 #include <functional>
 #include <memory>
 #include <streambuf>
 #include <string>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 //==============================================================================
 enum class CapturedLogLevel
@@ -80,6 +80,6 @@ private:
   std::streambuf* mOldCerrBuf;
 };
 
-} // namespace dart_demos
+} // namespace dart::gui::app
 
-#endif // DART_EXAMPLES_DEMOS_LOGCAPTURE_HPP_
+#endif // DART_GUI_APP_LOGCAPTURE_HPP_

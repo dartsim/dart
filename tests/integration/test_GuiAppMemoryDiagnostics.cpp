@@ -8,7 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#include "../memory_diagnostics.hpp"
+#include <dart/gui/app/memory_diagnostics.hpp>
 
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/WeldJointConstraint.hpp>
@@ -26,7 +26,7 @@
 #include <memory>
 #include <string>
 
-namespace dart::examples::demos {
+namespace dart::gui::app {
 namespace {
 
 //==============================================================================
@@ -469,4 +469,4 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheSixteenBitDrawIndexLimit)
 }
 
 } // namespace
-} // namespace dart::examples::demos
+} // namespace dart::gui::app

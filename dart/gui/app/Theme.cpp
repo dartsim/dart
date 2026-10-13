@@ -32,13 +32,13 @@
 
 #include "Theme.hpp"
 
-#include "GuiBackend.hpp"
+#include "GuiScale.hpp"
 
 #include <dart/external/imgui/imgui_internal.h>
 
 #include <cmath>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -148,11 +148,9 @@ void applyModernDarkColors()
   // bundled docking build disables the obsolete alias.
   colors[ImGuiCol_NavCursor] = accent;
 
-#ifdef IMGUI_HAS_DOCK
   // Docking-branch-only slots.
   colors[ImGuiCol_DockingPreview] = accentSoft;
   colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.07f, 0.08f, 0.09f, 1.0f);
-#endif
 }
 
 //==============================================================================
@@ -181,14 +179,12 @@ void applyModernDarkMetrics()
 
   style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
 
-#ifdef IMGUI_HAS_DOCK
   // Hairline splitters between docked panels (docking branch only).
   style.DockingSeparatorSize = 1.0f;
-#endif
 }
 
 //==============================================================================
-GuiScaleTheme::GuiScaleTheme(const GuiScaleSource& handler)
+GuiScaleTheme::GuiScaleTheme(const dart::gui::Viewer& handler)
   : mHandler(handler),
     mContext(ImGui::GetCurrentContext()),
     mBaseStyle(ImGui::GetStyle())
@@ -204,7 +200,7 @@ GuiScaleTheme::GuiScaleTheme(const GuiScaleSource& handler)
 
     // Scaling previous rounded metrics repeatedly shrinks fractional sizes.
     ImGui::GetStyle() = theme.mBaseStyle;
-    dart_demos::applyGuiScale(scale);
+    dart::gui::app::applyGuiScale(scale);
     theme.mAppliedScale = scale;
   };
   mHookId = ImGui::AddContextHook(mContext, &hook);
@@ -216,4 +212,4 @@ GuiScaleTheme::~GuiScaleTheme()
   ImGui::RemoveContextHook(mContext, mHookId);
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app
