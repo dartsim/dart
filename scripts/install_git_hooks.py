@@ -119,7 +119,7 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
         fewest_commits=
         for candidate_sha in $candidate_shas; do
             # Only the default HEAD is fetched; other heads must exist locally.
-            git cat-file -e "$candidate_sha^{commit}" 2>/dev/null || continue
+            GIT_NO_LAZY_FETCH=1 git cat-file -e "$candidate_sha^{commit}" 2>/dev/null || continue
             candidate_base=$(git merge-base "$candidate_sha" "$local_sha")
             status=$?
             # Status 1 means unrelated histories; other errors must block.

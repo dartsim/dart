@@ -490,6 +490,77 @@ def test_pre_push_new_ref_skips_unavailable_nondefault_branch_heads(tmp_path):
     assert fetch_head.read_text() == "Keep existing fetch state\n"
 
 
+@pytest.mark.parametrize("leak", [False, True])
+def test_pre_push_new_ref_does_not_lazy_fetch_other_branch_heads(tmp_path, leak):
+    repo, env, git = _push_repo(tmp_path)
+    env.pop("GIT_NO_LAZY_FETCH", None)
+    remote = tmp_path / "remote.git"
+    for setting in ("uploadpack.allowFilter", "uploadpack.allowAnySHA1InWant"):
+        git("--git-dir", str(remote), "config", setting, "true")
+    git("checkout", "-b", "remote-only")
+    git("commit", "--allow-empty", "-qm", "Remote-only change")
+    git("push", "origin", "remote-only")
+    remote_tip = git("rev-parse", "HEAD").stdout.strip()
+    partial = tmp_path / "partial"
+    clone = git(
+        "clone",
+        "--filter=blob:none",
+        "--single-branch",
+        "--branch=main",
+        remote.as_uri(),
+        str(partial),
+        check=False,
+    )
+    if "unknown option" in clone.stderr or "filtering not recognized" in clone.stderr:
+        pytest.skip("local Git does not support filtered partial clones")
+    assert clone.returncode == 0, clone.stderr
+    assert (
+        git(
+            "-C", str(partial), "config", "--get", "remote.origin.promisor"
+        ).stdout.strip()
+        == "true"
+    )
+
+    def probe_remote_tip():
+        return subprocess.run(
+            ["git", "cat-file", "-e", f"{remote_tip}^{{commit}}"],
+            cwd=partial,
+            env={**env, "GIT_NO_LAZY_FETCH": "1"},
+            capture_output=True,
+        )
+
+    if probe_remote_tip().returncode == 0:
+        pytest.skip("local Git does not support GIT_NO_LAZY_FETCH")
+    git("-C", str(partial), "config", "user.name", "DART Test")
+    git("-C", str(partial), "config", "user.email", "test@example.com")
+    base = git("-C", str(partial), "rev-parse", "HEAD").stdout.strip()
+    private_path = "/home/" + "example/private.md"
+    (partial / "notes.md").write_text(
+        private_path + "\n" if leak else "Public summary\n"
+    )
+    git("-C", str(partial), "add", "notes.md")
+    git("-C", str(partial), "commit", "-qm", "Topic change")
+    head = git("-C", str(partial), "rev-parse", "HEAD").stdout.strip()
+    assert _install(partial, env).returncode == 0
+
+    result = git(
+        "-C", str(partial), "push", "origin", "HEAD:refs/heads/topic", check=False
+    )
+
+    assert f"DART pre-push: scanning HEAD ({base}..{head})" in result.stderr
+    assert probe_remote_tip().returncode != 0
+    if leak:
+        assert result.returncode != 0
+        assert private_path in result.stdout
+        assert "push blocked" in result.stderr
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+    else:
+        assert result.returncode == 0, result.stderr
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout.strip() == (
+            f"{head}\trefs/heads/topic"
+        )
+
+
 @pytest.mark.parametrize(
     "command,option",
     [
