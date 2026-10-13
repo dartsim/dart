@@ -1,4 +1,4 @@
-"""C++ catalog construction and interaction contracts for the first scene batch."""
+"""Demo construction and interaction contracts for the first scene batch."""
 
 import gc
 import importlib
@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(
     viewer is None, reason="a vanilla system ImGui compiles out the demo app host"
 )
 
-# Ordered skeleton name/body/DOF counts from dart-demos --debug-print-world.
+# Ordered skeleton name/body/DOF counts captured during scene-port parity checks.
 STRUCTURES = {
     "empty": [],
     "hello_world": [("box", 1, 6), ("ground", 1, 0)],

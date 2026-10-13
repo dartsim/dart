@@ -530,12 +530,12 @@ def validate_command_structure(repo_root: Path) -> bool:
     return True
 
 
-# Deliberate non-capability ``dart-`` names mentioned in workflow sources
-# (for example the demos app). Extend this reviewed ledger explicitly when a
-# new non-capability name (such as a CMake component) is first mentioned;
+# Deliberate non-capability ``dart-`` names mentioned in workflow sources.
+# Extend this reviewed ledger explicitly when a new non-capability name
+# (such as a CMake component) is first mentioned;
 # harvesting names from the build system would let an incidental collision
 # silently exempt a retired capability.
-NON_CAPABILITY_DART_NAMES = frozenset({"dart-demos"})
+NON_CAPABILITY_DART_NAMES = frozenset()
 
 
 def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> list[str]:

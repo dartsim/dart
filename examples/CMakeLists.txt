@@ -19,7 +19,6 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/CheckFilamentGui.cmake")
 if(DART_IN_SOURCE_BUILD OR DART_EXAMPLES_HAVE_FILAMENT_GUI)
   add_subdirectory(hello_world)
-  add_subdirectory(demos)
 else()
   message(
     STATUS

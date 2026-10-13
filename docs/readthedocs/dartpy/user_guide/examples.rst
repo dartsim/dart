@@ -66,6 +66,9 @@ simulation toolbar, dockable scene panels, and diagnostics.
 Scenes supply worlds, callbacks, and declarative panels; Python does not draw
 the UI. All former C++ scenes are available as Python scenes, except the
 retired ``human_joint_limits`` scene.
+The C++ demo application and its alias executables are removed. Open the
+soft-body scenes with ``pixi run demos -- --scene soft_bodies``,
+``--scene soft_cubes``, or ``--scene soft_open_chain``.
 
 From a DART checkout:
 
