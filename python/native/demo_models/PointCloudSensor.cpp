@@ -101,13 +101,12 @@ octomap::Pointcloud generatePointCloudOnRobot(
   pointCloud.reserve(numPoints);
 
   const auto numBodies = robot->getNumBodyNodes();
-  if (numBodies == 0)
-    return pointCloud;
 
   constexpr std::size_t kMaxAttempts = 200000;
   std::size_t attempts = 0;
 
-  while (pointCloud.size() < numPoints && attempts < kMaxAttempts) {
+  while (numBodies > 0 && pointCloud.size() < numPoints
+         && attempts < kMaxAttempts) {
     ++attempts;
 
     const auto bodyIndex
@@ -154,9 +153,8 @@ octomap::Pointcloud generatePointCloudOnRobot(
         static_cast<float>(eigenVertex.z()));
   }
 
-  // If the robot has no mesh-shaped visual shape nodes and the attempt cap is
-  // exhausted, fill the remainder with uniform in-box samples rather than
-  // returning a short cloud.
+  // Fill the remainder with uniform in-box samples when the robot has no
+  // bodies or the mesh-sampling attempt cap is exhausted.
   const Eigen::Vector3d boxMin = Eigen::Vector3d::Constant(-0.5);
   const Eigen::Vector3d boxMax = Eigen::Vector3d::Constant(0.5);
   while (pointCloud.size() < numPoints) {

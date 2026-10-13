@@ -64,9 +64,9 @@ def build() -> dart.viewer.SceneSetup:
         key = event.getKey()
         if key not in (ord("1"), ord("2"), ord("3")):
             return False
-        if _demos.keyboard_capture_active():
-            return False
         if event.getEventType() == dart.gui.GUIEventAdapter.KEYDOWN:
+            if _demos.keyboard_capture_active():
+                return False
             constrained[key - ord("1")] = True
         elif event.getEventType() == dart.gui.GUIEventAdapter.KEYUP:
             constrained[key - ord("1")] = False

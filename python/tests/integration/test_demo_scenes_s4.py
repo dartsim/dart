@@ -482,12 +482,13 @@ def test_s4_operational_space_controls_keys_and_target(controls, monkeypatch):
     key(event.KEYDOWN, "1", ("line", (1.0, 0.0, 0.0)), "x ")
     monkeypatch.setattr(dart._demos, "keyboard_capture_active", lambda: True)
     previous = len(ctx.drag.calls)
-    assert not ctx.handler(event(event.KEYUP, ord("1")))
     assert not ctx.handler(event(event.KEYDOWN, ord("2")))
     assert len(ctx.drag.calls) == previous
     setup.pre_refresh()
     assert label.label == "Drag constraint: x "
+    key(event.KEYUP, "1", ("none",), "(none)")
     monkeypatch.setattr(dart._demos, "keyboard_capture_active", lambda: False)
+    key(event.KEYDOWN, "1", ("line", (1.0, 0.0, 0.0)), "x ")
     key(event.KEYDOWN, "2", ("plane", (0.0, 0.0, 1.0)), "x y ")
     key(event.KEYDOWN, "3", ("none",), "x y z ")
     key(event.KEYUP, "1", ("plane", (1.0, 0.0, 0.0)), "y z ")
