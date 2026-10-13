@@ -4,9 +4,9 @@ Straight port of ``python/examples/drag_and_drop/main.py``: a gizmo-draggable
 interactive frame carrying a draggable child box, plus X/Y/Z axis markers.
 """
 
-import dartpy as dart
+from __future__ import annotations
 
-from ..registry import SceneHandle
+import dartpy as dart
 
 
 def _marker(world, position, color, name):
@@ -18,14 +18,12 @@ def _marker(world, position, color, name):
     world.addSimpleFrame(marker)
 
 
-def build(gui=None) -> SceneHandle:
-    if gui is None:
-        gui = dart.gui
+def build() -> dart.viewer.SceneSetup:
     world = dart.simulation.World()
 
     tf = dart.math.Isometry3()
     tf.set_translation([4, -4, 0])
-    frame = gui.InteractiveFrame(
+    frame = dart.gui.InteractiveFrame(
         dart.dynamics.Frame.World(), "interactive frame", tf, 2
     )
     world.addSimpleFrame(frame)
@@ -41,11 +39,33 @@ def build(gui=None) -> SceneHandle:
     _marker(world, [0, 8, 0], [0, 0.9, 0], "Y")
     _marker(world, [0, 0, 8], [0, 0, 0.9], "Z")
 
-    node = gui.WorldNode(world)
+    def on_activate(ctx):
+        ctx.enable_drag_and_drop(frame)
+        ctx.enable_drag_and_drop(draggable)
 
-    return SceneHandle(
-        node=node,
-        drag_and_drop=[frame, draggable],
-        instructions=["Ctrl + Left-click: Rotate the box\n"],
-        camera_home=([20, 17, 17], [0, 0, 0], [0, 0, 1]),
+    panel = dart.viewer.Panel()
+    panel.add_text("Ctrl + Left-click: Rotate the box", wrap=True)
+
+    return dart.viewer.SceneSetup(
+        world,
+        on_activate=on_activate,
+        panel=panel,
+        shadows=False,
+        camera_home=dart.viewer.CameraHome(
+            eye=[20, 17, 17], center=[0, 0, 0], up=[0, 0, 1]
+        ),
     )
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "drag_and_drop",
+            title="Drag and Drop",
+            category="Visualization",
+            summary=(
+                "Drag and rotate a frame with a gizmo; click renderables to select."
+            ),
+            factory=build,
+        )
+    ]

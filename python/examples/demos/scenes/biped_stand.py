@@ -4,10 +4,8 @@ Port of ``python/examples/biped_stand/main.py``: an SPD-balanced standing
 biped with an ankle strategy and keyboard push tests.
 
 Key remap: the original example uses keys 1-4 for the four push directions
-(``InputHandler`` in the standalone example). The py-demos navigator reserves
-0-9 for direct scene selection, so the pushes are remapped to the arrow keys
-here (Up/Down/+-X, Right/Left/+-Z) -- same four directions, non-colliding
-keys.
+(``InputHandler`` in the standalone example). The catalog keeps its arrow-key
+mapping (Up/Down/+-X, Right/Left/+-Z) for the same four directions.
 
 Note: ``self.pre_offset`` is set in ``__init__`` but never reassigned in the
 original example's ankle-strategy step (so the ``kd * (pre_offset - offset)``
@@ -15,15 +13,14 @@ term always sees ``pre_offset == 0``). That looks like a dead variable in the
 original, not something introduced by this port; kept as-is for parity.
 """
 
+from __future__ import annotations
+
 import dartpy as dart
 import numpy as np
 
-from ..registry import SceneHandle
 
-
-class BipedStandNode:
+class BipedStandController:
     def __init__(self, world, skel):
-        super().__init__(world)
         self.skel = skel
         self.dofs = skel.getNumDofs()
         self.left_heel = skel.getBodyNode("h_heel_left")
@@ -35,7 +32,8 @@ class BipedStandNode:
             skel.getDof("j_heel_right_1").getIndexInSkeleton(),
             skel.getDof("j_toe_right").getIndexInSkeleton(),
         ]
-        self.timestep = world.getTimeStep()
+        # The toolbar can change the timestep; pre_step reads it each step.
+        self.world = world
 
         self.Kp = np.eye(self.dofs)
         self.Kd = np.eye(self.dofs)
@@ -56,20 +54,21 @@ class BipedStandNode:
         self.ext_force_visual.hide()
         world.addSimpleFrame(self.ext_force_frame)
 
-    def customPreStep(self):
+    def pre_step(self):
+        timestep = self.world.getTimeStep()
         q = self.skel.getPositions()
         dq = self.skel.getVelocities()
         constraint_forces = self.skel.getConstraintForces()
 
         # SPD tracking.
-        inv_m = np.linalg.inv(self.skel.getMassMatrix() + self.Kd * self.timestep)
-        p = np.matmul(-self.Kp, q + dq * self.timestep - self.q_d)
+        inv_m = np.linalg.inv(self.skel.getMassMatrix() + self.Kd * timestep)
+        p = np.matmul(-self.Kp, q + dq * timestep - self.q_d)
         d = np.matmul(-self.Kd, dq)
         ddq = np.matmul(
             inv_m,
             -self.skel.getCoriolisAndGravityForces() + p + d + constraint_forces,
         )
-        torques = p + d + np.matmul(-self.Kd, ddq) * self.timestep
+        torques = p + d + np.matmul(-self.Kd, ddq) * timestep
 
         # Ankle strategy for the sagittal plane.
         com = self.skel.getCOM()
@@ -117,9 +116,7 @@ class BipedStandNode:
         self.ext_force_duration = 100
 
 
-def build(gui=None) -> SceneHandle:
-    if gui is None:
-        gui = dart.gui
+def build() -> dart.viewer.SceneSetup:
     world = dart.utils.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
     world.setGravity([0, -9.81, 0])
 
@@ -133,25 +130,46 @@ def build(gui=None) -> SceneHandle:
     biped.getDof("j_heel_right_1").setPosition(0.25)
     biped.getDof("j_abdomen_2").setPosition(0.00)
 
-    class WorldNode(BipedStandNode, gui.RealTimeWorldNode):
-        pass
-
-    node = WorldNode(world, biped)
-
-    ea = gui.GUIEventAdapter
-    key_actions = {
-        ea.KEY_Up: ("Push +X", lambda: node.push([40, 0, 0])),
-        ea.KEY_Down: ("Push -X", lambda: node.push([-40, 0, 0])),
-        ea.KEY_Right: ("Push +Z", lambda: node.push([0, 0, 40])),
-        ea.KEY_Left: ("Push -Z", lambda: node.push([0, 0, -40])),
-    }
-
-    return SceneHandle(
-        node=node,
-        key_actions=key_actions,
-        camera_home=([3, 1.5, 3], [0, 0, 0], [0, 1, 0]),
-        notes=(
-            "Push-test keys remapped from 1-4 (original) to arrow keys: "
-            "navigator reserves 0-9 for direct scene select."
+    controller = BipedStandController(world, biped)
+    ea = dart.gui.GUIEventAdapter
+    key_actions = [
+        dart.viewer.KeyAction(
+            ea.KEY_Up, "Push +X", lambda: controller.push([40, 0, 0])
         ),
+        dart.viewer.KeyAction(
+            ea.KEY_Down, "Push -X", lambda: controller.push([-40, 0, 0])
+        ),
+        dart.viewer.KeyAction(
+            ea.KEY_Right, "Push +Z", lambda: controller.push([0, 0, 40])
+        ),
+        dart.viewer.KeyAction(
+            ea.KEY_Left, "Push -Z", lambda: controller.push([0, 0, -40])
+        ),
+    ]
+    panel = dart.viewer.Panel()
+    panel.add_text(
+        "Push-test keys remapped from 1-4 (original) to arrow keys.", wrap=True
     )
+
+    return dart.viewer.SceneSetup(
+        world,
+        pre_step=controller.pre_step,
+        key_actions=key_actions,
+        camera_home=dart.viewer.CameraHome(
+            eye=[3, 1.5, 3], center=[0, 0, 0], up=[0, 1, 0]
+        ),
+        shadows=False,
+        panel=panel,
+    )
+
+
+def scenes():
+    return [
+        dart.viewer.Scene(
+            "biped_stand",
+            title="Biped Stand",
+            category="Control & IK",
+            summary="SPD-balanced standing biped with an ankle strategy and push tests.",
+            factory=build,
+        )
+    ]

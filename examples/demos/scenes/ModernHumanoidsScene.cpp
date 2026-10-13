@@ -160,16 +160,7 @@ DemoScene makeModelScene(
         edits->pendingJoint = -1;
       }
     };
-    setup.onActivate = [](DemoHostContext& context) {
-      auto* viewer = context.viewer();
-      const bool resume = viewer->isSimulating();
-      viewer->allowSimulation(false);
-      context.addTeardown([viewer, resume] {
-        viewer->allowSimulation(true);
-        if (resume)
-          viewer->simulate(true);
-      });
-    };
+    setup.allowSimulation = false;
     return setup;
   };
   return scene;

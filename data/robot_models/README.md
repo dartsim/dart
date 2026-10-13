@@ -29,10 +29,13 @@ pixi run py-demos -- --scene unitree_g1
 ```
 
 The C++ scenes provide a joint slider and reset button, alongside the existing
-body and geometry inspector. In Python, `[` and `]` select a joint, `-` and `=`
-change its angle within the model limits, and `t` resets the pose. Both scenes
-have a fixed base and disable physics simulation. Scene factories use the
-verified cache offline, so switching scenes never starts a download.
+body and geometry inspector. The Python catalog uses the same native app host
+through `dartpy.viewer`: `[` and `]` select a joint, `-` and `=` change its
+angle within the model limits, and `t` resets the pose. These actions also
+appear as buttons in the scene panel. Both scenes have a fixed base and disable
+physics simulation. Scene factories use the verified cache offline, so
+switching scenes never starts a download. Missing assets are reported as
+skipped scenes; `pixi run py-demos -- --cycle-scenes --frames 2` still succeeds.
 
 `dart::utils::ModelResourceRetriever` and `dartpy.utils.ModelResourceRetriever`
 accept `model://<id>/<revision>/<relative-file>` URIs. The revision is the full

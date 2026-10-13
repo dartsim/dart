@@ -1,12 +1,15 @@
 # dart-demos
 
-`dart-demos` is the consolidated DART 6 demo application: a single
+`dart-demos` is the consolidated C++ demo application: a single
 `dart::gui::Viewer` host that runs every GUI demo as a
 runtime-switchable *scene*, selected from a categorized navigator. It replaces
 the scattered per-example programs that used to live under `examples/*`.
 
-Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The dartpy
-counterpart is `pixi run py-demos` (see `python/examples/demos/`).
+Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The Python
+catalog runs on this same native host through `dartpy.viewer.run()`:
+`pixi run py-demos` (see `python/examples/demos/`). It currently contains a
+subset of the C++ scene ids, in the same order and with the same metadata,
+while retaining the existing Python scene behavior.
 
 DART 7 uses Filament for every GUI example. `pixi run cycle-demos`
 exercises scene replacement without creating a graphics context. All scenes
@@ -51,7 +54,10 @@ macOS uses native Retina rendering with logical window coordinates.
   supplies the C++ scene catalog to `runCommandLine()`. The chrome opens as a
   dockable workspace: panels can be dragged, split, and re-tabbed, and
   View > "Reset layout" restores the default arrangement. A vanilla system
-  ImGui compiles out the host and demos; use bundled docking ImGui instead.
+  ImGui compiles out the host, demos, and `dartpy.viewer`; rebuild with
+  `-DDART_USE_SYSTEM_IMGUI=OFF` (`pixi run config` passes this option).
+  Python scenes supply `SceneSetup` worlds, hooks, and declarative panels;
+  the native host owns the rendering and UI.
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked
@@ -215,7 +221,9 @@ whatever the user changes at runtime:
 - `--list-scenes` — print the catalog grouped by category, exit 0.
 - `--scene <id>` — start on a specific scene.
 - `--cycle-scenes [--frames N]` — headless: build every scene, step N frames
-  each, twice (a leak/robustness audit); exit nonzero on any factory failure.
+  each, twice (a leak/robustness audit), without a graphics device; exit
+  nonzero on any factory or hook failure. Missing prefetched model assets
+  are reported as skipped scenes. These flags also apply to `pixi run py-demos`.
 - `--headless --shot <path> [--steps N]` — off-screen capture. Linux uses
   Vulkan without a DISPLAY; software Vulkan drivers are supported.
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a

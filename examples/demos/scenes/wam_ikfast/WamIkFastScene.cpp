@@ -51,11 +51,10 @@
 // than in a constructor that runs after the world node is attached, since
 // nothing here depends on viewer/world-node attachment order. Per-body and
 // per-target drag-and-drop are registered in onActivate and torn down on
-// scene switch, matching every other B3 DnD scene. viewer->allowSimulation
-// (false) is applied here (as the original does) to keep the host's global
-// Play button from stepping physics under this purely-kinematic scene;
-// restored to true on teardown so later (non-kinematic) scenes are
-// unaffected.
+// scene switch, matching every other B3 DnD scene. SceneSetup::
+// allowSimulation = false (the original forbids physics) keeps the host's
+// global Play button from stepping this purely kinematic scene; the host
+// restores it on teardown so later scenes are unaffected.
 
 #include "../Scenes.hpp"
 #include "GuiBackend.hpp"
@@ -188,7 +187,7 @@ DemoScene makeWamIkFastScene()
 
   scene.factory = [] {
     auto world = dart::simulation::World::create();
-    // The original app forbids all physics; here viewer->allowSimulation(false)
+    // The original app forbids all physics; here allowSimulation = false
     // only blocks the Play path, while the Step button, --cycle-scenes, and
     // --headless settle steps call world->step() directly. Zero gravity makes
     // any such accidental step inert so the unactuated FORCE-joint arm holds
@@ -253,6 +252,8 @@ DemoScene makeWamIkFastScene()
 
     DemoSceneSetup setup;
     setup.world = world;
+    // Purely kinematic: Play must not step physics under this scene.
+    setup.allowSimulation = false;
     setup.cameraHome = CameraHome{
         GuiVector3(5.34, 3.00, 1.91),
         GuiVector3(0.00, 0.00, 0.50),
@@ -263,16 +264,6 @@ DemoScene makeWamIkFastScene()
       state->log = [ctx](const std::string& message) {
         ctx.log(message);
       };
-
-      // Purely kinematic: keep the host's global Play button from stepping
-      // physics under this scene (restored on teardown).
-      const bool resumeSimulation = viewer->isSimulating();
-      viewer->allowSimulation(false);
-      ctx.addTeardown([viewer, resumeSimulation] {
-        viewer->allowSimulation(true);
-        if (resumeSimulation)
-          viewer->simulate(true);
-      });
 
       // Force the lazy IkFast dlopen/configure (solveAndApply triggers it) and
       // surface a load failure in the Diagnostics log: without the shared

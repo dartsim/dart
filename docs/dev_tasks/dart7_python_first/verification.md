@@ -392,3 +392,39 @@ Known gaps:
   need their own review of GIL acquisition during finalization.
 - **Status:** in progress. [#3704](https://github.com/dartsim/dart/pull/3704) builds
   6.20.1 wheels for Python 3.12 to 3.14; Python 3.15 wheels remain.
+
+## M1a: World step stages
+
+- **Objective:** split `World::step` into private inlined stages while keeping
+  stepping bit-identical to main.
+- **Baseline:** `dart7-base` is pinned to main `c3134f51b86d` as a local tag.
+  Its full nightly smoke record is being measured on the local performance host.
+- **Nightly A/B:** at `a751424b3` against main `6cca697a2`, PASS: 31 neutral
+  and 41 diagnostic rows; Ir geomean +0.009%, highest `s2r/dart` at +0.062%.
+  Guards and allocations are identical.
+- **Correction:** the first full A/B failed `s2r/dart` at +2.49% because the
+  seven stage calls went through the PLT under `-fPIC`. Inlining the stages
+  and holding the solve's group and filter once fixed it.
+- **S7 A/B (2026-10-12):** main `c3134f51b86d` against merged head
+  `8afe3251455d`, using
+  `pixi run python scripts/perf_regression.py local --base origin/main --head HEAD --rows S7-t1,S7-t4 --jobs 8`
+  with a separate private staging root: PASS, six diagnostic rows (no Ir gate).
+  All guards and resting counts match base and agree across one and four
+  threads: DART and ODE rest 3003/3003 bodies; Bullet rests 2724/3003.
+  Allocation counts and requested bytes are identical to base in all six rows.
+- **Other evidence:** StepAllocation counts are byte-identical to the base
+  build; the moved-line audit is clean.
+- **Gates (2026-10-12):** on merged head `8afe3251455d` (main
+  `c3134f51b86d`), `pixi run lint`, `pixi run check-lint`, `pixi run build` and
+  `pixi run test` pass; 185/185 CTests, including StepAllocation.
+- **Gazebo:** the Jetty and Harmonic lanes pass against a base variant. Ionic
+  had one load-dependent failure, gz-physics `JointSetPositionWithContact`,
+  which passed 15/15 through CTest on both base and head. The sleep oracle
+  reports the same two pre-existing mismatches on base and head; it needs the
+  C-only probe fix from [#3756](https://github.com/dartsim/dart/pull/3756) to
+  configure. `test-gz`: 199/199 + 4/4 + 1/1.
+- **Reviews:** two adversarial passes and a local Codex review, all clean.
+- **Follow-up for M1d:** the load-dependent result suggests nondeterministic
+  parallel chunking.
+- **Changelog decision:** no entry required; the diff against main preserves
+  API and behavior and documents an internal refactor.

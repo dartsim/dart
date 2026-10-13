@@ -11,11 +11,11 @@ description: "DART Analyze: analyze repository evidence without editing"
 
 Use this skill to run the DART `dart-analyze` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-analyze <arguments>`
+- Claude Code: `/dart-analyze <arguments>`
 - Codex: `$dart-analyze <arguments>`
 - Muse: `/dart-analyze <arguments>`
 

@@ -11,11 +11,11 @@ description: "DART Mechanical Refactor: perform a behavior-preserving mechanical
 
 Use this skill to run the DART `dart-mechanical-refactor` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-mechanical-refactor <arguments>`
+- Claude Code: `/dart-mechanical-refactor <arguments>`
 - Codex: `$dart-mechanical-refactor <arguments>`
 - Muse: `/dart-mechanical-refactor <arguments>`
 
