@@ -77,6 +77,7 @@
 #include <Eigen/StdVector>
 
 #include <algorithm>
+#include <atomic>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -715,24 +716,30 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
-createFclMeshCollisionDetector()
+static std::shared_ptr<collision::CollisionDetector> createFclCollisionDetector(
+    collision::FCLCollisionDetector::PrimitiveShape primitiveShapeType)
 {
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+  // A host can unregister the factory's creators, so fall back to creating
+  // FCL directly, as the constraint solver's default detector does.
+  auto* factory = collision::CollisionDetector::getFactory();
+  const auto& key = collision::FCLCollisionDetector::getStaticType();
+  std::shared_ptr<collision::FCLCollisionDetector> fcl;
+  if (factory->canCreate(key)) {
+    fcl = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+        factory->create(key));
+  }
 
-  return fcl;
-}
+  if (!fcl) {
+    static std::atomic<bool> warned{false};
+    if (!warned.exchange(true, std::memory_order_relaxed)) {
+      dtwarn << "[SkelParser] The collision detector factory cannot create an "
+             << "FCLCollisionDetector for '" << key << "'; creating one "
+             << "directly. This warning is printed once per process.\n";
+    }
+    fcl = collision::FCLCollisionDetector::create();
+  }
 
-//==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
-createFclPrimitiveCollisionDetector()
-{
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+  fcl->setPrimitiveShapeType(primitiveShapeType);
   fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
 
   return fcl;
@@ -779,15 +786,11 @@ simulation::WorldPtr readWorld(
       const auto cdType = getValueString(physicsElement, "collision_detector");
 
       if (cdType == "fcl_mesh") {
-        collision_detector = createFclMeshCollisionDetector();
-      } else if (cdType == "fcl") {
         collision_detector
-            = collision::CollisionDetector::getFactory()->create("fcl");
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
-        cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
+            = createFclCollisionDetector(collision::FCLCollisionDetector::MESH);
+      } else if (cdType == "fcl") {
+        collision_detector = createFclCollisionDetector(
+            collision::FCLCollisionDetector::PRIMITIVE);
       } else {
         collision_detector
             = collision::CollisionDetector::getFactory()->create(cdType);
@@ -799,8 +802,10 @@ simulation::WorldPtr readWorld(
       }
     }
 
-    if (!collision_detector)
-      collision_detector = createFclPrimitiveCollisionDetector();
+    if (!collision_detector) {
+      collision_detector = createFclCollisionDetector(
+          collision::FCLCollisionDetector::PRIMITIVE);
+    }
 
     newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
