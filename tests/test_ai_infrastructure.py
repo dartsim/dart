@@ -5560,6 +5560,14 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     report = infra.doctor_report(ROOT)
 
     assert report["schema_version"] == 1
+    assert set(report["tools"]) == {
+        "python",
+        "pixi",
+        "codex",
+        "claude",
+        "muse",
+        "opencode",
+    }
     assert report["profile"] == {
         "name": "dart7",
         "cpp_standard": "C++17",

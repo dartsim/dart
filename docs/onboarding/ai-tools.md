@@ -10,10 +10,9 @@ OpenCode workflow entrypoints generated from `.claude/` sources.
 - Do not hand-edit `.agents/skills/` or `.opencode/command/`; run
   `pixi run sync-ai-commands` instead.
 - Check parity with `pixi run check-ai-commands`.
-- Use canonical DART capability names in prompt-driven goal modes: Claude goal
-  text should name `/dart-ultrawork`, Codex goal text can name
-  `$dart-ultrawork`, and Muse goal text names the `dart-ultrawork`
-  skill. If Claude goal text starts with `ulw:` or the common typo
+- Use canonical DART capability names in prompt-driven goal modes: Claude and
+  Muse goal text should name `/dart-ultrawork`, and Codex goal text can
+  name `$dart-ultrawork`. If Claude goal text starts with `ulw:` or the common typo
   `ultrawok:`, normalize it to the canonical `/dart-ultrawork` workflow. These
   are prompt-level shorthands, not separate shared capabilities.
 
@@ -88,18 +87,21 @@ would happen).
   doctor flags the file so the shadowing is not silent).
 - Muse reads `AGENTS.md` chains from the workspace up to the
   `.git` boundary and discovers the generated `.agents/skills/` skills
-  natively; invoke DART workflows by skill name. Per directory it loads
+  natively; invoke DART workflows by their `/dart-*` slash shortcut.
+  Per directory it loads
   only one rules file — `AGENTS.md` wins over a sibling `CLAUDE.md` or
   the `AGENTS.md` inside `.agents/`, and the shadowed file warns at
   startup — and it does not expand `@` imports. Identical domain skills
   under `.claude/skills/` are shadowed by their `.agents/skills/`
   copies; that shadowing is expected, as with OpenCode below. Its
-  default shell sandbox keeps `.agents/` read-only inside the writable
-  workspace, so a workflow step that regenerates adapters
-  (`pixi run sync-ai-commands`) fails there with read-only errors; run
-  that one step from an unsandboxed shell — a normal terminal, another
+  default shell sandbox keeps `.git/` and `.agents/` read-only inside
+  the writable workspace, so workflow steps that mutate Git state
+  (branch switch, commit, base-branch merge) or regenerate adapters
+  (`pixi run sync-ai-commands`) fail there with read-only errors; run
+  those steps from an unsandboxed shell — a normal terminal, another
   client, or a maintainer-approved unsandboxed Muse run — and
-  keep editing the `.claude/` sources in Muse as usual.
+  keep editing sources and running read-only inspection in Muse
+  Code as usual.
 - Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
   layer.
 - OpenCode runs the generated `.opencode/command/` adapters as

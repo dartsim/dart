@@ -17,7 +17,7 @@ Codex, Muse, and OpenCode's skill loader.
 
 - Claude Code/OpenCode: `/dart-manage-pr <arguments>`
 - Codex: `$dart-manage-pr <arguments>`
-- Muse: load the `dart-manage-pr` skill
+- Muse: `/dart-manage-pr <arguments>`
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

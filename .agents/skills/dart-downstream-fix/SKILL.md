@@ -17,7 +17,7 @@ Codex, Muse, and OpenCode's skill loader.
 
 - Claude Code/OpenCode: `/dart-downstream-fix <arguments>`
 - Codex: `$dart-downstream-fix <arguments>`
-- Muse: load the `dart-downstream-fix` skill
+- Muse: `/dart-downstream-fix <arguments>`
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

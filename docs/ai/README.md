@@ -88,9 +88,8 @@ For documentation placement, use
 [`docs/information-architecture.md`](../information-architecture.md).
 For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
 
-Use `$dart-ultrawork` in Codex, `/dart-ultrawork` in
-Claude/OpenCode, or the `dart-ultrawork` skill in Muse when DART
-work should run as an autonomous
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in Claude, Muse
+Code, and OpenCode when DART work should run as an autonomous
 project from either a provided brief or one up-front decision interview. The
 workflow keeps `docs/dev_tasks/<task>/` as the project home and records
 acceptance criteria, risks, decisions, verification, progress, and handoff
@@ -101,9 +100,9 @@ handling.
 
 ## Updating Models And Coding Agents
 
-Use `$dart-model-upgrade` in Codex, `/dart-model-upgrade` in
-Claude/OpenCode, or the `dart-model-upgrade` skill in Muse when a
-request names a model, reasoning mode, coding-agent
+Use `$dart-model-upgrade` in Codex or `/dart-model-upgrade` in
+Claude, Muse, and OpenCode when a request names a model,
+reasoning mode, coding-agent
 release, migration, or compatibility audit. It captures the existing release
 harness as a control, refreshes primary guidance, isolates model, effort,
 prompt, configuration, and optional-agent changes, and records
@@ -147,8 +146,8 @@ bounded entry per validated lane:
   restate it with its physics/simulation context made explicit, and surface
   it to a maintainer if it still refuses.
 - **Muse — Muse models.** Reads the root `AGENTS.md` and the
-  generated `.agents/skills/` natively; invoke DART workflows by skill
-  name. The project pins no model or effort: reasoning effort is a
+  generated `.agents/skills/` natively; invoke DART workflows by their
+  `/dart-*` slash shortcut. The project pins no model or effort: reasoning effort is a
   session-level setting (`--reasoning-effort`, default `high`), so reserve
   `max`/`ultra` for one hard task. Validated on Muse 1.4.6
   (`muse-wonder-full-1.0`) for rules and skill discovery; the

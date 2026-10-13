@@ -6,7 +6,7 @@ supported AI tools.
 - Claude Code and OpenCode use `/dart-*` commands.
 - Codex uses generated `$dart-*` skills from `.agents/skills/`.
 - Muse uses the same generated skills from `.agents/skills/`,
-  invoked by skill name.
+  invoked as `/dart-*` slash shortcuts.
 - `.claude/commands/` and `.claude/skills/` are the editable source.
 - `.opencode/command/` and `.agents/skills/` are generated.
 

@@ -5916,6 +5916,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
             "pixi": version("pixi"),
             "codex": version("codex"),
             "claude": version("claude"),
+            "muse": version("muse"),
             "opencode": version("opencode"),
         },
         "inventory": {

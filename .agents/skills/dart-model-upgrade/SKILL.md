@@ -17,7 +17,7 @@ Codex, Muse, and OpenCode's skill loader.
 
 - Claude Code/OpenCode: `/dart-model-upgrade <arguments>`
 - Codex: `$dart-model-upgrade <arguments>`
-- Muse: load the `dart-model-upgrade` skill
+- Muse: `/dart-model-upgrade <arguments>`
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,

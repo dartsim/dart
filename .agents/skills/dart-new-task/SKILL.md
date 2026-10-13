@@ -17,7 +17,7 @@ Codex, Muse, and OpenCode's skill loader.
 
 - Claude Code/OpenCode: `/dart-new-task <arguments>`
 - Codex: `$dart-new-task <arguments>`
-- Muse: load the `dart-new-task` skill
+- Muse: `/dart-new-task <arguments>`
 
 Treat the text after the skill name, or the user's request when the skill is
 loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,
