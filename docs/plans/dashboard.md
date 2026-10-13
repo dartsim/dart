@@ -17,12 +17,10 @@ Priority order is document order. Active implementation handoff remains in
 - Scope: Main's next release becomes DART 7.0. That release is a clean Python
   API break; the C++ API stays compatible for the gz-used subset. Main's
   unreleased work ships in 7.0, and `release-6.20` is the 6.x maintenance line.
-- Next step: Exit M0 once the scope artifacts (#3728), the gz API inventory
-  (#3729), the C++14 contact-surface header follow-up (#3731) and the
-  analytical-IK copy fix (#3722) land. Then add nightly Gazebo-preset sleeping
-  rows, pin `dart7-base` and open the M1a stage-extraction PR. M5a's rename
-  table, the detector capability matrix and a skel-parser null-check fix run
-  in parallel.
+- Next step: Exit M0 once the scope artifacts (#3728) and the gz API inventory
+  (#3729) land. #3741 replaced the closed #3731; #3722, #3749 and #3750 have
+  merged. Then pin `dart7-base` and open the M1a stage-extraction PR. M5a's
+  rename table and the detector capability matrix run in parallel.
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
@@ -65,7 +63,8 @@ Priority order is document order. Active implementation handoff remains in
   Also complete normalized performance acceptance, multicore scaling evidence
   or an approved negative disposition, pre-default detector coverage gates,
   and a complete paired benchmark artifact or approved disposition. New GUI
-  examples belong in `dart-demos`.
+  examples are Python scenes in the demo catalog (`python/examples/demos`),
+  with heavy controllers and models kept native (D31b).
 - Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
   one-thread and host-capped multi-thread determinism/scaling; allocation and
   Gazebo gates before any collision, constraint, or backend-default change.

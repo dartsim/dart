@@ -427,6 +427,11 @@ owns its schedule and release gates:
     `Multibody` behind a segmentation id.
 - **`dart.viewer`** offers `open(world, ...)`, a passive viewer with a user-owned
   loop, and `launch(world, ...)`, a managed loop.
+  - The managed loop is a native workspace drawn by private C++ in the
+    extension (D31b): scene navigator, scene panels, inspector, tools,
+    profiler and log console.
+  - Python passes scenes (a World factory, key actions and light step hooks)
+    and declarative panel controls, and never calls ImGui.
 - **`dart.Material`** is a core PBR appearance value: base color (RGBA),
   metallic, roughness, emissive and textures. It is stored with each visual's
   properties, so it is available without a renderer, and editing it is a

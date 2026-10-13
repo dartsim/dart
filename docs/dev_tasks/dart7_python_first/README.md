@@ -7,7 +7,7 @@ baseline and becomes ready for multi-physics, batched and replayable simulation.
 tracks its roadmap status. The durable API and engine rules live in the
 [DART 7 Python API design](../../design/dart7_python_api.md).
 
-- [Decisions](decisions.md): the maintainer decisions D0–D32 and D31a, with
+- [Decisions](decisions.md): the maintainer decisions D0–D32, D31a and D31b, with
   their rationale.
 - [Verification](verification.md): evidence, review passes and gates per
   packet.
@@ -217,13 +217,13 @@ deciding M3.
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
 | M5 | dartpy 7.0 API | Planned | [Order](#m5-dartpy-70-api); the rename table needs maintainer approval first |
 | M6a | Filament backend port | Merged in #3696 | [Interface](#m6a-interface); remaining release gates below |
-| M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release |
+| M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release; includes the D31b demo host ([demo consolidation](../dart7_python_demos/README.md)) |
 | M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and the remaining rendering release gates |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
 Critical path: WP-7.0.1 rollover → baseline pin → M1a → M1d → M1i →
-`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6a → M6b → checkpoint C2. M5a starts when M0
-exits.
+`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6a → M6b
+→ checkpoint C2. M5a starts when M0 exits.
 
 ### M1 core seams
 
@@ -316,10 +316,12 @@ Release rules:
   must-have and misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
 - Items allowed to slip to 7.1: the generated API reference, notebooks, the
-  example runner, and the scheduled lane against the gz-physics development
-  branch.
+  example runner's remaining scenes (the C++ `dart-demos` app stays until the
+  Python catalog reaches parity, D31b), and the scheduled lane against the
+  gz-physics development branch.
 - While 7.0 waits for M6b and the remaining rendering gates, only fixes and
-  M6b land on the release path.
+  M6b land on the release path. M6b includes the D31b demo host, the Python
+  demo catalog that runs on it, and the core bindings its scenes need.
 - Release candidates publish `7.0.0rcN` to PyPI. The C++ version stays numeric;
   `DARTPY_VERSION_SUFFIX` carries the candidate tag.
 - The final release needs release-candidate feedback, the codemod run on at
@@ -397,6 +399,8 @@ style, ports the tutorials, docs and tests, and deletes the interim module
 before the API freeze `F`, so release candidates carry the final render API.
 The target-shape render test in `python/tests/unit/gui/` already uses the 7.0
 API, so it stays when the interim tests are ported.
+New viewer bindings land in the 7.0 style as `dartpy.viewer` (D31b). Demo
+scenes may use interim `dartpy.gui` primitives until M6b ports them.
 
 **OSG removal:**
 
@@ -411,8 +415,8 @@ API, so it stays when the interim tests are ported.
   Filament component.
 - In-repository OSG consumers (examples, Python demos and tutorials, package
   tools, the wheel test script) were ported or retired in #3696.
-- GUI binding sites adopt WP-7.0.4's interpreter-finalization rule once it
-  lands; until then they raise when no thread state can be attached.
+- GUI binding sites adopted WP-7.0.4's interpreter-finalization rule in
+  [#3713](https://github.com/dartsim/dart/pull/3713).
 - The M5 codemod marks GUI code with a `TODO(dart7)` note to port it to
   `dart.viewer`.
 
@@ -440,26 +444,27 @@ API, so it stays when the interim tests are ported.
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport merged ([#3717](https://github.com/dartsim/dart/pull/3717)) |
 | WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | In progress: [#3719](https://github.com/dartsim/dart/pull/3719) merged; four review findings remain open ([verification](verification.md#wp-703b-sdf-pose-attributes)) |
 | WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
-| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress: [#3720](https://github.com/dartsim/dart/pull/3720) added the rows and the baseline procedure; nightly Gazebo-preset sleeping rows and then the `dart7-base` pin follow M0's exit |
-| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In progress: [#3725](https://github.com/dartsim/dart/pull/3725) merged the version file, shim test and header probe; [#3729](https://github.com/dartsim/dart/pull/3729) (in review) adds the gz API inventory, and [#3731](https://github.com/dartsim/dart/pull/3731) (draft) keeps the contact-surface header tree valid C++14 |
+| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress: [#3720](https://github.com/dartsim/dart/pull/3720) added the many-World and Python-loop rows and the baseline procedure; [#3749](https://github.com/dartsim/dart/pull/3749) merged the nightly Gazebo-preset sleeping rows; the `dart7-base` pin follows M0's exit |
+| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | In progress: [#3725](https://github.com/dartsim/dart/pull/3725) merged the version file, shim test and header probe; [#3741](https://github.com/dartsim/dart/pull/3741) merged the Windows header-probe fix, replacing the closed [#3731](https://github.com/dartsim/dart/pull/3731); [#3729](https://github.com/dartsim/dart/pull/3729) (in review) adds the gz API inventory |
 | WP-7.0.7 | Record the API freeze, checkpoints, must-have list and acceptance tests | In review ([#3728](https://github.com/dartsim/dart/pull/3728)) |
 | WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for Python 3.12 to 3.14 and [#3730](https://github.com/dartsim/dart/pull/3730) Linux Python 3.15 wheels; macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15 builds of `bullet-cpp` and do not hold M0's exit |
 
 Each packet records its scope, non-goals, gates and evidence in
 [verification.md](verification.md) before it is marked done. M0 exits once
-[#3728](https://github.com/dartsim/dart/pull/3728) (WP-7.0.7),
-[#3729](https://github.com/dartsim/dart/pull/3729) (the gz API inventory),
-[#3731](https://github.com/dartsim/dart/pull/3731) (the C++14 follow-up to
-#3725) and [#3722](https://github.com/dartsim/dart/pull/3722) (the
-analytical-IK copy fix) land; #3725 and #3730 have merged. The macOS and
+[#3728](https://github.com/dartsim/dart/pull/3728) (WP-7.0.7) and
+[#3729](https://github.com/dartsim/dart/pull/3729) (the gz API inventory) land.
+The header-probe fix merged in [#3741](https://github.com/dartsim/dart/pull/3741),
+replacing the closed #3731; [#3722](https://github.com/dartsim/dart/pull/3722)
+merged the analytical-IK copy fix. #3725 and #3730 have also merged. The macOS and
 Windows Python 3.15 wheels, #3719's review follow-up and the `dart7-base` pin
 do not hold M0's exit.
 
-After M0 exits, in order: a small PR adds nightly Gazebo-preset sleeping rows,
-which cover gz's custom-filter replay path; `dart7-base` is pinned; the M1a PR
-opens. In parallel: M5a's rename table v0, the published shape and query
-capability matrix, and a null-check fix in the skel parser's detector
-fallback.
+After M0 exits, in order: `dart7-base` is pinned; the M1a PR opens. In
+parallel: M5a's rename table v0 and the published shape and query capability
+matrix. #3749 already merged the nightly Gazebo-preset sleeping rows, which
+cover gz's custom-filter replay path, and
+[#3750](https://github.com/dartsim/dart/pull/3750) merged the skel-parser
+null-check fix.
 
 ## Gates
 

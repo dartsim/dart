@@ -173,6 +173,24 @@ only with new evidence and maintainer approval.
   camelCase GUI bindings as an interim, undocumented module. M6b replaces them
   with the 7.0 API and deletes them before the API freeze `F`, so release
   candidates carry the final render API.
+- **D31b. The demo host becomes the managed viewer's core.** The C++
+  `dart-demos` host moves into private C++ linked into the dartpy extension,
+  with no installed headers, package components or gz-facing API. The host
+  covers the docking ImGui workspace, scene navigator, scene panels,
+  inspector, contact and drag tools, profiler, log console, and headless
+  list, cycle and capture.
+  - Its bindings start in the 7.0 style as `dartpy.viewer`, the managed-loop
+    core that M6b's `launch()` can reuse.
+  - Python declares scenes, key actions, light step hooks and declarative
+    panel controls. There is no Python ImGui API. Heavy controllers and
+    models stay native behind the private `dartpy._demos`.
+  - The Python demo catalog becomes D22's example runner. The C++ `dart-demos`
+    app is removed once the catalog reaches parity.
+  - Bundled ImGui uses the docking release; with a vanilla system ImGui the
+    host is compiled out. This is a labeled 7.0 build change.
+  - Evidence: maintaining a C++ and a Python demo app duplicated every scene
+    and host feature. The packets and the parity matrix live in the
+    [demo consolidation project home](../dart7_python_demos/README.md).
 
 ## Scope-gate refinement (2026-10-11)
 
@@ -189,10 +207,10 @@ are removed; past dates on decisions and evidence stay.
   must-haves, and additive work that misses `F` goes to 7.1. The maintainer
   confirmed this reading on 2026-10-12.
 - C1, the M3 go/no-go, is decided after the first three M2 kernel PRs, at the
-  M2 stop rule. M3 must be able to land before `F` without delaying
-  any other must-have, and so without delaying `F`. Gazebo gates must stay green through those
-  three PRs; the flagged contiguous-state spike is limited to revolute/free
-  joint positions and velocities.
+  M2 stop rule. M3 must be able to land before `F` without delaying any other
+  must-have, and so without delaying `F`. Gazebo gates must stay green through
+  those three PRs; the flagged contiguous-state spike is limited to
+  revolute/free joint positions and velocities.
 - C2 passes before `F`, so release candidates carry the final render API.
 
 The [project home](README.md) owns the must-have list, checkpoint criteria and

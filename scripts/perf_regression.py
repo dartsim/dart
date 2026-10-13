@@ -319,6 +319,26 @@ NIGHTLY_ROWS += [
         50,
     ),
 ]
+# Gazebo's step path: --gz-preset installs a BodyNodeCollisionFilter subclass,
+# as gz-physics does, so bodies sleep through World::step's custom-filter
+# decision replay. The preset sets its own ground and contact caps and rejects
+# --sdf-plane-shapes, so these rows cannot reuse WORLD_ARGS.
+NIGHTLY_ROWS += [
+    Row(
+        f"S7-t{threads}",
+        det,
+        CB,
+        ("{world}", "--gz-preset"),
+        0,
+        3000,
+        ir=False,
+        threads=threads,
+        parity=f"S7-t1/{det}" if threads == 4 else "",
+        perturb=False,
+    )
+    for det in ("dart", "bullet", "ode")
+    for threads in (1, 4)
+]
 NIGHTLY_ROWS += [
     Row(f"w{worlds}", det, PB, ("--scene", "contact", "--worlds", str(worlds)), 2, 3)
     for worlds in (1, 64, 1024)
@@ -862,6 +882,12 @@ def measure(row: Row, args, world: Path) -> dict:
         if (metrics.get("guards") or {}).get("loop_closed") is False:
             result.update(status="broken", error="loop closure failed")
             return result
+        if (
+            row.row in ("S7-t1", "S7-t4")
+            and int(metrics["guards"]["resting"].split("/")[0]) == 0
+        ):
+            result.update(status="broken", error="S7 sleeping failed: no body rests")
+            return result
         if args.perturb and row.perturb:
             result["perturbations"] = {}
             for config in PERTURBATIONS:
@@ -1008,7 +1034,9 @@ def select_rows(names: str) -> list[Row]:
         matches = [
             row
             for row in [*ROWS, *NIGHTLY_ROWS]
-            if name in (row.key, row.row) or name == "mt4" and row.parity
+            if name in (row.key, row.row)
+            or name == "mt4"
+            and row.row.startswith("mt4-")
         ]
         if not matches:
             raise ValueError(f"unknown row {name}")
@@ -1440,17 +1468,22 @@ def _measure_arm(args, provenance) -> dict:
                 )
     by_key = {row_key(result): result for result in results}
     for result in results:
-        if result["parity"] and result["status"] == "ok":
+        s7 = result["row"] == "S7-t4"
+        if result["parity"] and (result["status"] == "ok" or s7):
             serial = by_key.get(result["parity"])
             # Compare every guard, including contacts, cap hit, resting and finite.
             if (
                 not serial
                 or serial["status"] != "ok"
+                or result["status"] != "ok"
                 or guard_evidence(serial["head"]) != guard_evidence(result["head"])
             ):
-                result.update(
-                    status="broken", error="mt4 guard parity missing or unequal"
-                )
+                for failed in ([serial, result] if s7 and serial else [result]):
+                    if failed["status"] == "ok":
+                        failed.update(
+                            status="broken",
+                            error=f"{'S7' if s7 else 'mt4'} guard parity missing or unequal",
+                        )
     record = {
         "schema": "dart-perf/1",
         "run": {
@@ -2499,7 +2532,7 @@ def guard_table(record: dict, previous: str = "") -> str:
         if line.startswith("| S")
     }
     for row in record["results"]:
-        if not re.match(r"^S[1-6](?:-|$)", row["row"]):
+        if not re.match(r"^S[1-7](?:-|$)", row["row"]):
             continue
         head = row["head"]
         guards = head.get("guards", {})
@@ -3577,7 +3610,7 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument(
             "--nightly",
             action="store_true",
-            help="include all nightly rows (S1-S6 guards, mf and World loops)",
+            help="include all nightly rows (S1-S7 guards, mf and World loops)",
         )
         item.add_argument("--shim", type=Path)
         item.add_argument("--heappad", type=Path)
