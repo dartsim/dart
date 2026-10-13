@@ -64,6 +64,18 @@ public:
     set(_ptr);
   }
 
+  /// Copy constructor
+  TemplateNodePtr(const TemplateNodePtr&) = default;
+
+  /// Move constructor
+  TemplateNodePtr(TemplateNodePtr&&) = default;
+
+  /// Release the Node before its BodyNode and Skeleton owners.
+  ~TemplateNodePtr()
+  {
+    mDestructor.reset();
+  }
+
   /// Constructor that takes in a strong NodePtr
   template <class OtherNodeT, class OtherBodyNodeT>
   TemplateNodePtr(const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _ptr)
@@ -77,6 +89,12 @@ public:
     set(_ptr);
     return *this;
   }
+
+  /// Copy assignment operator
+  TemplateNodePtr& operator=(const TemplateNodePtr&) = default;
+
+  /// Move assignment operator
+  TemplateNodePtr& operator=(TemplateNodePtr&&) = default;
 
   /// Assignment operator for NodePtrs
   template <class OtherNodeT, class OtherBodyNodeT>

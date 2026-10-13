@@ -80,6 +80,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -651,6 +652,55 @@ TEST(FilamentBackend, MeshWithoutUvsStillBindsAuthoredJpeg)
   const auto untextured = renderer.readPixelsRGBA();
   EXPECT_GT(untextured[left + 2], absent[left + 2] + 40);
   EXPECT_GT(untextured[right], absent[right] + 40);
+}
+
+TEST(FilamentBackend, MalformedJpegDoesNotCacheTextureAndCanBeRetried)
+{
+  CaptureFile file;
+  file.path.replace_extension(".jpg");
+  ASSERT_TRUE(writeSolidJpeg(file.path, {255, 0, 0}));
+  std::ifstream input(file.path, std::ios::binary);
+  const std::vector<unsigned char> valid{
+      std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+  input.close();
+  auto corruptScan = valid;
+  const std::array<unsigned char, 2> sos{0xff, 0xda};
+  const auto marker = std::search(
+      corruptScan.begin(), corruptScan.end(), sos.begin(), sos.end());
+  ASSERT_NE(marker, corruptScan.end());
+  ASSERT_GE(std::distance(marker, corruptScan.end()), 4);
+  const auto scanOffset = std::distance(corruptScan.begin(), marker) + 2
+                          + (marker[2] << 8) + marker[3];
+  ASSERT_LT(static_cast<std::size_t>(scanOffset), corruptScan.size());
+  // A second SOI fails while reading scanlines, after image buffers resize.
+  corruptScan.insert(corruptScan.begin() + scanOffset, {0xff, 0xd8});
+
+  dart::gui::detail::FilamentRenderer renderer(64, 48, true);
+  const auto original = renderer.getTextureCount();
+  dart::gui::RenderableDescriptor quad;
+  quad.id = 1;
+  auto& geometry = quad.geometry;
+  geometry.kind = dart::gui::ShapeKind::Mesh;
+  geometry.triangleVertices = {{-1, 0, -1}, {1, 0, -1}, {1, 0, 1}};
+  geometry.triangleIndices = {{0, 1, 2}};
+  geometry.triangleNormals.assign(3, Eigen::Vector3d(0, -1, 0));
+  geometry.meshMaterials.resize(1);
+  geometry.meshMaterials[0].baseColorTexturePath = file.path.string();
+  const std::vector<unsigned char> invalidHeader{
+      'n', 'o', 't', ' ', 'j', 'p', 'e', 'g'};
+  for (const auto& bytes : {invalidHeader, corruptScan, valid}) {
+    {
+      std::ofstream output(file.path, std::ios::binary);
+      output.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+      ASSERT_TRUE(output);
+    }
+    ++quad.renderResourceVersion;
+    renderer.synchronize({quad});
+    EXPECT_EQ(
+        renderer.getTextureCount(), original + (bytes == valid ? 1u : 0u));
+  }
+  renderer.synchronize({});
+  EXPECT_EQ(renderer.getTextureCount(), original);
 }
 
 TEST(FilamentBackend, TextureClampRetainsBlackBorderAtEveryMip)
