@@ -109,7 +109,10 @@ would happen).
   Code as usual. The trusted project hook at `.muse/hooks.json` runs
   the shared commit guard outside that sandbox (matcher `^bash$`, the
   lowercase name of its shell tool), the same wiring Claude Code and
-  Codex use.
+  Codex use. Muse records the project root in a private per-session cache
+  so shell calls outside the checkout still reach the shared tokenizer;
+  `SessionEnd` removes that session's root record. Launcher failures and
+  timeouts block the tool call through a bounded `onFailure` handler.
 - Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
   layer.
 

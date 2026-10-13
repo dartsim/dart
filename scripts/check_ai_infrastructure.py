@@ -326,10 +326,111 @@ CODEX_HOOK_COMMAND_WINDOWS = (
 )
 CODEX_HOOK_TIMEOUT = 15
 CODEX_HOOK_STATUS = "Checking DART commit command"
-# Muse blocks only exit 2, so root-lookup and launcher failures must map to it.
-MUSE_HOOK_COMMAND = CODEX_HOOK_COMMAND + (
-    ' || { echo "DART guard: hook failed; blocking" >&2; exit 2; }'
+# Muse has no project-root variable and tool hooks run in the tool's cwd.
+MUSE_HOOK_CACHE = "$HOME/.cache/dart-muse-hooks/$MUSE_SESSION_ID.root"
+MUSE_HOOK_COMMAND = (
+    "sh -c 'payload=$(cat); "
+    'case "$payload" in *commit*|*g*i*t*c*o*m*m*i*t*) ;; *) exit 0 ;; esac; '
+    'repo_root=; case "${MUSE_SESSION_ID:-}" in ""|*[!A-Za-z0-9-]*) ;; '
+    f'*) repo_root=$(cat "{MUSE_HOOK_CACHE}" 2>/dev/null) ;; esac; '
+    'if [ -z "$repo_root" ]; then '
+    'repo_root="$(git rev-parse --show-toplevel)"; fi; '
+    '[ -n "$repo_root" ] && '
+    'printf "%s" "$payload" | '
+    'CLAUDE_PROJECT_DIR="$repo_root" CODEX_PROJECT_DIR="$repo_root" '
+    '"$repo_root/.claude/hooks/pre-commit-guard.sh" || '
+    '{ echo "DART guard: hook failed; blocking" >&2; exit 2; }\''
 )
+MUSE_HOOK_CACHE_HOME_WINDOWS = (
+    "$cacheHome = $env:HOME; if (-not $cacheHome) { "
+    "$cacheHome = [Environment]::GetFolderPath('UserProfile') }; "
+)
+MUSE_HOOK_COMMAND_WINDOWS = (
+    'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "'
+    "$payload = [Console]::In.ReadToEnd(); "
+    "if ($payload -notmatch '(?s)commit|g.*i.*t.*c.*o.*m.*m.*i.*t') { exit 0 }; "
+    "$ErrorActionPreference = 'Stop'; try { $repoRoot = $null; "
+    f"{MUSE_HOOK_CACHE_HOME_WINDOWS}"
+    "if ($env:MUSE_SESSION_ID -match '^[A-Za-z0-9-]+$') { "
+    "$cache = Join-Path $cacheHome ('.cache/dart-muse-hooks/' + $env:MUSE_SESSION_ID + '.root'); "
+    "if (Test-Path -LiteralPath $cache) { $repoRoot = Get-Content -LiteralPath $cache -Raw } }; "
+    "if (-not $repoRoot) { $repoRoot = git rev-parse --show-toplevel }; "
+    "if (-not $repoRoot) { throw 'git did not return a repository root' }; "
+    "$env:CLAUDE_PROJECT_DIR = $repoRoot.Trim(); $env:CODEX_PROJECT_DIR = $repoRoot.Trim(); "
+    "$payload | & (Join-Path $repoRoot.Trim() '.claude/hooks/pre-commit-guard.ps1'); "
+    "if (-not $? -or $LASTEXITCODE -ne 0) { throw 'guard failed' }; exit 0 "
+    "} catch { [Console]::Error.WriteLine('DART guard: hook failed; blocking'); exit 2 }\""
+)
+MUSE_HOOK_FAILURE = {
+    "type": "command",
+    "command": (
+        "sh -c 'cat >/dev/null; "
+        'echo "DART guard: hook failed or timed out; blocking" >&2; exit 2\''
+    ),
+    "commandWindows": (
+        'powershell -NoProfile -NonInteractive -Command "'
+        "$null = [Console]::In.ReadToEnd(); "
+        "[Console]::Error.WriteLine('DART guard: hook failed or timed out; blocking'); "
+        'exit 2"'
+    ),
+    "timeout": 2,
+}
+MUSE_HOOK_LIFECYCLE = {
+    "SessionStart": [
+        {
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": (
+                        "sh -c 'cat >/dev/null; umask 077; "
+                        'case "${MUSE_SESSION_ID:-}" in ""|*[!A-Za-z0-9-]*) exit 2 ;; esac; '
+                        "repo_root=$(git rev-parse --show-toplevel) && "
+                        '[ -x "$repo_root/.claude/hooks/pre-commit-guard.sh" ] && '
+                        'mkdir -p "$HOME/.cache/dart-muse-hooks" && '
+                        f'printf "%s" "$repo_root" >"{MUSE_HOOK_CACHE}"\''
+                    ),
+                    "commandWindows": (
+                        'powershell -NoProfile -NonInteractive -Command "'
+                        "$null = [Console]::In.ReadToEnd(); $ErrorActionPreference = 'Stop'; "
+                        f"try {{ {MUSE_HOOK_CACHE_HOME_WINDOWS}"
+                        "if ($env:MUSE_SESSION_ID -notmatch '^[A-Za-z0-9-]+$') { throw 'missing session ID' }; "
+                        "$repoRoot = git rev-parse --show-toplevel; "
+                        "if (-not $repoRoot -or -not (Test-Path -LiteralPath (Join-Path $repoRoot '.claude/hooks/pre-commit-guard.ps1'))) { throw 'missing guard' }; "
+                        "$cacheDir = Join-Path $cacheHome '.cache/dart-muse-hooks'; "
+                        "$null = New-Item -ItemType Directory -Force -Path $cacheDir; "
+                        "[IO.File]::WriteAllText((Join-Path $cacheDir ($env:MUSE_SESSION_ID + '.root')), $repoRoot); "
+                        "exit 0 } catch { [Console]::Error.WriteLine('DART guard: session setup failed'); exit 2 }\""
+                    ),
+                    "timeout": 15,
+                    "onFailure": MUSE_HOOK_FAILURE,
+                }
+            ]
+        }
+    ],
+    "SessionEnd": [
+        {
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": (
+                        "sh -c 'cat >/dev/null; "
+                        'case "${MUSE_SESSION_ID:-}" in ""|*[!A-Za-z0-9-]*) exit 0 ;; esac; '
+                        f'rm -f "{MUSE_HOOK_CACHE}"\''
+                    ),
+                    "commandWindows": (
+                        'powershell -NoProfile -NonInteractive -Command "'
+                        "$null = [Console]::In.ReadToEnd(); "
+                        f"{MUSE_HOOK_CACHE_HOME_WINDOWS}"
+                        "if ($env:MUSE_SESSION_ID -match '^[A-Za-z0-9-]+$') { "
+                        "$cache = Join-Path $cacheHome ('.cache/dart-muse-hooks/' + $env:MUSE_SESSION_ID + '.root'); "
+                        'Remove-Item -LiteralPath $cache -Force -ErrorAction SilentlyContinue }; exit 0"'
+                    ),
+                    "timeout": 2,
+                }
+            ]
+        }
+    ],
+}
 CLAUDE_HOOK_COMMAND = '"${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-commit-guard.sh"'
 WINDOWS_LAUNCHER_MARKERS = (
     "scripts/pretool_guard_bridge.py",
@@ -1048,6 +1149,8 @@ def _check_guard_hook_file(
     matcher: str,
     expected_command: str,
     expected_windows: str,
+    expected_failure: dict | None = None,
+    expected_lifecycle: dict | None = None,
 ) -> None:
     hooks_path = root / relative
     if hooks_path.exists():
@@ -1061,8 +1164,14 @@ def _check_guard_hook_file(
             if not isinstance(data, dict) or set(data) != {"hooks"}:
                 errors.append(f"{relative}: root keys must equal hooks")
             hooks = data.get("hooks") if isinstance(data, dict) else None
-            if not isinstance(hooks, dict) or set(hooks) != {"PreToolUse"}:
-                errors.append(f"{relative}: only a PreToolUse hook is allowed")
+            expected_events = {"PreToolUse", *(expected_lifecycle or {})}
+            if not isinstance(hooks, dict) or set(hooks) != expected_events:
+                errors.append(
+                    f"{relative}: hook events must equal {', '.join(sorted(expected_events))}"
+                )
+            for event, expected in (expected_lifecycle or {}).items():
+                if not isinstance(hooks, dict) or hooks.get(event) != expected:
+                    errors.append(f"{relative}: {event} wiring is stale")
             entries = hooks.get("PreToolUse") if isinstance(hooks, dict) else None
             entry = entries[0] if isinstance(entries, list) and entries else None
             handlers = entry.get("hooks") if isinstance(entry, dict) else None
@@ -1089,10 +1198,13 @@ def _check_guard_hook_file(
                 "timeout",
                 "statusMessage",
             }
+            if expected_failure is not None:
+                expected_keys.add("onFailure")
+                if not hook or hook.get("onFailure") != expected_failure:
+                    errors.append(f"{relative}: failure handler wiring is stale")
             if isinstance(hook, dict) and set(hook) != expected_keys:
                 errors.append(
-                    f"{relative}: handler keys must equal command, "
-                    "commandWindows, statusMessage, timeout, type"
+                    f"{relative}: handler keys must equal {', '.join(sorted(expected_keys))}"
                 )
             if not hook or hook.get("type") != "command":
                 errors.append(f"{relative}: hook type must be command")
@@ -1128,7 +1240,9 @@ def check_hooks(root: Path, errors: list[str]) -> None:
         ".muse/hooks.json",
         "^bash$",
         MUSE_HOOK_COMMAND,
-        CODEX_HOOK_COMMAND_WINDOWS,
+        MUSE_HOOK_COMMAND_WINDOWS,
+        MUSE_HOOK_FAILURE,
+        MUSE_HOOK_LIFECYCLE,
     )
 
     settings_path = root / ".claude" / "settings.json"
