@@ -1883,6 +1883,32 @@ def test_scoped_agent_instruction_files_are_required(tmp_path):
 
 
 @pytest.mark.parametrize(
+    "shadowed",
+    [
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        ".agents/AGENTS.md",
+        ".claude/CLAUDE.md",
+    ],
+)
+def test_shadowed_rules_files_are_rejected(monkeypatch, shadowed):
+    target = ROOT / shadowed
+    original_exists = Path.exists
+
+    def exists(path, *args, **kwargs):
+        if path == target:
+            return True
+        return original_exists(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "exists", exists)
+    errors = []
+
+    infra.check_release_guidance(ROOT, errors)
+
+    assert any(f"shadowed rules file `{shadowed}`" in error for error in errors)
+
+
+@pytest.mark.parametrize(
     ("field", "value", "expected"),
     [
         ("start_dir", "missing/start", "missing start_dir"),

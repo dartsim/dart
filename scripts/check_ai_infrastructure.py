@@ -4610,7 +4610,12 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
             )
     if (root / ".codex" / "skills").exists():
         errors.append("legacy generated directory `.codex/skills/` must be absent")
-    for shadowed in ("CLAUDE.md", ".agents/AGENTS.md"):
+    for shadowed in (
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        ".agents/AGENTS.md",
+        ".claude/CLAUDE.md",
+    ):
         if (root / shadowed).exists():
             errors.append(
                 f"shadowed rules file `{shadowed}` must be absent; "

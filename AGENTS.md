@@ -105,6 +105,10 @@ pixi run python scripts/setup_ai.py
 pixi run python scripts/check_ai_infrastructure.py --doctor
 ```
 
+Under Muse's default shell sandbox, `.agents/` stays read-only,
+so run `sync-ai-commands` from an unsandboxed shell there (see
+`docs/onboarding/ai-tools.md`).
+
 Use `$dart-ultrawork` in Codex, `/dart-ultrawork` in Claude/OpenCode, or
 the `dart-ultrawork` skill in Muse for large, multi-session, or
 explicitly autonomous work. Its project home is `docs/dev_tasks/<task>/`.
