@@ -60,6 +60,7 @@
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
 #include "ZUp.hpp"
+#include "demo_models/WorldHistory.hpp"
 
 #include <dart/utils/utils.hpp>
 
@@ -67,22 +68,16 @@
 
 #include <algorithm>
 #include <array>
-#include <deque>
 #include <memory>
 #include <stdexcept>
-#include <vector>
 
 namespace dart_demos {
 
 namespace {
 
-using dart::dynamics::BodyNode;
-using dart::dynamics::Skeleton;
 using dart::dynamics::SkeletonPtr;
 using dart::dynamics::SoftMeshShape;
 using dart::simulation::WorldPtr;
-
-constexpr std::size_t kMaxHistoryFrames = 4000;
 
 //==============================================================================
 struct SoftBodyDisplayOptions
@@ -102,22 +97,10 @@ struct SoftBodySceneSpec
 };
 
 //==============================================================================
-struct HistoryState
-{
-  Skeleton::Configuration config;
-  std::vector<dart::common::Composite::State> bodyStates;
-};
-
-//==============================================================================
-using TimeSlice = std::vector<HistoryState>;
-
-//==============================================================================
 /// Per-instance state captured by this scene's postStep/key-action lambdas.
 struct SoftBodiesState
 {
-  std::deque<TimeSlice> history;
-  std::size_t currentIndex = 0;
-  std::size_t framesRecorded = 0;
+  std::unique_ptr<WorldHistory> history;
   GuiViewer* viewer = nullptr;
   demo_gui::WorldNode* worldNode = nullptr;
   SoftBodyDisplayOptions display;
@@ -181,83 +164,27 @@ void refreshSoftBodyDisplay(SoftBodiesState& state)
 }
 
 //==============================================================================
-TimeSlice grabTimeSlice(const WorldPtr& world)
-{
-  TimeSlice slice;
-  slice.reserve(world->getNumSkeletons());
-
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
-    const SkeletonPtr& skeleton = world->getSkeleton(i);
-    HistoryState state;
-    state.config = skeleton->getConfiguration();
-    state.bodyStates.reserve(skeleton->getNumBodyNodes());
-    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j)
-      state.bodyStates.push_back(skeleton->getBodyNode(j)->getCompositeState());
-    slice.push_back(std::move(state));
-  }
-
-  return slice;
-}
-
-//==============================================================================
-void recordTimeSlice(const WorldPtr& world, SoftBodiesState& state)
-{
-  // Rewinding then resuming truncates the recorded "future" before appending
-  // the new slice, matching the original's branching-timeline semantics.
-  if (state.currentIndex + 1 < state.history.size())
-    state.history.resize(state.currentIndex + 1);
-
-  state.history.push_back(grabTimeSlice(world));
-  ++state.framesRecorded;
-  ++state.currentIndex;
-
-  if (state.history.size() > kMaxHistoryFrames) {
-    state.history.pop_front();
-    --state.currentIndex;
-  }
-}
-
-//==============================================================================
-void moveTo(const WorldPtr& world, SoftBodiesState& state, std::size_t index)
+void moveTo(SoftBodiesState& state, std::size_t index)
 {
   if (state.viewer)
     state.viewer->simulate(false);
-
-  if (state.history.empty())
-    return;
-
-  if (index >= state.history.size())
-    index = state.history.size() - 1;
-
-  const TimeSlice& slice = state.history[index];
-  for (std::size_t i = 0; i < slice.size() && i < world->getNumSkeletons();
-       ++i) {
-    const HistoryState& saved = slice[i];
-    const SkeletonPtr& skeleton = world->getSkeleton(i);
-    skeleton->setConfiguration(saved.config);
-    for (std::size_t j = 0;
-         j < skeleton->getNumBodyNodes() && j < saved.bodyStates.size();
-         ++j)
-      skeleton->getBodyNode(j)->setCompositeState(saved.bodyStates[j]);
-  }
-
-  state.currentIndex = index;
+  state.history->moveTo(index);
 }
 
 //==============================================================================
-void moveForward(
-    const WorldPtr& world, SoftBodiesState& state, std::size_t delta)
+void moveForward(SoftBodiesState& state, std::size_t delta)
 {
-  moveTo(world, state, state.currentIndex + delta);
+  if (state.viewer)
+    state.viewer->simulate(false);
+  state.history->moveForward(delta);
 }
 
 //==============================================================================
-void moveBackward(
-    const WorldPtr& world, SoftBodiesState& state, std::size_t delta)
+void moveBackward(SoftBodiesState& state, std::size_t delta)
 {
-  const std::size_t target
-      = delta > state.currentIndex ? 0 : state.currentIndex - delta;
-  moveTo(world, state, target);
+  if (state.viewer)
+    state.viewer->simulate(false);
+  state.history->moveBackward(delta);
 }
 
 //==============================================================================
@@ -280,9 +207,7 @@ DemoScene makeSoftBodyPlaybackScene(const SoftBodySceneSpec& spec)
     // Prime frame 0 at build time, as the original's RecordingWorld
     // constructor does, so a fresh (still paused) scene already has a
     // recorded frame to scrub to.
-    state->history.push_back(grabTimeSlice(world));
-    state->framesRecorded = 1;
-    state->currentIndex = 0;
+    state->history = std::make_unique<WorldHistory>(world);
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -293,34 +218,29 @@ DemoScene makeSoftBodyPlaybackScene(const SoftBodySceneSpec& spec)
       state->worldNode = ctx.worldNode();
     };
 
-    setup.postStep = [world, state] {
-      recordTimeSlice(world, *state);
+    setup.postStep = [state] {
+      state->history->record();
     };
 
+    setup.keyActions.push_back(KeyAction{'[', "Step back 1 frame", [state] {
+                                           moveBackward(*state, 1);
+                                         }});
+    setup.keyActions.push_back(KeyAction{']', "Step forward 1 frame", [state] {
+                                           moveForward(*state, 1);
+                                         }});
+    setup.keyActions.push_back(KeyAction{'{', "Step back 10 frames", [state] {
+                                           moveBackward(*state, 10);
+                                         }});
     setup.keyActions.push_back(
-        KeyAction{'[', "Step back 1 frame", [world, state] {
-                    moveBackward(world, *state, 1);
+        KeyAction{'}', "Step forward 10 frames", [state] {
+                    moveForward(*state, 10);
                   }});
+    setup.keyActions.push_back(KeyAction{'r', "Restart (frame 0)", [state] {
+                                           moveTo(*state, 0);
+                                         }});
     setup.keyActions.push_back(
-        KeyAction{']', "Step forward 1 frame", [world, state] {
-                    moveForward(world, *state, 1);
-                  }});
-    setup.keyActions.push_back(
-        KeyAction{'{', "Step back 10 frames", [world, state] {
-                    moveBackward(world, *state, 10);
-                  }});
-    setup.keyActions.push_back(
-        KeyAction{'}', "Step forward 10 frames", [world, state] {
-                    moveForward(world, *state, 10);
-                  }});
-    setup.keyActions.push_back(
-        KeyAction{'r', "Restart (frame 0)", [world, state] {
-                    moveTo(world, *state, 0);
-                  }});
-    setup.keyActions.push_back(
-        KeyAction{'\\', "Jump to latest frame", [world, state] {
-                    if (!state->history.empty())
-                      moveTo(world, *state, state->history.size() - 1);
+        KeyAction{'\\', "Jump to latest frame", [state] {
+                    moveTo(*state, state->history->getSize() - 1);
                   }});
 
     setup.renderPanel = [world, state] {
@@ -343,14 +263,16 @@ DemoScene makeSoftBodyPlaybackScene(const SoftBodySceneSpec& spec)
       ImGui::Separator();
       ImGui::Text(
           "Playback frame: %zu / %zu",
-          state->currentIndex,
-          state->history.empty() ? 0 : state->history.size() - 1);
-      ImGui::Text("Frames recorded (lifetime): %zu", state->framesRecorded);
+          state->history->getCurrentIndex(),
+          state->history->getSize() - 1);
+      ImGui::Text(
+          "Frames recorded (lifetime): %zu",
+          state->history->getFramesRecorded());
       ImGui::TextWrapped(
           "'[' / ']' step one recorded frame back/forward, '{' / '}' step "
           "10, 'r' restarts, '\\' jumps to the latest frame. Scrubbing "
           "pauses the simulation; history is capped at %zu frames.",
-          kMaxHistoryFrames);
+          WorldHistory::kMaxHistoryFrames);
     };
 
     return setup;

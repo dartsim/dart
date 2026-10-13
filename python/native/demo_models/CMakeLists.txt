@@ -37,8 +37,17 @@ add_library(
   ContactArrowLayout.cpp
   AdaptiveSoftContactModel.cpp
   SoftWormModel.cpp
+  WorldHistory.cpp
+  WamIkFast.cpp
+  ContactInverseDynamicsModel.cpp
+  RelaxedPosture.cpp
+  ssik_ik_gui/ArmSkeleton.cpp
 )
 target_link_libraries(dart-demo-models PUBLIC dart)
+set_source_files_properties(
+  WamIkFast.cpp
+  PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE COMPILE_OPTIONS "-w"
+)
 target_include_directories(
   dart-demo-models
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/.."

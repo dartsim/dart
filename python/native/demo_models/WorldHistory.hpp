@@ -30,60 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
-#define DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
+#ifndef DART_PYTHON_NATIVE_DEMO_MODELS_WORLDHISTORY_HPP_
+#define DART_PYTHON_NATIVE_DEMO_MODELS_WORLDHISTORY_HPP_
 
-#include "dart/common/SharedLibrary.hpp"
-#include "dart/dynamics/IkFast.hpp"
+#include <dart/simulation/World.hpp>
 
-class SharedLibraryWamIkFast : public dart::dynamics::IkFast
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/common/Composite.hpp>
+
+#include <deque>
+#include <vector>
+
+#include <cstddef>
+
+namespace dart_demos {
+
+/// Bounded full-state playback used by the soft-body catalog scenes.
+class WorldHistory
 {
 public:
-  SharedLibraryWamIkFast(
-      dart::dynamics::InverseKinematics* ik,
-      const std::vector<std::size_t>& dofMap,
-      const std::vector<std::size_t>& freeDofMap,
-      const std::string& methodName = "IKFast",
-      const Analytical::Properties& properties = Analytical::Properties());
+  static constexpr std::size_t kMaxHistoryFrames = 4000;
 
-  // Documentation inherited.
-  auto clone(dart::dynamics::InverseKinematics* newIK) const
-      -> std::unique_ptr<GradientMethod> override;
+  explicit WorldHistory(
+      dart::simulation::WorldPtr world,
+      std::size_t maxFrames = kMaxHistoryFrames);
 
-protected:
-  // Documentation inherited.
-  int getNumFreeParameters() const override;
+  void record();
+  void moveTo(std::size_t index);
+  void moveForward(std::size_t delta = 1);
+  void moveBackward(std::size_t delta = 1);
 
-  // Documentation inherited.
-  int* getFreeParameters() const override;
+  const dart::simulation::WorldPtr& getWorld() const;
+  std::size_t getCurrentIndex() const;
+  std::size_t getSize() const;
+  std::size_t getFramesRecorded() const;
+  std::size_t getMaxFrames() const;
 
-  // Documentation inherited.
-  int getNumJoints() const override;
+private:
+  struct HistoryState
+  {
+    dart::dynamics::Skeleton::Configuration config;
+    std::vector<dart::common::Composite::State> bodyStates;
+  };
+  using TimeSlice = std::vector<HistoryState>;
 
-  // Documentation inherited.
-  int getIkRealSize() const override;
+  TimeSlice grabTimeSlice() const;
 
-  // Documentation inherited.
-  int getIkType() const override;
-
-  // Documentation inherited.
-  bool computeIk(
-      const IkReal* targetTranspose,
-      const IkReal* targetRotation,
-      const IkReal* freeParams,
-      ikfast::IkSolutionListBase<IkReal>& solutions) override;
-
-  // Documentation inherited.
-  void computeFk(
-      const IkReal* parameters,
-      IkReal* targetTranspose,
-      IkReal* targetRotation) override;
-
-  // Documentation inherited.
-  const char* getKinematicsHash() override;
-
-  // Documentation inherited.
-  const char* getIkFastVersion() override;
+  dart::simulation::WorldPtr mWorld;
+  std::deque<TimeSlice> mHistory;
+  std::size_t mCurrentIndex = 0;
+  std::size_t mFramesRecorded = 1;
+  std::size_t mMaxFrames;
 };
 
-#endif // DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
+} // namespace dart_demos
+
+#endif // DART_PYTHON_NATIVE_DEMO_MODELS_WORLDHISTORY_HPP_

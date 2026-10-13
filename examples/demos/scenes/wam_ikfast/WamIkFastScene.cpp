@@ -31,18 +31,12 @@
  */
 
 // Ported from examples/wam_ikfast: a WAM arm posed purely kinematically by
-// IkFast-accelerated whole-body IK (SharedLibraryIkFast dlopens a small
-// shared library built from ikfast-generated code), with every body node
-// draggable (Alt/Ctrl/Shift + click) and a togglable IK target gizmo on the
-// end effector.
+// IkFast-accelerated whole-body IK using the linked demo-model solver, with
+// every body node draggable (Alt/Ctrl/Shift + click) and a togglable IK target
+// gizmo on the end effector.
 //
-// Deviations from the original: the original builds `libwamIk.so` from
-// ikfast/ikfast71.Transform6D.4_6_9_10_11_12_f8.cpp via its own `wamIk` CMake
-// target; that source is duplicated here (ikfast/ subdirectory) under a
-// different target/library name ("dartDemosWamIk") so this scene has no
-// build dependency on examples/wam_ikfast/, which a later cleanup phase may
-// retire (see ikfast/CMakeLists.txt). The original's InputHandler
-// (p/P) printed every DOF name and position to stdout, which would be
+// The original's InputHandler (p/P) printed every DOF name and position to
+// stdout, which would be
 // invisible in a windowed consolidated app; here it is routed to the host's
 // diagnostics log instead. The rest configuration and each end effector's
 // default IK bounds/target transform are captured once at scene-build time
@@ -58,6 +52,7 @@
 
 #include "../Scenes.hpp"
 #include "GuiBackend.hpp"
+#include "demo_models/WamIkFast.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -69,7 +64,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace dart_demos {
 
@@ -101,15 +95,6 @@ dart::dynamics::SkeletonPtr createWamIkFastGround()
 }
 
 //==============================================================================
-std::string ikFastLibraryName()
-{
-  // An absolute target path: SharedLibraryManager::load() resolves the given
-  // string via std::ifstream relative to the process's current working
-  // directory rather than dlopen()'s own RPATH search (see CMakeLists.txt).
-  return DART_DEMOS_IKFAST_LIBRARY;
-}
-
-//==============================================================================
 /// Per-instance state captured by this scene's onActivate/key-action lambdas.
 struct WamIkFastState
 {
@@ -126,9 +111,6 @@ struct WamIkFastState
   std::pair<Eigen::Vector6d, Eigen::Vector6d> defaultBounds;
   Eigen::Isometry3d defaultTargetTf = Eigen::Isometry3d::Identity();
 
-  // The IkFast gradient method, so onActivate can report a dlopen failure
-  // (the analytical IK silently no-ops without its shared library).
-  dart::dynamics::IkFast* ikFast = nullptr;
   std::function<void(const std::string&)> log;
 };
 
@@ -225,11 +207,7 @@ DemoScene makeWamIkFastScene()
         dart::dynamics::Frame::World(), "lh_target");
     ee->getIK(true)->setTarget(target);
 
-    const std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
-    const std::vector<std::size_t> ikFastFreeDofs{2};
-    auto& ikFast
-        = ee->getIK()->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
-            ikFastLibraryName(), ikFastDofs, ikFastFreeDofs);
+    setWamIkFast(*ee->getIK());
     ee->getIK()->getErrorMethod().setLinearBounds(
         -infiniteLinear, infiniteLinear);
     ee->getIK()->getErrorMethod().setAngularBounds(
@@ -241,7 +219,6 @@ DemoScene makeWamIkFastScene()
     auto state = std::make_shared<WamIkFastState>();
     state->wam = wam;
     state->target = target;
-    state->ikFast = &ikFast;
     state->restConfig = wam->getPositions();
     // Captured after setGradientMethod/setLinearBounds/setAngularBounds above,
     // exactly like the original's InputHandler::initialize() -- these are the
@@ -265,17 +242,7 @@ DemoScene makeWamIkFastScene()
         ctx.log(message);
       };
 
-      // Force the lazy IkFast dlopen/configure (solveAndApply triggers it) and
-      // surface a load failure in the Diagnostics log: without the shared
-      // library the analytical IK silently degrades to a no-op, which would
-      // otherwise be invisible.
       state->wam->getIK(true)->solveAndApply(true);
-      if (state->ikFast && !state->ikFast->isConfigured())
-        ctx.log(
-            "wam_ikfast: failed to load the IkFast shared library ("
-            + ikFastLibraryName()
-            + "); analytical IK is unavailable and the arm will not track "
-              "the target.");
 
       for (std::size_t i = 0; i < state->wam->getNumBodyNodes(); ++i) {
         auto* dnd = viewer->enableDragAndDrop(
@@ -288,9 +255,11 @@ DemoScene makeWamIkFastScene()
         ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });
     };
 
-    setup.renderPanel = [state] {
+    setup.preRefresh = [state] {
       state->wam->getIK(true)->solveAndApply(true);
+    };
 
+    setup.renderPanel = [state] {
       ImGui::Text(
           "IK target: %s", state->constraintActive ? "active" : "inactive");
       ImGui::TextWrapped(

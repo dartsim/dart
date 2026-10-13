@@ -46,9 +46,8 @@
 #include <Python.h>
 // clang-format on
 
-#include <dart/dart.hpp>
+#include "demo_models/ssik_ik_gui/ArmSkeleton.hpp"
 
-#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -156,30 +155,6 @@ private:
 std::string consumePythonError();
 
 //==============================================================================
-struct ArmSpec
-{
-  std::string label;
-  std::string module;
-};
-
-//==============================================================================
-/// The 19 arms bundled with the optional ssik package, in the original's
-/// combo-box order.
-std::vector<ArmSpec> getArmSpecs();
-
-//==============================================================================
-/// One joint of an ssik product-of-exponentials chain: the fixed transforms
-/// before/after the joint and its rotation axis. Forward kinematics composes
-/// tLeft * exp(axis * q) * tRight per joint.
-struct JointSpec
-{
-  Eigen::Isometry3d tLeft = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d tRight = Eigen::Isometry3d::Identity();
-  Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
-  bool prismatic = false;
-};
-
-//==============================================================================
 struct ArmInfo
 {
   std::string baseLink;
@@ -191,16 +166,6 @@ struct ArmInfo
     tf.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
     return tf;
   }();
-};
-
-//==============================================================================
-struct SsikSolution
-{
-  Eigen::VectorXd q;
-  double fkResidual = std::numeric_limits<double>::quiet_NaN();
-  std::string refinementUsed;
-  bool hasFkPose = false;
-  Eigen::Isometry3d fkPose = Eigen::Isometry3d::Identity();
 };
 
 //==============================================================================
