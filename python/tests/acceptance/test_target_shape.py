@@ -8,6 +8,7 @@ python/tests/unit/gui/test_target_shape_render.py, which test-gui runs and
 test-py leaves out.
 """
 
+import importlib
 import logging
 import pickle
 import sys
@@ -106,6 +107,17 @@ def test_edit_compile(world, robot):
         assert child in robot.links
         assert len(robot.links) == len(before[0]) + 1
         assert robot.num_dofs == before[1] + 1
+    assert world.is_compiled
+    assert robot in world.multibodies
+    world.setGravity([0, 0, 0])
+    velocities = np.zeros(robot.num_dofs)
+    velocities[-1] = 1
+    robot.setVelocities(velocities)
+    positions = robot.getPositions().copy()
+    world.step()
+    assert robot.getPositions()[-1] > positions[-1]
+    assert robot.num_dofs == before[1] + 1
+    with world.edit():
         world.remove(robot)
     assert world.is_compiled
     assert robot not in world.multibodies
@@ -229,6 +241,78 @@ def test_live_model_builders(world):
     assert len(owners[0].links) == 1
     world.compile()
     world.step()
+
+
+@pytest.mark.xfail(strict=True, reason="M5/M6b: final viewer names and removal of the interim gui module are pending")
+def test_legacy_gui_removed():
+    # Resolve the replacement surface without constructing a graphics device.
+    # This keeps a current optional build lacking GUI from falsely passing.
+    assert callable(dart.viewer.open)
+    assert callable(dart.viewer.launch)
+    assert not hasattr(dart, "gui")
+    with pytest.raises(ModuleNotFoundError) as missing:
+        importlib.import_module("dartpy.gui")
+    assert missing.value.name == "dartpy.gui"
+
+
+@pytest.mark.xfail(strict=True, reason="M5: native Collider/Visual capability handles and collision contexts are pending")
+def test_collider_capabilities(world, contact_box):
+    link = contact_box.links[0]
+    collider, visual = link.colliders[0], link.visuals[0]
+    assert isinstance(collider, dart.Collider)
+    assert isinstance(visual, dart.Visual)
+    assert collider == link.colliders[0]
+    assert hash(collider) == hash(link.colliders[0])
+    assert visual == link.visuals[0]
+    assert hash(visual) == hash(link.visuals[0])
+    ground = world.multibodies["ground"].links[0].colliders[0]
+    assert collider != ground
+    contacts = world.getLastCollisionResult()
+    assert contacts.getNumContacts() > 0
+    for i in range(contacts.getNumContacts()):
+        contact = contacts.getContact(i)
+        assert isinstance(contact.collider_a, dart.Collider)
+        assert isinstance(contact.collider_b, dart.Collider)
+        assert {contact.collider_a, contact.collider_b} == {collider, ground}
+    # Distinct nodes on the same Link must retain distinct handle identities.
+    other = contact_box.getRootBodyNode().createShapeNode(dart.dynamics.BoxShape([0.02] * 3))
+    other.createCollisionAspect()
+    assert len(link.colliders) == 2
+    assert len(set(link.colliders)) == 2
+    # Native setup creates both aspects on one node. M5 settles shape/pose
+    # observer spelling; both capabilities must follow that same live node.
+    node = contact_box.getRootBodyNode().getShapeNode(0)
+    node.setShape(dart.dynamics.BoxShape([0.25, 0.2, 0.2]))
+    rotation = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+    translation = np.array([0.01, 0.02, 0.03])
+    node.setRelativeTransform(dart.math.Isometry3(rotation, translation))
+    points = np.eye(3)
+    for capability in (collider, visual):
+        np.testing.assert_array_equal(capability.shape.size, (0.25, 0.2, 0.2))
+        np.testing.assert_allclose(capability.relative_transform @ points, points @ rotation.T + translation)
+
+
+@pytest.mark.xfail(strict=True, reason="M5b: the final World manual-constraint registry is pending")
+def test_manual_constraint_registry(world):
+    world.setGravity([0, 0, 0])
+    model = dart.dynamics.Skeleton("anchored")
+    joint, body = model.createFreeJointAndBodyNodePair()
+    world.addSkeleton(model)
+    joint.setVelocities([0, 0, 0, 1, 0, 0])
+    reference = world.clone()
+    anchor = body.getWorldTransform().translation().copy()
+    constraint = dart.constraint.BallJointConstraint(body, anchor)
+    # Constructor/registry observation spelling is provisional M5b; adding
+    # inside edit must retain a constraint that affects the native solve.
+    with world.edit():
+        world.constraints.add(constraint)
+    assert constraint in world.constraints
+    for _ in range(20):
+        world.step()
+        reference.step()
+    np.testing.assert_allclose(body.getWorldTransform().translation(), anchor, rtol=0, atol=1e-9)
+    free_body = reference.getSkeleton("anchored").getRootBodyNode()
+    assert free_body.getWorldTransform().translation()[0] > anchor[0] + 0.01
 
 
 @pytest.mark.xfail(strict=True, reason="M5: native diagnostics forwarded to Python's dartpy logger are pending")
@@ -828,6 +912,35 @@ def test_world_batch_set_step(world, robot):
     np.testing.assert_array_equal(batch.positions, expected)
     # The source is a template; stepping its independent clones leaves it alone.
     np.testing.assert_array_equal(robot.getPositions(), np.zeros(robot.getNumDofs()))
+
+
+@pytest.mark.xfail(strict=True, reason="M1c/M1i: selected-row WorldBatch snapshot broadcasting is pending")
+def test_world_batch_restore_state(world, robot):
+    robot.setPositions([0.2, -0.3])
+    robot.setVelocities([0.4, -0.5])
+    source_positions = robot.getPositions().copy()
+    source_velocities = robot.getVelocities().copy()
+    state = world.capture_state()
+    batch = dart.WorldBatch(world, count=4)
+    positions = np.array([[1, 2], [3, 4], [5, 6], [7, 8]], dtype=float)
+    velocities = -positions
+    batch.set("positions", positions)
+    batch.set("velocities", velocities)
+    # The array observer spelling is provisional M1i. The feature PR must
+    # also cover control channels and each clone's clock.
+    before_positions = batch.positions.copy()
+    before_velocities = batch.velocities.copy()
+    np.testing.assert_array_equal(before_positions, positions)
+    np.testing.assert_array_equal(before_velocities, velocities)
+    batch.restore_state(state, indices=[0, 2])
+    expected_positions = before_positions.copy()
+    expected_velocities = before_velocities.copy()
+    expected_positions[[0, 2]] = source_positions
+    expected_velocities[[0, 2]] = source_velocities
+    np.testing.assert_array_equal(batch.positions, expected_positions)
+    np.testing.assert_array_equal(batch.velocities, expected_velocities)
+    np.testing.assert_array_equal(robot.getPositions(), source_positions)
+    np.testing.assert_array_equal(robot.getVelocities(), source_velocities)
 
 
 @pytest.mark.xfail(strict=True, reason="M1i/M1g/M5b: remapping clones with World-bound step hooks are pending")

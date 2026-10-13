@@ -730,18 +730,18 @@ Known gaps:
   | Owner | Representative target-shape oracle or separate release gate |
   | --- | --- |
   | M1a / WP-7.0.5 | Completed stage/baseline evidence; core bit-identical and performance gates |
-  | M1b | Compiled edit/frozen membership and owned-object mutation; unsupported-shape rejection |
+  | M1b | Compiled edit/frozen membership and owned-object mutation; edited-DOF stepping after recompilation; unsupported-shape rejection |
   | M1c | Snapshot channels/time/compatible clone/structural rejection; exact contact/sleep checkpoint replay |
   | M1d | Counted-vs-serial motion, bool rejection, GIL progress, synchronized busy reads and bounded re-entrant rejection |
   | M1e / M1f | Typed nondefault primary solver; Python World and MJCF DART detector defaults |
   | M1g | Both bounded compliant servos, persistent channels and global hook decimation |
   | M1h | IMU orientation, joint-state motion, gravity-dependent support wrench and changing contacts |
-  | M1i | Distinct batch targets/serial clones, source isolation and a remapped stateless hook |
+  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook and selected-row snapshot broadcasting |
   | M2 | Compiled preparation plus allocation, numeric and performance gates in the core feature PRs |
   | M3 / M4 | Optional/gated work; they do not block the required snapshot/checkpoint contracts |
-  | M5 native API | Named collections, readonly copies, Transform/Rotation, loaders/builders/ownership, reset lifecycle, named errors and logging |
+  | M5 native API | Named collections, readonly copies, Transform/Rotation, loaders/builders/ownership, manual constraints, Collider identity/shared-node capabilities, reset lifecycle, named errors and logging |
   | M5 package/tooling | Rename inventory, private-extension/wheel audits, stub-drift/new-Any/pyright checks and codemod round trips in their dedicated PRs |
-  | M6b | RGB, metric depth, node segmentation lookup, Material, passive sync and bounded managed viewing |
+  | M6b | RGB, metric depth, node segmentation lookup, Material, passive sync, bounded managed viewing and legacy GUI import removal |
   | M7 / WP-7.0.6 / WP-7.0.8 | Fresh RC-wheel acceptance/slim import, Gazebo compatibility and separately owned maintenance wheels |
 
 - **Loader/default scope and roadmap follow-up on 2026-10-13** (`c04a253b4` review):
@@ -791,6 +791,30 @@ Known gaps:
     run remains `740426529`; no native implementation changed in this follow-up.
     These additional representative checks still leave full mutation,
     concurrency, clone-scene and release matrices with their feature owners.
+- **Topology, batch and native capability follow-up** (`7fec2595a` review):
+  - The edited model remains attached through recompilation; stepping with
+    only the new DOF moving proves the new topology participates in execution.
+    Removal occurs in a separate edit.
+  - A device-free gate first resolves the replacement viewer names, then
+    requires both the legacy `gui` attribute and `dartpy.gui` import to be
+    absent. The missing-module error must name `dartpy.gui` itself.
+  - Batch snapshots restore noncontiguous rows of distinct positions and
+    velocities while leaving the other rows and source World unchanged.
+    Setup assertions reject ignored row assignments. Full control-channel
+    and clock broadcasting remains required of the M1i feature PR.
+  - A registered one-body ball constraint holds its anchor while an
+    unregistered clone moves. Typed Collider/Visual handles share live
+    node geometry and pose; Collider identity and hashing agree with contact
+    contexts and distinguish two nodes on the same Link.
+  - Native fixture probes verify three DOFs with new-joint motion of 0.001,
+    four contacts matching their native ShapeFrames, shared visual/collision
+    aspects and live shape/pose updates. The independent constraint probe
+    holds the anchor within 1.7e-12 while the free clone advances 0.02.
+  - Two independent source reviews are clean. Focused guarded pytest reports
+    two native passes and 46 strict XFAILs; `--runxfail` reports 46 intended
+    pending-feature failures and two native passes. Lint, check-lint and
+    public-path checks pass. The last full Python run remains `740426529`;
+    these representative tests add no native implementation.
 
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame
