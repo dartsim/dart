@@ -638,6 +638,27 @@
       ],
       "data_members": [
         {
+          "count": 1,
+          "declarations": [
+            {
+              "class": "dart::dynamics::Skeleton",
+              "const": true,
+              "enum_declaration": "enum ConfigFlags",
+              "enum_type": "dart::dynamics::Skeleton::ConfigFlags",
+              "signature": "CONFIG_POSITIONS = 1 < < 1",
+              "virtual": false
+            }
+          ],
+          "examples": [
+            "test/plugins/DARTDoublePendulum.cc:294"
+          ],
+          "name": "CONFIG_POSITIONS",
+          "receiver_types": [
+            "dart::dynamics::Skeleton"
+          ],
+          "unresolved_count": 0
+        },
+        {
           "count": 2,
           "declarations": [
             {

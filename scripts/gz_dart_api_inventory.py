@@ -7,6 +7,7 @@ Known limitations:
 - Namespace using-directives and aliases are treated file-wide.
 - Source fields are keyed by name across owners.
 - Function-local type aliases are not collected.
+- Function-local classes and their virtual overrides are not collected.
 - Preprocessor conditions are not generally evaluated.
 - C++ template instantiation and overload resolution are not performed.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
@@ -250,6 +251,7 @@ class Tokens:
     raw_pointers: set = field(default_factory=set)
     using: list = field(default_factory=list)
     template_headers: dict = field(default_factory=lambda: defaultdict(set))
+    enum_headers: dict = field(default_factory=lambda: defaultdict(set))
     macros: set = field(default_factory=set)
 
     def __post_init__(self):
@@ -565,7 +567,8 @@ def scopes(tokens):
                     continue
             if value in {"class", "struct", "enum"} and i + 1 < end:
                 j = i + 1
-                if value == "enum" and values[j] in {"class", "struct"}:
+                scoped_enum = value == "enum" and values[j] in {"class", "struct"}
+                if scoped_enum:
                     j += 1
                 while j < end:
                     if values[j] in {"[", "("} and j in tokens.pairs:
@@ -595,6 +598,8 @@ def scopes(tokens):
                         full_name = "::".join(
                             (owner or "::".join(namespace), name)
                         ).strip(":")
+                        if value == "enum":
+                            tokens.enum_headers[full_name].add(" ".join(values[i:k]))
                         if values[segment : segment + 2] == ["template", "<"]:
                             stop, angle = segment + 1, 0
                             while stop < i:
@@ -647,17 +652,26 @@ def scopes(tokens):
                                         if begin < p and IDENTIFIER.match(
                                             values[begin]
                                         ):
-                                            fields.append(
-                                                {
-                                                    "class": full_name,
-                                                    "name": values[begin],
-                                                    "signature": " ".join(
-                                                        values[begin:p]
-                                                    ),
-                                                    "const": True,
-                                                    "virtual": False,
-                                                }
-                                            )
+                                            member = {
+                                                "class": full_name,
+                                                "name": values[begin],
+                                                "signature": " ".join(values[begin:p]),
+                                                "const": True,
+                                                "virtual": False,
+                                                "enum_type": full_name,
+                                                "enum_declaration": " ".join(
+                                                    values[i:k]
+                                                ),
+                                            }
+                                            fields.append(member)
+                                            if not scoped_enum:
+                                                fields.append(
+                                                    {
+                                                        **member,
+                                                        "class": owner
+                                                        or "::".join(namespace),
+                                                    }
+                                                )
                                         begin = p + 1
                                     p += 1
                             else:
@@ -742,6 +756,7 @@ def scopes(tokens):
                         )
                     )
                 if value == "{" and i in tokens.pairs:
+                    # shortcut: local classes are omitted; add lexical identities when local adapters need inventory coverage.
                     for p in range(inside, tokens.pairs[i] + 1):
                         tokens.scopes[p] = scope
                     i = tokens.pairs[i] + 1
@@ -759,6 +774,7 @@ def scopes(tokens):
 class ApiIndex:
     types: set = field(default_factory=set)
     type_templates: dict = field(default_factory=lambda: defaultdict(set))
+    type_enums: dict = field(default_factory=lambda: defaultdict(set))
     classes: dict = field(default_factory=dict)
     members: dict = field(default_factory=lambda: defaultdict(list))
     constructors: dict = field(default_factory=dict)
@@ -936,10 +952,17 @@ def variable_after_type(values, end):
     if (
         j + 1 < len(values)
         and IDENTIFIER.match(values[j])
-        and values[j + 1] in {";", "=", ",", ")", "(", "{"}
+        and values[j + 1] in {";", "=", ",", ")", "(", "{", "["}
     ):
         return j
     return None
+
+
+def array_end(tokens, index):
+    """Skip balanced array declarator dimensions starting at `index`."""
+    while tokens.values[index : index + 1] == ["["] and index in tokens.pairs:
+        index = tokens.pairs[index] + 1
+    return index
 
 
 def in_template_argument(values, start):
@@ -990,7 +1013,12 @@ def constructs(tokens, start, end, declarations, heads):
     }:
         statement -= 1
     specifiers = set(values[statement:lead])
-    defined = variable is not None and values[variable + 1] in {"=", "{", "("}
+    initialized = array_end(tokens, variable + 1) if variable is not None else 0
+    defined = variable is not None and values[initialized : initialized + 1] in (
+        ["="],
+        ["{"],
+        ["("],
+    )
     if (
         specifiers & {"typedef", "friend"}
         or ("extern" in specifiers and not defined)
@@ -1196,6 +1224,9 @@ def index_api(header_root):
         for name, declarations in tokens.template_headers.items():
             if name.startswith("dart::"):
                 api.type_templates[name].update(declarations)
+        for name, declarations in tokens.enum_headers.items():
+            if name.startswith("dart::"):
+                api.type_enums[name].update(declarations)
         for cls in classes:
             if cls["name"].startswith("dart::"):
                 api.types.add(cls["name"])
@@ -1292,7 +1323,18 @@ def classify_member(name, declarations):
 
 
 def public_declaration(declaration):
-    return {key: declaration[key] for key in ("class", "signature", "const", "virtual")}
+    return {
+        key: declaration[key]
+        for key in (
+            "class",
+            "signature",
+            "const",
+            "virtual",
+            "enum_type",
+            "enum_declaration",
+        )
+        if key in declaration
+    }
 
 
 def scan_sources(api, source_root):
@@ -1649,6 +1691,13 @@ def scan_sources(api, source_root):
                 for owner in api.ancestors(resolved) | {resolved}
                 if api.classes.get(owner, {}).get("final")
             )
+            enums = sorted(
+                {
+                    declaration
+                    for owner in api.ancestors(resolved) | {resolved}
+                    for declaration in api.type_enums.get(owner, ())
+                }
+            )
             add(
                 "types",
                 resolved,
@@ -1656,6 +1705,7 @@ def scan_sources(api, source_root):
                 tokens.line(start),
                 **({"template_declarations": templates} if templates else {}),
                 **({"final_classes": final_classes} if final_classes else {}),
+                **({"enum_declarations": enums} if enums else {}),
             )
             tokens.source_relevant = True
             referenced.update(api.ancestors(resolved))
@@ -1679,7 +1729,7 @@ def scan_sources(api, source_root):
                 after = template_end(values, type_end)
                 variable = variable_after_type(values, type_end)
                 if variable is not None:
-                    after = variable + 1
+                    after = array_end(tokens, variable + 1)
                 if (
                     constructed not in api.declares_constructor
                     and api.brace_fields.get(constructed)
@@ -1706,6 +1756,13 @@ def scan_sources(api, source_root):
                         template_end(values, type_end) : j
                     ] or pointer_alias(name, tokens, start, imports, namespace_aliases):
                         types.add(RAW_POINTER)
+                    dimension = j + 1
+                    while (
+                        values[dimension : dimension + 1] == ["["]
+                        and dimension in tokens.pairs
+                    ):
+                        types = {"__element__:" + value for value in types}
+                        dimension = tokens.pairs[dimension] + 1
                     bind_variable(tokens, j, types)
                     if is_field(tokens, j, classes):
                         fields[values[j]].update(types)

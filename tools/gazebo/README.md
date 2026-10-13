@@ -219,6 +219,7 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Namespace using-directives and aliases are treated file-wide.
 - Source fields are keyed by name across owners.
 - Function-local type aliases are not collected.
+- Function-local classes and their virtual overrides are not collected.
 - Preprocessor conditions are not generally evaluated.
 - C++ template instantiation and overload resolution are not performed.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
@@ -244,7 +245,10 @@ the gz-physics dartsim plugin, its direct DART test code, and directly by
 gz-sim. It includes source revisions, use counts, source locations, and
 matching DART header declarations with signatures, constness, and virtual
 status. Referenced types retain `final_classes` from their class dependencies,
-so making a DART base final changes the inventory. A construction lists the
+so making a DART base final changes the inventory. Enum types and enumerator
+declarations retain their normalized enum headers, including underlying types;
+unscoped enumerators are also indexed in their enclosing namespace or class.
+A construction, including an array declaration, lists the
 public and protected constructors that the
 type declares, including those of its class template specializations. When the
 type declares none, it lists those of the bases that its implicit constructor

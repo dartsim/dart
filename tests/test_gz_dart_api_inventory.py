@@ -1458,7 +1458,7 @@ struct Unused { int unrelated; };
 }
 """
     )
-    source = "void use() { dart::Options defaulted; auto temporary = dart::Options{true, 4, 5, {6, 7}}; dart::Options direct{true, 4}; dart::Options copied = {true, 4}; dart::Widget widget{1}; }"
+    source = "void use() { dart::Options defaulted; auto temporary = dart::Options{true, 4, 5, {6, 7}}; dart::Options direct{true, 4}; dart::Options copied = {true, 4}; dart::Options array[2]{{true, 4}, {false, 5}}; dart::Widget widget{1}; }"
     before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
     constructors = _entries(before, "constructors")
     layout = constructors["dart::Options"]["brace_member_declarations"]
@@ -1468,7 +1468,7 @@ struct Unused { int unrelated; };
         "other",
         "values",
     ]
-    assert constructors["dart::Options"]["count"] == 4
+    assert constructors["dart::Options"]["count"] == 5
     assert constructors["dart::Options"]["declarations"] == []
     assert "brace_member_declarations" not in constructors["dart::Widget"]
     assert "dart::Unused" not in constructors
@@ -1977,6 +1977,121 @@ struct Holder { enum class Mode { Fast, Slow }; };
         for declaration in entry["declarations"]
     )
     assert constants["Ready"]["receiver_types"] == ["dart::State"]
+
+
+def test_unscoped_enum_names_retain_enumerator_and_type_drift(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { namespace math { enum Axis : unsigned char { X = 1, Y }; "
+        "enum class Scoped { Hidden }; } struct Holder { enum Flag { Ready = 2 }; }; }"
+    )
+    source = "namespace dm = dart::math; void use() { auto x = dm::X; auto y = dm::Axis::Y; auto flag = dart::Holder::Ready; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    variables = _entries(before, "variables")
+    assert set(variables) == {"dart::math::X"}
+    assert (
+        variables["dart::math::X"]["declarations"][0]["enum_type"] == "dart::math::Axis"
+    )
+    members = _entries(before, "data_members")
+    assert set(members) == {"Ready", "Y"}
+    assert members["Ready"]["receiver_types"] == ["dart::Holder"]
+    assert "dart::math::Hidden" not in extractor.index_api(headers).variables
+    header.write_text(header.read_text().replace("X = 1", "X = 4"))
+    changed = _scan(
+        extractor, extractor.index_api(headers), tmp_path / "changed", source
+    )
+    assert _entries(changed, "variables") != variables
+    header.write_text(header.read_text().replace("unsigned char", "unsigned int"))
+    underlying = _scan(
+        extractor, extractor.index_api(headers), tmp_path / "underlying", source
+    )
+    assert _entries(underlying, "variables") != _entries(changed, "variables")
+    header.write_text(header.read_text().replace("X = 4, ", ""))
+    removed = _scan(
+        extractor, extractor.index_api(headers), tmp_path / "removed", source
+    )
+    assert "dart::math::X" not in _entries(removed, "variables")
+
+
+def test_enum_type_headers_detect_underlying_and_scopedness_drift(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { enum class Mode : unsigned char { Fast }; "
+        "enum class Forward : short; using Alias = Mode; enum Unused { Other }; }"
+    )
+    source = "void use(dart::Mode mode, dart::Alias alias, dart::Forward forward);"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    types = _entries(before, "types")
+    assert set(types) == {"dart::Mode", "dart::Alias", "dart::Forward"}
+    assert types["dart::Mode"]["enum_declarations"] == [
+        "enum class Mode : unsigned char"
+    ]
+    assert (
+        types["dart::Alias"]["enum_declarations"]
+        == types["dart::Mode"]["enum_declarations"]
+    )
+    assert types["dart::Forward"]["enum_declarations"] == ["enum class Forward : short"]
+    for old, new in (
+        ("unsigned char", "unsigned int"),
+        ("enum class Mode", "enum Mode"),
+        ("Forward : short", "Forward : int"),
+    ):
+        header.write_text(header.read_text().replace(old, new))
+        after = _scan(
+            extractor,
+            extractor.index_api(headers),
+            tmp_path / new.replace(" ", "-"),
+            source,
+        )
+        assert after["types"] != before["types"]
+        before = after
+
+
+def test_array_constructions_retain_element_constructor_drift(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text("namespace dart { struct A { A(); }; }")
+    source = """dart::A global[3];
+struct Holder { dart::A member[2][3]; static dart::A staticOnly[2]; };
+extern dart::A external[3];
+void parameter(dart::A values[3]);
+void use() { dart::A local[2]; dart::A initialized[2]{}; dart::A* pointers[2]; }
+"""
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    constructor = _entries(before, "constructors")["dart::A"]
+    assert constructor["count"] == 4
+    assert [d["signature"] for d in constructor["declarations"]] == ["A ( )"]
+    header.write_text(header.read_text().replace("A();", "explicit A(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (
+        _entries(after, "constructors")["dart::A"]["declarations"]
+        != constructor["declarations"]
+    )
+
+
+def test_array_receivers_preserve_dimensions_and_pointer_elements(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Target { void other(); }; struct A { A(); void hit(); Target* operator->(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use() { dart::A values[2][3]; values[0][1].hit(); dart::A* pointers[2]; pointers[0]->hit(); values[0][1]->other(); }",
+    )
+    members = _entries(result, "members")
+    assert members["hit"]["count"] == 2
+    assert members["hit"]["receiver_types"] == ["dart::A"]
+    assert members["hit"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 1
+    assert members["other"]["receiver_types"] == ["dart::Target"]
 
 
 def test_template_qualified_static_calls_and_return_receivers(extractor, tmp_path):
