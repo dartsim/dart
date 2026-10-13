@@ -40,6 +40,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
@@ -52,6 +53,7 @@
 #include "dart/utils/sdf/SdfParser.hpp"
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 #include <tinyxml2.h>
 
@@ -87,17 +89,41 @@ struct SdfPoseResourceRetriever : PresentResourceRetriever
 };
 
 //==============================================================================
+SdfParser::Options sdfMemoryOptions(const std::string& xml)
+{
+  auto retriever = std::make_shared<SdfPoseResourceRetriever>();
+  retriever->xml = xml;
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  return options;
+}
+
+//==============================================================================
+SkeletonPtr readSdfUniversalAxes(
+    const std::string& axis,
+    const std::string& axis2,
+    const std::string& version)
+{
+  const auto options = sdfMemoryOptions(
+      "<sdf version='" + version + "'><model name='axes'>"
+      "<pose>1 2 3 0.1 -0.2 0.3</pose><link name='parent'/>"
+      "<link name='child'><pose>0.4 0.5 0.6 0.4 -0.3 0.2</pose></link>"
+      "<joint name='joint' type='universal'><parent>parent</parent>"
+      "<child>child</child><pose>0.1 0.2 0.3 -0.2 0.5 -0.4</pose>"
+      + axis + axis2 + "</joint></model></sdf>");
+  return SdfParser::readSkeleton("memory://axes.sdf", options);
+}
+
+//==============================================================================
 SkeletonPtr readSdfPose(
     const std::string& element,
     const std::string& attributes,
-    const std::string& values)
+    const std::string& values,
+    const std::string& version = "1.9")
 {
   const auto pose = "<pose " + attributes + ">" + values + "</pose>";
   auto retriever = std::make_shared<SdfPoseResourceRetriever>();
-  // Attribute semantics are from SDFormat 1.8+, while DART's version gate
-  // currently accepts 1.4-1.6. Keep the version gate independent of these
-  // tests.
-  retriever->xml = "<sdf version='1.6'><model name='pose_model'>"
+  retriever->xml = "<sdf version='" + version + "'><model name='pose_model'>"
                   + (element == "model" ? pose
                                         : "<pose>2 -1 3 0.1 -0.2 0.3</pose>")
                   + "<link name='parent'><pose>5 6 7 0.3 -0.2 0.1</pose></link>"
@@ -236,6 +262,432 @@ TEST(SdfParser, EulerDegreesPosesMatchRadians)
 }
 
 //==============================================================================
+TEST(SdfParser, RotatedInertialPoseTransformsMomentAtCom)
+{
+  Eigen::Matrix3d expectedMoment;
+  expectedMoment << 5, -0.2, -0.4, -0.2, 4, 0.3, -0.4, 0.3, 6;
+  for (const auto* pose :
+       {"<pose>1 2 3 0 0 1.570796326794896619</pose>",
+        "<pose degrees='true'>1 2 3 0 0 90</pose>",
+        "<pose rotation_format='quat_xyzw'>1 2 3 0 0 1 1</pose>"}) {
+    SCOPED_TRACE(pose);
+    auto retriever = std::make_shared<SdfPoseResourceRetriever>();
+    retriever->xml
+        = "<sdf version='1.6'><model name='inertia'><link name='body'>"
+          "<inertial>"
+          + std::string(pose)
+          + "<mass>2</mass><inertia><ixx>4</ixx><iyy>5</iyy><izz>6</izz>"
+            "<ixy>0.2</ixy><ixz>0.3</ixz><iyz>0.4</iyz></inertia>"
+            "</inertial></link></model></sdf>";
+    SdfParser::Options options;
+    options.mResourceRetriever = retriever;
+    const auto skeleton
+        = SdfParser::readSkeleton("memory://inertia.sdf", options);
+    ASSERT_NE(skeleton, nullptr);
+    const auto* body = skeleton->getBodyNode("body");
+    ASSERT_NE(body, nullptr);
+    EXPECT_DOUBLE_EQ(body->getMass(), 2.0);
+    EXPECT_TRUE(body->getLocalCOM().isApprox(Eigen::Vector3d(1, 2, 3), 1e-12));
+    // The moment is about the COM; translation must not add a parallel-axis
+    // term.
+    EXPECT_TRUE(body->getInertia().getMoment().isApprox(expectedMoment, 1e-12));
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, SoftShapePoseTransformsEveryRestingPosition)
+{
+  const char* geometries[]
+      = {"<sphere><radius>0.5</radius><num_slices>4</num_slices>"
+         "<num_stacks>3</num_stacks></sphere>",
+         "<box><size>1 2 3</size><frags>2 2 2</frags></box>",
+         "<ellipsoid><size>1 2 3</size><num_slices>4</num_slices>"
+         "<num_stacks>3</num_stacks></ellipsoid>",
+         "<cylinder><radius>0.5</radius><height>1.3</height>"
+         "<num_slices>4</num_slices><num_stacks>2</num_stacks>"
+         "<num_rings>2</num_rings></cylinder>"};
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(1, 2, 3);
+  transform.linear()
+      = Eigen::AngleAxisd(1.570796326794896619, Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
+  for (const auto* geometry : geometries) {
+    SCOPED_TRACE(geometry);
+    const auto readSoftShape = [geometry](const std::string& pose) {
+      auto retriever = std::make_shared<SdfPoseResourceRetriever>();
+      retriever->xml
+          = "<sdf version='1.6'><model name='soft'><link name='body'>"
+            "<inertial><mass>1</mass></inertial>"
+            "<soft_shape><total_mass>1</total_mass>"
+            + pose + "<geometry>" + geometry
+            + "</geometry></soft_shape></link></model></sdf>";
+      SdfParser::Options options;
+      options.mResourceRetriever = retriever;
+      return SdfParser::readSkeleton("memory://soft.sdf", options);
+    };
+    const auto reference = readSoftShape("");
+    ASSERT_NE(reference, nullptr);
+    const auto* referenceBody = reference->getSoftBodyNode("body");
+    ASSERT_NE(referenceBody, nullptr);
+    ASSERT_GT(referenceBody->getNumPointMasses(), 0u);
+    for (const auto* pose :
+         {"<pose>1 2 3 0 0 1.570796326794896619</pose>",
+          "<pose degrees='true'>1 2 3 0 0 90</pose>",
+          "<pose rotation_format='quat_xyzw'>1 2 3 0 0 1 1</pose>"}) {
+      SCOPED_TRACE(pose);
+      const auto skeleton = readSoftShape(pose);
+      ASSERT_NE(skeleton, nullptr);
+      const auto* body = skeleton->getSoftBodyNode("body");
+      ASSERT_NE(body, nullptr);
+      ASSERT_EQ(body->getNumPointMasses(), referenceBody->getNumPointMasses());
+      for (std::size_t i = 0; i < body->getNumPointMasses(); ++i) {
+        SCOPED_TRACE(i);
+        EXPECT_TRUE(body->getPointMass(i)->getRestingPosition().isApprox(
+            transform * referenceBody->getPointMass(i)->getRestingPosition(),
+            1e-12));
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, EmptyPosesUseIdentity)
+{
+  for (const auto* element : sdfPoseElements) {
+    SCOPED_TRACE(element);
+    const auto reference = readSdfPose(element, "", "0 0 0 0 0 0", "1.6");
+    ASSERT_NE(reference, nullptr);
+    for (const auto* attributes :
+         {"",
+          "rotation_format='euler_rpy'",
+          "degrees='true'",
+          "rotation_format='quat_xyzw'"}) {
+      SCOPED_TRACE(attributes);
+      for (const auto* values : {"", " \t\n "}) {
+        const auto skeleton = readSdfPose(element, attributes, values, "1.6");
+        ASSERT_NE(skeleton, nullptr);
+        EXPECT_TRUE(
+            sdfPoseTransform(skeleton, element)
+                .matrix()
+                .isApprox(
+                    sdfPoseTransform(reference, element).matrix(), 1e-12));
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, SupportedVersionsLoadPoseAttributes)
+{
+  for (const auto* version : {"1.4", "1.5", "1.6", "1.7", "1.8", "1.9"}) {
+    SCOPED_TRACE(version);
+    const auto radians
+        = readSdfPose("visual", "", "1 2 3 0 0 1.570796326794896619", version);
+    const auto degrees
+        = readSdfPose("visual", "degrees='true'", "1 2 3 0 0 90", version);
+    const auto quaternion = readSdfPose(
+        "visual", "rotation_format='quat_xyzw'", "1 2 3 0 0 1 1", version);
+    ASSERT_NE(radians, nullptr);
+    ASSERT_NE(degrees, nullptr);
+    ASSERT_NE(quaternion, nullptr);
+    EXPECT_TRUE(
+        sdfPoseTransform(degrees, "visual")
+            .matrix()
+            .isApprox(sdfPoseTransform(radians, "visual").matrix(), 1e-12));
+    EXPECT_TRUE(
+        sdfPoseTransform(quaternion, "visual")
+            .matrix()
+            .isApprox(sdfPoseTransform(radians, "visual").matrix(), 1e-12));
+    auto retriever = std::make_shared<SdfPoseResourceRetriever>();
+    retriever->xml = "<sdf version='" + std::string(version)
+                     + "'><world name='world'><model name='model'>"
+                       "<pose rotation_format='quat_xyzw'>1 2 3 0 0 1 1</pose>"
+                       "<link name='body'/></model></world></sdf>";
+    SdfParser::Options options;
+    options.mResourceRetriever = retriever;
+    EXPECT_NE(SdfParser::readWorld("memory://version.sdf", options), nullptr);
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, UnqualifiedVersionsAreRejected)
+{
+  for (const auto* version :
+       {"", "unknown", "1.3", "1.10", "2.0", "1.70", "1.7.1", "1.7junk"}) {
+    SCOPED_TRACE(version);
+    EXPECT_EQ(readSdfPose("model", "", "0 0 0 0 0 0", version), nullptr);
+    auto retriever = std::make_shared<SdfPoseResourceRetriever>();
+    retriever->xml = "<sdf version='" + std::string(version)
+                     + "'><world name='world'/></sdf>";
+    SdfParser::Options options;
+    options.mResourceRetriever = retriever;
+    EXPECT_EQ(SdfParser::readWorld("memory://version.sdf", options), nullptr);
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, UniversalAxesRespectExpressedInFrames)
+{
+  const auto rotation = [](double roll, double pitch, double yaw) {
+    return (Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ())
+            * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
+            * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()))
+        .toRotationMatrix();
+  };
+  const Eigen::Matrix3d modelRotation = rotation(0.1, -0.2, 0.3);
+  const Eigen::Matrix3d worldJointRotation
+      = modelRotation * rotation(0.4, -0.3, 0.2) * rotation(-0.2, 0.5, -0.4);
+  const Eigen::Matrix3d modelToJointRotation
+      = worldJointRotation.transpose() * modelRotation;
+  struct AxisFrame
+  {
+    const char* attributes;
+    const char* legacy;
+    bool modelFrame;
+  };
+  const AxisFrame frames[]
+      = {{"", "<use_parent_model_frame>true</use_parent_model_frame>", true},
+         {"expressed_in='__model__'", "", true},
+         {"expressed_in=''", "", false},
+         {"expressed_in='  '", "", false},
+         {"", "", false}};
+  for (const auto* version : {"1.7", "1.8", "1.9"}) {
+    SCOPED_TRACE(version);
+    for (const auto& frame : frames) {
+      SCOPED_TRACE(frame.attributes);
+      SCOPED_TRACE(frame.legacy);
+      const auto skeleton = readSdfUniversalAxes(
+          "<axis><xyz " + std::string(frame.attributes) + ">1 0 0</xyz>"
+              + frame.legacy + "</axis>",
+          "<axis2><xyz " + std::string(frame.attributes) + ">0 1 0</xyz>"
+              + frame.legacy + "</axis2>",
+          version);
+      ASSERT_NE(skeleton, nullptr);
+      const auto* joint
+          = dynamic_cast<const UniversalJoint*>(skeleton->getJoint("joint"));
+      ASSERT_NE(joint, nullptr);
+      Eigen::Matrix3d expectedRotation = Eigen::Matrix3d::Identity();
+      if (frame.modelFrame)
+        expectedRotation = modelToJointRotation;
+      EXPECT_TRUE(joint->getAxis1().isApprox(expectedRotation.col(0), 1e-12));
+      EXPECT_TRUE(joint->getAxis2().isApprox(expectedRotation.col(1), 1e-12));
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, UniversalAxesRejectUnsupportedAndConflictingFrames)
+{
+  for (const auto* version : {"1.7", "1.8", "1.9"}) {
+    SCOPED_TRACE(version);
+    for (const auto* frame : {"other_link", "world"}) {
+      SCOPED_TRACE(frame);
+      const std::string xyz
+          = "<xyz expressed_in='" + std::string(frame) + "'>1 0 0</xyz>";
+      EXPECT_THROW(
+          readSdfUniversalAxes(
+              "<axis>" + xyz + "</axis>",
+              "<axis2><xyz>0 1 0</xyz></axis2>",
+              version),
+          std::invalid_argument);
+      EXPECT_THROW(
+          readSdfUniversalAxes(
+              "<axis><xyz>1 0 0</xyz></axis>",
+              "<axis2>" + xyz + "</axis2>",
+              version),
+          std::invalid_argument);
+    }
+    for (const auto* legacy : {"true", "false"}) {
+      SCOPED_TRACE(legacy);
+      const std::string xyz
+          = "<xyz expressed_in='__model__'>1 0 0</xyz>"
+            "<use_parent_model_frame>"
+            + std::string(legacy) + "</use_parent_model_frame>";
+      EXPECT_THROW(
+          readSdfUniversalAxes(
+              "<axis>" + xyz + "</axis>",
+              "<axis2><xyz>0 1 0</xyz></axis2>",
+              version),
+          std::invalid_argument);
+      EXPECT_THROW(
+          readSdfUniversalAxes(
+              "<axis><xyz>1 0 0</xyz></axis>",
+              "<axis2>" + xyz + "</axis2>",
+              version),
+          std::invalid_argument);
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, ModernModelsRejectUnsupportedFrameComposition)
+{
+  for (const auto* version : {"1.7", "1.8", "1.9"}) {
+    SCOPED_TRACE(version);
+    for (const auto* content :
+         {"<frame name='named'/>",
+          "<include><uri>memory://included.sdf</uri></include>",
+          "<model name='nested'><link name='nested_body'/></model>"}) {
+      SCOPED_TRACE(content);
+      const std::string model = "<model name='model'><link name='body'/>"
+                                + std::string(content) + "</model>";
+      auto options = sdfMemoryOptions(
+          "<sdf version='" + std::string(version) + "'>" + model + "</sdf>");
+      EXPECT_THROW(
+          SdfParser::readSkeleton("memory://frames.sdf", options),
+          std::invalid_argument);
+      options = sdfMemoryOptions(
+          "<sdf version='" + std::string(version) + "'><world name='world'>"
+          + model + "</world></sdf>");
+      EXPECT_THROW(
+          SdfParser::readWorld("memory://frames.sdf", options),
+          std::invalid_argument);
+    }
+    for (const auto* frame : {"", "__model__", " __model__ ", "other_link"}) {
+      SCOPED_TRACE(frame);
+      const std::string model = "<model name='model' placement_frame='"
+                                + std::string(frame)
+                                + "'><link name='body'/></model>";
+      const auto options = sdfMemoryOptions(
+          "<sdf version='" + std::string(version) + "'>" + model + "</sdf>");
+      const auto worldOptions = sdfMemoryOptions(
+          "<sdf version='" + std::string(version) + "'><world name='world'>"
+          + model + "</world></sdf>");
+      if (std::string(frame) == "other_link") {
+        EXPECT_THROW(
+            SdfParser::readSkeleton("memory://frames.sdf", options),
+            std::invalid_argument);
+        EXPECT_THROW(
+            SdfParser::readWorld("memory://frames.sdf", worldOptions),
+            std::invalid_argument);
+      } else {
+        EXPECT_NE(
+            SdfParser::readSkeleton("memory://frames.sdf", options), nullptr);
+        EXPECT_NE(
+            SdfParser::readWorld("memory://frames.sdf", worldOptions), nullptr);
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, ModernWorldsRejectUnsupportedFrameComposition)
+{
+  for (const auto* version : {"1.7", "1.8", "1.9"}) {
+    SCOPED_TRACE(version);
+    for (const auto* content :
+         {"<frame name='named'/>",
+          "<include><uri>memory://included.sdf</uri></include>"}) {
+      SCOPED_TRACE(content);
+      const auto options = sdfMemoryOptions(
+          "<sdf version='" + std::string(version) + "'><world name='world'>"
+          + content + "<model name='model'><link name='body'/></model>"
+                      "</world></sdf>");
+      EXPECT_THROW(
+          SdfParser::readWorld("memory://frames.sdf", options),
+          std::invalid_argument);
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, LegacyFrameCompositionRemainsAccepted)
+{
+  const std::string model
+      = "<model name='model' placement_frame='other_link'>"
+        "<link name='body'/><frame name='named'/>"
+        "<include><uri>memory://included.sdf</uri></include>"
+        "<model name='nested'><link name='nested_body'/></model></model>";
+  for (const auto* version : {"1.4", "1.5", "1.6"}) {
+    SCOPED_TRACE(version);
+    const auto options = sdfMemoryOptions(
+        "<sdf version='" + std::string(version) + "'>" + model + "</sdf>");
+    const auto skeleton
+        = SdfParser::readSkeleton("memory://frames.sdf", options);
+    ASSERT_NE(skeleton, nullptr);
+    EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
+    const auto worldOptions = sdfMemoryOptions(
+        "<sdf version='" + std::string(version) + "'><world name='world'>"
+        "<frame name='world_frame'/><include><uri>memory://included.sdf</uri>"
+        "</include>" + model + "</world></sdf>");
+    const auto world
+        = SdfParser::readWorld("memory://frames.sdf", worldOptions);
+    ASSERT_NE(world, nullptr);
+    EXPECT_EQ(world->getNumSkeletons(), 1u);
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, ModernJointsRejectUnknownLinksAndAcceptWorldParent)
+{
+  for (const auto* version : {"1.7", "1.8", "1.9"}) {
+    SCOPED_TRACE(version);
+    for (const auto* parent : {"world", "unknown_parent"}) {
+      SCOPED_TRACE(parent);
+      for (const auto* child : {"body", "unknown_child", "world"}) {
+        SCOPED_TRACE(child);
+        const std::string model
+            = "<model name='links'><link name='body'/>"
+              "<joint name='joint' type='fixed'><parent>"
+              + std::string(parent) + "</parent><child>" + child
+              + "</child></joint></model>";
+        const auto options = sdfMemoryOptions(
+            "<sdf version='" + std::string(version) + "'>" + model + "</sdf>");
+        const auto worldOptions = sdfMemoryOptions(
+            "<sdf version='" + std::string(version) + "'><world name='world'>"
+            + model + "</world></sdf>");
+        if (std::string(parent) == "world" && std::string(child) == "body") {
+          const auto skeleton
+              = SdfParser::readSkeleton("memory://links.sdf", options);
+          ASSERT_NE(skeleton, nullptr);
+          EXPECT_EQ(skeleton->getNumBodyNodes(), 1u);
+          const auto world
+              = SdfParser::readWorld("memory://links.sdf", worldOptions);
+          ASSERT_NE(world, nullptr);
+          EXPECT_EQ(world->getNumSkeletons(), 1u);
+        } else {
+          EXPECT_THROW(
+              SdfParser::readSkeleton("memory://links.sdf", options),
+              std::invalid_argument);
+          EXPECT_THROW(
+              SdfParser::readWorld("memory://links.sdf", worldOptions),
+              std::invalid_argument);
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, PoseFramesWorldPreservesInertiaAndSoftPose)
+{
+  const auto world
+      = SdfParser::readWorld("dart://sample/sdf/test/pose_frames.world");
+  ASSERT_NE(world, nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 2u);
+  const auto rigid = world->getSkeleton("inertia_frame");
+  ASSERT_NE(rigid, nullptr);
+  EXPECT_EQ(rigid->getNumSoftBodyNodes(), 0u);
+  const auto* body = rigid->getBodyNode("rotated_inertia");
+  ASSERT_NE(body, nullptr);
+  EXPECT_TRUE(body->getLocalCOM().isApprox(Eigen::Vector3d(0.15, 0, 0), 1e-12));
+  Eigen::Matrix3d expectedMoment;
+  expectedMoment << 0.1, -0.06, 0, -0.06, 0.1, 0, 0, 0, 0.18;
+  EXPECT_TRUE(body->getInertia().getMoment().isApprox(expectedMoment, 1e-12));
+  const auto soft = world->getSkeleton("soft_frame");
+  ASSERT_NE(soft, nullptr);
+  ASSERT_EQ(soft->getNumSoftBodyNodes(), 1u);
+  const auto* softBody = soft->getSoftBodyNode("posed_soft_ellipsoid");
+  ASSERT_NE(softBody, nullptr);
+  ASSERT_EQ(softBody->getNumPointMasses(), 114u);
+  Eigen::Vector3d meanRestPosition = Eigen::Vector3d::Zero();
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i)
+    meanRestPosition += softBody->getPointMass(i)->getRestingPosition();
+  meanRestPosition /= softBody->getNumPointMasses();
+  EXPECT_TRUE(meanRestPosition.isApprox(Eigen::Vector3d(0.3, 0.3, 0.2), 1e-12));
+}
+
+//==============================================================================
 TEST(SdfParser, PoseRotationFormatsRequireMatchingCounts)
 {
   const std::string values[]
@@ -284,6 +736,25 @@ TEST(SdfParser, InvalidPoseAttributesThrow)
         {"pose", "degrees", "quat_xyzw"});
     expectSdfPoseError(
         element, "degrees='sometimes'", "1 2 3 0 0 0", {"pose", "degrees"});
+    for (const auto* values : {"", " \t\n "}) {
+      expectSdfPoseError(
+          element,
+          "rotation_format='quaternion'",
+          values,
+          {"pose", "rotation_format", "quaternion"});
+      expectSdfPoseError(
+          element, "degrees='sometimes'", values, {"pose", "degrees"});
+      expectSdfPoseError(
+          element,
+          "rotation_format='quat_xyzw' degrees='true'",
+          values,
+          {"pose", "degrees", "quat_xyzw"});
+      expectSdfPoseError(
+          element,
+          "relative_to='unknown_frame'",
+          values,
+          {"pose", "relative_to", "unknown_frame"});
+    }
   }
 }
 

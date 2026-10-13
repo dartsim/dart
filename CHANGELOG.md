@@ -90,6 +90,12 @@
     the element's default frame is explicitly rejected instead of silently
     misplacing the pose.
 
+  * SDF loading preserves rotated inertial tensors and sphere, ellipsoid,
+    and cylinder soft-shape poses. Empty poses use the identity. Versions
+    1.7–1.9 are admitted for the supported model subset, with unsupported
+    frame composition rejected explicitly; joint axes support
+    `expressed_in="__model__"`.
+
   * Loading a SKEL world no longer crashes when the collision detector
     factory cannot create `fcl`, for example after an application
     unregisters the factory's creators. The parser creates the FCL detector

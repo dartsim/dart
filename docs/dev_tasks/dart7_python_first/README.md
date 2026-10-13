@@ -162,7 +162,7 @@ batch.step(20)
 | ID | Milestone | Status | Notes |
 | --- | --- | --- | --- |
 | M0 | Release-line rollover, project home, baselines, safety nets | Active | [Packets](#m0-packets) |
-| M1 | Core seams | Planned | [Sub-milestones](#m1-core-seams); bit-identical unless labeled |
+| M1 | Core seams | Active | M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775); remaining [sub-milestones](#m1-core-seams) are open |
 | M2 | Dense articulated-body data | Planned | [Stop rule](#release-train-and-checkpoints) |
 | M3 | Authoritative contiguous state | 7.x by default | Go/no-go at checkpoint C1 |
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
@@ -396,11 +396,11 @@ World.
 | WP-7.0.1b | Reconcile main's stale 6.20.0 changelog section with the released one | Done |
 | WP-7.0.2 | Create this project home, the design doc and the PLAN-624 dashboard entry | Done ([#3697](https://github.com/dartsim/dart/pull/3697)) |
 | WP-7.0.3 | Make the fixed-size XML value helpers reject wrong element counts instead of writing out of bounds | Done ([#3698](https://github.com/dartsim/dart/pull/3698)); 6.20 backport in review ([#3717](https://github.com/dartsim/dart/pull/3717)) |
-| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | In review ([#3719](https://github.com/dartsim/dart/pull/3719)) |
+| WP-7.0.3b | Honor or reject SDF pose attributes (`rotation_format`, `degrees`, `relative_to`) instead of ignoring them | #3719 merged; the [four-gap follow-up](verification.md#wp-703b-follow-up-pose-consumers-and-version-admission) is verified locally, awaiting publication |
 | WP-7.0.4 | Make dartpy's GIL acquisitions safe during interpreter finalization | Done ([#3699](https://github.com/dartsim/dart/pull/3699)); the GUI binding sites followed in [#3713](https://github.com/dartsim/dart/pull/3713) |
-| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | In progress |
-| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | Planned |
-| WP-7.0.7 | Record the freeze date, checkpoints, must-have list and acceptance tests | Planned |
+| WP-7.0.5 | Pin the pre-refactor performance baseline and add many-World and Python-loop rows | Baseline complete: `dart7-base` at `c3134f51b86d`, 78 passing rows; [evidence](verification.md#m1a-world-step-stages) |
+| WP-7.0.6 | Add the gz compatibility shim test, the contact-surface header probe, version plumbing and inventories | Safety nets merged; inventory in review ([#3729](https://github.com/dartsim/dart/pull/3729)) |
+| WP-7.0.7 | Record the freeze date, checkpoints, must-have list and acceptance tests | In review ([#3728](https://github.com/dartsim/dart/pull/3728)); newer approved decisions live on that branch |
 | WP-7.0.8 | Add newer-Python wheels to the 6.20.x maintenance line | In progress: [#3704](https://github.com/dartsim/dart/pull/3704) builds 6.20.1 wheels for Python 3.12 to 3.14 |
 
 Each packet records its scope, non-goals, gates and evidence in
