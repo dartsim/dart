@@ -591,6 +591,20 @@
               "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
               "const": false,
+              "signature": "TemplateNodePtr ( TemplateNodePtr && ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateNodePtr",
+              "const": false,
+              "signature": "TemplateNodePtr ( const TemplateNodePtr & ) = default",
+              "virtual": false
+            },
+            {
+              "access": "public",
+              "class": "dart::dynamics::TemplateNodePtr",
+              "const": false,
               "signature": "template < class OtherNodeT , class OtherBodyNodeT > TemplateNodePtr ( const TemplateNodePtr < OtherNodeT , OtherBodyNodeT > & _ptr )",
               "virtual": false
             }
