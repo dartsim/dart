@@ -269,6 +269,70 @@ def test_whole_body_ik_clone_preserves_objectives(clone_method):
     assert cloned.getNullSpaceObjective().eval(np.ones(6)) == 6
 
 
+def test_balance_constraint_clone_preserves_settings():
+    skel = dart.dynamics.Skeleton()
+    skel.setGravity([0, -9.81, 0])
+    _, body = skel.createFreeJointAndBodyNodePair()
+    support = body.createEndEffector("foot").getSupport(True)
+    support.setGeometry([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1]])
+    support.setActive()
+    ik = skel.getIK(True)
+    cls = dart.constraint.BalanceConstraint
+    balance = cls(
+        ik,
+        balanceMethod=cls.BalanceMethod.SHIFT_COM,
+        errorMethod=cls.ErrorMethod.FROM_EDGE,
+    )
+    balance.setOptimizationTolerance(3e-6)
+    balance.setPseudoInverseDamping(0.25)
+    ik.getProblem().addEqConstraint(balance)
+
+    target = dart.dynamics.Skeleton()
+    _, target_body = target.createFreeJointAndBodyNodePair()
+    target_support = target_body.createEndEffector("foot").getSupport(True)
+    target_support.setGeometry([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1]])
+    target_support.setActive()
+    cloned_problem = ik.clone(target).getProblem()
+    cloned = [
+        cloned_problem.getEqConstraint(i)
+        for i in range(cloned_problem.getNumEqConstraints())
+    ]
+    cloned = [c for c in cloned if isinstance(c, cls)]
+    assert len(cloned) == 1
+    assert cloned[0].getBalanceMethod() == cls.BalanceMethod.SHIFT_COM
+    assert cloned[0].getErrorMethod() == cls.ErrorMethod.FROM_EDGE
+    assert cloned[0].getOptimizationTolerance() == pytest.approx(3e-6)
+    assert cloned[0].getPseudoInverseDamping() == pytest.approx(0.25)
+
+
+def test_whole_body_ik_solve_and_apply_without_solver():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            textwrap.dedent(
+                """
+                import dartpy as dart
+                import numpy as np
+                skeleton = dart.dynamics.Skeleton()
+                skeleton.createFreeJointAndBodyNodePair()
+                skeleton.setPositions([0, 0, 0, 0.5, 0, 0])
+                ik = skeleton.getIK(True)
+                ik.setSolver(None)
+                assert not ik.solveAndApply()
+                np.testing.assert_array_equal(
+                    skeleton.getPositions(), [0, 0, 0, 0.5, 0, 0]
+                )
+                """
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_python_analytical_accepts_ssik_like_solutions():
     skel, body, ik, dofs = _create_free_joint_ik()
     expected = np.linspace(0.1, 0.6, len(dofs))
