@@ -151,17 +151,9 @@ set(
   test_AdaptiveSoftContactModel.cpp
   test_SoftWormModel.cpp
   test_ContactArrowLayout.cpp
-  "${PROJECT_SOURCE_DIR}/examples/demos/scenes/AdaptiveSoftContactModel.cpp"
-  "${PROJECT_SOURCE_DIR}/examples/demos/scenes/SoftWormModel.cpp"
-  # ContactArrowLayout is the GUI-free half of the host contact visualizer;
-  # ContactVisualizer.cpp itself is excluded because it pulls in ImGui.
-  "${PROJECT_SOURCE_DIR}/examples/demos/ContactArrowLayout.cpp"
 )
 target_sources(test_ConstraintSolver PRIVATE ${soft_demo_model_test_sources})
-target_include_directories(
-  test_ConstraintSolver
-  PRIVATE "${PROJECT_SOURCE_DIR}"
-)
+target_link_libraries(test_ConstraintSolver dart-demo-models)
 set_tests_properties(
   test_ConstraintSolver
   PROPERTIES
@@ -214,23 +206,11 @@ dart_format_add(${soft_demo_model_test_sources})
 # existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
 # components are optional, so the gate only exists when both are built.
 if(TARGET dart-utils AND TARGET dart-utils-urdf)
-  set(
-    soft_foot_simbicon_test_sources
-    test_SoftFootSimbiconModel.cpp
-    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.cpp"
-    # The controller sources are GUI-free and are reused as-is.
-    # AtlasSimbiconScene.cpp is deliberately excluded: it is the only file in
-    # that directory that pulls in the GUI and ImGui.
-    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/Controller.cpp"
-    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/State.cpp"
-    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/StateMachine.cpp"
-    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/TerminalCondition.cpp"
-  )
+  set(soft_foot_simbicon_test_sources test_SoftFootSimbiconModel.cpp)
   target_sources(
     test_ConstraintSolver
     PRIVATE ${soft_foot_simbicon_test_sources}
   )
-  target_link_libraries(test_ConstraintSolver dart-utils dart-utils-urdf)
   # The push-recovery sweep is a multi-minute parameter measurement (a dozen
   # settle+push+recover trials per foot type), so it gets its own CTest entry:
   # bundled with the correctness gates it exceeds the 30-minute per-test
@@ -264,7 +244,7 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
   # no-coverage-value` in pixi's build-coverage): measured there, the gates
   # took 3337 s and the sweep overran even 7200 s at a ~490x slowdown, while
   # contributing no coverage the report can see -- coverage-report strips
-  # */examples/* and */tests/* from coverage.info, and the dart-core paths
+  # */python/native/* and */tests/* from coverage.info, and the dart-core paths
   # these drive are already executed by test_SoftWormModel and
   # test_AdaptiveSoftContactModel. Every functional CI job still runs both.
   set_tests_properties(

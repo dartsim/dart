@@ -34,7 +34,7 @@
 
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
-#include "SoftWormModel.hpp"
+#include "demo_models/SoftWormModel.hpp"
 
 #include <memory>
 
