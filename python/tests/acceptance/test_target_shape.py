@@ -51,9 +51,9 @@ def robot(world):
     reason="M5/M1f: top-level World, keyword-only construction and the DART detector default are pending",
 )
 def test_world_construction_keywords():
-    world = dart.World(time_step=1e-3, gravity=(0, 0, -9.81))
-    assert world.time_step == 1e-3
-    np.testing.assert_array_equal(world.gravity, (0, 0, -9.81))
+    world = dart.World(time_step=2e-3, gravity=(0, 0, -4.905))
+    assert world.time_step == 2e-3
+    np.testing.assert_array_equal(world.gravity, (0, 0, -4.905))
     assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
     explicit = dart.World(name="configured", collision_detector=dart.collision.FCLCollisionDetector(), threads=2)
     assert explicit.name == "configured"
