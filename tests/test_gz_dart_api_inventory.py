@@ -2094,6 +2094,112 @@ def test_array_receivers_preserve_dimensions_and_pointer_elements(extractor, tmp
     assert members["other"]["receiver_types"] == ["dart::Target"]
 
 
+def test_constructor_access_distinguishes_implicit_and_unavailable(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { struct A {}; struct Derived : A {}; struct Unused {}; }"
+    )
+    source = "void use() { dart::A direct; dart::Derived derived; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert all(row["declarations"] == [] for row in before["constructors"])
+    for definition, access in (
+        ("private: A();", "private"),
+        ("protected: A();", "protected"),
+        ("A() = delete;", "public"),
+    ):
+        header.write_text(
+            "namespace dart { struct A { "
+            + definition
+            + " }; struct Derived : A {}; struct Unused {}; }"
+        )
+        after = _scan(
+            extractor, extractor.index_api(headers), tmp_path / access, source
+        )
+        assert after != before
+        constructors = _entries(after, "constructors")
+        assert set(constructors) == {"dart::A", "dart::Derived"}
+        for row in constructors.values():
+            assert row["declarations"][0]["access"] == access
+            assert row["declarations"][0]["class"] == "dart::A"
+            if access == "public":
+                assert "delete" in row["declarations"][0]["signature"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "item->mutate();",
+        "{ item->mutate(); }",
+        "if (true) item->mutate(); else item->mutate();",
+    ],
+)
+def test_range_for_returns_bind_elements_only_inside_loop(extractor, tmp_path, body):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { struct Target { void other(); }; struct Item { void mutate(); Target* operator->(); }; struct Factory { std::vector<Item*> items(); }; }"
+    )
+    source = (
+        "struct Foreign { void mutate(); }; void use(dart::Factory* factory, Foreign* item) { for (auto* item : factory->items()) "
+        + body
+        + " item->mutate(); }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    members = _entries(before, "members")
+    assert members["mutate"]["count"] == (2 if body.startswith("if") else 1)
+    assert members["mutate"]["receiver_types"] == ["dart::Item"]
+    assert members["mutate"]["unresolved_count"] == 0
+    assert "operator->" not in members
+    header.write_text(header.read_text().replace("void mutate();", "void mutate(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after["members"] != before["members"]
+
+
+def test_range_for_value_and_pointer_alias_elements_dispatch_correctly(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct Target { void other(); }; struct Item { void mutate(); Target* operator->(); }; using Pointer = Item*; struct Factory { std::vector<Pointer> pointers(); std::vector<Item> values(); }; }"
+    )
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::Factory* factory) { for (auto item : factory->pointers()) item->mutate(); for (auto& item : factory->values()) item->other(); }",
+    )
+    members = _entries(result, "members")
+    assert members["mutate"]["count"] == 1
+    assert members["mutate"]["receiver_types"] == ["dart::Pointer"]
+    assert members["mutate"]["unresolved_count"] == 0
+    assert members["operator->"]["count"] == 1
+    assert members["other"]["receiver_types"] == ["dart::Target"]
+
+
+def test_foreign_range_elements_do_not_gain_dart_members(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text("namespace dart { struct Known { void get(); }; }")
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "struct Foreign { void get(); }; struct ForeignFactory { std::vector<Foreign*> items(); }; "
+        "void use(dart::Known* known, ForeignFactory factory, std::vector<Foreign*> values) { "
+        "for (auto* item : factory.items()) item->get(); for (auto* item : values) item->get(); "
+        "} template<class Mystery> void unresolved(dart::Known* known, Mystery& unknown) { "
+        "for (auto* item : unknown) item->get(); }",
+    )
+    members = _entries(result, "members")
+    assert members["get"]["count"] == 1
+    assert members["get"]["unresolved_count"] == 1
+    assert members["get"]["receiver_types"] == []
+
+
 def test_template_qualified_static_calls_and_return_receivers(extractor, tmp_path):
     headers = tmp_path / "headers"
     headers.mkdir()

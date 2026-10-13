@@ -15,6 +15,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
               "signature": "BulletCollisionDetector ( )",
@@ -31,6 +32,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::BulletCollisionGroup",
               "const": false,
               "signature": "BulletCollisionGroup ( const CollisionDetectorPtr & collisionDetector )",
@@ -47,12 +49,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::common::FactoryRegistrar",
               "const": false,
               "signature": "FactoryRegistrar ( const KeyT & key , Creator creator )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::FactoryRegistrar",
               "const": false,
               "signature": "explicit FactoryRegistrar ( const KeyT & key )",
@@ -69,6 +73,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::CollisionOption",
               "const": false,
               "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
@@ -86,6 +91,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "protected",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "signature": "OdeCollisionDetector ( )",
@@ -102,18 +108,21 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionGroup",
               "const": false,
               "signature": "OdeCollisionGroup ( OdeCollisionGroup && ) = delete",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionGroup",
               "const": false,
               "signature": "OdeCollisionGroup ( const CollisionDetectorPtr & collisionDetector )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::collision::OdeCollisionGroup",
               "const": false,
               "signature": "OdeCollisionGroup ( const OdeCollisionGroup & ) = delete",
@@ -130,6 +139,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RaycastOption",
               "const": false,
               "signature": "RaycastOption ( bool enableAllHits = false , bool sortByClosest = false , RaycastFilter filter = nullptr )",
@@ -146,6 +156,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::collision::RaycastResult",
               "const": false,
               "signature": "RaycastResult ( )",
@@ -162,6 +173,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::ContactSurfaceHandler",
               "const": false,
               "signature": "explicit ContactSurfaceHandler ( ContactSurfaceHandlerPtr parent = nullptr )",
@@ -194,12 +206,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::constraint::WeldJointConstraint",
               "const": false,
               "signature": "WeldJointConstraint ( dynamics :: BodyNode * _body1 , dynamics :: BodyNode * _body2 )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::constraint::WeldJointConstraint",
               "const": false,
               "signature": "explicit WeldJointConstraint ( dynamics :: BodyNode * _body )",
@@ -215,48 +229,56 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "ComposeData ( ) = default",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "ComposeData ( CompositeType && composite )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "ComposeData ( const CompositeType & )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "ComposeData ( const CompositeType & composite )",
               "virtual": false
             },
             {
+              "access": "protected",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "template < typename ... Args > ComposeData ( DelegateTag , const Args & ... args )",
               "virtual": false
             },
             {
+              "access": "protected",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "template < typename ... Args > ComposeData ( DelegateTag , const Data & arg1 , const Args & ... args )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "template < typename ... Aspects > ComposeData ( const ComposeData < CompositeType , GetData , Aspects ... > & composite )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::common::detail::ComposeData",
               "const": false,
               "signature": "template < typename Arg1 , typename ... Args > ComposeData ( const Arg1 & arg1 , const Args & ... args )",
@@ -274,24 +296,28 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateBodyNodePtr",
               "const": false,
               "signature": "TemplateBodyNodePtr ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateBodyNodePtr",
               "const": false,
               "signature": "TemplateBodyNodePtr ( BodyNodeT * _ptr )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateBodyNodePtr",
               "const": false,
               "signature": "TemplateBodyNodePtr ( const TemplateBodyNodePtr & _bnp )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateBodyNodePtr",
               "const": false,
               "signature": "template < class OtherBodyNodeT > TemplateBodyNodePtr ( const TemplateBodyNodePtr < OtherBodyNodeT > & _bnp )",
@@ -308,6 +334,7 @@
           "count": 4,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::BoxShape",
               "const": false,
               "signature": "explicit BoxShape ( const Eigen :: Vector3d & _size )",
@@ -325,6 +352,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::CapsuleShape",
               "const": false,
               "signature": "CapsuleShape ( double radius , double height )",
@@ -341,6 +369,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::CylinderShape",
               "const": false,
               "signature": "CylinderShape ( double _radius , double _height )",
@@ -357,6 +386,7 @@
           "count": 3,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::FreeJointProperties",
               "const": false,
               "signature": "FreeJointProperties ( const GenericJoint < math :: SE3Space > :: Properties & genericJointProperties = GenericJoint < math :: SE3Space > :: Properties ( ) , const FreeJointUniqueProperties & freeJointProperties = FreeJointUniqueProperties ( ) )",
@@ -374,6 +404,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::HeightmapShape",
               "const": false,
               "signature": "HeightmapShape ( )",
@@ -390,18 +421,21 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "Inertia ( const Eigen :: Matrix6d & _spatialInertiaTensor )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "Inertia ( double _mass , double _comX , double _comY , double _comZ , double _Ixx , double _Iyy , double _Izz , double _Ixy , double _Ixz , double _Iyz )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::Inertia",
               "const": false,
               "signature": "Inertia ( double _mass = 1 , const Eigen :: Vector3d & _com = Eigen :: Vector3d :: Zero ( ) , const Eigen :: Matrix3d & _momentOfInertia = Eigen :: Matrix3d :: Identity ( ) )",
@@ -417,18 +451,21 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateJointPtr",
               "const": false,
               "signature": "TemplateJointPtr ( ) = default",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateJointPtr",
               "const": false,
               "signature": "TemplateJointPtr ( JointT * _ptr )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateJointPtr",
               "const": false,
               "signature": "template < class OtherJointT , class OtherBodyNodeT > TemplateJointPtr ( const TemplateJointPtr < OtherJointT , OtherBodyNodeT > & _jptr )",
@@ -444,24 +481,28 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < math :: TriMesh < double > > mesh , const common :: Uri & uri , common :: ResourceRetrieverPtr resourceRetriever )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < math :: TriMesh < double > > mesh , const common :: Uri & uri = )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , const aiScene * mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr , MeshOwnership ownership = MeshOwnership :: Imported )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
               "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < const aiScene > mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr )",
@@ -478,12 +519,14 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::PlaneShape",
               "const": false,
               "signature": "PlaneShape ( const Eigen :: Vector3d & _normal , const Eigen :: Vector3d & _point )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::PlaneShape",
               "const": false,
               "signature": "PlaneShape ( const Eigen :: Vector3d & _normal , double _offset )",
@@ -499,6 +542,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::PrismaticJointProperties",
               "const": false,
               "signature": "PrismaticJointProperties ( const GenericJoint < math :: R1Space > :: Properties & genericJointProperties = GenericJoint < math :: R1Space > :: Properties ( ) , const PrismaticJointUniqueProperties & prismaticProperties = PrismaticJointUniqueProperties ( ) )",
@@ -514,6 +558,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::RevoluteJointProperties",
               "const": false,
               "signature": "RevoluteJointProperties ( const GenericJoint < math :: R1Space > :: Properties & genericJointProperties = GenericJoint < math :: R1Space > :: Properties ( ) , const RevoluteJointUniqueProperties & revoluteProperties = RevoluteJointUniqueProperties ( ) )",
@@ -529,18 +574,21 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
               "const": false,
               "signature": "TemplateNodePtr ( )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
               "const": false,
               "signature": "TemplateNodePtr ( NodeT * _ptr )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::dynamics::TemplateNodePtr",
               "const": false,
               "signature": "template < class OtherNodeT , class OtherBodyNodeT > TemplateNodePtr ( const TemplateNodePtr < OtherNodeT , OtherBodyNodeT > & _ptr )",
@@ -556,6 +604,7 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::SphereShape",
               "const": false,
               "signature": "explicit SphereShape ( double radius )",
@@ -572,6 +621,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::detail::UniversalJointProperties",
               "const": false,
               "signature": "UniversalJointProperties ( const GenericJoint < math :: R2Space > :: Properties & genericJointProperties = GenericJoint < math :: R2Space > :: Properties ( ) , const UniversalJointUniqueProperties & universalProperties = UniversalJointUniqueProperties ( ) )",
@@ -587,6 +637,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::dynamics::WeldJoint::Properties",
               "const": false,
               "signature": "Properties ( const Joint :: Properties & _properties = Joint :: Properties ( ) )",
@@ -602,12 +653,14 @@
           "count": 2,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "World ( const std :: string & _name = )",
               "virtual": false
             },
             {
+              "access": "public",
               "class": "dart::simulation::World",
               "const": false,
               "signature": "explicit World ( const WorldConfig & config )",
@@ -624,6 +677,7 @@
           "count": 1,
           "declarations": [
             {
+              "access": "public",
               "class": "dart::utils::DartLoader",
               "const": false,
               "signature": "explicit DartLoader ( const Options & options = Options ( ) )",
@@ -737,7 +791,7 @@
           "receiver_types": [
             "dart::collision::Contact"
           ],
-          "unresolved_count": 2
+          "unresolved_count": 0
         },
         {
           "count": 3,
@@ -758,7 +812,7 @@
           "receiver_types": [
             "dart::collision::Contact"
           ],
-          "unresolved_count": 2
+          "unresolved_count": 0
         },
         {
           "count": 2,
@@ -1527,7 +1581,7 @@
           "receiver_types": [
             "dart::collision::Contact"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -2564,38 +2618,16 @@
               "const": true,
               "signature": "template < typename Func > void eachShapeNode ( Func func ) const",
               "virtual": false
-            },
-            {
-              "class": "dart::dynamics::Skeleton",
-              "const": false,
-              "signature": "template < typename Func > void eachShapeNode ( Func func )",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::Skeleton",
-              "const": true,
-              "signature": "template < typename Func > void eachShapeNode ( Func func ) const",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::Skeleton",
-              "const": false,
-              "signature": "template < typename Func > void eachShapeNode ( std :: size_t treeIndex , Func func )",
-              "virtual": false
-            },
-            {
-              "class": "dart::dynamics::Skeleton",
-              "const": true,
-              "signature": "template < typename Func > void eachShapeNode ( std :: size_t treeIndex , Func func ) const",
-              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/Base.hh:419"
           ],
           "name": "eachShapeNode",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::dynamics::BodyNode"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "accessor",
@@ -3922,7 +3954,7 @@
             "dart::dynamics::SkeletonPtr",
             "dart::simulation::WorldPtr"
           ],
-          "unresolved_count": 6
+          "unresolved_count": 4
         },
         {
           "classification": "accessor",
@@ -4780,8 +4812,10 @@
             "dartsim/src/Base.hh:424"
           ],
           "name": "getShapeNodes",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::dynamics::BodyNode"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "accessor",
@@ -5612,7 +5646,7 @@
         },
         {
           "classification": "accessor",
-          "count": 231,
+          "count": 225,
           "declarations": [
             {
               "class": "dart::dynamics::TemplateBodyNodePtr",

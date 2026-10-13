@@ -220,13 +220,17 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Source fields are keyed by name across owners.
 - Function-local type aliases are not collected.
 - Function-local classes and their virtual overrides are not collected.
+- DART headers are indexed globally; transitive include availability and per-source
+  declaration visibility are not tracked.
+- Destructor and managed-lifetime requirements are not recorded.
+- Implicit and contextual conversion operators are not recorded.
 - Preprocessor conditions are not generally evaluated.
 - C++ template instantiation and overload resolution are not performed.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
-- Public-to-protected declaration access changes are not recorded.
+- Non-constructor public-to-protected access changes are not recorded.
 - Used free-function declarations and signatures are not recorded.
 - Used type-alias target definitions are not recorded.
 - Qualified member-function references without calls are not recorded.
@@ -249,7 +253,7 @@ so making a DART base final changes the inventory. Enum types and enumerator
 declarations retain their normalized enum headers, including underlying types;
 unscoped enumerators are also indexed in their enclosing namespace or class.
 A construction, including an array declaration, lists the
-public and protected constructors that the
+constructors and their access, including private and deleted declarations, that the
 type declares, including those of its class template specializations. When the
 type declares none, it lists those of the bases that its implicit constructor
 calls, so an empty list means that no class in that chain declares one. A
@@ -270,6 +274,7 @@ Chained source helper calls use return declarations from the receiver's class
 and its bases; sequence returns retain their DART element types. Source class
 aliases retain DART bases, and member lookup respects source declarations and
 class using-declarations. Lambda parameters stay within their lambda body.
+Range-for variables retain the range's element types within the loop body.
 Chained DART data-member accesses use the member's declared type.
 Data declarations retain grouped names and array dimensions;
 qualified free-function references count even when they are not calls.

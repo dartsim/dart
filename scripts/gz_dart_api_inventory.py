@@ -8,13 +8,16 @@ Known limitations:
 - Source fields are keyed by name across owners.
 - Function-local type aliases are not collected.
 - Function-local classes and their virtual overrides are not collected.
+- DART headers are indexed globally; transitive include availability and per-source declaration visibility are not tracked.
+- Destructor and managed-lifetime requirements are not recorded.
+- Implicit and contextual conversion operators are not recorded.
 - Preprocessor conditions are not generally evaluated.
 - C++ template instantiation and overload resolution are not performed.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
-- Public-to-protected declaration access changes are not recorded.
+- Non-constructor public-to-protected access changes are not recorded.
 - Used free-function declarations and signatures are not recorded.
 - Used type-alias target definitions are not recorded.
 - Qualified member-function references without calls are not recorded.
@@ -831,7 +834,7 @@ class ApiIndex:
         return name if name in self.constructors else None
 
     def constructor_declarations(self, name):
-        """The constructors a construction of class `name` can call.
+        """The constructor declarations a construction of class `name` depends on.
 
         A class that declares no constructor has an implicit one, which calls
         the constructors of its bases.
@@ -1112,7 +1115,32 @@ def container_elements(argument, api, resolve_type, pointer_type=None):
     return result
 
 
-def bind_variable(tokens, index, types):
+def statement_end(tokens, start):
+    """The end of a compound, control, or expression statement."""
+    values = tokens.values
+    if values[start : start + 1] == ["{"] and start in tokens.pairs:
+        return tokens.pairs[start]
+    opening = start + 1
+    if values[opening : opening + 1] == ["constexpr"]:
+        opening += 1
+    if (
+        values[start : start + 1] in (["if"], ["for"], ["while"], ["switch"])
+        and values[opening : opening + 1] == ["("]
+        and opening in tokens.pairs
+    ):
+        end = statement_end(tokens, tokens.pairs[opening] + 1)
+        if values[start] == "if" and values[end + 1 : end + 2] == ["else"]:
+            end = statement_end(tokens, end + 2)
+        return end
+    index = start
+    while index < len(values) and values[index] != ";":
+        if values[index] in {"(", "[", "{"} and index in tokens.pairs:
+            index = tokens.pairs[index]
+        index += 1
+    return index
+
+
+def bind_variable(tokens, index, types, span=None):
     """Explicit declarations shadow same-named fields and other functions."""
     values = tokens.values
     start, end = 0, len(values)
@@ -1151,6 +1179,8 @@ def bind_variable(tokens, index, types):
             if body < len(values) and values[body] == "{" and body in tokens.pairs:
                 if tokens.pairs[body] - opening < end - start:
                     start, end = opening, tokens.pairs[body]
+    if span is not None:
+        start, end = span
     tokens.bindings.append((start, end, index, values[index], types))
 
 
@@ -1256,8 +1286,8 @@ def index_api(header_root):
                         api.members[function["name"]].append(function)
                 elif "~" not in function["return_tokens"]:
                     api.declares_constructor.add(owner)
-                    if public:
-                        api.constructors.setdefault(owner, []).append(function)
+                    api.constructors.setdefault(owner, []).append(function)
+                # shortcut: destructor requirements are omitted; use compiler lanes until lifetime modeling is needed.
             elif (
                 owner is None
                 and function["name"].startswith("dart::")
@@ -1723,7 +1753,7 @@ def scan_sources(api, source_root):
                     declarations=[],
                 )
                 row["declarations"].extend(
-                    public_declaration(d)
+                    {**public_declaration(d), "access": d["access"]}
                     for d in api.constructor_declarations(constructed)
                 )
                 after = template_end(values, type_end)
@@ -2152,7 +2182,7 @@ def scan_sources(api, source_root):
                 return {"__non_dart__"}
         return types
 
-    # Propagate ordinary auto aliases from explicit DART fields and return values.
+    # Propagate auto aliases and range elements from explicit fields and returns.
     for _ in range(3):
         for _, tokens, _, _, _, imports, namespace_aliases in files:
             values = tokens.values
@@ -2162,7 +2192,31 @@ def scan_sources(api, source_root):
                 j = i + 1
                 while j < len(values) and values[j] in {"const", "&", "&&", "*"}:
                     j += 1
-                if j + 1 >= len(values) or values[j + 1] != "=":
+                if j + 1 >= len(values):
+                    continue
+                if values[j + 1] == ":":
+                    opening = tokens.enclosing[i]
+                    if (
+                        opening is None
+                        or values[opening - 1 : opening] != ["for"]
+                        or opening not in tokens.pairs
+                    ):
+                        continue
+                    closing = tokens.pairs[opening]
+                    range_types = receiver(
+                        tokens, closing - 1, imports, namespace_aliases
+                    )
+                    inferred = elements(range_types)
+                    if not inferred and "__non_dart__" in range_types:
+                        inferred = {"__non_dart__"}
+                    bind_variable(
+                        tokens,
+                        j,
+                        inferred,
+                        (opening, statement_end(tokens, closing + 1)),
+                    )
+                    continue
+                if values[j + 1] != "=":
                     continue
                 end = j + 2
                 while end < len(values) and values[end] != ";":
