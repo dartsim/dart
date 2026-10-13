@@ -11,11 +11,11 @@ description: "DART Model Upgrade: audit and update DART AI infrastructure for mo
 
 Use this skill to run the DART `dart-model-upgrade` workflow. The editable workflow
 source lives in `.claude/commands/`; this generated skill is its entrypoint for
-Codex, Muse, and OpenCode's skill loader.
+Codex and Muse.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-model-upgrade <arguments>`
+- Claude Code: `/dart-model-upgrade <arguments>`
 - Codex: `$dart-model-upgrade <arguments>`
 - Muse: `/dart-model-upgrade <arguments>`
 

@@ -142,10 +142,7 @@ CLAUDE.local.md
 # Shared workflow files may be added under allowlisted command/skill folders.
 # Per-developer runtime caches, package installs, locks, and local settings stay
 # ignored.
-.opencode/*
-!.opencode/command/
-!.opencode/command/**/*.md
-!.opencode/AGENTS.md
+.opencode/
 
 !.codex/
 .codex/*

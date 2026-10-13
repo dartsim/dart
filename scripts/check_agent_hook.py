@@ -29,7 +29,6 @@ AI_PATH_PREFIXES = (
     ".claude/settings.json",
     ".claude/skills/",
     ".codex/",
-    ".opencode/command/",
     ".github/workflows/",
     ".gitignore",
     "AGENTS.md",

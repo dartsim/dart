@@ -1,14 +1,17 @@
 # AI Tooling And Review Rules
 
-This development branch supports Claude Code, Codex, Muse, and
-OpenCode workflow entrypoints generated from `.claude/` sources.
+This development branch supports Claude Code, Codex, and Muse
+workflow entrypoints generated from `.claude/` sources. OpenCode and
+Gemini CLI are not supported surfaces: they receive no generated
+adapters or shim files, and the manual `AGENTS.md` fallback below is
+the only contract for them and other clients.
 
 ## Source And Generated Files
 
 - Edit workflow commands in `.claude/commands/`.
 - Edit domain skills in `.claude/skills/`.
-- Do not hand-edit `.agents/skills/` or `.opencode/command/`; run
-  `pixi run sync-ai-commands` instead.
+- Do not hand-edit `.agents/skills/`; run `pixi run sync-ai-commands`
+  instead.
 - Check parity with `pixi run check-ai-commands`.
 - Use canonical DART capability names in prompt-driven goal modes: Claude and
   Muse goal text should name `/dart-ultrawork`, and Codex goal text can
@@ -38,8 +41,8 @@ reference material as apply/adapt/omit against the branch's compatibility
 surface.
 
 **Tested Versions**: Claude Code CLI 2.1.296 (Claude Opus 5.5), Codex CLI
-0.162.0, Muse 1.4.6 (muse-wonder-full-1.0), OpenCode 1.18.35,
-2026-10-12 — discovery, config, and hook checks exercised locally on this
+0.162.0, Muse 1.4.6 (muse-wonder-full-1.0), 2026-10-12 —
+discovery, config, and hook checks exercised locally on this
 branch; Muse rules/skill discovery additionally probed with
 headless `muse exec --provider echo` runs in isolated workspaces.
 
@@ -68,9 +71,9 @@ commits.
 
 The root `AGENTS.md` is the single shared rules file for every client. It
 carries a bare `@docs/ai/principles.md` line next to its prose pointer:
-clients that expand `@` imports (Claude Code, Gemini CLI) load the
-principles with it, and clients that do not (Codex, Muse) read the
-line as a path pointer. Keep shared guidance in `AGENTS.md`; a root
+Claude Code expands that `@` import and loads the principles with it,
+while Codex and Muse read the line as a path pointer. Keep
+shared guidance in `AGENTS.md`; a root
 `CLAUDE.md`, a personal `CLAUDE.local.md`, an `AGENTS.md` inside
 `.agents/`, or a `CLAUDE.md` inside `.claude/` would shadow it per
 client below, so none of them exists and `pixi run ai-doctor` enforces
@@ -93,7 +96,7 @@ would happen).
   the `AGENTS.md` inside `.agents/`, and the shadowed file warns at
   startup — and it does not expand `@` imports. Identical domain skills
   under `.claude/skills/` are shadowed by their `.agents/skills/`
-  copies; that shadowing is expected, as with OpenCode below. Its
+  copies; that shadowing is expected. Its
   default shell sandbox keeps `.git/` and `.agents/` read-only inside
   the writable workspace, so workflow steps that mutate Git state
   (branch switch, commit, base-branch merge) or regenerate adapters
@@ -104,16 +107,6 @@ would happen).
   Code as usual.
 - Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
   layer.
-- OpenCode runs the generated `.opencode/command/` adapters as
-  `/dart-*` commands and discovers skills in both `.claude/skills/` and
-  `.agents/skills/`. The generated domain-skill copies are identical
-  to their sources, so OpenCode's duplicate-skill-name warnings for
-  them are expected.
-- Gemini CLI reads only `GEMINI.md`, which imports `AGENTS.md` with an
-  `@` line; `AGENTS.md` in turn imports `docs/ai/principles.md`, so the
-  principles load once (a second direct import in `GEMINI.md` would not
-  be deduplicated and would load them twice). A prose
-  "read `AGENTS.md`" redirect would leave both files unloaded.
 
 Other clients that read `AGENTS.md` can follow the same owner docs and
 `pixi run ...` gates without a tool-specific command surface. Never make

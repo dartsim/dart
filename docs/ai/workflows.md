@@ -3,12 +3,12 @@
 DART exposes a subset of the DART AI workflows across
 supported AI tools.
 
-- Claude Code and OpenCode use `/dart-*` commands.
+- Claude Code uses `/dart-*` commands.
 - Codex uses generated `$dart-*` skills from `.agents/skills/`.
 - Muse uses the same generated skills from `.agents/skills/`,
   invoked as `/dart-*` slash shortcuts.
 - `.claude/commands/` and `.claude/skills/` are the editable source.
-- `.opencode/command/` and `.agents/skills/` are generated.
+- `.agents/skills/` is generated.
 
 `branch-profile.json` owns the checkout's line profile (`dart7` on `main`), its
 compatibility facts and forbidden surfaces, independent of the target branch. Resolve that target using
@@ -20,7 +20,7 @@ exercised by the infrastructure checker.
 
 ## User-Invoked Workflows
 
-| Capability                 | Codex                       | Claude/OpenCode             | Required docs and public path                                                                                                                                                                               | Minimum gate or exception                                                                                                                                                                                 |
+| Capability                 | Codex                       | Claude/Muse             | Required docs and public path                                                                                                                                                                               | Minimum gate or exception                                                                                                                                                                                 |
 | -------------------------- | --------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `dart-analyze`             | `$dart-analyze`             | `/dart-analyze`             | `docs/ai/principles.md`, `docs/ai/workflows.md`, `docs/ai/verification.md`, `docs/onboarding/ai-tools.md`                                                                                                   | Read-only analysis; no local mutation gate beyond inspected evidence                                                                                                                                      |
 | `dart-model-upgrade`       | `$dart-model-upgrade`       | `/dart-model-upgrade`       | `docs/AGENTS.md`, `docs/README.md`, `docs/ai/principles.md`, `docs/ai/README.md`, `docs/ai/components.md`, `docs/ai/sessions.md`, `docs/ai/workflows.md`, `docs/ai/verification.md`, `docs/ai/branch-profile.json`, `docs/information-architecture.md`, `docs/onboarding/ai-tools.md`, `docs/onboarding/release-management.md`, `docs/dev_tasks/README.md` | Audit-only is read-only; apply mode uses Relevant docs/AI checks from `docs/ai/verification.md`, one representative text-first, semantically inspected DART Filament investigation, and a principle audit; external mutations require explicit approval |

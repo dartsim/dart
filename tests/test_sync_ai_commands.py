@@ -56,7 +56,6 @@ def test_manifest_owned_cleanup_preserves_unrelated_skill(tmp_path, monkeypatch)
     assert not (target / "dart-alpha").exists()
     assert unrelated.read_text() == "personal content\n"
     assert json.loads(manifest_path.read_text())["paths"] == []
-    (tmp_path / ".opencode" / "command").mkdir(parents=True)
     assert sync.check_capability_parity(tmp_path)
 
 
