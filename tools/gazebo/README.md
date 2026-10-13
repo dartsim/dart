@@ -214,13 +214,23 @@ world generator.
 ## DART C++ API inventory
 
 The inventory is lexical and best-effort: it records uses it can resolve and
-retains conservative candidates for unresolved receivers. Known limitations
-include namespace using-directives and aliases treated file-wide, source fields
-keyed by name across owners, function-local type aliases, preprocessor
-conditions, and C++ template instantiation and overload resolution. Operator
-syntax is associated with declarations for `->`, `[]` and `()` when the receiver
-type is known. The Gazebo build and test lanes remain the authoritative
-compatibility check.
+retains conservative candidates for unresolved receivers. Known limitations:
+
+- Namespace using-directives and aliases are treated file-wide.
+- Source fields are keyed by name across owners.
+- Function-local type aliases are not collected.
+- Preprocessor conditions are not generally evaluated.
+- C++ template instantiation and overload resolution are not performed.
+- Ignored in-tree build artifacts are scanned as Gazebo sources.
+- Virtual destructor overrides are not recorded.
+- Referenced macro parameters and replacement tokens are not recorded.
+- Source-only inheritance chains beyond three hops can be missed.
+- Public-to-protected declaration access changes are not recorded.
+- Used free-function declarations and signatures are not recorded.
+
+Operator syntax is associated with declarations for `->`, `[]` and `()` when
+the receiver type is known. The Gazebo build and test lanes remain the
+authoritative compatibility check.
 
 [`compat/dart_api_inventory.json`](compat/dart_api_inventory.json) records the
 DART types, constructions, accessor and mutation calls, public and protected
