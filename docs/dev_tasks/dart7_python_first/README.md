@@ -65,9 +65,11 @@ tests in `python/tests/acceptance/test_target_shape.py`, each marked
 `xfail(strict=True)`. The headless-render test needs a graphics device, so it
 lives in `python/tests/unit/gui/test_target_shape_render.py`, which
 `pixi run test-gui` and `CI Filament` run and `pixi run test-py` leaves out.
-Each feature PR removes its marker, so the tests double as a burn-down. The
-tests use existing constructors for independent setup until the package rename
-lands. The contract stays here instead of in `python/examples/target_shape.py`,
+Each feature PR removes its marker, so the tests double as a burn-down. Feature
+fixtures use the final 7.0 facade; a separate baseline-native contact preflight
+validates the physical setup until M5 retires or migrates it. M1e/M5 settle the
+bound configuration fields for the keyword-only `World(config=...)` overload.
+The contract stays here instead of in `python/examples/target_shape.py`,
 alongside automatically discovered runnable examples, while its features are
 unimplemented.
 

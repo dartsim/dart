@@ -142,7 +142,7 @@ every new member needs a use case:
 The separate keyword-only overload `World(*, config=...)` consumes a typed
 `WorldConfig`; mixing it with individual constructor options raises `TypeError`.
 Python configuration defaults select DART, while the C++ defaults remain FCL.
-M1e/M5 settle the bound configuration fields without exposing allocator internals.
+The bound configuration fields exclude allocator internals.
 
 dartpy's `dart.World` and `dart.io.load_world` for MJCF default to the native
 DART collision detector, exposed through `world.collision.detector`. The
