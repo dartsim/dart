@@ -74,6 +74,7 @@ public:
 private:
   class TeeBuf;
 
+  bool mInSink = false;
   std::unique_ptr<TeeBuf> mCoutBuf;
   std::unique_ptr<TeeBuf> mCerrBuf;
   std::streambuf* mOldCoutBuf;
