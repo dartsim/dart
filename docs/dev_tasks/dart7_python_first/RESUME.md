@@ -18,13 +18,12 @@ Filament and the interim camelCase `dartpy.gui`, and
 finalization rule to the `python/dartpy/gui/` binding sites. M6b, sensor
 rendering and the Python render/viewer API, remains pending.
 
-Local demo consolidation update (2026-10-12): WP-PD.18 retires the demo
+Demo consolidation update (2026-10-12): WP-PD.18 retires the demo
 project home after the Python catalog replaces the C++ app. Its durable
 owners and M6b's remaining scope are linked in
 [the program README](README.md#demo-consolidation-d31b). The deferred
 [changelog drafts](changelog-drafts.md) wait for M6b's consolidation PR;
 packet evidence is in [verification.md](verification.md#demo-consolidation-evidence).
-No commit or publication is authorized for the WP-PD.18 checkout.
 
 ## Next steps
 

@@ -606,7 +606,7 @@ with 24 workers; no source fix was needed.
   a narrow review.
 - **Limitations:** Linux verification only; Windows/macOS runtime, wheels,
   vanilla dartpy runtime and downstream Gazebo suites were not run for this
-  private application removal. No commit or publication is authorized.
+  private application removal.
 
 ## M1a: World step stages
 
