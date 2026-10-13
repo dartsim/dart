@@ -14,13 +14,14 @@ Scissors cleanup or verbose mode excludes text after Git's scissors line. No
 rebases, reverts, imports and sequencer operations before publication. It reads
 Git's ref updates from stdin, skips deletions, and scans messages and changes
 using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
-new refs use the merge base with the remote's default branch. Missing base
-objects are fetched without changing refs or FETCH_HEAD. An empty remote or
-unrelated history scans the whole local history; lookup or scan errors block
-the push. Older branches without a checker or compatible Python skip the scan
-with a notice. A checker removed from the worktree is recovered from HEAD or
-the push base; recovery errors block the operation. Foreign pre-push hooks
-receive the same stdin. Behaviour:
+new refs choose the merge base that leaves the fewest commits to scan from
+locally available remote branch heads and the remote's default HEAD. Missing
+existing-ref bases and default HEAD objects are fetched without changing refs
+or FETCH_HEAD. An empty remote or unrelated history scans the whole local
+history; lookup or scan errors block the push. Older branches without a
+checker or compatible Python skip the scan with a notice. A checker removed
+from the worktree is recovered from HEAD or the push base; recovery errors
+block the operation. Foreign pre-push hooks receive the same stdin. Behaviour:
 
 * Each managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
@@ -103,12 +104,26 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
         if ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
             git fetch --no-tags --no-write-fetch-head "$2" "$base_sha" || exit 1
         fi
-        if [ "$new_ref" = 1 ]; then
-            base_sha=$(git merge-base "$base_sha" "$local_sha")
+    fi
+    if [ "$new_ref" = 1 ]; then
+        remote_heads=$(git ls-remote --heads "$2") || exit 1
+        candidate_shas=$(printf '%s\\n' "$base_sha" "$remote_heads" | awk '{print $1}') || exit 1
+        base_sha=
+        fewest_commits=
+        for candidate_sha in $candidate_shas; do
+            # Only the default HEAD is fetched; other heads must exist locally.
+            git cat-file -e "$candidate_sha^{commit}" 2>/dev/null || continue
+            candidate_base=$(git merge-base "$candidate_sha" "$local_sha")
             status=$?
             # Status 1 means unrelated histories; other errors must block.
             [ "$status" -le 1 ] || exit "$status"
-        fi
+            [ "$status" = 0 ] || continue
+            candidate_count=$(git rev-list --count "$candidate_base..$local_sha") || exit 1
+            if [ -z "$fewest_commits" ] || [ "$candidate_count" -lt "$fewest_commits" ]; then
+                base_sha=$candidate_base
+                fewest_commits=$candidate_count
+            fi
+        done
     fi
     commit_range=$local_sha
     [ -z "$base_sha" ] || commit_range="$base_sha..$local_sha"
