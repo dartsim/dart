@@ -46,8 +46,8 @@
 
 namespace {
 
-constexpr int kDefaultWindowWidth = 1600;
-constexpr int kDefaultWindowHeight = 1000;
+constexpr int kCliDefaultWindowWidth = 1600;
+constexpr int kCliDefaultWindowHeight = 1000;
 
 //==============================================================================
 enum class ParseResult
@@ -105,7 +105,7 @@ void printUsage(const char* prog)
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
-      << kDefaultWindowWidth << "x" << kDefaultWindowHeight
+      << kCliDefaultWindowWidth << "x" << kCliDefaultWindowHeight
       << "; interactive defaults scale and fit the monitor).\n"
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
          "(default: automatic DPI;\n"
@@ -294,8 +294,8 @@ int dart::gui::app::runCommandLine(
         opt.shotPath,
         opt.steps,
         opt.sceneId,
-        opt.width.value_or(kDefaultWindowWidth),
-        opt.height.value_or(kDefaultWindowHeight));
+        opt.width.value_or(kCliDefaultWindowWidth),
+        opt.height.value_or(kCliDefaultWindowHeight));
   }
 
   return host.run(opt.width, opt.height);
