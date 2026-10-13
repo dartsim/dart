@@ -150,8 +150,9 @@ jobs:
           version: "2"
 
       - name: Compile each target as one unity file
-        # The options of `pixi run config`, but with build type None as in the
-        # assertions gate: DART forces -O3 for Release, and clashes are
+        # The options of `pixi run config`, but with the vanilla system ImGui,
+        # so the non-docking build stays compiled, and build type None as in
+        # the assertions gate: DART forces -O3 for Release, and clashes are
         # front-end errors, so -O0 is enough. -j1: the dart and dartpy files
         # each need several GB. Single-source targets cannot clash.
         run: |

@@ -41,9 +41,9 @@ pixi run capture      # Render a demo scene to a PNG without a window
 pixi run test-gui     # GUI gate; see testing.md
 ```
 
-`demos`, `cycle-demos`, and `capture` configure through
-`pixi run config-demos`, which selects the bundled docking ImGui; alternating
-with tasks that use `config` reconfigures the tree. `pixi run ex <example>`
+`demos`, `cycle-demos`, and `capture` configure through `pixi run config`,
+whose bundled ImGui is the Dear ImGui docking release that configure fetches
+with Git. `pixi run ex <example>`
 builds and runs one GUI example. Python GUI tasks (`py-demos`, `py-ex`,
 `agent-capture`) depend on `pixi run build-py-dev`. For a build without
 graphics dependencies, `pixi run config-core` configures the headless core in

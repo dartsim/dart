@@ -44,7 +44,7 @@
 // scene rather than to an absolute constant, and their length still orders by
 // force magnitude.
 
-#include "examples/demos/ContactArrowLayout.hpp"
+#include "demo_models/ContactArrowLayout.hpp"
 
 #include <dart/simulation/World.hpp>
 

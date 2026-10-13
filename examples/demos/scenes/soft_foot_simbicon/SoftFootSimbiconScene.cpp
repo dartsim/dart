@@ -42,11 +42,11 @@
 // is captured by the factory lambda so it survives the rebuild.
 
 #include "../Scenes.hpp"
-#include "../atlas_simbicon/Controller.hpp"
-#include "../atlas_simbicon/State.hpp"
-#include "../atlas_simbicon/StateMachine.hpp"
 #include "GuiBackend.hpp"
-#include "SoftFootSimbiconModel.hpp"
+#include "demo_models/atlas_simbicon/Controller.hpp"
+#include "demo_models/atlas_simbicon/State.hpp"
+#include "demo_models/atlas_simbicon/StateMachine.hpp"
+#include "demo_models/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
 
 #include <memory>
 #include <string>

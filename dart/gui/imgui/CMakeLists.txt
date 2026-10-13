@@ -105,19 +105,12 @@ if(DART_USE_SYSTEM_IMGUI)
 else()
   include(FetchContent)
 
-  # Default to the vanilla tag to preserve the installed ImGui header layout
-  # (docking adds public ImGuiIO /
-  # ImGuiStyle members and shifts enum values). DART_IMGUI_DOCKING opts a
-  # build into the docking-branch release of the same version — identical to
-  # v1.92.8 plus the dockspace/DockBuilder API (IMGUI_HAS_DOCK) — which the
-  # demos configuration (`pixi run demos` via config-demos) uses for the
-  # rearrangeable docked workspace. Non-docking builds keep working through
-  # the fixed-layout fallback.
-  if(DART_IMGUI_DOCKING)
-    set(IMGUI_TARGET_VERSION "v1.92.8-docking")
-  else()
-    set(IMGUI_TARGET_VERSION "v1.92.8")
-  endif()
+  # The docking release of v1.92.8 is vanilla v1.92.8 plus the dockspace and
+  # DockBuilder API (IMGUI_HAS_DOCK) that the demo workspace uses. Docking
+  # adds public ImGuiIO and ImGuiStyle members and shifts enum values, so the
+  # installed dart/external/imgui headers use the docking layout. A vanilla
+  # system ImGui (DART_USE_SYSTEM_IMGUI=ON) still builds dart-gui.
+  set(IMGUI_TARGET_VERSION "v1.92.8-docking")
 
   # DART applies its compatibility patch directly inside the FetchContent
   # checkout, which leaves that working tree dirty. If the requested tag changed
@@ -264,7 +257,14 @@ else()
       $<BUILD_INTERFACE:${DART_BINARY_DIR}>
       $<BUILD_INTERFACE:${dart_imgui_SOURCE_DIR}>
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/dart/external/imgui>
+  )
+  # An install prefix can also hold another ImGui (for example a Conda
+  # environment's vanilla imgui.h), so installed consumers must find the
+  # bundled docking headers first when they write <imgui.h>.
+  target_include_directories(
+    ${target_name}
+    BEFORE
+    PUBLIC $<INSTALL_INTERFACE:include/dart/external/imgui>
   )
   target_compile_definitions(
     ${target_name}
@@ -280,11 +280,15 @@ else()
   )
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX AND imgui_core_sources)
+# Third-party sources: no warnings on any compiler, and kept out of unity
+# batches, where their file-local helpers could clash with dart-gui sources.
+if(imgui_core_sources)
   set_source_files_properties(
     ${imgui_core_sources}
     TARGET_DIRECTORY ${target_name}
-    PROPERTIES COMPILE_OPTIONS -w
+    PROPERTIES
+      COMPILE_OPTIONS "$<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>"
+      SKIP_UNITY_BUILD_INCLUSION ON
   )
 endif()
 

@@ -128,6 +128,15 @@
     as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
+  * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
+    heightmap without a height field reports finite heights and bounds.
+    [#3744](https://github.com/dartsim/dart/pull/3744)
+
+  * `VoxelGridShape::updateOccupancy()` now writes a single point through
+    OctoMap's double-precision update, so a point on a voxel boundary lands
+    in the cell that `getOccupancy()` reads.
+    [#3737](https://github.com/dartsim/dart/pull/3737)
+
   * Preserve the generated soft mesh and shape-node properties when cloning
     soft-body skeletons, avoiding duplicate null meshes during collision checks.
     [#3644](https://github.com/dartsim/dart/pull/3644)
@@ -188,6 +197,10 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Allow C++-only projects to find the installed CMake package with the
+    `collision-ode` component without enabling C.
+    [#3756](https://github.com/dartsim/dart/pull/3756)
 
   * Restore URDF support and `dart-io` builds with urdfdom 3.x installations
     that ship no CMake version file, such as Ubuntu 22.04 and FreeBSD packages.
