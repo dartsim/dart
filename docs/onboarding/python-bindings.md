@@ -110,7 +110,7 @@ that share ownership of the native interaction.
 
 ### Viewer app callbacks
 
-`dartpy.viewer` binds the private demo app host in `dart/gui/app`; a vanilla
+`dartpy.viewer` binds the private app host in `dart/gui/app`; a vanilla
 system ImGui compiles out both. The host never owns a Python reference. Each
 callable belongs to the Python object that accepted it: a `Scene`,
 `SceneSetup`, `KeyAction` or `Control`, or the `SceneContext` for teardowns
@@ -138,6 +138,11 @@ The host clears a panel's callbacks at teardown, and a scene's activation
 reconnects them from the Python callables, so a factory may return the same
 `Panel` each time. `Control.edit()` applies a value as a user edit does, or
 clicks a button, which lets scripted tests drive the host's own dispatch.
+Panel values are validated in C++; decimal precision is expressed as a
+number rather than a printf format string. See
+[scene rules](../../examples/README.md#adding-catalog-scenes) and
+[catalog verification](testing.md#demo-catalog-verification) when extending
+the source-tree app.
 
 ### Binding infrastructure
 

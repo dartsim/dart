@@ -1338,6 +1338,18 @@ TEST(SceneContract, StopExceptionsEndCyclesWithoutFailing)
 }
 
 //==============================================================================
+TEST(SceneContract, CommandLineRejectsRemovedWorldDump)
+{
+  testing::internal::CaptureStdout();
+  testing::internal::CaptureStderr();
+  EXPECT_EQ(runCommandLine({}, {"app", "--debug-print-world"}), 1);
+  const auto error = testing::internal::GetCapturedStderr();
+  testing::internal::GetCapturedStdout();
+  EXPECT_NE(
+      error.find("Unknown option: --debug-print-world"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SceneContract, CommandLineRejectsInvalidNumbersAndNestedRuns)
 {
   const std::vector<std::vector<std::string>> invalid = {

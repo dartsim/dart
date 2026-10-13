@@ -631,13 +631,14 @@ above lists every merged change.
     scene navigator, a dockable ImGui workspace with inspectors,
     contact-force display and a live profiler, DPI-aware scaling, and headless
     capture. `hello_world`, `cylindrical_constraint`, `speed_test`,
-    `contact_benchmark` and the dartpy `ssik_analytical_ik` stay standalone:
+    and `contact_benchmark` stay standalone; dartpy analytical IK is available
+    as the `ssik_ik_gui` scene in the demo catalog:
     [#3301](https://github.com/dartsim/dart/pull/3301),
     [#3426](https://github.com/dartsim/dart/pull/3426),
     [#3640](https://github.com/dartsim/dart/pull/3640)
 
   * Add deformable-body (`adaptive_soft_contact`, `soft_worm`) and ssik
-    inverse-kinematics (`ssik_ik_gui`, `ssik_analytical_ik`) examples:
+    inverse-kinematics (`ssik_ik_gui`) scenes to the demo catalog:
     [#3092](https://github.com/dartsim/dart/pull/3092),
     [#3382](https://github.com/dartsim/dart/pull/3382)
 

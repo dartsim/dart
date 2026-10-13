@@ -22,7 +22,7 @@ SCENE_IDS = (
     "vehicle",
 )
 
-# C++ debug-print-world: (name, bodies, soft bodies, point masses, DOFs).
+# Scene-port parity baseline: (name, bodies, soft bodies, point masses, DOFs).
 STRUCTURES = {
     "hardcoded_design": [("Skeleton", 3, 0, 0, 3)],
     "rigid_loop": [("skeleton 1", 10, 0, 0, 30)],

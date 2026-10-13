@@ -48,13 +48,12 @@ The soft-foot capture recipe is:
 ```bash
 DART_DEMO_SOFT_FOOT_FEET=soft DART_DEMO_SOFT_FOOT_PUSH_STEP=650 \
 DART_DEMO_SOFT_FOOT_PUSH_N=6000 \
-  xvfb-run -a -s '-screen 0 1280x1024x24' \
-  ./build/default/cpp/Release/bin/dart-demos --scene soft_foot_simbicon \
+  pixi run demos -- --scene soft_foot_simbicon \
   --headless --steps 2250 --shot end.png
 ```
 
-Use `rigid` for the matched control. Headless capture still needs an X server;
-with a display, omit the wrapper. Do not infer correctness from a still alone.
+Use `rigid` for the matched control. Linux headless capture uses Vulkan and
+needs a graphics driver, but no X server. Do not infer correctness from a still alone.
 Run `pixi run -e gazebo test-gz` for downstream-sensitive collision or solver
 changes, plus the pre-default gates in the design owner. Run `pixi run lint`
 before each commit.

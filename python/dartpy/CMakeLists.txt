@@ -103,7 +103,7 @@ if(TARGET dart-gui-app)
       TARGET dartpy
       POST_BUILD
       COMMAND
-        ${CMAKE_COMMAND} "-DDART_DEMOS_EXECUTABLE=$<TARGET_FILE:dartpy>" -P
+        ${CMAKE_COMMAND} "-DDART_HOST_BINARY=$<TARGET_FILE:dartpy>" -P
         "${PROJECT_SOURCE_DIR}/dart/gui/app/tests/check_memory_diagnostics_compiled_out.cmake"
       COMMENT "Verifying memory diagnostics are absent from dartpy"
       VERBATIM
