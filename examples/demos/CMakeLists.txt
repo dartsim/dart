@@ -253,13 +253,7 @@ if(DART_IN_SOURCE_BUILD)
 endif()
 
 if(BUILD_TESTING AND TARGET dart-demos)
-  # Its only remaining case needs Linux and the model assets; elsewhere the
-  # executable would run zero tests.
-  if(
-    COMMAND dart_add_test
-    AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
-    AND DART_DEMOS_HAVE_MODEL_ASSETS
-  )
+  if(COMMAND dart_add_test AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     if(NOT TARGET GTest::gtest)
       find_package(GTest MODULE REQUIRED)
     endif()

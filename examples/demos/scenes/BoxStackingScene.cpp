@@ -47,10 +47,12 @@
 
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
+#include "demo_models/BoxedLcpSolver.hpp"
 
 #include <dart/dart.hpp>
 
 #include <memory>
+#include <string>
 
 namespace dart_demos {
 
@@ -120,33 +122,10 @@ dart::dynamics::SkeletonPtr createBoxStackingFloor()
 }
 
 //==============================================================================
-enum class LcpSolverType
-{
-  Dantzig,
-  Pgs
-};
-
-//==============================================================================
 struct BoxStackingState
 {
-  LcpSolverType solverType = LcpSolverType::Dantzig;
+  std::string solverKind = "dantzig";
 };
-
-//==============================================================================
-void applyLcpSolver(const dart::simulation::WorldPtr& world, LcpSolverType type)
-{
-  using namespace dart::constraint;
-
-  if (type == LcpSolverType::Dantzig) {
-    auto lcpSolver = std::make_shared<DantzigBoxedLcpSolver>();
-    world->setConstraintSolver(
-        std::make_unique<BoxedLcpConstraintSolver>(lcpSolver));
-  } else {
-    auto lcpSolver = std::make_shared<PgsBoxedLcpSolver>();
-    world->setConstraintSolver(
-        std::make_unique<BoxedLcpConstraintSolver>(lcpSolver));
-  }
-}
 
 } // namespace
 
@@ -168,7 +147,7 @@ DemoScene makeBoxStackingScene()
       world->addSkeleton(boxSkel);
 
     auto state = std::make_shared<BoxStackingState>();
-    applyLcpSolver(world, state->solverType);
+    setBoxedLcpSolver(world, state->solverKind);
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -181,21 +160,17 @@ DemoScene makeBoxStackingScene()
       ImGui::Text("Time: %.3f", world->getTime());
       ImGui::TextUnformatted("LCP solver:");
 
-      int solverIndex = state->solverType == LcpSolverType::Dantzig ? 0 : 1;
+      int solverIndex = state->solverKind == "dantzig" ? 0 : 1;
       bool clicked = false;
       clicked |= ImGui::RadioButton("Dantzig", &solverIndex, 0);
       ImGui::SameLine();
       clicked |= ImGui::RadioButton("PGS", &solverIndex, 1);
-      // RadioButton returns true on any click, including re-clicking the
-      // already-selected option. Only swap the solver when the selection truly
-      // changes: World::setConstraintSolver rebuilds the solver and wakes every
-      // sleeping skeleton, so a redundant re-apply would perturb the sim.
+      // Re-clicking the selected backend must not wake sleeping boxes.
       if (clicked) {
-        const LcpSolverType newType
-            = solverIndex == 0 ? LcpSolverType::Dantzig : LcpSolverType::Pgs;
-        if (newType != state->solverType) {
-          state->solverType = newType;
-          applyLcpSolver(world, state->solverType);
+        const std::string newKind = solverIndex == 0 ? "dantzig" : "pgs";
+        if (newKind != state->solverKind) {
+          state->solverKind = newKind;
+          setBoxedLcpSolver(world, state->solverKind);
         }
       }
 

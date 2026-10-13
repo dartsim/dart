@@ -194,10 +194,16 @@ add_test(
   COMMAND
     $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
 )
+dart_add_test("integration" test_BoxedLcpSolver)
+target_link_libraries(test_BoxedLcpSolver dart-demo-models)
+dart_add_test("integration" test_HeightmapModel)
+target_link_libraries(test_HeightmapModel dart-demo-models)
 set_tests_properties(
   test_AdaptiveSoftContactModel
   test_SoftWormModel
   test_ContactArrowLayout
+  test_BoxedLcpSolver
+  test_HeightmapModel
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 dart_format_add(${soft_demo_model_test_sources})

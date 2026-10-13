@@ -43,6 +43,8 @@ void bind_wam_ikfast(nb::module_& m);
 void bind_contact_inverse_dynamics(nb::module_& m);
 void bind_relaxed_posture(nb::module_& m);
 void bind_arm_skeleton(nb::module_& m);
+void bind_boxed_lcp_solver(nb::module_& m);
+void bind_heightmap_model(nb::module_& m);
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
 void bind_simbicon(nb::module_& m);
 void bind_soft_foot_simbicon(nb::module_& m);
@@ -59,6 +61,8 @@ void bind_demos(nb::module_& m)
   bind_contact_inverse_dynamics(demos);
   bind_relaxed_posture(demos);
   bind_arm_skeleton(demos);
+  bind_boxed_lcp_solver(demos);
+  bind_heightmap_model(demos);
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
   bind_simbicon(demos);
   bind_soft_foot_simbicon(demos);

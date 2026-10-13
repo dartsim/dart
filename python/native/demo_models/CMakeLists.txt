@@ -35,6 +35,8 @@ add_library(
   dart-demo-models
   STATIC
   ContactArrowLayout.cpp
+  BoxedLcpSolver.cpp
+  HeightmapModel.cpp
   AdaptiveSoftContactModel.cpp
   SoftWormModel.cpp
   WorldHistory.cpp

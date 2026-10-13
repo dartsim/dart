@@ -174,6 +174,11 @@ namespace dart_demos {
 /// configurable grid, ported from examples/heightmap.
 [[nodiscard]] DemoScene makeHeightmapScene();
 
+/// Applies finite, ordered height edits; preserves the range if its span
+/// overflows. Returns whether an edit was accepted.
+bool updateHeightmapRange(
+    float& zMin, float& zMax, float requestedMin, float requestedMax);
+
 /// Control & IK > atlas_puppet: a purely kinematic Atlas whole-body IK
 /// puppet with balance and support-polygon overlays, ported from
 /// examples/atlas_puppet.

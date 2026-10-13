@@ -49,6 +49,7 @@
 
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
+#include "demo_models/HeightmapModel.hpp"
 
 #include <dart/dart.hpp>
 
@@ -60,32 +61,6 @@
 namespace dart_demos {
 
 namespace {
-
-//==============================================================================
-dart::dynamics::ShapePtr createHeightmapShape(
-    std::size_t xResolution,
-    std::size_t yResolution,
-    float xSize,
-    float ySize,
-    float zMin,
-    float zMax)
-{
-  dart::dynamics::HeightmapShapef::HeightField data(yResolution, xResolution);
-  for (std::size_t i = 0; i < yResolution; ++i) {
-    for (std::size_t j = 0; j < xResolution; ++j)
-      data(i, j) = dart::math::Random::uniform(zMin, zMax);
-  }
-
-  const Eigen::Vector3f scale(
-      xSize / static_cast<float>(xResolution),
-      ySize / static_cast<float>(yResolution),
-      1.f);
-
-  auto terrainShape = std::make_shared<dart::dynamics::HeightmapShapef>();
-  terrainShape->setScale(scale);
-  terrainShape->setHeightField(data);
-  return terrainShape;
-}
 
 //==============================================================================
 /// Per-instance state captured by this scene's panel/onActivate lambdas.
@@ -160,6 +135,24 @@ void ensureGridFieldsInitialized(HeightmapState& state)
 }
 
 } // namespace
+
+//==============================================================================
+bool updateHeightmapRange(
+    float& zMin, float& zMax, float requestedMin, float requestedMax)
+{
+  if (!std::isfinite(requestedMin))
+    requestedMin = zMin;
+  if (!std::isfinite(requestedMax))
+    requestedMax = zMax;
+  const bool changed = requestedMin != zMin || requestedMax != zMax;
+  if (requestedMin > requestedMax)
+    std::swap(requestedMin, requestedMax);
+  if (!std::isfinite(requestedMax - requestedMin))
+    return false;
+  zMin = requestedMin;
+  zMax = requestedMax;
+  return changed;
+}
 
 //==============================================================================
 DemoScene makeHeightmapScene()
@@ -267,25 +260,13 @@ DemoScene makeHeightmapScene()
 
         float zMin = state->zMin;
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.6f);
-        if (ImGui::InputFloat("Z Min", &zMin, 0.05f, 0.1f)
-            && std::isfinite(zMin) && zMin != state->zMin) {
-          state->zMin = zMin;
-          changed = true;
-        }
+        ImGui::InputFloat("Z Min", &zMin, 0.05f, 0.1f);
 
         float zMax = state->zMax;
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.6f);
-        if (ImGui::InputFloat("Z Max", &zMax, 0.05f, 0.1f)
-            && std::isfinite(zMax) && zMax != state->zMax) {
-          state->zMax = zMax;
+        ImGui::InputFloat("Z Max", &zMax, 0.05f, 0.1f);
+        if (updateHeightmapRange(state->zMin, state->zMax, zMin, zMax))
           changed = true;
-        }
-
-        // Unlike the original, keep zMin <= zMax: a fully inverted range fed
-        // straight into Random::uniform(zMin, zMax) is undefined behavior,
-        // not just a cosmetic glitch. (Both are finite by construction here.)
-        if (state->zMin > state->zMax)
-          std::swap(state->zMin, state->zMax);
 
         if (changed)
           updateHeightmapShape(*state);
