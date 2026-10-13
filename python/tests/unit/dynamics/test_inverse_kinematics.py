@@ -367,6 +367,76 @@ def test_python_analytical_rejects_out_of_range_dof():
         ik.setPythonAnalytical(solve, [len(dofs) + 5])
 
 
+@pytest.mark.parametrize("shift_dofs", [False, True])
+def test_python_analytical_copy_uses_jacobian_dls(shift_dofs, capfd):
+    skel = dart.dynamics.Skeleton("original")
+    joint, body = skel.createPrismaticJointAndBodyNodePair()
+    joint.setAxis([1, 0, 0])
+    ik = body.createShapeNode(dart.dynamics.SphereShape(0.1)).getOrCreateIK()
+    defaults = ik.getErrorMethod().getErrorMethodProperties()
+    ik.setPythonAnalytical(lambda target: [], [0], "stored_dofs")
+    ik.getGradientMethod().setComponentWeights(np.array([0.75]))
+    ik.getErrorMethod().setBounds(np.full(6, -1e-8), np.full(6, 1e-8))
+    ik.getErrorMethod().setComputeFromCenter(False)
+    ik.getSolver().setNumMaxIterations(100)
+    capfd.readouterr()
+
+    if shift_dofs:
+        copy = dart.dynamics.Skeleton("shifted")
+        base = copy.createPrismaticJointAndBodyNodePair()[1]
+        body.copyTo(copy, base)
+        copied_body = copy.getBodyNode(1)
+    else:
+        copy = body.copyAs("same")
+        copied_body = copy.getBodyNode(0)
+    warning = capfd.readouterr().err
+    assert warning.count("uses JacobianDLS") == 1
+    assert "Set the analytical solver up again for the copy." in warning
+
+    copied_ik = copied_body.getShapeNode(0).getIK()
+    assert copied_ik.getDofs() == [int(shift_dofs)]
+    assert copied_ik.getAnalytical() is None
+    assert copied_ik.getGradientMethod().getMethodName() == "JacobianDLS"
+    assert copied_ik.getGradientMethod().getComponentWeights() == pytest.approx([0.75])
+    error = copied_ik.getErrorMethod()
+    assert error.getErrorLengthClamp() == defaults.mErrorLengthClamp
+    assert error.getErrorMethodProperties().mErrorWeights == pytest.approx(
+        defaults.mErrorWeights
+    )
+    lower, upper = error.getBounds()
+    assert lower == pytest.approx(np.full(6, -1e-8))
+    assert upper == pytest.approx(np.full(6, 1e-8))
+    assert not error.isComputingFromCenter()
+    target = dart.math.Isometry3()
+    target.set_translation([0.8, 0, 0])
+    copied_ik.getTarget().setTransform(target)
+    assert copied_ik.solveAndApply(False)
+    assert copied_body.getWorldTransform().matrix() == pytest.approx(
+        target.matrix(), abs=1e-7
+    )
+    assert skel.getPositions() == pytest.approx([0])
+    assert ik.getGradientMethod().getMethodName() == "stored_dofs"
+
+
+def test_python_analytical_clone_skeleton_keeps_solver_and_solves():
+    skel = dart.dynamics.Skeleton("original")
+    joint, body = skel.createPrismaticJointAndBodyNodePair()
+    joint.setAxis([1, 0, 0])
+    ik = body.createShapeNode(dart.dynamics.SphereShape(0.1)).getOrCreateIK()
+    ik.setPythonAnalytical(lambda target: [[target[0, 3]]], [0], "prismatic")
+    ik.getErrorMethod().setBounds(np.full(6, -1e-8), np.full(6, 1e-8))
+    clone = skel.clone()
+    cloned_ik = clone.getBodyNode(0).getShapeNode(0).getIK()
+    assert cloned_ik.getAnalytical() is not None
+    assert cloned_ik.getGradientMethod().getMethodName() == "prismatic"
+    target = dart.math.Isometry3()
+    target.set_translation([0.8, 0, 0])
+    cloned_ik.getTarget().setTransform(target)
+    assert cloned_ik.solveAndApply(False)
+    assert clone.getPositions() == pytest.approx([0.8], abs=1e-7)
+    assert skel.getPositions() == pytest.approx([0])
+
+
 class FailingSolver(dart.optimizer.Solver):
     def __init__(self, constant):
         super(FailingSolver, self).__init__()

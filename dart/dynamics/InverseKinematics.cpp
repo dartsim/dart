@@ -173,7 +173,10 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
   // of the error method.
   newIK->mGradientMethod = mGradientMethod->clone(newIK.get());
   newIK->mAnalytical = dynamic_cast<Analytical*>(newIK->mGradientMethod.get());
-  if (nullptr != newIK->mAnalytical)
+  // A Node copied by BodyNode::copyTo() has no Skeleton until the copied
+  // BodyNodes join one, so it has no DOFs to map yet. Skeleton then binds the
+  // copied IK module to the copy, which builds this map.
+  if (nullptr != newIK->mAnalytical && nullptr != _newNode->getSkeleton())
     newIK->mAnalytical->constructDofMap();
 
   newIK->mErrorMethod = mErrorMethod->clone(newIK.get());
@@ -1258,8 +1261,14 @@ void InverseKinematics::Analytical::constructDofMap()
     }
 
     if (mDofMap[i] == -1) {
+      // A node copied into a new BodyNode tree has no Skeleton yet, and a
+      // copied solver can name a DOF that the destination Skeleton lacks
+      // until Skeleton replaces the solver.
+      const auto skeleton = mIK->getNode()->getSkeleton();
       DegreeOfFreedom* dof
-          = mIK->getNode()->getSkeleton()->getDof(analyticalDofs[i]);
+          = (skeleton && analyticalDofs[i] < skeleton->getNumDofs())
+                ? skeleton->getDof(analyticalDofs[i])
+                : nullptr;
       std::string name
           = (dof == nullptr) ? std::string("nonexistent") : dof->getName();
       dtwarn << "[InverseKinematics::Analytical::constructDofMap] Your "
