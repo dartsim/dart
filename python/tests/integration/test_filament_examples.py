@@ -1,34 +1,119 @@
-"""The neutral viewer uses the same demo and tutorial scene/controller code."""
+"""The native app host runs Python demo scenes without a graphics device."""
 
-import gc
 import importlib.util
+import re
+import runpy
+import subprocess
 import sys
-import weakref
 from pathlib import Path
 
 import dartpy as dart
+import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "python"))
 
-from examples.demos.registry import make_demo_scenes
-from examples.demos.runner import (
-    Navigator,
-    _install_scene,
-    _run_headless_steps,
-    _uninstall_scene,
-    main,
+viewer = getattr(dart, "viewer", None)
+HUMANOID_IDS = {"atlas_v5", "unitree_g1"}
+
+
+requires_app_host = pytest.mark.skipif(
+    viewer is None, reason="a vanilla system ImGui compiles out the demo app host"
 )
 
 
-def test_demo_catalog_does_not_require_a_renderer(capsys):
-    assert main(["--list"]) == 0
-    assert "atlas_puppet" in capsys.readouterr().out
-    ids = {scene.id for scene in make_demo_scenes()}
-    assert len(ids) == (11 if hasattr(dart.utils, "ModelResourceRetriever") else 9)
+def _demo_scenes():
+    from examples.demos.registry import make_demo_scenes
+
+    return make_demo_scenes()
+
+
+def _cpp_catalog_ids():
+    # Prefer the C++ catalog from the same build as the imported dartpy module.
+    build = Path(dart.__file__).resolve().parents[2]
+    binary = build / "bin" / "dart-demos"
+    if sys.platform == "win32":
+        binary = binary.with_suffix(".exe")
+    if binary.is_file():
+        result = subprocess.run(
+            [str(binary), "--list-scenes"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        ids = set(re.findall(r"^  ([a-z][a-z0-9_]*)  -  ", result.stdout, re.M))
+        assert ids, result.stdout
+        return ids
+
+    # Registry.cpp's complete catalog, including optional scenes, when the
+    # dartpy-only build has not produced dart-demos. Update as that catalog grows.
+    return set(
+        "empty hello_world simple_frames boxes rigid_cubes rigid_chain "
+        "add_delete_skels simulation_event_handler rigid_shapes sleeping "
+        "hardcoded_design rigid_loop box_stacking dynamic_joint_constraints "
+        "tinkertoy human_joint_limits joint_constraints hybrid_dynamics "
+        "biped_stand operational_space_control contact_inverse_dynamics "
+        "ssik_ik_gui wam_ikfast atlas_puppet atlas_simbicon mixed_chain "
+        "adaptive_soft_contact soft_worm soft_foot_simbicon soft_bodies "
+        "soft_cubes soft_open_chain atlas_v5 unitree_g1 vehicle heightmap "
+        "point_cloud drag_and_drop".split()
+    )
+
+
+@requires_app_host
+def test_demo_catalog_does_not_require_a_renderer(capfd):
+    scenes = _demo_scenes()
+    ids = [scene.id for scene in scenes]
+    assert ids and len(ids) == len(set(ids))
+    assert set(ids) <= _cpp_catalog_ids()
+    assert all(isinstance(scene, viewer.Scene) for scene in scenes)
     if hasattr(dart.utils, "ModelResourceRetriever"):
-        assert {"atlas_v5", "unitree_g1"} <= ids
+        assert HUMANOID_IDS <= set(ids)
+    else:
+        assert HUMANOID_IDS.isdisjoint(ids)
+    assert viewer.run(scenes, ["examples.demos", "--list-scenes"]) == 0
+    listed = capfd.readouterr().out
+    for scene in scenes:
+        assert f"{scene.id}  -  {scene.title}: {scene.summary}" in listed
+
+
+@requires_app_host
+def test_demo_catalog_cycles_without_a_renderer(capfd):
+    assert (
+        viewer.run(_demo_scenes(), ["examples.demos", "--cycle-scenes", "--frames", "2"])
+        == 0
+    )
+    assert "OK" in capfd.readouterr().out
+
+
+@requires_app_host
+@pytest.mark.parametrize("raises", [False, True], ids=["empty-path", "cache-error"])
+def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
+    class MissingModels:
+        def __init__(self, cache, offline):
+            assert cache == "" and offline
+
+        def getFilePath(self, uri):
+            if raises:
+                raise RuntimeError("Verified model cache is unavailable.")
+            return ""
+
+    monkeypatch.setattr(dart.utils, "ModelResourceRetriever", MissingModels, raising=False)
+    scenes = _demo_scenes()
+    assert HUMANOID_IDS <= {scene.id for scene in scenes}
+    for scene in scenes:
+        if scene.id in HUMANOID_IDS:
+            with pytest.raises(viewer.AssetsNotPrefetchedError, match="Prefetch with"):
+                scene.factory()
+    assert (
+        viewer.run(scenes, ["examples.demos", "--cycle-scenes", "--frames", "2"]) == 0
+    )
+    output = capfd.readouterr().out
+    for scene_id in HUMANOID_IDS:
+        assert f"demo '{scene_id}' skipped:" in output
+    assert "OK" in output
 
 
 def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(capsys):
@@ -40,45 +125,83 @@ def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(capsys):
     assert "franka_panda_ik" in capsys.readouterr().out
 
 
-def test_demo_navigator_does_not_keep_viewer_alive():
-    class Handler(Navigator, dart.gui.GUIEventHandler):
-        pass
+@requires_app_host
+def test_demo_catalog_failing_python_hook_fails_the_cycle(capfd):
+    def fail():
+        raise RuntimeError("demo hook failed")
 
-    viewer = dart.gui.Viewer()
-    navigator = Handler(viewer, [], dart.gui)
-    viewer.addEventHandler(navigator)
-    reference = weakref.ref(viewer)
-    del viewer
-    gc.collect()
-    assert reference() is None
-    with pytest.raises(RuntimeError, match="destroyed"):
-        navigator.viewer
+    scene = viewer.Scene(
+        "broken_python_hook",
+        title="Broken Python hook",
+        category="Tests",
+        factory=lambda: viewer.SceneSetup(dart.simulation.World(), pre_step=fail),
+    )
+    assert (
+        viewer.run(
+            [*_demo_scenes(), scene],
+            ["examples.demos", "--cycle-scenes", "--frames", "2"],
+        )
+        != 0
+    )
+    assert "RuntimeError: demo hook failed" in capfd.readouterr().err
 
 
+def _world_state(world):
+    values = []
+    for index in range(world.getNumSkeletons()):
+        skeleton = world.getSkeleton(index)
+        values.extend((skeleton.getPositions().copy(), skeleton.getVelocities().copy()))
+    for index in range(world.getNumSimpleFrames()):
+        transform = world.getSimpleFrame(index).getWorldTransform()
+        values.extend((transform.translation().copy(), transform.rotation().ravel().copy()))
+    return np.concatenate(values) if values else np.array([])
+
+
+@requires_app_host
 @pytest.mark.parametrize(
     "scene",
     [
         scene
-        for scene in make_demo_scenes()
-        if scene.id not in {"atlas_v5", "unitree_g1"}
-    ],
+        for scene in _demo_scenes()
+        if scene.id not in HUMANOID_IDS
+    ]
+    if viewer is not None
+    else [],
     ids=lambda scene: scene.id,
 )
 def test_neutral_demo_callbacks_and_deterministic_steps(scene):
-    handle = scene.build()
-    world = handle.node.getWorld()
-    assert isinstance(handle.node, dart.gui.WorldNode)
-    _run_headless_steps(handle, world, 3)
-    assert world.getSimFrames() == (3 if handle.allow_simulation else 0)
-    viewer = dart.gui.Viewer()
-    state = _install_scene(viewer, handle, dart.gui)
-    assert viewer.getWorldNode(world) is handle.node
-    _uninstall_scene(viewer, handle, state)
-    assert viewer.getNumWorldNodes() == 0
+    runs = []
+    for _ in range(2):
+        dart.math.Random.setSeed(42)
+        setup = scene.factory()
+        assert isinstance(setup, viewer.SceneSetup)
+        world = setup.world
+        assert isinstance(world, dart.simulation.World)
+        states = [_world_state(world)]
+        for _ in range(3):
+            # cycleScenes invokes these in this order, including for scenes
+            # whose allow_simulation flag disables only interactive simulation.
+            if setup.pre_refresh is not None:
+                setup.pre_refresh()
+            if setup.pre_step is not None:
+                setup.pre_step()
+            world.step()
+            if setup.post_step is not None:
+                setup.post_step()
+            states.append(_world_state(world))
+        assert world.getSimFrames() == 3
+        runs.append(np.array(states))
+    assert np.isfinite(runs[0]).all()
+    np.testing.assert_array_equal(runs[0], runs[1])
 
 
-@pytest.mark.parametrize("builder", ["build_atlas", "build_g1"])
-def test_modern_humanoid_callbacks_without_external_model_cache(builder, monkeypatch):
+@requires_app_host
+@pytest.mark.parametrize(
+    "factory, builder", [("atlas_world", "build_atlas"), ("g1_world", "build_g1")]
+)
+def test_modern_humanoid_callbacks_without_external_model_cache(
+    factory, builder, monkeypatch
+):
     from examples.demos.scenes import modern_humanoids
 
     world = dart.simulation.World()
@@ -86,13 +209,31 @@ def test_modern_humanoid_callbacks_without_external_model_cache(builder, monkeyp
     robot.createRevoluteJointAndBodyNodePair()
     world.addSkeleton(robot)
     monkeypatch.setattr(modern_humanoids, "_world", lambda *_: world)
-    handle = getattr(modern_humanoids, builder)()
-    assert isinstance(handle.node, dart.gui.WorldNode)
-    assert handle.node.getWorld() is world
-    assert handle.allow_simulation is False
+    assert getattr(modern_humanoids, factory)() is world
+    assert isinstance(getattr(modern_humanoids, factory)(), dart.simulation.World)
+    setup = getattr(modern_humanoids, builder)()
+    assert isinstance(setup, viewer.SceneSetup)
+    assert setup.world is world
+    assert setup.allow_simulation is False
+    actions = {action.key: action for action in setup.key_actions}
     for key in "[]=t":
-        handle.key_actions[ord(key)][1]()
+        actions[ord(key)].callback()
     assert robot.getPosition(0) == 0.0
+
+
+def test_demo_entrypoint_rebuild_hint(monkeypatch, capsys):
+    monkeypatch.delattr(dart, "viewer", raising=False)
+    monkeypatch.setattr(sys, "argv", ["examples.demos", "--list-scenes"])
+    with pytest.raises(SystemExit) as error:
+        runpy.run_module("examples.demos", run_name="__main__")
+    assert error.value.code == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert len(output.err.splitlines()) == 1
+    assert "demo app host" in output.err
+    assert "bundled docking ImGui" in output.err
+    assert "-DDART_USE_SYSTEM_IMGUI=OFF" in output.err
+    assert "pixi run config" in output.err
 
 
 @pytest.mark.parametrize("name", ("biped", "collisions", "dominoes", "multi_pendulum"))
@@ -119,3 +260,43 @@ def test_neutral_tutorial_callbacks(name, filename):
         node.customPostStep()
         node.customPostRefresh()
         assert world.getSimFrames() == 1
+
+
+def test_humanoid_world_factories_report_missing_models_without_the_host(monkeypatch):
+    from examples.demos.scenes import modern_humanoids
+
+    class MissingModels:
+        def __init__(self, cache, offline):
+            pass
+
+        def getFilePath(self, uri):
+            return ""
+
+    monkeypatch.setattr(dart.utils, "ModelResourceRetriever", MissingModels, raising=False)
+    monkeypatch.delattr(dart, "viewer", raising=False)
+    with pytest.raises(modern_humanoids.MissingModelsError, match="Prefetch with"):
+        modern_humanoids.atlas_world()
+
+
+@requires_app_host
+def test_atlas_puppet_zeroes_gravity_like_the_cpp_scene():
+    from examples.demos.scenes import atlas_puppet
+
+    # Step, cycles and captures force physics steps on this kinematic scene.
+    assert not atlas_puppet.build().world.getGravity().any()
+
+
+@requires_app_host
+def test_biped_controller_uses_the_current_timestep():
+    from examples.demos.scenes import biped_stand
+
+    changed = biped_stand.build()
+    changed.world.setTimeStep(0.01)
+    changed.pre_step()
+    fresh = biped_stand.build().world
+    fresh.setTimeStep(0.01)
+    skeleton = fresh.getSkeleton("fullbody1")
+    biped_stand.BipedStandController(fresh, skeleton).pre_step()
+    np.testing.assert_allclose(
+        changed.world.getSkeleton("fullbody1").getForces(), skeleton.getForces()
+    )
