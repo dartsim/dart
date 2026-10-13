@@ -374,7 +374,7 @@ app::SceneSetup buildScene(
   if (!nb::isinstance<PySceneSetup>(result))
     throw std::runtime_error(
         "the factory of scene '" + id + "' returned "
-        + nb::cast<std::string>(nb::str(result.type().attr("__name__")))
+        + nb::cast<std::string>(result.type().attr("__name__"))
         + ", not a dartpy.viewer.SceneSetup");
 
   const auto& setup = nb::cast<const PySceneSetup&>(result);
