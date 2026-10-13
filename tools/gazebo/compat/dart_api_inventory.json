@@ -6,6 +6,14 @@
         {
           "count": 1,
           "declarations": [],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::collision::BodyNodeCollisionFilter",
+              "const": false,
+              "signature": "std :: size_t mRevision = 0 u",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/EntityManagementFeatures.cc:43"
           ],
@@ -131,6 +139,26 @@
               "class": "dart::collision::CollisionGroup::ShapeFrameObserver",
               "const": false,
               "signature": "explicit ShapeFrameObserver ( CollisionGroup * group = nullptr )",
+              "virtual": false
+            }
+          ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::collision::BulletCollisionGroup",
+              "const": false,
+              "signature": "const CollisionFilter * mLastPersistentPairFilter = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::collision::BulletCollisionGroup",
+              "const": false,
+              "signature": "std :: size_t mLastPersistentPairFilterRevision = 0 u",
+              "virtual": false
+            },
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "std :: size_t mContentVersion = 0 u",
               "virtual": false
             }
           ],
@@ -351,6 +379,14 @@
               "class": "dart::collision::OdeCollisionGroup",
               "const": false,
               "signature": "OdeCollisionGroup ( const OdeCollisionGroup & ) = delete",
+              "virtual": false
+            }
+          ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::collision::CollisionGroup",
+              "const": false,
+              "signature": "std :: size_t mContentVersion = 0 u",
               "virtual": false
             }
           ],
@@ -778,6 +814,14 @@
               "virtual": false
             }
           ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::dynamics::BoxShape",
+              "const": false,
+              "signature": "Eigen :: Vector3d mSize { Eigen :: Vector3d :: Ones ( ) }",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/Base_TEST.cc:64",
             "dartsim/src/SDFFeatures.cc:299",
@@ -875,6 +919,20 @@
               "virtual": false
             }
           ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::dynamics::CapsuleShape",
+              "const": false,
+              "signature": "double mHeight { 1 . 0 }",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::CapsuleShape",
+              "const": false,
+              "signature": "double mRadius { 1 . 0 }",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/SDFFeatures.cc:325",
             "dartsim/src/ShapeFeatures.cc:157"
@@ -968,6 +1026,20 @@
               "class": "dart::math::BoundingBox",
               "const": false,
               "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
+              "virtual": false
+            }
+          ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::dynamics::CylinderShape",
+              "const": false,
+              "signature": "double mHeight { 1 . 0 }",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::CylinderShape",
+              "const": false,
+              "signature": "double mRadius { 1 . 0 }",
               "virtual": false
             }
           ],
@@ -1377,6 +1449,20 @@
               "virtual": false
             }
           ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::dynamics::HeightmapShape",
+              "const": false,
+              "signature": "S mMaxHeight = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::HeightmapShape",
+              "const": false,
+              "signature": "S mMinHeight = 0",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/CustomHeightmapShape.cc:35",
             "dartsim/src/CustomHeightmapShape.hh:33"
@@ -1639,6 +1725,22 @@
               "class": "dart::math::BoundingBox",
               "const": false,
               "signature": "EIGEN_MAKE_ALIGNED_OPERATOR_NEW BoundingBox ( )",
+              "virtual": false
+            }
+          ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::dynamics::MeshShape::MeshHandle",
+              "const": false,
+              "signature": "MeshOwnership mMeshOwnership { MeshOwnership :: None }",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::MeshShape::MeshOwnership",
+              "const": true,
+              "enum_declaration": "enum class MeshOwnership",
+              "enum_type": "dart::dynamics::MeshShape::MeshOwnership",
+              "signature": "None",
               "virtual": false
             }
           ],
@@ -2508,6 +2610,14 @@
               "virtual": false
             }
           ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::dynamics::SphereShape",
+              "const": false,
+              "signature": "double mRadius { 1 . 0 }",
+              "virtual": false
+            }
+          ],
           "examples": [
             "dartsim/src/SDFFeatures.cc:317",
             "dartsim/src/ShapeFeatures.cc:394"
@@ -2924,6 +3034,296 @@
               "class": "dart::simulation::World",
               "const": false,
               "signature": "explicit World ( const WorldConfig & config )",
+              "virtual": false
+            }
+          ],
+          "default_member_initializer_declarations": [
+            {
+              "class": "dart::simulation::DeactivationOptions",
+              "const": false,
+              "signature": "bool mEnabled = true",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::DeactivationOptions",
+              "const": false,
+              "signature": "double mAngularSpeedThreshold = 0 . 0 5",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::DeactivationOptions",
+              "const": false,
+              "signature": "double mLinearSpeedThreshold = 0 . 0 1",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::DeactivationOptions",
+              "const": false,
+              "signature": "double mTimeUntilSleep = 0 . 5",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::DeactivationOptions",
+              "const": false,
+              "signature": "double mWakeThresholdScale = 2 . 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mAllRestingKinematicSnapshotValid = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mAllRestingSnapshotCollisionAllowNegativePenetrationDepthContacts = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mAllRestingSnapshotCollisionEnableContact = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mAllRestingSnapshotHasMobileSkeleton = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mAllRestingSnapshotReady = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mAllRestingSnapshotResetCommand = true",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mLastStepRestingWorldStateCollisionAllowNegativePenetrationDepthContacts = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mLastStepRestingWorldStateCollisionEnableContact = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mLastStepRestingWorldStateCollisionFilterTrackable = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mLastStepRestingWorldStateValid = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mSimulationMode = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mSimulationModeCollisionEnableContact = false",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "bool mSimulationModeCollisionFilterTrackable = true",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionDetector * mAllRestingSnapshotCollisionDetector = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionDetector * mLastStepRestingWorldStateCollisionDetector = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionFilter * mAllRestingSnapshotCollisionFilter = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionFilter * mLastStepRestingWorldStateCollisionFilter = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionFilter * mSimulationModeCollisionFilter = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionGroup * mAllRestingSnapshotCollisionGroup = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionGroup * mLastStepRestingWorldStateCollisionGroup = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "const collision :: CollisionGroup * mSimulationModeCollisionGroup = nullptr",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotCollisionFilterRevision = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotCollisionGroupVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotCollisionMaxNumContacts = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotCollisionMaxNumContactsPerPair = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotDeactivationStateVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotExternalDisturbanceVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotKinematicVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotStructuralVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mAllRestingSnapshotVelocityVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mLastStepRestingWorldStateCollisionFilterRevision = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mLastStepRestingWorldStateCollisionGroupVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mLastStepRestingWorldStateCollisionMaxNumContacts = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mLastStepRestingWorldStateCollisionMaxNumContactsPerPair = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mLastStepRestingWorldStateDeactivationStateVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mNumSimulationThreads = 1",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mSimulationModeCollisionFilterRevision = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mSimulationModeCollisionGroupVersion = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mSimulationModeCollisionMaxNumContacts = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mSimulationModeCollisionMaxNumContactsPerPair = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mSimulationModeConstraintSolverThreads = 0",
+              "virtual": false
+            },
+            {
+              "class": "dart::simulation::World",
+              "const": false,
+              "signature": "std :: size_t mSimulationModeStructuralVersion = 0",
               "virtual": false
             }
           ],

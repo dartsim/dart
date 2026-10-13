@@ -269,6 +269,13 @@ order. This is lexical field evidence, without proving C++ aggregate eligibility
 Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
+Constructed `std::tuple` and `std::pair` values retain owned value elements;
+pointer and reference elements do not construct their pointees. Braced returns
+use their enclosing function's declared return type for construction evidence.
+Constructed classes' default field initializer declarations and their named
+constant dependencies are retained in `default_member_initializer_declarations`.
+Quoted literals in indexed field and constant initializers are retained in
+`initializer_literals` as evidence, without parsing their contents as C++.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
@@ -289,7 +296,9 @@ including the class of an out-of-line member definition and the bases of
 enclosing classes. A type alias is visible only in its file and in the files
 that include it; aliases declared inside function bodies are not collected.
 Chained source helper calls use return declarations from the receiver's class
-and its bases; sequence returns retain their DART element types through
+and its bases. Source helpers with `auto` or `decltype(auto)` returns infer
+receiver candidates from their return expressions, excluding nested functions
+and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain

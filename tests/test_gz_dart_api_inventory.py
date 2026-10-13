@@ -1547,7 +1547,11 @@ struct Checked : public dart::dynamics::Solver {};
     )
     constructors = _entries(result, "constructors")
     solver = constructors["dart::dynamics::Solver"]
-    assert solver["examples"] == ["dartsim/src/sample.cc:1", "dartsim/src/sample.cc:8"]
+    assert solver["examples"] == [
+        "dartsim/src/sample.cc:1",
+        "dartsim/src/sample.cc:6",
+        "dartsim/src/sample.cc:8",
+    ]
     derived = constructors["dart::dynamics::DerivedSolver"]
     assert [(d["class"], d["signature"]) for d in derived["declarations"]] == [
         ("dart::dynamics::Solver", "explicit Solver ( int flags = 0 )")
@@ -6643,3 +6647,1656 @@ def test_smart_field_union_retains_custom_pointer_candidates(extractor, tmp_path
         _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
         != before
     )
+
+
+@pytest.mark.parametrize(
+    "source, count",
+    [
+        ("dart::A make() { return {1}; }", 1),
+        ("dart::A make(bool flag) { if (flag) return {1}; else return {2}; }", 2),
+        (
+            "dart::A make(int flag) { switch(flag) { case 1: return {1}; default: return {2}; } }",
+            2,
+        ),
+        ("dart::A make() { try { return {1}; } catch (...) { return {2}; } }", 2),
+        (
+            "namespace consumer { using Result=dart::A; Result make() { return {1}; } }",
+            1,
+        ),
+        ("namespace physics=dart; physics::A make() { return {1}; }", 1),
+        ("struct Maker { dart::A make() { return {1}; } };", 1),
+        ("struct Maker { dart::A make(); }; dart::A Maker::make() { return {1}; }", 1),
+        ("struct Maker { using Result=dart::A; Result make() { return {1}; } };", 1),
+        (
+            "namespace consumer { struct Maker { using Result=dart::A; Result make(); }; } consumer::Maker::Result consumer::Maker::make() { return {1}; }",
+            1,
+        ),
+        ("const dart::A& make() { return {1}; }", 1),
+        ("dart::A make() { auto lambda=[] { return 1; }; return {lambda()}; }", 1),
+        (
+            "dart::A make() { auto lambda=[]() noexcept -> int { return {1}; }; return {lambda()}; }",
+            1,
+        ),
+        (
+            "dart::A make() { struct Local { int get() { return {1}; } }; return {1}; }",
+            1,
+        ),
+        ("dart::A make();", 0),
+        ("dart::A* make() { return {}; }", 0),
+        ("using Pointer=dart::A*; Pointer make() { return {}; }", 0),
+        ("dart::A make() { return dart::A(1); }", 1),
+        ("void use() { dart::A* known; auto lambda=[]() -> int { return {1}; }; }", 0),
+    ],
+)
+def test_contextual_braced_returns_retain_only_their_construction(
+    extractor, tmp_path, source, count
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { A(int); }; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert _entries(before, "constructors").get("dart::A", {}).get("count", 0) == count
+    header.write_text(text.replace("A(int);", "A();"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (after != before) == bool(count)
+
+
+def test_contextual_braced_aggregate_return_preserves_ordered_fields(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { int first; double second; }; }"
+    source = "dart::A make() { return {1, 2.0}; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "constructors")["dart::A"]
+    assert [d["name"] for d in row["brace_member_declarations"]] == ["first", "second"]
+    header.write_text(
+        text.replace("int first; double second;", "double second; int first;")
+    )
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after != before
+
+
+def test_contextual_braced_return_reuses_owned_constructor_dependencies(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct Base { Base(int); }; struct A:Base { A(int); }; }"
+    source = "dart::A make() { return {1}; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "constructors")["dart::A"]
+    assert {d["class"] for d in row["declarations"]} == {"dart::A", "dart::Base"}
+    header.write_text(text.replace("Base(int);", "Base();"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert after != before
+
+
+OWNED_CTOR_BEFORE = "namespace dart { struct A { A() = default; }; }"
+OWNED_CTOR_AFTER = OWNED_CTOR_BEFORE.replace("A() = default", "A() = delete")
+OWNED_TUPLE_CASES = [
+    (
+        "tuple",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<dart::A> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "pair_first",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::pair<dart::A,int> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "pair_second",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::pair<int,dart::A> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_cv",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<const volatile dart::A> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_brace",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<int,dart::A> value{};",
+        True,
+        "dart::A",
+    ),
+    (
+        "pair_brace",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::pair<int,dart::A> value{};",
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_pair",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<std::pair<int,dart::A>> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "pair_tuple",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::pair<std::tuple<dart::A>,int> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_array",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<std::array<dart::A,1>> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "array_tuple",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::array<std::tuple<dart::A>,1> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_multiple",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<int,dart::A*,const dart::A> value;",
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_pointer",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<dart::A*> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "pair_pointer",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::pair<int,dart::A*> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_reference",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "void use(dart::A& existing) { std::tuple<dart::A&> value(existing); }",
+        False,
+        "dart::A",
+    ),
+    (
+        "pair_reference",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "void use(dart::A& existing) { std::pair<int,dart::A&> value(1,existing); }",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_rvalue_reference",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "void use(dart::A& existing) { std::tuple<dart::A&&> value(std::move(existing)); }",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_function_pointer",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<dart::A(*)()> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_function_parameter",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<void(*)(int,dart::A)> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "pair_function_pointer",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::pair<int,dart::A(*)()> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_vector",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<std::vector<dart::A>> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_shared",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<std::shared_ptr<dart::A>> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_optional",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<std::optional<dart::A>> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "nested_tuple_pointer",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "std::tuple<std::tuple<dart::A*>> value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_parameter",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "void use(std::tuple<dart::A> value);",
+        False,
+        "dart::A",
+    ),
+    (
+        "tuple_type_only",
+        OWNED_CTOR_BEFORE,
+        OWNED_CTOR_AFTER,
+        "using Type=std::tuple<dart::A>;",
+        False,
+        "dart::A",
+    ),
+]
+for kind in ["std::tuple<A>", "std::pair<int,A>", "std::tuple<std::array<A,1>>"]:
+    before = (
+        OWNED_CTOR_BEFORE.removesuffix("}")
+        + " struct Holder { "
+        + kind
+        + " value; }; }"
+    )
+    OWNED_TUPLE_CASES.append(
+        (
+            "field_" + kind,
+            before,
+            before.replace("A() = default", "A() = delete"),
+            "dart::Holder value;",
+            True,
+            "dart::Holder",
+        )
+    )
+
+
+OWNED_DEFAULT_CASES = [
+    (
+        "field_constant",
+        "namespace dart { inline constexpr int K=1; struct A { int x=K; }; }",
+        "namespace dart { inline constexpr int K=2; struct A { int x=K; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_brace_constant",
+        "namespace dart { inline constexpr int K=1; struct A { int x{K}; }; }",
+        "namespace dart { inline constexpr int K=2; struct A { int x{K}; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_literal",
+        "namespace dart { struct A { int x=1; }; }",
+        "namespace dart { struct A { int x=2; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_local_constant",
+        "namespace dart { struct A { static constexpr int K=1; int x=K; }; }",
+        "namespace dart { struct A { static constexpr int K=2; int x=K; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_transitive_constant",
+        "namespace dart { inline constexpr int BASE=0; inline constexpr int K=BASE+1; struct A { int x=K; }; }",
+        "namespace dart { inline constexpr int BASE=1; inline constexpr int K=BASE+1; struct A { int x=K; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_inherited_constant",
+        "namespace dart { struct Base { static constexpr int K=1; }; struct A : Base { int x=K; }; }",
+        "namespace dart { struct Base { static constexpr int K=2; }; struct A : Base { int x=K; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_owned_constant",
+        "namespace dart { inline constexpr int K=1; struct B { int x=K; }; struct A { B value; }; }",
+        "namespace dart { inline constexpr int K=2; struct B { int x=K; }; struct A { B value; }; }",
+        "constexpr dart::A value; static_assert(value.value.x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_array_constant",
+        "namespace dart { inline constexpr int K=1; struct A { int x[1]={K}; }; }",
+        "namespace dart { inline constexpr int K=2; struct A { int x[1]={K}; }; }",
+        "constexpr dart::A value; static_assert(value.x[0]==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_array_bound",
+        "namespace dart { inline constexpr int N=1; struct A { int x[N]{}; }; }",
+        "namespace dart { inline constexpr int N=2; struct A { int x[N]{}; }; }",
+        "constexpr dart::A value; static_assert(sizeof(value.x)==sizeof(int));",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_tuple_constant",
+        "namespace dart { inline constexpr int K=1; struct B { int x=K; }; struct A { std::tuple<B> value; }; }",
+        "namespace dart { inline constexpr int K=2; struct B { int x=K; }; struct A { std::tuple<B> value; }; }",
+        "constexpr dart::A value; static_assert(std::get<0>(value.value).x==1);",
+        True,
+        "dart::A",
+    ),
+    (
+        "field_unused",
+        "namespace dart { inline constexpr int K=1; struct A { int x=K; }; }",
+        "namespace dart { inline constexpr int K=2; struct A { int x=K; }; }",
+        "void use(dart::A* value);",
+        False,
+        "dart::A",
+    ),
+    (
+        "field_pointer",
+        "namespace dart { inline constexpr int K=1; struct A { int x=K; }; }",
+        "namespace dart { inline constexpr int K=2; struct A { int x=K; }; }",
+        "dart::A* value=nullptr;",
+        False,
+        "dart::A",
+    ),
+    (
+        "field_static",
+        "namespace dart { inline constexpr int K=1; struct A { inline static int x=K; }; }",
+        "namespace dart { inline constexpr int K=2; struct A { inline static int x=K; }; }",
+        "dart::A value;",
+        False,
+        "dart::A",
+    ),
+    (
+        "field_shadowed_namespace",
+        "namespace dart { inline constexpr int K=3; struct A { static constexpr int K=1; int x=K; }; }",
+        "namespace dart { inline constexpr int K=4; struct A { static constexpr int K=1; int x=K; }; }",
+        "constexpr dart::A value; static_assert(value.x==1);",
+        False,
+        "dart::A",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,before_text,after_text,source,changed,owner", OWNED_TUPLE_CASES
+)
+def test_tuple_pair_owned_construction_evidence(
+    extractor, tmp_path, name, before_text, after_text, source, changed, owner
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(before_text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    constructors = _entries(before, "constructors")
+    if changed:
+        assert owner in constructors
+        assert any(d["class"] == "dart::A" for d in constructors[owner]["declarations"])
+    else:
+        assert not constructors
+    header.write_text(after_text)
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
+
+
+@pytest.mark.parametrize(
+    "name,before_text,after_text,source,changed,owner", OWNED_DEFAULT_CASES
+)
+def test_constructed_default_field_initializer_evidence(
+    extractor, tmp_path, name, before_text, after_text, source, changed, owner
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(before_text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    if changed:
+        declarations = _entries(before, "constructors")[owner][
+            "default_member_initializer_declarations"
+        ]
+        assert any(
+            d["class"] in {"dart::A", "dart::B"} and "x" in d["signature"].split()
+            for d in declarations
+        )
+        if "K=" in before_text:
+            assert any("K" in d["signature"].split() for d in declarations)
+        if "BASE=" in before_text:
+            assert any("BASE" in d["signature"].split() for d in declarations)
+    header.write_text(after_text)
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
+
+
+@pytest.mark.parametrize(
+    "source, count",
+    [
+        ("std::tuple<dart::A> make() { return {}; }", 1),
+        ("std::pair<dart::A,int> make() { return {}; }", 1),
+        ("std::pair<int,dart::A> make() { return {}; }", 1),
+        ("std::tuple<std::pair<int,dart::A>> make() { return {}; }", 1),
+        ("std::array<dart::A,1> make() { return {}; }", 1),
+        ("std::array<std::tuple<dart::A>,1> make() { return {}; }", 1),
+        ("std::tuple<std::array<dart::A,1>> make() { return {}; }", 1),
+        ("std::tuple<dart::A*> make() { return {}; }", 0),
+        ("std::pair<dart::A*,int> make() { return {}; }", 0),
+        ("std::tuple<dart::A&> make(dart::A& a) { return {a}; }", 0),
+        ("std::array<dart::A*,1> make() { return {}; }", 0),
+        ("std::array<dart::A,0> make() { return {}; }", 0),
+        ("std::vector<dart::A> make() { return {}; }", 0),
+        ("std::optional<dart::A> make() { return {}; }", 0),
+        ("std::shared_ptr<dart::A> make() { return {}; }", 0),
+        ("std::tuple<dart::A*> make();", 0),
+    ],
+)
+def test_contextual_braced_container_returns_preserve_element_ownership(
+    extractor, tmp_path, source, count
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { A() = default; }; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert _entries(before, "constructors").get("dart::A", {}).get("count", 0) == count
+    header.write_text(text.replace("A() = default;", "A(int);"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (after != before) == bool(count)
+
+
+DEDUCED_HELPER_HEADER = "namespace dart { struct A { void hit() const; }; A makeA(); struct Factory { A make(); std::shared_ptr<A> smart(); }; }"
+DEDUCED_HELPER_CASES = [
+    (
+        "concrete_parameter",
+        True,
+        {
+            "sample.cc": "auto helper(dart::A& value) { return value; } void use(dart::A& value) { helper(value).hit(); }"
+        },
+    ),
+    (
+        "smart_parameter",
+        True,
+        {
+            "sample.cc": "decltype(auto) helper(const std::shared_ptr<dart::A>& value) { return (value); } void use(const std::shared_ptr<dart::A>& value) { helper(value).get()->hit(); }"
+        },
+    ),
+    (
+        "source_member",
+        True,
+        {
+            "sample.cc": "struct Maker { auto helper(dart::Factory& f) { return f.make(); } }; void use(Maker& m, dart::Factory& f) { m.helper(f).hit(); }"
+        },
+    ),
+    (
+        "out_of_line_member",
+        True,
+        {
+            "sample.cc": "struct Maker { auto helper(dart::Factory& f); }; auto Maker::helper(dart::Factory& f) { return f.make(); } void use(Maker& m, dart::Factory& f) { m.helper(f).hit(); }"
+        },
+    ),
+    (
+        "recursive_known_first_return",
+        True,
+        {
+            "sample.cc": "auto helper(int n) { if(n==0) return dart::makeA(); return helper(n-1); } void use() { helper(0).hit(); }"
+        },
+    ),
+    (
+        "conditional_same_type",
+        True,
+        {
+            "sample.cc": "auto helper(bool flag,dart::Factory& f) { return flag ? f.make() : f.make(); } void use(dart::Factory& f) { helper(true,f).hit(); }"
+        },
+    ),
+    (
+        "branch_returns",
+        True,
+        {
+            "sample.cc": "auto helper(bool flag,dart::Factory& f) { if(flag) { return f.make(); } else { return f.make(); } } void use(dart::Factory& f) { helper(true,f).hit(); }"
+        },
+    ),
+    (
+        "local_auto_chain",
+        True,
+        {
+            "sample.cc": "auto helper(dart::Factory& f) { auto first=f.make(); auto second=first; return second; } void use(dart::Factory& f) { helper(f).hit(); }"
+        },
+    ),
+    (
+        "included_header_parameter_alias",
+        True,
+        {
+            "helper.hh": "namespace provider { using Value=dart::A; inline auto helper(Value& value) { return value; } }",
+            "caller.cc": '#include "helper.hh"\nvoid use(dart::A& value) { provider::helper(value).hit(); }',
+        },
+    ),
+    (
+        "included_header_local_chain",
+        True,
+        {
+            "helper.hh": "namespace provider { inline auto helper(dart::Factory& f) { auto value=f.make(); return value; } }",
+            "caller.cc": '#include "helper.hh"\nvoid use(dart::Factory& f) { auto value=provider::helper(f); value.hit(); }',
+        },
+    ),
+    (
+        "lambda_return_excluded",
+        False,
+        {
+            "sample.cc": "struct Foreign { void hit() const; }; Foreign foreign(); auto helper() { auto ignored=[] { return dart::makeA(); }; return foreign(); } void use(dart::A* known) { helper().hit(); }"
+        },
+    ),
+    (
+        "local_class_return_excluded",
+        False,
+        {
+            "sample.cc": "struct Foreign { void hit() const; }; Foreign foreign(); auto helper() { struct Local { auto make() { return dart::makeA(); } }; return foreign(); } void use(dart::A* known) { helper().hit(); }"
+        },
+    ),
+    (
+        "lambda_ignored_actual_dart",
+        True,
+        {
+            "sample.cc": "auto helper() { auto ignored=[] { return 0; }; return dart::makeA(); } void use() { helper().hit(); }"
+        },
+    ),
+    (
+        "inner_namespace_helper_shadow",
+        False,
+        {
+            "helper.hh": "namespace provider { inline auto helper() { return dart::makeA(); } }",
+            "caller.cc": '#include "helper.hh"\nstruct Foreign { void hit() const; }; using provider::helper; namespace consumer { Foreign helper(); void use(dart::A* known) { helper().hit(); } }',
+        },
+    ),
+    (
+        "unrelated_header_not_visible",
+        False,
+        {
+            "unused.hh": "inline auto helper() { return dart::makeA(); }",
+            "caller.cc": "struct Foreign { void hit() const; }; Foreign helper(); void use(dart::A* known) { helper().hit(); }",
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize("name,positive,files", DEDUCED_HELPER_CASES)
+def test_concrete_deduced_helpers_preserve_scope_and_receiver_shapes(
+    extractor, tmp_path, name, positive, files
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(DEDUCED_HELPER_HEADER)
+    before = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "before", files
+    )
+    row = _entries(before, "members").get("hit")
+    if positive:
+        assert row and row["receiver_types"] == ["dart::A"]
+        assert row["unresolved_count"] == 0
+    else:
+        assert row is None
+    header.write_text(
+        DEDUCED_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    after = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "after", files
+    )
+    assert (before != after) == positive
+
+
+BRACED_ALIAS_CASES = [
+    (
+        "reference_alias_source",
+        "namespace dart {struct A{A(int);};}",
+        "using Ref=const dart::A&; Ref make(){return{1};}",
+        "A(int);",
+        "A();",
+        True,
+    ),
+    (
+        "reference_alias_api",
+        "namespace dart {struct A{A(int);};using Ref=const A&;}",
+        "dart::Ref make(){return{1};}",
+        "A(int);",
+        "A();",
+        True,
+    ),
+    (
+        "tuple_reference_alias_source",
+        "namespace dart {struct A{A();};}",
+        "using Ref=dart::A&; std::tuple<Ref> make(dart::A&a){return{a};}",
+        "A();",
+        "A()=delete;",
+        False,
+    ),
+    (
+        "tuple_reference_alias_api",
+        "namespace dart {struct A{A();};using Ref=A&;}",
+        "std::tuple<dart::Ref> make(dart::A&a){return{a};}",
+        "A();",
+        "A()=delete;",
+        False,
+    ),
+    (
+        "tuple_value_alias",
+        "namespace dart {struct A{A();};}",
+        "using Value=dart::A; std::tuple<Value> make(){return{};}",
+        "A();",
+        "A()=delete;",
+        True,
+    ),
+    (
+        "reference_alias_chain_return",
+        "namespace dart {struct A{A(int);};}",
+        "using Ref=const dart::A&; using Other=Ref; Other make(){return{1};}",
+        "A(int);",
+        "A();",
+        True,
+    ),
+    (
+        "reference_alias_chain_element",
+        "namespace dart {struct A{A();};}",
+        "using Ref=dart::A&; using Other=Ref; std::pair<int,Other> make(dart::A&a){return{1,a};}",
+        "A();",
+        "A()=delete;",
+        False,
+    ),
+    (
+        "container_alias_element",
+        "namespace dart {struct A{A();};}",
+        "using Vector=std::vector<dart::A>; std::tuple<Vector> make(){return{};}",
+        "A();",
+        "A()=delete;",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize("name,text,source,old,new,changed", BRACED_ALIAS_CASES)
+def test_contextual_braced_alias_preserves_element_ownership(
+    extractor, tmp_path, name, text, source, old, new, changed
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    constructors = _entries(before, "constructors")
+    if changed:
+        assert any(
+            d["class"] == "dart::A"
+            for row in constructors.values()
+            for d in row["declarations"]
+        )
+    else:
+        assert not constructors
+    header.write_text(text.replace(old, new))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
+
+
+AUTO_HELPER_HEADER = """namespace dart {
+struct A { void hit() const; }; struct B { void other() const; };
+A makeA(); A& reference(); A* pointer(); std::shared_ptr<A> shared(); std::weak_ptr<A> weak();
+std::optional<A> optional(); std::vector<A> sequence(); std::array<A,2> array();
+std::optional<std::shared_ptr<A>> nested();
+}"""
+AUTO_HELPER_CASES = [
+    ("auto_free", "auto helper() { return dart::makeA(); }", "helper().hit()"),
+    (
+        "decltype_auto_free",
+        "decltype(auto) helper() { return dart::makeA(); }",
+        "helper().hit()",
+    ),
+    ("auto_pointer", "auto helper() { return dart::pointer(); }", "helper()->hit()"),
+    (
+        "decltype_reference",
+        "decltype(auto) helper() { return dart::reference(); }",
+        "helper().hit()",
+    ),
+    (
+        "auto_method",
+        "struct Source { auto make() { return dart::makeA(); } };",
+        "Source value; value.make().hit()",
+    ),
+    (
+        "decltype_method",
+        "struct Source { decltype(auto) make() { return dart::reference(); } };",
+        "Source value; value.make().hit()",
+    ),
+    (
+        "out_of_line",
+        "struct Source { auto make(); }; auto Source::make() { return dart::makeA(); }",
+        "Source value; value.make().hit()",
+    ),
+    (
+        "source_namespace",
+        "namespace one { auto make() { return dart::makeA(); } }",
+        "one::make().hit()",
+    ),
+    (
+        "source_using",
+        "namespace one { auto make() { return dart::makeA(); } } using one::make;",
+        "make().hit()",
+    ),
+    (
+        "local_auto",
+        "auto helper() { auto value=dart::makeA(); return value; }",
+        "helper().hit()",
+    ),
+    (
+        "parameter",
+        "auto helper(dart::A& value) { return value; }",
+        "dart::A value; helper(value).hit()",
+    ),
+    ("shared", "auto helper() { return dart::shared(); }", "helper().get()->hit()"),
+    ("weak", "auto helper() { return dart::weak(); }", "helper().lock()->hit()"),
+    (
+        "optional",
+        "auto helper() { return dart::optional(); }",
+        "helper().value().hit()",
+    ),
+    (
+        "sequence",
+        "auto helper() { return dart::sequence(); }",
+        "helper().front().hit()",
+    ),
+    ("array", "auto helper() { return dart::array(); }", "helper()[0].hit()"),
+    (
+        "nested_wrapper",
+        "decltype(auto) helper() { return dart::nested(); }",
+        "helper().value().get()->hit()",
+    ),
+    (
+        "forwarding",
+        "auto helper() { return std::move(dart::shared()); }",
+        "helper().get()->hit()",
+    ),
+    (
+        "helper_chain",
+        "auto inner() { return dart::makeA(); } auto helper() { return inner(); }",
+        "helper().hit()",
+    ),
+    (
+        "nested_method",
+        "struct Source { auto inner() { return dart::makeA(); } auto helper() { return inner(); } };",
+        "Source value; value.helper().hit()",
+    ),
+    (
+        "ordinary_block",
+        "auto helper(bool choose) { if(choose) { return dart::makeA(); } else { return dart::makeA(); } }",
+        "helper(true).hit()",
+    ),
+    (
+        "switch_block",
+        "auto helper(int choose) { switch(choose) { case 0:return dart::makeA(); default:return dart::makeA(); } }",
+        "helper(0).hit()",
+    ),
+    (
+        "try_block",
+        "auto helper() { try { return dart::makeA(); } catch(...) { return dart::makeA(); } }",
+        "helper().hit()",
+    ),
+    (
+        "lambda_exclusion",
+        "auto helper() { auto nested=[]() noexcept -> dart::B { return {}; }; return dart::makeA(); }",
+        "helper().hit()",
+    ),
+    (
+        "local_class_exclusion",
+        "auto helper() { struct Nested { dart::B make() { return {}; } }; return dart::makeA(); }",
+        "helper().hit()",
+    ),
+]
+
+
+@pytest.mark.parametrize("name,prefix,expression", AUTO_HELPER_CASES)
+def test_source_auto_helper_return_inference(
+    extractor, tmp_path, name, prefix, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(AUTO_HELPER_HEADER)
+    source = prefix + " void use() { " + expression + "; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    header.write_text(
+        AUTO_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(after, "members")["hit"]["declarations"] != hit["declarations"]
+
+
+@pytest.mark.parametrize(
+    "prefix,expression",
+    [
+        (
+            "struct Foreign { void hit() const; }; Foreign makeForeign(); auto helper() { return makeForeign(); }",
+            "helper().hit()",
+        ),
+        (
+            "struct Foreign { void hit() const; }; auto helper(Foreign& value) { return value; }",
+            "Foreign value; helper(value).hit()",
+        ),
+        (
+            "struct Foreign { void hit() const; }; Foreign makeForeign(); auto helper() { auto nested=[] { return dart::makeA(); }; return makeForeign(); }",
+            "helper().hit()",
+        ),
+        (
+            "struct Foreign { void hit() const; }; Foreign makeForeign(); auto helper() { struct Nested { auto make() { return dart::makeA(); } }; return makeForeign(); }",
+            "helper().hit()",
+        ),
+    ],
+)
+def test_known_foreign_auto_helper_returns_remain_non_dart(
+    extractor, tmp_path, prefix, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(AUTO_HELPER_HEADER)
+    source = prefix + " void use(dart::A* known) { " + expression + "; }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        AUTO_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "auto helper();",
+        "auto helper() -> dart::A;",
+        "decltype(dart::makeA()) helper();",
+        "auto helper() { return helper(); }",
+        "auto first(); auto helper() { return first(); } auto first() { return helper(); }",
+    ],
+)
+def test_unresolved_auto_helpers_remain_bounded_and_conservative(
+    extractor, tmp_path, prefix
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(AUTO_HELPER_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        prefix + " void use(dart::A* known) { helper().hit(); }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == [] and hit["unresolved_count"] == 1
+
+
+@pytest.mark.parametrize(
+    "prefix,expression",
+    [
+        (
+            "auto helper() noexcept(noexcept(dart::pointer()->hit())) { return dart::makeA(); }",
+            "helper().hit()",
+        ),
+        (
+            "auto helper() { auto nested=[]() noexcept(noexcept(dart::makeA())) -> dart::B { return {}; }; return dart::makeA(); }",
+            "helper().hit()",
+        ),
+        (
+            "auto helper() { auto nested=[value=dart::makeA()]() mutable noexcept -> dart::B { return {}; }; return dart::makeA(); }",
+            "helper().hit()",
+        ),
+    ],
+)
+def test_auto_helper_suffix_and_capture_bodies_keep_own_returns(
+    extractor, tmp_path, prefix, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(AUTO_HELPER_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        prefix + " void use() { " + expression + "; }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+def test_auto_helper_member_return_uses_own_scope_before_namespace(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(AUTO_HELPER_HEADER)
+    source = """struct Foreign { void hit() const; }; dart::A inner();
+ struct Source { Foreign inner(); auto helper() { return inner(); } };
+ void use(Source& source,dart::A* known) { source.helper().hit(); }"""
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        AUTO_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+def test_primitive_auto_helper_return_is_not_a_dart_receiver(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(AUTO_HELPER_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "auto helper(int value) { return value; } void use(dart::A* known) { helper(1).hit(); }",
+    )
+    assert "hit" not in _entries(result, "members")
+
+
+def test_auto_helper_return_uses_included_header_context(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(AUTO_HELPER_HEADER)
+    sources = {
+        "helper.hh": "using dart::makeA; auto helper() { return makeA(); }",
+        "client.cc": '#include "helper.hh"\nvoid use() { helper().hit(); }',
+    }
+    result = _scan_files(extractor, extractor.index_api(headers), tmp_path, sources)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+def test_auto_helper_alternative_definitions_keep_return_union(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { void hit(); }; struct B { void hit(); }; A makeA(); B makeB(); }"
+    )
+    source = """#if PICK_FIRST
+ auto helper() { return dart::makeA(); }
+ #else
+ auto helper() { return dart::makeB(); }
+ #endif
+ void use() { helper().hit(); }"""
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert (
+        hit["receiver_types"] == ["dart::A", "dart::B"] and hit["unresolved_count"] == 0
+    )
+
+
+def test_auto_helper_conditional_return_keeps_operand_candidates(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { void hit(); }; struct B:A { void hit(); }; A makeA(); B makeB(); }"
+    )
+    source = "auto helper(bool pick) { return pick ? dart::makeA() : dart::makeB(); } void use() { helper(true).hit(); }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert (
+        hit["receiver_types"] == ["dart::A", "dart::B"] and hit["unresolved_count"] == 0
+    )
+
+
+CALLBACK_SHADOWS = [
+    ("local_callback", "void use() { Foreign (*helper)()=&foreign; helper().hit(); }"),
+    ("parameter_callback", "void use(Foreign (*helper)()) { helper().hit(); }"),
+    (
+        "namespace_callback",
+        "namespace consumer { Foreign (*helper)()=&foreign; void use() { helper().hit(); } }",
+    ),
+    (
+        "member_callback",
+        "struct Source { Foreign (*helper)()=&foreign; void use() { helper().hit(); } };",
+    ),
+]
+
+
+@pytest.mark.parametrize("name,body", CALLBACK_SHADOWS)
+def test_callbacks_shadow_deduced_source_helper_functions(
+    extractor, tmp_path, name, body
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(AUTO_HELPER_HEADER)
+    source = (
+        "struct Foreign { void hit() const; }; Foreign foreign(); auto helper() { return dart::makeA(); } "
+        + body
+    )
+    files = {"sample.cc": source}
+    before = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "before", files
+    )
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        AUTO_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert (
+        _scan_files(extractor, extractor.index_api(headers), tmp_path / "after", files)
+        == before
+    )
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "struct Source { Foreign (*helper)()=&foreign; void use() { helper().hit(); } };",
+        "namespace consumer { Foreign (*helper)()=&foreign; void use() { helper().hit(); } }",
+        "void local() { Foreign (*helper)()=&foreign; helper().hit(); }",
+    ],
+)
+def test_callback_shadows_stay_within_their_own_scope(extractor, tmp_path, body):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(AUTO_HELPER_HEADER)
+    source = (
+        "struct Foreign { void hit() const; }; Foreign foreign(); auto helper() { return dart::makeA(); } "
+        + body
+        + " void outside() { helper().hit(); }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert (
+        hit["count"] == 1
+        and hit["receiver_types"] == ["dart::A"]
+        and hit["unresolved_count"] == 0
+    )
+    header.write_text(
+        AUTO_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+@pytest.mark.parametrize(
+    "declaration",
+    [
+        "Foreign (*helper)()=&foreign;",
+        "Foreign (* const helper)()=&foreign;",
+        "Foreign (&helper)()=foreign;",
+    ],
+)
+def test_known_foreign_callback_shadow_stays_non_dart_with_known_receivers(
+    extractor, tmp_path, declaration
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(AUTO_HELPER_HEADER)
+    source = (
+        "struct Foreign { void hit() const; }; Foreign foreign(); auto helper() { return dart::makeA(); } void use(dart::A* known) { "
+        + declaration
+        + " helper().hit(); }"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(result, "members")
+
+
+def test_dart_callback_shadow_retains_conservative_candidates(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(AUTO_HELPER_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "auto helper() { return dart::makeA(); } void use(dart::A (*helper)()) { helper().hit(); }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == [] and hit["unresolved_count"] == 1
+
+
+DEDUCED_CONDITIONAL_HEADER = "namespace dart { struct Base { void hit() const; }; struct Derived:Base {}; Base* base(); Derived* derived(); std::shared_ptr<Base> sharedBase(); std::shared_ptr<Derived> sharedDerived(); }"
+DEDUCED_CONDITIONAL_CASES = [
+    (
+        "raw_base_derived",
+        "auto helper(bool flag) { return flag ? dart::base() : dart::derived(); } void use() { helper(true)->hit(); }",
+    ),
+    (
+        "smart_base_derived",
+        "auto helper(bool flag) { return flag ? dart::sharedBase() : dart::sharedDerived(); } void use() { helper(true)->hit(); }",
+    ),
+]
+
+
+@pytest.mark.parametrize("name,source", DEDUCED_CONDITIONAL_CASES)
+def test_deduced_conditional_helpers_keep_both_real_dart_owners(
+    extractor, tmp_path, name, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(DEDUCED_CONDITIONAL_HEADER)
+    before = _scan_files(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path / "before",
+        {"sample.cc": source},
+    )
+    row = _entries(before, "members")["hit"]
+    assert row["receiver_types"] == ["dart::Base", "dart::Derived"]
+    assert row["unresolved_count"] == 0
+    header.write_text(
+        DEDUCED_CONDITIONAL_HEADER.replace(
+            "void hit() const;", "void hit() const = delete;"
+        )
+    )
+    assert (
+        _scan_files(
+            extractor,
+            extractor.index_api(headers),
+            tmp_path / "after",
+            {"sample.cc": source},
+        )
+        != before
+    )
+
+
+def test_callback_parameter_shadow_stays_within_its_function(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(AUTO_HELPER_HEADER)
+    source = "struct Foreign { void hit() const; }; Foreign foreign(); auto helper() { return dart::makeA(); } void use(Foreign (*helper)()) { helper().hit(); } void outside() { helper().hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    row = _entries(before, "members")["hit"]
+    assert row["count"] == 1
+    assert row["receiver_types"] == ["dart::A"]
+    assert row["unresolved_count"] == 0
+    header.write_text(
+        AUTO_HELPER_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+        != before
+    )
+
+
+QUOTED_INITIALIZER_CASES = []
+
+
+def quoted_initializer_case(name, header, old, new, source, changed=True):
+    QUOTED_INITIALIZER_CASES.append(
+        (name, header, header.replace(old, new), source, changed, old)
+    )
+
+
+quoted_initializer_case(
+    "char_equals",
+    "namespace dart { struct A { char x='a'; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "char_brace",
+    "namespace dart { struct A { char x{'a'}; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "string_array",
+    'namespace dart { struct A { char x[3]="aa"; }; }',
+    '"aa"',
+    '"bb"',
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "string_brace",
+    'namespace dart { struct A { char x[3]{"aa"}; }; }',
+    '"aa"',
+    '"bb"',
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "char_array_brace",
+    "namespace dart { struct A { char x[2]={'a','x'}; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "escaped_char",
+    r"namespace dart { struct A { char x='\x61'; }; }",
+    r"'\x61'",
+    r"'\x62'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "wide_char",
+    "namespace dart { struct A { wchar_t x=L'a'; }; }",
+    "L'a'",
+    "L'b'",
+    "constexpr dart::A value; static_assert(value.x==L'a');",
+)
+quoted_initializer_case(
+    "unicode_char",
+    "namespace dart { struct A { char32_t x=U'a'; }; }",
+    "U'a'",
+    "U'b'",
+    "constexpr dart::A value; static_assert(value.x==U'a');",
+)
+quoted_initializer_case(
+    "utf8_string",
+    'namespace dart { struct A { const char* x=u8"aa"; }; }',
+    'u8"aa"',
+    'u8"bb"',
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "escaped_string",
+    r'namespace dart { struct A { const char* x="\x61,\"{x}"; }; }',
+    r'"\x61,\"{x}"',
+    r'"\x62,\"{x}"',
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "raw_string",
+    'namespace dart { struct A { const char* x=R"tag(a, {dart::A{}.hit();})tag"; }; }',
+    'R"tag(a, {dart::A{}.hit();})tag"',
+    'R"tag(b, {dart::A{}.hit();})tag"',
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "adjacent_string",
+    'namespace dart { struct A { const char* x="a" "a"; }; }',
+    '"a" "a"',
+    '"b" "a"',
+    "constexpr dart::A value; static_assert(value.x[0]=='a');",
+)
+quoted_initializer_case(
+    "grouped_first",
+    "namespace dart { struct A { char x='a', y='q'; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "grouped_second",
+    "namespace dart { struct A { char x='q', y='a'; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.y=='a');",
+)
+quoted_initializer_case(
+    "namespace_char",
+    "namespace dart { inline constexpr char K='a'; struct A { char x=K; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "namespace_string",
+    'namespace dart { inline constexpr char K[3]="aa"; struct A { char x=K[0]; }; }',
+    '"aa"',
+    '"bb"',
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "namespace_brace",
+    "namespace dart { inline constexpr char K{'a'}; struct A { char x=K; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "namespace_grouped",
+    "namespace dart { inline constexpr char K='q', L='a'; struct A { char x=L; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "class_char",
+    "namespace dart { struct A { static constexpr char K='a'; char x=K; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "class_string",
+    'namespace dart { struct A { inline static constexpr char K[3]="aa"; char x=K[0]; }; }',
+    '"aa"',
+    '"bb"',
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "transitive_char",
+    "namespace dart { inline constexpr char BASE='a'; inline constexpr char K=BASE; struct A { char x=K; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "comment_control",
+    "namespace dart { struct A { char x='a' /* 'q' \"fake()\" */; }; }",
+    "'q'",
+    "'z'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+    False,
+)
+quoted_initializer_case(
+    "unused_type",
+    "namespace dart { struct A { char x='a'; }; }",
+    "'a'",
+    "'b'",
+    "void use(dart::A* value);",
+    False,
+)
+quoted_initializer_case(
+    "unused_macro",
+    '#define DART_TEXT "dart::A{}, fake(), {x}"\nnamespace dart { struct A { int x=1; }; }',
+    '"dart::A{}, fake(), {x}"',
+    '"dart::A{}.hit(), {y}"',
+    "constexpr dart::A value; static_assert(value.x==1);",
+    False,
+)
+quoted_initializer_case(
+    "source_string",
+    "namespace dart { struct A { char x='a'; void hit(); }; }",
+    "'a'",
+    "'b'",
+    'const char* value="dart::A{}.hit(), {x}";',
+    False,
+)
+quoted_initializer_case(
+    "parenthesized_char",
+    "namespace dart { inline constexpr char K('a'); struct A { char x=K; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "parenthesized_nested_char",
+    "namespace dart { inline constexpr char K(('a')); struct A { char x=K; }; }",
+    "'a'",
+    "'b'",
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "parenthesized_string_pointer",
+    'namespace dart { inline constexpr const char* const K("aa"); struct A { char x=K[0]; }; }',
+    '"aa"',
+    '"bb"',
+    "constexpr dart::A value; static_assert(value.x=='a');",
+)
+quoted_initializer_case(
+    "function_zero_argument",
+    "namespace dart { constexpr char f(); /* 'a' */ }",
+    "'a'",
+    "'b'",
+    "void use() { dart::f(); }",
+    False,
+)
+quoted_initializer_case(
+    "function_typed_parameter",
+    "namespace dart { constexpr char f(char value); /* 'a' */ }",
+    "'a'",
+    "'b'",
+    "void use() { dart::f('q'); }",
+    False,
+)
+quoted_initializer_case(
+    "function_defaulted_parameter",
+    "namespace dart { constexpr char f(char value='a'); }",
+    "'a'",
+    "'b'",
+    "void use() { dart::f('q'); }",
+    False,
+)
+quoted_initializer_case(
+    "function_alias_defaulted_parameter",
+    "namespace dart { using Alias=char; constexpr char f(Alias value='a'); }",
+    "'a'",
+    "'b'",
+    "void use() { dart::f('q'); }",
+    False,
+)
+quoted_initializer_case(
+    "function_defined",
+    "namespace dart { constexpr char f() { return 'a'; } }",
+    "'a'",
+    "'b'",
+    "void use() { dart::f(); }",
+    False,
+)
+
+
+@pytest.mark.parametrize(
+    "name,before_text,after_text,source,changed,literal", QUOTED_INITIALIZER_CASES
+)
+def test_quoted_default_field_initializer_evidence(
+    extractor, tmp_path, name, before_text, after_text, source, changed, literal
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(before_text)
+    api = extractor.index_api(headers)
+    if name.startswith("function_"):
+        assert "dart::f" in api.free_functions
+        assert "dart::f" not in api.variables
+    before = _scan(extractor, api, tmp_path / "before", source)
+    assert not before["members"]
+    if changed:
+        declarations = _entries(before, "constructors")["dart::A"][
+            "default_member_initializer_declarations"
+        ]
+        values = [
+            value
+            for declaration in declarations
+            for value in declaration.get("initializer_literals", [])
+        ]
+        if name == "adjacent_string":
+            assert values == ['"a"', '"a"']
+        else:
+            assert literal in values
+        if name.startswith("grouped_"):
+            by_signature = {
+                d["signature"]: d.get("initializer_literals", []) for d in declarations
+            }
+            assert by_signature["char x ="] == (
+                ["'a'"] if name == "grouped_first" else ["'q'"]
+            )
+            assert by_signature["char y ="] == (
+                ["'q'"] if name == "grouped_first" else ["'a'"]
+            )
+    header.write_text(after_text)
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
+
+
+ENUM_LITERAL_CASES = [
+    (
+        "enum_scoped",
+        "namespace dart{enum class Flag:char{K='a'};struct A{Flag x=Flag::K;};}",
+        "namespace dart{enum class Flag:char{K='b'};struct A{Flag x=Flag::K;};}",
+        "constexpr dart::A value;static_assert(value.x==static_cast<dart::Flag>('a'));",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_unscoped",
+        "namespace dart{enum Flag{K='a'};struct A{char x=K;};}",
+        "namespace dart{enum Flag{K='b'};struct A{char x=K;};}",
+        "constexpr dart::A value;static_assert(value.x=='a');",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_anonymous",
+        "namespace dart{enum:unsigned{K='a'};struct A{char x=K;};}",
+        "namespace dart{enum:unsigned{K='b'};struct A{char x=K;};}",
+        "constexpr dart::A value;static_assert(value.x=='a');",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_private",
+        "namespace dart{struct A{private:enum:unsigned{K='a'};public:char x=K;};}",
+        "namespace dart{struct A{private:enum:unsigned{K='b'};public:char x=K;};}",
+        "constexpr dart::A value;static_assert(value.x=='a');",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_implicit_dependency",
+        "namespace dart{enum class Flag:char{K='a',Next};struct A{Flag x=Flag::Next;};}",
+        "namespace dart{enum class Flag:char{K='b',Next};struct A{Flag x=Flag::Next;};}",
+        "constexpr dart::A value;static_assert(value.x==static_cast<dart::Flag>('b'));",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_nested_class",
+        "namespace dart { struct A { enum class Flag:char { K='a' }; Flag x=Flag::K; }; }",
+        "namespace dart { struct A { enum class Flag:char { K='b' }; Flag x=Flag::K; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::A::Flag>('a'));",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_explicit_dependency",
+        "namespace dart { enum class Flag:char { K='a', Next=K }; struct A { Flag x=Flag::Next; }; }",
+        "namespace dart { enum class Flag:char { K='b', Next=K }; struct A { Flag x=Flag::Next; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::Flag>('a'));",
+        True,
+        "'a'",
+    ),
+    (
+        "enum_comma_character",
+        "namespace dart { enum class Flag:char { K=',',Other='q' }; struct A { Flag x=Flag::K; }; }",
+        "namespace dart { enum class Flag:char { K='.',Other='q' }; struct A { Flag x=Flag::K; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::Flag>(','));",
+        True,
+        "','",
+    ),
+    (
+        "enum_brace_character",
+        "namespace dart { enum class Flag:char { K='{' }; struct A { Flag x=Flag::K; }; }",
+        "namespace dart { enum class Flag:char { K='}' }; struct A { Flag x=Flag::K; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::Flag>('{'));",
+        True,
+        "'{'",
+    ),
+    (
+        "enum_escaped_character",
+        "namespace dart { enum class Flag:char { K='\\x61' }; struct A { Flag x=Flag::K; }; }",
+        "namespace dart { enum class Flag:char { K='\\x62' }; struct A { Flag x=Flag::K; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::Flag>('a'));",
+        True,
+        "'\\x61'",
+    ),
+    (
+        "enum_wide_character",
+        "namespace dart { enum class Flag:wchar_t { K=L'a' }; struct A { Flag x=Flag::K; }; }",
+        "namespace dart { enum class Flag:wchar_t { K=L'b' }; struct A { Flag x=Flag::K; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::Flag>(L'a'));",
+        True,
+        "L'a'",
+    ),
+    (
+        "enum_unused_type",
+        "namespace dart { enum class Flag:char { K='a' }; struct A { Flag x=Flag::K; }; }",
+        "namespace dart { enum class Flag:char { K='b' }; struct A { Flag x=Flag::K; }; }",
+        "void use(dart::A* value);",
+        False,
+        "'a'",
+    ),
+    (
+        "enum_comment_control",
+        "namespace dart { enum class Flag:char { K='a' /* 'q' */ }; struct A { Flag x=Flag::K; }; }",
+        "namespace dart { enum class Flag:char { K='a' /* 'z' */ }; struct A { Flag x=Flag::K; }; }",
+        "constexpr dart::A value; static_assert(value.x==static_cast<dart::Flag>('a'));",
+        False,
+        "'q'",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,before_text,after_text,source,changed,literal", ENUM_LITERAL_CASES
+)
+def test_enum_quoted_default_initializer_closure(
+    extractor, tmp_path, name, before_text, after_text, source, changed, literal
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(before_text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    assert not before["members"]
+    if changed:
+        declarations = _entries(before, "constructors")["dart::A"][
+            "default_member_initializer_declarations"
+        ]
+        assert any(literal in d.get("initializer_literals", []) for d in declarations)
+        if "dependency" in name:
+            assert any("Next" in d["signature"].split() for d in declarations)
+            assert any("K" in d["signature"].split() for d in declarations)
+    header.write_text(after_text)
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
