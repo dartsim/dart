@@ -56,6 +56,7 @@
 
 #include "GuiBackend.hpp"
 #include "Scenes.hpp"
+#include "demo_models/OperationalSpaceController.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
@@ -69,21 +70,13 @@ namespace dart_demos {
 
 namespace {
 
-using dart::dynamics::BodyNode;
-using dart::dynamics::SkeletonPtr;
-
 //==============================================================================
 /// Per-instance state captured by this scene's preStep/onActivate lambdas and
 /// the held-key constraint handler.
 struct OscState
 {
-  SkeletonPtr robot;
-  BodyNode* endEffector = nullptr;
+  std::shared_ptr<OperationalSpaceController> controller;
   dart::dynamics::SimpleFramePtr target;
-
-  Eigen::Vector3d offset = Eigen::Vector3d(0.05, 0, 0);
-  Eigen::Matrix3d kp = Eigen::Matrix3d::Zero();
-  Eigen::MatrixXd kd;
 
   demo_gui::DragAndDrop* dnd = nullptr;
   bool constrained[3] = {false, false, false};
@@ -224,23 +217,16 @@ DemoScene makeOperationalSpaceControlScene()
     ground->getJoint(0)->setTransformFromParentBodyNode(groundTf);
 
     auto state = std::make_shared<OscState>();
-    state->robot = robot;
-    state->endEffector = robot->getBodyNode(robot->getNumBodyNodes() - 1);
-
-    const std::size_t dofs = state->endEffector->getNumDependentGenCoords();
-    for (std::size_t i = 0; i < 3; ++i)
-      state->kp(i, i) = 50.0;
-    state->kd = Eigen::MatrixXd::Zero(dofs, dofs);
-    for (std::size_t i = 0; i < dofs; ++i)
-      state->kd(i, i) = 5.0;
+    auto* endEffector = robot->getBodyNode(robot->getNumBodyNodes() - 1);
+    Eigen::Vector3d offset(0.05, 0, 0);
 
     robot->eachJoint([](dart::dynamics::Joint* joint) {
       joint->setLimitEnforcement(false);
       joint->setDampingCoefficient(0, 0.5);
     });
 
-    Eigen::Isometry3d tf = state->endEffector->getWorldTransform();
-    tf.pretranslate(state->offset);
+    Eigen::Isometry3d tf = endEffector->getWorldTransform();
+    tf.pretranslate(offset);
     state->target = std::make_shared<dart::dynamics::SimpleFrame>(
         dart::dynamics::Frame::World(), "target", tf);
     state->target->setShape(
@@ -248,9 +234,10 @@ DemoScene makeOperationalSpaceControlScene()
     state->target->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0, 0));
     world->addSimpleFrame(state->target);
 
-    state->offset
-        = state->endEffector->getWorldTransform().rotation().transpose()
-          * state->offset;
+    offset = endEffector->getWorldTransform().rotation().transpose() * offset;
+    state->controller
+        = std::make_shared<OperationalSpaceController>(robot, state->target);
+    state->controller->setOffset(offset);
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -264,32 +251,7 @@ DemoScene makeOperationalSpaceControlScene()
         GuiVector3(-0.24, -0.25, 0.94)};
 
     setup.preStep = [state] {
-      auto* robot = state->robot.get();
-      auto* ee = state->endEffector;
-
-      Eigen::MatrixXd M = robot->getMassMatrix();
-
-      dart::math::LinearJacobian J = ee->getLinearJacobian(state->offset);
-      Eigen::MatrixXd pinvJ
-          = J.transpose()
-            * (J * J.transpose() + 0.0025 * Eigen::Matrix3d::Identity())
-                  .inverse();
-
-      dart::math::LinearJacobian dJ = ee->getLinearJacobianDeriv(state->offset);
-      Eigen::MatrixXd pinvDJ
-          = dJ.transpose()
-            * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix3d::Identity())
-                  .inverse();
-
-      Eigen::Vector3d e = state->target->getWorldTransform().translation()
-                          - ee->getWorldTransform() * state->offset;
-      Eigen::Vector3d de = -ee->getLinearVelocity(state->offset);
-      Eigen::VectorXd Cg = robot->getCoriolisAndGravityForces();
-
-      Eigen::VectorXd forces
-          = M * (pinvJ * state->kp * de + pinvDJ * state->kp * e) + Cg
-            + state->kd * pinvJ * state->kp * e;
-      robot->setForces(forces);
+      state->controller->update();
     };
 
     setup.onActivate = [state](DemoHostContext& ctx) {

@@ -72,6 +72,7 @@
 #if HAVE_OCTOMAP
 
   #include "GuiBackend.hpp"
+  #include "demo_models/PointCloudSensor.hpp"
 
   #include <dart/utils/urdf/urdf.hpp>
   #include <dart/utils/utils.hpp>
@@ -93,21 +94,13 @@ namespace {
 using dart::dynamics::SkeletonPtr;
 
 //==============================================================================
-enum class PointSamplingMode
-{
-  SampleOnRobot,
-  SampleInBox
-};
-
-//==============================================================================
 /// Per-instance state captured by this scene's preStep/renderPanel lambdas.
 /// The sensor-orbit time and the grid editor's fields are scene-owned
 /// members (see the file comment) rather than the original's function-local
 /// statistics.
 struct PointCloudState
 {
-  SkeletonPtr robot;
-  dart::dynamics::SimpleFramePtr sensorFrame;
+  std::shared_ptr<PointCloudSensor> sensor;
 
   std::shared_ptr<dart::dynamics::PointCloudShape> pointCloudShape;
   std::shared_ptr<dart::dynamics::VoxelGridShape> voxelGridShape;
@@ -115,10 +108,6 @@ struct PointCloudState
   dart::dynamics::VisualAspect* voxelGridVisualAspect = nullptr;
 
   GuiPtr<demo_gui::GridVisual> grid;
-
-  PointSamplingMode samplingMode = PointSamplingMode::SampleOnRobot;
-  bool update = true;
-  double sensorOrbitTime = 0.0;
 
   // Grid editor fields, promoted from function-local statistics; see the file
   // comment (same treatment as HeightmapScene's gridXxx members).
@@ -152,145 +141,6 @@ void ensureGridFieldsInitialized(PointCloudState& state)
   state.gridMajorColor = state.grid->getMajorLineColor().cast<float>();
   state.gridMinorColor = state.grid->getMinorLineColor().cast<float>();
   state.gridFieldsInitialized = true;
-}
-
-//==============================================================================
-/// Rejection-samples `numPoints` vertices from the robot's visual meshes, as
-/// the original did, but bounded by a generous attempt cap (see the file
-/// comment) instead of an unconditional `while (true)`: if the robot ever has
-/// no mesh-shaped visual shape nodes, this falls back to uniform in-box
-/// sampling for the remainder rather than hanging the frame loop.
-octomap::Pointcloud generatePointCloudOnRobot(
-    const SkeletonPtr& robot, std::size_t numPoints)
-{
-  octomap::Pointcloud pointCloud;
-  pointCloud.reserve(numPoints);
-
-  const auto numBodies = robot->getNumBodyNodes();
-  if (numBodies == 0)
-    return pointCloud;
-
-  constexpr std::size_t kMaxAttempts = 200000;
-  std::size_t attempts = 0;
-
-  while (pointCloud.size() < numPoints && attempts < kMaxAttempts) {
-    ++attempts;
-
-    const auto bodyIndex
-        = dart::math::Random::uniform<std::size_t>(0, numBodies - 1);
-    auto* body = robot->getBodyNode(bodyIndex);
-    const auto numShapeNodes
-        = body->getNumShapeNodesWith<dart::dynamics::VisualAspect>();
-    if (numShapeNodes == 0)
-      continue;
-
-    const auto shapeIndex
-        = dart::math::Random::uniform<std::size_t>(0, numShapeNodes - 1);
-    auto* shapeNode
-        = body->getShapeNodeWith<dart::dynamics::VisualAspect>(shapeIndex);
-    auto shape = shapeNode->getShape();
-    if (!shape || !shape->is<dart::dynamics::MeshShape>())
-      continue;
-    auto mesh = std::static_pointer_cast<dart::dynamics::MeshShape>(shape);
-
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    auto* assimpScene = mesh->getMesh();
-    DART_SUPPRESS_DEPRECATED_END
-    if (!assimpScene || assimpScene->mNumMeshes < 1)
-      continue;
-
-    const auto meshIndex = dart::math::Random::uniform<unsigned int>(
-        0, assimpScene->mNumMeshes - 1);
-    auto* assimpMesh = assimpScene->mMeshes[meshIndex];
-    const auto numVertices = assimpMesh->mNumVertices;
-    if (numVertices == 0)
-      continue;
-
-    const auto vertexIndex
-        = dart::math::Random::uniform<unsigned int>(0, numVertices - 1);
-    const auto& vertex = assimpMesh->mVertices[vertexIndex];
-
-    const Eigen::Isometry3d tf = shapeNode->getWorldTransform();
-    Eigen::Vector3d eigenVertex
-        = tf * Eigen::Vector3f(vertex.x, vertex.y, vertex.z).cast<double>();
-
-    pointCloud.push_back(
-        static_cast<float>(eigenVertex.x()),
-        static_cast<float>(eigenVertex.y()),
-        static_cast<float>(eigenVertex.z()));
-  }
-
-  // If the robot has no mesh-shaped visual shape nodes and the attempt cap is
-  // exhausted, fill the remainder with uniform in-box samples rather than
-  // returning a short cloud (see the file comment).
-  const Eigen::Vector3d boxMin = Eigen::Vector3d::Constant(-0.5);
-  const Eigen::Vector3d boxMax = Eigen::Vector3d::Constant(0.5);
-  while (pointCloud.size() < numPoints) {
-    const Eigen::Vector3d point = dart::math::Random::uniform(boxMin, boxMax);
-    pointCloud.push_back(
-        static_cast<float>(point.x()),
-        static_cast<float>(point.y()),
-        static_cast<float>(point.z()));
-  }
-
-  return pointCloud;
-}
-
-//==============================================================================
-octomap::Pointcloud generatePointCloudInBox(
-    std::size_t numPoints,
-    const Eigen::Vector3d& min,
-    const Eigen::Vector3d& max)
-{
-  octomap::Pointcloud pointCloud;
-  pointCloud.reserve(numPoints);
-
-  for (std::size_t i = 0; i < numPoints; ++i) {
-    const Eigen::Vector3d point = dart::math::Random::uniform(min, max);
-    pointCloud.push_back(
-        static_cast<float>(point.x()),
-        static_cast<float>(point.y()),
-        static_cast<float>(point.z()));
-  }
-
-  return pointCloud;
-}
-
-//==============================================================================
-/// Z-height red-blue gradient, alpha 0.75, clipped to [0.1, 0.9]. `maxZ`'s
-/// std::numeric_limits<double>::min() start (a tiny positive value rather
-/// than the most negative double) is a pre-existing quirk kept byte-for-byte
-/// from the original -- see the file comment.
-std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
-generatePointCloudColors(
-    const dart::dynamics::PointCloudShape& pointCloudShape,
-    const octomap::Pointcloud& pointCloud)
-{
-  const auto& points = pointCloudShape.getPoints();
-  double minZ = std::numeric_limits<double>::max();
-  double maxZ = std::numeric_limits<double>::min();
-  for (const auto& point : points) {
-    minZ = std::min(minZ, point.z());
-    maxZ = std::max(maxZ, point.z());
-  }
-  const double diffZ
-      = std::max(std::abs(maxZ - minZ), std::numeric_limits<double>::min());
-
-  std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
-      colors;
-  colors.reserve(pointCloud.size());
-  for (const auto& point : pointCloud) {
-    float r
-        = (point.z() - static_cast<float>(minZ)) / static_cast<float>(diffZ);
-    float g = 0.0f;
-    float b = 1.f - r;
-    r = dart::math::clip(r, 0.1f, 0.9f);
-    g = dart::math::clip(g, 0.1f, 0.9f);
-    b = dart::math::clip(b, 0.1f, 0.9f);
-    colors.emplace_back(Eigen::Vector4f(r, g, b, 0.75f).cast<double>());
-  }
-
-  return colors;
 }
 
 //==============================================================================
@@ -354,7 +204,6 @@ DemoScene makePointCloudScene()
     world->addSkeleton(ground);
 
     auto state = std::make_shared<PointCloudState>();
-    state->robot = robot;
 
     auto pointCloudShape = std::make_shared<dart::dynamics::PointCloudShape>();
     pointCloudShape->setPointShapeType(dart::dynamics::PointCloudShape::BOX);
@@ -391,7 +240,8 @@ DemoScene makePointCloudScene()
     state->voxelGridShape = voxelGridShape;
     state->pointCloudVisualAspect = pointCloudVisual;
     state->voxelGridVisualAspect = voxelVisual;
-    state->sensorFrame = sensorFrame;
+    state->sensor = std::make_shared<PointCloudSensor>(
+        robot, sensorFrame, pointCloudShape, voxelGridShape);
     state->grid = makeGui<demo_gui::GridVisual>();
 
     DemoSceneSetup setup;
@@ -402,43 +252,7 @@ DemoScene makePointCloudScene()
         GuiVector3(-0.24, -0.25, 0.94)};
 
     setup.preStep = [state, world] {
-      if (!state->update)
-        return;
-
-      Eigen::VectorXd pos = state->robot->getPositions();
-      pos += 0.01 * Eigen::VectorXd::Random(pos.size());
-      state->robot->setPositions(pos);
-
-      constexpr std::size_t kNumPoints = 500;
-      octomap::Pointcloud pointCloud;
-      switch (state->samplingMode) {
-        case PointSamplingMode::SampleOnRobot:
-          pointCloud = generatePointCloudOnRobot(state->robot, kNumPoints);
-          break;
-        case PointSamplingMode::SampleInBox:
-          pointCloud = generatePointCloudInBox(
-              kNumPoints,
-              Eigen::Vector3d::Constant(-0.5),
-              Eigen::Vector3d::Constant(0.5));
-          break;
-      }
-
-      constexpr double radius = 1.0;
-      const Eigen::Vector3d center(0.0, 0.1, 0.0);
-      Eigen::Vector3d sensorPos = center;
-      sensorPos[0] = radius * std::sin(state->sensorOrbitTime);
-      sensorPos[1] = radius * std::cos(state->sensorOrbitTime);
-      sensorPos[2] = 0.5 + 0.25 * std::sin(state->sensorOrbitTime * 2.0);
-      // Advance by the live timestep (the host's Timestep control spans
-      // 1e-5..1e-2 s) rather than the original's hardcoded 0.001 s, so the
-      // orbit still paces at ~1 rad per simulated second across the range.
-      state->sensorOrbitTime += world->getTimeStep();
-      state->sensorFrame->setTranslation(sensorPos);
-
-      state->pointCloudShape->setPoints(pointCloud);
-      state->pointCloudShape->setColors(
-          generatePointCloudColors(*state->pointCloudShape, pointCloud));
-      state->voxelGridShape->updateOccupancy(pointCloud, sensorPos);
+      state->sensor->update(world->getTimeStep());
     };
 
     setup.onActivate = [state](DemoHostContext& ctx) {
@@ -455,17 +269,22 @@ DemoScene makePointCloudScene()
 
       if (ImGui::CollapsingHeader(
               "Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
-        bool updating = state->update;
+        bool updating = state->sensor->updating;
         if (ImGui::Checkbox("Run Robot Updating", &updating))
-          state->update = updating;
+          state->sensor->updating = updating;
 
         int samplingMode
-            = state->samplingMode == PointSamplingMode::SampleOnRobot ? 0 : 1;
+            = state->sensor->samplingMode
+                      == PointCloudSensor::SamplingMode::SampleOnRobot
+                  ? 0
+                  : 1;
         if (ImGui::RadioButton("Sample on robot", &samplingMode, 0))
-          state->samplingMode = PointSamplingMode::SampleOnRobot;
+          state->sensor->samplingMode
+              = PointCloudSensor::SamplingMode::SampleOnRobot;
         ImGui::SameLine();
         if (ImGui::RadioButton("Sample in box", &samplingMode, 1))
-          state->samplingMode = PointSamplingMode::SampleInBox;
+          state->sensor->samplingMode
+              = PointCloudSensor::SamplingMode::SampleInBox;
       }
 
       if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
