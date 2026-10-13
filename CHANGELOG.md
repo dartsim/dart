@@ -128,6 +128,10 @@
     as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
+  * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
+    heightmap without a height field reports finite heights and bounds.
+    [#3744](https://github.com/dartsim/dart/pull/3744)
+
   * `VoxelGridShape::updateOccupancy()` now writes a single point through
     OctoMap's double-precision update, so a point on a voxel boundary lands
     in the cell that `getOccupancy()` reads.
