@@ -46,15 +46,14 @@ The managed `pre-push` hook scans every updated ref's commit messages, file
 names and added lines, including commits created by cherry-pick, rebase,
 revert, `git am` and sequencer operations that skip commit hooks. It runs
 `scripts/check_local_paths.py --commit-range <base>..<local sha>` using the
-remote SHA for existing refs. New refs scan only the commits that neither the
-remote's default HEAD nor any locally available remote branch head, or its
-remote-tracking tip while that branch still exists and the remote fetches from
-the push destination, reaches, as one range when a single published base covers
-them and otherwise one commit at a time; a merge commit is still compared with
-its first parent, so content already published on a merged branch can be
-reported again. Missing existing-ref bases and default HEAD objects are fetched
-without changing refs or `FETCH_HEAD`; an empty remote or unrelated history
-scans all local history.
+remote SHA for existing refs. New refs scan only the commits that no branch
+head or default HEAD advertised by the destination reaches (a head this clone
+lacks is fetched from the destination only when the clone tracks that branch),
+as one range when a single published base covers them and otherwise one commit
+at a time; a merge commit is still compared with its first parent, so content
+already published on a merged branch can be reported again. Missing
+existing-ref bases and default HEAD objects are fetched without changing refs
+or `FETCH_HEAD`; an empty remote or unrelated history scans all local history.
 Deletions skip scanning. Older branches without checkers and unavailable
 interpreters print a notice and skip scanning. If a checker is missing from
 the worktree but exists in HEAD (commit hooks) or the push base (pre-push), the

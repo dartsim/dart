@@ -547,6 +547,36 @@ def test_pre_push_new_ref_scans_a_linear_branch_in_one_run(tmp_path):
     assert f"DART pre-push: scanning HEAD ({base}..{head})" in result.stderr
 
 
+def test_pre_push_new_ref_ignores_tracking_tips_left_by_a_previous_url(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
+    other = tmp_path / "other.git"
+    git("init", "-q", "--bare", str(other))
+    git(
+        "push",
+        "-q",
+        str(other),
+        f"{base}:refs/heads/main",
+        f"{base}:refs/heads/release",
+    )
+    git("checkout", "-b", "release")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Published to the first repository only")
+    git("push", "origin", "release")
+    git("commit", "--allow-empty", "-qm", "Clean descendant")
+    # The retargeted remote keeps refs/remotes/origin/release from the old URL.
+    git("remote", "set-url", "origin", str(other))
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0
+    assert private_path in result.stdout
+    assert git("ls-remote", str(other), "refs/heads/topic").stdout == ""
+
+
 @pytest.mark.parametrize("removal", ["delete", "rename"])
 def test_pre_push_new_ref_recovers_checker_when_release_base_lacks_it(
     tmp_path, removal
