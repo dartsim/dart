@@ -417,7 +417,7 @@ def test_reports_all_leaks_and_file_line(capsys):
         "notes.md",
     )
     assert capsys.readouterr().out.splitlines() == [
-        "notes.md:2: .sisyphus" "/plans/example.md",  # path-fixture
+        "notes.md:2: .sisyphus" + "/plans/example.md",  # path-fixture
         "notes.md:2: /home/example/checkout",
     ]
 
