@@ -28,11 +28,38 @@ the constraint solver resolves contacts and joint constraints; dynamics state is
 integrated; Filament or dartpy presents the result. Keep ownership at these existing
 boundaries instead of adding task-local bypasses.
 
-The private `dart/gui/app/` host (`dart-gui-app`) owns the demo window,
-docking workspace, scene lifecycle, and command-line dispatch. It links
-`dart-gui` and the GUI-free `dart-demo-models`; it is never installed or exported.
-The C++ demo catalog uses compatibility shims in `examples/demos/`. A vanilla
-system ImGui compiles out this host while retaining `dart-gui` and dartpy.
+## Python Demo Catalog
+
+DART has one demo application, `python/examples/demos/`, launched through
+`dartpy.viewer`. Python declares worlds, key actions, light step hooks, and
+declarative `Control` panels. C++ owns the docking workspace, navigator,
+inspector, tools, profiler, log console, scene lifecycle, and headless list,
+cycle, and capture. Heavy controllers and models stay native; Python has no
+ImGui drawing API.
+
+| Piece | Location and target | Boundary |
+| --- | --- | --- |
+| App host | `dart/gui/app/` → `dart-gui-app` | Private static target in `dart::gui::app`, excluded from `ALL` unless a consumer needs it; never installed or exported |
+| GUI-free models | `python/native/demo_models/` → `dart-demo-models` | Private static target in `dart_demos`, shared by dartpy and C++ model tests; builds with the GUI off |
+| Host bindings | `python/dartpy/viewer/` → `dartpy.viewer` | Compiled only when `dart-gui-app` exists; names follow the DART 7 Python style |
+| Model bindings | `python/dartpy/demos/` → `dartpy._demos` | Private native helpers for the source-tree catalog |
+| Scenes | `python/examples/demos/scenes/`, `registry.py`, `__main__.py` | Python factories and catalog registration; the catalog is not included in wheels |
+
+`dart-gui-app` links `dart-gui` and `dart-demo-models`. Its placement under
+`dart/` makes it available before `tests/` and `python/` are configured.
+The model library is added immediately after `dart/`; IO-dependent sources
+are included only when `dart-utils` and `dart-utils-urdf` exist, and the
+point-cloud sensor requires OctoMap. Both libraries link into the dartpy
+extension without adding installed headers, package components, or a
+Gazebo-facing API.
+
+The host requires `IMGUI_HAS_DOCK` in the copied ImGui header. Bundled builds
+use the docking release; a vanilla system ImGui compiles out the host and
+`dartpy.viewer` while retaining `dart-gui` and dartpy. The Python catalog then
+exits with a rebuild hint. See [build guidance](building.md#filament-gui),
+[callback ownership](python-bindings.md#viewer-app-callbacks),
+[scene rules](../../examples/README.md#adding-catalog-scenes), and
+[catalog verification](testing.md#demo-catalog-verification).
 
 ### World step stages
 

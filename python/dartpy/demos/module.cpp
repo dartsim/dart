@@ -2,6 +2,8 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include <dart/config.hpp>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -37,7 +39,20 @@
 namespace dart::python {
 
 void bind_soft_worm(nb::module_& m);
+void bind_world_history(nb::module_& m);
 void bind_adaptive_soft_contact(nb::module_& m);
+void bind_wam_ikfast(nb::module_& m);
+void bind_contact_inverse_dynamics(nb::module_& m);
+void bind_relaxed_posture(nb::module_& m);
+void bind_arm_skeleton(nb::module_& m);
+void bind_boxed_lcp_solver(nb::module_& m);
+void bind_heightmap_model(nb::module_& m);
+void bind_biped_stand(nb::module_& m);
+void bind_joint_constraints(nb::module_& m);
+void bind_operational_space_control(nb::module_& m);
+#if HAVE_OCTOMAP
+void bind_point_cloud_sensor(nb::module_& m);
+#endif
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
 void bind_simbicon(nb::module_& m);
 void bind_soft_foot_simbicon(nb::module_& m);
@@ -46,9 +61,23 @@ void bind_soft_foot_simbicon(nb::module_& m);
 void bind_demos(nb::module_& m)
 {
   auto demos = m.def_submodule(
-      "_demos", "Private GUI-free demo models; outside the SemVer contract.");
+      "_demos",
+      "Private demo models and scene helpers; outside the SemVer contract.");
   bind_soft_worm(demos);
+  bind_world_history(demos);
   bind_adaptive_soft_contact(demos);
+  bind_wam_ikfast(demos);
+  bind_contact_inverse_dynamics(demos);
+  bind_relaxed_posture(demos);
+  bind_arm_skeleton(demos);
+  bind_boxed_lcp_solver(demos);
+  bind_heightmap_model(demos);
+  bind_biped_stand(demos);
+  bind_joint_constraints(demos);
+  bind_operational_space_control(demos);
+#if HAVE_OCTOMAP
+  bind_point_cloud_sensor(demos);
+#endif
 #ifdef DARTPY_HAS_SIMBICON_DEMOS
   bind_simbicon(demos);
   bind_soft_foot_simbicon(demos);

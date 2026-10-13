@@ -56,7 +56,7 @@ public:
   void render();
 
   /// Test/debug-only hook: forces the recording state without going through
-  /// the checkbox (used by main.cpp's hidden --debug-record-profile flag so
+  /// the checkbox (used by Cli.cpp's hidden --debug-record-profile flag so
   /// a headless capture can show the profiler actually recording). Mirrors
   /// the checkbox handler's own resetProfile()-on-enable behavior.
   void setRecordingForTest(bool on);

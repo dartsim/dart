@@ -368,7 +368,10 @@ To reproduce the `CI Filament` capture smoke test, run
 `pixi run test-gui`. This option defaults to `OFF`, needs a graphics device,
 and replaces `DART_ENABLE_GUI_OSG_SMOKE_TESTS`. The GUI task selects
 `-L gui -LE filament-native`; run native-window tests separately as described
-in [testing guidance](testing.md).
+in [testing guidance](testing.md). Filament lanes build dartpy and the
+retained GUI, private-host, and memory-diagnostics test targets. The demo
+catalog's cycle and capture coverage comes from Python tests; there is no
+C++ demo app or scene-cycle CTest target.
 
 `ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
 testing and configures it once, so gz-physics' contact-callback test

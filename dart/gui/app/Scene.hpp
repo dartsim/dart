@@ -176,10 +176,6 @@ struct SceneSetup
   /// Control::makePanel()). Change callbacks run between frames. Optional.
   std::shared_ptr<Control> panel;
 
-  /// Draws extra scene controls with raw ImGui calls. Transitional: only the
-  /// C++ catalog uses it, and it is removed with that catalog. Optional.
-  std::function<void()> renderPanel;
-
   /// Keyboard shortcuts, mirrored as panel buttons.
   std::vector<KeyAction> keyActions;
 
@@ -193,15 +189,6 @@ struct SceneSetup
   /// host restores simulation, and resumes it if it was running, on teardown.
   /// Step, scene cycling and headless captures still step the world.
   bool allowSimulation = true;
-
-  /// Frames to enable drag-and-drop on (SimpleFrameDnD: unconstrained
-  /// free-drag). Transitional: only the C++ catalog uses it. This is the right
-  /// tool for a plain SimpleFrame that only needs a free-drag. For an
-  /// InteractiveFrame whose per-axis/plane gizmo tools should be draggable,
-  /// call Viewer::enableDragAndDrop(InteractiveFrame*) (InteractiveFrameDnD)
-  /// from onActivate and release it via ctx.addTeardown(disableDragAndDrop)
-  /// before the world is destroyed.
-  std::vector<dart::dynamics::SimpleFramePtr> dragFrames;
 
   /// Optional hook for anything else a scene needs to register (extra
   /// attachments, custom event handlers, ...).

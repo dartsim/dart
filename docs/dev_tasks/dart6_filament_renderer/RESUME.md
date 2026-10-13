@@ -60,8 +60,7 @@ aarch64 wheel and the publish runs themselves remain.
 - Historical contact benchmarks requiring the removed GUI component fail with
   an infrastructure error; use the `release-6.20` harness for comparisons.
 - Explicit `--width/--height` demo windows open at the origin instead of
-  centered; `examples/demos/GuiBackend.hpp` is a thin alias layer that could be
-  inlined; test-only `detail::readViewerPixelsRGBA` hooks are declared in the
+  centered; test-only `detail::readViewerPixelsRGBA` hooks are declared in the
   installed `Viewer.hpp`.
 - A viewer must not be destroyed by its own event handler in C++ (Python keeps
   it alive for the duration of `frame()`/`run()`).

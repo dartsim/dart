@@ -2793,14 +2793,10 @@ def test_default_pytest_target_leaves_rendering_modules_to_test_gui():
     ("name", "labels", "expected_error"),
     (
         ("test_FilamentBackend", ["gui", "gui-device"], False),
-        ("examples_demos_capture", ["gui", "gui-device"], False),
-        ("examples_demos_capture_extra", ["gui", "gui-device"], False),
         ("test_GuiViewer", ["gui"], False),
-        ("examples_demos_cycle", ["gui"], False),
         ("test_GuiMesh", ["gui"], True),
         ("test_FilamentNative", ["gui-device"], True),
         ("test_GuiDescriptors", ["gui", "gui-device"], True),
-        ("examples_demos_cycle", ["gui", "gui-device"], True),
     ),
 )
 def test_ctest_gui_labels_only_exclude_device_dependent_tests(
@@ -3640,83 +3636,6 @@ def test_repository_ctest_initialization_generates_the_full_dart_subtree(
         assert errors == []
         assert set(registrations) == {"semantic"}
         assert (build / "dart/child/CTestTestfile.cmake").is_file()
-
-
-def _add_demo_semantic_fixture(root: Path, labels: str = "gui", frames: str = "2"):
-    cmake = root / "CMakeLists.txt"
-    cmake.write_text(
-        cmake.read_text(encoding="utf-8") + "\nadd_subdirectory(examples/demos)\n",
-        encoding="utf-8",
-    )
-    demos = root / "examples/demos"
-    demos.mkdir(parents=True)
-    demos.joinpath("main.cpp").write_text(
-        "int main() { return 0; }\n", encoding="utf-8"
-    )
-    demos.joinpath("CMakeLists.txt").write_text(
-        "add_executable(dart-demos main.cpp)\n"
-        "add_dependencies(tests_and_run dart-demos)\n"
-        f"add_test(NAME examples_demos_cycle COMMAND dart-demos --cycle-scenes --frames {frames})\n"
-        f'set_tests_properties(examples_demos_cycle PROPERTIES LABELS "{labels}")\n',
-        encoding="utf-8",
-    )
-    return demos
-
-
-@pytest.mark.parametrize(
-    ("labels", "frames", "expected"),
-    (
-        ("gui", "2", None),
-        ("gui;gui-device", "2", "cannot have the `gui-device` label"),
-        ("gui", "0", "unapproved command arguments"),
-    ),
-)
-def test_cmake_semantic_graph_includes_demo_labels_and_arguments(
-    tmp_path, labels, frames, expected
-):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    _add_demo_semantic_fixture(tmp_path, labels, frames)
-    errors = []
-
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-
-    if expected is None:
-        assert errors == []
-    else:
-        assert any(
-            expected in error and "examples_demos_cycle" in error for error in errors
-        )
-
-
-def test_cmake_broad_gate_runs_demo_tests_from_the_dart_build_root(tmp_path):
-    build = _configure_semantic_graph_fixture(tmp_path)
-    demos = _add_demo_semantic_fixture(tmp_path)
-    demos.joinpath("main.cpp").write_text(
-        '#include <fstream>\nint main() { std::ofstream("demo-ran") << "ran"; return 0; }\n',
-        encoding="utf-8",
-    )
-    errors = []
-    infra.check_cmake_test_graph(tmp_path, build, errors)
-    assert errors == []
-
-    result = subprocess.run(
-        [
-            "cmake",
-            "--build",
-            str(build),
-            "--target",
-            "tests_and_run",
-            "--config",
-            "Release",
-            "--parallel",
-            "2",
-        ],
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert (build / "examples/demos/demo-ran").is_file()
 
 
 @pytest.mark.parametrize("poison_variable", (False, True))
