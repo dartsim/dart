@@ -159,3 +159,21 @@ only with new evidence and maintainer approval.
 - **D31a. Interim GUI bindings.** M6a lands with the Filament effort's tested
   camelCase GUI bindings as an interim, undocumented module. M6b replaces them
   with the 7.0 API and deletes them before the first release candidate.
+- **D31b. The demo host becomes the managed viewer's core.** The C++
+  `dart-demos` host moves into private C++ linked into the dartpy extension,
+  with no installed headers, package components or gz-facing API. The host
+  covers the docking ImGui workspace, scene navigator, scene panels,
+  inspector, contact and drag tools, profiler, log console, and headless
+  list, cycle and capture.
+  - Its bindings start in the 7.0 style as `dartpy.viewer`, the managed-loop
+    core that M6b's `launch()` can reuse.
+  - Python declares scenes, key actions, light step hooks and declarative
+    panel controls. There is no Python ImGui API. Heavy controllers and
+    models stay native behind the private `dartpy._demos`.
+  - The Python demo catalog becomes D22's example runner. The C++ `dart-demos`
+    app is removed once the catalog reaches parity.
+  - Bundled ImGui uses the docking release; with a vanilla system ImGui the
+    host is compiled out. This is a labeled 7.0 build change.
+  - Evidence: maintaining a C++ and a Python demo app duplicated every scene
+    and host feature. The packets and the parity matrix live in the
+    [demo consolidation project home](../dart7_python_demos/README.md).
