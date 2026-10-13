@@ -194,13 +194,70 @@ add_test(
   COMMAND
     $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
 )
+dart_add_test("integration" test_BoxedLcpSolver)
+target_link_libraries(test_BoxedLcpSolver dart-demo-models)
+dart_add_test("integration" test_HeightmapModel)
+target_link_libraries(test_HeightmapModel dart-demo-models)
 set_tests_properties(
   test_AdaptiveSoftContactModel
   test_SoftWormModel
   test_ContactArrowLayout
+  test_BoxedLcpSolver
+  test_HeightmapModel
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 dart_format_add(${soft_demo_model_test_sources})
+
+dart_add_test("integration" test_WorldHistory)
+target_link_libraries(test_WorldHistory dart-demo-models)
+
+dart_add_test("integration" test_RelaxedPosture)
+target_link_libraries(test_RelaxedPosture dart-demo-models)
+
+dart_add_test("integration" test_ArmSkeleton)
+target_link_libraries(test_ArmSkeleton dart-demo-models)
+
+if(TARGET dart-utils)
+  dart_add_test("integration" test_ContactInverseDynamicsModel)
+  target_link_libraries(
+    test_ContactInverseDynamicsModel
+    dart-demo-models
+    dart-utils
+  )
+endif()
+
+if(TARGET dart-utils)
+  foreach(
+    demo_model_test
+    BipedStandController
+    JointConstraintsController
+    OperationalSpaceController
+  )
+    dart_add_test("integration" test_${demo_model_test})
+    target_link_libraries(test_${demo_model_test} dart-demo-models dart-utils)
+    set_tests_properties(
+      test_${demo_model_test}
+      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+    )
+  endforeach()
+  if(HAVE_OCTOMAP)
+    dart_add_test("integration" test_PointCloudSensor)
+    target_link_libraries(test_PointCloudSensor dart-demo-models dart-utils)
+    set_tests_properties(
+      test_PointCloudSensor
+      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+    )
+  else()
+    dart_format_add(test_PointCloudSensor.cpp)
+  endif()
+else()
+  dart_format_add(
+    test_BipedStandController.cpp
+    test_JointConstraintsController.cpp
+    test_OperationalSpaceController.cpp
+    test_PointCloudSensor.cpp
+  )
+endif()
 
 # The soft-foot locomotion model drives the Atlas soft-feet SDF with the
 # existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
@@ -315,13 +372,8 @@ if(TARGET dart-utils-urdf)
     target_link_libraries(test_DartLoader dart-utils-urdf)
   endif()
 
-  dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
-  target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
-  target_compile_definitions(
-    SharedLibraryWamIkFast
-    PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY
-  )
-  target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+  dart_add_test("integration" test_WamIkFast)
+  target_link_libraries(test_WamIkFast dart-demo-models dart-utils-urdf)
 
   dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
   target_link_libraries(GeneratedWamIkFast PUBLIC dart)
@@ -338,15 +390,11 @@ if(TARGET dart-utils-urdf)
       PRIVATE DART_TEST_IKFAST_LIBRARY="$<TARGET_FILE_NAME:GeneratedWamIkFast>"
     )
     target_link_libraries(test_IkFast dart-utils-urdf)
-    add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
+    add_dependencies(test_IkFast GeneratedWamIkFast)
   endif()
 endif()
 
-dart_format_add(
-  GeneratedWamIkFast.cpp
-  SharedLibraryWamIkFast.hpp
-  SharedLibraryWamIkFast.cpp
-)
+dart_format_add(GeneratedWamIkFast.cpp)
 
 dart_add_test("integration" test_Distance)
 if(TARGET dart-collision-bullet)

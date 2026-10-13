@@ -191,9 +191,12 @@ as is the four-link flexible-rigid-foot versus deformable-foot comparison. They 
 `SoftBodyNode` and adaptive activation rather than adding new dynamics, so they
 fit the compatibility contract.
 
-The `soft_worm` and `adaptive_soft_contact` `dart-demos` scenes remain
+The Python demo catalog's `soft_worm` and `adaptive_soft_contact` scenes remain
 representative reduced evidence and do not by themselves establish paper-scale
 parity.
+
+Run them with `pixi run demos -- --scene soft_worm` or
+`pixi run demos -- --scene adaptive_soft_contact`.
 
 ## Related owners
 
@@ -202,5 +205,5 @@ parity.
 - Current roadmap state and gates: `docs/plans/dashboard.md`, PLAN-622
 - Active implementation and PR evidence:
   `docs/dev_tasks/dart6_deformable_body_performance/`
-- User-visible demos: `examples/demos/scenes/AdaptiveSoftContactScene.cpp` and
-  `examples/demos/scenes/SoftWormScene.cpp`
+- User-visible demos: `python/examples/demos/scenes/adaptive_soft_contact.py` and
+  `python/examples/demos/scenes/soft_worm.py`

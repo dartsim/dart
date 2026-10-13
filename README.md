@@ -32,7 +32,7 @@ makes it accurate and stable.
 <p align="center">
   <img src="https://raw.githubusercontent.com/dartsim/dart/main/docs/assets/dart_demos.gif" alt="Four DART demos: an Atlas humanoid walking under a SIMBICON controller, a Unitree G1 humanoid posed with inverse kinematics, a soft-body worm crawling, and a soft ball landing with adaptive soft contact">
   <br>
-  <sub>Atlas, soft-worm, and soft-contact scenes from <code>dart-demos</code> (<code>pixi run demos</code>), plus a Unitree G1 IK puppet from an earlier example</sub>
+  <sub>Atlas, soft-worm, and soft-contact scenes available in the Python demo catalog (<code>pixi run demos</code>), plus a Unitree G1 IK puppet from an earlier example</sub>
 </p>
 
 ## Why DART?
@@ -147,7 +147,7 @@ for details.
 git clone https://github.com/dartsim/dart.git
 cd dart
 pixi run test   # configure, build, and run the C++ tests
-pixi run demos  # build and launch the interactive demo app
+pixi run demos  # build dartpy and launch the Python demo catalog
 ```
 
 See the [build guide](https://dart.readthedocs.io/en/latest/dart/developer_guide/build.html)

@@ -643,12 +643,6 @@ void App::setDebugRecordProfile(bool on)
 }
 
 //==============================================================================
-void App::setDebugPrintWorld(bool on)
-{
-  mDebugPrintWorld = on;
-}
-
-//==============================================================================
 void App::setStopRequested(std::function<bool()> stopRequested)
 {
   mStopRequested = std::move(stopRequested);
@@ -1043,7 +1037,6 @@ void App::teardownCurrentScene()
   mResumeSimulationOnTeardown = false;
 
   mCurrentWorld.reset();
-  mCurrentRenderPanel = nullptr;
   mCurrentKeyActions.clear();
   // Destroying the scene's callables may have added panel callbacks, which
   // could keep the panel alive in a cycle.
@@ -1131,20 +1124,8 @@ void App::installScene(
   }
 
   mCurrentPanel = std::move(setup.panel);
-  mCurrentRenderPanel = setup.renderPanel;
   mCurrentKeyActions = std::move(setup.keyActions);
   mCurrentCameraHome = setup.cameraHome;
-
-  for (const auto& frame : setup.dragFrames) {
-    if (!frame)
-      continue;
-    auto* dnd = mViewer->enableDragAndDrop(frame.get());
-    if (dnd) {
-      auto* viewer = mViewer.get();
-      mExtraTeardowns.push_back(
-          [viewer, dnd] { viewer->disableDragAndDrop(dnd); });
-    }
-  }
 
   if (setup.onActivate) {
     SceneContext ctx(*this, mActivation);
@@ -1234,42 +1215,6 @@ void App::fitCameraToWorld()
           lookAtZ + std::max(6.0, distance * 0.55)),
       Eigen::Vector3d(center.x(), center.y(), lookAtZ),
       Eigen::Vector3d::UnitZ());
-}
-
-//==============================================================================
-void App::printWorld() const
-{
-  const SceneCounts counts = collectSceneCounts(mCurrentWorld);
-  std::size_t dofs = 0;
-  if (mCurrentWorld) {
-    for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i)
-      dofs += mCurrentWorld->getSkeleton(i)->getNumDofs();
-  }
-  const std::size_t constraints
-      = mCurrentWorld
-            ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
-            : std::size_t{0};
-  std::cout << "[world] skeletons " << counts.skeletons << ", bodies "
-            << counts.bodyNodes << ", soft bodies " << counts.softBodies
-            << ", point masses " << counts.pointMasses << ", dofs " << dofs
-            << ", constraints " << constraints << "\n";
-  if (!mCurrentWorld)
-    return;
-  for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i) {
-    const auto skeleton = mCurrentWorld->getSkeleton(i);
-    std::size_t softBodies = 0;
-    std::size_t pointMasses = 0;
-    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
-      if (const auto* soft = skeleton->getBodyNode(j)->asSoftBodyNode()) {
-        ++softBodies;
-        pointMasses += soft->getNumPointMasses();
-      }
-    }
-    std::cout << "[world] skeleton '" << skeleton->getName() << "': bodies "
-              << skeleton->getNumBodyNodes() << ", soft bodies " << softBodies
-              << ", point masses " << pointMasses << ", dofs "
-              << skeleton->getNumDofs() << "\n";
-  }
 }
 
 //==============================================================================
@@ -1429,7 +1374,7 @@ int App::runHeadlessShot(
               << "' failed to start; capturing the fallback state.\n";
   }
 
-  // Hidden debug/test hooks (main.cpp's --debug-select-body/
+  // Hidden debug/test hooks (Cli.cpp's --debug-select-body/
   // --debug-record-profile): let a headless capture exercise UI state that
   // normally requires interactive input: scene tree + inspector with a
   // selection, and profiler recording in the Tools tab.
@@ -1484,8 +1429,6 @@ int App::runHeadlessShot(
     processPanelEvents();
     return true;
   };
-  if (mDebugPrintWorld)
-    printWorld();
 
   errno = 0;
   if (std::remove(shotPath.c_str()) != 0 && errno != ENOENT) {
@@ -2136,26 +2079,8 @@ void App::renderSceneControlsSection()
 {
   if (mCurrentPanel)
     mCurrentPanel->render();
-
-  if (mCurrentRenderPanel) {
-    try {
-      mCurrentRenderPanel();
-    } catch (const std::exception& e) {
-      log(LogEntry::Level::Error,
-          "Scene panel for '" + mCurrentSceneTitle + "' failed: " + e.what()
-              + " (panel disabled)");
-      mCurrentRenderPanel = nullptr;
-      ++mCallbackFailures;
-    } catch (...) {
-      log(LogEntry::Level::Error,
-          "Scene panel for '" + mCurrentSceneTitle
-              + "' failed: unknown error (panel disabled)");
-      mCurrentRenderPanel = nullptr;
-      ++mCallbackFailures;
-    }
-  } else if (!mCurrentPanel) {
+  else
     ImGui::TextDisabled("This demo has no custom controls.");
-  }
 
   if (!mCurrentKeyActions.empty()) {
     ImGui::Separator();
