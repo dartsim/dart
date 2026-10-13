@@ -18,7 +18,7 @@ import pytest
 )
 def test_renderer_outputs(tmp_path):
     camera = dart.render.Camera.look_at(eye=(2, 0, 0.5), target=(0, 0, 0.5))
-    empty = dart.render.Renderer(dart.simulation.World())
+    empty = dart.render.Renderer(dart.World())
     background = empty.render(camera)
     path = tmp_path / "box.xml"
     path.write_text(
@@ -59,7 +59,7 @@ def test_renderer_outputs(tmp_path):
 
 @pytest.mark.xfail(strict=True, reason="M6b: final passive open and managed launch viewer entry points are pending")
 def test_viewer_entry_points():
-    world = dart.simulation.World()
+    world = dart.World()
     # M6b settles lifetime and bounded-run options. The provisional shape uses
     # the current viewer's headless bounded-step test strategy, avoiding an
     # interactive run while requiring construction through both final names.

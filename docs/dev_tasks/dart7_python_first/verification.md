@@ -734,9 +734,9 @@ Known gaps:
   | M1c | Snapshot channels/time/compatible clone/structural rejection; exact contact/sleep and hook-state checkpoint replay; parameter/topology/solver mismatch rejection |
   | M1d | Counted-vs-serial motion, bool rejection, GIL progress, synchronized busy reads and bounded re-entrant rejection |
   | M1e / M1f | Typed nondefault primary solver; Python World and MJCF DART detector defaults |
-  | M1g | Both bounded compliant servos, persistent channels and global hook decimation |
+  | M1g | Both bounded compliant servos from nonzero state, persistent channels and global hook decimation |
   | M1h | IMU orientation, joint-state motion, gravity-dependent support wrench and changing contacts |
-  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook, selected-row snapshot broadcasting and per-clone parameters |
+  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook, selected-row snapshot broadcasting of all channels/time and per-clone parameters |
   | M2 | Compiled preparation plus allocation, numeric and performance gates in the core feature PRs |
   | M3 / M4 | Optional/gated work; they do not block the required snapshot/checkpoint contracts |
   | M5 native API | Named model/frame collections, readonly copies, Transform validation and Rotation, configurable loaders/builders/ownership, manual constraints, Collider identity/shared-node capabilities, reset lifecycle, named errors and logging |
@@ -842,6 +842,36 @@ Known gaps:
     pending-feature failures and two native passes. Lint, check-lint and
     public-path checks pass. The last full Python run remains `740426529`;
     these representative checks do not implement the future runtime features.
+- **Final-facade and nonzero-state follow-up** (`b0989ae41` review):
+  - Future fixtures and all their oracles use the final World/Multibody/Link
+    facade, named DOF properties and capability builders. They retain no
+    Skeleton, ShapeNode, camelCase methods or forwarding aliases. Provisional
+    builder, solver/sleep and computed-array spellings remain explicitly owned
+    by M1/M5. StepHook stays in a provisional canonical submodule, outside the
+    curated top-level re-export allowlist; both GUI fixtures use final World.
+  - The separate unmarked native contact proof still validates the current
+    physical scene. It skips explicitly once the legacy binding disappears;
+    M5 retires or migrates that baseline proof and the existing direct-parser
+    regression through the normal native-unit-test rename sweep.
+  - The palm world-pose oracle uses independent NumPy forward kinematics from
+    the fixture offsets and x/z joint axes. Its result exactly matches the
+    current native transform, avoiding reuse of the property under test.
+  - Both servos start with nonzero position and velocity. The position row
+    also has a nonzero velocity target; saturated and unsaturated cases verify
+    the complete current-state error and damping terms. Two native probes
+    confirm constant diagonal inertia and zero Coriolis bias for this fixture.
+  - Selected batch snapshots restore positions, velocities, both target
+    channels and nonzero time. All source and per-row perturbations are
+    observed before restoration; untouched rows and the source stay unchanged.
+    The constructor gate now checks an explicit name, FCL detector and thread
+    count as well as the Python defaults.
+  - Native probes confirm the moving-servo bias, analytic palm transform and
+    unchanged four-contact/sleep scene with a default-mobile zero-DOF weld.
+    Two independent final source reviews are clean. Focused guarded pytest
+    reports two native passes and 50 strict XFAILs, no XPASS. With `--runxfail`,
+    the current missing final facade produces 11 intended API/logging failures
+    and 39 setup errors; both native gates pass. Lint, check-lint and public-path
+    gates pass. The last full Python run remains `740426529`.
 
 - **Review passes:**
   - The first review found seven issues: the step test read the legacy frame

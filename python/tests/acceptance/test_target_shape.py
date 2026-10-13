@@ -3,6 +3,13 @@
 The PR that removes a marker must make its test exercise the full contract in
 docs/design/dart7_python_api.md.
 
+Future tests use the final facade. Builder/solver/sleep/array computation
+spellings not yet fixed by that design are provisional M1/M5 signatures.
+StepHook uses the provisional simulation submodule (M1g/M5), outside the
+curated top-level allowlist.
+The unmarked native contact proof is separate and requires no legacy aliases
+in the final facade; M5 migrates baseline native tests with the rename table.
+
 The headless-render part needs a graphics device, so it lives in
 python/tests/unit/gui/test_target_shape_render.py, which test-gui runs and
 test-py leaves out.
@@ -22,25 +29,20 @@ import pytest
 
 @pytest.fixture
 def world():
-    # Existing constructors keep each failure local to the feature under test.
-    return dart.simulation.World()
+    return dart.World()
 
 
 @pytest.fixture
 def robot(world):
-    # Joint offsets put the wrist off the origin and the palm off the wrist, so
-    # a link's world pose differs from its pose in the parent frame and from
-    # its parent's pose.
-    robot = dart.dynamics.Skeleton("robot")
-    joint, wrist = robot.createRevoluteJointAndBodyNodePair()
-    joint.setName("shoulder_yaw")
-    joint.setAxis([1, 0, 0])
-    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0.1, 0, 0.4]))
-    wrist.setName("wrist")
-    joint, palm = robot.createRevoluteJointAndBodyNodePair(wrist)
-    joint.setTransformFromParentBodyNode(dart.math.Isometry3(np.eye(3), [0, 0.2, 0.3]))
-    palm.setName("palm")
-    world.addSkeleton(robot)
+    # M5 settles joint-spec pose spelling; preserve this independent physical
+    # fixture through the final facade, without retaining legacy aliases.
+    robot = dart.Multibody(name="robot")
+    wrist = robot.add_link("wrist", joint=dart.dynamics.RevoluteJointSpec(
+        axis=(1, 0, 0), parent_transform=dart.Transform(translation=(0.1, 0, 0.4))))
+    robot.joints[0].name = "shoulder_yaw"
+    robot.add_link("palm", parent=wrist, joint=dart.dynamics.RevoluteJointSpec(
+        axis=(0, 0, 1), parent_transform=dart.Transform(translation=(0, 0.2, 0.3))))
+    world.add(robot)
     return robot
 
 
@@ -53,6 +55,11 @@ def test_world_construction_keywords():
     assert world.time_step == 1e-3
     np.testing.assert_array_equal(world.gravity, (0, 0, -9.81))
     assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
+    explicit = dart.World(name="configured", collision_detector=dart.collision.FCLCollisionDetector(), threads=2)
+    assert explicit.name == "configured"
+    assert isinstance(explicit.collision.detector, dart.collision.FCLCollisionDetector)
+    # M1d/M5 settle executor observation; the explicit count cannot be ignored.
+    assert explicit.solver.threads == 2
     with pytest.raises(TypeError):
         dart.World("positional")
 
@@ -116,13 +123,13 @@ def test_edit_compile(world, robot):
         assert robot.num_dofs == before[1] + 1
     assert world.is_compiled
     assert robot in world.multibodies
-    world.setGravity([0, 0, 0])
+    world.gravity = [0, 0, 0]
     velocities = np.zeros(robot.num_dofs)
     velocities[-1] = 1
-    robot.setVelocities(velocities)
-    positions = robot.getPositions().copy()
+    robot.dofs.velocities = velocities
+    positions = robot.dofs.positions.copy()
     world.step()
-    assert robot.getPositions()[-1] > positions[-1]
+    assert robot.dofs.positions[-1] > positions[-1]
     assert robot.num_dofs == before[1] + 1
     with world.edit():
         world.remove(robot)
@@ -135,12 +142,9 @@ def test_edit_compile(world, robot):
 )
 def test_compile_rejects_unsupported_shape(world, robot):
     shape = dart.dynamics.HeightmapShapef()
-    shape.setHeightField(np.zeros((2, 2), dtype=np.float32))
-    node = robot.getRootBodyNode().createShapeNode(shape)
-    node.createCollisionAspect()
-    world.getConstraintSolver().setCollisionDetector(
-        dart.collision.DARTCollisionDetector()
-    )
+    shape.set_height_field(np.zeros((2, 2), dtype=np.float32))
+    robot.links[0].add_collider(shape)
+    world.collision.detector = dart.collision.DARTCollisionDetector()
     compile_world = world.compile
     # No public error type is specified yet; compile must reject, not warn and skip.
     with pytest.raises(Exception):
@@ -215,14 +219,14 @@ def test_load_model_options(tmp_path):
 
 @pytest.mark.xfail(strict=True, reason="M5b: World.add/remove and detached ownership for SimpleFrame are pending")
 def test_world_frame_membership(world):
-    frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "marker")
+    frame = dart.SimpleFrame(name="marker")
     assert world.add(frame) == frame
     assert len(world.frames) == 1
     assert world.frames[0] == frame
     assert world.frames["marker"] == frame
     assert list(world.frames) == [frame]
     assert list(world.frames.names) == ["marker"]
-    other = dart.simulation.World()
+    other = dart.World()
     add = other.add
     with pytest.raises(Exception):
         add(frame)
@@ -267,7 +271,7 @@ def test_live_model_builders(world):
         dart.dynamics.RevoluteJointSpec((0, 0, 1))
     with pytest.raises(Exception):
         spec.axis = (1, 0, 0)
-    model = dart.dynamics.Multibody(name="built")
+    model = dart.Multibody(name="built")
     link = model.add_link("root", parent=None, joint=spec)
     shape = dart.dynamics.BoxShape([0.2] * 3)
     collider = link.add_collider(shape=shape)
@@ -285,12 +289,12 @@ def test_live_model_builders(world):
     assert list(link.colliders) == [collider]
     assert list(link.visuals) == [visual]
     assert world.add(model) is model
-    other = dart.simulation.World()
+    other = dart.World()
     with pytest.raises(Exception):
         other.add(model)
     assert model in world.multibodies and model not in other.multibodies
     rigid_link = world.add_rigid_body(name="rigid")
-    assert isinstance(rigid_link, dart.dynamics.Link)
+    assert isinstance(rigid_link, dart.Link)
     owners = [owner for owner in world.multibodies if rigid_link in owner.links]
     assert len(owners) == 1
     assert len(owners[0].links) == 1
@@ -322,25 +326,22 @@ def test_collider_capabilities(world, contact_box):
     assert hash(visual) == hash(link.visuals[0])
     ground = world.multibodies["ground"].links[0].colliders[0]
     assert collider != ground
-    contacts = world.getLastCollisionResult()
-    assert contacts.getNumContacts() > 0
-    for i in range(contacts.getNumContacts()):
-        contact = contacts.getContact(i)
+    contacts = world.collision.contacts
+    assert contacts
+    for contact in contacts:
         assert isinstance(contact.collider_a, dart.Collider)
         assert isinstance(contact.collider_b, dart.Collider)
         assert {contact.collider_a, contact.collider_b} == {collider, ground}
     # Distinct nodes on the same Link must retain distinct handle identities.
-    other = contact_box.getRootBodyNode().createShapeNode(dart.dynamics.BoxShape([0.02] * 3))
-    other.createCollisionAspect()
+    link.add_collider(dart.dynamics.BoxShape(size=(0.02,) * 3))
     assert len(link.colliders) == 2
     assert len(set(link.colliders)) == 2
-    # Native setup creates both aspects on one node. M5 settles shape/pose
-    # observer spelling; both capabilities must follow that same live node.
-    node = contact_box.getRootBodyNode().getShapeNode(0)
-    node.setShape(dart.dynamics.BoxShape([0.25, 0.2, 0.2]))
+    # The fixture's builder creates both aspects on one node. M5 settles
+    # capability setter spelling; both must follow that same live node.
+    collider.shape = dart.dynamics.BoxShape(size=(0.25, 0.2, 0.2))
     rotation = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
     translation = np.array([0.01, 0.02, 0.03])
-    node.setRelativeTransform(dart.math.Isometry3(rotation, translation))
+    collider.relative_transform = dart.Transform(rotation=rotation, translation=translation)
     points = np.eye(3)
     for capability in (collider, visual):
         np.testing.assert_array_equal(capability.shape.size, (0.25, 0.2, 0.2))
@@ -349,14 +350,13 @@ def test_collider_capabilities(world, contact_box):
 
 @pytest.mark.xfail(strict=True, reason="M5b: the final World manual-constraint registry is pending")
 def test_manual_constraint_registry(world):
-    world.setGravity([0, 0, 0])
-    model = dart.dynamics.Skeleton("anchored")
-    joint, body = model.createFreeJointAndBodyNodePair()
-    world.addSkeleton(model)
-    joint.setVelocities([0, 0, 0, 1, 0, 0])
+    world.gravity = [0, 0, 0]
+    body = world.add_rigid_body(name="anchored", joint=dart.dynamics.FreeJointSpec())
+    model = world.multibodies["anchored"]
+    model.dofs.velocities = [0, 0, 0, 1, 0, 0]
     reference = world.clone()
-    anchor = body.getWorldTransform().translation().copy()
-    constraint = dart.constraint.BallJointConstraint(body, anchor)
+    anchor = body.world_transform @ np.zeros(3)
+    constraint = dart.constraint.BallJointConstraint(link=body, anchor=anchor)
     # Constructor/registry observation spelling is provisional M5b; adding
     # inside edit must retain a constraint that affects the native solve.
     with world.edit():
@@ -365,9 +365,9 @@ def test_manual_constraint_registry(world):
     for _ in range(20):
         world.step()
         reference.step()
-    np.testing.assert_allclose(body.getWorldTransform().translation(), anchor, rtol=0, atol=1e-9)
-    free_body = reference.getSkeleton("anchored").getRootBodyNode()
-    assert free_body.getWorldTransform().translation()[0] > anchor[0] + 0.01
+    np.testing.assert_allclose(body.world_transform @ np.zeros(3), anchor, rtol=0, atol=1e-9)
+    free_body = reference.multibodies["anchored"].links[0]
+    assert (free_body.world_transform @ np.zeros(3))[0] > anchor[0] + 0.01
 
 
 @pytest.mark.xfail(strict=True, reason="M5: native diagnostics forwarded to Python's dartpy logger are pending")
@@ -396,9 +396,7 @@ def test_material_visual_assignment(robot):
     assert material.metallic == pytest.approx(0.25)
     assert material.roughness == pytest.approx(0.4)
     np.testing.assert_allclose(material.emissive, (0.05, 0, 0))
-    node = robot.getRootBodyNode().createShapeNode(dart.dynamics.BoxShape([0.2] * 3))
-    node.createVisualAspect()
-    visual = robot.links["wrist"].visuals[0]
+    visual = robot.links["wrist"].add_visual(dart.dynamics.BoxShape(size=(0.2,) * 3))
     visual.material = material
     np.testing.assert_array_equal(visual.material.base_color, material.base_color)
     assert visual.material.metallic == material.metallic
@@ -409,46 +407,58 @@ def test_material_visual_assignment(robot):
 @pytest.mark.xfail(
     strict=True, reason="M1g/M5b: joint actuator channels, PositionServo and joint/DOF collections are pending"
 )
-@pytest.mark.parametrize("target,kd", [(10, 40), (-10, 40), (0.05, 40), (0.05, 0)])
+@pytest.mark.parametrize("target,kd", [(10, 40), (-10, 40), (0.25, 40), (0.05, 0)])
 def test_joint_position_servo(world, robot, target, kd):
-    world.setGravity([0, 0, 0])
-    h = world.getTimeStep()
-    inverse_mass = robot.getInvMassMatrix().copy()
+    world.gravity = [0, 0, 0]
+    robot.dofs.positions = np.array([0.2, 0.3])
+    robot.dofs.velocities = np.array([0.7, -0.4])
+    positions = robot.dofs.positions.copy()
+    free_velocities = robot.dofs.velocities.copy()
+    h = world.time_step
+    inverse_mass = robot.compute_inverse_mass_matrix().copy()
     servo = dart.PositionServo(kp=400, kd=kd, effort_limit=80)
     joint = robot.joints["shoulder_yaw"]
     joint.actuator = servo
     robot.dofs.position_targets = np.array([target, 0.0])
-    # With zero initial velocity and gravity, only this scalar motor row acts.
+    velocity_target = 0.1
+    robot.dofs.velocity_targets = np.array([velocity_target, 0.0])
+    # This fixture has constant diagonal inertia and zero Coriolis bias,
+    # independently verified natively. The full row uses current q and v.
+    compliance = h * kd + h * h * 400
     impulse = np.clip(
-        h * 400 * target / (1 + (h * kd + h * h * 400) * inverse_mass[0, 0]),
+        (h * 400 * (target - positions[0]) + h * kd * velocity_target - compliance * free_velocities[0])
+        / (1 + compliance * inverse_mass[0, 0]),
         -h * 80,
         h * 80,
     )
     world.step()
-    assert robot.getConstraintForces()[0] == pytest.approx(impulse / h)
+    assert robot.dofs.constraint_forces[0] == pytest.approx(impulse / h)
     np.testing.assert_allclose(
-        robot.getVelocities(), inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
+        robot.dofs.velocities, free_velocities + inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
     )
 
 
 @pytest.mark.xfail(strict=True, reason="M1g/M5b: VelocityServo and persistent velocity targets are pending")
 @pytest.mark.parametrize("target,kd", [(100, 40), (-100, 40), (0.05, 40), (0.05, 0)])
 def test_joint_velocity_servo(world, robot, target, kd):
-    world.setGravity([0, 0, 0])
-    h = world.getTimeStep()
-    inverse_mass = robot.getInvMassMatrix().copy()
+    world.gravity = [0, 0, 0]
+    robot.dofs.positions = np.array([0.2, 0.3])
+    robot.dofs.velocities = np.array([0.7, -0.4])
+    free_velocities = robot.dofs.velocities.copy()
+    h = world.time_step
+    inverse_mass = robot.compute_inverse_mass_matrix().copy()
     # M1g settles constructor and channel spelling. K=0 in the compliant-row
     # equation leaves bounded implicit velocity damping, including zero gain.
     servo = dart.VelocityServo(kd=kd, effort_limit=80)
     robot.joints["shoulder_yaw"].actuator = servo
     robot.dofs.velocity_targets = np.array([target, 0.0])
     impulse = np.clip(
-        h * kd * target / (1 + h * kd * inverse_mass[0, 0]), -h * 80, h * 80
+        h * kd * (target - free_velocities[0]) / (1 + h * kd * inverse_mass[0, 0]), -h * 80, h * 80
     )
     world.step()
-    assert robot.getConstraintForces()[0] == pytest.approx(impulse / h)
+    assert robot.dofs.constraint_forces[0] == pytest.approx(impulse / h)
     np.testing.assert_allclose(
-        robot.getVelocities(), inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
+        robot.dofs.velocities, free_velocities + inverse_mass[:, 0] * impulse, rtol=0, atol=1e-12
     )
 
 
@@ -457,16 +467,16 @@ def test_joint_velocity_servo(world, robot, target, kd):
     reason="M1h/M5b: native IMUSensor readings and the World sensor registry are pending",
 )
 def test_imu_sensor(world, robot):
-    sensor = dart.sensors.IMUSensor(link=robot.getRootBodyNode())
+    sensor = dart.sensors.IMUSensor(link=robot.links[0])
     imu = world.sensors.add(sensor)
     assert isinstance(imu, dart.sensors.IMUSensor)
     assert imu is sensor
     assert imu in world.sensors
-    robot.setPositions(np.full(robot.getNumDofs(), 0.5))
-    robot.setVelocities(np.ones(robot.getNumDofs()))
+    robot.dofs.positions = np.full(robot.num_dofs, 0.5)
+    robot.dofs.velocities = np.ones(robot.num_dofs)
     world.step()
     assert isinstance(imu.orientation, dart.Rotation)
-    half = robot.getPositions()[0] / 2
+    half = robot.dofs.positions[0] / 2
     np.testing.assert_allclose(
         imu.orientation.wxyz, (np.cos(half), np.sin(half), 0, 0), rtol=0, atol=1e-12
     )
@@ -474,38 +484,37 @@ def test_imu_sensor(world, robot):
 
 @pytest.mark.xfail(strict=True, reason="M1h/M5b: native JointStateSensor registration and samples are pending")
 def test_joint_state_sensor(world, robot):
-    world.setGravity([0, 0, 0])
-    joint = robot.getJoint("shoulder_yaw")
-    joint.setPosition(0, 0.2)
-    joint.setVelocity(0, 0.7)
+    world.gravity = [0, 0, 0]
+    joint = robot.joints["shoulder_yaw"]
+    robot.dofs.positions = np.array([0.2, 0])
+    robot.dofs.velocities = np.array([0.7, 0])
     # M1h settles attachment and reading spelling for the named sensor types.
     sensor = dart.sensors.JointStateSensor(joint=joint)
     assert world.sensors.add(sensor) is sensor
     assert sensor in world.sensors
     world.step()
-    assert joint.getPosition(0) != 0.2
-    assert sensor.position == pytest.approx(joint.getPosition(0))
-    assert sensor.velocity == pytest.approx(joint.getVelocity(0))
+    assert robot.dofs.positions[0] != 0.2
+    assert sensor.position == pytest.approx(robot.dofs.positions[0])
+    assert sensor.velocity == pytest.approx(robot.dofs.velocities[0])
 
 
 @pytest.mark.xfail(strict=True, reason="M1h/M5b: native ForceTorqueSensor registration and samples are pending")
 def test_force_torque_sensor(world):
-    world.setGravity([0, 0, -9.81])
-    model = dart.dynamics.Skeleton("supported_body")
-    joint, body = model.createWeldJointAndBodyNodePair()
-    body.setMass(2)
-    world.addSkeleton(model)
+    world.gravity = [0, 0, -9.81]
+    body = world.add_rigid_body(name="supported_body", joint=dart.dynamics.WeldJointSpec())
+    joint = world.multibodies["supported_body"].joints[0]
+    body.mass = 2
     # Attachment and reading spelling are provisional M1h; the support wrench
     # must follow gravity. Magnitude avoids imposing an unstated sign convention.
     sensor = dart.sensors.ForceTorqueSensor(joint=joint)
     assert world.sensors.add(sensor) is sensor
     assert sensor in world.sensors
     for gravity in (9.81, 4.905):
-        world.setGravity([0, 0, -gravity])
+        world.gravity = [0, 0, -gravity]
         world.step()
         assert np.linalg.norm(sensor.force) == pytest.approx(2 * gravity)
         assert np.linalg.norm(sensor.force) == pytest.approx(
-            np.linalg.norm(body.getBodyForce()[3:])
+            np.linalg.norm(body.body_force[3:])
         )
         np.testing.assert_allclose(sensor.torque, np.zeros(3), rtol=0, atol=1e-12)
 
@@ -513,20 +522,20 @@ def test_force_torque_sensor(world):
 @pytest.mark.xfail(strict=True, reason="M1h/M5b: native ContactSensor registration and samples are pending")
 def test_contact_sensor(world, contact_box):
     # Attachment and contact payload spelling are provisional M1h.
-    sensor = dart.sensors.ContactSensor(link=contact_box.getRootBodyNode())
+    sensor = dart.sensors.ContactSensor(link=contact_box.links[0])
     assert world.sensors.add(sensor) is sensor
     assert sensor in world.sensors
     world.step()
-    contacts = world.getLastCollisionResult()
-    expected = sorted(tuple(contacts.getContact(i).force) for i in range(contacts.getNumContacts()))
+    contacts = world.collision.contacts
+    expected = sorted(tuple(contact.force) for contact in contacts)
     actual = sorted(tuple(contact.force) for contact in sensor.contacts)
     assert actual and any(np.linalg.norm(force) > 0 for force in actual)
     np.testing.assert_array_equal(actual, expected)
-    positions = contact_box.getPositions().copy()
+    positions = contact_box.dofs.positions.copy()
     positions[5] = 0.5
-    contact_box.setPositions(positions)
+    contact_box.dofs.positions = positions
     world.step()
-    assert world.getLastCollisionResult().getNumContacts() == 0
+    assert len(world.collision.contacts) == 0
     assert not sensor.contacts
 
 
@@ -535,9 +544,9 @@ def test_contact_sensor(world, contact_box):
     reason="M1d/M5b: step(n), step_count and rejection of bool arguments are pending",
 )
 def test_step_n(world, robot):
-    world.setGravity([0, 0, 0])
-    robot.setVelocities(np.ones(robot.getNumDofs()))
-    initial = robot.getPositions().copy()
+    world.gravity = [0, 0, 0]
+    robot.dofs.velocities = np.ones(robot.num_dofs)
+    initial = robot.dofs.positions.copy()
     serial = world.clone()
     world.step(20)
     assert world.step_count == 20
@@ -545,10 +554,10 @@ def test_step_n(world, robot):
         serial.step()
     assert serial.step_count == world.step_count
     assert serial.time == world.time
-    assert not np.array_equal(robot.getPositions(), initial)
-    serial_robot = serial.getSkeleton("robot")
-    np.testing.assert_array_equal(robot.getPositions(), serial_robot.getPositions())
-    np.testing.assert_array_equal(robot.getVelocities(), serial_robot.getVelocities())
+    assert not np.array_equal(robot.dofs.positions, initial)
+    serial_robot = serial.multibodies["robot"]
+    np.testing.assert_array_equal(robot.dofs.positions, serial_robot.dofs.positions)
+    np.testing.assert_array_equal(robot.dofs.velocities, serial_robot.dofs.velocities)
     with pytest.raises(TypeError):
         world.step(True)
 
@@ -612,7 +621,7 @@ def test_world_busy_during_step(world, robot):
         active.set()
         assert read_finished.wait(timeout=5)
 
-    hook = dart.StepHook(during_step, every=1)
+    hook = dart.simulation.StepHook(during_step, every=1)
     world.hooks.add(hook)
     worker = threading.Thread(target=read_during_step)
     worker.start()
@@ -637,17 +646,17 @@ def test_world_rejects_reentrant_step(world, robot):
         if entries > 1:
             return
         count, time = current.step_count, current.time
-        positions = robot.getPositions().copy()
-        velocities = robot.getVelocities().copy()
+        positions = robot.dofs.positions.copy()
+        velocities = robot.dofs.velocities.copy()
         # The design requires rejection but leaves its exception type to M1d.
         with pytest.raises(Exception):
             current.step()
         assert (current.step_count, current.time) == (count, time)
-        np.testing.assert_array_equal(robot.getPositions(), positions)
-        np.testing.assert_array_equal(robot.getVelocities(), velocities)
+        np.testing.assert_array_equal(robot.dofs.positions, positions)
+        np.testing.assert_array_equal(robot.dofs.velocities, velocities)
 
     # Constructor/callback spelling remains provisional M1g.
-    world.hooks.add(dart.StepHook(during_step, every=1))
+    world.hooks.add(dart.simulation.StepHook(during_step, every=1))
     world.step()
     assert entries == 1
     assert world.step_count == 1
@@ -655,30 +664,30 @@ def test_world_rejects_reentrant_step(world, robot):
 
 @pytest.mark.xfail(strict=True, reason="M5b: final World lifecycle properties are pending")
 def test_world_reset(world, robot, contact_box):
-    robot.setVelocities(np.ones(robot.getNumDofs()))
-    initial = robot.getPositions().copy()
+    robot.dofs.velocities = np.ones(robot.num_dofs)
+    initial = robot.dofs.positions.copy()
     for _ in range(3):
         world.step()
-    assert not np.array_equal(robot.getPositions(), initial)
+    assert not np.array_equal(robot.dofs.positions, initial)
     assert world.time > 0 and world.step_count > 0
-    assert world.getLastCollisionResult().getNumContacts() > 0
-    assert np.linalg.norm(contact_box.getConstraintForces()) > 0
+    assert len(world.collision.contacts) > 0
+    assert np.linalg.norm(contact_box.dofs.constraint_forces) > 0
     members = list(world.multibodies)
-    states = [(model.getPositions().copy(), model.getVelocities().copy()) for model in (robot, contact_box)]
+    states = [(model.dofs.positions.copy(), model.dofs.velocities.copy()) for model in (robot, contact_box)]
     # Existing reset semantics clear clocks/history/impulses, preserving q/v.
     # The final design lists reset without redefining it as an initial-state reset.
     world.reset()
     assert world.time == 0 and world.step_count == 0
     assert list(world.multibodies) == members
-    assert world.getLastCollisionResult().getNumContacts() == 0
+    assert len(world.collision.contacts) == 0
     for model, (positions, velocities) in zip((robot, contact_box), states):
-        np.testing.assert_array_equal(model.getPositions(), positions)
-        np.testing.assert_array_equal(model.getVelocities(), velocities)
-        np.testing.assert_array_equal(model.getConstraintForces(), np.zeros(model.getNumDofs()))
+        np.testing.assert_array_equal(model.dofs.positions, positions)
+        np.testing.assert_array_equal(model.dofs.velocities, velocities)
+        np.testing.assert_array_equal(model.dofs.constraint_forces, np.zeros(model.num_dofs))
     world.step()
     assert world.step_count == 1
-    assert world.time == pytest.approx(world.getTimeStep())
-    assert not np.array_equal(robot.getPositions(), states[0][0])
+    assert world.time == pytest.approx(world.time_step)
+    assert not np.array_equal(robot.dofs.positions, states[0][0])
 
 
 @pytest.mark.xfail(strict=True, reason="M1g/M5b: StepHook and the World hook registry are pending")
@@ -687,7 +696,7 @@ def test_step_hook_every(world, robot):
 
     # M1g settles the callback signature; decimation and global boundaries are
     # the acceptance contract regardless of the final registration spelling.
-    hook = dart.StepHook(lambda world: calls.append(world.step_count), every=3)
+    hook = dart.simulation.StepHook(lambda world: calls.append(world.step_count), every=3)
     world.hooks.add(hook)
     world.step(4)
     first = calls.copy()
@@ -701,7 +710,7 @@ def test_step_hook_every(world, robot):
 @pytest.mark.xfail(strict=True, reason="M5b: DOF state and target properties with read-only copies are pending")
 @pytest.mark.parametrize("channel", ["positions", "velocities", "position_targets", "velocity_targets"])
 def test_dof_arrays_are_read_only_copies(robot, channel):
-    expected = np.full(robot.getNumDofs(), 0.5)
+    expected = np.full(robot.num_dofs, 0.5)
     setattr(robot.dofs, channel, expected)
     array = getattr(robot.dofs, channel)
     assert not array.flags.writeable
@@ -769,11 +778,15 @@ def test_rotation_value():
 def test_link_world_transform(robot):
     # The x-axis shoulder keeps the rotation from commuting with the z offset,
     # so a reversed composition order also fails.
-    robot.setPositions(np.full(robot.getNumDofs(), 0.5))
+    robot.dofs.positions = np.full(robot.num_dofs, 0.5)
     X_WP = robot.links["palm"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
-    X_WL = robot.getBodyNode("palm").getWorldTransform().matrix()
+    cosine, sine = np.cos(0.5), np.sin(0.5)
+    shoulder = np.array([[1, 0, 0], [0, cosine, -sine], [0, sine, cosine]])
+    wrist = np.array([[cosine, -sine, 0], [sine, cosine, 0], [0, 0, 1]])
+    rotation = shoulder @ wrist
+    translation = np.array([0.1, 0, 0.4]) + shoulder @ np.array([0, 0.2, 0.3])
     points = np.eye(3)
-    expected = (points + (0, 0, 0.1)) @ X_WL[:3, :3].T + X_WL[:3, 3]
+    expected = (points + (0, 0, 0.1)) @ rotation.T + translation
     np.testing.assert_allclose(X_WP @ points, expected, rtol=0, atol=1e-12)
 
 
@@ -785,44 +798,43 @@ def test_capture_restore_state(world, robot):
     robot.joints["shoulder_yaw"].actuator = dart.PositionServo(
         kp=400, kd=40, effort_limit=80
     )
-    targets = np.full(robot.getNumDofs(), 0.5)
-    velocity_targets = np.full(robot.getNumDofs(), 0.25)
+    targets = np.full(robot.num_dofs, 0.5)
+    velocity_targets = np.full(robot.num_dofs, 0.25)
     robot.dofs.position_targets = targets
     robot.dofs.velocity_targets = velocity_targets
-    robot.setVelocities(np.ones(robot.getNumDofs()))
-    positions = robot.getPositions().copy()
-    velocities = robot.getVelocities().copy()
+    robot.dofs.velocities = np.ones(robot.num_dofs)
+    positions = robot.dofs.positions.copy()
+    velocities = robot.dofs.velocities.copy()
     time = world.time
     state = world.capture_state()
     clone = world.clone()
-    clone_robot = clone.getSkeleton("robot")
-    clone.setGravity([0, 0, 0])
-    clone_robot.setPositions(-positions + 0.2)
-    clone_robot.setVelocities(-velocities)
+    clone_robot = clone.multibodies["robot"]
+    clone.gravity = [0, 0, 0]
+    clone_robot.dofs.positions = -positions + 0.2
+    clone_robot.dofs.velocities = -velocities
     clone_robot.dofs.position_targets = -targets
     clone_robot.dofs.velocity_targets = -velocity_targets
     clone.restore_state(state)
     np.testing.assert_array_equal(clone.gravity, (0, 0, 0))
-    np.testing.assert_array_equal(clone_robot.getPositions(), positions)
-    np.testing.assert_array_equal(clone_robot.getVelocities(), velocities)
+    np.testing.assert_array_equal(clone_robot.dofs.positions, positions)
+    np.testing.assert_array_equal(clone_robot.dofs.velocities, velocities)
     np.testing.assert_array_equal(clone_robot.dofs.position_targets, targets)
     np.testing.assert_array_equal(clone_robot.dofs.velocity_targets, velocity_targets)
     assert clone.time == time
     # Equal array sizes do not imply a matching structural digest.
     different = world.clone()
-    different_robot = different.getSkeleton("robot")
+    different_robot = different.multibodies["robot"]
     with different.edit():
-        fixed = dart.dynamics.Skeleton("extra_fixed_model")
-        fixed.createWeldJointAndBodyNodePair()
-        different.addSkeleton(fixed)
-    assert fixed.getNumDofs() == 0
-    different_robot.setPositions(np.full(robot.getNumDofs(), 0.25))
-    different_robot.setVelocities(-velocities)
+        different.add_rigid_body(name="extra_fixed_model", joint=dart.dynamics.WeldJointSpec())
+        fixed = different.multibodies["extra_fixed_model"]
+    assert fixed.num_dofs == 0
+    different_robot.dofs.positions = np.full(robot.num_dofs, 0.25)
+    different_robot.dofs.velocities = -velocities
     different_robot.dofs.position_targets = -targets
     different_robot.dofs.velocity_targets = -velocity_targets
     before = (
-        different_robot.getPositions().tobytes(),
-        different_robot.getVelocities().tobytes(),
+        different_robot.dofs.positions.tobytes(),
+        different_robot.dofs.velocities.tobytes(),
         different_robot.dofs.position_targets.tobytes(),
         different_robot.dofs.velocity_targets.tobytes(),
         different.time,
@@ -830,20 +842,20 @@ def test_capture_restore_state(world, robot):
     with pytest.raises(Exception):
         different.restore_state(state)
     assert (
-        different_robot.getPositions().tobytes(),
-        different_robot.getVelocities().tobytes(),
+        different_robot.dofs.positions.tobytes(),
+        different_robot.dofs.velocities.tobytes(),
         different_robot.dofs.position_targets.tobytes(),
         different_robot.dofs.velocity_targets.tobytes(),
         different.time,
     ) == before
-    robot.dofs.position_targets = np.full(robot.getNumDofs(), -0.5)
+    robot.dofs.position_targets = np.full(robot.num_dofs, -0.5)
     robot.dofs.velocity_targets = -velocity_targets
     np.testing.assert_array_equal(robot.dofs.position_targets, -targets)
     world.step()
-    assert not np.array_equal(robot.getPositions(), positions)
+    assert not np.array_equal(robot.dofs.positions, positions)
     world.restore_state(state)
-    np.testing.assert_array_equal(robot.getPositions(), positions)
-    np.testing.assert_array_equal(robot.getVelocities(), velocities)
+    np.testing.assert_array_equal(robot.dofs.positions, positions)
+    np.testing.assert_array_equal(robot.dofs.velocities, velocities)
     np.testing.assert_array_equal(robot.dofs.position_targets, targets)
     np.testing.assert_array_equal(robot.dofs.velocity_targets, velocity_targets)
     assert world.time == time
@@ -854,43 +866,39 @@ def test_capture_restore_state(world, robot):
 )
 def test_capture_restore_checkpoint(world, contact_box):
     robot = contact_box
-    native_solver = dart.constraint.BoxedLcpConstraintSolver()
-    primary = native_solver.getBoxedLcpSolver()
-    alternate = native_solver.getSecondaryBoxedLcpSolver()
-    assert primary.getType() != alternate.getType()
-    world.getConstraintSolver().setBoxedLcpSolver(primary)
-    options = world.getDeactivationOptions()
-    options.mEnabled = True
-    options.mTimeUntilSleep = 5 * world.getTimeStep()
-    world.setDeactivationOptions(options)
+    # M1e/M1c/M5 settle typed solver mutation and sleep settings on subobjects.
+    world.solver.primary_solver = dart.constraint.SolverType.DANTZIG
+    assert isinstance(world.solver.primary_solver, dart.constraint.DantzigBoxedLcpSolver)
+    world.solver.sleep.enabled = True
+    world.solver.sleep.time_until_sleep = 5 * world.time_step
     for _ in range(2):
         world.step()
-    assert not robot.isResting()
+    assert not robot.is_resting
     checkpoint = world.capture_checkpoint()
 
     def frame():
-        contacts = world.getLastCollisionResult()
+        contacts = world.collision.contacts
         contact_state = tuple(
             (
                 contact.point.tobytes(),
                 contact.normal.tobytes(),
                 contact.force.tobytes(),
-                contact.penetrationDepth,
+                contact.penetration_depth,
             )
-            for contact in (contacts.getContact(i) for i in range(contacts.getNumContacts()))
+            for contact in contacts
         )
         # Serialized fields plus solver outputs and sleep transitions are the oracle.
         return (
             pickle.dumps(world.capture_checkpoint(), protocol=5),
             world.time,
             world.step_count,
-            robot.getPositions().tobytes(),
-            robot.getVelocities().tobytes(),
-            robot.getAccelerations().tobytes(),
-            robot.getForces().tobytes(),
-            (robot.getConstraintForces() * world.getTimeStep()).tobytes(),
+            robot.dofs.positions.tobytes(),
+            robot.dofs.velocities.tobytes(),
+            robot.dofs.accelerations.tobytes(),
+            robot.dofs.forces.tobytes(),
+            (robot.dofs.constraint_forces * world.time_step).tobytes(),
             contact_state,
-            robot.isResting(),
+            robot.is_resting,
         )
 
     initial = frame()
@@ -898,7 +906,7 @@ def test_capture_restore_checkpoint(world, contact_box):
     for _ in range(20):
         world.step()
         expected.append(frame())
-    assert robot.isResting()
+    assert robot.is_resting
     assert expected[-1] != initial
     world.restore_state(pickle.loads(pickle.dumps(checkpoint, protocol=5)))
     assert frame() == initial
@@ -912,12 +920,10 @@ def test_capture_restore_checkpoint(world, contact_box):
         different = world.clone()
         if change == "topology":
             with different.edit():
-                fixed = dart.dynamics.Skeleton("checkpoint_extra_fixed")
-                fixed.createWeldJointAndBodyNodePair()
-                different.addSkeleton(fixed)
+                different.add_rigid_body(name="checkpoint_extra_fixed", joint=dart.dynamics.WeldJointSpec())
         else:
-            different.getConstraintSolver().setBoxedLcpSolver(alternate)
-            assert different.getConstraintSolver().getBoxedLcpSolver().getType() != primary.getType()
+            different.solver.primary_solver = dart.constraint.SolverType.PGS
+            assert isinstance(different.solver.primary_solver, dart.constraint.PgsBoxedLcpSolver)
         restore = different.restore_state
         before = pickle.dumps(different.capture_checkpoint(), protocol=5)
         with pytest.raises(Exception) as mismatch:
@@ -925,7 +931,7 @@ def test_capture_restore_checkpoint(world, contact_box):
         assert type(mismatch.value).__name__ == "CheckpointMismatchError"
         assert pickle.dumps(different.capture_checkpoint(), protocol=5) == before
 
-    world.setGravity([0, 0, 0])
+    world.gravity = [0, 0, 0]
     before_rejection = frame()
     with pytest.raises(Exception) as mismatch:
         world.restore_state(checkpoint)
@@ -939,7 +945,7 @@ class _CheckpointControl:
 
     def __call__(self, current):
         self.calls += 1
-        current.getSkeleton("robot").setVelocities([0.01 * self.calls, -0.005 * self.calls])
+        current.multibodies["robot"].dofs.velocities = [0.01 * self.calls, -0.005 * self.calls]
 
     def __getstate__(self):
         return {"calls": self.calls}
@@ -955,11 +961,11 @@ class _UnsupportedCheckpointControl(_CheckpointControl):
 
 @pytest.mark.xfail(strict=True, reason="M1c/M1g: serializable hook checkpoint state and unsupported-state rejection are pending")
 def test_checkpoint_hook_state(world, robot):
-    world.setGravity([0, 0, 0])
+    world.gravity = [0, 0, 0]
     control = _CheckpointControl()
     # M1g settles the wrapper/callback spelling; the callable's declared
     # Python state must affect exact replay rather than being silently dropped.
-    world.hooks.add(dart.StepHook(control, every=1))
+    world.hooks.add(dart.simulation.StepHook(control, every=1))
     for _ in range(3):
         world.step()
     assert control.calls == 3
@@ -967,8 +973,8 @@ def test_checkpoint_hook_state(world, robot):
 
     def frame():
         return (
-            robot.getPositions().tobytes(),
-            robot.getVelocities().tobytes(),
+            robot.dofs.positions.tobytes(),
+            robot.dofs.velocities.tobytes(),
             world.time,
             pickle.dumps(world.capture_checkpoint(), protocol=5),
         )
@@ -984,7 +990,7 @@ def test_checkpoint_hook_state(world, robot):
     for expected_frame in expected:
         world.step()
         assert frame() == expected_frame
-    world.hooks.add(dart.StepHook(_UnsupportedCheckpointControl(), every=1))
+    world.hooks.add(dart.simulation.StepHook(_UnsupportedCheckpointControl(), every=1))
     capture = world.capture_checkpoint
     with pytest.raises(Exception):
         capture()
@@ -992,6 +998,146 @@ def test_checkpoint_hook_state(world, robot):
 
 @pytest.fixture
 def contact_box(world):
+    # Sleep configuration and shared-node visual construction spelling are
+    # provisional M1c/M5. Native setup proofs below remain separate.
+    world.solver.sleep.enabled = False
+    ground = world.add_rigid_body(name="ground", joint=dart.dynamics.WeldJointSpec(
+        parent_transform=dart.Transform(translation=(0, 0, -0.05))))
+    ground.add_collider(dart.dynamics.BoxShape(size=(2, 2, 0.1)), visual=True)
+    body = world.add_rigid_body(name="box", joint=dart.dynamics.FreeJointSpec())
+    body.add_collider(dart.dynamics.BoxShape(size=(0.2, 0.2, 0.2)), visual=True)
+    box = world.multibodies["box"]
+    box.dofs.positions = np.array([0, 0, 0, 0, 0, 0.3])
+    for _ in range(2000):
+        world.step()
+    return box
+
+
+
+
+
+@pytest.mark.xfail(
+    strict=True, reason="M1i/M1g/M5b: WorldBatch clones, set/step and the position-target channel are pending"
+)
+def test_world_batch_set_step(world, robot):
+    world.gravity = [0, 0, 0]
+    robot.dofs.velocities = np.zeros(robot.num_dofs)
+    servo = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    robot.joints["shoulder_yaw"].actuator = servo
+    batch = dart.WorldBatch(world, count=64)
+    assert batch.positions.shape == (64, robot.num_dofs)
+    batch.set("velocities", np.zeros_like(batch.positions))
+    targets = np.zeros_like(batch.positions)
+    targets[:, 0] = np.linspace(-0.5, 0.5, 64)
+    batch.set("position_targets", targets)
+    batch.step(20)
+    expected = []
+    for target in targets:
+        serial = world.clone()
+        serial_robot = serial.multibodies["robot"]
+        serial_robot.dofs.position_targets = target
+        for _ in range(20):
+            serial.step()
+        expected.append(serial_robot.dofs.positions.copy())
+    assert expected[0][0] < 0 < expected[-1][0]
+    np.testing.assert_array_equal(batch.positions, expected)
+    # The source is a template; stepping its independent clones leaves it alone.
+    np.testing.assert_array_equal(robot.dofs.positions, np.zeros(robot.num_dofs))
+
+
+@pytest.mark.xfail(strict=True, reason="M1c/M1i: selected-row WorldBatch snapshot broadcasting is pending")
+def test_world_batch_restore_state(world, robot):
+    robot.dofs.positions = [0.2, -0.3]
+    robot.dofs.velocities = [0.4, -0.5]
+    robot.dofs.position_targets = [0.6, -0.7]
+    robot.dofs.velocity_targets = [0.8, -0.9]
+    for _ in range(3):
+        world.step()
+    channels = ("positions", "velocities", "position_targets", "velocity_targets")
+    np.testing.assert_array_equal(robot.dofs.position_targets, [0.6, -0.7])
+    np.testing.assert_array_equal(robot.dofs.velocity_targets, [0.8, -0.9])
+    source = {name: getattr(robot.dofs, name).copy() for name in channels}
+    source["time"] = world.time
+    assert source["time"] > 0
+    state = world.capture_state()
+    batch = dart.WorldBatch(world, count=4)
+    rows = np.array([[1, 2], [3, 4], [5, 6], [7, 8]], dtype=float)
+    requested = {"positions": rows, "velocities": -rows,
+                 "position_targets": 2 * rows, "velocity_targets": -2 * rows,
+                 "time": np.array([1, 2, 3, 4], dtype=float)}
+    # M1i settles the scalar-clock field and array observer spelling.
+    observers = {name: name for name in channels} | {"time": "times"}
+    before = {}
+    for name, values in requested.items():
+        batch.set(name, values)
+        before[name] = getattr(batch, observers[name]).copy()
+        np.testing.assert_array_equal(before[name], values)
+    batch.restore_state(state, indices=[0, 2])
+    for name, values in before.items():
+        expected = values.copy()
+        expected[[0, 2]] = source[name]
+        np.testing.assert_array_equal(getattr(batch, observers[name]), expected)
+    for name in channels:
+        np.testing.assert_array_equal(getattr(robot.dofs, name), source[name])
+    assert world.time == source["time"]
+
+
+@pytest.mark.xfail(strict=True, reason="M1i: per-clone batch parameters without recompilation are pending")
+def test_world_batch_parameters(world, robot):
+    world.gravity = [0, 0, 0]
+    robot.dofs.velocities = [0.5, -0.25]
+    positions = robot.dofs.positions.copy()
+    velocities = robot.dofs.velocities.copy()
+    time_step = world.time_step
+    batch = dart.WorldBatch(world, count=4)
+    # M1i settles argument spelling; distinct per-row time steps must affect
+    # execution, rather than silently retaining the template's configuration.
+    batch.set_parameter("time_step", np.array([2, 4]) * time_step, indices=[0, 2])
+    batch.step(20)
+    expected = []
+    for multiplier in (2, 1, 4, 1):
+        serial = world.clone()
+        serial.time_step = multiplier * time_step
+        for _ in range(20):
+            serial.step()
+        expected.append(serial.multibodies["robot"].dofs.positions.copy())
+    assert not np.array_equal(expected[0], expected[1])
+    assert not np.array_equal(expected[0], expected[2])
+    np.testing.assert_array_equal(batch.positions, expected)
+    assert world.time_step == time_step
+    assert world.time == 0
+    np.testing.assert_array_equal(robot.dofs.positions, positions)
+    np.testing.assert_array_equal(robot.dofs.velocities, velocities)
+
+
+@pytest.mark.xfail(strict=True, reason="M1i/M1g/M5b: remapping clones with World-bound step hooks are pending")
+def test_world_batch_remaps_hook(world, robot):
+    world.gravity = [0, 0, 0]
+    robot.joints["shoulder_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    robot.dofs.position_targets = np.zeros(robot.num_dofs)
+
+    def drive(current):
+        # Stateless and bound through the callback's World, not a source model
+        # captured in a closure. M1g settles the callback signature.
+        current.multibodies["robot"].dofs.position_targets = np.array([0.5, 0])
+
+    world.hooks.add(dart.simulation.StepHook(drive, every=1))
+    before_time = world.time
+    batch = dart.WorldBatch(world, count=3)
+    batch.step(20)
+    assert world.time == before_time
+    np.testing.assert_array_equal(robot.dofs.positions, np.zeros(robot.num_dofs))
+    np.testing.assert_array_equal(robot.dofs.position_targets, np.zeros(robot.num_dofs))
+    # Step the actual source as oracle: a shallow clone that drops the hook
+    # cannot make both the batch and a cloned serial oracle fail identically.
+    for _ in range(20):
+        world.step()
+    assert robot.dofs.positions[0] > 0
+    np.testing.assert_array_equal(batch.positions, np.tile(robot.dofs.positions, (3, 1)))
+
+
+# Current native fixture evidence is separate from the final public facade.
+def _native_contact_box(world):
     world.getConstraintSolver().setCollisionDetector(
         dart.collision.DARTCollisionDetector()
     )
@@ -1019,8 +1165,13 @@ def contact_box(world):
         world.step()
     return box
 
-
-def test_checkpoint_contact_scene(world, contact_box):
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "Skeleton"),
+    reason="Baseline native scene proof; M5 retires or migrates it after removing the legacy binding surface",
+)
+def test_checkpoint_contact_scene():
+    world = dart.simulation.World()
+    contact_box = _native_contact_box(world)
     # This setup gate runs without xfail, so a broken scene cannot hide behind M1c.
     result = world.getLastCollisionResult()
     assert result.getNumContacts() > 0
@@ -1037,115 +1188,3 @@ def test_checkpoint_contact_scene(world, contact_box):
     for _ in range(20):
         world.step()
     assert contact_box.isResting()
-
-
-@pytest.mark.xfail(
-    strict=True, reason="M1i/M1g/M5b: WorldBatch clones, set/step and the position-target channel are pending"
-)
-def test_world_batch_set_step(world, robot):
-    world.setGravity([0, 0, 0])
-    robot.setVelocities(np.zeros(robot.getNumDofs()))
-    servo = dart.PositionServo(kp=400, kd=40, effort_limit=80)
-    robot.joints["shoulder_yaw"].actuator = servo
-    batch = dart.WorldBatch(world, count=64)
-    assert batch.positions.shape == (64, robot.getNumDofs())
-    batch.set("velocities", np.zeros_like(batch.positions))
-    targets = np.zeros_like(batch.positions)
-    targets[:, 0] = np.linspace(-0.5, 0.5, 64)
-    batch.set("position_targets", targets)
-    batch.step(20)
-    expected = []
-    for target in targets:
-        serial = world.clone()
-        serial_robot = serial.getSkeleton("robot")
-        serial_robot.dofs.position_targets = target
-        for _ in range(20):
-            serial.step()
-        expected.append(serial_robot.getPositions().copy())
-    assert expected[0][0] < 0 < expected[-1][0]
-    np.testing.assert_array_equal(batch.positions, expected)
-    # The source is a template; stepping its independent clones leaves it alone.
-    np.testing.assert_array_equal(robot.getPositions(), np.zeros(robot.getNumDofs()))
-
-
-@pytest.mark.xfail(strict=True, reason="M1c/M1i: selected-row WorldBatch snapshot broadcasting is pending")
-def test_world_batch_restore_state(world, robot):
-    robot.setPositions([0.2, -0.3])
-    robot.setVelocities([0.4, -0.5])
-    source_positions = robot.getPositions().copy()
-    source_velocities = robot.getVelocities().copy()
-    state = world.capture_state()
-    batch = dart.WorldBatch(world, count=4)
-    positions = np.array([[1, 2], [3, 4], [5, 6], [7, 8]], dtype=float)
-    velocities = -positions
-    batch.set("positions", positions)
-    batch.set("velocities", velocities)
-    # The array observer spelling is provisional M1i. The feature PR must
-    # also cover control channels and each clone's clock.
-    before_positions = batch.positions.copy()
-    before_velocities = batch.velocities.copy()
-    np.testing.assert_array_equal(before_positions, positions)
-    np.testing.assert_array_equal(before_velocities, velocities)
-    batch.restore_state(state, indices=[0, 2])
-    expected_positions = before_positions.copy()
-    expected_velocities = before_velocities.copy()
-    expected_positions[[0, 2]] = source_positions
-    expected_velocities[[0, 2]] = source_velocities
-    np.testing.assert_array_equal(batch.positions, expected_positions)
-    np.testing.assert_array_equal(batch.velocities, expected_velocities)
-    np.testing.assert_array_equal(robot.getPositions(), source_positions)
-    np.testing.assert_array_equal(robot.getVelocities(), source_velocities)
-
-
-@pytest.mark.xfail(strict=True, reason="M1i: per-clone batch parameters without recompilation are pending")
-def test_world_batch_parameters(world, robot):
-    world.setGravity([0, 0, 0])
-    robot.setVelocities([0.5, -0.25])
-    positions = robot.getPositions().copy()
-    velocities = robot.getVelocities().copy()
-    time_step = world.getTimeStep()
-    batch = dart.WorldBatch(world, count=4)
-    # M1i settles argument spelling; distinct per-row time steps must affect
-    # execution, rather than silently retaining the template's configuration.
-    batch.set_parameter("time_step", np.array([2, 4]) * time_step, indices=[0, 2])
-    batch.step(20)
-    expected = []
-    for multiplier in (2, 1, 4, 1):
-        serial = world.clone()
-        serial.setTimeStep(multiplier * time_step)
-        for _ in range(20):
-            serial.step()
-        expected.append(serial.getSkeleton("robot").getPositions().copy())
-    assert not np.array_equal(expected[0], expected[1])
-    assert not np.array_equal(expected[0], expected[2])
-    np.testing.assert_array_equal(batch.positions, expected)
-    assert world.getTimeStep() == time_step
-    assert world.getTime() == 0
-    np.testing.assert_array_equal(robot.getPositions(), positions)
-    np.testing.assert_array_equal(robot.getVelocities(), velocities)
-
-
-@pytest.mark.xfail(strict=True, reason="M1i/M1g/M5b: remapping clones with World-bound step hooks are pending")
-def test_world_batch_remaps_hook(world, robot):
-    world.setGravity([0, 0, 0])
-    robot.joints["shoulder_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
-    robot.dofs.position_targets = np.zeros(robot.getNumDofs())
-
-    def drive(current):
-        # Stateless and bound through the callback's World, not a source model
-        # captured in a closure. M1g settles the callback signature.
-        current.getSkeleton("robot").dofs.position_targets = np.array([0.5, 0])
-
-    world.hooks.add(dart.StepHook(drive, every=1))
-    before_time = world.time
-    batch = dart.WorldBatch(world, count=3)
-    batch.step(20)
-    assert world.time == before_time
-    np.testing.assert_array_equal(robot.getPositions(), np.zeros(robot.getNumDofs()))
-    np.testing.assert_array_equal(robot.dofs.position_targets, np.zeros(robot.getNumDofs()))
-    # Step the actual source as oracle: a shallow clone that drops the hook
-    # cannot make both the batch and a cloned serial oracle fail identically.
-    for _ in range(20):
-        world.step()
-    assert robot.getPositions()[0] > 0
-    np.testing.assert_array_equal(batch.positions, np.tile(robot.getPositions(), (3, 1)))
