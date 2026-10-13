@@ -150,7 +150,13 @@ HEADS
         # Skip commits that any published head already reaches, so merging
         # several published branches does not rescan them.
         unpublished=$(git rev-list --topo-order --reverse "$local_sha" --not $published) || exit 1
-        unpublished_count=$(printf '%s\\n' "$unpublished" | grep -c .)
+        # Plain shell loops cannot fail halfway and leave commits unscanned.
+        unpublished_count=0
+        unpublished_ranges=
+        for commit in $unpublished; do
+            unpublished_count=$((unpublished_count + 1))
+            unpublished_ranges="$unpublished_ranges $commit^!"
+        done
         if [ -z "$best_base" ]; then
             # Nothing published is related: scan all local history at once.
             scan_ranges=$local_sha
@@ -162,7 +168,7 @@ HEADS
             scan_ranges="$best_base..$local_sha"
         else
             # Checkers of any version accept one commit as `<sha>^!`.
-            scan_ranges=$(printf '%s\\n' $unpublished | sed 's/$/^!/')
+            scan_ranges=$unpublished_ranges
         fi
     else
         scan_ranges="$base_sha..$local_sha"

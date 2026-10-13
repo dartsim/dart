@@ -577,6 +577,36 @@ def test_pre_push_new_ref_ignores_tracking_tips_left_by_a_previous_url(tmp_path)
     assert git("ls-remote", str(other), "refs/heads/topic").stdout == ""
 
 
+def test_pre_push_new_ref_blocks_when_text_tools_fail(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    git("commit", "--allow-empty", "-qm", "Published release change")
+    git("push", "origin", "release")
+    git("checkout", "main")
+    git("commit", "--allow-empty", "-qm", "Main-only change")
+    git("push", "origin", "main")
+    git("checkout", "-b", "topic")
+    git("merge", "-q", "--no-edit", "release")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    assert _install(repo, env).returncode == 0
+    # Selecting per-commit ranges must not depend on tools that can fail.
+    broken = tmp_path / "broken-bin"
+    broken.mkdir()
+    for tool in ("sed", "grep"):
+        (broken / tool).write_text("#!/bin/sh\nexit 23\n")
+        (broken / tool).chmod(0o755)
+    env["PATH"] = f"{broken}{os.pathsep}{env['PATH']}"
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode != 0
+    assert private_path in result.stdout
+    assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+
+
 @pytest.mark.parametrize("removal", ["delete", "rename"])
 def test_pre_push_new_ref_recovers_checker_when_release_base_lacks_it(
     tmp_path, removal
