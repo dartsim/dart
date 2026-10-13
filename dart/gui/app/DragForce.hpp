@@ -88,6 +88,9 @@ public:
       dart::gui::Viewer* viewer,
       std::function<void(dart::dynamics::BodyNode*)> onPlainClickSelect);
 
+  /// Removes the mouse handler from the viewer, which must still be alive.
+  void uninstallMouseHandler();
+
   /// Binds the force-line visual to the newly-installed scene's world. Call
   /// from App::installScene after `world` is set as the current world.
   void onSceneInstalled(const dart::simulation::WorldPtr& world);

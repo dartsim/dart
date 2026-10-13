@@ -252,7 +252,7 @@ public:
     // Never let typing in an ImGui field (e.g. the always-visible "Search
     // demos..." box) trigger a scene key action. The viewer already drops key
     // presses while ImGui wants the keyboard; this also covers held keys.
-    if (ImGui::GetIO().WantCaptureKeyboard)
+    if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
     return mHost->handleKey(ea.getKey());
@@ -265,48 +265,88 @@ private:
 } // namespace
 
 //==============================================================================
-SceneContext::SceneContext(App& host) : mHost(host) {}
+CameraHome::CameraHome(
+    const Eigen::Vector3d& eye,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& up)
+  : eye(eye), center(center), up(up)
+{
+  // Same predicate as Viewer::setCameraHome(), checked where the pose is made.
+  if (!eye.allFinite() || !center.allFinite() || !up.allFinite()
+      || (eye - center).norm() < 1e-12 || up.norm() < 1e-12
+      || (center - eye).cross(up).norm() < 1e-12)
+    throw std::invalid_argument(
+        "Camera vectors must be finite, distinct and nonparallel");
+}
+
+//==============================================================================
+SceneContext::SceneContext(App& host, std::weak_ptr<const void> activation)
+  : mHost(&host), mActivation(std::move(activation))
+{
+}
+
+//==============================================================================
+App& SceneContext::host() const
+{
+  if (mActivation.expired())
+    throw std::logic_error(
+        "This scene context expired when its scene was torn down");
+  return *mHost;
+}
 
 //==============================================================================
 dart::gui::Viewer* SceneContext::viewer() const
 {
-  return mHost.getViewer();
+  return host().getViewer();
 }
 
 //==============================================================================
 dart::gui::WorldNode* SceneContext::worldNode() const
 {
-  return mHost.getWorldNode();
+  return host().getWorldNode();
+}
+
+//==============================================================================
+std::shared_ptr<dart::gui::Viewer> SceneContext::viewerPtr() const
+{
+  return host().getViewerPtr();
+}
+
+//==============================================================================
+std::shared_ptr<dart::gui::WorldNode> SceneContext::worldNodePtr() const
+{
+  return host().getWorldNodePtr();
 }
 
 //==============================================================================
 void SceneContext::addTeardown(std::function<void()> teardown)
 {
-  mHost.addTeardown(std::move(teardown));
+  host().addTeardown(std::move(teardown));
 }
 
 //==============================================================================
 void SceneContext::addOwnedAttachment(
     std::shared_ptr<dart::gui::ViewerAttachment> attachment)
 {
-  auto* viewer = mHost.getViewer();
-  viewer->addAttachment(attachment);
+  auto* viewer = host().getViewer();
+  // Register the removal first: addTeardown() throws during a teardown.
   addTeardown([viewer, attachment] { viewer->removeAttachment(attachment); });
+  viewer->addAttachment(attachment);
 }
 
 //==============================================================================
 void SceneContext::addEventHandler(
     std::shared_ptr<dart::gui::GUIEventHandler> handler)
 {
-  auto* viewer = mHost.getViewer();
-  viewer->addEventHandler(handler);
+  auto* viewer = host().getViewer();
   addTeardown([viewer, handler] { viewer->removeEventHandler(handler); });
+  viewer->addEventHandler(handler);
 }
 
 //==============================================================================
 void SceneContext::log(const std::string& message) const
 {
-  mHost.log(LogEntry::Level::Info, message);
+  host().log(LogEntry::Level::Info, message);
 }
 
 //==============================================================================
@@ -337,6 +377,8 @@ void AppWorldNode::setHookErrorSink(
 void AppWorldNode::stepOnce()
 {
   customPreStep();
+  if (mStepStopped)
+    return;
   if (getWorld())
     getWorld()->step();
   customPostStep();
@@ -352,7 +394,19 @@ std::size_t AppWorldNode::getStepCount() const
 void AppWorldNode::customPreStep()
 {
   invokeHook(mPreStep, "preStep");
+  // refresh() checks isSimulating() before each step of a catch-up.
+  mStepStopped = mStopRequested && mStopRequested();
+  if (mStepStopped) {
+    simulate(false);
+    return;
+  }
   beginStepTiming();
+}
+
+//==============================================================================
+void AppWorldNode::setStopRequested(std::function<bool()> stopRequested)
+{
+  mStopRequested = std::move(stopRequested);
 }
 
 //==============================================================================
@@ -520,6 +574,16 @@ App::~App()
   // process exit leaks its DnD/attachment/event-handler teardowns into the
   // viewer's own destruction instead of running them first.
   teardownCurrentScene();
+
+  // A caller may keep the viewer (SceneContext::viewerPtr()); it must not
+  // call into this host afterwards.
+  mDragForce.uninstallMouseHandler();
+  if (mPanelWidget)
+    mViewer->removeWidget(mPanelWidget);
+  if (mKeyHandler)
+    mViewer->removeEventHandler(mKeyHandler);
+  if (mGridVisual)
+    mViewer->removeAttachment(mGridVisual);
 }
 
 //==============================================================================
@@ -571,6 +635,42 @@ void App::setDebugRecordProfile(bool on)
   mDebugRecordProfile = on;
 }
 
+//==============================================================================
+void App::setDebugPrintWorld(bool on)
+{
+  mDebugPrintWorld = on;
+}
+
+//==============================================================================
+void App::setStopRequested(std::function<bool()> stopRequested)
+{
+  mStopRequested = std::move(stopRequested);
+}
+
+//==============================================================================
+void App::setStopException(std::function<bool(const std::exception&)> isStop)
+{
+  mIsStopException = std::move(isStop);
+}
+
+//==============================================================================
+bool App::stopRequested() const
+{
+  // Latched until stopRun(): a predicate may report a stop only once, and
+  // the world node's poll must not consume it before the run's own poll.
+  mStopLatched = mStopLatched || (mStopRequested && mStopRequested());
+  return mStopLatched;
+}
+
+//==============================================================================
+int App::stopRun()
+{
+  // A stopped run tears its scene down like any other ending.
+  teardownCurrentScene();
+  mStopLatched = false;
+  return kStoppedExitCode;
+}
+
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
 //==============================================================================
 void App::setDebugScrollMemoryPanelTicks(int ticks)
@@ -593,6 +693,12 @@ std::size_t App::getActiveWorldNodeCount() const
 }
 
 //==============================================================================
+std::size_t App::getCallbackFailureCount() const
+{
+  return mCallbackFailures;
+}
+
+//==============================================================================
 dart::gui::Viewer* App::getViewer() const
 {
   return mViewer.get();
@@ -605,9 +711,46 @@ AppWorldNode* App::getWorldNode() const
 }
 
 //==============================================================================
+std::shared_ptr<dart::gui::Viewer> App::getViewerPtr() const
+{
+  return mViewer;
+}
+
+//==============================================================================
+std::shared_ptr<AppWorldNode> App::getWorldNodePtr() const
+{
+  return mWorldNode;
+}
+
+//==============================================================================
 void App::addTeardown(std::function<void()> teardown)
 {
+  if (mTearingDown)
+    throw std::logic_error("Cannot add a teardown while the scene tears down");
   mExtraTeardowns.push_back(std::move(teardown));
+}
+
+//==============================================================================
+void App::invokeSceneCallback(
+    std::function<void()>& callback, const std::string& what)
+{
+  if (!callback)
+    return;
+
+  try {
+    callback();
+    return;
+  } catch (const std::exception& e) {
+    reportFailure(
+        "Demo '" + mCurrentSceneTitle + "' " + what + " failed: " + e.what()
+        + " (disabled)");
+  } catch (...) {
+    reportFailure(
+        "Demo '" + mCurrentSceneTitle + "' " + what
+        + " failed: unknown error (disabled)");
+  }
+  callback = nullptr;
+  ++mCallbackFailures;
 }
 
 //==============================================================================
@@ -621,6 +764,15 @@ void App::log(LogEntry::Level level, const std::string& message)
   constexpr std::size_t kMaxLogEntries = 2000;
   while (mLog.size() > kMaxLogEntries)
     mLog.pop_front();
+}
+
+//==============================================================================
+void App::reportFailure(const std::string& message)
+{
+  log(LogEntry::Level::Error, message);
+  // Display-free runs show no log console, so failures go to the terminal.
+  if (mEchoErrors)
+    std::cerr << message << std::endl;
 }
 
 //==============================================================================
@@ -699,8 +851,10 @@ void App::ensureViewerConfigured()
   mViewer->setVerticalFieldOfView(30.0);
   if (!mAutomaticGuiScale)
     mViewer->setGuiScale(mGuiScale);
-  mViewer->addWidget(std::make_shared<HostPanelWidget>(this));
-  mViewer->addEventHandler(std::make_shared<DemoKeyHandler>(this));
+  mPanelWidget = std::make_shared<HostPanelWidget>(this);
+  mViewer->addWidget(mPanelWidget);
+  mKeyHandler = std::make_shared<DemoKeyHandler>(this);
+  mViewer->addEventHandler(mKeyHandler);
 
   // Host-wide picking: plain left-click selects a body for the Inspector;
   // Ctrl+left-drag starts a spring-force drag (DragForce owns both, since it
@@ -830,28 +984,55 @@ void App::teardownCurrentScene()
   mDragForce.reset(mViewer.get());
   mContactVisualizer.reset();
 
+  // No panel callback or queued click may run while the scene is released.
+  if (mCurrentPanel)
+    mCurrentPanel->clearCallbacks();
+  mPendingKeyAction.reset();
+
   // Tear down drag-and-drop / attachments / event handlers before the world
   // node and world itself, since these extras may hold raw pointers into
-  // objects the world owns (e.g. a SimpleFrame's DnD registration).
-  for (auto it = mExtraTeardowns.rbegin(); it != mExtraTeardowns.rend(); ++it) {
-    try {
-      (*it)();
-    } catch (...) {
-      // Teardown must never crash the host.
-    }
-  }
-  mExtraTeardowns.clear();
+  // objects the world owns (e.g. a SimpleFrame's DnD registration). The
+  // teardowns run from a snapshot; adding one meanwhile throws.
+  auto teardowns = std::exchange(mExtraTeardowns, {});
+  mTearingDown = true;
+  for (auto it = teardowns.rbegin(); it != teardowns.rend(); ++it)
+    invokeSceneCallback(*it, "teardown");
+  // Destroying the callables can run destructors that try to add more.
+  teardowns.clear();
+  mTearingDown = false;
+  // The scene's contexts expire only now, so its teardowns could use them.
+  mActivation.reset();
 
   if (mWorldNode) {
+    // Something else, such as a language binding, may still hold the node;
+    // it must not call into the scene once it is gone.
+    mWorldNode->setHooks({}, {}, {});
+    mWorldNode->setHookErrorSink({});
+    mWorldNode->setStopRequested({});
     mViewer->removeWorldNode(mWorldNode);
     mWorldNode = nullptr;
     if (mActiveWorldNodeCount > 0)
       --mActiveWorldNodeCount;
   }
 
+  // Undo only what installScene() changed: an owner may have disallowed
+  // simulation itself.
+  if (mRestoreSimulationOnTeardown) {
+    mViewer->allowSimulation(true);
+    if (mResumeSimulationOnTeardown)
+      mViewer->simulate(true);
+  }
+  mRestoreSimulationOnTeardown = false;
+  mResumeSimulationOnTeardown = false;
+
   mCurrentWorld.reset();
   mCurrentRenderPanel = nullptr;
   mCurrentKeyActions.clear();
+  // Destroying the scene's callables may have added panel callbacks, which
+  // could keep the panel alive in a cycle.
+  if (mCurrentPanel)
+    mCurrentPanel->clearCallbacks();
+  mCurrentPanel.reset();
   mCurrentCameraHome.reset();
   mCurrentSceneId.clear();
   mCurrentSceneTitle.clear();
@@ -865,6 +1046,8 @@ void App::installScene(
   ++mMemoryDiagnosticsGeneration;
   mMemoryDiagnosticsSession.reset();
 #endif
+  mCurrentSceneTitle = scene.title;
+  mActivation = std::make_shared<int>(0);
   mCurrentWorld = setup.world;
   applyRuntimeOptionsToWorld();
   mPerformanceStatsPanel.reset();
@@ -873,38 +1056,40 @@ void App::installScene(
   mCurrentSceneWantsShadows = setup.enableShadows;
 
   mWorldNode = std::make_shared<AppWorldNode>(mCurrentWorld);
+  mWorldNode->setStopRequested([this] { return stopRequested(); });
   applyShadowState();
 
   // Compose the host-level facilities (joint-slider edits, drag-force/
   // gizmo spring, contact-visualizer refresh) around the scene's own hooks.
-  // Each facility call is internally exception-safe (never throws), so a
-  // fault in one never disables the scene's own preStep/postStep/preRefresh
-  // the way AppWorldNode::invokeHook's generic guard would if it were
-  // tripped by host code.
+  // Only the scene's part is guarded and disabled when it throws, so the
+  // facilities keep running. They never throw themselves; if one did,
+  // AppWorldNode::invokeHook would disable the whole composite.
   mWorldNode->setHooks(
-      [this, scenePreStep = std::move(setup.preStep)] {
+      [this, scenePreStep = std::move(setup.preStep)]() mutable {
         mInspector.applyQueuedEdits();
         mDragForce.applyPreStep();
-        if (scenePreStep)
-          scenePreStep();
+        invokeSceneCallback(scenePreStep, "preStep");
       },
-      [this, scenePostStep = std::move(setup.postStep)] {
-        if (scenePostStep)
-          scenePostStep();
+      [this, scenePostStep = std::move(setup.postStep)]() mutable {
+        invokeSceneCallback(scenePostStep, "postStep");
         mContactVisualizer.applyPostStep();
       },
-      [this, scenePreRefresh = std::move(setup.preRefresh)] {
+      [this, scenePreRefresh = std::move(setup.preRefresh)]() mutable {
         mInspector.applyQueuedEdits();
-        mInspector.updateHighlight(ImGui::GetTime());
+        // A steady clock, because display-free runs have no ImGui context.
+        mInspector.updateHighlight(
+            std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - mStartTime)
+                .count());
         mDragForce.applyPreRefresh(!mViewer->isSimulating());
-        if (scenePreRefresh)
-          scenePreRefresh();
+        invokeSceneCallback(scenePreRefresh, "preRefresh");
       });
   mWorldNode->setHookErrorSink(
       [this](const std::string& hookName, const std::string& reason) {
-        log(LogEntry::Level::Error,
+        reportFailure(
             "Demo '" + mCurrentSceneTitle + "' " + hookName
-                + " failed: " + reason + " (disabled)");
+            + " failed: " + reason + " (disabled)");
+        ++mCallbackFailures;
       });
 
   mTargetRtf = 1.0f;
@@ -922,6 +1107,13 @@ void App::installScene(
   mViewer->addWorldNode(mWorldNode);
   ++mActiveWorldNodeCount;
 
+  if (!setup.allowSimulation && mViewer->isAllowingSimulation()) {
+    mResumeSimulationOnTeardown = mViewer->isSimulating();
+    mViewer->allowSimulation(false);
+    mRestoreSimulationOnTeardown = true;
+  }
+
+  mCurrentPanel = std::move(setup.panel);
   mCurrentRenderPanel = setup.renderPanel;
   mCurrentKeyActions = std::move(setup.keyActions);
   mCurrentCameraHome = setup.cameraHome;
@@ -938,16 +1130,11 @@ void App::installScene(
   }
 
   if (setup.onActivate) {
-    SceneContext ctx(*this);
-    try {
+    SceneContext ctx(*this, mActivation);
+    std::function<void()> activate = [&] {
       setup.onActivate(ctx);
-    } catch (const std::exception& e) {
-      log(LogEntry::Level::Error,
-          "Demo '" + scene.title + "' onActivate failed: " + e.what());
-    } catch (...) {
-      log(LogEntry::Level::Error,
-          "Demo '" + scene.title + "' onActivate failed: unknown error");
-    }
+    };
+    invokeSceneCallback(activate, "onActivate");
   }
 
   // Rebuilding the active demo keeps the user's camera pose; the scene's home
@@ -1033,6 +1220,42 @@ void App::fitCameraToWorld()
 }
 
 //==============================================================================
+void App::printWorld() const
+{
+  const SceneCounts counts = collectSceneCounts(mCurrentWorld);
+  std::size_t dofs = 0;
+  if (mCurrentWorld) {
+    for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i)
+      dofs += mCurrentWorld->getSkeleton(i)->getNumDofs();
+  }
+  const std::size_t constraints
+      = mCurrentWorld
+            ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
+            : std::size_t{0};
+  std::cout << "[world] skeletons " << counts.skeletons << ", bodies "
+            << counts.bodyNodes << ", soft bodies " << counts.softBodies
+            << ", point masses " << counts.pointMasses << ", dofs " << dofs
+            << ", constraints " << constraints << "\n";
+  if (!mCurrentWorld)
+    return;
+  for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i) {
+    const auto skeleton = mCurrentWorld->getSkeleton(i);
+    std::size_t softBodies = 0;
+    std::size_t pointMasses = 0;
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      if (const auto* soft = skeleton->getBodyNode(j)->asSoftBodyNode()) {
+        ++softBodies;
+        pointMasses += soft->getNumPointMasses();
+      }
+    }
+    std::cout << "[world] skeleton '" << skeleton->getName() << "': bodies "
+              << skeleton->getNumBodyNodes() << ", soft bodies " << softBodies
+              << ", point masses " << pointMasses << ", dofs "
+              << skeleton->getNumDofs() << "\n";
+  }
+}
+
+//==============================================================================
 int App::listScenes() const
 {
   for (const auto& category : mCategories) {
@@ -1051,6 +1274,7 @@ int App::listScenes() const
 //==============================================================================
 int App::cycleScenes(int framesPerScene, bool render, int width, int height)
 {
+  mEchoErrors = true;
   bool anyFailure = false;
   std::size_t skipped = 0;
   if (render) {
@@ -1067,8 +1291,13 @@ int App::cycleScenes(int framesPerScene, bool render, int width, int height)
   // gate must not leak world nodes or corrupt state across repeated switches.
   for (int repeat = 0; repeat < 2; ++repeat) {
     for (const auto& scene : mScenes) {
+      if (stopRequested())
+        return stopRun();
+      // Includes the previous scene's teardowns, which run in this switch.
+      const std::size_t failuresBefore = mCallbackFailures;
       requestSceneSwitch(scene.id);
       processPendingSwitch();
+      processPanelEvents();
 
       if (!mLastSwitchSkipReason.empty()) {
         std::cout << "[cycle-scenes] demo '" << scene.id
@@ -1082,13 +1311,31 @@ int App::cycleScenes(int framesPerScene, bool render, int width, int height)
 
       try {
         for (int frame = 0; frame < framesPerScene && mWorldNode; ++frame) {
-          mWorldNode->stepOnce();
-          if (render)
+          if (stopRequested())
+            return stopRun();
+          if (render) {
+            mWorldNode->stepOnce();
             mViewer->frame();
+          } else {
+            // Without a viewer frame, run the per-frame hooks it would.
+            mWorldNode->customPreRefresh();
+            mWorldNode->stepOnce();
+            mWorldNode->customPostRefresh();
+          }
+          processPanelEvents();
         }
       } catch (const std::exception& error) {
-        std::cerr << "[cycle-scenes] demo '" << scene.id
-                  << "' failed to render: " << error.what() << "\n";
+        // A stop exception ends the run at the next poll instead.
+        if (!(mIsStopException && mIsStopException(error))) {
+          std::cerr << "[cycle-scenes] demo '" << scene.id
+                    << "' failed to render: " << error.what() << "\n";
+          anyFailure = true;
+        }
+      }
+
+      if (mCallbackFailures != failuresBefore) {
+        std::cerr << "[cycle-scenes] demo '" << scene.id << "' disabled "
+                  << mCallbackFailures - failuresBefore << " callback(s).\n";
         anyFailure = true;
       }
 
@@ -1098,6 +1345,19 @@ int App::cycleScenes(int framesPerScene, bool render, int width, int height)
         anyFailure = true;
       }
     }
+  }
+
+  // A stop requested by the last frame still ends the run as stopped.
+  if (stopRequested())
+    return stopRun();
+
+  // Tear the last scene down too, so the result includes its teardowns.
+  const std::size_t failuresBefore = mCallbackFailures;
+  teardownCurrentScene();
+  if (mCallbackFailures != failuresBefore) {
+    std::cerr << "[cycle-scenes] the final teardown disabled "
+              << mCallbackFailures - failuresBefore << " callback(s).\n";
+    anyFailure = true;
   }
 
   std::cout << "[cycle-scenes] cycled " << mScenes.size() << " demo(s) x2, "
@@ -1131,6 +1391,7 @@ int App::runHeadlessShot(
     int width,
     int height)
 {
+  mEchoErrors = true;
   ensureViewerConfigured();
 
   const std::string initial = !sceneId.empty()           ? sceneId
@@ -1144,6 +1405,7 @@ int App::runHeadlessShot(
 
   requestSceneSwitch(initial);
   processPendingSwitch();
+  processPanelEvents();
   const bool sceneFailed = mLastSwitchFailed;
   if (sceneFailed) {
     std::cerr << "[headless] demo '" << initial
@@ -1185,11 +1447,28 @@ int App::runHeadlessShot(
       Eigen::Vector3d(0.0, 0.0, 1.0)};
   const CameraHome home = mCurrentCameraHome.value_or(defaultHome);
 
+  if (stopRequested())
+    return stopRun();
   if (!prepareOffscreenContext(width, height, home))
     return 1;
 
-  for (int i = 0; i < steps && mWorldNode; ++i)
+  for (int i = 0; i < steps && mWorldNode; ++i) {
+    if (stopRequested())
+      return stopRun();
     mWorldNode->stepOnce();
+    processPanelEvents();
+  }
+  // Every frame polls for a stop first. A frame's preRefresh may queue panel
+  // events too; run them like the interactive loop does.
+  const auto frame = [this] {
+    if (stopRequested())
+      return false;
+    mViewer->frame();
+    processPanelEvents();
+    return true;
+  };
+  if (mDebugPrintWorld)
+    printWorld();
 
   errno = 0;
   if (std::remove(shotPath.c_str()) != 0 && errno != ENOENT) {
@@ -1205,19 +1484,26 @@ int App::runHeadlessShot(
     const float hoverX = static_cast<float>(width) - 60.0f;
     const float hoverY = static_cast<float>(height) / 2.0f;
     applyCameraHome(home, false);
+    const auto stop = [&] {
+      ImGui::SetCurrentContext(previous);
+      return stopRun();
+    };
     ImGui::GetIO().AddMousePosEvent(hoverX, hoverY);
-    mViewer->frame();
+    if (!frame())
+      return stop();
     for (int tick = 0; tick < mDebugScrollMemoryPanelTicks; ++tick) {
       ImGui::GetIO().AddMousePosEvent(hoverX, hoverY);
       ImGui::GetIO().AddMouseWheelEvent(0.0f, -1.0f);
-      mViewer->frame();
+      if (!frame())
+        return stop();
       char scrollSuffix[24];
       std::snprintf(
           scrollSuffix, sizeof(scrollSuffix), ".scroll%04d.png", tick);
       const std::string tickPath = shotPath + scrollSuffix;
       std::remove(tickPath.c_str());
       mViewer->captureScreen(tickPath);
-      mViewer->frame();
+      if (!frame())
+        return stop();
     }
     ImGui::SetCurrentContext(previous);
   }
@@ -1225,11 +1511,15 @@ int App::runHeadlessShot(
 #endif
 
   // Re-pin the view and draw, then capture.
+  if (stopRequested())
+    return stopRun();
   applyCameraHome(home, false);
-  mViewer->frame();
-  mViewer->frame();
+  if (!frame() || !frame())
+    return stopRun();
   mViewer->captureScreen(shotPath);
-  mViewer->frame(); // SaveScreen writes the PNG during this frame.
+  // SaveScreen writes the PNG during this frame.
+  if (!frame())
+    return stopRun();
 
   std::ifstream captured(shotPath, std::ios::binary);
   if (!captured.good()) {
@@ -1241,6 +1531,8 @@ int App::runHeadlessShot(
   std::cout << "[headless] sim time "
             << (mCurrentWorld ? mCurrentWorld->getTime() : 0.0) << " s; wrote "
             << shotPath << "\n";
+  if (stopRequested())
+    return stopRun();
   return sceneFailed ? 1 : 0;
 }
 
@@ -1279,21 +1571,33 @@ int App::run(std::optional<int> width, std::optional<int> height)
     processPendingSwitch();
   }
 
-  mViewer->simulate(true);
+  startSimulation();
 
   while (!mViewer->done()) {
+    if (stopRequested())
+      return stopRun();
     const auto now = std::chrono::steady_clock::now();
     if (mAutomaticGuiScale && now >= mNextDpiCheck) {
       updateAutomaticGuiScale();
       mNextDpiCheck = now + std::chrono::milliseconds(250);
     }
-    // Scene switches are queued (requestSceneSwitch) and only ever executed
-    // here, between frames -- never from inside ImGui rendering.
+    // Panel callbacks and scene switches are queued while ImGui draws and
+    // only ever executed here, between frames.
+    processPanelEvents();
     processPendingSwitch();
     mViewer->frame();
   }
 
   return 0;
+}
+
+//==============================================================================
+void App::startSimulation()
+{
+  // Preserve the interactive start request while the scene disallows Play.
+  if (mRestoreSimulationOnTeardown)
+    mResumeSimulationOnTeardown = true;
+  mViewer->simulate(true);
 }
 
 //==============================================================================
@@ -1320,19 +1624,26 @@ void App::updateAutomaticGuiScale()
 //==============================================================================
 void App::invokeKeyAction(KeyAction& action)
 {
-  if (!action.callback)
-    return;
+  invokeSceneCallback(action.callback, "action '" + action.label + "'");
+}
 
-  try {
-    action.callback();
-  } catch (const std::exception& e) {
-    log(LogEntry::Level::Error,
-        "Action '" + action.label + "' failed: " + e.what() + " (disabled)");
-    action.callback = nullptr;
-  } catch (...) {
-    log(LogEntry::Level::Error,
-        "Action '" + action.label + "' failed: unknown error (disabled)");
-    action.callback = nullptr;
+//==============================================================================
+void App::processPanelEvents()
+{
+  if (mPendingKeyAction) {
+    const std::size_t index = *mPendingKeyAction;
+    mPendingKeyAction.reset();
+    if (index < mCurrentKeyActions.size())
+      invokeKeyAction(mCurrentKeyActions[index]);
+  }
+
+  if (mCurrentPanel) {
+    mCallbackFailures += mCurrentPanel->dispatch(
+        [this](Control& control, const std::string& reason) {
+          reportFailure(
+              "Demo '" + mCurrentSceneTitle + "' control '" + control.getLabel()
+              + "' failed: " + reason + " (disabled)");
+        });
   }
 }
 
@@ -1485,8 +1796,10 @@ void App::renderToolbar()
 
   sameLineIfEnoughRoom(calcButtonWidth(simulating ? "Pause" : "Play"));
   ImGui::BeginDisabled(!hasScene);
+  ImGui::BeginDisabled(!mViewer->isAllowingSimulation());
   if (ImGui::Button(simulating ? "Pause" : "Play"))
     mViewer->simulate(!simulating);
+  ImGui::EndDisabled();
   sameLineIfEnoughRoom(calcButtonWidth("Step"));
   if (ImGui::Button("Step") && mWorldNode)
     mWorldNode->stepOnce();
@@ -1804,6 +2117,9 @@ void App::renderInspectorSection()
 //==============================================================================
 void App::renderSceneControlsSection()
 {
+  if (mCurrentPanel)
+    mCurrentPanel->render();
+
   if (mCurrentRenderPanel) {
     try {
       mCurrentRenderPanel();
@@ -1812,25 +2128,29 @@ void App::renderSceneControlsSection()
           "Scene panel for '" + mCurrentSceneTitle + "' failed: " + e.what()
               + " (panel disabled)");
       mCurrentRenderPanel = nullptr;
+      ++mCallbackFailures;
     } catch (...) {
       log(LogEntry::Level::Error,
           "Scene panel for '" + mCurrentSceneTitle
               + "' failed: unknown error (panel disabled)");
       mCurrentRenderPanel = nullptr;
+      ++mCallbackFailures;
     }
-  } else {
+  } else if (!mCurrentPanel) {
     ImGui::TextDisabled("This demo has no custom controls.");
   }
 
   if (!mCurrentKeyActions.empty()) {
     ImGui::Separator();
     ImGui::TextUnformatted("Actions");
-    for (auto& action : mCurrentKeyActions) {
+    for (std::size_t i = 0; i < mCurrentKeyActions.size(); ++i) {
+      const KeyAction& action = mCurrentKeyActions[i];
       const std::string label = formatKeyActionLabel(action) + "##key_action_"
                                 + std::to_string(action.key);
       ImGui::BeginDisabled(!action.callback);
+      // Run between frames, like panel callbacks.
       if (ImGui::Button(label.c_str()))
-        invokeKeyAction(action);
+        mPendingKeyAction = i;
       ImGui::EndDisabled();
     }
   }

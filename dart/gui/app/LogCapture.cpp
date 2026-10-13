@@ -38,6 +38,9 @@ namespace dart::gui::app {
 
 namespace {
 
+// Both stream buffers share recursion state only within the current thread.
+thread_local bool inLogCaptureSink = false;
+
 //==============================================================================
 /// Strips ANSI SGR escape sequences ("\033[...m") from `text`.
 std::string stripAnsi(const std::string& text)
@@ -104,6 +107,10 @@ protected:
     if (traits_type::eq_int_type(c, traits_type::eof()))
       return traits_type::not_eof(c);
 
+    // Writes the sink makes are forwarded but never captured again.
+    if (inLogCaptureSink)
+      return c;
+
     const char ch = traits_type::to_char_type(c);
     if (ch == '\n')
       flushLine();
@@ -116,6 +123,8 @@ protected:
   {
     if (mOriginal)
       mOriginal->sputn(s, n);
+    if (inLogCaptureSink)
+      return n;
     for (std::streamsize i = 0; i < n; ++i) {
       if (s[i] == '\n')
         flushLine();
@@ -131,6 +140,7 @@ private:
     if (mLineBuf.empty())
       return;
 
+    inLogCaptureSink = true;
     try {
       if (mSink) {
         const CapturedLogLevel level = sniffSeverity(mLineBuf, mFallbackLevel);
@@ -139,6 +149,7 @@ private:
     } catch (...) {
       // The log console must never crash the app, even if the sink throws.
     }
+    inLogCaptureSink = false;
     mLineBuf.clear();
   }
 
