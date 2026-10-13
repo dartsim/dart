@@ -154,7 +154,6 @@ def release_reference_target(tmp_path):
             "docs/onboarding/contributing.md",
             "Release packaging targets release-7.0 directly.\n",
         ),
-        ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
         ("GEMINI.md", "The next release is currently DART 6.22.\n"),
         ("AGENTS.md", "The next release is DART 6.22.0.\n"),
         ("docs/README.md", "Next release: **DART 6.22.0**\n"),
@@ -1874,13 +1873,39 @@ def test_scoped_agent_instruction_files_are_required(tmp_path):
     for path in infra.required_paths(tmp_path):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("placeholder\n")
-    scoped = tmp_path / ".agents" / "AGENTS.md"
+    scoped = tmp_path / ".codex" / "AGENTS.md"
     scoped.unlink()
     errors = []
 
     infra.check_required_files(tmp_path, errors)
 
-    assert errors == ["missing required file: .agents/AGENTS.md"]
+    assert errors == ["missing required file: .codex/AGENTS.md"]
+
+
+@pytest.mark.parametrize(
+    "shadowed",
+    [
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        ".agents/AGENTS.md",
+        ".claude/CLAUDE.md",
+    ],
+)
+def test_shadowed_rules_files_are_rejected(monkeypatch, shadowed):
+    target = ROOT / shadowed
+    original_exists = Path.exists
+
+    def exists(path, *args, **kwargs):
+        if path == target:
+            return True
+        return original_exists(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "exists", exists)
+    errors = []
+
+    infra.check_release_guidance(ROOT, errors)
+
+    assert any(f"shadowed rules file `{shadowed}`" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -3069,6 +3094,7 @@ project(test_graph C CXX)
 set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(DART_VERSION 6.20.0)
 set(DART_VERSION_OVERRIDE "" CACHE STRING "")
+set(HAVE_ODE TRUE CACHE BOOL "")
 if(DART_VERSION_OVERRIDE)
   set(DART_VERSION "${DART_VERSION_OVERRIDE}")
 endif()
@@ -3108,6 +3134,16 @@ add_test(
     "-DDART_VERSION=${DART_VERSION}"
     "-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
+)
+add_test(
+  NAME test_DARTConfigODE
+  COMMAND
+    "${CMAKE_COMMAND}"
+    "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/DARTConfigODE"
+    "-DTEST_CONFIG=$<CONFIG>"
+    "-DTEST_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigODE.cmake"
 )
 add_subdirectory(integration)
 add_subdirectory(regression)
@@ -3179,6 +3215,7 @@ endif()
         "tests/cmake/test_DARTConfigVersion.cmake": (
             ROOT / "tests/cmake/test_DARTConfigVersion.cmake"
         ).read_text(encoding="utf-8"),
+        "tests/cmake/test_DARTConfigODE.cmake": 'message(STATUS "ODE fixture executed")\n',
         "package.xml": "<package><version>6.20.0</version></package>\n",
         "scripts/run_pytest.py": (ROOT / "scripts/run_pytest.py").read_text(
             encoding="utf-8"
@@ -3233,6 +3270,41 @@ def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     infra.check_cmake_test_graph(tmp_path, build, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (
+            "NAME test_DARTConfigODE",
+            "NAME missing_ode_test",
+            "required CMake script test `test_DARTConfigODE` is missing",
+        ),
+        (
+            "-DDART_BINARY_DIR=${DART_BINARY_DIR}",
+            "-DDART_BINARY_DIR=${DART_BINARY_DIR}/wrong",
+            "unapproved command arguments",
+        ),
+        (
+            "-DTEST_CONFIG=$<CONFIG>",
+            "-DTEST_CONFIG=wrong",
+            "unapproved command arguments",
+        ),
+    ),
+)
+def test_cmake_semantic_graph_rejects_changed_ode_script_test(
+    tmp_path, old, new, expected
+):
+    _configure_semantic_graph_fixture(tmp_path)
+    cmake_file = tmp_path / "tests/CMakeLists.txt"
+    cmake_file.write_text(
+        cmake_file.read_text(encoding="utf-8").replace(old, new), encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, tmp_path / "build", errors)
+
+    assert any(expected in error for error in errors), errors
 
 
 @pytest.mark.parametrize("override", ("", "7.0.0", "7.4.2", "8.0.0"))
@@ -5507,6 +5579,14 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     report = infra.doctor_report(ROOT)
 
     assert report["schema_version"] == 1
+    assert set(report["tools"]) == {
+        "python",
+        "pixi",
+        "codex",
+        "claude",
+        "muse",
+        "opencode",
+    }
     assert report["profile"] == {
         "name": "dart7",
         "cpp_standard": "C++17",

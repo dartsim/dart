@@ -69,6 +69,12 @@ optimizer::FunctionPtr BalanceConstraint::clone(
 }
 
 //==============================================================================
+std::shared_ptr<dynamics::HierarchicalIK> BalanceConstraint::getIK() const
+{
+  return mIK.lock();
+}
+
+//==============================================================================
 double BalanceConstraint::eval(const Eigen::VectorXd& _x)
 {
   const std::shared_ptr<dynamics::HierarchicalIK>& ik = mIK.lock();

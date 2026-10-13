@@ -19,8 +19,9 @@ class Problem;
 class Solver;
 } // namespace optimizer
 namespace constraint {
+class BalanceConstraint;
 class ConstraintSolver;
-}
+} // namespace constraint
 namespace utils {
 class CompositeResourceRetriever;
 class DartLoader;
@@ -100,6 +101,7 @@ auto enumerate_gc(T& owner, GcEdges& edges)
   enumerate_reference_frame_gc(owner.mReferenceFrame, edges);
 }
 void enumerate_gc(dart::collision::CollisionOption&, GcEdges&);
+void enumerate_gc(dart::constraint::BalanceConstraint&, GcEdges&);
 void enumerate_gc(dart::constraint::ConstraintSolver&, GcEdges&);
 void enumerate_gc(dart::utils::CompositeResourceRetriever&, GcEdges&);
 void enumerate_gc(dart::utils::DartLoader&, GcEdges&);

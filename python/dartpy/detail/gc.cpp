@@ -11,6 +11,7 @@
 
 #include <dart/simulation/World.hpp>
 
+#include <dart/constraint/BalanceConstraint.hpp>
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
@@ -225,6 +226,26 @@ void enumerate_gc(
   for (const auto& entry : owner.getSchemaRetrievers())
     for (const auto& retriever : entry.second)
       descend(retriever, edges, [&owner] { owner.removeAllRetrievers(); });
+}
+
+void enumerate_gc(dart::constraint::BalanceConstraint& owner, GcEdges& edges)
+{
+  // The Python wrapper retains the IK (and its Skeleton) besides the
+  // constraint, while the constraint itself holds the IK weakly. Expose that
+  // affiliation so a Python object stored on the IK can point back to this
+  // wrapper without forming an uncollectable cycle.
+  auto ik = owner.getIK();
+  if (!ik)
+    return;
+  // References inside this wrapper's graph: the retained pair and this
+  // locked copy, plus the retained Skeleton's own whole-body IK reference
+  // when this is that Skeleton's IK.
+  long references = 2;
+  if (const auto skeleton = ik->getSkeleton();
+      skeleton && skeleton->getIK() == ik)
+    ++references;
+  descend(
+      ik, edges, [] {}, references);
 }
 
 void enumerate_gc(dart::constraint::ConstraintSolver& owner, GcEdges& edges)

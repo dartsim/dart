@@ -1103,6 +1103,33 @@ def test_skeleton_owned_ik_back_reference_cycle_collects_without_outside_owners(
     )
 
 
+def test_balance_constraint_back_reference_cycle_collects():
+    run_isolated(
+        """
+        import weakref
+        class Objective(dart.optimizer.Function):
+            def eval(self, x):
+                return 0.0
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        ik = skeleton.getIK(True)
+        balance = dart.constraint.BalanceConstraint(ik)
+        objective = Objective()
+        ik.setObjective(objective)
+        objective.owner = balance
+        refs = (
+            weakref.ref(objective),
+            weakref.ref(ik),
+            weakref.ref(balance),
+            weakref.ref(skeleton),
+        )
+        del objective, ik, balance, skeleton
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        """
+    )
+
+
 @pytest.mark.parametrize("outside", ["problem", "solver", "foreign_problem"])
 def test_skeleton_owned_ik_live_optimizer_owner_preserves_objective(outside):
     run_isolated(
