@@ -43,8 +43,8 @@
 // solveAndApply logic runs at the top of renderPanel instead -- the same
 // trick already used by wam_ikfast (B3) for an identical
 // kinematic-IK-at-render-rate scene, and it is called at the same cadence
-// (once per rendered frame) as the original. viewer->allowSimulation(false)
-// is applied in onActivate and restored to true on teardown, matching
+// (once per rendered frame) as the original. SceneSetup::allowSimulation =
+// false makes the host disable Play and restore it on teardown, matching
 // wam_ikfast. Gravity is zeroed (the original never steps physics at all, so
 // this has no equivalent, but it keeps --cycle-scenes/--headless/the Step
 // button -- which call world->step() directly, bypassing allowSimulation --
@@ -650,6 +650,8 @@ DemoScene makeAtlasPuppetScene()
 
     DemoSceneSetup setup;
     setup.world = world;
+    // Purely kinematic: Play must not step physics under this scene.
+    setup.allowSimulation = false;
     setup.cameraHome = CameraHome{
         GuiVector3(5.34, 3.00, 2.41),
         GuiVector3(0.00, 0.00, 1.00),
@@ -660,14 +662,6 @@ DemoScene makeAtlasPuppetScene()
       state->log = [ctx](const std::string& message) {
         ctx.log(message);
       };
-
-      const bool resumeSimulation = viewer->isSimulating();
-      viewer->allowSimulation(false);
-      ctx.addTeardown([viewer, resumeSimulation] {
-        viewer->allowSimulation(true);
-        if (resumeSimulation)
-          viewer->simulate(true);
-      });
 
       for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
         if (auto* dnd

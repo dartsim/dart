@@ -52,7 +52,6 @@ REFERENCE_ROOTS = (
     ".agents/",
     ".claude/",
     ".codex/",
-    ".opencode/",
     "dart/",
     "docs/",
     "python/",
@@ -269,6 +268,7 @@ GUI_ONLY_PYTHON_TESTS = frozenset(
         "filament",
         "gui_offscreen",
         "target_shape_render",
+        "viewer_render",
     )
 )
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
@@ -4072,7 +4072,7 @@ def check_cmake_test_graph(
 def check_path_references(root: Path, errors: list[str]) -> None:
     required_pattern = re.compile(r"@([A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+)")
     backtick_pattern = re.compile(
-        r"`((?:\.agents/|\.claude/|\.codex/|\.opencode/|dart/|docs/|"
+        r"`((?:\.agents/|\.claude/|\.codex/|dart/|docs/|"
         r"python/|scripts/|tests/)[^`\s]+)`"
     )
     for path in source_paths(root):
@@ -4459,7 +4459,6 @@ def release_reference_paths(root: Path) -> list[Path]:
     paths.update(
         root / relative
         for relative in (
-            "GEMINI.md",
             ".github/PULL_REQUEST_TEMPLATE.md",
             "docs/readthedocs/index.rst",
             "docs/readthedocs/dart/developer_guide/build.rst",
@@ -5957,7 +5956,6 @@ def doctor_report(root: Path) -> dict[str, Any]:
             "codex": version("codex"),
             "claude": version("claude"),
             "muse": version("muse"),
-            "opencode": version("opencode"),
         },
         "inventory": {
             "source_commands": _path_inventory(commands, root),

@@ -45,12 +45,12 @@ CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
 to depend directly on `tests_and_run` and `pytest`, requires those targets to
 cover every configured C++ and Python test except the `gui-device`-labeled
-CTest tests and the five GUI-only Python modules (`test_filament`,
+CTest tests and the six GUI-only Python modules (`test_filament`,
 `test_gui_offscreen`, `test_agent_capture`, `test_agent_debug_overlay`,
-`test_target_shape_render`), which it requires `pixi run test-gui` to run,
-rejects omitted test directories or unowned test sources, and admits inactive
-platform tests or the one compile-only C test only through exact branch-owned
-predicates and target contracts. It
+`test_target_shape_render`, `test_viewer_render`), which it requires
+`pixi run test-gui` to run, rejects omitted test directories or unowned test
+sources, and admits inactive platform tests or the one compile-only C test
+only through exact branch-owned predicates and target contracts. It
 walks the active generated CTest subdirectory graph, maps registrations back to
 configured executables, and admits the required package-version CMake script
 only with its exact source, output directory, version, pointer size and active
@@ -164,10 +164,11 @@ as `##soft_mesh_alpha`, and size sliders or inputs from
 
 ## Simulation Allocation Gates
 
-Changes that touch `World::step`, `World::enterSimulationMode`,
-`MemoryManager`, profiler storage, or constraint-solver scratch must preserve
-the DART-owned zero-allocation contract for same-shape simulation steps using
-the `dart` detector after preparation.
+Changes that touch `World::step` or its private stages (see
+[World step stages](architecture.md#world-step-stages)),
+`World::enterSimulationMode`, `MemoryManager`, profiler storage, or
+constraint-solver scratch must preserve the DART-owned zero-allocation contract
+for same-shape simulation steps using the `dart` detector after preparation.
 
 Run the focused allocation gate before broadening:
 
@@ -194,10 +195,10 @@ simulation-loop behavior changes. It is the forward lane: it applies
 `tools/gazebo/patches/` to gz-physics first, so it does not prove that released
 Gazebo still works.
 
-For collision, contact, constraint-solver, sleeping, or `World::step` changes,
-and before a release, also run the unpatched lanes, which build released
-gz-physics and gz-sim against this checkout, run both full suites, and fail on
-any failure DART 6.19.4 did not have:
+For collision, contact, constraint-solver, sleeping, `World::step`, or
+step-stage changes, and before a release, also run the unpatched lanes, which
+build released gz-physics and gz-sim against this checkout, run both full
+suites, and fail on any failure DART 6.19.4 did not have:
 
 ```bash
 pixi run gz-compat-ionic       # gz-physics 8.4.0, gz-sim 9.5.0

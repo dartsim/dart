@@ -313,20 +313,31 @@ void enumerate_gc(dart::dynamics::HierarchicalIK& owner, GcEdges& edges)
   // Skeleton's own whole-body IK, which the Skeleton's graph reaches, and the
   // node is still in that Skeleton. A separate hierarchy, or a body moved to
   // another Skeleton, shares the module with a live owner outside this graph.
-  const dart::dynamics::Skeleton* skeleton = nullptr;
+  dart::dynamics::Skeleton* skeleton = nullptr;
   if (const auto affiliated = owner.getSkeleton();
       affiliated && affiliated->getIK().get() == &owner)
     skeleton = affiliated.get();
+  const auto descend_module = [&](const auto& ik) {
+    if (!ik)
+      return;
+    auto* node = ik->getNode();
+    const bool ownedByNode = skeleton && node && node->getIK() == ik
+                             && node->getSkeleton().get() == skeleton;
+    const long references
+        = module_references[complete_address(ik.get())] + ownedByNode;
+    descend(
+        ik, edges, [] {}, references);
+  };
   for (const auto& level : owner.getIKHierarchy())
-    for (const auto& ik : level) {
-      auto* node = ik->getNode();
-      const bool ownedByNode = skeleton && node && node->getIK() == ik
-                               && node->getSkeleton().get() == skeleton;
-      const long references
-          = module_references.at(complete_address(ik.get())) + ownedByNode;
-      descend(
-          ik, edges, [] {}, references);
-    }
+    for (const auto& ik : level)
+      descend_module(ik);
+  // Node IKs belong to this graph even before its hierarchy is refreshed.
+  if (skeleton) {
+    for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
+      descend_module(skeleton->getBodyNode(i)->getIK());
+    for (std::size_t i = 0; i < skeleton->getNumEndEffectors(); ++i)
+      descend_module(skeleton->getEndEffector(i)->getIK());
+  }
 }
 
 void enumerate_gc(dart::dynamics::ShapeFrame& owner, GcEdges& edges)

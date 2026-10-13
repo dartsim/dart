@@ -124,6 +124,14 @@ void DragForce::installMouseHandler(
 }
 
 //==============================================================================
+void DragForce::uninstallMouseHandler()
+{
+  // The default event handler observes the handler and forgets it on deletion.
+  delete mMouseHandler;
+  mMouseHandler = nullptr;
+}
+
+//==============================================================================
 void DragForce::onSceneInstalled(const dart::simulation::WorldPtr& world)
 {
   mWorld = world;

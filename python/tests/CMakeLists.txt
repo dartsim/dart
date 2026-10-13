@@ -33,7 +33,7 @@ list(
   FILTER dartpy_test_files
   EXCLUDE
   REGEX
-    "/unit/gui/test_(filament|gui_offscreen|agent_capture|agent_debug_overlay|target_shape_render)\\.py$"
+    "/unit/gui/test_(filament|gui_offscreen|agent_capture|agent_debug_overlay|target_shape_render|viewer_render)\\.py$"
 )
 
 # Add custom target to run the tests
