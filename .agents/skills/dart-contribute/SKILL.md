@@ -29,7 +29,9 @@ For target branches and milestones: `docs/onboarding/release-management.md`
 
 ## PR Workflow
 
-Resolve the target and required milestone below before publishing a PR.
+Resolve the target and required milestone below, and complete the applicable
+actions in `docs/onboarding/contributing.md` § "PR Author Checklist" before
+publishing a PR.
 
 ```bash
 # Development and new fixes start from main without tracking it
@@ -57,8 +59,8 @@ Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
 Follow `docs/onboarding/contributing.md` § "PR Descriptions" for the
-Effect-first template order, comparisons, plots, collapsed raw tables,
-simulation evidence, and Testing content.
+Summary and Testing default, optional material context, evidence formats,
+collapsed detail, and required simulation evidence.
 
 Commit messages are checked through the managed `commit-msg` hook. The PR
 Text workflow is the backstop for commits that use `--no-verify` or otherwise
