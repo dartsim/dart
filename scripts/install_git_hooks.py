@@ -15,7 +15,8 @@ rebases, reverts, imports and sequencer operations before publication. It reads
 Git's ref updates from stdin, skips deletions, and scans messages and changes
 using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
 new refs scan, one at a time, only the commits that neither the remote's
-default HEAD nor any locally available remote branch head reaches. Missing
+default HEAD nor any locally available remote branch head, or its
+remote-tracking tip while that branch still exists, reaches. Missing
 existing-ref bases and default HEAD objects are fetched without changing refs
 or FETCH_HEAD. An empty remote or unrelated history scans the whole local
 history; lookup or scan errors block the push. Older branches without a
@@ -115,7 +116,12 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
         fi
         remote_heads=$(git ls-remote --heads "$2") || exit 1
         published=
-        for head_sha in $(printf '%s\\n' "$base_sha" "$remote_heads" | awk '{print $1}'); do
+        # A remote-tracking tip stays a published boundary after its branch
+        # advances to a commit this clone lacks, while the branch still exists.
+        tracking_refs=$(git for-each-ref --format='%(objectname) refs/heads/%(refname:lstrip=3)' "refs/remotes/$1/") || exit 1
+        tracking_tips=$({ printf '%s\\n' "$remote_heads" --; printf '%s\\n' "$tracking_refs"; } |
+            awk '$0 == "--" { tracking = 1; next } !tracking { live[$2] = 1; next } live[$2] { print $1 }') || exit 1
+        for head_sha in $(printf '%s\\n' "$base_sha" "$remote_heads" "$tracking_tips" | awk '{print $1}'); do
             # Only the default HEAD is fetched; other heads must exist locally.
             GIT_NO_LAZY_FETCH=1 git cat-file -e "$head_sha^{commit}" 2>/dev/null || continue
             published="$published $head_sha"

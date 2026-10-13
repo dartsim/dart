@@ -464,6 +464,46 @@ def test_pre_push_new_ref_merging_published_branches_scans_only_new_commits(
         assert result.returncode == 0, result.stderr
 
 
+def test_pre_push_new_ref_keeps_stale_tracking_tip_published(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    git("checkout", "-b", "release")
+    published_path = "/home/" + "example/published.md"
+    (repo / "published.md").write_text(published_path + "\n")
+    git("add", "published.md")
+    git("commit", "-qm", "Published release fixture")
+    git("push", "origin", "release")
+    fixture_commit = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "-b", "topic")
+    (repo / "notes.md").write_text("Public summary\n")
+    git("add", "notes.md")
+    git("commit", "-qm", "Topic change")
+    head = git("rev-parse", "HEAD").stdout.strip()
+    # The remote release branch advances to a commit this clone does not have.
+    other = tmp_path / "other"
+    git("clone", "-q", "--branch", "release", str(tmp_path / "remote.git"), str(other))
+    git(
+        "-C",
+        str(other),
+        "-c",
+        "user.name=DART Test",
+        "-c",
+        "user.email=test@example.com",
+        "commit",
+        "--allow-empty",
+        "-qm",
+        "Later release change",
+    )
+    git("-C", str(other), "push", "-q", "origin", "release")
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+
+    assert result.returncode == 0, result.stderr
+    assert f"DART pre-push: scanning HEAD ({head}^!)" in result.stderr
+    assert fixture_commit not in result.stderr
+    assert published_path not in result.stdout
+
+
 @pytest.mark.parametrize("removal", ["delete", "rename"])
 def test_pre_push_new_ref_recovers_checker_when_release_base_lacks_it(
     tmp_path, removal
