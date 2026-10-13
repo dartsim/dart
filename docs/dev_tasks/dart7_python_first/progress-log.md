@@ -45,5 +45,10 @@
     release acceptance still prevent project-home retirement.
   - An independent M1b preparation spike confirms that editing unrelated
     World B incorrectly invalidates prepared World A. The shared-Skeleton
-    protection case passes. Production implementation waits for the recorded
-    sequencing to be reconciled; the evidence is retained in the task owner.
+    protection case passes. A compatible local fix now proceeds separately
+    on `fix/world-local-preparation`; M0 integration gates remain open.
+    The evidence is retained in the task owner.
+  - With explicit user approval, published the verified SDF follow-up as
+    draft #3782 for DART 7.0.0. Downloaded the rendered visual attachment
+    and confirmed its digest matches the assessed comparison. Current-head
+    CI and Codex review remain open; this does not complete the program.

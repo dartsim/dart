@@ -95,6 +95,7 @@
     1.7–1.9 are admitted for the supported model subset, with unsupported
     frame composition rejected explicitly; joint axes support
     `expressed_in="__model__"`.
+    [#3782](https://github.com/dartsim/dart/pull/3782)
 
   * Loading a SKEL world no longer crashes when the collision detector
     factory cannot create `fcl`, for example after an application

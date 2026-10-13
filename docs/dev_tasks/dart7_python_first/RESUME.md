@@ -6,7 +6,8 @@ This section supersedes the historical handoff below. The resumed checkout
 started detached at `dart7-base`; the current local packet branch is
 `fix/sdf-pose-followup`, initially based on fetched main `e378f985f`.
 The local fix is committed as `6047aca4a`; current main `95282f1b9` is merged
-for publication preparation. Its two additions change hooks and handoff docs,
+before publication as draft [#3782](https://github.com/dartsim/dart/pull/3782).
+Its two additions change hooks and handoff docs,
 with no SDF or engine source delta.
 
 - M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775). The
@@ -23,7 +24,8 @@ with no SDF or engine source delta.
 - The recorded M0 exit waits for those two PRs even though M1a has merged.
   Reconcile that sequencing at their integration; do not infer that the
   completed M1a waived the remaining M0 acceptance.
-- The completed local packet fixes the four confirmed WP-7.0.3b pose gaps:
+- Draft [#3782](https://github.com/dartsim/dart/pull/3782) fixes the four
+  confirmed WP-7.0.3b pose gaps:
   rotated inertia, non-box soft geometry, modern-version admission and empty
   poses. It changes only the SDF parser, regression evidence and its docs;
   public headers, class layouts and stepping kernels remain untouched. Core,
@@ -34,16 +36,18 @@ with no SDF or engine source delta.
   M6b and M7 release acceptance. Keep this project home until those criteria,
   required reviews and durable promotion are complete.
 
-Immediate next action: publish the locally verified SDF packet after approval,
-then execute the separately scoped M1b World-local preparation packet once
-the recorded M0 sequencing is reconciled. Its independent reproduction spike
-can proceed without changing production code or waiving the M0 exit.
-That spike now confirms unrelated-World invalidation; the shared-Skeleton
-protection case already passes. See [the M1b evidence](verification.md#m1b-preparation-scope-spike).
+Immediate next action: monitor current-head CI and Codex review of #3782.
+The independently reproduced World-local preparation bug is being fixed
+locally on `fix/world-local-preparation`; the shared-Skeleton protection
+must remain intact. This compatible fix can progress without waiving M0's
+integration exit or claiming M1b completion. See
+[the M1b evidence](verification.md#m1b-preparation-scope-spike).
 Keep existing #3728 and #3729 branches as their integration owners. Continue
-the missing packets; pending publication is not program completion.
-Publishing still requires explicit approval; the offline PR body and selected
-visual attachment are under `build/sdf-pose-evidence/`.
+the missing packets; this draft publication is not program completion.
+The user approved #3782's publication, attachment and Codex review request;
+marking it ready and merging still require their separate lifecycle gates.
+The PR's rendered attachment was downloaded and its digest matches the
+assessed comparison under `build/sdf-pose-evidence/`.
 
 ## Historical handoff (2026-10-11)
 

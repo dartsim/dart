@@ -458,8 +458,11 @@ Known gaps:
   publication text excludes private paths; runtime and visual limits remain
   explicit; existing open packet branches retain their ownership.
 - **Status:** implementation, verification and two independent reviews are
-  complete locally. Publication
-  requires approval. This follow-up does not establish full SDFormat schema
+  complete locally. Published with user approval as draft
+  [#3782](https://github.com/dartsim/dart/pull/3782), targeting main and the
+  DART 7.0.0 milestone. The rendered comparison attachment is accessible and
+  its SHA-256 matches the assessed local image. Current-head CI and Codex
+  review remain open. This follow-up does not establish full SDFormat schema
   support or DART 7 program completion.
 
 ### WP-7.0.7 Scope artifacts
