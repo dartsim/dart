@@ -67,7 +67,7 @@ void requireFinite(double value, const char* what)
     throw std::invalid_argument(std::string(what) + " must be finite");
 }
 
-// Plots store floats: a larger finite double would become infinite.
+// ImGui uses floats: a larger finite double would become infinite.
 void requireFloat(double value, const char* what)
 {
   if (!(std::abs(value) <= std::numeric_limits<float>::max()))
@@ -369,7 +369,7 @@ std::shared_ptr<Control> Control::addVec3(
     double min,
     double max)
 {
-  requireFinite(speed, "drag speed");
+  requireFloat(speed, "drag speed");
   auto control = std::shared_ptr<Control>(new Control(Kind::Vec3, label));
   control->mSpeed = std::abs(speed);
   control->setRange(min, max);
@@ -675,14 +675,14 @@ void Control::renderSelf()
       // clamp it. A "%.0f" slider also rounds its drags to whole numbers.
       const std::string format = mInteger ? "%.0f" : formatFor(mDecimals);
       double value = mValue.x();
+      // Let edit() reject non-finite text before clamping to the range.
       if (ImGui::SliderScalar(
               kValueId,
               ImGuiDataType_Double,
               &value,
               &mMin,
               &mMax,
-              format.c_str(),
-              ImGuiSliderFlags_AlwaysClamp))
+              format.c_str()))
         edit(Eigen::Vector4d(value, 0.0, 0.0, 0.0), !mNotifyOnRelease);
       // ImGui reports a finished edit even when edit() rejected all of it.
       if (mNotifyOnRelease && ImGui::IsItemDeactivatedAfterEdit())
