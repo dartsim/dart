@@ -97,34 +97,7 @@ config = { cmd = """
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE="$DART_VERBOSE"
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
-
-# config-demos: the `config` variant for the dockable demos workspace. It only
-# differs by selecting the bundled ImGui docking branch
-# (DART_USE_SYSTEM_IMGUI=OFF plus DART_IMGUI_DOCKING=ON; the bundled default
-# stays on the ABI-stable vanilla tag for installs); `config` itself stays
-# literal because the test-all semantic gate requires a deterministic,
-# configuration-only command.
-config-demos = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
-        -DBUILD_TESTING=ON \
-        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
-        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-        -DDART_DISABLE_COMPILER_CACHE="$DART_DISABLE_COMPILER_CACHE" \
-        -DDART_BUILD_DARTPY=ON \
-        -DDART_BUILD_UTILS_ASSETS=ON \
-        -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_IMGUI_DOCKING=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -315,10 +288,10 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_FILAMENT=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_FILAMENT=ON -DDART_USE_SYSTEM_IMGUI=OFF -DDART_BUILD_UTILS_ASSETS=ON" }
 
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
-  { arg = "use_system_imgui", default = "ON" },
+  { arg = "use_system_imgui", default = "OFF" },
 ] }
 
 wheel-repair-linux-core = { cmd = """
@@ -389,7 +362,7 @@ config-py = { cmd = """
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -525,6 +498,7 @@ coverage-report = { cmd = """
         '*/.deps/*' \
         '*/tests/*' \
         '*/examples/*' \
+        '*/python/native/*' \
         '*/tutorials/*' \
         --output-file coverage.info \
     && lcov --list coverage.info
@@ -590,7 +564,7 @@ capture = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos \
         --scene {{ scene }} --headless --shot {{ out }} --width {{ width }} --height {{ height }}
 """, depends-on = [
-  "config-demos",
+  "config",
 ], args = [
   { arg = "scene", default = "sleeping" },
   { arg = "out", default = "capture.png" },
@@ -832,10 +806,28 @@ config = { cmd = """
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF" } }
+
+# Assumes the default multi-config generator layout, like the Windows test-gui.
+capture = { cmd = """
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/bin/$BUILD_TYPE/dart-demos \
+        --scene {{ scene }} --headless --shot {{ out }} --width {{ width }} --height {{ height }}
+""", depends-on = [
+  "config",
+], args = [
+  { arg = "scene", default = "sleeping" },
+  { arg = "out", default = "capture.png" },
+  { arg = "width", default = "640" },
+  { arg = "height", default = "480" },
+], env = { BUILD_TYPE = "Release" } }
 
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
@@ -874,7 +866,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_FILAMENT=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_FILAMENT=ON -DDART_USE_SYSTEM_IMGUI=OFF -DDART_BUILD_UTILS_ASSETS=ON" }
 
 build-py-dev = { cmd = """
     cmake \
@@ -912,7 +904,7 @@ config-py = { cmd = """
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
@@ -1248,7 +1240,7 @@ config-tracy = { cmd = """
         -DDART_PROFILE_TRACY=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -1271,7 +1263,7 @@ demos = { cmd = """
         --target dart-demos \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos
-""", depends-on = ["config-demos"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 cycle-demos = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -1279,7 +1271,7 @@ cycle-demos = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos --cycle-scenes --frames 2
 """, depends-on = [
-  "config-demos",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 # Display-free GUI gate, which `test` leaves out: headless Filament C++ tests
 # and the dartpy GUI, tutorial and example tests. Native-window tests need a
@@ -1300,6 +1292,27 @@ test-gui = { cmd = """
 ], env = { BUILD_TYPE = "Release" } }
 
 [feature.filament.target.win-64.tasks]
+# Like test-gui below, these assume the default Visual Studio generator's
+# multi-config layout (bin/<config>); single-config generators such as Ninja
+# put dart-demos directly in bin/.
+demos = { cmd = """
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/bin/$BUILD_TYPE/dart-demos
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+cycle-demos = { cmd = """
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/bin/$BUILD_TYPE/dart-demos --cycle-scenes --frames 2
+""", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
 test-gui = { cmd = """
     cmake \
         --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \

@@ -81,8 +81,8 @@
 //    is not replicated, matching tinkertoy's (B2) identical case.
 
 #include "../Scenes.hpp"
-#include "Controller.hpp"
 #include "GuiBackend.hpp"
+#include "demo_models/atlas_simbicon/Controller.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>

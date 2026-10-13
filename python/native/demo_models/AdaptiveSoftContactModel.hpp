@@ -33,6 +33,8 @@
 
 #include <dart/dart.hpp>
 
+#include <vector>
+
 #include <cstddef>
 
 namespace dart_demos {
@@ -100,6 +102,12 @@ bool isFinite(const Model& model);
 
 /// Returns the surface-pose delta used by the standalone comparison contract.
 double surfacePoseDelta(const Model& lhs, const Model& rhs);
+
+/// Estimates which soft points are active, for display. The soft body reports
+/// only how many points are active, so this marks that many points: those
+/// nearest the last contacts, or the lowest ones when there are none. Points
+/// with non-finite positions are marked last.
+std::vector<bool> estimateActivePoints(const Model& model);
 
 } // namespace adaptive_soft_contact_model
 } // namespace dart_demos

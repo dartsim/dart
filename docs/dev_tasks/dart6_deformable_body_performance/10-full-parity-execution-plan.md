@@ -117,7 +117,7 @@ dynamics. It is the whole of the active DART 7.0 parity lane.
 shipped point-mass SoftBodyNode + adaptive activation is the Jain/Liu
 deformable substrate. What exists to reuse:
 
-- **A full SIMBICON controller** at `examples/demos/scenes/atlas_simbicon/`
+- **A full SIMBICON controller** at `python/native/demo_models/atlas_simbicon/`
   (`Controller`, `StateMachine`, `State`, `TerminalCondition`): torque PD + COM
   feedback (`State::computeControlForce`), standing/walk-in-place/walk/run state
   machines, harness helpers, push perturbation via `addExtForce`. Crucially its
