@@ -2,6 +2,12 @@
 
 ## Current state (2026-10-12)
 
+The `codex/pd17` checkout includes the host, bindings and all scene ports
+through WP-PD.16. WP-PD.17's task and documentation migration is local and
+verified, with all requested checks and two clean local reviews. The table
+below records the earlier published stack; it does not describe the full
+content of this checkout.
+
 | Packet | Branch | State |
 | --- | --- | --- |
 | WP-PD.0 | `docs/demo-app-consolidation-plan` | Draft PR #3732 |
@@ -20,11 +26,10 @@
 
 ## Immediate next step
 
-1. Finish the WP-PD.4 and WP-PD.5 reviews, then add both to stack #3748.
-2. Finish WP-PD.5's test-gui and wheel gates.
-3. Start WP-PD.6 (`dartpy._demos`) and WP-PD.7 (the Python catalog on the
-   native host).
-4. Watch the GitHub reviews and CI of the open PRs.
+1. Continue with WP-PD.18; WP-PD.17's command results and review evidence are
+   recorded in [verification.md](verification.md).
+2. Keep the C++ app and its CTests until WP-PD.18 removes them.
+3. No commit or publication is authorized for this checkout.
 
 ## Recovery notes
 
@@ -39,7 +44,8 @@
 - **Codex worktrees.** Lanes live in `../<slug>` on branches `codex/<slug>`.
   List them with `git worktree list`, and remove a worktree after its packet
   merges.
-- **Parity runs.** Until WP-PD.17, run the Python app from `python/` with
+- **Parity runs.** `pixi run demos -- …` now launches the Python catalog.
+  For direct parity runs from `python/`, use
   `PYTHONPATH=../build/default/cpp/Release/python/dartpy pixi run python -m examples.demos`.
 
 ## Verification commands

@@ -21,14 +21,18 @@ application updates.
 Build and run
 -------------
 
-From a checkout, ``pixi run config`` builds the GUI and dartpy. Build and
-launch the Filament demo catalog, or build and run the display-free GUI C++ and
+From a checkout, ``pixi run config`` configures the GUI and dartpy. Build and
+launch the Python demo catalog, or build and run the display-free GUI C++ and
 Python tests, with:
 
 .. code-block:: console
 
    pixi run demos
    pixi run test-gui
+
+The demo task builds dartpy and runs ``python -m examples.demos``. Python
+scenes use ``dartpy.viewer`` to run the native app host, with its navigator,
+simulation toolbar, dockable panels, and diagnostics.
 
 ``pixi run test`` and ``pixi run test-all`` skip these GUI tests. After
 ``test-gui``, run the native-window tests in a desktop session with
@@ -157,7 +161,8 @@ The repository capture tool uses Filament:
        --out /tmp/dart-visual-evidence
 
 The capture sidecar records the renderer, graphics backend, and device.
-Python demos and tutorials use the same ``dartpy.gui`` API.
+Python demos use the native app host through ``dartpy.viewer``; tutorials
+use the ``dartpy.gui`` API directly.
 
 Porting OSG applications
 ------------------------

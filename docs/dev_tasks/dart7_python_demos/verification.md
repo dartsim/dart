@@ -76,3 +76,51 @@ Published as stack #3748: #3745 (WP-PD.1), #3746 (WP-PD.2) and #3747
   Skeleton, with a regression test.
 - **API snapshots:** #3735 makes `api_surface.py --snapshot` read
   non-arithmetic enums, so the binding PRs can diff the API surface.
+
+## 2026-10-12: WP-PD.17, Python demo launch tasks
+
+- **Change:** `demos`, `cycle-demos` and `capture`, including Windows
+  variants, build dartpy and launch `python -m examples.demos`. The task
+  working directory is `python/`; the command returns to the repository root
+  with both dartpy and the source catalog on `PYTHONPATH`, preserving every
+  relative CLI output path, including a forwarded `--shot` override.
+  `py-demos` is removed. User docs, Python scene links and Korean PO/MO
+  catalogs use the Python app. The C++ app, aliases and CTests remain for
+  WP-PD.18.
+- **Checks passed:**
+  - `pixi run config`, then `pixi run build-py-dev` on the fresh build;
+  - `pixi run python -m pip install ssik` (8.1.0, environment only);
+  - `pixi run lint`, `pixi run sync-ai-commands` and
+    `pixi run check-ai-commands`;
+  - `pixi run test-ai-infra`: 1,968 passed;
+  - `pixi run cycle-demos`: 37 scenes, twice, two frames each, zero skipped;
+  - `pixi run demos -- --list-scenes`: 37 unique scene IDs;
+  - `pixi run capture sleeping`: repository-root `capture.png`, 640×480,
+    simulation time 2.5 seconds;
+  - `pixi run capture soft_bodies -- --steps 50`: the same output path,
+    frame 50 and simulation time 0.05 seconds;
+  - additional captures with absolute and relative paths containing spaces,
+    and a forwarded `--shot` overriding the positional output;
+  - `pixi run test-py`: 1,610 passed, two Python 3.15-only skips;
+  - `pixi run test-gui`: all 14 CTests passed; Python GUI and integration
+    tests reported 550 passed and one Python 3.15-only skip;
+  - `pixi run docs-build` and `pixi run docs-build-ko`, repeated after the
+    review corrections;
+  - changed-file local-path scan and `git diff --check`;
+  - final `pixi run lint` and `pixi run check-lint`, including the configured
+    semantic AI infrastructure check.
+- **Visual assessment:** `pixi run image-verdict capture.png` passed for
+  Sleeping. Native image inspection showed the Sleeping scene label,
+  colored stacks and native workspace. The subsequent Soft Bodies image
+  showed translucent embedded shapes and frame 50. These images corroborate
+  the launcher and capture output; they do not re-establish scene parity or
+  dynamics correctness. The catalog cycle and Python tests provide the text
+  evidence. The default 640×480 workspace clips some panel labels, but the
+  scene is visible. Images remain untracked.
+- **Reviews:** two role-separated read-only reviews of the final task/docs
+  diff are clean after correcting the configure-task name, humanoid slider
+  instructions and manual dartpy build prerequisites. Windows definitions
+  were read twice; they use the multi-config dartpy path and the existing
+  `build-py-dev --config` build.
+- **Limitations:** Windows runtime cannot be checked on this host. No commit
+  or publication is authorized. The C++ app's removal belongs to WP-PD.18.

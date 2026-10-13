@@ -1,15 +1,15 @@
 # dart-demos
 
-`dart-demos` is the consolidated C++ demo application: a single
-`dart::gui::Viewer` host that runs every GUI demo as a
-runtime-switchable *scene*, selected from a categorized navigator. It replaces
-the scattered per-example programs that used to live under `examples/*`.
+`dart-demos` is the retained C++ demo application. It and its CTests are kept
+only until WP-PD.18 removes them after the demo consolidation's parity gates.
+The architecture and conventions below document that temporary C++ app and
+the shared native host.
 
-Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The Python
-catalog runs on this same native host through `dartpy.viewer.run()`:
-`pixi run py-demos` (see `python/examples/demos/`). It currently contains a
-subset of the C++ scene ids, in the same order and with the same metadata,
-while retaining the existing Python scene behavior.
+`pixi run demos` now builds dartpy and launches the
+[Python demo catalog](../../python/examples/README.md) through
+`dartpy.viewer.run()`. Use `pixi run demos -- --scene <id>` to select a scene.
+Every retained C++ scene has a Python port with the same CLI and native host.
+`pixi run cycle-demos` and `pixi run capture` also use the Python catalog.
 
 DART 7 uses Filament for every GUI example. `pixi run cycle-demos`
 exercises scene replacement without creating a graphics context. All scenes
@@ -35,7 +35,7 @@ dimensions (pixels on X11 and Windows, logical points on macOS). Later DPI
 changes preserve the window's position and size, while rebuilding the docked
 panel layout for the new scale.
 
-Use `pixi run demos --gui-scale 1.5` or `DART_GUI_SCALE` for a manual scale
+Use `pixi run demos -- --gui-scale 1.5` or `DART_GUI_SCALE` for a manual scale
 between 0.5 and 4; the CLI overrides the environment. View > **Automatic DPI
 scaling** restores automatic mode. Adjusting the **GUI scale** slider switches
 to manual mode. These controls change the UI without resizing the window.
@@ -174,14 +174,10 @@ accounting and update timing.
 
 ## Adding a scene
 
-1. Write `scenes/MyScene.cpp` with a `dart_demos::makeMyScene()` factory
-   returning a `DemoSceneSetup` (copy an existing scene as a template;
-   `RigidCubesScene.cpp` is a good controller+visual example).
-2. Declare it in `Scenes.hpp` and register it in `Registry.cpp`.
-3. The executable globs `scenes/*.cpp`, so no CMake edit is needed for a
-   single-file scene. Multi-file scenes and optional-dependency scenes are
-   added in `CMakeLists.txt` (see the `wam_ikfast`, `atlas_simbicon`,
-   `human_joint_limits`, and `ssik_ik_gui` blocks).
+Add new scenes to `python/examples/demos/scenes/` and register them in
+`python/examples/demos/registry.py`. See the
+[Python examples README](../../python/examples/README.md) for the native host's
+`Scene` and `SceneSetup` contract.
 
 ## Host conventions (enforced in review)
 
@@ -223,7 +219,7 @@ whatever the user changes at runtime:
 - `--cycle-scenes [--frames N]` — headless: build every scene, step N frames
   each, twice (a leak/robustness audit), without a graphics device; exit
   nonzero on any factory or hook failure. Missing prefetched model assets
-  are reported as skipped scenes. These flags also apply to `pixi run py-demos`.
+  are reported as skipped scenes. Run this with `pixi run cycle-demos`.
 - `--headless --shot <path> [--steps N]` — off-screen capture. Linux uses
   Vulkan without a DISPLAY; software Vulkan drivers are supported.
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
@@ -235,8 +231,8 @@ whatever the user changes at runtime:
 - `--debug-select-body <name>` / `--debug-record-profile` — hidden hooks that
   let a headless capture exercise the inspector/profiler panels.
 
-The legacy soft-body commands are retained as thin aliases over `dart-demos`:
+Open the legacy soft-body scenes in the Python catalog:
 
-    $ pixi run ex soft_bodies -- --collision-detector dart --threads 16
-    $ pixi run ex soft_cubes -- --collision-detector fcl --threads 1
-    $ pixi run ex soft_open_chain -- --collision-detector dart --threads 4
+    $ pixi run demos -- --scene soft_bodies --collision-detector dart --threads 16
+    $ pixi run demos -- --scene soft_cubes --collision-detector fcl --threads 1
+    $ pixi run demos -- --scene soft_open_chain --collision-detector dart --threads 4

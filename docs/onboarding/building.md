@@ -35,17 +35,19 @@ in the default gates. See [testing guidance](testing.md) for native-window
 tests.
 
 ```bash
-pixi run demos        # Build dart-demos and open a native window
+pixi run demos        # Build dartpy and open the Python demo catalog
 pixi run cycle-demos  # Replace every demo scene without a graphics context
 pixi run capture      # Render a demo scene to a PNG without a window
 pixi run test-gui     # GUI gate; see testing.md
 ```
 
-`demos`, `cycle-demos`, and `capture` configure through `pixi run config`,
-whose bundled ImGui is the Dear ImGui docking release that configure fetches
-with Git. `pixi run ex <example>`
-builds and runs one GUI example. Python GUI tasks (`py-demos`, `py-ex`,
-`agent-capture`) depend on `pixi run build-py-dev`. For a build without
+`demos`, `cycle-demos`, and `capture` run `python -m examples.demos`
+against the built dartpy and depend on `pixi run build-py-dev`.
+That build configures through `pixi run config-py`, whose bundled ImGui is the
+Dear ImGui docking release that configure fetches with Git. `capture` keeps
+its output relative to the repository root (by default, `capture.png`).
+`pixi run ex <example>` builds and runs one C++ example; `py-ex` and
+`agent-capture` also depend on `pixi run build-py-dev`. For a build without
 graphics dependencies, `pixi run config-core` configures the headless core in
 `build/<env>/cpp/core`; see [build system notes](build-system.md).
 

@@ -1,19 +1,21 @@
 # DART Examples README
 
-Most of DART's C++ example programs live in one consolidated application,
-`demos`, so there is a single place to browse and run them. A handful of
-examples remain standalone because they serve a purpose the consolidated
-catalog does not: a minimal "first program", a console-only regression check,
+Most of DART's former C++ GUI examples now have Python scenes in one
+consolidated application, `python/examples/demos/`, so there is a single place
+to browse and run them. A handful of C++ examples remain standalone because
+they serve a purpose the consolidated catalog does not: a minimal "first
+program", a console-only regression check,
 a benchmark, and a CI-load-bearing microbenchmark harness.
 
 ## `demos`: the consolidated example catalog
 
-`demos/` hosts `dart-demos`, a Filament/ImGui application that bundles every
-former single-purpose GUI example (add/delete skeletons, box stacking, rigid
-chains/cubes/loops, joint constraints, humanoid controllers, soft bodies,
+The Python catalog runs on the native Filament/ImGui app host through
+`dartpy.viewer`. It bundles the former single-purpose GUI examples
+(add/delete skeletons, box stacking, rigid chains/cubes/loops, joint
+constraints, humanoid controllers, soft bodies,
 drag-and-drop, IK, and more) as selectable scenes in one window.
 
-Build and run it:
+Build dartpy and run the catalog:
 
     $ pixi run demos
 
@@ -24,26 +26,27 @@ for platform behavior.
 
 The flagship deformable-body scenes can be opened directly:
 
-    $ pixi run demos --scene adaptive_soft_contact
-    $ pixi run demos --scene soft_worm
+    $ pixi run demos -- --scene adaptive_soft_contact
+    $ pixi run demos -- --scene soft_worm
 
-Soft-body scene aliases are also available for compatibility with the former
-standalone examples:
+Open the former standalone soft-body examples by scene id:
 
-    $ pixi run ex soft_bodies -- --collision-detector dart --threads 16
-    $ pixi run ex soft_cubes -- --collision-detector fcl --threads 1
-    $ pixi run ex soft_open_chain -- --collision-detector dart --threads 4
+    $ pixi run demos -- --scene soft_bodies --collision-detector dart --threads 16
+    $ pixi run demos -- --scene soft_cubes --collision-detector fcl --threads 1
+    $ pixi run demos -- --scene soft_open_chain --collision-detector dart --threads 4
 
 Use `dart` or `fcl` for apples-to-apples soft-body comparisons. The
 consolidated `dart` detector covers `SoftMeshShape` in these scenes.
 
-or, from a manual build directory (the default `DART_BUILD_GUI=ON` needs a
-Filament SDK):
+For a manual source build, configure with `-DDART_BUILD_DARTPY=ON` and
+`-DDART_USE_SYSTEM_IMGUI=OFF`, then build dartpy and run the package from
+`python/` (the default `DART_BUILD_GUI=ON` needs a Filament SDK):
 
-    $ cmake --build build --target dart-demos
-    $ ./build/bin/dart-demos
+    $ cmake --build build --target dartpy
+    $ cd python
+    $ PYTHONPATH=../build/python/dartpy python -m examples.demos
 
-Useful flags (`./dart-demos --help` for the full list):
+Useful flags (`pixi run demos -- --help` for the full list):
 
     --list-scenes            Print the catalog grouped by category and exit.
     --scene <id>              Start on a specific scene (e.g. --scene boxes).
@@ -51,9 +54,12 @@ Useful flags (`./dart-demos --help` for the full list):
 
 `pixi run cycle-demos` runs that smoke test without a graphics context.
 
-Each scene's source lives under `demos/scenes/`; scene ids match their
-original standalone example names (e.g. `demos/scenes/BoxesScene.cpp` is
+Each scene's source lives under `python/examples/demos/scenes/`; scene ids match
+their original standalone example names (e.g. `scenes/boxes.py` is
 `--scene boxes`).
+
+The C++ app in `demos/` and its tests are kept only until WP-PD.18 removes
+them. The Pixi demo tasks use the Python catalog.
 
 ## Standalone examples
 
@@ -82,8 +88,8 @@ and the other examples still build. Configuring a GUI example individually
 requires the Filament component and fails clearly when it is absent.
 `contact_benchmark` still builds without it, but its GUI modes are unavailable.
 
-`demos` builds only inside the DART source tree (`pixi run demos`), because it
-links private libraries that DART does not install. A copied `examples`
+The retained C++ `dart-demos` target builds only inside the DART source tree,
+because it links private libraries that DART does not install. A copied `examples`
 directory skips it with a configure message.
 
 Copy this directory to your workspace (e.g., in Linux):
