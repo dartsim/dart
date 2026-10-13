@@ -43,3 +43,7 @@
     PR body and selected visual attachment are prepared for approval.
   - Kept the full program active: missing implementation, integration and
     release acceptance still prevent project-home retirement.
+  - An independent M1b preparation spike confirms that editing unrelated
+    World B incorrectly invalidates prepared World A. The shared-Skeleton
+    protection case passes. Production implementation waits for the recorded
+    sequencing to be reconciled; the evidence is retained in the task owner.

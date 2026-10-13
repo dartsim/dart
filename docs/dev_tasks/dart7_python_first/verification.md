@@ -418,7 +418,8 @@ Known gaps:
   is retained separately and is not counted as passing.
 - **Model oracle:** the durable fixture is
   `data/sdf/test/pose_frames.world`; its integration regression checks two
-  skeletons, inertia, COM, all 114 soft rest points and their centroid.
+  skeletons, inertia, COM, the 114-point count and rest centroid; a separate
+  regression checks every rest point across four soft shapes.
   An isolated C++ executable also reports the before/after values in
   `build/sdf-pose-evidence/{before,after}-oracle.json`. The old moment is
   `diag(0.04, 0.16, 0.18)` and the old rest centroid is approximately zero.
@@ -741,3 +742,35 @@ with 24 workers; no source fix was needed.
   parallel chunking.
 - **Changelog decision:** no entry required; the diff against main preserves
   API and behavior and documents an internal refactor.
+
+## M1b preparation-scope spike
+
+- **Contract:** preparation readiness follows this World's Skeletons, direct
+  solver Skeletons (including shapeless ones), and Skeleton ancestors of
+  collision-group frames. Preserve option/filter/thread/group checks, lazy C++
+  edits and shared membership. The global structural stamp may be a cheap
+  revalidation hint; it must not itself invalidate an unrelated World.
+  Bookkeeping fits behind the existing private state pointer, preserving
+  installed headers and object layout.
+- **Reproduction (2026-10-13):** isolated C++ probe against unchanged World
+  source, default FCL, adding a child RevoluteJoint. Preparing independent A
+  and B yields `[true, true]`; editing B yields `[false, false]`, although A's
+  Skeleton version remains unchanged. The required result is `[true, false]`.
+  Preparing A afterward yields `[true, false]`.
+- **Existing protection:** two Worlds sharing one Skeleton correctly become
+  `[false, false]` after its edit; preparing only A leaves B stale. This is a
+  passing protection case, not a second confirmed failure.
+- **Artifacts:** `build/world-preparation-scope/` contains source, transition
+  JSON, assertions-enabled build/run logs and provenance. Repeat with
+  `pixi run python build/world-preparation-scope/reproduce.py`.
+- **Next decisive cases:** own in-place topology edits and lazy rebuilding;
+  shared-Skeleton invalidation isolation; external solver/group/ancestor
+  dependencies and their replacement/removal. Keep unchanged-epoch readiness
+  allocation-free. Required verification includes exact state/contact traces,
+  StepAllocation and IslandDeactivation, core/Python and downstream gates,
+  and detector/thread-specific baseline comparisons.
+- **Limits and status:** evidence only; no production implementation, steps,
+  allocation/performance or other-detector/platform checks. Full M1b's
+  `compile()`, `edit()`, strict mutation tiers and unsupported-shape rejection
+  remain open. This spike does not waive the recorded M0 exit or introduce
+  exclusive ownership restrictions for lazy C++ Worlds.

@@ -4,7 +4,10 @@
 
 This section supersedes the historical handoff below. The resumed checkout
 started detached at `dart7-base`; the current local packet branch is
-`fix/sdf-pose-followup`, based on fetched main `e378f985f`.
+`fix/sdf-pose-followup`, initially based on fetched main `e378f985f`.
+The local fix is committed as `6047aca4a`; current main `95282f1b9` is merged
+for publication preparation. Its two additions change hooks and handoff docs,
+with no SDF or engine source delta.
 
 - M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775). The
   `dart7-base` nightly smoke has finished: all 78 rows pass; its pinned SHA,
@@ -35,6 +38,8 @@ Immediate next action: publish the locally verified SDF packet after approval,
 then execute the separately scoped M1b World-local preparation packet once
 the recorded M0 sequencing is reconciled. Its independent reproduction spike
 can proceed without changing production code or waiving the M0 exit.
+That spike now confirms unrelated-World invalidation; the shared-Skeleton
+protection case already passes. See [the M1b evidence](verification.md#m1b-preparation-scope-spike).
 Keep existing #3728 and #3729 branches as their integration owners. Continue
 the missing packets; pending publication is not program completion.
 Publishing still requires explicit approval; the offline PR body and selected
