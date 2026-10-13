@@ -1,6 +1,7 @@
 """Snapshot each backend in a fresh process, then compare public API surfaces."""
 
 import argparse
+import enum
 import inspect
 import json
 import os
@@ -164,7 +165,7 @@ def snapshot():
                 if members is not None:
                     enum = {}
                     for key, member in members.items():
-                        enum[key] = int(member)
+                        enum[key] = enum_number(member)
                     rows[child_path] = {"kind": "enum", "members": enum}
                 else:
                     rows[child_path] = {"kind": "class"}
@@ -183,12 +184,15 @@ def snapshot():
                     **property_types(child),
                 }
             elif hasattr(type(child), "__members__"):
-                rows[child_path] = {"kind": "enum_value", "value": int(child)}
+                rows[child_path] = {"kind": "enum_value", "value": enum_number(child)}
             elif isinstance(child, (str, int, float, bool, type(None))):
                 rows[child_path] = {"kind": "constant", "value": child}
             else:
                 try:
-                    rows[child_path] = {"kind": "enum_value", "value": int(child)}
+                    rows[child_path] = {
+                        "kind": "enum_value",
+                        "value": enum_number(child),
+                    }
                 except (TypeError, ValueError):
                     rows[child_path] = {"kind": type(child).__name__}
 
@@ -269,6 +273,11 @@ def compare(pb, nb):
     return diff
 
 
+def enum_number(member):
+    """Return an enum member's number; only arithmetic enums support int()."""
+    return int(getattr(member, "value", member))
+
+
 def self_check():
     assert shape("f(self: X, x: int = 4) -> int")["arguments"] == [
         {"name": "x", "default": "4", "type": "int"}
@@ -286,6 +295,10 @@ def self_check():
         == "tuple[array<float64,3>]"
     )
     assert compare({"X": {"kind": "class"}}, {})["missing"] == ["X"]
+    # Non-arithmetic nanobind enums, such as dartpy.gui.CameraMode, reject int().
+    Mode = enum.Enum("Mode", {"RGBA": 0, "DEPTH": 1})
+    assert enum_number(Mode.DEPTH) == 1
+    assert enum_number(3) == 3
     assert shape("(self: X, value: float) -> None")["arguments"] == [
         {"name": "value", "default": None, "type": "float"}
     ]

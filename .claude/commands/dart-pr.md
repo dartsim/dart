@@ -18,8 +18,8 @@ $ARGUMENTS
 
 ## Recent PR Patterns
 
-When the expected PR style is unclear, inspect recently merged PRs before
-drafting the title or body:
+When project context is unclear, inspect recently merged PRs for examples;
+the current PR-description owner below takes precedence over older bodies:
 
 ```bash
 gh pr list --repo dartsim/dart --state merged --base <target-branch> --limit 10 \
@@ -32,13 +32,12 @@ Use these practices:
 - Describe private plans in prose or link public PRs/issues. Keep private,
   local, and machine-specific paths out of the title and body.
 - Follow `docs/onboarding/contributing.md` § "PR Descriptions" for the
-  Effect-first template order, comparisons, plots, collapsed raw tables, and
-  Testing content. This is the PR-description owner for agents and contributors.
+  Summary and Testing default, optional material context, evidence formats,
+  and collapsed detail. This is the PR-description owner for agents and contributors.
   Write each paragraph and list item of the body on one line: GitHub renders
   newlines as line breaks, so never wrap PR text at a fixed width.
-- For CI, performance, or infrastructure work, include evidence such as CI run
-  observations, timing, reruns, benchmark output, or why a skipped check is
-  expected.
+- For CI, performance, or infrastructure work, include evidence that supports
+  the outcome and relevant verification gaps.
 - For model/scene, dynamics, collision/contact, simulation, rendering, mesh,
   texture, GUI, or visual-example changes, use `dart-verify-sim`: report the
   text correctness oracle and include assessed, claim-tied Filament/debug-overlay
@@ -48,8 +47,9 @@ Use these practices:
     screenshots.
   - Follow `docs/ai/verification.md` § "Simulation Verification Route" for
     before/after 3D highlights, matched captures, and compute-only plots.
-  - Inspect the images yourself and include the commands plus any environment
-    variables such as software rendering flags in the PR body.
+  - Inspect the images yourself and retain reproduction commands and
+    environment details in collapsed evidence details. Keep limiting caveats
+    and failed or uncertain results prominent.
   - Use `pixi run evidence-publish` to render the section without network access.
     Follow `docs/ai/verification.md` § "Visual Verification (Headless Capture)"
     for publication after explicit maintainer/user approval. Attachments use
@@ -59,9 +59,7 @@ Use these practices:
     assets.
   - If no headless path exists, either add a narrowly scoped capture mode when
     it fits the example or document why visual comparison is not practical.
-- Mark non-applicable checklist items as "N/A" with a short reason.
-- Mention related PRs, issues, backports, and follow-ups explicitly, including
-  "None" when there is no related work.
+- Link relevant PRs, issues, backports, and follow-ups when useful to the review.
 
 ## Workflow
 
@@ -92,8 +90,11 @@ Use these practices:
    git switch --no-track -c <type>/<topic> origin/<target-branch>
    ```
 7. Commit only intended files with a plain descriptive commit title.
-8. Before every `gh pr create` or `gh pr edit`, require both checks below to
-   exit 0 on the exact proposed title and body, including retained text:
+8. Every `gh pr create` or `gh pr edit` requires explicit maintainer/user
+   approval. Require both checks below to exit 0 on the exact proposed title
+   and body, including retained text.
+   Complete the applicable actions in `docs/onboarding/contributing.md`
+   § "PR Author Checklist" before publication:
    ```bash
    printf '%s\n' "$pr_title" | pixi run python scripts/check_local_paths.py --stdin
    pixi run python scripts/check_local_paths.py --text-file "$pr_body_file"
