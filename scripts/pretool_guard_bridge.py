@@ -104,7 +104,6 @@ def run_guard(root: Path, payload: bytes, bash: Path) -> int:
             "--norc",
             str(guard).replace("\\", "/"),
         ],
-        cwd=root,
         env=env,
         input=payload,
         capture_output=True,
