@@ -1,5 +1,8 @@
 """DART 7.0 target shape; each feature PR removes its strict xfail marker.
 
+The PR that removes a marker must make its test exercise the full contract in
+docs/design/dart7_python_api.md.
+
 The headless-render part needs a graphics device, so it lives in
 python/tests/unit/gui/test_target_shape_render.py, which test-gui runs and
 test-py leaves out.
@@ -43,6 +46,8 @@ def test_world_construction_keywords():
     assert world.time_step == 1e-3
     np.testing.assert_array_equal(world.gravity, (0, 0, -9.81))
     assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
+    with pytest.raises(TypeError):
+        dart.World("positional")
 
 
 @pytest.mark.xfail(
@@ -58,13 +63,22 @@ def test_load_world_mjcf_detector_default(tmp_path):
     assert isinstance(world.collision.detector, dart.collision.DARTCollisionDetector)
 
 
-@pytest.mark.xfail(strict=True, reason="M1b: explicit edit/compile modes are pending")
-def test_edit_compile(world):
+@pytest.mark.xfail(
+    strict=True, reason="M1b/M5b: edit/compile modes and frozen topology enforcement are pending"
+)
+def test_edit_compile(world, robot):
     world.compile()
     assert world.is_compiled
+    # The design names the error but leaves its public module to M5.
+    with pytest.raises(Exception) as frozen:
+        world.remove(robot)
+    assert type(frozen.value).__name__ == "ModelFrozenError"
+    assert robot in world.multibodies
     with world.edit():
-        pass
+        assert not world.is_compiled
+        world.remove(robot)
     assert world.is_compiled
+    assert robot not in world.multibodies
 
 
 @pytest.mark.xfail(
@@ -89,12 +103,22 @@ def test_joint_position_servo(robot):
 
 @pytest.mark.xfail(
     strict=True,
-    reason="M1h/M5b: native IMUSensor and the World sensor registry are pending",
+    reason="M1h/M5b: native IMUSensor readings and the World sensor registry are pending",
 )
 def test_imu_sensor(world, robot):
     sensor = dart.sensors.IMUSensor(link=robot.getRootBodyNode())
     imu = world.sensors.add(sensor)
     assert isinstance(imu, dart.sensors.IMUSensor)
+    assert imu is sensor
+    assert imu in world.sensors
+    robot.setPositions(np.full(robot.getNumDofs(), 0.5))
+    robot.setVelocities(np.ones(robot.getNumDofs()))
+    world.step()
+    assert isinstance(imu.orientation, dart.Rotation)
+    half = robot.getPositions()[0] / 2
+    np.testing.assert_allclose(
+        imu.orientation.wxyz, (np.cos(half), np.sin(half), 0, 0), rtol=0, atol=1e-12
+    )
 
 
 @pytest.mark.xfail(
@@ -117,6 +141,11 @@ def test_transform_composition():
     )
     composed = parent @ dart.Transform(translation=(0, 0, 0.1))
     np.testing.assert_allclose(composed @ np.zeros(3), (1, 1.9, 3))
+    quaternion = parent.wxyz.copy()
+    with pytest.raises(ValueError):
+        parent.wxyz[0] = 0
+    np.testing.assert_array_equal(parent.wxyz, quaternion)
+    np.testing.assert_array_equal(parent @ np.zeros(3), (1, 2, 3))
 
 
 @pytest.mark.xfail(
@@ -136,19 +165,27 @@ def test_link_world_transform(robot):
 
 @pytest.mark.xfail(
     strict=True,
-    reason="M1c/M5b: capture_state/restore_state dynamic snapshots are pending",
+    reason="M1c/M1g/M5b: dynamic snapshots including persistent servo targets are pending",
 )
 def test_capture_restore_state(world, robot):
+    robot.joints["shoulder_yaw"].actuator = dart.PositionServo(
+        kp=400, kd=40, effort_limit=80
+    )
+    targets = np.full(robot.getNumDofs(), 0.5)
+    robot.dofs.position_targets = targets
     robot.setVelocities(np.ones(robot.getNumDofs()))
     positions = robot.getPositions().copy()
     velocities = robot.getVelocities().copy()
     time = world.getTime()
     state = world.capture_state()
+    robot.dofs.position_targets = np.full(robot.getNumDofs(), -0.5)
+    np.testing.assert_array_equal(robot.dofs.position_targets, -targets)
     world.step()
     assert not np.array_equal(robot.getPositions(), positions)
     world.restore_state(state)
     np.testing.assert_array_equal(robot.getPositions(), positions)
     np.testing.assert_array_equal(robot.getVelocities(), velocities)
+    np.testing.assert_array_equal(robot.dofs.position_targets, targets)
     assert world.getTime() == time
 
 
