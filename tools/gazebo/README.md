@@ -262,6 +262,13 @@ DART headers declare them (`declared_in_dart`).
 Namespace-scope constants and variables retain their declarations in
 `variables`; unqualified free-function calls also search the DART namespaces
 associated with their argument types and bases.
+Referenced class templates retain their parameter declarations, including
+forward-declaration defaults. Direct DART includes are listed in `headers`
+with their source-header availability, and attributed declarations remain
+eligible for matching. DART free-function returns can also supply the type
+of a chained member-call receiver.
+`source_present` recognizes source headers and `.hpp.in` templates; availability
+of CMake-generated umbrella headers is checked by the Gazebo build lanes.
 
 The extractor does not evaluate preprocessor conditions. It drops only the
 branches that a literal `#if 0` or `#if 1` rules out and scans every other

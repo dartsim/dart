@@ -454,6 +454,18 @@
               "const": false,
               "signature": "MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < math :: TriMesh < double > > mesh , const common :: Uri & uri = )",
               "virtual": false
+            },
+            {
+              "class": "dart::dynamics::MeshShape",
+              "const": false,
+              "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , const aiScene * mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr , MeshOwnership ownership = MeshOwnership :: Imported )",
+              "virtual": false
+            },
+            {
+              "class": "dart::dynamics::MeshShape",
+              "const": false,
+              "signature": "[ [ deprecated ( ) ] ] MeshShape ( const Eigen :: Vector3d & scale , std :: shared_ptr < const aiScene > mesh , const common :: Uri & uri = , common :: ResourceRetrieverPtr resourceRetriever = nullptr )",
+              "virtual": false
             }
           ],
           "examples": [
@@ -1523,6 +1535,404 @@
             "dartsim/src/JointFeatures.cc:866"
           ],
           "name": "dart::math::dAdT"
+        }
+      ],
+      "headers": [
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/EntityManagementFeatures.cc:28"
+          ],
+          "name": "dart/collision/CollisionFilter.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/EntityManagementFeatures.cc:29",
+            "dartsim/src/GzCollisionDetector.cc:23",
+            "dartsim/src/SimulationFeatures.cc:28"
+          ],
+          "name": "dart/collision/CollisionObject.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/GzCollisionDetector.hh:28",
+            "dartsim/src/SimulationFeatures.cc:29"
+          ],
+          "name": "dart/collision/CollisionResult.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/GzCollisionDetector.hh:29",
+            "dartsim/src/WorldFeatures.cc:21"
+          ],
+          "name": "dart/collision/bullet/BulletCollisionDetector.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/GzCollisionDetector.cc:24"
+          ],
+          "name": "dart/collision/bullet/BulletCollisionGroup.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/WorldFeatures.cc:22"
+          ],
+          "name": "dart/collision/dart/DARTCollisionDetector.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/WorldFeatures.cc:30"
+          ],
+          "name": "dart/collision/fcl/FCLCollisionDetector.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/GzCollisionDetector.hh:30"
+          ],
+          "name": "dart/collision/ode/OdeCollisionDetector.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/GzCollisionDetector.cc:25"
+          ],
+          "name": "dart/collision/ode/OdeCollisionGroup.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/EntityManagementFeatures.cc:24",
+            "dartsim/src/SimulationFeatures.hh:26"
+          ],
+          "name": "dart/config.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/WorldFeatures.cc:35"
+          ],
+          "name": "dart/constraint/BoxedLcpConstraintSolver.hpp",
+          "source_present": true
+        },
+        {
+          "count": 6,
+          "examples": [
+            "dartsim/src/Base.hh:21",
+            "dartsim/src/EntityManagementFeatures.cc:25",
+            "dartsim/src/FreeGroupFeatures.cc:20"
+          ],
+          "name": "dart/constraint/ConstraintSolver.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/SimulationFeatures.cc:31"
+          ],
+          "name": "dart/constraint/ContactConstraint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SimulationFeatures.cc:33",
+            "dartsim/src/SimulationFeatures.hh:28"
+          ],
+          "name": "dart/constraint/ContactSurface.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/WorldFeatures.cc:37"
+          ],
+          "name": "dart/constraint/DantzigBoxedLcpSolver.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/WorldFeatures.cc:38"
+          ],
+          "name": "dart/constraint/PgsBoxedLcpSolver.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/Base.hh:22",
+            "dartsim/src/SDFFeatures.cc:44"
+          ],
+          "name": "dart/constraint/WeldJointConstraint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:29",
+            "dartsim/src/SDFFeatures_TEST.cc:20"
+          ],
+          "name": "dart/dynamics/BallJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 6,
+          "examples": [
+            "dartsim/src/AddedMassFeatures_TEST.cc:19",
+            "dartsim/src/Base.hh:23",
+            "dartsim/src/JointFeatures.cc:20"
+          ],
+          "name": "dart/dynamics/BodyNode.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/Base_TEST.cc:32",
+            "dartsim/src/SDFFeatures.cc:30",
+            "dartsim/src/ShapeFeatures.cc:24"
+          ],
+          "name": "dart/dynamics/BoxShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:31",
+            "dartsim/src/ShapeFeatures.cc:25"
+          ],
+          "name": "dart/dynamics/CapsuleShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:32"
+          ],
+          "name": "dart/dynamics/ConeShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:33",
+            "dartsim/src/ShapeFeatures.cc:26"
+          ],
+          "name": "dart/dynamics/CylinderShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/SDFFeatures_TEST.cc:22"
+          ],
+          "name": "dart/dynamics/DegreeOfFreedom.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:34",
+            "dartsim/src/ShapeFeatures.cc:27"
+          ],
+          "name": "dart/dynamics/EllipsoidShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/KinematicsFeatures.cc:18"
+          ],
+          "name": "dart/dynamics/Frame.hpp",
+          "source_present": true
+        },
+        {
+          "count": 8,
+          "examples": [
+            "dartsim/src/Base.hh:24",
+            "dartsim/src/Base_TEST.cc:33",
+            "dartsim/src/EntityManagementFeatures.cc:26"
+          ],
+          "name": "dart/dynamics/FreeJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/CustomHeightmapShape.hh:21",
+            "dartsim/src/SDFFeatures.cc:36",
+            "dartsim/src/ShapeFeatures.cc:28"
+          ],
+          "name": "dart/dynamics/HeightmapShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/AddedMassFeatures.cc:19"
+          ],
+          "name": "dart/dynamics/Inertia.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/JointFeatures.cc:21",
+            "test/plugins/DARTDoublePendulum.cc:22"
+          ],
+          "name": "dart/dynamics/Joint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/CustomMeshShape.hh:21",
+            "dartsim/src/SDFFeatures.cc:37",
+            "dartsim/src/ShapeFeatures.cc:29"
+          ],
+          "name": "dart/dynamics/MeshShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:38",
+            "dartsim/src/ShapeFeatures.cc:30"
+          ],
+          "name": "dart/dynamics/PlaneShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/JointFeatures.cc:23",
+            "dartsim/src/SDFFeatures.cc:39"
+          ],
+          "name": "dart/dynamics/PrismaticJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/JointFeatures.cc:24",
+            "dartsim/src/SDFFeatures.cc:40",
+            "dartsim/src/SDFFeatures_TEST.cc:24"
+          ],
+          "name": "dart/dynamics/RevoluteJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:41",
+            "dartsim/src/SDFFeatures_TEST.cc:25"
+          ],
+          "name": "dart/dynamics/ScrewJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/ShapeFeatures.cc:31"
+          ],
+          "name": "dart/dynamics/Shape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/Base.hh:25"
+          ],
+          "name": "dart/dynamics/SimpleFrame.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/Base.hh:26",
+            "dartsim/src/Base_TEST.cc:34",
+            "test/plugins/DARTDoublePendulum.cc:23"
+          ],
+          "name": "dart/dynamics/Skeleton.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "test/plugins/DARTDoublePendulum.cc:24"
+          ],
+          "name": "dart/dynamics/SmartPointer.hpp",
+          "source_present": true
+        },
+        {
+          "count": 2,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:42",
+            "dartsim/src/ShapeFeatures.cc:32"
+          ],
+          "name": "dart/dynamics/SphereShape.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "dartsim/src/SDFFeatures.cc:43"
+          ],
+          "name": "dart/dynamics/UniversalJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 3,
+          "examples": [
+            "dartsim/src/JointFeatures.cc:25",
+            "dartsim/src/SDFFeatures.cc:45",
+            "dartsim/src/SDFFeatures_TEST.cc:26"
+          ],
+          "name": "dart/dynamics/WeldJoint.hpp",
+          "source_present": true
+        },
+        {
+          "count": 5,
+          "examples": [
+            "dartsim/src/Base.hh:27",
+            "dartsim/src/Base_TEST.cc:35",
+            "dartsim/src/World.hh:21"
+          ],
+          "name": "dart/simulation/World.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "test/plugins/DARTDoublePendulum.cc:27"
+          ],
+          "name": "dart/utils/urdf/urdf.hpp",
+          "source_present": true
+        },
+        {
+          "count": 1,
+          "examples": [
+            "test/plugins/DARTDoublePendulum.cc:26"
+          ],
+          "name": "dart/utils/utils.hpp",
+          "source_present": false
         }
       ],
       "macros": [
@@ -7196,7 +7606,10 @@
             "dartsim/src/GzCollisionDetector.cc:418",
             "dartsim/src/GzCollisionDetector.hh:136"
           ],
-          "name": "dart::collision::CollisionDetector::Registrar"
+          "name": "dart::collision::CollisionDetector::Registrar",
+          "template_declarations": [
+            "template < typename KeyT , typename BaseT , typename DerivedT , typename HeldT = std :: shared_ptr < BaseT > , typename ... Args > class FactoryRegistrar"
+          ]
         },
         {
           "count": 2,
@@ -7324,7 +7737,10 @@
           "examples": [
             "dartsim/src/WorldFeatures.cc:180"
           ],
-          "name": "dart::constraint::BoxedLcpSolver"
+          "name": "dart::constraint::BoxedLcpSolver",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 2,
@@ -7356,7 +7772,10 @@
           "examples": [
             "dartsim/src/WorldFeatures.cc:184"
           ],
-          "name": "dart::constraint::DantzigBoxedLcpSolver"
+          "name": "dart::constraint::DantzigBoxedLcpSolver",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 4,
@@ -7365,7 +7784,10 @@
             "dartsim/src/WorldFeatures.cc:244",
             "dartsim/src/WorldFeatures.cc:250"
           ],
-          "name": "dart::constraint::PgsBoxedLcpSolver"
+          "name": "dart::constraint::PgsBoxedLcpSolver",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 1,
@@ -7387,7 +7809,32 @@
             "dartsim/src/SDFFeatures.cc:1203",
             "dartsim/src/SDFFeatures_TEST.cc:414"
           ],
-          "name": "dart::dynamics::BallJoint"
+          "name": "dart::dynamics::BallJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 61,
@@ -7396,7 +7843,54 @@
             "dartsim/src/AddedMassFeatures_TEST.cc:156",
             "dartsim/src/AddedMassFeatures_TEST.cc:173"
           ],
-          "name": "dart::dynamics::BodyNode"
+          "name": "dart::dynamics::BodyNode",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType > class CloneableMap",
+            "template < typename T > class CloneableVector"
+          ]
         },
         {
           "count": 3,
@@ -7405,7 +7899,58 @@
             "dartsim/src/EntityManagementFeatures.cc:889",
             "dartsim/src/SDFFeatures.cc:713"
           ],
-          "name": "dart::dynamics::BodyNode::Properties"
+          "name": "dart::dynamics::BodyNode::Properties",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class AspectT > struct GetProperties",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType , template < class > class GetData , class AspectT , typename ... Remainder > struct ComposeData < CompositeType , GetData , AspectT , Remainder ... >",
+            "template < class CompositeType , template < class > class GetData , typename ... Aspects > class ComposeData",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType , template < class > class GetData > class CompositeData",
+            "template < typename MapType > class CloneableMap",
+            "template < typename T > class CloneableVector"
+          ]
         },
         {
           "count": 4,
@@ -7414,7 +7959,55 @@
             "dartsim/src/Base.hh:71",
             "test/plugins/DARTDoublePendulum.cc:317"
           ],
-          "name": "dart::dynamics::BodyNodePtr"
+          "name": "dart::dynamics::BodyNodePtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class BodyNodeT > class TemplateBodyNodePtr",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType > class CloneableMap",
+            "template < typename T > class CloneableVector"
+          ]
         },
         {
           "count": 7,
@@ -7423,7 +8016,10 @@
             "dartsim/src/SDFFeatures.cc:299",
             "dartsim/src/SDFFeatures.cc:351"
           ],
-          "name": "dart::dynamics::BoxShape"
+          "name": "dart::dynamics::BoxShape",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 7,
@@ -7432,7 +8028,10 @@
             "dartsim/src/ShapeFeatures.cc:117",
             "dartsim/src/ShapeFeatures.cc:129"
           ],
-          "name": "dart::dynamics::CapsuleShape"
+          "name": "dart::dynamics::CapsuleShape",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 11,
@@ -7441,7 +8040,26 @@
             "dartsim/src/SDFFeatures.cc:935",
             "dartsim/src/ShapeFeatures.cc:101"
           ],
-          "name": "dart::dynamics::CollisionAspect"
+          "name": "dart::dynamics::CollisionAspect",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 4,
@@ -7450,7 +8068,59 @@
             "dartsim/src/Base.hh:568",
             "dartsim/src/FreeGroupFeatures.cc:36"
           ],
-          "name": "dart::dynamics::ConstSkeletonPtr"
+          "name": "dart::dynamics::ConstSkeletonPtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherBases > class NodeManagerJoinerForSkeleton",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class ... OtherSpecNodes > class SkeletonSpecializedFor",
+            "template < class AspectT > struct GetProperties",
+            "template < class AspectT > struct GetState",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForSkeleton < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForSkeleton < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForSkeleton < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode > class SkeletonSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class SkeletonSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType , template < class > class GetData > class CompositeData",
+            "template < typename MapType > class CloneableMap"
+          ]
         },
         {
           "count": 7,
@@ -7459,7 +8129,10 @@
             "dartsim/src/ShapeFeatures.cc:244",
             "dartsim/src/ShapeFeatures.cc:256"
           ],
-          "name": "dart::dynamics::CylinderShape"
+          "name": "dart::dynamics::CylinderShape",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 2,
@@ -7476,7 +8149,26 @@
             "dartsim/src/ShapeFeatures.cc:102",
             "dartsim/src/ShapeFeatures.cc:163"
           ],
-          "name": "dart::dynamics::DynamicsAspect"
+          "name": "dart::dynamics::DynamicsAspect",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 14,
@@ -7494,7 +8186,32 @@
             "dartsim/src/Base.hh:322",
             "dartsim/src/Base_TEST.cc:67"
           ],
-          "name": "dart::dynamics::FreeJoint"
+          "name": "dart::dynamics::FreeJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 3,
@@ -7503,7 +8220,31 @@
             "dartsim/src/EntityManagementFeatures.cc:886",
             "dartsim/src/SDFFeatures.cc:730"
           ],
-          "name": "dart::dynamics::FreeJoint::Properties"
+          "name": "dart::dynamics::FreeJoint::Properties",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 4,
@@ -7512,7 +8253,11 @@
             "dartsim/src/CustomHeightmapShape.hh:33",
             "dartsim/src/ShapeFeatures.cc:416"
           ],
-          "name": "dart::dynamics::HeightmapShape"
+          "name": "dart::dynamics::HeightmapShape",
+          "template_declarations": [
+            "template < typename Base > class Castable",
+            "template < typename S_ > class HeightmapShape"
+          ]
         },
         {
           "count": 1,
@@ -7535,7 +8280,24 @@
             "dartsim/src/Base.hh:361",
             "dartsim/src/Base.hh:570"
           ],
-          "name": "dart::dynamics::Joint"
+          "name": "dart::dynamics::Joint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 3,
@@ -7543,7 +8305,55 @@
             "dartsim/src/Base.hh:143",
             "dartsim/src/Base.hh:93"
           ],
-          "name": "dart::dynamics::JointPtr"
+          "name": "dart::dynamics::JointPtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class JointT , class BodyNodeT > class TemplateJointPtr",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType > class CloneableMap",
+            "template < typename T > class CloneableVector"
+          ]
         },
         {
           "count": 12,
@@ -7552,7 +8362,10 @@
             "dartsim/src/CustomMeshShape.hh:31",
             "dartsim/src/SDFFeatures.cc:402"
           ],
-          "name": "dart::dynamics::MeshShape"
+          "name": "dart::dynamics::MeshShape",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 6,
@@ -7561,7 +8374,10 @@
             "dartsim/src/ShapeFeatures.cc:544",
             "dartsim/src/ShapeFeatures.cc:545"
           ],
-          "name": "dart::dynamics::PlaneShape"
+          "name": "dart::dynamics::PlaneShape",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 6,
@@ -7570,14 +8386,65 @@
             "dartsim/src/JointFeatures.cc:773",
             "dartsim/src/JointFeatures.cc:786"
           ],
-          "name": "dart::dynamics::PrismaticJoint"
+          "name": "dart::dynamics::PrismaticJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 1,
           "examples": [
             "dartsim/src/JointFeatures.cc:809"
           ],
-          "name": "dart::dynamics::PrismaticJoint::Properties"
+          "name": "dart::dynamics::PrismaticJoint::Properties",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 8,
@@ -7586,14 +8453,65 @@
             "dartsim/src/JointFeatures.cc:697",
             "dartsim/src/JointFeatures.cc:710"
           ],
-          "name": "dart::dynamics::RevoluteJoint"
+          "name": "dart::dynamics::RevoluteJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 1,
           "examples": [
             "dartsim/src/JointFeatures.cc:733"
           ],
-          "name": "dart::dynamics::RevoluteJoint::Properties"
+          "name": "dart::dynamics::RevoluteJoint::Properties",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 2,
@@ -7601,7 +8519,33 @@
             "dartsim/src/SDFFeatures.cc:1227",
             "dartsim/src/SDFFeatures_TEST.cc:406"
           ],
-          "name": "dart::dynamics::ScrewJoint"
+          "name": "dart::dynamics::ScrewJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 31,
@@ -7610,14 +8554,89 @@
             "dartsim/src/Base.hh:145",
             "dartsim/src/Base.hh:419"
           ],
-          "name": "dart::dynamics::ShapeNode"
+          "name": "dart::dynamics::ShapeNode",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 1,
           "examples": [
             "dartsim/src/Base.hh:111"
           ],
-          "name": "dart::dynamics::ShapeNodePtr"
+          "name": "dart::dynamics::ShapeNodePtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class NodeT , class BodyNodeT > class TemplateNodePtr",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType > class CloneableMap",
+            "template < typename T > class CloneableVector"
+          ]
         },
         {
           "count": 12,
@@ -7626,7 +8645,10 @@
             "dartsim/src/SDFFeatures.cc:290",
             "dartsim/src/SDFFeatures.cc:911"
           ],
-          "name": "dart::dynamics::ShapePtr"
+          "name": "dart::dynamics::ShapePtr",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 6,
@@ -7635,7 +8657,26 @@
             "dartsim/src/Base_TEST.cc:217",
             "dartsim/src/Base_TEST.cc:62"
           ],
-          "name": "dart::dynamics::SimpleFrame"
+          "name": "dart::dynamics::SimpleFrame",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 7,
@@ -7644,7 +8685,26 @@
             "dartsim/src/Base.hh:369",
             "dartsim/src/Base.hh:94"
           ],
-          "name": "dart::dynamics::SimpleFramePtr"
+          "name": "dart::dynamics::SimpleFramePtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 10,
@@ -7653,7 +8713,59 @@
             "dartsim/src/Base.hh:178",
             "dartsim/src/Base_TEST.cc:216"
           ],
-          "name": "dart::dynamics::Skeleton"
+          "name": "dart::dynamics::Skeleton",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherBases > class NodeManagerJoinerForSkeleton",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class ... OtherSpecNodes > class SkeletonSpecializedFor",
+            "template < class AspectT > struct GetProperties",
+            "template < class AspectT > struct GetState",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForSkeleton < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForSkeleton < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForSkeleton < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode > class SkeletonSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class SkeletonSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType , template < class > class GetData > class CompositeData",
+            "template < typename MapType > class CloneableMap"
+          ]
         },
         {
           "count": 1,
@@ -7669,7 +8781,59 @@
             "dartsim/src/Base.hh:289",
             "dartsim/src/Base.hh:99"
           ],
-          "name": "dart::dynamics::SkeletonPtr"
+          "name": "dart::dynamics::SkeletonPtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherBases > class NodeManagerJoinerForSkeleton",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class ... OtherSpecNodes > class SkeletonSpecializedFor",
+            "template < class AspectT > struct GetProperties",
+            "template < class AspectT > struct GetState",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForSkeleton < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForSkeleton < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForSkeleton < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode > class SkeletonSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class SkeletonSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType , template < class > class GetData > class CompositeData",
+            "template < typename MapType > class CloneableMap"
+          ]
         },
         {
           "count": 5,
@@ -7678,7 +8842,10 @@
             "dartsim/src/ShapeFeatures.cc:368",
             "dartsim/src/ShapeFeatures.cc:379"
           ],
-          "name": "dart::dynamics::SphereShape"
+          "name": "dart::dynamics::SphereShape",
+          "template_declarations": [
+            "template < typename Base > class Castable"
+          ]
         },
         {
           "count": 2,
@@ -7686,21 +8853,91 @@
             "dartsim/src/SDFFeatures.cc:232",
             "dartsim/src/SDFFeatures.cc:253"
           ],
-          "name": "dart::dynamics::UniversalJoint"
+          "name": "dart::dynamics::UniversalJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 1,
           "examples": [
             "dartsim/src/SDFFeatures.cc:240"
           ],
-          "name": "dart::dynamics::UniversalJoint::Properties"
+          "name": "dart::dynamics::UniversalJoint::Properties",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class ConfigSpaceT > class GenericJoint",
+            "template < class ConfigSpaceT > struct GenericJointState",
+            "template < class ConfigSpaceT > struct GenericJointUniqueProperties",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < std :: size_t Dimension > struct RealVectorSpace"
+          ]
         },
         {
           "count": 1,
           "examples": [
             "dartsim/src/SDFFeatures.cc:1073"
           ],
-          "name": "dart::dynamics::VisualAspect"
+          "name": "dart::dynamics::VisualAspect",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 3,
@@ -7709,7 +8946,55 @@
             "test/plugins/DARTDoublePendulum.cc:62",
             "test/plugins/DARTDoublePendulum.cc:64"
           ],
-          "name": "dart::dynamics::WeakBodyNodePtr"
+          "name": "dart::dynamics::WeakBodyNodePtr",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherBases > class NodeManagerJoinerForBodyNode",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class ... OtherSpecNodes > class BodyNodeSpecializedFor",
+            "template < class Base , bool isCompositeBase > class EntityNodeBase",
+            "template < class Base , class OwnerT , class DataT , void ( * setData ) ( OwnerT * , const DataT & ) , DataT ( * getData ) ( const OwnerT * ) > class ProxyCloneable",
+            "template < class Base > class CompositeNode",
+            "template < class Base > class CompositePropertiesNode",
+            "template < class Base > class CompositeStateNode",
+            "template < class Base > class EntityNode",
+            "template < class Base > class EntityNodeBase < Base , true >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 , class ... OtherBases > class NodeManagerJoinerForBodyNode < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 , class Base2 > class NodeManagerJoinerForBodyNode < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class Base1 > class NodeManagerJoinerForBodyNode < Base1 >",
+            "template < class BaseT , class CompositeT , typename PropertiesT > class ProxyPropertiesAspect",
+            "template < class BaseT , class CompositeT , typename StateT > class ProxyStateAspect",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateProperties ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithVersionedProperties",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class BaseT , class DerivedT , typename StateDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & NoOp < DerivedT * > > class AspectWithState",
+            "template < class BaseT , class DerivedT , typename StateDataT , typename StateT = common :: Aspect :: MakeState < StateDataT > , void ( * setEmbeddedState ) ( DerivedT * , const StateT & ) = & DefaultSetEmbeddedState < DerivedT , StateT > , const StateT & ( * getEmbeddedState ) ( const DerivedT * ) = & DefaultGetEmbeddedState < DerivedT , StateT > > class EmbeddedStateAspect",
+            "template < class BodyNodeT > class TemplateWeakBodyNodePtr",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename StateDataT , typename PropertiesDataT > class EmbeddedStateAndPropertiesAspect",
+            "template < class CompositeT , typename StateT , typename PropertiesT > class ProxyStateAndPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT , typename ... CompositeBases > class EmbedPropertiesOnTopOf",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , class CompositeT = Composite , void ( * updateState ) ( DerivedT * ) = & detail :: NoOp < DerivedT * > , void ( * updateProperties ) ( DerivedT * ) = updateState > class AspectWithStateAndVersionedProperties",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT , typename ... CompositeBases > class EmbedStateAndPropertiesOnTopOf",
+            "template < class DerivedT , typename StateDataT , typename PropertiesDataT > class EmbedStateAndProperties",
+            "template < class NodeType > class AccessoryNode",
+            "template < class NodeType > class TemplatedJacobianNode",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class SpecNode > class BodyNodeSpecializedFor < SpecNode >",
+            "template < class SpecNode1 , class ... OtherSpecNodes > class BodyNodeSpecializedFor < SpecNode1 , OtherSpecNodes ... >",
+            "template < class T > class Cloneable",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual",
+            "template < typename MapType > class CloneableMap",
+            "template < typename T > class CloneableVector"
+          ]
         },
         {
           "count": 5,
@@ -7718,7 +9003,24 @@
             "dartsim/src/JointFeatures.cc:608",
             "dartsim/src/JointFeatures.cc:657"
           ],
-          "name": "dart::dynamics::WeldJoint"
+          "name": "dart::dynamics::WeldJoint",
+          "template_declarations": [
+            "template < class ... OtherBases > class CompositeJoiner",
+            "template < class ... OtherRequiredAspects > class RequiresAspect",
+            "template < class ... OtherSpecAspects > class SpecializedForAspect",
+            "template < class Base1 , class Base2 , class ... OtherBases > class CompositeJoiner < Base1 , Base2 , OtherBases ... >",
+            "template < class Base1 , class Base2 > class CompositeJoiner < Base1 , Base2 >",
+            "template < class Base1 > class CompositeJoiner < Base1 >",
+            "template < class BaseT , class DerivedT , typename PropertiesDataT , typename PropertiesT = common :: Aspect :: MakeProperties < PropertiesDataT > , void ( * setEmbeddedProperties ) ( DerivedT * , const PropertiesT & ) = & DefaultSetEmbeddedProperties < DerivedT , PropertiesT > , const PropertiesT & ( * getEmbeddedProperties ) ( const DerivedT * ) = & DefaultGetEmbeddedProperties < DerivedT , PropertiesT > > class EmbeddedPropertiesAspect",
+            "template < class CompositeT , typename PropertiesDataT > class EmbeddedPropertiesAspect",
+            "template < class CompositeType > class CompositeTrackingAspect",
+            "template < class DerivedT , typename PropertiesDataT > class EmbedProperties",
+            "template < class ReqAspect > class RequiresAspect < ReqAspect >",
+            "template < class ReqAspect1 , class ... OtherReqAspects > class RequiresAspect < ReqAspect1 , OtherReqAspects ... >",
+            "template < class SpecAspect > class SpecializedForAspect < SpecAspect >",
+            "template < class SpecAspect1 , class ... OtherSpecAspects > class SpecializedForAspect < SpecAspect1 , OtherSpecAspects ... >",
+            "template < class T > class alignas ( alignof ( T ) > alignof ( void * ) ? alignof ( T ) : alignof ( void * ) ) Virtual"
+          ]
         },
         {
           "count": 1,
@@ -7766,6 +9068,16 @@
       "constructors": [],
       "data_members": [],
       "free_functions": [],
+      "headers": [
+        {
+          "count": 1,
+          "examples": [
+            "test/integration/physics_system.cc:25"
+          ],
+          "name": "dart/config.hpp",
+          "source_present": true
+        }
+      ],
       "macros": [
         {
           "count": 1,

@@ -14,6 +14,7 @@ SCRIPT = ROOT / "scripts" / "gz_dart_api_inventory.py"
 INVENTORY = ROOT / "tools" / "gazebo" / "compat" / "dart_api_inventory.json"
 SECTIONS = (
     "types",
+    "headers",
     "members",
     "constructors",
     "data_members",
@@ -1130,6 +1131,120 @@ namespace other { constexpr int LIMIT = 1; }
         _entries(changed, "variables")["dart::LIMIT"]["declarations"]
         != variables["dart::LIMIT"]["declarations"]
     )
+
+
+@pytest.mark.parametrize("definition", [";", "{};"])
+def test_referenced_class_template_parameters_are_recorded(
+    extractor, tmp_path, definition
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(
+        "namespace dart { template<class T> class Box" + definition + " }"
+    )
+    source = "void f(dart::Box<int>* box) {}"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(before, "types")["dart::Box"]["template_declarations"] == [
+        "template < class T > class Box"
+    ]
+    header.write_text(header.read_text().replace("class T>", "class T, class U>"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "changed", source)
+    assert before != after
+
+
+def test_template_defaults_in_forward_headers_and_comparisons(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    forward = headers / "forward.hpp"
+    forward.write_text("namespace dart { template<class T, class U = int> class Box; }")
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+template<class T, class U> class Box {};
+template<bool B = (sizeof(int) < sizeof(long))> class Compared {};
+}
+"""
+    )
+    source = "void f(dart::Box<int>* box, dart::Compared<>* compared) {}"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    types = _entries(before, "types")
+    assert len(types["dart::Box"]["template_declarations"]) == 2
+    assert types["dart::Compared"]["template_declarations"] == [
+        "template < bool B = ( sizeof ( int ) < sizeof ( long ) ) > class Compared"
+    ]
+    forward.write_text(forward.read_text().replace("= int", "= double"))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "changed", source)
+    assert before != after
+
+
+def test_attributes_do_not_hide_real_declarations(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+class Mesh {
+public:
+  [[deprecated("old")]] Mesh(int value);
+  [[vendor::hint(choose(1, array[0]))]] int getMesh() const;
+  [[deprecated("old")]] void setMesh(int value);
+  int operator[](int value) const;
+};
+}
+"""
+    )
+    api = extractor.index_api(headers)
+    assert set(api.members) == {"getMesh", "setMesh", "operator[]"}
+    assert len(api.constructors["dart::Mesh"]) == 1
+    result = _scan(
+        extractor,
+        api,
+        tmp_path,
+        "void f() { dart::Mesh mesh(1); mesh.getMesh(); mesh.setMesh(2); mesh[0]; }",
+    )
+    assert set(_entries(result, "members")) == {"getMesh", "setMesh", "operator[]"}
+    assert _entries(result, "constructors")["dart::Mesh"]["declarations"]
+
+
+def test_free_function_returns_resolve_chained_receivers(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        """namespace dart {
+class Widget { public: void mutate(); int getValue() const; };
+Widget* make();
+Widget makeValue();
+}
+"""
+    )
+    result = _scan_files(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        {
+            "../client.cc": "void f() { dart::make()->mutate(); dart::makeValue().getValue(); }"
+        },
+    )
+    members = _entries(result, "members")
+    assert set(members) == {"mutate", "getValue"}
+    assert all(row["receiver_types"] == ["dart::Widget"] for row in members.values())
+    assert all(row["unresolved_count"] == 0 for row in members.values())
+
+
+def test_direct_dart_includes_detect_removed_headers(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "empty.hpp"
+    header.write_text("// Header with no indexed declarations.\n")
+    (headers / "config.hpp.in").write_text("// Generated installed header.\n")
+    source = '#include <dart/empty.hpp>\n#include "dart/config.hpp"\n#if 0\n#include <dart/inactive.hpp>\n#endif\n'
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    entries = _entries(before, "headers")
+    assert set(entries) == {"dart/empty.hpp", "dart/config.hpp"}
+    assert all(row["source_present"] for row in entries.values())
+    header.unlink()
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "changed", source)
+    assert not _entries(after, "headers")["dart/empty.hpp"]["source_present"]
+    assert before != after
 
 
 @pytest.mark.parametrize(
