@@ -227,6 +227,11 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Source-only inheritance chains beyond three hops can be missed.
 - Public-to-protected declaration access changes are not recorded.
 - Used free-function declarations and signatures are not recorded.
+- Used type-alias target definitions are not recorded.
+- Qualified member-function references without calls are not recorded.
+- Dependent `receiver->template method<T>()` calls are not recognized.
+- Base relationships of referenced DART types are not recorded.
+- Trailing return types are not used to infer chained-call receivers.
 
 Operator syntax is associated with declarations for `->`, `[]` and `()` when
 the receiver type is known. The Gazebo build and test lanes remain the
