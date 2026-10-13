@@ -39,6 +39,29 @@
 
 using namespace dart::dynamics;
 
+template <typename S>
+class HeightmapShapeDefaults : public ::testing::Test
+{
+};
+
+using HeightmapScalarTypes = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(HeightmapShapeDefaults, HeightmapScalarTypes);
+
+//==============================================================================
+TYPED_TEST(HeightmapShapeDefaults, ZeroHeightBoundsBeforeSettingHeightField)
+{
+  HeightmapShape<TypeParam> heightmap;
+
+  EXPECT_EQ(heightmap.getMinHeight(), TypeParam{0});
+  EXPECT_EQ(heightmap.getMaxHeight(), TypeParam{0});
+
+  const auto& box = heightmap.getBoundingBox();
+  EXPECT_TRUE(box.getMin().allFinite());
+  EXPECT_TRUE(box.getMax().allFinite());
+  EXPECT_DOUBLE_EQ(box.getMin().z(), 0.0);
+  EXPECT_DOUBLE_EQ(box.getMax().z(), 0.0);
+}
+
 // HeightmapShape::setScale and setHeightField guard against non-finite
 // (NaN/Inf) and non-positive inputs so they never reach the collision backend
 // (e.g. ODE) where they would trip an internal assertion or undefined

@@ -22,9 +22,11 @@ from urllib.parse import urlsplit
 # Keep the publication policy and its narrowly scoped exceptions here.
 PATH_TAIL = r"[^\s`\"'<>\[\](){};,|]*"
 URI = re.compile(
+    # Start once per scheme token; retain leading non-letter characters.
+    r"(?<![a-z0-9+.-])(?P<prefix>[0-9+.-]*)(?P<uri>"
     r"[a-z][a-z0-9+.-]*://(?:[^\s`\"'<>\[\](){}/@;,|]+@)?"
     r"(?:\[[^\s`\"'<>\[\](){};,|]+\])?"
-    r"(?:[^\s`\"'<>\[\](){};,|]|\([^\s`\"'<>\[\](){};,|]*\))*",
+    r"(?:[^\s`\"'<>\[\](){};,|]|\([^\s`\"'<>\[\](){};,|]*\))*)",
     re.IGNORECASE,
 )
 # Covers private planning/harness dirs, agent scratch/project dirs, numbered
@@ -68,7 +70,15 @@ PATTERNS = tuple(
 ALLOWLIST = {
     # Only file/staged scans may exempt checker fixtures; free text never does.
     "tests/test_check_local_paths.py": re.compile(
-        r"(?:^|[/\\])(?:example(?: user|-repo)?(?:\.[\w.-]+)?|path-fixture)(?=$|[/\\:])",
+        r"^(?:\.(?:sisyphus|ab)[/\\]+|/+tmp/+claude-|"
+        r"\.claude[/\\]+projects[/\\]+|scratchpad[/\\]+|task_\d+(?:[/\\]+|-)|"
+        r"/+(?:home|Users|workspace|workspaces|__w|root|(?:mnt/+)?[A-Za-z]/+Users)[/\\]+|"
+        r"[A-Za-z]:[/\\]+(?:Users|a)[/\\]+|"
+        r"[/\\]{2,}[^/\\]+[/\\]+Users[/\\]+|"
+        r"[/\\]{2,}(?:wsl\.localhost|wsl\$)[/\\]+[^/\\]+[/\\]+(?:home|root)[/\\]+|"
+        # A synthetic WSL distro also identifies a fixture's bare root home.
+        r"[/\\]{2,}(?:wsl\.localhost|wsl\$)[/\\]+(?=[^/\\]+[/\\]+root(?:[/\\]|$)))"
+        r"(?:example(?: user|-repo)?(?:\.[\w.-]+)?|path-fixture)(?=$|[/\\:])",
         re.IGNORECASE,
     ),
     ".gitignore": re.compile(r"\.sisyphus[/]"),
@@ -105,7 +115,7 @@ def decode(data: bytes) -> str:
 
 
 def content_decodings(data: bytes) -> list[str]:
-    texts = [decode(data)]
+    texts = [decode(data), data.decode("utf-8", errors="replace")]
     if b"\0" in data:
         # NUL-containing bytes are not UTF-8 text, even if UTF-8 accepts them.
         texts.extend(
@@ -181,13 +191,13 @@ def scan_line(
 
     def mask_public_url(match: re.Match[str]) -> str:
         try:
-            text = match.group()
+            text = match.group("uri")
             # HTTP(S) treats backslashes as slashes, including at the authority.
             if text.lower().startswith(("http://", "https://")):
                 text = text.replace("\\", "/")
             url = urlsplit(text)
             if url.scheme in {"http", "https"} and is_public_host(url.hostname):
-                return " "
+                return match.group("prefix") + " "
         except ValueError:
             return match.group()
         # Scan local URI paths at their root without relaxing home lookbehinds.
