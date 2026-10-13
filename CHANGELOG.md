@@ -124,6 +124,7 @@
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
     including GUI picks collected by Python.
+    [#3784](https://github.com/dartsim/dart/pull/3784)
 
   * Fix crashes when cloning a skeleton, or copying a body node that has an
     end effector, whose inverse kinematics uses an analytical solver. Inverse
