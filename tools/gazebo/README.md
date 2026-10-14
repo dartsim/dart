@@ -211,6 +211,185 @@ maintainer decided are not DART regressions; `baseline` keeps them, and
 `pixi run test-gz-compat-tools` after changing `compare_failures.py` or the
 world generator.
 
+## DART C++ API inventory
+
+The inventory is lexical and best-effort: it records uses it can resolve and
+retains conservative candidates for unresolved receivers. Known limitations:
+
+- Namespace using-directives and aliases are treated file-wide.
+- Source fields are keyed by name across owners.
+- Function-local type aliases are not collected.
+- Function-local classes and their virtual overrides are not collected.
+- DART headers are indexed globally; transitive include availability and per-source
+  declaration visibility are not tracked.
+- Destructor and managed-lifetime requirements are not recorded.
+- Implicit and contextual conversion operators are not recorded.
+- Structured-binding element types are not inferred.
+- Preprocessor conditions are not generally evaluated.
+- C++ template instantiation and overload resolution are not performed.
+- Ignored in-tree build artifacts are scanned as Gazebo sources.
+- Virtual destructor overrides are not recorded.
+- Referenced macro parameters and replacement tokens are not recorded.
+- Source-only inheritance chains beyond three hops can be missed.
+- Used type-alias target definitions outside field layout dependencies are not recorded.
+- Qualified member-function references without calls are not recorded.
+- Dependent `receiver->template method<T>()` calls are not recognized.
+- Base relationships of referenced DART types are not recorded.
+- Trailing return types are not used to infer chained-call receivers.
+
+Operator syntax is associated with declarations for `->`, `[]` and `()` when
+the receiver type is known. The Gazebo build and test lanes remain the
+authoritative compatibility check.
+
+[`compat/dart_api_inventory.json`](compat/dart_api_inventory.json) records the
+DART types, constructions, accessor and mutation calls, public and protected
+data-member accesses, free functions, macros, and virtual overrides used by
+the gz-physics dartsim plugin, its direct DART test code, and directly by
+gz-sim. It includes source revisions, use counts, source locations, and
+matching DART header declarations with signatures, constness, and virtual
+status. Used members also retain their declared access; free-function entries
+retain their declaration candidates. Referenced types retain `final_classes`
+from their class dependencies,
+so making a DART base final changes the inventory. Enum types and enumerator
+declarations retain their normalized enum headers, including underlying types;
+unscoped and anonymous enumerators are also indexed in their enclosing namespace
+or class. Used enumerators retain initializer and preceding-value dependencies.
+A construction, including an array declaration, lists the constructors and
+their access, including private and deleted declarations, of the type, its
+bases and owned non-static members, including class template specializations.
+These are conservative candidates without overload resolution.
+Construction helpers include `std::allocate_shared`, `std::make_optional` and
+`std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
+`new`.
+A Gazebo class derived from a DART class counts as a construction of that base
+at its base clause and retains its dependencies' pure-virtual declarations.
+For brace constructions of classes without declared constructors,
+`brace_member_declarations` retains public non-static fields in declaration
+order. This is lexical field evidence, without proving C++ aggregate eligibility.
+Constructed `std::array` values also retain their value elements' constructor
+dependencies, including nested arrays; literal zero extents and pointer elements
+do not construct those elements. Unknown extent expressions remain conservative.
+Constructed `std::tuple` and `std::pair` values retain owned value elements;
+pointer and reference elements do not construct their pointees. Count initializers
+on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
+value elements' constructor candidates, including count-plus-allocator arguments
+and count arguments forwarded by standard factories. This dependency applies at
+zero count too. Braced returns use their enclosing function's declared return
+type for construction evidence.
+Constructed classes' default field initializer declarations and their named
+constant dependencies are retained in `default_member_initializer_declarations`.
+Quoted literals in indexed field and constant initializers are retained in
+`initializer_literals` as evidence, without parsing their contents as C++.
+Used function declarations retain quoted literals from their return and parameter
+types, defaults and exception conditions in `declaration_literals`. Function bodies
+and comments remain excluded. Export and attribute spellings on used functions
+are retained in `declaration_annotations` before macro expansion.
+Language-linkage blocks are scanned in their enclosing namespace; used free
+functions and namespace variables retain the quoted linkage name with their
+declaration literals.
+Union types retain `union_declarations`, and union fields retain their enclosing
+`union_declaration`, including anonymous union blocks.
+By-value declarations and `sizeof`/`alignof` operands retain non-static field
+declarations in `layout_declarations`, in base and field order, including
+value-owned subobjects and unnamed bit-field padding. Owned union fields also
+retain their types' `union_declarations`. Inline field types retain alias targets and enum headers
+in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
+`declaration_literals`. Indexed constants in inline array extents appear in
+`type_constant_declarations`. Known callees in field `decltype` expressions retain
+their declarations in `declared_type_declarations`. Pointer and reference declarations preserve their
+indirection; dereferenced layout operands retain the referenced object fields.
+Referenced types retain normalized alignment specifiers and their type/constant
+dependencies in `alignment_declarations`. Used declarations retain constants
+named in parameter defaults in `default_argument_declarations`, including their
+initializer dependencies. Class annotations, including export macro spellings,
+are retained in `annotation_declarations` even when an export macro expands to
+nothing on the scanned platform. Constants in `noexcept(...)` conditions and
+named bit-field widths are retained in `exception_specification_declarations`
+and `bit_width_declarations`. Named array extents in fields and parameters are
+retained in `array_bound_declarations`, including initializer dependencies.
+This records lexical evidence without computing C++
+layout or evaluating constant expressions.
+The lexical inventory retains declaration candidates for unresolved receivers
+(`unresolved_count`) and overloads, so a member name on a non-DART object can
+match a DART declaration. Bullet, ODE, and Assimp types (`bt`, `d`, and `ai`
+prefixes) and unknown members of non-DART objects are not DART receivers.
+Type lookup uses tracked scopes, from the innermost namespace or class,
+including the class of an out-of-line member definition and the bases of
+enclosing classes. A type alias is visible only in its file and in the files
+that include it; aliases declared inside function bodies are not collected.
+Chained source helper calls use return declarations from the receiver's class
+and its bases. Source helpers with `auto` or `decltype(auto)` returns infer
+receiver candidates from their return expressions, excluding nested functions
+and lambdas. Sequence returns retain their DART element types through
+begin/end iterators and their const and reverse variants. Iterator arrows and
+dereferences preserve pointer elements as pointers.
+Set-family returns also preserve their value or pointer elements through
+iterators, aliases and range-for declarations. Returned `std::pair` and `std::tuple`
+values retain each element's receiver shape for `first`, `second` and `std::get`
+projection by index or a known unique element type.
+Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
+contained receiver shapes through value, pointer and array expressions. Returned
+standard smart pointers preserve their wrapper types through `get()` and `lock()`
+chains.
+Source class aliases retain DART bases, and member lookup respects source declarations and
+class using-declarations. Lambda parameters and initialized captures stay within
+their lambda body; capture initializers use the enclosing scope.
+Automatic declarations, including `decltype(auto)`, retain inferred return types.
+Concrete `decltype` declarations infer receiver shapes from their unevaluated
+expressions. Inferred free-function pointers preserve return shapes through
+aliases and invocation, including namespace variables visible through source
+includes and using-declarations; ordinary `auto` copies decay reference results.
+Unary address expressions preserve built-in pointer shapes or known member
+`operator&()` return declarations.
+Range-for variables retain the range's element types within the loop body.
+Control-statement declarations stay within the complete statement, including
+`else` branches, and grouping parentheses preserve receiver types. Conditional
+expressions retain both operand candidates without resolving their common type. C-style
+casts use the target type, including pointer aliases and source-derived types.
+Chained DART data-member accesses use the member's declared type.
+Function and data declarations retain grouped names and each declarator's type;
+data declarations retain array dimensions.
+Qualified free-function references count even when they are not calls.
+Macro entries also retain DART feature probes and mark whether the current
+DART headers declare them (`declared_in_dart`).
+Namespace-scope constants and variables retain their declarations in
+`variables`; unqualified free-function calls also search the DART namespaces
+associated with their argument types and bases. Friend function declarations
+belong to the enclosing namespace, including those in private class sections.
+Referenced class templates retain their parameter declarations, including
+forward-declaration defaults. Direct DART includes are listed in `headers`
+with their source-header availability, and attributed declarations remain
+eligible for matching. DART free-function returns can also supply the type
+of a chained member-call receiver.
+`source_present` recognizes source headers and `.hpp.in` templates; availability
+of CMake-generated umbrella headers is checked by the Gazebo build lanes.
+
+The extractor does not evaluate preprocessor conditions. It drops only the
+branches that a literal `#if 0` or `#if 1` rules out and scans every other
+branch, so the inventory can list uses that only a branch inactive in a given
+build makes. A use takes the types of every declaration that some build lets
+it see, so a variable declared in a branch does not hide other declarations of
+it from uses outside that branch. A type alias or Gazebo class defined
+differently in alternative branches keeps one of its definitions.
+
+With clean source checkouts, regenerate and check it from the DART root:
+
+```bash
+python scripts/gz_dart_api_inventory.py "$GZ_PHYSICS_SOURCE" --gz-sim "$GZ_SIM_SOURCE"
+python scripts/gz_dart_api_inventory.py --check "$GZ_PHYSICS_SOURCE" --gz-sim "$GZ_SIM_SOURCE"
+```
+
+To refresh the recorded SHAs, fetch each source repository, check out the
+chosen revision, and regenerate with both checkouts. Keep the gz-physics
+revision aligned with the DART compatibility shim; refresh gz-sim from its
+main branch. A check with only gz-physics retains the recorded gz-sim scan and
+reports that it was not rescanned. Without a checkout, the command explicitly
+reports a skipped check. Run `pixi run test-gz-compat-tools` after extractor
+changes.
+
+The `CI gz-physics` inventory job checks out both recorded Gazebo revisions
+and runs the freshness command on every pull request and main-branch push.
+
 ## Drivers
 
 [`bench/`](bench/) holds drivers that link one lane's gz-physics, gz-sim and

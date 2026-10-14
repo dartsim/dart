@@ -1,51 +1,16 @@
 # Resume
 
-## Current reality (2026-10-13)
+## Current state (2026-10-13)
 
-This section supersedes the historical handoff below. The resumed checkout
-started detached at `dart7-base`; the current local packet branch is
-`fix/sdf-pose-followup`, initially based on fetched main `e378f985f`.
-The local fix is committed as `6047aca4a`; current main `95282f1b9` is merged
-for publication preparation. Its two additions change hooks and handoff docs,
-with no SDF or engine source delta.
-
-- M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775). The
-  `dart7-base` nightly smoke has finished: all 78 rows pass; its pinned SHA,
-  host and record digest are in [verification.md](verification.md#m1a-world-step-stages).
-- Demo consolidation merged in [#3780](https://github.com/dartsim/dart/pull/3780).
-  It supplies the managed viewer host; M6b's render API remains required.
-- [#3728](https://github.com/dartsim/dart/pull/3728) (scope and acceptance)
-  and [#3729](https://github.com/dartsim/dart/pull/3729) (gz API inventory)
-  remain open. Their existing branches own those changes; do not duplicate
-  their implementations. Their newer decisions replace date-relative gates
-  with dependencies and retain FCL for C++ while gating the Python DART
-  detector default on the capability matrix and M1b shape rejection.
-- The recorded M0 exit waits for those two PRs even though M1a has merged.
-  Reconcile that sequencing at their integration; do not infer that the
-  completed M1a waived the remaining M0 acceptance.
-- The completed local packet fixes the four confirmed WP-7.0.3b pose gaps:
-  rotated inertia, non-box soft geometry, modern-version admission and empty
-  poses. It changes only the SDF parser, regression evidence and its docs;
-  public headers, class layouts and stepping kernels remain untouched. Core,
-  Python, GUI and the patched forward Gazebo gates pass, and two independent
-  reviews are clean. The verification owner records exact counts, skipped
-  cases, matched native captures and the isolated baseline's limits.
-- The full program still requires M1b through M1i, gated M2, M5, the remaining
-  M6b and M7 release acceptance. Keep this project home until those criteria,
-  required reviews and durable promotion are complete.
-
-Immediate next action: publish the locally verified SDF packet after approval,
-then execute the separately scoped M1b World-local preparation packet once
-the recorded M0 sequencing is reconciled. Its independent reproduction spike
-can proceed without changing production code or waiving the M0 exit.
-That spike now confirms unrelated-World invalidation; the shared-Skeleton
-protection case already passes. See [the M1b evidence](verification.md#m1b-preparation-scope-spike).
-Keep existing #3728 and #3729 branches as their integration owners. Continue
-the missing packets; pending publication is not program completion.
-Publishing still requires explicit approval; the offline PR body and selected
-visual attachment are under `build/sdf-pose-evidence/`.
-
-## Historical handoff (2026-10-11)
+M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775); its
+`dart7-base` nightly smoke passed all 78 rows, with the pinned source, host
+and digest in [verification](verification.md#m1a-world-step-stages).
+The SDF pose follow-up merged in [#3782](https://github.com/dartsim/dart/pull/3782),
+completing WP-7.0.3b. The independent
+[M1b preparation spike](verification.md#m1b-preparation-scope-spike)
+records unrelated-World invalidation and the passing shared-Skeleton protection
+case; it does not change production code or waive M0's remaining scope and
+inventory acceptance. The existing #3728 and #3729 branches own that work.
 
 M0 is active. The GitHub milestone "DART 7.0.0" (#105, formerly "DART 6.21.0")
 tracks the release, and main's release target reads 7.0.0.
@@ -54,8 +19,26 @@ tracks the release, and main's release target reads 7.0.0.
 | --- | --- | --- |
 | [#3697](https://github.com/dartsim/dart/pull/3697) | WP-7.0.1 and WP-7.0.2 | Merged |
 | [#3698](https://github.com/dartsim/dart/pull/3698) | WP-7.0.3 | Merged |
-| [#3717](https://github.com/dartsim/dart/pull/3717) | WP-7.0.3 backport to `release-6.20` | Draft, for DART 6.20.1 |
+| [#3717](https://github.com/dartsim/dart/pull/3717) | WP-7.0.3 backport to `release-6.20` | Merged, for DART 6.20.1 |
+| [#3719](https://github.com/dartsim/dart/pull/3719) and [#3782](https://github.com/dartsim/dart/pull/3782) | WP-7.0.3b and its four-gap follow-up | Merged; packet complete |
 | [#3699](https://github.com/dartsim/dart/pull/3699) | WP-7.0.4 | Merged |
+| [#3720](https://github.com/dartsim/dart/pull/3720) | WP-7.0.5 | Merged; `dart7-base` is pinned and all 78 smoke rows passed |
+| [#3749](https://github.com/dartsim/dart/pull/3749) | WP-7.0.5: nightly Gazebo-preset sleeping rows | Merged |
+| [#3725](https://github.com/dartsim/dart/pull/3725) | WP-7.0.6: version file, gz shim test and contact-surface header probe | Merged |
+| [#3729](https://github.com/dartsim/dart/pull/3729) | WP-7.0.6: gz API inventory | In review |
+| [#3731](https://github.com/dartsim/dart/pull/3731) | WP-7.0.6: contact-surface header follow-up | Closed in favor of #3741 |
+| [#3741](https://github.com/dartsim/dart/pull/3741) | WP-7.0.6: Windows header probe and shared compiler policy | Merged |
+| [#3728](https://github.com/dartsim/dart/pull/3728) | WP-7.0.7 | In review |
+| [#3704](https://github.com/dartsim/dart/pull/3704) | WP-7.0.8: 6.20.1 wheels for Python 3.12 to 3.14 | Merged |
+| [#3730](https://github.com/dartsim/dart/pull/3730) | WP-7.0.8: Linux Python 3.15 wheels for 6.20.1 | Merged |
+| [#3723](https://github.com/dartsim/dart/pull/3723) | Follow-up: ODE collision-callback exceptions | Merged; backported in [#3727](https://github.com/dartsim/dart/pull/3727) |
+| [#3722](https://github.com/dartsim/dart/pull/3722) | Follow-up: analytical-IK clone and copy crashes | Merged; its `release-6.20` backport remains |
+| [#3750](https://github.com/dartsim/dart/pull/3750) | Follow-up: skel-parser detector fallback null check | Merged |
+
+macOS and Windows Python 3.15 wheels for 6.20.x wait for conda-forge's Python
+3.15 builds of `bullet-cpp`. The GIL review of that line's pybind11 bindings
+found no crash or hang during finalization on Python 3.15, so they are
+unchanged.
 
 M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696). Main uses
 Filament and the interim camelCase `dartpy.gui`, and
@@ -70,19 +53,25 @@ owners and M6b's remaining scope are linked in
 [changelog drafts](changelog-drafts.md) wait for M6b's consolidation PR;
 packet evidence is in [verification.md](verification.md#demo-consolidation-evidence).
 
-## Historical next steps
+## Next steps
 
-1. Land #3717 and #3719 (WP-7.0.3b, SDF pose attributes), then publish
-   WP-7.0.5 (performance baseline and many-World rows).
-2. Open the follow-up packets: the ODE callback exception fix, the
-   analytical-IK clone crash, a tokenized release-reference check (the
-   regular-expression matcher misreads Markdown inside tokens, unusual
+1. Land #3728 (WP-7.0.7) and #3729 (gz API inventory); M0 exits then.
+   #3741 merged the header-probe fix, replacing the closed #3731, and #3722
+   merged the analytical-IK copy fix. Backport #3722 to `release-6.20`.
+2. After M0 exits, continue M1b and the remaining core seams. M1a already
+   merged and `dart7-base` is pinned; preserve that completed baseline.
+   #3749's nightly Gazebo-preset sleeping rows cover gz's custom-filter replay.
+3. In parallel with step 2: M5a's rename table v0 and the published shape and
+   query capability matrix. #3750 merged the skel-parser detector fallback
+   null-check fix. The matrix and M1b's strict shape rejection must land
+   before M1f.
+4. Open the remaining follow-up packets: a tokenized release-reference check
+   (the regular-expression matcher misreads Markdown inside tokens, unusual
    parameter separators and version suffixes, as its 6.x predecessor did), and
    a DART 7 wall-time dashboard (the DART 6 dashboard now tracks `release-6.*`
    only).
-3. Then WP-7.0.6, WP-7.0.7 and the rest of WP-7.0.8 (Python 3.15 wheels), and
-   pin `dart7-base` right before the first M1
-   PR.
+5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
+   `bullet-cpp` builds for Python 3.15. They do not hold M0's exit.
 
 ## Risks and recovery
 
@@ -93,6 +82,10 @@ packet evidence is in [verification.md](verification.md#demo-consolidation-evide
   retaining the DART 7 branch profile and release routing.
 - dartpy has no Python 3.15 CI lane yet. Re-run the shutdown regression test
   against a 3.15 build when touching finalization code.
+- #3741 fixed the Windows `ContactSurfaceProbe` failure seen at `722f28ddd`.
+  Preserve its platform-specific dialects: Unix probes C++14 with existing
+  compiler extensions; MSVC uses DART's required C++17 and exported
+  template-parsing options.
 
 ## Verification commands
 

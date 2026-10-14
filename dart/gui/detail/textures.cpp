@@ -158,28 +158,16 @@ void handleJpegError(j_common_ptr cinfo)
   longjmp(error->jumpBuffer, 1);
 }
 
-std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
+// Mutable decoder state and vectors stay in the caller's frame across longjmp.
+bool decodeJpegImage(
+    FILE* file,
+    jpeg_decompress_struct& info,
+    JpegErrorManager& error,
+    ImageData& output,
+    std::vector<std::uint8_t>& row)
 {
-  FILE* file = std::fopen(path.string().c_str(), "rb");
-  if (file == nullptr) {
-    std::cerr << "Failed to open JPEG texture: " << path.string() << "\n";
-    return std::nullopt;
-  }
-
-  jpeg_decompress_struct info{};
-  JpegErrorManager error;
-  info.err = jpeg_std_error(&error.base);
-  error.base.error_exit = handleJpegError;
-
-  ImageData output;
-  std::vector<std::uint8_t> row;
-  if (setjmp(error.jumpBuffer)) {
-    std::cerr << "Failed to read JPEG texture: " << path.string() << " ("
-              << error.message << ")\n";
-    jpeg_destroy_decompress(&info);
-    std::fclose(file);
-    return std::nullopt;
-  }
+  if (setjmp(error.jumpBuffer))
+    return false;
 
   jpeg_create_decompress(&info);
   jpeg_stdio_src(&info, file);
@@ -232,8 +220,31 @@ std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
   }
 
   jpeg_finish_decompress(&info);
+  return true;
+}
+
+std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
+{
+  FILE* file = std::fopen(path.string().c_str(), "rb");
+  if (file == nullptr) {
+    std::cerr << "Failed to open JPEG texture: " << path.string() << "\n";
+    return std::nullopt;
+  }
+
+  jpeg_decompress_struct info{};
+  JpegErrorManager error;
+  info.err = jpeg_std_error(&error.base);
+  error.base.error_exit = handleJpegError;
+  ImageData output;
+  std::vector<std::uint8_t> row;
+  const bool success = decodeJpegImage(file, info, error, output, row);
   jpeg_destroy_decompress(&info);
   std::fclose(file);
+  if (!success) {
+    std::cerr << "Failed to read JPEG texture: " << path.string() << " ("
+              << error.message << ")\n";
+    return std::nullopt;
+  }
   return output;
 }
 

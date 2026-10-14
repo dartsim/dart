@@ -169,9 +169,27 @@ Known gaps:
   error, instead of ignoring them.
 - **Acceptance:** tests for five, six, seven and eight values, with and without
   each attribute.
-- **Status:** merged in [#3719](https://github.com/dartsim/dart/pull/3719).
-  Its remaining pose-consumer and admission defects are covered by the
-  follow-up below. It changes behavior, so it targets main only.
+- **Pull request:** [#3719](https://github.com/dartsim/dart/pull/3719), merged
+  from head `a2e914f18` as `9ea8f6834`. It changes behavior, so it targets
+  main only.
+- **Evidence:** CI passed on `a2e914f18` (16 checks passed, 10 skipped).
+  #3719's description reports that all 21 SDF, world and model files under
+  `data/` (783 poses) load to byte-identical state before and after the
+  change.
+- **Historical review findings, resolved by the follow-up below** (Codex: two on the first commit; on
+  `a2e914f18`, a clean pass before the merge, then two findings after it):
+  - inertial poses keep only their translation, so a rotated inertial frame
+    loads an unrotated inertia tensor;
+  - the version gate accepts only SDF 1.4–1.6, so files that declare the newer
+    SDF versions defining these attributes are rejected before any pose is
+    read; the tests use SDF 1.6 documents;
+  - soft-shape spheres, ellipsoids and cylinders ignore the parsed pose; only
+    boxes apply it;
+  - an empty `<pose rotation_format="quat_xyzw"/>` raises instead of reading
+    as the identity.
+- **Status:** done. [#3782](https://github.com/dartsim/dart/pull/3782) merged
+  the four-gap follow-up with two clean independent reviews and the evidence
+  recorded below.
 
 ### WP-7.0.4 GIL acquisition during finalization
 
@@ -261,12 +279,19 @@ Known gaps:
   and 4096 contacts for K = 1, 64 and 1024, and a loop-closure error of
   2e-12 m. The dartpy loop measured 114 microseconds per step and read. These
   are head-only smoke numbers, not a baseline.
-- **Baseline procedure:** immediately before the first M1 PR, record the last
-  main SHA as `dart7-base`, with its host and the per-row records from
+- **Baseline procedure:** right before the M1a PR, record the last main SHA as
+  `dart7-base`. It is a local git ref on the local performance host, not a
+  pushed tag. This project home records its SHA, the host and the per-row
+  records, measured there with the full nightly harness:
   `pixi run python scripts/perf_regression.py local --smoke --nightly --head <sha>`.
   Each milestone exit runs
   `pixi run python scripts/perf_regression.py local --base dart7-base --head HEAD --rows nightly`
-  and compares each detector against its own baseline.
+  on the same host and compares each detector against its own baseline.
+- **Gates:** [#3720](https://github.com/dartsim/dart/pull/3720) merged from
+  head `adf9a57f6` as `fc823113d` while CI was still running; every check on
+  that head passed afterwards (20 passed, 10 skipped), including Perf A/B.
+- **Review passes:** Codex found no major issues on `bd4fe2625` and again on
+  the merged head `adf9a57f6`.
 - **Gazebo-preset rows:** nightly `S7-t1` and `S7-t4` run
   `contact_benchmark --gz-preset` on the settled `3k_shapes.sdf` with the
   DART, Bullet and ODE detectors at 1 and 4 threads. The preset installs a
@@ -371,14 +396,30 @@ Known gaps:
     after every factory creator is removed. Registering the base Bullet detector
     makes it fail. Its Bullet and ODE cases run only when those components are
     built.
-  - The machine-checked inventories of gz-used accessors and mutation paths
-    are in review in [#3729](https://github.com/dartsim/dart/pull/3729).
-- **Status:** safety and version plumbing merged; the inventory's integration
-  remains open.
+  - Still open: the machine-checked inventories of gz-used accessors and
+    mutation paths.
+- **Status:** in progress.
+  [#3725](https://github.com/dartsim/dart/pull/3725) merged WP-7.0.6a and
+  WP-7.0.6b; [#3729](https://github.com/dartsim/dart/pull/3729), in review,
+  adds the inventories. [#3731](https://github.com/dartsim/dart/pull/3731)
+  closed in favor of [#3741](https://github.com/dartsim/dart/pull/3741), merged
+  as `3c4c68813`. The replacement keeps the Unix probe in C++14, accepting
+  the existing compiler extensions, and runs the MSVC probe in DART's required
+  C++17 dialect with its exported template-parsing options. It fixes the
+  Windows failure without rewriting the installed header tree.
+
+### M0 follow-up fixes merged on 2026-10-12
+
+- [#3722](https://github.com/dartsim/dart/pull/3722) merged the analytical-IK
+  clone and node-copy crash fixes as `13ebab5aa`. It no longer holds M0's
+  exit; its `release-6.20` backport remains a next step.
+- [#3750](https://github.com/dartsim/dart/pull/3750) merged the skel-parser
+  detector fallback null-check fix as `039fdf497`. It no longer needs a
+  parallel follow-up after M0.
 
 #### WP-7.0.3b follow-up: pose consumers and version admission
 
-- **Current reality (2026-10-13):** the original packet merged in #3719,
+- **Starting point (2026-10-13):** the original packet merged in #3719,
   but four review findings remain in main `e378f985f`: rotated inertial poses
   discard tensor orientation; sphere/ellipsoid/cylinder soft shapes discard
   their pose; version admission rejects the 1.9 schema defining quaternion
@@ -457,32 +498,495 @@ Known gaps:
   installed headers, components, layouts and stepping paths are unchanged;
   publication text excludes private paths; runtime and visual limits remain
   explicit; existing open packet branches retain their ownership.
-- **Status:** implementation, verification and two independent reviews are
-  complete locally. Publication
-  requires approval. This follow-up does not establish full SDFormat schema
+- **Status:** done; merged in [#3782](https://github.com/dartsim/dart/pull/3782)
+  as `79a87e6ed` after implementation, verification and two clean independent
+  reviews. This follow-up does not establish full SDFormat schema
   support or DART 7 program completion.
 
 ### WP-7.0.7 Scope artifacts
 
+- **Pull request:** [#3728](https://github.com/dartsim/dart/pull/3728).
 - **Scope:**
-  - the freeze date `F`, the checkpoints C1 and C2, and the M3 thresholds;
-  - the 7.0 must-have list and explicit deferrals;
-  - the target-shape acceptance tests, marked `xfail(strict=True)`;
-  - a maintainer check of the PyPI project history for deleted 7.0.0 files,
-    because PyPI never accepts a reused file name.
-- **Status:** in review in [#3728](https://github.com/dartsim/dart/pull/3728).
-  Its branch owns the updated dependency gates and strict target-shape tests;
-  the maintainer-only PyPI history check remains required.
+  - the dependency/order/priority refinement dated 2026-10-11; historical
+    evidence dates stay;
+  - API freeze `F`, declared once every 7.0 must-have, breaking and additive,
+    has merged and C2 has passed; the breaking must-haves include the breaking
+    parts of otherwise additive work, such as `step` rejecting `bool`
+    arguments; only additive work that is not a must-have and misses `F`
+    moves to 7.1;
+  - C1 after the first three M2 kernel PRs and their stop rule, with M3 able to
+    land before `F` without delaying any other must-have, and so `F`;
+  - C2 before `F`, so release candidates carry the final render API;
+  - D13 as amended on 2026-10-12: FCL stays the C++ default in 7.0, while
+    dartpy's `dart.World` and the MJCF world loader default to the DART
+    detector (M1f), which lands after the capability matrix and M1b and
+    before `F`;
+  - the maintainer's 2026-10-12 settings for M0's exit, the M1a PR shape, the
+    `dart7-base` ref and the step-path Gazebo gates;
+  - the M3 thresholds: at least 15% `Ir` gain on `dyn`/`robot`, improved K = 64
+    wall time, and the flagged spike passing guards and the shim with `memcpy`
+    snapshots at most 0.1× the gather cost; M2 stops below 10% gain from its
+    first three kernel PRs;
+  - the 7.0 must-have list, which summarizes everything the acceptance
+    criteria and the design doc require, plus the work those requirements
+    wait for, and explicit deferrals;
+  - the target-shape acceptance tests, marked `xfail(strict=True)`; the
+    headless-render test needs a graphics device, so `pixi run test-gui` runs
+    it instead of `pixi run test-py`.
+- **Evidence on 2026-10-12** (this branch, merged with main `722f28ddd`):
+  - `pixi run test-py` collects the ten tests in
+    `python/tests/acceptance/test_target_shape.py`, all XFAIL with no XPASS
+    (688 passed, 2 skipped, 10 XFAIL), and does not collect the render test.
+  - `pixi run test-gui` passes: its CTest step passes 13 of 13 tests, and its
+    `pytest` step, over `python/tests/unit/gui` and `python/tests/integration`,
+    collects `python/tests/unit/gui/test_target_shape_render.py` as XFAIL with
+    no XPASS (262 passed, 1 skipped, 1 XFAIL).
+  - With xfail markers ignored, each test fails for its intended missing
+    feature. The command is
+    `pixi run python -I scripts/run_pytest.py --pythonpath build/default/cpp/Release/python/dartpy --runxfail`
+    with each test file:
+
+  | Test | Observed failure |
+  | --- | --- |
+  | World construction keywords | `AttributeError`: no `dart.World` |
+  | edit/compile | `AttributeError`: no `World.compile` |
+  | loading and `World.add` | `AttributeError`: no `dart.data` |
+  | joint PositionServo | `AttributeError`: no `dart.PositionServo` |
+  | IMU sensor | `AttributeError`: no `dart.sensors` |
+  | `step(n)` and `step_count` | `TypeError`: `step` accepts only a `bool`, not `20` |
+  | `Transform` composition | `AttributeError`: no `dart.Transform` |
+  | non-root link `world_transform` composed with a `Transform` | `AttributeError`: the legacy `Skeleton` has no `links` |
+  | capture/restore state | `AttributeError`: no `World.capture_state` |
+  | WorldBatch set/step | `AttributeError`: no `dart.WorldBatch` |
+  | Renderer RGB (`test-gui`) | `AttributeError`: no `dart.render` |
+
+  `pyproject.toml` already sets `xfail_strict = true`, and each test also
+  passes `strict=True`. The contract lives only in these tests, not in
+  `python/examples/`, because that directory's examples run automatically.
+- **Review follow-up on 2026-10-12** (main `3c4c68813` merged locally):
+  - The four Codex findings on `a2301f5fd` are addressed: M1f's MJCF
+    switch belongs only in `dart.io.load_world`; constructor and MJCF loader
+    acceptance check `world.collision.detector`; the batch fixture configures
+    its own PositionServo with matching nonzero serial and batch targets;
+    and `step(True)` must raise `TypeError`.
+  - `pixi run lint`, `pixi run check-lint` and `pixi run build-py-dev` pass.
+    `pixi run test-py` reports 688 passed, 2 skipped and 11 XFAIL, with no
+    XPASS. `pixi run test-gui` passes 13 CTests and reports 262 passed,
+    1 skipped and the render acceptance test XFAIL, with no XPASS.
+  - The same `--runxfail` command above fails all 11 acceptance tests and
+    the render test. The changed tests fail for missing `dart.World`,
+    `dart.io`, integer-count stepping and `dart.PositionServo`, respectively;
+    the render test still fails for missing `dart.render`.
+  - The minimal MJCF fixture loads through the existing direct parser and
+    retains FCL. Visual evidence is unnecessary for these documentation and
+    acceptance-contract changes; no simulation implementation changes.
+  - Changelog decision:
+    - Mode: decide
+    - Base evidence: `origin/main` at `3c4c68813`
+    - Scope evidence: #3728 review follow-up diff
+    - Decision: no entry required
+    - Target section: N/A
+    - Entry text: N/A
+    - PR-body note: Documentation and strict-xfail acceptance coverage only;
+      released library behavior is unchanged.
+    - Follow-up: none
+- **Unresolved-thread sweep on 2026-10-12** (main `2189f8b82` merged locally):
+  - All 22 unresolved #3728 threads were checked against the merged branch:
+    17 were already fixed and five required acceptance-test changes. No
+    GitHub comments, thread resolutions or pushes were made.
+  - The batch test now starts with zero velocity and zero gravity and requires
+    positive target-driven shoulder motion. The existing native fixture stays
+    exactly at zero without a target, so passive motion cannot satisfy it.
+  - Separate strict-XFAIL cases cover unsupported collision heightmaps at
+    compile time, GIL-free stepping, and exact checkpoint restoration and
+    per-frame replay with parameter-mismatch rejection. Checkpoints use the
+    native DART detector and compare serialized fields and public state, not
+    native memory. M1c still owns the full contact and hidden-history oracle.
+    The dynamic snapshot test reads the final `world.time` property.
+  - The GIL oracle passes three native calls that release the GIL and rejects
+    three native calls that hold it; both paths clean up the worker thread.
+  - The focused guarded pytest command above, over the acceptance and render
+    modules, reports 15 XFAIL with no XPASS. With `--runxfail`, all 15 fail for
+    their intended missing APIs: the new cases reach missing `World.compile`,
+    integer-count stepping and `World.capture_checkpoint`, respectively.
+    These results validate the pending acceptance contracts, not their future
+    simulation implementations; no visual evidence applies to this test-only
+    change.
+  - `pixi run test-gz-compat-tools` passes all 76 tests. No #3729 inventory
+    scanner thread or scanner change is part of this #3728 sweep.
+  - `pixi run test-py` passes: 1,178 passed, two skipped and 14 XFAIL, with no
+    XPASS. `pixi run build`, `pixi run lint` and `pixi run check-lint` also pass.
+  - Two role-separated local review passes checked the final acceptance
+    assertions against the design and then checked failure paths and cleanup;
+    neither found a remaining issue.
+  - Changelog decision:
+    - Mode: decide
+    - Base evidence: `origin/main` at `2189f8b82`
+    - Scope evidence: #3728 unresolved-thread sweep diff
+    - Decision: no entry required
+    - Target section: N/A
+    - Entry text: N/A
+    - PR-body note: Strict-XFAIL acceptance coverage and verification notes
+      only; released behavior is unchanged.
+    - Follow-up: none
+- **Contact, counted-step and servo review follow-up on 2026-10-13**:
+  - Merged current main through `95282f1b9`, preserving the scope/freeze gates
+    alongside the landed Python demo retirement and its durable owner links.
+  - Counted stepping now compares positions, velocities, time and step count
+    against twenty single steps of a clone containing a moving articulated
+    body. Counter-only implementations cannot satisfy this oracle.
+  - PositionServo covers both effort limits and unsaturated damped and
+    undamped motion. The expected impulse follows the design's compliant-row
+    equation and the native inverse mass matrix; generalized constraint forces
+    report effort separately from ordinary joint forces.
+  - Checkpoints capture a contacting free box after two sleep-enabled steps,
+    while it is still awake. Replay compares contact geometry and forces,
+    generalized impulses, state and the transition to sleep, so restoring must
+    preserve the partially accumulated dwell timer. The independent local
+    review suggested this partial-timer case and found no other issue.
+  - The scene's unmarked setup gate checks nonzero contacts, contact forces
+    and generalized constraint forces, then verifies sleep. Its static ground
+    is explicitly immobile. Two thousand ordinary settling steps let the
+    contact solver correct impact penetration without weakening sleep rules.
+  - Focused guarded pytest reports one passed setup gate and seventeen strict
+    XFAILs, with no XPASS. With `--runxfail`, those seventeen cases fail for
+    their intended missing APIs and the setup gate still passes.
+  - `pixi run test-py` passes: 1,597 passed, 26 skipped and 17 XFAILs, with
+    no XPASS. `pixi run build`, `pixi run lint`, `pixi run check-lint`,
+    `pixi run check-ai-commands` and the upstream hook regression suite
+    (281 passed) succeed. The contact fixture
+    checks current native setup; the future actuator/checkpoint implementations
+    remain unimplemented. Visual evidence is irrelevant to these pending
+    acceptance-contract changes; no simulation implementation changes.
+  - Changelog decision: no entry required; this follow-up changes tests and
+    documentation, with no released behavior change.
+- **Acceptance completeness follow-up on 2026-10-13** (`013621e441` review):
+  - Batch rows now have 64 distinct shoulder targets, each compared with its
+    own serial clone. The source World must remain unchanged.
+  - Snapshots restore to a compatible clone after a parameter change. Adding
+    a zero-DOF fixed model leaves array sizes unchanged but changes topology;
+    restoring must raise and leave positions, velocities, targets and time
+    unchanged.
+  - Three strict-XFAIL cases require read-only copies of DOF positions,
+    velocities and persistent position targets. Element writes must raise,
+    and later native changes must not modify a returned copy.
+  - A StepHook marker checks `every=3` across two counted calls. A separate
+    busy-access marker holds a stepping hook at a worker barrier, so the
+    worker's read must raise `WorldBusyError`. The GIL-progress test remains
+    independent. Local review caught and removed an idle-read timing race.
+  - Rendering checks floating-point metric depth at the box's front face
+    (1.7 meters), integer segmentation distinct from the empty scene, and
+    lookup of the corresponding scene object, alongside visible RGB output.
+    M1g and M6b settle callback and export-selector signatures; the tests
+    label those spellings provisional while keeping behavioral requirements.
+  - An independent read-only review of all six fixes found no remaining
+    issue. These remain pending API contracts, not runtime acceptance claims.
+  - Final focused guarded pytest, including the render module, reports one
+    passed setup gate and 23 strict XFAILs with no XPASS. `--runxfail` fails
+    those 23 cases at their intended missing APIs; the setup gate passes.
+    `pixi run test-py` reports 1,597 passed, 26 skipped and 22 strict XFAILs
+    with no XPASS. `pixi run lint` and `pixi run check-lint` pass. Rendering
+    remains in the device gate; its future API is unimplemented.
+- **Named native APIs and latest-main integration on 2026-10-13** (`5930123c4` review):
+  - Added bounded VelocityServo effort, changing/native-reference samples
+    for the remaining three sensor classes, core Material assignment, final
+    viewer entry points, typed primary-solver selection and duplicate-name
+    rejection. Segmentation handles compare by node equality rather than
+    Python wrapper identity. The hook-driven batch uses the actual source
+    World as its serial oracle and checks that cloning never alters it.
+  - The complete milestone/acceptance read also found native M5 gaps:
+    standalone immutable Rotation, raising/world-only loaders, live builders
+    with immutable keyword-only specifications, collection lookup/error
+    contracts and native-to-Python logging. Those now have strict markers.
+    Snapshot and read-only-copy coverage include persistent velocity targets.
+  - The support-wrench setup was independently probed through built dartpy:
+    the welded two-kilogram body's native wrench is `[0,0,0,0,0,19.62]`, then
+    `[0,0,0,0,0,9.81]` after halving gravity. Existing `dart.common.warn`
+    invokes C++ logging directly and currently produces no Python log record;
+    the bridge marker therefore fails for the intended missing behavior.
+  - Merged main through `79a87e6ed`, including #3778's Muse guard and #3782's
+    SDF fix. Planning conflicts retain the approved freeze/default contracts,
+    the SDF follow-up evidence, M1a and its completed baseline, and the M1b
+    preparation spike. Current resume steps do not repeat completed work.
+    `pixi run build` recompiled the SDF parser and passed.
+  - Signature spellings not fixed by the design remain explicitly provisional
+    for their M1/M5/M6 owners. Removing a marker still requires that feature
+    PR's full contract tests; these representative oracles do not replace
+    configuration, mutation, clone-scene, performance or wheel matrices.
+  - Final merged-main validation: `pixi run test-py` reports 1,597 passed,
+    26 skipped and 37 strict XFAILs with no XPASS. Focused acceptance plus
+    both device-gated cases reports one passed setup gate and 39 strict
+    XFAILs. With `--runxfail`, those 39 fail at their pending APIs or missing
+    logging-bridge behavior; the native setup gate passes. `pixi run build`,
+    `pixi run lint`, `pixi run check-lint` and the public-path checks pass.
+  - Two independent read-only source reviews of the final test delta are
+    clean. They checked exception scopes, analytic servo efforts, native
+    sensor oracles, snapshot/control restoration, hook remapping, immutable
+    values/builders, logging and bounded viewing. The independent docs pass
+    also confirms the conflict resolution and the matrix's release limits.
+    No simulation implementation changes or visual evidence applies to this
+    pending-contract follow-up; the full graphics-device suite was not rerun.
+
+  | Owner | Representative target-shape oracle or separate release gate |
+  | --- | --- |
+  | M1a / WP-7.0.5 | Completed stage/baseline evidence; core bit-identical and performance gates |
+  | M1b | Compiled edit/frozen membership and owned-object mutation; edited-DOF stepping after recompilation; unsupported-shape rejection |
+  | M1c | Snapshot channels/time/compatible clone and independently rebuilt World/structural rejection; exact contact/sleep and hook-state checkpoint replay; parameter/topology/solver mismatch rejection |
+  | M1d | Counted-vs-serial motion, bool rejection, GIL progress, synchronized busy reads and bounded re-entrant rejection |
+  | M1e / M1f | Typed nondefault primary solver; Python World and MJCF DART detector defaults |
+  | M1g | Both bounded compliant servos from nonzero state and against a hard limit, persistent channels and global hook decimation |
+  | M1h | IMU orientation, joint-state motion, gravity-dependent support wrench and changing contacts |
+  | M1i | Distinct batch targets/serial clones, source isolation, a remapped stateless hook, scalar/indices/mask writes, selected-row snapshot broadcasting of all channels/time and per-clone parameters |
+  | M2 | Compiled preparation plus allocation, numeric and performance gates in the core feature PRs |
+  | M3 / M4 | Optional/gated work; they do not block the required snapshot/checkpoint contracts |
+  | M5 native API | Named model/frame collections, readonly copies, Transform validation and Rotation, configurable loaders/builders/ownership, manual constraints, Collider identity/shared-node capabilities, reset lifecycle, named errors and logging |
+  | M5 package/tooling | Rename inventory, private-extension/wheel audits, stub-drift/new-Any/pyright checks and codemod round trips in their dedicated PRs |
+  | M6b | RGB color precedence, asymmetric camera axes, metric depth, multiple-object node segmentation lookup, Material, passive sync, bounded managed viewing and legacy GUI import removal |
+  | M7 / WP-7.0.6 / WP-7.0.8 | Fresh RC-wheel acceptance/slim import, Gazebo compatibility and separately owned maintenance wheels |
+
+  Required qualification beyond these M0 representative smoke tests remains
+  with the feature PR that removes each marker: M1c must test checkpoint
+  magic/version metadata and persisted earlier-7.y formats; M1h/M1i must test
+  nonzero seeded sensor-noise replay; M5 must test defined errors from retained
+  capability handles after aspect detachment; M6b must test cameras following
+  moving attached frames. Those APIs and serialized formats are settled by
+  their owners, rather than invented by this planning scaffold.
+
+- **Loader/default scope and roadmap follow-up on 2026-10-13** (`c04a253b4` review):
+  - The dashboard and critical-path summary now start with the remaining M1
+    seams instead of repeating the completed baseline pin and M1a.
+  - The existing unmarked direct MJCF parse test requires FCL. This protects
+    the C++ parser/direct binding while the strict future Python-wrapper
+    marker separately requires DART.
+  - A new strict loader marker requires a two-model SDF file to raise without
+    `model=`. Selecting each name returns the corresponding one-link or
+    two-link model and proves detached ownership by adding it to a World.
+    The exact fixed-joint fixture was independently loaded through the built
+    native SDF parser, confirming both model names and body-name order.
+  - Both independent read-only reviews of these three fixes are clean.
+    Focused acceptance, GUI markers and the direct MJCF regression report
+    two passed native gates and 40 strict XFAILs with no XPASS. With
+    `--runxfail`, the 40 intended pending-feature failures remain and both
+    native gates pass. The rebuilt native `test_SdfParser` also passes.
+    Full `pixi run test-py` reports 1,597 passed, 26 skipped and 38 strict
+    XFAILs with no XPASS. Lint, check-lint and public-path checks pass.
+- **Snapshot parameter and solver-observer follow-up** (`740426529` review):
+  - Restoring dynamic state into the differently configured clone must leave
+    its gravity unchanged. This rejects restoration that overwrites parameters.
+  - The typed primary-solver oracle uses an explicitly provisional snake_case
+    observer on `world.solver`, so it does not require a legacy camelCase API.
+  - Focused guarded pytest still reports two native passes and 40 strict
+    XFAILs; `--runxfail` reports 40 intended failures and two native passes.
+    Lint, check-lint and public-path checks pass. The last full Python run
+    remains `740426529` (1,597 passed, 26 skipped, 38 strict XFAILs); these
+    assertion-only refinements do not change native code or fixture counts.
+- **Representative core lifecycle follow-up** (`2711784c9` review):
+  - The frozen-mode gate also tries owned `add_link`, requires rejection
+    without changing links/DOFs, and verifies that `edit()` permits that change.
+    The callable and specification resolve before the rejection context.
+  - A same-thread hook attempts one nested step, bounding recursion in broken
+    implementations. Rejection must preserve counters/time/state, and the
+    original outer step must complete exactly once.
+  - The reset gate steps a moving robot alongside the contact fixture, then
+    requires clocks, contact history and constraint impulses to clear while
+    positions, velocities and membership are preserved. Motion resumes after
+    reset. These are existing native reset semantics, not a new initial-state
+    reset policy. The exact fixture/assertions passed a native preflight using
+    existing time/frame/membership getters in place of the final properties.
+  - Focused guarded pytest reports two native passes and 42 strict XFAILs;
+    `--runxfail` reports 42 intended pending-feature failures and two native
+    passes. Lint, check-lint and public-path checks pass. The last full Python
+    run remains `740426529`; no native implementation changed in this follow-up.
+    These additional representative checks still leave full mutation,
+    concurrency, clone-scene and release matrices with their feature owners.
+- **Topology, batch and native capability follow-up** (`7fec2595a` review):
+  - The edited model remains attached through recompilation; stepping with
+    only the new DOF moving proves the new topology participates in execution.
+    Removal occurs in a separate edit.
+  - A device-free gate first resolves the replacement viewer names, then
+    requires both the legacy `gui` attribute and `dartpy.gui` import to be
+    absent. The missing-module error must name `dartpy.gui` itself.
+  - Batch snapshots restore noncontiguous rows of distinct positions and
+    velocities while leaving the other rows and source World unchanged.
+    Setup assertions reject ignored row assignments. Full control-channel
+    and clock broadcasting remains required of the M1i feature PR.
+  - A registered one-body ball constraint holds its anchor while an
+    unregistered clone moves. Typed Collider/Visual handles share live
+    node geometry and pose; Collider identity and hashing agree with contact
+    contexts and distinguish two nodes on the same Link.
+  - Native fixture probes verify three DOFs with new-joint motion of 0.001,
+    four contacts matching their native ShapeFrames, shared visual/collision
+    aspects and live shape/pose updates. The independent constraint probe
+    holds the anchor within 1.7e-12 while the free clone advances 0.02.
+  - Two independent source reviews are clean. Focused guarded pytest reports
+    two native passes and 46 strict XFAILs; `--runxfail` reports 46 intended
+    pending-feature failures and two native passes. Lint, check-lint and
+    public-path checks pass. The last full Python run remains `740426529`;
+    these representative tests add no native implementation.
+- **Configuration and persistence follow-up** (`e4b7b44e0` review):
+  - The design explicitly defines a separate keyword-only `World(config=...)`
+    overload, exclusive with individual constructor options. Its typed PGS
+    marker also requires the Python DART default and rejects positional or
+    mixed configuration. Native allocator fields are outside the Python API.
+  - Selected clones receive distinct time steps through `set_parameter` and
+    match serial Worlds with those parameters; the template stays unchanged.
+    Transform validation rejects non-finite input, invalid matrices,
+    reflections, shear and conflicting forms, with an explicit normalization
+    projection case. Constructor spellings/tolerances remain with M5.
+  - Checkpoints reject same-size structural and distinct primary-solver
+    mismatches without partial restoration. A callable with declared Python
+    state drives changing controls through exact replay; undeclarable hook
+    state must make capture fail. Build/platform/extension compatibility and
+    the full configuration matrix remain feature-owner release obligations.
+  - Detached SimpleFrames exercise collection lookup, ownership rejection,
+    removal and transfer. The loader resolves a package URI to a real mesh
+    and distinguishes fixed zero-DOF from floating six-DOF root models.
+  - Native probes confirm the package mesh/mobility fixture, frame membership
+    setup, distinct solver types, per-row time-step motion and six exact
+    replay frames from the stateful control fixture. Current native Worlds
+    allow shared frame membership; the final Python ownership guard is pending.
+  - Two independent source reviews are clean. Focused guarded pytest reports
+    two native passes and 50 strict XFAILs; `--runxfail` reports 50 intended
+    pending-feature failures and two native passes. Lint, check-lint and
+    public-path checks pass. The last full Python run remains `740426529`;
+    these representative checks do not implement the future runtime features.
+- **Final-facade and nonzero-state follow-up** (`b0989ae41` review):
+  - Future fixtures and all their oracles use the final World/Multibody/Link
+    facade, named DOF properties and capability builders. They retain no
+    Skeleton, ShapeNode, camelCase methods or forwarding aliases. Provisional
+    builder, solver/sleep and computed-array spellings remain explicitly owned
+    by M1/M5. StepHook stays in a provisional canonical submodule, outside the
+    curated top-level re-export allowlist; both GUI fixtures use final World.
+  - The separate unmarked native contact proof still validates the current
+    physical scene. It skips explicitly once the legacy binding disappears;
+    M5 retires or migrates that baseline proof and the existing direct-parser
+    regression through the normal native-unit-test rename sweep.
+  - The palm world-pose oracle uses independent NumPy forward kinematics from
+    the fixture offsets and x/z joint axes. Its result exactly matches the
+    current native transform, avoiding reuse of the property under test.
+  - Both servos start with nonzero position and velocity. The position row
+    also has a nonzero velocity target; saturated and unsaturated cases verify
+    the complete current-state error and damping terms. Two native probes
+    confirm constant diagonal inertia and zero Coriolis bias for this fixture.
+  - Selected batch snapshots restore positions, velocities, both target
+    channels and nonzero time. All source and per-row perturbations are
+    observed before restoration; untouched rows and the source stay unchanged.
+    The constructor gate now checks an explicit name, FCL detector and thread
+    count as well as the Python defaults.
+  - Native probes confirm the moving-servo bias, analytic palm transform and
+    unchanged four-contact/sleep scene with a default-mobile zero-DOF weld.
+    Two independent final source reviews are clean. Focused guarded pytest
+    reports two native passes and 50 strict XFAILs, no XPASS. With `--runxfail`,
+    the current missing final facade produces 11 intended API/logging failures
+    and 39 setup errors; both native gates pass. Lint, check-lint and public-path
+    gates pass. The last full Python run remains `740426529`.
+
+- **Representative contract and qualification-scope follow-up on 2026-10-13**
+  (`84f97f938` and `6af40c8e6` reviews):
+  - Independently reconstructing the same final robot must accept a dynamic
+    snapshot, restoring its perturbed state and clock without clone lineage.
+    Batch writes now exercise scalar broadcast, noncontiguous indices and a
+    boolean mask, observing selected and untouched rows and the source.
+  - Both servos face a hard prismatic upper limit, with saturated and
+    unsaturated targets. The provisional isolated effort observer must report
+    the bounded row effort while the limit holds motion; an unrestricted
+    reference moves. Native fixture evidence holds position/velocity within
+    `1e-9` under outward effort, with the matching limit reaction. No aggregate
+    force field is treated as the isolated motor effort.
+  - The MJCF wrapper must preserve nondefault file time step and gravity.
+    The current direct native parser still returns its default World settings;
+    this is a pending wrapper contract, not a native behavior claim. The
+    unmarked direct-parser FCL regression is retained unchanged.
+  - Gravity and Material color exports reject writes and preserve previously
+    returned arrays after later updates. Both named quaternion orders are
+    compared with an asymmetric rotation. A clone created after registration
+    must retain the manual constraint's anchor behavior.
+  - Three distinguishable rendered objects require separate segmentation
+    ownership. Off-center centroids check both camera axes; green explicit
+    Material overrides red legacy RGBA, while blue legacy RGBA remains blue.
+    Native parsing confirms the three named bodies and optical-basis geometry;
+    GPU rendering remains pending and was not executed.
+  - Four review suggestions concern required feature qualification beyond
+    this M0 scaffold: detached-handle errors (M5), seeded-noise replay
+    (M1h/M1i), versioned/older-7.y persistence fixtures (M1c), and moving
+    frame-attached cameras (M6b). The matrix and both test modules explicitly
+    require their owners to add those gates before removing feature markers.
+    No unsettled API or serialized format is invented here.
+  - Two independent final source reviews are clean. Focused guarded pytest
+    reports two native passes and 56 strict XFAILs, no XPASS. `--runxfail`
+    reports 11 intended API/logging failures and 45 setup errors from the
+    absent final World API; both native gates pass. Lint, check-lint and
+    public-path checks pass. The last full Python run remains `740426529`.
+
+- **Review passes:**
+  - The first review found seven issues: the step test read the legacy frame
+    counter instead of `step_count`; the render test ran in the device-free
+    suite; the loader test skipped `World.add`; step hooks and type stubs were
+    listed as optional although the acceptance criteria and the design doc
+    require them; the freeze rule would have moved additive must-haves to 7.1;
+    the design doc carried release-train state; and the resume handoff was
+    stale. The freeze-rule conflict went to the maintainer, who settled it on
+    2026-10-12; the others were fixed.
+  - The second review found that the first fix made `F` wait for every
+    must-have, which changed the recorded rule that `F` follows the last
+    breaking change. It also found that the handoff missed PRs merged since,
+    that WP-7.0.3b and WP-7.0.5 were marked done without their review record,
+    that M2's dense data was called optional although the design doc's mode
+    contract requires it, that no test read `Link.world_transform`, that
+    porting the interim GUI tests could drop the render test, that the
+    published PR description contradicts the branch and wraps its lines, and
+    that the first fix commit's message describes the superseded rule. All but
+    the last two were fixed: the description's replacement goes up with the
+    approved push, and the commit keeps its message because the squash merge
+    uses the PR description.
+  - The third review found that the second fix's exemption of the additive
+    must-haves from the move to 7.1 also changed the recorded rule without
+    approval. The recorded rule was restored, and the conflict went to the
+    maintainer. It also found that `step` rejecting `bool` was missing from
+    the breaking changes, that M1e could not move to 7.1 while the constraint
+    module's 7.0 bindings wait for it, that the link test read a root link,
+    whose world pose equals its pose in the parent frame and has no
+    translation, that the standalone `Transform` test was gone, leaving M5a's
+    `Transform` PR no marker to remove, and that this record claimed every
+    second-review finding was fixed. These were fixed; the PR description
+    still waits for the approved push.
+  - On 2026-10-12 the maintainer settled the freeze rule as the project home
+    now states it, amended D13, and set M0's exit and the steps after it, the
+    M1a PR shape, the `dart7-base` ref and the step-path Gazebo gates. The
+    project home records these instead of a pending decision.
+  - The fourth review found that the link test compared an exact zero entry
+    with no absolute tolerance and kept the palm's parent link at the origin,
+    so a binding that dropped the parent's translation would pass; that the
+    adapter evidence named no command in this repository; and that WP-7.0.3b
+    and WP-7.0.5 lacked merge, CI and review evidence. The fixture now offsets
+    both links and the test uses `atol=1e-12`, the adapter claim is removed,
+    and both packets record that evidence while staying in progress. The
+    review's other findings were already fixed on this branch: no text calls
+    #3730 "in review", the GUI test package docstring names the render test,
+    the must-have list says `compile()` prepares M2's dense data as the design
+    doc requires, and the design doc carries no release-train state. A focused
+    Codex review of the fix found one issue, the adapter bullet still present
+    before the evidence update; it is removed.
+- **Pending maintainer action:** check PyPI's project history for deleted
+  7.0.0 files, because PyPI never accepts a reused file name.
+- **Status:** in review.
 
 ### WP-7.0.8 Newer-Python wheels for 6.20.x
 
-- **Scope:** add Python 3.14 wheels, and later 3.15, on `release-6.20` through
-  `dart-backport-pr`. The migration guide states which Python versions
-  `dartpy<7` supports.
+- **Scope:** add Python 3.14 wheels, and later 3.15, as release-branch
+  packaging PRs on `release-6.20`. The migration guide states which Python
+  versions `dartpy<7` supports.
 - **Risk:** that line's bindings use a different binder, so the 3.15 wheels
   need their own review of GIL acquisition during finalization.
-- **Status:** in progress. [#3704](https://github.com/dartsim/dart/pull/3704) builds
-  6.20.1 wheels for Python 3.12 to 3.14; Python 3.15 wheels remain.
+- **Status:** in progress.
+  - [#3704](https://github.com/dartsim/dart/pull/3704) added 6.20.1 wheels for
+    Python 3.12 to 3.14.
+  - [#3730](https://github.com/dartsim/dart/pull/3730) added Linux Python 3.15
+    wheels and runs a finalization test against every wheel. Its review of
+    that line's pybind11 bindings found no crash or hang during finalization
+    on Python 3.15, so the bindings are unchanged.
+  - macOS and Windows Python 3.15 wheels wait for conda-forge's Python 3.15
+    builds of `bullet-cpp`.
 
 
 ## Demo consolidation evidence

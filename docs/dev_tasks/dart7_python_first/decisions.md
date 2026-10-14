@@ -1,8 +1,8 @@
 # Decisions
 
 All decisions below were taken by the maintainer on 2026-10-10 and 2026-10-11,
-one at a time, after read-only research and independent reviews. Durable API
-rules derived from them live in the
+one at a time, after read-only research and independent reviews; D13 was
+amended on 2026-10-12. Durable API rules derived from them live in the
 [DART 7 Python API design](../../design/dart7_python_api.md). Revisit a decision
 only with new evidence and maintainer approval.
 
@@ -96,9 +96,22 @@ only with new evidence and maintainer approval.
   - Structural edits go inside `edit()`.
   - The C++ default stays lazy, so downstream runtime edits keep working.
 - **D13. Zero-allocation contract on the DART and Bullet detectors.**
-  - The default detector switches from FCL to DART only if its capability gate
-    passes by the M0 decision date; otherwise the switch is a 7.x labeled
-    change.
+  - Amended by the maintainer on 2026-10-12: the C++ `World` keeps FCL as its
+    default detector in 7.0, for Gazebo compatibility; switching the C++
+    default to DART is a labeled 7.x change. dartpy's `dart.World` and
+    `dart.io.load_world` for MJCF default to the DART detector in 7.0.
+    The MJCF switch changes only `dart.io.load_world`, never the C++
+    `dart::utils::MjcfParser::readWorld` or its direct dartpy `MjcfParser`
+    binding: changing that parser would also switch C++ callers from FCL.
+    The parser and its direct binding keep FCL. That breaking Python
+    default change is a must-have that lands before `F`, after the
+    published shape and query capability matrix and the strict rejection of
+    unsupported shapes when a World compiles (M1b). Behavior comparisons
+    against FCL and PLAN-622's pre-default coverage gate remain prerequisites
+    of the C++ switch.
+  - Before the amendment, the default switched from FCL to DART in 7.0 only if
+    its capability prerequisites passed before M1 started, scheduled first so
+    later rebaselines started from the final default.
   - Known gaps: the native detector currently warns once and skips heightmaps,
     and it approximates ellipsoids and cones.
 - **D14. One deterministic executor**, a GIL-free `step(n)`, and `WorldBatch`
@@ -158,7 +171,8 @@ only with new evidence and maintainer approval.
   (M6b).
 - **D31a. Interim GUI bindings.** M6a lands with the Filament effort's tested
   camelCase GUI bindings as an interim, undocumented module. M6b replaces them
-  with the 7.0 API and deletes them before the first release candidate.
+  with the 7.0 API and deletes them before the API freeze `F`, so release
+  candidates carry the final render API.
 - **D31b. The demo host becomes the managed viewer's core.** The native
   host lives in private C++ linked into the dartpy extension,
   with no installed headers, package components or gz-facing API. The host
@@ -197,3 +211,27 @@ only with new evidence and maintainer approval.
     of an embedded-interpreter bridge. The memory-diagnostics option keeps
     its existing name and defaults to off. `DART_IMGUI_DOCKING` is removed;
     the ImGui provider determines host availability.
+
+## Scope-gate refinement (2026-10-11)
+
+The maintainer refined the program's plans to express when work happens through
+dependencies, order and priority. Specific future dates and date-relative gates
+are removed; past dates on decisions and evidence stay.
+
+- D13's default-detector switch was gated on its prerequisites passing before
+  the start of M1; D13's 2026-10-12 amendment replaces that gate.
+- The API freeze `F` is declared once every 7.0 must-have, breaking and
+  additive, has merged and C2 has passed. Only additive work that is not a
+  must-have and misses `F` goes to 7.1. This is the no-date form of the
+  approved release train: breaking changes land before `F`, 7.0 requires its
+  must-haves, and additive work that misses `F` goes to 7.1. The maintainer
+  confirmed this reading on 2026-10-12.
+- C1, the M3 go/no-go, is decided after the first three M2 kernel PRs, at the
+  M2 stop rule. M3 must be able to land before `F` without delaying any other
+  must-have, and so without delaying `F`. Gazebo gates must stay green through
+  those three PRs; the flagged contiguous-state spike is limited to
+  revolute/free joint positions and velocities.
+- C2 passes before `F`, so release candidates carry the final render API.
+
+The [project home](README.md) owns the must-have list, checkpoint criteria and
+priority order.
