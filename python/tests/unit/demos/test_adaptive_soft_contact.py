@@ -378,3 +378,96 @@ def test_nonfinite_soft_point_is_detected_independently_of_skeleton(field):
 def test_model_functions_reject_missing_owner(function):
     with pytest.raises(TypeError, match="model must be a Model"):
         function(None)
+
+
+@pytest.mark.parametrize(
+    "error", [ValueError, OverflowError, KeyboardInterrupt, SystemExit, GeneratorExit]
+)
+@pytest.mark.parametrize("field", ["time", "ring_count", "linger_steps"])
+def test_numeric_protocol_errors_are_cleared_before_model_mutation(error, field):
+    class Number:
+        def __float__(self):
+            raise error
+
+        def __index__(self):
+            raise error
+
+    model = adaptive.create_model()
+    body = model.soft_body
+    before = model.pusher_joint.getPositions().copy()
+    settings = (
+        body.adaptive_contact_activation_ring_count,
+        body.adaptive_contact_activation_linger_steps,
+        body.adaptive_contact_activation_enabled,
+    )
+    with pytest.raises(TypeError):
+        if field == "time":
+            adaptive.set_pusher_pose(model, Number())
+        else:
+            kwargs = dict(adaptive_enabled=False, ring_count=2, linger_steps=3)
+            kwargs[field] = Number()
+            adaptive.configure(model, **kwargs)
+    np.testing.assert_array_equal(model.pusher_joint.getPositions(), before)
+    assert (
+        body.adaptive_contact_activation_ring_count,
+        body.adaptive_contact_activation_linger_steps,
+        body.adaptive_contact_activation_enabled,
+    ) == settings
+
+
+def test_adaptive_checks_actual_types_instead_of_spoofed_class_attributes():
+    class Spoof:
+        def __init__(self, kind):
+            self.kind = kind
+
+        @property
+        def __class__(self):
+            return self.kind
+
+        def __float__(self):
+            return 0.125
+
+        def __bool__(self):
+            return True
+
+    model = adaptive.create_model()
+    with pytest.raises(TypeError):
+        adaptive.set_pusher_pose(Spoof(adaptive.Model), 0.0)
+    body = model.soft_body
+    settings = (
+        body.adaptive_contact_activation_ring_count,
+        body.adaptive_contact_activation_linger_steps,
+        body.adaptive_contact_activation_enabled,
+    )
+    with pytest.raises(TypeError):
+        adaptive.configure(
+            model, adaptive_enabled=Spoof(bool), ring_count=2, linger_steps=3
+        )
+    assert (
+        body.adaptive_contact_activation_ring_count,
+        body.adaptive_contact_activation_linger_steps,
+        body.adaptive_contact_activation_enabled,
+    ) == settings
+    adaptive.set_pusher_pose(model, 0.125)
+    expected = model.pusher_joint.getPositions().copy()
+    adaptive.set_pusher_pose(model, Spoof(float))
+    np.testing.assert_array_equal(model.pusher_joint.getPositions(), expected)
+
+
+@pytest.mark.parametrize("ring_count", [-1, int(np.iinfo(np.uintp).max) + 1])
+@pytest.mark.parametrize("create", [False, True])
+def test_invalid_ring_count_rejects_before_converting_linger(ring_count, create):
+    calls = []
+
+    class Linger:
+        def __index__(self):
+            calls.append("linger")
+            return 3
+
+    kwargs = dict(adaptive_enabled=True, ring_count=ring_count, linger_steps=Linger())
+    with pytest.raises(TypeError):
+        if create:
+            adaptive.create_model(**kwargs)
+        else:
+            adaptive.configure(adaptive.create_model(), **kwargs)
+    assert calls == []

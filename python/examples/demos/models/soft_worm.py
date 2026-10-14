@@ -104,7 +104,7 @@ def create_world():
 
 
 def _require_worm(worm):
-    if not isinstance(worm, dart.dynamics.Skeleton):
+    if not issubclass(type(worm), dart.dynamics.Skeleton):
         raise TypeError("worm must be a Skeleton")
 
 
@@ -112,22 +112,22 @@ def _soft_bodies(worm):
     return (
         body
         for body in worm.getBodyNodes()
-        if isinstance(body, dart.dynamics.SoftBodyNode)
+        if issubclass(type(body), dart.dynamics.SoftBodyNode)
     )
 
 
 def apply_gait(worm, time, enabled):
     _require_worm(worm)
     try:
-        if isinstance(time, float):
+        if issubclass(type(time), float):
             time = float.__float__(time)
         elif hasattr(type(time), "__float__") or hasattr(type(time), "__index__"):
             time = float(time)
         else:
             raise TypeError
-    except Exception:
+    except BaseException:
         raise TypeError("time must be a real number") from None
-    if not isinstance(enabled, bool):
+    if type(enabled) is not bool:
         raise TypeError("enabled must be a bool")
     omega = 2.0 * math.pi * gait_frequency_hz
     for index in range(1, num_links):

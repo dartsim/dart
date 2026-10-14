@@ -42,17 +42,26 @@ class Checksum:
 
 
 def _model(value):
-    if not isinstance(value, Model):
+    if not issubclass(type(value), Model):
         raise TypeError("model must be a Model")
     return value
 
 
 def _settings(adaptive_enabled, ring_count, linger_steps):
-    if not isinstance(adaptive_enabled, bool):
+    if type(adaptive_enabled) is not bool:
         raise TypeError("adaptive_enabled must be a bool")
-    counts = [operator.index(value) for value in (ring_count, linger_steps)]
-    if any(value < 0 or value > int(np.iinfo(np.uintp).max) for value in counts):
-        raise TypeError("ring_count and linger_steps must be unsigned integers")
+    counts = []
+    for value in (ring_count, linger_steps):
+        try:
+            count = operator.index(value)
+        except BaseException:
+            # Native argument conversion clears protocol errors.
+            raise TypeError(
+                "ring_count and linger_steps must be unsigned integers"
+            ) from None
+        if count < 0 or count > int(np.iinfo(np.uintp).max):
+            raise TypeError("ring_count and linger_steps must be unsigned integers")
+        counts.append(count)
     return adaptive_enabled, *counts
 
 
@@ -139,13 +148,13 @@ def configure(model, *, adaptive_enabled, ring_count, linger_steps):
 def set_pusher_pose(model, time):
     model = _model(model)
     try:
-        if isinstance(time, float):
+        if issubclass(type(time), float):
             time = float.__float__(time)
         elif hasattr(type(time), "__float__") or hasattr(type(time), "__index__"):
             time = float(time)
         else:
             raise TypeError
-    except Exception:
+    except BaseException:
         raise TypeError("time must be a real number") from None
     phase = 2.0 * math.pi * time / 1.4
     # Preserve the native nonfinite pusher pose for invalid supplied times.

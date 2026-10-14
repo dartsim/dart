@@ -240,3 +240,42 @@ def test_worm_survives_dropping_its_world():
     worm_model.apply_gait(worm, 0.1, True)
     assert np.isfinite(worm_model.position_checksum(worm))
     assert worm_model.is_finite(worm)
+
+
+@pytest.mark.parametrize("error", [KeyboardInterrupt, SystemExit, GeneratorExit])
+def test_gait_clears_numeric_protocol_base_exceptions(error):
+    class Number:
+        def __float__(self):
+            raise error
+
+    _, worm = worm_model.create_world()
+    before = worm.getCommands().copy()
+    with pytest.raises(TypeError):
+        worm_model.apply_gait(worm, Number(), True)
+    np.testing.assert_array_equal(worm.getCommands(), before)
+
+
+def test_gait_checks_actual_types_instead_of_spoofed_class_attributes():
+    class Spoof:
+        def __init__(self, kind):
+            self.kind = kind
+
+        @property
+        def __class__(self):
+            return self.kind
+
+        def __float__(self):
+            return 0.125
+
+        def __bool__(self):
+            return True
+
+    _, worm = worm_model.create_world()
+    with pytest.raises(TypeError):
+        worm_model.apply_gait(Spoof(dart.dynamics.Skeleton), 0.0, True)
+    with pytest.raises(TypeError):
+        worm_model.apply_gait(worm, 0.0, Spoof(bool))
+    worm_model.apply_gait(worm, 0.125, True)
+    expected = worm.getCommands().copy()
+    worm_model.apply_gait(worm, Spoof(float), True)
+    np.testing.assert_array_equal(worm.getCommands(), expected)
