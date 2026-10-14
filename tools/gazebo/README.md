@@ -273,6 +273,7 @@ Constructed `std::tuple` and `std::pair` values retain owned value elements;
 pointer and reference elements do not construct their pointees. Default-initialized
 `std::variant` values retain construction dependencies of their first alternative,
 with each value declarator checked independently in grouped declarations.
+Function prototypes and function-type aliases do not construct their return values.
 Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
@@ -294,8 +295,12 @@ Union types retain `union_declarations`, and union fields retain their enclosing
 `union_declaration`, including anonymous union blocks.
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
-value-owned subobjects and unnamed bit-field padding. Owned union fields also
-retain their types' `union_declarations`. Inline field types retain alias targets and enum headers
+value-owned subobjects and unnamed bit-field padding.
+Direct function-pointer fields retain their pointer declarator, array extents and
+alignment in `storage_declarator`; their return and parameter types do not describe
+inline storage. Function declarations through aliases have no inline storage.
+Owned union fields also retain their types' `union_declarations`.
+Inline field types retain alias targets and enum headers
 in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
 `declaration_literals`. Indexed constants in inline array extents appear in
 `type_constant_declarations`. Known callees in field `decltype` expressions retain
@@ -358,6 +363,11 @@ retain their declarations when invoked through qualified names, object receivers
 or inherited fields, respecting member-name hiding. Grouped function pointers
 retain each name, array shape and any trailing return type. Callback fields do
 not construct their return types.
+Known indexed function-type aliases and nested `std::function` or raw callback
+returns preserve callable shapes through repeated invocations and product-element
+projections. Used callable aliases retain their target declarations, including
+parameter types, in `type_alias_declarations`. Dependent and explicitly declared source callbacks retain their
+existing conservative receiver handling.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).

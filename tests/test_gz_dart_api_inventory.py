@@ -18529,3 +18529,1209 @@ def test_global_foreign_function_does_not_use_dart_member_candidates(
     (headers / "api.hpp").write_text(header.replace("A* clone() const;", ""))
     after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
     assert after == before
+
+
+ROUND22_CALLBACK_LAYOUT_CASES = [
+    (
+        "array_extent",
+        "struct H {int(*callbacks[2])();};",
+        "[2]",
+        "[3]",
+        "static_assert(sizeof(dart::H)==2*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "multidimensional_extent",
+        "struct H {int(*callbacks[2][3])();};",
+        "[3]",
+        "[4]",
+        "static_assert(sizeof(dart::H)==6*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "grouped_later_extent",
+        "struct H {int(*first[2])(),(*second[3])();};",
+        "[3]",
+        "[4]",
+        "static_assert(sizeof(dart::H)==5*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "constant_extent",
+        "constexpr int Count=2;struct H {int(*callbacks[Count])();};",
+        "Count=2",
+        "Count=3",
+        "static_assert(sizeof(dart::H)==2*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "private_extent",
+        "class H {int(*callbacks[2])();public: unsigned size() const {return sizeof(callbacks);}};",
+        "[2]",
+        "[3]",
+        "static_assert(sizeof(dart::H)==2*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "alignment",
+        "struct H {alignas(16) int(*callbacks[2])();};",
+        "alignas(16)",
+        "alignas(32)",
+        "static_assert(sizeof(dart::H)==16);",
+        True,
+        True,
+    ),
+    (
+        "scalar_presence",
+        "struct H {int(*callback)();};",
+        "int(*callback)();",
+        "",
+        "static_assert(sizeof(dart::H)==sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "return_scalar",
+        "struct H {int(*callback)();};",
+        "int(*",
+        "double(*",
+        "static_assert(sizeof(dart::H)==sizeof(int(*)()));",
+        False,
+        False,
+    ),
+    (
+        "return_array",
+        "struct H {int(*callbacks[2])();};",
+        "int(*",
+        "double(*",
+        "static_assert(sizeof(dart::H)==2*sizeof(int(*)()));",
+        False,
+        False,
+    ),
+    (
+        "parameter_type",
+        "struct H {int(*callback)(int);};",
+        ")(int)",
+        ")(double)",
+        "static_assert(sizeof(dart::H)==sizeof(int(*)()));",
+        False,
+        False,
+    ),
+    (
+        "static_extent",
+        "struct H {static int(*callbacks[2])();};",
+        "[2]",
+        "[3]",
+        "static_assert(sizeof(dart::H)==1);",
+        False,
+        False,
+    ),
+    (
+        "default_argument_return",
+        "struct H {int(*callback)();};void accept(H value=H{});",
+        "int(*",
+        "double(*",
+        "void use(){dart::accept();}",
+        False,
+        False,
+    ),
+    (
+        "default_argument_extent",
+        "struct H {int(*callbacks[2])();};void accept(H value=H{});",
+        "[2]",
+        "[3]",
+        "void use(){dart::accept();}static_assert(sizeof(dart::H)==2*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+    (
+        "return_constructor",
+        "struct A {A()=default;int payload;};struct H {A(*callbacks[2])();};",
+        "A()=default",
+        "A()=delete",
+        "void use(){dart::H h;(void)h;}",
+        False,
+        False,
+    ),
+    (
+        "owned_field",
+        "struct A {int payload;};struct H {A owned;int(*callbacks[2])();};",
+        "int payload",
+        "char payload[17]",
+        "static_assert(sizeof(dart::H)==3*sizeof(int(*)()));",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,declarations,old,new,source,drift,broken",
+    ROUND22_CALLBACK_LAYOUT_CASES,
+    ids=[row[0] for row in ROUND22_CALLBACK_LAYOUT_CASES],
+)
+def test_callback_fields_preserve_storage_layout(
+    extractor, tmp_path, name, declarations, old, new, source, drift, broken
+):
+    header = "namespace dart {" + declarations + "}"
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, header.replace(old, new), source)
+    assert (before != after) == drift
+    if name == "array_extent":
+        rows = _entries(before, "types")["dart::H"]["layout_declarations"]
+        assert rows == [
+            {
+                "class": "dart::H",
+                "storage_declarator": "( * callbacks [ 2 ] )",
+                "access": "public",
+            }
+        ]
+    if name == "constant_extent":
+        rows = _entries(before, "types")["dart::H"]["layout_declarations"]
+        assert rows[0]["array_bound_declarations"]
+
+
+ROUND22_NESTED_CALLABLE_CASES = [
+    (
+        "std_nested_0",
+        "namespace dart {struct A{void hit() const;};struct Holder{static std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(){dart::Holder::factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "std_nested_1",
+        "namespace dart {struct A{void hit() const;};struct Holder{static std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "std_nested_2",
+        "namespace dart {struct A{void hit() const;};struct Holder{static std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder* h){h->factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "three_callable_layers",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<std::function<A*()>()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "nested_value",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()().hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "nested_reference",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A&()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()().hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "inner_raw_pointer",
+        "namespace dart {struct A{void hit() const;};using Inner=A*(*)();struct Holder{std::function<Inner()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "outer_raw_pointer",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*()>;struct Holder{Inner(*factory)();};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "both_raw_pointers",
+        "namespace dart {struct A{void hit() const;};using Inner=A*(*)();struct Holder{Inner(*factory)();};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "raw_reference_inner",
+        "namespace dart {struct A{void hit() const;};using Inner=A*(*)();struct Holder{std::function<Inner&()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "std_reference_inner",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*()>;struct Holder{std::function<Inner&()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "std_pointer_inner",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*()>;struct Holder{std::function<Inner*()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){(*h.factory())()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "alias_nested",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*()>;using Outer=std::function<Inner()>;struct Holder{Outer factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "argument_groups",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*(int)>;struct Holder{std::function<Inner(void(*)())> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void callback();void use(dart::Holder& h){h.factory(&callback)(0)->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "decltype_inner_return",
+        "namespace dart {struct A{void hit() const;};A* make();using Inner=std::function<decltype(make())()>;struct Holder{std::function<Inner()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "trailing_inner_return",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<auto()->A*>;struct Holder{std::function<Inner()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "pair_nested",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::pair<std::function<std::function<A*()>()>,int> values();};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.values().first()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "tuple_nested",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::tuple<int,std::function<std::function<A*()>()>> values();};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){std::get<1>(h.values())()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "optional_nested",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*()>;struct Holder{std::function<std::optional<Inner>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory().value()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "sequence_nested",
+        "namespace dart {struct A{void hit() const;};using Inner=std::function<A*()>;struct Holder{std::function<std::vector<Inner>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()[0]()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "method_return_nested",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A*()>()> factory();};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "free_return_nested",
+        "namespace dart {struct A{void hit() const;};std::function<std::function<A*()>()> factory();}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(){dart::factory()()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "inferred_pointer_return_nested",
+        "namespace dart {struct A{void hit() const;};std::function<A*()> factory();}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(){auto callback=&dart::factory;callback()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "copied_outer",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){auto callback=h.factory;callback()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "copied_inner",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h){auto callback=h.factory();callback()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "source_alias_holder",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "using H=dart::Holder;void use(H& h){h.factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "namespace_alias",
+        "namespace dart {struct A{void hit() const;};struct Holder{static std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "namespace d=dart;void use(){d::Holder::factory()()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "source_auto_helper",
+        "namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<A*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "auto helper(dart::Holder& h){return h.factory();}void use(dart::Holder& h){helper(h)()->hit();}",
+        "dart::A",
+        True,
+        True,
+    ),
+    (
+        "source_explicit_callback_boundary",
+        "namespace dart {struct A{void hit() const;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(){std::function<std::function<dart::A*()>()> callback;callback()()->hit();}",
+        "unknown",
+        True,
+        True,
+    ),
+    (
+        "dependent_callback",
+        "namespace dart {struct A{void hit() const;};template<class T>struct Holder{std::function<std::function<T*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder<dart::A>& h,dart::A* anchor){h.factory()()->hit();}",
+        "unknown",
+        True,
+        True,
+    ),
+    (
+        "known_foreign_30",
+        "namespace foreign {struct Foreign{void hit() const;};}namespace dart {struct A{void hit() const;};struct Holder{std::function<std::function<foreign::Foreign*()>()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h,dart::A* anchor){h.factory()()->hit();}",
+        None,
+        False,
+        False,
+    ),
+    (
+        "known_foreign_31",
+        "namespace foreign {struct Foreign{void hit() const;};}namespace dart {struct A{void hit() const;};using Inner=foreign::Foreign*(*)();struct Holder{std::function<Inner()> factory;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h,dart::A* anchor){h.factory()()->hit();}",
+        None,
+        False,
+        False,
+    ),
+    (
+        "known_foreign_32",
+        "namespace foreign {struct Foreign{void hit() const;};}namespace dart {struct A{void hit() const;};struct Holder{std::pair<std::function<std::function<foreign::Foreign*()>()>,std::function<A*()>> values();};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "void use(dart::Holder& h,dart::A* anchor){h.values().first()()->hit();}",
+        None,
+        False,
+        False,
+    ),
+    (
+        "source_foreign_boundary",
+        "namespace dart {struct A{void hit() const;};}",
+        "struct A{void hit() const;",
+        "struct A{void hit() const=delete;",
+        "struct Foreign{void hit() const;};void use(dart::A* anchor){std::function<std::function<Foreign*()>()> callback;callback()()->hit();}",
+        None,
+        False,
+        False,
+    ),
+    (
+        "callable_layout_stable",
+        "namespace dart {class A{int storage;public:void hit() const;};struct Holder{std::function<std::function<A*()>()> factory;};}",
+        "int storage;",
+        "double storage;",
+        "void use(dart::Holder& h){static_assert(sizeof(h.factory())==sizeof(std::function<dart::A*()>));h.factory()()->hit();}",
+        "dart::A",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,header,old,new,source,owner,changed,breaking",
+    ROUND22_NESTED_CALLABLE_CASES,
+    ids=[row[0] for row in ROUND22_NESTED_CALLABLE_CASES],
+)
+def test_nested_callable_return_shapes(
+    extractor, tmp_path, name, header, old, new, source, owner, changed, breaking
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    path = headers / "api.hpp"
+    path.write_text(header)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    members = _entries(before, "members")
+    if owner == "unknown":
+        assert (
+            members["hit"]["unresolved_count"] == 1 and members["hit"]["declarations"]
+        )
+    elif owner:
+        assert (
+            members["hit"]["receiver_types"] == [owner]
+            and members["hit"]["unresolved_count"] == 0
+        )
+    else:
+        assert "hit" not in members
+    for row in before["members"] + before["data_members"]:
+        assert all(not value.startswith("__") for value in row["receiver_types"])
+    path.write_text(header.replace(old, new))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+    ) == changed
+
+
+R22_PROTO_INCLUDES = (
+    "#include <variant>\n#include <tuple>\n#include <array>\n#include <optional>\n"
+)
+
+R22_PROTO_A = "namespace dart {class A {int storage;public:A()=default;explicit A(int);};class B {int storage;public:B()=default;};}"
+
+R22_PROTO_DELETED = R22_PROTO_A.replace("A()=default;", "A()=delete;")
+
+ROUND22_VARIANT_PROTOTYPE_CASES = [
+    (
+        "local_prototype_pointer",
+        "",
+        "void use(){std::variant<dart::A,int> first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "local_pointer_prototype",
+        "",
+        "void use(){std::variant<dart::A,int> *first=nullptr,second();}",
+        False,
+        0,
+    ),
+    (
+        "local_both_prototypes",
+        "",
+        "void use(){std::variant<dart::A,int> first(),second();}",
+        False,
+        0,
+    ),
+    (
+        "local_single_prototype",
+        "",
+        "void use(){std::variant<dart::A,int> first();}",
+        False,
+        0,
+    ),
+    (
+        "prototype_reference",
+        "",
+        "void use(std::variant<dart::A,int>& existing){std::variant<dart::A,int> first(),&second=existing;}",
+        False,
+        0,
+    ),
+    (
+        "reference_prototype",
+        "",
+        "void use(std::variant<dart::A,int>& existing){std::variant<dart::A,int>& first=existing,second();}",
+        False,
+        0,
+    ),
+    (
+        "prototype_selected",
+        "",
+        "void use(){std::variant<dart::A,int> first(),second{1};}",
+        False,
+        0,
+    ),
+    (
+        "selected_prototype",
+        "",
+        "void use(){std::variant<dart::A,int> first{1},second();}",
+        False,
+        0,
+    ),
+    (
+        "api_alias_prototype",
+        "using Value=std::variant<A,int>;",
+        "void use(){dart::Value first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "source_alias_prototype",
+        "",
+        "using Value=std::variant<dart::A,int>;void use(){Value first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "namespace_alias_prototype",
+        "",
+        "namespace st=std;void use(){st::variant<dart::A,int> first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "std_import_prototype",
+        "",
+        "using std::variant;void use(){variant<dart::A,int> first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "nested_prototype",
+        "",
+        "void use(){std::variant<std::tuple<dart::A,dart::B>,int> first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "array_prototype",
+        "",
+        "void use(){std::array<std::variant<dart::A,int>,2> first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "global_prototype",
+        "",
+        "std::variant<dart::A,int> first(),*second=nullptr;void use(){}",
+        False,
+        0,
+    ),
+    (
+        "block_const_prototype",
+        "",
+        "void use(){const std::variant<dart::A,int> first(),*second=nullptr;}",
+        False,
+        0,
+    ),
+    (
+        "prototype_default",
+        "",
+        "void use(){std::variant<dart::A,int> first(),second;}",
+        True,
+        1,
+    ),
+    (
+        "default_prototype",
+        "",
+        "void use(){std::variant<dart::A,int> first,second();}",
+        True,
+        1,
+    ),
+    (
+        "prototype_brace_default",
+        "",
+        "void use(){std::variant<dart::A,int> first(),second{};}",
+        True,
+        1,
+    ),
+    (
+        "brace_default_prototype",
+        "",
+        "void use(){std::variant<dart::A,int> first{},second();}",
+        True,
+        1,
+    ),
+    (
+        "two_defaults_prototype",
+        "",
+        "void use(){std::variant<dart::A,int> first,second{},third();}",
+        True,
+        2,
+    ),
+    (
+        "api_alias_prototype_default",
+        "using Value=std::variant<A,int>;",
+        "void use(){dart::Value first(),second;}",
+        True,
+        1,
+    ),
+    (
+        "source_alias_prototype_default",
+        "",
+        "using Value=std::variant<dart::A,int>;void use(){Value first(),second;}",
+        True,
+        1,
+    ),
+    (
+        "nested_prototype_default",
+        "",
+        "void use(){std::variant<std::tuple<dart::A,dart::B>,int> first(),second;}",
+        True,
+        1,
+    ),
+    (
+        "array_prototype_default",
+        "",
+        "void use(){std::array<std::variant<dart::A,int>,2> first(),second;}",
+        True,
+        1,
+    ),
+    (
+        "unnamed_parentheses",
+        "",
+        "void use(){(void)std::variant<dart::A,int>();}",
+        True,
+        1,
+    ),
+    (
+        "parenthesized_temporary_copy",
+        "",
+        "void use(){std::variant<dart::A,int> value=std::variant<dart::A,int>();}",
+        True,
+        1,
+    ),
+    ("empty_braces", "", "void use(){std::variant<dart::A,int> value{};}", True, 1),
+    (
+        "default_parameter",
+        "void f(std::variant<A,int> value={});",
+        "void use(){dart::f();}",
+        True,
+        None,
+    ),
+    (
+        "empty_optional_prototypes",
+        "",
+        "void use(){std::optional<std::variant<dart::A,int>> first(),second;}",
+        False,
+        0,
+    ),
+    (
+        "zero_array_prototypes",
+        "",
+        "void use(){std::array<std::variant<dart::A,int>,0> first(),second;}",
+        False,
+        0,
+    ),
+    (
+        "source_function_type",
+        "",
+        "using Fn=std::variant<dart::A,int>();void use(){Fn first;}",
+        False,
+        0,
+    ),
+    (
+        "api_function_type",
+        "using Fn=std::variant<A,int>();",
+        "void use(){dart::Fn first;}",
+        False,
+        0,
+    ),
+    (
+        "api_function_type_member",
+        "using Fn=std::variant<A,int>();struct Holder{Fn first;};",
+        "void use(){dart::Holder value;}",
+        False,
+        0,
+    ),
+    (
+        "noexcept_function_member",
+        "using Fn=std::variant<A,int>() noexcept;struct Holder{Fn first;};",
+        "void use(){dart::Holder value;}",
+        False,
+        0,
+    ),
+    (
+        "source_noexcept_function_type",
+        "",
+        "using Fn=std::variant<dart::A,int>() noexcept;void use(){Fn first;}",
+        False,
+        0,
+    ),
+    (
+        "source_typedef_function_type",
+        "",
+        "typedef std::variant<dart::A,int> Fn();void use(){Fn first;}",
+        False,
+        0,
+    ),
+    (
+        "decltype_constructor_in_alias",
+        "",
+        "using Fn=decltype(dart::A{})();void use(){Fn first;}",
+        True,
+        1,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "declarations", "source", "drift", "count"),
+    ROUND22_VARIANT_PROTOTYPE_CASES,
+)
+def test_round22_variant_prototypes_are_not_value_initializers(
+    extractor, tmp_path, label, declarations, source, drift, count
+):
+    header = R22_PROTO_INCLUDES + R22_PROTO_A + "namespace dart {" + declarations + "}"
+    changed = (
+        R22_PROTO_INCLUDES + R22_PROTO_DELETED + "namespace dart {" + declarations + "}"
+    )
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, changed, source)
+    assert (before != after) == drift
+    if count is not None:
+        constructors = {item["name"]: item for item in before["constructors"]}
+        assert constructors.get("dart::A", {}).get("count", 0) == count
+        if "dart::B" in source:
+            assert constructors.get("dart::B", {}).get("count", 0) == count
+
+
+ROUND22_SPEC_STORAGE_CASES = [
+    (
+        "callback_storage_type_alignment_dependency",
+        "namespace dart { struct alignas(16) A {int payload;}; struct H {alignas(A) A(*factory[2])();}; "
+        "}",
+        "alignas(16)",
+        "alignas(32)",
+        "static_assert(alignof(dart::H)==16);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_storage_constant_alignment_dependency",
+        "namespace dart {constexpr int Align=16; struct H {alignas(Align) int(*factory[2])();}; }",
+        "Align=16",
+        "Align=32",
+        "static_assert(alignof(dart::H)==16);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_parameter_layout_not_owned",
+        "namespace dart {struct A {int payload;}; struct H {int(*factory[2])(A);}; }",
+        "int payload;",
+        "double payload;",
+        "static_assert(sizeof(dart::H)==2*sizeof(void*));",
+        False,
+        False,
+        [],
+    ),
+    (
+        "callback_return_layout_not_owned",
+        "namespace dart {struct A {int payload;}; struct H {A(*factory[2])();}; }",
+        "int payload;",
+        "double payload;",
+        "static_assert(sizeof(dart::H)==2*sizeof(void*));",
+        False,
+        False,
+        [],
+    ),
+    (
+        "callback_return_and_parameter_signature_not_storage",
+        "namespace dart {struct H {int(*factory[2])(int);}; }",
+        "int(*factory[2])(int);",
+        "double(*factory[2])(double);",
+        "static_assert(sizeof(dart::H)==2*sizeof(void*));",
+        False,
+        False,
+        [],
+    ),
+    (
+        "owned_scalar_alignment_dependency",
+        "namespace dart { struct alignas(16) A {int payload;}; struct H {alignas(A) char byte;}; }",
+        "alignas(16)",
+        "alignas(32)",
+        "static_assert(alignof(dart::H)==16);",
+        True,
+        True,
+        [],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,header,old,new,source,drift,breaking,checks",
+    ROUND22_SPEC_STORAGE_CASES,
+    ids=[row[0] for row in ROUND22_SPEC_STORAGE_CASES],
+)
+def test_round22_callback_storage_alignment_dependencies(
+    extractor, tmp_path, name, header, old, new, source, drift, breaking, checks
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    if name.endswith("alignment_dependency"):
+        assert _entries(before, "types")["dart::H"]["alignment_declarations"]
+    headers = tmp_path / "dart"
+    (headers / "api.hpp").write_text(header.replace(old, new))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert (after != before) == drift
+
+
+ROUND22_FUNCTION_ALIAS_CASES = [
+    (
+        "function_type_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static Callback* "
+        "factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "class_function_type_pointer_alias",
+        "namespace dart{struct A{void hit();};struct Holder{using Callback=A*();static Callback* "
+        "factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "namespace_function_type_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();extern Callback* factory;}",
+        "void use(){dart::factory()->hit();}",
+        True,
+    ),
+    (
+        "value_return_function_type_alias",
+        "namespace dart{struct A{void hit();};using Callback=A();struct Holder{static Callback* "
+        "factory;};}",
+        "void use(){dart::Holder::factory().hit();}",
+        True,
+    ),
+    (
+        "reference_return_function_type_alias",
+        "namespace dart{struct A{void hit();};using Callback=A&();struct Holder{static Callback* "
+        "factory;};}",
+        "void use(){dart::Holder::factory().hit();}",
+        True,
+    ),
+    (
+        "function_type_reference_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static Callback& "
+        "factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "const_function_type_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static "
+        "Callback*const factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "parameterized_function_type_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*(int,double);struct Holder{static "
+        "Callback* factory;};}",
+        "void use(){dart::Holder::factory(1,2.)->hit();}",
+        True,
+    ),
+    (
+        "variadic_function_type_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*(...);struct Holder{static "
+        "Callback* factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "noexcept_function_type_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*()noexcept;struct Holder{static "
+        "Callback* factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "noexcept_expression_function_type_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*()noexcept(true);struct "
+        "Holder{static Callback* factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "typedef_function_type_alias",
+        "namespace dart{struct A{void hit();};typedef A* Callback();struct Holder{static "
+        "Callback* factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "class_typedef_function_type_alias",
+        "namespace dart{struct A{void hit();};struct Holder{typedef A* Callback();static "
+        "Callback* factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "chained_function_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();using Pointer=Callback*;struct "
+        "Holder{static Pointer factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "chained_function_reference_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();using "
+        "Reference=Callback&;struct Holder{static Reference factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        True,
+    ),
+    (
+        "function_pointer_alias_array",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static Callback* "
+        "factory[2];};}",
+        "void use(){dart::Holder::factory[0]()->hit();}",
+        True,
+    ),
+    (
+        "function_pointer_alias_matrix",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static Callback* "
+        "factory[2][3];};}",
+        "void use(){dart::Holder::factory[0][0]()->hit();}",
+        True,
+    ),
+    (
+        "chained_function_pointer_array_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();using Pointer=Callback*;using "
+        "Array=Pointer[2];struct Holder{static Array factory;};}",
+        "void use(){dart::Holder::factory[0]()->hit();}",
+        True,
+    ),
+    (
+        "chained_function_pointer_array_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();using Pointer=Callback*;using "
+        "Array=Pointer[2];struct Holder{static Array* factory;};}",
+        "void use(){dart::Holder::factory[0][0]()->hit();}",
+        True,
+    ),
+    (
+        "tuple_function_type_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static "
+        "std::tuple<Callback*,int> factory;};}",
+        "void use(){std::get<0>(dart::Holder::factory)()->hit();}",
+        True,
+    ),
+    (
+        "standard_array_function_type_pointer_alias",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static "
+        "std::array<Callback*,2> factory;};}",
+        "void use(){dart::Holder::factory[0]()->hit();}",
+        True,
+    ),
+    (
+        "ordinary_value_pointer_alias_preserved",
+        "namespace dart{struct A{void hit();};using Value=A*;struct Holder{static Value "
+        "factory;};}",
+        "void use(){dart::Holder::factory->hit();}",
+        True,
+    ),
+    (
+        "unused_function_type_alias_negative",
+        "namespace dart{struct A{void hit();};using Callback=A*();struct Holder{static Callback* "
+        "factory;};}",
+        "void use(){}",
+        False,
+    ),
+    (
+        "primitive_function_type_alias_negative",
+        "namespace dart{struct A{void hit();};using Callback=int();struct Holder{static "
+        "Callback* factory;};}",
+        "void use(){(void)dart::Holder::factory();}",
+        False,
+    ),
+    (
+        "foreign_function_type_alias_negative",
+        "struct Foreign{void hit();};namespace dart{struct A{void hit();};using "
+        "Callback=Foreign*();struct Holder{static Callback* factory;};}",
+        "void use(){dart::Holder::factory()->hit();}",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "case, header, source, positive",
+    ROUND22_FUNCTION_ALIAS_CASES,
+    ids=[case[0] for case in ROUND22_FUNCTION_ALIAS_CASES],
+)
+def test_function_type_alias_callable_shapes_round22(
+    extractor, tmp_path, case, header, source, positive
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    members = _entries(before, "members")
+    if positive:
+        expected = (
+            "dart::Value"
+            if case == "ordinary_value_pointer_alias_preserved"
+            else "dart::A"
+        )
+        assert members["hit"]["receiver_types"] == [expected]
+        assert members["hit"]["unresolved_count"] == 0
+    else:
+        assert "hit" not in members
+    changed = header.replace("struct A{void hit();}", "struct A{void hit()=delete;}", 1)
+    assert (
+        _scan_receiver_api(extractor, tmp_path, changed, source) != before
+    ) == positive
+
+
+@pytest.mark.parametrize(
+    "read", ["dart::Holder::factory(1)->hit();", "(void)dart::Holder::factory;"]
+)
+def test_used_callable_alias_signature_evidence_round22(extractor, tmp_path, read):
+    header = "namespace dart{struct A{void hit();};using Callback=A*(int);struct Holder{static Callback* factory;};}"
+    source = "void use(){" + read + "}"
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    declaration = _entries(before, "data_members")["factory"]["declarations"][0]
+    assert declaration["type_alias_declarations"] == [
+        {"class": "dart::Callback", "signature": "using dart::Callback = A * ( int )"}
+    ]
+    changed = header.replace("A*(int)", "A*(std::string)")
+    assert _scan_receiver_api(extractor, tmp_path, changed, source) != before
+
+
+def test_unread_callable_alias_signature_stays_unused_round22(extractor, tmp_path):
+    header = "namespace dart{struct A{};using Callback=A*(int);struct Holder{static Callback* factory;};}"
+    source = "void use(){}"
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    assert (
+        _scan_receiver_api(
+            extractor, tmp_path, header.replace("A*(int)", "A*(std::string)"), source
+        )
+        == before
+    )
+
+
+ROUND22_SPEC_ALIAS_COMPOSITIONS = [
+    (
+        "function_alias_returns_function_alias",
+        "namespace dart { struct A {void hit() const;}; using Leaf=A*(); using Factory=Leaf*(); struct H {Factory* factory;}; }",
+        "void hit() const;",
+        "",
+        "void f(dart::H& h){h.factory()()->hit();}",
+        True,
+        True,
+        [
+            {"member": "hit", "receivers": ["dart::A"], "count": 1},
+            {"data": "factory", "owner": "dart::H"},
+        ],
+    ),
+    (
+        "function_alias_returns_stdfunction",
+        "namespace dart { struct A {void hit() const;}; using Leaf=std::function<A*()>; using Factory=Leaf(); struct H {Factory* factory;}; }",
+        "void hit() const;",
+        "",
+        "void f(dart::H& h){h.factory()()->hit();}",
+        True,
+        True,
+        [
+            {"member": "hit", "receivers": ["dart::A"], "count": 1},
+            {"data": "factory", "owner": "dart::H"},
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "case,header,old,new,source,drift,breaking,checks",
+    ROUND22_SPEC_ALIAS_COMPOSITIONS,
+    ids=[r[0] for r in ROUND22_SPEC_ALIAS_COMPOSITIONS],
+)
+def test_round22_callable_alias_compositions(
+    extractor, tmp_path, case, header, old, new, source, drift, breaking, checks
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    members = _entries(before, "members")
+    assert members["hit"]["receiver_types"] == ["dart::A"]
+    assert members["hit"]["unresolved_count"] == 0
+    assert (
+        _scan_receiver_api(extractor, tmp_path, header.replace(old, new), source)
+        != before
+    )
