@@ -5451,6 +5451,9 @@ def test_ultrawork_uses_explicit_delegation_and_lean_prompt_shape():
 
     assert "Delegate only when the user explicitly requested it" in workflow
     assert "execute packets serially" in workflow
+    assert "bind it to the client's native goal" in workflow
+    assert "do not reimplement that loop in prose" in workflow
+    assert "two clean review passes" in workflow
     assert "Do not repeat this workflow's logistics" in workflow
     assert "Sol Ultra" not in workflow
 
