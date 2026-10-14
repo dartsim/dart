@@ -259,8 +259,8 @@ their access, including private and deleted declarations, of the type, its
 bases and owned non-static members, including class template specializations.
 These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
-`std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
-`new`.
+`std::make_from_tuple`, engaged optional `std::in_place` initializers, known
+optional `emplace` calls, value-producing `static_cast` targets and placement `new`.
 A Gazebo class derived from a DART class counts as a construction of that base
 at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
@@ -301,7 +301,7 @@ indirection; dereferenced layout operands retain the referenced object fields.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
-initializer dependencies. Class annotations, including export macro spellings,
+initializer dependencies and the constructors required by class-valued defaults. Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
 named bit-field widths are retained in `exception_specification_declarations`
@@ -324,7 +324,8 @@ and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
-iterators, aliases and range-for declarations. Returned `std::pair` and `std::tuple`
+iterators, aliases and range-for declarations. Map-family iterators preserve their
+key and mapped values as pair elements. Returned `std::pair` and `std::tuple`
 values retain each element's receiver shape for `first`, `second` and `std::get`
 projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
@@ -348,7 +349,8 @@ expressions retain both operand candidates without resolving their common type. 
 casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;
-data declarations retain array dimensions.
+data declarations retain array dimensions. Qualified callable variables and static
+data members retain their declarations when invoked.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
