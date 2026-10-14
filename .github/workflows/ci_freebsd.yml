@@ -126,6 +126,7 @@ jobs:
             done
             cmake -G Ninja -S . -B build/freebsd/cpp/Release \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_FLAGS=-O2 \
               -DDART_BUILD_DARTPY=OFF \
               -DDART_BUILD_GUI=OFF \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
