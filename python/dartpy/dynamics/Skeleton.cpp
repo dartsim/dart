@@ -349,7 +349,19 @@ void Skeleton(nb::module_& m)
           "setResting",
           &dart::dynamics::Skeleton::setResting,
           nb::arg("resting"))
+      .def(
+          "is_sleep_candidate", &dart::dynamics::Skeleton::isSleepCandidate)
+      .def(
+          "set_sleep_candidate",
+          &dart::dynamics::Skeleton::setSleepCandidate,
+          nb::arg("candidate"),
+          "Setting false also resets the accumulated quiet dwell time.")
       .def("getIslandIndex", &dart::dynamics::Skeleton::getIslandIndex)
+      .def(
+          "set_island_index",
+          &dart::dynamics::Skeleton::setIslandIndex,
+          nb::arg("index"),
+          "Constraint solver bookkeeping; other callers should not set it.")
       .def(
           "setTimeStep",
           +[](dart::dynamics::Skeleton* self, double _timeStep) -> void {

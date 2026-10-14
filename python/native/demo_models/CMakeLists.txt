@@ -35,12 +35,10 @@ add_library(
   dart-demo-models
   STATIC
   ContactArrowLayout.cpp
-  BoxedLcpSolver.cpp
   AdaptiveSoftContactModel.cpp
   SoftWormModel.cpp
   WorldHistory.cpp
   WamIkFast.cpp
-  ContactInverseDynamicsModel.cpp
 )
 target_link_libraries(dart-demo-models PUBLIC dart)
 set_source_files_properties(

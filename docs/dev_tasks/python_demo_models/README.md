@@ -113,14 +113,35 @@ comparisons corroborate the port.
   catalog model relocation has no separate release migration contract.
 - Follow-up: consolidate the drafts at M6b exit and add the publication link.
 
+## Boxed-LCP selection and contact inverse dynamics
+
+- Branch: `refactor/python-demo-lcp-contact`, local child of arm/posture
+  commit `e18517de1`.
+- Value and scope: port backend selection/wake handling and the Atlas squat
+  replay, keyframes, controls, histories and force visuals to Python. The
+  ordinary `dynamics.ContactInverseDynamics` solver stays in C++; bind existing
+  Skeleton sleep-candidacy/island setters to preserve the native wake recipe.
+- Compatibility: preserve borrowed boxed-solver identity, sleeping/dwell and
+  fixed-body behavior, four-contact order, float controls, native value copies,
+  replay derivatives, history-ring order and visual ownership. No C++ engine
+  headers, implementations, package exports or physics defaults change.
+- Non-goals: WAM policy, other families, unrelated marker repair and publication.
+- Acceptance: direct native/Python comparisons before native removal, real
+  settling/stacking and complete squat-replay oracles, transferred GUI-free
+  tests and ownership checks, fitted matched assessed captures, default/GUI
+  and build-variant gates, catalog cycle, lint and two clean reviews.
+- Status: locally complete and verified. Native helpers/bindings/tests and
+  shared registration are removed after direct parity. No publication authorization.
+- Changelog: program feature work defers to the M6b consolidation draft; ordinary
+  binding additions receive a draft entry. No standalone bug fix is proposed.
+
 ## Inventory and remaining packets
 
 The initial inventory found 15 binding families, 39 native source/header files
 (22,020 lines, including 14,933 generated WAM solver lines), 16 binding files,
 15 scene callers, registry gates, Python/native tests, and four build surfaces.
 
-After the arm/posture packet, nine native binding families remain:
-boxed-LCP selection with missing engine wake bindings; contact inverse dynamics;
+After the boxed-LCP/contact packet, seven native binding families remain:
 soft worm; adaptive soft contact; SIMBICON and
 soft-foot SIMBICON; point-cloud sampling with mesh API gaps; world history with
 missing snapshot types; WAM; and final module/build removal.

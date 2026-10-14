@@ -170,6 +170,74 @@ overlay and capture tests pass with the fix. It is a separate diagnostic commit.
   is invalid. All fourteen affected cases pass after rebuilding; subsequent
   aggregate runs are sequential.
 
+## Boxed-LCP and contact-replay packet, 2026-10-14
+
+Reference native sources: `e18517de1`. Archived extensions retain the native
+helpers before removal; the mixed LCP reference also has the ordinary Skeleton
+wake setters and solver constructors. Comparison processes use a stable archive.
+
+### Numerical and ownership evidence
+
+- Boxed-LCP selection: 1,307 state comparisons plus seven matching exception
+  pairs are bit-identical. These include 1,200 stacking steps, 104 sleep/wake
+  snapshots, fixed/resting/awake/candidate bodies, island state, borrowed solver,
+  collision detector/group/secondary backend identity, and SIMBICON harness
+  preservation. The existing constraint solver is mutated rather than replaced.
+- The real dwell regression settles first, wakes, accumulates partial quiet
+  dwell, switches backend again and stays awake for fifty steps before sleeping
+  on step fifty-one. Native comparison confirms this recipe; the initial fixture
+  incorrectly overlooked the engine's equilibrium sleep credit and was corrected
+  without weakening the post-switch assertions.
+- LCP matched scene: all eighteen joint-position, velocity and body-transform
+  arrays match after 800 direct physics steps, with seed 42, FCL, one thread,
+  six skeletons, and PGS selected through the panel. Host steps are zero; this
+  precomputed state capture makes no app-scheduling claim.
+- Contact replay: 3,131 saved comparisons agree across all sixty spline knots,
+  241 refreshes/history wrap, pause, derivatives, three regenerated depths,
+  controls, contact forces, arrow geometry and histories. Physical-state, force,
+  geometry and history arrays are bit-identical; 78 derived status arrays differ
+  by at most 1.14e-13. Controls retain float32 rounding/clamps, four
+  contacts retain their order, and exposed arrays/lists remain value copies.
+- CID fitted scene: all ten position/velocity/acceleration, force, arrow and
+  history arrays, the literal camera and complete focused bounds match exactly
+  after sixty refreshes. The ordinary C++ inverse-dynamics solver remains intact.
+- GUI-free tests retain validation, periodic interpolation/analytic derivatives,
+  force-arrow hiding/colors, history order/wrap, ownership and cycle collection.
+  Non-boxed validation uses a Python World subclass because Python cannot
+  install a custom native ConstraintSolver; it exercises the helper's rejection
+  without broadening the engine binding surface.
+
+### Visual evidence
+
+Matched Vulkan/Lavapipe captures fit the full five-box stack and, separately,
+the complete squat pose, both feet and green force-arrow tips. Both original
+pairs pass `image-verdict` and focused view assessment; semantic inspection
+agrees with their complete state oracles and unchanged controls. One CID fit
+passed geometric assessment but had feet obscured by the diagnostics dock;
+that capture was rejected and both cameras were backed out before acceptance.
+These captures corroborate one settled stack and kinematic pose/force-arrow
+parity, not future stacking stability, physical ground contact or balance.
+Ordinary rendering supplies the visible structural check; no contact/debug-layer
+claim is made. No performance claim is made.
+
+### Checks and reviews
+
+- Post-removal `build-py-dev` and `build`: pass. Focused model/S3/S6a suite:
+  56 passed against the rebuilt extension, after all native source deletions.
+- `pixi run test-all`: 187 CTests and 1,694 Python tests pass, with two
+  Python-version skips and 54 planned DART 7 acceptance failures.
+- `pixi run test-gui`: ten CTests and 515 Python tests pass, with one
+  Python-version skip and two planned final-render API failures.
+- Strict catalog cycle: all 37 scenes twice, two frames each, zero skipped.
+- GUI-off full `tests` target builds; all eight retained native-model CTests pass.
+- Vanilla system ImGui full `tests`/dartpy build passes; all 220 GUI-free
+  model/math/optimizer tests pass. The documented catalog rebuild hint remains.
+- Two independent source/numeric/visual reviews are clean after qualifying the
+  78 derived status vectors' tiny rounding difference. No implementation fix
+  was required by review.
+- `pixi run lint` and `check-lint` pass; final pre-commit lint and staged
+  local-path check cover the completed evidence notes.
+
 ## Limits
 
 No WAM backend change is implemented. The analytical prototype's sampled

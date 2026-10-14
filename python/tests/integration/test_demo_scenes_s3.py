@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+from examples.demos.models.boxed_lcp_solver import set_boxed_lcp_solver
+
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
@@ -329,33 +331,6 @@ def test_box_stacking_initial_geometry_and_transforms():
         )
 
 
-def test_boxed_lcp_solver_binding_validates_inputs():
-    world = dart.simulation.World()
-    for kind, backend in (
-        ("dantzig", "DantzigBoxedLcpSolver"),
-        ("pgs", "PgsBoxedLcpSolver"),
-    ):
-        assert dart._demos.set_boxed_lcp_solver(world, kind) is None
-        assert world.getConstraintSolver().getBoxedLcpSolver().getType() == backend
-    original = world.getConstraintSolver()
-    for kind in ("", "Dantzig", "other"):
-        with pytest.raises(ValueError):
-            dart._demos.set_boxed_lcp_solver(world, kind)
-        assert world.getConstraintSolver() is original
-    with pytest.raises(ValueError):
-        dart._demos.set_boxed_lcp_solver(None, "dantzig")
-
-
-def test_boxed_lcp_solver_switch_preserves_borrowed_wrapper():
-    world = dart.simulation.World()
-    dart._demos.set_boxed_lcp_solver(world, "dantzig")
-    borrowed = world.getConstraintSolver()
-    dart._demos.set_boxed_lcp_solver(world, "pgs")
-    assert world.getConstraintSolver() is borrowed
-    assert borrowed.getTimeStep() == world.getTimeStep()
-    assert borrowed.getBoxedLcpSolver().getType() == "PgsBoxedLcpSolver"
-
-
 @pytest.mark.parametrize("kind", ["dantzig", "pgs"])
 def test_boxed_lcp_solver_switch_preserves_simbicon_harness(kind):
     native = dart._demos.soft_foot_simbicon
@@ -363,7 +338,7 @@ def test_boxed_lcp_solver_switch_preserves_simbicon_harness(kind):
     controller = dart._demos.simbicon.Controller(model.atlas, model.world)
     controller.harness_pelvis()
     # The native controller borrows the solver without a Python solver wrapper.
-    dart._demos.set_boxed_lcp_solver(model.world, kind)
+    set_boxed_lcp_solver(model.world, kind)
     controller.unharness_pelvis()
     assert model.world.getConstraintSolver().getNumConstraints() == 0
     for _ in range(4):

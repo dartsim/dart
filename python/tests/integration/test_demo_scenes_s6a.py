@@ -1,8 +1,6 @@
 """Construction, frame updates, and controls for the S6a demo batch."""
 
-import gc
 import sys
-import weakref
 from pathlib import Path
 
 import dartpy as dart
@@ -81,15 +79,17 @@ def _control(controls, label):
 
 @pytest.fixture
 def contact_models(monkeypatch):
+    from examples.demos.scenes import contact_inverse_dynamics
+
     models = []
-    constructor = dart._demos.ContactInverseDynamicsModel
+    constructor = contact_inverse_dynamics.ContactInverseDynamicsModel
 
     def create(world):
         model = constructor(world)
         models.append(model)
         return model
 
-    monkeypatch.setattr(dart._demos, "ContactInverseDynamicsModel", create)
+    monkeypatch.setattr(contact_inverse_dynamics, "ContactInverseDynamicsModel", create)
     return models
 
 
@@ -142,9 +142,7 @@ def test_s6a_construction_and_deterministic_steps(scene_id):
             world.getGravity(),
             [0, 0, 0] if scene_id == "wam_ikfast" else [0, 0, -9.81],
         )
-        assert world.getNumSimpleFrames() == (
-            0 if scene_id == "wam_ikfast" else 4
-        )
+        assert world.getNumSimpleFrames() == (0 if scene_id == "wam_ikfast" else 4)
         _step(setup, 4)
         assert world.getSimFrames() == 4
         states.append(_state(world))
@@ -175,7 +173,9 @@ def test_wam_keys_solver_endpoint_and_activation(controls):
     np.testing.assert_array_equal(
         ground.getShapeNode(0).getVisualAspect().getRGBA(), [0.1, 0.1, 0.9, 0.2]
     )
-    np.testing.assert_array_equal(ee.getRelativeTransform().translation(), [0, 0, -0.09])
+    np.testing.assert_array_equal(
+        ee.getRelativeTransform().translation(), [0, 0, -0.09]
+    )
     np.testing.assert_array_equal(setup.camera_home.eye, [5.34, 3, 1.91])
     np.testing.assert_array_equal(setup.camera_home.center, [0, 0, 0.5])
     np.testing.assert_array_equal(setup.camera_home.up, [0, 0, 0.98])
@@ -226,7 +226,9 @@ def test_wam_keys_solver_endpoint_and_activation(controls):
     assert setup.world.getNumSimpleFrames() == 0
     lower, upper = ik.getErrorMethod().getBounds()
     assert np.isneginf(lower).all() and np.isposinf(upper).all()
-    np.testing.assert_array_equal(ik.getTarget().getRelativeTransform().matrix(), np.eye(4))
+    np.testing.assert_array_equal(
+        ik.getTarget().getRelativeTransform().matrix(), np.eye(4)
+    )
     setup.pre_refresh()
     assert _control(controls, "IK target: inactive")
 
@@ -274,7 +276,9 @@ def test_contact_every_panel_control_and_frame_results(controls, contact_models)
     assert any(c.label.startswith("Total Vertical Force: ") for c in controls)
     assert any(c.label in ("FEASIBLE", "INFEASIBLE") for c in controls)
     plots = [c for c in controls if c.kind == viewer.Control.Kind.PLOT]
-    assert [c.label for c in plots] == list(model.torque_names) + ["Total Vertical GRF (N)"]
+    assert [c.label for c in plots] == list(model.torque_names) + [
+        "Total Vertical GRF (N)"
+    ]
     assert all(len(c.samples) == 240 for c in plots)
     for control, samples in zip(plots, list(model.torque_plots) + [model.plot_samples]):
         np.testing.assert_array_equal(control.samples, samples)
@@ -295,57 +299,3 @@ def test_private_native_binding_validation():
     body = dart.dynamics.Skeleton().createWeldJointAndBodyNodePair()[1]
     with pytest.raises(ValueError):
         dart._demos.set_wam_ikfast(body.getIK(True))
-    with pytest.raises(ValueError):
-        dart._demos.ContactInverseDynamicsModel(None)
-    with pytest.raises(TypeError):
-        dart._demos.ContactInverseDynamicsModel("world")
-    with pytest.raises(RuntimeError):
-        dart._demos.ContactInverseDynamicsModel(dart.simulation.World())
-
-
-def test_contact_model_retains_world_and_collects_cycles():
-    from examples.demos.scenes.common import reorient_z_up
-
-    class World(dart.simulation.World):
-        pass
-
-    parsed = dart.utils.SkelParser.readWorld("dart://sample/skel/fullbody1.skel")
-    reorient_z_up(parsed)
-    world = World()
-    world.setGravity(parsed.getGravity())
-    for skeleton in _skeletons(parsed):
-        world.addSkeleton(skeleton)
-    del skeleton, parsed
-    model = dart._demos.ContactInverseDynamicsModel(world)
-    reference = weakref.ref(world)
-    del world
-    gc.collect()
-    assert reference() is model.world
-    world = model.world
-    world.model = model
-    refs = weakref.ref(world), weakref.ref(model)
-    del world, model
-    gc.collect()
-    assert all(ref() is None for ref in refs)
-
-
-@pytest.mark.parametrize(
-    "name, lower, upper",
-    [
-        ("playback_speed", 0.1, 2.0),
-        ("squat_depth", 0.0, 0.25),
-        ("friction_coeff", 0.0, 1.5),
-        ("force_scale", 0.0001, 0.01),
-    ],
-)
-def test_contact_native_control_validation(name, lower, upper):
-    model = _scene("contact_inverse_dynamics").factory().pre_refresh.__self__.model
-    initial = getattr(model, name)
-    for value in (float("nan"), float("inf"), -float("inf")):
-        with pytest.raises(ValueError):
-            setattr(model, name, value)
-        assert getattr(model, name) == initial
-    setattr(model, name, -1.0)
-    assert getattr(model, name) == float(np.float32(lower))
-    setattr(model, name, 9.0)
-    assert getattr(model, name) == float(np.float32(upper))

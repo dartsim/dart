@@ -42,8 +42,6 @@ void bind_soft_worm(nb::module_& m);
 void bind_world_history(nb::module_& m);
 void bind_adaptive_soft_contact(nb::module_& m);
 void bind_wam_ikfast(nb::module_& m);
-void bind_contact_inverse_dynamics(nb::module_& m);
-void bind_boxed_lcp_solver(nb::module_& m);
 #if HAVE_OCTOMAP
 void bind_point_cloud_sensor(nb::module_& m);
 #endif
@@ -61,8 +59,6 @@ void bind_demos(nb::module_& m)
   bind_world_history(demos);
   bind_adaptive_soft_contact(demos);
   bind_wam_ikfast(demos);
-  bind_contact_inverse_dynamics(demos);
-  bind_boxed_lcp_solver(demos);
 #if HAVE_OCTOMAP
   bind_point_cloud_sensor(demos);
 #endif

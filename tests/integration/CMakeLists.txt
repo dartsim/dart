@@ -194,28 +194,16 @@ add_test(
   COMMAND
     $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
 )
-dart_add_test("integration" test_BoxedLcpSolver)
-target_link_libraries(test_BoxedLcpSolver dart-demo-models)
 set_tests_properties(
   test_AdaptiveSoftContactModel
   test_SoftWormModel
   test_ContactArrowLayout
-  test_BoxedLcpSolver
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 dart_format_add(${soft_demo_model_test_sources})
 
 dart_add_test("integration" test_WorldHistory)
 target_link_libraries(test_WorldHistory dart-demo-models)
-
-if(TARGET dart-utils)
-  dart_add_test("integration" test_ContactInverseDynamicsModel)
-  target_link_libraries(
-    test_ContactInverseDynamicsModel
-    dart-demo-models
-    dart-utils
-  )
-endif()
 
 if(TARGET dart-utils)
   if(HAVE_OCTOMAP)

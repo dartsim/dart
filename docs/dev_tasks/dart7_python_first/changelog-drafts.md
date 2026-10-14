@@ -24,6 +24,9 @@ milestone consolidation PR, following the program's hot-file rule.
   random draws from the engine's seeded stream.
 - **Python:** Add `dartpy.math.Quaternion.from_two_vectors()` to align two
   directions using the engine's quaternion routine.
+- **Python:** Expose existing Skeleton sleep-candidacy and island-state
+  setters, and constructors for Dantzig/PGS boxed-LCP solvers, used when waking
+  a simulation after switching its constraint-solver backend.
 - **Breaking Changes:** Bundled Dear ImGui is now the `v1.92.8-docking`
   release, so the installed `dart/external/imgui` headers use the docking
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is
