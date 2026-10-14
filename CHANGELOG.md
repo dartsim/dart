@@ -68,6 +68,7 @@
     diagnostics and return `nullptr` (`None` in Python), including invalid poses
     that previously threw exceptions. Check the returned value when loading
     SDF. General nested models and non-tree joint structures remain unsupported.
+    [#3789](https://github.com/dartsim/dart/pull/3789)
   * Compile ImGui into `dart-gui`, preserving the `external-imgui` component
     and `dart-external-imgui` target as CMake forwarding names. They no longer
     provide the OpenGL2 backend (`imgui_impl_opengl2.h`) or depend on OpenGL,
@@ -94,6 +95,7 @@
     axes, rotated inertia and relative includes through sdformat. Meshes retain
     their originating document for resource resolution. DART soft-shape poses,
     empty identity poses and safely normalized quaternion poses remain supported.
+    [#3789](https://github.com/dartsim/dart/pull/3789)
 
   * Loading a SKEL world no longer crashes when the collision detector
     factory cannot create `fcl`, for example after an application
