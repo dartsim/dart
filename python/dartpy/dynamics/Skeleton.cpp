@@ -72,6 +72,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -142,6 +143,9 @@ namespace python {
 
 void Skeleton(nb::module_& m)
 {
+  dartnb::dart_class<dart::dynamics::Skeleton::Configuration>(
+      m, "SkeletonConfiguration");
+
   dartnb::dart_class<dart::dynamics::Skeleton, dart::dynamics::MetaSkeleton>(
       m, "Skeleton")
       .def(dartnb::factory(+[]() -> dart::dynamics::SkeletonPtr {
@@ -237,6 +241,21 @@ void Skeleton(nb::module_& m)
           "setState",
           +[](dart::dynamics::Skeleton* self,
               const dart::dynamics::Skeleton::State& state) -> void {
+            const auto* savedBodies
+                = state.get<dart::dynamics::detail::BodyNodeVectorProxyAspect>();
+            if (savedBodies) {
+              const auto& bodies = savedBodies->get();
+              for (std::size_t i = 0;
+                   i < std::min(bodies.size(), self->getNumBodyNodes());
+                   ++i) {
+                const auto* soft = self->getBodyNode(i)->asSoftBodyNode();
+                const auto* saved = bodies[i].get<dart::dynamics::SoftBodyNode>();
+                if (soft && saved
+                    && saved->mPointStates.size() != soft->getNumPointMasses())
+                  throw nb::value_error(
+                      "state point count must match the soft body");
+              }
+            }
             return self->setState(state);
           },
           nb::arg("state"))

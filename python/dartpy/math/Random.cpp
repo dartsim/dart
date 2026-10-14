@@ -61,6 +61,16 @@ void Random(nb::module_& m)
           nb::arg("min"),
           nb::arg("max"))
       .def_static(
+          "uniform_int",
+          +[](int lower, int upper) -> int {
+            if (lower > upper)
+              throw nb::value_error("lower must not exceed upper");
+            return dart::math::Random::uniform(lower, upper);
+          },
+          nb::arg("lower"),
+          nb::arg("upper"),
+          "Draw from the engine's inclusive integer uniform distribution.")
+      .def_static(
           "uniform_float",
           +[](float min, float max) -> float {
             return dart::math::Random::uniform(min, max);

@@ -50,5 +50,32 @@ def test_float_uniform_keeps_single_precision_and_seeded_sequence():
     assert Random.uniform(0, 1) == next_double
 
 
+def test_integer_uniform_is_inclusive_seeded_and_handles_singleton_ranges():
+    Random.setSeed(1234)
+    values = [Random.uniform_int(lower=-2, upper=2) for _ in range(100)]
+    next_double = Random.uniform(0, 1)
+    assert all(type(value) is int for value in values)
+    assert set(values) == {-2, -1, 0, 1, 2}
+    Random.setSeed(1234)
+    assert [Random.uniform_int(-2, 2) for _ in range(100)] == values
+    assert Random.uniform(0, 1) == next_double
+
+    Random.setSeed(1234)
+    assert Random.uniform_int(7, 7) == 7
+    after_singleton = Random.uniform(0, 1)
+    Random.setSeed(1234)
+    assert Random.uniform_int(7, 7) == 7
+    assert Random.uniform(0, 1) == after_singleton
+
+
+def test_integer_uniform_rejects_reversed_bounds_without_consuming_rng():
+    Random.setSeed(1234)
+    expected = Random.uniform_int(-2, 2)
+    Random.setSeed(1234)
+    with pytest.raises(ValueError, match="lower must not exceed upper"):
+        Random.uniform_int(3, 2)
+    assert Random.uniform_int(-2, 2) == expected
+
+
 if __name__ == "__main__":
     pytest.main()

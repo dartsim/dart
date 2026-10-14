@@ -31,13 +31,7 @@
 #
 
 # Private native code for the Python demo catalog and C++ tests; builds with DART_BUILD_GUI=OFF.
-add_library(
-  dart-demo-models
-  STATIC
-  ContactArrowLayout.cpp
-  WorldHistory.cpp
-  WamIkFast.cpp
-)
+add_library(dart-demo-models STATIC ContactArrowLayout.cpp WamIkFast.cpp)
 target_link_libraries(dart-demo-models PUBLIC dart)
 set_source_files_properties(
   WamIkFast.cpp
@@ -47,10 +41,6 @@ target_include_directories(
   dart-demo-models
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
-
-if(HAVE_OCTOMAP)
-  target_sources(dart-demo-models PRIVATE PointCloudSensor.cpp)
-endif()
 
 if(TARGET dart-utils AND TARGET dart-utils-urdf)
   target_sources(

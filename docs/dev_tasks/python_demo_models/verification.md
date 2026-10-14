@@ -330,6 +330,111 @@ rendering corroborates these structural claims; no performance claim is made.
 - `pixi run lint`, `check-lint`, diff and local-path checks cover the final
   source; final pre-commit lint also covers the completed evidence notes.
 
+## Soft-model conversion follow-up, 2026-10-14
+
+Commit `3c9ba6223` isolates four model/test files from the state/mesh packet.
+Expanded native boundary probes found protocol-raised BaseExceptions escaping,
+spoofed class attributes bypassing checks, and adaptive settings partially
+mutating before bool rejection. Converters now clear protocol errors as native
+argument conversion does, use actual types, and validate each unsigned count
+before converting the next. All rejected calls preserve state. The sequential
+negative/overflow count regressions check that the next protocol never runs.
+
+The final 109-test focused suite passes, as does a seven-test worm selector
+recheck. Two independent reviews reproduce matching native outcomes/state,
+including 24/30-row protocol matrices, unsigned limits and conversion order.
+Build, lint and staged path checks pass. This is private catalog migration
+correction, so no separate public release entry is required; ordinary program
+binding features remain in the M6b changelog draft. Full post-follow-up suites
+are recorded with the state/mesh packet.
+
+## History and point-cloud packet, 2026-10-14
+
+Reference native sources: `5a3a36635`; the isolated Python-only follow-up
+`3c9ba6223` does not change that native implementation. Immutable native and
+mixed extensions retain both helpers for paired comparison; the final build
+removes the source, bindings, tests and shared registrations afterward.
+
+### Numerical, boundary and ownership evidence
+
+- History: all 6,121 arrays across 31 events match exactly, as do independent
+  native/Python repeats and metadata. This includes all five configuration
+  vectors and soft positions, velocities, accelerations and forces, twelve
+  complete restores, 51 baseline input pairs, frame-cap truncation, branching,
+  lifetime counts, unsigned clamping, cleared/repopulated worlds and positional
+  matching after skeleton changes. The original 4,951 common arrays are also
+  exact; 1,170 acceleration arrays extend direct coverage.
+- History retains the original World and owning copied values, while the
+  original graph can release after direct engine snapshots are taken. World
+  time and simulation frames intentionally remain current after rewinding.
+  Constructor conversion order, actual World ancestry and protocol errors match
+  the native boundary. Python subclass engine-method overrides naturally
+  participate in the Python implementation.
+- Point cloud: all 462 physical/sampling/color/occupancy/RNG arrays and 510
+  post-operation boundary arrays match native exactly, with exact repeats and
+  214 input cases. Twelve fixture/mode paths and four failure/recovery paths
+  include unequal mesh groups, raw unscaled vertices, float32 narrowing,
+  fallback, pause/orbit, four point-render modes, negative/flat height colors
+  and rejected oversized/nonfinite rays. Rejected updates retain orbit, sensor
+  pose, cloud, colors and occupancy; preceding joint movement is preserved.
+- Review corrected protocol BaseException handling and spoofed-type checks,
+  including the MeshShape predicate. The final source has 80 focused passes;
+  history has 39. Both models use ordinary engine bindings.
+- Core bindings expose owning configuration/composite values, acceleration
+  copies, independent grouped mesh arrays, inclusive native integer draws,
+  the existing POINT enumerator and shared side-effect-free voxel preflight.
+  The singleton RNG test checks native repeatability without imposing one
+  standard library's engine-consumption behavior on other platforms.
+- Snapshot review found that enabling the existing Skeleton state API bypassed
+  the new body point-count check. Preflight now checks all matched nested body
+  states before skeleton mutation. Both mismatch directions fail the archived
+  skeleton tests, while all four body/skeleton cases pass after rebuilding.
+  Joint and point state remain unchanged on rejection. Valid snapshot values
+  release their source graph and restore into another compatible graph.
+  FORCE-joint commands retain the native derivation from restored forces;
+  no engine restore algorithm is changed.
+
+### Visual evidence
+
+Three playback scene traces match exactly at 301 rows of 3,726, 732 and 1,731
+values. Matched 1600x1000 Vulkan/Lavapipe captures use the same per-scene camera
+and fit the actual 1037x746 viewport with panels visible. Recorded indices 300
+and 120, restart/branch state, lifetime 302 and labels agree after 300 direct
+physics steps and one branch step; host steps are zero. All twelve view reports
+and six paired image verdicts pass. Inspection confirms that rewind restores
+the elevated soft-body arrangement and upper-cube separation. The chain is
+visually stationary at these selected indices, so no chain-motion claim is made.
+These images do not prove host scheduling or contact forces.
+
+Final-source sensor captures in robot and box modes match all eighteen saved
+state/occupancy arrays, cameras and bounds after six seeded warmup steps. The
+complete robot/cloud/voxels/red sensor and controls fit; all view reports and
+image verdicts pass. Rendered viewports are pixel-identical. Whole images differ
+at 44/14 GUI diagnostic pixels, so those values support no performance claim.
+The source hash in the final capture manifests matches the reviewed model.
+
+### Checks and reviews
+
+- Mixed build passes; initial core snapshot/shape/RNG suite: 466 passed.
+- Post-removal snapshot guard rebuild passes; final core/model/S4/S5/ownership
+  focused suite: 643 passed.
+- Two independent source/numeric/visual reviews are clean after the nested
+  skeleton guard; all five paired comparison sheets were inspected.
+- `pixi run test-all`: 183 CTests and 1,907 Python tests pass, with two
+  Python-version skips and 54 planned DART 7 acceptance failures.
+- Sequential `pixi run test-gui`: ten CTests and 516 Python tests pass, with
+  one Python-version skip and two planned final-render API failures.
+- GUI-off full `tests` build and all four retained native-model CTests pass.
+  Vanilla system ImGui full `tests`/dartpy build and 910 GUI-free
+  model/math/optimizer/core tests pass.
+- An initial GUI configure overlapped `check-lint`'s semantic CMake probe;
+  both reconfigured the same directory and `configure_file` failed. The checker
+  is not independent of build configuration. Its completed check passes, and
+  the sequential GUI retry above passes. No source fix was required.
+- Strict catalog cycle passes all 37 scenes twice, two frames per visit, with
+  zero skips. `pixi run lint` and `check-lint` pass; the final evidence-note
+  refresh receives another pre-commit lint and staged path check.
+
 ## Limits
 
 No WAM backend change is implemented. The analytical prototype's sampled

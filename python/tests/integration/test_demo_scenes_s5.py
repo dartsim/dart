@@ -168,13 +168,32 @@ def test_s5_construction_and_deterministic_steps(scene_id, monkeypatch):
 
 @pytest.mark.parametrize("scene_id", PLAYBACK_IDS)
 def test_soft_playback_keys_and_display(scene_id, controls):
+    def playback_state():
+        values = []
+        for si in range(world.getNumSkeletons()):
+            skeleton = world.getSkeleton(si)
+            values.extend(
+                getattr(skeleton, f"get{field}")()
+                for field in ("Positions", "Velocities", "Accelerations", "Forces", "Commands")
+            )
+            for body in _soft_bodies(skeleton):
+                for pi in range(body.getNumPointMasses()):
+                    point = body.get_point_mass(pi)
+                    values.extend(
+                        getattr(point, field)
+                        for field in ("positions", "velocities", "accelerations", "forces", "world_position")
+                    )
+        return np.concatenate(values).copy()
+
     setup = _scene(scene_id).factory()
     world = setup.world
     ctx = _Context(world)
     setup.on_activate(ctx)
-    initial = _state(world)
+    initial = playback_state()
     _step(setup, 12)
-    latest = _state(world)
+    latest = playback_state()
+    latest_time = world.getTime()
+    latest_sim_frames = world.getSimFrames()
     actions = _actions(setup)
     assert {key: action.label for key, action in actions.items()} == {
         "[": "Step back 1 frame",
@@ -189,11 +208,13 @@ def test_soft_playback_keys_and_display(scene_id, controls):
         actions[key].callback()
         assert not ctx.viewer.isSimulating()
         setup.pre_refresh()
+        assert world.getTime() == latest_time
+        assert world.getSimFrames() == latest_sim_frames
         assert any(c.label == f"Playback frame: {index} / 12" for c in controls)
         if index == 0:
-            np.testing.assert_array_equal(_state(world), initial)
+            np.testing.assert_array_equal(playback_state(), initial)
         if index == 12:
-            np.testing.assert_array_equal(_state(world), latest)
+            np.testing.assert_array_equal(playback_state(), latest)
     actions["r"].callback()
     _step(setup)
     setup.pre_refresh()

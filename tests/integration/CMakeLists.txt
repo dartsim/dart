@@ -184,26 +184,6 @@ set_tests_properties(
 )
 dart_format_add(${soft_demo_model_test_sources})
 
-dart_add_test("integration" test_WorldHistory)
-target_link_libraries(test_WorldHistory dart-demo-models)
-
-if(TARGET dart-utils)
-  if(HAVE_OCTOMAP)
-    dart_add_test("integration" test_PointCloudSensor)
-    target_link_libraries(test_PointCloudSensor dart-demo-models dart-utils)
-    set_tests_properties(
-      test_PointCloudSensor
-      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
-    )
-  else()
-    dart_format_add(test_PointCloudSensor.cpp)
-  endif()
-else()
-  dart_format_add(
-    test_PointCloudSensor.cpp
-  )
-endif()
-
 # The soft-foot locomotion model drives the Atlas soft-feet SDF with the
 # existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
 # components are optional, so the gate only exists when both are built.

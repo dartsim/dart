@@ -29,6 +29,10 @@ milestone consolidation PR, following the program's hot-file rule.
   a simulation after switching its constraint-solver backend.
 - **Python:** Expose PointMass state copies, adaptive SoftBodyNode settings,
   checked point lookup and revolute soft-body construction through engine bindings.
+- **Python:** Expose owning engine configuration/composite snapshots and
+  copied soft-point accelerations for recording and restoring simulation state.
+- **Python:** Expose copied mesh vertex groups, integer engine random draws,
+  point rendering and voxel-update preflight for Python sensor implementations.
 - **Breaking Changes:** Bundled Dear ImGui is now the `v1.92.8-docking`
   release, so the installed `dart/external/imgui` headers use the docking
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is

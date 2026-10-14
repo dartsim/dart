@@ -600,8 +600,7 @@ def test_point_cloud_sensor_panel_and_visibility(controls):
     for index in range(4):
         edit("Point Shape Type", index)
         assert controls["Point Shape Type"].value == index
-        if index < 3:
-            assert int(points.getPointShapeType()) == index
+        assert int(points.getPointShapeType()) == index
     edit("Visual Size", 0.07)
     assert points.getVisualSize() == float(np.float32(0.07))
     edit("Visual Size", -1)

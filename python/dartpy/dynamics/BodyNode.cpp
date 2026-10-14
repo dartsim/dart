@@ -61,6 +61,7 @@
 #include <dart/dynamics/Shape.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/TranslationalJoint.hpp>
 #include <dart/dynamics/TranslationalJoint2D.hpp>
@@ -384,6 +385,26 @@ void BodyNode(nb::module_& m)
       dart::dynamics::BodyNode,
       dart::dynamics::TemplatedJacobianNode<dart::dynamics::BodyNode>,
       dart::dynamics::Frame>(m, "BodyNode")
+      .def(
+          "get_composite_state",
+          [](const dart::dynamics::BodyNode& self) {
+            return self.getCompositeState();
+          })
+      .def(
+          "set_composite_state",
+          [](dart::dynamics::BodyNode& self,
+             const dart::common::Composite::State& state) {
+            if (const auto* soft
+                = dynamic_cast<const dart::dynamics::SoftBodyNode*>(&self)) {
+              const auto* saved = state.get<dart::dynamics::SoftBodyNode>();
+              if (saved
+                  && saved->mPointStates.size() != soft->getNumPointMasses())
+                throw nb::value_error(
+                    "state point count must match the soft body");
+            }
+            self.setCompositeState(state);
+          },
+          nb::arg("state"))
       .def(
           "setAllNodeStates",
           +[](dart::dynamics::BodyNode* self,

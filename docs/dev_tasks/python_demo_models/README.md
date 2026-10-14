@@ -166,19 +166,42 @@ comparisons corroborate the port.
 - Changelog: defer ordinary engine binding features to the M6b consolidation
   draft. The model relocation has no separate public release contract.
 
+## Current packet: world history and point-cloud sampling
+
+- Branch: `refactor/python-demo-state-mesh`, local child of the completed soft
+  packet at `5a3a36635`, with isolated conversion follow-up `3c9ba6223`.
+- Value: move history recording/playback and seeded sensor sampling, orbit,
+  colors and voxel updates into Python using ordinary library bindings.
+- Scope: both models/scenes/tests and native removal; owning configuration and
+  composite snapshots, direct body state access, point acceleration copies,
+  copied grouped mesh vertices, integer random draws, fourth point-render mode
+  and shared voxel-update preflight validation.
+- Compatibility: preserve history cap/branching/counters, positional matching,
+  state copies and world-time omission. Preserve mesh-group sampling, random
+  draw order, float narrowing, fallback, color quirks and mutation order.
+  Reject mismatched soft-point snapshot counts in body and skeleton restores
+  before native restoration can invalidate point indices. No engine headers,
+  implementations or exports change.
+- Acceptance: native/Python full snapshot and seeded sampling comparisons,
+  input boundary/mutation/copy/ownership checks, transferred native coverage,
+  direct point acceleration restore checks, matched assessed playback/sensor
+  captures, full/GUI/variant gates, cycle, lint and two independent reviews.
+- Status: locally complete and verified. Native helpers/bindings/tests and
+  registration are removed after complete paired comparisons. Snapshot safety,
+  full/GUI/variant gates, catalog cycle and two independent final reviews pass.
+  No publication authorization. Feature changelog additions defer to M6b.
+
 ## Inventory and remaining packets
 
 The initial inventory found 15 binding families, 39 native source/header files
 (22,020 lines, including 14,933 generated WAM solver lines), 16 binding files,
 15 scene callers, registry gates, Python/native tests, and four build surfaces.
 
-After the soft-model deletions, five native binding families remain: SIMBICON,
-soft-foot SIMBICON, point-cloud sampling, world history and WAM, followed by
-final module/build removal. World history needs registrations for existing
-owning configuration/composite snapshots and direct body snapshot access.
-Point-cloud sampling needs copied per-submesh vertices, integer engine random
-draws and shared voxel preflight validation to preserve sampling and mutation
-order. Neither requires a changed demo algorithm.
+After the state/mesh deletions, three native binding families remain: SIMBICON,
+soft-foot SIMBICON and WAM, followed by final module/build removal. World history
+uses existing owning snapshots through ordinary library bindings. Point-cloud
+sampling uses copied per-submesh vertices, integer engine random draws and
+shared voxel preflight validation. Both preserve their demo algorithms.
 
 The bounded SIMBICON audit found no further design decision: Python can own
 both controllers/models and their state machines. Bind existing point mass,

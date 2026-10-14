@@ -182,7 +182,7 @@ array keeps its storage alive independently of later solver calls.
 
 `SoftBodyNode.get_point_mass(index)` checks bounds and returns a borrowed
 `PointMass` that retains its body and Skeleton. Point positions, velocities,
-world position and forces return independent read-only NumPy copies; positions
+accelerations, world position and forces return independent read-only NumPy copies; positions
 and velocities can be assigned through their properties. These setters preserve
 the engine's nonfinite-value behavior, so diagnostic callers must check state
 before using it. Adaptive-contact settings are ordinary SoftBodyNode properties;
@@ -190,6 +190,19 @@ the engine determines activation membership.
 If a soft-body copy replaces topology and deletes a point, its retained Python
 handle raises `TypeError` on native access, including point-impulse arguments.
 Destruction notifications prevent address reuse from reviving that handle.
+
+`Skeleton.getConfiguration()` returns an owning `SkeletonConfiguration` value
+for `setConfiguration()`. `BodyNode.get_composite_state()` returns an owning
+`common.CompositeState` for `set_composite_state()`. These snapshots retain
+their copied state independently of the original graph. Restoring body or
+skeleton snapshots with different soft-point counts raises `ValueError` before
+mutation. `Skeleton.setState()` retains C++ joint restore semantics, including
+deriving FORCE-joint commands from restored forces.
+
+`MeshShape.mesh_vertex_groups` returns independent, writable arrays of unscaled
+vertices in submesh order. `VoxelGridShape.validate_occupancy_update()` checks
+the same inputs as `updateOccupancy()` without changing occupancy, allowing
+callers to validate a cloud before changing other sensor state.
 
 Registered owners expose native Python references to cyclic GC through
 traverse and clear slots. Coverage includes objective/solver and constraint

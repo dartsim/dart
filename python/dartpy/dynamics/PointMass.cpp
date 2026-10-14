@@ -39,6 +39,11 @@ void PointMass(nb::module_& m)
           [](const Point& self) { return readonlyCopy(self.getVelocities()); },
           &Point::setVelocities)
       .def_prop_ro(
+          "accelerations",
+          [](const Point& self) {
+            return readonlyCopy(self.getAccelerations());
+          })
+      .def_prop_ro(
           "world_position",
           [](const Point& self) {
             return readonlyCopy(self.getWorldPosition());
