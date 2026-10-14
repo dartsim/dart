@@ -2199,10 +2199,14 @@ class ApiIndex:
                 ):
                     name_index = function["name_index"]
                     prefix = parameter[:name_index] + parameter[name_index + 1 :]
-            if member and parameter[
-                member["name_index"] + 1 : member["name_index"] + 2
-            ] == ["["]:
-                prefix = [*prefix, "*"]
+            if member:
+                suffix = declarator_attributes_end(
+                    Tokens(" ".join(parameter)), member["name_index"] + 1
+                )
+                if parameter[suffix : suffix + 1] == ["["] and parameter[
+                    suffix : suffix + 2
+                ] != ["[", "["]:
+                    prefix = [*prefix, "*"]
             prefix = construction_aliases(prefix, self, scope)
             function = function_type_signature(prefix)
             if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
@@ -2372,6 +2376,7 @@ def names_in(values):
                     "return",
                     "class",
                     "struct",
+                    "union",
                     "static",
                     "virtual",
                     "public",
@@ -2471,24 +2476,66 @@ def template_end(values, index):
 
 def variable_after_type(values, end):
     j = template_end(values, end)
-    while j < len(values) and values[j] in {"const", "*", "&", "&&", ">"}:
-        j += 1
+    while j < len(values):
+        if values[j] in {"const", "*", "&", "&&", ">"}:
+            j += 1
+        elif values[j] in {"__attribute__", "__attribute", "__declspec"} or values[
+            j : j + 2
+        ] == ["[", "["]:
+            after = declarator_attributes_end(Tokens(" ".join(values)), j)
+            if after == j:
+                break
+            j = after
+        else:
+            break
     while j + 2 < len(values) and IDENTIFIER.match(values[j]) and values[j + 1] == "::":
         j += 2  # the `Class::` of an out-of-line static member definition
     if (
         j + 1 < len(values)
         and IDENTIFIER.match(values[j])
-        and values[j + 1] in {";", "=", ",", ")", "(", "{", "["}
+        and values[j + 1]
+        in {
+            ";",
+            "=",
+            ",",
+            ")",
+            "(",
+            "{",
+            "[",
+            "__attribute__",
+            "__attribute",
+            "__declspec",
+        }
     ):
         return j
     return None
 
 
-def array_end(tokens, index):
-    """Skip balanced array declarator dimensions starting at `index`."""
-    while tokens.values[index : index + 1] == ["["] and index in tokens.pairs:
-        index = tokens.pairs[index] + 1
+def declarator_attributes_end(tokens, index):
+    """Skip balanced standard and compiler declarator attributes."""
+    values = tokens.values
+    while index < len(values):
+        if values[index] in {"__attribute__", "__attribute", "__declspec"}:
+            opening = index + 1
+            bracket = "("
+        elif values[index : index + 2] == ["[", "["]:
+            opening = index
+            bracket = "["
+        else:
+            break
+        if values[opening : opening + 1] != [bracket] or opening not in tokens.pairs:
+            break
+        index = tokens.pairs[opening] + 1
     return index
+
+
+def array_end(tokens, index):
+    """Skip balanced array dimensions and following declarator attributes."""
+    while True:
+        index = declarator_attributes_end(tokens, index)
+        if tokens.values[index : index + 1] != ["["] or index not in tokens.pairs:
+            return index
+        index = tokens.pairs[index] + 1
 
 
 def array_types(tokens, index, types):
@@ -2638,7 +2685,11 @@ def sequence_count_initializer(tokens, end, allocators=()):
     if in_template_argument(values, end - 1):
         return False
     variable = variable_after_type(values, end)
-    opening = variable + 1 if variable is not None else template_end(values, end)
+    opening = (
+        array_end(tokens, variable + 1)
+        if variable is not None
+        else template_end(values, end)
+    )
     if values[opening : opening + 1] == ["="]:
         opening += 1
     closing = tokens.pairs.get(opening)
@@ -2719,7 +2770,13 @@ def constructs(tokens, start, end, declarations, heads, allocators=(), declarato
     if before in {".", "->", "~", "operator"}:
         return False
     element = lead
-    while element and values[element - 1] in {"const", "volatile"}:
+    while element and values[element - 1] in {
+        "const",
+        "volatile",
+        "class",
+        "struct",
+        "union",
+    }:
         element -= 1
     if (
         element > 1
@@ -4384,7 +4441,11 @@ def scan_sources(api, source_root):
         values = tokens.values
         start, end = construction_type_span(values, start, end)
         variable = variable_after_type(values, end)
-        opening = variable + 1 if variable is not None else template_end(values, end)
+        opening = (
+            array_end(tokens, variable + 1)
+            if variable is not None
+            else template_end(values, end)
+        )
         if values[opening : opening + 1] == ["="]:
             opening += 1
         closing = tokens.pairs.get(opening)
@@ -5533,6 +5594,7 @@ def scan_sources(api, source_root):
         if alias := trailing_function_alias(qualified(values)):
             return TOKEN.findall(product_key(*alias) or "")
         paired = Tokens(" ".join(values))
+        pointer = function_pointer_declarator(values)
         for opening, closing in sorted(paired.pairs.items(), reverse=True):
             if (
                 opening < closing
@@ -5540,9 +5602,14 @@ def scan_sources(api, source_root):
                 and paired.enclosing[opening] is None
                 and not in_template_argument(values, opening)
                 and values[opening + 1 : closing]
-                and values[opening + 1] in {"*", "&", "&&"}
-                and set(values[opening + 1 : closing])
-                <= {"*", "&", "&&", "const", "volatile"}
+                and (
+                    pointer
+                    and pointer["member_pointer"]
+                    and pointer["opening"] == opening
+                    or values[opening + 1] in {"*", "&", "&&"}
+                    and set(values[opening + 1 : closing])
+                    <= {"*", "&", "&&", "const", "volatile"}
+                )
                 and values[closing + 1 : closing + 2] == ["("]
             ):
                 parameters_end = paired.pairs.get(closing + 1, closing + 1)

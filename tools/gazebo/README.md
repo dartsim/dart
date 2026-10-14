@@ -261,6 +261,8 @@ These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
 `std::make_from_tuple`, engaged optional `std::in_place` initializers, known
 optional `emplace` calls, value-producing `static_cast` targets and placement `new`.
+Elaborated `class`, `struct` and `union` specifiers preserve value construction
+in cast targets.
 A Gazebo class derived from a DART class counts as a construction of that base
 at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
@@ -273,6 +275,7 @@ Constructed `std::tuple` and `std::pair` values retain owned value elements;
 pointer and reference elements do not construct their pointees. Default-initialized
 `std::variant` values retain construction dependencies of their first alternative,
 with each value declarator checked independently in grouped declarations.
+Balanced declarator attributes preserve the following initializer or terminator.
 Function prototypes and function-type aliases do not construct their return values.
 Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
@@ -316,6 +319,7 @@ initializer dependencies and the constructors required by class-valued defaults.
 Function-type parameters are adjusted to pointers before default construction
 analysis, so they do not construct their return types. Parenthesized object
 parameter names preserve their value, pointer, reference or array semantics.
+Parameter attributes preserve those semantics too.
 Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
@@ -370,6 +374,7 @@ retain their declarations when invoked through qualified names, object receivers
 or inherited fields, respecting member-name hiding. Grouped function pointers
 retain each name, array shape and any trailing return type. Callback fields do
 not construct their return types.
+Calls through qualified member-function pointers retain their declared return types.
 Known indexed function-type aliases and nested `std::function` or raw callback
 returns preserve callable shapes through repeated invocations and product-element
 projections. Used callable aliases retain their target declarations, including
