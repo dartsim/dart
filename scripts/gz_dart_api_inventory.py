@@ -400,14 +400,15 @@ def qualified(values):
     return "".join(values).lstrip(":")
 
 
-def function_pointer_name(values):
-    """The name in a plain grouped function-pointer/reference declarator."""
+def function_pointer_declarator(values):
+    """A grouped callable's element type, name and surrounding array shape."""
     tokens = Tokens(" ".join(values))
     for opening, closing in tokens.pairs.items():
         if (
             opening >= closing
             or values[opening] != "("
             or tokens.enclosing[opening] is not None
+            or in_template_argument(values, opening)
             or values[opening + 1 : opening + 2] not in (["*"], ["&"], ["&&"])
             or values[closing + 1 : closing + 2] != ["("]
         ):
@@ -415,8 +416,66 @@ def function_pointer_name(values):
         name = opening + 1
         while name < closing and values[name] in {"*", "&", "&&", "const", "volatile"}:
             name += 1
-        if name + 1 == closing and IDENTIFIER.match(values[name]):
-            return name, tokens.pairs.get(closing + 1, closing)
+        element_end = name
+        outer = []
+        nested_end = None
+        if values[name : name + 1] == ["("] and name in tokens.pairs:
+            nested_end = tokens.pairs[name]
+            name += 1
+            while name < nested_end and values[name] in {
+                "*",
+                "&",
+                "&&",
+                "const",
+                "volatile",
+            }:
+                outer.append(values[name])
+                name += 1
+        name_index = name if name < closing and IDENTIFIER.match(values[name]) else None
+        suffix = name + 1 if name_index is not None else name
+        if nested_end is not None:
+            if suffix != nested_end:
+                continue
+            suffix += 1
+        dimensions = 0
+        while values[suffix : suffix + 1] == ["["] and suffix in tokens.pairs:
+            dimensions += 1
+            suffix = tokens.pairs[suffix] + 1
+        if suffix == closing:
+            parameters_end = tokens.pairs.get(closing + 1, closing)
+            trailing = parameters_end + 1
+            if name_index is None:
+                # Alias expansion can append array dimensions to a callable type.
+                while (
+                    values[trailing : trailing + 1] == ["["]
+                    and trailing in tokens.pairs
+                ):
+                    dimensions += 1
+                    trailing = tokens.pairs[trailing] + 1
+                if trailing > parameters_end + 1:
+                    outer.extend(values[trailing:])
+            return {
+                "name_index": name_index,
+                "opening": opening,
+                "parameters_end": parameters_end,
+                "return_tokens": (
+                    values[:element_end] + values[closing : parameters_end + 1]
+                    if trailing > parameters_end + 1
+                    else values[:element_end] + values[closing:]
+                ),
+                "array_dimensions": dimensions,
+                "array_pointer": dimensions > 0 and "*" in outer,
+                "array_reference": dimensions > 0
+                and bool({"&", "&&"}.intersection(outer)),
+            }
+    return None
+
+
+def function_pointer_name(values):
+    """The name in a plain grouped function-pointer/reference declarator."""
+    pointer = function_pointer_declarator(values)
+    if pointer and pointer["name_index"] is not None:
+        return pointer["name_index"], pointer["parameters_end"]
     return None
 
 
@@ -603,19 +662,18 @@ def data_member(values, owner, layout_only=False):
         if end in type_expressions:
             continue
         angle += (token == "<") - (token == ">")
-        if token in {"=", "{", ":"} and angle == 0:
+        if (
+            token in {"=", "{", ":"}
+            and angle == 0
+            and type_tokens.enclosing[end] is None
+        ):
             declarator = values[:end]
             if token == ":":
                 bit_width = values[end + 1 :]
             break
     tokens = Tokens(" ".join(declarator))
+    pointer_shape = function_pointer_declarator(declarator)
     grouped_pointer = function_pointer_name(declarator)
-    if (
-        grouped_pointer
-        and layout_only
-        and "static" not in declarator[: grouped_pointer[0]]
-    ):
-        return None
     if grouped_pointer:
         type_expressions.update(
             index for index, value in enumerate(declarator) if value == "("
@@ -625,6 +683,8 @@ def data_member(values, owner, layout_only=False):
     while end and declarator[end - 1] == "]" and end - 1 in tokens.pairs:
         end = tokens.pairs[end - 1]
         dimensions += 1
+    if grouped_pointer:
+        dimensions += pointer_shape["array_dimensions"]
     unnamed = (
         bit_width is not None
         and end
@@ -682,11 +742,20 @@ def data_member(values, owner, layout_only=False):
         **({"layout_only": True} if unnamed else {}),
         "static": "static" in top,
         "return_tokens": (
-            declarator[:name_index] + declarator[name_index + 1 :]
+            pointer_shape["return_tokens"]
             if grouped_pointer
             else declarator[:name_index]
         ),
         "array_dimensions": dimensions,
+        **(
+            {
+                key: pointer_shape[key]
+                for key in ("array_pointer", "array_reference")
+                if pointer_shape[key]
+            }
+            if grouped_pointer
+            else {}
+        ),
         **({"bit_width_tokens": bit_width} if bit_width is not None else {}),
         "signature": " ".join(values),
         "const": "constexpr" in top or "const" in top[pointer + 1 :],
@@ -744,7 +813,7 @@ def declarators(values, owner, macros=()):
         first_values = parts[0][0]
         pointer = function_pointer_name(first_values)
         shared_end = (
-            Tokens(" ".join(first_values)).enclosing[pointer[0]]
+            function_pointer_declarator(first_values)["opening"]
             if pointer
             else first["name_index"]
         )
@@ -1452,6 +1521,8 @@ class ApiIndex:
                 expanded = construction_aliases(
                     values, self, tuple(current.split("::"))
                 )
+                if function_pointer_declarator(expanded):
+                    continue
                 if any(
                     name in SIZED_SEQUENCES | {"std::variant"}
                     and not in_template_argument(expanded, start)
@@ -1620,6 +1691,8 @@ class ApiIndex:
                 visit(self.owner(base))
             for member in cls.get("fields", ()):
                 if member.get("static") or not member.get("return_tokens"):
+                    continue
+                if function_pointer_declarator(TOKEN.findall(member["signature"])):
                     continue
                 result.append(member)
                 for child in self.layout_owners(
@@ -2275,7 +2348,7 @@ def construction_type_span(values, start, end):
     return start, end
 
 
-def constructs(tokens, start, end, declarations, heads, allocators=()):
+def constructs(tokens, start, end, declarations, heads, allocators=(), declarator=None):
     """Whether the type named by values[start:end] is constructed there."""
     values = tokens.values
     lead = start - (start > 0 and values[start - 1] == "::")  # `::dart::...`
@@ -2402,7 +2475,11 @@ def constructs(tokens, start, end, declarations, heads, allocators=()):
                     tokens, element - 4, element - 1, declarations, heads, allocators
                 )
         return False
-    variable = variable_after_type(values, end)
+    variable = (
+        declarator["name_index"]
+        if declarator is not None
+        else variable_after_type(values, end)
+    )
     statement = lead  # the specifiers of the declaration that the type starts
     while statement and values[statement - 1] not in {
         ";",
@@ -2451,7 +2528,11 @@ def constructs(tokens, start, end, declarations, heads, allocators=()):
             or values[opening] != "("
             or values[opening - 1] in {"if", "for", "while", "switch", "constexpr"}
         )
-        and {"*", "&", "&&"}.isdisjoint(values[after:variable])
+        and (
+            value_argument(declarator["return_tokens"])
+            if declarator is not None
+            else {"*", "&", "&&"}.isdisjoint(values[after:variable])
+        )
     )
 
 
@@ -3116,6 +3197,7 @@ def scan_sources(api, source_root):
     namespace_callables = defaultdict(lambda: defaultdict(dict))
     local_bases = {}
     source_returns = defaultdict(list)
+    source_fields = defaultdict(lambda: defaultdict(list))
     source_functions = defaultdict(lambda: defaultdict(list))
     alias_declarations = defaultdict(dict)
     source_macros = set()
@@ -3256,11 +3338,31 @@ def scan_sources(api, source_root):
             while line < len(newlines) and newlines[line] < offset:
                 line += 1
             tokens.branches.append(branches[line])
-        classes, functions, source_aliases, _ = scopes(tokens)
+        classes, functions, source_aliases, declared_fields = scopes(tokens)
+        for field in declared_fields:
+            if field["class"] and field["name"] and field.get("return_tokens"):
+                source_fields[field["class"]][field["name"]].append(
+                    {
+                        **field,
+                        "index": next(
+                            index
+                            for index, value in enumerate(tokens.values)
+                            if value == field["name"]
+                            and tokens.scopes.get(index)
+                            == tuple(field["class"].split("::"))
+                        ),
+                        "source": (relative, tokens, [], {}),
+                    }
+                )
         imports = re.findall(r"\busing\s+namespace\s+([\w:]+)\s*;", clean)
         namespace_aliases = dict(
             re.findall(r"\bnamespace\s+(\w+)\s*=\s*([\w:]+)\s*;", clean)
         )
+        for owner in classes:
+            for declarations in source_fields[owner["name"]].values():
+                for field in declarations:
+                    if field["source"][0] == relative:
+                        field["source"] = (relative, tokens, imports, namespace_aliases)
         files.append(
             (
                 relative,
@@ -4075,22 +4177,62 @@ def scan_sources(api, source_root):
                 prefixes.append(item["return_tokens"])
         return prefixes
 
-    def default_variant_constructions(tokens, start, end, context, declarations, heads):
-        """Reuse canonical type context for a variant's default-owned element."""
+    def default_variant_constructions(
+        tokens, start, end, context, declarations, heads, direct
+    ):
+        """Default-owned variant elements for each grouped source declarator."""
         values = tokens.values
         start, end = construction_type_span(values, start, end)
-        if not default_value_initializer(tokens, end) or not constructs(
-            tokens, start, end, declarations, heads
-        ):
-            return set()
+        lead = start
+        while lead and values[lead - 1] in {"const", "volatile", "::"}:
+            lead -= 1
         variable = variable_after_type(values, end)
         prefix = values[
-            start : variable if variable is not None else template_end(values, end)
+            lead : variable if variable is not None else template_end(values, end)
         ]
         prefix = construction_aliases(layout_prefix(prefix, context), api)
         if not any(name == "std::variant" for _, _, name in names_in(prefix)):
-            return set()
-        return contextual_constructors(prefix, context, temporary=False)
+            return None
+        if variable is None:
+            if direct:
+                return None
+            if not default_value_initializer(tokens, end) or not constructs(
+                tokens, start, end, declarations, heads
+            ):
+                return []
+            return [
+                (name, dependency, start)
+                for name, dependency in sorted(
+                    contextual_constructors(prefix, context, temporary=False)
+                )
+            ]
+        result = []
+        for part, offset in declarators(
+            values[lead : statement_end(tokens, lead)], None
+        ):
+            declared = Tokens(" ".join(part + [";"]))
+            local = variable_after_type(declared.values, end - lead)
+            if local is None or not default_value_initializer(declared, end - lead):
+                continue
+            site = lead + offset + local
+            prefix = part[:local]
+            if not constructs(
+                tokens,
+                start,
+                end,
+                declarations,
+                heads,
+                declarator={"name_index": site, "return_tokens": prefix},
+            ):
+                continue
+            prefix = construction_aliases(layout_prefix(prefix, context), api)
+            result.extend(
+                (name, dependency, site)
+                for name, dependency in sorted(
+                    contextual_constructors(prefix, context, temporary=False)
+                )
+            )
+        return result
 
     def retain_layout(row, owners):
         declarations = []
@@ -4228,7 +4370,7 @@ def scan_sources(api, source_root):
                 else None
             )
             constructed = optional or api.constructible(resolved)
-            if (
+            direct_construction = (
                 constructed
                 and not sequence
                 and (
@@ -4236,7 +4378,30 @@ def scan_sources(api, source_root):
                     or not wrapped(name, tokens, start, imports, namespace_aliases)
                 )
                 and constructs(tokens, start, type_end, declaration_indices, heads)
-            ):
+            )
+            variant = default_variant_constructions(
+                tokens,
+                start,
+                type_end,
+                context,
+                declaration_indices,
+                heads,
+                direct_construction,
+            )
+            if variant is not None:
+                for constructed_name, dependency, site in variant:
+                    if (
+                        in_template_argument(values, start)
+                        and api.owner(resolved) != dependency
+                    ):
+                        continue
+                    constructor_row = tables["types"].get(
+                        constructed_name
+                    ) or record_type(constructed_name, path, tokens, site)
+                    if not unevaluated_operand(tokens, start):
+                        retain_layout(constructor_row, [dependency])
+                    record_constructor(constructed_name, dependency, path, tokens, site)
+            elif direct_construction:
                 if not unevaluated_operand(tokens, start):
                     retain_layout(row, [constructed])
                 after = template_end(values, type_end)
@@ -4255,23 +4420,6 @@ def scan_sources(api, source_root):
                         or values[after : after + 2] == ["=", "{"]
                     ),
                 )
-            else:
-                for name, dependency in sorted(
-                    default_variant_constructions(
-                        tokens, start, type_end, context, declaration_indices, heads
-                    )
-                ):
-                    if (
-                        in_template_argument(values, start)
-                        and api.owner(resolved) != dependency
-                    ):
-                        continue
-                    constructor_row = tables["types"].get(name) or record_type(
-                        name, path, tokens, start
-                    )
-                    if not unevaluated_operand(tokens, start):
-                        retain_layout(constructor_row, [dependency])
-                    record_constructor(name, dependency, path, tokens, start)
             j = (
                 None
                 if in_template_argument(values, start)
@@ -4489,6 +4637,15 @@ def scan_sources(api, source_root):
                 for value in names
             )
             bind_variable(tokens, name, {NON_DART_CALLABLE} if foreign else set())
+            owner = "::".join(tokens.scopes.get(name, ()))
+            if (
+                any(
+                    tokens.bindings[-1][0] == cls["body"] and cls["name"] == owner
+                    for cls in classes
+                )
+                and values[name] not in source_fields[owner]
+            ):
+                source_fields[owner][values[name]].append({"foreign_callable": foreign})
 
     relevant_files = {path for path, tokens, *_ in files if tokens.source_relevant}
     for path, tokens, *_ in files:
@@ -4558,7 +4715,7 @@ def scan_sources(api, source_root):
                                 depth + 1,
                             )
                         )
-            if (cls, name) in source_returns or brought:
+            if (cls, name) in source_returns or name in source_fields[cls] or brought:
                 return brought
         return set(local_bases.get(owner, ()))
 
@@ -4963,6 +5120,20 @@ def scan_sources(api, source_root):
                 return values[:opening]
         return None
 
+    def callable_type_shape(values):
+        """A known callable's return and any surrounding array indirection."""
+        pointer = function_pointer_declarator(values)
+        declared = pointer["return_tokens"] if pointer else values
+        result = callable_return_tokens(declared)
+        if result is None:
+            return None
+        return (
+            result,
+            pointer["array_dimensions"] if pointer else 0,
+            pointer["array_pointer"] if pointer else False,
+            pointer["array_reference"] if pointer else False,
+        )
+
     def dependent_product_argument(argument, item, scope):
         """Keep indexed template parameters unknown, rather than known foreign."""
         headers = [item.get("signature", "")]
@@ -4996,6 +5167,10 @@ def scan_sources(api, source_root):
                     inferred = {"__element__:" + value for value in inferred} | {
                         RAW_ARRAY
                     }
+                if item.get("array_pointer"):
+                    inferred.add(RAW_POINTER)
+                if item.get("array_reference"):
+                    inferred.add(REFERENCE)
                 result.update(inferred)
                 continue
             return_tokens = item.get("return_tokens", ())
@@ -5019,8 +5194,11 @@ def scan_sources(api, source_root):
                         else None
                     ),
                 )
-                callable_return = callable_return_tokens(TOKEN.findall(key or ""))
-                if callable_return is not None:
+                callable_shape = callable_type_shape(TOKEN.findall(key or ""))
+                if callable_shape is not None:
+                    callable_return, dimensions, array_pointer, array_reference = (
+                        callable_shape
+                    )
                     inferred = returns(
                         [
                             {
@@ -5031,9 +5209,18 @@ def scan_sources(api, source_root):
                         ],
                         depth + 1,
                     )
-                    result.update(
+                    inferred = {
                         CALLABLE + value for value in inferred or {"__non_dart__"}
-                    )
+                    }
+                    for _ in range(dimensions):
+                        inferred = {"__element__:" + value for value in inferred} | {
+                            RAW_ARRAY
+                        }
+                    if array_pointer:
+                        inferred.add(RAW_POINTER)
+                    if array_reference:
+                        inferred.add(REFERENCE)
+                    result.update(inferred)
                     result.add(NO_INLINE_LAYOUT)
                     continue
             if raw_reference(return_tokens) and not item.get("reference_shape"):
@@ -5604,40 +5791,188 @@ def scan_sources(api, source_root):
         depths = declared_at | {depth for depth, items in found.items() if items}
         return next(iter(found[max(depths, default=0)]), None)
 
+    def member_declarations(owner, name, table, seen=frozenset()):
+        """Indexed members after nearest-name hiding and class using declarations."""
+        spelling = owner
+        owner = api.owner(owner)
+        if owner is None or owner in seen:
+            return []
+        cls = api.classes[owner]
+        fields = [item for item in cls["fields"] if item["name"] == name]
+        targets = cls.get("using", {}).get(name, ())
+        if (
+            fields
+            or any(item["name"] == name for item in cls["methods"])
+            or owner + "::" + name in api.types
+            or targets
+        ):
+            # An own declaration hides the inherited name; retain the indexed-data boundary.
+            result = [item for item in table.get(name, ()) if item["class"] == owner]
+            for target in targets:
+                where = target.rpartition("::")[0]
+                base = api.resolve(base_name(where), tuple(owner.split("::")))
+                result.extend(member_declarations(base, name, table, seen | {owner}))
+            return result
+        return [
+            item
+            for base in [
+                *cls["bases"],
+                *sorted(api.ancestors(spelling) - api.ancestors(owner)),
+            ]
+            for item in member_declarations(base, name, table, seen | {owner})
+        ]
+
     def qualified_members(tokens, index, imports, namespace_aliases, table):
         if not index or tokens.values[index - 1] != "::":
             return []
         qualifier = "::".join(qualifier_path(tokens.values, index))
         owner = resolve(qualifier, tokens, index, imports, namespace_aliases)
+        return member_declarations(owner, tokens.values[index], table)
+
+    def object_members(
+        types, name, tokens, index, imports, namespace_aliases, table, operator=None
+    ):
+        types = source_member_types(
+            types, name, tokens, index, imports, namespace_aliases
+        )
+        if table is api.members and name not in api.data_members:
+            return candidates(name, types, operator, table)
+        types = types - (api.standard_pointers if operator == "." else set())
+        owners = {api.owner(value) for value in types} - {None}
+        if operator != "." or name not in {"get", "lock"}:
+            for value in types:
+                owners.update(api.ancestors(value) - api.ancestors(api.owner(value)))
+        if any(value.startswith(SOURCE_CLASS) for value in types):
+            owners = {
+                owner
+                for owner in owners
+                if not any(
+                    owner != other and owner in api.ancestors(other) for other in owners
+                )
+            }
+        return [
+            item for owner in owners for item in member_declarations(owner, name, table)
+        ]
+
+    def object_data(
+        types, name, tokens, index, imports, namespace_aliases, operator=None
+    ):
+        return object_members(
+            types,
+            name,
+            tokens,
+            index,
+            imports,
+            namespace_aliases,
+            api.data_members,
+            operator,
+        )
+
+    def lexical_members(tokens, index, imports, namespace_aliases, table):
         name = tokens.values[index]
+        if any(
+            b[3] == name
+            and b[0] <= index <= b[1]
+            and b[2] <= index
+            and set(tokens.branches[b[2]]) <= set(tokens.branches[index])
+            for b in tokens.bindings
+        ):
+            return [], set()
+        scope = tokens.scopes.get(index, ())
+        owners = enclosing_bases(tokens, index)
+        for size in range(len(scope), 0, -1):
+            owner = "::".join(scope[:size])
+            if owner in source_classes:
+                owners = source_member_bases(
+                    owner, name, tokens, index, imports, namespace_aliases
+                )
+                break
+            if owner in api.classes:
+                owners = {owner}
+                break
+        types = set(owners)
+        if scope and owner in source_classes:
+            types.add(SOURCE_CLASS + owner)
+        if not types:
+            return [], owners
+        return (
+            object_members(
+                types, name, tokens, index, imports, namespace_aliases, table
+            ),
+            owners,
+        )
 
-        def lookup(owner, seen):
-            owner = api.owner(owner)
-            if owner is None or owner in seen:
-                return []
-            cls = api.classes[owner]
-            fields = [item for item in cls["fields"] if item["name"] == name]
-            targets = cls.get("using", {}).get(name, ())
-            if (
-                fields
-                or any(item["name"] == name for item in cls["methods"])
-                or owner + "::" + name in api.types
-                or targets
-            ):
-                # An own declaration hides the inherited name; retain the indexed-data boundary.
-                result = [
-                    item for item in table.get(name, ()) if item["class"] == owner
-                ]
-                for target in targets:
-                    where = target.rpartition("::")[0]
-                    base = api.resolve(base_name(where), tuple(owner.split("::")))
-                    result.extend(lookup(base, seen | {owner}))
-                return result
-            return [
-                item for base in cls["bases"] for item in lookup(base, seen | {owner})
-            ]
+    def lexical_data(tokens, index, imports, namespace_aliases):
+        return lexical_members(
+            tokens, index, imports, namespace_aliases, api.data_members
+        )
 
-        return lookup(owner, set())
+    def callable_field(tokens, index, imports, namespace_aliases, depth=0):
+        name = tokens.values[index]
+        if name not in api.data_members:
+            return [], set()
+        access = tokens.values[index - 1] if index else None
+        if access in {".", "->"}:
+            inferred = receiver(
+                tokens, index - 2, imports, namespace_aliases, depth + 1
+            )
+            if access == "->":
+                inferred = arrow_types(inferred)
+            return (
+                object_data(
+                    inferred, name, tokens, index, imports, namespace_aliases, access
+                ),
+                inferred,
+            )
+        if access == "::":
+            qualifier = "::".join(qualifier_path(tokens.values, index))
+            return qualified_data(tokens, index, imports, namespace_aliases), {
+                resolve(qualifier, tokens, index, imports, namespace_aliases)
+            }
+        return lexical_data(tokens, index, imports, namespace_aliases)
+
+    def source_field_result(types, name, depth):
+        """Own source fields hide bases without expanding explicit DART callbacks."""
+        declarations = []
+        for marker in types:
+            if not marker.startswith(SOURCE_CLASS):
+                continue
+            owner = marker.removeprefix(SOURCE_CLASS)
+            for candidate in [owner, *ancestry.get(owner, ())]:
+                if (candidate, name) in source_returns:
+                    break
+                if name in source_fields[candidate]:
+                    declarations.extend(source_fields[candidate][name])
+                    break
+        if not declarations:
+            return None
+        result = set()
+        for item in declarations:
+            if "foreign_callable" in item:
+                if item["foreign_callable"]:
+                    result.add("__non_dart__")
+                continue
+            declared = {key: value for key, value in item.items() if key != "static"}
+            context = item["source"]
+            key = product_key(
+                item["return_tokens"],
+                tuple(item["class"].split("::")),
+                (context[0], context[1], item["index"], context[2], context[3]),
+            )
+            callable_return = callable_return_tokens(TOKEN.findall(key or ""))
+            if callable_return is not None:
+                shape = returns(
+                    [{**declared, "return_tokens": callable_return}], depth + 1
+                )
+                if shape and not any(value.startswith("dart::") for value in shape):
+                    result.add("__non_dart__")
+            else:
+                shape = returns([declared], depth + 1)
+                invoked = returns(candidates("operator()", shape), depth + 1)
+                result.update(
+                    invoked or ({"__non_dart__"} if "__non_dart__" in shape else set())
+                )
+        return result
 
     def qualified_data(tokens, index, imports, namespace_aliases):
         return qualified_members(
@@ -5838,6 +6173,17 @@ def scan_sources(api, source_root):
             return set()
         values = tokens.values
         value = values[before]
+        if value == "this":
+            scope = tokens.scopes.get(before, ())
+            for size in range(len(scope), 0, -1):
+                owner = "::".join(scope[:size])
+                if owner in source_classes:
+                    return set(local_bases.get(owner, ())) | {
+                        SOURCE_CLASS + owner,
+                        RAW_POINTER,
+                    }
+                if owner in api.classes:
+                    return {owner, RAW_POINTER}
         if value == ")" and before in tokens.pairs:
             opening = tokens.pairs[before]
             function = opening - 1
@@ -5927,12 +6273,29 @@ def scan_sources(api, source_root):
                 )
             if function >= 0:
                 method = values[function]
+                data, _ = callable_field(
+                    tokens, function, imports, namespace_aliases, depth
+                )
+                if data:
+                    return callable_data_result(data, depth)
                 if function > 0 and values[function - 1] in {"->", "."}:
                     types = receiver(
                         tokens, function - 2, imports, namespace_aliases, depth + 1
                     )
                     if values[function - 1] == "->":
                         types = arrow_types(types)
+                    source_result = source_field_result(types, method, depth)
+                    if source_result is not None and not object_members(
+                        types,
+                        method,
+                        tokens,
+                        function,
+                        imports,
+                        namespace_aliases,
+                        api.members,
+                        values[function - 1],
+                    ):
+                        return source_result
                     if method in {"first", "second"} and any(
                         marker.startswith(PRODUCTS["std::pair"]) for marker in types
                     ):
@@ -6023,7 +6386,20 @@ def scan_sources(api, source_root):
                     types = source_member_types(
                         types, method, tokens, function, imports, namespace_aliases
                     )
-                    declarations = candidates(method, types, values[function - 1])
+                    declarations = (
+                        object_members(
+                            types,
+                            method,
+                            tokens,
+                            function,
+                            imports,
+                            namespace_aliases,
+                            api.members,
+                            values[function - 1],
+                        )
+                        if types
+                        else candidates(method, types, values[function - 1])
+                    )
                     if not declarations:
                         explicit = values[function + 1 : opening]
                         if "std" in explicit and "vector" in explicit:
@@ -6083,6 +6459,12 @@ def scan_sources(api, source_root):
                     if function > 0 and values[function - 1] == "::"
                     else method
                 )
+                if spelling == method:
+                    declarations, _ = lexical_members(
+                        tokens, function, imports, namespace_aliases, api.members
+                    )
+                    if declarations:
+                        return returns(declarations, depth + 1)
                 callable_types = source_callable(
                     spelling, tokens, function, namespace_aliases
                 )
@@ -6214,7 +6596,7 @@ def scan_sources(api, source_root):
                 types = receiver(
                     tokens, function, imports, namespace_aliases, depth + 1
                 )
-                if NON_DART_CALLABLE in types:
+                if NON_DART_CALLABLE in types or types == {"__non_dart__"}:
                     return {"__non_dart__"}
                 if any(value.startswith(CALLABLE) for value in types):
                     return {
@@ -6251,6 +6633,8 @@ def scan_sources(api, source_root):
                         else {"__non_dart__"}
                     )
                 return {"__non_dart__"}
+            if RAW_POINTER in types and RAW_ARRAY in types:
+                return (types - {RAW_POINTER}) | {REFERENCE}
             result = returns(candidates("operator[]", types))
             indexed = elements(types) or (types - {RAW_POINTER})
             return result or (indexed | {REFERENCE} if indexed else indexed)
@@ -6263,7 +6647,12 @@ def scan_sources(api, source_root):
             ):
                 return product_values(owner, int(value == "second"), "std::pair")
             declarations = candidates(
-                value, owner, values[before - 1], api.data_members
+                value,
+                source_member_types(
+                    owner, value, tokens, before, imports, namespace_aliases
+                ),
+                values[before - 1],
+                api.data_members,
             )
             types = returns(declarations)
             if types:
@@ -6277,6 +6666,13 @@ def scan_sources(api, source_root):
         spelling = "::".join(qualifier_path(values, before) + (value,))
         if standard_forwarder(spelling, tokens, before, namespace_aliases):
             return {"__non_dart__"}
+        data, _ = (
+            lexical_data(tokens, before, imports, namespace_aliases)
+            if values[before - 1 : before] not in (["."], ["->"], ["::"])
+            else ([], set())
+        )
+        if data:
+            return returns(data, depth + 1)
         types = variable_types(tokens, before, fields)
         if variable:
             types |= returns(api.variables[variable])
@@ -6939,7 +7335,15 @@ def scan_sources(api, source_root):
                 qualifier = "::".join(qualifier_path(values, i))
                 resolved = resolve(qualifier, tokens, i, imports, namespace_aliases)
             if call:
-                variable = namespace_variable(tokens, i, namespace_aliases)
+                data, inferred = callable_field(tokens, i, imports, namespace_aliases)
+                if data:
+                    record("data_members", name, data, inferred, path, i, tokens)
+                    continue
+                variable = (
+                    namespace_variable(tokens, i, namespace_aliases)
+                    if access is None
+                    else None
+                )
                 if variable:
                     add(
                         "variables",
@@ -6986,6 +7390,9 @@ def scan_sources(api, source_root):
                     inferred = receiver(tokens, i - 2, imports, namespace_aliases)
                     if access == "->":
                         inferred = arrow_types(inferred)
+                    inferred = source_member_types(
+                        inferred, name, tokens, i, imports, namespace_aliases
+                    )
                     declarations = candidates(
                         name, inferred, access if inferred else None, api.data_members
                     )
@@ -7011,11 +7418,10 @@ def scan_sources(api, source_root):
                         for b in tokens.bindings
                     )
                 ):
-                    inferred = enclosing_bases(tokens, i)  # the implicit `this`
+                    declarations, inferred = lexical_data(
+                        tokens, i, imports, namespace_aliases
+                    )
                     if inferred:
-                        declarations = candidates(
-                            name, inferred, table=api.data_members
-                        )
                         record(
                             "data_members",
                             name,
@@ -7037,7 +7443,20 @@ def scan_sources(api, source_root):
                 inferred = source_member_types(
                     inferred, name, tokens, i, imports, namespace_aliases
                 )
-                declarations = candidates(name, inferred, access if inferred else None)
+                declarations = (
+                    object_members(
+                        inferred,
+                        name,
+                        tokens,
+                        i,
+                        imports,
+                        namespace_aliases,
+                        api.members,
+                        access,
+                    )
+                    if inferred
+                    else candidates(name, inferred)
+                )
             elif qualifier is not None:
                 if resolved:
                     inferred = {resolved}
@@ -7072,17 +7491,9 @@ def scan_sources(api, source_root):
                     if free:
                         add("free_functions", free, path, tokens.line(i))
             else:
-                inferred = enclosing_bases(tokens, i)
-                scope = tokens.scopes.get(i, ())
-                for size in range(len(scope), 0, -1):
-                    owner = "::".join(scope[:size])
-                    if owner in source_classes:
-                        inferred = source_member_bases(
-                            owner, name, tokens, i, imports, namespace_aliases
-                        )
-                        break
-                if inferred:
-                    declarations = candidates(name, inferred)
+                declarations, inferred = lexical_members(
+                    tokens, i, imports, namespace_aliases, api.members
+                )
                 if not declarations:
                     for free in free_function(
                         name, tokens, i, path, imports, namespace_aliases

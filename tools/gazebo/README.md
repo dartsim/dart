@@ -271,7 +271,8 @@ dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
 Constructed `std::tuple` and `std::pair` values retain owned value elements;
 pointer and reference elements do not construct their pointees. Default-initialized
-`std::variant` values retain construction dependencies of their first alternative.
+`std::variant` values retain construction dependencies of their first alternative,
+with each value declarator checked independently in grouped declarations.
 Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
@@ -352,9 +353,11 @@ expressions retain both operand candidates without resolving their common type. 
 casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;
-data declarations retain array dimensions. Qualified callable variables and static
-data members retain their declarations when invoked, respecting member-name
-hiding. Grouped function pointers retain each name and any trailing return type.
+data declarations retain array dimensions. Callable variables and data members
+retain their declarations when invoked through qualified names, object receivers
+or inherited fields, respecting member-name hiding. Grouped function pointers
+retain each name, array shape and any trailing return type. Callback fields do
+not construct their return types.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).

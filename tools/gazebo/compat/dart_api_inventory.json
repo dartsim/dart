@@ -4532,8 +4532,14 @@
             "dartsim/src/CustomMeshShape.cc:223"
           ],
           "name": "mIsBoundingBoxDirty",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::MeshShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -4588,8 +4594,14 @@
             "dartsim/src/CustomMeshShape.cc:224"
           ],
           "name": "mIsVolumeDirty",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::MeshShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 2,
@@ -4627,8 +4639,14 @@
             "dartsim/src/CustomMeshShape.cc:222"
           ],
           "name": "mMesh",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::MeshShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 11,
@@ -6740,8 +6758,11 @@
             "dartsim/src/GzCollisionDetector.cc:401"
           ],
           "name": "getBulletCollisionWorld",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::collision::BulletCollisionGroup",
+            "dart::collision::CollisionGroup"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "accessor",
@@ -10438,8 +10459,14 @@
             "dartsim/src/CustomHeightmapShape.cc:57"
           ],
           "name": "setHeightField",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::HeightmapShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -11036,28 +11063,20 @@
               "const": false,
               "signature": "void setScale ( const Vector3 & scale )",
               "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::dynamics::MeshShape",
-              "const": false,
-              "signature": "void setScale ( const Eigen :: Vector3d & scale )",
-              "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::dynamics::MeshShape",
-              "const": false,
-              "signature": "void setScale ( double scale )",
-              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/CustomHeightmapShape.cc:58"
           ],
           "name": "setScale",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::HeightmapShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
