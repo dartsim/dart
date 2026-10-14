@@ -36,7 +36,6 @@ add_library(
   STATIC
   ContactArrowLayout.cpp
   BoxedLcpSolver.cpp
-  HeightmapModel.cpp
   AdaptiveSoftContactModel.cpp
   SoftWormModel.cpp
   WorldHistory.cpp
@@ -44,9 +43,6 @@ add_library(
   ContactInverseDynamicsModel.cpp
   RelaxedPosture.cpp
   ssik_ik_gui/ArmSkeleton.cpp
-  BipedStandController.cpp
-  JointConstraintsController.cpp
-  OperationalSpaceController.cpp
 )
 target_link_libraries(dart-demo-models PUBLIC dart)
 set_source_files_properties(

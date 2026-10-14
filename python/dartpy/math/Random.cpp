@@ -59,7 +59,15 @@ void Random(nb::module_& m)
             return dart::math::Random::uniform(min, max);
           },
           nb::arg("min"),
-          nb::arg("max"));
+          nb::arg("max"))
+      .def_static(
+          "uniform_float",
+          +[](float min, float max) -> float {
+            return dart::math::Random::uniform(min, max);
+          },
+          nb::arg("min"),
+          nb::arg("max"),
+          "Draw from the engine's single-precision uniform distribution.");
 }
 
 } // namespace python

@@ -296,6 +296,7 @@ def test_biped_stand_all_pushes_last_exactly_100_steps(controls, key, label, for
 
 
 def test_biped_stand_adapter_reads_toolbar_timestep():
+    from examples.demos.models.biped_stand import BipedStandController as Model
     from examples.demos.scenes.biped_stand import BipedStandController
 
     setup = _scene("biped_stand").factory()
@@ -303,8 +304,8 @@ def test_biped_stand_adapter_reads_toolbar_timestep():
     controller = BipedStandController(setup.world, biped)
     setup.world.setTimeStep(0.01)
     controller.pre_step()
-    assert controller.native.timestep == 0.01
-    expected = dart._demos.BipedStandController(biped, 0.01).compute_torques()
+    assert controller.controller.timestep == 0.01
+    expected = Model(biped, 0.01).compute_torques()
     np.testing.assert_array_equal(biped.getForces(), expected)
 
 
@@ -404,10 +405,12 @@ def test_joint_constraints_harness_toggles_and_refreshes_text(controls):
 
 
 def test_joint_constraints_controller_tracks_toolbar_timestep():
+    from examples.demos.models.joint_constraints import JointConstraintsController
+
     setup = _scene("joint_constraints").factory()
     biped = setup.world.getSkeleton(1)
     setup.world.setTimeStep(0.002)
-    expected = dart._demos.JointConstraintsController(biped, 0.002)
+    expected = JointConstraintsController(biped, 0.002)
     expected_torques = expected.compute_torques(biped)
     setup.pre_step()
     np.testing.assert_array_equal(biped.getForces(), expected_torques)
@@ -480,14 +483,14 @@ def test_s4_operational_space_controls_keys_and_target(controls, monkeypatch):
         assert label.label == "Drag constraint: " + text
 
     key(event.KEYDOWN, "1", ("line", (1.0, 0.0, 0.0)), "x ")
-    monkeypatch.setattr(dart._demos, "keyboard_capture_active", lambda: True)
+    monkeypatch.setattr(dart.viewer, "keyboard_capture_active", lambda: True)
     previous = len(ctx.drag.calls)
     assert not ctx.handler(event(event.KEYDOWN, ord("2")))
     assert len(ctx.drag.calls) == previous
     setup.pre_refresh()
     assert label.label == "Drag constraint: x "
     key(event.KEYUP, "1", ("none",), "(none)")
-    monkeypatch.setattr(dart._demos, "keyboard_capture_active", lambda: False)
+    monkeypatch.setattr(dart.viewer, "keyboard_capture_active", lambda: False)
     key(event.KEYDOWN, "1", ("line", (1.0, 0.0, 0.0)), "x ")
     key(event.KEYDOWN, "2", ("plane", (0.0, 0.0, 1.0)), "x y ")
     key(event.KEYDOWN, "3", ("none",), "x y z ")

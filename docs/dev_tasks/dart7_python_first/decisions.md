@@ -181,9 +181,12 @@ only with new evidence and maintainer approval.
   list, cycle and capture.
   - Its bindings start in the 7.0 style as `dartpy.viewer`, the managed-loop
     core that M6b's `launch()` can reuse.
-  - Python declares scenes, key actions, light step hooks and declarative
-    panel controls. There is no Python ImGui API. Heavy controllers and
-    models stay native behind the private `dartpy._demos`.
+  - Python declares scenes, key actions, simulation hooks and declarative
+    panel controls. There is no Python ImGui API. On 2026-10-13 the maintainer
+    revised the implementation boundary: demo controllers and models move to
+    Python over the engine, IO, and GUI bindings, removing `dartpy._demos` as
+    the ports finish. Robot-specific solver and other gray areas require
+    individual decisions; the WAM joint-selection policy remains open.
   - The Python demo catalog is D22's example runner. All 37 retained scenes
     reached parity before WP-PD.18 removed the C++ app and its aliases.
     The TinyDNN-only `human_joint_limits` scene is retired: no supported

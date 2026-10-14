@@ -48,6 +48,8 @@ Dear ImGui docking release that configure fetches with Git. `capture` keeps
 its output relative to the repository root (by default, `capture.png`).
 The catalog has no C++ executable target; `dart-gui-app` and
 `dart-demo-models` remain private libraries linked into dartpy and tests.
+Demo implementation is being moved to `python/examples/demos/models/`;
+the native model library remains until its final families are ported.
 With `-DDART_USE_SYSTEM_IMGUI=ON`, a vanilla ImGui retains `dart-gui` but
 compiles out the app host and `dartpy.viewer`. Set
 `FETCHCONTENT_SOURCE_DIR_DART_IMGUI` to a local docking source checkout for

@@ -66,9 +66,11 @@ declare a `Panel`, `KeyAction`s, and camera home in the setup. C++ draws the
 controls and validates edits. Put light simulation hooks in `pre_step` or
 `post_step`, and per-frame logic in `pre_refresh` so it runs even while the
 scene tab is hidden. Use `SceneContext` for native attachments, event
-handlers, drag and drop, and teardown. Heavy controllers, sensors, histories,
-and model helpers belong in `python/native/demo_models/`, bound through the
-private `dartpy._demos` module.
+handlers, drag and drop, and teardown. Demo controllers, sensors, histories,
+and model helpers belong in `python/examples/demos/models/` and use the engine,
+IO, and GUI bindings. Expose missing library APIs in their regular bindings.
+The remaining private `dartpy._demos` implementations are being ported;
+new demo implementation goes in Python.
 
 Preserve each port's physical setup, controls, and coordinate convention.
 Use `scenes/common.py`'s `reorient_z_up` for Y-up SKEL models that need the

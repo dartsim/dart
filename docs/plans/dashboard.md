@@ -69,7 +69,8 @@ Priority order is document order. Active implementation handoff remains in
   or an approved negative disposition, pre-default detector coverage gates,
   and a complete paired benchmark artifact or approved disposition. New GUI
   examples are Python scenes in the demo catalog (`python/examples/demos`),
-  with heavy controllers and models kept native (D31b).
+  with controllers and demo models written in Python over the engine, IO,
+  and GUI bindings. Remaining native demo helpers are being ported.
 - Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
   one-thread and host-capped multi-thread determinism/scaling; allocation and
   Gazebo gates before any collision, constraint, or backend-default change.

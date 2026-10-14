@@ -421,6 +421,11 @@ The [changelog drafts](changelog-drafts.md) wait for M6b's consolidation PR;
 the packet verification remains in [the program record](verification.md).
 
 This closes demo consolidation, not M6b's sensor or render/viewer API work.
+The maintainer subsequently directed demo implementation into Python over the
+engine, IO, and GUI bindings; the remaining `_demos` families are being ported
+with native behavior comparisons. See
+[the active task](../python_demo_models/README.md) for the open WAM solver
+decision and port evidence.
 M6b still owns `dart.render`, the final viewer API, and migration of the
 interim `dartpy.gui` primitives (InteractiveFrame, drag and drop, GridVisual,
 SupportPolygonVisual, DebugOverlay, and GUIEventHandler). Pre-existing host

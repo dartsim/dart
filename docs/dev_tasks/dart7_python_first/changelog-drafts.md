@@ -18,7 +18,10 @@ milestone consolidation PR, following the program's hot-file rule.
   `--threads` as before.
 - **Python:** Add `dartpy.viewer`, a managed viewer that runs Python-defined
   scenes in the native workspace. It offers declarative panel controls and
-  headless capture, and uses DART 7 names.
+  headless capture, and uses DART 7 names. `keyboard_capture_active()` lets
+  event handlers respect the viewer's keyboard focus.
+- **Python:** Add `dartpy.math.Random.uniform_float()` for single-precision
+  random draws from the engine's seeded stream.
 - **Breaking Changes:** Bundled Dear ImGui is now the `v1.92.8-docking`
   release, so the installed `dart/external/imgui` headers use the docking
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is

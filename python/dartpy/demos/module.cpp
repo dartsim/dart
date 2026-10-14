@@ -46,10 +46,6 @@ void bind_contact_inverse_dynamics(nb::module_& m);
 void bind_relaxed_posture(nb::module_& m);
 void bind_arm_skeleton(nb::module_& m);
 void bind_boxed_lcp_solver(nb::module_& m);
-void bind_heightmap_model(nb::module_& m);
-void bind_biped_stand(nb::module_& m);
-void bind_joint_constraints(nb::module_& m);
-void bind_operational_space_control(nb::module_& m);
 #if HAVE_OCTOMAP
 void bind_point_cloud_sensor(nb::module_& m);
 #endif
@@ -71,10 +67,6 @@ void bind_demos(nb::module_& m)
   bind_relaxed_posture(demos);
   bind_arm_skeleton(demos);
   bind_boxed_lcp_solver(demos);
-  bind_heightmap_model(demos);
-  bind_biped_stand(demos);
-  bind_joint_constraints(demos);
-  bind_operational_space_control(demos);
 #if HAVE_OCTOMAP
   bind_point_cloud_sensor(demos);
 #endif

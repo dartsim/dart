@@ -88,8 +88,9 @@ The Python catalog is the only demo app. `pixi run cycle-demos` constructs,
 steps, and tears down every registered scene without a graphics context.
 Its strict cycle exits nonzero if a callback fails. Device-free `test_GuiApp`
 and Python viewer tests cover the host, CLI, lifecycle, controls, callback
-failures, garbage collection, and interrupts. The native model tests remain
-in the C++ suite; `test_GuiAppMemoryDiagnostics` covers the opt-in diagnostic
+failures, garbage collection, and interrupts. Tests for Python demo models live
+under `python/tests/unit/demos`; tests for the remaining native models stay in
+the C++ suite. `test_GuiAppMemoryDiagnostics` covers the opt-in diagnostic
 model. Rendered catalog and viewer checks run through `pixi run test-gui`.
 
 Provision `ssik` and cached robot assets with `pixi run install-ssik` and

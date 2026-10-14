@@ -196,14 +196,11 @@ add_test(
 )
 dart_add_test("integration" test_BoxedLcpSolver)
 target_link_libraries(test_BoxedLcpSolver dart-demo-models)
-dart_add_test("integration" test_HeightmapModel)
-target_link_libraries(test_HeightmapModel dart-demo-models)
 set_tests_properties(
   test_AdaptiveSoftContactModel
   test_SoftWormModel
   test_ContactArrowLayout
   test_BoxedLcpSolver
-  test_HeightmapModel
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 dart_format_add(${soft_demo_model_test_sources})
@@ -227,19 +224,6 @@ if(TARGET dart-utils)
 endif()
 
 if(TARGET dart-utils)
-  foreach(
-    demo_model_test
-    BipedStandController
-    JointConstraintsController
-    OperationalSpaceController
-  )
-    dart_add_test("integration" test_${demo_model_test})
-    target_link_libraries(test_${demo_model_test} dart-demo-models dart-utils)
-    set_tests_properties(
-      test_${demo_model_test}
-      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
-    )
-  endforeach()
   if(HAVE_OCTOMAP)
     dart_add_test("integration" test_PointCloudSensor)
     target_link_libraries(test_PointCloudSensor dart-demo-models dart-utils)
@@ -252,9 +236,6 @@ if(TARGET dart-utils)
   endif()
 else()
   dart_format_add(
-    test_BipedStandController.cpp
-    test_JointConstraintsController.cpp
-    test_OperationalSpaceController.cpp
     test_PointCloudSensor.cpp
   )
 endif()
