@@ -3710,7 +3710,7 @@ def test_out_of_line_template_owner_is_not_a_source_return_type(extractor, tmp_p
 
 @pytest.mark.parametrize(
     "return_type",
-    ["T", "auto", "decltype(unknown())", "std::vector<T>", "std::shared_ptr<T>"],
+    ["T", "auto", "decltype(T{})", "std::vector<T>", "std::shared_ptr<T>"],
 )
 def test_unknown_source_free_function_returns_remain_conservative(
     extractor, tmp_path, return_type
@@ -3719,7 +3719,6 @@ def test_unknown_source_free_function_returns_remain_conservative(
     headers.mkdir()
     (headers / "api.hpp").write_text("namespace dart { struct A { void hit(); }; }")
     definition = "struct Foreign { void hit(); }; "
-    definition += "Foreign unknown(); " if "decltype" in return_type else ""
     definition += "template<class T> " + return_type + " foreign()"
     definition += " { return T{}; }" if return_type == "auto" else ";"
     expression = (
@@ -7571,7 +7570,6 @@ def test_known_foreign_auto_helper_returns_remain_non_dart(
     [
         "auto helper();",
         "auto helper() -> dart::A;",
-        "decltype(dart::makeA()) helper();",
         "auto helper() { return helper(); }",
         "auto first(); auto helper() { return first(); } auto first() { return helper(); }",
     ],
@@ -8166,7 +8164,15 @@ def test_quoted_default_field_initializer_evidence(
             )
     header.write_text(after_text)
     after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
-    assert (before != after) == changed
+    if name in {"function_defaulted_parameter", "function_alias_defaulted_parameter"}:
+        declarations = _entries(before, "free_functions")["dart::f"]["declarations"]
+        assert any(
+            literal in declaration.get("declaration_literals", [])
+            for declaration in declarations
+        )
+        assert before != after
+    else:
+        assert (before != after) == changed
 
 
 ENUM_LITERAL_CASES = [
@@ -8300,3 +8306,2331 @@ def test_enum_quoted_default_initializer_closure(
     header.write_text(after_text)
     after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
     assert (before != after) == changed
+
+
+QUOTED_DEFAULT_CASES = [
+    (
+        "free",
+        "namespace dart { constexpr char f(char value='a') { return value; } }",
+        "'a'",
+        "'b'",
+        "static_assert(dart::f()=='a');",
+        True,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "member",
+        "namespace dart { struct A { constexpr char f(char value='a') const { return value; } }; }",
+        "'a'",
+        "'b'",
+        "constexpr dart::A value; static_assert(value.f()=='a');",
+        True,
+        "members",
+        "f",
+    ),
+    (
+        "constructor",
+        "namespace dart { struct A { char x; constexpr A(char value='a'):x(value) {} }; }",
+        "'a'",
+        "'b'",
+        "constexpr dart::A value; static_assert(value.x=='a');",
+        True,
+        "constructors",
+        "dart::A",
+    ),
+    (
+        "string",
+        'namespace dart { constexpr char f(const char* value="aa") { return value[0]; } }',
+        '"aa"',
+        '"bb"',
+        "static_assert(dart::f()=='a');",
+        True,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "second_parameter",
+        "namespace dart { constexpr char f(int n=1,char value='a') { return value; } }",
+        "'a'",
+        "'b'",
+        "static_assert(dart::f()=='a');",
+        True,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "raw_string",
+        'namespace dart { constexpr char f(const char* value=R"tag(a,{dart::A{}.hit();})tag") { return value[0]; } }',
+        'R"tag(a,{dart::A{}.hit();})tag"',
+        'R"tag(b,{dart::A{}.hit();})tag"',
+        "static_assert(dart::f()=='a');",
+        True,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "escaped",
+        r"namespace dart { constexpr char f(char value='\x61') { return value; } }",
+        r"'\x61'",
+        r"'\x62'",
+        "static_assert(dart::f()=='a');",
+        True,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "comment",
+        "namespace dart { constexpr char f(char value='a' /* 'q' */) { return value; } }",
+        "'q'",
+        "'z'",
+        "static_assert(dart::f()=='a');",
+        False,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "unused",
+        "namespace dart { constexpr char f(char value='a') { return value; } }",
+        "'a'",
+        "'b'",
+        "void use() {}",
+        False,
+        "free_functions",
+        "dart::f",
+    ),
+    (
+        "body",
+        "namespace dart { constexpr char f() { return 'a'; } }",
+        "'a'",
+        "'b'",
+        "void use() { dart::f(); }",
+        False,
+        "free_functions",
+        "dart::f",
+    ),
+]
+
+
+QUOTED_DEFAULT_CASES.extend(
+    [
+        (
+            "grouped_first",
+            "namespace dart { constexpr char f(char='a'), g(char='x'); constexpr char f(char v) {return v;} constexpr char g(char v) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "grouped_second",
+            "namespace dart { constexpr char f(char='x'), g(char='a'); constexpr char f(char v) {return v;} constexpr char g(char v) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::g()=='a');",
+            True,
+            "free_functions",
+            "dart::g",
+        ),
+        (
+            "unnamed",
+            "namespace dart { constexpr char f(char='a'); constexpr char f(char v) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "alias",
+            "namespace dart { using Char=char; constexpr Char f(Char v='a') {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "member_static",
+            "namespace dart { struct A { static constexpr char f(char v='a') {return v;} }; }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::A::f()=='a');",
+            True,
+            "members",
+            "f",
+        ),
+        (
+            "out_of_line",
+            "namespace dart { struct A { constexpr char f(char v='a') const; }; constexpr char A::f(char v) const {return v;} }",
+            "'a'",
+            "'b'",
+            "constexpr dart::A value; static_assert(value.f()=='a');",
+            True,
+            "members",
+            "f",
+        ),
+        (
+            "macro_name",
+            "#define DART_FN f\nnamespace dart { constexpr char DART_FN(char v='a') {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "macro_owner",
+            "#define DART_OWNER A\nnamespace dart { struct DART_OWNER { constexpr char f(char v='a') const {return v;} }; }",
+            "'a'",
+            "'b'",
+            "constexpr dart::A value; static_assert(value.f()=='a');",
+            True,
+            "members",
+            "f",
+        ),
+        (
+            "wide",
+            "namespace dart { constexpr wchar_t f(wchar_t v=L'a') {return v;} }",
+            "L'a'",
+            "L'b'",
+            "static_assert(dart::f()==L'a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "lambda_default",
+            "namespace dart { constexpr char f(char v=[] {return 'a';}()) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "braced_default",
+            "namespace dart { constexpr char f(char v={'a'}) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "nested_calls",
+            "namespace dart { constexpr char choose(char x,char) {return x;} constexpr char f(char v=choose('a','x')) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "foreign",
+            "namespace foreign { constexpr char f(char v='a') {return v;} }",
+            "'a'",
+            "'b'",
+            "void use() {foreign::f();}",
+            False,
+            "free_functions",
+            "foreign::f",
+        ),
+    ]
+)
+
+
+QUOTED_DEFAULT_CASES.extend(
+    [
+        (
+            "noexcept_literal",
+            "namespace dart { constexpr bool f() noexcept('a'==97) {return true;} }",
+            "'a'",
+            "'b'",
+            "static_assert(noexcept(dart::f()));",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "return_template_literal",
+            "#include <type_traits>\nnamespace dart { std::integral_constant<char,'a'> f(); }",
+            "'a'",
+            "'b'",
+            "static_assert(decltype(dart::f())::value=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "parameter_template_literal",
+            "#include <type_traits>\nnamespace dart { constexpr char f(std::integral_constant<char,'a'> v={}) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "template_comma_default",
+            "#include <array>\nnamespace dart { constexpr char f(std::array<char,2> v={{'a','x'}},char z='q') {return v[0];} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='a');",
+            True,
+            "free_functions",
+            "dart::f",
+        ),
+    ]
+)
+
+
+QUOTED_DEFAULT_CASES.extend(
+    [
+        (
+            "grouped_unused",
+            "namespace dart { constexpr char f(char='q'), g(char='a'); constexpr char f(char v) {return v;} constexpr char g(char v) {return v;} }",
+            "'a'",
+            "'b'",
+            "static_assert(dart::f()=='q');",
+            False,
+            "free_functions",
+            "dart::f",
+        ),
+        (
+            "unused_member",
+            "namespace dart { struct A { constexpr char f() const {return 0;} constexpr char g(char v='a') const {return v;} }; }",
+            "'a'",
+            "'b'",
+            "constexpr dart::A value; static_assert(value.f()==0);",
+            False,
+            "members",
+            "f",
+        ),
+        (
+            "call_operator",
+            "namespace dart { struct A { constexpr char operator()(char v='a') const {return v;} }; }",
+            "'a'",
+            "'b'",
+            "constexpr dart::A value; static_assert(value()=='a');",
+            True,
+            "members",
+            "operator()",
+        ),
+    ]
+)
+
+
+@pytest.mark.parametrize(
+    "name,header_text,old,new,source,changed,category,key", QUOTED_DEFAULT_CASES
+)
+def test_quoted_parameter_defaults_retain_literal_evidence(
+    extractor, tmp_path, name, header_text, old, new, source, changed, category, key
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(header_text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    if changed:
+        declarations = _entries(before, category)[key]["declarations"]
+        assert any(old in d.get("declaration_literals", []) for d in declarations)
+    header.write_text(header_text.replace(old, new))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
+
+
+ROUND16_SPEC_CASES = [
+    (
+        "parenthesized_field_reference",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use(dart::Holder& source) { decltype((source.item)) value=source.item; value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "parenthesized_arrow_field_reference",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use(dart::Holder* source) { decltype((source->item)) value=source->item; value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "parenthesized_call_field_reference",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use() { decltype((dart::holder().item)) value=dart::holder().item; value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "unparenthesized_field_value",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use(dart::Holder& source) { decltype(source.item) value=source.item; static_assert(sizeof(value)==sizeof(int)); value.hit(); }",
+        True,
+        True,
+    ),
+    (
+        "decltype_auto_field_reference",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use(dart::Holder& source) { decltype(auto) value=(source.item); value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "parenthesized_value_call",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use() { decltype((dart::make())) value=dart::make(); static_assert(sizeof(value)==sizeof(int)); value.hit(); }",
+        True,
+        True,
+    ),
+    (
+        "parenthesized_reference_call",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use() { decltype((dart::reference())) value=dart::reference(); value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "inferred_callable_value",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use() { auto factory=&dart::make; auto value=factory(); static_assert(sizeof(value)==sizeof(int)); value.hit(); }",
+        True,
+        True,
+    ),
+    (
+        "inferred_callable_reference",
+        "namespace dart { class A { int field; public: void hit() const; }; struct Holder { A item; }; A make(); A& reference(); Holder& holder(); }",
+        "int field",
+        "double field",
+        "void use() { auto factory=&dart::reference; decltype(auto) value=factory(); value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "unnamed_bitfield_layout",
+        "namespace dart { class A { unsigned int : 8; }; }",
+        "int : 8",
+        "int : 16",
+        "static_assert(sizeof(dart::A)==1);",
+        True,
+        True,
+    ),
+    (
+        "padding_bitfield_layout",
+        "namespace dart { class A { unsigned int : 8; char field; }; }",
+        "int : 8",
+        "int : 16",
+        "static_assert(sizeof(dart::A)==2);",
+        True,
+        True,
+    ),
+]
+
+ROUND16_VISIBILITY_HEADER = (
+    "namespace dart { struct A { void hit() const; }; A make(); }"
+)
+
+ROUND16_VISIBILITY_CASES = [
+    (
+        "same_file_global_callable",
+        True,
+        {
+            "caller.cc": "namespace provider { inline auto factory=&dart::make; } void use() { provider::factory().hit(); }"
+        },
+    ),
+    (
+        "included_global_callable",
+        True,
+        {
+            "helper.hh": "#include <dart/api.hpp>\nnamespace provider { inline auto factory=&dart::make; }",
+            "caller.cc": '#include "helper.hh"\nvoid use() { provider::factory().hit(); }',
+        },
+    ),
+    (
+        "imported_global_callable",
+        True,
+        {
+            "helper.hh": "#include <dart/api.hpp>\nnamespace provider { inline auto factory=&dart::make; }",
+            "caller.cc": '#include "helper.hh"\nusing provider::factory; void use() { factory().hit(); }',
+        },
+    ),
+    (
+        "unrelated_header_callable",
+        False,
+        {
+            "unused.hh": "#include <dart/api.hpp>\nnamespace provider { inline auto factory=&dart::make; }",
+            "caller.cc": "struct Foreign { void hit() const; }; namespace provider { Foreign factory(); } void use() { provider::factory().hit(); }",
+        },
+    ),
+]
+
+
+def _round16_spec_strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _round16_spec_strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _round16_spec_strings(item)
+
+
+@pytest.mark.parametrize(
+    "name,text,old,new,source,changed,breaking", ROUND16_SPEC_CASES
+)
+def test_round16_spec_connected_decltype_and_layout(
+    extractor, tmp_path, name, text, old, new, source, changed, breaking
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path / "before", source)
+    if "bitfield" not in name:
+        hit = _entries(before, "members")["hit"]
+        assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+        assert {d["class"] for d in hit["declarations"]} == {"dart::A"}
+    assert not any(
+        value.startswith(
+            (
+                "__callable__:",
+                "__associated__:",
+                "__inline_layout__:",
+                "__reference__",
+                "__no_inline_layout__",
+                "__declared_type__",
+            )
+        )
+        for value in _round16_spec_strings(before)
+    )
+    header.write_text(text.replace(old, new))
+    after = _scan(extractor, extractor.index_api(headers), tmp_path / "after", source)
+    assert (before != after) == changed
+
+
+@pytest.mark.parametrize("name,positive,files", ROUND16_VISIBILITY_CASES)
+def test_round16_spec_namespace_callable_storage_visibility(
+    extractor, tmp_path, name, positive, files
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(ROUND16_VISIBILITY_HEADER)
+    before = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "before", files
+    )
+    hit = _entries(before, "members").get("hit")
+    assert bool(hit) == positive
+    if positive:
+        assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    header.write_text(
+        ROUND16_VISIBILITY_HEADER.replace(
+            "void hit() const;", "void hit() const = delete;"
+        )
+    )
+    after = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "after", files
+    )
+    assert (before != after) == positive
+
+
+RECEIVER16_HEADER = """namespace dart {
+struct A { void hit() const; A& operator()(); A* operator->(); A& operator[](int); };
+using Alias=A;
+A makeA(); A& reference(); A* pointer(); Alias alias();
+std::shared_ptr<A> shared(); std::weak_ptr<A> weak(); std::optional<A> optional();
+std::vector<A> sequence(); std::optional<std::shared_ptr<A>> nested();
+}"""
+DECLTYPE16_CASES = [
+    (
+        "direct",
+        "void use() { decltype(dart::makeA()) value=dart::makeA(); value.hit(); }",
+    ),
+    ("uninitialized", "void use() { decltype(dart::makeA()) value; value.hit(); }"),
+    ("braced_init", "void use() { decltype(dart::makeA()) value{}; value.hit(); }"),
+    ("parameter", "void use(decltype(dart::makeA()) value) { value.hit(); }"),
+    (
+        "const_parameter",
+        "void use(const decltype(dart::makeA())& value) { value.hit(); }",
+    ),
+    (
+        "pointer",
+        "void use() { decltype(dart::pointer()) value=dart::pointer(); value->hit(); }",
+    ),
+    ("pointer_suffix", "void use(decltype(dart::makeA())* value) { value->hit(); }"),
+    (
+        "reference",
+        "void use() { decltype(dart::reference()) value=dart::reference(); value.hit(); }",
+    ),
+    (
+        "parenthesized_id",
+        "void use() { auto original=dart::makeA(); decltype((original)) value=original; value.hit(); }",
+    ),
+    (
+        "unparenthesized_id",
+        "void use() { auto original=dart::makeA(); decltype(original) value=original; value.hit(); }",
+    ),
+    (
+        "grouped",
+        "void use() { decltype(dart::makeA()) first=dart::makeA(), second=dart::makeA(); first.hit(); second.hit(); }",
+    ),
+    (
+        "grouped_pointer",
+        "void use() { decltype(dart::makeA()) value, *pointer=&value; pointer->hit(); value.hit(); }",
+    ),
+    ("raw_array", "void use() { decltype(dart::makeA()) values[2]; values[0].hit(); }"),
+    (
+        "shared",
+        "void use() { decltype(dart::shared()) value=dart::shared(); value.get()->hit(); }",
+    ),
+    (
+        "weak",
+        "void use() { decltype(dart::weak()) value=dart::weak(); value.lock()->hit(); }",
+    ),
+    (
+        "optional",
+        "void use() { decltype(dart::optional()) value=dart::optional(); value.value().hit(); }",
+    ),
+    (
+        "sequence",
+        "void use() { decltype(dart::sequence()) value=dart::sequence(); value.front().hit(); }",
+    ),
+    (
+        "nested",
+        "void use() { decltype(dart::nested()) value=dart::nested(); value.value().get()->hit(); }",
+    ),
+    (
+        "field",
+        "struct Source { decltype(dart::makeA()) value; }; void use(Source& source) { source.value.hit(); }",
+    ),
+    (
+        "namespace_alias",
+        "namespace api=dart; void use() { decltype(api::makeA()) value=api::makeA(); value.hit(); }",
+    ),
+    (
+        "imported",
+        "using dart::makeA; void use() { decltype(makeA()) value=makeA(); value.hit(); }",
+    ),
+    (
+        "api_alias_return",
+        "void use() { decltype(dart::alias()) value=dart::alias(); value.hit(); }",
+    ),
+    (
+        "source_alias",
+        "using Value=decltype(dart::makeA()); void use() { Value value=dart::makeA(); value.hit(); }",
+    ),
+    (
+        "source_alias_chain",
+        "using Value=decltype(dart::makeA()); using Alias=Value; void use() { Alias value=dart::makeA(); value.hit(); }",
+    ),
+    (
+        "source_decltype_return",
+        "decltype(dart::makeA()) helper(); void use() { helper().hit(); }",
+    ),
+]
+CALLABLE16_CASES = [
+    ("address", "void use() { auto factory=&dart::makeA; factory().hit(); }"),
+    ("no_address", "void use() { auto factory=dart::makeA; factory().hit(); }"),
+    ("ref_qualifier", "void use() { auto& factory=dart::makeA; factory().hit(); }"),
+    ("forward_ref", "void use() { auto&& factory=dart::makeA; factory().hit(); }"),
+    (
+        "const_pointer",
+        "void use() { const auto factory=&dart::makeA; factory().hit(); }",
+    ),
+    (
+        "alias",
+        "void use() { auto factory=&dart::makeA; auto copy=factory; copy().hit(); }",
+    ),
+    (
+        "grouped",
+        "void use() { auto first=&dart::makeA, second=&dart::makeA; first().hit(); second().hit(); }",
+    ),
+    ("deref", "void use() { auto factory=&dart::makeA; (*factory)().hit(); }"),
+    ("pointer_return", "void use() { auto factory=&dart::pointer; factory()->hit(); }"),
+    (
+        "reference_return",
+        "void use() { auto factory=&dart::reference; factory().hit(); }",
+    ),
+    (
+        "smart_return",
+        "void use() { auto factory=&dart::shared; factory().get()->hit(); }",
+    ),
+    (
+        "weak_return",
+        "void use() { auto factory=&dart::weak; factory().lock()->hit(); }",
+    ),
+    (
+        "optional_return",
+        "void use() { auto factory=&dart::optional; factory().value().hit(); }",
+    ),
+    (
+        "sequence_return",
+        "void use() { auto factory=&dart::sequence; factory().front().hit(); }",
+    ),
+    (
+        "namespace_alias",
+        "namespace api=dart; void use() { auto factory=&api::makeA; factory().hit(); }",
+    ),
+    (
+        "using_import",
+        "using dart::makeA; void use() { auto factory=&makeA; factory().hit(); }",
+    ),
+    (
+        "using_namespace",
+        "using namespace dart; void use() { auto factory=makeA; factory().hit(); }",
+    ),
+    (
+        "lambda_capture",
+        "void use() { auto f=[factory=&dart::makeA] { factory().hit(); }; }",
+    ),
+    (
+        "source_function",
+        "namespace source { auto make() { return dart::makeA(); } } void use() { auto factory=&source::make; factory().hit(); }",
+    ),
+    (
+        "nested_factory",
+        "auto make() { return &dart::makeA; } void use() { auto factory=make(); factory().hit(); }",
+    ),
+    (
+        "decltype_function_pointer",
+        "void use() { decltype(&dart::makeA) factory=&dart::makeA; factory().hit(); }",
+    ),
+    (
+        "decltype_function_ref",
+        "void use() { decltype(dart::makeA)& factory=dart::makeA; factory().hit(); }",
+    ),
+    (
+        "decltype_function_alias",
+        "using Factory=decltype(&dart::makeA); void use() { Factory factory=&dart::makeA; factory().hit(); }",
+    ),
+]
+
+
+@pytest.mark.parametrize("name,source", DECLTYPE16_CASES + CALLABLE16_CASES)
+def test_decltype_and_function_reference_receivers(extractor, tmp_path, name, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(RECEIVER16_HEADER)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["unresolved_count"] == 0
+    assert {d["class"] for d in hit["declarations"]} == {"dart::A"}
+    assert "operator()" not in _entries(before, "members")
+    if "pointer" in name:
+        assert "operator->" not in _entries(before, "members")
+    header.write_text(
+        RECEIVER16_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    after = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(after, "members")["hit"]["declarations"] != hit["declarations"]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "struct Foreign { void hit() const; Foreign(dart::A); }; Foreign foreign(); void use() { decltype(foreign()) value=dart::makeA(); value.hit(); }",
+        "struct Foreign { void hit() const; }; Foreign foreign(); void use(dart::A* known) { decltype(foreign()) value=foreign(); value.hit(); }",
+        "struct Foreign { void hit() const; }; namespace provider { Foreign makeA(); } void use(dart::A* known) { auto factory=&provider::makeA; factory().hit(); }",
+        "struct Foreign { void hit() const; }; using namespace dart; namespace consumer { Foreign makeA(); void use(dart::A* known) { auto factory=&makeA; factory().hit(); } }",
+        "struct Foreign { void hit() const; }; Foreign foreign(); void use(dart::A* known) { auto factory=&dart::makeA; { auto factory=&foreign; factory().hit(); } }",
+    ],
+)
+def test_decltype_and_function_reference_foreign_controls(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(RECEIVER16_HEADER)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        RECEIVER16_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+def test_explicit_callback_stays_conservative_with_new_function_markers(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(RECEIVER16_HEADER)
+    result = _scan(
+        extractor,
+        extractor.index_api(headers),
+        tmp_path,
+        "void use(dart::A (*factory)()) { factory().hit(); }",
+    )
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == [] and hit["unresolved_count"] == 1
+
+
+def test_decltype_uses_declared_dart_type_before_convertible_initializer(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        RECEIVER16_HEADER
+        + " namespace dart { struct B:A { void hit(int) const; }; B makeB(); }"
+    )
+    header.write_text(text)
+    source = "void use() { decltype(dart::makeA()) value=dart::makeB(); value.hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and {
+        d["class"] for d in hit["declarations"]
+    } == {"dart::A"}
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+def test_known_foreign_decltype_return_does_not_remain_unknown(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(RECEIVER16_HEADER)
+    source = "struct Foreign { void hit() const; }; Foreign unknown(); template<class T> decltype(unknown()) foreign(); void use(dart::A* known) { auto value=foreign<Foreign>(); value.hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        RECEIVER16_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+def test_constexpr_source_factory_reference_uses_included_context(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = RECEIVER16_HEADER.replace("A makeA();", "constexpr A makeA() { return {}; }")
+    header.write_text(text)
+    sources = {
+        "factory.hh": "namespace provider { constexpr auto make() { return dart::makeA(); } }",
+        "client.cc": '#include "factory.hh"\nvoid use() { auto factory=&provider::make; factory().hit(); }',
+    }
+    before = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "before", sources
+    )
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert (
+        _scan_files(
+            extractor, extractor.index_api(headers), tmp_path / "after", sources
+        )
+        != before
+    )
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "namespace provider { using Value=decltype(dart::shared()); } void use() { provider::Value value=dart::shared(); value.get()->hit(); }",
+        "using Value=decltype(dart::makeA()); struct Source { Value value; }; void use(Source& source) { source.value.hit(); }",
+        "struct Foreign { void hit() const; }; void use() { decltype(dart::makeA()) value; { Foreign value; value.hit(); } value.hit(); }",
+        "struct Foreign { void hit() const; }; Foreign foreign(); void use() { auto factory=&dart::makeA; { auto factory=&foreign; factory().hit(); } factory().hit(); }",
+    ],
+)
+def test_decltype_and_callable_connected_scopes(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(RECEIVER16_HEADER)
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert (
+        hit["count"] == 1
+        and {d["class"] for d in hit["declarations"]} == {"dart::A"}
+        and hit["unresolved_count"] == 0
+    )
+
+
+@pytest.mark.parametrize(
+    "name,source",
+    [
+        (
+            "array",
+            "void use() { std::array<decltype(&dart::makeA),1> factories{{&dart::makeA}}; factories[0]().hit(); }",
+        ),
+        (
+            "vector",
+            "void use() { std::vector<decltype(&dart::makeA)> factories{&dart::makeA}; factories.front()().hit(); }",
+        ),
+        (
+            "optional",
+            "void use() { std::optional<decltype(&dart::makeA)> factory{&dart::makeA}; factory.value()().hit(); }",
+        ),
+        (
+            "optional_array",
+            "void use() { std::optional<std::array<decltype(&dart::makeA),1>> factories{std::in_place}; factories.value()[0]().hit(); }",
+        ),
+        (
+            "array_optional",
+            "void use() { std::array<std::optional<decltype(&dart::makeA)>,1> factories{}; factories[0].value()().hit(); }",
+        ),
+    ],
+)
+def test_function_reference_container_shapes(extractor, tmp_path, name, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(RECEIVER16_HEADER)
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "extra,source",
+    [
+        (
+            "using Value=decltype(makeA());",
+            "void use() { dart::Value value=dart::makeA(); value.hit(); }",
+        ),
+        (
+            "using Value=decltype(makeA()); using Other=Value;",
+            "void use() { dart::Other value=dart::makeA(); value.hit(); }",
+        ),
+        (
+            "namespace types { using Value=decltype(makeA()); }",
+            "void use() { dart::types::Value value=dart::makeA(); value.hit(); }",
+        ),
+        (
+            "using Value=decltype(shared());",
+            "void use() { dart::Value value=dart::shared(); value.get()->hit(); }",
+        ),
+        (
+            "using Factory=decltype(&makeA);",
+            "void use() { dart::Factory factory=&dart::makeA; factory().hit(); }",
+        ),
+        (
+            "using Value=decltype(makeA()); Value aliased();",
+            "void use() { dart::aliased().hit(); }",
+        ),
+    ],
+)
+def test_api_decltype_aliases(extractor, tmp_path, extra, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(RECEIVER16_HEADER + "namespace dart {" + extra + "}")
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "header,source,name",
+    [
+        (
+            "namespace dart { struct A { void hit() const; }; A make(); A invoke(A(*)()); }",
+            "void use() { auto factory=&dart::make; invoke(factory).hit(); }",
+            "dart::invoke",
+        ),
+        (
+            "namespace dart { struct A {}; int invoke(int(*)(A)); }",
+            "int factory(dart::A); void use() { auto callback=&factory; invoke(callback); }",
+            "dart::invoke",
+        ),
+        (
+            "namespace dart { struct A {}; using Alias=A; int invoke(int(*)(Alias)); }",
+            "int factory(dart::Alias); void use() { auto callback=&factory; invoke(callback); }",
+            "dart::invoke",
+        ),
+    ],
+)
+def test_callable_associated_namespaces(extractor, tmp_path, header, source, name):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(header)
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert name in _entries(result, "free_functions")
+
+
+@pytest.mark.parametrize(
+    "source,reference",
+    [
+        ("void use() { auto value=dart::reference(); }", False),
+        ("void use() { auto& value=dart::reference(); }", True),
+        ("void use() { decltype(dart::reference()) value=dart::reference(); }", True),
+        ("void use(dart::A& original) { decltype((original)) value=original; }", True),
+        ("void use(dart::A& original) { decltype(auto) value=(original); }", True),
+        ("void use() { auto factory=&dart::reference; auto value=factory(); }", False),
+        (
+            "void use() { auto factory=&dart::reference; decltype(auto) value=factory(); }",
+            True,
+        ),
+        (
+            "auto helper() { return dart::reference(); } void use() { auto value=helper(); }",
+            False,
+        ),
+        (
+            "decltype(auto) helper() { return dart::reference(); } void use() { decltype(helper()) value=helper(); }",
+            True,
+        ),
+        (
+            "using Ref=dart::A&; Ref helper(); void use() { decltype(helper()) value=helper(); }",
+            True,
+        ),
+    ],
+)
+def test_reference_evidence_preserves_only_reference_storage(
+    extractor, tmp_path, source, reference
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        RECEIVER16_HEADER.replace("struct A {", "struct A { int field;")
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    owners = {row["name"] for row in result["types"] if row.get("layout_declarations")}
+    assert ("dart::A" in owners) == (not reference)
+
+
+@pytest.mark.parametrize(
+    "extra,source",
+    [
+        (
+            "using Value=decltype(makeA());",
+            "struct Foreign { void hit() const; }; Foreign makeA(); void use() { dart::Value value=dart::makeA(); value.hit(); }",
+        ),
+        (
+            "using Value=decltype(pointer());",
+            "void use() { dart::Value value=dart::pointer(); value->hit(); }",
+        ),
+        (
+            "using Value=decltype(reference());",
+            "void use() { dart::Value value=dart::reference(); value.hit(); }",
+        ),
+        (
+            "using Factory=decltype(&makeA); namespace types { using Other=Factory; }",
+            "void use() { dart::types::Other factory=&dart::makeA; factory().hit(); }",
+        ),
+    ],
+)
+def test_api_expression_alias_context_and_return_shape(
+    extractor, tmp_path, extra, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        RECEIVER16_HEADER + "namespace dart {" + extra + "}"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "struct Foreign { void hit() const; }; Foreign foreign(); void use(dart::A* known) { std::array<decltype(&foreign),1> factories{{&foreign}}; factories[0]().hit(); }",
+        "struct Foreign { void hit() const; }; Foreign foreign(); void use(dart::A* known) { std::optional<decltype(&foreign)> factory{&foreign}; factory.value()().hit(); }",
+        "namespace foreign { struct A {}; int invoke(int(*)(A)); } int factory(foreign::A); void use(dart::A* known) { auto callback=&factory; invoke(callback); }",
+    ],
+)
+def test_callable_composition_foreign_controls(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        RECEIVER16_HEADER + "namespace dart { int invoke(int(*)(A)); }"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(result, "members") and "dart::invoke" not in _entries(
+        result, "free_functions"
+    )
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "void use(dart::A& value) { static_assert(sizeof(&value)==sizeof(void*)); }",
+        "void use(dart::A& value) { auto pointer=&value; static_assert(sizeof(pointer)==sizeof(void*)); }",
+    ],
+)
+def test_builtin_address_only_preserves_pointer_layout(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { private: int field; }; }"
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert not any(row.get("layout_declarations") for row in before["types"])
+    header.write_text(text.replace("int field", "double field"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+def test_known_overloaded_address_preserves_declared_return_shape(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { private: int field; public: A operator&() const; }; }"
+    header.write_text(text)
+    source = "void use(dart::A& value) { static_assert(sizeof(&value)==sizeof(int)); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert any(row.get("layout_declarations") for row in before["types"])
+    header.write_text(text.replace("int field", "double field"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+def test_api_primitive_decltype_alias_suppresses_unrelated_receivers(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        RECEIVER16_HEADER
+        + "namespace dart { int primitive(); using Value=decltype(primitive()); }"
+    )
+    source = "void use(dart::A* known) { dart::Value value=dart::primitive(); }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(result, "members") and not any(
+        row.get("layout_declarations") for row in result["types"]
+    )
+
+
+@pytest.mark.parametrize(
+    "kind,owners",
+    [
+        ("std::tuple<A*>", set()),
+        ("std::tuple<A&>", set()),
+        ("std::pair<A*,A*>", set()),
+        ("std::pair<A*,B>", {"dart::B"}),
+        ("std::tuple<A*,B>", {"dart::B"}),
+        ("std::array<A,2>", {"dart::A"}),
+        ("std::array<A,0>", set()),
+        ("std::optional<std::tuple<A*>>", set()),
+        ("std::variant<A*,B>", {"dart::B"}),
+    ],
+)
+def test_inferred_inline_wrapper_uses_exact_declared_storage_owners(
+    extractor, tmp_path, kind, owners
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace dart { struct A { private: int field; }; struct B { private: int field; }; "
+        + kind
+        + " make(); }"
+    )
+    header.write_text(text)
+    source = "void use() { auto value=dart::make(); }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert {
+        row["name"] for row in result["types"] if row.get("layout_declarations")
+    } == owners
+
+
+def test_source_inline_alias_returns_keep_defining_storage_context(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        "namespace dart { struct A { private: int field; }; struct B { private: int field; }; }"
+    )
+    source = "namespace provider { using Value=std::pair<dart::A*,dart::B>; Value make(); } void use() { auto value=provider::make(); }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert {
+        row["name"] for row in result["types"] if row.get("layout_declarations")
+    } == {"dart::B"}
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        "A operator&() const noexcept = delete;",
+        "private: A operator&() const noexcept;",
+        "A operator&() noexcept;",
+        "A operator&() const noexcept(false);",
+    ],
+)
+def test_unary_overloaded_address_retains_used_declarations(
+    extractor, tmp_path, replacement
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { private: int field; public: A operator&() const noexcept; }; }"
+    header.write_text(text)
+    source = "void use(const dart::A& value) { static_assert(sizeof(&value)==sizeof(int)); static_assert(noexcept(&value)); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(before, "members")["operator&"]["receiver_types"] == ["dart::A"]
+    header.write_text(text.replace("A operator&() const noexcept;", replacement))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+@pytest.mark.parametrize(
+    "source,reference",
+    [
+        (
+            "void use(dart::Holder& source) { decltype((source.item)) value=source.item; value.hit(); }",
+            True,
+        ),
+        (
+            "void use(dart::Holder* source) { decltype((source->item)) value=source->item; value.hit(); }",
+            True,
+        ),
+        (
+            "void use() { decltype((dart::holder().item)) value=dart::holder().item; value.hit(); }",
+            True,
+        ),
+        (
+            "void use(dart::Holder& source) { decltype(auto) value=(source.item); value.hit(); }",
+            True,
+        ),
+        (
+            "void use(dart::Holder& source) { decltype(source.item) value=source.item; value.hit(); }",
+            False,
+        ),
+    ],
+)
+def test_decltype_member_lvalue_reference_and_value_controls(
+    extractor, tmp_path, source, reference
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { private: int field; public: void hit() const; }; struct Holder { A item; }; Holder& holder(); }"
+    header.write_text(text)
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert _entries(result, "members")["hit"]["receiver_types"] == ["dart::A"]
+    assert any(row.get("layout_declarations") for row in result["types"]) == (
+        not reference
+    )
+    header.write_text(text.replace("int field", "double field"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path, source) != result
+    ) == (not reference)
+
+
+@pytest.mark.parametrize(
+    "files,hit_count",
+    [
+        (
+            {
+                "client.cc": "namespace provider { inline auto factory=&dart::makeA; } void use() { provider::factory().hit(); }"
+            },
+            1,
+        ),
+        (
+            {
+                "helper.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": '#include "helper.hh"\nvoid use() { provider::factory().hit(); }',
+            },
+            1,
+        ),
+        (
+            {
+                "helper.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": '#include "helper.hh"\nusing provider::factory; void use() { factory().hit(); }',
+            },
+            1,
+        ),
+        (
+            {
+                "helper.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": '#include "helper.hh"\nnamespace api=provider; void use() { api::factory().hit(); }',
+            },
+            1,
+        ),
+        (
+            {
+                "helper.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": '#include "helper.hh"\nusing namespace provider; void use() { factory().hit(); }',
+            },
+            1,
+        ),
+        (
+            {
+                "helper.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": '#include "helper.hh"\nstruct Foreign { void hit() const; }; Foreign foreign(); using provider::factory; void use() { auto factory=&foreign; factory().hit(); provider::factory().hit(); }',
+            },
+            1,
+        ),
+        (
+            {
+                "unused.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": "struct Foreign { void hit() const; }; namespace provider { Foreign factory(); } void use() { provider::factory().hit(); }",
+            },
+            0,
+        ),
+        (
+            {
+                "helper.hh": "namespace provider { inline auto factory=&dart::makeA; }",
+                "client.cc": '#include "helper.hh"\nstruct Foreign { void hit() const; }; Foreign foreign(); using provider::factory; void use() { auto factory=&foreign; factory().hit(); }',
+            },
+            0,
+        ),
+    ],
+)
+def test_namespace_inferred_callable_visibility(extractor, tmp_path, files, hit_count):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(RECEIVER16_HEADER)
+    before = _scan_files(
+        extractor, extractor.index_api(headers), tmp_path / "before", files
+    )
+    hit = _entries(before, "members").get("hit")
+    assert (hit["count"] if hit else 0) == hit_count
+    if hit:
+        assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    header.write_text(
+        RECEIVER16_HEADER.replace("void hit() const;", "void hit() const = delete;")
+    )
+    assert (
+        _scan_files(extractor, extractor.index_api(headers), tmp_path / "after", files)
+        != before
+    ) == bool(hit_count)
+
+
+def test_binary_member_address_operator_does_not_replace_builtin_unary_address(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = "namespace dart { struct A { private: int field; public: A operator&(const A&) const; }; }"
+    header.write_text(text)
+    source = "void use(dart::A& value) { auto pointer=&value; static_assert(sizeof(pointer)==sizeof(void*)); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "operator&" not in _entries(before, "members") and not any(
+        row.get("layout_declarations") for row in before["types"]
+    )
+    header.write_text(text.replace("int field", "double field"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+LAYOUT_CASES = [
+    (
+        "sizeof_type",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "by_value_local",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "void use(){dart::A value{}; static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "by_value_parameter",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "void use(dart::A value){static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "by_value_return",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "dart::A make(); static_assert(sizeof(make())==sizeof(int));",
+        True,
+    ),
+    (
+        "sizeof_dereference",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "void use(dart::A* p){static_assert(sizeof(*p)==sizeof(int));}",
+        True,
+    ),
+    (
+        "pointer_only",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "void use(dart::A* p);",
+        False,
+    ),
+    (
+        "reference_only",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "void use(const dart::A& a);",
+        False,
+    ),
+    (
+        "sizeof_pointer",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "static_assert(sizeof(dart::A*)==sizeof(void*));",
+        False,
+    ),
+    (
+        "api_pointer_alias",
+        "namespace dart { class A { int value; }; using Pointer=A*; }",
+        "namespace dart { class A { double value; }; using Pointer=A*; }",
+        "static_assert(sizeof(dart::Pointer)==sizeof(void*));",
+        False,
+    ),
+    (
+        "source_reference_alias",
+        "namespace dart { class A { int value; }; }",
+        "namespace dart { class A { double value; }; }",
+        "using Ref=const dart::A&; void use(Ref a);",
+        False,
+    ),
+    (
+        "base_private_field",
+        "namespace dart { class B { int value; }; class A: public B {}; }",
+        "namespace dart { class B { double value; }; class A: public B {}; }",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "owned_private_field",
+        "namespace dart { class B { int value; }; class A { B owned; }; }",
+        "namespace dart { class B { double value; }; class A { B owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "raw_array_field",
+        "namespace dart { class B { int value; }; class A { B owned[2]; }; }",
+        "namespace dart { class B { double value; }; class A { B owned[2]; }; }",
+        "static_assert(sizeof(dart::A)==2*sizeof(int));",
+        True,
+    ),
+    (
+        "array_field",
+        "namespace dart { class B { int value; }; class A { std::array<B,2> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::array<B,2> owned; }; }",
+        "static_assert(sizeof(dart::A)==2*sizeof(int));",
+        True,
+    ),
+    (
+        "array_zero_field",
+        "namespace dart { class B { int value; }; class A { std::array<B,0> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::array<B,0> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::array<int,0>));",
+        False,
+    ),
+    (
+        "array_zero_paren_field",
+        "namespace dart { class B { int value; }; class A { std::array<B,(0)> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::array<B,(0)> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::array<int,0>));",
+        False,
+    ),
+    (
+        "tuple_field",
+        "namespace dart { class B { int value; }; class A { std::tuple<B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::tuple<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "pair_field",
+        "namespace dart { class B { int value; }; class A { std::pair<B,B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::pair<B,B> owned; }; }",
+        "static_assert(sizeof(dart::A)==2*sizeof(int));",
+        True,
+    ),
+    (
+        "optional_field",
+        "namespace dart { class B { int value; }; class A { std::optional<B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::optional<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::optional<int>));",
+        True,
+    ),
+    (
+        "variant_field",
+        "namespace dart { class B { int value; }; class A { std::variant<B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::variant<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::variant<int>));",
+        True,
+    ),
+    (
+        "pointer_field",
+        "namespace dart { class B { int value; }; class A { B* owned; }; }",
+        "namespace dart { class B { double value; }; class A { B* owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "ref_field",
+        "namespace dart { class B { int value; }; class A { B& owned; }; }",
+        "namespace dart { class B { double value; }; class A { B& owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "tuple_ref_field",
+        "namespace dart { class B { int value; }; class A { std::tuple<B&> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::tuple<B&> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::tuple<int&>));",
+        False,
+    ),
+    (
+        "optional_pointer_field",
+        "namespace dart { class B { int value; }; class A { std::optional<B*> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::optional<B*> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::optional<void*>));",
+        False,
+    ),
+    (
+        "variant_pointer_field",
+        "namespace dart { class B { int value; }; class A { std::variant<B*> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::variant<B*> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::variant<void*>));",
+        False,
+    ),
+    (
+        "vector_field",
+        "namespace dart { class B { int value; }; class A { std::vector<B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::vector<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::vector<int>));",
+        False,
+    ),
+    (
+        "smart_field",
+        "namespace dart { class B { int value; }; class A { std::shared_ptr<B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::shared_ptr<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::shared_ptr<int>));",
+        False,
+    ),
+    (
+        "unique_field",
+        "namespace dart { class B { int value; }; class A { std::unique_ptr<B> owned; }; }",
+        "namespace dart { class B { double value; }; class A { std::unique_ptr<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(std::unique_ptr<int>));",
+        False,
+    ),
+    (
+        "static_field",
+        "namespace dart { class B { int value; }; class A { inline static B owned; }; }",
+        "namespace dart { class B { double value; }; class A { inline static B owned; }; }",
+        "static_assert(sizeof(dart::A)==1);",
+        False,
+    ),
+    (
+        "foreign_container_field",
+        "namespace dart { class B { int value; }; template<class T> class Foreign { T* pointer; }; "
+        "class A { Foreign<B> owned; }; }",
+        "namespace dart { class B { double value; }; template<class T> class Foreign { T* pointer; "
+        "}; class A { Foreign<B> owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "api_value_alias",
+        "namespace dart { class B { int value; }; using Value=B; class A { Value owned; }; }",
+        "namespace dart { class B { double value; }; using Value=B; class A { Value owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "api_pointer_alias_field",
+        "namespace dart { class B { int value; }; using Pointer=B*; class A { Pointer owned; }; }",
+        "namespace dart { class B { double value; }; using Pointer=B*; class A { Pointer owned; }; "
+        "}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "api_ref_alias_field",
+        "namespace dart { class B { int value; }; using Ref=B&; class A { Ref owned; }; }",
+        "namespace dart { class B { double value; }; using Ref=B&; class A { Ref owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "api_alias_chain",
+        "namespace dart { class B { int value; }; using Value=B;using Next=Value; class A { Next "
+        "owned; }; }",
+        "namespace dart { class B { double value; }; using Value=B;using Next=Value; class A { Next "
+        "owned; }; }",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "source_value_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Value=dart::B;static_assert(sizeof(Value)==sizeof(int));",
+        True,
+    ),
+    (
+        "source_array_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Value=std::array<dart::B,2>;static_assert(sizeof(Value)==2*sizeof(int));",
+        True,
+    ),
+    (
+        "source_zero_array_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Value=std::array<dart::B,0>;static_assert(sizeof(Value)==sizeof(std::array<int,0>));",
+        False,
+    ),
+    (
+        "source_tuple_ref_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Ref=dart::B&;using "
+        "Value=std::tuple<Ref>;static_assert(sizeof(Value)==sizeof(std::tuple<int&>));",
+        False,
+    ),
+    (
+        "source_alias_chain",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Value=dart::B;using Next=Value;static_assert(sizeof(Next)==sizeof(int));",
+        True,
+    ),
+    (
+        "api_ref_sizeof",
+        "namespace dart { class B { int value; }; using Ref=B&;}",
+        "namespace dart { class B { double value; }; using Ref=B&;}",
+        "static_assert(sizeof(dart::Ref)==sizeof(int));",
+        True,
+    ),
+    (
+        "source_ref_sizeof",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Ref=dart::B&;static_assert(sizeof(Ref)==sizeof(int));",
+        True,
+    ),
+    (
+        "source_pointer_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Pointer=dart::B*;static_assert(sizeof(Pointer)==sizeof(void*));",
+        False,
+    ),
+    (
+        "function_pointer_alias",
+        "namespace dart { class B { int value; }; using Callback=B(*)();}",
+        "namespace dart { class B { double value; }; using Callback=B(*)();}",
+        "static_assert(sizeof(dart::Callback)==sizeof(void*));",
+        False,
+    ),
+    (
+        "smart_sizeof_pointee",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(std::unique_ptr<dart::B>& p){static_assert(sizeof(*p)==sizeof(int));}",
+        True,
+    ),
+    (
+        "smart_sizeof_wrapper",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(std::unique_ptr<dart::B>& "
+        "p){static_assert(sizeof(p)==sizeof(std::unique_ptr<int>));}",
+        False,
+    ),
+    (
+        "vector_local",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(){std::vector<dart::B> "
+        "values;static_assert(sizeof(values)==sizeof(std::vector<int>));}",
+        False,
+    ),
+    (
+        "zero_array_local",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(){std::array<dart::B,0> "
+        "values;static_assert(sizeof(values)==sizeof(std::array<int,0>));}",
+        False,
+    ),
+    (
+        "field_order",
+        "namespace dart { class A { int x;double y;char z; }; }",
+        "namespace dart { class A { double y;int x;char z; }; }",
+        "static_assert(sizeof(dart::A)==24);",
+        True,
+    ),
+    (
+        "base_order",
+        "namespace dart { class X {int x;};class Y {double y;};class A: X,Y {char z;}; }",
+        "namespace dart { class X {int x;};class Y {double y;};class A: Y,X {char z;}; }",
+        "static_assert(sizeof(dart::A)==24);",
+        True,
+    ),
+    (
+        "bit_width_constant",
+        "namespace dart { constexpr unsigned W=63; class A { unsigned long long x:W; unsigned long "
+        "long y:1; }; }",
+        "namespace dart { constexpr unsigned W=64; class A { unsigned long long x:W; unsigned long "
+        "long y:1; }; }",
+        "static_assert(sizeof(dart::A)==8);",
+        True,
+    ),
+    (
+        "group_pointer_then_value",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(){dart::B *pointer=nullptr, value;static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "group_reference_then_value",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B& base){dart::B &reference=base, "
+        "value;static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "group_all_pointers",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(){dart::B *pointer=nullptr, "
+        "*other=nullptr;static_assert(sizeof(other)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "api_value_alias_outer_reference",
+        "namespace dart { class B { int value; }; using Value=B;}",
+        "namespace dart { class B { double value; }; using Value=B;}",
+        "void use(dart::Value& value);",
+        False,
+    ),
+    (
+        "source_alias_outer_reference",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Value=dart::B;void use(Value& value);",
+        False,
+    ),
+    (
+        "source_helper_value_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Value=dart::B;Value make();void use(){auto "
+        "value=make();static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "auto_factory_value",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){auto value=dart::make();static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "decltype_factory_value",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){decltype(dart::make()) "
+        "value=dart::make();static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "callable_factory_value",
+        "namespace dart { class B { int value; }; struct Factory { B operator()(); };}",
+        "namespace dart { class B { double value; }; struct Factory { B operator()(); };}",
+        "void use(){dart::Factory factory;auto "
+        "value=factory();static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "source_helper_ref_alias",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "using Ref=dart::B&;Ref make();void use(){decltype(make()) reference=make();}",
+        False,
+    ),
+    (
+        "auto_reference_copy",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){auto value=dart::make();static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "auto_reference_binding",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){auto& reference=dart::make();}",
+        False,
+    ),
+    (
+        "auto_const_reference_binding",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){const auto& reference=dart::make();}",
+        False,
+    ),
+    (
+        "auto_rvalue_reference_binding",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){auto&& reference=dart::make();}",
+        False,
+    ),
+    (
+        "decltype_reference_return",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){decltype(dart::make()) reference=dart::make();}",
+        False,
+    ),
+    (
+        "decltype_grouped_local",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B& existing){decltype((existing)) reference=existing;}",
+        False,
+    ),
+    (
+        "decltype_auto_reference_return",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){decltype(auto) reference=dart::make();}",
+        False,
+    ),
+    (
+        "auto_pointer_factory",
+        "namespace dart { class B { int value; }; B* make();}",
+        "namespace dart { class B { double value; }; B* make();}",
+        "void use(){auto pointer=dart::make();static_assert(sizeof(pointer)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "decltype_pointer_factory",
+        "namespace dart { class B { int value; }; B* make();}",
+        "namespace dart { class B { double value; }; B* make();}",
+        "void use(){decltype(dart::make()) "
+        "pointer=dart::make();static_assert(sizeof(pointer)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "sizeof_reference_factory",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "static_assert(sizeof(dart::make())==sizeof(int));",
+        True,
+    ),
+    (
+        "sizeof_temporary_pointer_field",
+        "namespace dart { class A { int value;public:A* pointer; };}",
+        "namespace dart { class A { double value;public:A* pointer; };}",
+        "static_assert(sizeof(dart::A().pointer)==sizeof(void*));",
+        False,
+    ),
+    (
+        "primitive_alias_field",
+        "namespace dart {using Scalar=int;class A{Scalar value;};}",
+        "namespace dart {using Scalar=double;class A{Scalar value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "primitive_alias_chain_field",
+        "namespace dart {using Scalar=int;using Next=Scalar;class A{Next value;};}",
+        "namespace dart {using Scalar=double;using Next=Scalar;class A{Next value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "enum_field",
+        "namespace dart {enum class E:int{};class A{E value;};}",
+        "namespace dart {enum class E:long long{};class A{E value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "enum_alias_field",
+        "namespace dart {enum class E:int{};using Value=E;class A{Value value;};}",
+        "namespace dart {enum class E:long long{};using Value=E;class A{Value value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "enum_alias_chain_field",
+        "namespace dart {enum class E:int{};using Value=E;using Next=Value;class A{Next value;};}",
+        "namespace dart {enum class E:long long{};using Value=E;using Next=Value;class A{Next "
+        "value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "enum_pointer_field",
+        "namespace dart {enum class E:int{};class A{E* value;};}",
+        "namespace dart {enum class E:long long{};class A{E* value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "enum_ref_field",
+        "namespace dart {enum class E:int{};class A{E& value;};}",
+        "namespace dart {enum class E:long long{};class A{E& value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "primitive_pointer_alias_field",
+        "namespace dart {using Scalar=int*;class A{Scalar value;};}",
+        "namespace dart {using Scalar=double*;class A{Scalar value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "primitive_pointer_alias_chain",
+        "namespace dart {using Scalar=int*;using Next=Scalar;class A{Next value;};}",
+        "namespace dart {using Scalar=double*;using Next=Scalar;class A{Next value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "bare_sizeof_dereference",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B* pointer){static_assert(sizeof *pointer==sizeof(int));}",
+        True,
+    ),
+    (
+        "bare_sizeof_reference",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B& value){static_assert(sizeof value==sizeof(int));}",
+        True,
+    ),
+    (
+        "bare_sizeof_pointer_factory",
+        "namespace dart { class B { int value; }; B* pointer();}",
+        "namespace dart { class B { double value; }; B* pointer();}",
+        "static_assert(sizeof *dart::pointer()==sizeof(int));",
+        True,
+    ),
+    (
+        "bare_sizeof_pointer",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B* pointer){static_assert(sizeof pointer==sizeof(void*));}",
+        False,
+    ),
+    (
+        "bare_sizeof_less_comparison",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B* pointer){static_assert(sizeof *pointer < 5);}",
+        True,
+    ),
+    (
+        "inherited_primitive_alias",
+        "namespace dart {struct Base {using Scalar=int;};class A:Base{Scalar value;};}",
+        "namespace dart {struct Base {using Scalar=double;};class A:Base{Scalar value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "inherited_primitive_alias_chain",
+        "namespace dart {struct Base {using Scalar=int;using Next=Scalar;};class A:Base{Next "
+        "value;};}",
+        "namespace dart {struct Base {using Scalar=double;using Next=Scalar;};class A:Base{Next "
+        "value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "array_indexed_extent",
+        "namespace dart {constexpr unsigned N=2;class A{std::array<int,N> value;};}",
+        "namespace dart {constexpr unsigned N=3;class A{std::array<int,N> value;};}",
+        "static_assert(sizeof(dart::A)==2*sizeof(int));",
+        True,
+    ),
+    (
+        "vector_nested_array_extent",
+        "namespace dart {constexpr unsigned N=2;class A{std::vector<std::array<int,N>> value;};}",
+        "namespace dart {constexpr unsigned N=3;class A{std::vector<std::array<int,N>> value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(std::vector<int>));",
+        False,
+    ),
+    (
+        "smart_nested_array_extent",
+        "namespace dart {constexpr unsigned N=2;class A{std::unique_ptr<std::array<int,N>> "
+        "value;};}",
+        "namespace dart {constexpr unsigned N=3;class A{std::unique_ptr<std::array<int,N>> "
+        "value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "quoted_array_alias_field",
+        "namespace dart {using Text=char['a'];class A{Text value;};}",
+        "namespace dart {using Text=char['b'];class A{Text value;};}",
+        "static_assert(sizeof(dart::A)==97);",
+        True,
+    ),
+    (
+        "quoted_array_alias_chain",
+        "namespace dart {using Text=char['a'];using Next=Text;class A{Next value;};}",
+        "namespace dart {using Text=char['b'];using Next=Text;class A{Next value;};}",
+        "static_assert(sizeof(dart::A)==97);",
+        True,
+    ),
+    (
+        "quoted_alias_comment",
+        "namespace dart {using Text=char['a'/*one*/];class A{Text value;};}",
+        "namespace dart {using Text=char['a'/*two*/];class A{Text value;};}",
+        "static_assert(sizeof(dart::A)==97);",
+        False,
+    ),
+    (
+        "quoted_alias_pointer",
+        "namespace dart {using Text=char(*)['a'];class A{Text value;};}",
+        "namespace dart {using Text=char(*)['b'];class A{Text value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "quoted_alias_unused",
+        "namespace dart {using Text=char['a'];class A{int value;};}",
+        "namespace dart {using Text=char['b'];class A{int value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        False,
+    ),
+    (
+        "auto_factory_storage",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){auto value=dart::make();}",
+        True,
+    ),
+    (
+        "auto_reference_copy_storage",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){auto value=dart::make();}",
+        True,
+    ),
+    (
+        "decltype_factory_storage",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){decltype(dart::make()) value=dart::make();}",
+        True,
+    ),
+    (
+        "decltype_auto_factory_storage",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){decltype(auto) value=dart::make();}",
+        True,
+    ),
+    (
+        "init_capture_value_layout",
+        "namespace dart { class B { int value; }; B make();}",
+        "namespace dart { class B { double value; }; B make();}",
+        "void use(){auto function=[value=dart::make()]{return "
+        "value;};static_assert(sizeof(function)==sizeof(int));}",
+        True,
+    ),
+    (
+        "init_capture_reference_copy_layout",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){auto function=[value=dart::make()]{return "
+        "value;};static_assert(sizeof(function)==sizeof(int));}",
+        True,
+    ),
+    (
+        "init_capture_reference_layout",
+        "namespace dart { class B { int value; }; B& make();}",
+        "namespace dart { class B { double value; }; B& make();}",
+        "void use(){auto function=[&value=dart::make()]{return "
+        "value;};static_assert(sizeof(function)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "api_reference_alias_object_sizeof",
+        "namespace dart { class B { int value; }; using Ref=B&;}",
+        "namespace dart { class B { double value; }; using Ref=B&;}",
+        "void use(dart::Ref value){static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "api_reference_alias_factory_sizeof",
+        "namespace dart { class B { int value; }; using Ref=B&;Ref make();}",
+        "namespace dart { class B { double value; }; using Ref=B&;Ref make();}",
+        "static_assert(sizeof(dart::make())==sizeof(int));",
+        True,
+    ),
+    (
+        "api_reference_alias_auto_copy",
+        "namespace dart { class B { int value; }; using Ref=B&;Ref make();}",
+        "namespace dart { class B { double value; }; using Ref=B&;Ref make();}",
+        "void use(){auto value=dart::make();static_assert(sizeof(value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "sizeof_address_of_reference",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B& value){static_assert(sizeof(&value)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "auto_address_of_reference",
+        "namespace dart { class B { int value; }; }",
+        "namespace dart { class B { double value; }; }",
+        "void use(dart::B& value){auto "
+        "pointer=&value;static_assert(sizeof(pointer)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "sizeof_overloaded_address_value",
+        "namespace dart {class A{int value;public:A operator&();};}",
+        "namespace dart {class A{double value;public:A operator&();};}",
+        "void use(dart::A& value){static_assert(sizeof(&value)==sizeof(int));}",
+        True,
+    ),
+    (
+        "sizeof_overloaded_address_pointer",
+        "namespace dart {class A{int value;public:A* operator&();};}",
+        "namespace dart {class A{double value;public:A* operator&();};}",
+        "void use(dart::A& value){static_assert(sizeof(&value)==sizeof(void*));}",
+        False,
+    ),
+    (
+        "tuple_pointer_factory",
+        "namespace dart { class B { int value; }; std::tuple<B*> make();}",
+        "namespace dart { class B { double value; }; std::tuple<B*> make();}",
+        "void use(){auto "
+        "value=dart::make();static_assert(sizeof(value)==sizeof(std::tuple<void*>));}",
+        False,
+    ),
+    (
+        "tuple_ref_factory",
+        "namespace dart { class B { int value; }; std::tuple<B&> make();}",
+        "namespace dart { class B { double value; }; std::tuple<B&> make();}",
+        "void use(){auto "
+        "value=dart::make();static_assert(sizeof(value)==sizeof(std::tuple<int&>));}",
+        False,
+    ),
+    (
+        "pair_pointer_factory",
+        "namespace dart { class B { int value; }; std::pair<B*,B*> make();}",
+        "namespace dart { class B { double value; }; std::pair<B*,B*> make();}",
+        "void use(){auto "
+        "value=dart::make();static_assert(sizeof(value)==sizeof(std::pair<void*,void*>));}",
+        False,
+    ),
+    (
+        "mixed_pair_pointer_factory",
+        "namespace dart { class B { int value; }; std::pair<B*,int> make();}",
+        "namespace dart { class B { double value; }; std::pair<B*,int> make();}",
+        "void use(){auto "
+        "value=dart::make();static_assert(sizeof(value)==sizeof(std::pair<void*,int>));}",
+        False,
+    ),
+    (
+        "tuple_value_factory",
+        "namespace dart { class B { int value; }; std::tuple<B> make();}",
+        "namespace dart { class B { double value; }; std::tuple<B> make();}",
+        "void use(){auto value=dart::make();static_assert(sizeof(value)==sizeof(std::tuple<int>));}",
+        True,
+    ),
+    (
+        "array_value_factory",
+        "namespace dart { class B { int value; }; std::array<B,2> make();}",
+        "namespace dart { class B { double value; }; std::array<B,2> make();}",
+        "void use(){auto value=dart::make();static_assert(sizeof(value)==2*sizeof(int));}",
+        True,
+    ),
+    (
+        "array_zero_factory",
+        "namespace dart { class B { int value; }; std::array<B,0> make();}",
+        "namespace dart { class B { double value; }; std::array<B,0> make();}",
+        "void use(){auto "
+        "value=dart::make();static_assert(sizeof(value)==sizeof(std::array<int,0>));}",
+        False,
+    ),
+    (
+        "decltype_literal_array_field",
+        "namespace dart {class A{decltype(0) value;};}",
+        "namespace dart {class A{decltype(0) value[2];};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "decltype_free_callee_field",
+        "namespace dart {int choose();class A{decltype(choose()) value;};}",
+        "namespace dart {double choose();class A{decltype(choose()) value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "decltype_static_callee_field",
+        "namespace dart {struct A{static int choose();decltype(choose()) value;};}",
+        "namespace dart {struct A{static double choose();decltype(choose()) value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "decltype_callee_owned_field",
+        "namespace dart { class B { int value; }; B choose();class A{decltype(choose()) value;};}",
+        "namespace dart { class B { double value; }; B choose();class A{decltype(choose()) "
+        "value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "decltype_callee_pointer_field",
+        "namespace dart { class B { int value; }; B* choose();class A{decltype(choose()) value;};}",
+        "namespace dart { class B { double value; }; B* choose();class A{decltype(choose()) "
+        "value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "decltype_callee_reference_field",
+        "namespace dart { class B { int value; }; B& choose();class A{decltype(choose()) value;};}",
+        "namespace dart { class B { double value; }; B& choose();class A{decltype(choose()) "
+        "value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "ordinary_function_not_field",
+        "namespace dart {class A{int choose();};}",
+        "namespace dart {class A{double choose();};}",
+        "static_assert(sizeof(dart::A)==1);",
+        False,
+    ),
+    (
+        "decltype_function_not_field",
+        "namespace dart {class A{decltype(0) choose();};}",
+        "namespace dart {class A{decltype(0.0) choose();};}",
+        "static_assert(sizeof(dart::A)==1);",
+        False,
+    ),
+    (
+        "callback_not_field",
+        "namespace dart {class A{int(*callback)();};}",
+        "namespace dart {class A{double(*callback)();};}",
+        "static_assert(sizeof(dart::A)==sizeof(void*));",
+        False,
+    ),
+    (
+        "decltype_private_static_callee",
+        "namespace dart {class A{static int choose();decltype(choose()) value;};}",
+        "namespace dart {class A{static double choose();decltype(choose()) value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "decltype_base_private_callee",
+        "namespace dart {class Base{static int choose();decltype(choose()) value;};class A:Base{};}",
+        "namespace dart {class Base{static double choose();decltype(choose()) value;};class "
+        "A:Base{};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "decltype_inherited_private_friend_callee",
+        "namespace dart {class Base{friend class A;static int choose();};class "
+        "A:Base{decltype(choose()) value;};}",
+        "namespace dart {class Base{friend class A;static double choose();};class "
+        "A:Base{decltype(choose()) value;};}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        True,
+    ),
+    (
+        "unnamed_padding_field",
+        "namespace dart {class A{unsigned int :8;char field;};}",
+        "namespace dart {class A{unsigned int :16;char field;};}",
+        "static_assert(sizeof(dart::A)==2);",
+        True,
+    ),
+    (
+        "unnamed_only_field",
+        "namespace dart {class A{unsigned int :8;};}",
+        "namespace dart {class A{unsigned int :16;};}",
+        "static_assert(sizeof(dart::A)==1);",
+        True,
+    ),
+    (
+        "unnamed_padding_constant",
+        "namespace dart {constexpr unsigned W=8;class A{unsigned int :W;char field;};}",
+        "namespace dart {constexpr unsigned W=16;class A{unsigned int :W;char field;};}",
+        "static_assert(sizeof(dart::A)==2);",
+        True,
+    ),
+    (
+        "unnamed_zero_padding",
+        "namespace dart {class A{unsigned int x:1;unsigned int :0;unsigned int y:1;};}",
+        "namespace dart {class A{unsigned int x:1;unsigned int :1;unsigned int y:1;};}",
+        "static_assert(sizeof(dart::A)==8);",
+        True,
+    ),
+    (
+        "unnamed_padding_aggregate",
+        "namespace dart {struct A{unsigned int :8;char field;};}",
+        "namespace dart {struct A{unsigned int :16;char field;};}",
+        "void use(){dart::A value{'x'};static_assert(sizeof(value)==2);}",
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,before_header,after_header,source,expected",
+    LAYOUT_CASES,
+    ids=[case[0] for case in LAYOUT_CASES],
+)
+def test_layout_storage_declarations(
+    extractor, tmp_path, name, before_header, after_header, source, expected
+):
+    before = _scan_receiver_api(extractor, tmp_path, before_header, source)
+    after = _scan_receiver_api(extractor, tmp_path, after_header, source)
+    assert (before != after) is expected
+
+
+def test_forward_class_layout_omits_identity_alias_evidence(extractor, tmp_path):
+    header = """namespace dart {
+class A;
+class A { int value; };
+using Value = A;
+class Holder { A direct; Value aliased; A* pointer; };
+}"""
+    inventory = _scan_receiver_api(
+        extractor, tmp_path, header, "static_assert(sizeof(dart::Holder)>sizeof(int));"
+    )
+    declarations = _entries(inventory, "types")["dart::Holder"]["layout_declarations"]
+    aliases = [
+        alias
+        for declaration in declarations
+        for alias in declaration.get("type_alias_declarations", ())
+    ]
+    assert aliases == [{"class": "dart::Value", "signature": "using dart::Value = A"}]
+    assert any(
+        declaration["class"] == "dart::A" and declaration["signature"] == "int value"
+        for declaration in declarations
+    )

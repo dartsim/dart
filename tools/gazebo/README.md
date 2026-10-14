@@ -231,7 +231,7 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
-- Used type-alias target definitions are not recorded.
+- Used type-alias target definitions outside field layout dependencies are not recorded.
 - Qualified member-function references without calls are not recorded.
 - Dependent `receiver->template method<T>()` calls are not recognized.
 - Base relationships of referenced DART types are not recorded.
@@ -276,6 +276,17 @@ Constructed classes' default field initializer declarations and their named
 constant dependencies are retained in `default_member_initializer_declarations`.
 Quoted literals in indexed field and constant initializers are retained in
 `initializer_literals` as evidence, without parsing their contents as C++.
+Used function declarations retain quoted literals from their return and parameter
+types, defaults and exception conditions in `declaration_literals`. Function bodies
+and comments remain excluded.
+By-value declarations and `sizeof`/`alignof` operands retain non-static field
+declarations in `layout_declarations`, in base and field order, including
+value-owned subobjects and unnamed bit-field padding. Inline field types retain alias targets and enum headers
+in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
+`declaration_literals`. Indexed constants in inline array extents appear in
+`type_constant_declarations`. Known callees in field `decltype` expressions retain
+their declarations in `declared_type_declarations`. Pointer and reference declarations preserve their
+indirection; dereferenced layout operands retain the referenced object fields.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
@@ -309,6 +320,12 @@ Source class aliases retain DART bases, and member lookup respects source declar
 class using-declarations. Lambda parameters and initialized captures stay within
 their lambda body; capture initializers use the enclosing scope.
 Automatic declarations, including `decltype(auto)`, retain inferred return types.
+Concrete `decltype` declarations infer receiver shapes from their unevaluated
+expressions. Inferred free-function pointers preserve return shapes through
+aliases and invocation, including namespace variables visible through source
+includes and using-declarations; ordinary `auto` copies decay reference results.
+Unary address expressions preserve built-in pointer shapes or known member
+`operator&()` return declarations.
 Range-for variables retain the range's element types within the loop body.
 Control-statement declarations stay within the complete statement, including
 `else` branches, and grouping parentheses preserve receiver types. Conditional
