@@ -5926,108 +5926,6 @@
             },
             {
               "access": "public",
-              "class": "dart::collision::CollisionDetector",
-              "const": false,
-              "default_argument_declarations": [
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "bool enableContact",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "std :: size_t maxNumContacts",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "std :: size_t maxNumContactsPerPair",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "bool allowNegativePenetrationDepthContacts",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
-                  "virtual": false
-                }
-              ],
-              "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
-              "virtual": true
-            },
-            {
-              "access": "public",
-              "class": "dart::collision::CollisionDetector",
-              "const": false,
-              "default_argument_declarations": [
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "bool enableContact",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "std :: size_t maxNumContacts",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "std :: size_t maxNumContactsPerPair",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "bool allowNegativePenetrationDepthContacts",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
-                  "virtual": false
-                },
-                {
-                  "access": "public",
-                  "class": "dart::collision::CollisionOption",
-                  "const": false,
-                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
-                  "virtual": false
-                }
-              ],
-              "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
-              "virtual": true
-            },
-            {
-              "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
               "default_argument_declarations": [
@@ -6157,13 +6055,6 @@
               "class": "dart::collision::FCLCollisionDetector",
               "const": false,
               "signature": "static std :: shared_ptr < FCLCollisionDetector > create ( )",
-              "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::common::detail::CompositeData",
-              "const": false,
-              "signature": "template < class AspectT , typename ... Args > typename GetData < AspectT > :: Type & create ( Args && ... args )",
               "virtual": false
             },
             {
@@ -9528,13 +9419,6 @@
               "class": "dart::collision::BodyNodeCollisionFilter",
               "const": true,
               "signature": "bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const override",
-              "virtual": true
-            },
-            {
-              "access": "public",
-              "class": "dart::collision::CollisionFilter",
-              "const": true,
-              "signature": "virtual bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const = 0",
               "virtual": true
             }
           ],

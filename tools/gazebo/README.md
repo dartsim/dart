@@ -270,7 +270,9 @@ Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
 Constructed `std::tuple` and `std::pair` values retain owned value elements;
-pointer and reference elements do not construct their pointees. Count initializers
+pointer and reference elements do not construct their pointees. Default-initialized
+`std::variant` values retain construction dependencies of their first alternative.
+Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
 and count arguments forwarded by standard factories. This dependency applies at
@@ -325,7 +327,8 @@ begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
 iterators, aliases and range-for declarations. Map-family iterators preserve their
-key and mapped values as pair elements. Returned `std::pair` and `std::tuple`
+key and mapped values as pair elements, including lookup iterators and both
+iterators returned by `equal_range`. Returned `std::pair` and `std::tuple`
 values retain each element's receiver shape for `first`, `second` and `std::get`
 projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
@@ -350,7 +353,8 @@ casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;
 data declarations retain array dimensions. Qualified callable variables and static
-data members retain their declarations when invoked.
+data members retain their declarations when invoked, respecting member-name
+hiding. Grouped function pointers retain each name and any trailing return type.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).

@@ -131,6 +131,7 @@ MAP_CONTAINERS = {
     "std::unordered_map",
     "std::unordered_multimap",
 }
+MAPPING = "__mapping__"
 OPTIONAL = "__optional__:"
 PRODUCTS = {"std::pair": "__pair__:", "std::tuple": "__tuple__:"}
 SMART_POINTERS = {
@@ -740,10 +741,22 @@ def declarators(values, owner, macros=()):
             return [(values, 0)]
         shared = parts[0][0][:colon]
     else:
-        shared = parts[0][0][: first["name_index"]]
+        first_values = parts[0][0]
+        pointer = function_pointer_name(first_values)
+        shared_end = (
+            Tokens(" ".join(first_values)).enclosing[pointer[0]]
+            if pointer
+            else first["name_index"]
+        )
+        shared = first_values[:shared_end]
+    shared_tokens = Tokens(" ".join(shared))
     angle = 0
     for i, token in enumerate(shared):
-        if angle == 0 and token in {"*", "&", "&&"}:
+        if (
+            angle == 0
+            and shared_tokens.enclosing[i] is None
+            and token in {"*", "&", "&&"}
+        ):
             shared = shared[:i]
             break
         angle += (token == "<") - (token == ">")
@@ -1295,15 +1308,18 @@ def scopes(tokens, annotation_text=None):
                         )
                     )
                 elif prefix and prefix[0] == "typedef" and len(prefix) > 2:
-                    aliases.append(
-                        (
-                            "::".join(
-                                (owner or "::".join(namespace), prefix[-1])
-                            ).strip(":"),
-                            prefix[1:-1],
-                            segment,
+                    for target, _ in declarators(prefix[1:], owner):
+                        member = data_member(target, owner)
+                        name_index = member["name_index"] if member else len(target) - 1
+                        aliases.append(
+                            (
+                                "::".join(
+                                    (owner or "::".join(namespace), target[name_index])
+                                ).strip(":"),
+                                target[:name_index] + target[name_index + 1 :],
+                                segment,
+                            )
                         )
-                    )
                 if value == "{" and i in tokens.pairs:
                     # shortcut: local classes are omitted; add lexical identities when local adapters need inventory coverage.
                     for p in range(inside, tokens.pairs[i] + 1):
@@ -1437,7 +1453,7 @@ class ApiIndex:
                     values, self, tuple(current.split("::"))
                 )
                 if any(
-                    name in SIZED_SEQUENCES
+                    name in SIZED_SEQUENCES | {"std::variant"}
                     and not in_template_argument(expanded, start)
                     for start, _, name in names_in(expanded)
                 ):
@@ -2098,6 +2114,25 @@ def in_place_initializer(tokens, end):
     )
 
 
+def default_value_initializer(tokens, end):
+    """An absent or empty initializer selects a variant's first alternative."""
+    values = tokens.values
+    variable = variable_after_type(values, end)
+    opening = (
+        array_end(tokens, variable + 1)
+        if variable is not None
+        else template_end(values, end)
+    )
+    while values[opening : opening + 1] == [">"]:
+        opening += 1
+    if values[opening : opening + 1] == ["="]:
+        opening += 1
+    return values[opening : opening + 1] in ([";"], [","], [")"]) or (
+        values[opening : opening + 1] in (["("], ["{"])
+        and tokens.pairs.get(opening) == opening + 1
+    )
+
+
 def value_argument(argument):
     """Whether a template type argument owns a value, rather than a pointer/reference."""
     if raw_pointer(argument):
@@ -2222,6 +2257,24 @@ def construction_aliases(values, api, scope=(), depth=0):
     return result + values[previous:]
 
 
+def construction_type_span(values, start, end):
+    """The outer type around a name nested in template arguments."""
+    while in_template_argument(values, start):
+        opening = next(
+            (
+                index
+                for index in range(start - 1, -1, -1)
+                if values[index] == "<" and template_end(values, index) > end
+            ),
+            None,
+        )
+        if opening is None or opening == 0:
+            break
+        end = opening
+        start = opening - 1 - 2 * len(qualifier_path(values, opening - 1))
+    return start, end
+
+
 def constructs(tokens, start, end, declarations, heads, allocators=()):
     """Whether the type named by values[start:end] is constructed there."""
     values = tokens.values
@@ -2298,6 +2351,20 @@ def constructs(tokens, start, end, declarations, heads, allocators=()):
                     first = index + 1
             return value_argument(values[first:last]) and constructs(
                 tokens, opening - 3, opening, declarations, heads, allocators
+            )
+        if opening is not None and values[max(0, opening - 3) : opening] == [
+            "std",
+            "::",
+            "variant",
+        ]:
+            argument = first_template_argument(values, opening)
+            return (
+                start < opening + 1 + len(argument)
+                and value_argument(argument)
+                and default_value_initializer(tokens, opening)
+                and constructs(
+                    tokens, opening - 3, opening, declarations, heads, allocators
+                )
             )
         if (
             opening is not None
@@ -2810,6 +2877,23 @@ def index_api(header_root):
                 )
                 entry["bases_raw"] += cls["bases"]
                 entry["methods"] += cls["members"]
+                for index in range(cls["body"] + 1, cls["end"]):
+                    if (
+                        tokens.values[index] != "using"
+                        or tokens.enclosing[index] != cls["body"]
+                    ):
+                        continue
+                    target = tokens.values[index + 1 : statement_end(tokens, index)]
+                    if target and target[0] == "typename":
+                        target = target[1:]
+                    if (
+                        "=" not in target
+                        and "::" in target
+                        and IDENTIFIER.match(target[-1])
+                    ):
+                        entry.setdefault("using", {}).setdefault(target[-1], []).append(
+                            qualified(target)
+                        )
                 entry["final"] |= cls["final"]
                 entry["pure_virtuals"] += [
                     method
@@ -3473,6 +3557,7 @@ def scan_sources(api, source_root):
             "function",
             "pair",
             "tuple",
+            "variant",
             "get",
         }:
             return name
@@ -3796,19 +3881,7 @@ def scan_sources(api, source_root):
     def sized_sequence(tokens, start, end, context, declarations, heads):
         """Constructor candidates and the count operand for one source use."""
         values = tokens.values
-        while in_template_argument(values, start):
-            opening = next(
-                (
-                    index
-                    for index in range(start - 1, -1, -1)
-                    if values[index] == "<" and template_end(values, index) > end
-                ),
-                None,
-            )
-            if opening is None or opening == 0:
-                break
-            end = opening
-            start = opening - 1 - 2 * len(qualifier_path(values, opening - 1))
+        start, end = construction_type_span(values, start, end)
         variable = variable_after_type(values, end)
         opening = variable + 1 if variable is not None else template_end(values, end)
         if values[opening : opening + 1] == ["="]:
@@ -3980,19 +4053,7 @@ def scan_sources(api, source_root):
     def value_type_prefix(tokens, start, end):
         """Retain outer wrappers and declarator indirection around a named type."""
         values = tokens.values
-        while in_template_argument(values, start):
-            opening = next(
-                (
-                    index
-                    for index in range(start - 1, -1, -1)
-                    if values[index] == "<" and template_end(values, index) > end
-                ),
-                None,
-            )
-            if opening is None or opening == 0:
-                break
-            end = opening
-            start = opening - 1 - 2 * len(qualifier_path(values, opening - 1))
+        start, end = construction_type_span(values, start, end)
         variable = variable_after_type(values, end)
         if variable is None:
             return None
@@ -4013,6 +4074,23 @@ def scan_sources(api, source_root):
             if item:
                 prefixes.append(item["return_tokens"])
         return prefixes
+
+    def default_variant_constructions(tokens, start, end, context, declarations, heads):
+        """Reuse canonical type context for a variant's default-owned element."""
+        values = tokens.values
+        start, end = construction_type_span(values, start, end)
+        if not default_value_initializer(tokens, end) or not constructs(
+            tokens, start, end, declarations, heads
+        ):
+            return set()
+        variable = variable_after_type(values, end)
+        prefix = values[
+            start : variable if variable is not None else template_end(values, end)
+        ]
+        prefix = construction_aliases(layout_prefix(prefix, context), api)
+        if not any(name == "std::variant" for _, _, name in names_in(prefix)):
+            return set()
+        return contextual_constructors(prefix, context, temporary=False)
 
     def retain_layout(row, owners):
         declarations = []
@@ -4177,6 +4255,23 @@ def scan_sources(api, source_root):
                         or values[after : after + 2] == ["=", "{"]
                     ),
                 )
+            else:
+                for name, dependency in sorted(
+                    default_variant_constructions(
+                        tokens, start, type_end, context, declaration_indices, heads
+                    )
+                ):
+                    if (
+                        in_template_argument(values, start)
+                        and api.owner(resolved) != dependency
+                    ):
+                        continue
+                    constructor_row = tables["types"].get(name) or record_type(
+                        name, path, tokens, start
+                    )
+                    if not unevaluated_operand(tokens, start):
+                        retain_layout(constructor_row, [dependency])
+                    record_constructor(name, dependency, path, tokens, start)
             j = (
                 None
                 if in_template_argument(values, start)
@@ -4838,7 +4933,15 @@ def scan_sources(api, source_root):
             opening = next(
                 (i for i, value in enumerate(signature) if value == "("), None
             )
-            return signature[:opening] if opening is not None else None
+            if opening is None:
+                return None
+            paired = Tokens(" ".join(signature))
+            closing = paired.pairs.get(opening, opening)
+            if "auto" in signature[:opening]:
+                for index in range(closing + 1, len(signature)):
+                    if signature[index] == "->" and paired.enclosing[index] is None:
+                        return signature[index + 1 :]
+            return signature[:opening]
         paired = Tokens(" ".join(values))
         for opening, closing in paired.pairs.items():
             if (
@@ -4852,6 +4955,11 @@ def scan_sources(api, source_root):
                 <= {"*", "&", "&&", "const", "volatile"}
                 and values[closing + 1 : closing + 2] == ["("]
             ):
+                parameters_end = paired.pairs.get(closing + 1, closing + 1)
+                if "auto" in values[:opening]:
+                    for index in range(parameters_end + 1, len(values)):
+                        if values[index] == "->" and paired.enclosing[index] is None:
+                            return values[index + 1 :]
                 return values[:opening]
         return None
 
@@ -5253,6 +5361,7 @@ def scan_sources(api, source_root):
                         depth + 1,
                     )
                     result.update("__element__:" + value for value in inferred)
+                    result.add(MAPPING)
                     result.add(NO_INLINE_LAYOUT)
                     if raw_pointer(return_tokens):
                         result.add(RAW_POINTER)
@@ -5495,15 +5604,44 @@ def scan_sources(api, source_root):
         depths = declared_at | {depth for depth, items in found.items() if items}
         return next(iter(found[max(depths, default=0)]), None)
 
-    def qualified_data(tokens, index, imports, namespace_aliases):
+    def qualified_members(tokens, index, imports, namespace_aliases, table):
         if not index or tokens.values[index - 1] != "::":
             return []
         qualifier = "::".join(qualifier_path(tokens.values, index))
         owner = resolve(qualifier, tokens, index, imports, namespace_aliases)
-        return (
-            candidates(tokens.values[index], {owner}, table=api.data_members)
-            if owner
-            else []
+        name = tokens.values[index]
+
+        def lookup(owner, seen):
+            owner = api.owner(owner)
+            if owner is None or owner in seen:
+                return []
+            cls = api.classes[owner]
+            fields = [item for item in cls["fields"] if item["name"] == name]
+            targets = cls.get("using", {}).get(name, ())
+            if (
+                fields
+                or any(item["name"] == name for item in cls["methods"])
+                or owner + "::" + name in api.types
+                or targets
+            ):
+                # An own declaration hides the inherited name; retain the indexed-data boundary.
+                result = [
+                    item for item in table.get(name, ()) if item["class"] == owner
+                ]
+                for target in targets:
+                    where = target.rpartition("::")[0]
+                    base = api.resolve(base_name(where), tuple(owner.split("::")))
+                    result.extend(lookup(base, seen | {owner}))
+                return result
+            return [
+                item for base in cls["bases"] for item in lookup(base, seen | {owner})
+            ]
+
+        return lookup(owner, set())
+
+    def qualified_data(tokens, index, imports, namespace_aliases):
+        return qualified_members(
+            tokens, index, imports, namespace_aliases, api.data_members
         )
 
     def callable_data_result(declarations, depth):
@@ -5527,6 +5665,33 @@ def scan_sources(api, source_root):
             )
             else {"__non_dart__"}
         )
+
+    def source_accessor_result(types, name, depth):
+        declarations = []
+        for marker in types:
+            if not marker.startswith(SOURCE_CLASS):
+                continue
+            owner = marker.removeprefix(SOURCE_CLASS)
+            for candidate in [owner, *ancestry.get(owner, ())]:
+                found = source_returns.get((candidate, name), ())
+                if found:
+                    declarations.extend(found)
+                    break
+        if not declarations:
+            return None
+        inferred = returns(declarations, depth + 1)
+        if inferred or name not in {"at", "operator[]"}:
+            return inferred
+        # A generic source accessor keeps its existing element evidence. Same-name
+        # fields of unrelated map owners do not turn that accessor into a map.
+        inferred = {
+            value
+            for value in elements(types)
+            if value != NO_INLINE_LAYOUT
+            and not value.startswith(INLINE_LAYOUT)
+            and not any(value.startswith(prefix) for prefix in PRODUCTS.values())
+        }
+        return inferred | {REFERENCE} if inferred else inferred
 
     def arrow_types(types):
         if ITERATOR in types:
@@ -5781,6 +5946,16 @@ def scan_sources(api, source_root):
                                 if value.startswith(CALLABLE) and value != CALLABLE
                             }
                         return returns(candidates("operator()", projected), depth + 1)
+                    if method in {
+                        "at",
+                        "find",
+                        "lower_bound",
+                        "upper_bound",
+                        "equal_range",
+                    }:
+                        source_result = source_accessor_result(types, method, depth)
+                        if source_result is not None:
+                            return source_result
                     if method == "get" and smart_kind(types):
                         if not smart_kind(
                             types, ("std::shared_ptr", "std::unique_ptr")
@@ -5808,8 +5983,30 @@ def scan_sources(api, source_root):
                             if method == "value" and result
                             else result
                         )
+                    if method == "at" and MAPPING in types:
+                        inferred = product_values(elements(types), 1, "std::pair")
+                        return inferred | {REFERENCE} if inferred else inferred
                     if method in {"at", "back", "front"} and elements(types):
                         return elements(types) | {REFERENCE}
+                    if MAPPING in types and method in {
+                        "find",
+                        "lower_bound",
+                        "upper_bound",
+                        "equal_range",
+                    }:
+                        iterator = {ITERATOR} | {
+                            value for value in types if value.startswith("__element__:")
+                        }
+                        if method == "equal_range":
+                            return {
+                                PRODUCTS["std::pair"]
+                                + json.dumps(
+                                    [position, None, value], separators=(",", ":")
+                                )
+                                for position in (0, 1)
+                                for value in iterator
+                            } | {NO_INLINE_LAYOUT}
+                        return iterator
                     if method in {
                         "begin",
                         "cbegin",
@@ -5863,7 +6060,15 @@ def scan_sources(api, source_root):
                         namespace_aliases,
                     )
                     if resolved:
-                        return returns(candidates(method, {resolved}))
+                        return returns(
+                            qualified_members(
+                                tokens,
+                                function,
+                                imports,
+                                namespace_aliases,
+                                api.members,
+                            )
+                        )
                     free = qualified_function(
                         qualifier + "::" + method,
                         tokens.scopes.get(function, ()),
@@ -6024,6 +6229,17 @@ def scan_sources(api, source_root):
             types = receiver(
                 tokens, tokens.pairs[before] - 1, imports, namespace_aliases, depth + 1
             )
+            if RAW_POINTER not in types:
+                source_result = source_accessor_result(types, "operator[]", depth)
+                if source_result is not None:
+                    return source_result
+            if MAPPING in types:
+                indexed = (
+                    types - {RAW_POINTER}
+                    if RAW_POINTER in types
+                    else product_values(elements(types), 1, "std::pair")
+                )
+                return indexed | {REFERENCE} if indexed else indexed
             if smart_kind(types):
                 if RAW_POINTER in types:
                     return types - {RAW_POINTER}
@@ -6777,7 +6993,7 @@ def scan_sources(api, source_root):
                         "data_members", name, declarations, inferred, path, i, tokens
                     )
                 elif qualifier is not None and resolved:
-                    declarations = candidates(name, {resolved}, table=api.data_members)
+                    declarations = qualified_data(tokens, i, imports, namespace_aliases)
                     record(
                         "data_members", name, declarations, {resolved}, path, i, tokens
                     )
@@ -6825,7 +7041,9 @@ def scan_sources(api, source_root):
             elif qualifier is not None:
                 if resolved:
                     inferred = {resolved}
-                    declarations = candidates(name, inferred)
+                    declarations = qualified_members(
+                        tokens, i, imports, namespace_aliases, api.members
+                    )
                 else:
                     owner = source_class(
                         qualifier,
