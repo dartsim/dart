@@ -12,15 +12,19 @@ import tempfile
 from pathlib import Path
 
 SMOKE_TEST = r"""
+import faulthandler
 import os
 import tempfile
 from pathlib import Path
 
+faulthandler.dump_traceback_later(60, repeat=True)
+print("Native smoke: importing dartpy", flush=True)
 import dartpy as dart
 from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
 from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
 
+print("Native smoke: physics and parsers", flush=True)
 assert dart.collision.BulletCollisionDetector() is not None
 assert dart.collision.OdeCollisionDetector() is not None
 
@@ -60,6 +64,7 @@ shapes = frame.getShapeFrames()
 assert isinstance(shapes, list)
 assert shapes
 
+print("Native smoke: collision overrides", flush=True)
 # C++ must dispatch to Python overrides; a broken wheel silently skips them.
 skeletons = [dart.dynamics.Skeleton("a"), dart.dynamics.Skeleton("b")]
 for skeleton in skeletons:
@@ -84,6 +89,7 @@ option.collisionFilter.calls = 0
 assert not group.collide(option)
 assert option.collisionFilter.calls > 0
 
+print("Native smoke: viewer ownership", flush=True)
 assert hasattr(dart.gui, "Viewer")
 node = dart.gui.WorldNode(world)
 viewer = dart.gui.Viewer()
@@ -94,6 +100,7 @@ assert node.getWorld().getName() == "wheel smoke"
 # The private demo app host runs display-free. A wheel built against a
 # vanilla system ImGui compiles it out.
 if hasattr(dart, "viewer"):
+    print("Native smoke: display-free demo host", flush=True)
     steps = []
     scene = dart.viewer.Scene(
         "smoke",
@@ -113,22 +120,27 @@ print("dartpy wheel smoke test passed")
 
 
 def run_command(
-    cmd: list[str], *, env: dict[str, str] | None = None
+    cmd: list[str],
+    *,
+    stage: str = "command",
+    timeout: float = 300,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
-    if result.stdout:
-        print(result.stdout)
-    if result.stderr:
-        print(result.stderr, file=sys.stderr)
-    if result.returncode != 0:
-        raise subprocess.CalledProcessError(
-            result.returncode,
-            cmd,
-            output=result.stdout,
-            stderr=result.stderr,
+    print(f"Running {stage} (timeout: {timeout:g} seconds)", flush=True)
+    try:
+        return subprocess.run(cmd, text=True, check=True, env=env, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        print(
+            f"{stage} timed out after {timeout:g} seconds", file=sys.stderr, flush=True
         )
-    return result
+        raise
+    except subprocess.CalledProcessError as error:
+        print(
+            f"{stage} failed with exit code {error.returncode}",
+            file=sys.stderr,
+            flush=True,
+        )
+        raise
 
 
 def _venv_python(venv_path: Path) -> Path:
@@ -177,8 +189,12 @@ def test_wheel(wheel_path: Path) -> None:
         venv_path = Path(tmpdir) / "test-env"
         python_path = _venv_python(venv_path)
 
-        print(f"Creating virtual environment at {venv_path}")
-        run_command([sys.executable, "-m", "venv", str(venv_path)])
+        print(f"Creating virtual environment at {venv_path}", flush=True)
+        run_command(
+            [sys.executable, "-m", "venv", str(venv_path)],
+            stage="virtual environment creation",
+            timeout=120,
+        )
 
         run_command(
             [
@@ -188,11 +204,18 @@ def test_wheel(wheel_path: Path) -> None:
                 "install",
                 "--upgrade",
                 "pip",
-            ]
+            ],
+            stage="pip upgrade",
         )
-        run_command([str(python_path), "-m", "pip", "install", str(wheel_path)])
         run_command(
-            [str(python_path), "-I", "-c", SMOKE_TEST], env=_smoke_environment()
+            [str(python_path), "-m", "pip", "install", str(wheel_path)],
+            stage="wheel installation",
+        )
+        run_command(
+            [str(python_path), "-I", "-u", "-X", "faulthandler", "-c", SMOKE_TEST],
+            stage="native smoke",
+            timeout=120,
+            env=_smoke_environment(),
         )
 
 
@@ -225,7 +248,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     for wheel_path in wheels:
-        print(f"Testing wheel: {wheel_path}")
+        print(f"Testing wheel: {wheel_path}", flush=True)
         test_wheel(wheel_path)
 
     print(f"All {len(wheels)} wheel(s) tested successfully.")

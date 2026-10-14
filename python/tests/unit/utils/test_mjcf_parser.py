@@ -7,11 +7,15 @@ from tests.util import get_asset_path
 
 
 def test_parse_fetch():
-    assert (
-        dart.utils.MjcfParser.readWorld(
-            "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml"
-        )
-        is not None
+    world = dart.utils.MjcfParser.readWorld(
+        "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml"
+    )
+    assert world is not None
+    # M1f switches only the Python World and io.load_world wrappers. The
+    # direct binding calls the C++ parser, whose FCL default must stay intact.
+    assert isinstance(
+        world.getConstraintSolver().getCollisionDetector(),
+        dart.collision.FCLCollisionDetector,
     )
 
 

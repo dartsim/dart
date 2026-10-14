@@ -1,25 +1,6 @@
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -405,7 +405,7 @@
-       -Wno-dangling-pointer
-     )
-   endif()
--  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-+  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG")
-   set(
-     CMAKE_CXX_FLAGS_DEBUG
-     "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls"
-@@ -442,7 +442,7 @@
-   if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-   endif()
--  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-+  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG")
-   set(
-     CMAKE_CXX_FLAGS_DEBUG
-     "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls"
-@@ -517,20 +517,20 @@
-   if(MSVC)
+@@ -519,7 +519,7 @@
      add_subdirectory(examples)
    else()
 -    add_subdirectory(examples EXCLUDE_FROM_ALL)
@@ -30,7 +11,7 @@
 +    #add_custom_target(examples DEPENDS ${examples})
    endif()
  
-   if(DART_VERBOSE)
+@@ -527,10 +527,10 @@
      message(STATUS "")
      message(STATUS "[ Examples ]")
 -    foreach(example ${examples})
@@ -46,5 +27,4 @@
 +    #list(LENGTH examples examples_length)
 +    #message(STATUS "Adding ${examples_length} examples")
    endif(DART_VERBOSE)
- 
-   # Add a "tutorials" target to build tutorials.
+ endif()
