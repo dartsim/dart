@@ -38,9 +38,7 @@
 
 namespace dart::python {
 
-void bind_soft_worm(nb::module_& m);
 void bind_world_history(nb::module_& m);
-void bind_adaptive_soft_contact(nb::module_& m);
 void bind_wam_ikfast(nb::module_& m);
 #if HAVE_OCTOMAP
 void bind_point_cloud_sensor(nb::module_& m);
@@ -55,9 +53,7 @@ void bind_demos(nb::module_& m)
   auto demos = m.def_submodule(
       "_demos",
       "Private demo models and scene helpers; outside the SemVer contract.");
-  bind_soft_worm(demos);
   bind_world_history(demos);
-  bind_adaptive_soft_contact(demos);
   bind_wam_ikfast(demos);
 #if HAVE_OCTOMAP
   bind_point_cloud_sensor(demos);

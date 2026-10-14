@@ -30,8 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "demo_models/SoftWormModel.hpp"
 #include "demo_models/WorldHistory.hpp"
+
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/PointMass.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
 
 #include <gtest/gtest.h>
 
@@ -45,11 +48,24 @@ using dart_demos::WorldHistory;
 //==============================================================================
 TEST(WorldHistoryTest, RestoresSkeletonAndSoftPointState)
 {
-  dart::dynamics::SkeletonPtr worm;
-  auto world = dart_demos::soft_worm_model::createWorld(worm);
-  auto* point = worm->getBodyNode(0)->asSoftBodyNode()->getPointMass(0);
-  const Eigen::VectorXd positions = worm->getPositions();
-  const Eigen::VectorXd velocities = worm->getVelocities();
+  auto world = dart::simulation::World::create();
+  auto skeleton = dart::dynamics::Skeleton::create("recorded_soft_body");
+  const auto flesh = dart::dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Constant(0.1),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i::Constant(2),
+      1.0);
+  skeleton->createJointAndBodyNodePair<
+      dart::dynamics::FreeJoint,
+      dart::dynamics::SoftBodyNode>(
+      nullptr,
+      dart::dynamics::FreeJoint::Properties(),
+      dart::dynamics::SoftBodyNode::Properties(
+          dart::dynamics::BodyNode::Properties(), flesh));
+  world->addSkeleton(skeleton);
+  auto* point = skeleton->getBodyNode(0)->asSoftBodyNode()->getPointMass(0);
+  const Eigen::VectorXd positions = skeleton->getPositions();
+  const Eigen::VectorXd velocities = skeleton->getVelocities();
   const Eigen::Vector3d pointPositions = point->getPositions();
   const Eigen::Vector3d pointVelocities = point->getVelocities();
   WorldHistory history(world);
@@ -59,25 +75,25 @@ TEST(WorldHistoryTest, RestoresSkeletonAndSoftPointState)
   EXPECT_EQ(history.getFramesRecorded(), 1u);
   EXPECT_EQ(history.getMaxFrames(), 4000u);
 
-  worm->setPositions(positions.array() + 0.1);
-  worm->setVelocities(velocities.array() + 0.2);
+  skeleton->setPositions(positions.array() + 0.1);
+  skeleton->setVelocities(velocities.array() + 0.2);
   point->setPositions(pointPositions + Eigen::Vector3d(0.01, 0.02, 0.03));
   point->setVelocities(Eigen::Vector3d(0.1, 0.2, 0.3));
-  const Eigen::VectorXd laterPositions = worm->getPositions();
-  const Eigen::VectorXd laterVelocities = worm->getVelocities();
+  const Eigen::VectorXd laterPositions = skeleton->getPositions();
+  const Eigen::VectorXd laterVelocities = skeleton->getVelocities();
   const Eigen::Vector3d laterPointPositions = point->getPositions();
   const Eigen::Vector3d laterPointVelocities = point->getVelocities();
   history.record();
 
   history.moveTo(0);
-  EXPECT_TRUE(worm->getPositions().isApprox(positions, 0.0));
-  EXPECT_TRUE(worm->getVelocities().isApprox(velocities, 0.0));
+  EXPECT_TRUE(skeleton->getPositions().isApprox(positions, 0.0));
+  EXPECT_TRUE(skeleton->getVelocities().isApprox(velocities, 0.0));
   EXPECT_TRUE(point->getPositions().isApprox(pointPositions, 0.0));
   EXPECT_TRUE(point->getVelocities().isApprox(pointVelocities, 0.0));
 
   history.moveForward();
-  EXPECT_TRUE(worm->getPositions().isApprox(laterPositions, 0.0));
-  EXPECT_TRUE(worm->getVelocities().isApprox(laterVelocities, 0.0));
+  EXPECT_TRUE(skeleton->getPositions().isApprox(laterPositions, 0.0));
+  EXPECT_TRUE(skeleton->getVelocities().isApprox(laterVelocities, 0.0));
   EXPECT_TRUE(point->getPositions().isApprox(laterPointPositions, 0.0));
   EXPECT_TRUE(point->getVelocities().isApprox(laterPointVelocities, 0.0));
 }

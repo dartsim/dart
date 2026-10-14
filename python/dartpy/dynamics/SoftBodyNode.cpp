@@ -15,6 +15,7 @@
 #include <dart/dynamics/SoftBodyNode.hpp>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace python {
@@ -41,6 +42,46 @@ void SoftBodyNode(nb::module_& m)
 
   dartnb::dart_class<SoftBody, dart::dynamics::BodyNode>(m, "SoftBodyNode")
       .def("getNumPointMasses", &SoftBody::getNumPointMasses)
+      .def(
+          "get_point_mass",
+          [](SoftBody& self, std::ptrdiff_t index) {
+            if (index < 0
+                || static_cast<std::size_t>(index) >= self.getNumPointMasses())
+              throw nb::index_error("point mass index out of range");
+            return self.getPointMass(static_cast<std::size_t>(index));
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("index"))
+      .def_prop_rw(
+          "adaptive_contact_activation_enabled",
+          &SoftBody::isAdaptiveContactActivationEnabled,
+          &SoftBody::setAdaptiveContactActivationEnabled)
+      .def_prop_rw(
+          "adaptive_contact_activation_ring_count",
+          &SoftBody::getAdaptiveContactActivationRingCount,
+          &SoftBody::setAdaptiveContactActivationRingCount)
+      .def_prop_rw(
+          "adaptive_contact_activation_linger_steps",
+          &SoftBody::getAdaptiveContactActivationLingerSteps,
+          &SoftBody::setAdaptiveContactActivationLingerSteps)
+      .def_prop_rw(
+          "adaptive_contact_activation_velocity_tolerance",
+          &SoftBody::getAdaptiveContactActivationVelocityTolerance,
+          [](SoftBody& self, double tolerance) {
+            if (std::isnan(tolerance) || tolerance < 0)
+              throw nb::value_error("velocity tolerance must be non-negative");
+            self.setAdaptiveContactActivationVelocityTolerance(tolerance);
+          })
+      .def_prop_rw(
+          "adaptive_contact_activation_position_tolerance",
+          &SoftBody::getAdaptiveContactActivationPositionTolerance,
+          [](SoftBody& self, double tolerance) {
+            if (std::isnan(tolerance) || tolerance < 0)
+              throw nb::value_error("position tolerance must be non-negative");
+            self.setAdaptiveContactActivationPositionTolerance(tolerance);
+          })
+      .def_prop_ro(
+          "num_active_point_masses", &SoftBody::getNumActivePointMasses)
       .def("getMass", &SoftBody::getMass)
       .def("getVertexSpringStiffness", &SoftBody::getVertexSpringStiffness)
       .def("getEdgeSpringStiffness", &SoftBody::getEdgeSpringStiffness)

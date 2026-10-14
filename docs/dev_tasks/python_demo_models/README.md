@@ -135,19 +135,66 @@ comparisons corroborate the port.
 - Changelog: program feature work defers to the M6b consolidation draft; ordinary
   binding additions receive a draft entry. No standalone bug fix is proposed.
 
+## Soft worm and adaptive soft contact
+
+- Branch: `refactor/python-demo-soft-models`, local child of the completed
+  boxed-LCP/contact packet at `3e55e373c`.
+- Value: move soft-body construction, gait/pusher control, diagnostics and
+  estimated activity-marker ranking into Python. Actual soft dynamics and
+  adaptive activation remain ordinary engine implementations.
+- Scope: both models/scenes/tests; PointMass state access, checked point lookup,
+  adaptive SoftBodyNode settings and revolute soft-body factory bindings;
+  independent soft-body fixture for the still-native WorldHistory test.
+- Compatibility: preserve mass/stiffness/damping, topology and names, gait and
+  pusher arithmetic, ordered long-double checksums, marker estimates and copies.
+  No engine headers/implementations, package exports or physics defaults change.
+- Ownership: borrowed children retain their native Skeleton resource. The unused
+  private Python Model shell can release; do not add pins solely to preserve its
+  weakref lifetime. Running scenes retain their World/model as before.
+- Acceptance: complete native/Python point-state comparisons and transferred
+  3,000-step worm displacement/exact-repeat gate; 2,000-step adaptive/all-active
+  comparison with 86 points, contact activity, reduction for over half the
+  steps, final activation at most 75%, surface delta at most 0.25 and exact
+  repeat. Preserve typed/nonfinite input behavior, ownership and finite guards.
+  Matched fitted timeline/activation captures corroborate structural claims;
+  marker glyphs remain an approximate region estimate. Relevant full/GUI/variant
+  gates, cycle, lint and two independent clean reviews finish the packet.
+- Status: locally complete and verified. Native helpers/bindings/tests and shared
+  registration are removed after parity. Both conversion fixes and a point
+  handle destruction guard pass their regression and broad gates; two
+  independent final reviews are clean. No publication authorization.
+- Changelog: defer ordinary engine binding features to the M6b consolidation
+  draft. The model relocation has no separate public release contract.
+
 ## Inventory and remaining packets
 
 The initial inventory found 15 binding families, 39 native source/header files
 (22,020 lines, including 14,933 generated WAM solver lines), 16 binding files,
 15 scene callers, registry gates, Python/native tests, and four build surfaces.
 
-After the boxed-LCP/contact packet, seven native binding families remain:
-soft worm; adaptive soft contact; SIMBICON and
-soft-foot SIMBICON; point-cloud sampling with mesh API gaps; world history with
-missing snapshot types; WAM; and final module/build removal.
+After the soft-model deletions, five native binding families remain: SIMBICON,
+soft-foot SIMBICON, point-cloud sampling, world history and WAM, followed by
+final module/build removal. World history needs registrations for existing
+owning configuration/composite snapshots and direct body snapshot access.
+Point-cloud sampling needs copied per-submesh vertices, integer engine random
+draws and shared voxel preflight validation to preserve sampling and mutation
+order. Neither requires a changed demo algorithm.
+
+The bounded SIMBICON audit found no further design decision: Python can own
+both controllers/models and their state machines. Bind existing point mass,
+collision flags, reset operations, copied soft point/face data and owning
+TriMesh construction as needed. Preserve Y-up, strict timer transitions,
+machine-state retention, the legacy foot-harness behavior, link mass versus
+total soft mass, copied inertia updates and complete reset ordering. Transfer
+the deterministic gait/reset, settled contact and full recovery-sweep gates;
+remeasure recovery thresholds before retaining panel claims. Borrowed bodies
+retain their Skeleton resource; controllers retain their World and remove
+pelvis harnesses on destruction, including cyclic collection.
 
 `ContactArrowLayout` is generic GUI code used by `dart/gui/app`; move it to the
-GUI owner before removing the model library. The private native app host stays
+GUI owner before removing the model library. Its private app source can be
+compiled directly into the existing core test binary to retain GUI-off checks;
+no new library or installed header is needed. The private native app host stays
 with the GUI implementation. Discuss consequential gray areas one at a time.
 
 ## Decision needed: WAM analytical IK

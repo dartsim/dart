@@ -185,14 +185,6 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": ("--gtest_filter=*/Nsgs*:*/Fbf",),
         "environment": (),
     },
-    "test_AdaptiveSoftContactModel": {
-        "arguments": ("--gtest_filter=AdaptiveSoftContactModelTest.*",),
-        "environment": (),
-    },
-    "test_SoftWormModel": {
-        "arguments": ("--gtest_filter=SoftWormModelTest.*",),
-        "environment": (),
-    },
     "test_SoftFootSimbiconModel": {
         "arguments": (
             "--gtest_filter=SoftFootSimbiconModelTest.*"

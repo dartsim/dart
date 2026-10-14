@@ -27,6 +27,8 @@ milestone consolidation PR, following the program's hot-file rule.
 - **Python:** Expose existing Skeleton sleep-candidacy and island-state
   setters, and constructors for Dantzig/PGS boxed-LCP solvers, used when waking
   a simulation after switching its constraint-solver backend.
+- **Python:** Expose PointMass state copies, adaptive SoftBodyNode settings,
+  checked point lookup and revolute soft-body construction through engine bindings.
 - **Breaking Changes:** Bundled Dear ImGui is now the `v1.92.8-docking`
   release, so the installed `dart/external/imgui` headers use the docking
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is

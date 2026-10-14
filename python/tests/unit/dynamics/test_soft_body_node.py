@@ -16,6 +16,15 @@ def make_soft_body(properties):
     return skeleton, joint, body
 
 
+@pytest.fixture
+def soft_body():
+    return make_soft_body(
+        dart.dynamics.SoftBodyNodeHelper.makeEllipsoidProperties(
+            [0.2, 0.2, 0.2], 3, 2, 0.5
+        )
+    )
+
+
 @pytest.mark.parametrize(
     "factory, count",
     [
@@ -124,3 +133,127 @@ def test_soft_factories_reject_invalid_dimensions_and_mass(bad):
     ):
         with pytest.raises(ValueError):
             factory()
+
+
+def test_point_mass_lookup_checks_indexes_and_preserves_identity(soft_body):
+    body = soft_body[2]
+    point = body.get_point_mass(0)
+    assert isinstance(point, dart.dynamics.PointMass)
+    assert body.get_point_mass(0) is point
+    assert body.get_point_mass(body.getNumPointMasses() - 1) is not point
+    for index in (-1, body.getNumPointMasses(), body.getNumPointMasses() + 1):
+        with pytest.raises(IndexError, match="point mass index"):
+            body.get_point_mass(index)
+
+
+def test_point_mass_state_copies_and_world_position_update(soft_body):
+    point = soft_body[2].get_point_mass(0)
+    old_position = point.positions
+    old_world_position = point.world_position
+    displacement = np.array([0.01, -0.02, 0.03])
+    velocity = np.array([-0.04, 0.05, 0.06])
+    point.positions = displacement
+    point.velocities = velocity
+    np.testing.assert_array_equal(point.positions, displacement)
+    np.testing.assert_array_equal(point.velocities, velocity)
+    np.testing.assert_array_equal(old_position, [0, 0, 0])
+    np.testing.assert_allclose(point.world_position, old_world_position + displacement)
+    for name in ("positions", "velocities", "world_position", "forces"):
+        array = getattr(point, name)
+        assert array.shape == (3,)
+        assert not array.flags.writeable
+        assert not np.shares_memory(array, getattr(point, name))
+        with pytest.raises(ValueError):
+            array[0] = 1
+
+
+@pytest.mark.parametrize("name", ["positions", "velocities"])
+def test_point_mass_state_setters_validate_shape_and_preserve_nonfinite_state(
+    soft_body, name
+):
+    point = soft_body[2].get_point_mass(0)
+    with pytest.raises(TypeError):
+        setattr(point, name, [1, 2])
+    value = np.array([np.nan, np.inf, -np.inf])
+    setattr(point, name, value)
+    np.testing.assert_array_equal(getattr(point, name), value)
+
+
+def test_revolute_soft_body_factory_creates_attached_native_link(soft_body):
+    skeleton, _, parent = soft_body
+    properties = dart.dynamics.SoftBodyNodeHelper.makeEllipsoidProperties(
+        [0.2, 0.2, 0.2], 3, 2, 0.5
+    )
+    joint, body = skeleton.create_revolute_joint_and_soft_body_node_pair(
+        parent=parent,
+        joint_properties=dart.dynamics.RevoluteJointProperties(),
+        body_properties=dart.dynamics.SoftBodyNodeProperties(
+            dart.dynamics.BodyNodeProperties(), properties
+        ),
+    )
+    assert isinstance(joint, dart.dynamics.RevoluteJoint)
+    assert isinstance(body, dart.dynamics.SoftBodyNode)
+    assert body.getParentBodyNode() is parent
+    assert skeleton.getNumSoftBodyNodes() == 2
+    assert body.getNumPointMasses() == 5
+    joint.setPosition(0, 0.2)
+    assert skeleton.getPosition(6) == pytest.approx(0.2)
+
+
+def test_adaptive_properties_freeze_and_reactivate_points(soft_body):
+    skeleton, _, body = soft_body
+    world = dart.simulation.World()
+    world.setGravity([0, 0, 0])
+    world.addSkeleton(skeleton)
+    assert not body.adaptive_contact_activation_enabled
+    assert body.num_active_point_masses == body.getNumPointMasses()
+    body.adaptive_contact_activation_ring_count = 0
+    body.adaptive_contact_activation_linger_steps = 0
+    body.adaptive_contact_activation_velocity_tolerance = np.inf
+    body.adaptive_contact_activation_position_tolerance = np.inf
+    body.adaptive_contact_activation_enabled = True
+    assert body.adaptive_contact_activation_enabled
+    assert body.adaptive_contact_activation_ring_count == 0
+    assert body.adaptive_contact_activation_linger_steps == 0
+    assert body.adaptive_contact_activation_velocity_tolerance == np.inf
+    assert body.adaptive_contact_activation_position_tolerance == np.inf
+    for _ in range(3):
+        world.step()
+    assert body.num_active_point_masses == 0
+    body.adaptive_contact_activation_enabled = False
+    assert body.num_active_point_masses == body.getNumPointMasses()
+    body.adaptive_contact_activation_enabled = True
+    assert body.num_active_point_masses == body.getNumPointMasses()
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "adaptive_contact_activation_velocity_tolerance",
+        "adaptive_contact_activation_position_tolerance",
+    ],
+)
+@pytest.mark.parametrize("bad", [-1, np.nan, -np.inf])
+def test_adaptive_tolerance_rejects_invalid_value_without_mutating_state(
+    soft_body, name, bad
+):
+    body = soft_body[2]
+    setattr(body, name, 0.1)
+    with pytest.raises(ValueError, match="tolerance must be non-negative"):
+        setattr(body, name, bad)
+    assert getattr(body, name) == 0.1
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "adaptive_contact_activation_ring_count",
+        "adaptive_contact_activation_linger_steps",
+    ],
+)
+def test_adaptive_count_rejects_negative_value_without_unsigned_wrap(soft_body, name):
+    body = soft_body[2]
+    setattr(body, name, 2)
+    with pytest.raises(TypeError):
+        setattr(body, name, -1)
+    assert getattr(body, name) == 2

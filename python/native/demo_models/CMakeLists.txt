@@ -35,8 +35,6 @@ add_library(
   dart-demo-models
   STATIC
   ContactArrowLayout.cpp
-  AdaptiveSoftContactModel.cpp
-  SoftWormModel.cpp
   WorldHistory.cpp
   WamIkFast.cpp
 )

@@ -146,12 +146,7 @@ if(TARGET dart-collision-ode)
   target_link_libraries(test_IslandDeactivation dart-collision-ode)
 endif()
 
-set(
-  soft_demo_model_test_sources
-  test_AdaptiveSoftContactModel.cpp
-  test_SoftWormModel.cpp
-  test_ContactArrowLayout.cpp
-)
+set(soft_demo_model_test_sources test_ContactArrowLayout.cpp)
 target_sources(test_ConstraintSolver PRIVATE ${soft_demo_model_test_sources})
 target_link_libraries(test_ConstraintSolver dart-demo-models)
 set_tests_properties(
@@ -179,24 +174,11 @@ set_tests_properties(
     LABELS "no-coverage-value"
 )
 add_test(
-  NAME test_AdaptiveSoftContactModel
-  COMMAND
-    $<TARGET_FILE:test_ConstraintSolver>
-    --gtest_filter=AdaptiveSoftContactModelTest.*
-)
-add_test(
-  NAME test_SoftWormModel
-  COMMAND
-    $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=SoftWormModelTest.*
-)
-add_test(
   NAME test_ContactArrowLayout
   COMMAND
     $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
 )
 set_tests_properties(
-  test_AdaptiveSoftContactModel
-  test_SoftWormModel
   test_ContactArrowLayout
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
@@ -263,10 +245,9 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
   # The gcov-instrumented coverage job excludes this pair (`--label-exclude
   # no-coverage-value` in pixi's build-coverage): measured there, the gates
   # took 3337 s and the sweep overran even 7200 s at a ~490x slowdown, while
-  # contributing no coverage the report can see -- coverage-report strips
-  # */python/native/* and */tests/* from coverage.info, and the dart-core paths
-  # these drive are already executed by test_SoftWormModel and
-  # test_AdaptiveSoftContactModel. Every functional CI job still runs both.
+  # adding no coverage in that measurement before the Python model ports.
+  # coverage-report strips */python/native/* and */tests/* from coverage.info.
+  # Every functional CI job still runs both.
   set_tests_properties(
     test_SoftFootSimbiconModel
     test_SoftFootSimbiconPushSweep

@@ -1,12 +1,17 @@
 """Native playback restores soft points and retains its World safely."""
 
 import gc
+import sys
 import weakref
+from pathlib import Path
 
 import dartpy as dart
 import numpy as np
 import pytest
 from dartpy import _demos
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from examples.demos.models import soft_worm
 
 
 def _rigid_world():
@@ -18,26 +23,26 @@ def _rigid_world():
 
 
 def test_history_restores_skeleton_and_soft_point_states():
-    world, worm = _demos.soft_worm.create_world()
+    world, worm = soft_worm.create_world()
     history = _demos.WorldHistory(world)
     assert history.world is world
     assert history.max_frames == 4000
     snapshots = [
-        (worm.getPositions().copy(), _demos.soft_worm.position_checksum(worm))
+        (worm.getPositions().copy(), soft_worm.position_checksum(worm))
     ]
     for _ in range(3):
-        _demos.soft_worm.apply_gait(worm, world.getTime(), True)
+        soft_worm.apply_gait(worm, world.getTime(), True)
         world.step()
         history.record()
         snapshots.append(
-            (worm.getPositions().copy(), _demos.soft_worm.position_checksum(worm))
+            (worm.getPositions().copy(), soft_worm.position_checksum(worm))
         )
     assert history.size == history.frames_recorded == 4
     for index, (positions, checksum) in enumerate(snapshots):
         history.move_to(index)
         assert history.current_index == index
         np.testing.assert_array_equal(worm.getPositions(), positions)
-        assert _demos.soft_worm.position_checksum(worm) == checksum
+        assert soft_worm.position_checksum(worm) == checksum
 
 
 def test_history_caps_frames_branches_and_clamps_playback():

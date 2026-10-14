@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+from examples.demos.models import soft_worm as worm_model
+
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
@@ -58,7 +60,7 @@ def _state(world):
         for body in _soft_bodies(skeleton):
             values.extend((body.getCOM(), body.getCOMLinearVelocity()))
         if skeleton.getName() == "soft_worm":
-            values.append([dart._demos.soft_worm.position_checksum(skeleton)])
+            values.append([worm_model.position_checksum(skeleton)])
     for i in range(world.getNumSimpleFrames()):
         values.append(world.getSimpleFrame(i).getRelativeTransform().translation())
     return np.concatenate(values).copy()
@@ -221,11 +223,11 @@ def test_soft_playback_keys_and_display(scene_id, controls):
     np.testing.assert_array_equal(world.getGravity(), [0, 0, -9.81])
 
 
-def test_adaptive_controls_and_native_markers(controls, monkeypatch):
-    native = dart._demos.adaptive_soft_contact
+def test_adaptive_controls_and_markers(controls, monkeypatch):
+    from examples.demos.models import adaptive_soft_contact as adaptive_model
     models = []
     settings = []
-    create_model, configure = native.create_model, native.configure
+    create_model, configure = adaptive_model.create_model, adaptive_model.configure
 
     def create(*args, **kwargs):
         model = create_model(*args, **kwargs)
@@ -236,8 +238,8 @@ def test_adaptive_controls_and_native_markers(controls, monkeypatch):
         settings.append(kwargs)
         configure(model, **kwargs)
 
-    monkeypatch.setattr(native, "create_model", create)
-    monkeypatch.setattr(native, "configure", apply)
+    monkeypatch.setattr(adaptive_model, "create_model", create)
+    monkeypatch.setattr(adaptive_model, "configure", apply)
     setup = _scene("adaptive_soft_contact").factory()
     model = models[0]
     checkbox = _control(controls, "Adaptive activation")
@@ -246,7 +248,7 @@ def test_adaptive_controls_and_native_markers(controls, monkeypatch):
     action.callback()
     assert not checkbox.value
     setup.pre_refresh()
-    assert native.compute_checksum(model).active == model.soft_body.getNumPointMasses()
+    assert adaptive_model.compute_checksum(model).active == model.soft_body.getNumPointMasses()
     _edit(checkbox, True)
     _edit(_control(controls, "Contact rings"), 3)
     _edit(_control(controls, "Linger steps"), 27)
@@ -257,7 +259,7 @@ def test_adaptive_controls_and_native_markers(controls, monkeypatch):
         "ring_count": 3,
         "linger_steps": 27,
     }
-    positions, flags = native.point_positions(model), native.active_flags(model)
+    positions, flags = adaptive_model.point_positions(model), adaptive_model.active_flags(model)
     assert setup.world.getNumSimpleFrames() == len(flags)
     for i, (position, active) in enumerate(zip(positions, flags)):
         marker = setup.world.getSimpleFrame(i)
@@ -276,9 +278,9 @@ def test_adaptive_controls_and_native_markers(controls, monkeypatch):
         for i in range(len(flags))
     ]
     model.soft_skeleton.setPosition(3, float("nan"))
-    invalid_positions = native.point_positions(model)
+    invalid_positions = adaptive_model.point_positions(model)
     invalid_positions[0] = np.nan
-    monkeypatch.setattr(native, "point_positions", lambda _model: invalid_positions)
+    monkeypatch.setattr(adaptive_model, "point_positions", lambda _model: invalid_positions)
     setup.post_step()
     setup.pre_refresh()
     assert _control(controls, "State is non-finite").visible
@@ -289,7 +291,8 @@ def test_adaptive_controls_and_native_markers(controls, monkeypatch):
         )
 
 
-def test_worm_gait_key_panel_and_nonfinite_guard(controls):
+@pytest.mark.parametrize("nonfinite_state", ["skeleton", "soft_point"])
+def test_worm_gait_key_panel_and_nonfinite_guard(controls, nonfinite_state):
     setup = _scene("soft_worm").factory()
     worm = setup.world.getSkeleton("soft_worm")
     gait = _control(controls, "Traveling-wave gait")
@@ -308,7 +311,10 @@ def test_worm_gait_key_panel_and_nonfinite_guard(controls):
     setup.pre_refresh()
     assert any(c.label.startswith("Frame: 3   contacts:") for c in controls)
     assert any(c.label.startswith("Position checksum:") for c in controls)
-    worm.setPosition(6, float("nan"))
+    if nonfinite_state == "skeleton":
+        worm.setPosition(6, float("nan"))
+    else:
+        worm.getBodyNode(0).get_point_mass(0).positions = [np.nan, 0, 0]
     setup.post_step()
     setup.pre_refresh()
     assert not gait.value

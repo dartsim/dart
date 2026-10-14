@@ -238,6 +238,98 @@ claim is made. No performance claim is made.
 - `pixi run lint` and `check-lint` pass; final pre-commit lint and staged
   local-path check cover the completed evidence notes.
 
+## Soft-worm and adaptive-contact packet, 2026-10-14
+
+Reference native sources: `3e55e373c`. Immutable native and mixed extensions
+retain both helpers; the mixed reference also contains the ordinary soft-body
+bindings. Final deletion and shared registration follow the accepted comparisons.
+
+### Numerical, boundary and ownership evidence
+
+- Worm: all 3,001 states of 1,694 values match bit-for-bit, including all 130
+  point masses' local positions, velocities, world positions and forces,
+  joint positions/velocities/accelerations/forces/commands, body transforms and
+  the ordered long-double checksum. Both the original native baseline and a
+  separate Python 3,000-step repeat are identical. Root displacement is
+  1.6374483483834361; final checksum is 91066.0472284822.
+- Review found differences in numeric conversion, strict boolean validation
+  and nonfinite phase handling. The corrected gait matches all 54 native input
+  cases and 22 exception pairs, including numeric protocols, NumPy scalars,
+  nonfinite/overflow phases and disabled calls. The complete trajectory and
+  independent repeat were rerun after the correction and remain bit-identical.
+- Adaptive contact: 37 saved trace arrays agree over 2,000 steps in adaptive
+  and all-active worlds. All point/joint state, transforms, contacts and flags
+  are exact; checksum/surface diagnostics differ by at most 5.56e-17. Repeated
+  Python runs are exact. Each body has 86 points; adaptive activation is reduced
+  for 1,987 steps, both worlds have contacts for 1,596 steps, final activation
+  is 37/86, and maximum surface-pose delta is 0.0595341, below the 0.25 gate.
+- The second review found matching numeric-conversion drift in the pusher.
+  The corrected conversion and fourteen regression cases pass; all 54 native
+  boundary cases and twenty exception pairs match with bit-identical poses,
+  including buffers, float subclasses, numeric protocols and nonfinite phases.
+  The full trajectory/repeat recheck after this correction preserves all 37
+  arrays within the same diagnostic-roundoff bounds and repeats exactly.
+- Typed settings, pusher nonfinite behavior, finite guards, copied outputs and
+  child resource lifetime are preserved. Borrowed children retain the native
+  Skeleton; the unused private Python Model shell can release. No artificial
+  Python shell pins are added. Running scenes retain their World/model.
+- Ordinary bindings expose copied read-only point arrays, checked point lookup,
+  adaptive settings and the existing revolute soft-body factory. Focused tests
+  cover invalid indices, array independence, direct nonfinite native state and
+  retained point/body resource use. The still-native history tests now use an
+  independent generic soft-body C++ fixture and the Python worm fixture.
+- Second review reproduced a stale point handle after inherited `BodyNode.copy`
+  shrinks soft topology. Retaining the body cannot retain points it deletes;
+  both properties and the existing point-impulse API need destruction-aware
+  input rejection. A per-wrapper native destruction observer now rejects
+  expired PointMass conversion and skips expired identities at reused native
+  addresses. All three subprocess regressions fail against the old extension,
+  including a regrowth SIGSEGV. Live identity, equal-size copying, movement,
+  getters/setters, impulse arguments and cleanup have regression coverage;
+  all three regressions pass after rebuilding, within the 66-test focused gate.
+
+### Visual evidence
+
+Six matched Vulkan/Lavapipe worm captures at steps 0, 1,500 and 3,000 fit all
+five colored links; view assessments and image verdicts pass. All 3,001 rows of
+the scene's 134-value trace and construction/material metadata agree exactly.
+Images corroborate complete geometry, gait and root advancement; the captured
+UI contact count is zero, so these images do not prove floor contact.
+
+Four fitted adaptive/all-active captures after 2,000 steps fit the entire
+ellipsoid and pusher. All nineteen state/marker arrays per mode, literal cameras
+and bounds match exactly; image verdicts pass with zero differing pixels.
+Semantic inspection confirms the adaptive lower/side gold region and 37/86
+count, compared with all-active gold surface and 86/86. Physical-body view
+assessments pass. Raw marker reports retain their ambiguity flag because the
+embedded glyphs overlap; inspection assesses the displayed region, not each
+glyph's separation. Markers remain a contact-nearest region estimate sized to
+the public active count, not exact native activation membership. Ordinary
+rendering corroborates these structural claims; no performance claim is made.
+
+### Checks and reviews
+
+- Final mixed-reference focused gates: 37 worm tests and 53 adaptive tests pass.
+- Post-removal worm gate: 37 passed; final core/ownership/history gate: 66 passed.
+- Independent C++ WorldHistory fixture builds and its CTest passes.
+- Post-removal `build-py-dev` and `build` pass. GUI-off full `tests` build
+  and all six retained native-model CTests pass. Vanilla system ImGui full
+  `tests`/dartpy build, final lifetime rebuild and 341 GUI-free
+  model/math/optimizer/core tests pass. Catalog retains the rebuild hint.
+- Two independent final source/numeric/visual reviews are clean after both
+  conversion fixes and the lifetime guard; all ten original captures were
+  inspected.
+- Final sequential `pixi run test-all`: 185 CTests and 1,782 Python tests pass,
+  with two Python-version skips and 54 planned DART 7 acceptance failures.
+- Final `pixi run test-gui`: ten CTests and 516 Python tests pass, with one
+  Python-version skip and two planned final-render API failures.
+- Strict catalog cycle: all 37 scenes twice, two frames each, zero skipped.
+- An earlier aggregate launcher returned status 143 after printing both
+  passing subgates; it is excluded as an aggregate result. The final post-fix
+  launch completes with status zero and the counts above.
+- `pixi run lint`, `check-lint`, diff and local-path checks cover the final
+  source; final pre-commit lint also covers the completed evidence notes.
+
 ## Limits
 
 No WAM backend change is implemented. The analytical prototype's sampled

@@ -411,6 +411,21 @@ void Skeleton(nb::module_& m)
           nb::arg("parent").none(),
           nb::arg("jointProperties"),
           nb::arg("bodyProperties"))
+      .def(
+          "create_revolute_joint_and_soft_body_node_pair",
+          [](dart::dynamics::Skeleton* self,
+             dart::dynamics::BodyNode* parent,
+             const dart::dynamics::RevoluteJoint::Properties& jointProperties,
+             const dart::dynamics::SoftBodyNode::Properties& bodyProperties) {
+            return self->createJointAndBodyNodePair<
+                dart::dynamics::RevoluteJoint,
+                dart::dynamics::SoftBodyNode>(
+                parent, jointProperties, bodyProperties);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("parent").none(),
+          nb::arg("joint_properties"),
+          nb::arg("body_properties"))
       // clang-format on
       .def(
           "getNumBodyNodes",
