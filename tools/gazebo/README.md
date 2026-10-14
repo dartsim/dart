@@ -296,10 +296,12 @@ Union types retain `union_declarations`, and union fields retain their enclosing
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
 value-owned subobjects and unnamed bit-field padding.
-Direct function-pointer fields, including qualified member pointers, retain their
-pointer declarator, array extents and
-alignment in `storage_declarator`; their return and parameter types do not describe
-inline storage. Function declarations through aliases have no inline storage.
+Direct and aliased function-pointer fields, including qualified member pointers,
+retain their physical pointer declarators, array extents and alignment spellings
+in `storage_declarator`, using fragments from the field and its indexed aliases.
+Their return and parameter types do not describe inline storage. Alignment
+evidence includes `alignas` and GNU alignment attributes. Function declarations
+through aliases have no inline storage.
 Owned union fields also retain their types' `union_declarations`.
 Inline field types retain alias targets and enum headers
 in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
@@ -312,7 +314,8 @@ dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
 initializer dependencies and the constructors required by class-valued defaults.
 Function-type parameters are adjusted to pointers before default construction
-analysis, so they do not construct their return types.
+analysis, so they do not construct their return types. Parenthesized object
+parameter names preserve their value, pointer, reference or array semantics.
 Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
