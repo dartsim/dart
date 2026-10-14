@@ -19735,3 +19735,792 @@ def test_round22_callable_alias_compositions(
         _scan_receiver_api(extractor, tmp_path, header.replace(old, new), source)
         != before
     )
+
+
+ROUND23_SOURCE_TYPE_HIDER_CASES = [
+    (
+        "nested_struct",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {struct factory {};void use(){factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_class",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {class factory {};void use(){factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_union",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {union factory {int value;};void use(){factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_scoped_enum",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {enum class factory {zero};void use(){(void)factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_unscoped_enum",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {enum factory {zero};void use(){(void)factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_using_primitive",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {using factory=int;void use(){(void)factory(2);}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_using_foreign",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Foreign {};struct Derived:dart::Holder {using factory=Foreign;void use(){factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_typedef",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {typedef int factory;void use(){(void)factory(2);}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_template_class",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {template<class T=int>struct factory {};void use(){factory<>();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "nested_template_alias",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {template<class T>using factory=T;void use(){(void)factory<int>(2);}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "source_parent_type_hider",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Parent:dart::Holder {struct factory {};};struct Derived:Parent {void use(){factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "out_of_line_type_hider",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {using factory=int;void use();};void Derived::use(){(void)factory(2);}",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "forward_nested_type",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {struct factory;void use();};struct Derived::factory {};void Derived::use(){factory();}",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "dart_type_alias_construction",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {using factory=dart::A;void use(){factory();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "actual_inherited_callback",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {void use(){factory()->hit();}};",
+        "void hit();",
+        "void hit() = delete;",
+        True,
+        True,
+        "precise",
+        1,
+    ),
+    (
+        "unrelated_nested_type",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {struct Other {};void use(){factory()->hit();}};",
+        "void hit();",
+        "void hit() = delete;",
+        True,
+        True,
+        "precise",
+        1,
+    ),
+    (
+        "sibling_type_does_not_hide",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Other:dart::Holder {struct factory {};};struct Derived:dart::Holder {void use(){factory()->hit();}};",
+        "void hit();",
+        "void hit() = delete;",
+        True,
+        True,
+        "precise",
+        1,
+    ),
+    (
+        "class_using_reintroduces_field",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Parent:dart::Holder {struct factory {};};struct Derived:Parent {using dart::Holder::factory;void use(){factory()->hit();}};",
+        "void hit();",
+        "void hit() = delete;",
+        True,
+        True,
+        "precise",
+        2,
+    ),
+    (
+        "out_of_line_real_call",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Derived:dart::Holder {struct Other {};void use();};void Derived::use(){factory()->hit();}",
+        "void hit();",
+        "void hit() = delete;",
+        True,
+        True,
+        "precise",
+        1,
+    ),
+    (
+        "qualified_namespace_sibling",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "namespace left {struct Derived:dart::Holder {struct factory {};};}namespace right {struct Derived:dart::Holder {void use(){factory()->hit();}};}",
+        "void hit();",
+        "void hit() = delete;",
+        True,
+        True,
+        "precise",
+        1,
+    ),
+    (
+        "known_foreign_method_hider",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "struct Foreign {void hit();};struct Derived:dart::Holder {static Foreign* factory();void use(){factory()->hit();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "absent",
+        0,
+    ),
+    (
+        "unknown_parameter_fallback",
+        "namespace dart {struct A {void hit();};struct Holder {static A*(*factory)();};}",
+        "template<class T>struct Derived:dart::Holder {void use(T* factory,dart::A* anchor){(void)anchor;factory->hit();}};",
+        "static A*(*factory)();",
+        "static int*(*factory)();",
+        False,
+        False,
+        "unknown",
+        0,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,drift,breaking,hit,factory_count",
+    ROUND23_SOURCE_TYPE_HIDER_CASES,
+    ids=[row[0] for row in ROUND23_SOURCE_TYPE_HIDER_CASES],
+)
+def test_source_member_type_hiders_round23(
+    extractor,
+    tmp_path,
+    label,
+    header,
+    source,
+    old,
+    new,
+    drift,
+    breaking,
+    hit,
+    factory_count,
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    fields = _entries(before, "data_members")
+    members = _entries(before, "members")
+    assert fields.get("factory", {}).get("count", 0) == factory_count
+    if hit == "absent":
+        assert "hit" not in members
+    elif hit == "precise":
+        assert members["hit"]["receiver_types"] == ["dart::A"]
+        assert members["hit"]["unresolved_count"] == 0
+    else:
+        assert members["hit"]["unresolved_count"] == 1
+    after = _scan_receiver_api(extractor, tmp_path, header.replace(old, new), source)
+    assert (before != after) == drift
+
+
+R23_FUNCTION_A = "namespace dart {class A {int storage;public:A()=default;};}"
+
+R23_FUNCTION_NO_A = R23_FUNCTION_A.replace("A()=default;", "A()=delete;")
+
+ROUND23_FUNCTION_PARAMETER_CASES = []
+
+for label, declaration, includes in [
+    ("named_function", "void consume(A callback()=nullptr);", ""),
+    ("unnamed_function", "void consume(A()=nullptr);", ""),
+    ("named_function_arguments", "void consume(A callback(int)=nullptr);", ""),
+    ("unnamed_function_arguments", "void consume(A(int)=nullptr);", ""),
+    ("qualified_unnamed_function", "void consume(dart::A()=nullptr);", ""),
+    ("const_unnamed_return", "void consume(const A()=nullptr);", ""),
+    ("const_named_return", "void consume(const A callback()=nullptr);", ""),
+    ("pointer_return_function", "void consume(A* callback()=nullptr);", ""),
+    ("reference_return_function", "void consume(A& callback()=nullptr);", ""),
+    ("noexcept_function", "void consume(A callback() noexcept=nullptr);", ""),
+    ("using_named_function", "using Fn=A();void consume(Fn callback=nullptr);", ""),
+    ("using_unnamed_function", "using Fn=A();void consume(Fn=nullptr);", ""),
+    ("typedef_named_function", "typedef A Fn();void consume(Fn callback=nullptr);", ""),
+    ("typedef_unnamed_function", "typedef A Fn();void consume(Fn=nullptr);", ""),
+    (
+        "function_alias_chain",
+        "using Fn=A();using Other=Fn;void consume(Other callback=nullptr);",
+        "",
+    ),
+    ("noexcept_function_alias", "using Fn=A() noexcept;void consume(Fn=nullptr);", ""),
+    (
+        "variant_return_function",
+        "void consume(std::variant<A,int> callback()=nullptr);",
+        "#include <variant>\n",
+    ),
+    (
+        "variant_return_alias",
+        "using Fn=std::variant<A,int>();void consume(Fn=nullptr);",
+        "#include <variant>\n",
+    ),
+    (
+        "array_return_function",
+        "void consume(std::array<A,2> callback()=nullptr);",
+        "#include <array>\n",
+    ),
+    (
+        "array_return_alias",
+        "using Fn=std::array<A,2>();void consume(Fn callback=nullptr);",
+        "#include <array>\n",
+    ),
+    (
+        "known_callback",
+        "A make();constexpr auto callback=&make;void consume(A value()=callback);",
+        "",
+    ),
+    ("function_reference", "A make();void consume(A (&callback)()=make);", ""),
+    (
+        "function_alias_reference",
+        "A make();using Fn=A();void consume(Fn& callback=make);",
+        "",
+    ),
+    ("explicit_function_pointer", "void consume(A (*callback)()=nullptr);", ""),
+    ("unnamed_function_pointer", "void consume(A (*)()=nullptr);", ""),
+    ("array_parameter", "void consume(A value[2]=nullptr);", ""),
+    ("unnamed_array_parameter", "void consume(A[2]=nullptr);", ""),
+    ("array_alias_parameter", "using Values=A[2];void consume(Values=nullptr);", ""),
+    (
+        "typedef_array_parameter",
+        "typedef A Values[2];void consume(Values value=nullptr);",
+        "",
+    ),
+    (
+        "empty_std_function",
+        "void consume(std::function<A()> value={});",
+        "#include <functional>\n",
+    ),
+]:
+    before = includes + R23_FUNCTION_A + "namespace dart {" + declaration + "}"
+    after = includes + R23_FUNCTION_NO_A + "namespace dart {" + declaration + "}"
+    ROUND23_FUNCTION_PARAMETER_CASES.append(
+        (label, before, after, "void use(){dart::consume();}", False, False)
+    )
+
+for label, declaration in [
+    ("value_default", "void consume(A value={});"),
+    ("unnamed_value_default", "void consume(A={});"),
+    ("value_alias_default", "using Value=A;void consume(Value value={});"),
+    ("temporary_reference_default", "void consume(const A& value={});"),
+    ("value_after_function", "void consume(A callback()=nullptr,A value={});"),
+    ("value_before_function", "void consume(A value={},A callback()=nullptr);"),
+    ("pointer_constructing_default", "void consume(A* value=new A{});"),
+]:
+    ROUND23_FUNCTION_PARAMETER_CASES.append(
+        (
+            label,
+            R23_FUNCTION_A + "namespace dart {" + declaration + "}",
+            R23_FUNCTION_NO_A + "namespace dart {" + declaration + "}",
+            "void use(){dart::consume();}",
+            True,
+            True,
+        )
+    )
+
+ROUND23_FUNCTION_PARAMETER_CASES.extend(
+    [
+        (
+            "member_function_parameter",
+            R23_FUNCTION_A
+            + "namespace dart {struct Factory {void consume(A callback()=nullptr);};}",
+            R23_FUNCTION_NO_A
+            + "namespace dart {struct Factory {void consume(A callback()=nullptr);};}",
+            "void use(dart::Factory& factory){factory.consume();}",
+            False,
+            False,
+        ),
+        (
+            "constructor_function_parameter",
+            R23_FUNCTION_A
+            + "namespace dart {class Factory {public:Factory(A callback()=nullptr);};}",
+            R23_FUNCTION_NO_A
+            + "namespace dart {class Factory {public:Factory(A callback()=nullptr);};}",
+            "void use(){dart::Factory factory;}",
+            False,
+            False,
+        ),
+        (
+            "declaration_scope_alias",
+            R23_FUNCTION_A
+            + "namespace dart {namespace api {using Fn=A();void consume(Fn callback=nullptr);}}",
+            R23_FUNCTION_NO_A
+            + "namespace dart {namespace api {using Fn=A();void consume(Fn callback=nullptr);}}",
+            "void use(){dart::api::consume();}",
+            False,
+            False,
+        ),
+        (
+            "callback_constant_dependency",
+            R23_FUNCTION_A
+            + "namespace dart {A first();A second();constexpr auto callback=&first;constexpr auto selected=callback;void consume(A value()=selected);}",
+            R23_FUNCTION_A
+            + "namespace dart {A first();A second();constexpr auto callback=&second;constexpr auto selected=callback;void consume(A value()=selected);}",
+            "static_assert(dart::selected==&dart::first);void use(){dart::consume();}",
+            True,
+            True,
+        ),
+    ]
+)
+
+
+@pytest.mark.parametrize(
+    ("label", "before_header", "after_header", "source", "drift", "breaks"),
+    ROUND23_FUNCTION_PARAMETER_CASES,
+)
+def test_round23_default_function_parameter_adjustment(
+    extractor, tmp_path, label, before_header, after_header, source, drift, breaks
+):
+    before = _scan_receiver_api(extractor, tmp_path, before_header, source)
+    after = _scan_receiver_api(extractor, tmp_path, after_header, source)
+    assert (before != after) == drift
+    if label == "callback_constant_dependency":
+        defaults = _entries(before, "free_functions")["dart::consume"][
+            "default_argument_declarations"
+        ]
+        assert any("callback = & first" in item["signature"] for item in defaults)
+        assert any("selected = callback" in item["signature"] for item in defaults)
+
+
+ROUND23_MEMBER_POINTER_CASES = [
+    (
+        "member_callback_array",
+        "namespace dart {struct A {void(A::*callback[2])();};}",
+        "namespace dart {struct A {void(A::*callback[3])();};}",
+        "static_assert(sizeof(dart::A)==2*sizeof(void(dart::A::*)()));",
+        True,
+    ),
+    (
+        "qualified_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {void(dart::Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};struct Holder {void(dart::Owner::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "global_qualified_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {void(::dart::Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};struct Holder {void(::dart::Owner::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "templated_owner_member_callback_array",
+        "namespace dart {template<class T> struct Owner {};struct Holder "
+        "{void(Owner<int>::*callback[2])();};}",
+        "namespace dart {template<class T> struct Owner {};struct Holder "
+        "{void(Owner<int>::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner<int>::*)()));",
+        True,
+    ),
+    (
+        "nested_templated_owner_member_callback_array",
+        "namespace dart {template<class T> struct Outer {struct Owner {};};struct Holder "
+        "{void(Outer<int>::Owner::*callback[2])();};}",
+        "namespace dart {template<class T> struct Outer {struct Owner {};};struct Holder "
+        "{void(Outer<int>::Owner::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Outer<int>::Owner::*)()));",
+        True,
+    ),
+    (
+        "private_member_callback_array",
+        "namespace dart {struct Owner {};class Holder {void(Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};class Holder {void(Owner::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "grouped_member_callback_arrays",
+        "namespace dart {struct Owner {};struct Holder "
+        "{void(Owner::*first[1])(),(Owner::*second[2])();};}",
+        "namespace dart {struct Owner {};struct Holder "
+        "{void(Owner::*first[1])(),(Owner::*second[3])();};}",
+        "static_assert(sizeof(dart::Holder)==3*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "grouped_member_callback_three",
+        "namespace dart {struct Owner {};struct Holder "
+        "{void(Owner::*first[1])(),(Owner::*second[1])(),(Owner::*third[2])();};}",
+        "namespace dart {struct Owner {};struct Holder "
+        "{void(Owner::*first[1])(),(Owner::*second[1])(),(Owner::*third[3])();};}",
+        "static_assert(sizeof(dart::Holder)==4*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "method_then_member_callback",
+        "namespace dart {struct Owner {};struct Holder {void method(),(Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};struct Holder {void method(),(Owner::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "member_callback_then_method",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])(),method();};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[3])(),method();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "typedef_member_callback_array",
+        "namespace dart {struct Owner {};typedef void(Owner::*Callback)();struct Holder {Callback "
+        "callback[2];};}",
+        "namespace dart {struct Owner {};typedef void(Owner::*Callback)();struct Holder {Callback "
+        "callback[3];};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "class_typedef_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {typedef void(Owner::*Callback)();Callback "
+        "callback[2];};}",
+        "namespace dart {struct Owner {};struct Holder {typedef void(Owner::*Callback)();Callback "
+        "callback[3];};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "using_member_callback_array",
+        "namespace dart {struct Owner {};using Callback=void(Owner::*)();struct Holder {Callback "
+        "callback[2];};}",
+        "namespace dart {struct Owner {};using Callback=void(Owner::*)();struct Holder {Callback "
+        "callback[3];};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "using_member_callback_array_type",
+        "namespace dart {struct Owner {};using Callbacks=void(Owner::*[2])();struct Holder {Callbacks "
+        "callback;};}",
+        "namespace dart {struct Owner {};using Callbacks=void(Owner::*[3])();struct Holder {Callbacks "
+        "callback;};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "typedef_member_callback_array_type",
+        "namespace dart {struct Owner {};typedef void(Owner::*Callbacks[2])();struct Holder {Callbacks "
+        "callback;};}",
+        "namespace dart {struct Owner {};typedef void(Owner::*Callbacks[3])();struct Holder {Callbacks "
+        "callback;};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "grouped_typedef_member_callback_arrays",
+        "namespace dart {struct Owner {};typedef void(Owner::*First)(),(Owner::*Second)();struct Holder "
+        "{Second callback[2];};}",
+        "namespace dart {struct Owner {};typedef void(Owner::*First)(),(Owner::*Second)();struct Holder "
+        "{Second callback[3];};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "const_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*const "
+        "callback[2])()={nullptr,nullptr};};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*const "
+        "callback[3])()={nullptr,nullptr};};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "noexcept_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])()noexcept;};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[3])()noexcept;};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "trailing_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {auto(Owner::*callback[2])()->void;};}",
+        "namespace dart {struct Owner {};struct Holder {auto(Owner::*callback[3])()->void;};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "multidimensional_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2][2])();};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[3][3])();};}",
+        "static_assert(sizeof(dart::Holder)==4*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "aligned_member_callback_array",
+        "namespace dart {struct Owner {};struct Holder {alignas(64) void(Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};struct Holder {alignas(32) void(Owner::*callback[2])();};}",
+        "static_assert(alignof(dart::Holder)==64);",
+        True,
+    ),
+    (
+        "constant_member_callback_extent",
+        "namespace dart {struct Owner {};constexpr int COUNT=2;struct Holder "
+        "{void(Owner::*callback[COUNT])();};}",
+        "namespace dart {struct Owner {};constexpr int COUNT=3;struct Holder "
+        "{void(Owner::*callback[COUNT])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        True,
+    ),
+    (
+        "return_type_not_owned",
+        "namespace dart {struct Owner {};struct Holder {int(Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};struct Holder {double(Owner::*callback[2])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        False,
+    ),
+    (
+        "parameter_type_not_owned",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])(int);};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])(double);};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        False,
+    ),
+    (
+        "cv_qualifier_not_storage",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])()const;};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])()volatile;};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        False,
+    ),
+    (
+        "noexcept_not_storage",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])()noexcept;};}",
+        "namespace dart {struct Owner {};struct Holder {void(Owner::*callback[2])();};}",
+        "static_assert(sizeof(dart::Holder)==2*sizeof(void(dart::Owner::*)()));",
+        False,
+    ),
+    (
+        "static_member_callback_extent",
+        "namespace dart {struct Owner {};struct Holder {static void(Owner::*callback[2])();};}",
+        "namespace dart {struct Owner {};struct Holder {static void(Owner::*callback[3])();};}",
+        "static_assert(sizeof(dart::Holder)==1);",
+        False,
+    ),
+    (
+        "return_constructor_not_owned",
+        "namespace dart {struct A {A()=default;int payload;};struct Owner {};struct Holder "
+        "{A(Owner::*callback[2])();};}",
+        "namespace dart {struct A {A()=delete;int payload;};struct Owner {};struct Holder "
+        "{A(Owner::*callback[2])();};}",
+        "void use(){dart::Holder value;(void)value;}",
+        False,
+    ),
+    (
+        "parameter_constructor_not_owned",
+        "namespace dart {struct A {A()=default;int payload;};struct Owner {};struct Holder "
+        "{void(Owner::*callback[2])(A);};}",
+        "namespace dart {struct A {A()=delete;int payload;};struct Owner {};struct Holder "
+        "{void(Owner::*callback[2])(A);};}",
+        "void use(){dart::Holder value;(void)value;}",
+        False,
+    ),
+    (
+        "owner_constructor_not_owned",
+        "namespace dart {struct A {A()=default;int payload;};struct Owner {};struct Holder "
+        "{void(A::*callback[2])();};}",
+        "namespace dart {struct A {A()=delete;int payload;};struct Owner {};struct Holder "
+        "{void(A::*callback[2])();};}",
+        "void use(){dart::Holder value;(void)value;}",
+        False,
+    ),
+    (
+        "member_callback_pointer_array_not_owned",
+        "namespace dart {struct A {A()=default;int payload;};struct Owner {};struct Holder "
+        "{A(Owner::*(*callback)[2])();};}",
+        "namespace dart {struct A {A()=delete;int payload;};struct Owner {};struct Holder "
+        "{A(Owner::*(*callback)[2])();};}",
+        "void use(){dart::Holder value;(void)value;}",
+        False,
+    ),
+    (
+        "member_callback_reference_array_not_owned",
+        "namespace dart {struct A {A()=default;int payload;};struct Owner {};struct Holder "
+        "{A(Owner::*(&callback)[2])();};}",
+        "namespace dart {struct A {A()=delete;int payload;};struct Owner {};struct Holder "
+        "{A(Owner::*(&callback)[2])();};}",
+        "void use(){static_assert(sizeof(dart::Holder)>0);}",
+        False,
+    ),
+    (
+        "member_callback_alias_not_owned",
+        "namespace dart {struct A {A()=default;int payload;};struct Owner {};struct Holder {using "
+        "Callback=A(Owner::*)();Callback callback[2];};}",
+        "namespace dart {struct A {A()=delete;int payload;};struct Owner {};struct Holder {using "
+        "Callback=A(Owner::*)();Callback callback[2];};}",
+        "void use(){dart::Holder value;(void)value;}",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,header,changed,source,drift",
+    ROUND23_MEMBER_POINTER_CASES,
+    ids=[row[0] for row in ROUND23_MEMBER_POINTER_CASES],
+)
+def test_member_pointer_fields_preserve_storage(
+    extractor, tmp_path, name, header, changed, source, drift
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, changed, source)
+    assert (before != after) == drift
+    if name == "member_callback_array":
+        assert _entries(before, "types")["dart::A"]["layout_declarations"] == [
+            {
+                "class": "dart::A",
+                "storage_declarator": "( A :: * callback [ 2 ] )",
+                "access": "public",
+            }
+        ]
+    if name == "qualified_member_callback_array":
+        assert (
+            _entries(before, "types")["dart::Holder"]["layout_declarations"][0][
+                "storage_declarator"
+            ]
+            == "( dart :: Owner :: * callback [ 2 ] )"
+        )
+    if name.endswith("not_owned"):
+        assert "dart::A" not in _entries(before, "types")
+        assert all(
+            declaration.get("class") != "dart::A"
+            for row in before["constructors"]
+            for declaration in row.get("declarations", [])
+        )
+
+
+def test_member_pointer_declarator_keeps_qualified_shape(extractor):
+    values = extractor.TOKEN.findall("void ( dart::Owner<int>::* callback [2][3] ) ()")
+    shape = extractor.function_pointer_declarator(values)
+    assert shape["member_pointer"]
+    assert shape["array_dimensions"] == 2
+    assert values[shape["name_index"]] == "callback"
+    assert shape["return_tokens"] == extractor.TOKEN.findall(
+        "void ( dart::Owner<int>::* ) ()"
+    )
+    assert extractor.function_type_signature(values) is None
+    assert extractor.function_declarations(values, "dart::Holder") == []
+
+
+def test_member_pointer_grouped_declarations_keep_shared_type(extractor):
+    values = extractor.TOKEN.findall(
+        "void ( Owner::* first [1] ) (), ( Owner::* second [2] ) ()"
+    )
+    fields = extractor.data_declarations(values, "dart::Holder")
+    assert [field["name"] for field in fields] == ["first", "second"]
+    assert all(field["array_dimensions"] == 1 for field in fields)
+    assert fields[1]["signature"] == "void ( Owner :: * second [ 2 ] ) ( )"
+    assert values[fields[1]["name_index"]] == "second"
+
+
+def test_member_pointer_classifier_leaves_ordinary_declarations(extractor):
+    assert (
+        extractor.function_pointer_declarator(extractor.TOKEN.findall("void method()"))
+        is None
+    )
+    assert (
+        extractor.function_pointer_declarator(extractor.TOKEN.findall("void values[2]"))
+        is None
+    )
+    shape = extractor.function_pointer_declarator(
+        extractor.TOKEN.findall("void (*callback[2])()")
+    )
+    assert not shape["member_pointer"]
+    assert shape["array_dimensions"] == 1

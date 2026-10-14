@@ -296,7 +296,8 @@ Union types retain `union_declarations`, and union fields retain their enclosing
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
 value-owned subobjects and unnamed bit-field padding.
-Direct function-pointer fields retain their pointer declarator, array extents and
+Direct function-pointer fields, including qualified member pointers, retain their
+pointer declarator, array extents and
 alignment in `storage_declarator`; their return and parameter types do not describe
 inline storage. Function declarations through aliases have no inline storage.
 Owned union fields also retain their types' `union_declarations`.
@@ -309,7 +310,10 @@ indirection; dereferenced layout operands retain the referenced object fields.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
-initializer dependencies and the constructors required by class-valued defaults. Class annotations, including export macro spellings,
+initializer dependencies and the constructors required by class-valued defaults.
+Function-type parameters are adjusted to pointers before default construction
+analysis, so they do not construct their return types.
+Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
 named bit-field widths are retained in `exception_specification_declarations`
@@ -341,8 +345,8 @@ Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
 contained receiver shapes through value, pointer and array expressions. Returned
 standard smart pointers preserve their wrapper types through `get()` and `lock()`
 chains.
-Source class aliases retain DART bases, and member lookup respects source declarations and
-class using-declarations. Lambda parameters and initialized captures stay within
+Source class aliases retain DART bases, and member lookup respects source declarations,
+nested types, type aliases and class using-declarations. Lambda parameters and initialized captures stay within
 their lambda body; capture initializers use the enclosing scope.
 Automatic declarations, including `decltype(auto)`, retain inferred return types.
 Concrete `decltype` declarations infer receiver shapes from their unevaluated

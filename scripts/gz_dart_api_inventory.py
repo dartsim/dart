@@ -409,11 +409,25 @@ def function_pointer_declarator(values):
             or values[opening] != "("
             or tokens.enclosing[opening] is not None
             or in_template_argument(values, opening)
-            or values[opening + 1 : opening + 2] not in (["*"], ["&"], ["&&"])
             or values[closing + 1 : closing + 2] != ["("]
         ):
             continue
         name = opening + 1
+        member_pointer = False
+        if values[name : name + 1] not in (["*"], ["&"], ["&&"]):
+            name = next(
+                (
+                    index + 1
+                    for index in range(name + 1, closing - 1)
+                    if values[index : index + 2] == ["::", "*"]
+                    and tokens.enclosing[index] == opening
+                    and not in_template_argument(values, index)
+                ),
+                closing,
+            )
+            member_pointer = name < closing
+        if name == closing:
+            continue
         while name < closing and values[name] in {"*", "&", "&&", "const", "volatile"}:
             name += 1
         element_end = name
@@ -464,6 +478,7 @@ def function_pointer_declarator(values):
                     else values[:element_end] + values[closing:]
                 ),
                 "array_dimensions": dimensions,
+                "member_pointer": member_pointer,
                 "array_pointer": dimensions > 0 and "*" in outer,
                 "array_reference": dimensions > 0
                 and bool({"&", "&&"}.intersection(outer)),
@@ -1943,11 +1958,32 @@ class ApiIndex:
             parameter = values[first:default]
             member = data_member(parameter, None)
             prefix = member["return_tokens"] if member else parameter
+            if not member:
+                function = declaration(parameter, None)
+                if (
+                    function
+                    and function["return_tokens"]
+                    and function["return_tokens"][-1] != "::"
+                    and any(
+                        value not in {"const", "volatile"}
+                        for value in function["return_tokens"]
+                    )
+                ):
+                    name_index = function["name_index"]
+                    prefix = parameter[:name_index] + parameter[name_index + 1 :]
             if member and parameter[
                 member["name_index"] + 1 : member["name_index"] + 2
             ] == ["["]:
                 prefix = [*prefix, "*"]
             prefix = construction_aliases(prefix, self, scope)
+            function = function_type_signature(prefix)
+            if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
+                function_opening = function["opening"]
+                prefix = (
+                    prefix[:function_opening]
+                    + ["(", "*", ")"]
+                    + prefix[function_opening:]
+                )
             if expression[:1] == ["{"]:
                 prefix = [
                     value
@@ -4845,7 +4881,12 @@ def scan_sources(api, source_root):
                                 depth + 1,
                             )
                         )
-            if (cls, name) in source_returns or name in source_fields[cls] or brought:
+            if (
+                (cls, name) in source_returns
+                or name in source_fields[cls]
+                or f"{cls}::{name}" in source_types
+                or brought
+            ):
                 return brought
         return set(local_bases.get(owner, ()))
 
