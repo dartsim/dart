@@ -71,8 +71,6 @@
   #include <dart/external/imgui/imgui.h>
 #endif
 
-#include <tinyxml2.h>
-
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -333,10 +331,10 @@ void printUsage(const std::string& programName)
          "excluded from the times).\n"
       << "                            Accepts only the shared SDF physics "
          "subset: flat models,\n"
-      << "                            plain poses, mass/inertia (unrotated), "
+      << "                            resolved frames, mass/inertia, "
          "box/sphere/cylinder/plane\n"
       << "                            collisions and fixed/revolute/prismatic/"
-         "universal/ball joints.\n"
+         "universal/ball/screw joints.\n"
       << "                            Physics supports step size and "
          "max_contacts; "
          "gravity defaults to -9.8.\n"
@@ -1765,8 +1763,9 @@ void applyOptions(
   }
 
   if (options.gzPreset) {
-    world->setGravity(
-        Eigen::Vector3d(0.0, 0.0, contact_scene::kGazeboDefaultGravity));
+    if (options.generatedObjects.has_value())
+      world->setGravity(
+          Eigen::Vector3d(0.0, 0.0, contact_scene::kGazeboDefaultGravity));
     world->getConstraintSolver()->getCollisionOption().collisionFilter
         = std::make_shared<contact_scene::GazeboContactFilter>();
   }
@@ -3018,10 +3017,13 @@ int main(int argc, char* argv[])
     std::cout << "Loading SDF world file: " << absoluteSdfPath << "\n";
 
     if (options.gzPreset) {
-      tinyxml2::XMLDocument sdf;
-      sdf.LoadFile(absoluteSdfPath.c_str());
+      std::ifstream stream(absoluteSdfPath);
+      const std::string xml(
+          (std::istreambuf_iterator<char>(stream)),
+          std::istreambuf_iterator<char>());
+      sdf::Root sdf;
       if (const auto unsupported
-          = contact_scene::findUnsupportedGazeboPresetSdf(sdf)) {
+          = contact_scene::findUnsupportedGazeboPresetSdf(xml, &sdf)) {
         std::cerr << "--gz-preset does not support " << absoluteSdfPath << ": "
                   << *unsupported
                   << ", so physics entities, geometry poses or contact "

@@ -60,7 +60,14 @@
     must rebuild.
   * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
     legacy CMake names and public `dart::utils` headers for rebuilt consumers.
-    Enabling IO now requires both tinyxml2 and urdfdom.
+    Enabling IO now requires tinyxml2, urdfdom, and sdformat 14.8 or newer.
+  * SDF loading uses canonical sdformat validation, version conversion and
+    frame semantics, including authored world gravity and joint effort and
+    velocity limits that the old parser ignored. Parse, resource and
+    unsupported-model failures now report
+    diagnostics and return `nullptr` (`None` in Python), including invalid poses
+    that previously threw exceptions. Check the returned value when loading
+    SDF. General nested models and non-tree joint structures remain unsupported.
   * Compile ImGui into `dart-gui`, preserving the `external-imgui` component
     and `dart-external-imgui` target as CMake forwarding names. They no longer
     provide the OpenGL2 backend (`imgui_impl_opengl2.h`) or depend on OpenGL,
@@ -77,24 +84,16 @@
     resource retriever and root-joint options.
     [#3653](https://github.com/dartsim/dart/pull/3653)
 
-  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
+  * SKEL and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
     4- or 6-element vector or pose value has the wrong number of elements,
     instead of writing out of bounds or leaving values unset in release
     builds. An MJCF weld `solref` with one value keeps the default for the
     other.
 
-  * SDF model, link, joint, visual, and collision poses honor
-    `rotation_format="quat_xyzw"` and Euler `degrees="true"`.
-    Invalid formats, value counts, zero quaternions, and quaternion poses in
-    degrees throw `std::invalid_argument`. A `relative_to` frame other than
-    the element's default frame is explicitly rejected instead of silently
-    misplacing the pose.
-
-  * SDF loading preserves rotated inertial tensors and sphere, ellipsoid,
-    and cylinder soft-shape poses. Empty poses use the identity. Versions
-    1.7–1.9 are admitted for the supported model subset, with unsupported
-    frame composition rejected explicitly; joint axes support
-    `expressed_in="__model__"`.
+  * SDF loading resolves named pose frames, joint endpoint frames, expressed
+    axes, rotated inertia and relative includes through sdformat. Meshes retain
+    their originating document for resource resolution. DART soft-shape poses,
+    empty identity poses and safely normalized quaternion poses remain supported.
 
   * Loading a SKEL world no longer crashes when the collision detector
     factory cannot create `fcl`, for example after an application

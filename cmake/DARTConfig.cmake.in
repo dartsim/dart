@@ -47,6 +47,10 @@ function(@PROJECT_NAME@_traverse_components output_variable)
 
       if(EXISTS "${component_include}" AND EXISTS "${target_include}")
         include("${component_include}")
+        if(component STREQUAL "io")
+          set_property(DIRECTORY PROPERTY DART_SDFORMAT_LIBRARIES
+            "${SDFORMAT_LIBRARIES}")
+        endif()
 
         set_property(DIRECTORY
           PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
@@ -69,6 +73,12 @@ function(@PROJECT_NAME@_traverse_components output_variable)
         # This is not necessary in recent versions of cmake, which supports
         # transitive includes via INTERFACE_INCLUDE_DIRECTORIES.
         foreach(dependency ${@PROJECT_NAME@_${component}_DEPENDENCIES})
+          get_property(dependency_found DIRECTORY
+            PROPERTY "@PROJECT_NAME_UPPERCASE@_${dependency}_FOUND")
+          if(NOT dependency_found)
+            set_property(DIRECTORY
+              PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" FALSE)
+          endif()
           set_property(DIRECTORY APPEND
             PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
             ${@PROJECT_NAME@_${dependency}_INCLUDE_DIRS})
@@ -172,6 +182,10 @@ if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)
     CACHE INTERNAL "")
 
   @PROJECT_NAME@_package_init(${@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS})
+  get_property(has_sdformat DIRECTORY PROPERTY DART_SDFORMAT_LIBRARIES SET)
+  if(has_sdformat)
+    get_property(SDFORMAT_LIBRARIES DIRECTORY PROPERTY DART_SDFORMAT_LIBRARIES)
+  endif()
 endif()
 
 list(REMOVE_AT CMAKE_MODULE_PATH -1)

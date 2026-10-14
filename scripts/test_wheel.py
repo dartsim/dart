@@ -12,6 +12,10 @@ import tempfile
 from pathlib import Path
 
 SMOKE_TEST = r"""
+import os
+import tempfile
+from pathlib import Path
+
 import dartpy as dart
 from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
@@ -37,6 +41,19 @@ skeleton = loader.parseSkeletonString(
 )
 assert skeleton is not None
 assert skeleton.getNumBodyNodes() == 1
+
+# Exercise embedded sdformat schemas and conversion without installed data.
+with tempfile.TemporaryDirectory() as sdf_directory:
+    os.environ["SDF_PATH"] = str(Path(sdf_directory) / "missing-schemas")
+    sdf_file = Path(sdf_directory) / "smoke.sdf"
+    sdf_file.write_text(
+        '<sdf version="1.4"><model name="sdf_smoke">'
+        '<link name="base"/></model></sdf>'
+    )
+    sdf_skeleton = SdfParser.readSkeleton(str(sdf_file))
+    assert sdf_skeleton is not None
+    assert sdf_skeleton.getNumBodyNodes() == 1
+    assert sdf_skeleton.getBodyNode(0).getMass() == 1.0
 
 frame = InteractiveFrame(dart.dynamics.Frame.World())
 shapes = frame.getShapeFrames()
@@ -129,6 +146,7 @@ def _smoke_environment() -> dict[str, str]:
         "CONDA_PROMPT_MODIFIER",
         "PYTHONPATH",
         "PYTHONHOME",
+        "SDF_PATH",
         "LD_LIBRARY_PATH",
         "DYLD_LIBRARY_PATH",
         "DYLD_FALLBACK_LIBRARY_PATH",

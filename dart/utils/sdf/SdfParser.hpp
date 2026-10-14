@@ -48,13 +48,13 @@ namespace utils {
 namespace SdfParser {
 
 /// Root joint type to be used when the parent joint of the root link is not
-/// specified in the URDF file.
+/// specified in the SDF file.
 enum class RootJointType
 {
-  /// Floating joint type of URDF.
+  /// Floating root joint.
   FLOATING = 0,
 
-  /// Fixed joint type of URDF.
+  /// Fixed root joint.
   FIXED = 1,
 };
 
@@ -64,7 +64,7 @@ struct Options
   common::ResourceRetrieverPtr mResourceRetriever;
 
   /// Default root joint type to be used when the parent joint of the root
-  /// link is not specified in the URDF file.
+  /// link is not specified in the SDF file.
   RootJointType mDefaultRootJointType;
 
   /// Collision detector to install before parsed models are added to a World.
@@ -88,6 +88,8 @@ simulation::WorldPtr readSdfFile(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
+/// Load a world using sdformat validation and frame semantics.
+/// Reports diagnostics and returns nullptr if loading or translation fails.
 simulation::WorldPtr readWorld(
     const common::Uri& uri, const Options& options = Options());
 
@@ -95,6 +97,8 @@ DART_DEPRECATED(6.12)
 simulation::WorldPtr readWorld(
     const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
 
+/// Load a standalone model using sdformat validation and frame semantics.
+/// Reports diagnostics and returns nullptr if loading or translation fails.
 dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options = Options());
 

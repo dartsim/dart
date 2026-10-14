@@ -466,6 +466,12 @@ TEST(SoftFootSimbiconModelTest, SoftAndRigidBipedsAreComparable)
         model->world->getConstraintSolver()->getCollisionDetector()->getType(),
         "fcl")
         << "the rigid-vs-soft comparison is only valid under FCL";
+    // Both variants retain the experiment's historical unbounded velocities.
+    const double infinity = std::numeric_limits<double>::infinity();
+    EXPECT_TRUE(
+        (model->atlas->getVelocityLowerLimits().array() == -infinity).all());
+    EXPECT_TRUE(
+        (model->atlas->getVelocityUpperLimits().array() == infinity).all());
   }
 
   // And the same rest-pose collision geometry, vertex for vertex. The rigid
