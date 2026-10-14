@@ -270,8 +270,12 @@ Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
 Constructed `std::tuple` and `std::pair` values retain owned value elements;
-pointer and reference elements do not construct their pointees. Braced returns
-use their enclosing function's declared return type for construction evidence.
+pointer and reference elements do not construct their pointees. Count initializers
+on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
+value elements' constructor candidates, including count-plus-allocator arguments
+and count arguments forwarded by standard factories. This dependency applies at
+zero count too. Braced returns use their enclosing function's declared return
+type for construction evidence.
 Constructed classes' default field initializer declarations and their named
 constant dependencies are retained in `default_member_initializer_declarations`.
 Quoted literals in indexed field and constant initializers are retained in
@@ -320,7 +324,9 @@ and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
-iterators, aliases and range-for declarations.
+iterators, aliases and range-for declarations. Returned `std::pair` and `std::tuple`
+values retain each element's receiver shape for `first`, `second` and `std::get`
+projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
 contained receiver shapes through value, pointer and array expressions. Returned
 standard smart pointers preserve their wrapper types through `get()` and `lock()`

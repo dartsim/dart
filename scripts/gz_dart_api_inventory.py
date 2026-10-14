@@ -118,7 +118,15 @@ ELEMENT_CONTAINERS = {
     "std::multiset",
     "std::unordered_multiset",
 }
+SIZED_SEQUENCES = ELEMENT_CONTAINERS - {
+    "std::array",
+    "std::set",
+    "std::unordered_set",
+    "std::multiset",
+    "std::unordered_multiset",
+}
 OPTIONAL = "__optional__:"
+PRODUCTS = {"std::pair": "__pair__:", "std::tuple": "__tuple__:"}
 SMART_POINTERS = {
     "std::shared_ptr": "__shared_ptr__:",
     "std::unique_ptr": "__unique_ptr__:",
@@ -1347,10 +1355,43 @@ class ApiIndex:
                 if owner and owner not in owners:
                     owners.append(owner)
                     bases.extend(self.classes[owner].get("bases", ()))
+            allocator_fields = {}
+            for owner in owners:
+                for field in self.classes.get(owner, {}).get("fields", ()):
+                    allocator_fields.setdefault(field["name"], field)
+            allocators = set()
+            for name, field in allocator_fields.items():
+                prefix = construction_aliases(
+                    field.get("return_tokens", []),
+                    self,
+                    tuple(field["class"].split("::")),
+                )
+                if (
+                    name
+                    and not raw_pointer(prefix)
+                    and any(
+                        spelling == "std::allocator"
+                        and not in_template_argument(prefix, start)
+                        for start, _, spelling in names_in(prefix)
+                    )
+                ):
+                    allocators.update(
+                        {name, field["class"] + "::" + name, "this->" + name}
+                    )
             for member in cls.get("fields", ()):
                 if member.get("static") or not member.get("return_tokens"):
                     continue
-                tokens = Tokens(member["signature"] + " ;")
+                values = TOKEN.findall(member["signature"])
+                expanded = construction_aliases(
+                    values, self, tuple(current.split("::"))
+                )
+                if any(
+                    name in SIZED_SEQUENCES
+                    and not in_template_argument(expanded, start)
+                    for start, _, name in names_in(expanded)
+                ):
+                    values = expanded
+                tokens = Tokens(" ".join(values) + " ;")
                 for start, end, spelling in names_in(tokens.values):
                     resolved = next(
                         (
@@ -1361,7 +1402,9 @@ class ApiIndex:
                         None,
                     ) or self.resolve(spelling, tuple(current.split("::")))
                     dependency = self.constructible(resolved)
-                    if dependency and constructs(tokens, start, end, set(), []):
+                    if dependency and constructs(
+                        tokens, start, end, set(), [], allocators
+                    ):
                         pending.append(dependency)
         return sorted(seen)
 
@@ -1830,14 +1873,14 @@ def expression_alias(api, name, depth=0):
     )
 
 
-def element_alias(api, name, depth=0):
+def element_alias(api, name, depth=0, containers=ELEMENT_CONTAINERS):
     """An API alias for one of the known standard element containers."""
     if depth > 8 or name not in api.alias_arguments:
         return False
     values, scope = api.alias_arguments[name]
     return any(
-        value in ELEMENT_CONTAINERS
-        or element_alias(api, api.resolve(value, scope), depth + 1)
+        value in containers
+        or element_alias(api, api.resolve(value, scope), depth + 1, containers)
         for start, _, value in names_in(values)
         if not in_template_argument(values, start)
     )
@@ -1988,7 +2031,77 @@ def layout_arguments(values, end, name):
     return parts[:1] if name.lstrip(":") == "std::optional" else parts
 
 
-def constructs(tokens, start, end, declarations, heads):
+def construction_arguments(tokens, opening):
+    """Argument spans outside balanced expressions and template argument lists."""
+    values = tokens.values
+    closing = tokens.pairs.get(opening)
+    if closing is None:
+        return []
+    result, first, index = [], opening + 1, opening + 1
+    while index <= closing:
+        if index == closing or values[index] == ",":
+            if first < index:
+                result.append((first, index - 1))
+            first = index + 1
+        elif values[index] in {"(", "[", "{"} and index in tokens.pairs:
+            index = tokens.pairs[index]
+        elif values[index] == "<":
+            after = template_end(values, index)
+            if after <= closing and values[after - 1] == ">":
+                index = after - 1
+        index += 1
+    return result
+
+
+def sequence_count_initializer(tokens, end, allocators=()):
+    """A count, optionally with a known allocator, default-constructs elements."""
+    values = tokens.values
+    if in_template_argument(values, end - 1):
+        return False
+    variable = variable_after_type(values, end)
+    opening = variable + 1 if variable is not None else template_end(values, end)
+    if values[opening : opening + 1] == ["="]:
+        opening += 1
+    closing = tokens.pairs.get(opening)
+    if closing is None or values[opening] not in {"(", "{"}:
+        return False
+    arguments = construction_arguments(tokens, opening)
+
+    def allocator(argument):
+        first, last = argument
+        while values[first] == "(" and tokens.pairs.get(first) == last:
+            first, last = first + 1, last - 1
+        return (
+            values[first : first + 3] == ["std", "::", "allocator"]
+            or qualified(values[first : last + 1]) in allocators
+        )
+
+    return (
+        len(arguments) == 1
+        and not allocator(arguments[0])
+        or len(arguments) == 2
+        and allocator(arguments[1])
+    )
+
+
+def construction_aliases(values, api, scope=(), depth=0):
+    """Expand bounded API type aliases in their declaring context."""
+    if depth > 8:
+        return values
+    result, previous = [], 0
+    for start, end, spelling in names_in(values):
+        result.extend(values[previous:start])
+        name = api.resolve(spelling, scope) or spelling
+        if name in api.alias_arguments:
+            arguments, where = api.alias_arguments[name]
+            result.extend(construction_aliases(arguments, api, where, depth + 1))
+        else:
+            result.extend(TOKEN.findall(name))
+        previous = end
+    return result + values[previous:]
+
+
+def constructs(tokens, start, end, declarations, heads, allocators=()):
     """Whether the type named by values[start:end] is constructed there."""
     values = tokens.values
     lead = start - (start > 0 and values[start - 1] == "::")  # `::dart::...`
@@ -2055,14 +2168,27 @@ def constructs(tokens, start, end, declarations, heads):
                         break
                     first = index + 1
             return value_argument(values[first:last]) and constructs(
-                tokens, opening - 3, opening, declarations, heads
+                tokens, opening - 3, opening, declarations, heads, allocators
+            )
+        if (
+            opening is not None
+            and qualified(values[max(0, opening - 3) : opening]) in SIZED_SEQUENCES
+        ):
+            return (
+                value_argument(first_template_argument(values, opening))
+                and sequence_count_initializer(tokens, opening, allocators)
+                and constructs(
+                    tokens, opening - 3, opening, declarations, heads, allocators
+                )
             )
         if values[max(0, element - 4) : element] == ["std", "::", "optional", "<"]:
             closing = template_end(values, element - 1)
             return (
                 values[after:closing] == [">"]
                 and in_place_initializer(tokens, element - 1)
-                and constructs(tokens, element - 4, element - 1, declarations, heads)
+                and constructs(
+                    tokens, element - 4, element - 1, declarations, heads, allocators
+                )
             )
         if values[max(0, element - 4) : element] == ["std", "::", "array", "<"]:
             closing = template_end(values, element - 1) - 1
@@ -2076,7 +2202,9 @@ def constructs(tokens, start, end, declarations, heads):
                 and extent
                 and not re.fullmatch(r"(?:0+|0[xX]0+|0[bB]0+)[uUlL]*", "".join(extent))
             ):
-                return constructs(tokens, element - 4, element - 1, declarations, heads)
+                return constructs(
+                    tokens, element - 4, element - 1, declarations, heads, allocators
+                )
         return False
     variable = variable_after_type(values, end)
     statement = lead  # the specifiers of the declaration that the type starts
@@ -3209,6 +3337,9 @@ def scan_sources(api, source_root):
             "unordered_set",
             "multiset",
             "unordered_multiset",
+            "pair",
+            "tuple",
+            "get",
         }:
             return name
         scope = tokens.scopes.get(index, ())
@@ -3528,6 +3659,119 @@ def scan_sources(api, source_root):
             previous = end
         return result + prefix[previous:]
 
+    def sized_sequence(tokens, start, end, context, declarations, heads):
+        """Constructor candidates and the count operand for one source use."""
+        values = tokens.values
+        while in_template_argument(values, start):
+            opening = next(
+                (
+                    index
+                    for index in range(start - 1, -1, -1)
+                    if values[index] == "<" and template_end(values, index) > end
+                ),
+                None,
+            )
+            if opening is None or opening == 0:
+                break
+            end = opening
+            start = opening - 1 - 2 * len(qualifier_path(values, opening - 1))
+        variable = variable_after_type(values, end)
+        opening = variable + 1 if variable is not None else template_end(values, end)
+        if values[opening : opening + 1] == ["="]:
+            opening += 1
+        closing = tokens.pairs.get(opening)
+        if closing is None or values[opening] not in {"(", "{"}:
+            return None
+        arguments = construction_arguments(tokens, opening)
+        lead = start
+        while lead and values[lead - 1] in {"const", "volatile", "::"}:
+            lead -= 1
+        prefix = values[
+            lead : variable if variable is not None else template_end(values, end)
+        ]
+        prefix = construction_aliases(layout_prefix(prefix, context), api)
+        factory = next(
+            (
+                (first, after, name)
+                for first, after, name in names_in(prefix)
+                if not in_template_argument(prefix, first)
+            ),
+            None,
+        )
+        if factory and factory[2] in {
+            "std::make_unique",
+            "std::make_shared",
+            "std::allocate_shared",
+        }:
+            prefix = first_template_argument(prefix, factory[1])
+            if not value_argument(prefix):
+                return None
+            prefix = construction_aliases(prefix, api)
+            if factory[2] == "std::allocate_shared":
+                arguments = arguments[1:]
+        if not any(
+            name in SIZED_SEQUENCES and not in_template_argument(prefix, index)
+            for index, _, name in names_in(prefix)
+        ):
+            return None
+        if not 1 <= len(arguments) <= 2:
+            return None
+        if variable is not None and not constructs(
+            tokens, start, end, declarations, heads
+        ):
+            return None
+        count_first, count_last = arguments[0]
+        initialized = Tokens(
+            " ".join(
+                prefix
+                + ["__sequence_value", "("]
+                + values[count_first : count_last + 1]
+                + [")", ";"]
+            )
+        )
+        candidates = set()
+        for first, last, name in names_in(prefix):
+            resolved = api.resolve(name)
+            constructed = api.constructible(resolved)
+            if constructed and constructs(initialized, first, last, set(), []):
+                candidates.add((resolved, constructed))
+        return (
+            candidates,
+            count_first,
+            count_last,
+            lead,
+            arguments[1] if len(arguments) == 2 else None,
+        )
+
+    def sequence_allocator(path, tokens, first, last, imports, namespace_aliases):
+        """A literal or visible typed variable naming the standard allocator."""
+        while (
+            tokens.values[first : first + 1] == ["("]
+            and tokens.pairs.get(first) == last
+        ):
+            first, last = first + 1, last - 1
+        prefix = tokens.values[first : last + 1]
+        contexts = [(prefix, first)]
+        if first == last:
+            contexts += [
+                (typed_variables[path][binding[2]][0], binding[2])
+                for binding in tokens.bindings
+                if binding[0] <= first <= binding[1]
+                and binding[2] <= first
+                and binding[3] == tokens.values[first]
+                and binding[2] in typed_variables[path]
+                and compatible(tokens.branches[binding[2]], tokens.branches[first])
+            ]
+        for prefix, index in contexts:
+            context = path, tokens, index, imports, namespace_aliases
+            prefix = construction_aliases(layout_prefix(prefix, context), api)
+            if not raw_pointer(prefix) and any(
+                name == "std::allocator" and not in_template_argument(prefix, start)
+                for start, _, name in names_in(prefix)
+            ):
+                return True
+        return False
+
     def layout_operator_operand(tokens, index):
         values = tokens.values
         first = index + 1
@@ -3717,6 +3961,7 @@ def scan_sources(api, source_root):
             **({"annotation_declarations": annotations} if annotations else {}),
         )
 
+    sequence_pending = {}
     for path, tokens, classes, functions, _, imports, namespace_aliases in files:
         values = tokens.values
         tokens.source_relevant = path.startswith("dartsim/")
@@ -3733,6 +3978,20 @@ def scan_sources(api, source_root):
                 continue
             row = record_type(resolved, path, tokens, start)
             context = path, tokens, start, imports, namespace_aliases
+            sequence = sized_sequence(
+                tokens, start, type_end, context, declaration_indices, heads
+            )
+            if sequence and sequence[0]:
+                sequence_classes, first, last, lead, allocator = sequence
+                sequence_pending[path, lead] = (
+                    tokens,
+                    sequence_classes,
+                    first,
+                    last,
+                    allocator,
+                    imports,
+                    namespace_aliases,
+                )
             operand = layout_operand(tokens, start)
             if operand:
                 prefix = values[slice(*operand)]
@@ -3759,6 +4018,7 @@ def scan_sources(api, source_root):
             constructed = optional or api.constructible(resolved)
             if (
                 constructed
+                and not sequence
                 and (
                     optional
                     or not wrapped(name, tokens, start, imports, namespace_aliases)
@@ -4368,6 +4628,89 @@ def scan_sources(api, source_root):
                 inferred.add(REFERENCE)
         return inferred
 
+    def product_key(values, scope, context=None, depth=0):
+        """Normalize a known element type spelling without deducing a C++ type."""
+        if depth > 8:
+            return None
+        if context and context[0] in closure:
+            values = layout_prefix(values, context)
+        result, previous = [], 0
+        for start, end, name in names_in(values):
+            result.extend(values[previous:start])
+            resolved = api.resolve(name, scope)
+            if resolved in api.alias_arguments:
+                argument, where = api.alias_arguments[resolved]
+                key = product_key(argument, where, depth=depth + 1)
+                if key is None:
+                    return None
+                result.extend(TOKEN.findall(key))
+            else:
+                if not resolved and context and context[0] in closure:
+                    path, tokens, index, imports, renamed = context
+                    resolved = source_class(
+                        name, tokens.scopes.get(index, ()), imports, renamed, path
+                    )
+                result.append(resolved or name)
+            previous = end
+        result.extend(values[previous:])
+        normalized, segment = [], []
+        for value in result + [","]:
+            if value in {"*", "&", "&&", "<", ">", ",", "(", ")", "[", "]"}:
+                normalized += (
+                    sorted(set(segment) & {"const", "volatile"})
+                    + [
+                        v
+                        for v in segment
+                        if v
+                        not in {
+                            "const",
+                            "volatile",
+                            "typename",
+                            "class",
+                            "struct",
+                            "enum",
+                        }
+                    ]
+                    + [value]
+                )
+                segment = []
+            else:
+                segment.append(value)
+        return " ".join(TOKEN.findall(" ".join(normalized[:-1])))
+
+    def product_values(types, selector, kind=None):
+        cells = [
+            json.loads(value.removeprefix(prefix))
+            for value in types
+            for name, prefix in PRODUCTS.items()
+            if (kind is None or name == kind) and value.startswith(prefix)
+        ]
+        if isinstance(selector, str):
+            return {value for _, key, value in cells if key == selector and value}
+        return {value for index, _, value in cells if index == selector and value}
+
+    def dependent_product_argument(argument, item, scope):
+        """Keep indexed template parameters unknown, rather than known foreign."""
+        headers = [item.get("signature", "")]
+        for size in range(1, len(scope) + 1):
+            headers.extend(api.type_templates.get("::".join(scope[:size]), ()))
+        parameters = set()
+        for header in headers:
+            values = TOKEN.findall(header)
+            for index, value in enumerate(values):
+                if value != "template" or values[index + 1 : index + 2] != ["<"]:
+                    continue
+                for parameter in template_arguments(values, index + 1):
+                    if parameter[:1] in (["class"], ["typename"]):
+                        name = next(
+                            (v for v in parameter[1:] if IDENTIFIER.match(v)), None
+                        )
+                        if name:
+                            parameters.add(name)
+        return any(
+            value.split("::", 1)[0] in parameters for _, _, value in names_in(argument)
+        )
+
     def returns(declarations, depth=0):
         if depth > 8:
             return set()
@@ -4573,7 +4916,11 @@ def scan_sources(api, source_root):
                     resolve_return(value)
                     for start, _, value in names_in(return_tokens)
                     if not in_template_argument(return_tokens, start)
-                    and element_alias(api, resolve_return(value))
+                    and element_alias(
+                        api,
+                        resolve_return(value),
+                        containers=ELEMENT_CONTAINERS | PRODUCTS.keys(),
+                    )
                 ),
                 None,
             )
@@ -4626,6 +4973,72 @@ def scan_sources(api, source_root):
                 result.update(
                     {INLINE_LAYOUT + owner for owner in owners} or {NO_INLINE_LAYOUT}
                 )
+                continue
+            product = next(
+                (
+                    (end, standard_type(value))
+                    for start, end, value in names_in(return_tokens)
+                    if standard_type(value) in PRODUCTS
+                    and not in_template_argument(return_tokens, start)
+                ),
+                None,
+            )
+            if product:
+                end, kind = product
+                key_context = (
+                    (path, tokens, index, imports, namespace_aliases)
+                    if context
+                    else None
+                )
+                for position, argument in enumerate(
+                    template_arguments(return_tokens, end)
+                ):
+                    unknown = (
+                        {""}
+                        if context or dependent_product_argument(argument, item, scope)
+                        else {"__non_dart__"}
+                    )
+                    key = product_key(argument, scope, key_context)
+                    declared = TOKEN.findall(key) if key is not None else argument
+                    callable_return = None
+                    paired = Tokens(" ".join(declared))
+                    for opening, closing in paired.pairs.items():
+                        if (
+                            opening < closing
+                            and declared[opening] == "("
+                            and declared[opening + 1 : closing]
+                            and declared[opening + 1] in {"*", "&", "&&"}
+                            and set(declared[opening + 1 : closing])
+                            <= {"*", "&", "&&", "const", "volatile"}
+                            and declared[closing + 1 : closing + 2] == ["("]
+                        ):
+                            callable_return = declared[:opening]
+                            break
+                    inferred = returns(
+                        [
+                            {
+                                **item,
+                                "return_tokens": (
+                                    callable_return
+                                    if callable_return is not None
+                                    else argument
+                                ),
+                                "layout_shape": False,
+                                "reference_shape": False,
+                            }
+                        ],
+                        depth + 1,
+                    )
+                    if callable_return is not None:
+                        inferred = {CALLABLE + value for value in inferred or unknown}
+                    result.update(
+                        PRODUCTS[kind]
+                        + json.dumps([position, key, value], separators=(",", ":"))
+                        for value in inferred or unknown
+                    )
+                    result.update(ASSOCIATED + value for value in inferred)
+                if raw_pointer(return_tokens):
+                    result.add(RAW_POINTER)
                 continue
             optional = next(
                 (
@@ -4740,6 +5153,7 @@ def scan_sources(api, source_root):
                     OPTIONAL in value
                     or value.startswith("__element__:")
                     or value.startswith(SOURCE_CLASS)
+                    or any(prefix in value for prefix in PRODUCTS.values())
                     or CALLABLE in value
                     or INLINE_LAYOUT in value
                     or NO_INLINE_LAYOUT in value
@@ -5104,6 +5518,19 @@ def scan_sources(api, source_root):
                     )
                     if values[function - 1] == "->":
                         types = arrow_types(types)
+                    if method in {"first", "second"} and any(
+                        marker.startswith(PRODUCTS["std::pair"]) for marker in types
+                    ):
+                        projected = product_values(
+                            types, int(method == "second"), "std::pair"
+                        )
+                        if any(value.startswith(CALLABLE) for value in projected):
+                            return {
+                                value.removeprefix(CALLABLE)
+                                for value in projected
+                                if value.startswith(CALLABLE) and value != CALLABLE
+                            }
+                        return returns(candidates("operator()", projected), depth + 1)
                     if method == "get" and smart_kind(types):
                         if not smart_kind(
                             types, ("std::shared_ptr", "std::unique_ptr")
@@ -5262,6 +5689,53 @@ def scan_sources(api, source_root):
                         depth,
                     )
                     return inferred | {REFERENCE} if inferred else inferred
+                if standard_name(
+                    spelling, tokens, function, namespace_aliases
+                ) == "std::get" and not any(
+                    b[3] == spelling and b[0] <= function <= b[1] and b[2] <= function
+                    for b in tokens.bindings
+                ):
+                    target = first_template_argument(values, function + 1)
+                    literal = re.fullmatch(
+                        r"(0[xX][0-9a-fA-F]+|0[bB][01]+|0[0-7]*|[1-9][0-9]*)(?:[uUlL]*)",
+                        "".join(target),
+                    )
+                    if literal:
+                        number = literal[1]
+                        selector = int(
+                            number,
+                            (
+                                16
+                                if number.lower().startswith("0x")
+                                else (
+                                    2
+                                    if number.lower().startswith("0b")
+                                    else 8 if number.startswith("0") else 10
+                                )
+                            ),
+                        )
+                    else:
+                        selector = product_key(
+                            target,
+                            tokens.scopes.get(function, ()),
+                            (
+                                tokens.source_path,
+                                tokens,
+                                function,
+                                imports,
+                                namespace_aliases,
+                            ),
+                        )
+                    types = expression_receiver(
+                        tokens,
+                        opening + 1,
+                        before - 1,
+                        imports,
+                        namespace_aliases,
+                        depth,
+                    )
+                    inferred = product_values(types, selector)
+                    return inferred | {REFERENCE} if inferred else inferred
                 if method in {"dynamic_cast", "static_cast"}:
                     for _, _, value in names_in(values[function + 1 : opening]):
                         resolved = resolve(
@@ -5312,6 +5786,10 @@ def scan_sources(api, source_root):
             owner = receiver(tokens, before - 2, imports, namespace_aliases, depth + 1)
             if values[before - 1] == "->":
                 owner = arrow_types(owner)
+            if value in {"first", "second"} and any(
+                marker.startswith(PRODUCTS["std::pair"]) for marker in owner
+            ):
+                return product_values(owner, int(value == "second"), "std::pair")
             declarations = candidates(
                 value, owner, values[before - 1], api.data_members
             )
@@ -5468,6 +5946,7 @@ def scan_sources(api, source_root):
                 or any(
                     OPTIONAL in value
                     or value.startswith("__element__:")
+                    or any(prefix in value for prefix in PRODUCTS.values())
                     or CALLABLE in value
                     or any(prefix in value for prefix in SMART_POINTERS.values())
                     for value in types
@@ -5653,6 +6132,39 @@ def scan_sources(api, source_root):
             changed |= tokens.bindings != previous
         if not changed:
             break
+
+    for (path, index), (
+        tokens,
+        sequence_classes,
+        first,
+        last,
+        allocator,
+        imports,
+        namespace_aliases,
+    ) in sequence_pending.items():
+        if allocator and not sequence_allocator(
+            path, tokens, *allocator, imports, namespace_aliases
+        ):
+            continue
+        if sequence_allocator(path, tokens, first, last, imports, namespace_aliases):
+            continue
+        argument = expression_receiver(tokens, first, last, imports, namespace_aliases)
+        if any(
+            api.owner(name)
+            or name.startswith("__element__:")
+            or OPTIONAL in name
+            or CALLABLE in name
+            or any(prefix in name for prefix in SMART_POINTERS.values())
+            for name in argument
+        ):
+            continue
+        for resolved, constructed in sorted(sequence_classes):
+            row = tables["types"].get(resolved) or record_type(
+                resolved, path, tokens, index
+            )
+            if not unevaluated_operand(tokens, index):
+                retain_layout(row, [constructed])
+            record_constructor(resolved, constructed, path, tokens, index)
 
     def retain_inferred_layout(inferred, path, tokens, index):
         if RAW_POINTER in inferred or ITERATOR in inferred or smart_kind(inferred):

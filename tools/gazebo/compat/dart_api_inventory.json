@@ -10101,13 +10101,6 @@
               "const": false,
               "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & transform ) override",
               "virtual": true
-            },
-            {
-              "access": "public",
-              "class": "dart::dynamics::SimpleFrame",
-              "const": false,
-              "signature": "void setRelativeTransform ( const Eigen :: Isometry3d & _newRelTransform )",
-              "virtual": false
             }
           ],
           "examples": [
@@ -10117,11 +10110,12 @@
           ],
           "name": "setRelativeTransform",
           "receiver_types": [
+            "dart::constraint::WeldJointConstraint",
             "dart::dynamics::FreeJoint",
             "dart::dynamics::ShapeNode",
             "dart::dynamics::ShapeNodePtr"
           ],
-          "unresolved_count": 1
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",

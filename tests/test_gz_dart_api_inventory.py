@@ -11703,3 +11703,1282 @@ def test_inline_named_union_static_field_preserves_pointer_layout(extractor, tmp
         extractor, tmp_path, header.replace("int bits", "double bits"), source
     )
     assert before == after
+
+
+SEQUENCE_DEFAULT_HEADER = "namespace dart { struct A { A()=default; }; }"
+SEQUENCE_REQUIRED_HEADER = "namespace dart { struct A { A(int); }; }"
+SEQUENCE_SIZED_CASES = []
+for family in ("vector", "deque", "list", "forward_list"):
+    include = "#include <" + family + ">\n"
+    for shape, body in [
+        ("count", "void use(){std::" + family + "<dart::A> values(3);}"),
+        ("zero", "void use(){std::" + family + "<dart::A> values(0);}"),
+        (
+            "variable",
+            "void use(unsigned count){std::" + family + "<dart::A> values(count);}",
+        ),
+        ("temporary", "void use(){auto values=std::" + family + "<dart::A>(3);}"),
+        ("brace_count", "void use(){std::" + family + "<dart::A> values{3};}"),
+    ]:
+        after = (
+            SEQUENCE_DEFAULT_HEADER.replace("A()=default", "A()=delete")
+            if shape == "brace_count"
+            else SEQUENCE_REQUIRED_HEADER
+        )
+        SEQUENCE_SIZED_CASES.append(
+            (
+                family + "_" + shape,
+                SEQUENCE_DEFAULT_HEADER,
+                after,
+                include + body,
+                True,
+                True,
+            )
+        )
+    for shape, body in [
+        ("pointer", "void use(){std::" + family + "<dart::A*> values(3);}"),
+        ("empty", "void use(){std::" + family + "<dart::A> values;}"),
+        ("empty_brace", "void use(){std::" + family + "<dart::A> values{};}"),
+        (
+            "fill",
+            "void use(const dart::A& value){std::"
+            + family
+            + "<dart::A> values(3,value);}",
+        ),
+        (
+            "range",
+            "void use(dart::A* first,dart::A* last){std::"
+            + family
+            + "<dart::A> values(first,last);}",
+        ),
+        (
+            "copy_element",
+            "void use(const dart::A& value){std::"
+            + family
+            + "<dart::A> values{value};}",
+        ),
+        (
+            "copy_container",
+            "void use(const std::"
+            + family
+            + "<dart::A>& original){std::"
+            + family
+            + "<dart::A> values(original);}",
+        ),
+    ]:
+        SEQUENCE_SIZED_CASES.append(
+            (
+                family + "_" + shape,
+                SEQUENCE_DEFAULT_HEADER,
+                SEQUENCE_REQUIRED_HEADER,
+                include + body,
+                False,
+                False,
+            )
+        )
+SEQUENCE_SIZED_CASES += [
+    (
+        "element_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing Value=dart::A; void use(){std::vector<Value> values(3);}",
+        True,
+        True,
+    ),
+    (
+        "source_container_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing Values=std::vector<dart::A>; void use(){Values values(3);}",
+        True,
+        True,
+    ),
+    (
+        "source_alias_chain",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing Values=std::vector<dart::A>; using Alias=Values; void use(){Alias values(3);}",
+        True,
+        True,
+    ),
+    (
+        "api_container_alias",
+        "#include <vector>\n"
+        + SEQUENCE_DEFAULT_HEADER
+        + " namespace dart { using Values=std::vector<A>; }",
+        "#include <vector>\n"
+        + SEQUENCE_REQUIRED_HEADER
+        + " namespace dart { using Values=std::vector<A>; }",
+        "#include <vector>\nvoid use(){dart::Values values(3);}",
+        True,
+        True,
+    ),
+    (
+        "std_namespace_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nnamespace st=std; void use(){st::vector<dart::A> values(3);}",
+        True,
+        True,
+    ),
+    (
+        "std_using_declaration",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing std::vector; void use(){vector<dart::A> values(3);}",
+        True,
+        True,
+    ),
+    (
+        "std_namespace_import",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing namespace std; void use(){vector<dart::A> values(3);}",
+        True,
+        True,
+    ),
+    (
+        "pointer_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing Pointer=dart::A*; void use(){std::vector<Pointer> values(3);}",
+        False,
+        False,
+    ),
+    (
+        "api_pointer_alias",
+        "namespace dart { struct A { A()=default; }; using Pointer=A*; }",
+        "namespace dart { struct A { A(int); }; using Pointer=A*; }",
+        "#include <vector>\nvoid use(){std::vector<dart::Pointer> values(3);}",
+        False,
+        False,
+    ),
+    (
+        "reference_container_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing Ref=std::vector<dart::A>&; void use(Ref original){Ref values(original);}",
+        False,
+        False,
+    ),
+    (
+        "copy_source_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing Values=std::vector<dart::A>; void use(const Values& original){Values values(original);}",
+        False,
+        False,
+    ),
+    (
+        "foreign_container",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "namespace foreign { template<class T>struct vector { explicit vector(unsigned){}; }; } void use(){foreign::vector<dart::A> values(3);}",
+        False,
+        False,
+    ),
+    (
+        "shadow_container",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nusing namespace std; namespace local { template<class T>struct vector { explicit vector(unsigned){}; }; void use(){vector<dart::A> values(3);} }",
+        False,
+        False,
+    ),
+    (
+        "array_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <array>\nvoid use(){std::vector<std::array<dart::A,2>> values(3);}",
+        True,
+        True,
+    ),
+    (
+        "zero_array_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <array>\nvoid use(){std::vector<std::array<dart::A,0>> values(3);}",
+        False,
+        False,
+    ),
+    (
+        "tuple_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <tuple>\nvoid use(){std::vector<std::tuple<dart::A>> values(3);}",
+        True,
+        True,
+    ),
+    (
+        "empty_optional_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <optional>\nvoid use(){std::vector<std::optional<dart::A>> values(3);}",
+        False,
+        False,
+    ),
+    (
+        "empty_vector_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nvoid use(){std::vector<std::vector<dart::A>> values(3);}",
+        False,
+        False,
+    ),
+    (
+        "empty_set",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <set>\nvoid use(){std::set<dart::A> values;}",
+        False,
+        False,
+    ),
+    (
+        "empty_multiset",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <set>\nvoid use(){std::multiset<dart::A> values;}",
+        False,
+        False,
+    ),
+]
+
+SEQUENCE_SIZED_CASES += [
+    (
+        "owned_count_field",
+        "#include <vector>\nnamespace dart { struct A { A()=default; }; struct Holder { std::vector<A> values{3}; }; }",
+        "#include <vector>\nnamespace dart { struct A { A()=delete; }; struct Holder { std::vector<A> values{3}; }; }",
+        "void use(){dart::Holder holder;}",
+        True,
+        True,
+    ),
+    (
+        "owned_alias_count_field",
+        "#include <vector>\nnamespace dart { struct A { A()=default; }; using Values=std::vector<A>; struct Holder { Values values{3}; }; }",
+        "#include <vector>\nnamespace dart { struct A { A()=delete; }; using Values=std::vector<A>; struct Holder { Values values{3}; }; }",
+        "void use(){dart::Holder holder;}",
+        True,
+        True,
+    ),
+    (
+        "owned_empty_field",
+        "#include <vector>\nnamespace dart { struct A { A()=default; }; struct Holder { std::vector<A> values{}; }; }",
+        "#include <vector>\nnamespace dart { struct A { A(int); }; struct Holder { std::vector<A> values{}; }; }",
+        "void use(){dart::Holder holder;}",
+        False,
+        False,
+    ),
+    (
+        "owned_pointer_field",
+        "#include <vector>\nnamespace dart { struct A { A()=default; }; struct Holder { std::vector<A*> values{3}; }; }",
+        "#include <vector>\nnamespace dart { struct A { A(int); }; struct Holder { std::vector<A*> values{3}; }; }",
+        "void use(){dart::Holder holder;}",
+        False,
+        False,
+    ),
+    (
+        "braced_empty_return",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nstd::vector<dart::A> make(){return {};}",
+        False,
+        False,
+    ),
+]
+
+SEQUENCE_SIZED_CASES += [
+    (
+        "function_declaration",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nstd::vector<dart::A> factory(unsigned count);",
+        False,
+        False,
+    ),
+    (
+        "function_definition",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\nstd::vector<dart::A> factory(unsigned count){return {};}",
+        False,
+        False,
+    ),
+    (
+        "count_allocator_literal",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(){std::vector<dart::A> values(3,std::allocator<dart::A>{});}",
+        True,
+        True,
+    ),
+    (
+        "count_allocator_parameter",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(std::size_t count,const std::allocator<dart::A>& allocator){std::vector<dart::A> values(count,allocator);}",
+        True,
+        True,
+    ),
+    (
+        "allocator_only",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(const std::allocator<dart::A>& allocator){std::vector<dart::A> values(allocator);}",
+        False,
+        False,
+    ),
+    (
+        "make_unique_sequence",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::make_unique<std::vector<dart::A>>(3);}",
+        True,
+        True,
+    ),
+    (
+        "make_shared_sequence",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::make_shared<std::vector<dart::A>>(3);}",
+        True,
+        True,
+    ),
+    (
+        "allocate_shared_sequence",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::allocate_shared<std::vector<dart::A>>(std::allocator<std::vector<dart::A>>{},3);}",
+        True,
+        True,
+    ),
+    (
+        "make_unique_pointer_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::make_unique<std::vector<dart::A*>>(3);}",
+        False,
+        False,
+    ),
+    (
+        "make_unique_empty_vector_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::make_unique<std::vector<std::vector<dart::A>>>(3);}",
+        False,
+        False,
+    ),
+    (
+        "make_unique_empty_optional_elements",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\n#include <optional>\nvoid use(){auto values=std::make_unique<std::vector<std::optional<dart::A>>>(3);}",
+        False,
+        False,
+    ),
+    (
+        "api_alias_make_unique",
+        "#include <vector>\n"
+        + SEQUENCE_DEFAULT_HEADER
+        + " namespace dart { using Values=std::vector<A>; }",
+        "#include <vector>\n"
+        + SEQUENCE_REQUIRED_HEADER
+        + " namespace dart { using Values=std::vector<A>; }",
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::make_unique<dart::Values>(3);}",
+        True,
+        True,
+    ),
+    (
+        "count_allocator_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nusing Allocator=std::allocator<dart::A>; void use(unsigned count,const Allocator& allocator){std::vector<dart::A> values(count,allocator);}",
+        True,
+        True,
+    ),
+    (
+        "count_allocator_namespace_alias",
+        SEQUENCE_DEFAULT_HEADER,
+        SEQUENCE_REQUIRED_HEADER,
+        "#include <vector>\n#include <memory>\nnamespace st=std; void use(unsigned count,const st::allocator<dart::A>& allocator){st::vector<dart::A> values(count,allocator);}",
+        True,
+        True,
+    ),
+    (
+        "api_alias_make_unique_pointer_target",
+        "#include <vector>\n"
+        + SEQUENCE_DEFAULT_HEADER
+        + " namespace dart { using Values=std::vector<A>; }",
+        "#include <vector>\n"
+        + SEQUENCE_REQUIRED_HEADER
+        + " namespace dart { using Values=std::vector<A>; }",
+        "#include <vector>\n#include <memory>\nvoid use(){auto values=std::make_unique<dart::Values*>(nullptr);}",
+        False,
+        False,
+    ),
+]
+
+SEQUENCE_SIZED_CASES += [
+    (
+        "owned_count_allocator_field",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A()=default; }; struct Holder { std::allocator<A> allocator; std::vector<A> values{3,allocator}; }; }",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A()=delete; }; struct Holder { std::allocator<A> allocator; std::vector<A> values{3,allocator}; }; }",
+        "void use(){dart::Holder holder;}",
+        True,
+        True,
+    ),
+    (
+        "owned_grouped_allocator_field",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A()=default; }; struct Holder { std::allocator<A> allocator; std::vector<A> values{3,(allocator)}; }; }",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A()=delete; }; struct Holder { std::allocator<A> allocator; std::vector<A> values{3,(allocator)}; }; }",
+        "void use(){dart::Holder holder;}",
+        True,
+        True,
+    ),
+    (
+        "owned_allocator_only_field",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A()=default; }; struct Holder { std::allocator<A> allocator; std::vector<A> values{allocator}; }; }",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A(int); }; struct Holder { std::allocator<A> allocator; std::vector<A> values{allocator}; }; }",
+        "void use(){dart::Holder holder;}",
+        False,
+        False,
+    ),
+    (
+        "owned_allocator_literal_only",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A()=default; }; struct Holder { std::vector<A> values{std::allocator<A>{}}; }; }",
+        "#include <vector>\n#include <memory>\nnamespace dart { struct A { A(int); }; struct Holder { std::vector<A> values{std::allocator<A>{}}; }; }",
+        "void use(){dart::Holder holder;}",
+        False,
+        False,
+    ),
+    (
+        "owned_fill_field",
+        "#include <vector>\nnamespace dart { struct A { A()=default; }; struct Holder { const A& seed; std::vector<A> values{3,seed}; Holder(const A& value):seed(value){} }; }",
+        "#include <vector>\nnamespace dart { struct A { A(int); }; struct Holder { const A& seed; std::vector<A> values{3,seed}; Holder(const A& value):seed(value){} }; }",
+        "void use(const dart::A& seed){dart::Holder holder(seed);}",
+        False,
+        False,
+    ),
+    (
+        "owned_range_field",
+        "#include <vector>\nnamespace dart { struct A { A()=default; }; struct Holder { const A* first=nullptr; const A* last=nullptr; std::vector<A> values{first,last}; }; }",
+        "#include <vector>\nnamespace dart { struct A { A(int); }; struct Holder { const A* first=nullptr; const A* last=nullptr; std::vector<A> values{first,last}; }; }",
+        "void use(){dart::Holder holder;}",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "before_header", "after_header", "source", "drift", "breaks"),
+    SEQUENCE_SIZED_CASES,
+)
+def test_sized_sequence_default_element_construction(
+    extractor, tmp_path, label, before_header, after_header, source, drift, breaks
+):
+    before = _scan_receiver_api(extractor, tmp_path, before_header, source)
+    after = _scan_receiver_api(extractor, tmp_path, after_header, source)
+    assert (before != after) == drift
+    if drift:
+        assert any(
+            declaration["class"] == "dart::A"
+            for row in before["constructors"]
+            for declaration in row.get("declarations", ())
+        )
+    else:
+        assert not any(
+            declaration["class"] == "dart::A"
+            for row in before["constructors"]
+            for declaration in row.get("declarations", ())
+        )
+
+
+ROUND18_SPEC_HEADER = """namespace foreign { struct F { void hit() const; }; }
+namespace dart {
+class A { int storage; public: void hit() const; };
+class B { int storage; public: void hit() const; };
+using Alias=A; using Ref=A&;
+using Pair=std::pair<A*,B>; using Tuple=std::tuple<A&,B*>;
+struct Factory {
+ Pair values(); Tuple refs(); std::pair<A&,B*> pairRefs();
+ std::optional<Tuple>& optional(); std::shared_ptr<Pair> shared();
+ std::vector<Pair> sequence(); std::tuple<A,foreign::F> hetero();
+};
+}"""
+ROUND18_A_HIT = "class A { int storage; public: void hit() const; };"
+ROUND18_B_HIT = "class B { int storage; public: void hit() const; };"
+
+ROUND18_SPEC_CASES = [
+    (
+        "pair_first_pointer",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { f.values().first->hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "pair_second_value",
+        ROUND18_SPEC_HEADER,
+        ROUND18_B_HIT,
+        ROUND18_B_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { f.values().second.hit(); }",
+        True,
+        True,
+        "dart::B",
+    ),
+    (
+        "pair_typeget_heterogeneous",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { std::get<dart::B>(f.values()).hit(); }",
+        False,
+        False,
+        "dart::B",
+    ),
+    (
+        "tuple_ref_typeget",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { std::get<dart::Ref>(f.refs()).hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "tuple_pointer_typeget",
+        ROUND18_SPEC_HEADER,
+        ROUND18_B_HIT,
+        ROUND18_B_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { std::get<dart::B*>(f.refs())->hit(); }",
+        True,
+        True,
+        "dart::B",
+    ),
+    (
+        "tuple_foreign_typeget_negative",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f, dart::A* known) { std::get<foreign::F>(f.hetero()).hit(); }",
+        False,
+        False,
+        None,
+    ),
+    (
+        "optional_tuple_intersection",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { std::get<0>(f.optional().value()).hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "shared_pair_intersection",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { std::get<dart::Alias*>(*f.shared())->hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "sequence_pair_copy",
+        ROUND18_SPEC_HEADER,
+        ROUND18_A_HIT,
+        ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "void use(dart::Factory& f) { auto product=f.sequence().front(); product.first->hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "source_alias_product_helper",
+        ROUND18_SPEC_HEADER,
+        ROUND18_B_HIT,
+        ROUND18_B_HIT.replace("void hit() const;", "void hit() const = delete;"),
+        "using Product=dart::Pair; Product helper(dart::Factory& f) { return f.values(); } void use(dart::Factory& f) { auto product=helper(f); product.second.hit(); }",
+        True,
+        True,
+        "dart::B",
+    ),
+    (
+        "projection_copy_layout",
+        ROUND18_SPEC_HEADER,
+        "class A { int storage;",
+        "class A { double storage;",
+        "void use(dart::Factory& f) { auto value=std::get<0>(f.refs()); static_assert(sizeof(value)==sizeof(int)); value.hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "projection_reference_layout_negative",
+        ROUND18_SPEC_HEADER,
+        "class A { int storage;",
+        "class A { double storage;",
+        "void use(dart::Factory& f) { decltype(auto) value=std::get<0>(f.refs()); value.hit(); }",
+        False,
+        False,
+        "dart::A",
+    ),
+    (
+        "pair_first_copy_layout",
+        ROUND18_SPEC_HEADER,
+        "class A { int storage;",
+        "class A { double storage;",
+        "void use(dart::Factory& f) { auto value=f.pairRefs().first; static_assert(sizeof(value)==sizeof(int)); value.hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+    (
+        "overloaded_product_typeget",
+        "namespace dart { struct A { void hit() const; }; struct B { void hit() const; }; struct Factory { std::pair<A*,B*> make(int); std::pair<B*,A*> make(double); }; }",
+        "struct A { void hit() const; };",
+        "struct A { void hit() const = delete; };",
+        "void use(dart::Factory& f) { std::get<dart::A*>(f.make(1))->hit(); }",
+        True,
+        True,
+        "dart::A",
+    ),
+]
+
+ROUND18_CTOR_HEADER = "namespace dart { struct A { A()=default; explicit A(int); }; }"
+ROUND18_SPEC_CASES.extend(
+    [
+        (
+            "count_allocator_literal",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use() { std::vector<dart::A> values(3, std::allocator<dart::A>{}); }",
+            True,
+            True,
+            "ctor",
+        ),
+        (
+            "count_allocator_parameter",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use(std::size_t count, const std::allocator<dart::A>& allocator) { std::vector<dart::A> values(count, allocator); }",
+            True,
+            True,
+            "ctor",
+        ),
+        (
+            "allocator_only_negative",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use(const std::allocator<dart::A>& allocator) { std::vector<dart::A> values(allocator); }",
+            False,
+            False,
+            None,
+        ),
+        (
+            "fill_element_negative",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use(const dart::A& seed) { std::vector<dart::A> values(3, seed); }",
+            False,
+            False,
+            None,
+        ),
+        (
+            "range_element_negative",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use(const dart::A* first, const dart::A* last) { std::vector<dart::A> values(first, last); }",
+            False,
+            False,
+            None,
+        ),
+        (
+            "pointer_element_count_negative",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use() { std::vector<dart::A*> values(3); }",
+            False,
+            False,
+            None,
+        ),
+        (
+            "owned_sized_sequence_field",
+            ROUND18_CTOR_HEADER
+            + " namespace dart { struct Holder { std::vector<A> values{3}; }; }",
+            "A()=default;",
+            "A()=delete;",
+            "void use() { dart::Holder value; }",
+            True,
+            True,
+            "ctor",
+        ),
+        (
+            "owned_sized_api_alias_field",
+            ROUND18_CTOR_HEADER
+            + " namespace dart { using Values=std::vector<A>; struct Holder { Values values{3}; }; }",
+            "A()=default;",
+            "A()=delete;",
+            "void use() { dart::Holder value; }",
+            True,
+            True,
+            "ctor",
+        ),
+        (
+            "make_unique_sized_sequence",
+            ROUND18_CTOR_HEADER,
+            "A()=default;",
+            "A()=delete;",
+            "void use() { auto values=std::make_unique<std::vector<dart::A>>(3); }",
+            True,
+            True,
+            "ctor",
+        ),
+    ]
+)
+
+
+ROUND18_SPEC_CASES.extend(
+    [
+        (
+            "source_typeget_pointer_alias",
+            ROUND18_SPEC_HEADER,
+            ROUND18_A_HIT,
+            ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+            "using AP=dart::A*; void use(dart::Factory& f) { std::get<AP>(f.values())->hit(); }",
+            True,
+            True,
+            "dart::A",
+        ),
+        (
+            "nested_product_projection",
+            "namespace dart { struct A { void hit() const; }; struct Factory { std::tuple<std::pair<int,A*>,float> values(); }; }",
+            "void hit() const;",
+            "void hit() const=delete;",
+            "void use(dart::Factory& f) { std::get<0>(f.values()).second->hit(); }",
+            True,
+            True,
+            "dart::A",
+        ),
+        (
+            "pair_nested_tuple_projection",
+            "namespace dart { struct A { void hit() const; }; struct Factory { std::pair<int,std::tuple<int,A*>> values(); }; }",
+            "void hit() const;",
+            "void hit() const=delete;",
+            "void use(dart::Factory& f) { std::get<1>(f.values().second)->hit(); }",
+            True,
+            True,
+            "dart::A",
+        ),
+        (
+            "projection_forwarded_product",
+            ROUND18_SPEC_HEADER,
+            ROUND18_A_HIT,
+            ROUND18_A_HIT.replace("void hit() const;", "void hit() const = delete;"),
+            "void use(dart::Factory& f) { std::get<0>(std::move(f.values()))->hit(); }",
+            True,
+            True,
+            "dart::A",
+        ),
+        (
+            "pair_callable_projection",
+            "namespace dart { struct A { void hit() const; }; struct Factory { std::pair<A*(*)(),int> values(); }; }",
+            "void hit() const;",
+            "void hit() const=delete;",
+            "void use(dart::Factory& f) { f.values().first()->hit(); }",
+            True,
+            True,
+            "dart::A",
+        ),
+        (
+            "tuple_callable_projection",
+            "namespace dart { struct A { void hit() const; }; struct Factory { std::tuple<int,A*(*)()> values(); }; }",
+            "void hit() const;",
+            "void hit() const=delete;",
+            "void use(dart::Factory& f) { std::get<1>(f.values())()->hit(); }",
+            True,
+            True,
+            "dart::A",
+        ),
+    ]
+)
+
+ROUND18_SPEC_CASES.append(
+    (
+        "owned_allocator_sequence_field",
+        "namespace dart {struct A {A()=default; explicit A(int);}; struct Holder {std::allocator<A> allocator; std::vector<A> values{3,allocator};};}",
+        "A()=default;",
+        "A()=delete;",
+        "void use(){dart::Holder holder;}",
+        True,
+        True,
+        "ctor",
+    )
+)
+
+
+@pytest.mark.parametrize(
+    "name,header,old,new,source,changed,breaking,expected",
+    ROUND18_SPEC_CASES,
+    ids=[case[0] for case in ROUND18_SPEC_CASES],
+)
+def test_sized_sequence_and_product_connected_cases(
+    extractor, tmp_path, name, header, old, new, source, changed, breaking, expected
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, header.replace(old, new), source)
+    assert (before != after) == changed
+    if expected == "ctor":
+        assert any(
+            item["class"] == "dart::A"
+            for row in before["constructors"]
+            for item in row.get("declarations", ())
+        )
+    elif expected:
+        hit = _entries(before, "members")["hit"]
+        api = extractor.index_api(tmp_path / "dart")
+        assert {api.owner(receiver) for receiver in hit["receiver_types"]} == {expected}
+        assert hit["unresolved_count"] == 0
+    else:
+        assert "hit" not in _entries(before, "members")
+
+
+PROJECTION18_HEADER = """namespace dart {
+struct A { void hit() const; A* operator->(); A& operator()(); A& operator[](int); };
+struct B { void hit(int) const; };
+using Alias=A; using Pointer=A*;
+struct Factory { KIND make(); };
+}"""
+PROJECTION18_CASES = [
+    ("pair_first", "std::pair<A*,int>", "factory.make().first->hit();"),
+    ("pair_second", "std::pair<int,A*>", "factory.make().second->hit();"),
+    ("pair_value", "std::pair<A,int>", "factory.make().first.hit();"),
+    ("pair_ref", "std::pair<A&,int>", "factory.make().first.hit();"),
+    ("get_pair", "std::pair<A*,int>", "std::get<0>(factory.make())->hit();"),
+    ("get_tuple", "std::tuple<int,A*,B>", "std::get<1>(factory.make())->hit();"),
+    ("get_value", "std::tuple<int,A>", "std::get<1>(factory.make()).hit();"),
+    ("get_ref", "std::tuple<int,A&>", "std::get<1>(factory.make()).hit();"),
+    (
+        "get_type_pointer",
+        "std::tuple<int,A*>",
+        "std::get<dart::A*>(factory.make())->hit();",
+    ),
+    ("get_type_value", "std::tuple<int,A>", "std::get<dart::A>(factory.make()).hit();"),
+    (
+        "get_type_alias",
+        "std::pair<int,Pointer>",
+        "std::get<dart::Pointer>(factory.make())->hit();",
+    ),
+    (
+        "get_type_cv",
+        "std::tuple<A*,const A*>",
+        "std::get<const dart::A*>(factory.make())->hit();",
+    ),
+    (
+        "get_type_const_order",
+        "std::tuple<A const*,A*>",
+        "std::get<const dart::A*>(factory.make())->hit();",
+    ),
+    (
+        "get_type_reference",
+        "std::tuple<int,A&>",
+        "std::get<dart::A&>(factory.make()).hit();",
+    ),
+    (
+        "get_unsigned_index",
+        "std::tuple<int,A*>",
+        "std::get<1u>(factory.make())->hit();",
+    ),
+    ("get_hex_index", "std::tuple<int,A*>", "std::get<0x1>(factory.make())->hit();"),
+    ("get_binary_index", "std::tuple<int,A*>", "std::get<0b1>(factory.make())->hit();"),
+    (
+        "nested_first",
+        "std::pair<std::pair<A*,int>,B>",
+        "factory.make().first.first->hit();",
+    ),
+    (
+        "nested_get",
+        "std::tuple<int,std::pair<A*,B>>",
+        "std::get<1>(factory.make()).first->hit();",
+    ),
+    (
+        "optional_pair",
+        "std::optional<std::pair<A*,int>>",
+        "factory.make().value().first->hit();",
+    ),
+    (
+        "smart_pair",
+        "std::shared_ptr<std::pair<A*,int>>",
+        "factory.make().get()->first->hit();",
+    ),
+    (
+        "sequence_pair",
+        "std::vector<std::pair<A*,int>>",
+        "factory.make().front().first->hit();",
+    ),
+    (
+        "iterator_pair",
+        "std::vector<std::pair<A*,int>>",
+        "factory.make().begin()->first->hit();",
+    ),
+    (
+        "pair_optional",
+        "std::pair<int,std::optional<A*>>",
+        "factory.make().second.value()->hit();",
+    ),
+    (
+        "pair_smart",
+        "std::pair<int,std::shared_ptr<A>>",
+        "factory.make().second.get()->hit();",
+    ),
+    (
+        "tuple_weak",
+        "std::tuple<int,std::weak_ptr<A>>",
+        "std::get<1>(factory.make()).lock()->hit();",
+    ),
+    (
+        "pair_callable",
+        "std::pair<decltype(&makeA),int>",
+        "factory.make().first().hit();",
+    ),
+]
+
+
+@pytest.mark.parametrize("name,kind,expression", PROJECTION18_CASES)
+def test_pair_tuple_return_projections_preserve_selected_receiver(
+    extractor, tmp_path, name, kind, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = PROJECTION18_HEADER.replace("KIND", kind).replace(
+        "struct Factory", "A makeA(); struct Factory"
+    )
+    header.write_text(text)
+    source = "void use(dart::Factory& factory) { " + expression + " }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert (
+        {extractor.index_api(headers).owner(value) for value in hit["receiver_types"]}
+        == {"dart::A"}
+        and hit["unresolved_count"] == 0
+        and {d["class"] for d in hit["declarations"]} == {"dart::A"}
+    )
+    assert not {"operator->", "operator()", "operator[]"} & set(
+        _entries(before, "members")
+    )
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "void use(dart::Factory& factory) { auto value=factory.make(); value.first->hit(); }",
+        "void use(dart::Factory& factory) { decltype(factory.make()) value=factory.make(); value.first->hit(); }",
+        "using Value=std::pair<dart::A*,int>; struct Provider { Value make(); }; void use(Provider& factory) { factory.make().first->hit(); }",
+        "using Value=std::pair<dart::A*,int>; void use() { Value value{}; value.first->hit(); }",
+        "void use() { std::pair<dart::A*,int> value{}; value.first->hit(); }",
+        "void use() { dart::Product value{}; value.first->hit(); }",
+        "void use() { dart::Product value{}; std::get<dart::Pointer>(value)->hit(); }",
+        "using std::get; void use(dart::Factory& factory) { get<0>(factory.make())->hit(); }",
+        "namespace st=std; void use(dart::Factory& factory) { st::get<0>(factory.make())->hit(); }",
+        "using namespace std; void use(dart::Factory& factory) { get<0>(factory.make())->hit(); }",
+        "std::pair<dart::A*,int> helper(); void use() { auto factory=&helper; factory().first->hit(); }",
+    ],
+)
+def test_pair_tuple_aliases_bindings_and_standard_imports(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        PROJECTION18_HEADER.replace("KIND", "std::pair<A*,int>")
+        + "namespace dart { using Product=std::pair<Pointer,int>; }"
+    )
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert {
+        extractor.index_api(headers).owner(value) for value in hit["receiver_types"]
+    } == {"dart::A"} and hit["unresolved_count"] == 0
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+@pytest.mark.parametrize(
+    "kind,expression",
+    [
+        ("std::pair<A*,B>", "factory.make().second.hit(1);"),
+        ("std::tuple<A*,B>", "std::get<1>(factory.make()).hit(1);"),
+        ("std::tuple<A*,B>", "std::get<dart::B>(factory.make()).hit(1);"),
+    ],
+)
+def test_pair_tuple_other_elements_never_leak_unselected_dart_receiver(
+    extractor, tmp_path, kind, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = PROJECTION18_HEADER.replace("KIND", kind)
+    header.write_text(text)
+    source = "void use(dart::A* known,dart::Factory& factory) { " + expression + " }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::B"] and {
+        d["class"] for d in hit["declarations"]
+    } == {"dart::B"}
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "struct Foreign { void hit() const; }; struct Provider { std::pair<Foreign,dart::A*> make(); }; void use(dart::A* known,Provider& factory) { factory.make().first.hit(); }",
+        "struct Foreign { void hit() const; }; struct Provider { std::tuple<Foreign,dart::A*> make(); }; void use(dart::A* known,Provider& factory) { std::get<0>(factory.make()).hit(); }",
+        "struct Foreign { void hit() const; }; struct Provider { std::tuple<Foreign,dart::A*> make(); }; void use(dart::A* known,Provider& factory) { std::get<Foreign>(factory.make()).hit(); }",
+        "struct Foreign { void hit() const; }; Foreign get(std::pair<dart::A*,int>); using std::get; void use(dart::A* known,dart::Factory& factory) { get(factory.make()).hit(); }",
+        "struct Foreign { void hit() const; }; Foreign foreign(std::pair<dart::A*,int>); using std::get; void use(dart::A* known,dart::Factory& factory) { Foreign (*get)(std::pair<dart::A*,int>)=&foreign; get(factory.make()).hit(); }",
+    ],
+)
+def test_pair_tuple_foreign_and_get_shadow_controls(extractor, tmp_path, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = PROJECTION18_HEADER.replace("KIND", "std::pair<A*,int>")
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+def test_pair_tuple_type_get_preserves_candidates_at_different_overload_indices(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = PROJECTION18_HEADER.replace("KIND", "std::pair<A*,B*>").replace(
+        "make();", "make(int); std::pair<B*,A*> make(double);"
+    )
+    header.write_text(text)
+    source = "void use(dart::Factory& factory) { std::get<dart::A*>(factory.make(1))->hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert {
+        extractor.index_api(headers).owner(value) for value in hit["receiver_types"]
+    } == {"dart::A"} and hit["unresolved_count"] == 0
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+@pytest.mark.parametrize(
+    "kind,expression",
+    [
+        ("std::tuple<A&,B*>", "std::get<dart::Ref>(factory.make()).hit();"),
+        (
+            "std::shared_ptr<std::pair<A*,B>>",
+            "std::get<dart::Alias*>(*factory.make())->hit();",
+        ),
+        ("std::pair<A*(*)(),int>", "factory.make().first()->hit();"),
+        ("std::tuple<int,A*(*)()>", "std::get<1>(factory.make())()->hit();"),
+        ("std::tuple<int,Function>", "std::get<1>(factory.make())()->hit();"),
+    ],
+)
+def test_pair_tuple_exact_reference_alias_and_declared_callable_cells(
+    extractor, tmp_path, kind, expression
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = PROJECTION18_HEADER.replace(
+        "struct Factory", "using Ref=A&; using Function=A*(*)(); struct Factory"
+    ).replace("KIND", kind)
+    header.write_text(text)
+    source = "void use(dart::Factory& factory) { " + expression + " }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    assert not {"operator->", "operator()", "operator[]"} & set(
+        _entries(before, "members")
+    )
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+def test_pair_tuple_api_foreign_element_does_not_use_unrelated_dart_fallback(
+    extractor, tmp_path
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = (
+        "namespace foreign { struct F { void hit() const; }; }"
+        + PROJECTION18_HEADER.replace("KIND", "std::tuple<A,foreign::F>")
+    )
+    header.write_text(text)
+    source = "void use(dart::Factory& factory,dart::A* known) { std::get<foreign::F>(factory.make()).hit(); }"
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        text.replace(
+            "struct A { void hit() const;", "struct A { void hit() const = delete;"
+        )
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+ROUND18_DEPENDENT_CASES = [
+    (
+        "dependent_pair",
+        "namespace dart {struct A {void hit();}; struct Factory {template<class T> std::pair<T*,T*> make();};}",
+        "void use(dart::Factory& f){auto pair=f.make<dart::A>(); pair.second->hit();}",
+    ),
+    (
+        "defaulted_pair_element",
+        "namespace dart {struct A {void hit();}; struct Factory {template<class T, class U=A> std::pair<T*,U*> make();};}",
+        "void use(dart::Factory& f){auto pair=f.make<dart::A>(); pair.second->hit();}",
+    ),
+    (
+        "dependent_tuple",
+        "namespace dart {struct A {void hit();}; struct Factory {template<class T> std::tuple<int,T*> make();};}",
+        "void use(dart::Factory& f){std::get<1>(f.make<dart::A>())->hit();}",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,header,source",
+    ROUND18_DEPENDENT_CASES,
+    ids=[case[0] for case in ROUND18_DEPENDENT_CASES],
+)
+def test_dependent_product_elements_keep_conservative_dart_candidates(
+    extractor, tmp_path, name, header, source
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor, tmp_path, header.replace("void hit();", "void hit()=delete;"), source
+    )
+    hit = _entries(before, "members")["hit"]
+    assert any(declaration["class"] == "dart::A" for declaration in hit["declarations"])
+    assert before != after
+
+
+ROUND18_DEPENDENT_CONNECTED = [
+    (
+        "derived_pair",
+        "namespace dart {struct Base {void hit();}; struct A:Base {}; struct Factory {template<class T,class U=A> std::pair<T*,U*> make();};}",
+        "void use(dart::Factory& f){auto pair=f.make<dart::A>(); pair.second->hit();}",
+        True,
+    ),
+    (
+        "class_template",
+        "namespace dart {struct A {void hit();}; template<class T> struct Factory {std::pair<int,T*> make();};}",
+        "void use(dart::Factory<dart::A>& f){f.make().second->hit();}",
+        True,
+    ),
+    (
+        "nested_class_template",
+        "namespace dart {struct A {void hit();}; template<typename T> struct Factory {struct Nested {std::tuple<int,T*> make();};};}",
+        "void use(dart::Factory<dart::A>::Nested& f){std::get<1>(f.make())->hit();}",
+        True,
+    ),
+    (
+        "dependent_qualified_type",
+        "namespace dart {struct A {void hit();}; struct Provider {using Type=A;}; struct Factory {template<typename T> std::pair<typename T::Type*,int> make();};}",
+        "void use(dart::Factory& f,dart::A* known){f.make<dart::Provider>().first->hit();}",
+        True,
+    ),
+    (
+        "template_foreign",
+        "namespace foreign {struct F {void hit() const;};} namespace dart {struct A {void hit();}; struct Factory {template<class T> std::pair<foreign::F,T*> make();};}",
+        "void use(dart::Factory& f,dart::A* known){f.make<dart::A>().first.hit();}",
+        False,
+    ),
+    (
+        "class_template_foreign",
+        "namespace foreign {struct F {void hit() const;};} namespace dart {struct A {void hit();}; template<class T> struct Factory {std::tuple<T*,foreign::F> make();};}",
+        "void use(dart::Factory<dart::A>& f,dart::A* known){std::get<1>(f.make()).hit();}",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize("name,header,source,dependent", ROUND18_DEPENDENT_CONNECTED)
+def test_pair_tuple_dependent_elements_retain_conservative_dart_uses(
+    extractor, tmp_path, name, header, source, dependent
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    path = headers / "api.hpp"
+    path.write_text(header)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hits = _entries(before, "members").get("hit")
+    if dependent:
+        assert hits and hits["declarations"] and hits["unresolved_count"] == 1
+    else:
+        assert hits is None
+    path.write_text(header.replace("void hit();", "void hit()=delete;"))
+    assert (
+        _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+    ) == dependent
+
+
+ROUND18_DEFAULTED_DEPENDENT_CASES = [
+    (
+        "dependent_pair",
+        "namespace dart{struct A{void hit();};struct Factory{template<class T=A>std::pair<int,T*> make();};}",
+        "void use(dart::Factory& factory,dart::A* known){factory.make<>().second->hit();}",
+        True,
+    ),
+    (
+        "dependent_tuple",
+        "namespace dart{struct A{void hit();};struct Factory{template<class T=A>std::tuple<int,T*> make();};}",
+        "void use(dart::Factory& factory,dart::A* known){std::get<1>(factory.make<>())->hit();}",
+        True,
+    ),
+    (
+        "known_foreign_api_cell",
+        "namespace foreign{struct F{void hit();};}namespace dart{struct A{void hit();};struct Factory{std::tuple<A*,foreign::F*> make();};}",
+        "void use(dart::A* known,dart::Factory& factory){std::get<1>(factory.make())->hit();}",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,header,source,changed",
+    ROUND18_DEFAULTED_DEPENDENT_CASES,
+    ids=[case[0] for case in ROUND18_DEFAULTED_DEPENDENT_CASES],
+)
+def test_defaulted_product_elements_keep_conservative_dart_candidates(
+    extractor, tmp_path, name, header, source, changed
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor,
+        tmp_path,
+        header.replace("struct A{void hit();};", "struct A{void hit()=delete;};"),
+        source,
+    )
+    hit = _entries(before, "members").get("hit")
+    if changed:
+        assert hit and any(
+            declaration["class"] == "dart::A" for declaration in hit["declarations"]
+        )
+    else:
+        assert hit is None
+    assert (before != after) == changed
