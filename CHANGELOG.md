@@ -173,6 +173,10 @@
 
 * Python
 
+  * Keep gradient arrays passed to Python `optimizer.Function.evalGradient`
+    overrides alive after the callback returns, while applying their updates
+    to the native solver.
+
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
     handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
