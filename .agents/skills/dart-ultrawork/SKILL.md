@@ -39,7 +39,8 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 
 ## Arguments
 
-`$ARGUMENTS` is a task brief plus optional mode flags:
+`$ARGUMENTS` is a task brief (prose or a structured `TASK` / `CONTEXT` block)
+plus optional mode flags:
 
 - `mode=interview`: ask one up-front batch of critical questions.
 - `mode=brief`: treat provided context as sufficient unless escalation applies.
@@ -48,119 +49,100 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 - `interview=skip`: skip maintainer questions only when the brief already
   answers all consequential decisions.
 
-The brief may be prose or a structured `TASK` / `CONTEXT` block. Extract north
-star, deliverable, acceptance criteria, constraints, risks, references, paths,
-issues/PRs/branches, commands, and first step when present.
+Extract north star, deliverable, acceptance criteria, constraints, risks,
+references, paths, issues/PRs/branches, commands, and first step when present.
 
 ## Workflow
 
-Own understanding, decomposition, sequencing, review, and honest evidence for
-the whole task. Delegate only when the user explicitly requested it and the
-current surface permits it; otherwise execute packets serially. Use
-`dart-new-task` for bounded single-session work unless the user asked for the
-autonomous project-home loop.
+This workflow is the DART contract layer over the host client's native
+autonomous machinery. The client owns the persistence loop, subagents, and
+background execution; this workflow owns understanding, decomposition,
+sequencing, review, and honest evidence.
+Delegate only when the user explicitly requested it and the current
+surface permits it; otherwise execute packets serially. Use
+`dart-new-task` for bounded single-session work unless the user asked
+for the autonomous project-home loop.
 
 A work packet is the unit of handoff: one packet = one branch = one
 verification story, with an objective, scope, non-goals, acceptance
 evidence, and gates named before execution starts. An executor who finds
 the real scope materially different stops and reports back.
 
-1. **Session start and current reality** - Locate the project home. For
-   DART autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
-   project directory. If it exists, read its `README.md`, `RESUME.md`, and any
-   autonomous sidecars such as `decisions.md`, `verification.md`, or
-   `progress-log.md`; then verify checkout state, current branch, and any
-   branch/PR evidence named by the docs. If the docs are stale, update the
-   handoff/current-reality note before relying on them. If no project home
-   exists and the task is multi-session, team-scale, design-heavy, risky, or
-   explicitly autonomous, create `docs/dev_tasks/<task>/` before
-   implementation. If prior work exists elsewhere, first absorb or summarize
-   it into the project home.
-2. **Understand and scout** - Restate the north star, final deliverable,
-   acceptance criteria, quality bar, non-goals, constraints, and risks. Scout
-   the territory first with named docs/code, read-only searches, a `dart-analyze` pass, or a
-   focused read-only scout (`dart_scout` when running in Codex). Load
-   `docs/plans/dashboard.md` for roadmap routing,
-   `docs/information-architecture.md` for durable placement, and the relevant
-   onboarding owner docs only when those phases apply. Draft a candidate
-   decomposition privately before asking anything.
-3. **Interview decisions; self-resolve uncertainties** - Ask at most one
-   up-front batch of critical questions. Escalate before destructive
-   operations, history rewrites, irreversible migrations, meaningful cost,
-   security/credential/secret handling, legal or privacy-sensitive decisions,
-   major product-direction choices not covered by the brief, conflicts with
-   stated constraints, or any assumption whose wrong answer could cause
-   significant harm. If input is unavailable, choose the safest reversible path,
-   document the assumption, and continue only with non-blocked work. Then split
-   consequential unknowns:
-   - **Maintainer decisions**: preference, scope, public API, release,
-     quality-bar, or roadmap calls that evidence cannot settle. Ask the human
-     now in one batched interview (focused questions with 2-4 concrete
-     options each, recommendation first). Do not start large work while a
-     consequential decision is open. Skip this discretionary interview when
-     `mode=brief`; also skip when `interview=skip` and the prompt already
-     answers everything consequential. In both cases, still follow the
-     escalation rules above.
-   - **Evidence-resolvable uncertainties**: anything a focused A/B test,
-     benchmark, throwaway spike, reference lookup, or blind-spot review can
-     settle. Do not ask the human; schedule these as spike/research packets
-     and record the method and result as evidence.
-4. **Create or refresh the tracking surface** - Populate the project home with
-   value, north star, deliverable, scope, non-goals, assumptions, risks,
-   acceptance evidence, gates, dependencies, milestone, next actions, and
-   blockers. Claim-dependent physics/simulation, collision/contact, model, Filament,
+1. **Session start and current reality** - The project home is
+   `docs/dev_tasks/<task>/`, not a parallel project directory. If it exists,
+   read `README.md`, `RESUME.md`, and any sidecars (`decisions.md`,
+   `verification.md`, `progress-log.md`), verify checkout, branch, and PR
+   evidence against them, and refresh stale handoff notes before relying on
+   them. If none exists and the task is multi-session, team-scale,
+   design-heavy, risky, or explicitly autonomous, create it before
+   implementation and absorb any prior work into it. The home is what makes
+   the task resumable by a zero-context session in any supported client;
+   native transcripts and memories are per-tool and do not replace it.
+2. **Understand and scout** - Restate north star, deliverable, acceptance
+   criteria, quality bar, non-goals, constraints, and risks. Scout first
+   (named docs/code, read-only searches, a `dart-analyze` pass, or
+   `dart_scout` in Codex), loading `docs/plans/dashboard.md` and
+   `docs/information-architecture.md` for routing only when they apply.
+   Draft a candidate decomposition privately before asking anything.
+3. **Interview decisions; self-resolve uncertainties** - Split consequential
+   unknowns. Maintainer decisions (preference, scope, public API, release,
+   quality-bar, roadmap) go to the human in at most one up-front batch
+   (focused questions, 2-4 concrete options each, recommendation first);
+   skip that batch under `mode=brief`, or under `interview=skip` when the
+   brief already answers everything consequential.
+   Evidence-resolvable uncertainties (anything a focused A/B test,
+   benchmark, spike, reference lookup, or blind-spot review can settle) are
+   scheduled as research packets, never asked. Regardless of mode, escalate
+   before destructive operations, history rewrites, irreversible
+   migrations, meaningful cost, secret handling, legal/privacy-sensitive
+   choices, product-direction calls outside the brief, or assumptions whose
+   wrong answer could cause significant harm; if input is unavailable, take
+   the safest reversible path, document the assumption, and continue only
+   with non-blocked work.
+4. **Tracking surface** - Populate the project home with value, north star,
+   deliverable, scope, non-goals, assumptions, risks, acceptance evidence,
+   gates, dependencies, milestone, next actions, and blockers. Keep
+   `RESUME.md` as the handoff; add `decisions.md`, `verification.md`, and
+   `progress-log.md` when they improve resumability or evidence.
+   Claim-dependent physics/simulation, collision/contact, model, Filament,
    and visual-example work routes through `dart-verify-sim`: require a text
-   oracle plus assessed visual/debug evidence, or a justified replacement. Keep `RESUME.md`
-   as the handoff; add `decisions.md`, `verification.md`, and
-   `progress-log.md` sidecars when they improve resumability or evidence.
-5. **Set the goal contract** - Express done-when as verifiable outcomes
-   (files, tests, gates, artifacts). When the session supports a goal or
-   stop-hook mode (for example `/goal` in Claude Code), set it to this
-   contract so orchestration cannot stop early or loop forever. Stop once the
-   acceptance criteria are satisfied, verification is recorded, docs are
-   current, known gaps are documented, and unnecessary work has been removed or
-   deferred. Every delegated packet gets its own contract: GOAL (one
-   sentence), DONE WHEN (verifiable), EVIDENCE (what to record), RISKS, and
-   NEXT STEP.
-6. **Decompose and route** - Cut work packets per the contract above and
-   execute serially by default. When the user explicitly requested delegation,
-   use the read-only `dart_scout` for bounded discovery, `dart_reviewer` for
-   current-state review, and `dart_release_auditor` for reference comparison.
-   Assign the same contracts to role-separated sessions in other clients.
-   Implementation stays with the parent or a scoped executor. Use parallel
-   writers only with explicit, disjoint ownership.
-7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
-   execute, verify, then run an independent/specialized review lane. Treat
-   review findings as hypotheses: investigate, fix or record no-fix evidence,
-   clean up, re-verify, and re-review. A packet is not done until the current
-   post-fix state has at least two clean review passes recorded.
-8. **Supervise and steer** - Monitor progress; unblock, reassign, or re-cut
-   packets on scope mismatch. Workers return Task, Summary, Files changed,
-   Evidence/tests, Risks, and Recommended next step. Use Codex from Claude,
-   Claude from Codex, subagents, or specialist reviewers when available; fall
-   back to role-separated local review only when unavailable. Root-cause
-   failures and fold newly discovered unknowns back into step 3.
-9. **Update docs at each stopping point** - Every meaningful cycle updates the
-   project home: `README.md` for status/plan/risks, `RESUME.md` for the next
-   fresh-session handoff, `decisions.md` if decisions changed,
-   `verification.md` if checks ran or gaps were found, and `progress-log.md`
-   for completed chunks when that sidecar exists. Keep docs current enough for
-   a zero-context session to resume without hidden chat memory.
-10. **Version-control and closeout** - Keep commits and PRs coherent: separate
-    feature work, bug fixes, refactors, docs, experiments, and AI-infra changes
-    when practical; review the diff, remove unrelated changes, make the
-    changelog decision, and run `pixi run lint` before commits. Run
-    task-specific gates from `docs/ai/verification.md`, record evidence per
-    packet, and complete the principle audit. Load
-    `docs/onboarding/contributing.md`, `docs/onboarding/changelog.md`, and
-    `docs/onboarding/ai-tools.md` for version-control or external closeout. A
-    project is complete only when
-    the north star and acceptance criteria are met, verification evidence is
-    recorded, docs are current, known gaps are documented, unnecessary work is
-    removed or deferred, and final state is summarized in `RESUME.md` or a
-    durable owner. Promote durable artifacts out of `docs/dev_tasks/<task>/`
-    and remove the folder in the completing PR. GitHub mutations only with
-    explicit maintainer/user approval.
+   oracle plus assessed visual/debug evidence, or a justified replacement.
+5. **Bind the native goal loop** - Express done-when as verifiable outcomes
+   (files, tests, gates, artifacts) and bind it to the client's native goal
+   or continuation mode (`/goal` in Claude Code, a Codex goal, a Muse
+   Code session goal) so the client owns keep-working-until-done and
+   stopping; do not reimplement that loop in prose. Done means acceptance
+   criteria satisfied, verification recorded, docs current, known gaps
+   documented, and unnecessary work removed or deferred. Every delegated
+   packet gets its own contract: GOAL (one sentence), DONE WHEN
+   (verifiable), EVIDENCE (what to record), RISKS, and NEXT STEP.
+6. **Decompose, run, review** - Cut packets per the contract above and run
+   them serially by default. When the user explicitly requested delegation,
+   route through the host client's native subagents, workflows, or
+   background agents — in Codex, `dart_scout` for bounded discovery,
+   `dart_reviewer` for current-state review, and `dart_release_auditor` for
+   reference comparison — with explicit, disjoint write ownership;
+   implementation stays with the parent or a scoped executor. For each
+   meaningful chunk: plan, execute, verify, then run an independent review
+   lane; treat findings as hypotheses, fix or record no-fix evidence,
+   re-verify, and re-review. A packet is not done until the current
+   post-fix state has at least two clean review passes recorded. On scope
+   mismatch, unblock or re-cut the packet and fold new unknowns back into
+   step 3.
+7. **Update docs at each stopping point** - Every meaningful cycle updates
+   the project home (`README.md` status/plan/risks, `RESUME.md` handoff,
+   and the sidecars when they changed) so a zero-context session can resume
+   without hidden chat memory.
+8. **Closeout** - Keep commits and PRs coherent, separating feature work,
+   fixes, refactors, docs, experiments, and AI-infra changes when
+   practical. Run `pixi run lint` before commits plus the task-specific
+   gates from `docs/ai/verification.md`, record evidence per packet, make
+   the changelog decision, and complete the principle audit (load the
+   contributing, changelog, and ai-tools owners for external closeout). A
+   project completes only when its north star and acceptance criteria are
+   met with evidence recorded and docs current; promote durable artifacts
+   out of `docs/dev_tasks/<task>/` and remove the folder in the completing
+   PR. GitHub mutations only with explicit maintainer/user approval.
 
 ## Prompt Shape
 
@@ -179,12 +161,12 @@ Constraints/evidence:
 - <known risks, branch/PR facts, or required comparison>
 ```
 
-Put this brief after `/dart-ultrawork` or `$dart-ultrawork`. When goal mode is
-available, make the same `Done when` list the goal contract.
+Put this brief after `/dart-ultrawork` or `$dart-ultrawork`, and make the
+same `Done when` list the native goal contract (step 5).
 
 ## Output
 
 - Interview record, uncertainty-resolution evidence, and project-home path
 - Packet list, routing, goal contracts, gates, and review-loop status
-- Per-packet evidence, GUI/demo artifacts when relevant, and updated docs
-- Principle audit, cleanup status, and approved external mutations
+- Per-packet evidence, updated docs, principle audit, cleanup status, and
+  approved external mutations
