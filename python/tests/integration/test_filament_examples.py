@@ -46,8 +46,6 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
     ids = [scene.id for scene in scenes]
     assert ids and len(ids) == len(set(ids))
     expected = CATALOG_IDS.copy()
-    if not hasattr(dart._demos, "ArmSkeleton"):
-        expected.remove("ssik_ik_gui")
     if not hasattr(dart.utils, "ModelResourceRetriever"):
         expected.difference_update(HUMANOID_IDS)
     if not hasattr(dart.dynamics, "VoxelGridShape"):

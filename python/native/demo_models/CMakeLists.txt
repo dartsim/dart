@@ -41,8 +41,6 @@ add_library(
   WorldHistory.cpp
   WamIkFast.cpp
   ContactInverseDynamicsModel.cpp
-  RelaxedPosture.cpp
-  ssik_ik_gui/ArmSkeleton.cpp
 )
 target_link_libraries(dart-demo-models PUBLIC dart)
 set_source_files_properties(

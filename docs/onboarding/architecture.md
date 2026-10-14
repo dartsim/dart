@@ -40,7 +40,7 @@ engine, IO, and GUI bindings; Python has no ImGui drawing API.
 | Piece | Location and target | Boundary |
 | --- | --- | --- |
 | App host | `dart/gui/app/` → `dart-gui-app` | Private static target in `dart::gui::app`, excluded from `ALL` unless a consumer needs it; never installed or exported |
-| Python models | `python/examples/demos/models/` | Demo controllers and model helpers using ordinary library bindings; terrain and three controllers are ported |
+| Python models | `python/examples/demos/models/` | Demo controllers and model helpers using ordinary library bindings; terrain, three controllers, arm helpers, and the Atlas posture objective are ported |
 | Remaining native models | `python/native/demo_models/` → `dart-demo-models` | Private static target in `dart_demos`, retained while its demo families are ported; builds with the GUI off |
 | Host bindings | `python/dartpy/viewer/` → `dartpy.viewer` | Compiled only when `dart-gui-app` exists; names follow the DART 7 Python style |
 | Remaining model bindings | `python/dartpy/demos/` → `dartpy._demos` | Temporary native helpers pending Python ports; no new demo implementation |

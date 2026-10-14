@@ -22,6 +22,8 @@ milestone consolidation PR, following the program's hot-file rule.
   event handlers respect the viewer's keyboard focus.
 - **Python:** Add `dartpy.math.Random.uniform_float()` for single-precision
   random draws from the engine's seeded stream.
+- **Python:** Add `dartpy.math.Quaternion.from_two_vectors()` to align two
+  directions using the engine's quaternion routine.
 - **Breaking Changes:** Bundled Dear ImGui is now the `v1.92.8-docking`
   release, so the installed `dart/external/imgui` headers use the docking
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is

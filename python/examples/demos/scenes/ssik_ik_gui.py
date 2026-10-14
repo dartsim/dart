@@ -1,9 +1,17 @@
-"""Browse ssik analytical IK branches for 19 native arm models."""
+"""Browse ssik analytical IK branches for 19 arm models."""
 
 import importlib
 
 import dartpy as dart
 import numpy as np
+
+from ..models.arm_skeleton import (
+    ArmSkeleton,
+    JointSpec,
+    get_ssik_arm_specs,
+    make_ssik_target_transform,
+    ssik_target_controls,
+)
 
 
 def isometry(matrix):
@@ -16,14 +24,14 @@ def isometry(matrix):
 
 
 def arm_chain(module):
-    """Pass ssik's product-of-exponentials chain to the native model."""
+    """Describe ssik's product-of-exponentials chain for the DART model."""
     if not all(
         hasattr(module, name)
         for name in ("_JOINT_T_LEFTS", "_JOINT_T_RIGHTS", "_JOINT_AXES", "_JOINT_TYPES")
     ):
         return []
     return [
-        dart._demos.JointSpec(
+        JointSpec(
             np.asarray(module._JOINT_T_LEFTS[i], dtype=float).reshape((4, 4)),
             np.asarray(module._JOINT_T_RIGHTS[i], dtype=float).reshape((4, 4)),
             np.asarray(module._JOINT_AXES[i], dtype=float),
@@ -41,8 +49,8 @@ class _SsikState:
         self.world = world
         self.target = target
         self.solved_frame = solved_frame
-        self.arm = dart._demos.ArmSkeleton(world)
-        self.arms = dart._demos.get_ssik_arm_specs()
+        self.arm = ArmSkeleton(world)
+        self.arms = get_ssik_arm_specs()
         self.module = None
         self.home = target.getTransform()
         self.seed = np.zeros(0)
@@ -183,7 +191,7 @@ class _SsikState:
         self.refresh_text()
 
     def target_controls(self, transform):
-        xyz, rpy = dart._demos.ssik_target_controls(transform)
+        xyz, rpy = ssik_target_controls(transform)
         self.target_xyz = xyz
         self.target_rpy = rpy
         self.position.value = xyz
@@ -191,7 +199,7 @@ class _SsikState:
 
     def sync_target(self):
         self.target.setTransform(
-            dart._demos.make_ssik_target_transform(self.position.value, self.rpy.value)
+            make_ssik_target_transform(self.position.value, self.rpy.value)
         )
         self.applied = self.target.getTransform().matrix().copy()
 

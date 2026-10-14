@@ -208,12 +208,6 @@ dart_format_add(${soft_demo_model_test_sources})
 dart_add_test("integration" test_WorldHistory)
 target_link_libraries(test_WorldHistory dart-demo-models)
 
-dart_add_test("integration" test_RelaxedPosture)
-target_link_libraries(test_RelaxedPosture dart-demo-models)
-
-dart_add_test("integration" test_ArmSkeleton)
-target_link_libraries(test_ArmSkeleton dart-demo-models)
-
 if(TARGET dart-utils)
   dart_add_test("integration" test_ContactInverseDynamicsModel)
   target_link_libraries(

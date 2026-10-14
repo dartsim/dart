@@ -175,6 +175,11 @@ Both paths keep returned storage alive. The NumPy export cache assumes the
 GIL and a single interpreter; isolated interpreters and free-threaded Python
 need a separate ownership and synchronization design.
 
+`optimizer.Function.evalGradient` overrides receive an owned NumPy output
+array initialized from the native gradient. In-place updates are copied back
+after the callback; changing the output size raises `ValueError`. Retaining the
+array keeps its storage alive independently of later solver calls.
+
 Registered owners expose native Python references to cyclic GC through
 traverse and clear slots. Coverage includes objective/solver and constraint
 state, collision options, composite retrievers, IK/error methods and their

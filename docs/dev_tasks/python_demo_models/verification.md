@@ -90,6 +90,86 @@ a different camera and claim-specific debug layers.
   four-family packet is complete; the remaining migration and WAM policy stay
   open.
 
+## Arm and posture packet, 2026-10-14
+
+Reference source and native demo implementations: `d13c20545`. A separately
+archived extension retains those native helpers alongside the ordinary math
+binding so the final oracle can compare both implementations in one process.
+The ordinary optimizer lifetime fix does not alter the native posture objective.
+
+### Numerical evidence
+
+- RelaxedPosture: 600 cases at dimensions 0, 1, 3, 6, and 31, bounded and
+  ideal modes, sparse weights and infinite bounds. Gradients match exactly;
+  maximum cost difference is 1.14e-13. The original weighted residual is
+  intentionally preserved rather than replaced with a squared-weight derivative.
+- Atlas: 190 paired refreshes exercise all four dragged targets, held posture
+  optimization, the balance control, and all eight movement keys. Positions,
+  COM, objective cost, and end-effector matrices match exactly. Existing
+  no-gravity support-polygon warnings prevent a claim of meaningful balance
+  correction from this experiment.
+- Arm helpers: four synthetic chains with sixteen ghosts each and 207 target
+  control cases preserve geometry, float control rounding and the Eigen ZYX
+  Euler branch. All nineteen catalog entries agree.
+- Final real-arm oracle: all nineteen arms, at rest and sixteen posed ghosts,
+  match native body/joint frames, every shape's local/world transform,
+  dimensions, bounds, colors and collision-aspect absence exactly. The full
+  prepared UR5 scene's 128 shapes, including target tools and marker, match
+  exactly independent of pointer-based child ordering.
+- Matched UR5 captures: camera and complete bounds agree exactly, as do all
+  sixteen saved joint-position/body-frame arrays after activation.
+
+The probes, baselines, captures and JSON results remain transient artifacts
+outside Git. Checked-in tests retain the behavioral and ownership assertions.
+
+### Visual evidence and diagnostic fix
+
+The original 960x600 scene-home ssik captures cropped the chain and were rejected
+as full-geometry evidence. Corrected matched 1600x1000 Vulkan/Lavapipe captures
+fit the entire UR5 chain, base, eight ghost solutions, target axes and marker.
+Both pass `image-verdict`; semantic inspection agrees with the structural oracle
+and unchanged controls. The Atlas 960x600 pair corroborates visible upper-body
+pose and controls, but crops feet and supplies no contact/balance evidence.
+Ordinary arm rendering and existing target axes are sufficient corroboration
+for this structural relocation; no additional core debug layers are needed.
+These captures make no performance claim.
+
+An apparent arm-bounds discrepancy was instead a bug in assessment traversal:
+Python wrappers could die and their IDs be reused, causing child shapes to be
+omitted. Retaining processed wrappers fixes it. The old implementation fails
+the new complete InteractiveFrame inventory regression; all 68 assessment,
+overlay and capture tests pass with the fix. It is a separate diagnostic commit.
+
+### Checks and reviews
+
+- The standalone optimizer fix has a failing retained-array oracle before the
+  fix and six passing optimizer tests afterward. Arrays own independent storage,
+  updates drive the native solver, and resized output is rejected. Two
+  independent source reviews are clean.
+- Review found that tiny quaternion directions could underflow normalization.
+  Rejecting subnormal squared norms preserves the ordinary Eigen alignment
+  path and closes the new source/target regression. Overflow, zero and
+  nonfinite directions are also rejected.
+- `pixi run build` and `build-py-dev`: passed; the reviewed math binding is rebuilt.
+- Reviewed focused suite: 90 passed, including nine quaternion cases.
+- Final sequential `pixi run test-all`: 189 CTests and 1,672 Python tests
+  passed; two Python-version skips and 54 planned DART 7 acceptance failures.
+- Final `pixi run test-gui`: ten CTests and 522 Python tests pass, with one
+  Python-version skip and two planned final-render API failures.
+- Strict catalog cycle: all 37 scenes twice, two frames each, zero skipped.
+- GUI-off full `tests` target built. All ten retained native-model CTests pass
+  across the main eight-test run and the additional adaptive-contact/arrow run.
+- Vanilla system ImGui full `tests`/dartpy build passed; reviewed GUI-free
+  model/math/optimizer suite has 191 passing tests. Catalog retains the intended
+  bundled-ImGui rebuild hint.
+- `pixi run lint`, `check-lint`, and the changed-file local-path check pass.
+- Two independent arm/posture reviews are clean after the quaternion guard;
+  both inspected numeric/visual evidence. The separate traversal review is clean.
+- One aggregate attempt overlapped a separate extension rebuild; five spawned
+  HTTPS-test workers saw a temporarily truncated shared object. That attempt
+  is invalid. All fourteen affected cases pass after rebuilding; subsequent
+  aggregate runs are sequential.
+
 ## Limits
 
 No WAM backend change is implemented. The analytical prototype's sampled
