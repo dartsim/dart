@@ -30,6 +30,45 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
+  api_inventory:
+    name: DART API inventory freshness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read recorded Gazebo revisions
+        id: revisions
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          sources = json.loads(Path('tools/gazebo/compat/dart_api_inventory.json').read_text())['sources']
+          for name, source in sources.items():
+              print(f'{name}={source["sha"]}')
+          PY
+
+      - name: Checkout recorded gz-physics
+        uses: actions/checkout@v7
+        with:
+          repository: gazebosim/gz-physics
+          ref: ${{ steps.revisions.outputs.gz-physics }}
+          path: .pixi/gz-inventory/gz-physics
+          persist-credentials: false
+
+      - name: Checkout recorded gz-sim
+        uses: actions/checkout@v7
+        with:
+          repository: gazebosim/gz-sim
+          ref: ${{ steps.revisions.outputs.gz-sim }}
+          path: .pixi/gz-inventory/gz-sim
+          persist-credentials: false
+
+      - name: Check inventory freshness
+        run: |
+          python scripts/gz_dart_api_inventory.py --check \
+            .pixi/gz-inventory/gz-physics --gz-sim .pixi/gz-inventory/gz-sim
+
   test_gazebo:
     name: ubuntu-latest
     runs-on: ubuntu-latest
