@@ -107,6 +107,17 @@ BLOCK = 1 << 30  # lookup depth of a block scope, past any namespace or class
 RAW_POINTER = "__raw_pointer__"
 RAW_ARRAY = "__raw_array__"
 ITERATOR = "__iterator__"
+ELEMENT_CONTAINERS = {
+    "std::vector",
+    "std::array",
+    "std::deque",
+    "std::list",
+    "std::forward_list",
+    "std::set",
+    "std::unordered_set",
+    "std::multiset",
+    "std::unordered_multiset",
+}
 OPTIONAL = "__optional__:"
 SMART_POINTERS = {
     "std::shared_ptr": "__shared_ptr__:",
@@ -261,6 +272,61 @@ def expand_macros(values, macros, active=()):
     return result
 
 
+def annotation_macro(name, macros, active=()):
+    """DART export/attribute macros, excluding declaration generators and types."""
+    if name in active or len(active) >= 16:
+        return False
+    if name not in macros:
+        return name.startswith("DART_") and name.endswith("_API")
+    _, body = macros[name]
+    if any(value in {";", "{", "}"} for value in body):
+        return False
+    return (
+        not body
+        and name.endswith(("_API", "_EXPORT", "_IMPORT"))
+        or any(value in {"__attribute__", "__declspec"} for value in body)
+        or any(
+            annotation_macro(value, macros, active + (name,))
+            for value in body
+            if value in macros
+        )
+    )
+
+
+def function_annotations(tokens, text, first, stop, macros):
+    """Raw annotations in a declaration prefix/suffix, outside nested type expressions."""
+    result, index = [], first
+    while index < stop:
+        value = tokens.values[index]
+        attribute = value in {"__attribute__", "__declspec"} or tokens.values[
+            index : index + 2
+        ] == ["[", "["]
+        if attribute or annotation_macro(value, macros):
+            end = index + 1
+            opening = index if value == "[" else end
+            if opening in tokens.pairs and tokens.values[opening] in {"(", "["}:
+                end = tokens.pairs[opening] + 1
+            raw = text[
+                tokens.offsets[index] : tokens.offsets[end - 1]
+                + len(tokens.values[end - 1])
+            ]
+            result.append(
+                " ".join(
+                    match.group()
+                    for match in re.finditer(IGNORED.pattern + "|" + TOKEN.pattern, raw)
+                    if not match.group().startswith(("//", "/*"))
+                )
+            )
+            index = end
+        elif value in {"(", "[", "{"} and index in tokens.pairs:
+            index = tokens.pairs[index] + 1
+        elif value == "<":
+            index = template_end(tokens.values, index)
+        else:
+            index += 1
+    return result
+
+
 def source_files(root):
     return sorted(
         path
@@ -288,6 +354,7 @@ class Tokens:
     using: list = field(default_factory=list)
     template_headers: dict = field(default_factory=lambda: defaultdict(set))
     enum_headers: dict = field(default_factory=lambda: defaultdict(set))
+    union_headers: dict = field(default_factory=lambda: defaultdict(set))
     alignment_headers: dict = field(default_factory=lambda: defaultdict(set))
     annotation_headers: dict = field(default_factory=lambda: defaultdict(set))
     macros: set = field(default_factory=set)
@@ -329,7 +396,7 @@ def declaration(values, owner, macros=()):
             continue
         name_index = opening - 1
         name = values[name_index]
-        if name in {"decltype", "noexcept", "alignas"}:
+        if name in {"decltype", "noexcept", "alignas", "__attribute__", "__declspec"}:
             excluded_until = Tokens(" ".join(values)).pairs.get(opening, opening)
             continue
         for spelling in (
@@ -349,6 +416,7 @@ def declaration(values, owner, macros=()):
         ):
             continue
         if name in macros:
+            excluded_until = Tokens(" ".join(values)).pairs.get(opening, opening)
             continue
         depth = 1
         closing = opening + 1
@@ -753,7 +821,15 @@ def scopes(tokens, annotation_text=None):
             p += 1
         return result
 
-    def walk(start, end, namespace=(), owner=None, access="public"):
+    def walk(
+        start,
+        end,
+        namespace=(),
+        owner=None,
+        access="public",
+        linkage_literals=(),
+        union_header=None,
+    ):
         here = tuple(owner.split("::")) if owner else namespace
         i = start
         segment = start
@@ -776,11 +852,38 @@ def scopes(tokens, annotation_text=None):
                 if j < end and values[j] == "{" and j in tokens.pairs:
                     names = tuple(v for v in values[i + 1 : j] if v != "::")
                     tokens.bodies[j] = namespace + names
-                    walk(j + 1, tokens.pairs[j], namespace + names)
+                    walk(
+                        j + 1,
+                        tokens.pairs[j],
+                        namespace + names,
+                        linkage_literals=linkage_literals,
+                    )
                     i = tokens.pairs[j] + 1
                     segment = i
                     continue
-            if value in {"class", "struct", "enum"} and i + 1 < end:
+            if (
+                value == "extern"
+                and values[i + 1 : i + 2] == ["{"]
+                and i + 1 in tokens.pairs
+            ):
+                opening = i + 1
+                literals = (
+                    quoted_literals(tokens.offsets[i], tokens.offsets[opening])
+                    if annotation_text is not None
+                    else ()
+                )
+                walk(
+                    opening + 1,
+                    tokens.pairs[opening],
+                    namespace,
+                    owner,
+                    access,
+                    literals,
+                )
+                i = tokens.pairs[opening] + 1
+                segment = i
+                continue
+            if value in {"class", "struct", "union", "enum"} and i + 1 < end:
                 j = i + 1
                 alignments = []
                 annotations = []
@@ -835,6 +938,24 @@ def scopes(tokens, annotation_text=None):
                         i = tokens.pairs[k] + 1
                         segment = i
                         continue
+                if (
+                    value == "union"
+                    and j < end
+                    and values[j] == "{"
+                    and j in tokens.pairs
+                ):
+                    header = " ".join(values[i : tokens.pairs[j] + 1])
+                    walk(
+                        j + 1,
+                        tokens.pairs[j],
+                        namespace,
+                        owner,
+                        access,
+                        union_header=header,
+                    )
+                    i = tokens.pairs[j] + 1
+                    segment = i
+                    continue
                 if j < end and IDENTIFIER.match(values[j]):
                     name = values[j]
                     k = template_end(values, j + 1)  # a specialization's arguments
@@ -855,6 +976,8 @@ def scopes(tokens, annotation_text=None):
                             )
                         if value == "enum":
                             tokens.enum_headers[full_name].add(" ".join(values[i:k]))
+                        if value == "union":
+                            tokens.union_headers[full_name].add(" ".join(values[i:k]))
                         if values[segment : segment + 2] == ["template", "<"]:
                             stop, angle = segment + 1, 0
                             while stop < i:
@@ -920,7 +1043,13 @@ def scopes(tokens, annotation_text=None):
                                     tokens.pairs[k],
                                     namespace,
                                     full_name,
-                                    "public" if value == "struct" else "private",
+                                    "private" if value == "class" else "public",
+                                    linkage_literals=linkage_literals,
+                                    union_header=(
+                                        " ".join(values[i:k])
+                                        if value == "union"
+                                        else None
+                                    ),
                                 )
                                 entry["members"] = [
                                     m
@@ -928,6 +1057,57 @@ def scopes(tokens, annotation_text=None):
                                     if m["class"] == full_name
                                 ]
                             i = tokens.pairs[k] + 1
+                            if value == "union" and values[i : i + 1] != [";"]:
+                                stop = statement_end(tokens, i)
+                                type_tokens = values[
+                                    segment : entry["index"]
+                                ] + TOKEN.findall(full_name)
+                                members = data_declarations(
+                                    type_tokens + values[i:stop],
+                                    owner or "::".join(namespace),
+                                    layout_only=bool(owner),
+                                )
+                                for position, member in enumerate(members):
+                                    if annotation_text is not None:
+                                        first = (
+                                            i + member["name_index"] - len(type_tokens)
+                                        )
+                                        last = (
+                                            i
+                                            + members[position + 1]["name_index"]
+                                            - len(type_tokens)
+                                            if position + 1 < len(members)
+                                            else stop
+                                        )
+                                        literals = quoted_literals(
+                                            tokens.offsets[first] + len(values[first]),
+                                            tokens.offsets[last],
+                                        )
+                                        if literals:
+                                            member["initializer_literals"] = literals
+                                        if owner is None:
+                                            declaration_literals = list(
+                                                linkage_literals
+                                            ) + quoted_literals(
+                                                tokens.offsets[segment],
+                                                tokens.offsets[entry["index"]],
+                                            )
+                                            if declaration_literals:
+                                                member["declaration_literals"] = (
+                                                    declaration_literals
+                                                )
+                                    fields.append(
+                                        {
+                                            **member,
+                                            "access": access,
+                                            **(
+                                                {"union_declaration": union_header}
+                                                if union_header
+                                                else {}
+                                            ),
+                                        }
+                                    )
+                                i = stop
                             segment = i
                             continue
                         if k < end and values[k] == ";":
@@ -978,6 +1158,10 @@ def scopes(tokens, annotation_text=None):
                         method["class"] = None
                         method["declaration_scope"] = here
                     if method["class"] is None:
+                        if linkage_literals:
+                            method["declaration_literals"] = list(
+                                linkage_literals
+                            ) + method.get("declaration_literals", [])
                         method["name"] = "::".join(namespace + path + (method["name"],))
                         opening = method["name_index"] + 1
                         if (
@@ -1020,7 +1204,25 @@ def scopes(tokens, annotation_text=None):
                         )
                         if literals:
                             member["initializer_literals"] = literals
-                    fields.append({**member, "access": access})
+                        if owner is None:
+                            declaration_literals = list(linkage_literals)
+                            if "extern" in prefix:
+                                declaration_literals += quoted_literals(
+                                    tokens.offsets[segment], tokens.offsets[first]
+                                )
+                            if declaration_literals:
+                                member["declaration_literals"] = declaration_literals
+                    fields.append(
+                        {
+                            **member,
+                            "access": access,
+                            **(
+                                {"union_declaration": union_header}
+                                if union_header
+                                else {}
+                            ),
+                        }
+                    )
                 if prefix and "using" in prefix and "=" in prefix:
                     equals = prefix.index("=")
                     using = prefix.index("using")
@@ -1063,6 +1265,7 @@ class ApiIndex:
     types: set = field(default_factory=set)
     type_templates: dict = field(default_factory=lambda: defaultdict(set))
     type_enums: dict = field(default_factory=lambda: defaultdict(set))
+    type_unions: dict = field(default_factory=lambda: defaultdict(set))
     type_alignments: dict = field(default_factory=lambda: defaultdict(set))
     type_annotations: dict = field(default_factory=lambda: defaultdict(set))
     classes: dict = field(default_factory=dict)
@@ -1627,6 +1830,19 @@ def expression_alias(api, name, depth=0):
     )
 
 
+def element_alias(api, name, depth=0):
+    """An API alias for one of the known standard element containers."""
+    if depth > 8 or name not in api.alias_arguments:
+        return False
+    values, scope = api.alias_arguments[name]
+    return any(
+        value in ELEMENT_CONTAINERS
+        or element_alias(api, api.resolve(value, scope), depth + 1)
+        for start, _, value in names_in(values)
+        if not in_template_argument(values, start)
+    )
+
+
 def base_name(raw):
     """The class named in a base clause entry such as `public virtual A<B>`."""
     raw = re.sub(r"\b(public|protected|private|virtual)\b", "", raw)
@@ -2183,12 +2399,21 @@ def index_api(header_root):
     for clean, text in headers:
         # Collect annotations before expansion can erase platform-specific export spellings.
         raw_tokens = Tokens(clean)
+        raw_tokens.macros = {
+            name
+            for name, (parameters, _) in macros.items()
+            if parameters is not None and annotation_macro(name, macros)
+        }
         _, raw_functions, raw_aliases, raw_fields = scopes(
             raw_tokens, annotation_text=text
         )
         raw_annotations = defaultdict(set)
         raw_literals = defaultdict(list)
         raw_declaration_literals = defaultdict(list)
+        raw_function_annotations = defaultdict(list)
+        grouped_functions = defaultdict(list)
+        for function in raw_functions:
+            grouped_functions[function["index"]].append(function)
         for name, _, start in raw_aliases:
             stop = statement_end(raw_tokens, start)
             literals = [
@@ -2202,33 +2427,64 @@ def index_api(header_root):
                 name = qualified(expand_macros(TOKEN.findall(name), macros))
                 api.alias_literals[name] = literals
         for member in raw_fields:
-            if member.get("initializer_literals"):
-                owner = qualified(expand_macros(TOKEN.findall(member["class"]), macros))
-                name = qualified(expand_macros(TOKEN.findall(member["name"]), macros))
-                signature = " ".join(
-                    expand_macros(TOKEN.findall(member["signature"]), macros)
-                )
-                raw_literals[owner, name, signature].extend(
-                    member["initializer_literals"]
-                )
+            owner = qualified(expand_macros(TOKEN.findall(member["class"]), macros))
+            name = qualified(expand_macros(TOKEN.findall(member["name"]), macros))
+            signature = " ".join(
+                expand_macros(TOKEN.findall(member["signature"]), macros)
+            )
+            raw_literals[owner, name, signature].extend(
+                member.get("initializer_literals", ())
+            )
+            raw_declaration_literals[owner, name, signature].extend(
+                member.get("declaration_literals", ())
+            )
         for function in raw_functions:
-            if function.get("constant_initializer_literals") or function.get(
-                "declaration_literals"
-            ):
-                owner, name = function["class"], function["name"]
-                if owner is None:
-                    owner, _, name = name.rpartition("::")
-                owner = qualified(expand_macros(TOKEN.findall(owner), macros))
-                name = qualified(expand_macros(TOKEN.findall(name), macros))
-                signature = " ".join(
-                    expand_macros(TOKEN.findall(function["signature"]), macros)
+            owner, name = function["class"], function["name"]
+            if owner is None:
+                owner, _, name = name.rpartition("::")
+            owner = qualified(expand_macros(TOKEN.findall(owner), macros))
+            name = qualified(expand_macros(TOKEN.findall(name), macros))
+            signature = " ".join(
+                expand_macros(TOKEN.findall(function["signature"]), macros)
+            )
+            raw_literals[owner, name, signature].extend(
+                function.get("constant_initializer_literals", ())
+            )
+            raw_declaration_literals[owner, name, signature].extend(
+                function.get("declaration_literals", ())
+            )
+            group = grouped_functions[function["index"]]
+            annotations = function_annotations(
+                raw_tokens, text, function["index"], group[0]["name_index"], macros
+            )
+            position = group.index(function)
+            if position:
+                previous = group[position - 1]
+                first = (
+                    previous["name_index"]
+                    + len(TOKEN.findall(previous["signature"]))
+                    - len(previous["return_tokens"])
+                    + 1
                 )
-                raw_literals[owner, name, signature].extend(
-                    function.get("constant_initializer_literals", ())
+                annotations.extend(
+                    function_annotations(
+                        raw_tokens, text, first, function["name_index"], macros
+                    )
                 )
-                raw_declaration_literals[owner, name, signature].extend(
-                    function.get("declaration_literals", ())
+            opening = function["name_index"] + len(
+                TOKEN.findall(function["name"].rsplit("::", 1)[-1])
+            )
+            closing = raw_tokens.pairs.get(opening)
+            stop = (
+                function["name_index"]
+                + len(TOKEN.findall(function["signature"]))
+                - len(function["return_tokens"])
+            )
+            if closing is not None:
+                annotations.extend(
+                    function_annotations(raw_tokens, text, closing + 1, stop, macros)
                 )
+            raw_function_annotations[owner, name, signature].extend(annotations)
         for name, declarations in raw_tokens.annotation_headers.items():
             expanded_name = qualified(expand_macros(TOKEN.findall(name), macros))
             raw_annotations[expanded_name].update(declarations)
@@ -2249,18 +2505,31 @@ def index_api(header_root):
             )
             if defaults:
                 function["declaration_literals"] = defaults
+            annotations = raw_function_annotations.get(
+                (owner, name, function["signature"])
+            )
+            if annotations:
+                function["declaration_annotations"] = list(dict.fromkeys(annotations))
         for member in fields:
             literals = raw_literals.get(
                 (member["class"], member["name"], member["signature"])
             )
             if literals:
                 member["initializer_literals"] = literals
+            declaration_literals = raw_declaration_literals.get(
+                (member["class"], member["name"], member["signature"])
+            )
+            if declaration_literals:
+                member["declaration_literals"] = declaration_literals
         for name, declarations in tokens.template_headers.items():
             if name.startswith("dart::"):
                 api.type_templates[name].update(declarations)
         for name, declarations in tokens.enum_headers.items():
             if name.startswith("dart::"):
                 api.type_enums[name].update(declarations)
+        for name, declarations in tokens.union_headers.items():
+            if name.startswith("dart::"):
+                api.type_unions[name].update(declarations)
         for name, declarations in tokens.alignment_headers.items():
             if name.startswith("dart::"):
                 api.type_alignments[name].update(declarations)
@@ -2489,6 +2758,8 @@ def public_declaration(declaration):
             "enum_declaration",
             "initializer_literals",
             "declaration_literals",
+            "declaration_annotations",
+            "union_declaration",
         )
         if key in declaration
     }
@@ -2934,6 +3205,10 @@ def scan_sources(api, source_root):
             "deque",
             "list",
             "forward_list",
+            "set",
+            "unordered_set",
+            "multiset",
+            "unordered_multiset",
         }:
             return name
         scope = tokens.scopes.get(index, ())
@@ -3375,6 +3650,17 @@ def scan_sources(api, source_root):
                     declaration["enum_declarations"] = enums
                 if constants:
                     declaration["type_constant_declarations"] = constants
+                unions = sorted(
+                    {
+                        header
+                        for child in api.layout_owners(
+                            item["return_tokens"], tuple(item["class"].split("::"))
+                        )
+                        for header in api.type_unions.get(child, ())
+                    }
+                )
+                if unions:
+                    declaration["union_declarations"] = unions
                 declared_types = api.decltype_declarations(
                     item["return_tokens"], tuple(item["class"].split("::"))
                 )
@@ -3405,6 +3691,13 @@ def scan_sources(api, source_root):
                 for declaration in api.type_enums.get(owner, ())
             }
         )
+        unions = sorted(
+            {
+                declaration
+                for owner in owners
+                for declaration in api.type_unions.get(owner, ())
+            }
+        )
         alignments = api.alignment_declarations(resolved)
         annotations = [
             {"class": owner, "signature": signature}
@@ -3419,6 +3712,7 @@ def scan_sources(api, source_root):
             **({"template_declarations": templates} if templates else {}),
             **({"final_classes": final_classes} if final_classes else {}),
             **({"enum_declarations": enums} if enums else {}),
+            **({"union_declarations": unions} if unions else {}),
             **({"alignment_declarations": alignments} if alignments else {}),
             **({"annotation_declarations": annotations} if annotations else {}),
         )
@@ -4274,6 +4568,29 @@ def scan_sources(api, source_root):
                 if context
                 else value.lstrip(":")
             )
+            alias = next(
+                (
+                    resolve_return(value)
+                    for start, _, value in names_in(return_tokens)
+                    if not in_template_argument(return_tokens, start)
+                    and element_alias(api, resolve_return(value))
+                ),
+                None,
+            )
+            if alias:
+                argument, where = api.alias_arguments[alias]
+                element = {
+                    **item,
+                    "return_tokens": argument,
+                    "declaration_scope": where,
+                    "layout_shape": False,
+                    "reference_shape": False,
+                }
+                element.pop("source", None)
+                result.update(returns([element], depth + 1))
+                if raw_pointer(return_tokens) or alias in api.raw_pointers:
+                    result.add(RAW_POINTER)
+                continue
 
             def inline_wrapper(values, where, depth=0):
                 if depth > 8:
@@ -4401,14 +4718,7 @@ def scan_sources(api, source_root):
                 (
                     end
                     for start, end, value in names_in(return_tokens)
-                    if standard_type(value)
-                    in {
-                        "std::vector",
-                        "std::array",
-                        "std::deque",
-                        "std::list",
-                        "std::forward_list",
-                    }
+                    if standard_type(value) in ELEMENT_CONTAINERS
                     and not in_template_argument(return_tokens, start)
                 ),
                 None,
@@ -4428,6 +4738,8 @@ def scan_sources(api, source_root):
                 )
                 if any(
                     OPTIONAL in value
+                    or value.startswith("__element__:")
+                    or value.startswith(SOURCE_CLASS)
                     or CALLABLE in value
                     or INLINE_LAYOUT in value
                     or NO_INLINE_LAYOUT in value
@@ -5155,6 +5467,7 @@ def scan_sources(api, source_root):
                 or REFERENCE in types
                 or any(
                     OPTIONAL in value
+                    or value.startswith("__element__:")
                     or CALLABLE in value
                     or any(prefix in value for prefix in SMART_POINTERS.values())
                     for value in types

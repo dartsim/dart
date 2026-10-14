@@ -1667,6 +1667,9 @@
               "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
+              "declaration_annotations": [
+                "[ [ deprecated ( \"Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.\" ) ] ]"
+              ],
               "declaration_literals": [
                 "\"Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.\"",
                 "\"\""
@@ -1696,6 +1699,9 @@
               "access": "public",
               "class": "dart::dynamics::MeshShape",
               "const": false,
+              "declaration_annotations": [
+                "[ [ deprecated ( \"Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.\" ) ] ]"
+              ],
               "declaration_literals": [
                 "\"Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.\"",
                 "\"\""

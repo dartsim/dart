@@ -10634,3 +10634,1072 @@ class Holder { A direct; Value aliased; A* pointer; };
         declaration["class"] == "dart::A" and declaration["signature"] == "int value"
         for declaration in declarations
     )
+
+
+ROUND17_ROOT_CASES = []
+
+
+def _union(name, header, old, new, source, changed=True, breaking=None):
+    ROUND17_ROOT_CASES.append(
+        (
+            name,
+            header,
+            header.replace(old, new),
+            source,
+            changed,
+            changed if breaking is None else breaking,
+        )
+    )
+
+
+U = "namespace dart { union Value { int bits; double real; }; }"
+_union(
+    "union_member",
+    U,
+    "int bits",
+    "int gone",
+    "void use(){dart::Value value;value.bits=1;}",
+)
+_union(
+    "union_arrow",
+    U,
+    "int bits",
+    "int gone",
+    "void use(dart::Value* value){value->bits=1;}",
+)
+_union(
+    "union_value_receiver",
+    "namespace dart { union Value { int bits; void hit(); }; Value make(); }",
+    "void hit();",
+    "void hit()=delete;",
+    "void use(){dart::make().hit();}",
+)
+_union(
+    "union_pointer_receiver",
+    "namespace dart { union Value { int bits; void hit(); }; Value* make(); }",
+    "void hit();",
+    "void hit()=delete;",
+    "void use(){dart::make()->hit();}",
+)
+_union(
+    "union_alias",
+    U + " namespace dart { using Alias=Value; }",
+    "int bits",
+    "int gone",
+    "void use(){dart::Alias value;value.bits=1;}",
+)
+_union(
+    "union_forward",
+    "namespace dart { union Value; union Value { int bits; double real; }; }",
+    "int bits",
+    "int gone",
+    "void use(){dart::Value value;value.bits=1;}",
+)
+_union(
+    "union_nested",
+    "namespace dart { struct Holder { union Value { int bits; double real; }; }; }",
+    "int bits",
+    "int gone",
+    "void use(){dart::Holder::Value value;value.bits=1;}",
+)
+_union(
+    "union_access",
+    "namespace dart { union Value { int bits; }; }",
+    "int bits;",
+    "private: int bits;",
+    "void use(){dart::Value value;value.bits=1;}",
+)
+_union(
+    "union_ctor",
+    "namespace dart { union Value { int bits; Value(); }; }",
+    "Value();",
+    "Value()=delete;",
+    "void use(){dart::Value value;}",
+)
+_union(
+    "union_template",
+    "namespace dart { template<class T> union Value { T bits; double real; }; }",
+    "T bits",
+    "T gone",
+    "void use(){dart::Value<int> value;value.bits=1;}",
+)
+_union(
+    "union_alignment",
+    "namespace dart { union alignas(16) Value { int bits; double real; }; }",
+    "alignas(16)",
+    "alignas(8)",
+    "static_assert(alignof(dart::Value)==16);",
+)
+_union(
+    "union_storage_kind",
+    U,
+    "union Value",
+    "struct Value",
+    "static_assert(sizeof(dart::Value)==sizeof(double));",
+)
+_union(
+    "union_owned_storage_kind",
+    U + " namespace dart { struct Holder { Value value; }; }",
+    "union Value",
+    "struct Value",
+    "static_assert(sizeof(dart::Holder)==sizeof(double));",
+)
+_union(
+    "union_owned_alias_storage_kind",
+    U + " namespace dart { using Alias=Value; struct Holder { Alias value; }; }",
+    "union Value",
+    "struct Value",
+    "static_assert(sizeof(dart::Holder)==sizeof(double));",
+)
+_union(
+    "anonymous_union_member",
+    "namespace dart { struct Holder { union { int bits; double real; }; }; }",
+    "int bits",
+    "int gone",
+    "void use(){dart::Holder value;value.bits=1;}",
+)
+_union(
+    "anonymous_union_arrow",
+    "namespace dart { struct Holder { union { int bits; double real; }; }; }",
+    "int bits",
+    "int gone",
+    "void use(dart::Holder* value){value->bits=1;}",
+)
+_union(
+    "anonymous_union_namespace",
+    "namespace dart { static union { int bits; double real; }; }",
+    "int bits",
+    "int gone",
+    "void use(){dart::bits=1;}",
+)
+_union(
+    "anonymous_union_grouping",
+    "namespace dart { struct Holder { union { int a; double b; }; union { int c; double d; }; }; }",
+    "union { int a; double b; }; union { int c; double d; };",
+    "union { int a; double b; int c; double d; };",
+    "static_assert(sizeof(dart::Holder)==2*sizeof(double));",
+)
+_union(
+    "union_foreign_negative",
+    "namespace dart { struct A { void hit(); }; } namespace foreign { union Value { int bits; }; }",
+    "int bits",
+    "int gone",
+    "void use(dart::A* known){foreign::Value value;value.bits=1;}",
+    False,
+    True,
+)
+_union(
+    "union_unused_negative",
+    U + " namespace dart { struct A { void hit(); }; }",
+    "int bits",
+    "int gone",
+    "void use(dart::A* value){value->hit();}",
+    False,
+)
+
+for name, header in [
+    ("namespace_block", 'namespace dart { extern "C" { void hit(); } }'),
+    ("outer_block", 'extern "C" { namespace dart { void hit(); } }'),
+    (
+        "nested_namespace",
+        'namespace dart { extern "C" { namespace detail { void hit(); } } }',
+    ),
+    (
+        "nested_linkage",
+        'namespace dart { extern "C++" { extern "C" { void hit(); } } }',
+    ),
+    ("linkage_comment", 'namespace dart { extern /* comment */ "C" { void hit(); } }'),
+    ("linkage_grouped", 'namespace dart { extern "C" { void hit(), untouched(); } }'),
+    ("linkage_inline", 'namespace dart { extern "C" { inline void hit() {} } }'),
+    ("linkage_individual", 'namespace dart { extern "C" void hit(); }'),
+]:
+    source = (
+        "void use(){dart::"
+        + ("detail::" if name == "nested_namespace" else "")
+        + "hit();}"
+    )
+    old = "void hit()"
+    new = "void hit(int)"
+    _union(name, header, old, new, source)
+_union(
+    "linkage_literal",
+    'namespace dart { extern "C" { void hit(); } }',
+    '"C"',
+    '"C++"',
+    "void use(){dart::hit();}",
+    True,
+    False,
+)
+_union(
+    "linkage_member_negative",
+    'namespace dart { extern "C" { struct A { void hit(); }; } }',
+    '"C"',
+    '"C++"',
+    "void use(dart::A& value){value.hit();}",
+    False,
+)
+_union(
+    "linkage_other_block_negative",
+    'namespace dart { extern "C" { void hit(); } extern "C++" { void unused(); } }',
+    "void unused()",
+    "void unused(int)",
+    "void use(){dart::hit();}",
+    False,
+)
+_union(
+    "linkage_body_negative",
+    'namespace dart { extern "C" { inline void hit(){int value=1;} } }',
+    "value=1",
+    "value=2",
+    "void use(){dart::hit();}",
+    False,
+)
+_union(
+    "linkage_comment_negative",
+    'namespace dart { extern "C" { /* text1 */ void hit(); } }',
+    "text1",
+    "text2",
+    "void use(){dart::hit();}",
+    False,
+)
+_union(
+    "linkage_closed_scope",
+    'namespace dart { extern "C" { void unused(); } void hit(); }',
+    '"C"',
+    '"C++"',
+    "void use(){dart::hit();}",
+    False,
+)
+
+_union(
+    "linkage_variable_signature",
+    'namespace dart { extern "C" { extern int value; } }',
+    "int value",
+    "int gone",
+    "void use(){dart::value=1;}",
+)
+_union(
+    "linkage_variable_literal",
+    'namespace dart { extern "C" { extern int value; } }',
+    '"C"',
+    '"C++"',
+    "void use(){dart::value=1;}",
+    True,
+    False,
+)
+_union(
+    "linkage_variable_individual",
+    'namespace dart { extern "C" int value; }',
+    '"C"',
+    '"C++"',
+    "void use(){dart::value=1;}",
+    True,
+    False,
+)
+_union(
+    "linkage_variable_const",
+    'namespace dart { extern "C" { extern const int value; } }',
+    '"C"',
+    '"C++"',
+    "int use(){return dart::value;}",
+    True,
+    False,
+)
+_union(
+    "linkage_variable_closed_scope",
+    'namespace dart { extern "C" { extern int unused; } extern int value; }',
+    '"C"',
+    '"C++"',
+    "void use(){dart::value=1;}",
+    False,
+)
+_union(
+    "linkage_static_field_negative",
+    'namespace dart { extern "C" { struct A{static int value;}; } }',
+    '"C"',
+    '"C++"',
+    "void use(){dart::A::value=1;}",
+    False,
+)
+
+
+@pytest.mark.parametrize(
+    "name,before_header,after_header,source,changed,breaking",
+    ROUND17_ROOT_CASES,
+    ids=[x[0] for x in ROUND17_ROOT_CASES],
+)
+def test_union_and_language_linkage_declarations(
+    extractor, tmp_path, name, before_header, after_header, source, changed, breaking
+):
+    before = _scan_receiver_api(extractor, tmp_path, before_header, source)
+    after = _scan_receiver_api(extractor, tmp_path, after_header, source)
+    assert (before != after) == changed
+
+
+ASSOCIATIVE17_HEADER = """namespace dart {
+struct A { void hit() const; A* operator->(); A& operator()(); A& operator[](int); };
+struct Hash { std::size_t operator()(const A&) const; };
+struct PointerHash { std::size_t operator()(A*) const; };
+struct Factory { KIND values(); };
+}"""
+ASSOCIATIVE17_KINDS = [
+    "std::set<A>",
+    "std::multiset<A>",
+    "std::unordered_set<A,Hash>",
+    "std::unordered_multiset<A,Hash>",
+]
+ASSOCIATIVE17_USES = [
+    ("arrow", "void use(dart::Factory& factory) { factory.values().begin()->hit(); }"),
+    (
+        "const_iterator",
+        "void use(dart::Factory& factory) { factory.values().cbegin()->hit(); }",
+    ),
+    (
+        "dereference",
+        "void use(dart::Factory& factory) { (*factory.values().begin()).hit(); }",
+    ),
+    (
+        "auto_copy",
+        "void use(dart::Factory& factory) { auto values=factory.values(); auto iterator=values.begin(); auto copy=iterator; copy->hit(); }",
+    ),
+    (
+        "auto_element",
+        "void use(dart::Factory& factory) { auto value=*factory.values().begin(); value.hit(); }",
+    ),
+    (
+        "range_for",
+        "void use(dart::Factory& factory) { for(const auto& value:factory.values()) { value.hit(); } }",
+    ),
+    (
+        "const_range",
+        "void use(dart::Factory& factory) { const auto values=factory.values(); values.begin()->hit(); }",
+    ),
+    (
+        "move",
+        "void use(dart::Factory& factory) { std::move(factory.values()).begin()->hit(); }",
+    ),
+]
+
+
+@pytest.mark.parametrize("kind", ASSOCIATIVE17_KINDS)
+@pytest.mark.parametrize("name,source", ASSOCIATIVE17_USES)
+def test_associative_returns_preserve_iterator_element_shapes(
+    extractor, tmp_path, kind, name, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    text = ASSOCIATIVE17_HEADER.replace("KIND", kind)
+    header.write_text(text)
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(before, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    assert not {"operator->", "operator[]", "operator()"} & set(
+        _entries(before, "members")
+    )
+    header.write_text(text.replace("void hit() const;", "void hit() const = delete;"))
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
+
+
+@pytest.mark.parametrize("kind", ["std::set<A>", "std::multiset<A>"])
+@pytest.mark.parametrize("method", ["rbegin", "crbegin"])
+def test_associative_reverse_iterators_preserve_elements(
+    extractor, tmp_path, kind, method
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(ASSOCIATIVE17_HEADER.replace("KIND", kind))
+    source = (
+        "void use(dart::Factory& factory) { factory.values()." + method + "()->hit(); }"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "std::set<A*>",
+        "std::multiset<A*>",
+        "std::unordered_set<A*,PointerHash>",
+        "std::unordered_multiset<A*,PointerHash>",
+    ],
+)
+def test_associative_pointer_elements_keep_extra_indirection(extractor, tmp_path, kind):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(ASSOCIATIVE17_HEADER.replace("KIND", kind))
+    source = "void use(dart::Factory& factory) { auto iterator=factory.values().begin(); (*iterator)->hit(); }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    assert "operator->" not in _entries(result, "members")
+
+
+@pytest.mark.parametrize("kind", ["std::set<A>", "std::unordered_set<A,Hash>"])
+@pytest.mark.parametrize(
+    "prefix,source",
+    [
+        (
+            "std::optional<KIND>",
+            "void use(dart::Factory& factory) { factory.values().value().begin()->hit(); }",
+        ),
+        (
+            "std::vector<KIND>",
+            "void use(dart::Factory& factory) { factory.values().front().begin()->hit(); }",
+        ),
+        (
+            "std::shared_ptr<KIND>",
+            "void use(dart::Factory& factory) { factory.values().get()->begin()->hit(); }",
+        ),
+    ],
+)
+def test_associative_nested_returns_preserve_elements(
+    extractor, tmp_path, kind, prefix, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        ASSOCIATIVE17_HEADER.replace("KIND", prefix.replace("KIND", kind))
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize("kind", ["std::set<A>", "std::unordered_set<A,Hash>"])
+@pytest.mark.parametrize(
+    "extra,source",
+    [
+        (
+            "",
+            "using Values=std::set<dart::A>; struct Provider { Values values(); }; void use(Provider& factory) { factory.values().begin()->hit(); }",
+        ),
+        (
+            "using Values=KIND; struct Aliased { Values values(); };",
+            "void use(dart::Aliased& factory) { factory.values().begin()->hit(); }",
+        ),
+        (
+            "using Values=KIND; using Other=Values; struct Aliased { Other values(); };",
+            "void use(dart::Aliased& factory) { factory.values().begin()->hit(); }",
+        ),
+        (
+            "",
+            "using std::set; struct Provider { set<dart::A> values(); }; void use(Provider& factory) { factory.values().begin()->hit(); }",
+        ),
+        (
+            "",
+            "namespace st=std; struct Provider { st::set<dart::A> values(); }; void use(Provider& factory) { factory.values().begin()->hit(); }",
+        ),
+    ],
+)
+def test_associative_alias_and_import_context(extractor, tmp_path, kind, extra, source):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        ASSOCIATIVE17_HEADER.replace("KIND", kind)
+        + "namespace dart {"
+        + extra.replace("KIND", kind)
+        + "}"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "std::set<Foreign>",
+        "std::multiset<Foreign>",
+        "std::unordered_set<Foreign,ForeignHash>",
+        "std::unordered_multiset<Foreign,ForeignHash>",
+    ],
+)
+def test_associative_foreign_elements_suppress_same_named_dart_member(
+    extractor, tmp_path, kind
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(ASSOCIATIVE17_HEADER.replace("KIND", "std::set<A>"))
+    source = (
+        "struct Foreign { void hit() const; }; struct ForeignHash { std::size_t operator()(const Foreign&) const; }; struct Provider { "
+        + kind
+        + " values(); }; void use(dart::A* known,Provider& factory) { factory.values().begin()->hit(); }"
+    )
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        ASSOCIATIVE17_HEADER.replace("KIND", "std::set<A>").replace(
+            "void hit() const;", "void hit() const = delete;"
+        )
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+@pytest.mark.parametrize("kind", ["std::set<A>", "std::unordered_set<A,Hash>"])
+@pytest.mark.parametrize(
+    "extra,source",
+    [
+        (
+            "using Values=KIND;",
+            "void use() { dart::Values values; values.begin()->hit(); }",
+        ),
+        ("KIND values();", "void use() { dart::values().begin()->hit(); }"),
+        (
+            "KIND values();",
+            "void use() { auto factory=&dart::values; factory().cbegin()->hit(); }",
+        ),
+        (
+            "",
+            "struct Provider { std::set<dart::A> values(); }; void use(Provider& factory) { factory.values().begin()->hit(); }",
+        ),
+        (
+            "",
+            "using namespace std; struct Provider { set<dart::A> values(); }; void use(Provider& factory) { factory.values().begin()->hit(); }",
+        ),
+    ],
+)
+def test_associative_connected_declarations_and_factories(
+    extractor, tmp_path, kind, extra, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        ASSOCIATIVE17_HEADER.replace("KIND", kind)
+        + "namespace dart {"
+        + extra.replace("KIND", kind)
+        + "}"
+    )
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+def test_associative_source_derived_elements_keep_dart_bases(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(
+        ASSOCIATIVE17_HEADER.replace("KIND", "std::set<A>")
+    )
+    source = "struct Derived:dart::A {}; struct Provider { std::set<Derived> values(); }; void use(Provider& factory) { factory.values().begin()->hit(); }"
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+
+
+def test_associative_std_import_respects_source_container_shadow(extractor, tmp_path):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    header = headers / "api.hpp"
+    header.write_text(ASSOCIATIVE17_HEADER.replace("KIND", "std::set<A>"))
+    source = """struct Foreign { void hit() const; }; struct Iterator { Foreign* operator->(); };
+using namespace std; namespace provider { template<class T> struct set { Iterator begin(); }; struct Factory { set<dart::A> values(); }; }
+void use(provider::Factory& factory) { factory.values().begin()->hit(); }"""
+    before = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    assert "hit" not in _entries(before, "members")
+    header.write_text(
+        ASSOCIATIVE17_HEADER.replace("KIND", "std::set<A>").replace(
+            "void hit() const;", "void hit() const = delete;"
+        )
+    )
+    assert _scan(extractor, extractor.index_api(headers), tmp_path, source) == before
+
+
+@pytest.mark.parametrize(
+    "kind,source",
+    [
+        (
+            "std::set<std::shared_ptr<A>>",
+            "void use(dart::Factory& factory) { factory.values().begin()->get()->hit(); }",
+        ),
+        (
+            "std::set<std::optional<A>>",
+            "void use(dart::Factory& factory) { factory.values().cbegin()->value().hit(); }",
+        ),
+    ],
+)
+def test_associative_wrapped_elements_reuse_existing_receiver_shapes(
+    extractor, tmp_path, kind, source
+):
+    headers = tmp_path / "dart"
+    headers.mkdir()
+    (headers / "api.hpp").write_text(ASSOCIATIVE17_HEADER.replace("KIND", kind))
+    result = _scan(extractor, extractor.index_api(headers), tmp_path, source)
+    hit = _entries(result, "members")["hit"]
+    assert hit["receiver_types"] == ["dart::A"] and hit["unresolved_count"] == 0
+    assert not {"operator->", "operator[]", "operator()"} & set(
+        _entries(result, "members")
+    )
+
+
+FUNCTION_ANNOTATION_MACROS = """#define DART_COMMON_API
+#define DART_TEST_API(value)
+#define DART_ALIAS_API DART_COMMON_API
+#define DART_HIT hit
+#define DART_CLASS A
+#define DART_NAMESPACE dart
+"""
+FUNCTION_ANNOTATION_CASES = [
+    (
+        "free",
+        "namespace dart { DART_COMMON_API int hit(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "member",
+        "namespace dart { struct A { DART_COMMON_API int hit(); }; }",
+        "DART_COMMON_API",
+        "",
+        "void use(dart::A& a){a.hit();}",
+        True,
+    ),
+    (
+        "constructor",
+        "namespace dart { struct A { DART_COMMON_API A(); }; }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::A a;}",
+        True,
+    ),
+    (
+        "static_member",
+        "namespace dart { struct A { DART_COMMON_API static int hit(); }; }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::A::hit();}",
+        True,
+    ),
+    (
+        "template_free",
+        "namespace dart { template<class T> DART_COMMON_API int hit(T); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit(1);}",
+        True,
+    ),
+    (
+        "template_member",
+        "namespace dart { struct A { template<class T> DART_COMMON_API int hit(T); }; }",
+        "DART_COMMON_API",
+        "",
+        "void use(dart::A& a){a.hit(1);}",
+        True,
+    ),
+    (
+        "friend",
+        "namespace dart { struct A { friend DART_COMMON_API int hit(A&); }; }",
+        "DART_COMMON_API",
+        "",
+        "namespace dart { void use(A& a){hit(a);} }",
+        True,
+    ),
+    (
+        "prefix_group_first",
+        "namespace dart { DART_COMMON_API int hit(), miss(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "prefix_group_second",
+        "namespace dart { DART_COMMON_API int miss(), hit(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "suffix_group_first",
+        "namespace dart { int hit() DART_COMMON_API, miss(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "suffix_group_unrelated",
+        "namespace dart { int miss() DART_COMMON_API, hit(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        False,
+    ),
+    (
+        "suffix_group_second",
+        "namespace dart { int miss(), hit() DART_COMMON_API; }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "function_macro",
+        'namespace dart { DART_TEST_API("default") int hit(); }',
+        'DART_TEST_API("default")',
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "function_macro_nested",
+        'namespace dart { DART_TEST_API(visibility("default")) int hit(); }',
+        'DART_TEST_API(visibility("default"))',
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "alias_macro",
+        "namespace dart { DART_ALIAS_API int hit(); }",
+        "DART_ALIAS_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "name_macro",
+        "namespace dart { DART_COMMON_API int DART_HIT(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "class_macro",
+        "namespace dart { struct DART_CLASS { DART_COMMON_API int hit(); }; }",
+        "DART_COMMON_API",
+        "",
+        "void use(dart::A& a){a.hit();}",
+        True,
+    ),
+    (
+        "namespace_macro",
+        "namespace DART_NAMESPACE { DART_COMMON_API int hit(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "gnu_prefix",
+        'namespace dart { __attribute__((visibility("default"))) int hit(); }',
+        '__attribute__((visibility("default")))',
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "gnu_suffix",
+        'namespace dart { int hit() __attribute__((visibility("default"))); }',
+        '__attribute__((visibility("default")))',
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "standard_attribute",
+        'namespace dart { [[gnu::visibility("default")]] int hit(); }',
+        '[[gnu::visibility("default")]]',
+        "",
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "attribute_string",
+        'namespace dart { __attribute__((visibility("default"))) int hit(); }',
+        '"default"',
+        '"hidden"',
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "macro_string",
+        'namespace dart { DART_TEST_API("default") int hit(); }',
+        '"default"',
+        '"hidden"',
+        "void use(){dart::hit();}",
+        True,
+    ),
+    (
+        "annotation_comment",
+        'namespace dart { __attribute__((visibility(/* first */"default"))) int hit(); }',
+        "/* first */",
+        "/* second, longer */",
+        "void use(){dart::hit();}",
+        False,
+    ),
+    (
+        "unrelated_function",
+        "namespace dart { int hit(); DART_COMMON_API int miss(); }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        False,
+    ),
+    (
+        "unrelated_class",
+        "namespace dart { int hit(); struct DART_COMMON_API A {}; }",
+        "DART_COMMON_API",
+        "",
+        "void use(){dart::hit();}",
+        False,
+    ),
+    (
+        "body_attribute",
+        "namespace dart { inline int hit(){ __attribute__((unused)) int local=0; return 1; } }",
+        "__attribute__((unused))",
+        "",
+        "void use(){dart::hit();}",
+        False,
+    ),
+    (
+        "parameter_attribute",
+        "namespace dart { int hit(int __attribute__((unused)) value); }",
+        "__attribute__((unused))",
+        "",
+        "void use(){dart::hit(1);}",
+        True,
+    ),
+    (
+        "ordinary_name",
+        "namespace dart { int DART_HIT(); }",
+        "#define DART_HIT hit",
+        "#define DART_HIT hit",
+        "void use(){dart::hit();}",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "header", "old", "new", "source", "drift"), FUNCTION_ANNOTATION_CASES
+)
+def test_raw_function_export_annotation_evidence(
+    extractor, tmp_path, label, header, old, new, source, drift
+):
+    original = FUNCTION_ANNOTATION_MACROS + header
+    before = _scan_receiver_api(extractor, tmp_path, original, source)
+    after = _scan_receiver_api(
+        extractor,
+        tmp_path,
+        FUNCTION_ANNOTATION_MACROS + header.replace(old, new),
+        source,
+    )
+    assert (before != after) == drift
+    if label == "parameter_attribute":
+        declarations = _entries(before, "free_functions")["dart::hit"]["declarations"]
+        assert all(
+            "declaration_annotations" not in declaration for declaration in declarations
+        )
+    if drift and label != "parameter_attribute":
+        declarations = [
+            declaration
+            for section in ("free_functions", "members", "constructors")
+            for row in before[section]
+            for declaration in row.get("declarations", ())
+        ]
+        assert any(
+            declaration.get("declaration_annotations") for declaration in declarations
+        )
+
+
+ROUND17_SPEC_CASES = [
+    (
+        "friend_declaration_linkage",
+        'namespace dart { extern "C" { struct A { friend void hit(A*); }; } }',
+        '"C"',
+        '"C++"',
+        "void use(dart::A* value) { hit(value); }",
+        True,
+        False,
+    ),
+    (
+        "friend_definition_linkage",
+        'namespace dart { extern "C" { struct A { friend void hit(A*) {} }; } }',
+        '"C"',
+        '"C++"',
+        "void use(dart::A* value) { hit(value); }",
+        True,
+        False,
+    ),
+    (
+        "out_of_line_member_linkage_negative",
+        'namespace dart { struct A { void hit(); }; extern "C" { void A::hit() {} } }',
+        '"C"',
+        '"C++"',
+        "void use(dart::A& value) { value.hit(); }",
+        False,
+        False,
+    ),
+    (
+        "static_member_linkage_negative",
+        'namespace dart { extern "C" { struct A { static void hit(); }; } }',
+        '"C"',
+        '"C++"',
+        "void use() { dart::A::hit(); }",
+        False,
+        False,
+    ),
+    (
+        "nearest_language_override_negative",
+        'namespace dart { extern "C" { extern "C++" { void hit(); } } }',
+        'extern "C"',
+        'extern "C++"',
+        "void use() { dart::hit(); }",
+        False,
+        False,
+    ),
+    (
+        "nearest_language_changes",
+        'namespace dart { extern "C" { extern "C++" { void hit(); } } }',
+        'extern "C++"',
+        'extern "C"',
+        "void use() { dart::hit(); }",
+        True,
+        False,
+    ),
+    (
+        "empty_owned_union_kind",
+        "namespace dart { union Value {}; struct Holder { Value value; }; }",
+        "union Value",
+        "struct Value",
+        "void use() { dart::Holder holder; static_assert(std::is_union_v<decltype(holder.value)>); }",
+        True,
+        True,
+    ),
+    (
+        "empty_union_kind_control",
+        "namespace dart { union Value {}; }",
+        "union Value",
+        "struct Value",
+        "static_assert(std::is_union_v<dart::Value>);",
+        True,
+        True,
+    ),
+    (
+        "empty_owned_union_alias_kind",
+        "namespace dart { union Value {}; using Alias=Value; struct Holder { Alias value; }; }",
+        "union Value",
+        "struct Value",
+        "void use() { dart::Holder holder; static_assert(std::is_union_v<decltype(holder.value)>); }",
+        True,
+        True,
+    ),
+    (
+        "empty_union_pointer_field_negative",
+        "namespace dart { union Value {}; struct Holder { Value* value; }; }",
+        "union Value",
+        "struct Value",
+        "static_assert(sizeof(dart::Holder)==sizeof(void*));",
+        False,
+        False,
+    ),
+    (
+        "empty_union_reference_field_negative",
+        "namespace dart { union Value {}; struct Holder { Value& value; }; }",
+        "union Value",
+        "struct Value",
+        "static_assert(sizeof(dart::Holder)==sizeof(void*));",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,header,old,new,source,changed,breaking",
+    ROUND17_SPEC_CASES,
+    ids=[case[0] for case in ROUND17_SPEC_CASES],
+)
+def test_union_and_linkage_connected_declarations(
+    extractor, tmp_path, name, header, old, new, source, changed, breaking
+):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, header.replace(old, new), source)
+    assert (before != after) == changed
+
+
+@pytest.mark.parametrize(
+    "declarator,source",
+    [
+        ("storage", "void use(){dart::Holder value; value.storage.bits=1;}"),
+        ("storage", "static_assert(sizeof(dart::Holder)==sizeof(double));"),
+        ("first, storage", "void use(){dart::Holder value; value.storage.bits=1;}"),
+        ("storage[2]", "void use(){dart::Holder value; value.storage[1].bits=1;}"),
+        ("*storage", "void use(dart::Holder& value){value.storage->bits=1;}"),
+    ],
+)
+def test_inline_named_union_declarator_evidence(
+    extractor, tmp_path, declarator, source
+):
+    header = (
+        "namespace dart {struct Holder {union Value {int bits; double real;} "
+        + declarator
+        + ";};}"
+    )
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor, tmp_path, header.replace("int bits", "int gone"), source
+    )
+    if "sizeof" in source:
+        after = _scan_receiver_api(
+            extractor, tmp_path, header.replace("union Value", "struct Value"), source
+        )
+    assert before != after
+
+
+@pytest.mark.parametrize(
+    "declarator,field",
+    [("storage={'a'}", "storage"), ("first={'x'}, storage={'a'}", "storage")],
+)
+def test_inline_named_union_initializer_literal(extractor, tmp_path, declarator, field):
+    header = (
+        "namespace dart {struct Holder {union Value {char bits; int real;} "
+        + declarator
+        + ";};}"
+    )
+    source = (
+        "constexpr dart::Holder value{}; static_assert(value." + field + ".bits=='a');"
+    )
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor, tmp_path, header.replace("'a'", "'b'"), source
+    )
+    assert before != after
+    declarations = _entries(before, "constructors")["dart::Holder"][
+        "default_member_initializer_declarations"
+    ]
+    assert any(item.get("initializer_literals") == ["'a'"] for item in declarations)
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        'namespace dart {extern "C" union Value {int bits;} value;}',
+        'namespace dart {extern "C" {union Value {int bits;} value;}}',
+    ],
+)
+def test_inline_named_union_variable_language_linkage(extractor, tmp_path, header):
+    source = "void use(){dart::value.bits=1;}"
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor, tmp_path, header.replace('"C"', '"C++"'), source
+    )
+    assert before != after
+
+
+def test_inline_named_union_static_field_preserves_pointer_layout(extractor, tmp_path):
+    header = "namespace dart {struct Holder {static union Value {int bits;} storage;};}"
+    source = "static_assert(sizeof(dart::Holder)==1);"
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor, tmp_path, header.replace("int bits", "double bits"), source
+    )
+    assert before == after

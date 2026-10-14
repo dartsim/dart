@@ -278,10 +278,17 @@ Quoted literals in indexed field and constant initializers are retained in
 `initializer_literals` as evidence, without parsing their contents as C++.
 Used function declarations retain quoted literals from their return and parameter
 types, defaults and exception conditions in `declaration_literals`. Function bodies
-and comments remain excluded.
+and comments remain excluded. Export and attribute spellings on used functions
+are retained in `declaration_annotations` before macro expansion.
+Language-linkage blocks are scanned in their enclosing namespace; used free
+functions and namespace variables retain the quoted linkage name with their
+declaration literals.
+Union types retain `union_declarations`, and union fields retain their enclosing
+`union_declaration`, including anonymous union blocks.
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
-value-owned subobjects and unnamed bit-field padding. Inline field types retain alias targets and enum headers
+value-owned subobjects and unnamed bit-field padding. Owned union fields also
+retain their types' `union_declarations`. Inline field types retain alias targets and enum headers
 in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
 `declaration_literals`. Indexed constants in inline array extents appear in
 `type_constant_declarations`. Known callees in field `decltype` expressions retain
@@ -312,6 +319,8 @@ receiver candidates from their return expressions, excluding nested functions
 and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
+Set-family returns also preserve their value or pointer elements through
+iterators, aliases and range-for declarations.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
 contained receiver shapes through value, pointer and array expressions. Returned
 standard smart pointers preserve their wrapper types through `get()` and `lock()`
