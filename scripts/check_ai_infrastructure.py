@@ -240,6 +240,7 @@ GUI_ONLY_PYTHON_TESTS = frozenset(
         "agent_debug_overlay",
         "filament",
         "gui_offscreen",
+        "target_shape_render",
         "viewer_render",
     )
 )

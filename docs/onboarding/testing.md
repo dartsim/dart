@@ -44,11 +44,12 @@ CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
 to depend directly on `tests_and_run` and `pytest`, requires those targets to
 cover every configured C++ and Python test except the `gui-device`-labeled
-CTest tests and the five GUI-only Python modules (`test_filament`, `test_gui_offscreen`,
-`test_agent_capture`, `test_agent_debug_overlay`, `test_viewer_render`), which it requires
+CTest tests and the six GUI-only Python modules (`test_filament`,
+`test_gui_offscreen`, `test_agent_capture`, `test_agent_debug_overlay`,
+`test_target_shape_render`, `test_viewer_render`), which it requires
 `pixi run test-gui` to run, rejects omitted test directories or unowned test
-sources, and admits inactive platform tests or the one compile-only
-C test only through exact branch-owned predicates and target contracts. It
+sources, and admits inactive platform tests or the one compile-only C test
+only through exact branch-owned predicates and target contracts. It
 walks the active generated CTest subdirectory graph, maps registrations back to
 configured executables, and admits the required package-version CMake script
 only with its exact source, output directory, version, pointer size and active

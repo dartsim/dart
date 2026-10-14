@@ -139,6 +139,18 @@ every new member needs a use case:
 - sub-objects: `world.collision`, `world.solver`, `world.sensors`,
   `world.hooks` and `world.constraints`.
 
+The separate keyword-only overload `World(*, config=...)` consumes a typed
+`WorldConfig`; mixing it with individual constructor options raises `TypeError`.
+Python configuration defaults select DART, while the C++ defaults remain FCL.
+The bound configuration fields exclude allocator internals.
+
+dartpy's `dart.World` and `dart.io.load_world` for MJCF default to the native
+DART collision detector, exposed through `world.collision.detector`. The
+MJCF switch belongs only in `dart.io.load_world`; the C++
+`dart::utils::MjcfParser::readWorld` and its direct dartpy `MjcfParser`
+binding keep FCL. Changing that parser would also switch C++ callers. The
+C++ `World` defaults to FCL, for Gazebo compatibility.
+
 Not bound in Python: internal preparation steps, the C++ recording accessor
 (replaced by `dart.Recorder` once the recorder ships), index and memory-manager accessors, the
 `remove_all_*` family, and boolean collision-check overloads.
@@ -406,8 +418,10 @@ Binding rules:
 
 M6a merged the Filament renderer on `main` in
 [#3696](https://github.com/dartsim/dart/pull/3696). Its camelCase `dartpy.gui`
-bindings are interim. M6b still implements the following Python API and
-removes that interim module before the first release candidate:
+bindings are interim and are not part of the 7.0 API. M6b implements the
+following Python API and deletes that module; the
+[project home](../dev_tasks/dart7_python_first/README.md#release-train-and-checkpoints)
+owns its schedule and release gates:
 
 - **`dart.render`** is headless.
   - A `Renderer` returns NumPy arrays: RGB, metric depth and segmentation.
