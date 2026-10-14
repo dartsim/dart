@@ -37,10 +37,6 @@
 namespace dart::python {
 
 void bind_wam_ikfast(nb::module_& m);
-#ifdef DARTPY_HAS_SIMBICON_DEMOS
-void bind_simbicon(nb::module_& m);
-void bind_soft_foot_simbicon(nb::module_& m);
-#endif
 
 void bind_demos(nb::module_& m)
 {
@@ -48,10 +44,6 @@ void bind_demos(nb::module_& m)
       "_demos",
       "Private demo models and scene helpers; outside the SemVer contract.");
   bind_wam_ikfast(demos);
-#ifdef DARTPY_HAS_SIMBICON_DEMOS
-  bind_simbicon(demos);
-  bind_soft_foot_simbicon(demos);
-#endif
 }
 
 } // namespace dart::python

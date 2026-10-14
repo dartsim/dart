@@ -523,6 +523,16 @@ void Shape(nb::module_& m)
       m, "MeshShape")
       .def(
           dartnb::factory(
+              [](const Eigen::Vector3d& scale,
+                 std::shared_ptr<dart::math::TriMesh<double>> mesh) {
+                return std::make_shared<dart::dynamics::MeshShape>(
+                    scale, std::move(mesh));
+              }),
+          nb::arg("scale"),
+          nb::arg("mesh"))
+      .def_prop_ro("tri_mesh", &dart::dynamics::MeshShape::getTriMesh)
+      .def(
+          dartnb::factory(
               +[](const Eigen::Vector3d& scale, const aiScene* mesh) {
                 DART_SUPPRESS_DEPRECATED_BEGIN
                 auto shape

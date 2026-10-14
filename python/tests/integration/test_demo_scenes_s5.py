@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
 from examples.demos.models import soft_worm as worm_model
+from examples.demos.models import soft_foot_simbicon as foot_model
 
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
@@ -156,7 +157,7 @@ def test_s5_construction_and_deterministic_steps(scene_id, monkeypatch):
         _step(setup, 4)
         assert setup.world.getSimFrames() == 4
         states.append(
-            dart._demos.soft_foot_simbicon.state_vector(
+            foot_model.state_vector(
                 setup.pre_step.__self__.model
             ).copy()
             if scene_id == "soft_foot_simbicon"
@@ -347,6 +348,8 @@ def test_worm_gait_key_panel_and_nonfinite_guard(controls, nonfinite_state):
 def test_atlas_keys_and_every_panel_control(controls):
     setup = _scene("atlas_simbicon").factory()
     state = setup.pre_step.__self__
+    assert state.mode.value == state.control_mode == 2
+    assert state.controller.current_state_machine == "walking in place"
     initial = state.controller.atlas.getPositions().copy()
     actions = _actions(setup)
     assert {key: action.label for key, action in actions.items()} == {
@@ -419,7 +422,7 @@ def test_soft_foot_keys_restart_and_deferred_feet(controls, monkeypatch):
     scene = _scene("soft_foot_simbicon")
     setup = scene.factory()
     state = setup.pre_step.__self__
-    native = dart._demos.soft_foot_simbicon
+    native = foot_model
     initial = native.state_vector(state.model).copy()
     actions = _actions(setup)
     assert {key: action.label for key, action in actions.items()} == {
@@ -476,7 +479,7 @@ def test_soft_foot_atof(text, expected):
 
 
 def test_soft_foot_environment_scripted_push(monkeypatch):
-    native = dart._demos.soft_foot_simbicon
+    native = foot_model
     monkeypatch.setenv("DART_DEMO_SOFT_FOOT_FEET", "rigid")
     monkeypatch.setenv("DART_DEMO_SOFT_FOOT_PUSH_STEP", " 2steps")
     monkeypatch.setenv("DART_DEMO_SOFT_FOOT_PUSH_N", "125.5N")

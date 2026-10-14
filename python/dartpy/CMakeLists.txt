@@ -91,9 +91,6 @@ target_link_libraries(
   dartpy
   PRIVATE ${dartpy_libraries} dart-demo-models tsl::robin_map
 )
-if(TARGET dart-utils AND TARGET dart-utils-urdf)
-  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_SIMBICON_DEMOS)
-endif()
 if(TARGET dart-gui-app)
   target_link_libraries(dartpy PRIVATE dart-gui-app)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_VIEWER)

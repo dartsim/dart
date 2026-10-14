@@ -1,3 +1,6 @@
+import gc
+import weakref
+
 import dartpy as dart
 import numpy as np
 import pytest
@@ -158,13 +161,117 @@ def test_point_mass_state_copies_and_world_position_update(soft_body):
     np.testing.assert_array_equal(point.velocities, velocity)
     np.testing.assert_array_equal(old_position, [0, 0, 0])
     np.testing.assert_allclose(point.world_position, old_world_position + displacement)
-    for name in ("positions", "velocities", "world_position", "forces"):
+    for name in (
+        "positions",
+        "velocities",
+        "world_position",
+        "world_velocity",
+        "rest_position",
+        "forces",
+    ):
         array = getattr(point, name)
         assert array.shape == (3,)
         assert not array.flags.writeable
         assert not np.shares_memory(array, getattr(point, name))
         with pytest.raises(ValueError):
             array[0] = 1
+
+
+def test_soft_generator_metadata_matches_native_point_and_face_order():
+    properties = dart.dynamics.SoftBodyNodeHelper.makeBoxProperties(
+        [0.123456789012345, 0.25, 0.5], dart.math.Isometry3(), [4, 4, 4], 0.5
+    )
+    skeleton, joint, body = make_soft_body(properties)
+    positions = properties.point_rest_positions
+    masses = properties.point_masses
+    faces = properties.faces
+    assert positions.dtype == np.float64
+    assert positions.shape == (body.getNumPointMasses(), 3)
+    assert faces.shape == (body.num_faces, 3)
+    for index, (position, mass) in enumerate(zip(positions, masses)):
+        point = body.get_point_mass(index)
+        np.testing.assert_array_equal(point.rest_position, position)
+        assert point.mass == mass
+    for index, face in enumerate(faces):
+        np.testing.assert_array_equal(body.get_face(index), face)
+    for index in (-1, body.num_faces, body.num_faces + 1):
+        with pytest.raises(IndexError, match="face index"):
+            body.get_face(index)
+    saved = (positions.copy(), masses.copy(), faces.copy())
+    positions[:] = 99
+    masses[:] = 99
+    faces[:] = 0
+    body.get_face(0)[:] = 0
+    for actual, expected in zip(
+        (properties.point_rest_positions, properties.point_masses, properties.faces),
+        saved,
+    ):
+        np.testing.assert_array_equal(actual, expected)
+    copies = (
+        properties.point_rest_positions,
+        properties.point_masses,
+        properties.faces,
+    )
+    body_reference = weakref.ref(body)
+    del properties, skeleton, joint, body, point
+    gc.collect()
+    assert body_reference() is None
+    for actual, expected in zip(copies, saved):
+        np.testing.assert_array_equal(actual, expected)
+
+
+def test_point_mass_mass_updates_soft_total_and_rejects_invalid_mass(soft_body):
+    _, _, body = soft_body
+    point = body.get_point_mass(0)
+    original_point_mass = point.mass
+    original_body_mass = body.getMass()
+    point.mass = 2 * original_point_mass
+    assert body.getMass() == pytest.approx(original_body_mass + original_point_mass)
+    for value in (0, -1, np.nan, np.inf):
+        with pytest.raises(ValueError, match="mass must be finite and positive"):
+            point.mass = value
+        assert point.mass == 2 * original_point_mass
+
+
+def test_point_mass_world_velocity_and_resets_preserve_other_state(soft_body):
+    skeleton, _, body = soft_body
+    point = body.get_point_mass(0)
+    rest_position = point.rest_position
+    point.positions = [0.01, 0.02, 0.03]
+    point.velocities = [0.04, 0.05, 0.06]
+    np.testing.assert_array_equal(point.world_velocity, point.velocities)
+    point.reset_positions()
+    np.testing.assert_array_equal(point.positions, [0, 0, 0])
+    np.testing.assert_array_equal(point.rest_position, rest_position)
+    np.testing.assert_array_equal(point.velocities, [0.04, 0.05, 0.06])
+    world = dart.simulation.World()
+    world.addSkeleton(skeleton)
+    world.step()
+    for field in ("velocities", "accelerations", "forces"):
+        before = {
+            name: getattr(point, name)
+            for name in ("positions", "velocities", "accelerations", "forces")
+        }
+        getattr(point, "reset_" + field)()
+        np.testing.assert_array_equal(getattr(point, field), [0, 0, 0])
+        for name, saved in before.items():
+            if name != field:
+                np.testing.assert_array_equal(getattr(point, name), saved)
+
+
+def test_skeleton_clears_native_point_collision_flags(soft_body):
+    skeleton, _, body = soft_body
+    point = body.get_point_mass(0)
+    assert not body.is_colliding
+    assert not point.is_colliding
+    point.is_colliding = True
+    assert point.is_colliding
+    with pytest.raises(TypeError):
+        point.is_colliding = 1
+    assert point.is_colliding
+    skeleton.clear_colliding_bodies()
+    assert not point.is_colliding
+    assert not body.is_colliding
 
 
 @pytest.mark.parametrize("name", ["positions", "velocities"])

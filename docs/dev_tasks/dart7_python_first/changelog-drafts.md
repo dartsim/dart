@@ -33,6 +33,9 @@ milestone consolidation PR, following the program's hot-file rule.
   copied soft-point accelerations for recording and restoring simulation state.
 - **Python:** Expose copied mesh vertex groups, integer engine random draws,
   point rendering and voxel-update preflight for Python sensor implementations.
+- **Python:** Expose point mass metadata and reset operations, collision flags,
+  copied soft-body point/face properties and owning triangle meshes through
+  ordinary engine bindings for Python model construction and control.
 - **Breaking Changes:** Bundled Dear ImGui is now the `v1.92.8-docking`
   release, so the installed `dart/external/imgui` headers use the docking
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is

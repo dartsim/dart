@@ -435,10 +435,100 @@ The source hash in the final capture manifests matches the reviewed model.
   zero skips. `pixi run lint` and `check-lint` pass; the final evidence-note
   refresh receives another pre-commit lint and staged path check.
 
+## Locomotion packet: native preparation, 2026-10-14
+
+The native reference is the completed state/mesh packet `7572b9c5b`.
+SIMBICON preparation records 707 full-state arrays and 1,078 boundary arrays
+over 102 cases, with exact independent repeats. It covers four gaits, pushes,
+harnessing, normalized rigid/soft models, strict state transitions, retained
+machine states, reset and scene controls. Sixteen existing Python tests pass
+against the native controller. Internal timers are inferred from transitions
+and source; no direct timer-observation claim is made. A fitted fixed-camera
+Y-up before capture shows the complete Atlas and both feet, with eighteen
+saved states and a passing assessment.
+
+Both native 1,000-step rigid/soft stance traces repeat exactly. In the 501-sample
+settled window, soft contacts average 51.18363273453094 versus rigid
+15.644710578842316, a ratio of 3.2716. The full 24-trial sweep reproduces
+largest tested recovered pushes of 18 kN soft and 8 kN rigid. Soft recovery is
+nonmonotonic: 2, 4 and 18 kN recover, while 6 through 16 kN and 20 through
+24 kN fail. The port must retain exhaustive evaluation after a failed trial.
+This measurement does not establish recovery for every smaller force.
+
+Native reset removes soft-point deformation and matches fresh physical state
+for 300 subsequent steps. Immediately after reset, 33 generalized acceleration
+entries remain stale, with maximum absolute value 50.4944; the first step
+matches fresh state. Preserve that existing behavior. Native soft/rigid
+rest-pose manifolds each have 48 contacts and match within 8.795e-9. Four fitted
+stance/push before captures pass image and view assessments. The push snapshot
+supports visible pose and labels; the upright predicate is a pelvis-minus-foot
+height check and a still does not prove recovery.
+
+Generic ContactArrowLayout moved to the private GUI app owner. Mechanical
+comparison and an independent bounded source review confirm unchanged
+algorithm, validation and all sixteen existing cases. Its implementation is
+compiled directly into the existing constraint-solver test binary for
+GUI-off coverage. Ordinary metadata and triangle-mesh bindings build and pass
+75 focused tests, including copied double geometry, malformed indices, point
+handle invalidation, reset isolation and native mesh retention. A bounded
+independent review and its immutable-reference lifetime/stride probes are clean.
+The first mixed build found a deprecated-call warning in the new Skeleton
+binding, corrected with the existing suppression pattern; the retry passes.
+Paired Python comparisons now match all 707 controller arrays, 1,078 boundary
+arrays over 102 cases, and ten extra indexed-reset arrays. Four gait paths and
+both normalized-foot paths agree. Native debug/verbosity output is byte-identical
+at 2,507 bytes. The native degree literals evaluate as long doubles before
+rounding to double; a private Python helper preserves their decimal precision
+and operation order rather than using the differently rounded `math.radians`.
+
+Both enriched standing traces match exactly at 1,001 rows of 658 rigid and
+1,646 soft physical values, including all five generalized vectors, body
+transforms, point state/world velocity/collision flags and raw contacts, with
+exact independent repeats. Construction metadata matches point masses, rest
+positions, faces, original double triangle meshes, inertia, friction and all
+thirty live collision-frame memberships. Reset, manifold and 29 baseline
+boundary comparisons also match. All 27,205 state-vector rows across the 24
+recovery trials match exactly, at 66 rigid or 378 soft values, with exact
+diagnostics/outcomes and the native nonmonotonic curve. Those sweep rows do not
+directly cover all the enriched standing fields. Repository tests preserve the
+native portable same-run maximum comparison and exhaustive trial coverage;
+the exact 18/8 kN curve is this host's paired evidence.
+
+Preliminary review fixed cached body identity after renames and selective,
+indexed q/dq reset after adding a joint. Both regressions are independently
+rechecked against native behavior. Controllers avoid retaining borrowed solver
+wrappers in World back-reference cycles; active harness cleanup and cyclic
+collection match native. A second independent reviewer audits 31 saved pairs
+and 2,576 arrays, all exact. Final-source rigid captures match eighteen saved
+arrays, camera and bounds; rendered viewports are pixel-identical, with 50
+whole-image GUI diagnostic pixels different. Four final-source foot pairs match
+state, camera and diagnostic metadata; all eight view reports and image verdicts
+pass. Original-detail inspection confirms complete bodies, feet and overlays,
+and matching rest-foot closeups and post-push poses. The soft biped visibly
+leans in the push snapshot while its relative-height predicate remains true;
+the snapshot alone does not prove recovery. Source, AST and immutable-extension
+hashes are recorded. Global lint corrected six private sagittal identifiers;
+the resulting alpha rename is independently verified, and guarded current-source
+comparisons/captures are refreshed afterward. An accidental
+NVIDIA-versus-Lavapipe rigid refresh was excluded before the matching Lavapipe rerun.
+
+Both native controllers, bindings/tests and shared registrations are now
+removed. Post-removal dartpy and C++ builds pass. `pixi run test-all` passes
+181 CTests and 2,000 Python tests, with two Python-version skips and 54 planned
+acceptance failures. Sequential `pixi run test-gui` passes ten CTests and 516
+Python tests, with one Python-version skip and two planned final-render API
+failures. GUI-off full tests build and both retained CTests pass; vanilla system
+ImGui full tests/dartpy build and 1,099 selected GUI-free Python tests pass.
+Strict catalog cycle passes all 37 scenes twice, two frames per visit, with
+zero skips. Global lint, sequential check-lint and staged path checks pass.
+Two independent final post-removal reviews are clean; both inspect refreshed
+images, verify current hashes and independently check numerical archives and
+completed gate logs. The final review-note refresh receives pre-commit lint.
+
 ## Limits
 
 No WAM backend change is implemented. The analytical prototype's sampled
 accuracy does not establish full reachability, exact IKFast branches,
 interactive continuity, or performance. Windows native runtime validation is
-unavailable on this Linux host. The remaining native families and `_demos`
-module are intentionally present until their ports and decisions are complete.
+unavailable on this Linux host. The WAM native family and `_demos` module remain
+until its decision and port are complete.

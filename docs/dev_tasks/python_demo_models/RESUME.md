@@ -4,8 +4,9 @@ Read README.md, AGENTS.md, and docs/ai/principles.md. Verify the current branch
 and worktree before acting. This project removes native demo implementation
 from dartpy while retaining C++ engine, IO, and GUI functionality.
 
-Current branch: `refactor/python-demo-state-mesh`, from completed soft-model
-`5a3a36635`, with isolated conversion follow-up `3c9ba6223`. It inherits
+Current branch: `refactor/python-demo-locomotion`, from completed state/mesh
+`7572b9c5b`. That packet inherits soft-model `5a3a36635` and isolated conversion
+follow-up `3c9ba6223`. It inherits
 LCP/contact `3e55e373c` and arm/posture `e18517de1`.
 The arm/posture branch is a local child of
 `refactor/python-demo-controllers` at `d13c20545`; that parent starts from main
@@ -28,7 +29,7 @@ cycle and two reviews pass. Soft-worm and adaptive
 soft-contact ports and ordinary soft-body bindings are implemented. Their native
 helpers/bindings/tests and shared registrations are removed; final validation,
 full/GUI/variant gates, cycle, and two final reviews pass.
-The current packet ports WorldHistory and PointCloudSensor. Both native helpers
+The completed state/mesh packet ports WorldHistory and PointCloudSensor. Both native helpers
 are deleted after direct comparisons. Root owns snapshot/point-acceleration bindings,
 core snapshot tests, shared registration/docs and build coordination. Disjoint
 workers own each model/callers/tests and the mesh/RNG/voxel bindings. Native
@@ -38,10 +39,18 @@ ready and the final post-removal focused suite passes 643 tests. Body and
 skeleton restores now reject mismatched soft-point counts before any mutation;
 the nested skeleton bypass has failing archived tests and passing rebuilt tests.
 Two independent final reviews, full/GUI/variant gates, cycle and lint pass.
-Three native families remain. Both next controllers' native baselines are
-ready, including the complete nonmonotonic recovery sweep. Commit this packet,
-then port SIMBICON and soft-foot SIMBICON together on a local child branch;
-preserve existing files and immutable references.
+The current packet ports SIMBICON and soft-foot SIMBICON together. Full paired
+comparisons and fitted captures pass, including all four gaits, precise foot
+geometry, complete standing state and the full nonmonotonic 24-trial recovery
+sweep. Renamed-body identity and selective indexed-reset regressions are fixed
+and independently rechecked. Native controllers/bindings/tests and shared
+registration are now deleted. Ordinary metadata/TriMesh bindings and the generic
+GUI contact-arrow move pass bounded reviews. Full/default/GUI/variant gates,
+catalog cycle, lint and check-lint pass; two independent final reviews are clean.
+The local packet is complete. Only WAM remains; resolve its joint-selection decision before
+implementation and preserve immutable references. Do not overlap build,
+configuration, global formatting or semantic-CMake check-lint operations on one
+build tree.
 
 WAM is the first pending maintainer decision. Do not treat “continue” as
 acceptance of changed joint selection or authorization for GitHub mutations.

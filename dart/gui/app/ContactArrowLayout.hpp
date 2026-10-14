@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DEMOS_CONTACTARROWLAYOUT_HPP_
-#define DART_DEMOS_CONTACTARROWLAYOUT_HPP_
+#ifndef DART_GUI_APP_CONTACTARROWLAYOUT_HPP_
+#define DART_GUI_APP_CONTACTARROWLAYOUT_HPP_
 
 #include <dart/simulation/World.hpp>
 
@@ -44,7 +44,7 @@
 
 #include <cstddef>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 //==============================================================================
 /// World-space endpoints for one contact-force arrow.
@@ -170,6 +170,6 @@ private:
   std::size_t mSceneFingerprint = 0;
 };
 
-} // namespace dart_demos
+} // namespace dart::gui::app
 
-#endif // DART_DEMOS_CONTACTARROWLAYOUT_HPP_
+#endif // DART_GUI_APP_CONTACTARROWLAYOUT_HPP_

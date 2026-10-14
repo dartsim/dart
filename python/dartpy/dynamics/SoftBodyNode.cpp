@@ -30,7 +30,30 @@ void SoftBodyNode(nb::module_& m)
       .def(nb::init<>())
       .def_rw("mKv", &SoftBody::UniqueProperties::mKv)
       .def_rw("mKe", &SoftBody::UniqueProperties::mKe)
-      .def_rw("mDampCoeff", &SoftBody::UniqueProperties::mDampCoeff);
+      .def_rw("mDampCoeff", &SoftBody::UniqueProperties::mDampCoeff)
+      .def_prop_ro(
+          "point_rest_positions",
+          [](const SoftBody::UniqueProperties& self) {
+            Eigen::Matrix<double, Eigen::Dynamic, 3> result(
+                self.mPointProps.size(), 3);
+            for (std::size_t i = 0; i < self.mPointProps.size(); ++i)
+              result.row(i) = self.mPointProps[i].mX0.transpose();
+            return result;
+          })
+      .def_prop_ro(
+          "point_masses",
+          [](const SoftBody::UniqueProperties& self) {
+            Eigen::VectorXd result(self.mPointProps.size());
+            for (std::size_t i = 0; i < self.mPointProps.size(); ++i)
+              result[i] = self.mPointProps[i].mMass;
+            return result;
+          })
+      .def_prop_ro("faces", [](const SoftBody::UniqueProperties& self) {
+        Eigen::Matrix<int, Eigen::Dynamic, 3> result(self.mFaces.size(), 3);
+        for (std::size_t i = 0; i < self.mFaces.size(); ++i)
+          result.row(i) = self.mFaces[i].transpose();
+        return result;
+      });
 
   dartnb::dart_class<SoftBody::Properties>(m, "SoftBodyNodeProperties")
       .def(
@@ -42,6 +65,16 @@ void SoftBodyNode(nb::module_& m)
 
   dartnb::dart_class<SoftBody, dart::dynamics::BodyNode>(m, "SoftBodyNode")
       .def("getNumPointMasses", &SoftBody::getNumPointMasses)
+      .def_prop_ro("num_faces", &SoftBody::getNumFaces)
+      .def(
+          "get_face",
+          [](const SoftBody& self, std::ptrdiff_t index) -> Eigen::Vector3i {
+            if (index < 0
+                || static_cast<std::size_t>(index) >= self.getNumFaces())
+              throw nb::index_error("face index out of range");
+            return self.getFace(static_cast<std::size_t>(index));
+          },
+          nb::arg("index"))
       .def(
           "get_point_mass",
           [](SoftBody& self, std::ptrdiff_t index) {

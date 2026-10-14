@@ -46,13 +46,16 @@ engine, IO, and GUI bindings; Python has no ImGui drawing API.
 | Remaining model bindings | `python/dartpy/demos/` → `dartpy._demos` | Temporary native helpers pending Python ports; no new demo implementation |
 | Scenes | `python/examples/demos/scenes/`, `registry.py`, `__main__.py` | Python factories and catalog registration; the catalog is not included in wheels |
 
-`dart-gui-app` links `dart-gui` and `dart-demo-models`. Its placement under
+`dart-gui-app` links `dart-gui`. Its placement under
 `dart/` makes it available before `tests/` and `python/` are configured.
-The model library is added immediately after `dart/`; IO-dependent sources
-are included only when `dart-utils` and `dart-utils-urdf` exist, and the
-point-cloud sensor requires OctoMap. Both libraries link into the dartpy
+The model library is added immediately after `dart/` and retains only the
+WAM analytical solver pending its Python implementation decision. Both libraries link into the dartpy
 extension without adding installed headers, package components, or a
 Gazebo-facing API.
+
+Contact-force arrow layout belongs to the GUI app. Its implementation uses
+core state without a renderer and is compiled directly into the existing
+constraint-solver test binary, retaining headless coverage.
 
 The host requires `IMGUI_HAS_DOCK` in the copied ImGui header. Bundled builds
 use the docking release; a vanilla system ImGui compiles out the host and

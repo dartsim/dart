@@ -1,4 +1,4 @@
-"""Y-up SIMBICON push recovery with native rigid or deformable Atlas feet."""
+"""Y-up SIMBICON push recovery with rigid or deformable Atlas feet."""
 
 import math
 import os
@@ -6,7 +6,7 @@ import re
 
 import dartpy as dart
 
-_model = dart._demos.soft_foot_simbicon
+from ..models import soft_foot_simbicon as _model
 
 
 def _atoi(text):

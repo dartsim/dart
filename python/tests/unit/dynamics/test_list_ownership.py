@@ -130,7 +130,8 @@ def test_point_mass_keeps_soft_body_alive_and_copies_outlive_native_owners():
         assert body_reference() is not None
         assert body_reference().getSkeleton().getName() == "point_owner"
         point.positions = [0.01, 0.02, 0.03]
-        arrays = [point.positions, point.velocities, point.world_position, point.forces]
+        arrays = [point.positions, point.velocities, point.world_position,
+                  point.forces, point.rest_position, point.world_velocity]
         del point
         gc.collect()
         assert body_reference() is None
@@ -174,6 +175,16 @@ def test_deleted_point_mass_rejects_native_access(operation):
         for name in ('positions', 'velocities', 'world_position', 'forces'):
             with pytest.raises(TypeError):
                 getattr(point, name)
+        for name in ('mass', 'rest_position', 'world_velocity', 'is_colliding'):
+            with pytest.raises(TypeError):
+                getattr(point, name)
+        for name in ('reset_positions', 'reset_velocities',
+                     'reset_accelerations', 'reset_forces'):
+            with pytest.raises(TypeError):
+                getattr(point, name)()
+        for name, value in (('mass', 1), ('is_colliding', True)):
+            with pytest.raises(TypeError):
+                setattr(point, name, value)
         for name in ('positions', 'velocities'):
             with pytest.raises(TypeError):
                 setattr(point, name, [0, 0, 0])

@@ -191,6 +191,13 @@ If a soft-body copy replaces topology and deletes a point, its retained Python
 handle raises `TypeError` on native access, including point-impulse arguments.
 Destruction notifications prevent address reuse from reviving that handle.
 
+Point masses expose mass, rest position, world velocity and collision status;
+the four `reset_*` methods reset their position, velocity, acceleration and force
+state separately. `Skeleton.clear_colliding_bodies()` clears body and point
+collision flags. Soft-body generator properties expose independent arrays of
+point rest positions, masses and faces, and `SoftBodyNode.get_face()` returns a
+checked, copied face.
+
 `Skeleton.getConfiguration()` returns an owning `SkeletonConfiguration` value
 for `setConfiguration()`. `BodyNode.get_composite_state()` returns an owning
 `common.CompositeState` for `set_composite_state()`. These snapshots retain
@@ -203,6 +210,11 @@ deriving FORCE-joint commands from restored forces.
 vertices in submesh order. `VoxelGridShape.validate_occupancy_update()` checks
 the same inputs as `updateOccupancy()` without changing occupancy, allowing
 callers to validate a cloud before changing other sensor state.
+
+`math.TriMesh(vertices, triangles)` owns double-precision geometry and checks
+finite vertices and valid integral triangle indices. Its array properties return
+independent copies. `MeshShape(scale, mesh)` accepts this ordinary mesh, and
+`MeshShape.tri_mesh` returns its owning native mesh.
 
 Registered owners expose native Python references to cyclic GC through
 traverse and clear slots. Coverage includes objective/solver and constraint

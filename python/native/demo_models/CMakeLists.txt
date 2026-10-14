@@ -31,7 +31,7 @@
 #
 
 # Private native code for the Python demo catalog and C++ tests; builds with DART_BUILD_GUI=OFF.
-add_library(dart-demo-models STATIC ContactArrowLayout.cpp WamIkFast.cpp)
+add_library(dart-demo-models STATIC WamIkFast.cpp)
 target_link_libraries(dart-demo-models PUBLIC dart)
 set_source_files_properties(
   WamIkFast.cpp
@@ -41,19 +41,6 @@ target_include_directories(
   dart-demo-models
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
-
-if(TARGET dart-utils AND TARGET dart-utils-urdf)
-  target_sources(
-    dart-demo-models
-    PRIVATE
-      soft_foot_simbicon/SoftFootSimbiconModel.cpp
-      atlas_simbicon/Controller.cpp
-      atlas_simbicon/State.cpp
-      atlas_simbicon/StateMachine.cpp
-      atlas_simbicon/TerminalCondition.cpp
-  )
-  target_link_libraries(dart-demo-models PUBLIC dart-utils dart-utils-urdf)
-endif()
 
 file(GLOB_RECURSE demo_model_format_files "*.hpp" "*.cpp")
 dart_format_add(${demo_model_format_files})

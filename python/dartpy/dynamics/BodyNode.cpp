@@ -604,6 +604,12 @@ void BodyNode(nb::module_& m)
           "isCollidable",
           +[](const dart::dynamics::BodyNode* self)
               -> bool { return self->isCollidable(); })
+      .def_prop_ro("is_colliding", [](dart::dynamics::BodyNode& self) {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        const bool result = self.isColliding();
+        DART_SUPPRESS_DEPRECATED_END
+        return result;
+      })
       .def(
           "setCollidable",
           +[](dart::dynamics::BodyNode* self, bool _isCollidable) {

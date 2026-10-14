@@ -45,7 +45,7 @@
 
 #include <cmath>
 
-namespace dart_demos {
+namespace dart::gui::app {
 
 namespace {
 
@@ -331,4 +331,4 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
   return mArrows;
 }
 
-} // namespace dart_demos
+} // namespace dart::gui::app

@@ -1291,8 +1291,11 @@ void Skeleton(nb::module_& m)
           +[](const dart::dynamics::Skeleton* self) -> double {
             return self->computePotentialEnergy();
           })
-      //      .def("clearCollidingBodies", +[](dart::dynamics::Skeleton *self)
-      //      -> void { return self->clearCollidingBodies(); })
+      .def("clear_colliding_bodies", [](dart::dynamics::Skeleton& self) {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        self.clearCollidingBodies();
+        DART_SUPPRESS_DEPRECATED_END
+      })
       .def(
           "getCOM",
           +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector3d {

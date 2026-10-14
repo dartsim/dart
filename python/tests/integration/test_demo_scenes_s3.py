@@ -333,11 +333,12 @@ def test_box_stacking_initial_geometry_and_transforms():
 
 @pytest.mark.parametrize("kind", ["dantzig", "pgs"])
 def test_boxed_lcp_solver_switch_preserves_simbicon_harness(kind):
-    native = dart._demos.soft_foot_simbicon
-    model = native.create_model(native.Feet.RIGID)
-    controller = dart._demos.simbicon.Controller(model.atlas, model.world)
+    from examples.demos.models import simbicon, soft_foot_simbicon
+
+    model = soft_foot_simbicon.create_model(soft_foot_simbicon.Feet.RIGID)
+    controller = simbicon.Controller(model.atlas, model.world)
     controller.harness_pelvis()
-    # The native controller borrows the solver without a Python solver wrapper.
+    # Switching the boxed backend keeps the controller's solver and harness.
     set_boxed_lcp_solver(model.world, kind)
     controller.unharness_pelvis()
     assert model.world.getConstraintSolver().getNumConstraints() == 0

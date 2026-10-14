@@ -166,7 +166,7 @@ comparisons corroborate the port.
 - Changelog: defer ordinary engine binding features to the M6b consolidation
   draft. The model relocation has no separate public release contract.
 
-## Current packet: world history and point-cloud sampling
+## World history and point-cloud sampling
 
 - Branch: `refactor/python-demo-state-mesh`, local child of the completed soft
   packet at `5a3a36635`, with isolated conversion follow-up `3c9ba6223`.
@@ -191,32 +191,60 @@ comparisons corroborate the port.
   full/GUI/variant gates, catalog cycle and two independent final reviews pass.
   No publication authorization. Feature changelog additions defer to M6b.
 
+## Current packet: SIMBICON and soft-foot locomotion
+
+- Branch: `refactor/python-demo-locomotion`, local child of the completed
+  state/mesh packet at `7572b9c5b`.
+- Value: move gait state machines, control torques, Atlas setup, soft-foot
+  collision geometry, pushes and reset logic into Python. Move generic
+  contact-arrow layout into its GUI app owner.
+- Scope: both models/scenes/tests and combined native removal; ordinary point
+  metadata/reset, collision flags, copied soft properties and owning TriMesh
+  bindings; shared build/module/test registrations.
+- Compatibility: preserve native timer transitions, retained gait states,
+  harness lifetime and the legacy foot harness behavior, link versus total
+  soft mass, copied inertia updates, collision group membership, Y-up and reset
+  ordering. Native reset leaves stale generalized accelerations until the next
+  step; preserve that behavior. No engine headers, implementation, exports or
+  physics defaults change.
+- Acceptance: exact native/Python full-state, input-boundary and ownership
+  comparisons; transferred gait/reset and contact/manifold checks; the entire
+  24-trial recovery sweep, including its nonmonotonic soft-foot outcomes;
+  matched assessed captures, full/GUI/variant gates, catalog cycle, lint and two
+  independent final reviews.
+- Status: Python implementations and ordinary binding additions pass complete
+  paired comparisons and matched assessed captures. Native controllers,
+  bindings/tests and shared registrations are removed afterward. Full/GUI/variant
+  gates, catalog cycle and lint pass; two independent final reviews are clean.
+  This local packet is complete. No publication authorization.
+- Changelog: ordinary binding features defer to the M6b consolidation draft.
+
 ## Inventory and remaining packets
 
 The initial inventory found 15 binding families, 39 native source/header files
 (22,020 lines, including 14,933 generated WAM solver lines), 16 binding files,
 15 scene callers, registry gates, Python/native tests, and four build surfaces.
 
-After the state/mesh deletions, three native binding families remain: SIMBICON,
-soft-foot SIMBICON and WAM, followed by final module/build removal. World history
+After the locomotion deletions, only the WAM native binding family remains,
+followed by final module/build removal. World history
 uses existing owning snapshots through ordinary library bindings. Point-cloud
 sampling uses copied per-submesh vertices, integer engine random draws and
 shared voxel preflight validation. Both preserve their demo algorithms.
 
-The bounded SIMBICON audit found no further design decision: Python can own
-both controllers/models and their state machines. Bind existing point mass,
-collision flags, reset operations, copied soft point/face data and owning
-TriMesh construction as needed. Preserve Y-up, strict timer transitions,
+The SIMBICON ports own both controllers/models and their state machines in
+Python. Ordinary bindings expose existing point mass and collision flags,
+reset operations, copied soft point/face data and owning TriMesh construction.
+The models preserve Y-up, strict timer transitions,
 machine-state retention, the legacy foot-harness behavior, link mass versus
 total soft mass, copied inertia updates and complete reset ordering. Transfer
-the deterministic gait/reset, settled contact and full recovery-sweep gates;
-remeasure recovery thresholds before retaining panel claims. Borrowed bodies
+the deterministic gait/reset, settled contact and full recovery-sweep gates.
+Recovery thresholds are remeasured before retaining panel claims. Borrowed bodies
 retain their Skeleton resource; controllers retain their World and remove
 pelvis harnesses on destruction, including cyclic collection.
 
-`ContactArrowLayout` is generic GUI code used by `dart/gui/app`; move it to the
-GUI owner before removing the model library. Its private app source can be
-compiled directly into the existing core test binary to retain GUI-off checks;
+`ContactArrowLayout` is generic GUI code used by `dart/gui/app` and now resides
+with that GUI owner. Its private app source is compiled directly into the
+existing core test binary to retain GUI-off checks;
 no new library or installed header is needed. The private native app host stays
 with the GUI implementation. Discuss consequential gray areas one at a time.
 
