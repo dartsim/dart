@@ -10,7 +10,7 @@
 requires = [
   "setuptools>=84.0.0",
   "wheel>=0.45.1",
-  "ninja>=1.12.1",
+  "ninja>=1.13.2",
   "cmake>=4.4.4,<4.4.5",
 ]
 build-backend = "setuptools.build_meta"
