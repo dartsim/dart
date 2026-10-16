@@ -382,8 +382,6 @@ void readSdfAxis(
   direction = sdfVector(resolved);
   const double scale = direction.cwiseAbs().maxCoeff();
   requireSdf(direction.allFinite() && scale > 0.0, "Invalid joint axis");
-  direction /= scale;
-  direction.normalize();
 
   const double lower = axis->Lower();
   const double upper = axis->Upper();

@@ -1141,6 +1141,91 @@ TEST(SdfParser, MimicMapsFollowerAndReferenceAxesIndependently)
 }
 
 //==============================================================================
+TEST(SdfParser, OrdinaryJointAxesPreserveConstructorNormalization)
+{
+  for (const auto* version : {"1.4", "1.9"}) {
+    for (const double sign : {-1.0, 1.0}) {
+      SCOPED_TRACE(version);
+      SCOPED_TRACE(sign);
+      const auto options = sdfMemoryOptions(
+          "<sdf version='" + std::string(version)
+          + "'><model name='axis'><link name='body'/>"
+            "<joint name='joint' type='revolute'><parent>world</parent>"
+            "<child>body</child><axis><xyz>0 0.5 "
+          + (sign < 0.0 ? "-0.866025" : "0.866025")
+          + "</xyz></axis></joint></model></sdf>");
+      const auto skeleton
+          = SdfParser::readSkeleton("memory://axis.sdf", options);
+      ASSERT_NE(skeleton, nullptr);
+      const auto* joint
+          = dynamic_cast<const RevoluteJoint*>(skeleton->getJoint("joint"));
+      ASSERT_NE(joint, nullptr);
+      const Eigen::Vector3d expected
+          = Eigen::Vector3d(0.0, 0.5, sign * 0.866025).normalized();
+      for (int index = 0; index < 3; ++index)
+        EXPECT_EQ(joint->getAxis()[index], expected[index]);
+    }
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, ExtremeJointAxesRemainFiniteAndNormalized)
+{
+  struct AxisCase
+  {
+    const char* text;
+    Eigen::Vector3d direction;
+  };
+  const AxisCase axes[]
+      = {{"1e300 2e300 3e300", {1, 2, 3}},
+         {"1e-300 2e-300 3e-300", {1, 2, 3}},
+         {"1e-8 1e-8 1e-8", {1, 1, 1}},
+         {"6e-7 6e-7 6e-7", {1, 1, 1}},
+         {"7.741001517595157e153 7.741001517595157e153 7.741001517595157e153",
+          {1, 1, 1}}};
+  for (const auto& axis : axes) {
+    SCOPED_TRACE(axis.text);
+    const auto options = sdfMemoryOptions(
+        "<sdf version='1.9'><model name='axis'><link name='body'/>"
+        "<joint name='joint' type='revolute'><parent>world</parent>"
+        "<child>body</child><axis><xyz>"
+        + std::string(axis.text) + "</xyz></axis></joint></model></sdf>");
+    const auto skeleton = SdfParser::readSkeleton("memory://axis.sdf", options);
+    ASSERT_NE(skeleton, nullptr);
+    const auto* joint
+        = dynamic_cast<const RevoluteJoint*>(skeleton->getJoint("joint"));
+    ASSERT_NE(joint, nullptr);
+    EXPECT_TRUE(joint->getAxis().allFinite());
+    EXPECT_TRUE(joint->getAxis().isApprox(axis.direction.normalized(), 1e-15));
+  }
+}
+
+//==============================================================================
+TEST(SdfParser, ExtremeUniversalAxesResolveInAuthoredFrames)
+{
+  const auto skeleton = readSdfUniversalAxes(
+      "<axis><xyz expressed_in='__model__'>1e300 1e300 1e300</xyz></axis>",
+      "<axis2><xyz expressed_in='__model__'>1e-300 -1e-300 0</xyz></axis2>",
+      "1.9");
+  ASSERT_NE(skeleton, nullptr);
+  const auto* joint
+      = dynamic_cast<const UniversalJoint*>(skeleton->getJoint("joint"));
+  ASSERT_NE(joint, nullptr);
+  const Eigen::Matrix3d modelToJoint
+      = (eulerZYXToMatrix(Eigen::Vector3d(0.2, -0.3, 0.4))
+         * eulerZYXToMatrix(Eigen::Vector3d(-0.4, 0.5, -0.2)))
+            .transpose();
+  EXPECT_TRUE(joint->getAxis1().allFinite());
+  EXPECT_TRUE(joint->getAxis2().allFinite());
+  EXPECT_NEAR(joint->getAxis1().norm(), 1.0, 1e-15);
+  EXPECT_NEAR(joint->getAxis2().norm(), 1.0, 1e-15);
+  EXPECT_TRUE(joint->getAxis1().isApprox(
+      modelToJoint * Eigen::Vector3d::Ones().normalized(), 1e-12));
+  EXPECT_TRUE(joint->getAxis2().isApprox(
+      modelToJoint * Eigen::Vector3d(1, -1, 0).normalized(), 1e-12));
+}
+
+//==============================================================================
 TEST(SdfParser, JointLimitsAndDynamicsUseTypedValues)
 {
   const auto options

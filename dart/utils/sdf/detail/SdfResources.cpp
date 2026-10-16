@@ -159,6 +159,13 @@ void sdfResourceNormalizeDirection(const sdf::ElementPtr& element)
     scale = std::max(scale, std::abs(value));
   if (scale == 0.0)
     throw std::invalid_argument("<" + element->GetName() + "> must be nonzero");
+  // Let sdformat normalize ordinary directions without changing their rounding.
+  double squaredNorm = 0.0;
+  for (const auto value : values)
+    squaredNorm += value * value;
+  if (std::isfinite(squaredNorm)
+      && !gz::math::equal(std::sqrt(squaredNorm), 0.0))
+    return;
   double norm = 0.0;
   for (auto& value : values) {
     value /= scale;
