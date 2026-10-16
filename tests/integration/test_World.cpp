@@ -77,6 +77,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -2469,6 +2470,349 @@ TEST(World, LateGlobalWorldDestructionKeepsOwnerRegistryAvailable)
   gLateDestroyedWorld = World::create();
   gLateDestroyedWorld->compile();
   EXPECT_TRUE(gLateDestroyedWorld->isCompiled());
+}
+
+namespace {
+
+class OwnershipCallbackShape final : public BoxShape
+{
+public:
+  OwnershipCallbackShape() : BoxShape(Eigen::Vector3d::Ones()) {}
+
+  const std::string& getType() const override
+  {
+    if (mCallback) {
+      auto callback = std::move(mCallback);
+      mCallback = nullptr;
+      callback();
+    }
+    return BoxShape::getType();
+  }
+
+  mutable std::function<void()> mCallback;
+};
+
+class OwnershipBody final : public BodyNode
+{
+public:
+  OwnershipBody(BodyNode* parent, Joint* joint, const Properties& properties)
+    : Entity(Frame::World(), false),
+      Frame(Frame::World()),
+      BodyNode(parent, joint, properties)
+  {
+  }
+
+  void reparent(Frame* parent)
+  {
+    Frame::changeParentFrame(parent);
+  }
+};
+
+class OwnershipReaderFrame final : public SimpleFrame
+{
+public:
+  OwnershipReaderFrame()
+    : Entity(ConstructFrame), Frame(Frame::World()), SimpleFrame()
+  {
+  }
+
+  const ShapeNode* asShapeNode() const override
+  {
+    ++mReads;
+    if (mArmed)
+      throw std::runtime_error("unexpected custom Frame reader");
+    return nullptr;
+  }
+
+  bool mArmed = false;
+  mutable std::size_t mReads = 0u;
+};
+
+class OwnershipFrame final : public SimpleFrame
+{
+public:
+  explicit OwnershipFrame(Frame* parent)
+    : Entity(ConstructFrame), Frame(parent), SimpleFrame(parent)
+  {
+  }
+
+  std::function<void(Entity*)> mOnAdd;
+  std::function<void(Entity*)> mOnRemove;
+
+protected:
+  void processNewEntity(Entity* child) override
+  {
+    if (mOnAdd)
+      mOnAdd(child);
+  }
+
+  void processRemovedEntity(Entity* child) override
+  {
+    if (mOnRemove)
+      mOnRemove(child);
+  }
+};
+
+} // namespace
+
+TEST(World, OwnershipUsesRawIdentityAndReleasesRemovedAliases)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto token = std::make_shared<int>(0);
+  SkeletonPtr alias(token, robot.get());
+  ASSERT_TRUE(alias.owner_before(robot) || robot.owner_before(alias));
+  world->addSkeleton(alias);
+  world->addSkeleton(robot);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+  world->compile();
+  EXPECT_THROW(
+      robot->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+  {
+    auto edit = world->edit();
+    world->removeSkeleton(alias);
+  }
+  EXPECT_EQ(world->getNumSkeletons(), 0u);
+  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
+}
+
+TEST(World, OwnershipReadsLiveBorrowedViewMembershipAndExpiry)
+{
+  auto world = World::create();
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  auto view = Group::create("view");
+  world->getConstraintSolver()->getCollisionGroup()->subscribeTo(view);
+  auto loose = Skeleton::create();
+  auto* first = loose->createJointAndBodyNodePair<FreeJoint>().second;
+  auto* second = loose->createJointAndBodyNodePair<FreeJoint>().second;
+  ASSERT_TRUE(view->addBodyNode(first));
+  auto parameter = world->getParameterRevision();
+  first->setCollidable(false);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  ASSERT_TRUE(view->removeBodyNode(first));
+  parameter = world->getParameterRevision();
+  first->setCollidable(true);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+  ASSERT_TRUE(view->addBodyNode(second));
+  second->setCollidable(false);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  view.reset();
+  parameter = world->getParameterRevision();
+  second->setCollidable(true);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+}
+
+TEST(World, OwnershipDoesNotCallCustomFrameReaderUnderRegistryLock)
+{
+  auto world = World::create();
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  auto frame = std::make_shared<OwnershipReaderFrame>();
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(frame.get());
+  frame->mReads = 0u;
+  frame->mArmed = true;
+  auto loose = Skeleton::create("unrelated");
+  EXPECT_NO_THROW(loose->createJointAndBodyNodePair<FreeJoint>());
+  EXPECT_EQ(frame->mReads, 0u);
+  // Disarm before teardown so a failing oracle still exits normally.
+  frame->mArmed = false;
+}
+
+TEST(World, OwnershipTracksTransferredBodiesThroughoutOneEdit)
+{
+  auto world = World::create();
+  auto source = createBox(Eigen::Vector3d::Ones());
+  auto target = Skeleton::create("target");
+  world->addSkeleton(source);
+  world->addSkeleton(target);
+  world->compile();
+  auto* body = source->getBodyNode(0);
+  const auto topology = world->getTopologyRevision();
+  {
+    auto edit = world->edit();
+    ASSERT_TRUE(body->moveTo(target, nullptr));
+    ASSERT_EQ(body->getSkeleton(), target);
+    auto parameter = world->getParameterRevision();
+    body->setCollidable(false);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    auto* child = target->createJointAndBodyNodePair<FreeJoint>(body).second;
+    parameter = world->getParameterRevision();
+    child->setCollidable(false);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    ASSERT_TRUE(child->moveTo(source, nullptr));
+    parameter = world->getParameterRevision();
+    child->setCollidable(true);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    EXPECT_EQ(world->getTopologyRevision(), topology + 1u);
+  }
+  EXPECT_GT(world->getTopologyRevision(), topology);
+  EXPECT_THROW(
+      target->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+  EXPECT_THROW(
+      source->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+}
+
+TEST(World, OwnershipKeepsSharedBorrowedMembershipLive)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  first->addSkeleton(robot);
+  second->getConstraintSolver()->getCollisionGroup()->subscribeTo(robot);
+  auto firstParameter = first->getParameterRevision();
+  auto secondParameter = second->getParameterRevision();
+  robot->getBodyNode(0)->setCollidable(false);
+  EXPECT_GT(first->getParameterRevision(), firstParameter);
+  EXPECT_GT(second->getParameterRevision(), secondParameter);
+  EXPECT_THROW(second->compile(), std::runtime_error);
+  second->getConstraintSolver()->getCollisionGroup()->unsubscribeFrom(
+      robot.get());
+  EXPECT_NO_THROW(second->compile());
+  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
+  first->compile();
+  EXPECT_THROW(
+      robot->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+}
+
+TEST(World, OwnershipCustomShapeCallbackCannotRecertifyRawView)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto shape = std::make_shared<OwnershipCallbackShape>();
+  robot->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0)->setShape(shape);
+  auto view = Group::create("callback_view");
+  auto loose = Skeleton::create();
+  auto* body = loose->createJointAndBodyNodePair<FreeJoint>().second;
+  bool called = false;
+  shape->mCallback = [&] {
+    called = true;
+    world->getConstraintSolver()->getCollisionGroup()->subscribeTo(view);
+    ASSERT_TRUE(view->addBodyNode(body));
+    const auto parameter = world->getParameterRevision();
+    body->setCollidable(false);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+  };
+  world->addSkeleton(robot);
+  ASSERT_TRUE(called);
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  world->compile();
+  EXPECT_THROW(
+      body->createShapeNodeWith<CollisionAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
+      std::runtime_error);
+}
+
+TEST(World, OwnershipNameCallbackNestedAdditionCannotRecertifyRawView)
+{
+  auto world = World::create();
+  auto first = createBox(Eigen::Vector3d::Ones());
+  first->setName("duplicate");
+  world->addSkeleton(first);
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  robot->setName("duplicate");
+  auto view = Group::create("name_callback_view");
+  bool called = false;
+  auto connection = robot->onNameChanged.connect(
+      [&](ConstMetaSkeletonPtr, const std::string&, const std::string&) {
+        if (called)
+          return;
+        called = true;
+        world->getConstraintSolver()->getCollisionGroup()->subscribeTo(view);
+        world->addSkeleton(Skeleton::create("nested"));
+      });
+  world->addSkeleton(robot);
+  ASSERT_TRUE(called);
+  auto loose = Skeleton::create();
+  auto* body = loose->createJointAndBodyNodePair<FreeJoint>().second;
+  ASSERT_TRUE(view->addBodyNode(body));
+  world->compile();
+  EXPECT_THROW(
+      body->createShapeNodeWith<CollisionAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
+      std::runtime_error);
+  connection.disconnect();
+}
+
+TEST(World, OwnershipThrowingAdditionTracksActualPartialMembership)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto shape = std::make_shared<OwnershipCallbackShape>();
+  robot->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0)->setShape(shape);
+  shape->mCallback = [] {
+    throw std::runtime_error("shape reader failure");
+  };
+  EXPECT_THROW(world->addSkeleton(robot), std::runtime_error);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+  ASSERT_EQ(world->getSkeleton(0).get(), robot.get());
+  const auto parameter = world->getParameterRevision();
+  robot->getBodyNode(0)->setCollidable(false);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  EXPECT_NO_THROW(world->removeSkeleton(robot));
+  ASSERT_EQ(world->getNumSkeletons(), 0u);
+  const auto removedParameter = world->getParameterRevision();
+  robot->getBodyNode(0)->setCollidable(true);
+  EXPECT_EQ(world->getParameterRevision(), removedParameter);
+}
+
+TEST(World, OwnershipFollowsForeignBodyFrameAncestryBeforeNativeAddition)
+{
+  auto world = World::create();
+  auto owned = createBox(Eigen::Vector3d::Ones());
+  auto foreign = Skeleton::create("foreign");
+  auto* body
+      = foreign->createJointAndBodyNodePair<FreeJoint, OwnershipBody>().second;
+  body->reparent(owned->getBodyNode(0));
+  ASSERT_EQ(body->getSkeleton(), foreign);
+  world->addSkeleton(owned);
+  world->compile();
+  const auto parameter = world->getParameterRevision();
+  body->setCollidable(false);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  EXPECT_THROW(
+      body->createShapeNodeWith<CollisionAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
+      std::runtime_error);
+  {
+    auto edit = world->edit();
+    body->reparent(Frame::World());
+  }
+}
+
+TEST(World, OwnershipFrameCallbacksSeeCurrentLiveAncestry)
+{
+  auto world = World::create();
+  auto owned = createBox(Eigen::Vector3d::Ones());
+  auto parent = std::make_shared<OwnershipFrame>(owned->getBodyNode(0));
+  auto child = std::make_shared<SimpleFrame>();
+  child->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  child->createDynamicsAspect();
+  world->addSkeleton(owned);
+  bool added = false;
+  bool removed = false;
+  parent->mOnAdd = [&](Entity* entity) {
+    EXPECT_EQ(entity->getParentFrame(), parent.get());
+    const auto parameter = world->getParameterRevision();
+    child->getDynamicsAspect()->setFrictionCoeff(0.7);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    added = true;
+  };
+  parent->mOnRemove = [&](Entity* entity) {
+    EXPECT_EQ(entity->getParentFrame(), parent.get());
+    const auto parameter = world->getParameterRevision();
+    child->getDynamicsAspect()->setFrictionCoeff(0.8);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    removed = true;
+  };
+  child->setParentFrame(parent.get());
+  EXPECT_TRUE(added);
+  child->setParentFrame(Frame::World());
+  EXPECT_TRUE(removed);
+  const auto parameter = world->getParameterRevision();
+  child->getDynamicsAspect()->setFrictionCoeff(0.9);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+  parent->mOnAdd = nullptr;
+  parent->mOnRemove = nullptr;
 }
 
 //==============================================================================

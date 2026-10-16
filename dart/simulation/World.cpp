@@ -48,6 +48,7 @@
 #include "dart/collision/dart/shapes/Shape.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionGroup.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
@@ -62,13 +63,33 @@
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/detail/SkeletonMembershipVersion.h"
+#include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -84,6 +105,7 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -573,6 +595,18 @@ public:
   }
 
   World* mWorld;
+  // Raw identity matches mSkeletons; those strong members bound the lifetime.
+  std::unordered_set<const dynamics::Skeleton*> mOwnedSkeletons;
+  bool mNativeOwnership = false;
+  const dynamics::Skeleton* mAddingNativeSkeleton = nullptr;
+  struct NativeAdditionEvents
+  {
+    std::size_t mModelChecks = 0u;
+    std::size_t mModelNotifications = 0u;
+    std::size_t mGroupNotifications = 0u;
+    std::size_t mSolverChecks = 0u;
+    std::size_t mSolverNotifications = 0u;
+  } mNativeAdditionEvents;
   bool mCompiled = false;
   std::size_t mEditDepth = 0u;
   bool mTopologyDirty = false;
@@ -756,10 +790,155 @@ bool ownsContactHandler(
   return false;
 }
 
-bool ownsModelObject(const World& world, const common::Composite* object)
+// Only these exact native readers/resetters run inside the addition scope.
+// Unknown virtual implementations retain the live ownership traversal.
+bool isNativeOwnershipModel(const dynamics::Skeleton& skeleton)
 {
+  if (typeid(skeleton) != typeid(dynamics::Skeleton))
+    return false;
+  for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+    const auto* body = skeleton.getBodyNode(i);
+    if (typeid(*body) != typeid(dynamics::BodyNode)
+        && typeid(*body) != typeid(dynamics::SoftBodyNode))
+      return false;
+    const auto* parent = body->getParentBodyNode();
+    if (body->getParentFrame() != (parent ? parent : dynamics::Frame::World()))
+      return false;
+    const auto& joint = typeid(*body->getParentJoint());
+    if (joint != typeid(dynamics::BallJoint)
+        && joint != typeid(dynamics::EulerJoint)
+        && joint != typeid(dynamics::FreeJoint)
+        && joint != typeid(dynamics::PlanarJoint)
+        && joint != typeid(dynamics::PrismaticJoint)
+        && joint != typeid(dynamics::RevoluteJoint)
+        && joint != typeid(dynamics::ScrewJoint)
+        && joint != typeid(dynamics::TranslationalJoint)
+        && joint != typeid(dynamics::TranslationalJoint2D)
+        && joint != typeid(dynamics::UniversalJoint)
+        && joint != typeid(dynamics::WeldJoint))
+      return false;
+    bool native = true;
+    body->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](const dynamics::ShapeNode* node) {
+          if (typeid(*node) != typeid(dynamics::ShapeNode)
+              || node->getParentFrame() != body) {
+            native = false;
+            return;
+          }
+          const auto shape = node->getShape();
+          if (!shape)
+            return;
+          const auto& type = typeid(*shape);
+          native = native
+                   && (type == typeid(dynamics::BoxShape)
+                       || type == typeid(dynamics::SphereShape)
+                       || type == typeid(dynamics::EllipsoidShape)
+                       || type == typeid(dynamics::CylinderShape)
+                       || type == typeid(dynamics::CapsuleShape)
+                       || type == typeid(dynamics::ConeShape)
+                       || type == typeid(dynamics::PlaneShape)
+                       || type == typeid(dynamics::PyramidShape)
+                       || type == typeid(dynamics::MeshShape)
+                       || type == typeid(dynamics::ConvexMeshShape));
+        });
+    if (!native)
+      return false;
+  }
+  return true;
+}
+
+bool usesNativeOwnershipBackend(const World& world)
+{
+  const auto* solver = world.getConstraintSolver();
+  if (typeid(*solver) != typeid(constraint::BoxedLcpConstraintSolver)
+      || typeid(*solver->getCollisionDetector())
+             != typeid(collision::FCLCollisionDetector)
+      || typeid(*solver->getCollisionGroup())
+             != typeid(collision::FCLCollisionGroup))
+    return false;
+  const auto* filter = solver->getCollisionOption().collisionFilter.get();
+  if (filter && typeid(*filter) != typeid(collision::BodyNodeCollisionFilter))
+    return false;
+  const auto native = [](const constraint::BoxedLcpSolver* backend) {
+    return !backend
+           || typeid(*backend) == typeid(constraint::DantzigBoxedLcpSolver)
+           || typeid(*backend) == typeid(constraint::PgsBoxedLcpSolver)
+           || typeid(*backend) == typeid(constraint::NsgsFrictionSolver)
+           || typeid(*backend) == typeid(constraint::FbfFrictionSolver);
+  };
+  const auto* boxed
+      = static_cast<const constraint::BoxedLcpConstraintSolver*>(solver);
+  return native(boxed->getBoxedLcpSolver().get())
+         && native(boxed->getSecondaryBoxedLcpSolver().get());
+}
+
+class NativeSkeletonAddition
+{
+public:
+  NativeSkeletonAddition(
+      WorldDeactivationState& state, const dynamics::Skeleton* skeleton)
+    : mState(state), mUncaughtExceptions(std::uncaught_exceptions())
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    mPrevious = state.mAddingNativeSkeleton;
+    state.mAddingNativeSkeleton = state.mNativeOwnership ? skeleton : nullptr;
+    mActive = state.mAddingNativeSkeleton != nullptr;
+    mBefore = state.mNativeAdditionEvents;
+    if (mActive) {
+      for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
+        skeleton->getBodyNode(i)->eachShapeNodeWith<dynamics::CollisionAspect>(
+            [&](const dynamics::ShapeNode*) { ++mExpectedGroupNotifications; });
+    }
+  }
+
+  ~NativeSkeletonAddition()
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    mState.mAddingNativeSkeleton = mPrevious;
+    const auto& after = mState.mNativeAdditionEvents;
+    // No events are suppressed. Extra reentrant changes permanently retire
+    // the certificate; negative ownership queries use live traversal here.
+    if (std::uncaught_exceptions() > mUncaughtExceptions
+        || (mActive
+            && (after.mModelChecks - mBefore.mModelChecks != 1u
+                || after.mModelNotifications - mBefore.mModelNotifications != 0u
+                || after.mGroupNotifications - mBefore.mGroupNotifications
+                       != mExpectedGroupNotifications
+                || after.mSolverChecks - mBefore.mSolverChecks != 1u
+                || after.mSolverNotifications - mBefore.mSolverNotifications
+                       != 1u)))
+      mState.mNativeOwnership = false;
+  }
+
+private:
+  WorldDeactivationState& mState;
+  const dynamics::Skeleton* mPrevious;
+  WorldDeactivationState::NativeAdditionEvents mBefore;
+  bool mActive = false;
+  std::size_t mExpectedGroupNotifications = 1u;
+  int mUncaughtExceptions;
+};
+
+bool ownsModelObject(
+    const WorldDeactivationState& owner, const common::Composite* object)
+{
+  const auto& world = *owner.mWorld;
   const auto* frame = dynamic_cast<const dynamics::Frame*>(object);
   const auto* skeleton = modelSkeleton(object);
+  if (typeid(world) == typeid(World)) {
+    if (skeleton && owner.mOwnedSkeletons.count(skeleton))
+      return true;
+    if (owner.mNativeOwnership && !owner.mAddingNativeSkeleton
+        && usesNativeOwnershipBackend(world)) {
+      for (const auto* parent = frame; parent && !parent->isWorld();
+           parent = parent->getParentFrame()) {
+        if (const auto* body = dynamic_cast<const dynamics::BodyNode*>(parent))
+          if (owner.mOwnedSkeletons.count(body->getSkeleton().get()))
+            return true;
+      }
+      return false;
+    }
+  }
   for (std::size_t i = 0u; i < world.getNumSimpleFrames(); ++i) {
     const auto* member = world.getSimpleFrame(i).get();
     if (shareFrameTree(frame, member)
@@ -777,9 +956,20 @@ bool ownsModelObject(const World& world, const common::Composite* object)
     return true;
   for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
     const auto* member = group->getShapeFrame(i);
-    if (shareFrameTree(frame, member)
-        || (skeleton && modelSkeleton(member) == skeleton))
+    if (shareFrameTree(frame, member))
       return true;
+    if (skeleton) {
+      // Custom Frame readers can reenter guarded mutation. Only invoke this
+      // virtual for the exact native type; retain RTTI for custom Frames.
+      const auto* node = typeid(*member) == typeid(dynamics::ShapeNode)
+                             ? member->asShapeNode()
+                             : nullptr;
+      if (node) {
+        if (node->getBodyNode() && node->getSkeleton().get() == skeleton)
+          return true;
+      } else if (modelSkeleton(member) == skeleton)
+        return true;
+    }
   }
   if (!skeleton)
     return false;
@@ -794,10 +984,22 @@ bool ownsModelObject(const World& world, const common::Composite* object)
   return false;
 }
 
-bool ownsFrameObject(const World& world, const dynamics::Frame* frame)
+bool ownsFrameObject(
+    const WorldDeactivationState& owner, const dynamics::Frame* frame)
 {
+  const auto& world = *owner.mWorld;
   if (const auto* object = dynamic_cast<const common::Composite*>(frame))
-    return ownsModelObject(world, object);
+    return ownsModelObject(owner, object);
+  if (typeid(world) == typeid(World) && owner.mNativeOwnership
+      && !owner.mAddingNativeSkeleton && usesNativeOwnershipBackend(world)) {
+    for (const auto* parent = frame; parent && !parent->isWorld();
+         parent = parent->getParentFrame()) {
+      if (const auto* body = dynamic_cast<const dynamics::BodyNode*>(parent))
+        if (owner.mOwnedSkeletons.count(body->getSkeleton().get()))
+          return true;
+    }
+    return false;
+  }
   for (std::size_t i = 0u; i < world.getNumSimpleFrames(); ++i) {
     if (shareFrameTree(frame, world.getSimpleFrame(i).get()))
       return true;
@@ -1429,28 +1631,28 @@ void World::compile()
       if (other == &state)
         continue;
       for (const auto& skeleton : mSkeletons) {
-        if (ownsModelObject(*other->mWorld, skeleton.get()))
+        if (ownsModelObject(*other, skeleton.get()))
           throw std::runtime_error(
               "ModelFrozenError: model belongs to another World");
       }
       for (const auto& skeleton : mConstraintSolver->getSkeletons()) {
-        if (ownsModelObject(*other->mWorld, skeleton.get()))
+        if (ownsModelObject(*other, skeleton.get()))
           throw std::runtime_error(
               "ModelFrozenError: solver model belongs to another World");
       }
       for (const auto& frame : mSimpleFrames) {
-        if (ownsModelObject(*other->mWorld, frame.get()))
+        if (ownsModelObject(*other, frame.get()))
           throw std::runtime_error(
               "ModelFrozenError: frame belongs to another World");
       }
       for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
-        if (ownsModelObject(*other->mWorld, group->getShapeFrame(i)))
+        if (ownsModelObject(*other, group->getShapeFrame(i)))
           throw std::runtime_error(
               "ModelFrozenError: collision model belongs to another World");
       }
       collision::detail::CollisionGroupOwnershipAccessor::forEachSkeleton(
           *group, [&](const auto* skeleton) {
-            if (ownsModelObject(*other->mWorld, skeleton))
+            if (ownsModelObject(*other, skeleton))
               throw std::runtime_error(
                   "ModelFrozenError: subscribed model belongs to another "
                   "World");
@@ -1975,6 +2177,7 @@ World::World(const WorldConfig& config)
     setCollisionDetector(detector);
 
   const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+  mDeactivationState->mNativeOwnership = usesNativeOwnershipBackend(*this);
   modelOwners().mWorlds.push_back(mDeactivationState.get());
 }
 
@@ -3901,12 +4104,26 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
     const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
     for (const auto* owner : modelOwners().mWorlds) {
       if (owner != mDeactivationState.get()
-          && ownsModelObject(*owner->mWorld, _skeleton.get()))
+          && ownsModelObject(*owner, _skeleton.get()))
         throw std::runtime_error(
             "ModelFrozenError: model belongs to another World");
     }
   }
-  mSkeletons.push_back(_skeleton);
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    auto& state = *mDeactivationState;
+    if (typeid(*this) != typeid(World) || !usesNativeOwnershipBackend(*this)
+        || !isNativeOwnershipModel(*_skeleton))
+      state.mNativeOwnership = false;
+    const auto inserted = state.mOwnedSkeletons.insert(_skeleton.get());
+    try {
+      mSkeletons.push_back(_skeleton);
+    } catch (...) {
+      if (inserted.second)
+        state.mOwnedSkeletons.erase(inserted.first);
+      throw;
+    }
+  }
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
   mMapForSkeletons[_skeleton] = _skeleton;
 
@@ -3922,7 +4139,10 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   _skeleton->setGravity(mGravity);
 
   refreshSkeletonDofIndices();
-  mConstraintSolver->addSkeleton(_skeleton);
+  {
+    NativeSkeletonAddition addition(*mDeactivationState, _skeleton.get());
+    mConstraintSolver->addSkeleton(_skeleton);
+  }
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
   invalidateSimulationMode();
@@ -3964,14 +4184,22 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   // Remove _skeleton from constraint handler.
   checkModelMutation(*mDeactivationState);
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    mDeactivationState->mNativeOwnership = false;
+  }
   mConstraintSolver->removeSkeleton(_skeleton);
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
 
   // Remove _skeleton from mSkeletons
-  mSkeletons.erase(
-      remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
-      mSkeletons.end());
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    mSkeletons.erase(
+        remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+        mSkeletons.end());
+    mDeactivationState->mOwnedSkeletons.erase(_skeleton.get());
+  }
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
   refreshSkeletonDofIndices();
   invalidateSimulationMode();
@@ -4082,6 +4310,10 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 
   checkModelMutation(*mDeactivationState);
   common::detail::checkTopologyMutation(_frame.get());
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    mDeactivationState->mNativeOwnership = false;
+  }
   mSimpleFrames.push_back(_frame);
   mSimpleFrameToShared[_frame.get()] = _frame;
 
@@ -4322,6 +4554,10 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 
   solver->setTimeStep(mTimeStep);
   solver->setNumSimulationThreads(mNumSimulationThreads);
+  {
+    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    mDeactivationState->mNativeOwnership = false;
+  }
   mConstraintSolver = std::move(solver);
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
   invalidateAllRestingKinematicSnapshot();
@@ -4517,9 +4753,14 @@ void checkTopologyMutation(const Composite* object)
   if (!object)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  for (const auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsModelObject(*owner->mWorld, object))
+  for (auto* owner : simulation::modelOwners().mWorlds) {
+    if (simulation::ownsModelObject(*owner, object)) {
       simulation::checkModelMutation(*owner);
+      if (owner->mAddingNativeSkeleton)
+        ++owner->mNativeAdditionEvents.mModelChecks;
+      if (owner->mAddingNativeSkeleton != object)
+        owner->mNativeOwnership = false;
+    }
   }
 }
 
@@ -4528,9 +4769,11 @@ void checkFrameTopologyMutation(const dynamics::Frame* frame)
   if (!frame || frame->isWorld())
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  for (const auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsFrameObject(*owner->mWorld, frame))
+  for (auto* owner : simulation::modelOwners().mWorlds) {
+    if (simulation::ownsFrameObject(*owner, frame)) {
       simulation::checkModelMutation(*owner);
+      owner->mNativeOwnership = false;
+    }
   }
 }
 
@@ -4544,8 +4787,10 @@ void notifyFrameTopologyMutation(const dynamics::Frame* frame)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsFrameObject(*owner->mWorld, frame))
+    if (simulation::ownsFrameObject(*owner, frame)) {
+      owner->mNativeOwnership = false;
       simulation::notifyModelTopology(*owner);
+    }
   }
 }
 
@@ -4555,8 +4800,13 @@ void notifyTopologyMutation(const Composite* object)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsModelObject(*owner->mWorld, object))
+    if (simulation::ownsModelObject(*owner, object)) {
+      if (owner->mAddingNativeSkeleton)
+        ++owner->mNativeAdditionEvents.mModelNotifications;
+      if (owner->mAddingNativeSkeleton != object)
+        owner->mNativeOwnership = false;
       simulation::notifyModelTopology(*owner);
+    }
   }
 }
 
@@ -4566,7 +4816,7 @@ void notifyParameterMutation(const Composite* object)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsModelObject(*owner->mWorld, object))
+    if (simulation::ownsModelObject(*owner, object))
       ++owner->mParameterRevision;
   }
 }
@@ -4584,6 +4834,10 @@ void notifyWorldGroupMutation(const CollisionGroup* group)
         == group) {
       if (owner->mCompiled && owner->mEditDepth == 0u)
         owner->mRawGroupMutation = true;
+      if (!owner->mAddingNativeSkeleton)
+        owner->mNativeOwnership = false;
+      else
+        ++owner->mNativeAdditionEvents.mGroupNotifications;
       simulation::notifyModelTopology(*owner);
     }
   }
@@ -4627,9 +4881,14 @@ namespace detail {
 void checkWorldTopologyMutation(const ConstraintSolver* solver)
 {
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  for (const auto* owner : simulation::modelOwners().mWorlds) {
-    if (owner->mWorld->getConstraintSolver() == solver)
+  for (auto* owner : simulation::modelOwners().mWorlds) {
+    if (owner->mWorld->getConstraintSolver() == solver) {
       simulation::checkModelMutation(*owner);
+      if (!owner->mAddingNativeSkeleton)
+        owner->mNativeOwnership = false;
+      else
+        ++owner->mNativeAdditionEvents.mSolverChecks;
+    }
   }
 }
 
@@ -4637,8 +4896,13 @@ void notifyWorldTopologyMutation(const ConstraintSolver* solver)
 {
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (owner->mWorld->getConstraintSolver() == solver)
+    if (owner->mWorld->getConstraintSolver() == solver) {
+      if (!owner->mAddingNativeSkeleton)
+        owner->mNativeOwnership = false;
+      else
+        ++owner->mNativeAdditionEvents.mSolverNotifications;
       simulation::notifyModelTopology(*owner);
+    }
   }
 }
 
