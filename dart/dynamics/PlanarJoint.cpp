@@ -68,7 +68,7 @@ void PlanarJoint::setAspectProperties(const AspectProperties& properties)
   mAspectProperties = properties;
   Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================

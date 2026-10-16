@@ -34,6 +34,7 @@
 #define DART_COMMON_DETAIL_COMPOSITE_HPP_
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 
 #include <dart/common/Composite.hpp>
 
@@ -84,6 +85,7 @@ void Composite::set(const T* aspect)
 template <class T>
 void Composite::set(std::unique_ptr<T>&& aspect)
 {
+  detail::checkTopologyMutation(this);
   _set(typeid(T), std::move(aspect));
 }
 
@@ -91,6 +93,7 @@ void Composite::set(std::unique_ptr<T>&& aspect)
 template <class T, typename... Args>
 T* Composite::createAspect(Args&&... args)
 {
+  detail::checkTopologyMutation(this);
   auto insertion = mAspectMap.insert(AspectMap::value_type(typeid(T), nullptr));
   auto& slot = insertion.first->second;
 
@@ -118,9 +121,11 @@ std::unique_ptr<T> Composite::releaseAspect()
   std::unique_ptr<T> extraction = nullptr;
   AspectMap::iterator it = mAspectMap.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(releaseAspect, T, nullptr)
-  if (mAspectMap.end() != it) {
+  if (mAspectMap.end() != it && it->second) {
+    detail::checkTopologyMutation(this);
     removeFromComposite(it->second.get());
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
+    detail::notifyTopologyMutation(this);
   }
 
   return extraction;

@@ -187,6 +187,9 @@ public:
   /// Increments the structural version counter.
   std::size_t incrementVersion() override;
 
+  /// Increment the model parameter version without changing topology.
+  std::size_t incrementParameterVersion();
+
   /// Remove copy operator
   Skeleton& operator=(const Skeleton& _other) = delete;
 
@@ -1108,6 +1111,8 @@ public:
   friend class EndEffector;
   friend class collision::BodyNodeCollisionFilter;
   friend class simulation::World;
+  friend std::size_t common::detail::incrementAspectVersion(
+      common::VersionCounter*, const common::Aspect*);
   friend class constraint::BoxedLcpConstraintSolver;
   friend class constraint::ConstraintSolver;
 

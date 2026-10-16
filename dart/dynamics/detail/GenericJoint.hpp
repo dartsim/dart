@@ -76,7 +76,13 @@
   if (value == Base::mAspectProperties.mField)                                 \
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
-  Joint::incrementVersion();
+  ++Joint::mVersion;
+
+#define GenericJoint_SET_PARAMETER_IF_DIFFERENT(mField, value)                 \
+  if (value == Base::mAspectProperties.mField)                                 \
+    return;                                                                    \
+  Base::mAspectProperties.mField = value;                                      \
+  Joint::incrementParameterVersion();
 
 namespace dart {
 namespace dynamics {
@@ -622,7 +628,8 @@ void GenericJoint<ConfigSpaceT>::setPositionLowerLimit(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits[index], position);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mPositionLowerLimits[index], position);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -648,7 +655,7 @@ void GenericJoint<ConfigSpaceT>::setPositionLowerLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits, lowerLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mPositionLowerLimits, lowerLimits);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -669,7 +676,8 @@ void GenericJoint<ConfigSpaceT>::setPositionUpperLimit(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits[index], position);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mPositionUpperLimits[index], position);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -695,7 +703,7 @@ void GenericJoint<ConfigSpaceT>::setPositionUpperLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits, upperLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mPositionUpperLimits, upperLimits);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -748,7 +756,7 @@ void GenericJoint<ConfigSpaceT>::setInitialPosition(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mInitialPositions[index], initial);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mInitialPositions[index], initial);
 }
 
 //==============================================================================
@@ -773,7 +781,7 @@ void GenericJoint<ConfigSpaceT>::setInitialPositions(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mInitialPositions, initial);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mInitialPositions, initial);
 }
 
 //==============================================================================
@@ -936,7 +944,8 @@ void GenericJoint<ConfigSpaceT>::setVelocityLowerLimit(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mVelocityLowerLimits[index], velocity);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mVelocityLowerLimits[index], velocity);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -962,7 +971,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityLowerLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mVelocityLowerLimits, lowerLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mVelocityLowerLimits, lowerLimits);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -983,7 +992,8 @@ void GenericJoint<ConfigSpaceT>::setVelocityUpperLimit(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mVelocityUpperLimits[index], velocity);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mVelocityUpperLimits[index], velocity);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -1009,7 +1019,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityUpperLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mVelocityUpperLimits, upperLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mVelocityUpperLimits, upperLimits);
   this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -1049,7 +1059,7 @@ void GenericJoint<ConfigSpaceT>::setInitialVelocity(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mInitialVelocities[index], initial);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mInitialVelocities[index], initial);
 }
 
 //==============================================================================
@@ -1074,7 +1084,7 @@ void GenericJoint<ConfigSpaceT>::setInitialVelocities(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mInitialVelocities, initial);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mInitialVelocities, initial);
 }
 
 //==============================================================================
@@ -1168,7 +1178,8 @@ void GenericJoint<ConfigSpaceT>::setAccelerationLowerLimit(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mAccelerationLowerLimits[index], acceleration);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mAccelerationLowerLimits[index], acceleration);
 }
 
 //==============================================================================
@@ -1193,7 +1204,8 @@ void GenericJoint<ConfigSpaceT>::setAccelerationLowerLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mAccelerationLowerLimits, lowerLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mAccelerationLowerLimits, lowerLimits);
 }
 
 //==============================================================================
@@ -1212,7 +1224,8 @@ void GenericJoint<ConfigSpaceT>::setAccelerationUpperLimit(
     GenericJoint_REPORT_OUT_OF_RANGE(setAccelerationUpperLimit, index) return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mAccelerationUpperLimits[index], acceleration);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mAccelerationUpperLimits[index], acceleration);
 }
 
 //==============================================================================
@@ -1237,7 +1250,8 @@ void GenericJoint<ConfigSpaceT>::setAccelerationUpperLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mAccelerationUpperLimits, upperLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(
+      mAccelerationUpperLimits, upperLimits);
 }
 
 //==============================================================================
@@ -1327,7 +1341,7 @@ void GenericJoint<ConfigSpaceT>::setForceLowerLimit(size_t index, double force)
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mForceLowerLimits[index], force);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mForceLowerLimits[index], force);
 }
 
 //==============================================================================
@@ -1352,7 +1366,7 @@ void GenericJoint<ConfigSpaceT>::setForceLowerLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mForceLowerLimits, lowerLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mForceLowerLimits, lowerLimits);
 }
 
 //==============================================================================
@@ -1371,7 +1385,7 @@ void GenericJoint<ConfigSpaceT>::setForceUpperLimit(size_t index, double force)
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mForceUpperLimits[index], force);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mForceUpperLimits[index], force);
 }
 
 //==============================================================================
@@ -1396,7 +1410,7 @@ void GenericJoint<ConfigSpaceT>::setForceUpperLimits(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mForceUpperLimits, upperLimits);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mForceUpperLimits, upperLimits);
 }
 
 //==============================================================================
@@ -1591,7 +1605,7 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
     k = 0.0;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mSpringStiffnesses[index], k);
   // Passive forces change rest state, not automatic-constraint eligibility.
   if (const auto skel = this->getSkeleton())
     skel->incrementDeactivationStateVersion();
@@ -1624,7 +1638,7 @@ void GenericJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mRestPositions[index], q0);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mRestPositions[index], q0);
   if (const auto skel = this->getSkeleton())
     skel->incrementDeactivationStateVersion();
 }
@@ -1651,7 +1665,7 @@ void GenericJoint<ConfigSpaceT>::setRestPositions(
     return;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mRestPositions, restPositions);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mRestPositions, restPositions);
   if (const auto skel = this->getSkeleton())
     skel->incrementDeactivationStateVersion();
 }
@@ -1682,7 +1696,7 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
     d = 0.0;
   }
 
-  GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mDampingCoefficients[index], d);
   if (const auto skel = this->getSkeleton())
     skel->incrementDeactivationStateVersion();
 
@@ -1747,7 +1761,7 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
 
   const bool hadFriction = Base::mAspectProperties.mFrictions[index] > 0.0;
   const bool hasFriction = friction > 0.0;
-  GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
+  GenericJoint_SET_PARAMETER_IF_DIFFERENT(mFrictions[index], friction);
   if (hadFriction != hasFriction) {
     // Turning friction on or off changes which joints get a friction
     // constraint, so every solver rescans its joints.

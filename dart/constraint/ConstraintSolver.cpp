@@ -41,6 +41,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
@@ -1000,6 +1001,8 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
     return;
   }
 
+  detail::checkWorldTopologyMutation(this);
+  common::detail::checkTopologyMutation(skeleton.get());
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
@@ -1018,11 +1021,18 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   DART_SUPPRESS_DEPRECATED_BEGIN
   skeleton->clearCollidingBodies();
   DART_SUPPRESS_DEPRECATED_END
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
 void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& skeletons)
 {
+  for (const auto& skeleton : skeletons) {
+    if (!hasSkeleton(skeleton)) {
+      detail::checkWorldTopologyMutation(this);
+      common::detail::checkTopologyMutation(skeleton.get());
+    }
+  }
   for (const auto& skeleton : skeletons)
     addSkeleton(skeleton);
 }
@@ -1047,12 +1057,15 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
            << "', which doesn't exist in the ConstraintSolver.\n";
   }
 
+  detail::checkWorldTopologyMutation(this);
   mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   if (contained)
     detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
   mConstrainedGroups.reserve(mSkeletons.size());
+  if (contained)
+    detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1066,11 +1079,14 @@ void ConstraintSolver::removeSkeletons(
 //==============================================================================
 void ConstraintSolver::removeAllSkeletons()
 {
+  detail::checkWorldTopologyMutation(this);
   const bool hadSkeletons = !mSkeletons.empty();
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
   if (hadSkeletons)
     detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
+  if (hadSkeletons)
+    detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1084,7 +1100,9 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
     return;
   }
 
+  detail::checkWorldTopologyMutation(this);
   mManualConstraints.push_back(constraint);
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1117,10 +1135,12 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
     return;
   }
 
+  detail::checkWorldTopologyMutation(this);
   mManualConstraints.erase(
       remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
       mManualConstraints.end());
   restartAwakeSleepCandidacy();
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1129,8 +1149,10 @@ void ConstraintSolver::removeAllConstraints()
   if (mManualConstraints.empty())
     return;
 
+  detail::checkWorldTopologyMutation(this);
   mManualConstraints.clear();
   restartAwakeSleepCandidacy();
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1187,7 +1209,10 @@ void ConstraintSolver::clearLastCollisionResult()
 void ConstraintSolver::setTimeStep(double _timeStep)
 {
   DART_ASSERT(_timeStep > 0.0 && "Time step should be positive value.");
+  if (mTimeStep == _timeStep)
+    return;
   mTimeStep = _timeStep;
+  detail::notifyWorldParameterMutation(this);
 }
 
 //==============================================================================
@@ -1219,15 +1244,29 @@ void ConstraintSolver::setAutomaticSleepingContactPenetrationTolerance(
     tolerance = 0.0;
   }
 
-  gSleepContactPenetrationTolerance = tolerance;
-  gSleepContactPenetrationToleranceUserConfigured = true;
+  if (gSleepContactPenetrationTolerance != tolerance) {
+    gSleepContactPenetrationTolerance = tolerance;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
+  if (gSleepContactPenetrationToleranceUserConfigured != true) {
+    gSleepContactPenetrationToleranceUserConfigured = true;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
 void ConstraintSolver::resetAutomaticSleepingContactPenetrationTolerance()
 {
-  gSleepContactPenetrationTolerance = kDefaultSleepContactPenetrationTolerance;
-  gSleepContactPenetrationToleranceUserConfigured = false;
+  if (gSleepContactPenetrationTolerance
+      != kDefaultSleepContactPenetrationTolerance) {
+    gSleepContactPenetrationTolerance
+        = kDefaultSleepContactPenetrationTolerance;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
+  if (gSleepContactPenetrationToleranceUserConfigured != false) {
+    gSleepContactPenetrationToleranceUserConfigured = false;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -1252,7 +1291,18 @@ void ConstraintSolver::setNumSimulationThreads(std::size_t numThreads)
       numThreads = 1u;
   }
 
+  const auto previous = mNumSimulationThreads;
+  if (std::max<std::size_t>(1u, numThreads) != previous)
+    detail::checkWorldTopologyMutation(this);
+  const auto* detector = dynamic_cast<const collision::DARTCollisionDetector*>(
+      mCollisionDetector.get());
+  if (detector
+      && detector->getNumCollisionThreads()
+             != std::max<std::size_t>(1u, numThreads))
+    collision::detail::checkWorldDetectorTopologyMutation(detector);
   mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
+  if (mNumSimulationThreads != previous)
+    detail::notifyWorldTopologyMutation(this);
   configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
   if (mNumSimulationThreads <= 1u) {
     mConstraintThreadPool.reset();
@@ -1274,6 +1324,7 @@ std::size_t ConstraintSolver::getNumSimulationThreads() const
 void ConstraintSolver::setCollisionDetector(
     collision::CollisionDetector* collisionDetector)
 {
+  detail::checkWorldTopologyMutation(this);
   setCollisionDetector(
       std::unique_ptr<collision::CollisionDetector>(collisionDetector));
 }
@@ -1292,6 +1343,11 @@ void ConstraintSolver::setCollisionDetector(
   if (mCollisionDetector == collisionDetector)
     return;
 
+  detail::checkWorldTopologyMutation(this);
+  const auto* incoming = dynamic_cast<const collision::DARTCollisionDetector*>(
+      collisionDetector.get());
+  if (incoming && incoming->getNumCollisionThreads() != mNumSimulationThreads)
+    collision::detail::checkWorldDetectorTopologyMutation(incoming);
   if (auto* cache = detail::findContactWarmStartCache(this))
     cache->clear();
   // Publish both the pointer and its owner before releasing the old detector:
@@ -1303,6 +1359,7 @@ void ConstraintSolver::setCollisionDetector(
 
   for (const auto& skeleton : mSkeletons)
     mCollisionGroup->subscribeTo(skeleton);
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -1620,6 +1677,23 @@ void ConstraintSolver::prepareForSimulationWithQueryFilter(
 void ConstraintSolver::setFromOtherConstraintSolver(
     const ConstraintSolver& other)
 {
+  detail::checkWorldTopologyMutation(this);
+  const auto* detector = dynamic_cast<const collision::DARTCollisionDetector*>(
+      mCollisionDetector.get());
+  if (detector
+      && detector->getNumCollisionThreads() != other.getNumSimulationThreads())
+    collision::detail::checkWorldDetectorTopologyMutation(detector);
+  for (const auto& skeleton : other.getSkeletons())
+    common::detail::checkTopologyMutation(skeleton.get());
+  std::vector<const ContactSurfaceHandler*> handlers;
+  for (auto handler = other.mContactSurfaceHandler; handler;
+       handler = handler->getParent()) {
+    if (std::find(handlers.begin(), handlers.end(), handler.get())
+        != handlers.end())
+      break;
+    detail::checkContactSurfaceMutation(handler.get());
+    handlers.push_back(handler.get());
+  }
   removeAllSkeletons();
   mManualConstraints.clear();
   mAutomaticJointConstraintJoints.clear();
@@ -1634,6 +1708,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
       .swap(mContactSurfaceHandler);
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -3384,7 +3459,10 @@ void ConstraintSolver::recordConstrainedGroupProfileCounters() const
 //==============================================================================
 void ConstraintSolver::setSplitImpulseEnabled(bool enabled)
 {
+  if (mSplitImpulseEnabled == enabled)
+    return;
   mSplitImpulseEnabled = enabled;
+  detail::notifyWorldParameterMutation(this);
 }
 
 //==============================================================================
@@ -3814,8 +3892,10 @@ void ConstraintSolver::addContactSurfaceHandler(
           << "ignoring.\n";
     return;
   }
+  detail::checkWorldTopologyMutation(this);
   handler->setParent(mContactSurfaceHandler);
   mContactSurfaceHandler = std::move(handler);
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -3827,11 +3907,17 @@ bool ConstraintSolver::removeContactSurfaceHandler(
   ContactSurfaceHandlerPtr previous = nullptr;
   while (current != nullptr) {
     if (current == handler) {
+      detail::checkWorldTopologyMutation(this);
+      detail::checkContactSurfaceMutation(
+          previous ? previous.get() : current.get());
       if (previous != nullptr)
         previous->mParent = current->mParent;
       else
         mContactSurfaceHandler = current->mParent;
       found = true;
+      if (previous)
+        detail::notifyContactSurfaceMutation(previous.get());
+      detail::notifyWorldTopologyMutation(this);
       break;
     }
     previous = current;

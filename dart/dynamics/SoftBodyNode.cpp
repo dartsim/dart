@@ -35,6 +35,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -137,6 +138,23 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 } // namespace detail
 
 namespace {
+
+bool pointTopologyChanged(
+    const SoftBodyNode::UniqueProperties& current,
+    const SoftBodyNode::UniqueProperties& replacement)
+{
+  if (current.mPointProps.size() != replacement.mPointProps.size()
+      || current.mFaces != replacement.mFaces)
+    return true;
+
+  for (std::size_t i = 0; i < current.mPointProps.size(); ++i) {
+    if (current.mPointProps[i].mConnectedPointMassIndices
+        != replacement.mPointProps[i].mConnectedPointMassIndices)
+      return true;
+  }
+
+  return false;
+}
 
 template <typename StateVector>
 struct PointMassPhaseView
@@ -428,6 +446,8 @@ const SoftBodyNode* SoftBodyNode::asSoftBodyNode() const
 //==============================================================================
 void SoftBodyNode::setProperties(const Properties& _properties)
 {
+  if (pointTopologyChanged(mAspectProperties, _properties))
+    common::detail::checkTopologyMutation(this);
   BodyNode::setProperties(
       static_cast<const BodyNode::Properties&>(_properties));
 
@@ -478,6 +498,11 @@ void SoftBodyNode::restoreDynamicState(
 //==============================================================================
 void SoftBodyNode::setAspectProperties(const AspectProperties& properties)
 {
+  const bool topologyChanged
+      = pointTopologyChanged(mAspectProperties, properties);
+  if (topologyChanged)
+    common::detail::checkTopologyMutation(this);
+
   setVertexSpringStiffness(properties.mKv);
   setEdgeSpringStiffness(properties.mKe);
   setDampingCoefficient(properties.mDampCoeff);
@@ -486,7 +511,13 @@ void SoftBodyNode::setAspectProperties(const AspectProperties& properties)
       || properties.mFaces != mAspectProperties.mFaces) {
     mAspectProperties.mPointProps = properties.mPointProps;
     mAspectProperties.mFaces = properties.mFaces;
-    configurePointMasses(mSoftShapeNode.lock());
+    if (topologyChanged) {
+      configurePointMasses(mSoftShapeNode.lock());
+    } else {
+      adaptiveContactActivation(*this).resize(mAspectProperties.mPointProps);
+      handlePointMassMassChange();
+      mNotifier->dirtyTransform();
+    }
   }
 }
 
@@ -507,6 +538,12 @@ void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
   const auto& otherActivation = adaptiveContactActivation(_otherSoftBodyNode);
   auto& activation = adaptiveContactActivation(*this);
   const bool activationWasEnabled = activation.mEnabled;
+  const bool activationParametersChanged
+      = activation.mEnabled != otherActivation.mEnabled
+        || activation.mRingCount != otherActivation.mRingCount
+        || activation.mLingerSteps != otherActivation.mLingerSteps
+        || activation.mVelocityTolerance != otherActivation.mVelocityTolerance
+        || activation.mPositionTolerance != otherActivation.mPositionTolerance;
   activation.mEnabled = otherActivation.mEnabled;
   activation.mRingCount = otherActivation.mRingCount;
   activation.mLingerSteps = otherActivation.mLingerSteps;
@@ -515,6 +552,8 @@ void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
   activation.resetTransientState();
   if (activationWasEnabled || activation.mEnabled)
     mNotifier->dirtyTransform();
+  if (activationParametersChanged)
+    common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -644,18 +683,13 @@ void SoftBodyNode::matchSoftShapeNode(const SoftBodyNode* original)
 //==============================================================================
 void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
 {
+  common::detail::checkTopologyMutation(this);
   const UniqueProperties& softProperties = mAspectProperties;
 
   std::size_t newCount = softProperties.mPointProps.size();
   std::size_t oldCount = mPointMasses.size();
 
   auto& activation = adaptiveContactActivation(*this);
-  if (newCount == oldCount) {
-    activation.resize(softProperties.mPointProps);
-    if (activation.mEnabled)
-      mNotifier->dirtyTransform();
-    return;
-  }
 
   // Adjust the number of PointMass objects since that has changed
   if (newCount < oldCount) {
@@ -697,7 +731,12 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
     }
   }
 
+  if (auto* skeleton = getSkeletonRawPtr()) {
+    skeleton->updateTotalMass();
+    skeleton->incrementDeactivationStateVersion();
+  }
   incrementVersion();
+  common::detail::notifyTopologyMutation(this);
   mNotifier->dirtyTransform();
 }
 
@@ -779,9 +818,10 @@ void SoftBodyNode::handlePointMassMassChange()
   const SkeletonPtr& skel = getSkeleton();
   if (skel) {
     skel->updateTotalMass();
+    skel->incrementParameterVersion();
     skel->incrementDeactivationStateVersion();
   }
-  incrementVersion();
+  ++mVersion;
 }
 
 //==============================================================================
@@ -794,7 +834,11 @@ void SoftBodyNode::handlePointMassRestingPositionChange()
   // scratch.
   activation.mForceAllActiveNextStep = true;
   dirtyArticulatedInertia();
-  incrementVersion();
+  ++mVersion;
+  if (auto* skeleton = getSkeletonRawPtr()) {
+    skeleton->incrementParameterVersion();
+    skeleton->incrementDeactivationStateVersion();
+  }
 }
 
 //==============================================================================
@@ -806,7 +850,12 @@ void SoftBodyNode::setVertexSpringStiffness(double _kv)
     return;
 
   mAspectProperties.mKv = _kv;
-  incrementVersion();
+  dirtyArticulatedInertia();
+  ++mVersion;
+  if (auto* skeleton = getSkeletonRawPtr()) {
+    skeleton->incrementParameterVersion();
+    skeleton->incrementDeactivationStateVersion();
+  }
 }
 
 //==============================================================================
@@ -824,7 +873,11 @@ void SoftBodyNode::setEdgeSpringStiffness(double _ke)
     return;
 
   mAspectProperties.mKe = _ke;
-  incrementVersion();
+  ++mVersion;
+  if (auto* skeleton = getSkeletonRawPtr()) {
+    skeleton->incrementParameterVersion();
+    skeleton->incrementDeactivationStateVersion();
+  }
 }
 
 //==============================================================================
@@ -850,7 +903,12 @@ void SoftBodyNode::setDampingCoefficient(double _damp)
     return;
 
   mAspectProperties.mDampCoeff = _damp;
-  incrementVersion();
+  dirtyArticulatedInertia();
+  ++mVersion;
+  if (auto* skeleton = getSkeletonRawPtr()) {
+    skeleton->incrementParameterVersion();
+    skeleton->incrementDeactivationStateVersion();
+  }
 }
 
 //==============================================================================
@@ -867,6 +925,7 @@ void SoftBodyNode::setAdaptiveContactActivationEnabled(bool enabled)
     return;
 
   activation.mEnabled = enabled;
+  common::detail::notifyParameterMutation(this);
   activation.resetTransientState();
   for (std::size_t i = 0; i < activation.mFrozenLocalPositions.size(); ++i)
     activation.mFrozenLocalPositions[i] = mAspectProperties.mPointProps[i].mX0;
@@ -888,6 +947,7 @@ void SoftBodyNode::setAdaptiveContactActivationRingCount(std::size_t ringCount)
     return;
 
   activation.mRingCount = ringCount;
+  common::detail::notifyParameterMutation(this);
   activation.mForceAllActiveNextStep = true;
   if (activation.mEnabled)
     mNotifier->dirtyTransform();
@@ -908,6 +968,7 @@ void SoftBodyNode::setAdaptiveContactActivationLingerSteps(
     return;
 
   activation.mLingerSteps = lingerSteps;
+  common::detail::notifyParameterMutation(this);
   if (activation.mEnabled)
     dirtyArticulatedInertia();
 }
@@ -937,6 +998,7 @@ void SoftBodyNode::setAdaptiveContactActivationVelocityTolerance(
     return;
 
   activation.mVelocityTolerance = tolerance;
+  common::detail::notifyParameterMutation(this);
   if (activation.mEnabled)
     dirtyArticulatedInertia();
 }
@@ -966,6 +1028,7 @@ void SoftBodyNode::setAdaptiveContactActivationPositionTolerance(
     return;
 
   activation.mPositionTolerance = tolerance;
+  common::detail::notifyParameterMutation(this);
   if (activation.mEnabled)
     dirtyArticulatedInertia();
 }
@@ -989,6 +1052,10 @@ std::size_t SoftBodyNode::getNumActivePointMasses() const
 //==============================================================================
 void SoftBodyNode::removeAllPointMasses()
 {
+  if (mPointMasses.empty() && mAspectProperties.mFaces.empty())
+    return;
+
+  common::detail::checkTopologyMutation(this);
   // configurePointMasses() deletes the point masses and their states together.
   mAspectProperties.mPointProps.clear();
   mAspectProperties.mFaces.clear();
@@ -998,6 +1065,7 @@ void SoftBodyNode::removeAllPointMasses()
 //==============================================================================
 PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 {
+  common::detail::checkTopologyMutation(this);
   // configurePointMasses() creates the point mass and its state together.
   mAspectProperties.mPointProps.push_back(_properties);
   configurePointMasses(mSoftShapeNode.lock());
@@ -1011,6 +1079,7 @@ void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
   DART_ASSERT(_idx1 != _idx2);
   DART_ASSERT(_idx1 < mPointMasses.size());
   DART_ASSERT(_idx2 < mPointMasses.size());
+  common::detail::checkTopologyMutation(this);
   mPointMasses[_idx1]->addConnectedPointMass(mPointMasses[_idx2]);
   mPointMasses[_idx2]->addConnectedPointMass(mPointMasses[_idx1]);
   // Version incremented in addConnectedPointMass
@@ -1019,6 +1088,7 @@ void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 //==============================================================================
 void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 {
+  common::detail::checkTopologyMutation(this);
   mAspectProperties.addFace(_face);
   configurePointMasses(mSoftShapeNode.lock());
 }

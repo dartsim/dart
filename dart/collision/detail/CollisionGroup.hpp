@@ -34,6 +34,7 @@
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 
 #include <dart/collision/CollisionGroup.hpp>
 
@@ -117,6 +118,7 @@ void CollisionGroup::subscribeTo(
       bodyNode.get(), BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
 
   if (inserted.second) {
+    detail::notifyWorldGroupMutation(this);
     mSubscriptionOrder.push_back(bodyNode.get());
     const BodyNodeSources::iterator& entry = inserted.first;
     bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
@@ -139,6 +141,7 @@ void CollisionGroup::subscribeTo(
       SkeletonSource(metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
 
   if (inserted.second) {
+    detail::notifyWorldGroupMutation(this);
     mSubscriptionOrder.push_back(metaSkeleton.get());
     SkeletonSource& entry = inserted.first->second;
 
@@ -241,6 +244,7 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mBodyNodeSources.find(bodyNode);
   if (it != mBodyNodeSources.end()) {
+    detail::notifyWorldGroupMutation(this);
     for (const auto& entry : it->second.mObjects)
       removeShapeFrameInternal(entry.first, bodyNode);
 
@@ -258,6 +262,7 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mSkeletonSources.find(skeleton);
   if (it != mSkeletonSources.end()) {
+    detail::notifyWorldGroupMutation(this);
     for (const auto& entry : it->second.mObjects) {
       removeShapeFrameInternal(entry.first, skeleton);
     }

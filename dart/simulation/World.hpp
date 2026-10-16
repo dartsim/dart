@@ -346,6 +346,32 @@ public:
   /// current world shape. Calling this is optional; step() does it lazily.
   void enterSimulationMode();
 
+  /// Prepare the model and opt into topology freezing. Legacy lazy Worlds
+  /// continue to permit runtime model edits until compile() is called.
+  void compile();
+
+  /// Whether explicit compilation is current and no edit scope is active.
+  bool isCompiled() const;
+
+  class EditScope
+  {
+  public:
+    explicit EditScope(World& world);
+    ~EditScope() noexcept(false);
+    EditScope(const EditScope&) = delete;
+    EditScope& operator=(const EditScope&) = delete;
+
+  private:
+    World& mWorld;
+    int mUncaughtExceptions;
+  };
+
+  /// Permit topology changes until the returned scope exits, then recompile.
+  EditScope edit();
+
+  std::size_t getTopologyRevision() const;
+  std::size_t getParameterRevision() const;
+
   /// Returns true if simulation preparation is current for the world shape.
   /// It may synchronize the constraint solver's collision group, so do not call
   /// it concurrently with step() or other changes to this World.
@@ -747,6 +773,8 @@ public:
 
 private:
   friend struct WorldTestAccess;
+
+  void validateCompiledModel() const;
 
   /// Whether solver support motion is covered by World's skeleton snapshots.
   bool ownsSolverSkeletons();

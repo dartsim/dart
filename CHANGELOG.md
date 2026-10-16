@@ -76,6 +76,11 @@
 
 * API
 
+  * Add opt-in C++ `World::compile()` and scoped `World::edit()` to freeze
+    and recompile model topology, with per-World topology and parameter
+    revisions. Worlds that are never compiled retain lazy runtime editing
+    and shared model membership.
+
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release

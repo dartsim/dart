@@ -1362,6 +1362,40 @@ TEST(StepAllocation, FirstSingleConnectionSignalRaiseDoesNotAllocate)
   }
 }
 
+TEST(StepAllocation, NativeCompiledFirstStepHasNoAllocation)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  auto world = createCountedStackedBoxesWorld(
+      "compiled", dart::collision::DARTCollisionDetector::create(), allocator);
+  world->compile();
+  ASSERT_TRUE(world->isCompiled());
+  const auto measurement = measureWorldStepsNow(world, allocator, 1);
+  reportMeasurement("native_compiled_first_step", measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable("compiled", measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+  if (measurement.rawHeap.skipped)
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+TEST(StepAllocation, NativeCompiledSoftFirstStepHasNoAllocation)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  auto world
+      = createCountedNativeSoftBoxOnGroundWorld("compiled_soft", allocator);
+  world->compile();
+  ASSERT_TRUE(world->isCompiled());
+  const auto measurement = measureWorldStepsNow(world, allocator, 1);
+  reportMeasurement("native_compiled_soft_first_step", measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable("compiled_soft", measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+  if (measurement.rawHeap.skipped)
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
 TEST(StepAllocation, ScopedHeapAllocationCounterDetectsOperatorNew)
 {
   dart::test::ScopedHeapAllocationCounter counter;

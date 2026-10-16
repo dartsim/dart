@@ -904,6 +904,9 @@ protected:
   /// Notify that this joint's automatic-constraint eligibility changed.
   void notifyAutomaticConstraintPropertiesUpdated();
 
+  /// Update parameter versions without stamping structural model changes.
+  void incrementParameterVersion();
+
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
   /// that the index should be unique within the joint.

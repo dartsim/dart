@@ -210,7 +210,7 @@ Eigen::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
 //==============================================================================
 void VoxelGridShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 {
-  incrementVersion();
+  incrementVisualVersion();
 }
 
 //==============================================================================

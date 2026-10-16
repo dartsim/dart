@@ -32,9 +32,11 @@
 
 #include "dart/dynamics/Entity.hpp"
 
+#include "dart/common/Composite.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/StlHelpers.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
 
@@ -235,7 +237,16 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
   if (mParentFrame == _newParentFrame)
     return;
 
+  if (_newParentFrame)
+    common::detail::checkFrameTopologyMutation(_newParentFrame);
+  // A null parent is the base-destructor path. ShapeFrame's virtual bases are
+  // already being torn down, so collision-group observers must remove it
+  // through Subject's destruction notification before ownership scans resume.
   const Frame* oldParentFrame = mParentFrame;
+  if (_newParentFrame) {
+    common::detail::notifyFrameTopologyMutation(mParentFrame);
+    common::detail::notifyFrameTopologyMutation(_newParentFrame);
+  }
 
   if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld()) {
     // If this entity has a parent Frame, tell that parent that it is losing
@@ -273,7 +284,20 @@ Detachable::Detachable(Frame* _refFrame, bool _quiet)
 //==============================================================================
 void Detachable::setParentFrame(Frame* _newParentFrame)
 {
+  if (_newParentFrame == getParentFrame())
+    return;
+  auto* composite = dynamic_cast<common::Composite*>(this);
+  auto* frame = dynamic_cast<Frame*>(this);
+  if (frame)
+    common::detail::checkFrameTopologyMutation(frame);
+  else
+    common::detail::checkTopologyMutation(composite);
+  common::detail::checkFrameTopologyMutation(_newParentFrame);
   changeParentFrame(_newParentFrame);
+  if (frame)
+    common::detail::notifyFrameTopologyMutation(frame);
+  else
+    common::detail::notifyTopologyMutation(composite);
 }
 
 //==============================================================================

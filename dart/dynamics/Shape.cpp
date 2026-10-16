@@ -33,11 +33,38 @@
 #include "dart/dynamics/Shape.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+thread_local const Shape* pendingVisualVersion = nullptr;
+thread_local const Shape* currentVisualVersion = nullptr;
+
+class ScopedShapeVersion
+{
+public:
+  ScopedShapeVersion(const Shape*& slot, const Shape* shape)
+    : mSlot(slot), mPrevious(slot)
+  {
+    mSlot = shape;
+  }
+
+  ~ScopedShapeVersion()
+  {
+    mSlot = mPrevious;
+  }
+
+private:
+  const Shape*& mSlot;
+  const Shape* mPrevious;
+};
+
+} // namespace
 
 //==============================================================================
 Shape::Shape(ShapeType type)
@@ -179,6 +206,9 @@ void Shape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 //==============================================================================
 std::size_t Shape::incrementVersion()
 {
+  const ScopedShapeVersion current(
+      currentVisualVersion, pendingVisualVersion == this ? this : nullptr);
+  const ScopedShapeVersion pending(pendingVisualVersion, nullptr);
   ++mVersion;
   mVersionChangedSignal.raise(this, mVersion);
 
@@ -186,7 +216,25 @@ std::size_t Shape::incrementVersion()
 }
 
 //==============================================================================
+std::size_t Shape::incrementVisualVersion()
+{
+  const ScopedShapeVersion pending(pendingVisualVersion, this);
+  return incrementVersion();
+}
+
+//==============================================================================
 std::atomic_int Shape::mCounter{PRIMITIVE_MAGIC_NUMBER};
 
 } // namespace dynamics
+
+namespace common {
+namespace detail {
+
+bool isVisualShapeVersionUpdate(const dynamics::Shape* shape)
+{
+  return dynamics::currentVisualVersion == shape;
+}
+
+} // namespace detail
+} // namespace common
 } // namespace dart

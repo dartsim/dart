@@ -33,6 +33,7 @@
 #include "dart/dynamics/FixedFrame.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -79,7 +80,8 @@ void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
 
   mAspectProperties.mRelativeTf = transform;
   dirtyTransform();
-  incrementVersion();
+  incrementParameterVersion();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================

@@ -202,6 +202,7 @@ template <class SpecAspect>
 void SpecializedForAspect<SpecAspect>::_set(
     type<SpecAspect>, const SpecAspect* aspect)
 {
+  detail::checkTopologyMutation(this);
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -224,6 +225,7 @@ template <class SpecAspect>
 void SpecializedForAspect<SpecAspect>::_set(
     type<SpecAspect>, std::unique_ptr<SpecAspect>&& aspect)
 {
+  detail::checkTopologyMutation(this);
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -245,6 +247,7 @@ template <typename... Args>
 SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
     type<SpecAspect>, Args&&... args)
 {
+  detail::checkTopologyMutation(this);
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -296,10 +299,14 @@ std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_releaseAspect(
 
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(release, SpecAspect, nullptr);
 
+  if (mSpecAspectIterator->second)
+    detail::checkTopologyMutation(this);
   removeFromComposite(mSpecAspectIterator->second.get());
   std::unique_ptr<SpecAspect> extraction(
       static_cast<SpecAspect*>(mSpecAspectIterator->second.release()));
 
+  if (extraction)
+    detail::notifyTopologyMutation(this);
   return extraction;
 }
 

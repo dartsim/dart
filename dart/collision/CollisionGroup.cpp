@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -170,7 +171,8 @@ bool CollisionGroup::isSubscribedTo()
 //==============================================================================
 void CollisionGroup::removeAllShapeFrames()
 {
-  const bool hadObjects = !mObjectInfoList.empty();
+  const bool hadObjects = !mObjectInfoList.empty() || !mSkeletonSources.empty()
+                          || !mBodyNodeSources.empty();
 
   removeAllCollisionObjectsFromEngine();
 
@@ -543,6 +545,7 @@ void CollisionGroup::removeShapeFrameInternal(
 void CollisionGroup::incrementContentVersion()
 {
   ++mContentVersion;
+  detail::notifyWorldGroupMutation(this);
 }
 
 //==============================================================================
@@ -733,7 +736,8 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
 
     object->mLastKnownShapeID = currentID;
     object->mLastKnownVersion = currentVersion;
-    incrementContentVersion();
+    // Shape parameters refresh engine objects without changing membership.
+    ++mContentVersion;
 
     return true;
   }

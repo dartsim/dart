@@ -122,6 +122,94 @@ static_assert(embeddedAspectHostIsImmobile<
 
 } // namespace
 
+namespace {
+
+// Custom aspect hosts expose incrementVersion() without promising an
+// accessible, unique VersionCounter base.
+class PrivateVersionedHost final : public Composite, private VersionCounter
+{
+public:
+  using VersionCounter::getVersion;
+  using VersionCounter::incrementVersion;
+};
+
+struct FirstVersionCounter : VersionCounter
+{
+};
+
+struct SecondVersionCounter : VersionCounter
+{
+};
+
+class AmbiguousVersionedHost final : public Composite,
+                                     public FirstVersionCounter,
+                                     public SecondVersionCounter
+{
+public:
+  std::size_t incrementVersion() override
+  {
+    return FirstVersionCounter::incrementVersion();
+  }
+
+  std::size_t getVersion() const override
+  {
+    return FirstVersionCounter::getVersion();
+  }
+};
+
+static_assert(std::is_base_of<VersionCounter, PrivateVersionedHost>::value);
+static_assert(
+    !std::is_convertible<PrivateVersionedHost*, VersionCounter*>::value);
+static_assert(std::is_base_of<VersionCounter, AmbiguousVersionedHost>::value);
+static_assert(
+    !std::is_convertible<AmbiguousVersionedHost*, VersionCounter*>::value);
+
+struct CustomVersionProperties
+{
+  int mValue = 0;
+};
+
+template <class Host>
+class CustomVersionAspect final : public AspectWithVersionedProperties<
+                                      CustomVersionAspect<Host>,
+                                      CustomVersionProperties,
+                                      Host>
+{
+public:
+  using Base = AspectWithVersionedProperties<
+      CustomVersionAspect<Host>,
+      CustomVersionProperties,
+      Host>;
+  using Base::Base;
+};
+
+} // namespace
+
+TEST(Aspect, PrivateVersionCounterHostRetainsPublicVersionContract)
+{
+  PrivateVersionedHost host;
+  auto* aspect = host.createAspect<CustomVersionAspect<PrivateVersionedHost>>();
+  const auto previous = host.getVersion();
+  CustomVersionProperties properties;
+  properties.mValue = 7;
+  aspect->setProperties(properties);
+  EXPECT_EQ(host.getVersion(), previous + 1u);
+  EXPECT_EQ(aspect->getProperties().mValue, 7);
+}
+
+TEST(Aspect, AmbiguousVersionCounterHostRetainsPublicVersionContract)
+{
+  AmbiguousVersionedHost host;
+  auto* aspect
+      = host.createAspect<CustomVersionAspect<AmbiguousVersionedHost>>();
+  const auto previous = host.getVersion();
+  CustomVersionProperties properties;
+  properties.mValue = 11;
+  aspect->setProperties(properties);
+  EXPECT_EQ(host.getVersion(), previous + 1u);
+  EXPECT_EQ(aspect->getProperties().mValue, 11);
+}
+
 struct EmbeddedStateData
 {
   double d;

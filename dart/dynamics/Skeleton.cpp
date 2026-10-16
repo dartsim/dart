@@ -37,6 +37,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/common/StlHelpers.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EndEffector.hpp"
@@ -252,6 +253,13 @@ BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel)
 void setAllBodyNodeProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties)
 {
+  if (skel) {
+    const std::size_t count
+        = std::min(skel->getNumBodyNodes(), properties.size());
+    for (std::size_t i = 0; i < count; ++i)
+      common::detail::checkTopologyProperties(
+          skel->getBodyNode(i), properties[i]);
+  }
   setAllMemberObjectData<
       Skeleton,
       BodyNode,
@@ -305,6 +313,11 @@ BodyNodeStateVector getAllJointStates(const Skeleton* skel)
 void setAllJointProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties)
 {
+  if (skel) {
+    const std::size_t count = std::min(skel->getNumJoints(), properties.size());
+    for (std::size_t i = 0; i < count; ++i)
+      common::detail::checkTopologyProperties(skel->getJoint(i), properties[i]);
+  }
   setAllMemberObjectData<
       Skeleton,
       Joint,
@@ -473,6 +486,14 @@ std::size_t Skeleton::incrementVersion()
 {
   const std::size_t version = common::VersionCounter::incrementVersion();
   incrementGlobal(gStructuralVersion);
+  return version;
+}
+
+//==============================================================================
+std::size_t Skeleton::incrementParameterVersion()
+{
+  const std::size_t version = common::VersionCounter::incrementVersion();
+  common::detail::notifyParameterMutation(this);
   return version;
 }
 
@@ -798,10 +819,12 @@ void Skeleton::disableSelfCollision()
 //==============================================================================
 void Skeleton::setSelfCollisionCheck(bool enable)
 {
-  if (mAspectProperties.mEnabledSelfCollisionCheck != enable)
-    incrementDeactivationStateVersion();
+  if (mAspectProperties.mEnabledSelfCollisionCheck == enable)
+    return;
 
   mAspectProperties.mEnabledSelfCollisionCheck = enable;
+  common::detail::notifyParameterMutation(this);
+  incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -831,10 +854,12 @@ bool Skeleton::isEnabledSelfCollisionCheck() const
 //==============================================================================
 void Skeleton::setAdjacentBodyCheck(bool enable)
 {
-  if (mAspectProperties.mEnabledAdjacentBodyCheck != enable)
-    incrementDeactivationStateVersion();
+  if (mAspectProperties.mEnabledAdjacentBodyCheck == enable)
+    return;
 
   mAspectProperties.mEnabledAdjacentBodyCheck = enable;
+  common::detail::notifyParameterMutation(this);
+  incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -864,10 +889,12 @@ bool Skeleton::isEnabledAdjacentBodyCheck() const
 //==============================================================================
 void Skeleton::setMobile(bool _isMobile)
 {
-  if (mAspectProperties.mIsMobile != _isMobile)
-    incrementDeactivationStateVersion();
+  if (mAspectProperties.mIsMobile == _isMobile)
+    return;
 
   mAspectProperties.mIsMobile = _isMobile;
+  common::detail::notifyParameterMutation(this);
+  incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -880,10 +907,13 @@ bool Skeleton::isMobile() const
 void Skeleton::setTimeStep(double _timeStep)
 {
   DART_ASSERT(_timeStep > 0.0);
+  if (mAspectProperties.mTimeStep == _timeStep)
+    return;
   mAspectProperties.mTimeStep = _timeStep;
 
   for (std::size_t i = 0; i < mTreeCache.size(); ++i)
     dirtyArticulatedInertia(i);
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -903,6 +933,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
   ON_ALL_TREES(dirtySupportPolygon);
+  common::detail::notifyParameterMutation(this);
   incrementDeactivationStateVersion();
 }
 
@@ -2229,6 +2260,7 @@ void Skeleton::constructNewTree()
 //==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
+  common::detail::checkTopologyMutation(this);
 #ifndef NDEBUG
   std::vector<BodyNode*>::iterator repeat = std::find(
       mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
@@ -2313,6 +2345,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 #endif // ------- Debug mode
 
+  common::detail::notifyTopologyMutation(this);
   _newBodyNode->incrementVersion();
   _newBodyNode->mStructuralChangeSignal.raise(_newBodyNode);
   // We don't need to explicitly increment the version of this Skeleton here
@@ -2375,6 +2408,7 @@ void Skeleton::registerNode(
 //==============================================================================
 void Skeleton::registerNode(Node* _newNode)
 {
+  common::detail::checkTopologyMutation(this);
   registerNode(mNodeMap, _newNode, _newNode->mIndexInSkeleton);
 
   registerNode(
@@ -2427,6 +2461,7 @@ void Skeleton::destructOldTree(std::size_t tree)
 //==============================================================================
 void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
+  common::detail::checkTopologyMutation(this);
   unregisterJoint(_oldBodyNode->getParentJoint());
 
   BodyNode::NodeMap& nodeMap = _oldBodyNode->mNodeMap;
@@ -2484,6 +2519,7 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 
   updateTotalMass();
 
+  common::detail::notifyTopologyMutation(this);
   _oldBodyNode->incrementVersion();
   _oldBodyNode->mStructuralChangeSignal.raise(_oldBodyNode);
   // We don't need to explicitly increment the version of this Skeleton here
@@ -2558,6 +2594,7 @@ void Skeleton::unregisterNode(
 //==============================================================================
 void Skeleton::unregisterNode(Node* _oldNode)
 {
+  common::detail::checkTopologyMutation(this);
   const std::size_t indexInSkel = _oldNode->mIndexInSkeleton;
   unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton);
 
@@ -2663,6 +2700,8 @@ bool Skeleton::moveBodyNodeTree(
     return false;
   }
 
+  common::detail::checkTopologyMutation(this);
+  common::detail::checkTopologyMutation(_newSkeleton.get());
   std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
 
   Joint* originalParent = _bodyNode->getParentJoint();
@@ -2799,6 +2838,8 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     BodyNode* _parentNode,
     bool _recursive) const
 {
+  common::detail::checkTopologyMutation(_newSkeleton.get());
+  common::detail::checkTopologyMutation(_parentNode);
   std::pair<Joint*, BodyNode*> root(nullptr, nullptr);
   std::vector<const BodyNode*> tree;
   if (_recursive)
@@ -2873,6 +2914,7 @@ std::vector<BodyNode*> Skeleton::constructBodyNodeTree(BodyNode* _bodyNode)
 //==============================================================================
 std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
+  common::detail::checkTopologyMutation(this);
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
 
   // Go backwards to minimize the number of shifts needed
@@ -2890,6 +2932,7 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 //==============================================================================
 void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
 {
+  common::detail::checkTopologyMutation(this);
   for (BodyNode* bn : _tree)
     registerBodyNode(bn);
 }

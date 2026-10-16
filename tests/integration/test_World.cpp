@@ -32,17 +32,40 @@
 
 #include "TestHelpers.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Factory.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
+#include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
+#include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
+#include "dart/constraint/JointConstraint.hpp"
+#include "dart/constraint/JointCoulombFrictionConstraint.hpp"
+#include "dart/constraint/JointLimitConstraint.hpp"
+#include "dart/constraint/MimicMotorConstraint.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/ServoMotorConstraint.hpp"
+#include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/constraint/WeldJointConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FixedFrame.hpp"
+#include "dart/dynamics/Group.hpp"
+#include "dart/dynamics/LineSegmentShape.hpp"
+#include "dart/dynamics/Linkage.hpp"
+#include "dart/dynamics/PointCloudShape.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/DeactivationOptions.hpp"
@@ -56,6 +79,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -83,6 +107,91 @@ using namespace dynamics;
 using namespace simulation;
 
 namespace {
+
+// Its destructor follows function-local static objects first initialized by
+// tests. Memory-checker runs use this to cover Worlds retained by pre-main
+// globals.
+WorldPtr gLateDestroyedWorld;
+
+struct SkeletonVersionAccess : Skeleton
+{
+  using Skeleton::getGlobalStructuralVersion;
+};
+
+class NamedFixedFrame final : public FixedFrame
+{
+public:
+  explicit NamedFixedFrame(Frame* parent)
+    : Entity(ConstructFrame), Frame(parent), FixedFrame(parent)
+  {
+  }
+
+  const std::string& setName(const std::string& name) override
+  {
+    mName = name;
+    return mName;
+  }
+
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+
+private:
+  std::string mName;
+};
+
+// A valid native Frame need not also inherit Composite. Its owned descendants
+// must still protect its child sets before constructors or reparenting run.
+class BareFrame final : public Frame, public Detachable
+{
+public:
+  explicit BareFrame(Frame* parent)
+    : Entity(ConstructFrame), Frame(parent), Detachable(parent, false)
+  {
+  }
+
+  const std::string& setName(const std::string& name) override
+  {
+    mName = name;
+    return mName;
+  }
+
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+
+  const Eigen::Isometry3d& getRelativeTransform() const override
+  {
+    return mTransform;
+  }
+
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override
+  {
+    return mZero;
+  }
+
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override
+  {
+    return mZero;
+  }
+
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override
+  {
+    return mZero;
+  }
+
+  const Eigen::Vector6d& getPartialAcceleration() const override
+  {
+    return mZero;
+  }
+
+private:
+  std::string mName;
+  Eigen::Isometry3d mTransform = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d mZero = Eigen::Vector6d::Zero();
+};
 
 class ScopedCollisionFactoryDisabler
 {
@@ -1416,4 +1525,1119 @@ TEST(World, RecordingDropsFramesWhenSkeletonDofLayoutChanges)
   world->addSkeleton(makeSkeleton("third", 44.0));
   EXPECT_EQ(recording->getNumSkeletons(), 2);
   EXPECT_EQ(recording->getNumFrames(), 0);
+}
+
+//==============================================================================
+TEST(World, CompileFreezesOwnedGraphBeforeMutation)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  auto* body = robot->getBodyNode(0);
+  auto* shape = body->getShapeNodeWith<CollisionAspect>(0);
+  ASSERT_NE(shape, nullptr);
+  const auto originalShape = shape->getShape();
+  const auto bodies = robot->getNumBodyNodes();
+  const auto nodes = body->getNumShapeNodes();
+  auto* solver = world->getConstraintSolver();
+  const auto detector = world->getCollisionDetector();
+  world->compile();
+  ASSERT_TRUE(world->isCompiled());
+
+  EXPECT_THROW(
+      robot->createJointAndBodyNodePair<RevoluteJoint>(body),
+      std::runtime_error);
+  EXPECT_EQ(robot->getNumBodyNodes(), bodies);
+  EXPECT_THROW(
+      body->createShapeNodeWith<CollisionAspect>(originalShape),
+      std::runtime_error);
+  EXPECT_EQ(body->getNumShapeNodes(), nodes);
+  EXPECT_THROW(
+      shape->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
+      std::runtime_error);
+  EXPECT_EQ(shape->getShape(), originalShape);
+  EXPECT_THROW(shape->remove(), std::runtime_error);
+  EXPECT_EQ(body->getNumShapeNodes(), nodes);
+  EXPECT_THROW(shape->removeCollisionAspect(), std::runtime_error);
+  EXPECT_TRUE(shape->has<CollisionAspect>());
+  EXPECT_THROW(shape->createCollisionAspect(), std::runtime_error);
+  EXPECT_THROW(body->remove(), std::runtime_error);
+  EXPECT_EQ(robot->getNumBodyNodes(), bodies);
+  EXPECT_THROW(world->removeSkeleton(robot), std::runtime_error);
+  EXPECT_TRUE(world->hasSkeleton(robot));
+  EXPECT_THROW(
+      world->setCollisionDetector(CollisionDetectorType::Dart),
+      std::runtime_error);
+  EXPECT_EQ(world->getCollisionDetector(), detector);
+  EXPECT_THROW(
+      solver->setCollisionDetector(collision::DARTCollisionDetector::create()),
+      std::runtime_error);
+  EXPECT_EQ(world->getCollisionDetector(), detector);
+  auto constraint = std::make_shared<constraint::BallJointConstraint>(
+      body, body->getTransform().translation());
+  EXPECT_THROW(solver->addConstraint(constraint), std::runtime_error);
+  EXPECT_EQ(solver->getNumConstraints(), 0u);
+}
+
+//==============================================================================
+TEST(World, EditRecompilesChangedDofLayoutAndKeepsObjects)
+{
+  auto world = World::create();
+  auto robot = Skeleton::create("robot");
+  auto* root = robot->createJointAndBodyNodePair<RevoluteJoint>().second;
+  world->addSkeleton(robot);
+  world->compile();
+  const auto revision = world->getTopologyRevision();
+  {
+    auto edit = world->edit();
+    EXPECT_FALSE(world->isCompiled());
+    EXPECT_THROW(world->step(), std::runtime_error);
+    robot->createJointAndBodyNodePair<RevoluteJoint>(root);
+    {
+      auto nested = world->edit();
+      EXPECT_FALSE(world->isCompiled());
+    }
+    EXPECT_FALSE(world->isCompiled());
+  }
+  EXPECT_TRUE(world->isCompiled());
+  EXPECT_EQ(robot->getBodyNode(0), root);
+  EXPECT_EQ(world->getIndex(1), 2);
+  EXPECT_GT(world->getTopologyRevision(), revision);
+  EXPECT_NO_THROW(world->step());
+  EXPECT_TRUE(robot->getPositions().allFinite());
+}
+
+//==============================================================================
+TEST(World, FrozenMoveAndCopyPreserveSourceAndDestination)
+{
+  auto frozenWorld = World::create();
+  auto frozen = Skeleton::create("frozen");
+  auto* frozenBody = frozen->createJointAndBodyNodePair<RevoluteJoint>().second;
+  frozenWorld->addSkeleton(frozen);
+  frozenWorld->compile();
+  auto loose = Skeleton::create("loose");
+  auto* looseBody = loose->createJointAndBodyNodePair<RevoluteJoint>().second;
+  EXPECT_THROW(looseBody->moveTo(frozen, frozenBody), std::runtime_error);
+  EXPECT_THROW(
+      looseBody->moveTo<RevoluteJoint>(frozen, frozenBody), std::runtime_error);
+  EXPECT_THROW(frozenBody->moveTo(loose, looseBody), std::runtime_error);
+  EXPECT_THROW(looseBody->copyTo(frozen, frozenBody), std::runtime_error);
+  EXPECT_THROW(
+      looseBody->copyTo<RevoluteJoint>(frozen, frozenBody), std::runtime_error);
+  EXPECT_EQ(looseBody->getSkeleton(), loose);
+  EXPECT_EQ(frozenBody->getSkeleton(), frozen);
+  EXPECT_EQ(loose->getNumBodyNodes(), 1u);
+  EXPECT_EQ(frozen->getNumBodyNodes(), 1u);
+  EXPECT_NO_THROW(frozenBody->copyTo(loose, looseBody));
+  EXPECT_EQ(loose->getNumBodyNodes(), 2u);
+}
+
+//==============================================================================
+TEST(World, LazySharedMembershipAndOwnerLifetimeRemainSupported)
+{
+  auto robot = Skeleton::create("shared");
+  auto* body = robot->createJointAndBodyNodePair<RevoluteJoint>().second;
+  auto first = World::create();
+  auto second = World::create();
+  first->addSkeleton(robot);
+  second->addSkeleton(robot);
+  EXPECT_THROW(first->compile(), std::runtime_error);
+  EXPECT_FALSE(first->isCompiled());
+  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<RevoluteJoint>(body));
+  EXPECT_NO_THROW(first->step());
+  EXPECT_NO_THROW(second->step());
+  second->removeSkeleton(robot);
+  first->compile();
+  EXPECT_THROW(second->addSkeleton(robot), std::runtime_error);
+  EXPECT_FALSE(second->hasSkeleton(robot));
+  first.reset();
+  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<RevoluteJoint>(body));
+  EXPECT_NO_THROW(second->addSkeleton(robot));
+}
+
+//==============================================================================
+TEST(World, CompiledRevisionsSeparateParametersStateAndAppearance)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  world->compile();
+  auto* body = robot->getBodyNode(0);
+  auto* shape = body->getShapeNodeWith<VisualAspect>(0);
+  const auto topology = world->getTopologyRevision();
+  const auto parameter = world->getParameterRevision();
+  const auto structural = SkeletonVersionAccess::getGlobalStructuralVersion();
+  body->setMass(body->getMass() * 2.0);
+  body->setLocalCOM(Eigen::Vector3d(0.01, 0, 0));
+  robot->getJoint(0)->setDampingCoefficient(0, 0.5);
+  auto pose = shape->getRelativeTransform();
+  pose.translation().x() = 0.05;
+  shape->setRelativeTransform(pose);
+  auto box = std::dynamic_pointer_cast<BoxShape>(shape->getShape());
+  ASSERT_NE(box, nullptr);
+  box->setSize(1.05 * box->getSize());
+  shape->getCollisionAspect()->setCollidable(false);
+  shape->getDynamicsAspect()->setFrictionCoeff(0.7);
+  world->setTimeStep(0.002);
+  world->setGravity(Eigen::Vector3d(0, 0, -9.8));
+  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  const auto changedParameters = world->getParameterRevision();
+  robot->setPosition(0, 0.1);
+  robot->setVelocity(0, 0.2);
+  robot->setCommand(0, 0.3);
+  body->setName("renamed");
+  shape->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  EXPECT_EQ(world->getParameterRevision(), changedParameters);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_NO_THROW(world->step());
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, CompileRejectsRawConfigurationChangesUntilEdited)
+{
+  auto world = createCloneContactWorld();
+  world->compile();
+  auto& options = world->getConstraintSolver()->getCollisionOption();
+  options.maxNumContacts += 1;
+  const auto time = world->getTime();
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+  EXPECT_EQ(world->getTime(), time);
+  {
+    auto edit = world->edit();
+  }
+  EXPECT_NO_THROW(world->step());
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(frame.get());
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+  {
+    auto edit = world->edit();
+  }
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, ExplicitCompileRejectsUnsupportedNativeShapeTransactionally)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto* shape = robot->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0);
+  shape->setShape(std::make_shared<LineSegmentShape>());
+  world->addSkeleton(robot);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+  EXPECT_FALSE(world->isCompiled());
+  EXPECT_NO_THROW(
+      shape->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones())));
+  EXPECT_NO_THROW(world->compile());
+  EXPECT_TRUE(world->isCompiled());
+}
+
+//==============================================================================
+TEST(World, ExplicitCompileAdmitsSpecializedSoftMeshRoute)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  auto soft = Skeleton::create("soft");
+  const auto properties = SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(2, 2, 2),
+      1.0,
+      500.0,
+      10.0,
+      1.0);
+  soft->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr,
+      FreeJoint::Properties(),
+      SoftBodyNode::Properties(BodyNode::Properties(), properties));
+  world->addSkeleton(soft);
+  EXPECT_NO_THROW(world->compile());
+  EXPECT_TRUE(world->isCompiled());
+  auto* body = soft->getSoftBodyNode(0);
+  const auto points = body->getNumPointMasses();
+  const auto faces = body->getNumFaces();
+  auto* point = body->getPointMass(0);
+  const auto connections = point->getNumConnectedPointMasses();
+  EXPECT_THROW(body->removeAllPointMasses(), std::runtime_error);
+  EXPECT_THROW(body->addPointMass(PointMass::Properties()), std::runtime_error);
+  EXPECT_THROW(body->connectPointMasses(0, 1), std::runtime_error);
+  EXPECT_THROW(
+      point->addConnectedPointMass(body->getPointMass(1)), std::runtime_error);
+  EXPECT_THROW(body->addFace(Eigen::Vector3i(0, 1, 2)), std::runtime_error);
+  auto changed = body->getAspectProperties();
+  changed.mPointProps.push_back(PointMass::Properties());
+  EXPECT_THROW(body->setAspectProperties(changed), std::runtime_error);
+  EXPECT_EQ(body->getNumPointMasses(), points);
+  EXPECT_EQ(body->getNumFaces(), faces);
+  EXPECT_EQ(point->getNumConnectedPointMasses(), connections);
+  const auto topology = world->getTopologyRevision();
+  const auto parameter = world->getParameterRevision();
+  const auto structural = SkeletonVersionAccess::getGlobalStructuralVersion();
+  const auto previousPsi = point->getImplicitPsi();
+  body->setVertexSpringStiffness(1000.0);
+  body->setDampingCoefficient(2.0);
+  EXPECT_NE(point->getImplicitPsi(), previousPsi);
+  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, CompiledWorldDetectsEmptySubscriptionsAndOwnsTheirModels)
+{
+  auto world = World::create();
+  auto empty = Skeleton::create("empty");
+  world->compile();
+  const auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->subscribeTo(empty);
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+  {
+    auto edit = world->edit();
+  }
+  EXPECT_THROW(
+      empty->createJointAndBodyNodePair<RevoluteJoint>(), std::runtime_error);
+  EXPECT_EQ(empty->getNumBodyNodes(), 0u);
+  group->unsubscribeFrom(empty.get());
+  EXPECT_THROW(world->step(), std::runtime_error);
+
+  auto clearingWorld = World::create();
+  auto clearingSource = Skeleton::create("cleared_empty");
+  const auto clearingGroup
+      = clearingWorld->getConstraintSolver()->getCollisionGroup();
+  clearingGroup->subscribeTo(clearingSource);
+  clearingWorld->compile();
+  clearingGroup->removeAllShapeFrames();
+  EXPECT_THROW(clearingWorld->step(), std::runtime_error);
+  EXPECT_THROW(clearingWorld->compile(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, CompiledWorldDetectsNestedBuiltInFilterChanges)
+{
+  auto world = createCloneContactWorld();
+  auto root = std::make_shared<collision::CompositeCollisionFilter>();
+  auto nested = std::make_shared<collision::CompositeCollisionFilter>();
+  auto child = std::make_shared<collision::BodyNodeCollisionFilter>();
+  root->addCollisionFilter(nested.get());
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = root;
+  world->compile();
+  nested->addCollisionFilter(child.get());
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+  {
+    auto edit = world->edit();
+  }
+  child->addBodyNodePairToBlackList(
+      world->getSkeleton(0)->getBodyNode(0),
+      world->getSkeleton(1)->getBodyNode(0));
+  EXPECT_THROW(world->step(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, CompiledWorldProtectsStandaloneFrameDescendants)
+{
+  auto world = World::create();
+  auto root = std::make_shared<SimpleFrame>();
+  auto child = root->spawnChildSimpleFrame("child");
+  world->addSimpleFrame(root);
+  world->compile();
+  EXPECT_THROW(child->setParentFrame(Frame::World()), std::runtime_error);
+  EXPECT_EQ(child->getParentFrame(), root.get());
+  EXPECT_THROW(root->spawnChildSimpleFrame("forbidden"), std::runtime_error);
+  const auto children = root->getChildFrames();
+  EXPECT_THROW(std::make_shared<SimpleFrame>(root.get()), std::runtime_error);
+  EXPECT_EQ(root->getChildFrames(), children);
+  auto parameters = world->getParameterRevision();
+  EXPECT_THROW(
+      std::make_shared<NamedFixedFrame>(child.get()), std::runtime_error);
+  EXPECT_EQ(world->getParameterRevision(), parameters);
+  child.reset();
+  EXPECT_THROW(world->step(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, FrozenJointPropertiesRejectBeforeAnyEarlierFieldChanges)
+{
+  auto world = World::create();
+  auto robot = Skeleton::create("mixed");
+  FreeJoint::Properties initial;
+  initial.mActuatorTypes = {{0u, Joint::MIMIC}};
+  Joint* joint
+      = robot->createJointAndBodyNodePair<FreeJoint>(nullptr, initial).first;
+  world->addSkeleton(robot);
+  world->compile();
+  const auto unchanged = joint->getJointProperties();
+  EXPECT_NO_THROW(joint->setProperties(unchanged));
+  auto changed = unchanged;
+  changed.mName = "forbidden_name";
+  changed.mT_ParentBodyToJoint.translation().x() = 0.5;
+  changed.mActuatorType = Joint::PASSIVE;
+  changed.mActuatorTypes.clear();
+  EXPECT_THROW(joint->setProperties(changed), std::runtime_error);
+  EXPECT_EQ(joint->getName(), unchanged.mName);
+  EXPECT_EQ(
+      joint->getTransformFromParentBodyNode().matrix(),
+      unchanged.mT_ParentBodyToJoint.matrix());
+  EXPECT_EQ(
+      joint->getJointProperties().mActuatorTypes, unchanged.mActuatorTypes);
+}
+
+//==============================================================================
+TEST(World, FrozenNodeAndSkeletonBatchesPreflightEveryEntry)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto* body = robot->getBodyNode(0);
+  auto* first = body->getShapeNodeWith<CollisionAspect>(0);
+  auto* second = body->createShapeNodeWith<CollisionAspect>(first->getShape());
+  world->addSkeleton(robot);
+  world->compile();
+  auto changes = body->getAllNodeProperties();
+  auto& values = changes.getMap().at(typeid(ShapeNode))->getVector();
+  ASSERT_EQ(values.size(), 2u);
+  auto* firstProperties
+      = dynamic_cast<common::Composite::Properties*>(values[0].get());
+  auto* secondProperties
+      = dynamic_cast<common::Composite::Properties*>(values[1].get());
+  ASSERT_NE(firstProperties, nullptr);
+  ASSERT_NE(secondProperties, nullptr);
+  ASSERT_NE(firstProperties->get<FixedFrame>(), nullptr);
+  ASSERT_NE(secondProperties->get<ShapeFrame>(), nullptr);
+  firstProperties->get<FixedFrame>()->mRelativeTf.translation().x() = 0.75;
+  secondProperties->get<ShapeFrame>()->mShape
+      = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  const auto originalTransform = first->getRelativeTransform();
+  const auto originalShape = second->getShape();
+  EXPECT_THROW(body->setAllNodeProperties(changes), std::runtime_error);
+  EXPECT_EQ(first->getRelativeTransform().matrix(), originalTransform.matrix());
+  EXPECT_EQ(second->getShape(), originalShape);
+
+  auto properties = robot->getProperties();
+  auto* bodyProxy
+      = properties.get<dynamics::detail::BodyNodeVectorProxyAspect>();
+  ASSERT_NE(bodyProxy, nullptr);
+  auto bodies = bodyProxy->get();
+  auto* nodeProxy = bodies[0].get<dynamics::detail::NodeVectorProxyAspect>();
+  ASSERT_NE(nodeProxy, nullptr);
+  nodeProxy->set(changes);
+  bodyProxy->set(bodies);
+  properties.get<Skeleton>()->mName = "forbidden_skeleton_name";
+  const auto originalName = robot->getName();
+  EXPECT_THROW(robot->setProperties(properties), std::runtime_error);
+  EXPECT_EQ(robot->getName(), originalName);
+  EXPECT_EQ(first->getRelativeTransform().matrix(), originalTransform.matrix());
+  EXPECT_EQ(second->getShape(), originalShape);
+}
+
+//==============================================================================
+TEST(World, FrozenSimpleFrameCopyAndWeldMergeRejectBeforeEffects)
+{
+  auto world = World::create();
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frame->createDynamicsAspect();
+  world->addSimpleFrame(frame);
+  auto robot = Skeleton::create("welded");
+  auto* parent = robot->createJointAndBodyNodePair<FreeJoint>().second;
+  auto weld = robot->createJointAndBodyNodePair<WeldJoint>(parent);
+  world->addSkeleton(robot);
+  world->compile();
+  const auto parameters = world->getParameterRevision();
+  frame->getDynamicsAspect()->setFrictionCoeff(0.8);
+  EXPECT_GT(world->getParameterRevision(), parameters);
+  SimpleFrame source;
+  source.setShape(std::make_shared<BoxShape>(2.0 * Eigen::Vector3d::Ones()));
+  source.setRelativeTranslation(Eigen::Vector3d::UnitX());
+  const auto oldShape = frame->getShape();
+  const auto oldTransform = frame->getRelativeTransform();
+  EXPECT_THROW(frame->copy(source, Frame::World()), std::runtime_error);
+  EXPECT_EQ(frame->getShape(), oldShape);
+  EXPECT_EQ(frame->getRelativeTransform().matrix(), oldTransform.matrix());
+  const auto oldInertia = parent->getInertia();
+  const auto oldForce = parent->getExternalForceLocal();
+  EXPECT_THROW(weld.first->merge(), std::runtime_error);
+  EXPECT_EQ(parent->getInertia(), oldInertia);
+  EXPECT_EQ(parent->getExternalForceLocal(), oldForce);
+  EXPECT_EQ(robot->getNumBodyNodes(), 2u);
+  EXPECT_EQ(weld.second->getParentBodyNode(), parent);
+}
+
+//==============================================================================
+TEST(World, CompiledWorldDetectsRawSubscribedViewChanges)
+{
+  auto world = World::create();
+  auto view = Group::create("subscribed_view");
+  world->getConstraintSolver()->getCollisionGroup()->subscribeTo(view);
+  world->compile();
+  auto loose = Skeleton::create();
+  auto* body = loose->createJointAndBodyNodePair<RevoluteJoint>().second;
+  view->addBodyNode(body);
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, FrozenLinkageReassembleChecksEveryMoveBeforeEffects)
+{
+  auto original = Skeleton::create("original");
+  auto* root = original->createJointAndBodyNodePair<RevoluteJoint>().second;
+  auto* middle
+      = original->createJointAndBodyNodePair<RevoluteJoint>(root).second;
+  auto* leaf
+      = original->createJointAndBodyNodePair<RevoluteJoint>(middle).second;
+  auto linkage = Linkage::create(Linkage::Criteria(root, leaf));
+  auto loose = Skeleton::create("loose");
+  auto frozen = Skeleton::create("frozen");
+  ASSERT_TRUE(middle->moveTo(loose, nullptr));
+  ASSERT_TRUE(leaf->moveTo(frozen, nullptr));
+  auto world = World::create();
+  world->addSkeleton(frozen);
+  world->compile();
+  EXPECT_THROW(linkage->reassemble(), std::runtime_error);
+  EXPECT_EQ(middle->getSkeleton(), loose);
+  EXPECT_EQ(middle->getParentBodyNode(), nullptr);
+  EXPECT_EQ(leaf->getSkeleton(), frozen);
+  EXPECT_EQ(leaf->getParentBodyNode(), nullptr);
+  EXPECT_EQ(original->getNumBodyNodes(), 1u);
+}
+
+//==============================================================================
+TEST(World, VisualShapeVersionSignalsPreserveNestedGeometryClassification)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto cloud = std::make_shared<PointCloudShape>();
+  cloud->addPoint(Eigen::Vector3d::Zero());
+  robot->getBodyNode(0)->createShapeNodeWith<VisualAspect>(cloud);
+  world->addSkeleton(robot);
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  const auto parameter = world->getParameterRevision();
+  const auto structural = SkeletonVersionAccess::getGlobalStructuralVersion();
+  cloud->notifyColorUpdated(Eigen::Vector4d::Ones());
+  cloud->setVisualSize(0.05);
+  cloud->setPointShapeType(PointCloudShape::BILLBOARD_CIRCLE);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  bool nested = false;
+  auto connection = cloud->onVersionChanged.connect([&](Shape*, std::size_t) {
+    if (!nested) {
+      nested = true;
+      cloud->addPoint(Eigen::Vector3d::UnitX());
+    }
+  });
+  cloud->notifyColorUpdated(Eigen::Vector4d::Ones());
+  EXPECT_TRUE(nested);
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+}
+
+//==============================================================================
+TEST(World, CompiledGroupFrameProtectsStandaloneAncestorsAndTheirLifetime)
+{
+  auto world = World::create();
+  auto root = std::make_shared<SimpleFrame>();
+  auto child = root->spawnChildSimpleFrame("group_child");
+  child->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  child->createDynamicsAspect();
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(child.get());
+  world->compile();
+  const auto parameters = world->getParameterRevision();
+  root->setRelativeTranslation(Eigen::Vector3d::UnitX());
+  child->getDynamicsAspect()->setFrictionCoeff(0.9);
+  EXPECT_GT(world->getParameterRevision(), parameters);
+  EXPECT_NO_THROW(world->step());
+  SimpleFrame other;
+  EXPECT_THROW(root->setParentFrame(&other), std::runtime_error);
+  EXPECT_EQ(root->getParentFrame(), Frame::World());
+  root.reset();
+  EXPECT_EQ(child->getParentFrame(), Frame::World());
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, FrozenSolverBulkTransfersPreflightEverySource)
+{
+  auto sourceWorld = World::create();
+  auto frozen = createBox(Eigen::Vector3d::Ones());
+  sourceWorld->addSkeleton(frozen);
+  sourceWorld->compile();
+  auto destination = World::create();
+  auto retained = createBox(Eigen::Vector3d::Ones());
+  destination->addSkeleton(retained);
+  auto* solver = destination->getConstraintSolver();
+  auto constraint = std::make_shared<dart::constraint::WeldJointConstraint>(
+      retained->getBodyNode(0));
+  solver->addConstraint(constraint);
+  const auto groupSize = solver->getCollisionGroup()->getNumShapeFrames();
+  const auto handler = solver->getLastContactSurfaceHandler();
+  auto loose = createBox(Eigen::Vector3d::Ones());
+  loose->getBodyNode(0)->setConstraintImpulse(Eigen::Vector6d::Ones());
+  EXPECT_THROW(solver->addSkeletons({loose, frozen}), std::runtime_error);
+  EXPECT_EQ(solver->getSkeletons(), std::vector<SkeletonPtr>{retained});
+  EXPECT_EQ(solver->getCollisionGroup()->getNumShapeFrames(), groupSize);
+  EXPECT_EQ(
+      loose->getBodyNode(0)->getConstraintImpulse(), Eigen::Vector6d::Ones());
+  EXPECT_THROW(
+      solver->setFromOtherConstraintSolver(*sourceWorld->getConstraintSolver()),
+      std::runtime_error);
+  EXPECT_EQ(solver->getSkeletons(), std::vector<SkeletonPtr>{retained});
+  EXPECT_EQ(solver->getCollisionGroup()->getNumShapeFrames(), groupSize);
+  ASSERT_EQ(solver->getNumConstraints(), 1u);
+  EXPECT_EQ(solver->getConstraint(0), constraint);
+  EXPECT_EQ(solver->getLastContactSurfaceHandler(), handler);
+  EXPECT_EQ(sourceWorld->getSkeleton(0), frozen);
+}
+
+//==============================================================================
+TEST(World, FrozenContactHandlersPreserveBothChains)
+{
+  using dart::constraint::ContactSurfaceHandler;
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto handler = std::make_shared<ContactSurfaceHandler>();
+  solver->addContactSurfaceHandler(handler);
+  const auto parent = handler->getParent();
+  world->compile();
+  auto candidateParent = std::make_shared<ContactSurfaceHandler>();
+  auto candidate = std::make_shared<ContactSurfaceHandler>(candidateParent);
+  EXPECT_THROW(solver->addContactSurfaceHandler(candidate), std::runtime_error);
+  EXPECT_EQ(candidate->getParent(), candidateParent);
+  EXPECT_EQ(solver->getLastContactSurfaceHandler(), handler);
+  EXPECT_THROW(
+      solver->removeContactSurfaceHandler(handler), std::runtime_error);
+  EXPECT_THROW(handler->setParent(nullptr), std::runtime_error);
+  EXPECT_EQ(handler->getParent(), parent);
+  auto unrelated = World::create();
+  const auto unrelatedHandler
+      = unrelated->getConstraintSolver()->getLastContactSurfaceHandler();
+  EXPECT_THROW(
+      unrelated->getConstraintSolver()->addContactSurfaceHandler(handler),
+      std::runtime_error);
+  EXPECT_EQ(
+      unrelated->getConstraintSolver()->getLastContactSurfaceHandler(),
+      unrelatedHandler);
+  EXPECT_EQ(handler->getParent(), parent);
+  const auto revision = world->getTopologyRevision();
+  {
+    auto edit = world->edit();
+    EXPECT_TRUE(solver->removeContactSurfaceHandler(handler));
+    solver->addContactSurfaceHandler(candidate);
+  }
+  EXPECT_GT(world->getTopologyRevision(), revision);
+  EXPECT_EQ(solver->getLastContactSurfaceHandler(), candidate);
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, SolverAndDeactivationParametersAdvanceOnlyParameterRevision)
+{
+  auto world = World::create();
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  auto previous = world->getParameterRevision();
+  auto deactivation = world->getDeactivationOptions();
+  deactivation.mLinearSpeedThreshold *= 2;
+  world->setDeactivationOptions(deactivation);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  world->setDeactivationOptions(deactivation);
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  auto* solver = world->getConstraintSolver();
+  solver->setTimeStep(solver->getTimeStep() * 2);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  solver->setTimeStep(solver->getTimeStep());
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  solver->setSplitImpulseEnabled(!solver->isSplitImpulseEnabled());
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  solver->setSplitImpulseEnabled(solver->isSplitImpulseEnabled());
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  auto* boxed
+      = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(solver);
+  ASSERT_NE(boxed, nullptr);
+  auto options = boxed->getMatrixFreeContactSolverOptions();
+  options.mMaxIterations += 1;
+  boxed->setMatrixFreeContactSolverOptions(options);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  boxed->setMatrixFreeContactSolverOptions(options);
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  EXPECT_NO_THROW(world->step());
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+}
+
+//==============================================================================
+TEST(World, BorrowedGroupFrameDestructionIsDetectedWithoutDanglingOwnership)
+{
+  auto world = World::create();
+  auto frame = std::make_shared<SimpleFrame>();
+  auto child = frame->spawnChildSimpleFrame("borrowed_child");
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->addShapeFrame(frame.get());
+  world->compile();
+  frame.reset();
+  EXPECT_EQ(child->getParentFrame(), Frame::World());
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, ThreadStorageChangesRequireEditBeforeAnyPoolChanges)
+{
+  auto world = World::create();
+  world->compile();
+  auto* solver = world->getConstraintSolver();
+  const auto previous = world->getNumSimulationThreads();
+  EXPECT_THROW(
+      world->setNumSimulationThreads(previous + 1u), std::runtime_error);
+  EXPECT_EQ(world->getNumSimulationThreads(), previous);
+  EXPECT_EQ(solver->getNumSimulationThreads(), previous);
+  EXPECT_THROW(
+      solver->setNumSimulationThreads(previous + 1u), std::runtime_error);
+  EXPECT_EQ(solver->getNumSimulationThreads(), previous);
+  {
+    auto edit = world->edit();
+    world->setNumSimulationThreads(previous + 1u);
+  }
+  EXPECT_EQ(world->getNumSimulationThreads(), previous + 1u);
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, NestedSolverAndManualConstraintParametersStampTheirOwners)
+{
+  using namespace dart::constraint;
+  auto world = World::create();
+  auto unrelated = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  auto* boxed
+      = dynamic_cast<BoxedLcpConstraintSolver*>(world->getConstraintSolver());
+  ASSERT_NE(boxed, nullptr);
+  auto fbf = std::make_shared<FbfFrictionSolver>();
+  auto pgs = std::make_shared<PgsBoxedLcpSolver>();
+  boxed->setBoxedLcpSolver(fbf);
+  boxed->setSecondaryBoxedLcpSolver(pgs);
+  auto constraint
+      = std::make_shared<WeldJointConstraint>(robot->getBodyNode(0));
+  boxed->addConstraint(constraint);
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  const auto unrelatedParameters = unrelated->getParameterRevision();
+  auto previous = world->getParameterRevision();
+  auto fbfOptions = fbf->getOptions();
+  fbfOptions.maxOuterIterations += 1;
+  fbf->setOptions(fbfOptions);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  fbf->setOptions(fbfOptions);
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  auto pgsOptions = pgs->getOption();
+  pgsOptions.mMaxIteration += 1;
+  pgs->setOption(pgsOptions);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  pgs->setOption(pgsOptions);
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  auto transform = constraint->getRelativeTransform();
+  transform.translation().x() += 0.1;
+  constraint->setRelativeTransform(transform);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  constraint->setRelativeTransform(transform);
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  auto nsgs = std::make_shared<NsgsFrictionSolver>();
+  {
+    auto edit = world->edit();
+    boxed->setBoxedLcpSolver(nsgs);
+  }
+  previous = world->getParameterRevision();
+  auto nsgsOptions = nsgs->getOptions();
+  nsgsOptions.maxSweeps += 1;
+  nsgs->setOptions(nsgsOptions);
+  EXPECT_GT(world->getParameterRevision(), previous);
+  previous = world->getParameterRevision();
+  nsgs->setOptions(nsgsOptions);
+  EXPECT_EQ(world->getParameterRevision(), previous);
+  EXPECT_EQ(unrelated->getParameterRevision(), unrelatedParameters);
+}
+
+//==============================================================================
+TEST(World, GlobalConstraintParametersStampAllAffectedWorlds)
+{
+  using namespace dart::constraint;
+  struct Parameter
+  {
+    double (*get)();
+    void (*set)(double);
+  };
+  const Parameter parameters[]
+      = {{ContactConstraint::getConstraintForceMixing,
+          ContactConstraint::setConstraintForceMixing},
+         {SoftContactConstraint::getConstraintForceMixing,
+          SoftContactConstraint::setConstraintForceMixing},
+         {JointConstraint::getConstraintForceMixing,
+          JointConstraint::setConstraintForceMixing},
+         {DynamicJointConstraint::getConstraintForceMixing,
+          DynamicJointConstraint::setConstraintForceMixing},
+         {JointLimitConstraint::getConstraintForceMixing,
+          JointLimitConstraint::setConstraintForceMixing},
+         {JointCoulombFrictionConstraint::getConstraintForceMixing,
+          JointCoulombFrictionConstraint::setConstraintForceMixing},
+         {ServoMotorConstraint::getConstraintForceMixing,
+          ServoMotorConstraint::setConstraintForceMixing},
+         {MimicMotorConstraint::getConstraintForceMixing,
+          MimicMotorConstraint::setConstraintForceMixing},
+         {CouplerConstraint::getConstraintForceMixing,
+          CouplerConstraint::setConstraintForceMixing}};
+  auto first = World::create();
+  auto second = World::create();
+  first->compile();
+  const auto topology = first->getTopologyRevision();
+  const auto structural = SkeletonVersionAccess::getGlobalStructuralVersion();
+  for (const auto& parameter : parameters) {
+    const double original = parameter.get();
+    const double changed = original * 0.5 + 1e-5;
+    auto firstRevision = first->getParameterRevision();
+    auto secondRevision = second->getParameterRevision();
+    parameter.set(changed);
+    EXPECT_GT(first->getParameterRevision(), firstRevision);
+    EXPECT_GT(second->getParameterRevision(), secondRevision);
+    firstRevision = first->getParameterRevision();
+    secondRevision = second->getParameterRevision();
+    parameter.set(changed);
+    EXPECT_EQ(first->getParameterRevision(), firstRevision);
+    EXPECT_EQ(second->getParameterRevision(), secondRevision);
+    parameter.set(original);
+  }
+  EXPECT_EQ(first->getTopologyRevision(), topology);
+  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+}
+
+//==============================================================================
+TEST(World, SharedDetectorConfigurationChecksEveryOwnerBeforeThreadEffects)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto frozen = World::create();
+  auto lazy = World::create();
+  frozen->getConstraintSolver()->setCollisionDetector(detector);
+  lazy->getConstraintSolver()->setCollisionDetector(detector);
+  frozen->compile();
+  const auto threads = detector->getNumCollisionThreads();
+  EXPECT_THROW(lazy->setNumSimulationThreads(threads + 1u), std::runtime_error);
+  EXPECT_EQ(lazy->getNumSimulationThreads(), threads);
+  EXPECT_EQ(lazy->getConstraintSolver()->getNumSimulationThreads(), threads);
+  EXPECT_THROW(
+      lazy->getConstraintSolver()->setNumSimulationThreads(threads + 1u),
+      std::runtime_error);
+  EXPECT_EQ(lazy->getConstraintSolver()->getNumSimulationThreads(), threads);
+  EXPECT_THROW(
+      detector->setNumCollisionThreads(threads + 1u), std::runtime_error);
+  EXPECT_EQ(detector->getNumCollisionThreads(), threads);
+  auto candidateWorld = World::create();
+  candidateWorld->setNumSimulationThreads(threads + 1u);
+  const auto oldDetector
+      = candidateWorld->getConstraintSolver()->getCollisionDetector();
+  const auto oldGroup
+      = candidateWorld->getConstraintSolver()->getCollisionGroup();
+  EXPECT_THROW(
+      candidateWorld->getConstraintSolver()->setCollisionDetector(detector),
+      std::runtime_error);
+  EXPECT_EQ(
+      candidateWorld->getConstraintSolver()->getCollisionDetector(),
+      oldDetector);
+  EXPECT_EQ(
+      candidateWorld->getConstraintSolver()->getCollisionGroup(), oldGroup);
+  auto retained = createBox(Eigen::Vector3d::Ones());
+  lazy->addSkeleton(retained);
+  const auto lazyGroup = lazy->getConstraintSolver()->getCollisionGroup();
+  const auto lazyGroupSize = lazyGroup->getNumShapeFrames();
+  const auto lazyHandler
+      = lazy->getConstraintSolver()->getLastContactSurfaceHandler();
+  EXPECT_THROW(
+      lazy->getConstraintSolver()->setFromOtherConstraintSolver(
+          *candidateWorld->getConstraintSolver()),
+      std::runtime_error);
+  EXPECT_EQ(
+      lazy->getConstraintSolver()->getSkeletons(),
+      std::vector<SkeletonPtr>{retained});
+  EXPECT_EQ(lazy->getConstraintSolver()->getCollisionGroup(), lazyGroup);
+  EXPECT_EQ(lazyGroup->getNumShapeFrames(), lazyGroupSize);
+  EXPECT_EQ(
+      lazy->getConstraintSolver()->getLastContactSurfaceHandler(), lazyHandler);
+  EXPECT_EQ(lazy->getConstraintSolver()->getNumSimulationThreads(), threads);
+  const auto frozenParameters = frozen->getParameterRevision();
+  const auto lazyParameters = lazy->getParameterRevision();
+  detector->setSoftFaceInteriorContactsEnabled(
+      !detector->getSoftFaceInteriorContactsEnabled());
+  EXPECT_GT(frozen->getParameterRevision(), frozenParameters);
+  EXPECT_GT(lazy->getParameterRevision(), lazyParameters);
+  EXPECT_NO_THROW(frozen->step());
+  auto fclWorld = World::create();
+  auto fcl = std::dynamic_pointer_cast<dart::collision::FCLCollisionDetector>(
+      fclWorld->getConstraintSolver()->getCollisionDetector());
+  ASSERT_NE(fcl, nullptr);
+  fclWorld->compile();
+  const auto primitive = fcl->getPrimitiveShapeType();
+  const auto replacement
+      = primitive == dart::collision::FCLCollisionDetector::MESH
+            ? dart::collision::FCLCollisionDetector::PRIMITIVE
+            : dart::collision::FCLCollisionDetector::MESH;
+  EXPECT_THROW(fcl->setPrimitiveShapeType(replacement), std::runtime_error);
+  EXPECT_EQ(fcl->getPrimitiveShapeType(), primitive);
+  const auto parameters = fclWorld->getParameterRevision();
+  const auto method = fcl->getContactPointComputationMethod();
+  fcl->setContactPointComputationMethod(
+      method == dart::collision::FCLCollisionDetector::DART
+          ? dart::collision::FCLCollisionDetector::FCL
+          : dart::collision::FCLCollisionDetector::DART);
+  EXPECT_GT(fclWorld->getParameterRevision(), parameters);
+}
+
+//==============================================================================
+TEST(World, EmptyBodySubscriptionExpirationRejectsBeforeTimeAdvance)
+{
+  auto world = World::create();
+  auto loose = Skeleton::create();
+  auto* body = loose->createJointAndBodyNodePair<FreeJoint>().second;
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->subscribeTo(ConstBodyNodePtr(body));
+  ASSERT_EQ(group->getNumShapeFrames(), 0u);
+  world->compile();
+  loose.reset();
+  const auto time = world->getTime();
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(world->getTime(), time);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, SolverReplacementPreflightsFinalWorldThreadsBeforeModelStateChanges)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto frozen = World::create();
+  frozen->getConstraintSolver()->setCollisionDetector(detector);
+  frozen->compile();
+  auto world = World::create();
+  world->setNumSimulationThreads(2u);
+  auto* oldSolver = world->getConstraintSolver();
+  oldSolver->setNumSimulationThreads(1u);
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  auto* body = robot->getBodyNode(0);
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  body->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+  const auto oldGroup = oldSolver->getCollisionGroup();
+  const auto oldFrames = oldGroup->getNumShapeFrames();
+  auto candidate
+      = std::make_unique<dart::constraint::BoxedLcpConstraintSolver>();
+  candidate->setCollisionDetector(detector);
+  EXPECT_THROW(
+      world->setConstraintSolver(std::move(candidate)), std::runtime_error);
+  EXPECT_EQ(world->getConstraintSolver(), oldSolver);
+  EXPECT_EQ(oldSolver->getCollisionGroup(), oldGroup);
+  EXPECT_EQ(oldGroup->getNumShapeFrames(), oldFrames);
+  EXPECT_EQ(oldSolver->getSkeletons(), std::vector<SkeletonPtr>{robot});
+  EXPECT_EQ(body->getConstraintImpulse(), Eigen::Vector6d::Ones());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(body->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+//==============================================================================
+TEST(World, LateGlobalWorldDestructionKeepsOwnerRegistryAvailable)
+{
+  gLateDestroyedWorld = World::create();
+  gLateDestroyedWorld->compile();
+  EXPECT_TRUE(gLateDestroyedWorld->isCompiled());
+}
+
+//==============================================================================
+TEST(World, FixedFrameDescendantLifetimeIsDetectedBeforeFollowingOldPointers)
+{
+  auto world = World::create();
+  auto root = std::make_shared<SimpleFrame>();
+  auto middle = std::make_shared<NamedFixedFrame>(root.get());
+  auto leaf = std::make_shared<NamedFixedFrame>(middle.get());
+  ASSERT_EQ(root->getChildFrames().size(), 1u);
+  ASSERT_EQ(middle->getChildFrames().size(), 1u);
+  world->addSimpleFrame(root);
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  auto pose = Eigen::Isometry3d::Identity();
+  pose.translation().x() = 0.2;
+  middle->setRelativeTransform(pose);
+  EXPECT_GT(world->getParameterRevision(), parameters);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_NO_THROW(world->step());
+  EXPECT_THROW(std::make_shared<SimpleFrame>(middle.get()), std::runtime_error);
+  leaf.reset();
+  const auto time = world->getTime();
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(world->getTime(), time);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+}
+
+//==============================================================================
+TEST(World, ShapelessModelsOwnFrameDescendantsThroughEveryMembershipRoute)
+{
+  for (int ownership = 0; ownership < 4; ++ownership) {
+    SCOPED_TRACE(ownership);
+    auto world = World::create();
+    auto skeleton = Skeleton::create();
+    auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+    auto middle = std::make_shared<NamedFixedFrame>(body);
+    auto leaf = std::make_shared<SimpleFrame>(middle.get());
+    ASSERT_EQ(body->getChildFrames().size(), 1u);
+    ASSERT_EQ(middle->getChildFrames().size(), 1u);
+    auto* solver = world->getConstraintSolver();
+    switch (ownership) {
+      case 0:
+        world->addSkeleton(skeleton);
+        break;
+      case 1:
+        solver->addSkeleton(skeleton);
+        break;
+      case 2:
+        solver->getCollisionGroup()->subscribeTo(skeleton);
+        break;
+      case 3:
+        solver->getCollisionGroup()->subscribeTo(ConstBodyNodePtr(body));
+        break;
+    }
+    world->compile();
+    const auto parameters = world->getParameterRevision();
+    auto pose = Eigen::Isometry3d::Identity();
+    pose.translation().x() = 0.2;
+    middle->setRelativeTransform(pose);
+    EXPECT_GT(world->getParameterRevision(), parameters);
+    EXPECT_NO_THROW(world->step());
+    const auto children = middle->getChildFrames();
+    EXPECT_THROW(
+        std::make_shared<SimpleFrame>(middle.get()), std::runtime_error);
+    EXPECT_EQ(middle->getChildFrames(), children);
+    EXPECT_THROW(
+        body->createShapeNodeWith<VisualAspect>(
+            std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
+        std::runtime_error);
+    EXPECT_EQ(body->getNumShapeNodes(), 0u);
+    leaf.reset();
+    const auto time = world->getTime();
+    EXPECT_THROW(world->step(), std::runtime_error);
+    EXPECT_EQ(world->getTime(), time);
+    EXPECT_THROW(world->compile(), std::runtime_error);
+  }
+}
+
+//==============================================================================
+TEST(World, NonCompositeFramePreflightsConstructionAndReparenting)
+{
+  auto world = World::create();
+  auto parent = std::make_shared<BareFrame>(Frame::World());
+  auto member = std::make_shared<SimpleFrame>(parent.get());
+  world->addSimpleFrame(member);
+  world->compile();
+  const auto children = parent->getChildFrames();
+  ASSERT_EQ(children.size(), 1u);
+  ASSERT_EQ(children.count(member.get()), 1u);
+  const auto topology = world->getTopologyRevision();
+  EXPECT_THROW(std::make_shared<SimpleFrame>(parent.get()), std::runtime_error);
+  EXPECT_EQ(parent->getChildFrames(), children);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+
+  auto sourceWorld = World::create();
+  auto sourceParent = std::make_shared<SimpleFrame>();
+  auto source = std::make_shared<SimpleFrame>(sourceParent.get());
+  sourceWorld->addSimpleFrame(source);
+  const auto sourceChildren = sourceParent->getChildFrames();
+  const auto sourceTopology = sourceWorld->getTopologyRevision();
+  EXPECT_THROW(source->setParentFrame(parent.get()), std::runtime_error);
+  EXPECT_EQ(source->getParentFrame(), sourceParent.get());
+  EXPECT_EQ(sourceParent->getChildFrames(), sourceChildren);
+  EXPECT_EQ(parent->getChildFrames(), children);
+  EXPECT_EQ(sourceWorld->getTopologyRevision(), sourceTopology);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  auto destination = std::make_shared<SimpleFrame>();
+  const auto destinationChildren = destination->getChildFrames();
+  EXPECT_THROW(parent->setParentFrame(destination.get()), std::runtime_error);
+  EXPECT_EQ(parent->getParentFrame(), Frame::World());
+  EXPECT_EQ(parent->getChildFrames(), children);
+  EXPECT_EQ(destination->getChildFrames(), destinationChildren);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, NonCompositeFrameChangesStampLazyTopology)
+{
+  auto world = World::create();
+  auto parent = std::make_shared<BareFrame>(Frame::World());
+  auto member = std::make_shared<SimpleFrame>(parent.get());
+  world->addSimpleFrame(member);
+  const auto topology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  auto sibling = std::make_shared<SimpleFrame>(parent.get());
+  EXPECT_GT(world->getTopologyRevision(), topology);
+  const auto attachedTopology = world->getTopologyRevision();
+  sibling->setParentFrame(Frame::World());
+  EXPECT_GT(world->getTopologyRevision(), attachedTopology);
+  EXPECT_EQ(world->getParameterRevision(), parameters);
+  const auto& children = parent->getChildFrames();
+  EXPECT_EQ(children.size(), 1u);
+  EXPECT_EQ(children.count(member.get()), 1u);
+  const auto detachedTopology = world->getTopologyRevision();
+  auto destination = std::make_shared<SimpleFrame>();
+  parent->setParentFrame(destination.get());
+  EXPECT_GT(world->getTopologyRevision(), detachedTopology);
+  EXPECT_EQ(world->getParameterRevision(), parameters);
+}
+
+//==============================================================================
+TEST(World, RuntimeSkeletonParametersPreserveSubscriptionVersions)
+{
+  auto world = World::create();
+  auto unrelated = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  const auto version = robot->getVersion();
+  const auto unrelatedParameters = unrelated->getParameterRevision();
+  const auto checkChange = [&](const auto& setter) {
+    const auto parameters = world->getParameterRevision();
+    setter();
+    EXPECT_GT(world->getParameterRevision(), parameters);
+    const auto changedParameters = world->getParameterRevision();
+    setter();
+    EXPECT_EQ(world->getParameterRevision(), changedParameters);
+    EXPECT_EQ(robot->getVersion(), version);
+    EXPECT_EQ(world->getTopologyRevision(), topology);
+    EXPECT_EQ(unrelated->getParameterRevision(), unrelatedParameters);
+  };
+  checkChange([&] { robot->setMobile(false); });
+  checkChange([&] { robot->setSelfCollisionCheck(true); });
+  checkChange([&] { robot->setAdjacentBodyCheck(true); });
+  checkChange([&] { robot->setTimeStep(0.002); });
+  checkChange([&] { robot->setGravity(Eigen::Vector3d(1.0, 0.0, -9.81)); });
+  EXPECT_NO_THROW(world->step());
 }

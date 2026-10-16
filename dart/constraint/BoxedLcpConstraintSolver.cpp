@@ -35,6 +35,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -548,8 +549,11 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
            << "solver, which is discouraged. Ignoring this request.\n";
   }
 
-  if (mBoxedLcpSolver != lcpSolver)
+  if (mBoxedLcpSolver != lcpSolver) {
+    detail::checkWorldTopologyMutation(this);
     detail::eraseContactWarmStartCache(this);
+    detail::notifyWorldTopologyMutation(this);
+  }
   mBoxedLcpSolver = std::move(lcpSolver);
 }
 
@@ -563,6 +567,9 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
     BoxedLcpSolverPtr lcpSolver)
 {
+  if (mSecondaryBoxedLcpSolver == lcpSolver)
+    return;
+  detail::checkWorldTopologyMutation(this);
   if (lcpSolver == mBoxedLcpSolver) {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
            << "the secondary LCP solver that is identical to the primary LCP "
@@ -571,6 +578,7 @@ void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
   }
 
   mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -585,8 +593,18 @@ void BoxedLcpConstraintSolver::setMatrixFreeContactSolverOptions(
     const MatrixFreeContactSolverOptions& options)
 {
   const auto sanitized = sanitizeMatrixFreeContactOptions(options);
+  const auto current = getMatrixFreeContactSolverOptions();
+  if (current.mEnabled == sanitized.mEnabled
+      && current.mMinRows == sanitized.mMinRows
+      && current.mMaxIterations == sanitized.mMaxIterations
+      && current.mSor == sanitized.mSor
+      && current.mDeltaTolerance == sanitized.mDeltaTolerance
+      && current.mRelativeDeltaTolerance == sanitized.mRelativeDeltaTolerance
+      && current.mEpsilonForDivision == sanitized.mEpsilonForDivision)
+    return;
   std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
   matrixFreeContactOptionsBySolver()[this] = sanitized;
+  detail::notifyWorldParameterMutation(this);
 }
 
 //==============================================================================

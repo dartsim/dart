@@ -33,6 +33,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 
@@ -319,15 +320,13 @@ const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const
 void DynamicsAspect::notifyContactDynamicsPropertiesUpdated()
 {
   // Contact materials are read whenever contact constraints are built, so an
-  // edit only needs to wake resting bodies. It deliberately does not bump the
-  // ShapeFrame version: that version propagates to the Skeleton's structural
-  // version, which makes World prepare for simulation again on the next step,
-  // and gz-sim's WheelSlip system sets slip compliance every iteration. The
-  // solver's only version-keyed cache of them lasts one constraint update.
+  // edit only needs to wake resting bodies and stamp parameters. Avoid a
+  // ShapeFrame version change: gz-sim's WheelSlip sets slip every iteration.
   auto* shapeFrame = getComposite();
   if (shapeFrame == nullptr)
     return;
 
+  common::detail::notifyParameterMutation(shapeFrame);
   auto* shapeNode = shapeFrame->asShapeNode();
   if (shapeNode == nullptr)
     return;
@@ -372,6 +371,7 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   if (shape == ShapeFrame::mAspectProperties.mShape)
     return;
 
+  common::detail::checkTopologyMutation(this);
   ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
   ShapeNode* shapeNode = asShapeNode();
   BodyNode* bodyNode
@@ -382,6 +382,7 @@ void ShapeFrame::setShape(const ShapePtr& shape)
                                      && collision->getCollidable();
 
   ShapeFrame::mAspectProperties.mShape = shape;
+  common::detail::notifyTopologyMutation(this);
   incrementVersion();
 
   mConnectionForShapeVersionChange.disconnect();
@@ -391,8 +392,12 @@ void ShapeFrame::setShape(const ShapePtr& shape)
         = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
             DART_ASSERT(
                 shape == this->ShapeFrame::mAspectProperties.mShape.get());
-            DART_UNUSED(shape);
-            this->incrementVersion();
+            if (common::detail::isVisualShapeVersionUpdate(shape)) {
+              this->incrementLocalVersion();
+              return;
+            }
+            this->incrementParameterVersion();
+            common::detail::notifyParameterMutation(this);
 
             if (auto* shapeNode = this->asShapeNode()) {
               if (auto* bodyNode = shapeNode->getBodyNodePtr().get())

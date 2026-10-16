@@ -53,8 +53,14 @@
 namespace dart {
 namespace collision {
 
+namespace detail {
+struct CollisionGroupOwnershipAccessor;
+} // namespace detail
+
 class CollisionGroup
 {
+  friend struct detail::CollisionGroupOwnershipAccessor;
+
 public:
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);

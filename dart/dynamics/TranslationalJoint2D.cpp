@@ -69,7 +69,7 @@ void TranslationalJoint2D::setAspectProperties(
   mAspectProperties = properties;
   Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================

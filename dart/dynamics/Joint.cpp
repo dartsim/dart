@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -52,6 +53,25 @@ std::atomic<std::size_t> gAutomaticConstraintRevision{0u};
 
 using ActuatorOverride = std::pair<std::size_t, Joint::ActuatorType>;
 using ActuatorOverrides = std::vector<ActuatorOverride>;
+
+bool mimicConstraintTypesChanged(
+    const Joint& joint, const std::vector<MimicDofProperties>& replacement)
+{
+  const auto& current = joint.getMimicDofProperties();
+  const std::size_t currentCount = std::min(joint.getNumDofs(), current.size());
+  const std::size_t replacementCount
+      = std::min(joint.getNumDofs(), replacement.size());
+  if (currentCount != replacementCount)
+    return true;
+
+  for (std::size_t i = 0; i < std::min(current.size(), replacement.size());
+       ++i) {
+    if (current[i].mConstraintType != replacement[i].mConstraintType)
+      return true;
+  }
+
+  return false;
+}
 
 auto findActuatorOverride(ActuatorOverrides& overrides, std::size_t index)
 {
@@ -160,13 +180,22 @@ void Joint::setProperties(const Properties& properties)
 //==============================================================================
 void Joint::setAspectProperties(const AspectProperties& properties)
 {
+  const bool actuatorsChanged
+      = mAspectProperties.mActuatorType != properties.mActuatorType
+        || mAspectProperties.mActuatorTypes != properties.mActuatorTypes;
+  if (actuatorsChanged
+      || mimicConstraintTypesChanged(*this, properties.mMimicDofProps))
+    common::detail::checkTopologyMutation(this);
+
   setName(properties.mName);
   setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setLimitEnforcement(properties.mIsPositionLimitEnforced);
-  setActuatorType(properties.mActuatorType);
-  for (const auto& [index, actuatorType] : properties.mActuatorTypes)
-    setActuatorType(index, actuatorType);
+  if (actuatorsChanged) {
+    setActuatorType(properties.mActuatorType);
+    for (const auto& [index, actuatorType] : properties.mActuatorTypes)
+      setActuatorType(index, actuatorType);
+  }
   setMimicJointDofs(properties.mMimicDofProps);
 }
 
@@ -240,6 +269,7 @@ void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
       && mAspectProperties.mActuatorTypes.empty())
     return;
 
+  common::detail::checkTopologyMutation(this);
   mAspectProperties.mActuatorType = _actuatorType;
   mAspectProperties.mActuatorTypes.clear();
   notifyAutomaticConstraintPropertiesUpdated();
@@ -292,6 +322,7 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
     if (it == overrides.end())
       return;
 
+    common::detail::checkTopologyMutation(this);
     overrides.erase(it);
     notifyAutomaticConstraintPropertiesUpdated();
     resetCommands();
@@ -302,6 +333,7 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
   if (it != overrides.end() && it->second == actuatorType)
     return;
 
+  common::detail::checkTopologyMutation(this);
   if (it != overrides.end()) {
     it->second = actuatorType;
   } else {
@@ -327,6 +359,7 @@ void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
 
   if (actuatorTypes.empty()) {
     if (!mAspectProperties.mActuatorTypes.empty()) {
+      common::detail::checkTopologyMutation(this);
       mAspectProperties.mActuatorTypes.clear();
       notifyAutomaticConstraintPropertiesUpdated();
       resetCommands();
@@ -370,6 +403,7 @@ void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
       && mAspectProperties.mActuatorTypes == newOverrides)
     return;
 
+  common::detail::checkTopologyMutation(this);
   mAspectProperties.mActuatorType = newDefault;
   mAspectProperties.mActuatorTypes = std::move(newOverrides);
   notifyAutomaticConstraintPropertiesUpdated();
@@ -474,6 +508,14 @@ void Joint::setMimicJoint(
 {
   const auto constraintType = getMimicConstraintType();
   std::size_t numDofs = getNumDofs();
+  if (mAspectProperties.mMimicDofProps.size() < numDofs)
+    common::detail::checkTopologyMutation(this);
+  for (std::size_t i = 0;
+       i < std::min(numDofs, mAspectProperties.mMimicDofProps.size());
+       ++i) {
+    if (mAspectProperties.mMimicDofProps[i].mConstraintType != constraintType)
+      common::detail::checkTopologyMutation(this);
+  }
   mAspectProperties.mMimicDofProps.resize(numDofs);
 
   for (std::size_t i = 0; i < numDofs; ++i) {
@@ -491,6 +533,9 @@ void Joint::setMimicJoint(
 void Joint::setMimicJointDof(
     std::size_t index, const MimicDofProperties& mimicProp)
 {
+  if (mAspectProperties.mMimicDofProps[index].mConstraintType
+      != mimicProp.mConstraintType)
+    common::detail::checkTopologyMutation(this);
   mAspectProperties.mMimicDofProps[index] = mimicProp;
   notifyAutomaticConstraintPropertiesUpdated();
 }
@@ -498,6 +543,8 @@ void Joint::setMimicJointDof(
 //==============================================================================
 void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 {
+  if (mimicConstraintTypesChanged(*this, mimicProps))
+    common::detail::checkTopologyMutation(this);
   mAspectProperties.mMimicDofProps = mimicProps;
   notifyAutomaticConstraintPropertiesUpdated();
 }
@@ -506,6 +553,11 @@ void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 void Joint::setMimicJointDofs(
     const std::map<std::size_t, MimicDofProperties>& mimicPropMap)
 {
+  for (const auto& [index, prop] : mimicPropMap) {
+    if (mAspectProperties.mMimicDofProps[index].mConstraintType
+        != prop.mConstraintType)
+      common::detail::checkTopologyMutation(this);
+  }
   for (const auto& pair : mimicPropMap) {
     const auto& index = pair.first;
     const auto& prop = pair.second;
@@ -540,8 +592,16 @@ const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
 //==============================================================================
 void Joint::setMimicConstraintType(MimicConstraintType type)
 {
+  if (std::all_of(
+          mAspectProperties.mMimicDofProps.begin(),
+          mAspectProperties.mMimicDofProps.end(),
+          [type](const auto& prop) { return prop.mConstraintType == type; }))
+    return;
+
+  common::detail::checkTopologyMutation(this);
   for (auto& prop : mAspectProperties.mMimicDofProps)
     prop.mConstraintType = type;
+  notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -762,6 +822,7 @@ void Joint::setLimitEnforcement(bool enforced)
     return;
 
   mAspectProperties.mIsPositionLimitEnforced = enforced;
+  incrementParameterVersion();
   notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -874,6 +935,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
     return;
   }
   mAspectProperties.mT_ParentBodyToJoint = _T;
+  incrementParameterVersion();
   notifyPositionUpdated();
 }
 
@@ -888,6 +950,7 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
     return;
   }
   mAspectProperties.mT_ChildBodyToJoint = _T;
+  incrementParameterVersion();
   updateRelativeJacobian();
   notifyPositionUpdated();
 }
@@ -1091,9 +1154,18 @@ void Joint::notifyExternalDisturbanceUpdated()
 void Joint::notifyAutomaticConstraintPropertiesUpdated()
 {
   gAutomaticConstraintRevision.fetch_add(1, std::memory_order_relaxed);
+  common::detail::notifyParameterMutation(this);
 
   if (const auto skel = getSkeleton())
     skel->incrementDeactivationStateVersion();
+}
+
+//==============================================================================
+void Joint::incrementParameterVersion()
+{
+  ++mVersion;
+  if (const auto skeleton = getSkeleton())
+    skeleton->incrementParameterVersion();
 }
 
 } // namespace dynamics

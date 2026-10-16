@@ -36,10 +36,28 @@
 #include <dart/common/Aspect.hpp>
 #include <dart/common/Deprecated.hpp>
 #include <dart/common/StlHelpers.hpp>
+#include <dart/common/VersionCounter.hpp>
+#include <dart/common/detail/ModelMutation.hpp>
+
+#include <type_traits>
 
 namespace dart {
 namespace common {
 namespace detail {
+
+template <class CompositeT>
+std::size_t incrementAspectVersion(
+    CompositeT* object, const Aspect* aspect, std::true_type)
+{
+  return incrementAspectVersion(static_cast<VersionCounter*>(object), aspect);
+}
+
+template <class CompositeT>
+std::size_t incrementAspectVersion(
+    CompositeT* object, const Aspect*, std::false_type)
+{
+  return object->incrementVersion();
+}
 
 //==============================================================================
 /// AspectWithProtectedState generates implementations of the State managing
@@ -407,8 +425,12 @@ std::size_t AspectWithVersionedProperties<
     CompositeT,
     updateProperties>::incrementVersion()
 {
-  if (CompositeType* comp = this->getComposite())
-    return comp->incrementVersion();
+  if (CompositeType* comp = this->getComposite()) {
+    return incrementAspectVersion(
+        comp,
+        this,
+        typename std::is_convertible<CompositeType*, VersionCounter*>::type{});
+  }
 
   return 0;
 }
