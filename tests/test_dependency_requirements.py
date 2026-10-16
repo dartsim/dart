@@ -63,6 +63,58 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     (directory / f"{package}Config.cmake").write_text(contents + extra)
 
 
+def test_component_exports_only_install_owned_dependency_finders(tmp_path):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    # Gazebo's FindEIGEN3 matches FindEigen3 on case-insensitive filesystems.
+    (modules / "FindEigen3.cmake").write_text("gz_import_target(EIGEN3 INTERFACE)\n")
+    (modules / "FindODE.cmake").write_text(
+        'message(FATAL_ERROR "Foreign ODE finder")\n'
+    )
+    result = configure(
+        tmp_path,
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
+        "set(LIBRARY_INSTALL_DIR lib)\n"
+        "include(Components)\n"
+        "initialize_component_helpers(dart)\n"
+        "add_component(dart fixture)\n"
+        "add_library(fixture INTERFACE)\n"
+        "add_component_targets(dart fixture fixture)\n"
+        "add_component_dependency_packages(dart fixture Eigen3 ODE)\n"
+        "install_component_exports(dart)\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    stage = tmp_path / "stage"
+    result = subprocess.run(
+        [
+            shutil.which("cmake"),
+            "--install",
+            str(tmp_path / "build"),
+            "--prefix",
+            str(stage),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    installed = stage / "lib/cmake/DART"
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    config_package(consumer, "Eigen3", "3.4.0")
+    result = configure(
+        consumer,
+        f'set(CMAKE_MODULE_PATH "{installed.as_posix()}")\n'
+        "find_package(Eigen3 REQUIRED)\n"
+        "include(DARTFindEigen3)\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (installed / "FindEigen3.cmake").exists()
+    for name in ("DARTFindEigen3.cmake", "DARTFindODE.cmake", "FindODE.cmake"):
+        assert (installed / name).read_text() == (ROOT / "cmake" / name).read_text()
+
+
 @pytest.mark.parametrize("skip", ["ON", "OFF"])
 def test_optional_package_with_undefined_found_flag(tmp_path, skip):
     result = configure(

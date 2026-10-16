@@ -93,7 +93,8 @@
 
   * SDF loading resolves named pose frames, joint endpoint frames, expressed
     axes, rotated inertia and relative includes through sdformat. Meshes retain
-    their originating document for resource resolution. DART soft-shape poses,
+    their originating document for resource resolution, including Windows native
+    paths. DART soft-shape poses,
     empty identity poses and safely normalized quaternion poses remain supported.
     [#3789](https://github.com/dartsim/dart/pull/3789)
 
