@@ -44,6 +44,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/detail/NativeShapeConversion.hpp"
 #include "dart/collision/dart/shapes/Shape.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
@@ -91,6 +92,15 @@
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+  #include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+  #include "dart/collision/ode/OdeCollisionGroup.hpp"
+#endif
+
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
@@ -126,6 +136,11 @@ struct CompositeCollisionFilterAccessor
 
 struct CollisionGroupOwnershipAccessor
 {
+  static bool hasSources(const CollisionGroup& group)
+  {
+    return !group.mSkeletonSources.empty() || !group.mBodyNodeSources.empty();
+  }
+
   template <class Visit>
   static void forEachSource(const CollisionGroup& group, Visit visit)
   {
@@ -598,6 +613,12 @@ public:
   // Raw identity matches mSkeletons; those strong members bound the lifetime.
   std::unordered_set<const dynamics::Skeleton*> mOwnedSkeletons;
   bool mNativeOwnership = false;
+  const constraint::detail::NativeDetectorInitialization*
+      mNativeDetectorInitialization
+      = nullptr;
+  const collision::CollisionDetector* mInitializingNativeDetector = nullptr;
+  std::size_t mNativeDetectorChecks = 0u;
+  std::size_t mNativeDetectorNotifications = 0u;
   const dynamics::Skeleton* mAddingNativeSkeleton = nullptr;
   struct NativeAdditionEvents
   {
@@ -847,14 +868,54 @@ bool isNativeOwnershipModel(const dynamics::Skeleton& skeleton)
   return true;
 }
 
+bool isNativeOwnershipDetector(const collision::CollisionDetector* detector)
+{
+  if (!detector)
+    return false;
+  const auto& type = typeid(*detector);
+  return type == typeid(collision::FCLCollisionDetector)
+         || type == typeid(collision::DARTCollisionDetector)
+#if HAVE_BULLET
+         || type == typeid(collision::BulletCollisionDetector)
+#endif
+#if HAVE_ODE
+         || type == typeid(collision::OdeCollisionDetector)
+#endif
+      ;
+}
+
 bool usesNativeOwnershipBackend(const World& world)
 {
   const auto* solver = world.getConstraintSolver();
-  if (typeid(*solver) != typeid(constraint::BoxedLcpConstraintSolver)
-      || typeid(*solver->getCollisionDetector())
-             != typeid(collision::FCLCollisionDetector)
-      || typeid(*solver->getCollisionGroup())
-             != typeid(collision::FCLCollisionGroup))
+  if (typeid(*solver) != typeid(constraint::BoxedLcpConstraintSolver))
+    return false;
+  const auto detector = solver->getCollisionDetector();
+  const auto group = solver->getCollisionGroup();
+  if (!isNativeOwnershipDetector(detector.get())
+      || group->getCollisionDetector().get() != detector.get())
+    return false;
+  const auto& detectorType = typeid(*detector);
+  const auto& groupType = typeid(*group);
+  const bool nativeGroup
+      = (detectorType == typeid(collision::FCLCollisionDetector)
+         && groupType == typeid(collision::FCLCollisionGroup))
+        || (detectorType == typeid(collision::DARTCollisionDetector)
+            && groupType == typeid(collision::DARTCollisionGroup))
+#if HAVE_BULLET
+        || (detectorType == typeid(collision::BulletCollisionDetector)
+            && groupType == typeid(collision::BulletCollisionGroup))
+#endif
+#if HAVE_ODE
+        || (detectorType == typeid(collision::OdeCollisionDetector)
+            && groupType == typeid(collision::OdeCollisionGroup))
+#endif
+      ;
+  if (!nativeGroup)
+    return false;
+  if (detectorType == typeid(collision::DARTCollisionDetector)
+      && static_cast<const collision::DARTCollisionDetector*>(detector.get())
+                 ->getNumCollisionThreads()
+             != solver->getNumSimulationThreads())
     return false;
   const auto* filter = solver->getCollisionOption().collisionFilter.get();
   if (filter && typeid(*filter) != typeid(collision::BodyNodeCollisionFilter))
@@ -870,6 +931,22 @@ bool usesNativeOwnershipBackend(const World& world)
       = static_cast<const constraint::BoxedLcpConstraintSolver*>(solver);
   return native(boxed->getBoxedLcpSolver().get())
          && native(boxed->getSecondaryBoxedLcpSolver().get());
+}
+
+bool hasEmptyNativeOwnership(const WorldDeactivationState& state)
+{
+  const auto& world = *state.mWorld;
+  const auto* solver = world.getConstraintSolver();
+  const auto group = solver->getCollisionGroup();
+  return typeid(world) == typeid(World) && !state.mCompiled
+         && state.mEditDepth == 0u
+         && !state.mStepping.load(std::memory_order_acquire)
+         && state.mOwnedSkeletons.empty() && world.getNumSkeletons() == 0u
+         && world.getNumSimpleFrames() == 0u && solver->getSkeletons().empty()
+         && solver->getNumConstraints() == 0u
+         && group->getNumShapeFrames() == 0u
+         && !collision::detail::CollisionGroupOwnershipAccessor::hasSources(
+             *group);
 }
 
 class NativeSkeletonAddition
@@ -929,6 +1006,7 @@ bool ownsModelObject(
     if (skeleton && owner.mOwnedSkeletons.count(skeleton))
       return true;
     if (owner.mNativeOwnership && !owner.mAddingNativeSkeleton
+        && !owner.mNativeDetectorInitialization
         && usesNativeOwnershipBackend(world)) {
       for (const auto* parent = frame; parent && !parent->isWorld();
            parent = parent->getParentFrame()) {
@@ -991,7 +1069,8 @@ bool ownsFrameObject(
   if (const auto* object = dynamic_cast<const common::Composite*>(frame))
     return ownsModelObject(owner, object);
   if (typeid(world) == typeid(World) && owner.mNativeOwnership
-      && !owner.mAddingNativeSkeleton && usesNativeOwnershipBackend(world)) {
+      && !owner.mAddingNativeSkeleton && !owner.mNativeDetectorInitialization
+      && usesNativeOwnershipBackend(world)) {
     for (const auto* parent = frame; parent && !parent->isWorld();
          parent = parent->getParentFrame()) {
       if (const auto* body = dynamic_cast<const dynamics::BodyNode*>(parent))
@@ -4846,9 +4925,15 @@ void notifyWorldGroupMutation(const CollisionGroup* group)
 void checkWorldDetectorTopologyMutation(const CollisionDetector* detector)
 {
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  for (const auto* owner : simulation::modelOwners().mWorlds) {
-    if (owner->mWorld->getConstraintSolver()->getCollisionDetector().get()
-        == detector)
+  for (auto* owner : simulation::modelOwners().mWorlds) {
+    const bool current
+        = owner->mWorld->getConstraintSolver()->getCollisionDetector().get()
+          == detector;
+    if ((current || owner->mInitializingNativeDetector == detector)
+        && (owner->mNativeDetectorInitialization
+            || owner->mAddingNativeSkeleton))
+      owner->mNativeOwnership = false;
+    if (current)
       simulation::checkModelMutation(*owner);
   }
 }
@@ -4857,8 +4942,14 @@ void notifyWorldDetectorTopologyMutation(const CollisionDetector* detector)
 {
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (owner->mWorld->getConstraintSolver()->getCollisionDetector().get()
-        == detector)
+    const bool current
+        = owner->mWorld->getConstraintSolver()->getCollisionDetector().get()
+          == detector;
+    if ((current || owner->mInitializingNativeDetector == detector)
+        && (owner->mNativeDetectorInitialization
+            || owner->mAddingNativeSkeleton))
+      owner->mNativeOwnership = false;
+    if (current)
       simulation::notifyModelTopology(*owner);
   }
 }
@@ -4878,13 +4969,85 @@ void notifyWorldDetectorParameterMutation(const CollisionDetector* detector)
 namespace constraint {
 namespace detail {
 
+NativeDetectorInitialization::NativeDetectorInitialization(
+    const ConstraintSolver* solver,
+    const collision::CollisionDetector* incoming)
+  : mSolver(solver), mUncaughtExceptions(std::uncaught_exceptions())
+{
+  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  for (auto* owner : simulation::modelOwners().mWorlds) {
+    if (owner->mWorld->getConstraintSolver() != solver)
+      continue;
+    if (owner->mNativeDetectorInitialization || owner->mAddingNativeSkeleton) {
+      owner->mNativeOwnership = false;
+      return;
+    }
+    if (!owner->mNativeOwnership
+        || !simulation::usesNativeOwnershipBackend(*owner->mWorld)
+        || !simulation::hasEmptyNativeOwnership(*owner)
+        || !simulation::isNativeOwnershipDetector(incoming))
+      return;
+    if (typeid(*incoming) == typeid(collision::DARTCollisionDetector)
+        && static_cast<const collision::DARTCollisionDetector*>(incoming)
+                   ->getNumCollisionThreads()
+               != solver->getNumSimulationThreads())
+      return;
+
+    // All admission readers above are nonallocating. Release the mutex before
+    // native group construction, old-owner release, or any user callback.
+    owner->mNativeDetectorInitialization = this;
+    owner->mInitializingNativeDetector = incoming;
+    owner->mNativeDetectorChecks = 0u;
+    owner->mNativeDetectorNotifications = 0u;
+    return;
+  }
+}
+
+NativeDetectorInitialization::~NativeDetectorInitialization()
+{
+  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  for (auto* owner : simulation::modelOwners().mWorlds) {
+    if (owner->mNativeDetectorInitialization != this)
+      continue;
+    // Preserve a prior certificate only. Unexpected events and exceptions
+    // cannot be erased by restoring empty membership or native final types.
+    owner->mNativeOwnership
+        = owner->mNativeOwnership
+          && std::uncaught_exceptions() == mUncaughtExceptions
+          && owner->mWorld->getConstraintSolver() == mSolver
+          && owner->mWorld->getConstraintSolver()->getCollisionDetector().get()
+                 == owner->mInitializingNativeDetector
+          && owner->mNativeDetectorChecks == 1u
+          && owner->mNativeDetectorNotifications == 1u
+          && simulation::usesNativeOwnershipBackend(*owner->mWorld)
+          && simulation::hasEmptyNativeOwnership(*owner);
+    owner->mNativeDetectorInitialization = nullptr;
+    owner->mInitializingNativeDetector = nullptr;
+    return;
+  }
+}
+
+bool hasNativeOwnershipCertificate(const ConstraintSolver* solver)
+{
+  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  for (const auto* owner : simulation::modelOwners().mWorlds) {
+    if (owner->mWorld->getConstraintSolver() == solver)
+      return owner->mNativeOwnership;
+  }
+  return false;
+}
+
 void checkWorldTopologyMutation(const ConstraintSolver* solver)
 {
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
     if (owner->mWorld->getConstraintSolver() == solver) {
       simulation::checkModelMutation(*owner);
-      if (!owner->mAddingNativeSkeleton)
+      if (owner->mNativeDetectorInitialization) {
+        if (++owner->mNativeDetectorChecks != 1u
+            || owner->mNativeDetectorNotifications != 0u)
+          owner->mNativeOwnership = false;
+      } else if (!owner->mAddingNativeSkeleton)
         owner->mNativeOwnership = false;
       else
         ++owner->mNativeAdditionEvents.mSolverChecks;
@@ -4897,7 +5060,11 @@ void notifyWorldTopologyMutation(const ConstraintSolver* solver)
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
   for (auto* owner : simulation::modelOwners().mWorlds) {
     if (owner->mWorld->getConstraintSolver() == solver) {
-      if (!owner->mAddingNativeSkeleton)
+      if (owner->mNativeDetectorInitialization) {
+        if (++owner->mNativeDetectorNotifications != 1u
+            || owner->mNativeDetectorChecks != 1u)
+          owner->mNativeOwnership = false;
+      } else if (!owner->mAddingNativeSkeleton)
         owner->mNativeOwnership = false;
       else
         ++owner->mNativeAdditionEvents.mSolverNotifications;

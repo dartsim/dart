@@ -37,6 +37,7 @@
 #include "dart/common/Factory.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
@@ -80,6 +81,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -87,12 +89,16 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#endif
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -101,6 +107,95 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/simulation/World.hpp"
+
+namespace {
+
+thread_local std::function<bool()>* gDetectorAllocationCallback = nullptr;
+
+class ScopedDetectorAllocationCallback
+{
+public:
+  explicit ScopedDetectorAllocationCallback(std::function<bool()> callback)
+    : mCallback(std::move(callback)), mPrevious(gDetectorAllocationCallback)
+  {
+    gDetectorAllocationCallback = &mCallback;
+  }
+
+  ~ScopedDetectorAllocationCallback()
+  {
+    gDetectorAllocationCallback = mPrevious;
+  }
+
+private:
+  std::function<bool()> mCallback;
+  std::function<bool()>* mPrevious;
+};
+
+} // namespace
+
+void* operator new(std::size_t bytes)
+{
+  if (auto* callback = std::exchange(gDetectorAllocationCallback, nullptr)) {
+    if (!(*callback)())
+      gDetectorAllocationCallback = callback;
+  }
+  if (auto* pointer = std::malloc(bytes == 0u ? 1u : bytes))
+    return pointer;
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes)
+{
+  return ::operator new(bytes);
+}
+
+void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  try {
+    return ::operator new(bytes);
+  } catch (const std::bad_alloc&) {
+    return nullptr;
+  }
+}
+
+void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  try {
+    return ::operator new[](bytes);
+  } catch (const std::bad_alloc&) {
+    return nullptr;
+  }
+}
+
+void operator delete(void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, const std::nothrow_t&) noexcept
+{
+  ::operator delete(pointer);
+}
+
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept
+{
+  ::operator delete[](pointer);
+}
 
 using namespace dart;
 using namespace math;
@@ -2553,7 +2648,293 @@ protected:
   }
 };
 
+class NativeDetectorReleaseCallback
+{
+public:
+  NativeDetectorReleaseCallback(
+      constraint::ConstraintSolver* solver, std::function<void()> callback)
+    : mCallback(std::make_shared<std::function<void()>>(std::move(callback)))
+  {
+    auto detector = collision::FCLCollisionDetector::create();
+    solver->setCollisionDetector(std::shared_ptr<collision::CollisionDetector>(
+        detector.get(),
+        [detector, callback = mCallback](collision::CollisionDetector*) {
+          if (*callback)
+            (*callback)();
+        }));
+  }
+
+  ~NativeDetectorReleaseCallback()
+  {
+    *mCallback = nullptr;
+  }
+
+private:
+  std::shared_ptr<std::function<void()>> mCallback;
+};
+
+class DetectorInitializationOwnershipProbe
+{
+public:
+  explicit DetectorInitializationOwnershipProbe(const WorldPtr& world)
+    : mWorld(world),
+      mRobot(createBox(Eigen::Vector3d::Ones())),
+      mBody(mRobot->getBodyNode(0)),
+      mParent(std::make_shared<BareFrame>(mBody))
+  {
+  }
+
+  void checkLiveBeforeGroupNotification(
+      const collision::CollisionGroupPtr& group)
+  {
+    bool observed = false;
+    const auto topology = mWorld->getTopologyRevision();
+    {
+      ScopedDetectorAllocationCallback allocation([&] {
+        if (group->getNumShapeFrames() == 0u)
+          return false;
+        observed = true;
+        EXPECT_EQ(mWorld->getTopologyRevision(), topology);
+        const auto parameters = mWorld->getParameterRevision();
+        mBody->setCollidable(false);
+        EXPECT_GT(mWorld->getParameterRevision(), parameters);
+        auto descendant = std::make_shared<BareFrame>(mParent.get());
+        EXPECT_GT(mWorld->getTopologyRevision(), topology);
+        return true;
+      });
+      group->addShapeFrame(mBody->getShapeNodeWith<CollisionAspect>(0));
+    }
+    EXPECT_TRUE(observed);
+    group->removeAllShapeFrames();
+    const auto parameters = mWorld->getParameterRevision();
+    mBody->setCollidable(true);
+    EXPECT_EQ(mWorld->getParameterRevision(), parameters);
+    EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  }
+
+  void checkBorrowedViewAndFrozenMutation()
+  {
+    auto view = Group::create("detector_initialization_view");
+    auto group = mWorld->getConstraintSolver()->getCollisionGroup();
+    group->subscribeTo(view);
+    ASSERT_TRUE(view->addBodyNode(mBody));
+    auto parameters = mWorld->getParameterRevision();
+    mBody->setCollidable(false);
+    EXPECT_GT(mWorld->getParameterRevision(), parameters);
+    ASSERT_TRUE(view->removeBodyNode(mBody));
+    parameters = mWorld->getParameterRevision();
+    mBody->setCollidable(true);
+    EXPECT_EQ(mWorld->getParameterRevision(), parameters);
+    ASSERT_TRUE(view->addBodyNode(mBody));
+    mWorld->compile();
+    const auto children = mParent->getChildFrames();
+    EXPECT_THROW(
+        std::make_shared<BareFrame>(mParent.get()), std::runtime_error);
+    EXPECT_EQ(mParent->getChildFrames(), children);
+    EXPECT_THROW(
+        mBody->createShapeNodeWith<CollisionAspect>(
+            std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
+        std::runtime_error);
+  }
+
+private:
+  WorldPtr mWorld;
+  SkeletonPtr mRobot;
+  BodyNode* mBody;
+  std::shared_ptr<BareFrame> mParent;
+};
+
+void expectDetectorCertificateStaysRetired(constraint::ConstraintSolver* solver)
+{
+  EXPECT_FALSE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  solver->setCollisionDetector(collision::FCLCollisionDetector::create());
+  EXPECT_FALSE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  EXPECT_EQ(solver->getCollisionGroup()->getNumShapeFrames(), 0u);
+  EXPECT_EQ(
+      solver->getCollisionGroup()->getCollisionDetector(),
+      solver->getCollisionDetector());
+}
+
 } // namespace
+
+TEST(World, DetectorInitializationAllocationKeepsBorrowedOwnershipLive)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto oldGroup = solver->getCollisionGroup();
+  auto incoming = collision::FCLCollisionDetector::create();
+  DetectorInitializationOwnershipProbe probe(world);
+  bool called = false;
+  {
+    ScopedDetectorAllocationCallback allocation([&] {
+      called = true;
+      EXPECT_EQ(solver->getCollisionDetector(), incoming);
+      EXPECT_EQ(solver->getCollisionGroup(), oldGroup);
+      probe.checkLiveBeforeGroupNotification(oldGroup);
+      return true;
+    });
+    solver->setCollisionDetector(incoming);
+  }
+  ASSERT_TRUE(called);
+  EXPECT_NE(solver->getCollisionGroup(), oldGroup);
+  probe.checkBorrowedViewAndFrozenMutation();
+}
+
+TEST(World, DetectorInitializationPreservesOnlyPristineNativeCertificate)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::FCLCollisionDetector::create(),
+      collision::DARTCollisionDetector::create(),
+      collision::FCLCollisionDetector::create()};
+#if HAVE_BULLET
+  detectors.push_back(collision::BulletCollisionDetector::create());
+#endif
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    const auto topology = world->getTopologyRevision();
+    solver->setCollisionDetector(detector);
+    EXPECT_EQ(world->getTopologyRevision(), topology + 1u);
+    EXPECT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+    EXPECT_EQ(solver->getCollisionGroup()->getCollisionDetector(), detector);
+  }
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  EXPECT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+}
+
+TEST(World, DetectorInitializationReleaseKeepsBorrowedOwnershipLive)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  DetectorInitializationOwnershipProbe probe(world);
+  collision::CollisionGroupPtr oldGroup;
+  auto incoming = collision::FCLCollisionDetector::create();
+  bool called = false;
+  NativeDetectorReleaseCallback release(solver, [&] {
+    called = true;
+    EXPECT_EQ(solver->getCollisionDetector(), incoming);
+    EXPECT_EQ(solver->getCollisionGroup(), oldGroup);
+    probe.checkLiveBeforeGroupNotification(oldGroup);
+  });
+  oldGroup = solver->getCollisionGroup();
+  solver->setCollisionDetector(incoming);
+  ASSERT_TRUE(called);
+  EXPECT_NE(solver->getCollisionGroup(), oldGroup);
+  probe.checkBorrowedViewAndFrozenMutation();
+}
+
+TEST(World, DetectorInitializationNestedReplacementCannotRecertify)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto nested = collision::FCLCollisionDetector::create();
+  bool called = false;
+  NativeDetectorReleaseCallback release(solver, [&] {
+    called = true;
+    solver->setCollisionDetector(nested);
+    EXPECT_EQ(solver->getCollisionDetector(), nested);
+  });
+  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  solver->setCollisionDetector(collision::FCLCollisionDetector::create());
+  ASSERT_TRUE(called);
+  EXPECT_EQ(solver->getCollisionDetector(), nested);
+  expectDetectorCertificateStaysRetired(solver);
+  DetectorInitializationOwnershipProbe(world)
+      .checkBorrowedViewAndFrozenMutation();
+}
+
+TEST(World, DetectorInitializationMutationThenEmptyCannotRecertify)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto view = Group::create("temporary_detector_view");
+  auto loose = Skeleton::create();
+  auto* body = loose->createJointAndBodyNodePair<FreeJoint>().second;
+  bool called = false;
+  NativeDetectorReleaseCallback release(solver, [&] {
+    called = true;
+    auto group = solver->getCollisionGroup();
+    group->subscribeTo(view);
+    ASSERT_TRUE(view->addBodyNode(body));
+    const auto parameters = world->getParameterRevision();
+    body->setCollidable(false);
+    EXPECT_GT(world->getParameterRevision(), parameters);
+    ASSERT_TRUE(view->removeBodyNode(body));
+    group->unsubscribeFrom(view.get());
+    EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  });
+  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  solver->setCollisionDetector(collision::FCLCollisionDetector::create());
+  ASSERT_TRUE(called);
+  expectDetectorCertificateStaysRetired(solver);
+}
+
+TEST(World, DetectorInitializationTopologyChangeThenRestoreCannotRecertify)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto incoming = collision::DARTCollisionDetector::create();
+  ASSERT_EQ(incoming->getNumCollisionThreads(), 1u);
+  bool called = false;
+  NativeDetectorReleaseCallback release(solver, [&] {
+    called = true;
+    const auto topology = world->getTopologyRevision();
+    incoming->setNumCollisionThreads(2u);
+    incoming->setNumCollisionThreads(1u);
+    EXPECT_GT(world->getTopologyRevision(), topology);
+    EXPECT_EQ(incoming->getNumCollisionThreads(), 1u);
+  });
+  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  solver->setCollisionDetector(incoming);
+  ASSERT_TRUE(called);
+  expectDetectorCertificateStaysRetired(solver);
+}
+
+TEST(World, DetectorInitializationThreadMismatchCannotRecertify)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto incoming = collision::DARTCollisionDetector::create();
+  incoming->setNumCollisionThreads(2u);
+  ASSERT_EQ(solver->getNumSimulationThreads(), 1u);
+  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  solver->setCollisionDetector(incoming);
+  EXPECT_EQ(incoming->getNumCollisionThreads(), 1u);
+  expectDetectorCertificateStaysRetired(solver);
+}
+
+TEST(World, DetectorInitializationAllocationFailureRecoversWithoutRecertifying)
+{
+  auto world = World::create();
+  auto* solver = world->getConstraintSolver();
+  auto oldGroup = solver->getCollisionGroup();
+  auto incoming = collision::FCLCollisionDetector::create();
+  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
+  bool called = false;
+  bool caught = false;
+  {
+    ScopedDetectorAllocationCallback allocation([&]() -> bool {
+      called = true;
+      EXPECT_EQ(solver->getCollisionDetector(), incoming);
+      EXPECT_EQ(solver->getCollisionGroup(), oldGroup);
+      throw std::bad_alloc();
+    });
+    try {
+      solver->setCollisionDetector(incoming);
+    } catch (const std::bad_alloc&) {
+      caught = true;
+    }
+  }
+  ASSERT_TRUE(called);
+  EXPECT_TRUE(caught);
+  expectDetectorCertificateStaysRetired(solver);
+  DetectorInitializationOwnershipProbe(world)
+      .checkBorrowedViewAndFrozenMutation();
+}
 
 TEST(World, OwnershipUsesRawIdentityAndReleasesRemovedAliases)
 {

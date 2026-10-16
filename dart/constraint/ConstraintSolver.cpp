@@ -1343,6 +1343,8 @@ void ConstraintSolver::setCollisionDetector(
   if (mCollisionDetector == collisionDetector)
     return;
 
+  detail::NativeDetectorInitialization initialization(
+      this, collisionDetector.get());
   detail::checkWorldTopologyMutation(this);
   const auto* incoming = dynamic_cast<const collision::DARTCollisionDetector*>(
       collisionDetector.get());
