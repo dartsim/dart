@@ -4,6 +4,16 @@ Evidence per packet. A packet is done only after its gates pass and two clean
 review passes are recorded on its final state. Every claim records its
 revision, command, date and scope.
 
+## Shape/query capability draft (2026-10-13)
+
+[The matrix draft](shape-query-capabilities.md) inventories public shapes and
+separates conversion from collision, distance/nearest points and raycast at
+`4ff47d438c3695f2ce63ef702949890e48258b52`. Its implementation routes and existing
+test contracts are source evidence; no new runtime qualification is claimed.
+Earlier fixed-binary collision diagnostics lack exact commit/build attribution
+and do not qualify this pin or other query operations. The published matrix and
+M1b strict rejection still gate the Python default change; C++ keeps FCL in 7.0.
+
 ## Planning (2026-10-10 to 2026-10-11)
 
 What changed: decisions D0–D32 and D31a (see [decisions.md](decisions.md)) and
