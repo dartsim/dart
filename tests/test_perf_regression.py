@@ -1226,6 +1226,28 @@ def test_compare_classification_and_thresholds():
         assert "binary missing" in module.markdown(record)
 
 
+def test_markdown_folds_neutral_rows():
+    module = _load_runner()
+    base = _micro_record(module, "dyn")
+    base["results"].append(_micro_record(module, "lcp")["results"][0])
+    base["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    report = module.markdown(module.compare(base, copy.deepcopy(base)))
+    assert "2 neutral." in report
+    assert "<summary>Neutral rows (2)</summary>" in report
+    visible, folded = report.split("<details>", 1)
+    assert "Ir geomean" in visible
+    assert "| dyn |" in folded and "| lcp |" in folded
+    assert "| dyn |" not in visible and "| lcp |" not in visible
+
+    head = copy.deepcopy(base)
+    head["results"][0]["head"]["bytes_per_step"] = 28
+    report = module.markdown(module.compare(base, head))
+    visible, folded = report.split("<details>", 1)
+    assert "<summary>Neutral rows (1)</summary>" in report
+    assert "| dyn |" in visible and "| lcp |" not in visible
+    assert "| lcp |" in folded
+
+
 def _load_runner():
     import sys
 
