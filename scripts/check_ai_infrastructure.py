@@ -5465,7 +5465,10 @@ def exercise_scenarios(
                     ("delegation is the default", "`delegation=off`"),
                 ),
                 ("docs/ai/README.md", ("Delegate by default", "`delegation=off`")),
-                ("docs/ai/workflows.md", ("`delegation=off`",)),
+                (
+                    "docs/ai/workflows.md",
+                    ("Delegation by default", "`delegation=off`"),
+                ),
                 (
                     ".claude/commands/dart-ultrawork.md",
                     ("Delegate by default", "`delegation=off`"),

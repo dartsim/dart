@@ -5488,6 +5488,7 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "Delegate by default; use Ultra only when delegation is authorized",
         ),
         ("docs/ai/workflows.md", "`delegation=off`", "missing-marker"),
+        ("docs/ai/workflows.md", "Delegation by default", "missing-marker"),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(

@@ -133,9 +133,10 @@ on 2026-10-17:
   work, including ambiguous multi-step work that needs planning and
   validation; use GPT-6 Astra (`gpt-6-astra`) for the hardest end-to-end work
   and GPT-6 Luna (`gpt-6-luna`) for clear, repeatable, or narrowly scoped
-  packets. `gpt-6.1-sol` accepts reasoning effort `low`, `medium` (default),
-  `high`, `xhigh`, and `max`, but not `none` or `minimal`; other models'
-  ranges differ. API reasoning modes `standard` and `pro` are independent of
+  packets. In the API, `gpt-6.1-sol` accepts reasoning effort `low`, `medium`
+  (the API default), `high`, `xhigh`, and `max`, but not `none` or `minimal`;
+  other models' ranges differ. In Codex, start from the effort your client
+  offers by default. API reasoning modes `standard` and `pro` are independent of
   effort. In Codex, `max` gives one task more reasoning time, and `ultra`, on
   supported models, uses subagents for complex work. Select only settings the
   current client and model advertise. See OpenAI's
