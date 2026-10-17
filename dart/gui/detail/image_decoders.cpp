@@ -137,7 +137,8 @@ std::optional<ImageData> loadBmpImage(const std::filesystem::path& path)
   for (std::uint32_t y = 0; y < height; ++y) {
     const auto targetY = topDown ? y : height - 1 - y;
     for (std::uint32_t x = 0; x < image->width; ++x) {
-      const auto source = offset + y * rowBytes + x * (bits / 8);
+      const auto source
+          = offset + y * rowBytes + static_cast<std::size_t>(x) * (bits / 8);
       const auto target
           = (static_cast<std::size_t>(targetY) * image->width + x) * 4;
       image->rgba[target] = bytes[source + 2];
