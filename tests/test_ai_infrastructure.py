@@ -5495,6 +5495,21 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "delegation is the default",
             "delegation is the default; delegation is not the default",
         ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; delegation isn't the default",
+        ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; delegation is no longer the default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Don\u2019t delegate by default",
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(

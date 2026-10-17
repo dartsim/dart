@@ -5487,17 +5487,18 @@ def exercise_scenarios(
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
-                lowered = owner_text.lower()
-                for negated in (
-                    "not delegate by default",
-                    "n't delegate by default",
-                    "never delegate by default",
-                    "delegation is not the default",
-                ):
-                    if negated in lowered:
-                        local_errors.append(
-                            f"{relative} negates the delegation default: {negated!r}"
-                        )
+                # Negated defaults, including contractions and "no longer".
+                negated = re.search(
+                    r"(?:\bnot|n't|\bnever|\bno longer)\s+delegate\s+by\s+default\b"
+                    r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't)"
+                    r"\s+(?:the\s+)?default\b",
+                    owner_text.lower().replace("\u2019", "'"),
+                )
+                if negated:
+                    local_errors.append(
+                        f"{relative} negates the delegation default: "
+                        f"{negated.group(0)!r}"
+                    )
                 for stale in (
                     "Delegate only when the user",
                     "explicit user authorization for delegation",
