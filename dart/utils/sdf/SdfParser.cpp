@@ -339,16 +339,28 @@ SdfBody readSdfBody(
   checkSdfErrors(
       link.ResolveInertial(inertial, link.Name()), "Resolving link inertia");
   const auto& matrix = inertial.MassMatrix();
-  properties.mInertia.setMass(positiveSdf(matrix.Mass(), "Link mass"));
+  const auto mass = positiveSdf(matrix.Mass(), "Link mass");
+  properties.mInertia.setMass(mass);
   const auto pose = sdfTransform(inertial.Pose());
   properties.mInertia.setLocalCOM(pose.translation());
-  const auto moi = matrix.Moi();
+  const sdf::ElementPtr inertialElement
+      = link.Element() ? link.Element()->FindElement("inertial") : nullptr;
+  const bool authoredInertia
+      = inertialElement && inertialElement->FindElement("inertia");
   Eigen::Matrix3d moment;
-  for (int row = 0; row < 3; ++row)
-    for (int column = 0; column < 3; ++column)
-      moment(row, column) = moi(row, column);
-  requireSdf(moment.allFinite(), "Link inertia must be finite");
-  moment = pose.linear() * moment * pose.linear().transpose();
+  if (authoredInertia) {
+    const auto moi = matrix.Moi();
+    for (int row = 0; row < 3; ++row)
+      for (int column = 0; column < 3; ++column)
+        moment(row, column) = moi(row, column);
+    requireSdf(moment.allFinite(), "Link inertia must be finite");
+    moment = pose.linear() * moment * pose.linear().transpose();
+  } else {
+    // sdformat resolves an omitted <inertia> to its unit-diagonal default;
+    // the legacy DART parser used mass * I, so keep that fallback instead of
+    // silently changing the angular response of mass-only links.
+    moment = mass * Eigen::Matrix3d::Identity();
+  }
   requireSdf(moment.allFinite(), "Resolved link inertia must be finite");
   properties.mInertia.setMoment(moment);
 

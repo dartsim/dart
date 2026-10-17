@@ -725,6 +725,32 @@ TEST(SdfParser, PoseFramesWorldPreservesInertiaAndSoftPose)
 }
 
 //==============================================================================
+TEST(SdfParser, MassOnlyInertiaKeepsLegacyMassTimesIdentityFallback)
+{
+  const auto readMoment = [](const std::string& inertial) {
+    const auto options = sdfMemoryOptions(
+        "<sdf version='1.9'><model name='mass_only'><link name='link'>"
+        + inertial + "</link></model></sdf>");
+    const auto skeleton
+        = SdfParser::readSkeleton("memory://mass-only.sdf", options);
+    EXPECT_NE(skeleton, nullptr);
+    if (!skeleton)
+      return Eigen::Matrix3d::Zero().eval();
+    const auto* body = skeleton->getBodyNode("link");
+    EXPECT_NE(body, nullptr);
+    return body ? body->getInertia().getMoment() : Eigen::Matrix3d::Zero();
+  };
+
+  EXPECT_TRUE(readMoment("<inertial><mass>100</mass></inertial>")
+                  .isApprox(100.0 * Eigen::Matrix3d::Identity(), 1e-12));
+  EXPECT_TRUE(
+      readMoment("<inertial><mass>100</mass><inertia><ixx>1</ixx><iyy>1</iyy>"
+                 "<izz>1</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>"
+                 "</inertial>")
+          .isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+}
+
+//==============================================================================
 TEST(SdfParser, PoseRotationFormatsRequireMatchingCounts)
 {
   const std::string values[]

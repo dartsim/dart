@@ -621,7 +621,7 @@ TEST(
     <model name="body"><pose relative_to="origin" degrees="true">0 0 0 0 0 90</pose>
       <link name="base"/><frame name="attachment" attached_to="base"/>
       <link name="link"><inertial><mass>2</mass>
-        <pose rotation_format="quat_xyzw">0 0 0 0 0 1 1</pose>
+        <pose rotation_format="quat_xyzw">0 0 0 0 0 0 2</pose>
         <inertia><ixx>1</ixx><iyy>2</iyy><izz>3</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
       </inertial></link>
       <joint name="joint" type="universal"><parent>attachment</parent><child>link</child>
@@ -631,6 +631,28 @@ TEST(
   EXPECT_FALSE(unsupported.has_value()) << unsupported.value_or("");
   EXPECT_FALSE(findUnsupportedInWorld(
       R"(<model name="body"><link name="link"><inertial><mass>2</mass></inertial></link></model>)"));
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, RejectsRotatedInertialPoses)
+{
+  const auto unsupportedInertialPose = [](const std::string& pose) {
+    return findUnsupportedInWorld(
+        "<model name=\"body\"><link name=\"link\"><inertial>" + pose
+        + "<mass>2</mass><inertia><ixx>1</ixx><iyy>2</iyy><izz>3</izz>"
+          "<ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial></link>"
+          "</model>");
+  };
+  EXPECT_FALSE(unsupportedInertialPose("<pose>0.1 0.2 0.3 0 0 0</pose>"));
+  EXPECT_FALSE(unsupportedInertialPose(
+      "<pose rotation_format=\"quat_xyzw\">0.1 0.2 0.3 0 0 0 -2</pose>"));
+  const auto euler = unsupportedInertialPose("<pose>0 0 0 0.1 0 0</pose>");
+  ASSERT_TRUE(euler.has_value());
+  EXPECT_NE(euler->find("inertial"), std::string::npos) << *euler;
+  const auto quaternion = unsupportedInertialPose(
+      "<pose rotation_format=\"quat_xyzw\">0 0 0 0 0 1 1</pose>");
+  ASSERT_TRUE(quaternion.has_value());
+  EXPECT_NE(quaternion->find("inertial"), std::string::npos) << *quaternion;
 }
 
 //==============================================================================

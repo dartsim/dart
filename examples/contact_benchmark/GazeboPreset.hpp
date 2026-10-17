@@ -609,6 +609,11 @@ inline std::optional<std::string> findUnsupportedGazeboSdfElement(
           || (normalizedNative - robust).norm() > 1e-12)
         return path + " quaternion normalization differs in Gazebo";
     }
+    // Released gz-physics copies Moi() into the link frame without applying
+    // the inertial pose rotation, while DART rotates the tensor into it.
+    if (name == "pose" && parent == "inertial"
+        && (values[3] != 0.0 || values[4] != 0.0 || values[5] != 0.0))
+      return path + " rotation differs in Gazebo";
     if (name == "fdir1"
         && (values[0] != 0.0 || values[1] != 0.0 || values[2] != 0.0))
       return path + " must be the default 0 0 0";
