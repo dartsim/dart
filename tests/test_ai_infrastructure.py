@@ -5446,16 +5446,84 @@ def test_model_upgrade_contract_accepts_versioned_identity(monkeypatch, identity
     assert infra.exercise_scenarios(ROOT, emit=False) == []
 
 
-def test_ultrawork_uses_explicit_delegation_and_lean_prompt_shape():
+@pytest.mark.parametrize("marker", ["Delegate by default", "`delegation=off`"])
+def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, marker):
+    source = ROOT / ".claude/commands/dart-model-upgrade.md"
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(marker, "missing-marker")
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any(f"missing contract marker {marker!r}" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("relative", "old", "new"),
+    [
+        ("AGENTS.md", "Delegate by default", "missing-marker"),
+        ("docs/ai/orchestration.md", "delegation is the default", "missing-marker"),
+        (".claude/commands/dart-ultrawork.md", "`delegation=off`", "missing-marker"),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default. Delegate only when the user asks",
+        ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default, using specialists when the user authorized\n"
+            "delegation",
+        ),
+        ("docs/ai/README.md", "Delegate by default", "missing-marker"),
+        (
+            "docs/ai/README.md",
+            "Delegate by default",
+            "Delegate by default; use Ultra only when delegation is authorized",
+        ),
+        ("docs/ai/workflows.md", "`delegation=off`", "missing-marker"),
+        ("docs/ai/workflows.md", "Delegation by default", "missing-marker"),
+    ],
+)
+def test_delegation_owners_require_default_and_reject_request_gate(
+    monkeypatch, relative, old, new
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(old, new)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any(relative in error and "delegat" in error for error in errors)
+
+
+def test_ultrawork_uses_default_delegation_and_lean_prompt_shape():
     workflow = (ROOT / ".claude" / "commands" / "dart-ultrawork.md").read_text()
 
-    assert "Delegate only when the user explicitly requested it" in workflow
-    assert "execute packets serially" in workflow
+    assert "Delegate by default" in workflow
+    assert "`delegation=off`" in workflow
+    assert "explicit, disjoint write ownership" in workflow
+    assert "another installed supported client" in workflow
     assert "bind it to the client's native goal" in workflow
     assert "do not reimplement that loop in prose" in workflow
     assert "two clean review passes" in workflow
     assert "Do not repeat this workflow's logistics" in workflow
     assert "Sol Ultra" not in workflow
+    assert "Delegate only when the user" not in workflow
+    assert "execute packets serially" not in workflow
 
 
 def _write_agent_profiles(root, *, malformed_instructions=False):

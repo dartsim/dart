@@ -4,6 +4,8 @@ This file is the single shared rules file and repository pointer board for
 Claude Code, Codex, and Muse; keep shared guidance here (see
 `docs/onboarding/ai-tools.md`). Start every task with
 `docs/ai/principles.md`, then load only the owner docs needed for the work.
+Delegate by default under `docs/ai/orchestration.md`; honor a per-task
+`delegation=off` opt-out.
 
 @docs/ai/principles.md
 
