@@ -629,8 +629,6 @@ TEST(
         <axis2><xyz>0 1 0</xyz></axis2></joint>
     </model>)");
   EXPECT_FALSE(unsupported.has_value()) << unsupported.value_or("");
-  EXPECT_FALSE(findUnsupportedInWorld(
-      R"(<model name="body"><link name="link"><inertial><mass>2</mass></inertial></link></model>)"));
 }
 
 //==============================================================================
@@ -653,6 +651,22 @@ TEST(ContactBenchmarkGazeboPreset, RejectsRotatedInertialPoses)
       "<pose rotation_format=\"quat_xyzw\">0 0 0 0 0 1 1</pose>");
   ASSERT_TRUE(quaternion.has_value());
   EXPECT_NE(quaternion->find("inertial"), std::string::npos) << *quaternion;
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, RejectsMassWithoutInertiaTensor)
+{
+  // DART's parser gives a mass-only link the moment mass * I, while sdformat
+  // (and gz-physics) resolve the omitted tensor to the unit diagonal.
+  const auto massOnly = [](const std::string& mass) {
+    return findUnsupportedInWorld(
+        "<model name=\"body\"><link name=\"link\"><inertial><mass>" + mass
+        + "</mass></inertial></link></model>");
+  };
+  EXPECT_FALSE(massOnly("1"));
+  const auto unsupported = massOnly("2");
+  ASSERT_TRUE(unsupported.has_value());
+  EXPECT_NE(unsupported->find("inertia"), std::string::npos) << *unsupported;
 }
 
 //==============================================================================

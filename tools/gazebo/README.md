@@ -517,8 +517,8 @@ sdformat's supported versions and conversion, physics step size and
 `max_contacts`, scheduling-only real-time settings, and flat models with
 static flags, resolved frame references, Euler or quaternion poses, links,
 and fixed/revolute/prismatic/universal/ball/screw joints. Links support
-gravity flags, mass and inertia tensors including rotated inertial frames,
-and box/sphere/cylinder/plane collisions. Loaded worlds preserve their
+gravity flags, mass and inertia tensors with translation-only inertial
+poses, and box/sphere/cylinder/plane collisions. Loaded worlds preserve their
 SDF gravity; omitted gravity and generated worlds use Gazebo's default
 `0 0 -9.8`. Joint axes use sdformat's frame resolution and normalization,
 including converted SDF 1.4 axes. Damping, friction, springs, position

@@ -751,6 +751,22 @@ TEST(SdfParser, MassOnlyInertiaKeepsLegacyMassTimesIdentityFallback)
 }
 
 //==============================================================================
+TEST(SdfParser, RejectsNonzeroFluidAddedMass)
+{
+  const auto readWithFluid = [](const std::string& fluid) {
+    const auto options = sdfMemoryOptions(
+        "<sdf version='1.11'><model name='fluid'><link name='link'>"
+        "<inertial><mass>2</mass><fluid_added_mass>"
+        + fluid + "</fluid_added_mass></inertial></link></model></sdf>");
+    return SdfParser::readSkeleton("memory://fluid-added-mass.sdf", options);
+  };
+
+  EXPECT_EQ(readWithFluid("<xx>0.5</xx>"), nullptr);
+  EXPECT_NE(readWithFluid("<xx>0</xx>"), nullptr);
+  EXPECT_NE(readWithFluid(""), nullptr);
+}
+
+//==============================================================================
 TEST(SdfParser, PoseRotationFormatsRequireMatchingCounts)
 {
   const std::string values[]

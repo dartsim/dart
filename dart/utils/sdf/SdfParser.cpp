@@ -338,6 +338,19 @@ SdfBody readSdfBody(
   gz::math::Inertiald inertial;
   checkSdfErrors(
       link.ResolveInertial(inertial, link.Name()), "Resolving link inertia");
+  // DART has no fluid added-mass dynamics; dropping an authored tensor
+  // would silently change the link's acceleration response.
+  if (const auto& fluidAddedMass = inertial.FluidAddedMass();
+      fluidAddedMass.has_value()) {
+    bool zero = true;
+    for (std::size_t row = 0; row < 6 && zero; ++row)
+      for (std::size_t column = 0; column < 6; ++column)
+        zero = zero && (*fluidAddedMass)(row, column) == 0.0;
+    requireSdf(
+        zero,
+        "Link [" + link.Name()
+            + "] fluid added mass is not supported by DART's SDF parser");
+  }
   const auto& matrix = inertial.MassMatrix();
   const auto mass = positiveSdf(matrix.Mass(), "Link mass");
   properties.mInertia.setMass(mass);

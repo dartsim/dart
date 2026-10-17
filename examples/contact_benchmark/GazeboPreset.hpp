@@ -679,6 +679,14 @@ inline std::optional<std::string> findUnsupportedGazeboSdfElement(
     if (isOneOf(name, {"mass", "radius", "length", "max_step_size"})
         && number <= 0.0)
       return path + " must be positive";
+    // DART's parser assigns a mass-only link the moment mass * I, while
+    // sdformat resolves the omitted tensor to the unit diagonal consumed by
+    // gz-physics, so the runners would integrate different mass matrices.
+    if (name == "mass" && parent == "inertial" && number != 1.0) {
+      const auto inertial = element.GetParent();
+      if (!inertial || !inertial->FindElement("inertia"))
+        return path + " without inertia differs from sdformat's unit inertia";
+    }
     if ((name == "lower" && number > 0.0) || (name == "upper" && number < 0.0))
       return path + " excludes zero; DART changes the initial joint position";
     if ((isOneOf(name, {"mu", "mu2"}) && number != 1.0)
