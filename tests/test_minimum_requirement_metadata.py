@@ -53,7 +53,7 @@ def test_package_metadata_support_boundaries():
     }
     for name, rejected, accepted in [
         ("wheel", "0.47.0", "0.48.0"),
-        ("ninja", "1.12.0", "1.12.1"),
+        ("ninja", "1.13.1", "1.13.2"),
         ("setuptools", "83.0.0", "84.0.0"),
         ("cmake", "4.4.3", "4.4.4"),
     ]:
