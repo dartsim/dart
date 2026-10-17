@@ -9,7 +9,7 @@
 # environment.
 requires = [
   "setuptools>=84.0.0",
-  "wheel>=0.45.1",
+  "wheel>=0.48.0",
   "ninja>=1.12.1",
   "cmake>=4.4.4,<4.4.5",
 ]
