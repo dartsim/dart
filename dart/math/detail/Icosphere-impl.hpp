@@ -44,10 +44,8 @@ namespace math {
 template <typename S>
 std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
 {
-  std::size_t numVertices = 12;
-  for (auto i = 0u; i < subdivisions; ++i)
-    numVertices += getNumEdges(i);
-  return numVertices;
+  // OEIS A122973 [a(subdivisions + 1)]: 10 * 4^subdivisions + 2
+  return 10 * (std::size_t{1} << (2 * subdivisions)) + 2;
 }
 
 //==============================================================================
@@ -61,7 +59,7 @@ std::size_t Icosphere<S>::getNumEdges(std::size_t subdivisions)
 template <typename S>
 std::size_t Icosphere<S>::getNumTriangles(std::size_t subdivisions)
 {
-  return 20 * std::pow(4, subdivisions);
+  return 20 * (std::size_t{1} << (2 * subdivisions)); // 20 * 4^subdivisions
 }
 
 //==============================================================================
