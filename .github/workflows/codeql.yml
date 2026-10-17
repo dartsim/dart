@@ -46,7 +46,7 @@ jobs:
 
       - name: Setup pixi
         if: matrix.run_build
-        uses: prefix-dev/setup-pixi@v0.10.2
+        uses: prefix-dev/setup-pixi@v0.11.0
         with:
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

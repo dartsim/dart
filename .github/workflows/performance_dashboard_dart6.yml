@@ -106,7 +106,7 @@ jobs:
           ref: ${{ steps.dart6-branch.outputs.checkout_ref }}
 
       - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.10.2
+        uses: prefix-dev/setup-pixi@v0.11.0
         with:
           cache: true
           cache-write: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-6.') }}

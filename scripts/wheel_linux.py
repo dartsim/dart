@@ -48,7 +48,7 @@ tar -C /io --exclude=.git --exclude=.pixi --exclude=build --exclude=dist \\
 cd /tmp/dart
 export PATH=/opt/python/{args.python_tag}-{args.python_tag}/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:${{LD_LIBRARY_PATH:-}}
-{python} -m pip install 'setuptools>=80.1.0,<81' 'wheel>=0.45.1,<0.46' ninja
+{python} -m pip install 'setuptools>=80.1.0,<81' 'wheel>=0.48.0,<0.49' ninja
 CONDA_PREFIX=/usr/local {python} scripts/wheel_build.py OFF
 auditwheel show dist/dartpy-*-linux_{arch}.whl
 auditwheel repair --plat manylinux_2_28_{arch} --only-plat \\
