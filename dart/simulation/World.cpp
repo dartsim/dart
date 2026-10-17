@@ -3572,7 +3572,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
-  if (!isCollisionFilterSnapshotTrackable(collisionFilter)
+  const bool nativeFilter
+      = collisionFilter == nullptr
+        || typeid(*collisionFilter)
+               == typeid(collision::BodyNodeCollisionFilter);
+  if (!nativeFilter && !isCollisionFilterSnapshotTrackable(collisionFilter)
       && !(
           isReplayed(*mDeactivationState, collisionFilter)
           && mDeactivationState->mReplayVerified)) {
@@ -3581,7 +3585,13 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
   }
 
   const auto collisionFilterRevision
-      = getCollisionFilterSnapshotRevision(collisionFilter);
+      = nativeFilter
+            ? (collisionFilter
+                   ? static_cast<const collision::BodyNodeCollisionFilter*>(
+                         collisionFilter)
+                         ->getBodyNodePairBlackListRevision()
+                   : 0u)
+            : getCollisionFilterSnapshotRevision(collisionFilter);
   const bool collisionFilterUnchanged
       = mAllRestingSnapshotCollisionFilter == collisionFilter
         && mAllRestingSnapshotCollisionFilterRevision
@@ -3887,10 +3897,11 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   const auto* collisionFilter = collisionOption.collisionFilter.get();
   // Classify once per step. The default filter needs only the same exact-type
   // check as snapshot tracking; World::step reuses the custom-filter decision.
-  bool collisionFilterTrackable
+  const bool nativeFilter
       = collisionFilter == nullptr
         || typeid(*collisionFilter)
                == typeid(collision::BodyNodeCollisionFilter);
+  bool collisionFilterTrackable = nativeFilter;
   bool collisionFilterReplayed = false;
   deactivationState.mStepCustomBodyFilter = false;
   if (!collisionFilterTrackable) {
@@ -3978,7 +3989,14 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
                == collisionOption.allowNegativePenetrationDepthContacts
         && mLastStepRestingWorldStateCollisionFilter == collisionFilter
         && mLastStepRestingWorldStateCollisionFilterRevision
-               == getCollisionFilterSnapshotRevision(collisionFilter);
+               == (nativeFilter
+                       ? (collisionFilter
+                              ? static_cast<
+                                    const collision::BodyNodeCollisionFilter*>(
+                                    collisionFilter)
+                                    ->getBodyNodePairBlackListRevision()
+                              : 0u)
+                       : getCollisionFilterSnapshotRevision(collisionFilter));
 
   if (recordedStateUnchanged && collisionFilterReplayed
       && !mLastStepRestingWorldSkeletonStates.empty()
