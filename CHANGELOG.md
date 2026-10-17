@@ -256,6 +256,10 @@
     from 0.45.1 to 0.48.0.
     [#3791](https://github.com/dartsim/dart/pull/3791)
 
+  * Raise the minimum `ninja` version for isolated Python package builds
+    from 1.12.1 to 1.13.2.
+    [#3792](https://github.com/dartsim/dart/pull/3792)
+
 ## DART 6
 
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
