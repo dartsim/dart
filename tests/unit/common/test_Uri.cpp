@@ -133,8 +133,11 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
       "C:\\foo\\",
       "C:\\foo\\bar",
   };
+  const std::vector<std::string> expectedPaths
+      = {"C:/foo", "C:/foo/", "C:/foo/bar"};
 #else
   std::vector<std::string> testPaths = {"/foo", "/foo/", "/foo/bar"};
+  const auto& expectedPaths = testPaths;
 #endif
 
   Uri uri;
@@ -147,7 +150,7 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
   EXPECT_EQ("", *uri.mAuthority);
-  EXPECT_EQ(testPaths[0], uri.getFilesystemPath());
+  EXPECT_EQ(expectedPaths[0], uri.getFilesystemPath());
 
   ASSERT_TRUE(uri.fromPath(testPaths[1]));
   ASSERT_TRUE(uri.mScheme);
@@ -157,7 +160,7 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
   EXPECT_EQ("", *uri.mAuthority);
-  EXPECT_EQ(testPaths[1], uri.getFilesystemPath());
+  EXPECT_EQ(expectedPaths[1], uri.getFilesystemPath());
 
   ASSERT_TRUE(uri.fromPath(testPaths[2]));
   ASSERT_TRUE(uri.mScheme);
@@ -167,7 +170,7 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
   EXPECT_EQ("", *uri.mAuthority);
-  EXPECT_EQ(testPaths[2], uri.getFilesystemPath());
+  EXPECT_EQ(expectedPaths[2], uri.getFilesystemPath());
 }
 
 TEST(UriHelpers, fromStringOrPath_UriNotPathNorFileUri_ReturnsUriNotFileUri)
@@ -226,28 +229,46 @@ TEST(UriHelpers, getUri_InputIsUri_DoesNotChange)
 TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
 {
 #ifdef _WIN32
-  std::vector<std::string> testPaths = {
-      "C:\\foo",
-      "C:\\foo\\",
-      "C:\\foo\\bar",
+  const std::vector<std::pair<std::string, std::string>> testPaths = {
+      {"C:\\foo", "file:///C:/foo"},
+      {"C:\\foo\\", "file:///C:/foo/"},
+      {"C:\\foo\\bar", "file:///C:/foo/bar"},
   };
 #else
-  std::vector<std::string> testPaths = {"/foo", "/foo/", "/foo/bar"};
+  const std::vector<std::pair<std::string, std::string>> testPaths = {
+      {"/foo", "file:///foo"},
+      {"/foo/", "file:///foo/"},
+      {"/foo/bar", "file:///foo/bar"},
+  };
 #endif
 
-  for (const std::string& testPath : testPaths) {
-#ifdef _WIN32
-    // On Windows, an absolute path does not begin with forward slash but a
-    // file URI needs it to represent an empty authority,
-    const std::string testUri = "file:///" + testPath;
-#else
-    // whereas on Unix systems the additional forward slash is not required
-    // since an absolute path already has it.
-    const std::string testUri = "file://" + testPath;
-#endif
+  for (const auto& [testPath, testUri] : testPaths)
     EXPECT_EQ(testUri, Uri::getUri(testPath));
+}
+
+#ifdef _WIN32
+TEST(UriHelpers, WindowsNativePathsResolveRelativeResources)
+{
+  for (const auto* path :
+       {"C:\\models\\atlas\\root.world",
+        "C:/models/atlas\\root.world",
+        "C:/models/atlas/root.world"}) {
+    SCOPED_TRACE(path);
+    const Uri root(path);
+    EXPECT_EQ("file:///C:/models/atlas/root.world", root.toString());
+    const auto included
+        = Uri::createFromRelativeUri(root, std::string("included/model.sdf"));
+    EXPECT_EQ(
+        "file:///C:/models/atlas/included/model.sdf", included.toString());
+    EXPECT_EQ(
+        "C:/models/atlas/included/model.sdf", included.getFilesystemPath());
+    const auto mesh = Uri::createFromRelativeUri(
+        included, std::string("meshes/pelvis.dae"));
+    EXPECT_EQ(
+        "file:///C:/models/atlas/included/meshes/pelvis.dae", mesh.toString());
   }
 }
+#endif
 
 TEST(UriHelpers, getRelativeUri)
 {

@@ -118,6 +118,9 @@ Optional components remain optional.
    * - tinyxml2
      - 9.0.0
      - XML parsers
+   * - sdformat
+     - 14.8 (supported majors: 14, 15, 16)
+     - SDF parser
    * - urdfdom
      - 3.0.0
      - URDF parser

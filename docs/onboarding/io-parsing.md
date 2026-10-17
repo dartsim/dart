@@ -7,22 +7,36 @@ headers as compatibility surfaces.
 Run focused IO tests when touching parser code, model-loading dependencies, or
 package metadata used by IO components.
 
-## SDF Pose Subset
+## SDF Loading
 
-`SdfParser` admits versions 1.4 through 1.9 for its supported model subset.
-It honors Euler, degree and `quat_xyzw` poses, including empty identity poses,
-rotates COM-frame inertia tensors into the link frame, and applies soft-shape
-poses to every rest point. The
-[SDFormat 1.9 link specification](https://sdformat.org/spec/1.9/link/)
-defines the pose formats and inertia-frame convention.
+`SdfParser` uses sdformat for schema validation, version conversion and frame
+resolution. IO requires sdformat 14.8 or newer; supported library majors are
+14, 15 and 16. The accepted document versions follow the selected library.
+Public `dart::utils::SdfParser` entrypoints and options remain available.
+Authored world gravity, physics timestep and joint limits, including effort and
+velocity, are honored. Existing controllers that relied on ignored limits must
+configure their intended limits explicitly after loading.
 
-This is not full SDFormat schema support. Poses may name only their default
-frame. Joint axes may use their joint frame or `expressed_in="__model__"`;
-combining a nonempty `expressed_in` with legacy `use_parent_model_frame`
-raises. In newly admitted 1.7–1.9 documents, frame declarations, includes,
-nested models and non-model placement frames raise `std::invalid_argument`
-instead of silently dropping geometry or frame semantics. Unqualified schema
-versions still return `nullptr`.
+Named pose frames, joint endpoint frames, axes expressed in other frames,
+world-level includes and merged includes use sdformat semantics. Inertia is
+rotated into the link frame; inertial poses must use their owning link frame.
+DART retains its soft-shape extensions, root-joint selection and plane-loading
+option. General nested models, closed kinematic
+loops, world-level joints, multiple incoming joints per link, mesh submesh
+selection and unsupported geometry fail instead of loading incomplete models.
+
+Malformed input, invalid numeric values, unresolved resources or frames, and
+unsupported model structures produce diagnostics and return `nullptr` in C++
+or `None` in Python. Check the returned value instead of relying on SDF pose
+exceptions. Empty poses are identity transforms; finite nonzero quaternions are
+normalized safely even at extreme magnitudes. Other XML parsers retain their
+existing error contracts.
+
+Includes use the caller's resource retriever and resolve relative to the source
+document containing each include. Meshes resolve relative to their own source
+document, including merged models. Private staging files are removed after
+model construction or a loading failure; parser callbacks are local to each
+load. Loading itself adds no network retriever or automatic download behavior.
 
 The self-contained `data/sdf/test/pose_frames.world` and
 `python/examples/sdf_pose/main.py` illustrate the local geometry and

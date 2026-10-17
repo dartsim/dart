@@ -131,6 +131,12 @@ else()
   )
 endif()
 
+# Discover sdformat here so its imported dependency targets reach sibling
+# executables and tests that also use its API.
+if(DART_BUILD_IO)
+  dart_find_package(sdformat)
+endif()
+
 #=======================
 # Optional dependencies
 #=======================

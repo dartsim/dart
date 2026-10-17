@@ -36,6 +36,7 @@
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
 
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -316,6 +317,12 @@ Model createModel(Feet feet)
   auto atlas = dart::utils::SdfParser::readSkeleton(sdfUriFor(feet));
   if (!atlas)
     throw std::runtime_error("failed to load " + sdfUriFor(feet));
+
+  // Preserve the experiment's historical unbounded velocities in both variants.
+  const double infinity = std::numeric_limits<double>::infinity();
+  const auto dofs = static_cast<Eigen::Index>(atlas->getNumDofs());
+  atlas->setVelocityLowerLimits(Eigen::VectorXd::Constant(dofs, -infinity));
+  atlas->setVelocityUpperLimits(Eigen::VectorXd::Constant(dofs, infinity));
 
   auto* pelvis = atlas->getBodyNode("pelvis");
   auto* leftFoot = atlas->getBodyNode("l_foot");

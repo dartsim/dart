@@ -137,6 +137,7 @@ if(TARGET dart-collision-ode AND TARGET dart-utils)
     test_ContactBenchmarkGazeboPreset
     dart-collision-ode
     dart-utils
+    ${SDFORMAT_LIBRARIES}
   )
   target_include_directories(
     test_ContactBenchmarkGazeboPreset
@@ -348,7 +349,7 @@ if(TARGET dart-utils)
   target_link_libraries(test_MjcfParser dart-utils)
 
   dart_add_test("integration" test_SdfParser)
-  target_link_libraries(test_SdfParser dart-utils)
+  target_link_libraries(test_SdfParser dart-utils ${SDFORMAT_LIBRARIES})
   if(TARGET dart-collision-bullet)
     target_link_libraries(test_SdfParser dart-collision-bullet)
   endif()

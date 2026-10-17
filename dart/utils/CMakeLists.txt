@@ -13,6 +13,15 @@ if(NOT urdfdom_FOUND)
     "dart-io requires urdfdom >= 3.0.0; install it or set DART_BUILD_IO=OFF."
   )
 endif()
+if(NOT DEFINED SDFORMAT_FOUND)
+  dart_find_package(sdformat)
+endif()
+if(NOT SDFORMAT_FOUND)
+  message(
+    FATAL_ERROR
+    "dart-io requires sdformat 14 (>= 14.8), 15 or 16; install it or set DART_BUILD_IO=OFF."
+  )
+endif()
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -43,6 +52,7 @@ set(component_name io)
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})
 target_link_libraries(
   ${target_name}
+  PRIVATE ${SDFORMAT_LIBRARIES}
   PUBLIC
     dart
     $<BUILD_INTERFACE:tinyxml2::tinyxml2>
@@ -55,7 +65,7 @@ target_link_libraries(
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2 urdfdom)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2 urdfdom sdformat)
 
 # Header sources retain legacy --target build commands without another library.
 foreach(legacy_component utils utils-urdf)
