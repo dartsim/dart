@@ -1993,11 +1993,12 @@ def markdown(record: dict) -> str:
     lines += [f"- {item}" for item in [*verdict["failures"], *verdict["warnings"]]]
     if verdict["ir_geomean"] is not None:
         lines += [f"Ir geomean: {percent(verdict['ir_geomean'])}."]
-    lines += [
-        "",
+    table_header = [
         "| Row | Threads | Base Ir/step | Head Ir/step | Delta | Allocs/step | Bytes/step delta | Guards | Class | Gate qualification |",
         "|---|---:|---:|---:|---:|---:|---:|---|---|---|",
     ]
+    visible_lines = []
+    neutral_lines = []
 
     def number(value):
         return f"{value:,.2f}".rstrip("0").rstrip(".") if value is not None else "—"
@@ -2032,7 +2033,26 @@ def markdown(record: dict) -> str:
             change["class"],
             row["gate_reason"],
         ]
-        lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
+        rendered = "| " + " | ".join(map(markdown_cell, values)) + " |"
+        if row_change(row) == "neutral":
+            neutral_lines.append(rendered)
+        else:
+            visible_lines.append(rendered)
+    if visible_lines:
+        lines += ["", *table_header, *visible_lines]
+    if neutral_lines:
+        lines += [
+            "",
+            "<details>",
+            f"<summary>Neutral rows ({len(neutral_lines)})</summary>",
+            "",
+            *table_header,
+            *neutral_lines,
+            "",
+            "</details>",
+        ]
+    if not visible_lines and not neutral_lines:
+        lines += ["", *table_header]
     lines += [
         "",
         "Wall time is recorded as advisory; RSS warns at +5%. Diagnostic and behaviour-change deltas do not enter the Ir gate.",
