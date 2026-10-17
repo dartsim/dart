@@ -16,6 +16,7 @@ if(DART_IN_SOURCE_BUILD)
   endif()
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
   if(TARGET ${example_name})
+    target_link_libraries(${example_name} ${SDFORMAT_LIBRARIES})
     target_compile_definitions(
       ${example_name}
       PRIVATE DART_CONTACT_BENCHMARK_HAS_GUI=${has_gui}
@@ -35,6 +36,7 @@ find_package(
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} PUBLIC ${required_libraries})
+target_link_libraries(${example_name} PRIVATE ${SDFORMAT_LIBRARIES})
 include("${CMAKE_CURRENT_LIST_DIR}/../CheckFilamentGui.cmake")
 if(DART_EXAMPLES_HAVE_FILAMENT_GUI)
   target_link_libraries(${example_name} PUBLIC dart-gui)

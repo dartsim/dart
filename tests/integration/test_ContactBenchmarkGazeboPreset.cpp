@@ -63,7 +63,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
-#include <tinyxml2.h>
 
 #include <limits>
 #include <memory>
@@ -163,14 +162,12 @@ simulation::WorldPtr createStarvedBoxWorld(
 
 //==============================================================================
 std::optional<std::string> findUnsupportedInWorld(
-    std::string_view contents, std::string_view version = "1.6")
+    std::string_view contents, std::string_view version = "1.9")
 {
   const std::string sdf = "<sdf version=\"" + std::string(version)
                           + "\"><world name=\"test\">" + std::string(contents)
                           + "</world></sdf>";
-  tinyxml2::XMLDocument document;
-  EXPECT_EQ(document.Parse(sdf.c_str()), tinyxml2::XML_SUCCESS);
-  return findUnsupportedGazeboPresetSdf(document);
+  return findUnsupportedGazeboPresetSdf(sdf);
 }
 
 } // namespace
@@ -393,7 +390,6 @@ TEST(ContactBenchmarkGazeboPreset, AcceptsSupportedGazeboPresetSdf)
 {
   const std::string_view worlds[]
       = {"",
-         "<model name=\"empty\"/>",
          R"(<gravity>0 0 -9.8</gravity>
          <physics name="1ms" type="ignored" default="true">
            <max_step_size>0.001</max_step_size>
@@ -404,7 +400,7 @@ TEST(ContactBenchmarkGazeboPreset, AcceptsSupportedGazeboPresetSdf)
            <link name="body">
              <pose>0 0 1 0.3 0.2 0.1</pose>
              <inertial><pose>0.1 0.2 0.3 0 0 0</pose><mass>2</mass>
-               <inertia><ixx>1</ixx><iyy>2</iyy><izz>3</izz>
+               <inertia><ixx>2</ixx><iyy>3</iyy><izz>4</izz>
                  <ixy>0.1</ixy><ixz>0.2</ixz><iyz>0.3</iyz></inertia>
              </inertial>
              <collision name="box"><pose>1 0 0 0 0 0</pose>
@@ -514,9 +510,6 @@ TEST(ContactBenchmarkGazeboPreset, RejectsUnsupportedGazeboPresetElements)
       {"<model name=\"outer\"><model name=\"inner\"/></model>",
        "/sdf/world/model/model"},
       {"<joint name=\"world_joint\" type=\"fixed\"/>", "/sdf/world/joint"},
-      {"<frame name=\"offset\"/>", "/sdf/world/frame"},
-      {"<model name=\"body\"><frame name=\"offset\"/></model>",
-       "/sdf/world/model/frame"},
       {"<model name=\"body\"><link name=\"link\"><collision name=\"mesh\">"
        "<geometry><mesh><uri>file://collision.obj</uri></mesh></geometry>"
        "</collision></link></model>",
@@ -592,43 +585,96 @@ TEST(ContactBenchmarkGazeboPreset, RejectsUnsupportedGazeboPresetAttributes)
     std::string_view contents;
     std::string_view path;
   };
-  const RejectedWorld worlds[]
-      = {{"<model name=\"body\"><pose relative_to=\"offset\">0 0 0 0 0 0"
-          "</pose></model>",
-          "/sdf/world/model/pose/@relative_to"},
-         {"<model name=\"body\"><link name=\"link\">"
-          "<pose degrees=\"true\">0 0 0 0 0 90</pose></link></model>",
-          "/sdf/world/model/link/pose/@degrees"},
-         {"<model name=\"body\"><link name=\"link\"><collision name=\"shape\">"
-          "<pose rotation_format=\"quat_xyzw\">0 0 0 0 0 0 1</pose>"
-          "<geometry><sphere><radius>1</radius></sphere></geometry>"
-          "</collision></link></model>",
-          "/sdf/world/model/link/collision/pose/@rotation_format"},
-         {"<model name=\"body\" unexpected=\"true\"/>",
-          "/sdf/world/model/@unexpected"},
-         {"<model name=\"body\"><link name=\"link\"><inertial auto=\"true\"/>"
-          "</link></model>",
-          "/sdf/world/model/link/inertial/@auto"},
-         {"<model name=\"body\"><link name=\"link\"/>"
-          "<joint name=\"joint\" type=\"screw\"><parent>world</parent>"
-          "<child>link</child><axis><xyz>0 0 1</xyz></axis></joint></model>",
-          "/sdf/world/model/joint/@type"},
-         {"<model name=\"body\"><link name=\"link\"/>"
-          "<joint name=\"joint\" type=\"revolute2\"><parent>world</parent>"
-          "<child>link</child><axis><xyz>0 0 1</xyz></axis>"
-          "<axis2><xyz>0 1 0</xyz></axis2></joint></model>",
-          "/sdf/world/model/joint/@type"},
-         {"<model name=\"body\"><link name=\"link\"/>"
-          "<joint name=\"joint\" type=\"revolute\"><parent>world</parent>"
-          "<child>link</child><axis><xyz expressed_in=\"model\">0 0 "
-          "1</xyz></axis></joint></model>",
-          "/sdf/world/model/joint/axis/xyz/@expressed_in"}};
-
+  const RejectedWorld worlds[] = {
+      {R"(<model name="body" unexpected="true"/>)",
+       "/sdf/world/model/@unexpected"},
+      {R"(<model name="body"><link name="link"><inertial auto="true"/></link></model>)",
+       "/sdf/world/model/link/inertial/@auto"},
+      {R"(<model name="body"><link name="link"><pose rotation_format="quaternion">0 0 0 0 0 0</pose></link></model>)",
+       "/sdf/world/model/link/pose/@rotation_format"},
+      {R"(<model name="body"><link name="link"/><joint name="joint" type="gearbox"><parent>world</parent><child>link</child><axis><xyz>0 0 1</xyz></axis></joint></model>)",
+       "/sdf/world/model/joint/@type"},
+      {R"(<model name="body"><link name="link"/><joint name="joint" type="revolute2"><parent>world</parent><child>link</child><axis><xyz>0 0 1</xyz></axis><axis2><xyz>0 1 0</xyz></axis2></joint></model>)",
+       "/sdf/world/model/joint/@type"}};
   for (const auto& world : worlds) {
     const auto unsupported = findUnsupportedInWorld(world.contents);
     ASSERT_TRUE(unsupported.has_value()) << world.contents;
     EXPECT_NE(unsupported->find(world.path), std::string::npos) << *unsupported;
   }
+  for (
+      const auto* invalid :
+      {R"(<model name="body"><pose relative_to="missing">0 0 0 0 0 0</pose><link name="link"/></model>)",
+       R"(<model name="body"><link name="link"/><joint name="joint" type="revolute"><parent>world</parent><child>link</child><axis><xyz expressed_in="missing">0 0 1</xyz></axis></joint></model>)"}) {
+    const auto unsupported = findUnsupportedInWorld(invalid);
+    ASSERT_TRUE(unsupported.has_value());
+    EXPECT_NE(unsupported->find("missing"), std::string::npos) << *unsupported;
+  }
+}
+
+//==============================================================================
+TEST(
+    ContactBenchmarkGazeboPreset, AcceptsCanonicalFrameInertiaAndLimitSemantics)
+{
+  const auto unsupported = findUnsupportedInWorld(R"(
+    <gravity>1 2 -3</gravity>
+    <frame name="origin"><pose>1 2 3 0 0 0</pose></frame>
+    <model name="body"><pose relative_to="origin" degrees="true">0 0 0 0 0 90</pose>
+      <link name="base"/><frame name="attachment" attached_to="base"/>
+      <link name="link"><inertial><mass>2</mass>
+        <pose rotation_format="quat_xyzw">0 0 0 0 0 1 1</pose>
+        <inertia><ixx>1</ixx><iyy>2</iyy><izz>3</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+      </inertial></link>
+      <joint name="joint" type="universal"><parent>attachment</parent><child>link</child>
+        <axis><xyz expressed_in="__model__">0 0 2</xyz><limit><effort>4</effort><velocity>5</velocity></limit></axis>
+        <axis2><xyz>0 1 0</xyz></axis2></joint>
+    </model>)");
+  EXPECT_FALSE(unsupported.has_value()) << unsupported.value_or("");
+  EXPECT_FALSE(findUnsupportedInWorld(
+      R"(<model name="body"><link name="link"><inertial><mass>2</mass></inertial></link></model>)"));
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, AcceptsCanonicalScrewPitch)
+{
+  // Released gz-physics maps ThreadPitch to DART as -2*pi/pitch.
+  for (const auto* pitch :
+       {"<thread_pitch>-25.132741228718345</thread_pitch>",
+        "<screw_thread_pitch>0.25</screw_thread_pitch>"}) {
+    const auto unsupported = findUnsupportedInWorld(
+        "<model name='screw'><link name='body'/><joint name='joint' "
+        "type='screw'>"
+        "<parent>world</parent><child>body</child><axis><xyz>0 0 1</xyz></axis>"
+        + std::string(pitch) + "</joint></model>");
+    EXPECT_FALSE(unsupported.has_value()) << unsupported.value_or("");
+  }
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, RejectsGazeboNormalizationDiscrepancies)
+{
+  for (const auto* magnitude : {"1e300", "1e-300", "1e-8"}) {
+    const auto unsupported = findUnsupportedInWorld(
+        "<model name='body'><link name='link'>"
+        "<pose rotation_format='quat_xyzw'>0 0 0 0 0 "
+        + std::string(magnitude) + " " + magnitude + "</pose></link></model>");
+    ASSERT_TRUE(unsupported.has_value()) << magnitude;
+    EXPECT_NE(
+        unsupported->find("/sdf/world/model/link/pose"), std::string::npos)
+        << *unsupported;
+  }
+  for (const auto* magnitude : {"1e300", "1e-300", "1e-8"}) {
+    const auto unsupported = findUnsupportedInWorld(
+        "<model name='body'><link name='link'/>"
+        "<joint name='joint' type='revolute'><parent>world</parent>"
+        "<child>link</child><axis><xyz>0 0 "
+        + std::string(magnitude) + "</xyz></axis></joint></model>");
+    ASSERT_TRUE(unsupported.has_value()) << magnitude;
+    EXPECT_NE(
+        unsupported->find("/sdf/world/model/joint/axis/xyz"), std::string::npos)
+        << *unsupported;
+  }
+  EXPECT_FALSE(findUnsupportedInWorld(
+      R"(<model name="body"><link name="link"><pose rotation_format="quat_xyzw">0 0 0 0 0 2 2</pose></link></model>)"));
 }
 
 //==============================================================================
@@ -643,12 +689,9 @@ TEST(ContactBenchmarkGazeboPreset, RejectsNonEquivalentGazeboPresetValues)
   };
 
   rejectLink("<self_collide>true</self_collide>", "/link/self_collide");
-  rejectLink("<inertial><mass>2</mass></inertial>", "/link/inertial");
   rejectLink(
       "<inertial><inertia><ixx>1</ixx></inertia></inertial>",
       "/link/inertial/inertia");
-  rejectLink(
-      "<inertial><pose>0 0 0 0 0 0.1</pose></inertial>", "/link/inertial/pose");
 
   struct RejectedSurface
   {
@@ -693,16 +736,13 @@ TEST(ContactBenchmarkGazeboPreset, RejectsNonEquivalentGazeboPresetValues)
 
   EXPECT_TRUE(findUnsupportedInWorld(
       "<model name=\"body\"><self_collide>true</self_collide></model>"));
-  EXPECT_TRUE(findUnsupportedInWorld("<gravity>0 0 -9.81</gravity>"));
+  EXPECT_FALSE(findUnsupportedInWorld("<gravity>0 0 -9.81</gravity>"));
   EXPECT_TRUE(
       findUnsupportedInWorld("<physics><gravity>0 0 -9.8</gravity></physics>"));
 
   const std::string_view axes[]
       = {"<xyz>0 0 0</xyz>",
-         "<xyz>0 0 1e-8</xyz>",
-         "<xyz>0 0 1</xyz><limit><lower>1</lower><upper>2</upper></limit>",
-         "<xyz>0 0 1</xyz><limit><effort>1</effort></limit>",
-         "<xyz>0 0 1</xyz><limit><velocity>2</velocity></limit>"};
+         "<xyz>0 0 1</xyz><limit><lower>1</lower><upper>2</upper></limit>"};
   for (const auto axis : axes) {
     const auto unsupported = findUnsupportedInWorld(
         "<model name=\"body\"><link name=\"link\"/>"
@@ -713,14 +753,11 @@ TEST(ContactBenchmarkGazeboPreset, RejectsNonEquivalentGazeboPresetValues)
     EXPECT_NE(unsupported->find("/model/joint/axis/"), std::string::npos)
         << *unsupported;
   }
-  const auto unsupported = findUnsupportedInWorld(
+  EXPECT_FALSE(findUnsupportedInWorld(
       "<model name=\"body\"><link name=\"link\"/>"
       "<joint name=\"joint\" type=\"universal\"><parent>world</parent>"
       "<child>link</child><axis><xyz>0 0 2</xyz></axis>"
-      "<axis2><xyz>0 1 0</xyz></axis2></joint></model>");
-  ASSERT_TRUE(unsupported.has_value());
-  EXPECT_NE(unsupported->find("/model/joint/axis/xyz"), std::string::npos)
-      << *unsupported;
+      "<axis2><xyz>0 1 0</xyz></axis2></joint></model>"));
 }
 
 //==============================================================================
@@ -835,11 +872,7 @@ TEST(ContactBenchmarkGazeboPreset, HandlesVersionedJointAxisSemantics)
                </axis>
              </joint>
            </model>)";
-  const auto unsupported = findUnsupportedInWorld(joint, "1.4");
-  ASSERT_TRUE(unsupported.has_value());
-  EXPECT_NE(
-      unsupported->find("/sdf/world/model/joint/axis"), std::string::npos);
-  for (const std::string_view version : {"1.5", "1.6"}) {
+  for (const std::string_view version : {"1.4", "1.5", "1.6", "1.9"}) {
     const auto supported = findUnsupportedInWorld(joint, version);
     EXPECT_FALSE(supported.has_value()) << supported.value_or("");
   }
@@ -860,29 +893,73 @@ TEST(ContactBenchmarkGazeboPreset, ReportsFirstUnsupportedGazeboPresetInput)
 TEST(ContactBenchmarkGazeboPreset, ReadsActivePhysicsContactLimit)
 {
   const auto limit = [](const std::string& physics) {
-    const std::string sdf = "<sdf><world>" + physics + "</world></sdf>";
-    tinyxml2::XMLDocument document;
-    EXPECT_EQ(document.Parse(sdf.c_str()), tinyxml2::XML_SUCCESS);
+    const std::string xml = "<sdf version='1.9'><world name='test_world'>"
+                            + physics + "</world></sdf>";
+    sdf::Root document;
+    EXPECT_TRUE(document.LoadSdfString(xml).empty());
     return sdfCollisionPairMaxContacts(document);
   };
 
   EXPECT_EQ(limit(""), 20u);
-  EXPECT_EQ(limit("<physics/>"), 20u);
-  EXPECT_EQ(limit("<physics><max_contacts>4</max_contacts></physics>"), 4u);
-  EXPECT_EQ(limit("<physics><max_contacts>0</max_contacts></physics>"), 0u);
+  EXPECT_EQ(limit("<physics name=\"p1\" type=\"ignored\"/>"), 20u);
   EXPECT_EQ(
-      limit("<physics><max_contacts>4</max_contacts></physics>"
-            "<physics><max_contacts>8</max_contacts></physics>"),
+      limit("<physics name=\"p1\" "
+            "type=\"ignored\"><max_contacts>4</max_contacts></physics>"),
       4u);
   EXPECT_EQ(
-      limit("<physics><max_contacts>4</max_contacts></physics>"
-            "<physics default=\"true\"><max_contacts>8</max_contacts></physics>"
-            "<physics default=\"1\"><max_contacts>12</max_contacts></physics>"),
+      limit("<physics name=\"p1\" "
+            "type=\"ignored\"><max_contacts>0</max_contacts></physics>"),
+      0u);
+  EXPECT_EQ(
+      limit("<physics name=\"p1\" "
+            "type=\"ignored\"><max_contacts>4</max_contacts></physics>"
+            "<physics name=\"p2\" "
+            "type=\"ignored\"><max_contacts>8</max_contacts></physics>"),
       4u);
   EXPECT_EQ(
-      limit("<physics/>"
-            "<physics default=\"1\"><max_contacts>8</max_contacts></physics>"),
+      limit("<physics name=\"p1\" "
+            "type=\"ignored\"><max_contacts>4</max_contacts></physics>"
+            "<physics name=\"p2\" type=\"ignored\" "
+            "default=\"true\"><max_contacts>8</max_contacts></physics>"
+            "<physics name=\"p3\" type=\"ignored\" "
+            "default=\"1\"><max_contacts>12</max_contacts></physics>"),
+      4u);
+  EXPECT_EQ(
+      limit("<physics name=\"p1\" type=\"ignored\"/>"
+            "<physics name=\"p2\" type=\"ignored\" "
+            "default=\"1\"><max_contacts>8</max_contacts></physics>"),
       20u);
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, ReadsFirstPhysicsTimeStep)
+{
+  const auto timeStep = [](const std::string& physics) {
+    const std::string xml = "<sdf version='1.9'><world name='test_world'>"
+                            + physics + "</world></sdf>";
+    sdf::Root document;
+    EXPECT_TRUE(document.LoadSdfString(xml).empty());
+    return sdfFirstPhysicsMaxStepSize(document);
+  };
+
+  EXPECT_DOUBLE_EQ(timeStep(""), 0.001);
+  EXPECT_DOUBLE_EQ(
+      timeStep("<physics name=\"p1\" type=\"ignored\">"
+               "<max_step_size>0.002</max_step_size></physics>"
+               "<physics name=\"p2\" type=\"ignored\" default=\"true\">"
+               "<max_step_size>0.0005</max_step_size></physics>"),
+      0.002);
+  EXPECT_DOUBLE_EQ(
+      timeStep("<physics name=\"p1\" type=\"ignored\"/>"
+               "<physics name=\"p2\" type=\"ignored\" default=\"true\">"
+               "<max_step_size>0.0005</max_step_size></physics>"),
+      0.001);
+  EXPECT_DOUBLE_EQ(
+      timeStep("<physics name=\"p1\" type=\"ignored\" default=\"true\">"
+               "<max_step_size>0.002</max_step_size></physics>"
+               "<physics name=\"p2\" type=\"ignored\">"
+               "<max_step_size>0.0005</max_step_size></physics>"),
+      0.002);
 }
 
 //==============================================================================

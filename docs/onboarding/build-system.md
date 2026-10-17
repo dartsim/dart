@@ -92,7 +92,17 @@ components, and parent-project embedding.
 ## IO
 
 `dart-io` contains the SKEL, SDF, MJCF and URDF loaders. Enable it with
-`DART_BUILD_IO=ON` (the default); it requires tinyxml2 and urdfdom. Set
+`DART_BUILD_IO=ON` (the default); it requires tinyxml2, urdfdom and sdformat
+14 (at least 14.8), 15 or 16. Pixi uses sdformat 15.3 or newer within major 15
+by default. SDF loading uses sdformat's validation, schema conversion and
+frame resolution; tinyxml2 remains required by the other XML loaders.
+CMake selects major 16, then 15, then 14 when several SDKs are available,
+using versioned or unversioned package names. Installed IO components record
+the selected package and major and require that same major, so a consumer
+cannot silently link a different sdformat ABI. Core builds with IO disabled
+do not discover sdformat.
+
+Set
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` for a headless core plus IO
 build.
 
