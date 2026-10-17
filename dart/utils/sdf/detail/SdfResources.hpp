@@ -52,7 +52,8 @@ namespace detail {
 class SdfResources
 {
 public:
-  explicit SdfResources(common::ResourceRetrieverPtr retriever);
+  SdfResources(
+      common::ResourceRetrieverPtr retriever, bool useNativeFileLookup);
   ~SdfResources();
 
   SdfResources(const SdfResources&) = delete;
@@ -80,6 +81,7 @@ private:
       bool softGeometry = false);
 
   common::ResourceRetrieverPtr mRetriever;
+  bool mUseNativeFileLookup;
   sdf::ParserConfig mConfig;
   std::filesystem::path mDirectory;
   common::Uri mRootUri;

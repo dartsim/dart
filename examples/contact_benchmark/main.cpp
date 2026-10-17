@@ -3016,6 +3016,7 @@ int main(int argc, char* argv[])
 
     std::cout << "Loading SDF world file: " << absoluteSdfPath << "\n";
 
+    std::optional<double> gazeboTimeStep;
     if (options.gzPreset) {
       std::ifstream stream(absoluteSdfPath);
       const std::string xml(
@@ -3030,6 +3031,7 @@ int main(int argc, char* argv[])
                      "behavior could differ from Gazebo\n";
         return 1;
       }
+      gazeboTimeStep = contact_scene::sdfFirstPhysicsMaxStepSize(sdf);
       if (!options.gzCollisionPairMaxContacts.has_value()) {
         options.gzCollisionPairMaxContacts
             = contact_scene::sdfCollisionPairMaxContacts(sdf);
@@ -3044,6 +3046,10 @@ int main(int argc, char* argv[])
       parserOptions.mCollisionDetector = detector;
 
     world = dart::utils::SdfParser::readWorld(absoluteSdfPath, parserOptions);
+    // SdfParser honors the default physics profile; released Gazebo's
+    // benchmark reference uses the first profile's timestep.
+    if (world && gazeboTimeStep.has_value())
+      world->setTimeStep(*gazeboTimeStep);
   }
 
   if (!world) {

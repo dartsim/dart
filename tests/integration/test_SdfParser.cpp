@@ -1045,6 +1045,48 @@ TEST(SdfParser, MergedIncludeFlattensIntoTheContainingSkeleton)
 }
 
 //==============================================================================
+TEST(SdfParser, CustomRetrieverDoesNotFallBackToAmbientFiles)
+{
+  struct RootOnlyRetriever : PresentResourceRetriever
+  {
+    std::string rootUri;
+    std::string xml;
+
+    bool exists(const common::Uri& uri) override
+    {
+      return uri.toString() == rootUri;
+    }
+
+    std::string getFilePath(const common::Uri&) override
+    {
+      return "";
+    }
+
+    std::string readAll(const common::Uri& uri) override
+    {
+      return uri.toString() == rootUri ? xml : "";
+    }
+  };
+
+  TemporarySdfDirectory directory;
+  directory.write(
+      "included.sdf",
+      "<sdf version='1.9'><model name='ambient'><link name='body'/></model>"
+      "</sdf>");
+  const auto includedUri
+      = common::Uri::createFromPath((directory.path / "included.sdf").string());
+
+  auto retriever = std::make_shared<RootOnlyRetriever>();
+  retriever->rootUri = "memory://custom/scene.world";
+  retriever->xml = "<sdf version='1.9'><world name='custom'><include><uri>"
+                   + includedUri.toString() + "</uri></include></world></sdf>";
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+
+  EXPECT_EQ(SdfParser::readWorld(retriever->rootUri, options), nullptr);
+}
+
+//==============================================================================
 TEST(SdfParser, ReadWorldSelectsTheFirstWorldAndValidatesTheDocument)
 {
   const auto contents = R"(<sdf version='1.9'>

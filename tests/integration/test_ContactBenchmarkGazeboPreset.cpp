@@ -932,6 +932,37 @@ TEST(ContactBenchmarkGazeboPreset, ReadsActivePhysicsContactLimit)
 }
 
 //==============================================================================
+TEST(ContactBenchmarkGazeboPreset, ReadsFirstPhysicsTimeStep)
+{
+  const auto timeStep = [](const std::string& physics) {
+    const std::string xml = "<sdf version='1.9'><world name='test_world'>"
+                            + physics + "</world></sdf>";
+    sdf::Root document;
+    EXPECT_TRUE(document.LoadSdfString(xml).empty());
+    return sdfFirstPhysicsMaxStepSize(document);
+  };
+
+  EXPECT_DOUBLE_EQ(timeStep(""), 0.001);
+  EXPECT_DOUBLE_EQ(
+      timeStep("<physics name=\"p1\" type=\"ignored\">"
+               "<max_step_size>0.002</max_step_size></physics>"
+               "<physics name=\"p2\" type=\"ignored\" default=\"true\">"
+               "<max_step_size>0.0005</max_step_size></physics>"),
+      0.002);
+  EXPECT_DOUBLE_EQ(
+      timeStep("<physics name=\"p1\" type=\"ignored\"/>"
+               "<physics name=\"p2\" type=\"ignored\" default=\"true\">"
+               "<max_step_size>0.0005</max_step_size></physics>"),
+      0.001);
+  EXPECT_DOUBLE_EQ(
+      timeStep("<physics name=\"p1\" type=\"ignored\" default=\"true\">"
+               "<max_step_size>0.002</max_step_size></physics>"
+               "<physics name=\"p2\" type=\"ignored\">"
+               "<max_step_size>0.0005</max_step_size></physics>"),
+      0.002);
+}
+
+//==============================================================================
 TEST(ContactBenchmarkGazeboPreset, PublishesChangedPosesLikeGazebo)
 {
   auto world = simulation::World::create();

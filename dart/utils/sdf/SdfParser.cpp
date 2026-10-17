@@ -888,8 +888,10 @@ simulation::WorldPtr readSdfFile(
 simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 {
   try {
+    const bool useNativeFileLookup = !options.mResourceRetriever;
     const auto resolved = resolveSdfOptions(options);
-    detail::SdfResources resources(resolved.mResourceRetriever);
+    detail::SdfResources resources(
+        resolved.mResourceRetriever, useNativeFileLookup);
     sdf::Root root;
     if (!resources.load(uri, root))
       return nullptr;
@@ -936,8 +938,10 @@ dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options)
 {
   try {
+    const bool useNativeFileLookup = !options.mResourceRetriever;
     const auto resolved = resolveSdfOptions(options);
-    detail::SdfResources resources(resolved.mResourceRetriever);
+    detail::SdfResources resources(
+        resolved.mResourceRetriever, useNativeFileLookup);
     sdf::Root root;
     if (!resources.load(uri, root))
       return nullptr;

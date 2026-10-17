@@ -272,8 +272,11 @@ void sdfResourceCheckDimensions(const sdf::ElementPtr& geometry)
 } // namespace
 
 //==============================================================================
-SdfResources::SdfResources(common::ResourceRetrieverPtr retriever)
-  : mRetriever(std::move(retriever)), mConfig(sdf::ParserConfig::GlobalConfig())
+SdfResources::SdfResources(
+    common::ResourceRetrieverPtr retriever, bool useNativeFileLookup)
+  : mRetriever(std::move(retriever)),
+    mUseNativeFileLookup(useNativeFileLookup),
+    mConfig(sdf::ParserConfig::GlobalConfig())
 {
   mConfig.SetStoreResolvedURIs(false);
   mConfig.SetWarningsPolicy(sdf::EnforcementPolicy::WARN);
@@ -331,7 +334,7 @@ std::string SdfResources::stage(
       && std::filesystem::is_directory(source.getFilesystemPath()))
     path = source.getFilesystemPath();
   bool native = false;
-  if (path.empty() && !mRetriever->exists(source)) {
+  if (mUseNativeFileLookup && path.empty() && !mRetriever->exists(source)) {
     path = sdf::findFile(source.toString(), true, false, mConfig);
     native = !path.empty();
     if (native)

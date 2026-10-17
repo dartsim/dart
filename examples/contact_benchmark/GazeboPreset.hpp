@@ -109,6 +109,15 @@ inline std::size_t sdfCollisionPairMaxContacts(const sdf::Root& document)
                      : kGazeboDefaultCollisionPairMaxContacts;
 }
 
+/// Reads <max_step_size> from the first world's first physics profile, using
+/// the same selection released gz-sim applies in its benchmark reference.
+inline double sdfFirstPhysicsMaxStepSize(const sdf::Root& document)
+{
+  const auto* world = document.WorldByIndex(0);
+  const auto* physics = world ? world->PhysicsByIndex(0) : nullptr;
+  return physics ? physics->MaxStepSize() : 0.001;
+}
+
 /// Side of the cube gz-physics SDFFeatures ConstructPlane builds for an SDF
 /// <plane>.
 constexpr double kGazeboPlaneBoxSize = 2100.0;
@@ -760,7 +769,8 @@ inline std::optional<std::string> findUnsupportedGazeboSdfElement(
        child = child->GetNextElement()) {
     const std::string childPath = path + "/" + child->GetName();
     // Only one world/geometry/field is built. Repeated profiles and named
-    // entities are the exceptions (both loaders use the first physics).
+    // entities are the exceptions (the preset applies the first physics
+    // profile's timestep and contact limit).
     if (!isOneOf(
             child->GetName(),
             {"physics",
