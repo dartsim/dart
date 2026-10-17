@@ -99,10 +99,13 @@ visual/debug evidence.
    keeps one bounded entry per validated tool lane. Match capability tiers to
    task shape: the top tier for the hardest ambiguous work, the middle tier
    for everyday or read-heavy work, and the light tier for clear repeatable
-   work. Deeper reasoning modes give one difficult task more time; parallel
-   lanes need explicit user authorization for delegation; most tasks need
-   neither. An explicitly requested top-tier evaluation exercises that lane
-   without becoming a project default. Do not carry one family's tier or
+   work. Deeper reasoning modes give one difficult task more time.
+   Delegate by default under `docs/ai/orchestration.md`, honoring a per-task
+   `delegation=off` opt-out. Route packets to the best available agent,
+   keeping small tasks or a single hard workstream with one agent when
+   proportionate; independent packets may run in parallel. An explicitly
+   requested top-tier evaluation exercises that lane without becoming a
+   project default. Do not carry one family's tier or
    reasoning-mode names into another family's guidance. Replace a stale
    per-family entry in the owner doc; do not clone the workflow or append an
    ever-growing model taxonomy.

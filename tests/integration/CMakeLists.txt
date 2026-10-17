@@ -75,6 +75,15 @@ endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
 endif()
+# Explicit budget for coverage builds, overriding the coverage job's
+# `ctest --timeout 3000` default. In the gcov-instrumented Debug coverage
+# build this binary measured 1617 s on the green 2026-10-16 nightly but
+# overran 3000 s on the slower 2026-10-15 and 2026-10-17 nights (#3797), so
+# size at roughly twice the slow-night projection (~3300 s by the suite-wide
+# slowdown those nights). Non-coverage runs keep their tighter budgets.
+if(DART_CODECOV)
+  set_tests_properties(test_SplitImpulse PROPERTIES TIMEOUT 6600)
+endif()
 # T0 of the friction-solver evaluation. Its scenes are shared with the
 # standalone harness in tools/friction_eval, formatted with this tree.
 dart_add_test("integration" test_FrictionAnalytic)

@@ -3990,6 +3990,73 @@ def test_micro_native_slope_and_explicit_windows(monkeypatch, tmp_path, name):
             module.micro_perturb(row, args, tmp_path, "")
 
 
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+def test_micro_auxiliary_zero_stepalloc_report_is_ignored(monkeypatch, tmp_path, name):
+    # Google Benchmark 1.10 runs an auxiliary process under LD_PRELOAD whose
+    # shim prints an all-zero STEPALLOC report before the measured process.
+    module = _load_runner()
+    row = module.select_rows(name)[0]
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+        ]
+    )
+    args.bin_dir = tmp_path
+    cases = _micro_record(module, name)["results"][0]["head"]["cases"]
+    conflicting = False
+
+    def execute(command, env, log, timeout):
+        steps = int(
+            next(
+                item for item in command if item.startswith("--benchmark_min_time=")
+            ).split("=")[1][:-1]
+        )
+        output = Path(
+            next(
+                item.split("=", 1)[1]
+                for item in command
+                if item.startswith("--benchmark_out=")
+            )
+        )
+        module.write_json(
+            output,
+            {"benchmarks": [{"name": case, "iterations": steps} for case in cases]},
+        )
+        libdart = f"libdart={tmp_path}/libdart.so"
+        prefix = (
+            "STEPALLOC steps=7 measured=7 allocs=1 bytes=1 "
+            if conflicting
+            else "STEPALLOC steps=0 measured=0 allocs=0 bytes=0 "
+        )
+        text = prefix + libdart + "\n"
+        text += "".join(
+            f"PERFGUARD case={case} hash=0x0123456789abcdef finite=true\n"
+            for case in cases
+        )
+        text += (
+            f"STEPALLOC steps={len(cases)} measured={len(cases)} "
+            f"allocs={50 + 3 * steps} bytes={200 + 12 * steps} {libdart}\n"
+        )
+        log.write_text(text)
+        return text
+
+    monkeypatch.setattr(module, "execute", execute)
+    metrics = module.micro_perturb(row, args, tmp_path, "")
+    assert metrics["allocs"] == 3 * row.steps
+    assert metrics["bytes"] == 12 * row.steps
+    assert metrics["cases"] == cases
+    conflicting = True
+    with pytest.raises(ValueError):
+        module.micro_perturb(row, args, tmp_path, "")
+
+
 @pytest.mark.parametrize("defect", ["case error", "iterations", "malformed"])
 def test_micro_case_errors_are_correctness_failures(
     monkeypatch, tmp_path, capsys, defect
