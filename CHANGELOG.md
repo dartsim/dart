@@ -252,6 +252,10 @@
     from source on Linux (Clang 20 or newer and Ninja) and downloaded prebuilt
     on macOS arm64 and 64-bit Windows.
 
+  * Raise the minimum `wheel` version for isolated Python package builds
+    from 0.45.1 to 0.48.0.
+    [#3791](https://github.com/dartsim/dart/pull/3791)
+
   * Raise the minimum `ninja` version for isolated Python package builds
     from 1.12.1 to 1.13.2.
     [#3792](https://github.com/dartsim/dart/pull/3792)
