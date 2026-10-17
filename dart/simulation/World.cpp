@@ -777,6 +777,71 @@ const dynamics::Skeleton* modelSkeleton(const common::Composite* object)
   return nullptr;
 }
 
+// Only the caller's type is stable across owner visits. Associations, virtual
+// getters and their temporary shared-pointer releases must stay per owner.
+struct ModelObjectQuery
+{
+  explicit ModelObjectQuery(const common::Composite* object)
+  {
+    if (!object)
+      return;
+    mFrame = dynamic_cast<const dynamics::Frame*>(object);
+    mSkeleton = dynamic_cast<const dynamics::Skeleton*>(object);
+    if (mSkeleton)
+      return;
+    mBody = dynamic_cast<const dynamics::BodyNode*>(object);
+    if (mBody)
+      return;
+    mNode = dynamic_cast<const dynamics::Node*>(object);
+    if (mNode)
+      return;
+    mJoint = dynamic_cast<const dynamics::Joint*>(object);
+  }
+
+  const dynamics::Skeleton* resolveSkeleton() const
+  {
+    if (mSkeleton)
+      return mSkeleton;
+    if (mBody)
+      return mBody->getSkeleton().get();
+    if (mNode)
+      return mNode->getBodyNode() ? mNode->getSkeleton().get() : nullptr;
+    if (mJoint)
+      return mJoint->getSkeleton().get();
+    if (mFrame) {
+      for (const auto* parent = mFrame->getParentFrame();
+           parent && !parent->isWorld();
+           parent = parent->getParentFrame()) {
+        if (const auto* body = dynamic_cast<const dynamics::BodyNode*>(parent))
+          return body->getSkeleton().get();
+      }
+    }
+    return nullptr;
+  }
+
+  const dynamics::Frame* mFrame = nullptr;
+  const dynamics::Skeleton* mSkeleton = nullptr;
+  const dynamics::BodyNode* mBody = nullptr;
+  const dynamics::Node* mNode = nullptr;
+  const dynamics::Joint* mJoint = nullptr;
+};
+
+struct FrameObjectQuery
+{
+  explicit FrameObjectQuery(const dynamics::Frame* frame)
+    : mFrame(frame),
+      mObject(dynamic_cast<const common::Composite*>(frame)),
+      mModel(mObject)
+  {
+  }
+
+  // The reverse Composite->Frame cast in mModel can be ambiguous even when
+  // the incoming Frame->Composite cast succeeds. Do not reuse mFrame for it.
+  const dynamics::Frame* mFrame;
+  const common::Composite* mObject;
+  ModelObjectQuery mModel;
+};
+
 bool shareFrameTree(const dynamics::Frame* first, const dynamics::Frame* second)
 {
   for (const auto* a = first; a && !a->isWorld(); a = a->getParentFrame()) {
@@ -997,11 +1062,11 @@ private:
 };
 
 bool ownsModelObject(
-    const WorldDeactivationState& owner, const common::Composite* object)
+    const WorldDeactivationState& owner, const ModelObjectQuery& query)
 {
   const auto& world = *owner.mWorld;
-  const auto* frame = dynamic_cast<const dynamics::Frame*>(object);
-  const auto* skeleton = modelSkeleton(object);
+  const auto* frame = query.mFrame;
+  const auto* skeleton = query.resolveSkeleton();
   if (typeid(world) == typeid(World)) {
     if (skeleton && owner.mOwnedSkeletons.count(skeleton))
       return true;
@@ -1062,12 +1127,19 @@ bool ownsModelObject(
   return false;
 }
 
+bool ownsModelObject(
+    const WorldDeactivationState& owner, const common::Composite* object)
+{
+  return ownsModelObject(owner, ModelObjectQuery(object));
+}
+
 bool ownsFrameObject(
-    const WorldDeactivationState& owner, const dynamics::Frame* frame)
+    const WorldDeactivationState& owner, const FrameObjectQuery& query)
 {
   const auto& world = *owner.mWorld;
-  if (const auto* object = dynamic_cast<const common::Composite*>(frame))
-    return ownsModelObject(owner, object);
+  if (query.mObject)
+    return ownsModelObject(owner, query.mModel);
+  const auto* frame = query.mFrame;
   if (typeid(world) == typeid(World) && owner.mNativeOwnership
       && !owner.mAddingNativeSkeleton && !owner.mNativeDetectorInitialization
       && usesNativeOwnershipBackend(world)) {
@@ -4832,8 +4904,11 @@ void checkTopologyMutation(const Composite* object)
   if (!object)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::modelOwners().mWorlds.empty())
+    return;
+  const simulation::ModelObjectQuery query(object);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsModelObject(*owner, object)) {
+    if (simulation::ownsModelObject(*owner, query)) {
       simulation::checkModelMutation(*owner);
       if (owner->mAddingNativeSkeleton)
         ++owner->mNativeAdditionEvents.mModelChecks;
@@ -4848,8 +4923,11 @@ void checkFrameTopologyMutation(const dynamics::Frame* frame)
   if (!frame || frame->isWorld())
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::modelOwners().mWorlds.empty())
+    return;
+  const simulation::FrameObjectQuery query(frame);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsFrameObject(*owner, frame)) {
+    if (simulation::ownsFrameObject(*owner, query)) {
       simulation::checkModelMutation(*owner);
       owner->mNativeOwnership = false;
     }
@@ -4865,8 +4943,11 @@ void notifyFrameTopologyMutation(const dynamics::Frame* frame)
   if (frame->isShapeFrame() && !dynamic_cast<const Composite*>(frame))
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::modelOwners().mWorlds.empty())
+    return;
+  const simulation::FrameObjectQuery query(frame);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsFrameObject(*owner, frame)) {
+    if (simulation::ownsFrameObject(*owner, query)) {
       owner->mNativeOwnership = false;
       simulation::notifyModelTopology(*owner);
     }
@@ -4878,8 +4959,11 @@ void notifyTopologyMutation(const Composite* object)
   if (!object)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::modelOwners().mWorlds.empty())
+    return;
+  const simulation::ModelObjectQuery query(object);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsModelObject(*owner, object)) {
+    if (simulation::ownsModelObject(*owner, query)) {
       if (owner->mAddingNativeSkeleton)
         ++owner->mNativeAdditionEvents.mModelNotifications;
       if (owner->mAddingNativeSkeleton != object)
@@ -4894,8 +4978,11 @@ void notifyParameterMutation(const Composite* object)
   if (!object)
     return;
   const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::modelOwners().mWorlds.empty())
+    return;
+  const simulation::ModelObjectQuery query(object);
   for (auto* owner : simulation::modelOwners().mWorlds) {
-    if (simulation::ownsModelObject(*owner, object))
+    if (simulation::ownsModelObject(*owner, query))
       ++owner->mParameterRevision;
   }
 }

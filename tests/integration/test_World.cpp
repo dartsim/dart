@@ -2559,6 +2559,409 @@ TEST(World, SolverReplacementPreflightsFinalWorldThreadsBeforeModelStateChanges)
   DART_SUPPRESS_DEPRECATED_END
 }
 
+namespace {
+
+// A custom Node may manage a property and change its associated body without
+// attaching itself to a BodyNode's NodeMap. The ownership readers must observe
+// its current association on every World visit.
+class OwnershipQueryNode final : public Node, public common::Composite
+{
+public:
+  explicit OwnershipQueryNode(BodyNode* body) : Node(body) {}
+
+  const std::string& setName(const std::string& name) override
+  {
+    mName = name;
+    return mName;
+  }
+
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+
+  void setValue(int value)
+  {
+    common::detail::notifyParameterMutation(this);
+    mValue = value;
+  }
+
+  void associate(BodyNode* body)
+  {
+    mBodyNode = body;
+  }
+
+  std::shared_ptr<const Skeleton> getSkeleton() const override
+  {
+    mTrace->push_back("get");
+    if (mThrow)
+      throw std::runtime_error("later owner getter");
+    const auto* skeleton = mBodyNode->getSkeleton().get();
+    return std::shared_ptr<const Skeleton>(skeleton, [this](const Skeleton*) {
+      mTrace->push_back("release");
+      if (mOnRelease) {
+        auto callback = std::move(mOnRelease);
+        mOnRelease = nullptr;
+        callback();
+      }
+    });
+  }
+
+  std::vector<std::string>* mTrace = nullptr;
+  mutable std::function<void()> mOnRelease;
+  bool mThrow = false;
+  int mValue = 0;
+
+protected:
+  Node* cloneNode(BodyNode* body) const override
+  {
+    return new OwnershipQueryNode(body);
+  }
+
+private:
+  std::string mName;
+};
+
+class OwnershipQuerySource final : public Group
+{
+public:
+  explicit OwnershipQuerySource(BodyNode* body)
+    : Group("query_source", std::vector<BodyNode*>{body}, false, false)
+  {
+  }
+
+  std::size_t getNumBodyNodes() const override
+  {
+    if (mOnRead) {
+      auto callback = std::move(mOnRead);
+      mOnRead = nullptr;
+      callback();
+    }
+    return Group::getNumBodyNodes();
+  }
+
+  mutable std::function<void()> mOnRead;
+};
+
+// Quiet Frames have no registered child-set entries. A custom reader can
+// change this protected association without recursively taking the World lock.
+class OwnershipQueryFrame final : public SimpleFrame
+{
+public:
+  OwnershipQueryFrame()
+    : Entity(Frame::World(), true), Frame(Frame::World()), SimpleFrame()
+  {
+  }
+
+  void associate(Frame* parent)
+  {
+    mParentFrame = parent;
+  }
+};
+
+class OwnershipQueryFrameArm : public Frame
+{
+public:
+  explicit OwnershipQueryFrameArm(
+      bool* phase = nullptr, Frame* parent = Frame::World())
+    : Entity(ConstructFrame), Frame(parent), mPhase(phase)
+  {
+    if (mPhase) {
+      *mPhase = dynamic_cast<const common::Composite*>(this) != nullptr;
+      common::detail::notifyFrameTopologyMutation(this);
+    }
+  }
+
+  ~OwnershipQueryFrameArm() override
+  {
+    if (mPhase) {
+      *mPhase = dynamic_cast<const common::Composite*>(this) != nullptr;
+      common::detail::notifyFrameTopologyMutation(this);
+    }
+  }
+
+  const std::string& setName(const std::string& name) override
+  {
+    mName = name;
+    return mName;
+  }
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+  const Eigen::Isometry3d& getRelativeTransform() const override
+  {
+    return mTransform;
+  }
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override
+  {
+    return mZero;
+  }
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override
+  {
+    return mZero;
+  }
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override
+  {
+    return mZero;
+  }
+  const Eigen::Vector6d& getPartialAcceleration() const override
+  {
+    return mZero;
+  }
+
+  void associate(Frame* parent)
+  {
+    mParentFrame = parent;
+  }
+  void announce()
+  {
+    common::detail::notifyFrameTopologyMutation(this);
+  }
+
+private:
+  bool* mPhase;
+  std::string mName;
+  Eigen::Isometry3d mTransform = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d mZero = Eigen::Vector6d::Zero();
+};
+
+class OwnershipQueryLeft : public OwnershipQueryFrameArm
+{
+};
+class OwnershipQueryRight : public OwnershipQueryFrameArm
+{
+};
+class OwnershipQueryAmbiguous final : public OwnershipQueryLeft,
+                                      public OwnershipQueryRight,
+                                      public common::Composite
+{
+public:
+  OwnershipQueryAmbiguous() : Entity(Frame::World(), true) {}
+
+  const std::string& setName(const std::string& name) override
+  {
+    mName = name;
+    return mName;
+  }
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+
+  void dirtyTransform() override
+  {
+    OwnershipQueryLeft::dirtyTransform();
+    OwnershipQueryRight::dirtyTransform();
+  }
+  void dirtyVelocity() override
+  {
+    OwnershipQueryLeft::dirtyVelocity();
+    OwnershipQueryRight::dirtyVelocity();
+  }
+  void dirtyAcceleration() override
+  {
+    OwnershipQueryLeft::dirtyAcceleration();
+    OwnershipQueryRight::dirtyAcceleration();
+  }
+
+protected:
+  void changeParentFrame(Frame* parent) override
+  {
+    OwnershipQueryLeft::changeParentFrame(parent);
+    OwnershipQueryRight::changeParentFrame(parent);
+  }
+
+private:
+  std::string mName;
+};
+
+class OwnershipQueryLifecycle final : public OwnershipQueryFrameArm,
+                                      public common::Composite
+{
+public:
+  OwnershipQueryLifecycle(bool* phase, Frame* parent)
+    : Entity(Frame::World(), true), OwnershipQueryFrameArm(phase, parent)
+  {
+  }
+};
+
+} // namespace
+
+TEST(World, OwnershipQueryReadsChangedNodeAssociationForEachWorld)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto loose = createBox(Eigen::Vector3d::Ones());
+  auto owned = createBox(Eigen::Vector3d::Ones());
+  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
+  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
+  second->addSkeleton(owned);
+  std::vector<std::string> trace;
+  OwnershipQueryNode node(loose->getBodyNode(0));
+  node.mTrace = &trace;
+  source->mOnRead = [&] {
+    trace.push_back("source");
+    node.associate(owned->getBodyNode(0));
+  };
+  const auto firstRevision = first->getParameterRevision();
+  const auto secondRevision = second->getParameterRevision();
+  node.setValue(1);
+  EXPECT_EQ(node.mValue, 1);
+  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
+  EXPECT_EQ(second->getParameterRevision(), secondRevision + 1u);
+  ASSERT_GE(trace.size(), 5u);
+  EXPECT_EQ(
+      (std::vector<std::string>(trace.end() - 5, trace.end())),
+      (std::vector<std::string>{"get", "release", "source", "get", "release"}));
+}
+
+TEST(World, OwnershipQueryReleasesGetterBeforePositiveMembership)
+{
+  auto observer = World::create();
+  auto first = World::create();
+  auto second = World::create();
+  auto firstModel = createBox(Eigen::Vector3d::Ones());
+  auto secondModel = createBox(Eigen::Vector3d::Ones());
+  auto source
+      = std::make_shared<OwnershipQuerySource>(firstModel->getBodyNode(0));
+  observer->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
+  first->addSkeleton(firstModel);
+  second->addSkeleton(secondModel);
+  std::vector<std::string> trace;
+  OwnershipQueryNode node(firstModel->getBodyNode(0));
+  node.mTrace = &trace;
+  source->mOnRead = [&] {
+    trace.push_back("source");
+    node.mOnRelease = [&] {
+      node.associate(secondModel->getBodyNode(0));
+    };
+  };
+  const auto observerRevision = observer->getParameterRevision();
+  const auto firstRevision = first->getParameterRevision();
+  const auto secondRevision = second->getParameterRevision();
+  node.setValue(1);
+  EXPECT_EQ(observer->getParameterRevision(), observerRevision + 1u);
+  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
+  EXPECT_EQ(second->getParameterRevision(), secondRevision + 1u);
+  ASSERT_GE(trace.size(), 5u);
+  EXPECT_EQ(
+      (std::vector<std::string>(trace.end() - 5, trace.end())),
+      (std::vector<std::string>{"source", "get", "release", "get", "release"}));
+}
+
+TEST(World, OwnershipQueryLaterThrowPreservesEarlierOwnerEffects)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto loose = createBox(Eigen::Vector3d::Ones());
+  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
+  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
+  std::vector<std::string> trace;
+  OwnershipQueryNode node(loose->getBodyNode(0));
+  node.mTrace = &trace;
+  source->mOnRead = [&] {
+    trace.push_back("source");
+    node.mThrow = true;
+  };
+  const auto firstRevision = first->getParameterRevision();
+  const auto secondRevision = second->getParameterRevision();
+  EXPECT_THROW(node.setValue(1), std::runtime_error);
+  EXPECT_EQ(node.mValue, 0);
+  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
+  EXPECT_EQ(second->getParameterRevision(), secondRevision);
+  ASSERT_GE(trace.size(), 4u);
+  EXPECT_EQ(
+      (std::vector<std::string>(trace.end() - 4, trace.end())),
+      (std::vector<std::string>{"get", "release", "source", "get"}));
+}
+
+TEST(World, OwnershipQueryNullBodySkipsGetterForLaterWorld)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto loose = createBox(Eigen::Vector3d::Ones());
+  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
+  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
+  std::vector<std::string> trace;
+  OwnershipQueryNode node(loose->getBodyNode(0));
+  node.mTrace = &trace;
+  source->mOnRead = [&] {
+    trace.push_back("source");
+    node.associate(nullptr);
+    node.mThrow = true;
+  };
+  const auto firstRevision = first->getParameterRevision();
+  const auto secondRevision = second->getParameterRevision();
+  EXPECT_NO_THROW(node.setValue(1));
+  EXPECT_EQ(node.mValue, 1);
+  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
+  EXPECT_EQ(second->getParameterRevision(), secondRevision);
+  ASSERT_GE(trace.size(), 3u);
+  EXPECT_EQ(
+      (std::vector<std::string>(trace.end() - 3, trace.end())),
+      (std::vector<std::string>{"get", "release", "source"}));
+}
+
+TEST(World, OwnershipQueryReadsChangedFrameAncestryForEachWorld)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto loose = createBox(Eigen::Vector3d::Ones());
+  auto owned = createBox(Eigen::Vector3d::Ones());
+  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
+  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
+  second->addSkeleton(owned);
+  OwnershipQueryFrame frame;
+  frame.createDynamicsAspect();
+  frame.associate(loose->getBodyNode(0));
+  source->mOnRead = [&] {
+    frame.associate(owned->getBodyNode(0));
+  };
+  const auto firstRevision = first->getParameterRevision();
+  const auto secondRevision = second->getParameterRevision();
+  frame.getDynamicsAspect()->setFrictionCoeff(0.7);
+  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
+  EXPECT_EQ(second->getParameterRevision(), secondRevision + 1u);
+}
+
+TEST(World, OwnershipQueryPreservesAmbiguousFrameRoundTrip)
+{
+  auto world = World::create();
+  auto model = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(model);
+  OwnershipQueryAmbiguous query;
+  auto* left = static_cast<OwnershipQueryLeft*>(&query);
+  left->associate(model->getBodyNode(0));
+  const auto* object = dynamic_cast<const common::Composite*>(left);
+  ASSERT_NE(object, nullptr);
+  ASSERT_EQ(dynamic_cast<const Frame*>(object), nullptr);
+  const auto topology = world->getTopologyRevision();
+  left->announce();
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+}
+
+TEST(World, OwnershipQueryResolvesEachLifecyclePhaseSeparately)
+{
+  auto world = World::create();
+  auto model = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(model);
+  bool compositeInBasePhase = true;
+  const auto beforeConstruction = world->getTopologyRevision();
+  auto query = std::make_unique<OwnershipQueryLifecycle>(
+      &compositeInBasePhase, model->getBodyNode(0));
+  EXPECT_FALSE(compositeInBasePhase);
+  EXPECT_GT(world->getTopologyRevision(), beforeConstruction);
+  const auto topology = world->getTopologyRevision();
+  query->announce();
+  EXPECT_GT(world->getTopologyRevision(), topology);
+  const auto beforeDestruction = world->getTopologyRevision();
+  compositeInBasePhase = true;
+  query.reset();
+  EXPECT_FALSE(compositeInBasePhase);
+  EXPECT_GT(world->getTopologyRevision(), beforeDestruction);
+}
+
 //==============================================================================
 TEST(World, LateGlobalWorldDestructionKeepsOwnerRegistryAvailable)
 {
