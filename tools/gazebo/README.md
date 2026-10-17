@@ -259,8 +259,10 @@ their access, including private and deleted declarations, of the type, its
 bases and owned non-static members, including class template specializations.
 These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
-`std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
-`new`.
+`std::make_from_tuple`, engaged optional `std::in_place` initializers, known
+optional `emplace` calls, value-producing `static_cast` targets and placement `new`.
+Elaborated `class`, `struct` and `union` specifiers preserve value construction
+in cast targets.
 A Gazebo class derived from a DART class counts as a construction of that base
 at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
@@ -270,7 +272,12 @@ Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
 Constructed `std::tuple` and `std::pair` values retain owned value elements;
-pointer and reference elements do not construct their pointees. Count initializers
+pointer and reference elements do not construct their pointees. Default-initialized
+`std::variant` values retain construction dependencies of their first alternative,
+with each value declarator checked independently in grouped declarations.
+Balanced declarator attributes preserve the following initializer or terminator.
+Function prototypes and function-type aliases do not construct their return values.
+Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
 and count arguments forwarded by standard factories. This dependency applies at
@@ -291,8 +298,15 @@ Union types retain `union_declarations`, and union fields retain their enclosing
 `union_declaration`, including anonymous union blocks.
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
-value-owned subobjects and unnamed bit-field padding. Owned union fields also
-retain their types' `union_declarations`. Inline field types retain alias targets and enum headers
+value-owned subobjects and unnamed bit-field padding.
+Direct and aliased function-pointer fields, including qualified member pointers,
+retain their physical pointer declarators, array extents and alignment spellings
+in `storage_declarator`, using fragments from the field and its indexed aliases.
+Their return and parameter types do not describe inline storage. Alignment
+evidence includes `alignas` and GNU alignment attributes. Function declarations
+through aliases have no inline storage.
+Owned union fields also retain their types' `union_declarations`.
+Inline field types retain alias targets and enum headers
 in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
 `declaration_literals`. Indexed constants in inline array extents appear in
 `type_constant_declarations`. Known callees in field `decltype` expressions retain
@@ -301,7 +315,12 @@ indirection; dereferenced layout operands retain the referenced object fields.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
-initializer dependencies. Class annotations, including export macro spellings,
+initializer dependencies and the constructors required by class-valued defaults.
+Function-type parameters are adjusted to pointers before default construction
+analysis, so they do not construct their return types. Parenthesized object
+parameter names preserve their value, pointer, reference or array semantics.
+Parameter attributes preserve those semantics too.
+Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
 named bit-field widths are retained in `exception_specification_declarations`
@@ -324,15 +343,17 @@ and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
-iterators, aliases and range-for declarations. Returned `std::pair` and `std::tuple`
+iterators, aliases and range-for declarations. Map-family iterators preserve their
+key and mapped values as pair elements, including lookup iterators and both
+iterators returned by `equal_range`. Returned `std::pair` and `std::tuple`
 values retain each element's receiver shape for `first`, `second` and `std::get`
 projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
 contained receiver shapes through value, pointer and array expressions. Returned
 standard smart pointers preserve their wrapper types through `get()` and `lock()`
 chains.
-Source class aliases retain DART bases, and member lookup respects source declarations and
-class using-declarations. Lambda parameters and initialized captures stay within
+Source class aliases retain DART bases, and member lookup respects source declarations,
+nested types, type aliases and class using-declarations. Lambda parameters and initialized captures stay within
 their lambda body; capture initializers use the enclosing scope.
 Automatic declarations, including `decltype(auto)`, retain inferred return types.
 Concrete `decltype` declarations infer receiver shapes from their unevaluated
@@ -348,7 +369,17 @@ expressions retain both operand candidates without resolving their common type. 
 casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;
-data declarations retain array dimensions.
+data declarations retain array dimensions. Callable variables and data members
+retain their declarations when invoked through qualified names, object receivers
+or inherited fields, respecting member-name hiding. Grouped function pointers
+retain each name, array shape and any trailing return type. Callback fields do
+not construct their return types.
+Calls through qualified member-function pointers retain their declared return types.
+Known indexed function-type aliases and nested `std::function` or raw callback
+returns preserve callable shapes through repeated invocations and product-element
+projections. Used callable aliases retain their target declarations, including
+parameter types, in `type_alias_declarations`. Dependent and explicitly declared source callbacks retain their
+existing conservative receiver handling.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
