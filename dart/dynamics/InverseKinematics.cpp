@@ -1030,7 +1030,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
       mOutOfReachCache.push_back(s);
   }
 
-  auto comparator = [=](const Solution& s1, const Solution& s2) {
+  auto comparator = [this](const Solution& s1, const Solution& s2) {
     return mAnalyticalP.mQualityComparator(s1.mConfig, s2.mConfig, mIK);
   };
 
@@ -1804,7 +1804,7 @@ void InverseKinematics::resetTargetConnection()
 {
   mTargetConnection.disconnect();
   mTargetConnection = mTarget->onTransformUpdated.connect(
-      [=](const Entity*) { this->clearCaches(); });
+      [this](const Entity*) { this->clearCaches(); });
   clearCaches();
 }
 
@@ -1813,7 +1813,7 @@ void InverseKinematics::resetNodeConnection()
 {
   mNodeConnection.disconnect();
   mNodeConnection = mNode->onTransformUpdated.connect(
-      [=](const Entity*) { this->clearCaches(); });
+      [this](const Entity*) { this->clearCaches(); });
   clearCaches();
 }
 
