@@ -1,6 +1,6 @@
 ---
 description: kick off a large or autonomous DART task with project-home docs, an optional decision interview, and orchestrated execution
-argument-hint: "<TASK/CONTEXT> [mode=interview|brief|resume] [interview=skip]"
+argument-hint: "<TASK/CONTEXT> [mode=interview|brief|resume] [interview=skip] [delegation=off]"
 agent: build
 ---
 
@@ -27,6 +27,8 @@ plus optional mode flags:
   and run the session-start protocol before changing files.
 - `interview=skip`: skip maintainer questions only when the brief already
   answers all consequential decisions.
+- `delegation=off`: keep execution and review in the parent for this task,
+  as `docs/ai/orchestration.md` defines.
 
 Extract north star, deliverable, acceptance criteria, constraints, risks,
 references, paths, issues/PRs/branches, commands, and first step when present.
@@ -37,8 +39,9 @@ This workflow is the DART contract layer over the host client's native
 autonomous machinery. The client owns the persistence loop, subagents, and
 background execution; this workflow owns understanding, decomposition,
 sequencing, review, and honest evidence.
-Delegate only when the user explicitly requested it and the current
-surface permits it; otherwise execute packets serially. Use
+Delegate by default under `docs/ai/orchestration.md`, honoring a per-task
+`delegation=off` opt-out and keeping small tasks or a single hard workstream
+with one agent when proportionate. Use
 `dart-new-task` for bounded single-session work unless the user asked
 for the autonomous project-home loop.
 
@@ -95,15 +98,14 @@ the real scope materially different stops and reports back.
    documented, and unnecessary work removed or deferred. Every delegated
    packet gets its own contract: GOAL (one sentence), DONE WHEN
    (verifiable), EVIDENCE (what to record), RISKS, and NEXT STEP.
-6. **Decompose, run, review** - Cut packets per the contract above and run
-   them serially by default. When the user explicitly requested delegation,
-   route through the host client's native subagents, workflows, or
-   background agents — in Codex, `dart_scout` for bounded discovery,
-   `dart_reviewer` for current-state review, and `dart_release_auditor` for
-   reference comparison — with explicit, disjoint write ownership;
+6. **Decompose, run, review** - Cut packets per the contract above and assign
+   each to the best available agent: the parent, native subagents or
+   specialists, or another installed supported client. Honor the task's
+   delegation opt-out and sequence dependent packets. Give every executor
+   explicit, disjoint write ownership;
    implementation stays with the parent or a scoped executor. For each
    meaningful chunk: plan, execute, verify, then run an independent review
-   lane; treat findings as hypotheses, fix or record no-fix evidence,
+   lane (under `delegation=off`, a role-separated local review); treat findings as hypotheses, fix or record no-fix evidence,
    re-verify, and re-review. A packet is not done until the current
    post-fix state has at least two clean review passes recorded. On scope
    mismatch, unblock or re-cut the packet and fold new unknowns back into

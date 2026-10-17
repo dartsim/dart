@@ -5428,7 +5428,8 @@ def exercise_scenarios(
                 "one lower effort",
                 "structural",
                 "Deeper reasoning modes give one difficult task more time",
-                "explicit user authorization for delegation",
+                "Delegate by default",
+                "`delegation=off`",
                 '`docs/ai/README.md` § "Updating Models And Coding Agents"',
                 "Do not substitute a model",
                 "durable project context",
@@ -5455,6 +5456,47 @@ def exercise_scenarios(
                         "dart-model-upgrade source is missing contract marker "
                         f"{marker!r}"
                     )
+            # Delegation is the default: its owners must say so and must not
+            # regain the old delegate-only-on-request gate.
+            for relative, required in (
+                ("AGENTS.md", ("Delegate by default", "`delegation=off`")),
+                (
+                    "docs/ai/orchestration.md",
+                    ("delegation is the default", "`delegation=off`"),
+                ),
+                ("docs/ai/README.md", ("Delegate by default", "`delegation=off`")),
+                (
+                    "docs/ai/workflows.md",
+                    ("Delegation by default", "`delegation=off`"),
+                ),
+                (
+                    ".claude/commands/dart-ultrawork.md",
+                    ("Delegate by default", "`delegation=off`"),
+                ),
+                (".claude/commands/dart-model-upgrade.md", ()),
+            ):
+                try:
+                    # Collapse wrapping so phrases split across lines still match.
+                    owner_text = " ".join(
+                        (root / relative).read_text(encoding="utf-8").split()
+                    )
+                except OSError:
+                    owner_text = ""
+                for marker in required:
+                    if marker not in owner_text:
+                        local_errors.append(
+                            f"{relative} is missing delegation marker {marker!r}"
+                        )
+                for stale in (
+                    "Delegate only when the user",
+                    "explicit user authorization for delegation",
+                    "when the user authorized delegation",
+                    "when delegation is authorized",
+                ):
+                    if stale in owner_text:
+                        local_errors.append(
+                            f"{relative} still gates delegation on request: {stale!r}"
+                        )
 
         if scenario_id == "simulation-verification":
             expected_scopes = {
