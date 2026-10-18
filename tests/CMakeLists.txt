@@ -148,6 +148,15 @@ add_test(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_DARTConfigVersion.cmake"
 )
 
+add_test(
+  NAME test_HeadersComponent
+  COMMAND
+    "${CMAKE_COMMAND}" "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/HeadersComponent"
+    "-DTEST_CONFIG=$<CONFIG>" -P
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_HeadersComponent.cmake"
+)
+
 if(TARGET dart-collision-ode)
   add_test(
     NAME test_DARTConfigODE

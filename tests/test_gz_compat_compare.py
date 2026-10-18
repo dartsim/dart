@@ -600,6 +600,72 @@ def test_parallel_variants_share_one_clean_tagged_clone(tmp_path):
     assert "expected gz-sim9_9.5.0" in run.stderr
 
 
+def _locale_available(name):
+    try:
+        probe = subprocess.run(
+            ["locale", "-a"], capture_output=True, text=True, check=False
+        ).stdout.lower()
+    except OSError:
+        return False
+    return name.lower().replace("-", "") in probe.replace("-", "")
+
+
+# The lane is Linux-only; the probe runs only where the lane can.
+@pytest.mark.skipif(
+    sys.platform != "linux" or not _locale_available("en_US.UTF-8"),
+    reason="needs Linux and a locale whose collation differs from C",
+)
+def test_fuel_cache_key_does_not_depend_on_the_locale(tmp_path):
+    git = shutil.which("git")
+    remote = tmp_path / "remote"
+    (remote / "test" / "integration").mkdir(parents=True)
+    # C and en_US.UTF-8 order these owners differently.
+    (remote / "test" / "integration" / "fixture.cc").write_text(
+        '"https://fuel.gazebosim.org/1.0/chapulina/models/Box"\n'
+        '"https://fuel.gazebosim.org/1.0/OpenRobotics/models/Ball"\n'
+    )
+    identity = ["-c", "user.name=Test", "-c", "user.email=test@example.org"]
+    subprocess.run([git, "-C", str(remote), "init", "-q"], check=True)
+    subprocess.run([git, "-C", str(remote), "add", "-A"], check=True)
+    subprocess.run(
+        [git, "-C", str(remote), *identity, "commit", "-qm", "fixture"], check=True
+    )
+    subprocess.run([git, "-C", str(remote), "tag", "gz-sim9_9.5.0"], check=True)
+    shim = tmp_path / "bin"
+    shim.mkdir()
+    (shim / "git").write_text(
+        '#!/bin/bash\nif [ "$1" = clone ]; then\n'
+        '  exec "$REAL_GIT" clone -q --branch gz-sim9_9.5.0 '
+        '"$CLONE_REMOTE" "${@: -1}"\nfi\nexec "$REAL_GIT" "$@"\n'
+    )
+    # `gz fuel download -u <uri>` unpacks one model into GZ_FUEL_CACHE_PATH.
+    (shim / "gz").write_text(
+        '#!/bin/bash\necho "$4" >> "$DOWNLOADS"\npath="${4#*/1.0/}"\n'
+        'owner="${path%%/*}"; name="${path#*/models/}"\n'
+        'model="$GZ_FUEL_CACHE_PATH/fuel.gazebosim.org/${owner,,}/models/${name,,}/1"\n'
+        'mkdir -p "$model" && touch "$model/model.config"\n'
+    )
+    for path in shim.iterdir():
+        path.chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GZ_COMPAT_")}
+    env.update(
+        CONDA_PREFIX=str(tmp_path),
+        GZ_COMPAT_DIR=str(tmp_path / "work"),
+        PATH=str(shim) + os.pathsep + env["PATH"],
+        REAL_GIT=git,
+        CLONE_REMOTE=str(remote),
+        DOWNLOADS=str(tmp_path / "downloads"),
+    )
+    command = ["bash", str(LANE), "ionic", "fuel-cache"]
+    for locale in ("en_US.UTF-8", "C"):
+        run = subprocess.run(
+            command, env={**env, "LC_ALL": locale}, capture_output=True, text=True
+        )
+        assert run.returncode == 0, run.stdout + run.stderr
+    # The second run finds the first run's cache instead of downloading again.
+    assert len((tmp_path / "downloads").read_text().splitlines()) == 2
+
+
 def test_retries_and_stale_accepted_entries_are_reported(tmp_path, capsys):
     expected = tmp_path / "expected.txt"
     expected.write_text(
