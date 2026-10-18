@@ -881,8 +881,8 @@ TEST(WorldState, RestoreAfterShapeReplacementSynchronizesCollisionGeometry)
   const auto state = world->captureState();
   node->setShape(softShape);
   world->restoreState(state);
+  expectEqual(state, world->captureState());
   world->step();
-  expectEqual(state, state);
   EXPECT_EQ(node->getShape(), softShape);
 }
 
