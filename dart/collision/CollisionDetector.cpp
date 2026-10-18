@@ -38,6 +38,7 @@
 #include "dart/collision/dart/detail/DARTCollisionDetectorAccessor.hpp"
 #include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionGroup.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
@@ -62,6 +63,8 @@ void detail::CollisionHistory::clear(CollisionGroup& group)
   const auto detector = group.getCollisionDetector();
   if (auto* dart = dynamic_cast<DARTCollisionDetector*>(detector.get())) {
     DARTCollisionDetectorAccessor::clearHistory(*dart, group);
+  } else if (auto* fcl = dynamic_cast<FCLCollisionGroup*>(&group)) {
+    clear(*fcl);
   }
 #if HAVE_BULLET
   else if (auto* bullet = dynamic_cast<BulletCollisionGroup*>(&group)) {

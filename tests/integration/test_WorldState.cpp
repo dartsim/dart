@@ -230,6 +230,56 @@ void expectFreshTrajectory(
   }
 }
 
+void expectFreshFclSleepTrajectory(bool deactivation)
+{
+  const auto makeWorld = [deactivation] {
+    auto world = makeSleepingWorld();
+    world->getConstraintSolver()->setCollisionDetector(
+        collision::CollisionDetector::getFactory()->create("fcl"));
+    auto options = world->getDeactivationOptions();
+    options.mEnabled = deactivation;
+    options.mTimeUntilSleep = 0.01;
+    world->setDeactivationOptions(options);
+    return world;
+  };
+  for (const bool disturb : {false, true}) {
+    SCOPED_TRACE(disturb);
+    auto a = makeWorld();
+    for (int i = 0; i < 20; ++i)
+      a->step();
+    const auto state = a->captureState();
+    if (disturb) {
+      a->getSkeleton(1)->setVelocity(3, 2.0);
+      for (int i = 0; i < 5; ++i)
+        a->step();
+    }
+    auto b = makeWorld();
+    auto* group = a->getConstraintSolver()->getCollisionGroup().get();
+    const auto contentVersion = group->getContentVersion();
+    a->restoreState(state);
+    b->restoreState(state);
+    EXPECT_EQ(a->getConstraintSolver()->getCollisionGroup().get(), group);
+    EXPECT_EQ(group->getContentVersion(), contentVersion);
+    bool rested = false;
+    for (int i = 0; i < (deactivation ? 3000 : 16) && !rested; ++i) {
+      SCOPED_TRACE(i);
+      a->step();
+      b->step();
+      ASSERT_EQ(a->getSkeleton(1)->isResting(), b->getSkeleton(1)->isResting());
+      const auto sa = a->captureState();
+      const auto sb = b->captureState();
+      ASSERT_TRUE((sa.positions.array() == sb.positions.array()).all())
+          << "position delta: " << (sa.positions - sb.positions).transpose();
+      ASSERT_TRUE((sa.velocities.array() == sb.velocities.array()).all())
+          << "velocity delta: " << (sa.velocities - sb.velocities).transpose();
+      rested = b->getSkeleton(1)->isResting();
+    }
+    if (deactivation) {
+      EXPECT_TRUE(rested);
+    }
+  }
+}
+
 template <typename JointType = WeldJoint>
 WorldPtr makeSoftWorld()
 {
@@ -675,6 +725,16 @@ TEST(WorldState, RestoredSleepDecisionsMatchFreshWorld)
   EXPECT_TRUE(rested);
 }
 
+TEST(WorldState, RestoredFclSleepDecisionsMatchFreshWorld)
+{
+  expectFreshFclSleepTrajectory(true);
+}
+
+TEST(WorldState, RestoredFclTrajectoryMatchesFreshWorldWithoutDeactivation)
+{
+  expectFreshFclSleepTrajectory(false);
+}
+
 TEST(WorldState, RestoreInvalidatesWarmedCachesAndSleepingFastPath)
 {
   auto world = makeSleepingWorld();
@@ -871,8 +931,10 @@ TEST(WorldState, RestoreDoesNotAllocate)
       EXPECT_EQ(raw.allocationCount(), 0u);
     }
   };
+  // FCL rebuilds its history-dependent broad-phase tree on restore, which
+  // allocates nodes through FCL's public registration API.
   for (const auto* detector : {
-         "dart", "fcl",
+         "dart",
 #if HAVE_BULLET
              "bullet",
 #endif
@@ -886,7 +948,10 @@ TEST(WorldState, RestoreDoesNotAllocate)
       world->step();
     measure(world);
   }
-  measure(makeSoftWorld());
+  auto soft = makeSoftWorld();
+  soft->getConstraintSolver()->setCollisionDetector(
+      collision::DARTCollisionDetector::create());
+  measure(soft);
 }
 
 TEST(WorldState, InvalidRestorePreservesContactHistory)

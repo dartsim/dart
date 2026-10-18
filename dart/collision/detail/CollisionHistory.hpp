@@ -36,6 +36,7 @@ namespace dart::collision {
 
 class CollisionGroup;
 class BulletCollisionGroup;
+class FCLCollisionGroup;
 class OdeCollisionDetector;
 
 namespace detail {
@@ -47,6 +48,7 @@ struct CollisionHistory
 
 private:
   static void clear(BulletCollisionGroup& group);
+  static void clear(FCLCollisionGroup& group);
   static void clear(OdeCollisionDetector& detector, CollisionGroup& group);
 };
 

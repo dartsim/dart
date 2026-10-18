@@ -33,6 +33,7 @@
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
 #include <algorithm>
@@ -74,6 +75,17 @@ bool containsObject(
 }
 
 } // namespace
+
+//==============================================================================
+void detail::CollisionHistory::clear(FCLCollisionGroup& group)
+{
+  // Incremental balancing retains tree topology and traversal history even at
+  // unchanged poses. Rebuild in group order using the restored bounds; FCL's
+  // public tree reset requires allocating new nodes on registration.
+  group.updateEngineData();
+  group.mBroadPhaseAlg->clear();
+  group.mBroadPhaseAlg->registerObjects(group.mFiniteObjects);
+}
 
 //==============================================================================
 FCLCollisionGroup::FCLCollisionGroup(
