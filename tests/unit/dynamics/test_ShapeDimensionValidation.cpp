@@ -40,7 +40,9 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <memory>
 #include <new>
+#include <string>
 #include <vector>
 
 #include <cmath>
