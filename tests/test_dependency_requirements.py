@@ -414,9 +414,7 @@ def test_ode_libccd_probe_uses_an_enabled_language(tmp_path, languages, has_macr
     result = configure(
         tmp_path,
         "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\n"
-        + "".join(
-            f"enable_language({language})\n" for language in languages.split(";")
-        )
+        + "".join(f"enable_language({language})\n" for language in languages.split(";"))
         + "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
         "include(DARTFindODE)\n"
         "if(NOT ODE_FOUND OR NOT "
