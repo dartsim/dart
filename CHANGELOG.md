@@ -123,10 +123,10 @@
 
 * Dynamics
 
-  * Initialize the lazy bounding-box and volume caches in the default `Shape`
-    constructor, so line segment, plane, point cloud, voxel grid and custom
-    shapes no longer read uninitialized flags or skip their first geometry
-    calculation.
+  * Line segment, plane, point cloud, voxel grid and custom shapes built on
+    the default `Shape` constructor now always compute their volume and
+    bounding box on the first query, instead of possibly returning zero
+    volume or an empty box.
 
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
