@@ -168,7 +168,7 @@ def swivel_solver(chain, wam):
                 method="bvls",
             ).x
             x = np.clip(x + np.clip(step, -TRACK_REACH, TRACK_REACH), lower, upper)
-        return best
+        return x if np.abs(chain.fk(x) - desired).max() < FK_TOLERANCE else best
 
     def candidates(desired, q):
         motion = chain.self_motion(desired)

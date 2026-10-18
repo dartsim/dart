@@ -598,6 +598,22 @@ def test_wam_ssik_rejects_inaccurate_charts_at_a_wrist_singularity():
     assert np.abs(wam.getPositions() - start).max() < 0.5
 
 
+def test_wam_ssik_keeps_a_continuation_reached_on_its_last_step():
+    from examples.demos.scenes import wam_analytical_ik
+
+    _, wam, _, chain = _wam_with_ssik()
+    # At full extension ssik finds no chart for this target, and the short
+    # boundary continuation first reaches it on its last permitted step.
+    start = np.array([-2.422, 0.0, -1.274, 0.23052629, -1.817, 0.0, 2.551])
+    goal = np.array([-2.441, -0.047, -1.322, 0.23052629, -1.838, 0.044, 2.507])
+    desired = chain.fk(start + 0.99 * (goal - start))
+    wam.setPositions(start)
+    found = wam_analytical_ik.swivel_solver(chain, wam)(desired)
+    assert len(found) == 1
+    np.testing.assert_allclose(chain.fk(found[0]), desired, atol=1e-6)
+    assert np.abs(found[0] - start).max() <= wam_analytical_ik.TRACK_REACH
+
+
 def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
     from examples.demos.scenes import wam_analytical_ik
 
