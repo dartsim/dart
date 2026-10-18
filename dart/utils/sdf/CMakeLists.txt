@@ -1,9 +1,11 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_srcs "detail/*.cpp")
 
-dart_add_utils_headers(${hdrs})
-dart_add_utils_sources(${srcs})
+dart_add_utils_headers(${hdrs} ${detail_hdrs})
+dart_add_utils_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_sdf headers" ${hdrs})

@@ -42,6 +42,7 @@ imgui = ">=1.92.8,<2"
 libboost-devel = ">=1.86.0,<2"
 libcurl = ">=7.85.0,<9"
 libode = ">=0.16.5,<0.17"
+libsdformat15 = ">=15.3.0,<16"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openssl = ">=1.1.1,<4"
@@ -59,7 +60,9 @@ config-core = { cmd = """
         -DBUILD_TESTING=OFF -DDART_BUILD_IO=OFF -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF \
         -DCMAKE_DISABLE_FIND_PACKAGE_OpenGL=ON \
         -DCMAKE_DISABLE_FIND_PACKAGE_imgui=ON -DCMAKE_DISABLE_FIND_PACKAGE_tinyxml2=ON \
-        -DCMAKE_DISABLE_FIND_PACKAGE_urdfdom=ON
+        -DCMAKE_DISABLE_FIND_PACKAGE_urdfdom=ON \
+        -DCMAKE_DISABLE_FIND_PACKAGE_sdformat=ON -DCMAKE_DISABLE_FIND_PACKAGE_sdformat14=ON \
+        -DCMAKE_DISABLE_FIND_PACKAGE_sdformat15=ON -DCMAKE_DISABLE_FIND_PACKAGE_sdformat16=ON
 """ }
 build-core = { cmd = "cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/core --target dart --parallel 8", depends-on = [
   "config-core",
@@ -971,7 +974,7 @@ libgz-fuel-tools10 = ">=10.0.0"
 libgz-gui9 = ">=9.0.0"
 libgz-sensors9 = ">=9.0.0"
 libgz-rendering9 = ">=9.0.0"
-libsdformat15 = ">=15.0.0"
+libsdformat15 = ">=15.3.0,<16"
 eigen = ">=3.4.0"
 assimp = ">=5.4.3,<6"
 libode = ">=0.16.2"

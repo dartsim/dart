@@ -252,29 +252,17 @@ function(install_component_exports package_name)
     set(external_dependencies)
     foreach(dependent_package ${dependency_package})
       set(find_pkg_name "Find${dependent_package}.cmake")
-      set(find_pkg_path "")
+      # Dependency packages can add private, non-standalone finders to the path.
+      set(find_pkg_path "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/${find_pkg_name}")
       set(dart_find_pkg_name "DARTFind${dependent_package}.cmake")
-      set(dart_find_pkg_path "")
-      foreach(module_path ${CMAKE_MODULE_PATH})
-        set(find_pkg_path_candidate "${module_path}/${find_pkg_name}")
-        set(dart_find_pkg_path_candidate "${module_path}/${dart_find_pkg_name}")
-        if(
-          "${find_pkg_path}" STREQUAL ""
-          AND EXISTS "${find_pkg_path_candidate}"
-        )
-          set(find_pkg_path ${find_pkg_path_candidate})
-        endif()
-        if(
-          "${dart_find_pkg_path}" STREQUAL ""
-          AND EXISTS "${dart_find_pkg_path_candidate}"
-        )
-          set(dart_find_pkg_path ${dart_find_pkg_path_candidate})
-        endif()
-      endforeach()
-      if(NOT "${find_pkg_path}" STREQUAL "")
+      set(
+        dart_find_pkg_path
+        "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/${dart_find_pkg_name}"
+      )
+      if(EXISTS "${find_pkg_path}")
         install(FILES "${find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
       endif()
-      if("${dart_find_pkg_path}" STREQUAL "")
+      if(NOT EXISTS "${dart_find_pkg_path}")
         message(FATAL_ERROR "Failed to find '${dart_find_pkg_path}'.")
       endif()
       list(APPEND external_dependencies ${dependent_package})
