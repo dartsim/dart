@@ -2561,3 +2561,36 @@ TEST_F(SoftDynamicsTest, pointMassAccelerationsDoNotAffectMassMatrices)
   for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i)
     softBody->getPointMass(i)->setAccelerations(originalAccelerations[i]);
 }
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, pointMassEditsKeepPointStateInSync)
+{
+  auto skeleton = dynamics::Skeleton::create();
+  dynamics::SoftBodyNode::Properties properties(
+      dynamics::BodyNode::Properties(),
+      dynamics::SoftBodyNodeHelper::makeSinglePointMassProperties(
+          1.0, 0.0, 0.0, 0.0));
+  auto* soft = skeleton
+                   ->createJointAndBodyNodePair<
+                       dynamics::WeldJoint,
+                       dynamics::SoftBodyNode>(
+                       nullptr, dynamics::WeldJoint::Properties(), properties)
+                   .second;
+  const auto version = skeleton->getVersion();
+
+  auto* added = soft->addPointMass(
+      dynamics::PointMass::Properties(Vector3d::UnitX(), 1.0));
+
+  ASSERT_EQ(soft->getNumPointMasses(), 2u);
+  EXPECT_EQ(soft->getPointMass(1), added);
+  EXPECT_EQ(soft->getAspectState().mPointStates.size(), 2u);
+  EXPECT_TRUE(added->getState() == dynamics::PointMass::State());
+  EXPECT_TRUE(added->getWorldPosition().isApprox(Vector3d::UnitX()));
+  EXPECT_GT(skeleton->getVersion(), version);
+
+  const auto addedVersion = skeleton->getVersion();
+  soft->removeAllPointMasses();
+  EXPECT_EQ(soft->getNumPointMasses(), 0u);
+  EXPECT_TRUE(soft->getAspectState().mPointStates.empty());
+  EXPECT_GT(skeleton->getVersion(), addedVersion);
+}

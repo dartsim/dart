@@ -247,10 +247,22 @@ template <typename... _ArgTypes>
 template <typename... Args>
 void Signal<void(_ArgTypes...)>::raise(Args&&... args)
 {
+  std::shared_ptr<ConnectionBodyType> singleConnection;
   std::vector<std::shared_ptr<ConnectionBodyType>> connections;
   {
     std::lock_guard<std::mutex> lock(mConnectionMutex);
-    connections.assign(mConnectionBodies.begin(), mConnectionBodies.end());
+    if (mConnectionBodies.empty())
+      return;
+    if (mConnectionBodies.size() == 1u)
+      singleConnection = *mConnectionBodies.begin();
+    else
+      connections.assign(mConnectionBodies.begin(), mConnectionBodies.end());
+  }
+
+  if (singleConnection) {
+    if (singleConnection->isConnected())
+      singleConnection->getSlot()(std::forward<Args>(args)...);
+    return;
   }
 
   for (const auto& connectionBody : connections) {

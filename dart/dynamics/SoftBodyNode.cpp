@@ -459,6 +459,23 @@ void SoftBodyNode::setAspectState(const AspectState& state)
 }
 
 //==============================================================================
+void SoftBodyNode::restoreDynamicState(
+    const std::vector<PointMass::State>& pointStates,
+    const std::vector<Eigen::Vector3d>& externalForces)
+{
+  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  DART_ASSERT(externalForces.size() == mPointMasses.size());
+
+  mAspectState.mPointStates = pointStates;
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses[i]->mFext = externalForces[i];
+  dirtyExternalForces();
+
+  adaptiveContactActivation(*this).resetTransientState();
+  mNotifier->dirtyTransform();
+}
+
+//==============================================================================
 void SoftBodyNode::setAspectProperties(const AspectProperties& properties)
 {
   setVertexSpringStiffness(properties.mKv);
@@ -972,7 +989,7 @@ std::size_t SoftBodyNode::getNumActivePointMasses() const
 //==============================================================================
 void SoftBodyNode::removeAllPointMasses()
 {
-  mPointMasses.clear();
+  // configurePointMasses() deletes the point masses and their states together.
   mAspectProperties.mPointProps.clear();
   mAspectProperties.mFaces.clear();
   configurePointMasses(mSoftShapeNode.lock());
@@ -981,8 +998,7 @@ void SoftBodyNode::removeAllPointMasses()
 //==============================================================================
 PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 {
-  mPointMasses.push_back(new PointMass(this));
-  mPointMasses.back()->mIndex = mPointMasses.size() - 1;
+  // configurePointMasses() creates the point mass and its state together.
   mAspectProperties.mPointProps.push_back(_properties);
   configurePointMasses(mSoftShapeNode.lock());
 
