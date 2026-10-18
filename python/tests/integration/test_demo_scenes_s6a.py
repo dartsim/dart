@@ -721,6 +721,8 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
         (shoulder, 1, -0.003),
         (np.array([0.0, 0.0, 0.0, -0.9, 0.0, 0.0, 0.0]), 3, -1e-4),
         (np.array([2.6, -2.0, -2.8, -0.9, -0.3, 0.0, -3.0]), 1, -0.001),
+        # Past the wrist limit, bounded steps cycle instead of stalling.
+        (np.array([-1.092, 1.163, -2.604, 2.857, -0.06, -1.6, 0.94]), 5, -0.005),
     ):
         moved = start.copy()
         moved[joint] += offset
