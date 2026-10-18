@@ -3308,6 +3308,57 @@ def test_cmake_semantic_graph_rejects_changed_ode_script_test(
     assert any(expected in error for error in errors), errors
 
 
+HEADERS_SCRIPT_TEST = """
+add_test(
+  NAME test_HeadersComponent
+  COMMAND
+    "${CMAKE_COMMAND}"
+    "-DDART_BINARY_DIR=${DART_BINARY_DIR}"
+    "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmake/HeadersComponent"
+    "-DTEST_CONFIG=$<CONFIG>"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test_HeadersComponent.cmake"
+)
+"""
+
+
+@pytest.mark.parametrize(
+    ("registration", "expected"),
+    (
+        (HEADERS_SCRIPT_TEST, None),
+        ("", "required CMake script test `test_HeadersComponent` is missing"),
+        (
+            HEADERS_SCRIPT_TEST.replace("$<CONFIG>", "wrong"),
+            "unapproved command arguments",
+        ),
+    ),
+)
+def test_cmake_semantic_graph_checks_headers_script_test(
+    tmp_path, registration, expected
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    (tmp_path / "tests/cmake/test_HeadersComponent.cmake").write_text(
+        'message(STATUS "headers fixture executed")\n', encoding="utf-8"
+    )
+    cmake_file = tmp_path / "tests/CMakeLists.txt"
+    cmake_file.write_text(
+        cmake_file.read_text(encoding="utf-8") + registration, encoding="utf-8"
+    )
+    result = subprocess.run(
+        ["cmake", "-S", str(tmp_path), "-B", str(build)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    if expected is None:
+        assert errors == []
+    else:
+        assert any(expected in error for error in errors), errors
+
+
 @pytest.mark.parametrize("override", ("", "7.0.0", "7.4.2", "8.0.0"))
 def test_cmake_semantic_graph_accepts_effective_version_script_test(tmp_path, override):
     build = _configure_semantic_graph_fixture(tmp_path)
