@@ -9688,3 +9688,83 @@ def test_delegation_owners_stale_gate_is_case_insensitive(
     _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "gates delegation" in e for e in errors) is gated
+
+
+_F2BC_BOUNDARY_SOURCES = [
+    ("Do not delegate by default, when delegation=off.", False),
+    ("Do not delegate by default, with delegation=off.", False),
+    ("Do not delegate by default, if delegation=off.", False),
+    ("Do not delegate by default when delegation=off.", False),
+    ("When delegation=off, do not delegate by default.", False),
+    ("Delegation is disabled by default, when delegation=off.", False),
+    ("By default, delegation is off, when delegation=off.", False),
+    ("Do not delegate, by default, when delegation=off.", False),
+    ("(Do not delegate by default, when delegation=off.)", False),
+    ("Delegate by default (Do not delegate by default, when delegation=off.)", False),
+    ("`Do not delegate by default, when delegation=off.`", False),
+    ("Do not delegate by default, when delegation=off or unset.", True),
+    ("Do not delegate by default, when delegation=off-mode.", True),
+    ("Do not delegate by default, when delegation=OFFICE.", True),
+    ("Do not delegate by default, even when delegation=off.", True),
+    ("Do not delegate by default. When delegation=off.", True),
+    ("When delegation=off,\n\nDo not delegate by default.", True),
+    (
+        "Do not delegate by default, when delegation=off; Do not delegate by default.",
+        True,
+    ),
+    ("<span hidden>Do not delegate by default, when delegation=off.</span>", False),
+    ("Delegation is disabled by default.", True),
+    ("By default, delegation is disabled.", True),
+    ("Delegation is off, by default.", True),
+    ("By default, delegation is off.", True),
+    ("Delegation is disabled by default for release workflows.", False),
+    ("Delegation is by default disabled. Do not delegate by default.", True),
+]
+
+_F2BC_FLAG_REPLACEMENTS = [
+    ("delegation=off", False),
+    ("delegation=off-mode", True),
+    ("x-delegation=off", True),
+    ("delegation=off--mode", True),
+    ("delegation=office", True),
+    ("delegation=off_mode", True),
+    ("delegation=off2", True),
+    ("xdelegation=off", True),
+    ("delegation=OFF", True),
+    ("delegation=off -", False),
+    ("delegation=off,", False),
+    ("delegation=off.", False),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _F2BC_BOUNDARY_SOURCES)
+def test_f2bc_boundary_helper(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(("source", "rejected"), _F2BC_BOUNDARY_SOURCES)
+def test_f2bc_boundary_owners(monkeypatch, relative, source, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + source)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(("replacement", "missing"), _F2BC_FLAG_REPLACEMENTS)
+def test_f2bc_boundary_required_flag(monkeypatch, relative, replacement, missing):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace("delegation=off", replacement)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert (
+        any(relative in e and "missing delegation marker" in e for e in errors)
+        is missing
+    )

@@ -378,3 +378,7 @@ state scoped by `for`, `about` or a quoted label stays local; other
 continuations stay conservative. Synonyms such as `prohibited` and
 `disallowed`, and scopes such as `in`, `on` and `during`, are not interpreted;
 use the canonical `disabled`/`off` and `for ...` wording.
+The by-default qualifier is recognized only fronted (`By default, delegation is
+disabled.`) or trailing (`Delegation is disabled by default.`); an infixed
+placement such as `Delegation is by default disabled.` is not interpreted, so
+use one of the two recognized positions.

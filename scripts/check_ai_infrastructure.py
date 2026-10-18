@@ -5204,7 +5204,7 @@ _DELEGATION_OPT_OUT = (
 # order. A balanced parenthetical holding only this clause is exempted too.
 _DELEGATION_EXCEPTION_CLAUSE = (
     rf"(?:{_DELEGATION_OPT_OUT}[:,]? +(?:{_DELEGATION_NEGATION_PATTERN})"
-    rf"|(?:{_DELEGATION_NEGATION_PATTERN}) +{_DELEGATION_OPT_OUT})"
+    rf"|(?:{_DELEGATION_NEGATION_PATTERN}),? +{_DELEGATION_OPT_OUT})"
 )
 _DELEGATION_EXCEPTION = re.compile(_DELEGATION_EXCEPTION_CLAUSE)
 _DELEGATION_EXEMPT_CLAUSE = re.compile(
@@ -5827,9 +5827,10 @@ def exercise_scenarios(
                     local_errors.append(str(error))
                     break
                 for marker in required:
-                    if not re.search(
-                        rf"\b{re.escape(_delegation_owner_text(marker))}\b", owner_text
-                    ):
+                    pattern = rf"\b{re.escape(_delegation_owner_text(marker))}\b"
+                    if marker == "`delegation=off`":
+                        pattern = rf"(?<![\w-]){re.escape(_delegation_owner_text(marker))}(?![\w-])"
+                    if not re.search(pattern, owner_text):
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
