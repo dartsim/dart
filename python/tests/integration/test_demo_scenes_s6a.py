@@ -307,10 +307,6 @@ def _random_in_limits(wam, rng):
     return rng.uniform(wam.getPositionLowerLimits(), wam.getPositionUpperLimits())
 
 
-def _swivel(chain, q):
-    return chain.self_motion(chain.fk(q)).param_of(q)
-
-
 def _rotation_error(a, b):
     relative = a[:3, :3].T @ b[:3, :3]
     skew = relative - relative.T
@@ -391,15 +387,74 @@ def test_wam_ssik_tracks_a_dragged_target_without_jumps():
 def test_wam_ssik_keeps_a_dragged_elbow_pose():
     setup, wam, ee, chain = _wam_with_ssik()
     target = _activate_at(setup, wam, [0.3, 0.6, 0.2, 1.5, -0.3, 0.5, 0.1])
-    held = _swivel(chain, wam.getPositions())
+    # Swivels are measured in the target's basis, as the solver holds them.
+    motion = chain.self_motion(target.getTransform().matrix())
+    held = motion.param_of(wam.getPositions())
     wam.getDof("/j3").setPosition(0.6)
-    moved = _swivel(chain, wam.getPositions())
-    assert abs(moved - held) > 0.1
+    moved = motion.param_of(wam.getPositions())
+    assert abs(moved - held) > 0.05
     setup.pre_refresh()
     np.testing.assert_allclose(
         ee.getWorldTransform().matrix(), target.getTransform().matrix(), atol=1e-8
     )
-    assert _swivel(chain, wam.getPositions()) == pytest.approx(moved, abs=1e-9)
+    assert motion.param_of(wam.getPositions()) == pytest.approx(moved, abs=1e-9)
+
+
+def test_wam_ssik_follows_a_drag_across_the_swivel_basis_switch():
+    setup, wam, ee, _ = _wam_with_ssik()
+    # ssik rebuilds the swivel basis around a near-vertical shoulder-wrist line
+    # between these two poses, 0.0002 rad apart.
+    start = np.array([0.3, -0.036474599, 0.2, 0.5, -0.3, 0.5, 0.1])
+    goal = start + [0.0, 0.0002, 0.0, 0.0, 0.0, 0.0, 0.0]
+    target = _activate_at(setup, wam, goal)
+    desired = target.getTransform().matrix()
+    target.setTransform(ee.getWorldTransform())
+    wam.setPositions(start)
+    transform = dart.math.Isometry3()
+    transform.set_rotation(desired[:3, :3])
+    transform.set_translation(desired[:3, 3])
+    target.setTransform(transform)
+    setup.pre_refresh()
+    assert np.abs(wam.getPositions() - start).max() < 0.01
+    np.testing.assert_allclose(ee.getWorldTransform().matrix(), desired, atol=1e-7)
+
+
+def test_wam_ssik_fallback_finds_narrow_in_limit_arcs():
+    from examples.demos.scenes import wam_analytical_ik
+
+    upper = np.ones(7)
+    upper[0] = 0.001
+
+    class Arm:
+        def getPositionLowerLimits(self):
+            return -np.ones(7)
+
+        def getPositionUpperLimits(self):
+            return upper
+
+        def getPositions(self):
+            return np.zeros(7)
+
+    class Chart:
+        def q(self, swivel):
+            # Joint 0 is within limits only on a 0.063 rad arc around 0.049,
+            # between two of the 64 coarse samples, and never wraps into them.
+            q = np.zeros(np.shape(swivel) + (7,))
+            q[..., 0] = 2.0 * (1.0 - np.cos(np.asarray(swivel) - 0.049))
+            return q
+
+    class Motion(list):
+        def param_of(self, q):
+            return 2.0
+
+    class Chain:
+        def self_motion(self, desired):
+            return Motion([Chart()])
+
+    arm = Arm()
+    solutions = wam_analytical_ik.swivel_solver(Chain(), arm)(np.eye(4))
+    assert len(solutions) == 1
+    assert -1.0 <= solutions[0][0] <= upper[0]
 
 
 @pytest.mark.parametrize(

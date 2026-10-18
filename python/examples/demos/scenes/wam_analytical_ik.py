@@ -34,20 +34,22 @@ def ssik_chain(ssik, wam, ee):
     )
 
 
-# Fallback swivels, sampled because ssik's native Chart.in_limits can stall on
-# the degenerate chart of a singular target, such as the rest pose turned in place.
-SWIVEL_SAMPLES = np.linspace(-np.pi, np.pi, 64, endpoint=False)
-# A held swivel that would turn a joint this far is ill-defined, as at the
+# A held swivel that would turn a joint this far is ill-conditioned, as at the
 # straight-up rest pose, where the shoulder-wrist line is the base axis.
 FLIP = 1.0
+# Fallback swivels are searched coarse to fine, because ssik's native
+# Chart.in_limits can stall on the degenerate chart of a singular target, such
+# as the straight-up rest pose turned in place.
+SAMPLES = 64
+REFINEMENTS = 3
 
 
 def swivel_solver(chain, wam):
-    """Hold the current pose's elbow swivel, so redundancy follows body drags.
+    """Hold the current elbow's swivel, so redundancy follows body drags.
 
     When no held solution is within limits, or every one would flip a joint,
-    also offers each branch's in-limit swivel sample nearest the current pose.
-    DART then applies the valid solution nearest the current pose.
+    also offers each branch's in-limit swivel nearest the current pose. DART
+    then applies the valid solution nearest the current pose.
     """
     lower = wam.getPositionLowerLimits()
     upper = wam.getPositionUpperLimits()
@@ -63,22 +65,33 @@ def swivel_solver(chain, wam):
         # Also rejects NaN, which marks a swivel where a branch does not exist.
         return np.all((lower <= q) & (q <= upper), axis=-1)
 
-    def nearest_sample(chart, q):
-        samples = into_limits(chart.q(SWIVEL_SAMPLES))
-        distances = np.linalg.norm(samples - q, axis=1)
-        distances[~within_limits(samples)] = np.inf
-        best = np.argmin(distances)
-        return samples[best] if np.isfinite(distances[best]) else None
+    def nearest_in_limits(chart, q):
+        # Zoom in on the least limit violation; arcs near limits can be narrow.
+        swivels = np.linspace(-np.pi, np.pi, SAMPLES, endpoint=False)
+        for _ in range(REFINEMENTS):
+            samples = into_limits(chart.q(swivels))
+            valid = within_limits(samples)
+            if valid.any():
+                distances = np.linalg.norm(samples - q, axis=1)
+                return samples[np.argmin(np.where(valid, distances, np.inf))]
+            excess = np.maximum(lower - samples, 0) + np.maximum(samples - upper, 0)
+            worst = np.nan_to_num(excess.sum(axis=1), nan=np.inf)
+            step = swivels[1] - swivels[0]
+            swivels = swivels[np.argmin(worst)] + np.linspace(-step, step, SAMPLES)
+        return None
 
     def solve(desired):
         q = wam().getPositions()
-        swivel = chain.self_motion(chain.fk(q)).param_of(q)
-        charts = list(chain.self_motion(desired))
+        motion = chain.self_motion(desired)
+        # Measure the current elbow in the target's swivel basis, which ssik
+        # rebuilds per pose and switches near a vertical shoulder-wrist line.
+        swivel = motion.param_of(q)
+        charts = list(motion)
         held = [into_limits(chart.q(swivel)) for chart in charts]
         held = [c for c in held if within_limits(c)]
         if held and min(np.abs(c - q).max() for c in held) < FLIP:
             return held
-        nearest = (nearest_sample(chart, q) for chart in charts)
+        nearest = (nearest_in_limits(chart, q) for chart in charts)
         return held + [c for c in nearest if c is not None]
 
     return solve
