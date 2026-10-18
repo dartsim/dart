@@ -5150,6 +5150,109 @@ def scenario_gate_error(root: Path, command: Any, pixi_tasks: set[str]) -> str |
     return None
 
 
+_MD_INLINE_LINK = re.compile(
+    r"\[([^\[\]]*)\]\((?:[^()\s]|\([^()\s]*\))*(?:\s+(?:\"[^\"]*\"|'[^']*'))?\)"
+)
+_MD_REF_LINK = re.compile(r"\[([^\[\]]*)\]\[[^\[\]]*\]")
+_MD_HEADING = re.compile(r"#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?")
+_MD_PREFIX = re.compile(r"[ \t]*(?:(>)|(?:[-*+]|\d+[.)])(?=[ \t]))")
+_DELEGATION_MODAL = r"(?:should|must|can|could|will|would|shall|may|might)"
+_DELEGATION_NEGATION_PATTERN = (
+    r"(?:\bdo\s+not|\bdon't|\bcannot|\bnot|n't|\bnever|\bno longer)"
+    r"\s+delegate\s+by\s+default\b"
+    r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't"
+    r"|cannot\s+be"
+    rf"|(?:{_DELEGATION_MODAL}"
+    r"\s+(?:not|never|no\s+longer)"
+    r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
+    r"\s+(?:(?:the\s+)?default|(?:enabled|on|active)\s+by\s+default)\b"
+    rf"|\bdelegation\s+(?:is|{_DELEGATION_MODAL}\s+be)\s+"
+    r"(?:disabled|off)\s+by\s+default\b"
+)
+_DELEGATION_NEGATION = re.compile(_DELEGATION_NEGATION_PATTERN)
+_DELEGATION_OPT_OUT = (
+    r"(?:with|when|if) +delegation=off(?: +is +(?:set|enabled|active))?"
+)
+# A whole clause that is only the opt-out condition plus the negation, in either
+# order. A balanced parenthetical holding only this clause is exempted too.
+_DELEGATION_EXCEPTION_CLAUSE = (
+    rf"(?:{_DELEGATION_OPT_OUT}[:,]? +(?:{_DELEGATION_NEGATION_PATTERN})"
+    rf"|(?:{_DELEGATION_NEGATION_PATTERN}) +{_DELEGATION_OPT_OUT})"
+)
+_DELEGATION_EXCEPTION = re.compile(_DELEGATION_EXCEPTION_CLAUSE)
+_DELEGATION_EXEMPT_CLAUSE = re.compile(
+    rf"(?:{_DELEGATION_EXCEPTION_CLAUSE}"
+    rf"|(?:(?:delegate by default|delegation is the default) *)?"
+    rf"\({_DELEGATION_EXCEPTION_CLAUSE}\))"
+)
+
+
+def _delegation_owner_text(source: str) -> str:
+    """Visible owner text: links reduced to labels, blocks folded to paragraphs."""
+    # shortcut: one parenthesis level in link targets; extend for richer owner links.
+    source = _MD_REF_LINK.sub(r"\1", _MD_INLINE_LINK.sub(r"\1", source))
+    paragraphs: list[str] = []
+    current: list[str] = []
+    previous_depth = 0
+
+    def flush() -> None:
+        if current:
+            paragraphs.append(" ".join(" ".join(current).split()))
+            current.clear()
+
+    for line in source.splitlines():
+        # Quote and list prefixes may interleave (`- > text`); depth counts quotes.
+        depth, item, body = 0, False, line
+        while match := _MD_PREFIX.match(body):
+            depth += bool(match.group(1))
+            item = item or not match.group(1)
+            body = body[match.end() :]
+        body = body.strip()
+        heading = _MD_HEADING.fullmatch(body)
+        if heading:
+            flush()
+            current.append(heading.group(1))
+            flush()
+        elif not body:
+            flush()
+        elif item or depth > previous_depth:
+            # List items and deeper quotes start a new block; a shallower or
+            # equal depth is a continuation (lazy or not).
+            flush()
+            current.append(body)
+        else:
+            current.append(body)
+        previous_depth = depth
+    flush()
+    return "\n\n".join(paragraphs)
+
+
+def _delegation_negation(owner_text: str) -> str | None:
+    """Return an unconditional negation of the delegation default, if any."""
+    lowered = re.sub(r"[*_`]", "", owner_text.lower().replace("’", "'"))
+    # A balanced parenthetical that is exactly an opt-out exception stays an atom
+    # (its terminal punctuation is dropped so it is not split); the whole
+    # containing clause must then be that exception, optionally parenthesized or
+    # led by a canonical positive marker. Other text keeps the negation visible.
+    lowered = re.sub(
+        r"\(([^()]*)\)",
+        lambda m: (
+            f"({m.group(1).strip().rstrip('.!?').strip()})"
+            if _DELEGATION_EXCEPTION.fullmatch(m.group(1).strip().rstrip(".!?").strip())
+            else m.group(0)
+        ),
+        lowered,
+    )
+    for clause in re.split(r"[.!?;|\n]+", lowered):
+        clause = clause.strip()
+        if _DELEGATION_EXEMPT_CLAUSE.fullmatch(clause):
+            continue
+        negated = _DELEGATION_NEGATION.search(clause)
+        if negated:
+            return negated.group(0)
+    return None
+
+
 def exercise_scenarios(
     root: Path, data: dict[str, Any] | None = None, *, emit: bool = True
 ) -> list[str]:
@@ -5477,20 +5580,7 @@ def exercise_scenarios(
             ):
                 try:
                     owner_source = (root / relative).read_text(encoding="utf-8")
-                    # ATX headings end at their line, even without blank lines.
-                    owner_source = re.sub(
-                        r"(?m)^[ \t]*(?:>[ \t]*)*#{1,6}[ \t]+"
-                        r"(.*?)(?:[ \t]+#+)?[ \t]*$",
-                        r"\n\n\1\n\n",
-                        owner_source,
-                    )
-                    # Fold wrapping while preserving paragraph and list boundaries.
-                    owner_text = "\n\n".join(
-                        " ".join(paragraph.split())
-                        for paragraph in re.split(
-                            r"\n\s*\n|\n(?=[ \t]*[-*+>][ \t]+)", owner_source
-                        )
-                    )
+                    owner_text = _delegation_owner_text(owner_source)
                 except OSError:
                     owner_text = ""
                 for marker in required:
@@ -5499,36 +5589,10 @@ def exercise_scenarios(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
                 # shortcut: match canonical clauses; extend for new owner wording.
-                modal = r"(?:should|must|can|could|will|would|shall|may|might)"
-                negation = (
-                    r"(?:\bdo\s+not|\bdon't|\bcannot|\bnot|n't|\bnever|\bno longer)"
-                    r"\s+delegate\s+by\s+default\b"
-                    r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't"
-                    r"|cannot\s+be"
-                    rf"|(?:{modal}"
-                    r"\s+(?:not|never|no\s+longer)"
-                    r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
-                    r"\s+(?:(?:the\s+)?default|(?:enabled|on|active)\s+by\s+default)\b"
-                    rf"|\bdelegation\s+(?:is|{modal}\s+be)\s+"
-                    r"(?:disabled|off)\s+by\s+default\b"
-                )
-                lowered = owner_text.lower().replace("\u2019", "'")
-                lowered = re.sub(r"[*_`]", "", lowered)
-                # Exempt complete opt-out clauses; surrounding text can widen scope.
-                unconditional = re.sub(
-                    r"(?:(?:^|(?<=[.!?;|\n])) *(?:[-*+>] +)*"
-                    r"(?:with|when|if) +delegation=off"
-                    r"(?: +is +(?:set|enabled|active))?[:,]? +(?:" + negation + r")"
-                    r"|(?:" + negation + r") +(?:when|if) +delegation=off"
-                    r"(?: +is +(?:set|enabled|active))?) *(?=[.!?;|\n]|$)",
-                    "",
-                    lowered,
-                )
-                negated = re.search(negation, unconditional)
+                negated = _delegation_negation(owner_text)
                 if negated:
                     local_errors.append(
-                        f"{relative} negates the delegation default: "
-                        f"{negated.group(0)!r}"
+                        f"{relative} negates the delegation default: {negated!r}"
                     )
                 for stale in (
                     "Delegate only when the user",

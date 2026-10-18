@@ -5648,6 +5648,112 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "Delegate by default",
             "Delegate by default. We cannot delegate by default.",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; even without delegation=off, do not delegate by "
+            "default when delegation=off.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; even with `delegation=off`, do not delegate by "
+            "default when `delegation=off`.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when `delegation=off`, "
+            "even after it is removed.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> Do not\n> delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> > Do not\n> > delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> Do not\ndelegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n1. Do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Do [not](policy.md) Delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; [do not](a.md) delegate [by default](b.md).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default with [flag](a.md) set.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; [when](a.md#x;y?z!) `delegation=off`, [also](b.md) "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off`, even then do not delegate "
+            "by default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default when `delegation=off`, do not delegate by default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; (do not delegate by default (when `delegation=off`)).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (even when `delegation=off`, do not delegate by "
+            "default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off`) (do not delegate by default).",
+        ),
+        *(
+            ("AGENTS.md", "Delegate by default", f"Delegate by default; {text}")
+            for text in (
+                "even without `delegation=off`, (when `delegation=off`, do not "
+                "delegate by default).",
+                "even without `delegation=off`, (do not delegate by default when "
+                "`delegation=off`).",
+                "(do not delegate by default when `delegation=off`), even after it "
+                "is removed.",
+                "(even without `delegation=off`) (do not delegate by default when "
+                "`delegation=off`).",
+                "(do not delegate by default when `delegation=off`) (or unset).",
+                "except (do not delegate by default when `delegation=off`).",
+            )
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(
@@ -5811,6 +5917,76 @@ def test_delegation_owners_require_default_and_reject_request_gate(
             "Delegate by default; delegation must be off by default "
             "when `delegation=off` is active.",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default with delegation=off.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default with `delegation=off` is set.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off` is enabled, do not delegate "
+            "by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when delegation=off, do not delegate by default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (do not delegate by default if `delegation=off`).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off` is active: delegation must not be "
+            "the default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> When `delegation=off`,\n> do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> > When `delegation=off`, do not\n> > delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n> When `delegation=off`, do not delegate by default\n\n",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n1. When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; [when](a.md#x;y?z!) `delegation=off`, do [not](b.md) "
+            "delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when "
+            '[`delegation=off`](a_(b).md "t").',
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "[Delegate](a.md) [by default](b.md); with `delegation=off`, "
+            "delegation is [not](c.md) the default.",
+        ),
     ],
 )
 def test_delegation_owners_permit_opt_out_scoped_negation(
@@ -5829,7 +6005,141 @@ def test_delegation_owners_permit_opt_out_scoped_negation(
 
     errors = infra.exercise_scenarios(ROOT, emit=False)
 
-    assert not any("negates the delegation default" in error for error in errors)
+    assert not any("delegat" in error for error in errors)
+
+
+_NEGATIONS = [
+    "do not delegate by default",
+    "don\u2019t delegate by default",
+    "never delegate by default",
+    "cannot delegate by default",
+    "delegation is not the default",
+    "delegation is no longer the default",
+    "delegation must not be the default",
+    "delegation shouldn't be the default",
+    "delegation is disabled by default",
+    "delegation must not be enabled by default",
+]
+_FLAGS = [
+    "delegation=off",
+    "`delegation=off`",
+    "[`delegation=off`](flag.md#a;b?c=1)",
+    "delegation=off is set",
+    "delegation=off is enabled",
+    "delegation=off is active",
+]
+_BLOCKS = [
+    "{}",
+    "Delegate by default. {}.",
+    "Delegate by default; {}!",
+    "Delegate by default\n- {}.",
+    "Delegate by default\n1. {}.",
+    "Delegate by default.\n> {}.",
+    "Delegate by default.\n> > {}.",
+    "Delegate by default.\n### {}.",
+    "**{}.**",
+    "Delegate by default ({}).",
+]
+
+
+def _exceptions(negation, flag, word):
+    yield f"{word} {flag}, {negation}"
+    yield f"{word} {flag}: {negation}"
+    yield f"{negation} {word} {flag}"
+
+
+def test_delegation_negation_scopes_parenthetical_exception_context():
+    for flag in _FLAGS:
+        for exc in (
+            f"when {flag}, do not delegate by default",
+            f"do not delegate by default when {flag}",
+        ):
+            for ok in (
+                f"({exc})",
+                f"({exc}.)",
+                f"Delegate by default ({exc}).",
+                f"Delegate by default; ({exc})",
+            ):
+                assert (
+                    infra._delegation_negation(infra._delegation_owner_text(ok)) is None
+                ), ok
+            for bad in (
+                f"even without {flag}, ({exc})",
+                f"except ({exc})",
+                f"({exc}), even after it is removed",
+                f"({exc}) (or unset)",
+                f"(even without {flag}) ({exc})",
+            ):
+                assert infra._delegation_negation(
+                    infra._delegation_owner_text(bad)
+                ), bad
+
+
+def test_delegation_negation_scopes_exact_opt_out_clauses():
+    for negation in _NEGATIONS:
+        assert infra._delegation_negation(negation) is not None
+        for flag in _FLAGS:
+            for word in ("with", "when", "if"):
+                for clause in _exceptions(negation, flag, word):
+                    widened = (
+                        f"even {clause}",
+                        f"{clause}, otherwise {negation}",
+                        f"{clause} or unset",
+                        f"{clause}; {negation}",
+                        f"({clause}",
+                        f"{clause})",
+                        f"({clause}, but only today)",
+                        f"({negation} ({word} {flag}))",
+                    )
+                    for block in _BLOCKS:
+                        text = infra._delegation_owner_text(block.format(clause))
+                        assert infra._delegation_negation(text) is None, text
+                        for bad in widened:
+                            if "(" in block and bad.count("(") != bad.count(")"):
+                                continue  # stray paren beside a balanced exception
+                            text = infra._delegation_owner_text(block.format(bad))
+                            assert infra._delegation_negation(text), text
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Delegate by default.\n> Do not\n> delegate by default.",
+        "Delegate by default.\n> Do not\ndelegate by default.",
+        "- do\n  not delegate by default",
+        "Do [not](a.md) delegate [by](b.md) default",
+        "Do [not][ref] delegate by default",
+        '[Do not](a(b).md "title") delegate by default',
+        "Delegate by default\n> when delegation=off\n> and then more.\n\nDo not delegate by default",
+        "Delegate by default.\n- > Do not\n  > delegate by default.",
+        "Delegate by default.\n1. > > Do not\n   > > delegate by default.",
+        "- > even without delegation=off, do not\n  > delegate by default when `delegation=off`.",
+        "Delegate by default; do not delegate by default when `delegation=off` (or unset).",
+        "Delegate by default; (even without delegation=off) do not delegate by default when `delegation=off`.",
+    ],
+)
+def test_delegation_owner_text_exposes_negation(text):
+    assert infra._delegation_negation(infra._delegation_owner_text(text))
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Delegate by default.\n> Delegate by default.",
+        "[Delegate by default](policy.md) with [`delegation=off`](f.md) opt-out",
+        "Delegate by default (see [not](a.md), do [this](b.md)).",
+        "Delegate by default\n\n## Do not\n\ndelegate by default",
+        "- > when `delegation=off` is set,\n  > do not delegate by default.",
+        "1. > > when `delegation=off`,\n   > > do not delegate by default.",
+        "Delegate by default (when `delegation=off`, do not delegate by default.)",
+        "Delegate by default (do not delegate by default with `delegation=off`!)",
+        "(when `delegation=off`, do not delegate by default?)",
+    ],
+)
+def test_delegation_owner_text_keeps_positives_and_boundaries(text):
+    owner = infra._delegation_owner_text(text)
+    assert "Delegate by default" in owner or "delegate by default" in owner
+    assert infra._delegation_negation(owner) is None
 
 
 def test_ultrawork_uses_default_delegation_and_lean_prompt_shape():
