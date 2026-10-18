@@ -5792,7 +5792,13 @@ def test_delegation_owners_require_default_and_reject_request_gate(
 
     def changed_text(path, *args, **kwargs):
         if path == source:
-            return original.replace(old, new)
+            # Missing-marker cases remove the visible spelling everywhere, since
+            # rendered text no longer distinguishes code from plain occurrences.
+            target = old.strip("`") if new == "missing-marker" else old
+            replaced = original.replace(target, new)
+            if new == "missing-marker":
+                assert target not in infra._delegation_owner_text(replaced)
+            return replaced
         return read_text(path, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", changed_text)
@@ -6532,7 +6538,8 @@ def test_delegation_owner_text_fails_closed_without_markdown_parser(monkeypatch)
     ],
 )
 def test_delegation_markers_must_be_visible(text, marker, visible):
-    assert (marker in infra._delegation_owner_text(text)) is visible
+    owner = infra._delegation_owner_text(text)
+    assert (infra._delegation_owner_text(marker) in owner) is visible
 
 
 def test_ultrawork_uses_default_delegation_and_lean_prompt_shape():
@@ -8386,3 +8393,191 @@ def test_main_release_target_matches_branch_profile(tmp_path, version, expected)
 def test_entity_newlines_do_not_split_required_markers(text):
     owner = infra._delegation_owner_text(text)
     assert "Delegate by default" in owner or "Delegate only when the user asks" in owner
+
+
+@pytest.mark.parametrize("state", ["disabled", "off"])
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("Delegation defaults to {}.", True),
+        ("When delegation=off, delegation defaults to {}.", False),
+        ("Delegation defaults to {} if delegation=off.", False),
+        (
+            "Delegate by default (when delegation=off, delegation defaults to {}).",
+            False,
+        ),
+        ("Even when delegation=off, delegation defaults to {}.", True),
+        ("Delegation defaults to {} when delegation=off or unset.", True),
+        ("When delegation=off,\n\ndelegation defaults to {}.", True),
+        ("Delegation defaults to {}line.", False),
+    ],
+)
+def test_delegation_negation_recognizes_defaults_to_disabled_off(
+    state, template, rejected
+):
+    owner = infra._delegation_owner_text(template.format(state))
+    assert bool(infra._delegation_negation(owner)) is rejected, template
+
+
+@pytest.mark.parametrize("state", ["on", "enabled", "active"])
+def test_delegation_defaults_to_positive_states_stay_accepted(state):
+    owner = infra._delegation_owner_text(f"Delegation defaults to {state}.")
+    assert infra._delegation_negation(owner) is None
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("<pre>When delegation=off,\n\nDo not delegate by default.</pre>", True),
+        (
+            "<pre><code>When delegation=off,\n\nDo not delegate by default.</code></pre>",
+            True,
+        ),
+        (
+            "<pre><span>When delegation=off,</span>\n\nDo not delegate by default.</pre>",
+            True,
+        ),
+        ("<pre>When delegation=off,\n\nDo not delegate by default.", True),
+        ("<pre>Do not\n\ndelegate by default.</pre>", False),
+        ("<pre>When delegation=off,\nDo not delegate by default.</pre>", False),
+        (
+            "<pre><code>When delegation=off,\nDo not delegate by default.</code></pre>",
+            False,
+        ),
+    ],
+)
+def test_html_pre_keeps_blank_line_paragraph_boundaries(source, rejected):
+    owner = infra._delegation_owner_text(source)
+    assert bool(infra._delegation_negation(owner)) is rejected, source
+
+
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nDelegation defaults to off.", True),
+        ("\n\nDelegation defaults to disabled.", True),
+        ("\n\nWhen delegation=off, delegation defaults to off.", False),
+        ("\n\n<pre>When delegation=off,\n\nDo not delegate by default.</pre>", True),
+        ("\n\n<pre>When delegation=off,\nDo not delegate by default.</pre>", False),
+    ],
+)
+@pytest.mark.parametrize(
+    "relative",
+    ["AGENTS.md", "docs/ai/orchestration.md", ".claude/commands/dart-ultrawork.md"],
+)
+def test_delegation_owners_reject_defaults_to_off_and_pre_blank_lines(
+    monkeypatch, relative, suffix, rejected
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "delegat" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("When delegation=of_f, do not delegate by default.", True),
+        ("When delegation=o*ff, do not delegate by default.", True),
+        ("When `delegation=of_f`, do not delegate by default.", True),
+        ("When `delegation=o*ff`, do not delegate by default.", True),
+        ("When delegation=o`ff, do not delegate by default.", True),
+        ("When `delegation=off, do not delegate by default.", True),
+        ("When \\`delegation=off\\`, do not delegate by default.", False),
+        ("```\nWhen delegation=of_f, do not delegate by default.\n```", True),
+        ("```\nWhen delegation=o*ff, do not delegate by default.\n```", True),
+        ("```\nWhen `delegation=off`, do not delegate by default.\n```", False),
+        ("When `delegation=off`, do not delegate by default.", False),
+        ("When delegation=off, do not delegate by default.", False),
+        ("Do no_t delegate by default.", False),
+        ("Do not delegate by default.", True),
+        ("Do **not** delegate by default.", True),
+        ("Do _not_ delegate by default.", True),
+        ("Don\\'t delegate by default.", True),
+        ("Delegation isn\\'t the default.", True),
+        ("By default, can\\'t delegate.", True),
+        ("When delegation=off, don\\'t delegate by default.", False),
+        ("Do \\[not\\] delegate by default, <b>ok</b>.", False),
+        ("\\<b>Do not delegate by default.", True),
+    ],
+)
+def test_delegation_negation_preserves_literal_punctuation(source, rejected):
+    owner = infra._delegation_owner_text(source)
+    assert bool(infra._delegation_negation(owner)) is rejected, source
+
+
+_OWNERS = (
+    "AGENTS.md",
+    "docs/ai/README.md",
+    "docs/ai/orchestration.md",
+    "docs/ai/workflows.md",
+    ".claude/commands/dart-ultrawork.md",
+    ".claude/commands/dart-model-upgrade.md",
+)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nWhen delegation=of_f, do not delegate by default.", True),
+        ("\n\nWhen `delegation=o*ff`, do not delegate by default.", True),
+        ("\n\nDon\\'t delegate by default.", True),
+        ("\n\nWhen `delegation=off`, do not delegate by default.", False),
+    ],
+)
+def test_delegation_owners_literal_punctuation(monkeypatch, relative, suffix, rejected):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("replacement", "missing"),
+    [
+        ("delegation=office", True),
+        ("xdelegation=off", True),
+        ("delegation=off_", True),
+        ("delegation=off2", True),
+        ("delegation=off", False),
+        ("**delegation=off**", False),
+    ],
+)
+def test_delegation_flag_marker_needs_whole_word(
+    monkeypatch, relative, replacement, missing
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace("`delegation=off`", f"`{replacement}`").replace(
+                "[delegation=off]", f"[{replacement}]"
+            )
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert (
+        any(relative in e and "missing delegation marker" in e for e in errors)
+        is missing
+    )

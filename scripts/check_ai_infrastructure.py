@@ -5180,10 +5180,12 @@ _DELEGATION_NEGATION_PATTERN = (
     r"\s+(?:enabled|on|active)\b"
     rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_POSITIVE_COPULA}"
     r"\s+(?:disabled|off)\b"
+    r"|\bdelegation\s+defaults\s+to\s+(?:disabled|off)\b"
 )
 _DELEGATION_NEGATION = re.compile(_DELEGATION_NEGATION_PATTERN)
 _DELEGATION_OPT_OUT = (
-    r"(?:with|when|if) +delegation=off(?: +is +(?:set|enabled|active))?"
+    r"(?:with|when|if) +(?:delegation=off|`delegation=off`)"
+    r"(?: +is +(?:set|enabled|active))?"
 )
 # A whole clause that is only the opt-out condition plus the negation, in either
 # order. A balanced parenthetical holding only this clause is exempted too.
@@ -5219,17 +5221,23 @@ class _VisibleHTML(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
+        self.pre_depth = 0
 
     def handle_data(self, data: str) -> None:
-        self.parts.append(re.sub(r"\s+", " ", data))  # lexical, not structural
+        # Lexical folding, except <pre> keeps its structural blank lines.
+        self.parts.append(data if self.pre_depth else re.sub(r"\s+", " ", data))
 
     def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag == "pre":
+            self.pre_depth += 1
         if tag == "br":
             self.parts.append(" ")
         elif tag in _HTML_BLOCK_TAGS:
             self.parts.append("\n\n")
 
     def handle_endtag(self, tag: str) -> None:
+        if tag == "pre":
+            self.pre_depth = max(self.pre_depth - 1, 0)
         if tag in _HTML_BLOCK_TAGS:
             self.parts.append("\n\n")
 
@@ -5268,14 +5276,13 @@ def _markdown_parser() -> Any:
 
 
 def _inline_parts(children: Any) -> str:
-    """Visible text of inline tokens; escapes keep spelling, entities decode once."""
+    """Visible text of inline tokens; token content is already decoded once."""
     parts: list[str] = []
     for child in children or ():
         if child.type in {"text", "text_special"}:
-            text = child.markup if child.info == "escape" else child.content
-            parts.append(re.sub(r"\s+", " ", text))  # entity newlines are lexical
+            parts.append(re.sub(r"\s+", " ", child.content))  # entity newlines lexical
         elif child.type == "code_inline":
-            parts.append(f"`{child.content}`")
+            parts.append(child.content)
         elif child.type == "html_inline":
             parts.append(_html_text(child.content))
         elif child.type == "image":
@@ -5320,7 +5327,7 @@ def _delegation_owner_text(source: str) -> str:
 
 def _delegation_negation(owner_text: str) -> str | None:
     """Return an unconditional negation of the delegation default, if any."""
-    lowered = re.sub(r"[*_`]", "", owner_text.lower().replace("’", "'"))
+    lowered = owner_text.lower().replace("’", "'")
     # A balanced parenthetical that is exactly an opt-out exception stays an atom
     # (its terminal punctuation is dropped so it is not split); the whole
     # containing clause must then be that exception, optionally parenthesized or
@@ -5679,7 +5686,9 @@ def exercise_scenarios(
                     local_errors.append(str(error))
                     break
                 for marker in required:
-                    if marker not in owner_text:
+                    if not re.search(
+                        rf"\b{re.escape(_delegation_owner_text(marker))}\b", owner_text
+                    ):
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
