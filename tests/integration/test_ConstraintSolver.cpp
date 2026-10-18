@@ -5712,3 +5712,38 @@ TEST(ConstraintSolver, ContactCapTrimsConcurrentWorldsIndependently)
   for (std::size_t i = 0u; i < kWorlds; ++i)
     EXPECT_TRUE(states[i] == expected) << "world " << i;
 }
+
+//==============================================================================
+// A custom deleter of the replaced detector may reenter the solver. The solver
+// must already expose the new detector together with its owner by then.
+TEST(ConstraintSolver, SetCollisionDetectorPublishesNewDetectorBeforeRelease)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  auto next = collision::DARTCollisionDetector::create();
+
+  bool inDeleter = false;
+  bool sameDetector = false;
+  bool sameOwner = false;
+  {
+    auto inner = collision::DARTCollisionDetector::create();
+    auto* raw = inner.get();
+    std::shared_ptr<collision::CollisionDetector> previous(
+        raw, [&, inner](collision::CollisionDetector*) mutable {
+          if (inDeleter)
+            return;
+          inDeleter = true;
+          const auto current = solver.getCollisionDetector();
+          sameDetector = current.get() == next.get();
+          sameOwner
+              = !current.owner_before(next) && !next.owner_before(current);
+          inner.reset();
+        });
+    solver.setCollisionDetector(previous);
+  }
+
+  solver.setCollisionDetector(next);
+
+  EXPECT_TRUE(inDeleter);
+  EXPECT_TRUE(sameDetector);
+  EXPECT_TRUE(sameOwner);
+}

@@ -1287,7 +1287,9 @@ void ConstraintSolver::setCollisionDetector(
 
   if (auto* cache = detail::findContactWarmStartCache(this))
     cache->clear();
-  mCollisionDetector = collisionDetector;
+  // Publish both the pointer and its owner before releasing the old detector:
+  // a custom shared-pointer deleter can reenter the solver through a getter.
+  collision::CollisionDetectorPtr(collisionDetector).swap(mCollisionDetector);
   configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
 
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();

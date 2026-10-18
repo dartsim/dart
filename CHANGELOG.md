@@ -106,6 +106,10 @@
 
 * Collision
 
+  * Replacing a constraint solver's collision detector no longer hands a
+    custom deleter of the previous detector a dangling detector when the
+    deleter reads the solver's detector; it now sees the new one.
+
   * An exception thrown by a collision filter during an ODE collision check
     now reaches the caller after ODE finishes the check, instead of unwinding
     through ODE and leaving its collision space locked.
