@@ -5491,25 +5491,29 @@ def exercise_scenarios(
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
+                # shortcut: match canonical clauses; extend for new owner wording.
+                modal = r"(?:should|must|can|could|will|would|shall|may|might)"
                 negation = (
                     r"(?:\bdo\s+not|\bdon't|\bnot|n't|\bnever|\bno longer)"
                     r"\s+delegate\s+by\s+default\b"
                     r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't"
                     r"|cannot\s+be"
-                    r"|(?:(?:should|must|can|could|will|would|shall|may|might)"
+                    rf"|(?:{modal}"
                     r"\s+(?:not|never|no\s+longer)"
                     r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
                     r"\s+(?:the\s+)?default\b"
+                    rf"|\bdelegation\s+(?:is|{modal}\s+be)\s+"
+                    r"(?:disabled|off)\s+by\s+default\b"
                 )
                 lowered = owner_text.lower().replace("\u2019", "'")
-                lowered = re.sub(r"\*\*|__|`", "", lowered)
+                lowered = re.sub(r"[*_`]", "", lowered)
                 # Exempt complete opt-out clauses; surrounding text can widen scope.
                 unconditional = re.sub(
                     r"(?:(?:^|(?<=[.!?;|\n])) *(?:[-*+>] +)*"
                     r"(?:with|when|if) +delegation=off"
-                    r"(?: +is +(?:set|enabled))?[:,]? +(?:" + negation + r")"
+                    r"(?: +is +(?:set|enabled|active))?[:,]? +(?:" + negation + r")"
                     r"|(?:" + negation + r") +(?:when|if) +delegation=off"
-                    r"(?: +is +(?:set|enabled))?) *(?=[.!?;|\n]|$)",
+                    r"(?: +is +(?:set|enabled|active))?) *(?=[.!?;|\n]|$)",
                     "",
                     lowered,
                 )

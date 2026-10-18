@@ -5613,6 +5613,26 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "Delegate by default",
             "Delegate by default; delegation won't be the default.",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is disabled by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation must be off by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is *not* the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is _not_ the default.",
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(
@@ -5722,6 +5742,35 @@ def test_delegation_owners_require_default_and_reject_request_gate(
             "Delegate by default",
             "Delegate by default; if `delegation=off` is enabled: "
             "delegation must not be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off` is active, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default "
+            "when `delegation=off` is active.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. *When `delegation=off`, do not delegate by default.*",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`, "
+            "delegation is disabled by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation must be off by default "
+            "when `delegation=off` is active.",
         ),
     ],
 )
