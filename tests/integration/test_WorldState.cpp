@@ -405,6 +405,46 @@ TEST(WorldState, RestoredCommandsFollowPerDofActuatorLimits)
   expectEqual(expected, world->captureState());
 }
 
+TEST(WorldState, RestoredCommandsMatchSetCommandForEveryActuatorType)
+{
+  // Restore applies setCommand()'s per-actuator rule through its own helper,
+  // so both must give the same command for every type and value.
+  auto world = World::create();
+  auto skeleton = Skeleton::create();
+  auto* joint = skeleton->createJointAndBodyNodePair<RevoluteJoint>().first;
+  world->addSkeleton(skeleton);
+  joint->setForceLowerLimit(0, -0.2);
+  joint->setForceUpperLimit(0, 0.25);
+  joint->setVelocityLowerLimit(0, -0.3);
+  joint->setVelocityUpperLimit(0, 0.35);
+  joint->setAccelerationLowerLimit(0, -0.4);
+  joint->setAccelerationUpperLimit(0, 0.45);
+  const Joint::ActuatorType types[]
+      = {Joint::FORCE,
+         Joint::PASSIVE,
+         Joint::SERVO,
+         Joint::MIMIC,
+         Joint::ACCELERATION,
+         Joint::VELOCITY,
+         Joint::LOCKED};
+  for (const auto type : types) {
+    joint->setActuatorType(type);
+    for (const double command : {-10.0, -0.1, 0.0, 0.1, 10.0}) {
+      SCOPED_TRACE(
+          std::to_string(static_cast<int>(type)) + " "
+          + std::to_string(command));
+      joint->resetCommands();
+      joint->setCommand(0, command);
+      const double expected = joint->getCommand(0);
+      auto state = world->captureState();
+      state.commands[0] = command;
+      joint->resetCommands();
+      world->restoreState(state);
+      EXPECT_EQ(joint->getCommand(0), expected);
+    }
+  }
+}
+
 TEST(WorldState, ForceCommandsRespectLimitsOnNextStep)
 {
   auto source = makeWorld();
