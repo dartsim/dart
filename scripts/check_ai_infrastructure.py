@@ -5168,13 +5168,15 @@ _DELEGATION_NEGATED_COPULA = (
 )
 _DELEGATION_POSITIVE_COPULA = rf"(?:is|{_DELEGATION_MODAL}\s+be)"
 _DELEGATION_BY_DEFAULT = r"\bby\s+default[,:]?\s+"
+# Trailing "... by default" takes an optional comma right before it, as in "..., by default".
+_DELEGATION_TRAILING_BY_DEFAULT = r",?\s+by\s+default\b"
 # Trailing "... by default" forms, then the same states fronted as "By default, ...".
 _DELEGATION_NEGATION_PATTERN = (
-    rf"{_DELEGATION_NEGATED_ACTION}\s+by\s+default\b"
+    rf"{_DELEGATION_NEGATED_ACTION}{_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|\bdelegation\s+{_DELEGATION_NEGATED_COPULA}"
-    r"\s+(?:(?:the\s+)?default|(?:enabled|on|active)\s+by\s+default)\b"
+    rf"(?:\s+(?:the\s+)?default\b|\s+(?:enabled|on|active){_DELEGATION_TRAILING_BY_DEFAULT})"
     rf"|\bdelegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
-    r"(?:disabled|off)\s+by\s+default\b"
+    rf"(?:disabled|off){_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
     rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_NEGATED_COPULA}"
     r"\s+(?:enabled|on|active)\b"

@@ -8581,3 +8581,82 @@ def test_delegation_flag_marker_needs_whole_word(
         any(relative in e and "missing delegation marker" in e for e in errors)
         is missing
     )
+
+
+_COMMA_FORMS = [
+    # Trailing ", by default" on the action and both state branches.
+    ("Do not delegate, by default.", True),
+    ("Don't delegate, by default.", True),
+    ("Delegation is disabled, by default.", True),
+    ("Delegation is off, by default.", True),
+    ("Delegation is not enabled, by default.", True),
+    ("Delegation must not be active, by default.", True),
+    ("Do not delegate by default.", True),
+    ("Delegation is disabled by default.", True),
+    # The full opt-out exception still exempts the comma form in every position.
+    ("When delegation=off, do not delegate, by default.", False),
+    ("Do not delegate, by default when delegation=off.", False),
+    ("Delegate by default (when delegation=off, do not delegate, by default).", False),
+    ("When delegation=off, delegation is disabled, by default.", False),
+    ("Delegation is not enabled, by default if delegation=off.", False),
+    # Wideners and extra qualifiers stay rejected.
+    ("Even when delegation=off, do not delegate, by default.", True),
+    ("Do not delegate, by default, when delegation=off or unset.", True),
+    ("When delegation=off,\n\ndo not delegate, by default.", True),
+    # The comma must not cross a sentence, clause or paragraph boundary.
+    ("Do not delegate.\n\nBy default, delegate.", False),
+    ("Do not delegate. By default, delegate.", False),
+    ("Do not delegate; by default, delegate.", False),
+    ("Do not delegate!, by default.", False),
+    ("Do not delegate\n\n, by default.", False),
+    ("Delegation is disabled; by default, delegate.", False),
+    ("Delegation is not enabled.\n\nBy default, delegate.", False),
+    # Literal near-word text and unrelated punctuation stay unrelated.
+    ("Do not delegate,, by default.", False),
+    ("Do not delegate , by default.", False),
+    ("Do not delegates, by default.", False),
+    ("Do not delegate, by defaults.", False),
+    ("Delegation is disabled, by defaultx.", False),
+    ("Delegation is enabled, by default.", False),
+    ("Delegation is on, by default.", False),
+    ("Do no_t delegate, by default.", False),
+    ("Do \\[not\\] delegate, by default.", False),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _COMMA_FORMS)
+def test_delegation_negation_accepts_comma_before_trailing_by_default(source, rejected):
+    owner = infra._delegation_owner_text(source)
+    assert bool(infra._delegation_negation(owner)) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nDo not delegate, by default.", True),
+        ("\n\nDelegation is disabled, by default.", True),
+        ("\n\nDelegation is not enabled, by default.", True),
+        ("\n\nEven when `delegation=off`, do not delegate, by default.", True),
+        ("\n\nWhen `delegation=off`, do not delegate, by default.", False),
+        ("\n\nDo not delegate, by default when `delegation=off`.", False),
+        ("\n\nWhen `delegation=off`, delegation is disabled, by default.", False),
+        ("\n\nDo not delegate.\n\nBy default, delegate.", False),
+        ("\n\nDelegation is enabled, by default.", False),
+    ],
+)
+def test_delegation_owners_comma_before_trailing_by_default(
+    monkeypatch, relative, suffix, rejected
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
