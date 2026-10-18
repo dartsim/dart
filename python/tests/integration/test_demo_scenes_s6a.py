@@ -542,6 +542,18 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
             [-1.8, 0.0, -2.8, 0.23052629, 1.24, -1.6, 1.0],
             [-1.82, 0.0, -2.8, 0.23052629, 1.24, -1.6, 1.0],
         ),
+        (
+            [2.6, 0.0, -2.8, 0.2315263, 1.24, -1.6, 0.0],
+            [2.56, 0.0, -2.8, 0.2315263, 1.24, -1.6, 0.0],
+        ),
+        (
+            [0.347, -2.0, -2.8, 0.23052629, 1.24, 0.0, -3.0],
+            [0.372, -1.925, -2.8, 0.23052629, 1.19, 0.045, -2.925],
+        ),
+        (
+            [0.3, 0.6, 0.2, -0.9, -0.3, 0.5, 0.1],
+            [0.3, 0.6, 0.2, -0.9, -0.3001, 0.5, 0.1],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -564,7 +576,10 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
     # usable iterate, and stalled at a stationary point of active limits; the
     # last two recover from an overshoot, or reduce the least-squares residual
     # while the largest pose error briefly grows, so a stall guard must judge
-    # the residual and allow a recovery.
+    # the residual and allow a recovery; the next plateaus just above
+    # tolerance under strong damping, the next has no chart at full
+    # extension and needs the nudged retry, and the last passes through an
+    # intermediate target whose elbow lies a few 1e-6 rad past its limit.
     ids=[
         "basis-switch",
         "near-singular",
@@ -602,6 +617,9 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
         "stalled-fold",
         "overshoot-recovery",
         "residual-progress",
+        "damping-plateau",
+        "chartless-nudge",
+        "elbow-on-limit",
     ],
 )
 
@@ -736,6 +754,8 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
         (np.array([2.6, -2.0, -2.8, -0.9, -0.3, 0.0, -3.0]), 1, -0.001),
         # Past the wrist limit, bounded steps cycle instead of stalling.
         (np.array([-1.092, 1.163, -2.604, 2.857, -0.06, -1.6, 0.94]), 5, -0.005),
+        # Past the shoulder limit, every retry keeps improving a little.
+        (np.array([-1.521, 2.0, 0.121, 0.2315, 1.24, 0.0, -2.154]), 1, 0.003),
     ):
         moved = start.copy()
         moved[joint] += offset
@@ -747,7 +767,7 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
         setup.pre_refresh()
         actions = {chr(action.key): action for action in setup.key_actions}
         actions["1"].callback()
-    assert max(steps) < 60
+    assert max(steps) <= 60
 
 
 def test_wam_ssik_skips_continuation_the_held_swivel_already_beats(monkeypatch):

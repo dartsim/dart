@@ -55,12 +55,18 @@ TRACK_TOLERANCE = 1e-9
 TRACK_ITERATIONS = 100
 BOUNDARY_ITERATIONS = 20
 TRACK_DAMPING = 1e-2
+WEAK_DAMPING = 1e-6
 # A bounded step this small has stalled against the limits.
 STALL = 1e-14
 TRACK_PATIENCE = 10
 TRACK_REACH = 0.5
+# Bounded least-squares steps per solve across all continuation attempts,
+# which keeps a failing drag frame to tens of milliseconds.
+TRACK_BUDGET = 60
 # The WAM's elbow, /j4: the shoulder-wrist distance alone fixes its angle.
 ELBOW = 3
+# Elbows this far past a limit still allow continuation within FK_TOLERANCE.
+ELBOW_SLACK = 1e-5
 # An elbow retry this close to the current elbow repeats the first attempt.
 RETRY_OFFSET = 1e-6
 NUDGE = 0.01
@@ -134,7 +140,7 @@ def swivel_solver(chain, wam):
     def near(x, q):
         return x is not None and np.abs(x - q).max() <= TRACK_REACH
 
-    def track(q, desired, iterations):
+    def track(q, desired, iterations, budget):
         # ssik's damped Newton continuation from the current pose, with a
         # looser gate and a larger budget than its tracker.
         result = refinement.lm_refine(
@@ -149,10 +155,10 @@ def swivel_solver(chain, wam):
         )
         x = None if result is None else into_limits(result[0])
         if not near(x, q) or not within_limits(x):
-            x = track_within_limits(q, q, desired, iterations)
+            x = track_within_limits(q, q, desired, iterations, budget)
         return x
 
-    def track_within_limits(seed, q, desired, iterations):
+    def track_within_limits(seed, q, desired, iterations, budget, damp=TRACK_DAMPING):
         # Where the unconstrained steps cross a limit or stall, continue again
         # with bounded least-squares steps that keep every joint in its limits.
         # Damping shrinks with the residual, as in Levenberg-Marquardt, and the
@@ -176,7 +182,10 @@ def swivel_solver(chain, wam):
                 least, stale = residual, 0
             elif (stale := stale + 1) > TRACK_PATIENCE:
                 break
-            damping = np.sqrt(min(TRACK_DAMPING, residual)) * np.eye(x.size)
+            if budget[0] <= 0:
+                break
+            budget[0] -= 1
+            damping = np.sqrt(min(damp, residual)) * np.eye(x.size)
             step = optimize.lsq_linear(
                 np.vstack([jacobian(x), damping]),
                 np.concatenate([twist, np.zeros(x.size)]),
@@ -198,7 +207,11 @@ def swivel_solver(chain, wam):
         held = [into_limits(chart.q(swivel)) for chart in charts]
         # The target fixes each branch's elbow angle, whatever the swivel; if
         # none is in limits, nothing within limits reaches the target.
-        elbows = {c[ELBOW] for c in held if lower[ELBOW] <= c[ELBOW] <= upper[ELBOW]}
+        elbows = {
+            np.clip(c[ELBOW], lower[ELBOW], upper[ELBOW])
+            for c in held
+            if lower[ELBOW] - ELBOW_SLACK <= c[ELBOW] <= upper[ELBOW] + ELBOW_SLACK
+        }
         if charts and not elbows:
             return []
         held = [c for c in held if usable(c, desired)]
@@ -206,31 +219,38 @@ def swivel_solver(chain, wam):
         if move <= JUMP:
             return held
         # Newton continuation, as ssik's own trackers use, stays continuous
-        # where the swivel is ill-conditioned or near limits. Without a chart
-        # the target is out of reach unless it lies on the boundary at full
-        # extension, so keep that attempt short.
-        # Continuation keeps the elbow within reach of its current angle, so
-        # it cannot help when every target elbow lies farther away.
+        # where the swivel is ill-conditioned or near limits. Continuation keeps
+        # the elbow within reach of its current angle, so it cannot help when
+        # every target elbow lies farther away. Without a chart the target is
+        # out of reach unless it lies on the boundary at full extension, so
+        # keep those attempts short.
         offsets = [abs(elbow - q[ELBOW]) for elbow in elbows]
         tracked = None
         if not charts or min(offsets) <= TRACK_REACH:
             iterations = TRACK_ITERATIONS if charts else BOUNDARY_ITERATIONS
-            tracked = track(q, desired, iterations)
-        # From the elbow fold at full extension, continuation can settle on the
-        # wrong side of active limits; retry from each other target elbow.
-        for elbow, offset in sorted(zip(elbows, offsets), key=lambda e: e[1]):
-            if tracked is not None or offset > TRACK_REACH:
-                break
-            if offset > RETRY_OFFSET:
-                start = q.copy()
-                start[ELBOW] = elbow
-                tracked = track_within_limits(start, q, desired, TRACK_ITERATIONS)
-        # Several active limits can trap the bounded steps at a stationary
-        # point; retry once from a seed nudged inward off every active limit.
-        nudged = np.clip(q, lower + NUDGE, upper - NUDGE)
-        reachable = charts and min(offsets) <= TRACK_REACH
-        if tracked is None and reachable and (nudged != q).any():
-            tracked = track_within_limits(nudged, q, desired, TRACK_ITERATIONS)
+            budget = [TRACK_BUDGET if charts else 3 * BOUNDARY_ITERATIONS]
+            # From the elbow fold at full extension, continuation can settle on
+            # the wrong side of active limits, so retry from each other target
+            # elbow; several active limits can also trap the bounded steps at a
+            # stationary point, so retry from a seed nudged off the limits.
+            seeds = []
+            for elbow, offset in sorted(zip(elbows, offsets), key=lambda e: e[1]):
+                if RETRY_OFFSET < offset <= TRACK_REACH:
+                    seeds.append(q.copy())
+                    seeds[-1][ELBOW] = elbow
+            nudged = np.clip(q, lower + NUDGE, upper - NUDGE)
+            if (nudged != q).any():
+                seeds.append(nudged)
+            tracked = track(q, desired, iterations, budget)
+            for seed in seeds:
+                if tracked is not None or budget[0] <= 0:
+                    break
+                tracked = track_within_limits(seed, q, desired, iterations, budget)
+            # Damping can also hold the bounded steps just above tolerance.
+            if tracked is None and budget[0] > 0:
+                tracked = track_within_limits(
+                    q, q, desired, iterations, budget, damp=WEAK_DAMPING
+                )
         if tracked is not None and np.abs(tracked - q).max() + JUMP < move:
             return [tracked]
         if move < FLIP:
