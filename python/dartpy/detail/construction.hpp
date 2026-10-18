@@ -4,6 +4,8 @@
 
 #include <nanobind/eval.h>
 
+#include <functional>
+
 namespace dartnb {
 // Transfer a prepared external reference into an uninitialized Python subtype.
 // The native factory object and its shared_ptr control block stay in place.
@@ -260,6 +262,10 @@ struct Nullable<std::shared_ptr<T>> : std::true_type
 };
 template <class T>
 struct Nullable<std::unique_ptr<T>> : std::true_type
+{
+};
+template <class R, class... Args>
+struct Nullable<std::function<R(Args...)>> : std::true_type
 {
 };
 template <class T>

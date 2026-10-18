@@ -175,6 +175,9 @@
 
 * Python
 
+  * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
+    raycasts and releasing the stored Python callback.
+
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
     handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
