@@ -287,6 +287,44 @@ def test_api_snapshot_links_bound_classmethod_reexports(api_surface, monkeypatch
     assert rows == api_surface.snapshot()
 
 
+def test_api_snapshot_collapses_members_shared_by_unrelated_classes(
+    api_surface, monkeypatch
+):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    class Inner:
+        pass
+
+    def helper():
+        """() -> None"""
+
+    class First:
+        pass
+
+    class Second:
+        pass
+
+    for cls in (Inner, First, Second):
+        cls.__module__ = "dartpy"
+    # Objects stored in two unrelated class dicts are one identity.
+    First.Inner = Second.Inner = Inner
+    First.helper = staticmethod(helper)
+    Second.other = staticmethod(helper)
+    module.First = First
+    module.Second = Second
+    module.Inner = Inner
+    module.helper = helper
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    rows = api_surface.snapshot()
+    for path in ("dartpy.First.Inner", "dartpy.Second.Inner", "dartpy.Inner"):
+        assert rows[path]["runtime"]["identity_path"] == "dartpy.First.Inner"
+    for path in ("dartpy.First.helper", "dartpy.Second.other", "dartpy.helper"):
+        assert rows[path]["runtime"]["identity_path"] == "dartpy.First.helper"
+    assert rows == api_surface.snapshot()
+
+
 def test_api_compare_ignores_additive_inventory_metadata(api_surface):
     legacy = {
         "module": {"kind": "module"},

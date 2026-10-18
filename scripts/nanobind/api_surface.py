@@ -251,7 +251,8 @@ def snapshot():
         if owner is not None:
             if id(owner) not in seen:
                 continue
-            metadata["identity_path"] = seen[id(owner)] + "." + name
+            # The first walked owner wins when unrelated classes share an object.
+            metadata["identity_path"] = identities[identity(value)][0]
             continue
         metadata["identity_path"], _ = identities.setdefault(
             identity(value), (path, value)
