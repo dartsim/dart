@@ -5564,6 +5564,18 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "Delegate by default; never delegate by default if "
             "`delegation=off` is set/unset",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`, do not delegate "
+            "by default, even after the opt-out is removed",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation is not the default when "
+            "`delegation=off` is set, even after the opt-out is removed",
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(
@@ -5591,25 +5603,25 @@ def test_delegation_owners_require_default_and_reject_request_gate(
         (
             "AGENTS.md",
             "Delegate by default",
-            "Delegate by default; with `delegation=off`, do not delegate " "by default",
+            "Delegate by default; with `delegation=off`, do not delegate by default.",
         ),
         (
             "AGENTS.md",
             "Delegate by default",
             "Delegate by default; do not delegate by default when "
-            "`delegation=off` is set",
+            "`delegation=off` is set.",
         ),
         (
             "docs/ai/orchestration.md",
             "delegation is the default",
             "delegation is the default; with `delegation=off`, delegation "
-            "is not the default",
+            "is not the default.",
         ),
         (
             "AGENTS.md",
             "Delegate by default",
             "Delegate by default; with `delegation=off`, do not\n"
-            "delegate by default",
+            "delegate by default.",
         ),
     ],
 )

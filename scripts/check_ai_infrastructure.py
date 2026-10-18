@@ -5496,13 +5496,13 @@ def exercise_scenarios(
                     r"\s+(?:the\s+)?default\b"
                 )
                 lowered = owner_text.lower().replace("\u2019", "'")
-                # Exempt individual negations attached to an explicit opt-out.
+                # Exempt whole opt-out clauses; trailing text can widen their scope.
                 unconditional = re.sub(
-                    r"(?<!except )(?<!unless )(?<!except, )(?<!unless, )"
+                    r"(?:(?<!except )(?<!unless )(?<!except, )(?<!unless, )"
                     r"\b(?:with|when|if) +`?delegation=off`?"
                     r"(?: +is +(?:set|enabled))?,? +(?:" + negation + r")"
                     r"|(?:" + negation + r") +(?:when|if) +`?delegation=off`?"
-                    r" +is +(?:set|enabled)(?![-/\w]| *,? *or\b)",
+                    r" +is +(?:set|enabled)) *(?=[.;|\n]|$)",
                     "",
                     lowered,
                 )
