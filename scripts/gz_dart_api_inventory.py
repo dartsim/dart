@@ -437,9 +437,32 @@ def template_parameter_names(header):
             names
             and part[-1] == names[-1]
             and part[-2:-1] != ["::"]
-            and names[-1] not in {"class", "typename"}
+            and names[-1] not in {"class", "typename", "const", "volatile"}
         ):
             result.add(names[-1])
+        elif grouped := next(  # `T (&A)[2]`, `T (*A)[2]`, `T (*A)()`
+            (
+                part[closing - 1]
+                for opening, closing in Tokens(" ".join(part)).pairs.items()
+                if opening < closing
+                and part[opening] == "("
+                and part[closing + 1 : closing + 2] in (["["], ["("])
+                and not in_template_argument(part, opening)
+                and IDENTIFIER.match(part[closing - 1])
+                and part[closing - 1] not in {"const", "volatile"}
+                and part[opening + 1 : closing - 1]
+                and set(part[opening + 1 : closing - 1])
+                <= {"*", "&", "&&", "const", "volatile"}
+            ),
+            None,
+        ):
+            result.add(grouped)
+        elif (
+            (member := data_member(part, None))
+            and member["name"]
+            and (member["array_dimensions"] or function_pointer_name(part))
+        ):
+            result.add(member["name"])  # grouped or array non-type parameter
     return result
 
 
@@ -450,11 +473,25 @@ def function_pointer_declarator(values):
         if (
             opening >= closing
             or values[opening] != "("
-            or tokens.enclosing[opening] is not None
             or in_template_argument(values, opening)
             or values[closing + 1 : closing + 2] != ["("]
         ):
             continue
+        if tokens.enclosing[opening] is not None:
+            # A callable that returns a callable, `T (*(*f)())()`: the inner
+            # group is the stored declarator and the outer one its returned type.
+            outer = tokens.enclosing[opening]
+            if (
+                values[outer] != "("
+                or tokens.enclosing[outer] is not None
+                or in_template_argument(values, outer)
+                or values[tokens.pairs[outer] + 1 : tokens.pairs[outer] + 2] != ["("]
+                or tokens.pairs.get(closing + 1) != tokens.pairs[outer] - 1
+                or not values[outer + 1 : opening]
+                or not set(values[outer + 1 : opening])
+                <= {"*", "&", "&&", "const", "volatile"} | POINTER_WIDTHS
+            ):
+                continue
         name = opening + 1
         attributes = set()
         group, inside = closing, opening  # innermost redundant grouping
@@ -496,6 +533,14 @@ def function_pointer_declarator(values):
                 and name + 1 in tokens.pairs
             ):
                 stop = tokens.pairs[name + 1] + 1
+                attributes.update(range(name, stop))
+                name = stop
+            elif (
+                values[name : name + 2] == ["[", "["]
+                and name in tokens.pairs
+                and tokens.pairs.get(name + 1) == tokens.pairs[name] - 1
+            ):
+                stop = tokens.pairs[name] + 1
                 attributes.update(range(name, stop))
                 name = stop
             else:
@@ -832,6 +877,14 @@ def data_member(values, owner, layout_only=False):
     for start, end, name in names_in(values):
         if name == "std::function":
             type_expressions.update(range(end + 1, template_end(values, end)))
+    type_expressions.update(  # function types spelled inside template arguments
+        position
+        for opening, closing in type_tokens.pairs.items()
+        if opening < closing
+        and values[opening] == "("
+        and in_template_argument(values, opening)
+        for position in range(opening, closing + 1)
+    )
     angle = 0
     for end, token in enumerate(values):
         if end in type_expressions:
@@ -862,6 +915,19 @@ def data_member(values, owner, layout_only=False):
         dimensions += 1
     if grouped_pointer:
         dimensions += pointer_shape["array_dimensions"]
+    shift = 0
+    if (
+        dimensions
+        and not grouped_pointer
+        and end > 2
+        and declarator[end - 3 : end - 2] == ["("]
+        and declarator[end - 1] == ")"
+        and IDENTIFIER.match(declarator[end - 2])
+    ):
+        # A redundant parenthesized name before its array dimensions: `T (b)[2]`.
+        declarator = declarator[: end - 3] + declarator[end - 2 :]
+        end -= 2
+        shift = 1
     unnamed = (
         bit_width is not None
         and end
@@ -915,7 +981,7 @@ def data_member(values, owner, layout_only=False):
     return {
         "class": owner,
         "name": "" if unnamed else declarator[name_index],
-        "name_index": name_index,
+        "name_index": name_index + shift,
         **({"layout_only": True} if unnamed else {}),
         "static": "static" in top,
         "return_tokens": (
@@ -1558,7 +1624,14 @@ def scopes(tokens, annotation_text=None):
                     alias_name = "::".join(
                         (owner or "::".join(namespace), prefix[using + 1])
                     ).strip(":")
-                    aliases.append((alias_name, prefix[equals + 1 :], segment))
+                    # Attributes on the alias name, like a typedef's, qualify its target.
+                    aliases.append(
+                        (
+                            alias_name,
+                            prefix[equals + 1 :] + prefix[using + 2 : equals],
+                            segment,
+                        )
+                    )
                     # Only the enclosing class templates' parameters shadow its target.
                     tokens.alias_templates[alias_name] = templates
                 elif prefix and prefix[0] == "typedef" and len(prefix) > 2:
@@ -2166,6 +2239,35 @@ class ApiIndex:
             constants.extend(self.constant_dependencies(TOKEN.findall(spelling), scope))
         return aliases, enums, constants
 
+    def callable_alias_declarations(self, values, scope):
+        """Alias declarations of each callable type named anywhere in `values`.
+
+        Unlike a field's inline storage, a used declaration's call signature
+        depends on the aliased callable even inside a product or container.
+        """
+        aliases, enums, constants = [], [], []
+        for start, end, spelling in names_in(values):
+            resolved = self.layout_type(spelling, scope)
+            if resolved not in self.alias_arguments:
+                continue
+            argument, where = self.alias_arguments[resolved]
+            expanded = construction_aliases(argument, self, where)
+            if (
+                function_pointer_declarator(expanded)
+                or function_type_signature(expanded)
+                or any(
+                    name == "std::function" and not in_template_argument(expanded, at)
+                    for at, _, name in names_in(expanded)
+                )
+            ):
+                child = self.layout_type_declarations(
+                    values[start:end], scope, include_wrapped=True
+                )
+                aliases.extend(child[0])
+                enums.extend(child[1])
+                constants.extend(child[2])
+        return aliases, enums, constants
+
     def construction_initializer_declarations(self, name):
         """Default field initializers and constants of constructed subobjects."""
         result = []
@@ -2449,7 +2551,12 @@ class ApiIndex:
                 continue
             expression = values[default + 1 : last + 1]
             constants.extend(self.constant_dependencies(expression, scope))
-            parameter = values[first:default]
+            parameter = [  # an elaborated type specifier names the same class
+                value
+                for index, value in enumerate(values[first:default])
+                if value not in {"class", "struct", "union"}
+                or not IDENTIFIER.match(values[first + index + 1])
+            ]
             member = data_member(parameter, None)
             if not member:
                 # Grouped object names must not receive function-parameter adjustment.
@@ -2515,7 +2622,13 @@ class ApiIndex:
                     prefix = parameter[:name_index] + parameter[name_index + 1 :]
             if member:
                 suffix = declarator_attributes_end(
-                    Tokens(" ".join(parameter)), member["name_index"] + 1
+                    Tokens(" ".join(parameter)),
+                    member["name_index"]
+                    + 1
+                    + (
+                        parameter[member["name_index"] + 1 : member["name_index"] + 2]
+                        == [")"]
+                    ),
                 )
                 if parameter[suffix : suffix + 1] == ["["] and parameter[
                     suffix : suffix + 2
@@ -2552,7 +2665,7 @@ class ApiIndex:
                 else:
                     for owner in self.layout_operand_owners(operand, scope):
                         result.extend(self.layout_evidence(owner))
-            prefix = construction_aliases(prefix, self, scope)
+            prefix = self.masked_aliases(prefix, scope, shadowed)
             function = function_type_signature(prefix)
             if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
                 function_opening = function["opening"]
@@ -2869,7 +2982,7 @@ def template_end(values, index):
 def variable_after_type(values, end, grouped=False):
     j = template_end(values, end)
     while j < len(values):
-        if values[j] in {"const", "*", "&", "&&", ">"}:
+        if values[j] in {"const", "volatile", "*", "&", "&&", ">"}:
             j += 1
         elif values[j] in {"__attribute__", "__attribute", "__declspec"} or values[
             j : j + 2
@@ -2931,13 +3044,49 @@ def declarator_attributes_end(tokens, index):
     return index
 
 
-def array_end(tokens, index):
-    """Skip balanced array dimensions and following declarator attributes."""
+def array_bounds(tokens, index):
+    """Balanced array bounds' `[` indices, and the index after their attributes."""
+    bounds = []
     while True:
         index = declarator_attributes_end(tokens, index)
         if tokens.values[index : index + 1] != ["["] or index not in tokens.pairs:
-            return index
+            return bounds, index
+        bounds.append(index)
         index = tokens.pairs[index] + 1
+
+
+def array_end(tokens, index):
+    """Skip balanced array dimensions and following declarator attributes."""
+    return array_bounds(tokens, index)[1]
+
+
+def literal_extent(tokens, bound):
+    """A literal array bound's value; names and expressions stay unknown."""
+    inner = tokens.values[bound + 1 : tokens.pairs[bound]]
+    while inner[:1] == ["("] and inner[-1:] == [")"]:
+        inner = inner[1:-1]
+    match = re.fullmatch(
+        r"(0[xX][0-9a-fA-F]+|0[bB][01]+|[0-9]+)[uUlL]*", "".join(inner)
+    )
+    if not match:
+        return None
+    number = match.group(1)
+    try:
+        return int(number, 8 if re.fullmatch(r"0[0-9]+", number) else 0)
+    except ValueError:
+        return None
+
+
+def enclosing_template(values, start):
+    """The `<` of the innermost template argument list that contains `start`."""
+    return next(
+        (
+            index
+            for index in range(start - 1, -1, -1)
+            if values[index] == "<" and template_end(values, index) > start
+        ),
+        None,
+    )
 
 
 def array_types(tokens, index, types):
@@ -2963,8 +3112,11 @@ def in_template_argument(values, start):
     return angle > 0
 
 
-def in_place_initializer(tokens, end):
-    """Whether a value initializer starts with the std::in_place object."""
+def in_place_initializer(tokens, end, exact=False):
+    """Whether a value initializer starts with the std::in_place object.
+
+    `exact` also requires that no arguments follow it.
+    """
     values = tokens.values
     variable = variable_after_type(values, end)
     opening = (
@@ -2978,36 +3130,84 @@ def in_place_initializer(tokens, end):
     if arguments[:1] == ["::"]:
         arguments = arguments[1:]
     return arguments[:3] == ["std", "::", "in_place"] and (
-        len(arguments) == 3 or arguments[3] == ","
+        len(arguments) == 3 or not exact and arguments[3] == ","
     )
 
 
 def default_value_initializer(tokens, end, grouped=False):
-    """An absent or empty initializer selects a variant's first alternative."""
+    """An absent or empty initializer selects a variant's first alternative.
+
+    An array also defaults its elements that a brace list omits or spells `{}`.
+    Without evaluating bounds, only a literal bound can prove every element
+    supplied; a rank above one, a named or runtime bound and an inferred `new`
+    bound stay conservative.
+    """
     values = tokens.values
     variable = variable_after_type(values, end, grouped)
     if variable is not None and values[variable - 1] == "(":
         variable += 1  # step over the closing parenthesis of `T (name)`
-    opening = (
-        array_end(tokens, variable + 1)
-        if variable is not None
-        else template_end(values, end)
-    )
-    while values[opening : opening + 1] == [">"]:
+    opening = variable + 1 if variable is not None else template_end(values, end)
+    while values[opening : opening + 1] in ([">"], ["const"], ["volatile"]):
         opening += 1
+    bounds, opening = array_bounds(tokens, opening)
     if values[opening : opening + 1] == ["="]:
         opening += 1
-    return values[opening : opening + 1] in ([";"], [","], [")"]) or (
+    closing = tokens.pairs.get(opening)
+    if values[opening : opening + 1] in ([";"], [","], [")"]):
+        return True
+    if values[opening : opening + 1] == ["{"] and closing is not None and bounds:
+        clauses = construction_arguments(tokens, opening)
+        extent = literal_extent(tokens, bounds[0])
+        if not clauses:  # a literal zero bound has no elements to default
+            return extent != 0
+        if len(bounds) > 1 or any(
+            values[first : last + 1] == ["{", "}"] for first, last in clauses
+        ):
+            return True
+        if extent is None:  # `T values[] = {...}` is fully supplied
+            return variable is None or tokens.pairs[bounds[0]] != bounds[0] + 1
+        return len(clauses) < extent
+    return (
         (
             values[opening : opening + 1] == ["{"]
             or variable is None
             and values[opening : opening + 1] == ["("]
         )
-        and tokens.pairs.get(opening) == opening + 1
+        and closing == opening + 1
         # `T value({})` copy-list-initializes from an empty list.
         or values[opening : opening + 3] == ["(", "{", "}"]
-        and tokens.pairs.get(opening) == opening + 3
+        and closing == opening + 3
     )
+
+
+def defaulted_variant(tokens, opening, allocators=()):
+    """Whether the context default-initializes the variant spelled at `opening`.
+
+    A variant nested in a wrapper is defaulted by that wrapper's initializer:
+    a sized sequence's count, an `in_place` without arguments, or the enclosing
+    aggregate's own default initialization, not by the outermost declaration's.
+    """
+    values = tokens.values
+    parent = enclosing_template(values, opening - 3)
+    if parent is None:
+        return default_value_initializer(tokens, opening)
+    kind = qualified(values[max(0, parent - 3) : parent])
+    if kind in SIZED_SEQUENCES:
+        return sequence_count_initializer(tokens, parent, allocators)
+    if kind == "std::optional":
+        return in_place_initializer(tokens, parent, exact=True)
+    if kind in {"std::tuple", "std::pair", "std::array"}:
+        return defaulted_variant(tokens, parent, allocators)
+    if values[parent - 1] == "allocate_shared":
+        after = template_end(values, parent)
+        arguments = construction_arguments(tokens, after)
+        if (
+            values[after : after + 1] == ["("]
+            and len(arguments) == 1
+            and allocator_argument(tokens, arguments[0], allocators)
+        ):
+            return True
+    return default_value_initializer(tokens, opening)
 
 
 def value_argument(argument):
@@ -3086,38 +3286,51 @@ def construction_arguments(tokens, opening):
     return result
 
 
+def allocator_argument(tokens, argument, allocators=()):
+    """Whether a construction argument span is a known allocator object."""
+    values = tokens.values
+    first, last = argument
+    while values[first] == "(" and tokens.pairs.get(first) == last:
+        first, last = first + 1, last - 1
+    return (
+        values[first : first + 3] == ["std", "::", "allocator"]
+        or qualified(values[first : last + 1]) in allocators
+    )
+
+
 def sequence_count_initializer(tokens, end, allocators=()):
     """A count, optionally with a known allocator, default-constructs elements."""
     values = tokens.values
     if in_template_argument(values, end - 1):
-        return False
-    variable = variable_after_type(values, end)
-    opening = (
-        array_end(tokens, variable + 1)
-        if variable is not None
-        else template_end(values, end)
-    )
+        # Only the sole template argument of make_shared/make_unique is counted.
+        parent = enclosing_template(values, end - 3)
+        if (
+            parent is None
+            or values[parent - 1] not in {"make_shared", "make_unique"}
+            or parent + 1 != end - 3
+            or values[template_end(values, end) : template_end(values, end) + 1]
+            != [">"]
+        ):
+            return False
+        opening = template_end(values, parent)
+    else:
+        variable = variable_after_type(values, end)
+        opening = (
+            array_end(tokens, variable + 1)
+            if variable is not None
+            else template_end(values, end)
+        )
     if values[opening : opening + 1] == ["="]:
         opening += 1
     closing = tokens.pairs.get(opening)
     if closing is None or values[opening] not in {"(", "{"}:
         return False
     arguments = construction_arguments(tokens, opening)
-
-    def allocator(argument):
-        first, last = argument
-        while values[first] == "(" and tokens.pairs.get(first) == last:
-            first, last = first + 1, last - 1
-        return (
-            values[first : first + 3] == ["std", "::", "allocator"]
-            or qualified(values[first : last + 1]) in allocators
-        )
-
     return (
         len(arguments) == 1
-        and not allocator(arguments[0])
+        and not allocator_argument(tokens, arguments[0], allocators)
         or len(arguments) == 2
-        and allocator(arguments[1])
+        and allocator_argument(tokens, arguments[1], allocators)
     )
 
 
@@ -3183,6 +3396,7 @@ def constructs(tokens, start, end, declarations, heads, allocators=(), declarato
         "class",
         "struct",
         "union",
+        "typename",
     }:
         element -= 1
     if (
@@ -3248,7 +3462,7 @@ def constructs(tokens, start, end, declarations, heads, allocators=(), declarato
             return (
                 start < opening + 1 + len(argument)
                 and value_argument(argument)
-                and default_value_initializer(tokens, opening)
+                and defaulted_variant(tokens, opening, allocators)
                 and constructs(
                     tokens, opening - 3, opening, declarations, heads, allocators
                 )
@@ -3331,6 +3545,13 @@ def constructs(tokens, start, end, declarations, heads, allocators=(), declarato
         while values[after : after + 1] in (["const"], ["volatile"]):
             after += 1
         return values[after : after + 1] not in (["*"], ["&"], ["&&"])
+    group = tokens.pairs.get(after) if values[after : after + 1] == ["("] else None
+    if group is not None and values[group + 1 : group + 2] == ["("]:
+        inner = values[after + 1 : group]
+        if inner[:1] in (["*"], ["&"], ["&&"]) or ["::", "*"] in [
+            inner[index : index + 2] for index in range(len(inner))
+        ]:
+            return False  # `T (*callback)()` declares a callable, not a `T`
     if values[after : after + 1] in (["("], ["{"]):
         return True
     opening = tokens.enclosing[start]  # parameters are not constructions
@@ -3605,6 +3826,44 @@ def is_field(tokens, index, classes):
         for opening, closing in tokens.pairs.items()
         if opening < closing
     )
+
+
+def later_declarators(tokens, start):
+    """Name index and type tokens of each declarator after a declaration's first."""
+    values = tokens.values
+    lead = start
+    while lead and values[lead - 1] in {
+        "const",
+        "volatile",
+        "::",
+        "static",
+        "thread_local",
+        "inline",
+        "constexpr",
+    }:
+        lead -= 1
+    enclosing = tokens.enclosing[start]
+    control = (  # `for (`, `if (` or `switch (` init-statement
+        enclosing is not None
+        and values[enclosing] == "("
+        and lead == enclosing + 1
+        and values[enclosing - 1 - (values[enclosing - 1 : enclosing] == ["constexpr"])]
+        in {"for", "if", "switch"}
+    )
+    if not control and (
+        (lead and values[lead - 1] not in {";", "{", "}"})
+        or (enclosing is not None and values[enclosing] == "(")
+    ):
+        return []  # not a statement-level declaration; parameters stay separate
+    stop = statement_end(tokens, start)
+    if values[stop : stop + 1] != [";"] or (control and stop > tokens.pairs[enclosing]):
+        return []  # a range-for has no init-statement `;` inside its parentheses
+    result = []
+    for part, offset in declarators(values[start:stop], None)[1:]:
+        item = data_member(part, None)
+        if item:
+            result.append((start + offset + item["name_index"], item["return_tokens"]))
+    return result
 
 
 def index_api(header_root):
@@ -3899,7 +4158,12 @@ def index_api(header_root):
         for _, _, value in names_in(values):
             resolved = api.resolve(value, scope)
             if resolved and resolved != name:
-                api.aliases.setdefault(name, resolved)
+                # A callable alias names a function type, not its return class.
+                if not (
+                    function_pointer_declarator(values)
+                    or function_type_signature(values)
+                ):
+                    api.aliases.setdefault(name, resolved)
                 api.dependencies.setdefault(name, set()).add(resolved)
         if wraps(values, lambda value: api.resolve(value, scope)):
             api.wrappers.add(name)
@@ -4062,7 +4326,8 @@ def scan_sources(api, source_root):
         )
     }
 
-    def used_declaration(item):
+    def used_declaration(item, layout=False):
+        """A used declaration; `layout` marks inline-storage evidence only."""
         result = public_declaration(item)
         if item.get("class") in api.classes and "access" in item:
             result["access"] = item["access"]
@@ -4108,6 +4373,19 @@ def scan_sources(api, source_root):
                     result["enum_declarations"] = enums
                 if constants:
                     result["constant_declarations"] = constants
+            elif not layout:
+                aliases, enums, constants = api.callable_alias_declarations(
+                    prefix, scope
+                )
+                for key, found in (
+                    ("type_alias_declarations", aliases),
+                    ("enum_declarations", enums),
+                    ("constant_declarations", constants),
+                ):
+                    if found:
+                        result[key] = list(
+                            {json.dumps(d, sort_keys=True): d for d in found}.values()
+                        )
         return result
 
     def add(section, name, path, line, **metadata):
@@ -4707,7 +4985,10 @@ def scan_sources(api, source_root):
                             and not wrapped(
                                 value, tokens, index, imports, namespace_aliases
                             ),
-                        )
+                        ) or bool(
+                            function_pointer_declarator(values)
+                            or function_type_signature(values)
+                        )  # a callable alias names a function type, not its return
                         pointer = (
                             raw_pointer(values)
                             or any(
@@ -4755,10 +5036,16 @@ def scan_sources(api, source_root):
     source_types.update(name.split("::")[-1] for name in tuple(source_types))
 
     def contextual_constructors(
-        prefix, context, api_scope=None, depth=0, temporary=True
+        prefix, context, api_scope=None, depth=0, temporary=True, wrap=None
     ):
+        """DART classes a value of `prefix` constructs, as initialized by `wrap`.
+
+        `wrap` is the source tokens that precede and follow the type; without it
+        the value is default-initialized.
+        """
         if depth > 8:
             return set()
+        before, after = wrap or ([], ["__returned_value", "{", "}", ";"])
         path, tokens, index, imports, namespace_aliases = context
         prefix = [
             value
@@ -4767,10 +5054,12 @@ def scan_sources(api, source_root):
             or value not in {"&", "&&"}
             or in_template_argument(prefix, offset)
         ]
-        returned = Tokens(" ".join(prefix + ["__returned_value", "{", "}", ";"]))
+        returned = Tokens(" ".join(before + prefix + after))
         result = set()
         for start, end, spelling in names_in(prefix):
-            if not constructs(returned, start, end, set(), []):
+            if not constructs(
+                returned, start + len(before), end + len(before), set(), []
+            ):
                 continue
             name, alias = (
                 (api.resolve(spelling, api_scope), None)
@@ -4810,6 +5099,8 @@ def scan_sources(api, source_root):
                         temporary=temporary and not in_template_argument(prefix, start),
                     )
                 )
+            elif alias in tokens.wrapped:
+                continue  # a source alias of a wrapper or callable, not its element
             elif constructed := api.constructible(name):
                 result.add((name, constructed))
         return result
@@ -5047,14 +5338,21 @@ def scan_sources(api, source_root):
         if variable is None:
             if direct:
                 return None
-            if not default_value_initializer(tokens, end) or not constructs(
-                tokens, start, end, declarations, heads
-            ):
+            if not constructs(tokens, start, end, declarations, heads):
                 return []
+            # The expression's own bounds and arguments follow the type.
+            after = template_end(values, end)
+            bounds, opening = array_bounds(tokens, after)
+            if opening in tokens.pairs and values[opening] in {"(", "{"}:
+                opening = tokens.pairs[opening] + 1
+            wrap = (["new"] if values[lead - 1 : lead] == ["new"] else []), [
+                *values[after:opening],
+                ";",
+            ]
             return [
                 (name, dependency, start)
                 for name, dependency in sorted(
-                    contextual_constructors(prefix, context, temporary=False)
+                    contextual_constructors(prefix, context, temporary=False, wrap=wrap)
                 )
             ]
         result = []
@@ -5063,12 +5361,11 @@ def scan_sources(api, source_root):
         ):
             declared = Tokens(" ".join(part + [";"]))
             local = variable_after_type(declared.values, end - lead, grouped=grouped)
-            if local is None or not default_value_initializer(
-                declared, end - lead, grouped=grouped
-            ):
+            if local is None:
                 continue
             site = lead + offset + local
             prefix = part[: local - (part[local - 1 : local] == ["("])]
+            initializer = part[local + 1 + (part[local - 1 : local] == ["("]) :]
             if not constructs(
                 tokens,
                 start,
@@ -5084,7 +5381,12 @@ def scan_sources(api, source_root):
             result.extend(
                 (name, dependency, site)
                 for name, dependency in sorted(
-                    contextual_constructors(prefix, context, temporary=False)
+                    contextual_constructors(
+                        prefix,
+                        context,
+                        temporary=False,
+                        wrap=([], ["__returned_value", *initializer, ";"]),
+                    )
                 )
             )
         return result
@@ -5093,7 +5395,7 @@ def scan_sources(api, source_root):
         declarations = []
         for owner in owners:
             for item in api.layout_declarations(owner):
-                declaration = used_declaration(item)
+                declaration = used_declaration(item, layout=True)
                 aliases, enums, constants = api.layout_type_declarations(
                     item["return_tokens"], tuple(item["class"].split("::"))
                 )
@@ -5315,6 +5617,18 @@ def scan_sources(api, source_root):
                     typed_variables[path].setdefault(
                         j, (values[start:j], is_field(tokens, j, classes))
                     )
+                    for later, later_prefix in later_declarators(tokens, start):
+                        types = {resolved} if owner else set()
+                        if "*" in later_prefix[
+                            template_end(values, type_end) - start :
+                        ] or pointer_alias(
+                            name, tokens, start, imports, namespace_aliases
+                        ):
+                            types.add(RAW_POINTER)
+                        bind_variable(tokens, later, array_types(tokens, later, types))
+                        typed_variables[path].setdefault(
+                            later, (later_prefix, is_field(tokens, later, classes))
+                        )
         for start, end, name in names_in(values):
             if resolve(name, tokens, start, imports, namespace_aliases):
                 continue
@@ -5374,6 +5688,17 @@ def scan_sources(api, source_root):
                 typed_variables[path].setdefault(
                     j, (values[start:j], is_field(tokens, j, classes))
                 )
+                for later, later_prefix in later_declarators(tokens, start):
+                    kept = contained - {RAW_POINTER}
+                    if RAW_POINTER in contained and (
+                        name in {"std::shared_ptr", "std::unique_ptr", "std::weak_ptr"}
+                        or raw_pointer(later_prefix[end - start :])
+                    ):
+                        kept.add(RAW_POINTER)
+                    bind_variable(tokens, later, array_types(tokens, later, kept))
+                    typed_variables[path].setdefault(
+                        later, (later_prefix, is_field(tokens, later, classes))
+                    )
 
         # Init-capture initializers see the enclosing scope; their names exist
         # only in the lambda body, including bodies of nested lambdas.
@@ -5989,6 +6314,28 @@ def scan_sources(api, source_root):
         paired = Tokens(" ".join(values))
         pointer = function_pointer_declarator(values)
         for opening, closing in sorted(paired.pairs.items(), reverse=True):
+            returned = (  # `T (*(*)())()` returns the callable `T (*)()`
+                values[opening : opening + 2] == ["(", "*"]
+                and paired.enclosing[opening] is None
+                and values[closing + 1 : closing + 2] == ["("]
+                and any(
+                    inner < closing
+                    and paired.enclosing[inner] == opening
+                    and values[inner] == "("
+                    and set(values[inner + 1 : paired.pairs[inner]])
+                    <= {"*", "&", "&&", "const", "volatile"}
+                    and values[paired.pairs[inner] + 1 : paired.pairs[inner] + 2]
+                    == ["("]
+                    and paired.pairs.get(paired.pairs[inner] + 1) == closing - 1
+                    for inner in paired.pairs
+                )
+            )
+            if returned:
+                return (
+                    values[:opening]
+                    + ["(", values[opening + 1], ")"]
+                    + values[closing + 1 :]
+                )
             if (
                 opening < closing
                 and values[opening] == "("
@@ -8117,9 +8464,12 @@ def scan_sources(api, source_root):
                 None,
             )
             if optional is not None:
-                return contextual_constructors(
-                    first_template_argument(prefix, optional), context, temporary=False
-                )
+                element = first_template_argument(prefix, optional)
+                if function_pointer_declarator(element) or function_type_signature(
+                    element
+                ):
+                    return set()  # a null callable, not an object of its return type
+                return contextual_constructors(element, context, temporary=False)
         return {
             (name, constructed)
             for name in owned
@@ -8133,7 +8483,11 @@ def scan_sources(api, source_root):
                 value == "emplace"
                 and index > 1
                 and values[index - 1] in {".", "->"}
-                and values[index + 1 : index + 2] == ["("]
+                and values[
+                    template_end(values, index + 1) : template_end(values, index + 1)
+                    + 1
+                ]
+                == ["("]
             ):
                 inferred = receiver(tokens, index - 2, imports, namespace_aliases)
                 if values[index - 1] == "->":

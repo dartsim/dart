@@ -234,6 +234,9 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Used type-alias target definitions outside field layout dependencies are not recorded.
 - Qualified member-function references without calls are not recorded.
 - Dependent `receiver->template method<T>()` calls are not recognized.
+- Unique-map node-handle results (`.node`, `.mapped()`) and `std::invoke`
+  callback results do not propagate receivers; the compiled Gazebo gates
+  remain authoritative for them.
 - Base relationships of referenced DART types are not recorded.
 - Trailing return types are not used to infer chained-call receivers.
 
@@ -260,9 +263,13 @@ bases and owned non-static members, including class template specializations.
 These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
 `std::make_from_tuple`, engaged optional `std::in_place` initializers, known
-optional `emplace` calls, value-producing `static_cast` targets and placement `new`.
-Elaborated `class`, `struct` and `union` specifiers preserve value construction
-in cast targets.
+optional `emplace` calls, including explicit template arguments such as
+`emplace<int>(1)` on known receivers, value-producing `static_cast` targets and
+placement `new`. An optional callable element is a null callable and does not
+construct its return class; later declarators of a grouped optional declaration
+bind their own receivers.
+Elaborated `class`, `struct`, `union` and `typename` specifiers preserve value
+construction in cast targets, and `class`, `struct` and `union` in default parameters.
 A Gazebo class derived from a DART class counts as a construction of that base
 at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
@@ -276,7 +283,18 @@ pointer and reference elements do not construct their pointees. Default-initiali
 `std::variant` values retain construction dependencies of their first alternative,
 with each value declarator checked independently in grouped declarations.
 Balanced declarator attributes preserve the following initializer or terminator.
-Function prototypes and function-type aliases do not construct their return values.
+Function prototypes and function-type aliases, including `typedef` and `using`
+function types and `T (*callback)()` declarators, do not construct their return values.
+A variant array, or a `new` array, retains the first alternative's construction
+when it has no initializer, an empty `()` or `{}`, a brace list that is shorter than a
+literal bound, or an explicit `{}` element. This is constructor-viability evidence,
+not an element count: a rank above one, a named or runtime bound and an inferred
+`new` bound stay conservative, and only a fully supplied one-dimensional literal
+list, an inferred ordinary bound or an empty-braced literal-zero bound do not
+construct. A variant nested in a wrapper follows the wrapper's initializer: a
+sized sequence's count, `std::in_place` alone, an allocator-only
+`std::allocate_shared` or the enclosing tuple, pair or array's own default
+initialization. `volatile` qualifiers in either order do not hide the declarator.
 Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
@@ -303,7 +321,11 @@ Direct and aliased function-pointer fields, including qualified member pointers,
 retain their physical pointer declarators, array extents and alignment spellings
 in `storage_declarator`, using fragments from the field and its indexed aliases.
 Their return and parameter types do not describe inline storage. Alignment
-evidence includes `alignas` and GNU alignment attributes. Function declarations
+evidence includes `alignas` and GNU alignment attributes, standard `[[...]]`
+attribute lists inside the callback group, and attributes on a `using` alias name.
+Function types spelled inside template arguments, such as `std::array<int(*)(),2>`,
+are field storage, and a callable that returns a callable keeps its stored pointer
+and array shape. A parenthesized later declarator such as `(b)[2]` keeps its array. Function declarations
 through aliases have no inline storage.
 Owned union fields also retain their types' `union_declarations`.
 Inline field types retain alias targets and enum headers
@@ -378,7 +400,8 @@ Calls through qualified member-function pointers retain their declared return ty
 Known indexed function-type aliases and nested `std::function` or raw callback
 returns preserve callable shapes through repeated invocations and product-element
 projections. Used callable aliases retain their target declarations, including
-parameter types, in `type_alias_declarations`. Dependent and explicitly declared source callbacks retain their
+parameter types, in `type_alias_declarations`, including aliases named inside products and
+containers or aliasing `std::function`; inline field layout alone does not retain them. Dependent and explicitly declared source callbacks retain their
 existing conservative receiver handling.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
