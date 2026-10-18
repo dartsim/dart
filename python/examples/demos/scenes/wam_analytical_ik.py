@@ -1,11 +1,98 @@
-"""A draggable WAM arm posed with native analytical whole-body IK."""
+"""A draggable WAM arm posed with ssik's closed-form 7R analytical IK."""
 
+import importlib
+import weakref
 from pathlib import Path
 
 import dartpy as dart
+import numpy as np
+
+
+def ssik_chain(ssik, wam, ee):
+    """Build ssik's chain from DART's own joint transforms, axes, and limits."""
+    joints = [
+        wam.getJoint(i)
+        for i in range(wam.getNumJoints())
+        if wam.getJoint(i).getNumDofs()
+    ]
+    trafos = []
+    child_to_joint = np.eye(4)
+    for joint in joints:
+        trafos.append(
+            child_to_joint @ joint.getTransformFromParentBodyNode().matrix()
+        )
+        child_to_joint = np.linalg.inv(
+            joint.getTransformFromChildBodyNode().matrix()
+        )
+    trafos.append(child_to_joint @ ee.getRelativeTransform().matrix())
+    return ssik.Manipulator.from_transforms(
+        trafos,
+        [joint.getAxis() for joint in joints],
+        limits=np.column_stack(
+            [wam.getPositionLowerLimits(), wam.getPositionUpperLimits()]
+        ),
+    )
+
+
+# Fallback swivels, sampled because ssik's native Chart.in_limits can stall on
+# the degenerate chart of a singular target, such as the rest pose turned in place.
+SWIVEL_SAMPLES = np.linspace(-np.pi, np.pi, 64, endpoint=False)
+# A held swivel that would turn a joint this far is ill-defined, as at the
+# straight-up rest pose, where the shoulder-wrist line is the base axis.
+FLIP = 1.0
+
+
+def swivel_solver(chain, wam):
+    """Hold the current pose's elbow swivel, so redundancy follows body drags.
+
+    When no held solution is within limits, or every one would flip a joint,
+    also offers each branch's in-limit swivel sample nearest the current pose.
+    DART then applies the valid solution nearest the current pose.
+    """
+    lower = wam.getPositionLowerLimits()
+    upper = wam.getPositionUpperLimits()
+    center = 0.5 * (lower + upper)
+    # The skeleton owns this callback, so a strong reference would leak it.
+    wam = weakref.ref(wam)
+
+    def into_limits(q):
+        # Charts return any turn of each angle; DART checks limits literally.
+        return q - 2.0 * np.pi * np.round((q - center) / (2.0 * np.pi))
+
+    def within_limits(q):
+        # Also rejects NaN, which marks a swivel where a branch does not exist.
+        return np.all((lower <= q) & (q <= upper), axis=-1)
+
+    def nearest_sample(chart, q):
+        samples = into_limits(chart.q(SWIVEL_SAMPLES))
+        distances = np.linalg.norm(samples - q, axis=1)
+        distances[~within_limits(samples)] = np.inf
+        best = np.argmin(distances)
+        return samples[best] if np.isfinite(distances[best]) else None
+
+    def solve(desired):
+        q = wam().getPositions()
+        swivel = chain.self_motion(chain.fk(q)).param_of(q)
+        charts = list(chain.self_motion(desired))
+        held = [into_limits(chart.q(swivel)) for chart in charts]
+        held = [c for c in held if within_limits(c)]
+        if held and min(np.abs(c - q).max() for c in held) < FLIP:
+            return held
+        nearest = (nearest_sample(chart, q) for chart in charts)
+        return held + [c for c in nearest if c is not None]
+
+    return solve
 
 
 def build() -> dart.viewer.SceneSetup:
+    try:
+        ssik = importlib.import_module("ssik")
+        ssik.Manipulator.self_motion
+    except (ImportError, AttributeError) as error:
+        raise dart.viewer.AssetsNotPrefetchedError(
+            "Install ssik>=8.1.0 in this Python environment with: "
+            "pixi run install-ssik"
+        ) from error
     world = dart.simulation.World()
     world.setGravity([0.0, 0.0, 0.0])
 
@@ -33,7 +120,9 @@ def build() -> dart.viewer.SceneSetup:
     target = dart.gui.InteractiveFrame(dart.dynamics.Frame.World(), "lh_target")
     ik = ee.getIK(True)
     ik.setTarget(target)
-    dart._demos.set_wam_ikfast(ik)
+    ik.setPythonAnalytical(
+        swivel_solver(ssik_chain(ssik, wam, ee), wam), methodName="ssik SRS"
+    )
     infinity = [float("inf")] * 3
     negative_infinity = [-float("inf")] * 3
     ik.getErrorMethod().setLinearBounds(negative_infinity, infinity)
@@ -122,10 +211,13 @@ def build() -> dart.viewer.SceneSetup:
 def scenes():
     return [
         dart.viewer.Scene(
-            "wam_ikfast",
-            title="WAM IkFast",
+            "wam_analytical_ik",
+            title="WAM Analytical IK",
             category="Control & IK",
-            summary="WAM arm posed by IkFast analytical whole-body IK, fully draggable.",
+            summary=(
+                "WAM arm posed by ssik closed-form analytical IK (optional ssik "
+                "package), fully draggable."
+            ),
             factory=build,
         )
     ]

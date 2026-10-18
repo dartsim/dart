@@ -43,8 +43,8 @@ def test_s6b_catalog_order_and_metadata():
     scenes = _scenes()
     ids = [scene.id for scene in scenes]
     assert ids.index("contact_inverse_dynamics") + 1 == ids.index("ssik_ik_gui")
-    assert ids.index("ssik_ik_gui") + 1 == ids.index("wam_ikfast")
-    assert ids.index("wam_ikfast") + 1 == ids.index("atlas_puppet")
+    assert ids.index("ssik_ik_gui") + 1 == ids.index("wam_analytical_ik")
+    assert ids.index("wam_analytical_ik") + 1 == ids.index("atlas_puppet")
     for scene_id, title, summary in (
         (
             "atlas_puppet",

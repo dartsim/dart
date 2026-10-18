@@ -1,5 +1,6 @@
 """Construction, frame updates, and controls for the S6a demo batch."""
 
+import faulthandler
 import sys
 from pathlib import Path
 
@@ -12,7 +13,7 @@ viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
 STRUCTURES = {
-    "wam_ikfast": [("wam", 8, 7), ("ground", 1, 0)],
+    "wam_analytical_ik": [("wam", 8, 7), ("ground", 1, 0)],
     "contact_inverse_dynamics": [("ground skeleton", 1, 6), ("fullbody1", 20, 37)],
 }
 
@@ -101,14 +102,15 @@ def test_s6a_registry_order_and_metadata():
     assert (
         ids.index("operational_space_control")
         < ids.index("contact_inverse_dynamics")
-        < ids.index("wam_ikfast")
+        < ids.index("wam_analytical_ik")
         < ids.index("atlas_puppet")
     )
     for scene_id, title, summary in (
         (
-            "wam_ikfast",
-            "WAM IkFast",
-            "WAM arm posed by IkFast analytical whole-body IK, fully draggable.",
+            "wam_analytical_ik",
+            "WAM Analytical IK",
+            "WAM arm posed by ssik closed-form analytical IK (optional ssik "
+            "package), fully draggable.",
         ),
         (
             "contact_inverse_dynamics",
@@ -126,6 +128,8 @@ def test_s6a_registry_order_and_metadata():
 
 @pytest.mark.parametrize("scene_id", STRUCTURES)
 def test_s6a_construction_and_deterministic_steps(scene_id):
+    if scene_id == "wam_analytical_ik":
+        pytest.importorskip("ssik")
     states = []
     for _ in range(2):
         setup = _scene(scene_id).factory()
@@ -140,9 +144,10 @@ def test_s6a_construction_and_deterministic_steps(scene_id):
         assert setup.allow_simulation == (scene_id == "contact_inverse_dynamics")
         np.testing.assert_array_equal(
             world.getGravity(),
-            [0, 0, 0] if scene_id == "wam_ikfast" else [0, 0, -9.81],
+            [0, 0, 0] if scene_id == "wam_analytical_ik" else [0, 0, -9.81],
         )
-        assert world.getNumSimpleFrames() == (0 if scene_id == "wam_ikfast" else 4)
+        frames = 0 if scene_id == "wam_analytical_ik" else 4
+        assert world.getNumSimpleFrames() == frames
         _step(setup, 4)
         assert world.getSimFrames() == 4
         states.append(_state(world))
@@ -163,7 +168,8 @@ class _Context:
 
 
 def test_wam_keys_solver_endpoint_and_activation(controls):
-    setup = _scene("wam_ikfast").factory()
+    pytest.importorskip("ssik")
+    setup = _scene("wam_analytical_ik").factory()
     wam = setup.world.getSkeleton("wam")
     ee = wam.getEndEffector("ee")
     ik = ee.getIK()
@@ -211,16 +217,9 @@ def test_wam_keys_solver_endpoint_and_activation(controls):
     ik.getTarget().setTransform(desired)
     for _ in range(5):
         setup.pre_refresh()
-    # The source solver targets /wam7 directly, including the scene's 9 cm offset.
+    assert ik.getGradientMethod().getMethodName() == "ssik SRS"
     np.testing.assert_allclose(
-        wam.getBodyNode("/wam7").getWorldTransform().matrix(),
-        desired.matrix(),
-        atol=1e-5,
-    )
-    np.testing.assert_allclose(
-        ee.getWorldTransform().matrix(),
-        desired.multiply(ee.getRelativeTransform()).matrix(),
-        atol=1e-5,
+        ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-8
     )
     actions["1"].callback()
     assert setup.world.getNumSimpleFrames() == 0
@@ -293,9 +292,156 @@ def test_contact_every_panel_control_and_frame_results(controls, contact_models)
         )
 
 
-def test_private_native_binding_validation():
-    with pytest.raises((ValueError, TypeError)):
-        dart._demos.set_wam_ikfast(None)
-    body = dart.dynamics.Skeleton().createWeldJointAndBodyNodePair()[1]
-    with pytest.raises(ValueError):
-        dart._demos.set_wam_ikfast(body.getIK(True))
+def _wam_with_ssik():
+    ssik = pytest.importorskip("ssik")
+    from examples.demos.scenes import wam_analytical_ik
+
+    setup = _scene("wam_analytical_ik").factory()
+    wam = setup.world.getSkeleton("wam")
+    ee = wam.getEndEffector("ee")
+    chain = wam_analytical_ik.ssik_chain(ssik, wam, ee)
+    return setup, wam, ee, chain
+
+
+def _random_in_limits(wam, rng):
+    return rng.uniform(wam.getPositionLowerLimits(), wam.getPositionUpperLimits())
+
+
+def _swivel(chain, q):
+    return chain.self_motion(chain.fk(q)).param_of(q)
+
+
+def _rotation_error(a, b):
+    relative = a[:3, :3].T @ b[:3, :3]
+    skew = relative - relative.T
+    sin = np.linalg.norm([skew[2, 1], skew[0, 2], skew[1, 0]]) / 2.0
+    return float(np.arctan2(sin, (np.trace(relative) - 1.0) / 2.0))
+
+
+def test_wam_ssik_chain_matches_dart_fk():
+    _, wam, ee, chain = _wam_with_ssik()
+    rng = np.random.default_rng(7)
+    for _ in range(100):
+        q = _random_in_limits(wam, rng)
+        wam.setPositions(q)
+        np.testing.assert_allclose(
+            chain.fk(q), ee.getWorldTransform().matrix(), rtol=0, atol=1e-12
+        )
+
+
+def test_wam_ssik_solutions_reach_target_within_limits():
+    _, wam, ee, _ = _wam_with_ssik()
+    analytical = ee.getIK().getAnalytical()
+    lower, upper = wam.getPositionLowerLimits(), wam.getPositionUpperLimits()
+    rng = np.random.default_rng(11)
+    found = 0
+    for _ in range(100):
+        wam.setPositions(_random_in_limits(wam, rng))
+        target = ee.getWorldTransform()
+        wam.setPositions(_random_in_limits(wam, rng))
+        valid = [
+            solution.mConfig
+            for solution in analytical.getSolutions(target)
+            if solution.mValidity == dart.dynamics.InverseKinematicsAnalytical.VALID
+        ]
+        found += bool(valid)
+        for q in valid:
+            assert np.all((lower <= q) & (q <= upper))
+            wam.setPositions(q)
+            reached = ee.getWorldTransform().matrix()
+            assert np.abs(reached[:3, 3] - target.translation()).max() <= 1e-8
+            assert _rotation_error(reached, target.matrix()) <= 1e-8
+    # A random in-limit target is always reachable; the fallback keeps it so.
+    assert found == 100
+
+
+def _activate_at(setup, wam, q):
+    wam.setPositions(q)
+    actions = {chr(action.key): action for action in setup.key_actions}
+    actions["1"].callback()
+    return wam.getEndEffector("ee").getIK().getTarget()
+
+
+def test_wam_ssik_tracks_a_dragged_target_without_jumps():
+    setup, wam, ee, _ = _wam_with_ssik()
+    target = _activate_at(setup, wam, [0.3, 0.6, 0.2, 1.5, -0.3, 0.5, 0.1])
+    start = target.getTransform().matrix()
+    previous = wam.getPositions().copy()
+    max_step = 0.0
+    for k in range(1, 201):
+        angle = 2.0 * np.pi * k / 200
+        # A 3 cm circle with a +/-11 degree roll: ~1 mm and <0.4 degree per step.
+        transform = dart.math.Isometry3()
+        transform.set_rotation(
+            dart.math.expMapRot([0.2 * np.sin(angle), 0.0, 0.0]) @ start[:3, :3]
+        )
+        transform.set_translation(
+            start[:3, 3] + 0.03 * np.array([np.cos(angle) - 1.0, np.sin(angle), 0.0])
+        )
+        target.setTransform(transform)
+        setup.pre_refresh()
+        np.testing.assert_allclose(
+            ee.getWorldTransform().matrix(), transform.matrix(), atol=1e-8
+        )
+        max_step = max(max_step, np.abs(wam.getPositions() - previous).max())
+        previous = wam.getPositions().copy()
+    assert max_step < 0.05
+
+
+def test_wam_ssik_keeps_a_dragged_elbow_pose():
+    setup, wam, ee, chain = _wam_with_ssik()
+    target = _activate_at(setup, wam, [0.3, 0.6, 0.2, 1.5, -0.3, 0.5, 0.1])
+    held = _swivel(chain, wam.getPositions())
+    wam.getDof("/j3").setPosition(0.6)
+    moved = _swivel(chain, wam.getPositions())
+    assert abs(moved - held) > 0.1
+    setup.pre_refresh()
+    np.testing.assert_allclose(
+        ee.getWorldTransform().matrix(), target.getTransform().matrix(), atol=1e-8
+    )
+    assert _swivel(chain, wam.getPositions()) == pytest.approx(moved, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    ("move", "turn"),
+    [
+        ([0, 1, 0], [0, 0, 0]),
+        ([0, 0, -1], [0, 0, 0]),
+        ([0, 0, 0], [1, 0, 0]),
+        ([0, 0, 0], [0, 0, 1]),
+    ],
+    ids=["sideways", "down", "roll", "yaw"],
+)
+def test_wam_ssik_leaves_the_singular_rest_pose_without_flips(move, turn):
+    setup, wam, ee, _ = _wam_with_ssik()
+    # At rest the shoulder-wrist line is the base axis, so the swivel is undefined.
+    target = _activate_at(setup, wam, np.zeros(7))
+    previous = wam.getPositions().copy()
+    max_step = 0.0
+    # ssik's native limit arcs once stalled here; fail loudly instead of hanging.
+    faulthandler.dump_traceback_later(120, exit=True)
+    try:
+        for _ in range(20):
+            current = target.getTransform().matrix()
+            transform = dart.math.Isometry3()
+            transform.set_rotation(
+                dart.math.expMapRot(0.005 * np.asarray(turn, float)) @ current[:3, :3]
+            )
+            transform.set_translation(current[:3, 3] + 0.001 * np.asarray(move, float))
+            target.setTransform(transform)
+            setup.pre_refresh()
+            np.testing.assert_allclose(
+                ee.getWorldTransform().matrix(), transform.matrix(), atol=1e-8
+            )
+            max_step = max(max_step, np.abs(wam.getPositions() - previous).max())
+            previous = wam.getPositions().copy()
+    finally:
+        faulthandler.cancel_dump_traceback_later()
+    assert max_step < 1.0
+
+
+@pytest.mark.parametrize("ssik", [None, object()], ids=["missing", "too old"])
+def test_wam_scene_skips_without_ssik(monkeypatch, ssik):
+    monkeypatch.setitem(sys.modules, "ssik", ssik)
+    with pytest.raises(viewer.AssetsNotPrefetchedError, match="ssik>=8.1.0"):
+        _scene("wam_analytical_ik").factory()

@@ -39,7 +39,7 @@ from .scenes import (
     tinkertoy,
     unitree_g1,
     vehicle,
-    wam_ikfast,
+    wam_analytical_ik,
 )
 
 
@@ -66,7 +66,7 @@ def make_demo_scenes():
         operational_space_control,
         contact_inverse_dynamics,
         ssik_ik_gui,
-        wam_ikfast,
+        wam_analytical_ik,
         atlas_puppet,
         atlas_simbicon,
         mixed_chain,
