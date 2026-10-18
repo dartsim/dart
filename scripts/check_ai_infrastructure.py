@@ -135,15 +135,6 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "scopes": ("if:TARGET dart-utils-urdf", "if:NOT MSVC"),
         "msvc": True,
     },
-    "tests/integration/test_IkFast.cpp": {
-        "owner": "tests/integration/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-utils-urdf",
-            "if:BUILD_SHARED_LIBS",
-        ),
-        "cache": {"BUILD_SHARED_LIBS": "OFF"},
-    },
     **{
         f"tests/integration/test_{name}.cpp": {
             "owner": "tests/integration/CMakeLists.txt",

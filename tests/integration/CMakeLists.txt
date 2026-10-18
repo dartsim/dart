@@ -249,30 +249,7 @@ if(TARGET dart-utils-urdf)
     dart_add_test("integration" test_DartLoader)
     target_link_libraries(test_DartLoader dart-utils-urdf)
   endif()
-
-  dart_add_test("integration" test_WamIkFast)
-  target_link_libraries(test_WamIkFast dart-demo-models dart-utils-urdf)
-
-  dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
-  target_link_libraries(GeneratedWamIkFast PUBLIC dart)
-  target_compile_definitions(
-    GeneratedWamIkFast
-    PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY
-  )
-  target_compile_options(GeneratedWamIkFast PRIVATE -w)
-
-  if(BUILD_SHARED_LIBS)
-    dart_add_test("integration" test_IkFast)
-    target_compile_definitions(
-      test_IkFast
-      PRIVATE DART_TEST_IKFAST_LIBRARY="$<TARGET_FILE_NAME:GeneratedWamIkFast>"
-    )
-    target_link_libraries(test_IkFast dart-utils-urdf)
-    add_dependencies(test_IkFast GeneratedWamIkFast)
-  endif()
 endif()
-
-dart_format_add(GeneratedWamIkFast.cpp)
 
 dart_add_test("integration" test_Distance)
 if(TARGET dart-collision-bullet)

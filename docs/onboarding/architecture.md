@@ -41,17 +41,14 @@ engine, IO, and GUI bindings; Python has no ImGui drawing API.
 | --- | --- | --- |
 | App host | `dart/gui/app/` → `dart-gui-app` | Private static target in `dart::gui::app`, excluded from `ALL` unless a consumer needs it; never installed or exported |
 | Python models | `python/examples/demos/models/` | Demo controllers, model helpers, data and scene logic using ordinary library bindings |
-| Remaining native models | `python/native/demo_models/` → `dart-demo-models` | Private static target in `dart_demos`, retained while its demo families are ported; builds with the GUI off |
 | Host bindings | `python/dartpy/viewer/` → `dartpy.viewer` | Compiled only when `dart-gui-app` exists; names follow the DART 7 Python style |
-| Remaining model bindings | `python/dartpy/demos/` → `dartpy._demos` | Temporary native helpers pending Python ports; no new demo implementation |
 | Scenes | `python/examples/demos/scenes/`, `registry.py`, `__main__.py` | Python factories and catalog registration; the catalog is not included in wheels |
 
 `dart-gui-app` links `dart-gui`. Its placement under
 `dart/` makes it available before `tests/` and `python/` are configured.
-The model library is added immediately after `dart/` and retains only the
-WAM analytical solver pending its Python implementation decision. Both libraries link into the dartpy
-extension without adding installed headers, package components, or a
-Gazebo-facing API.
+The host links into the dartpy extension without adding installed headers,
+package components, or a Gazebo-facing API. Demo implementation lives entirely
+in Python.
 
 Contact-force arrow layout belongs to the GUI app. Its implementation uses
 core state without a renderer and is compiled directly into the existing

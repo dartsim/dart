@@ -59,18 +59,6 @@ def test_inactive_cpp_test_policies_name_tracked_sources_and_owners():
         assert (ROOT / policy["owner"]).is_file()
 
 
-def test_static_ikfast_test_has_an_explicit_inactive_policy():
-    assert infra.APPROVED_INACTIVE_CPP_TESTS["tests/integration/test_IkFast.cpp"] == {
-        "owner": "tests/integration/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-utils-urdf",
-            "if:BUILD_SHARED_LIBS",
-        ),
-        "cache": {"BUILD_SHARED_LIBS": "OFF"},
-    }
-
-
 def test_repository_check_works_without_python_utf8_mode():
     env = {
         **os.environ,

@@ -69,8 +69,7 @@ scene tab is hidden. Use `SceneContext` for native attachments, event
 handlers, drag and drop, and teardown. Demo controllers, sensors, histories,
 and model helpers belong in `python/examples/demos/models/` and use the engine,
 IO, and GUI bindings. Expose missing library APIs in their regular bindings.
-The remaining private `dartpy._demos` implementations are being ported;
-new demo implementation goes in Python.
+Demo implementation lives entirely in Python.
 
 Preserve each port's physical setup, controls, and coordinate convention.
 Use `scenes/common.py`'s `reorient_z_up` for Y-up SKEL models that need the
@@ -87,13 +86,13 @@ Gate registration on optional binding availability: `point_cloud` needs
 raises `AssetsNotPrefetchedError` for unavailable cached robot models or the
 optional `ssik` package, so catalog cycling reports a skip. A source build
 with assets and OctoMap supports 37 scenes; a build without the asset
-retriever omits Atlas v5 and Unitree G1. Wheels include the host and native
-helpers, while the catalog stays in the source tree. Its wheel smoke test
-uses a small test-owned scene.
+retriever omits Atlas v5 and Unitree G1. Wheels include the host, while the
+catalog stays in the source tree. Its wheel smoke test uses a small test-owned
+scene.
 
-The WAM IKFast solver is linked into the native model library and needs no
-runtime shared-library lookup or LAPACK dependency. The ssik scene calls the
-Python solver directly through DART's `setPythonAnalytical` integration.
+The WAM scene uses ssik's closed-form analytical IK through
+`setPythonAnalytical`. Like `ssik_ik_gui`, it is an optional-ssik scene that
+skips when ssik is unavailable.
 The unbuilt TinyDNN-only `human_joint_limits` scene and the duplicate
 `hello_world_gui` and `contacts_pointcloud` selectors are retired.
 

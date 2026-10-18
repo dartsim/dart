@@ -493,7 +493,6 @@ coverage-report = { cmd = """
         '*/.deps/*' \
         '*/tests/*' \
         '*/examples/*' \
-        '*/python/native/*' \
         '*/tutorials/*' \
         --output-file coverage.info \
     && lcov --list coverage.info
