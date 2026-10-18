@@ -116,6 +116,19 @@ def swivel_solver(chain, wam):
     def jacobian(q):
         return refinement.kinbody_jacobian(chain.kinbody, q)
 
+    def hold_limits(q, desired):
+        # Newton ignores limits and can step just past one near an active
+        # limit; hold those joints on it and re-solve with the others.
+        if within_limits(q):
+            return q
+        q = np.clip(q, lower, upper)
+        free = (lower < q) & (q < upper)
+        for _ in range(3):
+            twist = refinement.se3_log_residual(desired @ np.linalg.inv(chain.fk(q)))
+            q[free] += np.linalg.lstsq(jacobian(q)[:, free], twist, rcond=None)[0]
+            q = np.clip(q, lower, upper)
+        return q
+
     def candidates(desired, q):
         motion = chain.self_motion(desired)
         # Measure the current elbow in the target's swivel basis, which ssik
@@ -131,7 +144,7 @@ def swivel_solver(chain, wam):
             q, chain.fk, jacobian, desired, fk_atol=TRACK_TOLERANCE
         )
         if tracked is not None:
-            tracked = into_limits(tracked.q)
+            tracked = hold_limits(into_limits(tracked.q), desired)
             if usable(tracked, desired) and np.abs(tracked - q).max() + JUMP < move:
                 return [tracked]
         if move < FLIP:

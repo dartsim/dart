@@ -446,6 +446,14 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [-0.9, 0.0, 2.4, 2.4, 1.1, 1e-4, -2.6],
             [-0.8999, 1e-4, 2.3998, 2.4, 1.0998, 0.0, -2.5999],
         ),
+        (
+            [-2.6, -1.2, 1.0, 1.5, -0.9, -0.2, -2.999999],
+            [-2.6, -1.1999, 1.0, 1.5, -0.9, -0.2, -2.999999],
+        ),
+        (
+            [-2.6, 0.02, -2.8, 1.3, 0.4, 1.6, 2.3],
+            [-2.6, 0.0201, -2.8, 1.3, 0.4, 1.6, 2.3],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -454,7 +462,9 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
     # turns the wrist, and the nearest solution lies in a narrow basin between
     # the coarse samples, also between two joint limits; Newton overshoots a
     # limit next to the last two-limit goals, and converges only linearly at
-    # full extension and with aligned shoulder and wrist axes.
+    # full extension and with aligned shoulder and wrist axes; for the last two
+    # goals, Newton steps a few 1e-7 rad past a limit that another goal joint
+    # sits on.
     ids=[
         "basis-switch",
         "near-singular",
@@ -468,6 +478,8 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
         "two-limits-3",
         "full-extension",
         "aligned-axes",
+        "limit-crossing",
+        "limit-crossing-2",
     ],
 )
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
