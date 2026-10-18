@@ -534,6 +534,14 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
             [-2.6, 0.0, -2.8, 0.2315263, 1.24, -1.6, 3.0],
             [-2.5956, -0.0031, -2.8, 0.2284, 1.2355, -1.6, 2.9982],
         ),
+        (
+            [0.388, 2.0, 1.0, 0.23152629, -0.393, 0.0, 3.0],
+            [0.3644, 1.9945, 0.9522, 0.2473, -0.3966, -0.0328, 3.0],
+        ),
+        (
+            [-1.8, 0.0, -2.8, 0.23052629, 1.24, -1.6, 1.0],
+            [-1.82, 0.0, -2.8, 0.23052629, 1.24, -1.6, 1.0],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -553,7 +561,10 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
     # the one after; from the last two starts at full extension on several
     # limits, weak damping or the elbow fold sent continuation to the wrong
     # side of the limits; continuation later wandered out of reach after a
-    # usable iterate, and stalled at a stationary point of active limits.
+    # usable iterate, and stalled at a stationary point of active limits; the
+    # last two recover from an overshoot, or reduce the least-squares residual
+    # while the largest pose error briefly grows, so a stall guard must judge
+    # the residual and allow a recovery.
     ids=[
         "basis-switch",
         "near-singular",
@@ -589,6 +600,8 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
         "elbow-fold",
         "wandering-continuation",
         "stalled-fold",
+        "overshoot-recovery",
+        "residual-progress",
     ],
 )
 

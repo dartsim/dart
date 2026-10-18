@@ -57,7 +57,7 @@ BOUNDARY_ITERATIONS = 20
 TRACK_DAMPING = 1e-2
 # A bounded step this small has stalled against the limits.
 STALL = 1e-14
-TRACK_PATIENCE = 5
+TRACK_PATIENCE = 10
 TRACK_REACH = 0.5
 # The WAM's elbow, /j4: the shoulder-wrist distance alone fixes its angle.
 ELBOW = 3
@@ -168,13 +168,15 @@ def swivel_solver(chain, wam):
                 best, best_move = x.copy(), move
             if error < TRACK_TOLERANCE:
                 break
-            # Steps can cycle against the limits without stalling; stop once
-            # the residual stops improving, as lm_refine does.
-            least, stale = (error, 0) if error < 0.999 * least else (least, stale + 1)
-            if stale > TRACK_PATIENCE:
-                break
             twist = refinement.se3_log_residual(desired @ np.linalg.inv(pose))
-            damping = np.sqrt(min(TRACK_DAMPING, twist @ twist)) * np.eye(x.size)
+            residual = twist @ twist
+            # Steps can cycle against the limits without stalling; stop once
+            # the least-squares residual they minimize stops improving.
+            if residual < 0.99 * least:
+                least, stale = residual, 0
+            elif (stale := stale + 1) > TRACK_PATIENCE:
+                break
+            damping = np.sqrt(min(TRACK_DAMPING, residual)) * np.eye(x.size)
             step = optimize.lsq_linear(
                 np.vstack([jacobian(x), damping]),
                 np.concatenate([twist, np.zeros(x.size)]),
