@@ -46,6 +46,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <numeric>
 #include <ostream>
 #include <string>
@@ -403,6 +404,108 @@ TEST(Signal, SelfDisconnectDuringRaise)
     EXPECT_EQ(signal.getNumConnections(), 1u);
     EXPECT_EQ(callbackCount, 1);
   }
+}
+
+//==============================================================================
+TEST(Signal, SingleConnectionSurvivesSelfDisconnect)
+{
+  Signal<void()> signal;
+  auto captured = std::make_shared<int>(42);
+  std::weak_ptr<int> lifetime = captured;
+  Connection self;
+  int calls = 0;
+  self = signal.connect([&, captured]() {
+    ++calls;
+    self.disconnect();
+    EXPECT_FALSE(self.isConnected());
+    EXPECT_FALSE(lifetime.expired());
+    EXPECT_EQ(*captured, 42);
+    signal.raise();
+  });
+  captured.reset();
+
+  signal.raise();
+
+  EXPECT_EQ(calls, 1);
+  EXPECT_TRUE(lifetime.expired());
+}
+
+//==============================================================================
+TEST(Signal, SingleConnectionUsesFreshSnapshotForNestedRaise)
+{
+  Signal<void(int)> signal;
+  int originalCalls = 0;
+  int addedCalls = 0;
+  int addedArgument = -1;
+  signal.connect([&](int depth) {
+    ++originalCalls;
+    if (depth == 0) {
+      signal.connect([&](int value) {
+        ++addedCalls;
+        addedArgument = value;
+      });
+      signal.raise(1);
+    }
+  });
+
+  signal.raise(0);
+
+  EXPECT_EQ(originalCalls, 2);
+  EXPECT_EQ(addedCalls, 1);
+  EXPECT_EQ(addedArgument, 1);
+}
+
+//==============================================================================
+TEST(Signal, SingleConnectionUnwindsSnapshotAfterThrow)
+{
+  Signal<void()> signal;
+  auto captured = std::make_shared<int>(42);
+  std::weak_ptr<int> lifetime = captured;
+  Connection self;
+  self = signal.connect([&, captured]() {
+    self.disconnect();
+    EXPECT_FALSE(lifetime.expired());
+    throw *captured;
+  });
+  captured.reset();
+
+  EXPECT_THROW(signal.raise(), int);
+  EXPECT_TRUE(lifetime.expired());
+
+  int calls = 0;
+  signal.connect([&]() { ++calls; });
+  signal.raise();
+  EXPECT_EQ(calls, 1);
+}
+
+//==============================================================================
+TEST(Signal, SingleConnectionSurvivesConcurrentDisconnect)
+{
+  Signal<void()> signal;
+  auto captured = std::make_shared<int>(42);
+  std::weak_ptr<int> lifetime = captured;
+  std::atomic<bool> entered{false};
+  std::atomic<bool> resume{false};
+  int observed = 0;
+  const auto connection = signal.connect([&, captured]() {
+    entered.store(true, std::memory_order_release);
+    while (!resume.load(std::memory_order_acquire))
+      std::this_thread::yield();
+    observed = *captured;
+  });
+  captured.reset();
+  std::thread raiser([&]() { signal.raise(); });
+  while (!entered.load(std::memory_order_acquire))
+    std::this_thread::yield();
+
+  connection.disconnect();
+  EXPECT_FALSE(connection.isConnected());
+  EXPECT_FALSE(lifetime.expired());
+  resume.store(true, std::memory_order_release);
+  raiser.join();
+
+  EXPECT_EQ(observed, 42);
+  EXPECT_TRUE(lifetime.expired());
 }
 
 //==============================================================================

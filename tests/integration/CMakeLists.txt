@@ -218,6 +218,8 @@ set_tests_properties(
 )
 dart_format_add(${soft_demo_model_test_sources})
 
+dart_add_test("integration" test_WorldState)
+target_sources(test_WorldState PRIVATE AllocationCounting.cpp)
 dart_add_test("integration" test_WorldHistory)
 target_link_libraries(test_WorldHistory dart-demo-models)
 
