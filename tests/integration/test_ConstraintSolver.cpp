@@ -1919,6 +1919,70 @@ TEST(ConstraintSolver, LegacyPrimariesDoNotUseOrRetainContactWarmStart)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, ExecutorPreservesIslandThresholdResults)
+{
+  for (const std::size_t boxes : {127u, 128u, 129u}) {
+    for (const bool useNsgs : {false, true}) {
+      SCOPED_TRACE(boxes);
+      SCOPED_TRACE(useNsgs);
+      auto serial = createManySingleFreeBodyContactWorld(boxes, 1u);
+      auto threaded = createManySingleFreeBodyContactWorld(boxes, 8u);
+      ExposedBoxedLcpConstraintSolver* probe = nullptr;
+      for (auto* world : {serial.get(), threaded.get()}) {
+        constraint::BoxedLcpSolverPtr primary;
+        if (useNsgs)
+          primary = std::make_shared<constraint::NsgsFrictionSolver>();
+        else
+          primary = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+        auto solver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
+            primary, nullptr);
+        solver->setCollisionDetector(
+            collision::DARTCollisionDetector::create());
+        solver->getCollisionOption().maxNumContacts = boxes * 4u;
+        solver->getCollisionOption().maxNumContactsPerPair = 4u;
+        if (world == threaded.get())
+          probe = solver.get();
+        world->setConstraintSolver(std::move(solver));
+        setContactWorldSlidingVelocity(*world);
+      }
+      for (std::size_t step = 0u; step < 4u; ++step) {
+        serial->step();
+        threaded->step();
+        ASSERT_EQ(boxes, probe->getNumConstrainedGroupsForTest());
+        EXPECT_EQ(boxes >= 128u, probe->canSolveInParallelForTest());
+        expectWorldStateBitIdentical(*serial, *threaded);
+        const auto& serialContacts = serial->getLastCollisionResult();
+        const auto& threadedContacts = threaded->getLastCollisionResult();
+        ASSERT_EQ(
+            serialContacts.getNumContacts(), threadedContacts.getNumContacts());
+        for (std::size_t index = 0u; index < serialContacts.getNumContacts();
+             ++index) {
+          const auto& expected = serialContacts.getContact(index);
+          const auto& actual = threadedContacts.getContact(index);
+          for (const auto& channels :
+               {std::make_pair(&expected.point, &actual.point),
+                std::make_pair(&expected.normal, &actual.normal),
+                std::make_pair(&expected.force, &actual.force)}) {
+            EXPECT_EQ(
+                0,
+                std::memcmp(
+                    channels.first->data(),
+                    channels.second->data(),
+                    3u * sizeof(double)));
+          }
+          EXPECT_EQ(
+              0,
+              std::memcmp(
+                  &expected.penetrationDepth,
+                  &actual.penetrationDepth,
+                  sizeof(double)));
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
 TEST(ConstraintSolver, NsgsFrictionLawsHaveBitIdenticalThreadCountResults)
 {
   using Nsgs = constraint::NsgsFrictionSolver;
