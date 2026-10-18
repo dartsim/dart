@@ -48,6 +48,9 @@ LEVELS = 8
 # Charts close forward kinematics to about 1e-7 at a fold, but can miss by far
 # more near a wrist singularity.
 FK_TOLERANCE = 1e-6
+# ssik's tracker default, 1e-10, rejects accurate continuations near full
+# extension and aligned axes, where Newton converges only linearly.
+TRACK_TOLERANCE = 1e-9
 
 
 def swivel_solver(chain, wam):
@@ -81,10 +84,9 @@ def swivel_solver(chain, wam):
     def usable(q, desired):
         return within_limits(q) and np.abs(chain.fk(q) - desired).max() < FK_TOLERANCE
 
-    def nearest_in_limits(chart, q, desired):
+    def zoom(chart, q, desired, swivels):
         # Zoom in on the least limit violation until some swivel is in limits,
         # then on the in-limit solution nearest q; arcs near limits are narrow.
-        swivels = np.linspace(-np.pi, np.pi, SAMPLES, endpoint=False)
         best, best_distance = None, np.inf
         for _ in range(LEVELS):
             samples = into_limits(chart.q(swivels))
@@ -99,7 +101,17 @@ def swivel_solver(chain, wam):
                 index = np.argmin(np.nan_to_num(excess.sum(axis=1), nan=np.inf))
             step = swivels[1] - swivels[0]
             swivels = swivels[index] + np.linspace(-step, step, SAMPLES)
-        return best
+        return best, best_distance
+
+    def nearest_in_limits(chart, q, desired, swivel):
+        # Also zoom from the held swivel: the coarse grid can lock onto a
+        # distant arc and miss a narrow one next to the current pose.
+        step = 2.0 * np.pi / SAMPLES
+        starts = (
+            np.linspace(-np.pi, np.pi, SAMPLES, endpoint=False),
+            swivel + np.linspace(-step, step, SAMPLES),
+        )
+        return min((zoom(chart, q, desired, s) for s in starts), key=lambda r: r[1])[0]
 
     def jacobian(q):
         return refinement.kinbody_jacobian(chain.kinbody, q)
@@ -115,14 +127,16 @@ def swivel_solver(chain, wam):
         move = min((np.abs(c - q).max() for c in held), default=np.inf)
         # Newton-continue from the current pose, as ssik's own trackers do: it
         # stays continuous where the swivel is ill-conditioned or near limits.
-        tracked = refinement.seeded_track(q, chain.fk, jacobian, desired)
+        tracked = refinement.seeded_track(
+            q, chain.fk, jacobian, desired, fk_atol=TRACK_TOLERANCE
+        )
         if tracked is not None:
             tracked = into_limits(tracked.q)
             if usable(tracked, desired) and np.abs(tracked - q).max() + JUMP < move:
                 return [tracked]
         if move < FLIP:
             return held
-        nearest = (nearest_in_limits(chart, q, desired) for chart in charts)
+        nearest = (nearest_in_limits(chart, q, desired, swivel) for chart in charts)
         found = [c for c in nearest if c is not None]
         if not found:
             # The seeded solve also handles the singular continua charts miss;
