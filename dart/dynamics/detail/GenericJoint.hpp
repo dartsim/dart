@@ -203,6 +203,27 @@ void GenericJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::restoreDynamicState(
+    const Vector& positions,
+    const Vector& velocities,
+    const Vector& accelerations,
+    const Vector& forces,
+    const Vector& commands)
+{
+  this->mAspectState.mPositions = positions;
+  this->mAspectState.mVelocities = velocities;
+  this->mAspectState.mAccelerations = accelerations;
+  this->mAspectState.mForces = forces;
+  this->mAspectState.mCommands = commands;
+
+  this->notifyPositionUpdated();
+  this->notifyVelocityUpdated();
+  this->notifyAccelerationUpdated();
+  this->notifyExternalDisturbanceUpdated();
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAspectProperties(
     const AspectProperties& properties)
 {

@@ -459,6 +459,22 @@ void SoftBodyNode::setAspectState(const AspectState& state)
 }
 
 //==============================================================================
+void SoftBodyNode::restoreDynamicState(
+    const std::vector<PointMass::State>& pointStates,
+    const std::vector<Eigen::Vector3d>& externalForces)
+{
+  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  DART_ASSERT(externalForces.size() == mPointMasses.size());
+
+  mAspectState.mPointStates = pointStates;
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses[i]->mFext = externalForces[i];
+
+  adaptiveContactActivation(*this).resetTransientState();
+  mNotifier->dirtyTransform();
+}
+
+//==============================================================================
 void SoftBodyNode::setAspectProperties(const AspectProperties& properties)
 {
   setVertexSpringStiffness(properties.mKv);
