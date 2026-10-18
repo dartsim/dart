@@ -53,8 +53,11 @@ FK_TOLERANCE = 1e-6
 # than ssik's own tracker. Damping bounds steps along active limits.
 TRACK_TOLERANCE = 1e-9
 TRACK_ITERATIONS = 100
+BOUNDARY_ITERATIONS = 20
 TRACK_DAMPING = 1e-6
 TRACK_REACH = 0.5
+# The WAM's elbow, /j4: the shoulder-wrist distance alone fixes its angle.
+ELBOW = 3
 
 
 def swivel_solver(chain, wam):
@@ -122,7 +125,10 @@ def swivel_solver(chain, wam):
     def jacobian(q):
         return refinement.kinbody_jacobian(chain.kinbody, q)
 
-    def track(q, desired):
+    def near(x, q):
+        return x is not None and np.abs(x - q).max() <= TRACK_REACH
+
+    def track(q, desired, iterations):
         # ssik's damped Newton continuation from the current pose, with a
         # looser gate and a larger budget than its tracker.
         result = refinement.lm_refine(
@@ -130,25 +136,23 @@ def swivel_solver(chain, wam):
             chain.fk,
             desired,
             fk_atol=TRACK_TOLERANCE,
-            max_iters=TRACK_ITERATIONS,
+            max_iters=iterations,
             jacobian_fn=jacobian,
             divergence_factor=np.inf,
-            stall_patience=TRACK_ITERATIONS,
+            stall_patience=iterations,
         )
         x = None if result is None else into_limits(result[0])
-        if x is None or not within_limits(x):
-            x = track_within_limits(q, desired)
-        if x is None or np.abs(x - q).max() > TRACK_REACH:
-            return None
-        return x
+        if not near(x, q) or not within_limits(x):
+            x = track_within_limits(q, desired, iterations)
+        return x if near(x, q) else None
 
-    def track_within_limits(q, desired):
+    def track_within_limits(q, desired, iterations):
         # Where the unconstrained steps cross a limit or stall, continue again
         # with bounded least-squares steps that keep every joint in its limits.
         # Damping shrinks with the residual, as in Levenberg-Marquardt, and the
         # augmented system stays well posed where the Jacobian loses rank.
         x, best = q.copy(), None
-        for _ in range(TRACK_ITERATIONS):
+        for _ in range(iterations):
             pose = chain.fk(x)
             error = np.abs(pose - desired).max()
             if error < TRACK_TOLERANCE:
@@ -173,14 +177,19 @@ def swivel_solver(chain, wam):
         swivel = motion.param_of(q)
         charts = list(motion)
         held = [into_limits(chart.q(swivel)) for chart in charts]
+        # The target fixes each branch's elbow angle, whatever the swivel; if
+        # none is in limits, nothing within limits reaches the target.
+        if charts and not any(lower[ELBOW] <= c[ELBOW] <= upper[ELBOW] for c in held):
+            return []
         held = [c for c in held if usable(c, desired)]
         move = min((np.abs(c - q).max() for c in held), default=np.inf)
         if move <= JUMP:
             return held
         # Newton continuation, as ssik's own trackers use, stays continuous
-        # where the swivel is ill-conditioned or near limits.
-        # Without a chart the target is out of reach; skip the costly steps.
-        tracked = track(q, desired) if charts else None
+        # where the swivel is ill-conditioned or near limits. Without a chart
+        # the target is out of reach unless it lies on the boundary at full
+        # extension, so keep that attempt short.
+        tracked = track(q, desired, TRACK_ITERATIONS if charts else BOUNDARY_ITERATIONS)
         if tracked is not None and np.abs(tracked - q).max() + JUMP < move:
             return [tracked]
         if move < FLIP:

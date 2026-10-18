@@ -510,6 +510,14 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [-0.7, 2.0, -1.6, 3.1, -1.0, 1.6, 3.0],
             [-0.7, 2.0, -1.5999, 3.1, -1.0, 1.6, 3.0],
         ),
+        (
+            [0.0, 0.0, 0.0, 0.2315263, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.23052629, 0.0, 0.0, 0.0],
+        ),
+        (
+            [2.23, -0.62, 0.0, 0.2315263, -4.76, 1.6, 0.0],
+            [2.2625, -0.5725, 0.045, 0.2070263, -4.73, 1.6, 0.04],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -524,7 +532,9 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
     # once, where Newton crosses limits, converges only linearly, or stalls
     # under too much damping, and where a rank-deficient constrained solve
     # once raised, an active set went stale or kept a bound it should
-    # release, or the last usable iterate was dropped.
+    # release, or the last usable iterate was dropped; ssik finds no chart at
+    # full extension for the next goal, and Newton alone lands 6 rad away from
+    # the last.
     ids=[
         "basis-switch",
         "near-singular",
@@ -554,6 +564,8 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
         "bound-release",
         "stale-active-set-2",
         "usable-iterate",
+        "chartless-extension",
+        "distant-root",
     ],
 )
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
@@ -586,27 +598,50 @@ def test_wam_ssik_rejects_inaccurate_charts_at_a_wrist_singularity():
     assert np.abs(wam.getPositions() - start).max() < 0.5
 
 
-def test_wam_ssik_drags_out_of_reach_without_slow_searches(monkeypatch):
+def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
+    from examples.demos.scenes import wam_analytical_ik
+
     setup, wam, ee, _ = _wam_with_ssik()
     rescue = pytest.importorskip("ssik.refinement.rescue")
     refinement = pytest.importorskip("ssik.refinement")
+    budgets = []
+    lm_refine = refinement.lm_refine
 
     def fail(*args, **kwargs):
-        raise AssertionError("out-of-reach drags must skip slow searches")
+        raise AssertionError("interactive solves must not run ssik's rescue")
+
+    def record(*args, **kwargs):
+        budgets.append(kwargs["max_iters"])
+        return lm_refine(*args, **kwargs)
 
     monkeypatch.setattr(rescue, "rescue_via_T_perturbation", fail)
-    monkeypatch.setattr(refinement, "lm_refine", fail)
-    target = _activate_at(setup, wam, np.zeros(7))
-    start = target.getTransform().matrix()
+    monkeypatch.setattr(refinement, "lm_refine", record)
+
+    def drag(start, offsets):
+        target = _activate_at(setup, wam, start)
+        pose = target.getTransform().matrix()
+        for offset in offsets:
+            transform = dart.math.Isometry3()
+            transform.set_rotation(pose[:3, :3])
+            transform.set_translation(pose[:3, 3] + offset)
+            target.setTransform(transform)
+            setup.pre_refresh()
+        actions = {chr(action.key): action for action in setup.key_actions}
+        actions["1"].callback()
+
     # From 6 mm straight up, the stretched rest pose's target is out of reach
     # but inside ssik's reach sphere, where its rescue would run for every new
-    # target.
-    for k in range(5, 10):
-        transform = dart.math.Isometry3()
-        transform.set_rotation(start[:3, :3])
-        transform.set_translation(start[:3, 3] + [0.0, 0.0, 0.002 * k])
-        target.setTransform(transform)
-        setup.pre_refresh()
+    # target; only a short boundary continuation may run.
+    drag(np.zeros(7), [[0.0, 0.0, 0.002 * k] for k in range(5, 10)])
+    assert budgets and max(budgets) <= wam_analytical_ik.BOUNDARY_ITERATIONS
+    # Straightening the elbow past its 3.1 rad limit needs no search at all.
+    budgets.clear()
+    wam.setPositions([0.3, 0.6, 0.2, 3.1001, -0.3, 0.5, 0.1])
+    beyond = ee.getWorldTransform().translation()
+    wam.setPositions([0.3, 0.6, 0.2, 3.1, -0.3, 0.5, 0.1])
+    step = beyond - ee.getWorldTransform().translation()
+    drag([0.3, 0.6, 0.2, 3.1, -0.3, 0.5, 0.1], [step * k for k in range(1, 4)])
+    assert budgets == []
 
 
 def test_wam_ssik_skips_continuation_the_held_swivel_already_beats(monkeypatch):
