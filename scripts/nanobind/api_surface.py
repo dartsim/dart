@@ -123,9 +123,13 @@ def shape(signature):
 
 
 def property_types(value):
-    getter_types = [shape(s)["return"] for s in signatures(value.fget)]
-    setter_types = [shape(s)["arguments"][-1]["type"] for s in signatures(value.fset)]
-    return {"getter_types": getter_types, "setter_types": setter_types}
+    getters, setters = signatures(value.fget), signatures(value.fset)
+    return {
+        "getter_types": [shape(s)["return"] for s in getters],
+        "setter_types": [shape(s)["arguments"][-1]["type"] for s in setters],
+        "getter_signatures": getters,
+        "setter_signatures": setters,
+    }
 
 
 def snapshot():
@@ -136,6 +140,19 @@ def snapshot():
         "dartpy.__doc__": {"kind": "constant", "value": dartpy.__doc__},
     }
     seen = set()
+    identities = {id(dartpy): ("dartpy", dartpy)}
+
+    def runtime(value, path):
+        # Keep objects alive so transient bound methods cannot reuse an identity.
+        identity_path, _ = identities.setdefault(id(value), (path, value))
+        result = {
+            "identity_path": identity_path,
+            "module": getattr(value, "__module__", None),
+            "qualname": getattr(value, "__qualname__", None),
+        }
+        if isinstance(value, types.ModuleType):
+            result["name"] = value.__name__
+        return result
 
     def walk(value, path):
         if id(value) in seen:
@@ -156,7 +173,10 @@ def snapshot():
             if isinstance(child, types.ModuleType) and child.__name__.startswith(
                 "dartpy"
             ):
-                rows[child_path] = {"kind": "module"}
+                rows[child_path] = {
+                    "kind": "module",
+                    "runtime": runtime(child, child_path),
+                }
                 walk(child, child_path)
             elif inspect.isclass(child) and getattr(child, "__module__", "").startswith(
                 "dartpy"
@@ -166,9 +186,16 @@ def snapshot():
                     enum = {}
                     for key, member in members.items():
                         enum[key] = enum_number(member)
-                    rows[child_path] = {"kind": "enum", "members": enum}
+                    rows[child_path] = {
+                        "kind": "enum",
+                        "members": enum,
+                        "runtime": runtime(child, child_path),
+                    }
                 else:
-                    rows[child_path] = {"kind": "class"}
+                    rows[child_path] = {
+                        "kind": "class",
+                        "runtime": runtime(child, child_path),
+                    }
                     walk(child, child_path)
             elif callable(child):
                 sig = signatures(child)
@@ -176,12 +203,14 @@ def snapshot():
                     "kind": "callable",
                     "signatures": sig,
                     "normalized": [shape(s) for s in sig],
+                    "runtime": runtime(child, child_path),
                 }
             elif isinstance(child, property):
                 rows[child_path] = {
                     "kind": "property",
                     "writable": child.fset is not None,
                     **property_types(child),
+                    "runtime": runtime(child, child_path),
                 }
             elif hasattr(type(child), "__members__"):
                 rows[child_path] = {"kind": "enum_value", "value": enum_number(child)}
@@ -211,6 +240,18 @@ def snapshot():
 
 
 def compare(pb, nb):
+    # Inventory attribution and raw property spelling do not change binder parity.
+    pb, nb = (
+        {
+            path: {
+                key: value
+                for key, value in row.items()
+                if key not in {"runtime", "getter_signatures", "setter_signatures"}
+            }
+            for path, row in rows.items()
+        }
+        for rows in (pb, nb)
+    )
     diff = {
         key: []
         for key in (
@@ -312,6 +353,8 @@ def self_check():
     assert property_types(property(getter, setter)) == {
         "getter_types": ["float"],
         "setter_types": ["float"],
+        "getter_signatures": ["(self: X) -> float"],
+        "setter_signatures": ["(self: X, value: float) -> None"],
     }
 
 

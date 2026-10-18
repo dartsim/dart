@@ -1,7 +1,10 @@
 """Check the reusable migration tools without modifying the bindings."""
 
+import enum
+import json
 import subprocess
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -52,3 +55,127 @@ def test_codemod_requires_historical_sources(tmp_path):
     assert result.returncode == 2
     assert "--source must name an existing pybind11 source directory" in result.stderr
     assert not destination.exists()
+
+
+@pytest.fixture
+def api_surface(monkeypatch):
+    monkeypatch.syspath_prepend(str(TOOLS))
+    import api_surface
+
+    return api_surface
+
+
+@pytest.mark.parametrize("native", [False, True])
+def test_api_property_preserves_raw_overloads(api_surface, native):
+    getters = [
+        "(self: X) -> float | None",
+        '(self: X) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 1]", "flags.writeable"]',
+    ]
+    setters = [
+        "(self: X, value: float | None) -> None",
+        '(self: X, value: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[3, 1]"]) -> None',
+    ]
+
+    def getter(self):
+        pass
+
+    def setter(self, value):
+        pass
+
+    for function, signatures in ((getter, getters), (setter, setters)):
+        if native:
+            function.__nb_signature__ = tuple(
+                ("def " + signature, None, None) for signature in signatures
+            )
+        else:
+            function.__doc__ = "\n".join(
+                f"{index}. {signature}"
+                for index, signature in enumerate(signatures, start=1)
+            )
+    row = api_surface.property_types(property(getter, setter))
+    assert row["getter_signatures"] == getters
+    assert row["setter_signatures"] == setters
+    assert row["getter_types"] == row["setter_types"] == ["float", "array<float64,3>"]
+    assert api_surface.property_types(property(getter))["setter_signatures"] == []
+
+
+def test_api_snapshot_attributes_runtime_aliases(api_surface, monkeypatch):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+    module.domain = types.ModuleType("dartpy.domain")
+
+    class Example:
+        @property
+        def value(self):
+            """(self: X) -> float | None"""
+
+        @staticmethod
+        def operation():
+            """() -> None"""
+
+    Example.__module__ = "dartpy.domain"
+    Example.__qualname__ = "Example"
+    module.Alias = module.domain.Example = Example
+    module.domain.Mode = enum.Enum("Mode", {"FIRST": 1, "ALIAS": 1})
+    module.domain.Mode.__module__ = "dartpy.domain"
+    module.AliasMode = module.domain.Mode
+    module.operation = Example.operation
+    module.z_domain = module.domain
+    module.domain.root = module
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    rows = api_surface.snapshot()
+    assert rows["dartpy.domain.Example"]["runtime"] == {
+        "identity_path": "dartpy.Alias",
+        "module": "dartpy.domain",
+        "qualname": "Example",
+    }
+    assert rows["dartpy.Alias"]["runtime"] == rows["dartpy.domain.Example"]["runtime"]
+    assert rows["dartpy.z_domain"]["runtime"]["identity_path"] == "dartpy.domain"
+    assert rows["dartpy.z_domain"]["runtime"]["name"] == "dartpy.domain"
+    assert rows["dartpy.domain.root"]["runtime"]["identity_path"] == "dartpy"
+    assert rows["dartpy.domain.Mode"]["runtime"]["identity_path"] == "dartpy.AliasMode"
+    assert rows["dartpy.domain.Mode"]["members"] == {"FIRST": 1, "ALIAS": 1}
+    assert (
+        rows["dartpy.operation"]["runtime"]["identity_path"] == "dartpy.Alias.operation"
+    )
+    assert rows["dartpy.Alias.value"]["getter_signatures"] == [
+        "(self: X) -> float | None"
+    ]
+    assert "dartpy.domain.Example.value" not in rows
+    assert "0x" not in json.dumps(rows)
+    assert rows == api_surface.snapshot()
+
+
+def test_api_compare_ignores_additive_inventory_metadata(api_surface):
+    legacy = {
+        "module": {"kind": "module"},
+        "class": {"kind": "class"},
+        "enum": {"kind": "enum", "members": {"ONE": 1}},
+        "callable": {
+            "kind": "callable",
+            "signatures": ["() -> int"],
+            "normalized": [{"arguments": [], "return": "int"}],
+        },
+        "property": {
+            "kind": "property",
+            "writable": False,
+            "getter_types": ["float"],
+            "setter_types": [],
+        },
+    }
+    enriched = {
+        path: {**row, "runtime": {"identity_path": path}}
+        for path, row in legacy.items()
+    }
+    enriched["property"].update(
+        getter_signatures=["(self: X) -> float | None"], setter_signatures=[]
+    )
+    assert not any(api_surface.compare(legacy, enriched).values())
+    assert not any(api_surface.compare(enriched, legacy).values())
+    enriched["property"]["writable"] = True
+    diff = api_surface.compare(legacy, enriched)
+    assert len(diff["property_types"]) == 1
+    assert not any(value for key, value in diff.items() if key != "property_types")
+    assert "runtime" not in diff["property_types"][0]["nb"]
+    assert "getter_signatures" not in diff["property_types"][0]["nb"]
