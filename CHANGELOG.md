@@ -177,6 +177,7 @@
 
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
+    [#3810](https://github.com/dartsim/dart/pull/3810)
 
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
