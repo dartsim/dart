@@ -13,6 +13,11 @@ from pathlib import Path
 
 from codemod import split
 
+# Quoted defaults stay intact; any other "<... at 0x...>" address is masked.
+ADDRESS_PATTERN = re.compile(
+    r"""(?P<quoted>'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|(?<= at )0x[0-9a-fA-F]+(?=>)"""
+)
+
 
 def signatures(value):
     native = getattr(value, "__nb_signature__", None)
@@ -23,12 +28,16 @@ def signatures(value):
                 sig = sig.replace("\\=" + str(index), str(default))
                 sig = sig.replace("\\" + str(index), repr(default))
             result.append(sig.removeprefix("def "))
-        return result
-    doc = getattr(value, "__doc__", "") or ""
+    else:
+        doc = getattr(value, "__doc__", "") or ""
+        result = [
+            re.sub(r"^\d+\. ", "", line.strip())
+            for line in doc.splitlines()
+            if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
+        ]
     return [
-        re.sub(r"^\d+\. ", "", line.strip())
-        for line in doc.splitlines()
-        if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
+        ADDRESS_PATTERN.sub(lambda match: match["quoted"] or "ADDRESS", sig)
+        for sig in result
     ]
 
 
@@ -123,9 +132,13 @@ def shape(signature):
 
 
 def property_types(value):
-    getter_types = [shape(s)["return"] for s in signatures(value.fget)]
-    setter_types = [shape(s)["arguments"][-1]["type"] for s in signatures(value.fset)]
-    return {"getter_types": getter_types, "setter_types": setter_types}
+    getters, setters = signatures(value.fget), signatures(value.fset)
+    return {
+        "getter_types": [shape(s)["return"] for s in getters],
+        "setter_types": [shape(s)["arguments"][-1]["type"] for s in setters],
+        "getter_signatures": getters,
+        "setter_signatures": setters,
+    }
 
 
 def snapshot():
@@ -135,12 +148,41 @@ def snapshot():
         "dartpy.__version__": {"kind": "constant", "value": dartpy.__version__},
         "dartpy.__doc__": {"kind": "constant", "value": dartpy.__doc__},
     }
-    seen = set()
+    seen = {}
+    identities = {id(dartpy): ("dartpy", dartpy)}
+    pending_runtime = []
+
+    def identity(value):
+        if inspect.ismethod(value):
+            return (id(value.__func__), id(value.__self__))
+        return id(value)
+
+    def runtime(value, path, parent, name):
+        owner = None
+        if inspect.isclass(parent):
+            owner = next(
+                (cls for cls in parent.__mro__ if name in cls.__dict__), type(parent)
+            )
+        # A property has no name of its own; describe it by its accessor.
+        source = value
+        if isinstance(value, property):
+            source = value.fget or value.fset or value
+        result = {
+            "identity_path": None,
+            "module": getattr(source, "__module__", None),
+            "qualname": getattr(source, "__qualname__", None),
+        }
+        if isinstance(value, types.ModuleType):
+            result["name"] = value.__name__
+        # Keep objects alive, and resolve owners after all classes have been walked.
+        inherited = owner is not None and owner is not parent
+        pending_runtime.append((result, value, path, owner, name, inherited))
+        return result
 
     def walk(value, path):
         if id(value) in seen:
             return
-        seen.add(id(value))
+        seen[id(value)] = path
         for name in dir(value):
             if name.startswith("_") and name not in {
                 "__init__",
@@ -156,7 +198,10 @@ def snapshot():
             if isinstance(child, types.ModuleType) and child.__name__.startswith(
                 "dartpy"
             ):
-                rows[child_path] = {"kind": "module"}
+                rows[child_path] = {
+                    "kind": "module",
+                    "runtime": runtime(child, child_path, value, name),
+                }
                 walk(child, child_path)
             elif inspect.isclass(child) and getattr(child, "__module__", "").startswith(
                 "dartpy"
@@ -166,9 +211,16 @@ def snapshot():
                     enum = {}
                     for key, member in members.items():
                         enum[key] = enum_number(member)
-                    rows[child_path] = {"kind": "enum", "members": enum}
+                    rows[child_path] = {
+                        "kind": "enum",
+                        "members": enum,
+                        "runtime": runtime(child, child_path, value, name),
+                    }
                 else:
-                    rows[child_path] = {"kind": "class"}
+                    rows[child_path] = {
+                        "kind": "class",
+                        "runtime": runtime(child, child_path, value, name),
+                    }
                     walk(child, child_path)
             elif callable(child):
                 sig = signatures(child)
@@ -176,12 +228,14 @@ def snapshot():
                     "kind": "callable",
                     "signatures": sig,
                     "normalized": [shape(s) for s in sig],
+                    "runtime": runtime(child, child_path, value, name),
                 }
             elif isinstance(child, property):
                 rows[child_path] = {
                     "kind": "property",
                     "writable": child.fset is not None,
                     **property_types(child),
+                    "runtime": runtime(child, child_path, value, name),
                 }
             elif hasattr(type(child), "__members__"):
                 rows[child_path] = {"kind": "enum_value", "value": enum_number(child)}
@@ -197,6 +251,28 @@ def snapshot():
                     rows[child_path] = {"kind": type(child).__name__}
 
     walk(dartpy, "dartpy")
+    # Defining owners take precedence over inherited rows and module re-exports.
+    # Members stay under the first walked class path to preserve comparison keys;
+    # a nested class reached through an alias may lack rows at <identity_path>.member.
+    # Rows a class defines claim identities in walk order before inherited rows.
+    for claim_inherited in (False, True):
+        for _, value, _, owner, name, inherited in pending_runtime:
+            if inherited != claim_inherited or owner is None or id(owner) not in seen:
+                continue
+            member = getattr(owner, name)
+            owner_path = seen[id(owner)] + "." + name
+            identities.setdefault(identity(member), (owner_path, member))
+            identities.setdefault(identity(value), (owner_path, value))
+    for metadata, value, path, owner, name, _ in pending_runtime:
+        if owner is not None:
+            if id(owner) not in seen:
+                continue
+            # The first walked owner wins when unrelated classes share an object.
+            metadata["identity_path"] = identities[identity(value)][0]
+            continue
+        metadata["identity_path"], _ = identities.setdefault(
+            identity(value), (path, value)
+        )
     enum_values = {}
     for path, row in rows.items():
         if row["kind"] == "enum":
@@ -211,6 +287,18 @@ def snapshot():
 
 
 def compare(pb, nb):
+    # Inventory attribution and raw property spelling do not change binder parity.
+    pb, nb = (
+        {
+            path: {
+                key: value
+                for key, value in row.items()
+                if key not in {"runtime", "getter_signatures", "setter_signatures"}
+            }
+            for path, row in rows.items()
+        }
+        for rows in (pb, nb)
+    )
     diff = {
         key: []
         for key in (
@@ -312,6 +400,8 @@ def self_check():
     assert property_types(property(getter, setter)) == {
         "getter_types": ["float"],
         "setter_types": ["float"],
+        "getter_signatures": ["(self: X) -> float"],
+        "setter_signatures": ["(self: X, value: float) -> None"],
     }
 
 
