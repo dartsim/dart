@@ -1,0 +1,414 @@
+{
+  "schema": "dart-perf/1",
+  "run": {
+    "tier": "release",
+    "harness_commit": "dc04809b826ac2f6a8f9e5f8b78b2761e9cb9bec",
+    "commit": "834bc1415597bb4b19de6c87f19737e8c5d283be",
+    "parent": "ce5c6526035ccc9a22d895670b2579052a2b8903",
+    "branch": "release-6.20",
+    "pr": null,
+    "describe": "v6.20.0-17-g834bc1415",
+    "time": "2026-10-18T16:58:43.155944+00:00",
+    "env": {
+      "valgrind": "3.22.0",
+      "valgrind_sha": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+      "callgrind_sha": "5bc589aea801a02d44a388697e5fe6e8437d475dbdf614291eb1f8bb9a76ad98",
+      "valgrind_guest_cpu": "Intel(R) Core(TM) i7-4910MQ CPU @ 2.90GHz",
+      "compiler": "GNU 13.3.0",
+      "compiler_sha": "1353e9bdd29a7295c7226bf6c63abccce056d8cac31f112e5cdbecc3f28c2769",
+      "compiler_provenance": "dart-perf-build/1",
+      "glibc": "2.39",
+      "pixi_lock_sha": "16628e9bde0faf208558f8ae76a7283fe2057524a7d403b6f5a1d1295b827e9d",
+      "runtime_pixi_lock_sha": "16628e9bde0faf208558f8ae76a7283fe2057524a7d403b6f5a1d1295b827e9d",
+      "runtime_environment": "default",
+      "staging_root": "default",
+      "preset": "perf-1",
+      "harness_sha": "d2af06617efef59a016b4421a6a1120ffa2d8cc958db9916d713341601e2c5aa",
+      "allocshim_sha": "5f16a7d5a3ecfab93d9b8625541574b0e6b437b9c59780f2f7d5dceef3940b20",
+      "heappad_sha": "93f023d7e9686aaa11269bfd43f1dc26bc0ceda122b0d33ce370a799978629f6",
+      "runner": {
+        "environment": "github-hosted",
+        "name": "GitHub Actions 1000157010",
+        "image": "ubuntu24/20261012.334.1"
+      },
+      "host_cpu": "AMD EPYC 9V45 96-Core Processor",
+      "fingerprint": "3ec357f3b2a7938c926217fba953b71a6088350e49b15a202f179ab3719dad93"
+    },
+    "accepted": [],
+    "tag": "v6.20.1",
+    "base_tag": "v6.19.5"
+  },
+  "results": [
+    {
+      "row": "gzb",
+      "det": "ode",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 2,
+        "steps": 3
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "stepAndRead(dart::simulation::World*)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "3d945a5d65bfd0bcb49c8820277ee79302d39731adff58b0ca48df742d6ca9b7",
+      "head": {
+        "guards": {
+          "hash": "0xb72854800aade88b",
+          "finite": true,
+          "contacts": 10000,
+          "cap_hit": true,
+          "resting": "2002/3003"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 16707.666666666668,
+        "bytes_per_step": 2405840.0,
+        "allocs": 50123,
+        "bytes": 7217520,
+        "libdart": "libdart.so.6.20",
+        "max_rss_kb": 146164,
+        "wall_ms_per_step": 27.095883,
+        "ir_per_step": 174071573.66666666
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xb72854800aade88b",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 50123,
+          "bytes": 7217520,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "a69f3a7e6a6e53a0db601f06b6f6716f92e6a0580d6a78f0dac6ce686eab34ba",
+      "parent": {
+        "guards": {
+          "hash": "0xd67880939e013a65",
+          "finite": true,
+          "contacts": 10000,
+          "cap_hit": true,
+          "resting": "0/3003"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 101421.66666666667,
+        "bytes_per_step": 27590234.666666668,
+        "allocs": 304265,
+        "bytes": 82770704,
+        "libdart": "libdart.so.6.19",
+        "max_rss_kb": 537232,
+        "wall_ms_per_step": 65.31708,
+        "ir_per_step": 466533628.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": null,
+        "allocs": null,
+        "bytes": null,
+        "guards_equal": false,
+        "class": "behaviour-change"
+      },
+      "wall_ms_per_step": {
+        "parent": 65.31708,
+        "head": 27.095883,
+        "advisory": true
+      },
+      "failures": [
+        "input_sha changed; Rebaseline-Rationale required"
+      ],
+      "gate_reason": "perturbation check passed; row is behaviour-change; input_sha changed"
+    },
+    {
+      "row": "robot",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 300,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "stepAndRead(dart::simulation::World*)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "5b76ddb3adc1c90c550949ab5c548ba4479d68c3c0097ba7b5c6062e6898dccb",
+      "head": {
+        "guards": {
+          "hash": "0xf3016c0eb10fdb15",
+          "finite": true,
+          "contacts": 8,
+          "cap_hit": false,
+          "resting": "0/2"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 16.0,
+        "bytes_per_step": 223104.0,
+        "allocs": 1600,
+        "bytes": 22310400,
+        "libdart": "libdart.so.6.20",
+        "max_rss_kb": 52376,
+        "wall_ms_per_step": 1.185308,
+        "ir_per_step": 12633388.68
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf3016c0eb10fdb15",
+            "finite": true,
+            "contacts": 8,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 1600,
+          "bytes": 22310400,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "a69f3a7e6a6e53a0db601f06b6f6716f92e6a0580d6a78f0dac6ce686eab34ba",
+      "parent": {
+        "guards": {
+          "hash": "0xe8749aad42fe4bc9",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "0/2"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 230.77,
+        "bytes_per_step": 12453.0,
+        "allocs": 23077,
+        "bytes": 1245300,
+        "libdart": "libdart.so.6.19",
+        "max_rss_kb": 46352,
+        "wall_ms_per_step": 0.4056,
+        "ir_per_step": 826558.23
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": null,
+        "allocs": null,
+        "bytes": null,
+        "guards_equal": false,
+        "class": "behaviour-change"
+      },
+      "wall_ms_per_step": {
+        "parent": 0.4056,
+        "head": 1.185308,
+        "advisory": true
+      },
+      "failures": [
+        "input_sha changed; Rebaseline-Rationale required"
+      ],
+      "gate_reason": "perturbation check passed; row is behaviour-change; input_sha changed"
+    }
+  ],
+  "verdict": {
+    "status": "FAIL",
+    "failures": [
+      "gzb/ode: input_sha changed; Rebaseline-Rationale required",
+      "robot/dart: input_sha changed; Rebaseline-Rationale required"
+    ],
+    "warnings": [],
+    "ir_geomean": null
+  },
+  "ledger": {
+    "entries": [],
+    "missing": []
+  }
+}
