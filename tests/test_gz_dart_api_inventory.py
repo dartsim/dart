@@ -29978,3 +29978,1123 @@ def test_five_fix_construction_owner(
     _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
     scan = _scan_receiver_api(extractor, tmp_path, header, source)
     assert "enclosing_templates" not in json.dumps(scan)
+
+
+FIVE_FIX_961_BOUNDARIES = [
+    (
+        "optional_leading_second",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A>(first),second;second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_leading_first",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A>(first),second;first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_later_grouped",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A> first,(second);second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_redundant_leading",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A>((first)),second;second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_api_alias_leading",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){dart::O(first),second;second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_source_alias_leading",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "using O=std::optional<dart::A>;void use(){O(first),second;second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_pointer_later",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A>(first),*second=&first;second->emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_class_fields",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "struct H{std::optional<dart::A>(first),second;};void use(H&h){h.second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_pointer_element_negative",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A*>(first),second;second.emplace(nullptr);}",
+        "A(int);",
+        "A(int)=delete;",
+        False,
+        False,
+    ),
+    (
+        "optional_unengaged_negative",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A>(first),second;}",
+        "A(int);",
+        "A(int)=delete;",
+        False,
+        False,
+    ),
+    (
+        "optional_parameter_boundary_negative",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(std::optional<dart::A>(first),std::optional<dart::A*> second){second.emplace(nullptr);}",
+        "A(int);",
+        "A(int)=delete;",
+        False,
+        False,
+    ),
+    (
+        "cast_const_array_reference",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X&x){dart::X y{static_cast<const dart::X&>(x)};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "cast_rvalue_array_reference",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X&x){dart::X y{static_cast<dart::X&&>(x)};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "cast_array_value_copy",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X&x){dart::X y{static_cast<dart::X>(x)};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "cast_source_alias_reference",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "using Alias=dart::X;void use(dart::X&x){dart::X y{static_cast<const Alias&>(x)};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "cast_full_pointer_dereference",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X**p){dart::X y{**static_cast<dart::X**>(p)};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "plain_whole_array_copy_control",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X&x){dart::X y{x};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "cast_pointer_tail_positive",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X**p){dart::X y{*static_cast<dart::X**>(p)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "cast_distinct_array_tail_positive",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::Y&x){dart::X y{static_cast<const dart::Y&>(x)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "cast_variant_element_tail_positive",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(dart::X&x){dart::X y{static_cast<const dart::V&>(x[0])};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "optional_ungrouped_baseline",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A> first,second;second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_for_grouped_initializer",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){for(std::optional<dart::A>(first),second;false;){second.emplace(1);}}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_if_grouped_initializer",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){if(std::optional<dart::A>(first),second;true){second.emplace(1);}}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "optional_grouped_if_scope_after",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using O=std::optional<A>;}",
+        "void use(){std::optional<dart::A*> second;if(std::optional<dart::A>(first),second;true){}second.emplace(nullptr);}",
+        "A(int);",
+        "A(int)=delete;",
+        False,
+        False,
+    ),
+    (
+        "cast_void_operand_target_pointer",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);A(void*);A(std::array<int,1>);};using V=std::variant<A,int>;using X=std::array<V,2>;using Y=std::array<int,1>;}",
+        "void use(void*raw){dart::X y{*static_cast<dart::X*>(raw)};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_961_BOUNDARIES,
+    ids=[row[0] for row in FIVE_FIX_961_BOUNDARIES],
+)
+def test_five_fix_961_boundaries(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    scan = _scan_receiver_api(extractor, tmp_path, header, source)
+    assert "enclosing_templates" not in json.dumps(scan)
+
+
+FIVE_FIX_961_LOCAL_COMPLETION = [
+    (
+        "variant_redundant_empty",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};}",
+        "void use(){std::variant<dart::A,int>((v));}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "variant_redundant_full",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};}",
+        "void use(){std::variant<dart::A,int>((v))={1};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "variant_redundant_array_full",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};}",
+        "void use(){std::variant<dart::A,int>((v[2]))={1,2};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "variant_redundant_array_partial",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};}",
+        "void use(){std::variant<dart::A,int>((v[2]))={1};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "source_group_first_field",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "struct H{std::optional<dart::A>(first),second;};void use(H&h){h.first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_group_first_field",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}namespace dart{struct H{std::optional<A>(first),second;};}",
+        "void use(dart::H&h){h.first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_group_later_field",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "struct H{std::optional<dart::A>first,(second);};void use(H&h){h.second.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_qualified_reference",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{void touch(dart::A&);}void use(dart::A&a){util::touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_qualified_pointer",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{void touch(dart::A*&);}void use(dart::A*a){util::touch(a);a->hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_qualified_local",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{void touch(dart::A&);}void use(){dart::A a;util::touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_std_move",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "void use(dart::A&a){std::move(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_std_as_const",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "void use(dart::A&a){std::as_const(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_std_addressof",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "void use(dart::A&a){std::addressof<dart::A>(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_comma_control",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{void touch(dart::A&);}void use(dart::A&a,dart::A&b){util::touch(a),b.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_api_control",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace dart{void touch(A&);}void use(dart::A&a){dart::touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_api_template_control",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace dart{template<class T>void tt(T&);}void use(dart::A&a){dart::tt<dart::A>(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_std_namespace_alias",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace s=std;void use(dart::A&a){s::move(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "call_foreign_negative",
+        "#include <utility>\n#include <memory>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace other{struct Q{void hit();};}void use(other::Q&a){std::move(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_961_LOCAL_COMPLETION,
+    ids=[row[0] for row in FIVE_FIX_961_LOCAL_COMPLETION],
+)
+def test_five_fix_961_local_completion(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    scan = _scan_receiver_api(extractor, tmp_path, header, source)
+    assert "enclosing_templates" not in json.dumps(scan)
+
+
+FIVE_FIX_SCOPED_FIELD_COMPLETION = [
+    (
+        "api_optional_alias_field",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{O(first),second;};}",
+        "void use(dart::H&h){h.first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_optional_alias_field",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}",
+        "using O=std::optional<dart::A>;struct H{O(first),second;};void use(H&h){h.first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_plain_field_layout",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{A(value);};}",
+        "static_assert(sizeof(dart::H)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+    ),
+    (
+        "api_plain_field_receiver",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{A(value);};}",
+        "void use(dart::H&h){h.value.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "constructor_parameter_control",
+        "namespace dart{struct Parameter{int storage;};struct H{H(Parameter);};}",
+        "static_assert(sizeof(dart::H)==1);",
+        "int storage;",
+        "double storage;",
+        False,
+        False,
+    ),
+    (
+        "grouped_prototype_control",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{A(value)();};}",
+        "static_assert(sizeof(dart::H)==1);",
+        "int storage;",
+        "double storage;",
+        False,
+        False,
+    ),
+    (
+        "api_grouped_outer_array_control",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{std::optional<A>(values)[2];};}",
+        "void use(dart::H&h){h.values[0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_grouped_redundant_outer_array",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{std::optional<A>((values))[2];};}",
+        "void use(dart::H&h){h.values[0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_grouped_inner_array",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};using O=std::optional<A>;}namespace dart{struct H{std::optional<A>(values[2]);};}",
+        "void use(dart::H&h){h.values[0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_grouped_leading_alignment",
+        "#include <optional>\nnamespace dart{struct H{alignas(16)std::optional<int>(value);};}",
+        "static_assert(alignof(dart::H)==16);",
+        "alignas(16)",
+        "alignas(32)",
+        True,
+        True,
+    ),
+    (
+        "api_grouped_suffix_alignment",
+        "#include <optional>\nnamespace dart{struct H{std::optional<int>(value)__attribute__((aligned(16)));};}",
+        "static_assert(alignof(dart::H)==16);",
+        "aligned(16)",
+        "aligned(32)",
+        True,
+        True,
+    ),
+    (
+        "template_id_constructor_control",
+        "namespace dart{struct P{};struct Q{};template<class T>struct H{H<T>(P);};}",
+        "static_assert(sizeof(dart::H<int>)==1);",
+        "H<T>(P);",
+        "H<T>(Q);",
+        False,
+        False,
+    ),
+    (
+        "source_class_homonym",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace defs{struct Touch{};}namespace util{void Touch(dart::A&);}void use(dart::A&a){util::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_alias_homonym",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace defs{using Touch=std::optional<dart::A>;}namespace util{void Touch(dart::A&);}void use(dart::A&a){util::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "std_function_other_alias_same_leaf",
+        "#include <optional>\n#include <utility>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "namespace other{using move=int;}void use(dart::A&a){std::move(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_alias_grouped_positive",
+        "#include <optional>\n#include <utility>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "using Opt=std::optional<dart::A>;void use(){Opt(first);first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "grouped_field_gnu_suffix",
+        "#include <optional>\n#include <utility>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "struct H{std::optional<dart::A>(first) __attribute__((unused));};void use(H&h){h.first.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "grouped_field_outer_array",
+        "#include <optional>\n#include <utility>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "struct H{std::optional<dart::A>(first)[2];};void use(H&h){h.first[0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "redundant_grouped_field_outer_array",
+        "#include <optional>\n#include <utility>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "struct H{std::optional<dart::A>((first))[2];};void use(H&h){h.first[0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "grouped_field_inner_array",
+        "#include <optional>\n#include <utility>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "struct H{std::optional<dart::A>(first[2]);};void use(H&h){h.first[0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_SCOPED_FIELD_COMPLETION,
+    ids=[row[0] for row in FIVE_FIX_SCOPED_FIELD_COMPLETION],
+)
+def test_five_fix_scoped_field_completion(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_BALANCED_DECLARATOR_COMPLETION = [
+    (
+        "same_fqn_class_hidden_by_function",
+        "namespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{struct Touch{};void Touch(dart::A&);}void use(dart::A&a){util::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "interleaved",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}namespace dart{struct H{std::optional<A>((values)[2])[3];};}",
+        "void use(dart::H&h){h.values[0][0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "contiguous_control",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}namespace dart{struct H{std::optional<A>(values[2][3]);};}",
+        "void use(dart::H&h){h.values[0][0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_interleaved",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "struct H{std::optional<dart::A>((values)[2])[3];};void use(H&h){h.values[0][0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_contiguous_control",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "struct H{std::optional<dart::A>(values[2][3]);};void use(H&h){h.values[0][0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_same_fqn_class_hidden_by_function",
+        "namespace dart{class A{int storage;public:A();void hit();};struct Touch{};void Touch(A&);}",
+        "void use(dart::A&a){dart::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "inner_outer_group_api_array_control",
+        "#include <optional>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}namespace dart{struct H{std::optional<A>(values[2])[3];};}",
+        "void use(dart::H&h){h.values[0][0].emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "interleaved_group_variant",
+        "#include <optional>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int>((values)[2])[3];}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "typedef_interleaved_group_array",
+        "namespace dart{class A{int storage;public:A()=default;};typedef A ((Rows)[2])[3];struct H{Rows value;};}",
+        "static_assert(sizeof(dart::H)==6*sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+    ),
+    (
+        "interleaved_variant_fully_supplied_conservative",
+        "#include <optional>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int>((values)[2])[3]={{1,2,3},{4,5,6}};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        False,
+    ),
+    (
+        "source_elaborated_hidden_tag_group_positive",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "namespace util{struct Touch{std::optional<dart::A> item;};void Touch(dart::A&);}void use(){struct util::Touch (v);v.item.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_elaborated_hidden_tag_group_positive",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}namespace dart{struct Touch{std::optional<A> item;};void Touch(A&);}",
+        "void use(){struct dart::Touch (v);v.item.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_BALANCED_DECLARATOR_COMPLETION,
+    ids=[row[0] for row in FIVE_FIX_BALANCED_DECLARATOR_COMPLETION],
+)
+def test_five_fix_balanced_declarator_completion(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_FUNCTION_KIND_CONSUMERS = [
+    (
+        "api_same_name_real_function_dependency",
+        "namespace dart{class A{int storage;public:A()=default;};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};void Touch(A&);}",
+        "void use(dart::A&a){dart::Touch(a);}",
+        "void Touch(A&);",
+        "void Touch(A&)=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_elaborated_tag_not_function",
+        "namespace dart{class A{int storage;public:A()=default;};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};void Touch(A&);}",
+        "void use(){struct dart::Touch (v);}",
+        "void Touch(A&);",
+        "void Touch(A&)=delete;",
+        False,
+        False,
+    ),
+    (
+        "api_elaborated_tag_default_ctor",
+        "namespace dart{class A{int storage;public:A()=default;};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};void Touch(A&);}",
+        "void use(){struct dart::Touch (v);}",
+        "Touch()=default",
+        "Touch()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_same_name_call_not_constructor",
+        "namespace dart{class A{int storage;public:A()=default;};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};void Touch(A&);}",
+        "void use(dart::A&a){dart::Touch(a);}",
+        "explicit Touch(A&);",
+        "explicit Touch(A&)=delete;",
+        False,
+        False,
+    ),
+    (
+        "api_same_name_call_not_owned_layout",
+        "namespace dart{class A{int storage;public:A()=default;};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};void Touch(A&);}",
+        "void use(dart::A&a){dart::Touch(a);}",
+        "int tag_storage;",
+        "double tag_storage;",
+        False,
+        False,
+    ),
+    (
+        "api_same_name_elaborated_return_function",
+        "namespace dart{class A{int storage;public:A();void hit();};}namespace dart{struct Touch{};struct Touch Touch(A&);}",
+        "void use(dart::A&a){dart::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_same_name_elaborated_return_function",
+        "namespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{struct Touch{};struct Touch Touch(dart::A&);}void use(dart::A&a){util::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_FUNCTION_KIND_CONSUMERS,
+    ids=[row[0] for row in FIVE_FIX_FUNCTION_KIND_CONSUMERS],
+)
+def test_five_fix_function_kind_consumers(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_FUNCTION_RETURN_EXPRESSION = [
+    (
+        "api_function_bitwise_decltype_return",
+        "namespace dart{class A{int storage;public:A();void hit();};}namespace dart{struct Touch{};decltype(~0) Touch(A&);}",
+        "void use(dart::A&a){dart::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_function_bitwise_decltype_return",
+        "namespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{struct Touch{};decltype(~0) Touch(dart::A&);}void use(dart::A&a){util::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_FUNCTION_RETURN_EXPRESSION,
+    ids=[row[0] for row in FIVE_FIX_FUNCTION_RETURN_EXPRESSION],
+)
+def test_five_fix_function_return_expression(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_ORDINARY_NAME_KINDS = [
+    (
+        "source_namespace_callable_variable",
+        "namespace dart{class A{int storage;public:A();void hit();};}",
+        "namespace util{struct Touch{};extern void(*Touch)(dart::A&);}void use(dart::A&a){util::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_namespace_callable_variable",
+        "namespace dart{class A{int storage;public:A();void hit();};}namespace dart{struct Touch{};extern void(*Touch)(A&);}",
+        "void use(dart::A&a){dart::Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_member_function",
+        "namespace dart{class A{int storage;public:A();void hit();};}",
+        "struct H{struct Touch{};void Touch(dart::A&);void use(dart::A&a){Touch(a);a.hit();}};",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_member_function",
+        "namespace dart{class A{int storage;public:A();void hit();};}namespace dart{struct H{struct Touch{};void Touch(A&);void use(A&);};}",
+        "void dart::H::use(dart::A&a){Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_callable_value_real_call_dependency",
+        "namespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};extern void(*Touch)(A&);struct H{struct Touch{int x;};void Touch(A&);};}",
+        "void use(dart::A&a){dart::Touch(a);}",
+        "extern void(*Touch)(A&);",
+        "extern void(*Touch)(int);",
+        True,
+        True,
+    ),
+    (
+        "api_tag_declaration_not_callable_value",
+        "namespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};extern void(*Touch)(A&);struct H{struct Touch{int x;};void Touch(A&);};}",
+        "void use(){struct dart::Touch (v);}",
+        "extern void(*Touch)(A&);",
+        "extern void(*Touch)(int);",
+        False,
+        False,
+    ),
+    (
+        "api_tag_declaration_default_ctor_with_value_hider",
+        "namespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};extern void(*Touch)(A&);struct H{struct Touch{int x;};void Touch(A&);};}",
+        "void use(){struct dart::Touch (v);}",
+        "Touch()=default",
+        "Touch()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_callable_value_call_not_constructor",
+        "namespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};extern void(*Touch)(A&);struct H{struct Touch{int x;};void Touch(A&);};}",
+        "void use(dart::A&a){dart::Touch(a);}",
+        "explicit Touch(A&);",
+        "explicit Touch(A&)=delete;",
+        False,
+        False,
+    ),
+    (
+        "api_callable_value_call_not_owned_layout",
+        "namespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};extern void(*Touch)(A&);struct H{struct Touch{int x;};void Touch(A&);};}",
+        "void use(dart::A&a){dart::Touch(a);}",
+        "int tag_storage;",
+        "double tag_storage;",
+        False,
+        False,
+    ),
+    (
+        "api_member_tag_declaration_not_method",
+        "namespace dart{class A{int storage;public:A()=default;explicit A(int);void hit();};class Touch{int tag_storage;public:Touch()=default;explicit Touch(A&);};extern void(*Touch)(A&);struct H{struct Touch{int x;};void Touch(A&);};}",
+        "void use(){struct dart::H::Touch (v);}",
+        "void Touch(A&);",
+        "void Touch(A&)=delete;",
+        False,
+        False,
+    ),
+    (
+        "source_tag_positive_with_callable_value",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "namespace util{struct Touch{std::optional<dart::A> item;};extern void(*Touch)(dart::A&);}void use(){struct util::Touch (v);v.item.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_nested_tag_positive_with_member_hider",
+        "#include <optional>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};}",
+        "struct H{struct Touch{std::optional<dart::A> item;};void Touch(dart::A&);};void use(){struct H::Touch (v);v.item.emplace(1);}",
+        "A(int);",
+        "A(int)=delete;",
+        True,
+        True,
+    ),
+    (
+        "enum_tag_declaration_not_free_function",
+        "namespace dart{class A{int storage;public:A();};enum class Touch:int{V};void Touch(A&);}",
+        "void use(){enum dart::Touch (v);}",
+        "void Touch(A&);",
+        "void Touch(A&)=delete;",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_ORDINARY_NAME_KINDS,
+    ids=[row[0] for row in FIVE_FIX_ORDINARY_NAME_KINDS],
+)
+def test_five_fix_ordinary_name_kinds(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_ORDINARY_KIND_SCOPES = [
+    (
+        "source_global_callable_variable",
+        "namespace dart{class A{int storage;public:A();void hit();};}",
+        "struct Touch{};extern void(*Touch)(dart::A&);void use(dart::A&a){Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_private_member_function",
+        "namespace dart{class A{int storage;public:A();void hit();};}namespace dart{class H{struct Touch{};void Touch(A&);public:void use(A&);};}",
+        "void dart::H::use(dart::A&a){Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_private_member_callable_data",
+        "namespace dart{class A{int storage;public:A();void hit();};}namespace dart{class H{struct Touch{};void(*Touch)(A&);public:void use(A&);};}",
+        "void dart::H::use(dart::A&a){Touch(a);a.hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_ORDINARY_KIND_SCOPES,
+    ids=[row[0] for row in FIVE_FIX_ORDINARY_KIND_SCOPES],
+)
+def test_five_fix_ordinary_kind_scopes(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_METHOD_KINDS = [
+    (
+        "api_plain_injected_type",
+        "namespace dart{class H{int storage;public:H()=default;explicit H(int);void use();};}",
+        "void dart::H::use(){H(v);}",
+        "H()=default",
+        "H()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_elaborated_injected_control",
+        "namespace dart{class H{int storage;public:H()=default;explicit H(int);void use();};}",
+        "void dart::H::use(){class H(v);}",
+        "H()=default",
+        "H()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_destructor_injected_self_type",
+        "namespace dart{class H{int storage;public:H();~H();void use();};}",
+        "void dart::H::use(){H(value);}",
+        "H();",
+        "H()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_destructor_elaborated_self_control",
+        "namespace dart{class H{int storage;public:H();~H();void use();};}",
+        "void dart::H::use(){struct H(value);}",
+        "H();",
+        "H()=delete;",
+        True,
+        True,
+    ),
+    (
+        "api_elaborated_field_pseudo_method",
+        "namespace dart{struct H{class Touch{int storage;public:Touch();};struct Touch(saved);void use();};}",
+        "void dart::H::use(){Touch(value);}",
+        "Touch();",
+        "Touch()=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_foreign_explicit_constructor",
+        "namespace dart{class A{int storage;public:void hit();};}",
+        "namespace foreign{struct B{void hit();};}struct H{H()=default;explicit H(int);foreign::B get();void use();};void H::use(){H(v);v.get().hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        False,
+        False,
+    ),
+    (
+        "source_foreign_destructor_control",
+        "namespace dart{class A{int storage;public:void hit();};}",
+        "namespace foreign{struct B{void hit();};}struct H{H()=default;~H();foreign::B get();void use();};void H::use(){H(v);v.get().hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        False,
+        False,
+    ),
+    (
+        "source_foreign_explicit_elaborated_control",
+        "namespace dart{class A{int storage;public:void hit();};}",
+        "namespace foreign{struct B{void hit();};}struct H{H()=default;explicit H(int);foreign::B get();void use();};void H::use(){class H(v);v.get().hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        False,
+        False,
+    ),
+    (
+        "api_destructor_plain_object",
+        "namespace dart{class H{public:H();~H();void use();};}",
+        "void dart::H::use(){H value;}",
+        "H();",
+        "H()=delete;",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_METHOD_KINDS,
+    ids=[row[0] for row in FIVE_FIX_METHOD_KINDS],
+)
+def test_five_fix_method_kinds(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)

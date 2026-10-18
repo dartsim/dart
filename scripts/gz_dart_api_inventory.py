@@ -719,6 +719,23 @@ def function_type_signature(values):
     return result
 
 
+def real_function(item):
+    """A parsed function with a real return type, not a constructor or type parse."""
+    returns = item["return_tokens"]
+    # A member named for its class is a constructor, even `explicit H(int)`.
+    owner = (item.get("class") or "").split("::")[-1]
+    if owner and item["name"].split("::")[-1] == owner:
+        return False
+    # A trailing tag keyword means the "name" is that tag's name: `struct T (v)`.
+    return (
+        bool(returns)
+        and returns[-1] not in {"::", "struct", "class", "union", "enum"}
+        # A trailing `~` is a destructor; an inner one is `decltype(~0)`.
+        and returns[-1] != "~"
+        and not any(value in {"typedef", "using"} for value in returns)
+    )
+
+
 def grouped_declarator_name(values):
     """A sole grouped name immediately after a declaration's type prefix."""
     tokens = Tokens(" ".join(values))
@@ -755,8 +772,13 @@ def grouped_declarator_name(values):
         "char32_t",
     }
     start = 0
-    while values[start : start + 1] and values[start] in qualifiers | {"::"}:
-        start += 1
+    while True:  # leading specifiers and attributes, as `alignas(16) T (name)`
+        if values[start : start + 1] and values[start] in qualifiers | {"::"}:
+            start += 1
+        elif declarator_attributes_end(tokens, start) != start:
+            start = declarator_attributes_end(tokens, start)
+        else:
+            break
     if values[start : start + 2] == ["decltype", "("] and start + 1 in tokens.pairs:
         end = tokens.pairs[start + 1] + 1
     elif values[start : start + 1] and values[start] in builtins:
@@ -780,13 +802,8 @@ def grouped_declarator_name(values):
     closing = tokens.pairs.get(opening)
     if values[opening : opening + 1] != ["("] or closing is None:
         return None
-    first, last = opening + 1, closing - 1
-    while values[first : first + 1] == ["("] and tokens.pairs.get(first) == last:
-        first += 1
-        last -= 1
-    if first == last and IDENTIFIER.match(values[first]):
-        return first
-    return None
+    found = grouped_object(tokens, opening)
+    return found[0] if found else None  # the name, with bounds `T ((name)[2])[3]`
 
 
 def declaration(values, owner, macros=()):
@@ -972,8 +989,13 @@ def member_signature(item, resolve_type):
     )
 
 
-def data_member(values, owner, layout_only=False):
-    """Read one data declarator, including array dimensions and bit-field width."""
+def data_member(values, owner, layout_only=False, macros=None):
+    """Read one data declarator, including array dimensions and bit-field width.
+
+    Member and namespace declarations pass their `macros`: a sole grouped name
+    then declares an object, as `T (name)[2]`, unless T is the owner's own
+    constructor name or a macro. Parameters omit them, since there `T (name)` may
+    spell an abstract function type."""
     declarator = values
     bit_width = None
     type_tokens = Tokens(" ".join(values))
@@ -1016,6 +1038,36 @@ def data_member(values, owner, layout_only=False):
             if token == ":":
                 bit_width = values[end + 1 :]
             break
+    name = None if macros is None else grouped_declarator_name(declarator)
+    if name is not None and declarator[name - 1] == "(":
+        grouped = Tokens(" ".join(declarator))
+        opening = name
+        while declarator[opening - 1] == "(":
+            opening -= 1
+        _, end, _, parens = grouped_object(grouped, opening)
+        spelled = [
+            (stop, value)
+            for start, stop, value in names_in(declarator[:opening])
+            if start not in annotations and not in_template_argument(declarator, start)
+        ]
+        stop, spelled = spelled[-1] if spelled else (0, "")
+        parts = spelled.split("::")
+        constructor = template_end(declarator, stop) == opening and (
+            parts[-1] == (owner or "").rsplit("::", 1)[-1] or parts[-2:-1] == parts[-1:]
+        )
+        if not constructor and spelled not in macros and end == len(declarator):
+            member = data_member(
+                [value for index, value in enumerate(declarator) if index not in parens]
+                + values[len(declarator) :],
+                owner,
+                layout_only,
+            )
+            return member and {
+                **member,
+                "name_index": member["name_index"] + name - opening,
+                "signature": " ".join(values),
+            }
+    shift = 0
     tokens = Tokens(" ".join(declarator))
     pointer_shape = function_pointer_declarator(declarator)
     grouped_pointer = function_pointer_name(declarator)
@@ -1032,7 +1084,6 @@ def data_member(values, owner, layout_only=False):
         dimensions += 1
     if grouped_pointer:
         dimensions += pointer_shape["array_dimensions"]
-    shift = 0
     if (
         dimensions
         and not grouped_pointer
@@ -1154,7 +1205,8 @@ def declarators(values, owner, macros=()):
                 initializer = True
         i += 1
     first = declaration(parts[0][0], owner, macros) or data_member(parts[0][0], owner)
-    if not first:
+    grouped_name = grouped_declarator_name(parts[0][0])
+    if not first and grouped_name is None:
         # An unnamed leading bit-field still supplies the group's type.
         colon = next(
             (
@@ -1172,7 +1224,6 @@ def declarators(values, owner, macros=()):
     else:
         first_values = parts[0][0]
         pointer = function_pointer_name(first_values)
-        grouped_name = grouped_declarator_name(first_values)
         shared_end = (
             function_pointer_declarator(first_values)["opening"]
             if pointer
@@ -1197,11 +1248,11 @@ def declarators(values, owner, macros=()):
     ]
 
 
-def data_declarations(values, owner, layout_only=False):
+def data_declarations(values, owner, layout_only=False, macros=None):
     return [
         {**member, "name_index": member["name_index"] + offset}
         for part, offset in declarators(values, owner)
-        if (member := data_member(part, owner, layout_only))
+        if (member := data_member(part, owner, layout_only, macros))
     ]
 
 
@@ -1577,6 +1628,7 @@ def scopes(tokens, annotation_text=None):
                                     type_tokens + values[i:stop],
                                     owner or "::".join(namespace),
                                     layout_only=bool(owner),
+                                    macros=tokens.macros,
                                 )
                                 for position, member in enumerate(members):
                                     if annotation_text is not None:
@@ -1707,7 +1759,10 @@ def scopes(tokens, annotation_text=None):
                             )
                     functions.append(method)
                 members = data_declarations(
-                    prefix, owner or "::".join(namespace), layout_only=bool(owner)
+                    prefix,
+                    owner or "::".join(namespace),
+                    layout_only=bool(owner),
+                    macros=tokens.macros,
                 )
                 for position, member in enumerate(members):
                     if annotation_text is not None:
@@ -1802,15 +1857,12 @@ def scopes(tokens, annotation_text=None):
                             else member["name_index"] if member else len(target) - 1
                         )
                         removed = {name_index}
-                        left, right = name_index - 1, name_index + 1
                         grouped = Tokens(" ".join(target))
-                        while (
-                            target[left : left + 1] == ["("]
-                            and grouped.pairs.get(left) == right
-                        ):
-                            removed.update((left, right))
-                            left -= 1
-                            right += 1
+                        if grouped_name is not None:
+                            left = name_index
+                            while target[left - 1 : left] == ["("]:
+                                left -= 1
+                            removed |= grouped_object(grouped, left)[3]
                         alias_name = "::".join(
                             (owner or "::".join(namespace), target[name_index])
                         ).strip(":")
@@ -3426,16 +3478,9 @@ def variable_after_type(values, end, grouped=False):
         else:
             break
     if grouped and values[j : j + 1] == ["("]:
-        tokens = Tokens(" ".join(values))
-        _, closing = array_bounds(tokens, j + 2)
-        if (
-            j + 1 < len(values)
-            and IDENTIFIER.match(values[j + 1])
-            and closing == tokens.pairs.get(j)
-            and values[declarator_attributes_end(tokens, closing + 1) :][:1]
-            in [[";"], ["="], [","], ["{"]]
-        ):
-            return j + 1  # a parenthesized object/array declarator
+        found = grouped_object(Tokens(" ".join(values)), j)
+        if found and values[found[1] : found[1] + 1] in [[";"], ["="], [","], ["{"]]:
+            return found[0]  # a parenthesized object/array declarator
     while j + 2 < len(values) and IDENTIFIER.match(values[j]) and values[j + 1] == "::":
         j += 2  # the `Class::` of an out-of-line static member definition
     if (
@@ -3476,6 +3521,33 @@ def declarator_attributes_end(tokens, index):
             break
         index = tokens.pairs[opening] + 1
     return index
+
+
+def grouped_object(tokens, opening):
+    """A balanced `(name)[2]`-style object declarator at `opening`.
+
+    Returns the name index, the index after the outermost group and its trailing
+    bounds, every bound's `[` and the group parentheses; `None` otherwise. Bounds
+    and attributes may follow each closing group, as `((name)[2])[3]`."""
+    values = tokens.values
+    closing = tokens.pairs.get(opening)
+    if values[opening : opening + 1] != ["("] or closing is None:
+        return None
+    if values[opening + 1 : opening + 2] == ["("]:
+        inner = grouped_object(tokens, opening + 1)
+        if inner is None:
+            return None
+        name, after, bounds, parens = inner
+    elif IDENTIFIER.match(values[opening + 1]):
+        name = opening + 1
+        bounds, after = array_bounds(tokens, name + 1)
+        parens = set()
+    else:
+        return None
+    if after != closing:
+        return None
+    more, end = array_bounds(tokens, closing + 1)
+    return name, end, bounds + more, parens | {opening, closing}
 
 
 def array_bounds(tokens, index):
@@ -3528,12 +3600,22 @@ def enclosing_template(values, start):
 
 
 def array_types(tokens, index, types):
-    """Retain each declared array dimension around the element's type markers."""
+    """Retain each declared array dimension around the element's type markers.
+
+    A grouped name's bounds count inside and after its own `(`, as `T ((a)[2])[3]`.
+    """
+    groups = 0
+    while index > groups and tokens.values[index - groups - 1] == "(":
+        groups += 1
     index += 1
-    while tokens.values[index : index + 1] == ["["] and index in tokens.pairs:
-        types = {"__element__:" + value for value in types} | {RAW_ARRAY}
-        index = tokens.pairs[index] + 1
-    return types
+    while True:
+        bounds, index = array_bounds(tokens, index)
+        for _ in bounds:
+            types = {"__element__:" + value for value in types} | {RAW_ARRAY}
+        if not groups or tokens.values[index : index + 1] != [")"]:
+            return types
+        groups -= 1
+        index += 1
 
 
 def in_template_argument(values, start):
@@ -3582,12 +3664,17 @@ def default_value_initializer(tokens, end, grouped=False, array=None):
     """
     values = tokens.values
     variable = variable_after_type(values, end, grouped)
-    if variable is not None and values[variable - 1] == "(":
-        variable += 1  # step over the closing parenthesis of `T (name)`
+    bounds = []
     opening = variable + 1 if variable is not None else template_end(values, end)
+    if variable is not None and values[variable - 1] == "(":
+        group = variable - 1
+        while values[group - 1 : group] == ["("]:
+            group -= 1
+        _, opening, bounds, _ = grouped_object(tokens, group)  # past every group
     while values[opening : opening + 1] in ([">"], ["const"], ["volatile"]):
         opening += 1
-    bounds, opening = array_bounds(tokens, opening)
+    more, opening = array_bounds(tokens, opening)
+    bounds += more
     if values[opening : opening + 1] == ["="]:
         opening += 1
     closing = tokens.pairs.get(opening)
@@ -4357,14 +4444,16 @@ def variable_types(tokens, index, fields):
 def is_field(tokens, index, classes):
     start = tokens.bindings[-1][0]
     return any(start == cls["body"] for cls in classes) and not any(
-        opening < index < closing and tokens.values[opening] == "("
+        opening < index < closing
+        and tokens.values[opening] == "("
+        and set(tokens.values[opening:index]) != {"("}  # the name's own group
         for opening, closing in tokens.pairs.items()
         if opening < closing
     )
 
 
-def later_declarators(tokens, start):
-    """Name index and type tokens of each declarator after a declaration's first."""
+def declaration_statement_end(tokens, start):
+    """The `;` ending a statement-level or control-init declaration at `start`."""
     values = tokens.values
     lead = start
     while lead:
@@ -4413,15 +4502,44 @@ def later_declarators(tokens, start):
         (lead and values[lead - 1] not in {";", "{", "}"})
         or (enclosing is not None and values[enclosing] == "(")
     ):
-        return []  # not a statement-level declaration; parameters stay separate
+        return None  # not a statement-level declaration; parameters stay separate
     stop = statement_end(tokens, start)
     if values[stop : stop + 1] != [";"] or (control and stop > tokens.pairs[enclosing]):
-        return []  # a range-for has no init-statement `;` inside its parentheses
+        return None  # a range-for has no init-statement `;` inside its parentheses
+    return stop
+
+
+def bound_variable_after_type(tokens, start, end, known_type=True):
+    """The variable after a type, including a sole grouped name in a declaration.
+
+    `T(x);` only declares x when T is a type, so a grouped name needs known type
+    evidence; a qualified spelling alone may be a function call."""
+    variable = variable_after_type(tokens.values, end)
+    if variable is None and known_type and declaration_statement_end(tokens, start):
+        variable = variable_after_type(tokens.values, end, grouped=True)
+    return variable
+
+
+def type_prefix(values, start, name):
+    """The type tokens from `start` to a declared name, without its grouping `(`."""
+    while name > start and values[name - 1] == "(":
+        name -= 1
+    return values[start:name]
+
+
+def later_declarators(tokens, start):
+    """Name index and type tokens of each declarator after a declaration's first."""
+    values = tokens.values
+    stop = declaration_statement_end(tokens, start)
+    if stop is None:
+        return []
     result = []
     for part, offset in declarators(values[start:stop], None)[1:]:
         item = data_member(part, None)
         if item:
             result.append((start + offset + item["name_index"], item["return_tokens"]))
+        elif (name := grouped_declarator_name(part)) is not None:
+            result.append((start + offset + name, type_prefix(part, 0, name)))
     return result
 
 
@@ -4768,10 +4886,18 @@ def index_api(header_root):
                 resolved = api.resolve(value, scope)
                 if resolved and resolved != name:
                     cls["bases"].append(resolved)
+    api.free_functions = {  # a same-name type keeps only genuine function evidence
+        name: [
+            item
+            for item in declarations
+            if name not in api.types or real_function(item)
+        ]
+        for name, declarations in api.free_functions.items()
+    }
     api.free_functions = {
         name: declarations
         for name, declarations in api.free_functions.items()
-        if name not in api.types
+        if declarations
     }
     changed = True
     while changed:
@@ -5058,7 +5184,7 @@ def scan_sources(api, source_root):
             tokens.branches.append(branches[line])
         classes, functions, source_aliases, declared_fields = scopes(tokens)
         for field in declared_fields:
-            if field["class"] and field["name"] and field.get("return_tokens"):
+            if field["name"] and field.get("return_tokens"):
                 source_fields[field["class"]][field["name"]].append(
                     {
                         **field,
@@ -5066,8 +5192,8 @@ def scan_sources(api, source_root):
                             index
                             for index, value in enumerate(tokens.values)
                             if value == field["name"]
-                            and tokens.scopes.get(index)
-                            == tuple(field["class"].split("::"))
+                            and tokens.scopes.get(index, ())
+                            == tuple(filter(None, field["class"].split("::")))
                         ),
                         "source": (relative, tokens, [], {}),
                     }
@@ -5214,6 +5340,88 @@ def scan_sources(api, source_root):
             if candidate in source_classes:
                 return candidate
         return None
+
+    def source_type(name, tokens, index, imports, namespace_aliases):
+        """Whether `name` names a scanned class or alias visible there."""
+        return any(
+            candidate in source_classes
+            or any(
+                candidate in alias_declarations[header]
+                for header in closure[tokens.source_path]
+            )
+            for candidate in api.spellings(
+                expand(name, namespace_aliases), tokens.scopes.get(index, ()), imports
+            )
+        )
+
+    def tag_named(tokens, index):
+        """Whether a `struct`/`class`/`union`/`enum` tag leads the name at index."""
+        values = tokens.values
+        tags = (["struct"], ["class"], ["union"], ["enum"])
+        start = index
+        while values[start - 1 : start] == ["::"]:
+            start -= 1
+            if IDENTIFIER.match(values[start - 1] if start else "") and (
+                values[start - 1 : start] not in tags
+            ):
+                start -= 1
+        return values[start - 1 : start] in tags
+
+    def ordinary_declaration(candidate, closed):
+        """Whether a real ordinary non-type declaration of this spelling is visible."""
+        scope, _, leaf = candidate.rpartition("::")
+        methods = [
+            *(d for d in api.members.get(leaf, ()) if d["class"] == scope),
+            # Full raw class metadata keeps private names, which still hide types.
+            *(
+                d
+                for d in api.classes.get(scope, {}).get("methods", ())
+                if d.get("name") == leaf
+            ),
+        ]
+        values = [
+            *api.variables.get(candidate, ()),
+            *(d for d in api.data_members.get(leaf, ()) if d["class"] == scope),
+            *(
+                d
+                for d in api.classes.get(scope, {}).get("fields", ())
+                if d.get("name") == leaf
+            ),
+        ]
+        if any(real_function(item) for item in api.free_functions.get(candidate, ())):
+            return True
+        if any(real_function(item) for item in methods) or any(
+            item.get("return_tokens") for item in values
+        ):
+            return True
+        return any(
+            item["source"][0] in closed and real_function(item)
+            for item in source_returns.get((scope, leaf), ())
+        ) or any(
+            item["source"][0] in closed and item["return_tokens"][-1:] != ["::"]
+            for item in source_fields.get(scope, {}).get(leaf, ())
+            if item.get("return_tokens")
+        )
+
+    def function_hides(name, tokens, index, imports, namespace_aliases):
+        """Whether an ordinary function or variable of this spelling hides its class.
+
+        A leading tag keyword still names the type."""
+        if tag_named(tokens, index):
+            return False
+        closed = closure[tokens.source_path]
+        for candidate in api.spellings(
+            expand(name, namespace_aliases), tokens.scopes.get(index, ()), imports
+        ):
+            if ordinary_declaration(candidate, closed) or any(
+                real_function(item)
+                for header in closed
+                for item in source_functions[header].get(candidate, ())
+            ):
+                return True
+            if candidate in api.types or candidate in source_classes:
+                return False
+        return False
 
     parents = defaultdict(list)
     for _, tokens, classes, _, _, imports, namespace_aliases in files:
@@ -6014,7 +6222,7 @@ def scan_sources(api, source_root):
         prefix = values[
             lead : variable if variable is not None else template_end(values, end)
         ]
-        if variable is not None and values[variable - 1] == "(":
+        while variable is not None and prefix and prefix[-1] == "(":
             prefix = prefix[:-1]
         prefix = layout_prefix(prefix, context)
         template_alias = not direct and any(  # an explicit alias-template-id
@@ -6056,13 +6264,19 @@ def scan_sources(api, source_root):
             if local is None:
                 continue
             site = lead + offset + local
-            prefix = part[: local - (part[local - 1 : local] == ["("])]
+            opening = local
+            while part[opening - 1 : opening] == ["("]:
+                opening -= 1  # every redundant `(` of the grouped name
+            prefix = part[:opening]
             after = local + 1
             inner_bounds = []
-            if part[local - 1 : local] == ["("]:
-                _, closing = array_bounds(declared, after)
-                inner_bounds = part[after:closing]
-                after = closing + 1
+            if opening != local:
+                _, after, bounds, _ = grouped_object(declared, opening)
+                inner_bounds = [
+                    value
+                    for bound in bounds
+                    for value in part[bound : declared.pairs[bound] + 1]
+                ]
             initializer = inner_bounds + mark_array_copy(
                 tokens,
                 part[after:],
@@ -6301,6 +6515,10 @@ def scan_sources(api, source_root):
                 resolved = resolve(name, tokens, start, imports, namespace_aliases)
             if not resolved:
                 continue
+            if values[type_end : type_end + 1] != ["::"] and function_hides(
+                name, tokens, start, imports, namespace_aliases
+            ):
+                continue  # an ordinary call of the hiding function, not the type
             row = record_type(resolved, path, tokens, start)
             context = path, tokens, start, imports, namespace_aliases
             sequence = sized_sequence(
@@ -6361,7 +6579,12 @@ def scan_sources(api, source_root):
             j = (
                 None
                 if in_template_argument(values, start)
-                else variable_after_type(values, type_end)
+                else bound_variable_after_type(
+                    tokens,
+                    start,
+                    type_end,
+                    not function_hides(name, tokens, start, imports, namespace_aliases),
+                )
             )
             if j is not None and j not in declaration_indices:
                 owner = api.owner(resolved)
@@ -6374,7 +6597,7 @@ def scan_sources(api, source_root):
                     types = array_types(tokens, j, types)
                     bind_variable(tokens, j, types)
                     typed_variables[path].setdefault(
-                        j, (values[start:j], is_field(tokens, j, classes))
+                        j, (type_prefix(values, start, j), is_field(tokens, j, classes))
                     )
                     for later, later_prefix in later_declarators(tokens, start):
                         types = {resolved} if owner else set()
@@ -6400,7 +6623,29 @@ def scan_sources(api, source_root):
                 or name.split("::")[-1] in source_types
                 or name in {"int", "double", "float", "bool", "char", "size_t"}
             ):
-                j = variable_after_type(values, end)
+                known_type = (
+                    THIRD_PARTY.match(name)
+                    or name in {"int", "double", "float", "bool", "char", "size_t"}
+                    or standard_name(name, tokens, start, namespace_aliases)
+                    in {
+                        "std::optional",
+                        "std::variant",
+                        *SMART_POINTERS,
+                        *ELEMENT_CONTAINERS,
+                        *MAP_CONTAINERS,
+                        *PRODUCTS,
+                    }
+                    or source_type(name, tokens, start, imports, namespace_aliases)
+                )
+                j = bound_variable_after_type(
+                    tokens,
+                    start,
+                    end,
+                    bool(known_type)
+                    and not function_hides(
+                        name, tokens, start, imports, namespace_aliases
+                    ),
+                )
                 if j is None or j in declaration_indices:
                     continue
                 contained = set(local_bases.get(name, ()))
@@ -6445,7 +6690,7 @@ def scan_sources(api, source_root):
                     contained = array_types(tokens, j, contained)
                 bind_variable(tokens, j, contained)
                 typed_variables[path].setdefault(
-                    j, (values[start:j], is_field(tokens, j, classes))
+                    j, (type_prefix(values, start, j), is_field(tokens, j, classes))
                 )
                 for later, later_prefix in later_declarators(tokens, start):
                     kept = contained - {RAW_POINTER}
@@ -8876,6 +9121,24 @@ def scan_sources(api, source_root):
                     inferred = product_values(types, selector)
                     return inferred | {REFERENCE} if inferred else inferred
                 if method in {"dynamic_cast", "static_cast"}:
+                    typed = returns(
+                        [
+                            {
+                                "class": None,
+                                "name": "",
+                                "return_tokens": values[function + 2 : opening - 1],
+                                "index": function,
+                                "source": (
+                                    tokens.source_path,
+                                    tokens,
+                                    imports,
+                                    namespace_aliases,
+                                ),
+                            }
+                        ]
+                    )
+                    if typed:
+                        return typed
                     for _, _, value in names_in(values[function + 1 : opening]):
                         resolved = resolve(
                             value, tokens, function, imports, namespace_aliases
@@ -9683,6 +9946,8 @@ def scan_sources(api, source_root):
             j = template_end(values, i + 1)
             call = j < len(values) and values[j] == "("
             access = values[i - 1] if i and values[i - 1] in {".", "->"} else None
+            if access is None and tag_named(tokens, i):
+                continue  # an elaborated type name, never a value use
             qualifier = None
             if i and values[i - 1] == "::":
                 qualifier = "::".join(qualifier_path(values, i))
@@ -9841,13 +10106,13 @@ def scan_sources(api, source_root):
                         i,
                         namespace_aliases,
                     )
-                    if free:
+                    if free and not tag_named(tokens, i):
                         add("free_functions", free, path, tokens.line(i))
             else:
                 declarations, inferred = lexical_members(
                     tokens, i, imports, namespace_aliases, api.members
                 )
-                if not declarations:
+                if not declarations and not tag_named(tokens, i):
                     for free in free_function(
                         name, tokens, i, path, imports, namespace_aliases
                     ):
