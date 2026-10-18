@@ -69,3 +69,7 @@
   - The SDF follow-up merged in #3782 as `79a87e6ed`, completing WP-7.0.3b.
     Scope/acceptance #3728 integrates that evidence with the reviewed freeze
     contract and records M1a and the baseline as already completed.
+- **2026-10-18**
+  - Closed M6a: Nightly qualifies all eight Filament wheels, the cached SDK
+    stage is unnecessary, quiet-host renderer performance and the final
+    renderer reviews moved to C2, and the M6a task folder is retired.
