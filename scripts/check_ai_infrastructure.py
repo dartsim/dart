@@ -5180,17 +5180,20 @@ _DELEGATION_TRAILING_BY_DEFAULT = r",?\s+by\s+default\b"
 _DELEGATION_NEGATION_PATTERN = (
     rf"{_DELEGATION_NEGATED_ACTION}{_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|\bdelegation\s+{_DELEGATION_NEGATED_COPULA}"
-    rf"(?:\s+(?:the\s+)?default\b|\s+(?:enabled|on|active){_DELEGATION_TRAILING_BY_DEFAULT})"
+    rf"(?:\s+(?:the\s+)?default\b|\s+(?:enabled|on|active|allowed){_DELEGATION_TRAILING_BY_DEFAULT})"
     rf"|\bdelegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
     rf"(?:disabled|off){_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
     rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_NEGATED_COPULA}"
-    r"\s+(?:enabled|on|active)\b"
+    r"\s+(?:enabled|on|active|allowed)\b"
     rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_POSITIVE_COPULA}"
     r"\s+(?:disabled|off)\b"
     r"|\bdelegation\s+defaults\s+to\s+(?:disabled|off)\b"
 )
 _DELEGATION_NEGATION = re.compile(_DELEGATION_NEGATION_PATTERN)
+_DELEGATION_FRONTED_ACTION = re.compile(
+    rf"{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
+)
 _DELEGATION_OPT_OUT = (
     r"(?:with|when|if) +(?:delegation=off|`delegation=off`)"
     r"(?: +is +(?:set|enabled|active))?"
@@ -5214,6 +5217,10 @@ _MD_TASK = re.compile(r"^\[[ xX]\][ \t]+")
 # Containers whose bodies a browser does not render as text; matched by root tag.
 _HTML_HIDDEN_TAGS = frozenset({"script", "style", "title", "template"})
 _HTML_KEEP_SPACE_TAGS = frozenset({"pre", "textarea"})
+# Current HTML void elements: they have no end tag, so they never open a hidden root.
+_HTML_VOID_TAGS = frozenset(
+    "area base br col embed hr img input link meta source track wbr".split()
+)
 
 
 class MarkdownParserMissing(RuntimeError):
@@ -5229,6 +5236,8 @@ def _html_block_tags() -> frozenset[str]:
 
 class _VisibleHTML(HTMLParser):
     """Keep text; drop comments, attributes and hidden containers; <br> is a space.
+
+    Hidden means script/style/title/template or the `hidden` attribute.
 
     shortcut: HTMLParser has no browser recovery; revisit if owner markup needs it.
     """
@@ -5247,12 +5256,23 @@ class _VisibleHTML(HTMLParser):
         # Lexical folding, except <pre> keeps its structural blank lines.
         self.parts.append(data if self.keep_space_depth else re.sub(r"\s+", " ", data))
 
+    def handle_startendtag(self, tag: str, attrs: Any) -> None:
+        # Void tags have no end event, so a hidden `<hr hidden/>` adds no boundary.
+        self.handle_starttag(tag, attrs)
+        if tag not in _HTML_VOID_TAGS:
+            self.handle_endtag(tag)
+
     def handle_starttag(self, tag: str, attrs: Any) -> None:
         if self.hidden:
-            if tag == self.hidden == "template":
+            if tag == self.hidden:
                 self.hidden_depth += 1
             return
-        if tag in _HTML_HIDDEN_TAGS:
+        # The hidden attribute hides by presence, whatever its value.
+        is_hidden = any(name == "hidden" for name, _ in attrs)
+        if tag in _HTML_VOID_TAGS:
+            if is_hidden:
+                return
+        elif is_hidden or tag in _HTML_HIDDEN_TAGS:
             self.hidden, self.hidden_depth = tag, 1
             return
         if tag in _HTML_KEEP_SPACE_TAGS:
@@ -5353,6 +5373,58 @@ def _delegation_owner_text(source: str) -> str:
     return "\n\n".join(_folded_paragraphs(_html_text(html)))
 
 
+def _fronted_action_ends(text: str, start: int, end: int) -> bool:
+    """Whether a fronted action stands alone rather than taking an object.
+
+    The decision needs the original owner text around the action: clause
+    splitting drops the punctuation that tells a closing quote from an opening
+    one, and a label prefix like ` .name` from a sentence end.
+    """
+    tail = text[end:]
+    spaced = bool(tail and tail[0] in " \t\r\f\v")
+    tail = tail.lstrip(" \t\r\f\v")
+    if not tail or tail[0] == "\n":
+        return True
+    if tail[0] in "\"'`”":
+        # Scan this paragraph for quotes still open at the action; apostrophes inside
+        # words and word-final possessives do not delimit.
+        pairs = {'"': '"', "'": "'", "`": "`", "‘": "'", "“": "”"}
+        opened: list[str] = []
+        paragraph = text.rfind("\n", 0, start) + 1
+        for position in range(paragraph, start):
+            char = text[position]
+            if char not in pairs and char not in opened:
+                continue
+            before = text[position - 1 : position] if position > paragraph else ""
+            after = text[position + 1 : position + 2]
+            # An apostrophe within an identifier/word never delimits a quote.
+            word_before = bool(before and (before.isalnum() or before == "_"))
+            word_after = bool(after and (after.isalnum() or after == "_"))
+            if char == "'" and word_before and word_after:
+                continue
+            if char in opened:
+                # Closing an outer quote also ends its inner quote context.
+                match = len(opened) - 1 - opened[::-1].index(char)
+                del opened[match:]
+            elif char in pairs and (char in "‘“" or not word_before):
+                # A word-final apostrophe with no matching open quote is
+                # possessive, not the beginning of a quoted scope.
+                opened.append(pairs[char])
+        if tail[0] in opened:
+            return True
+        # An unpaired terminal quote is still closing punctuation, but a quoted
+        # object has nonterminal content, including whitespace or punctuation.
+        return all(char in " \t\r\f\v\n.!?;|,)\"'`”" for char in tail[1:])
+    if tail[0] in ".!?;|":
+        # A whitespace-separated literal/label prefix stays attached to its
+        # object. Sentence punctuation is immediate or followed by whitespace.
+        after = tail[1:2]
+        return not (spaced and after and not after.isspace() and after not in ",)\"'`”")
+    return tail[0] in ",)" or bool(
+        re.match(r"(?:with|when|if|and|or|otherwise)\b", tail)
+    )
+
+
 def _delegation_negation(owner_text: str) -> str | None:
     """Return an unconditional negation of the delegation default, if any."""
     lowered = owner_text.lower().replace("’", "'")
@@ -5369,12 +5441,18 @@ def _delegation_negation(owner_text: str) -> str | None:
         ),
         lowered,
     )
-    for clause in re.split(r"[.!?;|\n]+", lowered):
-        clause = clause.strip()
+    for span in re.finditer(r"[^.!?;|\n]+", lowered):  # spans keep source offsets
+        raw_clause = span.group(0)
+        clause = raw_clause.strip()
+        offset = span.start() + len(raw_clause) - len(raw_clause.lstrip())
         if _DELEGATION_EXEMPT_CLAUSE.fullmatch(clause):
             continue
-        negated = _DELEGATION_NEGATION.search(clause)
-        if negated:
+        for negated in _DELEGATION_NEGATION.finditer(clause):
+            fronted = _DELEGATION_FRONTED_ACTION.match(clause, negated.start())
+            if fronted and not _fronted_action_ends(
+                lowered, offset + fronted.start(), offset + fronted.end()
+            ):
+                continue  # object-qualified; a later real reversal may follow
             return negated.group(0)
     return None
 

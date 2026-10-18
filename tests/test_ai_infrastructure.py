@@ -8885,3 +8885,433 @@ def test_delegation_owners_textarea_whitespace(monkeypatch, relative, suffix, re
     _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_COPULA_HEADS = [
+    "is not", "is never", "is no longer", "isn't", "cannot be",
+    "should not be", "must never be", "won't be", "shouldn't be",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("head", _COPULA_HEADS)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("Delegation {h} allowed by default.", True),
+        ("Delegation {h} allowed, by default.", True),
+        ("By default, delegation {h} allowed.", True),
+        ("By default delegation {h} allowed.", True),
+        ("When delegation=off, delegation {h} allowed by default.", False),
+        ("Delegation {h} allowed by default when `delegation=off`.", False),
+        ("When delegation=off, by default, delegation {h} allowed.", False),
+        ("When delegation=o*ff, by default, delegation {h} allowed.", True),
+        ("Even when delegation=off, delegation {h} allowed by default.", True),
+        ("When delegation=off, by default, delegation {h} allowed or unset.", True),
+        ("By default, delegation {h} allowedly.", False),
+        ("By default, delegation {h} disallowed.", False),
+    ],
+)
+def test_delegation_negation_recognizes_not_allowed(head, template, rejected):
+    assert _rejected(template.format(h=head)) is rejected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "Delegation is allowed by default.",
+        "By default, delegation is allowed.",
+        "By default, delegation can be allowed.",
+    ],
+)
+def test_delegation_positive_allowed_stays_unrelated(source):
+    assert not _rejected(source)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("Delegation is not allowed by default.", True),
+        ("By default delegation cannot be allowed.", True),
+        ("When delegation=off, delegation is not allowed by default.", False),
+        ("When delegation=o*ff, delegation is not allowed by default.", True),
+        ("By default, agents do not delegate release approval.", False),
+        ("By default, agents do not delegate.", True),
+    ],
+)
+def test_delegation_owners_not_allowed_and_objects(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_ACTION_HEADS = ["do not", "does not", "cannot", "can't", "must no longer", "won't"]
+
+
+@pytest.mark.parametrize("subject", ["we", "agents", "the orchestrator", "an agent"])
+@pytest.mark.parametrize("head", _ACTION_HEADS)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("By default, {s} {h} delegate release approval.", False),
+        ("By default, {s} {h} delegate tasks to the build agents.", False),
+        ("By default, {s} {h} delegate.", True),
+        ("By default, {s} {h} delegate", True),
+        ("By default: {s} {h} delegate, always.", True),
+        ("By default, {s} {h} delegate and review.", True),
+        ("By default, {s} {h} delegate or unset.", True),
+        ("By default, {s} {h} delegate otherwise.", True),
+        ("By default, {s} {h} delegate when delegation=off.", False),
+        ("By default, {s} {h} delegate when delegation=o*ff.", True),
+        ("By default, {s} {h} delegate if asked.", True),
+        ("By default, {s} {h} delegate release approval. Delegate otherwise.", False),
+        (
+            "By default, {s} {h} delegate release approval. By default, we {h} delegate.",
+            True,
+        ),
+        ("{s} {h} delegate release approval by default.", False),
+        ("(By default, {s} {h} delegate)", True),
+    ],
+)
+def test_delegation_fronted_action_is_standalone(subject, head, template, rejected):
+    text = template.format(s=subject, h=head)
+    assert _rejected(text) is rejected, text
+
+
+_HIDDEN_ATTR = ["hidden", "hidden=''", 'hidden="hidden"', 'hidden="false"',
+                'hidden="until-found"', "HIDDEN", "id=x hidden"]  # fmt: skip
+
+
+@pytest.mark.parametrize("attr", _HIDDEN_ATTR)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("<span {a}>" + _NEG + "</span>", False),
+        ("<div {a}>" + _NEG + "</div>", False),
+        ("<custom-x {a}>" + _NEG + "</custom-x>", False),
+        ("<span {a}>" + _NEG, False),
+        ("Do no<span {a}>junk</span>t delegate by default.", True),
+        ("Do no<div {a}>junk\n\njunk</div>t delegate by default.", True),
+        ("<span {a}>x <span>y</span> " + _NEG + "</span> after", False),
+        ("<span {a}><span><span>y</span></span>" + _NEG + "</span>", False),
+        ("<div {a}><div>y</div>" + _NEG + "</div>", False),
+        ("<span {a}>x</span>" + _NEG, True),
+        ("<span {a}><span {a}>x</span>" + _NEG + "</span>", False),
+        ("<pre {a}>" + _NEG + "</pre>", False),
+        ("<textarea {a}>" + _NEG + "</textarea>", False),
+        ("<pre>When delegation=off,<span {a}>x</span>\n\n" + _NEG + "</pre>", True),
+        ("<template {a}>" + _NEG + "</template>", False),
+        ("<script {a}>" + _NEG + "</script>", False),
+        ("<SPAN {a}>" + _NEG + "</SPAN>", False),
+        ("<span {a}/>" + _NEG, True),
+        ("<span {a}/>x</span>" + _NEG, True),
+    ],
+)
+def test_delegation_owner_text_honors_hidden_attribute(attr, template, rejected):
+    assert _rejected(template.format(a=attr)) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("<span data-hidden>" + _NEG + "</span>", True),
+        ('<span aria-hidden="true">' + _NEG + "</span>", True),
+        ('<span class="hidden">' + _NEG + "</span>", True),
+        ('<span title="hidden">' + _NEG + "</span>", True),
+        ("`<span hidden>`" + _NEG, True),
+        ("```\n<span hidden>" + _NEG + "</span>\n```", True),
+        ("&lt;span hidden&gt;" + _NEG + "&lt;/span&gt;", True),
+        ('<span title="<b hidden>">' + _NEG + "</span>", True),
+        ("Do ![no <span hidden>](p.svg)t delegate by default.", False),
+        ("![<span hidden>](p.svg) " + _NEG, True),
+        ('<img hidden alt="x">' + _NEG, True),
+    ],
+)
+def test_delegation_owner_text_hidden_attribute_limits(source, rejected):
+    assert _rejected(source) is rejected
+
+
+@pytest.mark.parametrize("tag", ["br", "hr", "img", "input", "wbr", "col", "meta"])
+@pytest.mark.parametrize("form", ["<{t} hidden>", "<{t} hidden/>", "<{t} hidden />"])
+def test_delegation_hidden_void_tags_leave_no_trace(tag, form):
+    open_tag = form.format(t=tag)
+    text = infra._delegation_owner_text(f"a{open_tag}b")
+    assert text == "ab"
+    assert _rejected(f"Do no{open_tag}t delegate by default.")
+    assert _rejected(f"{open_tag}{_NEG}")
+    assert _rejected(f"Do not{open_tag} delegate by default.")
+
+
+def test_delegation_hidden_void_tags_keep_visible_counterparts():
+    assert infra._delegation_owner_text("a<br>b") == "a b"
+    assert infra._delegation_owner_text("a<hr hidden>b") == "ab"
+    assert infra._delegation_owner_text("a<hr/>b") == "a\n\nb"
+    assert infra._delegation_owner_text("a<br hidden/>b") == "ab"
+
+
+_OWNER_DEFAULT_MARKERS = {
+    "docs/ai/orchestration.md": "delegation is the default",
+    "docs/ai/workflows.md": "Delegation by default",
+}
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize("attr", ["hidden", 'hidden="false"'])
+@pytest.mark.parametrize("which", ["flag", "default"])
+def test_delegation_owners_hidden_markers_are_not_visible(
+    monkeypatch, relative, attr, which
+):
+    path = ROOT / relative
+    text = path.read_text()
+    marker = (
+        "`delegation=off`"
+        if which == "flag"
+        else _OWNER_DEFAULT_MARKERS.get(relative, "Delegate by default")
+    )
+    assert marker in text
+    read_text = Path.read_text
+
+    def hide(p, *args, **kwargs):
+        if p == path:
+            hidden = f"<span {attr}>{marker.strip('`')}</span>"
+            if which == "flag":  # bare mentions (front matter) count as visible too
+                return re.sub(r"`?delegation=off`?", hidden, text)
+            return text.replace(marker, hidden)
+        return read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", hide)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "marker" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("<span hidden>Do not delegate by default.</span>", False),
+        ('<div HIDDEN="false">Delegation is not allowed by default.</div>', False),
+        ("<span>Do not delegate by default.</span>", True),
+    ],
+)
+def test_delegation_owners_hidden_negations(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_QUOTED_OBJECT_FORMS = [
+    # An opening quote or backtick starts an object noun: not a global reversal.
+    ('By default, agents do not delegate "release approval".', False),
+    ("By default, agents do not delegate 'release approval'.", False),
+    ("By default, agents do not delegate `release approval`.", False),
+    ('By default, agents do not delegate "release approval"', False),
+    ('By default, we cannot delegate "tasks" to the build agents.', False),
+    ('By default, the orchestrator won\'t delegate "x" or "y".', False),
+    # A closing quote ends a fully quoted standalone negative.
+    ('"By default, agents do not delegate".', True),
+    ('"By default, agents do not delegate ".', True),
+    ("'By default, agents do not delegate'.", True),
+    ("“By default, agents do not delegate”.", True),
+    ("“By default, agents do not delegate ”.", True),
+    ("‘By default, agents do not delegate’.", True),
+    ("`By default, agents do not delegate`.", True),
+    ("(By default, agents do not delegate)", True),
+    # Finite continuations and widened or wrong-flag scopes stay rejected.
+    ('By default, agents do not delegate "x" when delegation=off.', False),
+    ('"By default, agents do not delegate" when delegation=o*ff.', True),
+    ('By default, agents do not delegate when delegation=o*ff, "x".', True),
+    ('By default, agents do not delegate "release approval". We delegate.', False),
+    ('By default, agents do not delegate "release approval". By default, we '
+     "do not delegate.", True),
+    ('When delegation=off, by default, agents do not delegate "x" or unset.', False),
+    ('"When delegation=off, by default, agents do not delegate" or unset.', True),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _QUOTED_OBJECT_FORMS)
+def test_delegation_fronted_action_distinguishes_quoted_objects(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ('By default, agents do not delegate "release approval".', False),
+        ("By default, agents do not delegate `release approval`.", False),
+        ('"By default, agents do not delegate".', True),
+        ("By default, agents do not delegate.", True),
+    ],
+)
+def test_delegation_owners_quoted_objects(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_SPAN_BASE = "By default, agents do not delegate"
+_SPAN_OBJECTS = [
+    '" release approval "', '"#release-approval"', '" if approval "',
+    "' release approval '", "“ release approval ”", "`.release-approval`",
+    "`!release-approval`", "`;release-approval`", "`|release-approval`",
+    "![release approval](p.svg)", "![when delegation=off](p.svg)",
+]  # fmt: skip
+_SPAN_CASES = (
+    # Object-qualified spans: whitespace/punctuation-leading quotes, labels, code.
+    [(f"{_SPAN_BASE} {o}{end}", False) for o in _SPAN_OBJECTS for end in (".", " when delegation=off.")]
+    # An object-qualified span never hides a later real reversal.
+    + [(f"{_SPAN_BASE} {o}{sep}{later}", True)
+       for o in ('" release approval "', "`.release-approval`", "![release approval](p.svg)")
+       for sep in (". ", "; ", "| ", ", ", "\n\n")
+       for later in ("By default, we do not delegate.", "Do not delegate by default.")]
+    # Every separator ends a standalone action, immediate or spaced.
+    + [(f"{_SPAN_BASE}{p}{s}", True) for p in ".!?;|" for s in ("", " Next policy.")]
+    + [(f"{_SPAN_BASE} {p} Next policy.", True) for p in ".!?;|"]
+    # Canonical paired negatives, with or without space before the closing quote.
+    + [(f"{a}{_SPAN_BASE}{sp}{b}.", True)
+       for a, b in ('""', "''", "“”", "‘’", "``") for sp in ("", " ", "  ")]
+    # Exact, widened and wrong-flag scopes.
+    + [
+        (f"When delegation=off, {_SPAN_BASE.lower()}.", False),
+        (f"{_SPAN_BASE} when delegation=off.", False),
+        (f"When delegation=off, {_SPAN_BASE.lower()} or unset.", True),
+        (f"{_SPAN_BASE} when delegation=off or unset.", True),
+        (f"{_SPAN_BASE} when delegation=of_f.", True),
+        (f'"{_SPAN_BASE} " when delegation=of_f.', True),
+        # An unrelated quote in an earlier paragraph is not this action's opener.
+        (f'He said "hi\n\n{_SPAN_BASE}".', True),
+        (f'"hi" and\n\n{_SPAN_BASE} "x".', False),
+    ]
+)  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _SPAN_CASES)
+def test_delegation_fronted_action_uses_original_span_context(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (f'{_SPAN_BASE} " release approval ".', False),
+        (f"{_SPAN_BASE} `.release-approval`.", False),
+        (f"{_SPAN_BASE} ![release approval](p.svg).", False),
+        (f'{_SPAN_BASE} " release approval ". Do not delegate by default.', True),
+        (f"{_SPAN_BASE} `!x`; By default, we do not delegate.", True),
+        (f'"{_SPAN_BASE} ".', True),
+        (f"{_SPAN_BASE}; Next policy.", True),
+        (f"When delegation=off, {_SPAN_BASE.lower()}.", False),
+        (f"{_SPAN_BASE} when delegation=of_f.", True),
+    ],
+)
+def test_delegation_owners_original_span_context(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_APOSTROPHE_CASES = [
+    # A possessive or contraction prefix never opens a quote scope.
+    ("By default, the agent's helpers do not delegate \"release approval\".", False),
+    ("By default, the agents' helpers do not delegate \"release approval\".", False),
+    ("By default, the agents’ helpers do not delegate 'release approval'.", False),
+    ("The agent's rule: by default, agents do not delegate `.x`.", False),
+    ("Agents' rule: by default, agents do not delegate 'release approval'.", False),
+    # A completed earlier quote, including a mixed-family one, leaves no context.
+    ("\"Use 'x'\" says by default, agents do not delegate \"release approval\".", False),
+    ("\"A ' token\" by default, agents do not delegate 'release approval'.", False),
+    ("`a` and \"b\" by default, agents do not delegate \"release approval\".", False),
+    # A genuinely open quote, even with a contraction or when-prefix, closes it.
+    ("\"Don't: by default, agents do not delegate\" or unset.", True),
+    ("\"The agent's rule: by default, agents do not delegate\" or unset.", True),
+    ("'When delegation=off, by default, agents do not delegate' or unset.", True),
+    ("\"When delegation=off, by default, agents do not delegate\" or unset.", True),
+    ("“The agents’ rule: by default, agents do not delegate” or unset.", True),
+    # An earlier closed quote does not hide a later open one.
+    ("\"x\" \"by default, agents do not delegate\" or unset.", True),
+    # Paragraph isolation and an exact quoted exception stay as before.
+    ("\"hi\n\nThe agent's by default, agents do not delegate \"x\".", False),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _APOSTROPHE_CASES)
+def test_delegation_fronted_action_quote_scope_ignores_apostrophes(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (
+            'The agent\'s rule: by default, agents do not delegate "release approval".',
+            False,
+        ),
+        (
+            "The agents' rule: by default, agents do not delegate 'release approval'.",
+            False,
+        ),
+        ('"The agent\'s rule: by default, agents do not delegate" or unset.', True),
+        ("'When delegation=off, by default, agents do not delegate' or unset.", True),
+    ],
+)
+def test_delegation_owners_quote_scope_ignores_apostrophes(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_QUOTE_FAMILIES = [('"', '"', '"'), ("'", "'", "'"), ("“", "”", '"'),
+                   ("‘", "’", "'")]  # fmt: skip
+_PARA_BASE = "By default, agents do not delegate"
+_PARA_CASES = (
+    # A quote still open across a clause separator closes the standalone action.
+    [(f"{o}A rule{sep} {_PARA_BASE}{c} or unset.", True)
+     for o, c, _ in _QUOTE_FAMILIES for sep in ".!?;|"]
+    # A prefix quote closed before the action leaves no context for its object.
+    + [(f"{o}Previous guidance{sep}{c} {_PARA_BASE} {q}release approval{q}.", False)
+       for o, c, q in _QUOTE_FAMILIES for sep in ".!?;|"]
+    + [
+        # Scopes with an open quote: exact still rejects the standalone form.
+        (f'"A rule. {_PARA_BASE}".', True),
+        (f'"A rule. {_PARA_BASE} ".', True),
+        (f'"A rule. {_PARA_BASE}" when delegation=o*ff.', True),
+        (f'"A rule. {_PARA_BASE}" or "another policy".', True),
+        (f'"A rule. {_PARA_BASE}" or unset. Do not delegate by default.', True),
+        # Closed prefix followed by an object, a paragraph break, a later reversal.
+        (f'"A rule. " {_PARA_BASE} "release approval".', False),
+        (f'"A rule\n\n{_PARA_BASE} "release approval".', False),
+        (f'"A rule." {_PARA_BASE} "x". Do not delegate by default.', True),
+        (f'"A rule." {_PARA_BASE} "x"; By default, we do not delegate.', True),
+    ]
+)  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _PARA_CASES)
+def test_delegation_fronted_action_quote_scope_spans_clauses(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (f'"Previous guidance." {_PARA_BASE} "release approval".', False),
+        (f"'Previous guidance.' {_PARA_BASE} 'release approval'.", False),
+        (f'"Previous guidance. {_PARA_BASE}" or unset.', True),
+        (f"“Previous guidance; {_PARA_BASE}” when delegation=o*ff.", True),
+    ],
+)
+def test_delegation_owners_quote_scope_spans_clauses(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
