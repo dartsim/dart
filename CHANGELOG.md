@@ -2,7 +2,21 @@
 
 ## DART 6
 
-### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestone/106)
+### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
+
+DART 6.20.1 is a patch release on the DART 6 line. It fixes mimic joints that
+use the coupler constraint gaining energy or crashing, simulations that blow up
+on contacts no joint motion can resolve, and crashes when copying analytical
+inverse kinematics, loading SKEL worlds or releasing removed nodes. An
+exception from a collision filter no longer leaves ODE's collision space
+locked, and SKEL, SDF and MJCF files with the wrong number of vector or pose
+values now fail to load instead of writing out of bounds. Builds work again
+with urdfdom 3.x packages that ship no CMake version file, and C++-only
+projects can find the `collision-ode` component. dartpy wheels now cover
+Python 3.12 to 3.14, plus Python 3.15 on Linux; pip on Python 3.10 and 3.11
+keeps installing 6.20.0. There is no API or ABI change, so code built against
+6.20.0 runs unchanged; rebuild it to pick up the `NodePtr` and
+`HeightmapShape` fixes, which are in header-only templates.
 
 * Collision
 
