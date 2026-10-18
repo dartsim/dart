@@ -376,6 +376,7 @@ class Tokens:
     alias_templates: dict = field(default_factory=dict)
     alias_parameters: dict = field(default_factory=dict)
     alias_defaults: dict = field(default_factory=dict)
+    alias_packs: dict = field(default_factory=dict)
     ambiguous: bool = False  # a whole-array copy decision awaits inferred types
     late: bool = False  # inference has finished
     enum_headers: dict = field(default_factory=lambda: defaultdict(set))
@@ -1687,6 +1688,14 @@ def scopes(tokens, annotation_text=None):
                         tokens.alias_parameters[alias_name] = template_parameter_list(
                             header
                         )
+                        tokens.alias_packs[alias_name] = {
+                            parameter
+                            for parameter, part in zip(
+                                tokens.alias_parameters[alias_name],
+                                template_arguments(header, 1),
+                            )
+                            if parameter and part[-2:] == ["...", parameter]
+                        }
                         tokens.alias_defaults[alias_name] = [
                             part[
                                 next(
@@ -1754,6 +1763,7 @@ class ApiIndex:
     alias_templates: dict = field(default_factory=dict)
     alias_parameters: dict = field(default_factory=dict)
     alias_defaults: dict = field(default_factory=dict)
+    alias_packs: dict = field(default_factory=dict)
     alias_literals: dict = field(default_factory=dict)
     macros: set = field(default_factory=set)
     headers: set = field(default_factory=set)
@@ -2561,17 +2571,41 @@ class ApiIndex:
             )
         )
         parameters = self.alias_parameters.get(name, ())
-        mapping, after = {}, end
+        mapping, packs, after = {}, {}, end
 
         def substitute(tokens):
-            result = []
-            for index, value in enumerate(tokens):
+            result, index = [], 0
+            while index < len(tokens):
+                value = tokens[index]
+                if (
+                    packs
+                    and value == "<"
+                    and (closing := template_end(tokens, index)) > index
+                    and tokens[closing - 1] == ">"
+                ):
+                    parts = []
+                    for part in template_arguments(tokens, index):
+                        if len(part) == 2 and part[1] == "..." and part[0] in packs:
+                            # A direct pack-name argument is a list splice. Compound
+                            # patterns remain masked; no template instantiation here.
+                            parts.extend(packs[part[0]])
+                        else:
+                            parts.append(substitute(part))
+                    result.append("<")
+                    for position, part in enumerate(parts):
+                        if position:
+                            result.append(",")
+                        result.extend(part)
+                    result.append(">")
+                    index = closing
+                    continue
                 if value in mapping and (
                     not index or tokens[index - 1] not in {"::", "."}
                 ):
                     result.extend(mapping[value])
                 else:
                     result.append(value)
+                index += 1
             return result
 
         if parameters and values[end : end + 1] == ["<"]:
@@ -2580,6 +2614,11 @@ class ApiIndex:
             defaults = self.alias_defaults.get(name, ())
             for index, parameter in enumerate(parameters):
                 if not parameter:
+                    continue
+                if parameter in self.alias_packs.get(name, ()):
+                    packs[parameter] = [
+                        normalize(actual) for actual in actuals[index:] if actual
+                    ]
                     continue
                 actual = actuals[index] if index < len(actuals) else []
                 default = defaults[index] if index < len(defaults) else []
@@ -4360,6 +4399,7 @@ def index_api(header_root):
             if name.startswith("dart::"):
                 api.alias_parameters[name] = parameters
                 api.alias_defaults[name] = tokens.alias_defaults.get(name, ())
+                api.alias_packs[name] = tokens.alias_packs.get(name, set())
         for name, declarations in tokens.enum_headers.items():
             if name.startswith("dart::"):
                 api.type_enums[name].update(declarations)

@@ -226,7 +226,9 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Implicit and contextual conversion operators are not recorded.
 - Structured-binding element types are not inferred.
 - Preprocessor conditions are not generally evaluated.
-- C++ template instantiation and overload resolution are not performed.
+- C++ template instantiation and overload resolution are not performed. Alias
+  templates substitute direct pack-name template arguments (`Ts...`); compound
+  pack patterns remain uninstantiated.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
@@ -239,6 +241,10 @@ retains conservative candidates for unresolved receivers. Known limitations:
   remain authoritative for them.
 - Base relationships of referenced DART types are not recorded.
 - Trailing return types are not used to infer chained-call receivers.
+- Implicit mapped-value construction by `std::map` and `std::unordered_map`
+  subscripting is not recorded.
+- Explicitly selected `std::variant` alternatives (`std::in_place_type` or
+  `std::in_place_index`) are not tracked for construction.
 
 Operator syntax is associated with declarations for `->`, `[]` and `()` when
 the receiver type is known. The Gazebo build and test lanes remain the

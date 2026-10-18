@@ -28580,3 +28580,206 @@ def test_callback_alignment_and_alias_defaults_keep_declared_shape(
         _api_changes(extractor, tmp_path, header, header.replace(old, new), source)
         == drift
     )
+
+
+PR3787_527_DIRECT_ALIAS_PACK_CASES = [
+    (
+        "cloud_pair",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::pair<Ts...>;P<int,A>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "tuple_single",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;P<A>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<0>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "tuple_multiple",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;P<int,double,A>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<2>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "ordinary_then_pack",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class Head,class...Ts>using P=std::tuple<Head,Ts...>;P<int,double,A>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<2>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "empty_sole",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;}",
+        "A();",
+        "A()=delete;",
+        "void use(){dart::P<> value;static_assert(std::tuple_size<decltype(value)>::value==0);}",
+        False,
+    ),
+    (
+        "empty_before_fixed",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...,A>;P<>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<0>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "empty_after_fixed",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<A,Ts...>;P<>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<0>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "nested_alias",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;template<class...Us>using Q=P<Us...>;Q<int,A>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "ordinary_default_then_empty_pack",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class Head=A,class...Ts>using P=std::tuple<Head,Ts...>;P<>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<0>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "ordinary_default_override",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class Head=A,class...Ts>using P=std::tuple<Head,Ts...>;P<int>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){(void)std::get<0>(dart::get());}",
+        False,
+    ),
+    (
+        "caller_actual_scope",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};namespace defs{using Chosen=int;template<class...Ts>using P=std::tuple<Ts...>;}namespace caller{using Chosen=A;defs::P<int,Chosen>get();}}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::caller::get()).hit();}",
+        True,
+    ),
+    (
+        "definition_fixed_scope",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};namespace defs{using Chosen=A;template<class...Ts>using P=std::tuple<Ts...,Chosen>;}namespace caller{using Chosen=int;defs::P<int>get();}}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::caller::get()).hit();}",
+        True,
+    ),
+    (
+        "unused_pack_alias",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){}",
+        False,
+    ),
+    (
+        "foreign_override",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;struct B{void hit();};P<int,B>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::get()).hit();}",
+        False,
+    ),
+    (
+        "pointer_layout",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;struct H{P<int,A*>value;};}",
+        "int storage;",
+        "double storage;",
+        "void use(){(void)sizeof(dart::H);}",
+        False,
+    ),
+    (
+        "owned_layout",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;struct H{P<int,A>value;};}",
+        "int storage;",
+        "double storage;",
+        "void use(){static_assert(sizeof(dart::H)==2*sizeof(int));(void)sizeof(dart::H);}",
+        True,
+    ),
+    (
+        "source_construction",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;}",
+        "A();",
+        "A()=delete;",
+        "void use(){dart::P<int,dart::A>value;}",
+        True,
+    ),
+    (
+        "indexed_default",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;void sink(P<int,A> value={});}",
+        "A();",
+        "A()=delete;",
+        "void use(){dart::sink();}",
+        True,
+    ),
+    (
+        "optional_return",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;std::optional<P<int,A>>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::get().value()).hit();}",
+        True,
+    ),
+    (
+        "unknown_uninstantiated",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;}",
+        "void hit();",
+        "void hit()=delete;",
+        "template<class...Ts>void use(){dart::P<Ts...>value;}",
+        False,
+    ),
+    (
+        "repeated_direct_pack",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...,Ts...>;P<int,A>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<3>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "empty_middle",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<int,Ts...,A>;P<>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<1>(dart::get()).hit();}",
+        True,
+    ),
+    (
+        "pointer_receiver",
+        "#include <tuple>\n#include <array>\n#include <optional>\n#include <utility>\n#include <functional>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};template<class...Ts>using P=std::tuple<Ts...>;P<A*>get();}",
+        "void hit();",
+        "void hit()=delete;",
+        "void use(){std::get<0>(dart::get())->hit();}",
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "header", "old", "new", "source", "expected"),
+    PR3787_527_DIRECT_ALIAS_PACK_CASES,
+    ids=[case[0] for case in PR3787_527_DIRECT_ALIAS_PACK_CASES],
+)
+def test_direct_alias_pack_arguments_keep_declared_shape(
+    extractor, tmp_path, label, header, old, new, source, expected
+):
+    assert old in header
+    assert (
+        _api_changes(extractor, tmp_path, header, header.replace(old, new, 1), source)
+        == expected
+    )
