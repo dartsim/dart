@@ -296,7 +296,7 @@ TEST(WorldStateManual, CloneRequiresManualConstraintsBeforeRestore)
     addConstraint(source, ManualKind::Weld, bodyPair);
     const auto state = source->captureState();
     auto clone = source->clone();
-    ASSERT_EQ(clone->getConstraintSolver()->getNumConstraints(), 0);
+    ASSERT_EQ(clone->getConstraintSolver()->getNumConstraints(), 0u);
     expectAtomicMismatch(clone, state);
 
     addConstraint(clone, ManualKind::Weld, bodyPair);
@@ -457,7 +457,7 @@ TEST(WorldStateManual, ContactConstraintsRemainEphemeralAndUnsupported)
   auto world = makeSleepingWorld();
   world->step();
   auto& contacts = world->getConstraintSolver()->getLastCollisionResult();
-  ASSERT_GT(contacts.getNumContacts(), 0);
+  ASSERT_GT(contacts.getNumContacts(), 0u);
   auto contact = contacts.getContact(0);
   expectUnsupported(
       world,
@@ -524,8 +524,8 @@ TEST(WorldStateManual, ReusableCaptureWithManualConstraintsDoesNotAllocate)
     world->captureState(output);
   heap.stop();
   raw.stop();
-  EXPECT_EQ(heap.allocationCount(), 0);
+  EXPECT_EQ(heap.allocationCount(), 0u);
   if (!raw.skipped()) {
-    EXPECT_EQ(raw.allocationCount(), 0);
+    EXPECT_EQ(raw.allocationCount(), 0u);
   }
 }
