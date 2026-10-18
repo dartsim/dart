@@ -30,6 +30,34 @@
     [#3707](https://github.com/dartsim/dart/pull/3707),
     [#3721](https://github.com/dartsim/dart/pull/3721)
 
+* Dynamics
+
+  * Fix crashes when cloning a skeleton, or copying a body node that has an
+    end effector, whose inverse kinematics uses an analytical solver. Inverse
+    kinematics copied by `BodyNode::copyTo()` or `BodyNode::copyAs()` now
+    selects the copies of the original degrees of freedom, keeps the selected
+    ones that were not copied when the copy stays in the same skeleton, and
+    warns when none remain. Copies with analytical solvers warn and use
+    `JacobianDLS` with normal iterative error settings, preserving user bounds
+    and task-space regions. Set up the analytical solver again for the copy;
+    whole-skeleton clones keep their analytical solvers. Inverse kinematics
+    on a body node of a cloned skeleton now moves the clone; before, it could
+    not move it. `IkFast::getDofs()` now returns an empty list when IkFast
+    cannot configure, as its warning says.
+    [#3722](https://github.com/dartsim/dart/pull/3722)
+
+  * Fix a crash when the last `NodePtr` to a removed node, such as a removed
+    shape node, is released: the body and skeleton that the pointer kept alive
+    now outlive the node's destruction. `NodePtr` is a header-only template,
+    so rebuild code that holds one to get this fix.
+    [#3784](https://github.com/dartsim/dart/pull/3784)
+
+  * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
+    heightmap without a height field reports finite heights and bounds.
+    `HeightmapShape` is a header-only template, so rebuild code that creates
+    one to get this fix.
+    [#3744](https://github.com/dartsim/dart/pull/3744)
+
 * Parsers
 
   * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
@@ -39,11 +67,11 @@
     other.
     [#3698](https://github.com/dartsim/dart/pull/3698)
 
-  * Restore `dart-utils-urdf` builds with urdfdom 3.x installations that ship
-    no CMake version file, such as Ubuntu 22.04 and FreeBSD packages. The
-    minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
-    3.0.0.
-    [#3733](https://github.com/dartsim/dart/pull/3733)
+  * Loading a SKEL world no longer crashes when the collision detector
+    factory cannot create `fcl`, for example after an application
+    unregisters the factory's creators. The parser creates the FCL detector
+    directly instead and warns once.
+    [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Python
 
@@ -56,6 +84,18 @@
   * dartpy publishes Python 3.15 wheels for Linux x86_64 and aarch64. macOS
     arm64 and Windows x64 follow once conda-forge's bullet-cpp builds for
     Python 3.15. [#3730](https://github.com/dartsim/dart/pull/3730)
+
+* Build
+
+  * Restore `dart-utils-urdf` builds with urdfdom 3.x installations that ship
+    no CMake version file, such as Ubuntu 22.04 and FreeBSD packages. The
+    minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
+    3.0.0.
+    [#3733](https://github.com/dartsim/dart/pull/3733)
+
+  * Allow C++-only projects to find the installed CMake package with the
+    `collision-ode` component without enabling C.
+    [#3756](https://github.com/dartsim/dart/pull/3756)
 
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
