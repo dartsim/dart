@@ -132,6 +132,7 @@ MAP_CONTAINERS = {
     "std::unordered_multimap",
 }
 MAPPING = "__mapping__"
+MULTIMAPPING = "__multimapping__"
 OPTIONAL = "__optional__:"
 PRODUCTS = {"std::pair": "__pair__:", "std::tuple": "__tuple__:"}
 SMART_POINTERS = {
@@ -484,6 +485,14 @@ def function_pointer_declarator(values):
             suffix += 1
         dimensions = 0
         while values[suffix : suffix + 1] == ["["] and suffix in tokens.pairs:
+            if (
+                name_index is not None
+                and values[suffix + 1 : suffix + 2] == ["["]
+                and tokens.pairs[suffix + 1] + 1 == tokens.pairs[suffix]
+            ):
+                # Post-name standard attribute, e.g. `(*factory [[maybe_unused]])`.
+                suffix = tokens.pairs[suffix] + 1
+                continue
             dimensions += 1
             suffix = tokens.pairs[suffix] + 1
         if suffix == closing:
@@ -2223,6 +2232,27 @@ class ApiIndex:
             (item["class"] or item["name"].rpartition("::")[0]).split("::")
         )
         result, constants = [], []
+        shadowed = set()
+        if values[:2] == ["template", "<"]:
+            # shortcut: read this function's header; extend for enclosing templates.
+            for part in template_arguments(values, 1):
+                default = next(
+                    (
+                        index
+                        for index, value in enumerate(part)
+                        if value == "=" and not in_template_argument(part, index)
+                    ),
+                    len(part),
+                )
+                part = part[:default]
+                names = [value for value in part if IDENTIFIER.match(value)]
+                if (
+                    names
+                    and part[-1] == names[-1]
+                    and part[-2:-1] != ["::"]
+                    and names[-1] not in {"class", "typename"}
+                ):
+                    shadowed.add(names[-1])
         for first, last in construction_arguments(tokens, opening):
             default = next(
                 (
@@ -2310,6 +2340,17 @@ class ApiIndex:
                     suffix : suffix + 2
                 ] != ["[", "["]:
                     prefix = [*prefix, "*"]
+            prefix, expression = (
+                [
+                    (
+                        "__template_parameter"
+                        if value in shadowed and (not index or part[index - 1] != "::")
+                        else value
+                    )
+                    for index, value in enumerate(part)
+                ]
+                for part in (prefix, expression)
+            )
             prefix = construction_aliases(prefix, self, scope)
             function = function_type_signature(prefix)
             if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
@@ -2584,7 +2625,7 @@ def template_end(values, index):
     return index
 
 
-def variable_after_type(values, end):
+def variable_after_type(values, end, grouped=False):
     j = template_end(values, end)
     while j < len(values):
         if values[j] in {"const", "*", "&", "&&", ">"}:
@@ -2598,6 +2639,15 @@ def variable_after_type(values, end):
             j = after
         else:
             break
+    if (
+        grouped
+        and values[j : j + 1] == ["("]
+        and j + 3 < len(values)
+        and IDENTIFIER.match(values[j + 1])
+        and values[j + 2] == ")"
+        and values[j + 3] in {";", "=", ",", "{"}
+    ):
+        return j + 1  # a parenthesized object declarator, `T (name);`
     while j + 2 < len(values) and IDENTIFIER.match(values[j]) and values[j + 1] == "::":
         j += 2  # the `Class::` of an out-of-line static member definition
     if (
@@ -2690,10 +2740,12 @@ def in_place_initializer(tokens, end):
     )
 
 
-def default_value_initializer(tokens, end):
+def default_value_initializer(tokens, end, grouped=False):
     """An absent or empty initializer selects a variant's first alternative."""
     values = tokens.values
-    variable = variable_after_type(values, end)
+    variable = variable_after_type(values, end, grouped)
+    if variable is not None and values[variable - 1] == "(":
+        variable += 1  # step over the closing parenthesis of `T (name)`
     opening = (
         array_end(tokens, variable + 1)
         if variable is not None
@@ -4756,12 +4808,25 @@ def scan_sources(api, source_root):
         values = tokens.values
         start, end = construction_type_span(values, start, end)
         lead = start
-        while lead and values[lead - 1] in {"const", "volatile", "::"}:
+        while lead and values[lead - 1] in {
+            "const",
+            "volatile",
+            "::",
+            "static",
+            "thread_local",
+            "inline",
+            "constexpr",
+        }:
             lead -= 1
-        variable = variable_after_type(values, end)
+        grouped = not lead or values[lead - 1] in {";", "{", "}"}
+        if lead and values[lead - 1] == "{":
+            grouped = statement_end(tokens, lead) < tokens.pairs.get(lead - 1, lead)
+        variable = variable_after_type(values, end, grouped=grouped)
         prefix = values[
             lead : variable if variable is not None else template_end(values, end)
         ]
+        if variable is not None and values[variable - 1] == "(":
+            prefix = prefix[:-1]
         prefix = construction_aliases(layout_prefix(prefix, context), api)
         if not any(name == "std::variant" for _, _, name in names_in(prefix)):
             return None
@@ -4783,11 +4848,13 @@ def scan_sources(api, source_root):
             values[lead : statement_end(tokens, lead)], None
         ):
             declared = Tokens(" ".join(part + [";"]))
-            local = variable_after_type(declared.values, end - lead)
-            if local is None or not default_value_initializer(declared, end - lead):
+            local = variable_after_type(declared.values, end - lead, grouped=grouped)
+            if local is None or not default_value_initializer(
+                declared, end - lead, grouped=grouped
+            ):
                 continue
             site = lead + offset + local
-            prefix = part[:local]
+            prefix = part[: local - (part[local - 1 : local] == ["("])]
             if not constructs(
                 tokens,
                 start,
@@ -6233,7 +6300,7 @@ def scan_sources(api, source_root):
                 continue
             mapping = next(
                 (
-                    end
+                    (end, standard_type(value))
                     for start, end, value in names_in(return_tokens)
                     if standard_type(value) in MAP_CONTAINERS
                     and not in_template_argument(return_tokens, start)
@@ -6241,7 +6308,7 @@ def scan_sources(api, source_root):
                 None,
             )
             if mapping is not None:
-                arguments = template_arguments(return_tokens, mapping)
+                arguments = template_arguments(return_tokens, mapping[0])
                 if len(arguments) >= 2:
                     pair = (
                         ["std", "::", "pair", "<"]
@@ -6263,6 +6330,8 @@ def scan_sources(api, source_root):
                     )
                     result.update("__element__:" + value for value in inferred)
                     result.add(MAPPING)
+                    if mapping[1] in {"std::multimap", "std::unordered_multimap"}:
+                        result.add(MULTIMAPPING)
                     result.add(NO_INLINE_LAYOUT)
                     if raw_pointer(return_tokens):
                         result.add(RAW_POINTER)
@@ -7092,6 +7161,49 @@ def scan_sources(api, source_root):
                         return {ITERATOR} | {
                             value for value in types if value.startswith("__element__:")
                         }
+                    if MAPPING in types and method in {
+                        "insert",
+                        "emplace",
+                        "emplace_hint",
+                        "try_emplace",
+                        "insert_or_assign",
+                    }:
+                        insert_end = tokens.pairs.get(function + 1, function + 1)
+                        commas = [
+                            index
+                            for index in range(function + 2, insert_end)
+                            if values[index] == ","
+                            and tokens.enclosing[index] == function + 1
+                            and not in_template_argument(values, index)
+                        ]
+                        first_argument = (
+                            expression_receiver(
+                                tokens,
+                                function + 2,
+                                commas[0] - 1,
+                                imports,
+                                namespace_aliases,
+                                depth + 1,
+                            )
+                            if commas
+                            else set()
+                        )
+                        hinted = method == "emplace_hint" or bool(
+                            method != "emplace"
+                            and ITERATOR in first_argument
+                            and elements(first_argument) == elements(types)
+                        )
+                        iterator = {ITERATOR} | {
+                            value for value in types if value.startswith("__element__:")
+                        }
+                        if hinted or MULTIMAPPING in types:
+                            return iterator
+                        # Unique-key insertion returns pair<iterator, bool>.
+                        return {
+                            PRODUCTS["std::pair"]
+                            + json.dumps([0, None, value], separators=(",", ":"))
+                            for value in iterator
+                        } | {NO_INLINE_LAYOUT}
                     if MAPPING in types and method in {
                         "find",
                         "lower_bound",

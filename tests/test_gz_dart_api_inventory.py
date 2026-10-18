@@ -23060,3 +23060,193 @@ def test_converting_or_explicit_default_keeps_constructors(extractor, tmp_path):
             header.replace("A(B);", "A(B)=delete;"),
             "void use(){dart::f();}",
         )
+
+
+def test_post_name_standard_attribute_callback_keeps_return_receiver(
+    extractor, tmp_path
+):
+    header = (
+        "namespace dart { struct A { void hit() const; };"
+        " struct Holder { A* (*factory [[maybe_unused]])(); }; }"
+    )
+    assert _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("void hit() const;", "void hit() const=delete;"),
+        "void use(dart::Holder& h){h.factory()->hit();}",
+    )
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "values.try_emplace(0).first->second.unique_name()",
+        "values.emplace(0, dart::A()).first->second.unique_name()",
+        "values.insert({0, dart::A()}).first->second.unique_name()",
+        "values.insert_or_assign(0, dart::A()).first->second.unique_name()",
+        "values.try_emplace(values.begin(), 0)->second.unique_name()",
+        "values.emplace_hint(values.begin(), 0, dart::A())->second.unique_name()",
+        "values.insert(values.begin(), {0, dart::A()})->second.unique_name()",
+        "values.insert_or_assign(values.begin(), 0, dart::A())->second.unique_name()",
+    ],
+)
+def test_map_insertion_results_preserve_mapped_receiver(
+    extractor, tmp_path, expression
+):
+    header = "namespace dart { struct A { A()=default; void unique_name(); }; }"
+    source = f"void use(std::map<int,dart::A>& values){{{expression};}}"
+    members = _entries(
+        _scan_receiver_api(extractor, tmp_path, header, source), "members"
+    )
+    assert members["unique_name"]["receiver_types"] == ["dart::A"]
+    assert members["unique_name"]["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize("container", ["std::multimap", "std::unordered_multimap"])
+@pytest.mark.parametrize("method", ["insert({0, dart::A()})", "emplace(0, dart::A())"])
+def test_multimap_insertion_returns_iterator(extractor, tmp_path, container, method):
+    header = "namespace dart { struct A { A()=default; void unique_name(); }; }"
+    source = (
+        f"void use({container}<int,dart::A>& values)"
+        f"{{values.{method}->second.unique_name();}}"
+    )
+    members = _entries(
+        _scan_receiver_api(extractor, tmp_path, header, source), "members"
+    )
+    assert members["unique_name"]["receiver_types"] == ["dart::A"]
+    assert members["unique_name"]["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize("method", ["emplace", "try_emplace", "insert_or_assign"])
+@pytest.mark.parametrize("keys", ["std::vector<dart::A>", "std::map<int,dart::A>"])
+def test_map_insertion_iterator_key_is_not_hint(extractor, tmp_path, method, keys):
+    header = "namespace dart { struct A { A()=default; void unique_name(); }; }"
+    source = (
+        "struct Compare { template<class T> bool operator()(const T&, const T&) "
+        "const { return false; } };"
+        f"void use({keys}& keys, std::map<{keys}::iterator,dart::A,Compare>& values)"
+        f"{{values.{method}(keys.begin(), dart::A()).first->second.unique_name();}}"
+    )
+    members = _entries(
+        _scan_receiver_api(extractor, tmp_path, header, source), "members"
+    )
+    assert members["unique_name"]["receiver_types"] == ["dart::A"]
+    assert members["unique_name"]["unresolved_count"] == 0
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "values.try_emplace(0).first->unique_name()",
+        "values.insert({0, dart::A()}).second.unique_name()",
+    ],
+)
+def test_map_insertion_key_and_flag_are_not_mapped_receivers(
+    extractor, tmp_path, expression
+):
+    header = "namespace dart { struct A { A()=default; void unique_name(); }; }"
+    source = f"void use(std::map<int,dart::A>& values){{{expression};}}"
+    members = _entries(
+        _scan_receiver_api(extractor, tmp_path, header, source), "members"
+    )
+    assert "dart::A" not in members.get("unique_name", {}).get("receiver_types", [])
+
+
+@pytest.mark.parametrize(
+    "qualifiers", ["", "static ", "thread_local ", "static const "]
+)
+def test_parenthesized_variant_declarator_owns_first_alternative(
+    extractor, tmp_path, qualifiers
+):
+    header = R20_VARIANT_INCLUDES + R20_VARIANT_A + "namespace dart {}"
+    changed = R20_VARIANT_INCLUDES + R20_VARIANT_DELETED + "namespace dart {}"
+    source = f"void use(){{{qualifiers}std::variant<dart::A,int> (value);}}"
+    assert _scan_receiver_api(extractor, tmp_path, header, source) != (
+        _scan_receiver_api(extractor, tmp_path, changed, source)
+    )
+    prototype = "std::variant<dart::A,int> (value());"
+    source = f"void use(){{{prototype}}}"
+    assert _scan_receiver_api(extractor, tmp_path, header, source) == (
+        _scan_receiver_api(extractor, tmp_path, changed, source)
+    )
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "void g(std::variant<dart::A,int>,int); void use(int value)"
+        "{g(std::variant<dart::A,int> (value),1);}",
+        "void use(std::variant<dart::A,int>& v,int value)"
+        "{v=std::variant<dart::A,int> (value);}",
+        "void use(int value){std::vector<std::variant<dart::A,int>> xs"
+        "{std::variant<dart::A,int>(value),std::variant<dart::A,int>(value)};}",
+        "void g(std::vector<std::variant<dart::A,int>>); void use(int value)"
+        "{g({std::variant<dart::A,int>(value),1});}",
+    ],
+)
+def test_variant_value_cast_does_not_default_construct(extractor, tmp_path, source):
+    header = R20_VARIANT_INCLUDES + R20_VARIANT_A
+    changed = R20_VARIANT_INCLUDES + R20_VARIANT_DELETED
+    assert _scan_receiver_api(extractor, tmp_path, header, source) == (
+        _scan_receiver_api(extractor, tmp_path, changed, source)
+    )
+
+
+@pytest.mark.parametrize(
+    ("template", "call", "drift"),
+    [
+        ("template<class A> void f(A value={});", "dart::f<int>();", False),
+        ("template<class B> void f(A value={});", "dart::f<int>();", True),
+        ("void f(A value={});", "dart::f();", True),
+        (
+            "template<class T, std::enable_if_t<std::is_same_v<T,int>, A>* "
+            "= nullptr> void f(A value={});",
+            "dart::f<int>();",
+            True,
+        ),
+    ],
+)
+def test_template_parameter_shadows_dart_type_in_defaults(
+    extractor, tmp_path, template, call, drift
+):
+    header = (
+        f"namespace dart {{ struct A {{ A()=default; private: int storage; }}; "
+        f"{template} }}"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("A()=default", "A()=delete"),
+            f"void use(){{{call}}}",
+        )
+        == drift
+    )
+
+
+def test_nested_template_default_does_not_shadow_outer_type(extractor, tmp_path):
+    header = (
+        "namespace dart { struct A { A()=default; private: int storage; };"
+        " template<template<class A=int> class T> void f(A value={}); }"
+    )
+    source = "template<class> struct X {}; void use(){dart::f<X>();}"
+    assert _api_changes(
+        extractor, tmp_path, header, header.replace("A()=default", "A()=delete"), source
+    )
+
+
+def test_unnamed_qualified_parameter_does_not_shadow_type(extractor, tmp_path):
+    header = (
+        "namespace dart { struct type { type()=default; private: int storage; };"
+        " template<class T, typename std::enable_if<std::is_same_v<T,int>,int>"
+        "::type =0> void f(type value={}); }"
+    )
+    assert _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("type()=default", "type()=delete"),
+        "void use(){dart::f<int>();}",
+    )
