@@ -5181,16 +5181,16 @@ _DELEGATION_NEGATION_PATTERN = (
     rf"{_DELEGATION_NEGATED_ACTION}{_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|\bno\s+delegation{_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|{_DELEGATION_BY_DEFAULT}no\s+delegation\b"
-    rf"|\bdelegation\s+{_DELEGATION_NEGATED_COPULA}"
+    rf"|(?<![\w-])delegation\s+{_DELEGATION_NEGATED_COPULA}"
     rf"(?:\s+(?:the\s+)?default\b|\s+(?:enabled|on|active|allowed){_DELEGATION_TRAILING_BY_DEFAULT})"
-    rf"|\bdelegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
+    rf"|(?<![\w-])delegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
     rf"(?:disabled|off){_DELEGATION_TRAILING_BY_DEFAULT}"
     rf"|{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
     rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_NEGATED_COPULA}"
     r"\s+(?:enabled|on|active|allowed)\b"
     rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_POSITIVE_COPULA}"
     r"\s+(?:disabled|off)\b"
-    r"|\bdelegation\s+defaults\s+to\s+(?:disabled|off)\b"
+    r"|(?<![\w-])delegation\s+defaults\s+to\s+(?:disabled|off)\b"
 )
 _DELEGATION_NEGATION = re.compile(_DELEGATION_NEGATION_PATTERN)
 _DELEGATION_FRONTED_ACTION = re.compile(
@@ -5409,6 +5409,8 @@ def _delegation_negation_ends(
         return False
     spaced = bool(tail and tail[0] in " \t\r\f\v")
     tail = tail.lstrip(" \t\r\f\v")
+    if re.match(r",[ \t\r\f\v]+(?=(?:for|about)(?=\s)|[\"'`‘“”])", tail):
+        tail = tail[1:].lstrip(" \t\r\f\v")
     # Non-fronted negatives take explicit for/about scopes or quoted labels;
     # other continuation text stays conservative (e.g. "not the default policy").
     if not fronted_action and not re.match(r"(?:for|about)(?=\s)|[\"'`‘“”]", tail):

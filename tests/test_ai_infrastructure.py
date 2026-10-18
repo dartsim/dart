@@ -9768,3 +9768,175 @@ def test_f2bc_boundary_required_flag(monkeypatch, relative, replacement, missing
         any(relative in e and "missing delegation marker" in e for e in errors)
         is missing
     )
+
+
+_EF5_SCOPE_BOUNDARY_SOURCES = [
+    pytest.param("Sub-Delegation is disabled by default.", False, id="0-compound"),
+    pytest.param("Re-Delegation is disabled by default.", False, id="1-compound"),
+    pytest.param("Other_Delegation is disabled by default.", False, id="2-compound"),
+    pytest.param("Delegation is disabled by default.", True, id="3-standalone"),
+    pytest.param("Sub-Delegation is not the default.", False, id="4-compound"),
+    pytest.param("Re-Delegation is not the default.", False, id="5-compound"),
+    pytest.param("Other_Delegation is not the default.", False, id="6-compound"),
+    pytest.param("Delegation is not the default.", True, id="7-standalone"),
+    pytest.param("Sub-Delegation defaults to off.", False, id="8-compound"),
+    pytest.param("Re-Delegation defaults to off.", False, id="9-compound"),
+    pytest.param("Other_Delegation defaults to off.", False, id="10-compound"),
+    pytest.param("Delegation defaults to off.", True, id="11-standalone"),
+    pytest.param(
+        "By default, sub-delegation is disabled.", False, id="12-compound-opposite"
+    ),
+    pytest.param(
+        "`Sub-delegation is disabled by default.`", False, id="13-compound-opposite"
+    ),
+    pytest.param(
+        "<span hidden>Sub-delegation is disabled by default.</span>",
+        False,
+        id="14-compound-opposite",
+    ),
+    pytest.param(
+        "Sub-delegation is disabled by default. Do not delegate by default.",
+        True,
+        id="15-compound-opposite",
+    ),
+    pytest.param(
+        "Delegation is disabled by default for release approval.", False, id="16-scope"
+    ),
+    pytest.param(
+        "Delegation is disabled by default, for release approval.",
+        False,
+        id="17-comma-scope",
+    ),
+    pytest.param(
+        "Delegation is not the default for release approval.", False, id="18-scope"
+    ),
+    pytest.param(
+        "Delegation is not the default, for release approval.",
+        False,
+        id="19-comma-scope",
+    ),
+    pytest.param(
+        "Delegation defaults to off for release approval.", False, id="20-scope"
+    ),
+    pytest.param(
+        "Delegation defaults to off, for release approval.", False, id="21-comma-scope"
+    ),
+    pytest.param(
+        "By default, delegation is off for release approval.", False, id="22-scope"
+    ),
+    pytest.param(
+        "By default, delegation is off, for release approval.",
+        False,
+        id="23-comma-scope",
+    ),
+    pytest.param(
+        "Do not delegate by default for release approval.", False, id="24-scope"
+    ),
+    pytest.param(
+        "Do not delegate by default, for release approval.", False, id="25-comma-scope"
+    ),
+    pytest.param(
+        "By default, agents do not delegate for release approval.", False, id="26-scope"
+    ),
+    pytest.param(
+        "By default, agents do not delegate, for release approval.",
+        False,
+        id="27-comma-scope",
+    ),
+    pytest.param(
+        "Delegation is disabled by default about release approval.",
+        False,
+        id="28-scope",
+    ),
+    pytest.param(
+        "Delegation is disabled by default, about release approval.",
+        False,
+        id="29-comma-scope",
+    ),
+    pytest.param(
+        'Delegation is disabled by default "release approval".', False, id="30-scope"
+    ),
+    pytest.param(
+        'Delegation is disabled by default, "release approval".',
+        False,
+        id="31-comma-scope",
+    ),
+    pytest.param(
+        '"Delegation is disabled by default, " or unset.',
+        True,
+        id="32-retained-conservative-control",
+    ),
+    pytest.param(
+        "'Delegation is disabled by default, ' or unset.",
+        True,
+        id="33-retained-conservative-control",
+    ),
+    pytest.param(
+        "“Delegation is disabled by default, ” or unset.",
+        True,
+        id="34-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default, in release workflows.",
+        True,
+        id="35-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default,, for release approval.",
+        True,
+        id="36-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default: for release approval.",
+        True,
+        id="37-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default; for release approval.",
+        True,
+        id="38-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default,\n\nfor release approval.",
+        True,
+        id="39-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default, for release approval; Do not delegate by default.",
+        True,
+        id="40-retained-conservative-control",
+    ),
+    pytest.param(
+        "Do not delegate by default, when delegation=off.",
+        False,
+        id="41-retained-conservative-control",
+    ),
+    pytest.param(
+        "Do not delegate by default, when delegation=off-mode.",
+        True,
+        id="42-retained-conservative-control",
+    ),
+    pytest.param(
+        "Do not delegate by default, when delegation=off or unset.",
+        True,
+        id="43-retained-conservative-control",
+    ),
+    pytest.param(
+        "<span hidden>Delegation is disabled by default, for release approval.</span>",
+        False,
+        id="44-retained-conservative-control",
+    ),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _EF5_SCOPE_BOUNDARY_SOURCES)
+def test_ef5_scope_boundary_helper(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(("source", "rejected"), _EF5_SCOPE_BOUNDARY_SOURCES)
+def test_ef5_scope_boundary_owners(monkeypatch, relative, source, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + source)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
