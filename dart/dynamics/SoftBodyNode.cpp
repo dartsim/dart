@@ -469,6 +469,7 @@ void SoftBodyNode::restoreDynamicState(
   mAspectState.mPointStates = pointStates;
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses[i]->mFext = externalForces[i];
+  dirtyExternalForces();
 
   adaptiveContactActivation(*this).resetTransientState();
   mNotifier->dirtyTransform();

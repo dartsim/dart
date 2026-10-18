@@ -43,8 +43,10 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -108,6 +110,7 @@ WorldPtr makeSleepingWorld()
   return world;
 }
 
+template <typename JointType = WeldJoint>
 WorldPtr makeSoftWorld()
 {
   auto world = World::create();
@@ -116,8 +119,8 @@ WorldPtr makeSoftWorld()
   SoftBodyNode::Properties properties(
       BodyNode::Properties(),
       SoftBodyNodeHelper::makeSinglePointMassProperties(1.0, 0.0, 0.0, 0.0));
-  skeleton->createJointAndBodyNodePair<WeldJoint, SoftBodyNode>(
-      nullptr, WeldJoint::Properties(), properties);
+  skeleton->createJointAndBodyNodePair<JointType, SoftBodyNode>(
+      nullptr, typename JointType::Properties(), properties);
   world->addSkeleton(skeleton);
   return world;
 }
@@ -231,13 +234,128 @@ TEST(WorldState, ParametersAndActuatorLimitsRemainTargetOwned)
   joint->setForceUpperLimit(0, 0.2);
   target->getSkeleton(0)->getBodyNode(0)->setMass(2.0);
   target->restoreState(state);
-  expectEqual(state, target->captureState());
+  auto expected = state;
+  expected.commands[0] = 0.1;
+  expectEqual(expected, target->captureState());
   EXPECT_EQ(joint->getActuatorType(), Joint::VELOCITY);
   EXPECT_EQ(joint->getVelocityUpperLimit(0), 0.1);
   EXPECT_EQ(target->getSkeleton(0)->getBodyNode(0)->getMass(), 2.0);
   EXPECT_EQ(target->getTimeStep(), 0.002);
   EXPECT_EQ(target->getConstraintSolver()->getCollisionDetector(), detector);
   EXPECT_TRUE(target->getGravity().isApprox(Eigen::Vector3d(1, 2, 3), 0));
+}
+
+TEST(WorldState, RestoredCommandsFollowPerDofActuatorLimits)
+{
+  auto world = World::create();
+  auto skeleton = Skeleton::create();
+  auto* joint = skeleton->createJointAndBodyNodePair<FreeJoint>().first;
+  world->addSkeleton(skeleton);
+  auto state = world->captureState();
+  state.commands << 10, -10, 10, -10, 10, -10;
+  const Joint::ActuatorType types[]
+      = {Joint::FORCE, Joint::SERVO, Joint::VELOCITY, Joint::ACCELERATION};
+  for (std::size_t d = 0; d < 6; ++d) {
+    joint->setForceLowerLimit(d, -0.2 * (d + 1));
+    joint->setForceUpperLimit(d, 0.2 * (d + 1));
+    joint->setVelocityLowerLimit(d, -0.3 * (d + 1));
+    joint->setVelocityUpperLimit(d, 0.3 * (d + 1));
+    joint->setAccelerationLowerLimit(d, -0.4 * (d + 1));
+    joint->setAccelerationUpperLimit(d, 0.4 * (d + 1));
+  }
+  for (const auto type : types) {
+    SCOPED_TRACE(static_cast<int>(type));
+    joint->setActuatorType(type);
+    world->restoreState(state);
+    auto expected = state;
+    const double limit = type == Joint::FORCE          ? 0.2
+                         : type == Joint::ACCELERATION ? 0.4
+                                                       : 0.3;
+    for (Eigen::Index d = 0; d < 6; ++d)
+      expected.commands[d] = (d % 2 == 0 ? 1 : -1) * limit * (d + 1);
+    expectEqual(expected, world->captureState());
+  }
+  joint->setActuatorType(Joint::FORCE);
+  joint->setActuatorType(5, Joint::MIMIC);
+  world->restoreState(state);
+  auto expected = state;
+  for (Eigen::Index d = 0; d < 6; ++d)
+    expected.commands[d] = (d % 2 == 0 ? 1 : -1) * 0.2 * (d + 1);
+  expected.commands[5] = 0;
+  expectEqual(expected, world->captureState());
+}
+
+TEST(WorldState, ForceCommandsRespectLimitsOnNextStep)
+{
+  auto source = makeWorld();
+  source->getSkeleton(0)->setCommand(0, 11.0);
+  auto target = makeWorld();
+  auto* joint = target->getSkeleton(0)->getJoint(0);
+  joint->setForceUpperLimit(0, 0.2);
+  target->restoreState(source->captureState());
+  EXPECT_EQ(joint->getCommand(0), 0.2);
+  target->step(false);
+  EXPECT_EQ(joint->getCommand(0), 0.2);
+  EXPECT_EQ(joint->getForce(0), 0.2);
+  EXPECT_TRUE(target->getSkeleton(0)->getVelocities().allFinite());
+}
+
+TEST(WorldState, PassiveTargetDiscardsRestoredCommands)
+{
+  auto source = makeWorld();
+  source->getSkeleton(0)->setCommand(0, 11.0);
+  const auto state = source->captureState();
+  for (const auto type : {Joint::PASSIVE, Joint::MIMIC, Joint::LOCKED}) {
+    auto target = makeWorld();
+    auto* joint = target->getSkeleton(0)->getJoint(0);
+    joint->setActuatorType(type);
+    target->restoreState(state);
+    EXPECT_EQ(joint->getCommand(0), 0.0);
+    EXPECT_EQ(joint->getActuatorType(), type);
+  }
+}
+
+TEST(WorldState, EndEffectorSupportAndMarkerRemainTargetOwned)
+{
+  auto source = makeWorld();
+  auto* sourceBody = source->getSkeleton(0)->getBodyNode(0);
+  auto* sourceSupport = sourceBody->createEndEffector()->createSupport();
+  sourceSupport->setActive(true);
+  sourceBody->createMarker("source marker", Eigen::Vector3d(1, 2, 3));
+  source->getSkeleton(0)->setPosition(0, 0.4);
+  const auto state = source->captureState();
+  auto target = makeWorld();
+  auto* targetBody = target->getSkeleton(0)->getBodyNode(0);
+  auto* targetSupport = targetBody->createEndEffector()->createSupport();
+  auto* marker
+      = targetBody->createMarker("target marker", Eigen::Vector3d::Zero());
+  for (const bool active : {false, true}) {
+    targetSupport->setActive(active);
+    sourceSupport->setActive(!active);
+    target->restoreState(source->captureState());
+    EXPECT_EQ(targetSupport->isActive(), active);
+    EXPECT_TRUE(marker->getLocalPosition().isZero(0));
+    expectEqual(state, target->captureState());
+  }
+}
+
+TEST(WorldState, ImmobileSkeletonRestoresPositionsWithoutWaking)
+{
+  auto source = makeWorld();
+  source->getSkeleton(0)->setPositions(Eigen::Vector2d(0.3, -0.4));
+  const auto state = source->captureState();
+  auto target = makeWorld();
+  auto skeleton = target->getSkeleton(0);
+  skeleton->setMobile(false);
+  skeleton->setResting(true);
+  static_cast<void>(skeleton->getBodyNode(1)->getWorldTransform());
+  target->restoreState(state);
+  expectEqual(state, target->captureState());
+  EXPECT_FALSE(skeleton->isMobile());
+  EXPECT_TRUE(skeleton->isResting());
+  EXPECT_TRUE(skeleton->getBodyNode(1)->getWorldTransform().matrix().isApprox(
+      source->getSkeleton(0)->getBodyNode(1)->getWorldTransform().matrix(),
+      1e-14));
 }
 
 TEST(WorldState, TopologyAndMalformedChannelsRejectBeforeEffects)
@@ -257,7 +375,7 @@ TEST(WorldState, TopologyAndMalformedChannelsRejectBeforeEffects)
   const auto beforeExtra = extra->captureState();
   EXPECT_THROW(extra->restoreState(state), std::invalid_argument);
   expectEqual(beforeExtra, extra->captureState());
-  for (int kind = 0; kind < 4; ++kind) {
+  for (int kind = 0; kind < 5; ++kind) {
     auto bad = state;
     if (kind == 0)
       bad.commands.conservativeResize(1);
@@ -267,6 +385,8 @@ TEST(WorldState, TopologyAndMalformedChannelsRejectBeforeEffects)
       bad.time = std::numeric_limits<double>::infinity();
     if (kind == 3)
       bad.bodyExternalForces(0, 1) = std::numeric_limits<double>::infinity();
+    if (kind == 4)
+      bad.commands[0] = std::numeric_limits<double>::quiet_NaN();
     EXPECT_THROW(source->restoreState(bad), std::invalid_argument);
     expectEqual(state, source->captureState());
   }
@@ -428,6 +548,40 @@ TEST(WorldState, SoftPointInputsSurviveFrozenActivationAndNextStep)
       = std::numeric_limits<double>::quiet_NaN();
   EXPECT_THROW(target->restoreState(bad), std::invalid_argument);
   expectEqual(before, target->captureState());
+}
+
+TEST(WorldState, SoftFreeJointRoundTripMatchesNextStep)
+{
+  auto control = makeSoftWorld<FreeJoint>();
+  auto controlSkeleton = control->getSkeleton(0);
+  controlSkeleton->setPositions(
+      (Eigen::Vector6d() << 0.1, -0.2, 0.3, 0.4, -0.5, 0.6).finished());
+  controlSkeleton->setVelocities(Eigen::Vector6d::Constant(0.2));
+  controlSkeleton->setCommands(Eigen::Vector6d::Constant(0.3));
+  auto* controlSoft = controlSkeleton->getSoftBodyNode(0);
+  auto* point = controlSoft->getPointMass(0);
+  point->setPositions(Eigen::Vector3d(0.2, 0.3, 0.4));
+  point->setVelocities(Eigen::Vector3d(0.5, 0.6, 0.7));
+  point->setAccelerations(Eigen::Vector3d(0.8, 0.9, 1.0));
+  point->setForces(Eigen::Vector3d(1.1, 1.2, 1.3));
+  point->addExtForce(Eigen::Vector3d(2, 3, 4), true);
+  controlSoft->addExtForce(
+      Eigen::Vector3d(5, 6, 7), Eigen::Vector3d::Zero(), true);
+  const auto state = control->captureState();
+  auto target = makeSoftWorld<FreeJoint>();
+  auto targetSkeleton = target->getSkeleton(0);
+  targetSkeleton->setPositions(Eigen::Vector6d::Constant(-0.1));
+  auto* targetSoft = targetSkeleton->getSoftBodyNode(0);
+  static_cast<void>(targetSoft->getPointMass(0)->getWorldPosition());
+  static_cast<void>(targetSkeleton->getMassMatrix());
+  static_cast<void>(targetSkeleton->getExternalForces());
+  target->restoreState(state);
+  expectEqual(state, target->captureState());
+  EXPECT_TRUE(targetSkeleton->getExternalForces().isApprox(
+      controlSkeleton->getExternalForces(), 1e-14));
+  target->step(false);
+  control->step(false);
+  expectEqual(control->captureState(), target->captureState());
 }
 
 TEST(WorldState, SoftConnectivityRejectsEqualSizedState)

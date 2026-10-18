@@ -227,6 +227,7 @@ void World::validateDynamicStateSupport() const
           || type == typeid(dynamics::detail::NodeVectorProxyAspect)
           || type == typeid(dynamics::BodyNode::Aspect)
           || type == typeid(dynamics::SoftBodyNode::Aspect)
+          || type == typeid(dynamics::Support)
           || type == typeid(dynamics::GenericJoint<math::R1Space>::Aspect)
           || type == typeid(dynamics::GenericJoint<math::R2Space>::Aspect)
           || type == typeid(dynamics::GenericJoint<math::R3Space>::Aspect)

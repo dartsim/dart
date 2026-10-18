@@ -174,6 +174,8 @@ public:
   /// Restore channels directly after complete validation. Mobile Skeletons
   /// wake and soft activation restarts; frame count and exact solver/contact
   /// history are not restored. Parameters remain those of this World.
+  /// Commands follow this World's actuator types and limits, as setCommand()
+  /// would. EndEffector Support active flags remain those of this World.
   /// Mismatch, non-finite values or invalid shapes throw std::invalid_argument
   /// before this World changes. Display names do not affect structural
   /// compatibility.

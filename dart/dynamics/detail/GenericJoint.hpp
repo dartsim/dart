@@ -214,7 +214,9 @@ void GenericJoint<ConfigSpaceT>::restoreDynamicState(
   this->mAspectState.mVelocities = velocities;
   this->mAspectState.mAccelerations = accelerations;
   this->mAspectState.mForces = forces;
-  this->mAspectState.mCommands = commands;
+  for (std::size_t i = 0; i < NumDofs; ++i)
+    this->mAspectState.mCommands[i]
+        = clampCommandToActuatorLimits(i, commands[i]);
 
   this->notifyPositionUpdated();
   this->notifyVelocityUpdated();
@@ -423,6 +425,39 @@ Joint::ActuatorType GenericJoint<ConfigSpaceT>::getActuatorTypeForValidIndex(
 
 //==============================================================================
 template <class ConfigSpaceT>
+double GenericJoint<ConfigSpaceT>::clampCommandToActuatorLimits(
+    std::size_t index, double command) const
+{
+  switch (getActuatorTypeForValidIndex(index)) {
+    case Joint::FORCE:
+      return math::clip(
+          command,
+          Base::mAspectProperties.mForceLowerLimits[index],
+          Base::mAspectProperties.mForceUpperLimits[index]);
+    case Joint::SERVO:
+    case Joint::VELOCITY:
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      return math::clip(
+          command,
+          Base::mAspectProperties.mVelocityLowerLimits[index],
+          Base::mAspectProperties.mVelocityUpperLimits[index]);
+    case Joint::ACCELERATION:
+      return math::clip(
+          command,
+          Base::mAspectProperties.mAccelerationLowerLimits[index],
+          Base::mAspectProperties.mAccelerationUpperLimits[index]);
+    case Joint::PASSIVE:
+    case Joint::MIMIC:
+    case Joint::LOCKED:
+      return 0.0;
+    default:
+      DART_ASSERT(false);
+      return this->mAspectState.mCommands[index];
+  }
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
 {
   if (index >= getNumDofs())
@@ -439,25 +474,12 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
 
   const double previousCommand = this->mAspectState.mCommands[index];
   switch (getActuatorTypeForValidIndex(index)) {
-    case Joint::FORCE:
-      this->mAspectState.mCommands[index] = math::clip(
-          command,
-          Base::mAspectProperties.mForceLowerLimits[index],
-          Base::mAspectProperties.mForceUpperLimits[index]);
-      break;
     case Joint::PASSIVE:
       if (0.0 != command) {
         dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
                << command << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands[index] = 0.0;
-      break;
-    case Joint::SERVO:
-      this->mAspectState.mCommands[index] = math::clip(
-          command,
-          Base::mAspectProperties.mVelocityLowerLimits[index],
-          Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
     case Joint::MIMIC:
       if (0.0 != command) {
@@ -465,20 +487,6 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a MIMIC joint [" << this->getName()
                << "].\n";
       }
-      this->mAspectState.mCommands[index] = 0.0;
-      break;
-    case Joint::ACCELERATION:
-      this->mAspectState.mCommands[index] = math::clip(
-          command,
-          Base::mAspectProperties.mAccelerationLowerLimits[index],
-          Base::mAspectProperties.mAccelerationUpperLimits[index]);
-      break;
-    case Joint::VELOCITY:
-      this->mAspectState.mCommands[index] = math::clip(
-          command,
-          Base::mAspectProperties.mVelocityLowerLimits[index],
-          Base::mAspectProperties.mVelocityUpperLimits[index]);
-      // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
       if (0.0 != command) {
@@ -486,12 +494,12 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a LOCKED joint [" << this->getName()
                << "].\n";
       }
-      this->mAspectState.mCommands[index] = 0.0;
       break;
     default:
-      DART_ASSERT(false);
       break;
   }
+  this->mAspectState.mCommands[index]
+      = clampCommandToActuatorLimits(index, command);
 
   if (this->mAspectState.mCommands[index] != previousCommand)
     this->notifyExternalDisturbanceUpdated();
