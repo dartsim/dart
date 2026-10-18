@@ -123,6 +123,11 @@
 
 * Dynamics
 
+  * `SoftBodyNode::addPointMass()` and `removeAllPointMasses()` now keep the
+    point-mass states, soft mesh and skeleton version in sync. Adding a point
+    mass previously read and wrote its state out of bounds, and removing all
+    point masses leaked them.
+
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
     including GUI picks collected by Python.
