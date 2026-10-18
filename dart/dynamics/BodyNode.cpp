@@ -361,6 +361,13 @@ void BodyNode::setAspectState(const AspectState& state)
 }
 
 //==============================================================================
+void BodyNode::restoreDynamicExternalForce(const Eigen::Vector6d& force)
+{
+  mAspectState.mFext = force;
+  dirtyExternalForces();
+}
+
+//==============================================================================
 void BodyNode::setAspectProperties(const AspectProperties& properties)
 {
   setName(properties.mName);

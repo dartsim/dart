@@ -41,6 +41,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Signal.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
@@ -1322,6 +1323,44 @@ void expectAllocationGateBudget(
 }
 
 } // namespace
+
+TEST(StepAllocation, FirstSingleConnectionSignalRaiseDoesNotAllocate)
+{
+  dart::common::Signal<void(int, const int&)> signal;
+  int calls = 0;
+  int observed = 0;
+  const int increment = 5;
+  signal.connect([&](int value, const int& delta) {
+    ++calls;
+    observed = value + delta;
+  });
+
+  dart::test::ScopedHeapAllocationCounter globalCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  signal.raise(7, increment);
+  globalCounter.stop();
+  rawCounter.stop();
+
+  EXPECT_EQ(calls, 1);
+  EXPECT_EQ(observed, 12);
+  StepAllocationMeasurement measurement;
+  measurement.globalHeap = globalCounter.snapshot();
+  measurement.rawHeap = rawCounter.snapshot();
+  recordProperty(
+      "single_signal_operator_new_count",
+      measurement.globalHeap.allocationCount);
+  recordProperty(
+      "single_signal_operator_new_bytes",
+      measurement.globalHeap.allocationBytes);
+  recordProperty(
+      "single_signal_raw_count", measurement.rawHeap.allocationCount);
+  recordProperty(
+      "single_signal_raw_bytes", measurement.rawHeap.allocationBytes);
+  expectNoGlobalHeapAllocationsWhenReliable("single_signal", measurement);
+  if (!measurement.rawHeap.skipped) {
+    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+  }
+}
 
 TEST(StepAllocation, ScopedHeapAllocationCounterDetectsOperatorNew)
 {

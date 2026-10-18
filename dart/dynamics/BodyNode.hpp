@@ -59,6 +59,10 @@
 #include <vector>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
+
 namespace dynamics {
 
 class GenCoord;
@@ -1352,6 +1356,10 @@ public:
   /// \}
 
 private:
+  friend class simulation::World;
+
+  void restoreDynamicExternalForce(const Eigen::Vector6d& force);
+
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;

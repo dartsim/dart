@@ -42,6 +42,7 @@
 #include <dart/simulation/DeactivationOptions.hpp>
 #include <dart/simulation/Recording.hpp>
 #include <dart/simulation/SmartPointer.hpp>
+#include <dart/simulation/WorldState.hpp>
 
 #include <dart/constraint/SmartPointer.hpp>
 
@@ -160,6 +161,25 @@ public:
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
   /// by this World will be copied over.
   std::shared_ptr<World> clone() const;
+
+  /// Capture owning dynamic channels and time, excluding parameters/history.
+  /// Unsupported custom state throws std::invalid_argument.
+  WorldState captureState() const;
+
+  /// Fill a previously captured compatible value without allocating.
+  /// A default value is initialized on first capture. Invalid shapes or
+  /// incompatible structure throw std::invalid_argument before output changes.
+  void captureState(WorldState& output) const;
+
+  /// Restore channels directly after complete validation. Mobile Skeletons
+  /// wake and soft activation restarts; frame count and exact solver/contact
+  /// history are not restored. Parameters remain those of this World.
+  /// Commands follow this World's actuator types and limits, as setCommand()
+  /// would. EndEffector Support active flags remain those of this World.
+  /// Mismatch, non-finite values or invalid shapes throw std::invalid_argument
+  /// before this World changes. Display names do not affect structural
+  /// compatibility.
+  void restoreState(const WorldState& state);
 
   //--------------------------------------------------------------------------
   // Properties
@@ -493,6 +513,8 @@ protected:
 
   /// Clears the saved state used to detect between-step world/contact changes.
   void invalidateLastStepRestingWorldState();
+
+  void validateDynamicStateSupport() const;
 
   /// Invalidates the all-resting fast path cache.
   void invalidateAllRestingKinematicSnapshot();

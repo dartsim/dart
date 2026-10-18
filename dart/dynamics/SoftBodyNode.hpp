@@ -400,6 +400,12 @@ protected:
   math::Inertia mArtInertiaImplicit2;
 
 private:
+  friend class simulation::World;
+
+  void restoreDynamicState(
+      const std::vector<PointMass::State>& pointStates,
+      const std::vector<Eigen::Vector3d>& externalForces);
+
   /// \brief
   void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const;
 
