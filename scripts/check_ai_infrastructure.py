@@ -5215,7 +5215,9 @@ _DELEGATION_EXEMPT_CLAUSE = re.compile(
 _MD_FULL_REFERENCE = re.compile(r"\[([^\[\]]*)\]\[[^\[\]]*\]")
 _MD_TASK = re.compile(r"^\[[ xX]\][ \t]+")
 # Containers whose bodies a browser does not render as text; matched by root tag.
-_HTML_HIDDEN_TAGS = frozenset({"script", "style", "title", "template"})
+_HTML_HIDDEN_TAGS = frozenset(
+    {"script", "style", "title", "template", "iframe", "noembed", "noframes"}
+)
 _HTML_KEEP_SPACE_TAGS = frozenset({"pre", "textarea"})
 # Current HTML void elements: they have no end tag, so they never open a hidden root.
 _HTML_VOID_TAGS = frozenset(
@@ -5237,7 +5239,9 @@ def _html_block_tags() -> frozenset[str]:
 class _VisibleHTML(HTMLParser):
     """Keep text; drop comments, attributes and hidden containers; <br> is a space.
 
-    Hidden means script/style/title/template or the `hidden` attribute.
+    Hidden means the `hidden` attribute or a known non-rendered container:
+    script/style/title/template plus iframe/noembed/noframes, whose legacy
+    fallback bodies are not rendered as owner text.
 
     shortcut: HTMLParser has no browser recovery; revisit if owner markup needs it.
     """

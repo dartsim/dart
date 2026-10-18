@@ -2860,15 +2860,12 @@ def test_bare_runtime_keeps_message_scan_and_direct_checker_fail_closed(tmp_path
         )
         assert run.returncode == expected, run.stderr
 
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]);"
+        "import check_ai_infrastructure as c; c._markdown_parser()"
+    )
     direct = subprocess.run(
-        [
-            str(bare),
-            "-I",
-            "-c",
-            "import sys; sys.path.insert(0, sys.argv[1]);"
-            "import check_ai_infrastructure as c; c._markdown_parser()",
-            str(ROOT / "scripts"),
-        ],
+        [str(bare), "-I", "-c", code, str(ROOT / "scripts")],
         capture_output=True,
         text=True,
     )

@@ -8741,7 +8741,7 @@ def _owner_suffix(monkeypatch, relative, suffix):
 
 
 _NEG = "Do not delegate by default."
-_HIDDEN = ["script", "style", "title", "template"]
+_HIDDEN = ["script", "style", "title", "template", "iframe", "noembed", "noframes"]
 
 
 @pytest.mark.parametrize("tag", _HIDDEN)
@@ -8757,6 +8757,10 @@ _HIDDEN = ["script", "style", "title", "template"]
         ("Do no<{t}>ignored\n\nignored</{t}>t delegate by default.", True),
         ("<div><{t}>When delegation=off,</{t}>" + _NEG + "</div>", True),
         ("<{t}>Delegation is disabled.</{t}>Delegate by default.", False),
+        (
+            "<{t}>When delegation=off,</{t}><{t}>Do not delegate by default.</{t}>",
+            False,
+        ),
     ],
 )
 def test_delegation_owner_text_skips_nonrendered_html(tag, template, rejected):
@@ -9089,6 +9093,35 @@ def test_delegation_owners_hidden_markers_are_not_visible(
 
 
 @pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize("tag", ["iframe", "noembed", "noframes"])
+@pytest.mark.parametrize("which", ["flag", "default"])
+def test_delegation_owners_fallback_container_markers_are_not_visible(
+    monkeypatch, relative, tag, which
+):
+    path = ROOT / relative
+    text = path.read_text()
+    marker = (
+        "`delegation=off`"
+        if which == "flag"
+        else _OWNER_DEFAULT_MARKERS.get(relative, "Delegate by default")
+    )
+    assert marker in text
+    read_text = Path.read_text
+
+    def wrap(p, *args, **kwargs):
+        if p == path:
+            hidden = f"<{tag}>{marker.strip('`')}</{tag}>"
+            if which == "flag":
+                return re.sub(r"`?delegation=off`?", hidden, text)
+            return text.replace(marker, hidden)
+        return read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", wrap)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "marker" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
 @pytest.mark.parametrize(
     ("suffix", "rejected"),
     [
@@ -9394,8 +9427,25 @@ def test_delegation_owner_text_hidden_plaintext_self_close_matches_start_tag():
     ) == infra._delegation_owner_text(f"<span hidden><plaintext>fake</span>{tail}")
 
 
-@pytest.mark.skipif(not shutil.which("python3.11"), reason="needs Python 3.11")
 def test_delegation_self_close_html_reader_runs_on_python_311():
+    python311 = shutil.which("python3.11")
+    if not python311:
+        pytest.skip("needs Python 3.11")
+    try:
+        version = subprocess.run(
+            [
+                python311,
+                "-I",
+                "-c",
+                "import sys; sys.exit(sys.version_info[:2] != (3, 11))",
+            ],
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        pytest.skip("Python 3.11 is not runnable")
+    if version.returncode:
+        pytest.skip("Python 3.11 is not runnable")
     # 3.11 has no RCDATA elements and set_cdata_mode takes no keyword: no crash.
     code = (
         "import sys; sys.path.insert(0, sys.argv[1]);"
@@ -9408,7 +9458,7 @@ def test_delegation_self_close_html_reader_runs_on_python_311():
         "assert 'z' not in ''.join(p.parts)"
     )
     run = subprocess.run(
-        [shutil.which("python3.11"), "-I", "-c", code, str(ROOT / "scripts")],
+        [python311, "-I", "-c", code, str(ROOT / "scripts")],
         capture_output=True,
         text=True,
     )
