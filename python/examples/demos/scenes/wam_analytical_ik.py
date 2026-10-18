@@ -66,6 +66,8 @@ def swivel_solver(chain, wam):
     valid solution nearest the current pose.
     """
     refinement = importlib.import_module("ssik.refinement")
+    # SciPy is an ssik dependency.
+    optimize = importlib.import_module("scipy.optimize")
     lower = wam.getPositionLowerLimits()
     upper = wam.getPositionUpperLimits()
     center = 0.5 * (lower + upper)
@@ -142,25 +144,27 @@ def swivel_solver(chain, wam):
 
     def track_within_limits(q, desired):
         # Where the unconstrained steps cross a limit or stall, continue again
-        # with damped steps that hold each joint on a limit while a step would
-        # push it past. Damping shrinks with the residual, as in
-        # Levenberg-Marquardt, so the steps still converge quadratically.
-        x = q.copy()
+        # with bounded least-squares steps that keep every joint in its limits.
+        # Damping shrinks with the residual, as in Levenberg-Marquardt, and the
+        # augmented system stays well posed where the Jacobian loses rank.
+        x, best = q.copy(), None
         for _ in range(TRACK_ITERATIONS):
             pose = chain.fk(x)
-            if np.abs(pose - desired).max() < TRACK_TOLERANCE:
+            error = np.abs(pose - desired).max()
+            if error < TRACK_TOLERANCE:
                 return x
+            if error < FK_TOLERANCE:
+                best = x.copy()
             twist = refinement.se3_log_residual(desired @ np.linalg.inv(pose))
-            damping = min(TRACK_DAMPING, twist @ twist) * np.eye(6)
-            jac = jacobian(x)
-            free = np.ones(x.size, dtype=bool)
-            for _ in range(2):
-                part = jac[:, free]
-                step = np.zeros_like(x)
-                step[free] = part.T @ np.linalg.solve(part @ part.T + damping, twist)
-                free &= ~(((x <= lower) & (step < 0)) | ((x >= upper) & (step > 0)))
+            damping = np.sqrt(min(TRACK_DAMPING, twist @ twist)) * np.eye(x.size)
+            step = optimize.lsq_linear(
+                np.vstack([jacobian(x), damping]),
+                np.concatenate([twist, np.zeros(x.size)]),
+                bounds=(lower - x, upper - x),
+                method="bvls",
+            ).x
             x = np.clip(x + np.clip(step, -TRACK_REACH, TRACK_REACH), lower, upper)
-        return None
+        return best
 
     def candidates(desired, q):
         motion = chain.self_motion(desired)
@@ -175,7 +179,8 @@ def swivel_solver(chain, wam):
             return held
         # Newton continuation, as ssik's own trackers use, stays continuous
         # where the swivel is ill-conditioned or near limits.
-        tracked = track(q, desired)
+        # Without a chart the target is out of reach; skip the costly steps.
+        tracked = track(q, desired) if charts else None
         if tracked is not None and np.abs(tracked - q).max() + JUMP < move:
             return [tracked]
         if move < FLIP:
@@ -197,7 +202,12 @@ def swivel_solver(chain, wam):
         q = wam().getPositions()
         key = desired.tobytes() + q.tobytes()
         if last[0] != key:
-            last[:] = [key, candidates(desired, q)]
+            try:
+                found = candidates(desired, q)
+            except np.linalg.LinAlgError:
+                # A numerical failure must not disable the scene's refresh.
+                found = []
+            last[:] = [key, found]
         return last[1]
 
     return solve

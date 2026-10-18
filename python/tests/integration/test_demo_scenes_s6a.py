@@ -486,6 +486,30 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [-0.16, 1.5, 2.44, 0.2315263, -4.76, 1.6, -3.0],
             [-0.1601, 1.4999, 2.4401, 0.2314263, -4.76, 1.6, -2.9999],
         ),
+        (
+            [2.6, -1.49, -2.8, 0.23, 0.74, -1.59, -0.2],
+            [2.6, -1.48992, -2.79997, 0.23004, 0.73993, -1.58994, -0.20009],
+        ),
+        (
+            [0.0, -2.0, -2.8, 3.1, 0.0, 1.6, -3.0],
+            [0.0, -2.0, -2.8, 3.1, 0.0, 1.5999, -3.0],
+        ),
+        (
+            [-1.7, 0.0, 2.8, 0.2315, -4.76, 0.0, -3.0],
+            [-1.69991, -7e-05, 2.79994, 0.23145, -4.76, 3e-05, -3.0],
+        ),
+        (
+            [2.6, 2.0, -2.8, 0.2315, 1.12, -1.13, 3.0],
+            [2.59996, 2.0, -2.79992, 0.23146, 1.11992, -1.13008, 3.0],
+        ),
+        (
+            [2.6, 2.0, 0.1982, 0.2315, -4.76, 0.0, -3.0],
+            [2.6, 2.0, 0.1935, 0.2289, -4.7531, 0.0004, -2.9978],
+        ),
+        (
+            [-0.7, 2.0, -1.6, 3.1, -1.0, 1.6, 3.0],
+            [-0.7, 2.0, -1.5999, 3.1, -1.0, 1.6, 3.0],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -498,7 +522,9 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
     # goals, Newton steps a few 1e-7 rad past a limit that another goal joint
     # sits on; the remaining starts sit on several limits or singularities at
     # once, where Newton crosses limits, converges only linearly, or stalls
-    # under too much damping.
+    # under too much damping, and where a rank-deficient constrained solve
+    # once raised, an active set went stale or kept a bound it should
+    # release, or the last usable iterate was dropped.
     ids=[
         "basis-switch",
         "near-singular",
@@ -522,6 +548,12 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
         "unconstrained-budget",
         "constrained-damping",
         "constrained-damping-2",
+        "rank-deficient",
+        "rank-deficient-2",
+        "stale-active-set",
+        "bound-release",
+        "stale-active-set-2",
+        "usable-iterate",
     ],
 )
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
@@ -554,19 +586,22 @@ def test_wam_ssik_rejects_inaccurate_charts_at_a_wrist_singularity():
     assert np.abs(wam.getPositions() - start).max() < 0.5
 
 
-def test_wam_ssik_never_runs_the_slow_rescue_while_dragging(monkeypatch):
+def test_wam_ssik_drags_out_of_reach_without_slow_searches(monkeypatch):
     setup, wam, ee, _ = _wam_with_ssik()
     rescue = pytest.importorskip("ssik.refinement.rescue")
+    refinement = pytest.importorskip("ssik.refinement")
 
     def fail(*args, **kwargs):
-        raise AssertionError("interactive solves must not run ssik's rescue")
+        raise AssertionError("out-of-reach drags must skip slow searches")
 
     monkeypatch.setattr(rescue, "rescue_via_T_perturbation", fail)
+    monkeypatch.setattr(refinement, "lm_refine", fail)
     target = _activate_at(setup, wam, np.zeros(7))
     start = target.getTransform().matrix()
-    # Straight up from the stretched rest pose is out of reach but inside
-    # ssik's reach sphere, where its rescue would run for every new target.
-    for k in range(1, 6):
+    # From 6 mm straight up, the stretched rest pose's target is out of reach
+    # but inside ssik's reach sphere, where its rescue would run for every new
+    # target.
+    for k in range(5, 10):
         transform = dart.math.Isometry3()
         transform.set_rotation(start[:3, :3])
         transform.set_translation(start[:3, 3] + [0.0, 0.0, 0.002 * k])
