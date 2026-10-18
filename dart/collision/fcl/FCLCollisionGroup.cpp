@@ -81,7 +81,10 @@ void detail::CollisionHistory::clear(FCLCollisionGroup& group)
 {
   // Incremental balancing retains tree topology and traversal history even at
   // unchanged poses. Rebuild in group order using the restored bounds; FCL's
-  // public tree reset requires allocating new nodes on registration.
+  // public tree reset requires allocating new nodes on registration. Pick up
+  // shapes replaced since the last step first, as collide() would.
+  if (group.getAutomaticUpdate())
+    group.update();
   group.updateEngineData();
   group.mBroadPhaseAlg->clear();
   group.mBroadPhaseAlg->registerObjects(group.mFiniteObjects);

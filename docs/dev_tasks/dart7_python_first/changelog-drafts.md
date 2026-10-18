@@ -7,10 +7,11 @@ consolidation under the program's hot-file rule:
   for dynamic World snapshots: positions, velocities, accelerations, forces,
   commands, body external forces, soft point-mass state and time. A snapshot
   restores into the same World or a structurally identical one, such as a
-  clone; parameters and solver or contact history are not part of it, and
-  contact and solver warm starts are cleared on restore. Clones omit manual
-  constraints; re-add them in the same order with endpoints mapped to the
-  clone's bodies before restoring.
+  clone; parameters and solver or contact history are not part of it. A
+  restored World continues exactly as a new World restoring the same snapshot
+  would; with the FCL or Bullet detector, restoring may allocate. Clones omit
+  manual constraints; re-add them in the same order with endpoints mapped to
+  the clone's bodies before restoring.
   Commands follow the target's actuator types and limits; EndEffector support
   flags remain target-owned.
   Manual ball, revolute, cylindrical and weld joint constraints are

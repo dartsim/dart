@@ -860,6 +860,32 @@ TEST(WorldState, SoftConnectivityRejectsEqualSizedState)
   expectEqual(before, target->captureState());
 }
 
+TEST(WorldState, RestoreAfterShapeReplacementSynchronizesCollisionGeometry)
+{
+  // Restoring rebuilds the FCL broadphase, so it must first pick up a shape
+  // replaced since the last step, as the next collision check would. Without
+  // that, the rebuild reads the replaced shape's geometry; run under memcheck
+  // or a sanitizer to see the invalid read.
+  auto world = makeSoftWorld();
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::CollisionDetector::getFactory()->create("fcl"));
+  auto* node = world->getSkeleton(0)->getSoftBodyNode(0)->getShapeNode(0);
+  if (!node->getCollisionAspect())
+    node->createCollisionAspect();
+  const auto softShape = node->getShape();
+  node->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)));
+  world->step();
+  ASSERT_GT(
+      world->getConstraintSolver()->getCollisionGroup()->getNumShapeFrames(),
+      0u);
+  const auto state = world->captureState();
+  node->setShape(softShape);
+  world->restoreState(state);
+  world->step();
+  expectEqual(state, state);
+  EXPECT_EQ(node->getShape(), softShape);
+}
+
 TEST(WorldState, ReusableGatherDoesNotAllocate)
 {
   auto world = makeWorld();
