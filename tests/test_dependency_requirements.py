@@ -63,6 +63,58 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     (directory / f"{package}Config.cmake").write_text(contents + extra)
 
 
+def test_component_exports_only_install_owned_dependency_finders(tmp_path):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    # Gazebo's FindEIGEN3 matches FindEigen3 on case-insensitive filesystems.
+    (modules / "FindEigen3.cmake").write_text("gz_import_target(EIGEN3 INTERFACE)\n")
+    (modules / "FindODE.cmake").write_text(
+        'message(FATAL_ERROR "Foreign ODE finder")\n'
+    )
+    result = configure(
+        tmp_path,
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
+        "set(LIBRARY_INSTALL_DIR lib)\n"
+        "include(Components)\n"
+        "initialize_component_helpers(dart)\n"
+        "add_component(dart fixture)\n"
+        "add_library(fixture INTERFACE)\n"
+        "add_component_targets(dart fixture fixture)\n"
+        "add_component_dependency_packages(dart fixture Eigen3 ODE)\n"
+        "install_component_exports(dart)\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    stage = tmp_path / "stage"
+    result = subprocess.run(
+        [
+            shutil.which("cmake"),
+            "--install",
+            str(tmp_path / "build"),
+            "--prefix",
+            str(stage),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    installed = stage / "lib/cmake/DART"
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    config_package(consumer, "Eigen3", "3.4.0")
+    result = configure(
+        consumer,
+        f'set(CMAKE_MODULE_PATH "{installed.as_posix()}")\n'
+        "find_package(Eigen3 REQUIRED)\n"
+        "include(DARTFindEigen3)\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (installed / "FindEigen3.cmake").exists()
+    for name in ("DARTFindEigen3.cmake", "DARTFindODE.cmake", "FindODE.cmake"):
+        assert (installed / name).read_text() == (ROOT / "cmake" / name).read_text()
+
+
 @pytest.mark.parametrize("skip", ["ON", "OFF"])
 def test_optional_package_with_undefined_found_flag(tmp_path, skip):
     result = configure(
@@ -76,10 +128,12 @@ def test_optional_package_with_undefined_found_flag(tmp_path, skip):
     assert "HAVE_Missing:BOOL=FALSE" in cache
 
 
-@pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom"])
+@pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom", "sdformat"])
 def test_io_requires_all_parser_dependencies(tmp_path, missing):
-    if missing == "urdfdom":
+    if missing != "tinyxml2":
         config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
+    if missing == "sdformat":
+        config_package(tmp_path, "urdfdom", "3.0.0", "urdfdom")
     result = configure(
         tmp_path,
         "include(DARTMacros)\n"
@@ -568,5 +622,171 @@ def test_filament_changed_root_invalidates_cached_package_directory(tmp_path):
         f'set(Filament_ROOT "{replacement_root.as_posix()}")\n'
         "find_package(Filament QUIET MODULE)\n"
         'if(Filament_FOUND)\nmessage(FATAL_ERROR "Kept the previous SDK")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "package,version,target,accepted",
+    [
+        ("sdformat14", "14.8.0", "sdformat14::sdformat14", True),
+        ("sdformat14", "14.7.0", "sdformat14::sdformat14", False),
+        ("sdformat15", "15.0.0", "sdformat15::sdformat15", True),
+        ("sdformat16", "16.1.0", "sdformat16::sdformat16", True),
+        ("sdformat", "16.1.0", "sdformat::sdformat16", True),
+        ("sdformat", "15.3.0", "sdformat::sdformat", True),
+        ("sdformat", "13.9.0", "sdformat::sdformat", False),
+        ("sdformat", "17.0.0", "sdformat::sdformat", False),
+        ("sdformat15", None, "sdformat15::sdformat15", False),
+        ("sdformat15", "15.3.0", None, False),
+        ("sdformat15", "16.1.0", "sdformat15::sdformat15", False),
+    ],
+)
+def test_sdformat_supported_packages(tmp_path, package, version, target, accepted):
+    config_package(tmp_path, package, version, target)
+    result = configure(
+        tmp_path,
+        "include(DARTFindsdformat)\n"
+        f"if(NOT SDFORMAT_FOUND STREQUAL {'TRUE' if accepted else 'FALSE'})\n"
+        'message(FATAL_ERROR "Incorrect sdformat acceptance")\nendif()\n'
+        + (
+            f'if(NOT SDFORMAT_LIBRARIES STREQUAL "{target}" OR NOT DART_SDFORMAT_PACKAGE STREQUAL "{package}")\n'
+            'message(FATAL_ERROR "Incorrect sdformat selection")\nendif()\n'
+            if accepted
+            else ""
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("unversioned", [False, True])
+def test_sdformat_prefers_newest_supported_major(tmp_path, unversioned):
+    config_package(tmp_path, "sdformat14", "14.8.0", "sdformat14::sdformat14")
+    config_package(tmp_path, "sdformat15", "15.3.0", "sdformat15::sdformat15")
+    config_package(
+        tmp_path,
+        "sdformat" if unversioned else "sdformat16",
+        "16.1.0",
+        "sdformat::sdformat16" if unversioned else "sdformat16::sdformat16",
+    )
+    result = configure(
+        tmp_path,
+        "include(DARTFindsdformat)\n"
+        'if(NOT DART_SDFORMAT_MAJOR STREQUAL "16")\n'
+        'message(FATAL_ERROR "Did not select newest sdformat")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("installed_major", [14, 15, 16])
+@pytest.mark.parametrize("package", ["sdformat15", "sdformat"])
+def test_sdformat_installed_component_pins_major(tmp_path, installed_major, package):
+    target = f"{package}::{package}"
+    config_package(tmp_path, package, f"{installed_major}.8.0", target)
+    # A different package at the requested major must not satisfy the pin.
+    if package == "sdformat":
+        config_package(tmp_path, "sdformat15", "15.3.0", "sdformat15::sdformat15")
+    template = (ROOT / "cmake/dart_Component.cmake.in").read_text()
+    for name, value in {
+        "PROJECT_NAME": "dart",
+        "PROJECT_NAME_UPPERCASE": "DART",
+        "component": "io",
+        "internal_dependencies": "dart",
+        "libraries": "dart-io",
+        "external_dependencies": "sdformat",
+        "DART_SDFORMAT_PACKAGE": package,
+        "DART_SDFORMAT_MAJOR": "15",
+    }.items():
+        template = template.replace(f"@{name}@", value)
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "dart_ioComponent.cmake").write_text(template)
+    shutil.copy(ROOT / "cmake/DARTFindsdformat.cmake", modules)
+    result = configure(
+        tmp_path,
+        "include(dart_ioComponent)\n"
+        "get_property(found DIRECTORY PROPERTY DART_io_FOUND)\n"
+        f"if(NOT found STREQUAL {'TRUE' if installed_major == 15 else 'FALSE'})\n"
+        'message(FATAL_ERROR "Incorrect installed sdformat major")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_io_disabled_does_not_discover_sdformat(tmp_path):
+    source = (ROOT / "dart/CMakeLists.txt").read_text()
+    start = source.index("if(DART_BUILD_IO)")
+    io_addition = source[start : source.index("endif()", start) + len("endif()")]
+    result = configure(
+        tmp_path,
+        "set(DART_BUILD_IO OFF)\n"
+        "function(add_subdirectory)\n"
+        'message(FATAL_ERROR "IO should not be configured")\nendfunction()\n'
+        + io_addition,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("component", ["io", "utils", "utils-urdf"])
+@pytest.mark.parametrize("major", [15, 16])
+def test_installed_legacy_components_propagate_sdformat_failure(
+    tmp_path, component, major
+):
+    config_package(tmp_path, "sdformat", f"{major}.3.0", "sdformat::sdformat")
+    prefix = tmp_path / "prefix"
+    (prefix / "include").mkdir()
+    package_dir = prefix / "lib/cmake/DART"
+    package_dir.mkdir(parents=True)
+    substitutions = {
+        "PROJECT_NAME": "dart",
+        "PROJECT_NAME_UPPERCASE": "DART",
+        "PACKAGE_INIT": "macro(set_and_check name value)\nset(${name} ${value})\nendmacro()",
+        "PACKAGE_INCLUDE_INSTALL_DIR": (prefix / "include").as_posix(),
+        "PACKAGE_INCLUDE_DIRS": "",
+        "DART_USE_SYSTEM_IMGUI": "ON",
+        "DART_VERSION": "6.20.0",
+        "DART_MAJOR_VERSION": "6",
+        "DART_SDFORMAT_PACKAGE": "sdformat",
+        "DART_SDFORMAT_MAJOR": "15",
+    }
+
+    def render(template, **values):
+        for name, value in (substitutions | values).items():
+            template = template.replace(f"@{name}@", value)
+        return template
+
+    (package_dir / "DARTConfig.cmake").write_text(
+        render((ROOT / "cmake/DARTConfig.cmake.in").read_text())
+    )
+    template = (ROOT / "cmake/dart_Component.cmake.in").read_text()
+    for name, dependencies, target in (
+        ("dart", "", "dart"),
+        ("io", "dart", "dart-io"),
+        ("utils", "io", "dart-utils"),
+        ("utils-urdf", "utils", "dart-utils-urdf"),
+    ):
+        (package_dir / f"dart_{name}Component.cmake").write_text(
+            render(
+                template,
+                component=name,
+                internal_dependencies=dependencies,
+                libraries=target,
+                external_dependencies="sdformat" if name == "io" else "",
+            )
+        )
+        (package_dir / f"dart_{name}Targets.cmake").write_text(
+            f"add_library({target} INTERFACE IMPORTED)\n"
+        )
+    shutil.copy(ROOT / "cmake/DARTFindsdformat.cmake", package_dir)
+    result = configure(
+        tmp_path,
+        f"find_package(DART QUIET CONFIG COMPONENTS {component})\n"
+        f"if({'NOT DART_FOUND' if major == 15 else 'DART_FOUND'})\n"
+        'message(FATAL_ERROR "Legacy component accepted incompatible sdformat")\nendif()\n'
+        + (
+            'if(NOT SDFORMAT_LIBRARIES STREQUAL "sdformat::sdformat")\n'
+            'message(FATAL_ERROR "Selected SDK target did not reach installed callers")\nendif()\n'
+            if major == 15
+            else ""
+        ),
     )
     assert result.returncode == 0, result.stdout + result.stderr

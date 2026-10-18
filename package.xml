@@ -28,6 +28,7 @@
   <depend>libfcl-dev</depend>
   <depend>liburdfdom-dev</depend>
   <depend>tinyxml2</depend>
+  <depend>sdformat</depend>
 
   <!-- The following tags are recommended by REP-136 -->
   <exec_depend>catkin</exec_depend>

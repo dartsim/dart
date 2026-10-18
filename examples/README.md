@@ -76,6 +76,10 @@ catalog's Z-up view; vehicle, Atlas SIMBICON, and soft-foot SIMBICON retain
 their Y-up worlds. The humanoid factories `atlas_world` and `g1_world` keep
 returning Worlds for `agent-capture --factory`.
 
+The soft-foot SIMBICON experiment explicitly uses unbounded joint velocities
+for both rigid and soft variants, preserving its historical push-recovery
+settings. General SDF loading honors the velocity limits authored in each model.
+
 Gate registration on optional binding availability: `point_cloud` needs
 `VoxelGridShape`; the humanoids need `ModelResourceRetriever`. A factory
 raises `AssetsNotPrefetchedError` for unavailable cached robot models or the
