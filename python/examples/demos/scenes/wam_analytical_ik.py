@@ -54,7 +54,9 @@ FK_TOLERANCE = 1e-6
 TRACK_TOLERANCE = 1e-9
 TRACK_ITERATIONS = 100
 BOUNDARY_ITERATIONS = 20
-TRACK_DAMPING = 1e-6
+TRACK_DAMPING = 1e-2
+# A bounded step this small has stalled against the limits.
+STALL = 1e-14
 TRACK_REACH = 0.5
 # The WAM's elbow, /j4: the shoulder-wrist distance alone fixes its angle.
 ELBOW = 3
@@ -167,7 +169,10 @@ def swivel_solver(chain, wam):
                 bounds=(lower - x, upper - x),
                 method="bvls",
             ).x
-            x = np.clip(x + np.clip(step, -TRACK_REACH, TRACK_REACH), lower, upper)
+            moved = np.clip(x + np.clip(step, -TRACK_REACH, TRACK_REACH), lower, upper)
+            if np.abs(moved - x).max() < STALL:
+                break
+            x = moved
         return x if np.abs(chain.fk(x) - desired).max() < FK_TOLERANCE else best
 
     def candidates(desired, q):
@@ -179,7 +184,8 @@ def swivel_solver(chain, wam):
         held = [into_limits(chart.q(swivel)) for chart in charts]
         # The target fixes each branch's elbow angle, whatever the swivel; if
         # none is in limits, nothing within limits reaches the target.
-        if charts and not any(lower[ELBOW] <= c[ELBOW] <= upper[ELBOW] for c in held):
+        elbows = {c[ELBOW] for c in held if lower[ELBOW] <= c[ELBOW] <= upper[ELBOW]}
+        if charts and not elbows:
             return []
         held = [c for c in held if usable(c, desired)]
         move = min((np.abs(c - q).max() for c in held), default=np.inf)
@@ -190,6 +196,15 @@ def swivel_solver(chain, wam):
         # the target is out of reach unless it lies on the boundary at full
         # extension, so keep that attempt short.
         tracked = track(q, desired, TRACK_ITERATIONS if charts else BOUNDARY_ITERATIONS)
+        # From the elbow fold at full extension, continuation can settle on the
+        # wrong side of active limits; retry from each of the target's elbows.
+        for elbow in sorted(elbows) if tracked is None else ():
+            start = q.copy()
+            start[ELBOW] = elbow
+            tracked = track_within_limits(start, desired, TRACK_ITERATIONS)
+            if near(tracked, q):
+                break
+            tracked = None
         if tracked is not None and np.abs(tracked - q).max() + JUMP < move:
             return [tracked]
         if move < FLIP:

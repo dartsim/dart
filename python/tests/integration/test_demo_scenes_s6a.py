@@ -404,7 +404,7 @@ _NARROW = np.array([-2.6, -2.0, 2.8, 3.1, -4.76, -1.6, 3.0])
 _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
 
 
-@pytest.mark.parametrize(
+_NEARBY_TARGETS = pytest.mark.parametrize(
     ("start", "goal"),
     [
         (
@@ -518,6 +518,14 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [2.23, -0.62, 0.0, 0.2315263, -4.76, 1.6, 0.0],
             [2.2625, -0.5725, 0.045, 0.2070263, -4.73, 1.6, 0.04],
         ),
+        (
+            [1.6263, -2.0, 0.6187, 0.23052629, 0.9754, 0.0, -2.9648],
+            [1.6434, -2.0, 0.611, 0.23052629, 0.9477, 0.0187, -2.9456],
+        ),
+        (
+            [0.926, -2.0, -0.086, 0.23052629, 1.24, -1.6, -1.073],
+            [0.929, -1.9978, -0.0878, 0.22592629, 1.24, -1.5967, -1.0767],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -534,7 +542,9 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
     # once raised, an active set went stale or kept a bound it should
     # release, or the last usable iterate was dropped; ssik finds no chart at
     # full extension for the next goal, and Newton alone lands 6 rad away from
-    # the last.
+    # the one after; from the last two starts at full extension on several
+    # limits, weak damping or the elbow fold sent continuation to the wrong
+    # side of the limits.
     ids=[
         "basis-switch",
         "near-singular",
@@ -566,8 +576,13 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
         "usable-iterate",
         "chartless-extension",
         "distant-root",
+        "aligned-wrist-damping",
+        "elbow-fold",
     ],
 )
+
+
+@_NEARBY_TARGETS
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
     setup, wam, ee, _ = _wam_with_ssik()
     wam.setPositions(goal)
@@ -579,6 +594,24 @@ def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
     assert np.abs(wam.getPositions() - start).max() < reach
     np.testing.assert_allclose(
         ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
+    )
+
+
+@_NEARBY_TARGETS
+def test_wam_ssik_solver_offers_nearby_solutions_for_whole_moves(start, goal):
+    from examples.demos.scenes import wam_analytical_ik
+
+    # DART clamps each IK iteration's error, so the scene sees intermediate
+    # targets; the solver must also reach the whole move in one call.
+    _, wam, _, chain = _wam_with_ssik()
+    desired = chain.fk(np.asarray(goal, dtype=float))
+    wam.setPositions(start)
+    found = wam_analytical_ik.swivel_solver(chain, wam)(desired)
+    reach = max(0.01, 2.0 * np.abs(np.subtract(goal, start)).max())
+    assert any(
+        np.abs(c - start).max() < reach
+        and np.abs(chain.fk(c) - desired).max() < 1e-6
+        for c in found
     )
 
 
@@ -658,6 +691,28 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
     step = beyond - ee.getWorldTransform().translation()
     drag([0.3, 0.6, 0.2, 3.1, -0.3, 0.5, 0.1], [step * k for k in range(1, 4)])
     assert budgets == []
+    # Pulling the shoulder past its limit stalls the bounded continuation,
+    # which must stop instead of spending its whole budget on every frame.
+    optimize = pytest.importorskip("scipy.optimize")
+    steps = []
+    lsq_linear = optimize.lsq_linear
+
+    def count(*args, **kwargs):
+        steps[-1] += 1
+        return lsq_linear(*args, **kwargs)
+
+    monkeypatch.setattr(optimize, "lsq_linear", count)
+    start = np.array([0.4, -2.0, 2.8, 3.1, 1.09, -0.22, -3.0])
+    for k in range(1, 4):
+        wam.setPositions(start - [0.0, 0.001 * k, 0.0, 0.0, 0.0, 0.0, 0.0])
+        desired = ee.getWorldTransform()
+        target = _activate_at(setup, wam, start)
+        target.setTransform(desired)
+        steps.append(0)
+        setup.pre_refresh()
+        actions = {chr(action.key): action for action in setup.key_actions}
+        actions["1"].callback()
+    assert max(steps) < 60
 
 
 def test_wam_ssik_skips_continuation_the_held_swivel_already_beats(monkeypatch):
