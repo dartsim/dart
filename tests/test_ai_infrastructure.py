@@ -9538,3 +9538,69 @@ def test_delegation_owners_hidden_self_close_markers_are_not_visible(
     monkeypatch.setattr(Path, "read_text", hide)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "marker" in e for e in errors)
+
+
+_SCOPE_BASES = [
+    "Delegation is not the default",
+    "Delegation is not default",
+    "Delegation is not enabled by default",
+    "Delegation is not on by default",
+    "Delegation is not active by default",
+    "Delegation is not allowed by default",
+    "By default, delegation is not enabled",
+    "By default, delegation is not on",
+    "By default, delegation is not active",
+    "By default, delegation is not allowed",
+    "Delegation is disabled by default",
+    "Delegation is off by default",
+    "By default, delegation is disabled",
+    "By default, delegation is off",
+    "Delegation defaults to disabled",
+    "Delegation defaults to off",
+    "Do not delegate by default",
+]
+_SCOPE_TEMPLATES = [
+    ("{base}.", True),
+    ("{base} for release approval.", False),
+    ("{base} about release approval.", False),
+    ('{base} "release approval".', False),
+    ('"{base}" or unset.', True),
+    ("{base} policy.", True),
+    ("{base} for release approval; Do not delegate by default.", True),
+    ("When delegation=o*ff, {base}.", True),
+    ("When delegation=off, {base}.", False),
+]
+_SCOPE_CASES = [
+    (template.format(base=base), rejected)
+    for base in _SCOPE_BASES
+    for template, rejected in _SCOPE_TEMPLATES
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _SCOPE_CASES)
+def test_delegation_negative_scope_tails(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("Delegation is not the default for release approval.", False),
+        ("By default, delegation is disabled about release approval.", False),
+        ('Do not delegate by default "release approval".', False),
+        ("Delegation is not the default.", True),
+        ('"Delegation is not the default" or unset.', True),
+        (
+            "Delegation is not the default for release approval. "
+            "Delegation is not the default.",
+            True,
+        ),
+    ],
+)
+def test_delegation_owners_negative_scope_tails(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected

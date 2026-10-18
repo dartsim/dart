@@ -5393,8 +5393,10 @@ def _delegation_owner_text(source: str) -> str:
     return "\n\n".join(_folded_paragraphs(_html_text(html)))
 
 
-def _fronted_action_ends(text: str, start: int, end: int) -> bool:
-    """Whether a fronted action stands alone rather than taking an object.
+def _delegation_negation_ends(
+    text: str, start: int, end: int, *, fronted_action: bool = False
+) -> bool:
+    """Whether a negative stands alone rather than taking an object or topic scope.
 
     The decision needs the original owner text around the action: clause
     splitting drops the punctuation that tells a closing quote from an opening
@@ -5403,6 +5405,10 @@ def _fronted_action_ends(text: str, start: int, end: int) -> bool:
     tail = text[end:]
     spaced = bool(tail and tail[0] in " \t\r\f\v")
     tail = tail.lstrip(" \t\r\f\v")
+    # Non-fronted negatives take explicit for/about scopes or quoted labels;
+    # other continuation text stays conservative (e.g. "not the default policy").
+    if not fronted_action and not re.match(r"(?:for|about)(?=\s)|[\"'`‘“”]", tail):
+        return True
     if not tail or tail[0] == "\n":
         return True
     if tail[0] in "\"'`”":
@@ -5471,8 +5477,11 @@ def _delegation_negation(owner_text: str) -> str | None:
             continue
         for negated in _DELEGATION_NEGATION.finditer(clause):
             fronted = _DELEGATION_FRONTED_ACTION.match(clause, negated.start())
-            if fronted and not _fronted_action_ends(
-                lowered, offset + fronted.start(), offset + fronted.end()
+            if not _delegation_negation_ends(
+                lowered,
+                offset + negated.start(),
+                offset + negated.end(),
+                fronted_action=fronted is not None,
             ):
                 continue  # object-qualified; a later real reversal may follow
             return negated.group(0)
