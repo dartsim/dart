@@ -375,6 +375,7 @@ class Tokens:
     template_headers: dict = field(default_factory=lambda: defaultdict(set))
     alias_templates: dict = field(default_factory=dict)
     alias_parameters: dict = field(default_factory=dict)
+    alias_defaults: dict = field(default_factory=dict)
     ambiguous: bool = False  # a whole-array copy decision awaits inferred types
     late: bool = False  # inference has finished
     enum_headers: dict = field(default_factory=lambda: defaultdict(set))
@@ -631,15 +632,10 @@ def function_pointer_declarator(values):
                 continue
             suffix += 1
         dimensions = 0
-        while values[suffix : suffix + 1] == ["["] and suffix in tokens.pairs:
-            if (
-                name_index is not None
-                and values[suffix + 1 : suffix + 2] == ["["]
-                and tokens.pairs[suffix + 1] + 1 == tokens.pairs[suffix]
-            ):
-                # Post-name standard attribute, e.g. `(*factory [[maybe_unused]])`.
-                suffix = tokens.pairs[suffix] + 1
-                continue
+        while True:
+            suffix = declarator_attributes_end(tokens, suffix)
+            if values[suffix : suffix + 1] != ["["] or suffix not in tokens.pairs:
+                break
             dimensions += 1
             suffix = tokens.pairs[suffix] + 1
         if suffix == group:
@@ -918,20 +914,9 @@ def data_member(values, owner, layout_only=False):
     }
     annotations = {
         position
-        for index, value in enumerate(values)
-        if value in {"__attribute__", "__attribute", "__declspec"}
-        and values[index + 1 : index + 2] == ["("]
-        and index + 1 in type_tokens.pairs
-        for position in range(index, type_tokens.pairs[index + 1] + 1)
+        for index in range(len(values))
+        for position in range(index, declarator_attributes_end(type_tokens, index))
     }
-    annotations.update(
-        position
-        for index, value in enumerate(values)
-        if value == "["
-        and values[index + 1 : index + 2] == ["["]
-        and index in type_tokens.pairs
-        for position in range(index, type_tokens.pairs[index] + 1)
-    )
     type_expressions.update(annotations)
     for start, end, name in names_in(values):
         if name == "std::function":
@@ -1698,9 +1683,24 @@ def scopes(tokens, annotation_text=None):
                     # Only the enclosing class templates' parameters shadow its target.
                     tokens.alias_templates[alias_name] = templates
                     if prefix[:2] == ["template", "<"]:  # the alias's own parameters
+                        header = prefix[:using]
                         tokens.alias_parameters[alias_name] = template_parameter_list(
-                            prefix[:using]
+                            header
                         )
+                        tokens.alias_defaults[alias_name] = [
+                            part[
+                                next(
+                                    (
+                                        index + 1
+                                        for index, value in enumerate(part)
+                                        if value == "="
+                                        and not in_template_argument(part, index)
+                                    ),
+                                    len(part),
+                                ) :
+                            ]
+                            for part in template_arguments(header, 1)
+                        ]
                 elif prefix and prefix[0] == "typedef" and len(prefix) > 2:
                     for target, _ in declarators(prefix[1:], owner):
                         member = data_member(target, owner) or declaration(
@@ -1753,6 +1753,7 @@ class ApiIndex:
     alias_arguments: dict = field(default_factory=dict)
     alias_templates: dict = field(default_factory=dict)
     alias_parameters: dict = field(default_factory=dict)
+    alias_defaults: dict = field(default_factory=dict)
     alias_literals: dict = field(default_factory=dict)
     macros: set = field(default_factory=set)
     headers: set = field(default_factory=set)
@@ -2551,8 +2552,7 @@ class ApiIndex:
         return set().union(*map(template_parameter_names, headers))
 
     def alias_target(self, name, values, end, normalize):
-        """An alias's target with explicit arguments substituted, its remaining
-        template parameters masked, and the index after the used alias-id."""
+        """Substitute an alias-id's actuals/defaults, masking unresolved parameters."""
         arguments, where = self.alias_arguments[name]
         shadowed = set().union(
             *(
@@ -2562,25 +2562,39 @@ class ApiIndex:
         )
         parameters = self.alias_parameters.get(name, ())
         mapping, after = {}, end
+
+        def substitute(tokens):
+            result = []
+            for index, value in enumerate(tokens):
+                if value in mapping and (
+                    not index or tokens[index - 1] not in {"::", "."}
+                ):
+                    result.extend(mapping[value])
+                else:
+                    result.append(value)
+            return result
+
         if parameters and values[end : end + 1] == ["<"]:
             after = template_end(values, end)
-            mapping = {
-                parameter: normalize(actual)
-                for parameter, actual in zip(
-                    parameters, template_arguments(values, end)
-                )
-                if parameter
-            }
+            actuals = template_arguments(values, end)
+            defaults = self.alias_defaults.get(name, ())
+            for index, parameter in enumerate(parameters):
+                if not parameter:
+                    continue
+                actual = actuals[index] if index < len(actuals) else []
+                default = defaults[index] if index < len(defaults) else []
+                if actual:
+                    mapping[parameter] = normalize(actual)
+                elif default:
+                    # Defaults see their declaration scope and earlier actuals.
+                    mapping[parameter] = self.masked_aliases(
+                        substitute(default),
+                        where,
+                        shadowed
+                        | (set(filter(None, parameters[:index])) - set(mapping)),
+                    )
         shadowed |= set(filter(None, parameters)) - set(mapping)
-        substituted = []
-        for index, value in enumerate(arguments):
-            if value in mapping and (
-                not index or arguments[index - 1] not in {"::", "."}
-            ):
-                substituted.extend(mapping[value])
-            else:
-                substituted.append(value)
-        return substituted, where, shadowed, after
+        return substitute(arguments), where, shadowed, after
 
     def masked_aliases(self, values, scope, shadowed, depth=0):
         """Expand aliases, masking each declaration's own template parameters."""
@@ -2839,7 +2853,10 @@ class ApiIndex:
                 else:
                     for owner in self.layout_operand_owners(operand, scope):
                         result.extend(self.layout_evidence(owner))
-            prefix = self.masked_aliases(prefix, scope, shadowed)
+            prefix, expression = (
+                self.masked_aliases(part, scope, shadowed)
+                for part in (prefix, expression)
+            )
             function = function_type_signature(prefix)
             if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
                 function_opening = function["opening"]
@@ -3178,9 +3195,12 @@ def variable_after_type(values, end, grouped=False):
     while j < len(values):
         if values[j] in {"const", "volatile", "*", "&", "&&", ">"}:
             j += 1
-        elif values[j] in {"__attribute__", "__attribute", "__declspec"} or values[
-            j : j + 2
-        ] == ["[", "["]:
+        elif values[j] in {
+            "__attribute__",
+            "__attribute",
+            "__declspec",
+            "alignas",
+        } or values[j : j + 2] == ["[", "["]:
             after = declarator_attributes_end(Tokens(" ".join(values)), j)
             if after == j:
                 break
@@ -3214,6 +3234,7 @@ def variable_after_type(values, end, grouped=False):
             "__attribute__",
             "__attribute",
             "__declspec",
+            "alignas",
         }
     ):
         return j
@@ -3224,7 +3245,7 @@ def declarator_attributes_end(tokens, index):
     """Skip balanced standard and compiler declarator attributes."""
     values = tokens.values
     while index < len(values):
-        if values[index] in {"__attribute__", "__attribute", "__declspec"}:
+        if values[index] in {"__attribute__", "__attribute", "__declspec", "alignas"}:
             opening = index + 1
             bracket = "("
         elif values[index : index + 2] == ["[", "["]:
@@ -4338,6 +4359,7 @@ def index_api(header_root):
         for name, parameters in tokens.alias_parameters.items():
             if name.startswith("dart::"):
                 api.alias_parameters[name] = parameters
+                api.alias_defaults[name] = tokens.alias_defaults.get(name, ())
         for name, declarations in tokens.enum_headers.items():
             if name.startswith("dart::"):
                 api.type_enums[name].update(declarations)
@@ -6101,7 +6123,7 @@ def scan_sources(api, source_root):
             )
             if j is not None and j not in declaration_indices:
                 owner = api.owner(resolved)
-                if owner or expression_alias(api, resolved):
+                if owner or resolved in api.alias_arguments:
                     types = {resolved} if owner else set()
                     if "*" in values[
                         template_end(values, type_end) : j
@@ -6747,12 +6769,30 @@ def scan_sources(api, source_root):
             values = layout_prefix(values, context)
         result, previous = [], 0
         for start, end, name in names_in(values):
+            if start < previous:
+                continue  # inside an already substituted alias-id
             result.extend(values[previous:start])
             resolved = api.resolve(name, scope)
             if trailing_function_alias(resolved):
                 result.append(resolved)
             elif resolved in api.alias_arguments:
-                argument, where = api.alias_arguments[resolved]
+
+                def normalize_actual(actual):
+                    key = product_key(actual, scope, context, depth + 1)
+                    return TOKEN.findall(key) if key is not None else actual
+
+                argument, where, shadowed, end = api.alias_target(
+                    resolved, values, end, normalize_actual
+                )
+                argument = [
+                    (
+                        "__template_parameter"
+                        if value in shadowed
+                        and (not index or argument[index - 1] != "::")
+                        else value
+                    )
+                    for index, value in enumerate(argument)
+                ]
                 key = product_key(argument, where, depth=depth + 1)
                 if key is None:
                     return None
@@ -7280,12 +7320,22 @@ def scan_sources(api, source_root):
                     resolve_return(value)
                     for start, _, value in names_in(return_tokens)
                     if not in_template_argument(return_tokens, start)
-                    and expression_alias(api, resolve_return(value))
+                    and (
+                        expression_alias(api, resolve_return(value))
+                        or api.alias_parameters.get(resolve_return(value))
+                    )
                 ),
                 None,
             )
             if alias:
-                values, where = outer_declaration_type(return_tokens, api, scope)
+                prefix = (
+                    layout_prefix(
+                        return_tokens, (path, tokens, index, imports, namespace_aliases)
+                    )
+                    if context and path in closure
+                    else return_tokens
+                )
+                values, where = outer_declaration_type(prefix, api, scope)
                 expanded = {**item, "return_tokens": values, "declaration_scope": where}
                 expanded.pop("source", None)
                 inferred = returns([expanded], depth + 1)
