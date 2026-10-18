@@ -60,6 +60,9 @@ STALL = 1e-14
 TRACK_REACH = 0.5
 # The WAM's elbow, /j4: the shoulder-wrist distance alone fixes its angle.
 ELBOW = 3
+# An elbow retry this close to the current elbow repeats the first attempt.
+RETRY_OFFSET = 1e-6
+NUDGE = 0.01
 
 
 def swivel_solver(chain, wam):
@@ -145,22 +148,24 @@ def swivel_solver(chain, wam):
         )
         x = None if result is None else into_limits(result[0])
         if not near(x, q) or not within_limits(x):
-            x = track_within_limits(q, desired, iterations)
-        return x if near(x, q) else None
+            x = track_within_limits(q, q, desired, iterations)
+        return x
 
-    def track_within_limits(q, desired, iterations):
+    def track_within_limits(seed, q, desired, iterations):
         # Where the unconstrained steps cross a limit or stall, continue again
         # with bounded least-squares steps that keep every joint in its limits.
         # Damping shrinks with the residual, as in Levenberg-Marquardt, and the
         # augmented system stays well posed where the Jacobian loses rank.
-        x, best = q.copy(), None
-        for _ in range(iterations):
+        # Returns the usable iterate nearest q, since later steps can wander.
+        x, best, best_move = seed.copy(), None, TRACK_REACH
+        for _ in range(iterations + 1):
             pose = chain.fk(x)
             error = np.abs(pose - desired).max()
+            move = np.abs(x - q).max()
+            if error < FK_TOLERANCE and move <= best_move:
+                best, best_move = x.copy(), move
             if error < TRACK_TOLERANCE:
-                return x
-            if error < FK_TOLERANCE:
-                best = x.copy()
+                break
             twist = refinement.se3_log_residual(desired @ np.linalg.inv(pose))
             damping = np.sqrt(min(TRACK_DAMPING, twist @ twist)) * np.eye(x.size)
             step = optimize.lsq_linear(
@@ -173,7 +178,7 @@ def swivel_solver(chain, wam):
             if np.abs(moved - x).max() < STALL:
                 break
             x = moved
-        return x if np.abs(chain.fk(x) - desired).max() < FK_TOLERANCE else best
+        return best
 
     def candidates(desired, q):
         motion = chain.self_motion(desired)
@@ -195,16 +200,28 @@ def swivel_solver(chain, wam):
         # where the swivel is ill-conditioned or near limits. Without a chart
         # the target is out of reach unless it lies on the boundary at full
         # extension, so keep that attempt short.
-        tracked = track(q, desired, TRACK_ITERATIONS if charts else BOUNDARY_ITERATIONS)
+        # Continuation keeps the elbow within reach of its current angle, so
+        # it cannot help when every target elbow lies farther away.
+        offsets = [abs(elbow - q[ELBOW]) for elbow in elbows]
+        tracked = None
+        if not charts or min(offsets) <= TRACK_REACH:
+            iterations = TRACK_ITERATIONS if charts else BOUNDARY_ITERATIONS
+            tracked = track(q, desired, iterations)
         # From the elbow fold at full extension, continuation can settle on the
-        # wrong side of active limits; retry from each of the target's elbows.
-        for elbow in sorted(elbows) if tracked is None else ():
-            start = q.copy()
-            start[ELBOW] = elbow
-            tracked = track_within_limits(start, desired, TRACK_ITERATIONS)
-            if near(tracked, q):
+        # wrong side of active limits; retry from each other target elbow.
+        for elbow, offset in sorted(zip(elbows, offsets), key=lambda e: e[1]):
+            if tracked is not None or offset > TRACK_REACH:
                 break
-            tracked = None
+            if offset > RETRY_OFFSET:
+                start = q.copy()
+                start[ELBOW] = elbow
+                tracked = track_within_limits(start, q, desired, TRACK_ITERATIONS)
+        # Several active limits can trap the bounded steps at a stationary
+        # point; retry once from a seed nudged inward off every active limit.
+        nudged = np.clip(q, lower + NUDGE, upper - NUDGE)
+        reachable = charts and min(offsets) <= TRACK_REACH
+        if tracked is None and reachable and (nudged != q).any():
+            tracked = track_within_limits(nudged, q, desired, TRACK_ITERATIONS)
         if tracked is not None and np.abs(tracked - q).max() + JUMP < move:
             return [tracked]
         if move < FLIP:

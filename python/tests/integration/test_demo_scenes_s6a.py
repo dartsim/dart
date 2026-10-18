@@ -526,6 +526,14 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
             [0.926, -2.0, -0.086, 0.23052629, 1.24, -1.6, -1.073],
             [0.929, -1.9978, -0.0878, 0.22592629, 1.24, -1.5967, -1.0767],
         ),
+        (
+            [0.698, 0.0, 2.8, 0.23152629, -4.76, -1.162, -3.0],
+            [0.705, 0.0, 2.8, 0.23152629, -4.76, -1.156, -2.999],
+        ),
+        (
+            [-2.6, 0.0, -2.8, 0.2315263, 1.24, -1.6, 3.0],
+            [-2.5956, -0.0031, -2.8, 0.2284, 1.2355, -1.6, 2.9982],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -544,7 +552,8 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
     # full extension for the next goal, and Newton alone lands 6 rad away from
     # the one after; from the last two starts at full extension on several
     # limits, weak damping or the elbow fold sent continuation to the wrong
-    # side of the limits.
+    # side of the limits; continuation later wandered out of reach after a
+    # usable iterate, and stalled at a stationary point of active limits.
     ids=[
         "basis-switch",
         "near-singular",
@@ -578,6 +587,8 @@ _NEARBY_TARGETS = pytest.mark.parametrize(
         "distant-root",
         "aligned-wrist-damping",
         "elbow-fold",
+        "wandering-continuation",
+        "stalled-fold",
     ],
 )
 
@@ -702,9 +713,18 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
         return lsq_linear(*args, **kwargs)
 
     monkeypatch.setattr(optimize, "lsq_linear", count)
-    start = np.array([0.4, -2.0, 2.8, 3.1, 1.09, -0.22, -3.0])
-    for k in range(1, 4):
-        wam.setPositions(start - [0.0, 0.001 * k, 0.0, 0.0, 0.0, 0.0, 0.0])
+    # Pushing past an elbow limit on the near branch leaves only far elbows,
+    # which continuation cannot reach; a near-repeat elbow retry is skipped.
+    shoulder = np.array([0.4, -2.0, 2.8, 3.1, 1.09, -0.22, -3.0])
+    for start, joint, offset in (
+        (shoulder, 1, -0.001),
+        (shoulder, 1, -0.003),
+        (np.array([0.0, 0.0, 0.0, -0.9, 0.0, 0.0, 0.0]), 3, -1e-4),
+        (np.array([2.6, -2.0, -2.8, -0.9, -0.3, 0.0, -3.0]), 1, -0.001),
+    ):
+        moved = start.copy()
+        moved[joint] += offset
+        wam.setPositions(moved)
         desired = ee.getWorldTransform()
         target = _activate_at(setup, wam, start)
         target.setTransform(desired)
