@@ -8660,3 +8660,228 @@ def test_delegation_owners_comma_before_trailing_by_default(
     monkeypatch.setattr(Path, "read_text", changed_text)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_POLICY_SUBJECTS = [
+    "I", "we", "you", "agent", "agents", "the agent", "the agents", "an agent",
+    "assistant", "assistants", "the assistant", "the assistants",
+    "the orchestrator", "the executor", "the parent",
+]  # fmt: skip
+
+
+def _rejected(source):
+    return bool(infra._delegation_negation(infra._delegation_owner_text(source)))
+
+
+@pytest.mark.parametrize("subject", _POLICY_SUBJECTS)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("By default, {s} do not delegate.", True),
+        ("By default: {s} cannot delegate.", True),
+        ("By default {s} won't delegate.", True),
+        ("By default, {s} must no longer delegate.", True),
+        ("{s} do not delegate by default.", True),
+        ("When delegation=off, {s} do not delegate by default.", False),
+        ("{s} do not delegate by default when delegation=off.", False),
+        ("({s} do not delegate by default when `delegation=off`).", False),
+        ("When delegation=off, by default, {s} do not delegate.", False),
+        ("When delegation=o*ff, by default, {s} do not delegate.", True),
+        ("Even when delegation=off, {s} do not delegate by default.", True),
+        ("When delegation=off, {s} do not delegate by default or ever.", True),
+    ],
+)
+def test_delegation_negation_recognizes_policy_subjects(subject, template, rejected):
+    assert _rejected(template.format(s=subject)) is rejected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "By default, the build does not delegate.",
+        "By default, weird agents do not delegate.",
+        "By default, agentship does not delegate.",
+        "By default, the agentic task does not delegate.",
+        "By default, we always do not delegate.",
+    ],
+)
+def test_delegation_negation_ignores_unlisted_subjects(source):
+    assert not _rejected(source)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nBy default, we do not delegate.", True),
+        ("\n\nWhen delegation=off, we do not delegate by default.", False),
+        ("\n\nWe do not delegate by default when delegation=off.", False),
+        ("\n\nWhen delegation=o*ff, by default, we do not delegate.", True),
+        ("\n\nBy default, the build does not delegate.", False),
+    ],
+)
+def test_delegation_owners_policy_subjects(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+def _owner_suffix(monkeypatch, relative, suffix):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+
+_NEG = "Do not delegate by default."
+_HIDDEN = ["script", "style", "title", "template"]
+
+
+@pytest.mark.parametrize("tag", _HIDDEN)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("<{t}>" + _NEG + "</{t}>", False),
+        ("<span><{t}>" + _NEG + "</{t}></span>", False),
+        ("<{T}>" + _NEG + "</{T}>", False),
+        ("<{t}>" + _NEG, False),
+        ("<{t}>x</{t}>\n" + _NEG, True),
+        ("Do no<{t}>ignored</{t}>t delegate by default.", True),
+        ("Do no<{t}>ignored\n\nignored</{t}>t delegate by default.", True),
+        ("<div><{t}>When delegation=off,</{t}>" + _NEG + "</div>", True),
+        ("<{t}>Delegation is disabled.</{t}>Delegate by default.", False),
+    ],
+)
+def test_delegation_owner_text_skips_nonrendered_html(tag, template, rejected):
+    assert _rejected(template.format(t=tag, T=tag.upper())) is rejected
+
+
+def test_delegation_owner_text_nests_hidden_templates():
+    nested = "<template><template>x</template>" + _NEG + "</template>"
+    assert not _rejected(nested)
+    assert _rejected(nested + _NEG)
+    assert _rejected("<span>Do not delegate by default.</span>")
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "<script>Do not delegate by default.</script>",
+        "<style>Do not delegate by default.</style>",
+    ],
+)
+def test_delegation_marker_in_hidden_html_is_not_visible(source):
+    assert infra._delegation_owner_text(source) == ""
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "```\n<script>Do not delegate by default.</script>\n```",
+        "`<script>`Do not delegate by default.",
+        "Do not delegate by default.\\<script>x",
+        "Do not delegate by default. &lt;script&gt;x&lt;/script&gt;",
+    ],
+)
+def test_delegation_literal_script_text_stays_visible(source):
+    assert "delegate by default" in infra._delegation_owner_text(source)
+    assert _rejected(source)
+
+
+@pytest.mark.parametrize("tag", ["center", "dir", "menu", "dialog", "frame"])
+def test_delegation_html_blocks_use_commonmark_names(tag):
+    source = f"<{tag}>When delegation=off,</{tag}>\n<{tag}>{_NEG}</{tag}>"
+    assert _rejected(source)
+    sibling = f"<{tag}>When delegation=off,</{tag}><{tag}>{_NEG}</{tag}>"
+    assert "\n\n" in infra._delegation_owner_text(sibling) or _rejected(sibling)
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("<textarea>When delegation=off,</textarea>" + _NEG, True),
+        ("<span>When delegation=off,</span> " + _NEG, False),
+        ("<em>Do no</em>t delegate by default.", True),
+    ],
+)
+def test_delegation_html_inline_and_textarea_boundaries(source, rejected):
+    assert _rejected(source) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "visible"),
+    [
+        ("Do ![`not`](p.svg) delegate by default.", True),
+        ("Do ![not <script>](p.svg) delegate by default.", True),
+        ('Do <img alt="not" src="p.svg"> delegate by default.', False),
+        ('<img alt="Do not delegate by default.">', False),
+        ("![<script>junk](p.svg) " + _NEG, True),
+        ("![](p.svg)" + _NEG, True),
+    ],
+)
+def test_delegation_image_labels_keep_code_and_ignore_img_alt(source, visible):
+    assert _rejected(source) is visible
+
+
+def test_delegation_image_code_label_text_and_no_state_leak():
+    owner = infra._delegation_owner_text("![`code` and **b**](p.svg)")
+    assert owner == "!code and b"
+    owner = infra._delegation_owner_text("![<template>x](p.svg) " + _NEG)
+    assert owner.endswith(_NEG)
+    assert "\n" not in owner
+
+
+_TEXTAREA_FORMS = [
+    ("<textarea>When delegation=off,\n\nDo not delegate by default.</textarea>", True),
+    (
+        "<TEXTAREA>When delegation=off,&#10;&#10;Do not delegate by default.</TEXTAREA>",
+        True,
+    ),
+    (
+        "Pre <textarea>When delegation=off,\n\nDo not delegate by default.</textarea>",
+        True,
+    ),
+    ("<textarea>Do not\n\ndelegate by default.</textarea>", False),
+    ("<TextArea>Do not&#10;&#10;delegate by default.</TextArea>", False),
+    ("Pre <textarea>Do not&#10;&#10;delegate by default.</textarea> post", False),
+    ("<textarea>When delegation=off,\ndo not delegate by default.</textarea>", False),
+    (
+        "<textarea>When delegation=off,&#10;do not delegate by default.</textarea>",
+        False,
+    ),
+    ("<textarea>Do not delegate by default.</textarea>", True),
+    ("<pre>When delegation=off,\n\nDo not delegate by default.</pre>", True),
+    ("<pre>Do not\n\ndelegate by default.</pre>", False),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _TEXTAREA_FORMS)
+def test_delegation_textarea_keeps_structural_whitespace(source, rejected):
+    assert _rejected(source) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (
+            "<textarea>When delegation=off,\n\nDo not delegate by default.</textarea>",
+            True,
+        ),
+        ("<textarea>Do not&#10;&#10;delegate by default.</textarea>", False),
+        (
+            "<textarea>When delegation=off,\ndo not delegate by default.</textarea>",
+            False,
+        ),
+    ],
+)
+def test_delegation_owners_textarea_whitespace(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected

@@ -5157,7 +5157,13 @@ _DELEGATION_NEGATED_AUX = (
     rf"(?:(?:do|does|did|{_DELEGATION_MODAL})\s+(?:not|never|no\s+longer)"
     r"|(?:do|does|did|should|must|ca|could|wo|would|sha|may|might)n't)"
 )
+# Finite policy subjects that may precede a negated action; not an NLP subject parser.
+_DELEGATION_POLICY_SUBJECT = (
+    r"(?:i|we|you|(?:the\s+)?(?:agents?|assistants?)|an\s+agent"
+    r"|the\s+(?:orchestrator|executor|parent))"
+)
 _DELEGATION_NEGATED_ACTION = (
+    rf"(?:\b{_DELEGATION_POLICY_SUBJECT}\s+)?"
     rf"(?:\b{_DELEGATION_NEGATED_AUX}|\bcannot|\bnot|n't|\bnever|\bno longer)"
     r"\s+delegate"
 )
@@ -5203,44 +5209,69 @@ _DELEGATION_EXEMPT_CLAUSE = re.compile(
 )
 
 
-# Block tags that end a visible paragraph inside raw HTML; inline tags stay transparent.
-_HTML_BLOCK_TAGS = frozenset(
-    "address article aside blockquote body dd details div dl dt fieldset figure "
-    "footer form h1 h2 h3 h4 h5 h6 header hr li main nav ol p pre section "
-    "summary table tbody td tfoot th thead tr ul".split()
-)
 _MD_FULL_REFERENCE = re.compile(r"\[([^\[\]]*)\]\[[^\[\]]*\]")
 _MD_TASK = re.compile(r"^\[[ xX]\][ \t]+")
+# Containers whose bodies a browser does not render as text; matched by root tag.
+_HTML_HIDDEN_TAGS = frozenset({"script", "style", "title", "template"})
+_HTML_KEEP_SPACE_TAGS = frozenset({"pre", "textarea"})
 
 
 class MarkdownParserMissing(RuntimeError):
     """The Pixi-supplied Markdown parser is unavailable to this interpreter."""
 
 
+def _html_block_tags() -> frozenset[str]:
+    """CommonMark's own block names (lazy: markdown-it is Pixi-supplied)."""
+    from markdown_it.common.html_blocks import block_names
+
+    return frozenset(block_names) | _HTML_KEEP_SPACE_TAGS
+
+
 class _VisibleHTML(HTMLParser):
-    """Keep text; drop comments and attributes; <br> is a space, blocks split."""
+    """Keep text; drop comments, attributes and hidden containers; <br> is a space.
+
+    shortcut: HTMLParser has no browser recovery; revisit if owner markup needs it.
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
-        self.pre_depth = 0
+        self.keep_space_depth = 0  # inside <pre>/<textarea>: whitespace is structural
+        self.block_tags = _html_block_tags()
+        self.hidden: str | None = None  # root tag of the hidden container
+        self.hidden_depth = 0
 
     def handle_data(self, data: str) -> None:
+        if self.hidden:
+            return
         # Lexical folding, except <pre> keeps its structural blank lines.
-        self.parts.append(data if self.pre_depth else re.sub(r"\s+", " ", data))
+        self.parts.append(data if self.keep_space_depth else re.sub(r"\s+", " ", data))
 
     def handle_starttag(self, tag: str, attrs: Any) -> None:
-        if tag == "pre":
-            self.pre_depth += 1
+        if self.hidden:
+            if tag == self.hidden == "template":
+                self.hidden_depth += 1
+            return
+        if tag in _HTML_HIDDEN_TAGS:
+            self.hidden, self.hidden_depth = tag, 1
+            return
+        if tag in _HTML_KEEP_SPACE_TAGS:
+            self.keep_space_depth += 1
         if tag == "br":
             self.parts.append(" ")
-        elif tag in _HTML_BLOCK_TAGS:
+        elif tag in self.block_tags:
             self.parts.append("\n\n")
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "pre":
-            self.pre_depth = max(self.pre_depth - 1, 0)
-        if tag in _HTML_BLOCK_TAGS:
+        if self.hidden:
+            if tag == self.hidden:
+                self.hidden_depth -= 1
+                if not self.hidden_depth:
+                    self.hidden = None
+            return
+        if tag in _HTML_KEEP_SPACE_TAGS:
+            self.keep_space_depth = max(self.keep_space_depth - 1, 0)
+        if tag in self.block_tags:
             self.parts.append("\n\n")
 
 
@@ -5272,23 +5303,19 @@ def _markdown_parser() -> Any:
             "the delegation policy check needs the Pixi-supplied markdown-it-py; "
             "run it with `pixi run check-ai-infra` or the Pixi interpreter"
         ) from error
-    parser = MarkdownIt("commonmark", {"html": True}).disable("text_join")
+    parser = MarkdownIt("commonmark", {"html": True})
     parser.inline.ruler.after("link", "legacy_full_reference", _legacy_full_reference)
     return parser
 
 
-def _inline_parts(children: Any) -> str:
-    """Visible text of inline tokens; token content is already decoded once."""
+def _image_label(children: Any) -> str:
+    """Plain image label: text and code kept, alt-embedded HTML ignored."""
     parts: list[str] = []
     for child in children or ():
-        if child.type in {"text", "text_special"}:
-            parts.append(re.sub(r"\s+", " ", child.content))  # entity newlines lexical
-        elif child.type == "code_inline":
+        if child.type in {"text", "text_special", "code_inline"}:
             parts.append(child.content)
-        elif child.type == "html_inline":
-            parts.append(_html_text(child.content))
         elif child.type == "image":
-            parts.append("!" + _inline_parts(child.children))
+            parts.append("!" + _image_label(child.children))
         elif child.type in {"softbreak", "hardbreak"}:
             parts.append(" ")
     return "".join(parts)
@@ -5302,29 +5329,28 @@ def _folded_paragraphs(text: str) -> list[str]:
 
 
 def _delegation_owner_text(source: str) -> str:
-    """Visible owner text: CommonMark blocks folded to blank-line paragraphs."""
+    """Visible owner text: the rendered CommonMark HTML, folded to paragraphs."""
     markdown = _markdown_parser()
     env: dict[str, Any] = {}  # fresh per owner so definitions never leak
     tokens = markdown.parse(source, env)
-    paragraphs: list[str] = []
     for index, token in enumerate(tokens):
-        if token.type == "inline":
-            children = token.children
-            task = _MD_TASK.match(token.content)
-            if (
-                task
-                and index >= 2
-                and tokens[index - 2].type == "list_item_open"
-                and tokens[index - 1].type == "paragraph_open"
-            ):
-                rest = markdown.parseInline(token.content[task.end() :], env)
-                children = rest[0].children
-            paragraphs.extend(_folded_paragraphs(_inline_parts(children)))
-        elif token.type in {"fence", "code_block"}:
-            paragraphs.extend(_folded_paragraphs(token.content))
-        elif token.type == "html_block":
-            paragraphs.extend(_folded_paragraphs(_html_text(token.content)))
-    return "\n\n".join(paragraphs)
+        if token.type != "inline":
+            continue
+        task = _MD_TASK.match(token.content)
+        if (
+            task
+            and index >= 2
+            and tokens[index - 2].type == "list_item_open"
+            and tokens[index - 1].type == "paragraph_open"
+        ):
+            rest = markdown.parseInline(token.content[task.end() :], env)
+            token.children = rest[0].children
+        for child in token.children or ():
+            if child.type == "image":  # the renderer drops code labels
+                child.content = "!" + _image_label(child.children)
+                child.type, child.children = "text", None
+    html = markdown.renderer.render(tokens, markdown.options, env)
+    return "\n\n".join(_folded_paragraphs(_html_text(html)))
 
 
 def _delegation_negation(owner_text: str) -> str | None:
