@@ -211,6 +211,9 @@
 
 * Build
 
+  * Standard Pixi environments use sdformat 16.1 and urdfdom 6, reducing memory
+    used to load large SDF worlds through shared schema descriptions.
+
   * Allow C++-only projects to find the installed CMake package with the
     `collision-ode` component without enabling C.
     [#3756](https://github.com/dartsim/dart/pull/3756)
