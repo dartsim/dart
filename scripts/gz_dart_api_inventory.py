@@ -628,11 +628,13 @@ def function_pointer_declarator(values):
                 name += 1
         name_index = name if name < group and IDENTIFIER.match(values[name]) else None
         suffix = name + 1 if name_index is not None else name
+        dimensions = 0
         if nested_end is not None:
+            bounds, suffix = array_bounds(tokens, suffix)
+            dimensions += len(bounds)
             if suffix != nested_end:
                 continue
             suffix += 1
-        dimensions = 0
         while True:
             suffix = declarator_attributes_end(tokens, suffix)
             if values[suffix : suffix + 1] != ["["] or suffix not in tokens.pairs:

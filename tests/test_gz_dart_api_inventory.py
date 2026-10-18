@@ -28783,3 +28783,152 @@ def test_direct_alias_pack_arguments_keep_declared_shape(
         _api_changes(extractor, tmp_path, header, header.replace(old, new, 1), source)
         == expected
     )
+
+
+NESTED_CALLBACK_A = "struct A{int payload;A();void hit();};"
+NESTED_CALLBACK_SIZE = "static_assert(sizeof(dart::H)==%s*sizeof(void*));"
+NESTED_CALLBACK_RECEIVER = "void use(dart::H&h){(*h.factory[0])[0]().hit();}"
+
+
+@pytest.mark.parametrize(
+    ("tail", "source", "old", "new", "drift"),
+    [
+        # Stored extent is layout; the referred-to array extent is not.
+        (
+            "struct H{A (*(*factory[3])[2])();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "factory[3]",
+            "factory[4]",
+            True,
+        ),
+        (
+            "struct H{A (*(*factory[3])[2])();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "[2]",
+            "[4]",
+            False,
+        ),
+        (
+            "struct H{A (*(*const factory[3])[2])();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "factory[3]",
+            "factory[4]",
+            True,
+        ),
+        # Multidimensional stored extent.
+        (
+            "struct H{A (*(*factory[2][3])[2])();};",
+            NESTED_CALLBACK_SIZE % 6,
+            "[2][3]",
+            "[2][4]",
+            True,
+        ),
+        # Redundant grouping.
+        (
+            "struct H{A ((*(*factory[3])[2]))();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "factory[3]",
+            "factory[4]",
+            True,
+        ),
+        (
+            "struct H{A ((*(*factory[3])[2]))();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "[2]",
+            "[4]",
+            False,
+        ),
+        # Alias target storage: indexed and chained.
+        (
+            "using F=A (*(*)[2])();struct H{F factory[3];};",
+            NESTED_CALLBACK_SIZE % 3,
+            "factory[3]",
+            "factory[4]",
+            True,
+        ),
+        (
+            "using F=A (*(*)[2])();struct H{F factory[3];};",
+            NESTED_CALLBACK_SIZE % 3,
+            "(*)[2]",
+            "(*)[5]",
+            False,
+        ),
+        (
+            "using F=A (*(*)[2])();using G=F;struct H{G factory[3];};",
+            NESTED_CALLBACK_SIZE % 3,
+            "factory[3]",
+            "factory[4]",
+            True,
+        ),
+        # Named bounds.
+        (
+            "constexpr int S=3;constexpr int R=2;"
+            "struct H{A (*(*factory[S])[R])();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "S=3",
+            "S=4",
+            True,
+        ),
+        (
+            "constexpr int S=3;constexpr int R=2;"
+            "struct H{A (*(*factory[S])[R])();};",
+            NESTED_CALLBACK_SIZE % 3,
+            "R=2",
+            "R=5",
+            False,
+        ),
+        # Receivers through the nested callback.
+        (
+            "struct H{A (*(*factory[3])[2])();};",
+            NESTED_CALLBACK_RECEIVER,
+            "void hit();",
+            "void hit()=delete;",
+            True,
+        ),
+        (
+            "using F=A (*(*)[2])();struct H{F factory[3];};",
+            NESTED_CALLBACK_RECEIVER,
+            "void hit();",
+            "void hit()=delete;",
+            True,
+        ),
+        # Attributes are skipped, not counted as array dimensions.
+        (
+            "struct H{A (*(*factory alignas(32)[3])[2])();};",
+            "static_assert(alignof(dart::H)==32);",
+            "alignas(32)",
+            "alignas(64)",
+            True,
+        ),
+        (
+            "struct H{A (*(*factory [[maybe_unused]][3])[2])();};",
+            NESTED_CALLBACK_RECEIVER,
+            "void hit();",
+            "void hit()=delete;",
+            True,
+        ),
+    ],
+)
+def test_nested_callback_outer_array_is_storage(
+    extractor, tmp_path, tail, source, old, new, drift
+):
+    header = "namespace dart{" + NESTED_CALLBACK_A + tail + "}"
+    assert (
+        _api_changes(extractor, tmp_path, header, header.replace(old, new, 1), source)
+        == drift
+    )
+
+
+def test_nested_callback_foreign_receiver_is_not_dart(extractor, tmp_path):
+    header = (
+        "namespace other{struct B{void hit();};}"
+        "namespace dart{struct A{void hit();};"
+        "struct H{other::B (*(*factory[3])[2])();};}"
+    )
+    assert not _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("struct A{void hit();}", "struct A{void hit()=delete;}"),
+        NESTED_CALLBACK_RECEIVER,
+    )
