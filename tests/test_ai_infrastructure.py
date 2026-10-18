@@ -5510,6 +5510,60 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "Delegate by default",
             "Delegate by default. Don\u2019t delegate by default",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default and honor "
+            "`delegation=off`",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default, even if "
+            "`delegation=off` is unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`, do not delegate "
+            "by default, otherwise never delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`,\n\n"
+            "do not delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; except when `delegation=off` is set, "
+            "do not delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; never delegate by default if "
+            "`delegation=off` is set or unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; except, when `delegation=off` is set, "
+            "do not delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; never delegate by default if "
+            "`delegation=off` is set, or unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; never delegate by default if "
+            "`delegation=off` is set/unset",
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(
@@ -5529,6 +5583,53 @@ def test_delegation_owners_require_default_and_reject_request_gate(
     errors = infra.exercise_scenarios(ROOT, emit=False)
 
     assert any(relative in error and "delegat" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("relative", "old", "new"),
+    [
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`, do not delegate " "by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when "
+            "`delegation=off` is set",
+        ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; with `delegation=off`, delegation "
+            "is not the default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`, do not\n"
+            "delegate by default",
+        ),
+    ],
+)
+def test_delegation_owners_permit_opt_out_scoped_negation(
+    monkeypatch, relative, old, new
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(old, new)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert not any("negates the delegation default" in error for error in errors)
 
 
 def test_ultrawork_uses_default_delegation_and_lean_prompt_shape():

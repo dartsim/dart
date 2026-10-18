@@ -5476,9 +5476,11 @@ def exercise_scenarios(
                 (".claude/commands/dart-model-upgrade.md", ()),
             ):
                 try:
-                    # Collapse wrapping so phrases split across lines still match.
-                    owner_text = " ".join(
-                        (root / relative).read_text(encoding="utf-8").split()
+                    owner_source = (root / relative).read_text(encoding="utf-8")
+                    # Fold wrapping while preserving paragraph boundaries.
+                    owner_text = "\n\n".join(
+                        " ".join(paragraph.split())
+                        for paragraph in re.split(r"\n\s*\n", owner_source)
                     )
                 except OSError:
                     owner_text = ""
@@ -5487,13 +5489,24 @@ def exercise_scenarios(
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
-                # Negated defaults, including contractions and "no longer".
-                negated = re.search(
-                    r"(?:\bnot|n't|\bnever|\bno longer)\s+delegate\s+by\s+default\b"
+                negation = (
+                    r"(?:\bdo\s+not|\bdon't|\bnot|n't|\bnever|\bno longer)"
+                    r"\s+delegate\s+by\s+default\b"
                     r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't)"
-                    r"\s+(?:the\s+)?default\b",
-                    owner_text.lower().replace("\u2019", "'"),
+                    r"\s+(?:the\s+)?default\b"
                 )
+                lowered = owner_text.lower().replace("\u2019", "'")
+                # Exempt individual negations attached to an explicit opt-out.
+                unconditional = re.sub(
+                    r"(?<!except )(?<!unless )(?<!except, )(?<!unless, )"
+                    r"\b(?:with|when|if) +`?delegation=off`?"
+                    r"(?: +is +(?:set|enabled))?,? +(?:" + negation + r")"
+                    r"|(?:" + negation + r") +(?:when|if) +`?delegation=off`?"
+                    r" +is +(?:set|enabled)(?![-/\w]| *,? *or\b)",
+                    "",
+                    lowered,
+                )
+                negated = re.search(negation, unconditional)
                 if negated:
                     local_errors.append(
                         f"{relative} negates the delegation default: "
