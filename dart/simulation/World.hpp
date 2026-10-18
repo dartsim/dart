@@ -177,7 +177,9 @@ public:
   /// Commands follow this World's actuator types and limits, as setCommand()
   /// would. EndEffector Support active flags remain those of this World.
   /// Supported manual Ball/Revolute/Cylindrical/Weld constraint impulses reset;
-  /// their ordered types and body endpoints must match.
+  /// their ordered types and body endpoints must match. clone() omits manual
+  /// constraints; re-add them in the same order with endpoints mapped to the
+  /// clone's bodies before restoring.
   /// Mismatch, non-finite values or invalid shapes throw std::invalid_argument
   /// before this World changes. Display names do not affect structural
   /// compatibility.

@@ -15,6 +15,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -276,6 +282,29 @@ TEST(WorldStateManual, IndependentGraphsAndRenamedTargetsRoundTrip)
       target->restoreState(state);
       expectEqual(state, target->captureState());
     }
+  }
+}
+
+TEST(WorldStateManual, CloneRequiresManualConstraintsBeforeRestore)
+{
+  for (const bool bodyPair : {false, true}) {
+    SCOPED_TRACE(bodyPair);
+    auto source = makeWorld("source");
+    source->getSkeleton(0)->setPosition(0, 0.3);
+    source->getSkeleton(1)->setVelocity(5, 0.4);
+    source->setTime(8.5);
+    addConstraint(source, ManualKind::Weld, bodyPair);
+    const auto state = source->captureState();
+    auto clone = source->clone();
+    ASSERT_EQ(clone->getConstraintSolver()->getNumConstraints(), 0);
+    expectAtomicMismatch(clone, state);
+
+    addConstraint(clone, ManualKind::Weld, bodyPair);
+    ASSERT_NO_THROW(clone->restoreState(state));
+    expectEqual(state, clone->captureState());
+    source->step(false);
+    clone->step(false);
+    expectEqual(source->captureState(), clone->captureState(), 1e-13);
   }
 }
 
