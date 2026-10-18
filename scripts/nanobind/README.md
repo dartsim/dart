@@ -1,6 +1,7 @@
 # nanobind migration tools
 
 Select a built `dartpy` with `PYTHONPATH` before running runtime probes.
+Snapshot runtime identities attribute inherited members to their walked defining class, use `identity_path: null` for members with unwalked owners, and match bound classmethod aliases by function and receiver.
 
 - `api_surface.py --pb <pybind11-module-dir> --nb <nanobind-module-dir>
   --output <output-dir>` snapshots and compares the public API, including `dartpy.gui`: names, overloads, keywords, defaults, and enums.

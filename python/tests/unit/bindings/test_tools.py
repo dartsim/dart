@@ -99,6 +99,58 @@ def test_api_property_preserves_raw_overloads(api_surface, native):
     assert api_surface.property_types(property(getter))["setter_signatures"] == []
 
 
+@pytest.mark.parametrize("native", [False, True])
+def test_api_snapshot_masks_default_addresses(api_surface, monkeypatch, native):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    class Example:
+        def operation(self, option=None):
+            pass
+
+        @property
+        def value(self, option=None):
+            pass
+
+        @value.setter
+        def value(self, value=None):
+            pass
+
+    Example.__module__ = "dartpy"
+    module.Example = Example
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+    functions = (
+        (Example.operation, "(self: X, option: object = {default}) -> bool"),
+        (Example.value.fget, "(self: X, option: object = {default}) -> object"),
+        (Example.value.fset, "(self: X, value: object = {default}) -> None"),
+    )
+    snapshots = []
+    for default in (object(), object()):
+        for function, signature in functions:
+            if native:
+                function.__nb_signature__ = (
+                    ("def " + signature.format(default=r"\0"), None, (default,)),
+                )
+            else:
+                function.__doc__ = signature.format(default=repr(default))
+        rows = api_surface.snapshot()
+        for path, key, signature in (
+            ("operation", "signatures", functions[0][1]),
+            ("value", "getter_signatures", functions[1][1]),
+            ("value", "setter_signatures", functions[2][1]),
+        ):
+            assert rows[f"dartpy.Example.{path}"][key] == [
+                signature.format(default="<object object at ADDRESS>")
+            ]
+        serialized = json.dumps(rows, indent=2)
+        assert "0x" not in serialized
+        snapshots.append(serialized)
+    assert snapshots[0] == snapshots[1]
+    assert not any(
+        api_surface.compare(*(json.loads(row) for row in snapshots)).values()
+    )
+
+
 def test_api_snapshot_attributes_runtime_aliases(api_surface, monkeypatch):
     module = types.ModuleType("dartpy")
     module.__version__ = "test"
@@ -144,6 +196,97 @@ def test_api_snapshot_attributes_runtime_aliases(api_surface, monkeypatch):
     ]
     assert "dartpy.domain.Example.value" not in rows
     assert "0x" not in json.dumps(rows)
+    assert rows == api_surface.snapshot()
+
+
+def test_api_snapshot_attributes_inherited_members_to_defining_class(
+    api_surface, monkeypatch
+):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    class Base:
+        def method(self):
+            """(self: Base) -> None"""
+
+        @property
+        def value(self):
+            """(self: Base) -> int"""
+
+    class Derived(Base):
+        pass
+
+    Base.__module__ = Derived.__module__ = "dartpy"
+    # Visit the subclass first, before its defining owner is walked.
+    module.ADerived = Derived
+    module.ZBase = Base
+    module.method = Base.method
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    rows = api_surface.snapshot()
+    for name in ("method", "value"):
+        identity = f"dartpy.ZBase.{name}"
+        assert rows[identity]["runtime"]["identity_path"] == identity
+        assert (
+            rows[f"dartpy.ADerived.{name}"]["runtime"]["identity_path"] == identity
+        )
+    assert rows["dartpy.method"]["runtime"]["identity_path"] == "dartpy.ZBase.method"
+    assert rows == api_surface.snapshot()
+
+
+def test_api_snapshot_leaves_external_members_untracked(api_surface, monkeypatch):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    class External:
+        def method(self):
+            pass
+
+    class Example(External):
+        pass
+
+    Example.__module__ = "dartpy"
+    module.Example = Example
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    rows = api_surface.snapshot()
+    for name in ("__init__", "__eq__", "__repr__", "__str__", "method"):
+        assert rows[f"dartpy.Example.{name}"]["runtime"]["identity_path"] is None
+
+
+def test_api_snapshot_links_bound_classmethod_reexports(api_surface, monkeypatch):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    class Base:
+        @classmethod
+        def operation(cls):
+            """() -> None"""
+
+    class Derived(Base):
+        pass
+
+    Base.__module__ = Derived.__module__ = "dartpy"
+    module.ADerived = Derived
+    module.ZBase = Base
+    # A re-export visited before the class must still point at the owner.
+    module.AOperation = Base.operation
+    module.operation = Base.operation
+    module.derived_operation = Derived.operation
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    rows = api_surface.snapshot()
+    for path in (
+        "dartpy.ADerived.operation",
+        "dartpy.ZBase.operation",
+        "dartpy.AOperation",
+        "dartpy.operation",
+    ):
+        assert rows[path]["runtime"]["identity_path"] == "dartpy.ZBase.operation"
+    assert (
+        rows["dartpy.derived_operation"]["runtime"]["identity_path"]
+        == "dartpy.derived_operation"
+    )
     assert rows == api_surface.snapshot()
 
 

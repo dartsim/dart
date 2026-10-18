@@ -23,13 +23,14 @@ def signatures(value):
                 sig = sig.replace("\\=" + str(index), str(default))
                 sig = sig.replace("\\" + str(index), repr(default))
             result.append(sig.removeprefix("def "))
-        return result
-    doc = getattr(value, "__doc__", "") or ""
-    return [
-        re.sub(r"^\d+\. ", "", line.strip())
-        for line in doc.splitlines()
-        if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
-    ]
+    else:
+        doc = getattr(value, "__doc__", "") or ""
+        result = [
+            re.sub(r"^\d+\. ", "", line.strip())
+            for line in doc.splitlines()
+            if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
+        ]
+    return [re.sub(r"0x[0-9a-fA-F]+", "ADDRESS", sig) for sig in result]
 
 
 def canonical_type(value):
@@ -139,25 +140,36 @@ def snapshot():
         "dartpy.__version__": {"kind": "constant", "value": dartpy.__version__},
         "dartpy.__doc__": {"kind": "constant", "value": dartpy.__doc__},
     }
-    seen = set()
+    seen = {}
     identities = {id(dartpy): ("dartpy", dartpy)}
+    pending_runtime = []
 
-    def runtime(value, path):
-        # Keep objects alive so transient bound methods cannot reuse an identity.
-        identity_path, _ = identities.setdefault(id(value), (path, value))
+    def identity(value):
+        if inspect.ismethod(value):
+            return (id(value.__func__), id(value.__self__))
+        return id(value)
+
+    def runtime(value, path, parent, name):
+        owner = None
+        if inspect.isclass(parent):
+            owner = next(
+                (cls for cls in parent.__mro__ if name in cls.__dict__), type(parent)
+            )
         result = {
-            "identity_path": identity_path,
+            "identity_path": None,
             "module": getattr(value, "__module__", None),
             "qualname": getattr(value, "__qualname__", None),
         }
         if isinstance(value, types.ModuleType):
             result["name"] = value.__name__
+        # Keep objects alive, and resolve owners after all classes have been walked.
+        pending_runtime.append((result, value, path, owner, name))
         return result
 
     def walk(value, path):
         if id(value) in seen:
             return
-        seen.add(id(value))
+        seen[id(value)] = path
         for name in dir(value):
             if name.startswith("_") and name not in {
                 "__init__",
@@ -175,7 +187,7 @@ def snapshot():
             ):
                 rows[child_path] = {
                     "kind": "module",
-                    "runtime": runtime(child, child_path),
+                    "runtime": runtime(child, child_path, value, name),
                 }
                 walk(child, child_path)
             elif inspect.isclass(child) and getattr(child, "__module__", "").startswith(
@@ -189,12 +201,12 @@ def snapshot():
                     rows[child_path] = {
                         "kind": "enum",
                         "members": enum,
-                        "runtime": runtime(child, child_path),
+                        "runtime": runtime(child, child_path, value, name),
                     }
                 else:
                     rows[child_path] = {
                         "kind": "class",
-                        "runtime": runtime(child, child_path),
+                        "runtime": runtime(child, child_path, value, name),
                     }
                     walk(child, child_path)
             elif callable(child):
@@ -203,14 +215,14 @@ def snapshot():
                     "kind": "callable",
                     "signatures": sig,
                     "normalized": [shape(s) for s in sig],
-                    "runtime": runtime(child, child_path),
+                    "runtime": runtime(child, child_path, value, name),
                 }
             elif isinstance(child, property):
                 rows[child_path] = {
                     "kind": "property",
                     "writable": child.fset is not None,
                     **property_types(child),
-                    "runtime": runtime(child, child_path),
+                    "runtime": runtime(child, child_path, value, name),
                 }
             elif hasattr(type(child), "__members__"):
                 rows[child_path] = {"kind": "enum_value", "value": enum_number(child)}
@@ -226,6 +238,22 @@ def snapshot():
                     rows[child_path] = {"kind": type(child).__name__}
 
     walk(dartpy, "dartpy")
+    # Defining owners take precedence over inherited rows and module re-exports.
+    for _, _, _, owner, name in pending_runtime:
+        if owner is not None and id(owner) in seen:
+            member = getattr(owner, name)
+            identities.setdefault(
+                identity(member), (seen[id(owner)] + "." + name, member)
+            )
+    for metadata, value, path, owner, name in pending_runtime:
+        if owner is not None:
+            if id(owner) not in seen:
+                continue
+            metadata["identity_path"] = seen[id(owner)] + "." + name
+            continue
+        metadata["identity_path"], _ = identities.setdefault(
+            identity(value), (path, value)
+        )
     enum_values = {}
     for path, row in rows.items():
         if row["kind"] == "enum":
