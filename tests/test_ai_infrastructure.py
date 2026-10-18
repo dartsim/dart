@@ -9940,3 +9940,81 @@ def test_ef5_scope_boundary_owners(monkeypatch, relative, source, rejected):
     _owner_suffix(monkeypatch, relative, "\n\n" + source)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_A04_MARKERS = {
+    "AGENTS.md": "Delegate by default",
+    "docs/ai/orchestration.md": "delegation is the default",
+    "docs/ai/README.md": "Delegate by default",
+    "docs/ai/workflows.md": "Delegation by default",
+    ".claude/commands/dart-ultrawork.md": "Delegate by default",
+    ".claude/commands/dart-model-upgrade.md": "Delegate by default",
+}
+_A04_POSITIVE = [
+    ("genuine", "{marker}", False),
+    ("dont_hyphen", "Don't-{marker}", True),
+    ("non_hyphen", "non-{marker}", True),
+    ("hyphen_suffix", "{marker}-only", True),
+    ("word_prefix", "x{marker}", True),
+    ("underscore_suffix", "{marker}_suffix", True),
+    ("wrong_case", None, True),
+    ("bold", "**{marker}**", False),
+    ("code", "`{marker}`", False),
+    ("visible_html", "<span>{marker}</span>", False),
+    ("hidden_html", "<span hidden>{marker}</span>", True),
+    ("terminal_period", "{marker}.", False),
+    ("terminal_comma", "{marker},", False),
+    ("separated_hyphen", "{marker} -", False),
+    ("encoded_hyphen", "Don't&#45;{marker}", True),
+    ("escaped_html_literal", "&lt;span hidden&gt;{marker}&lt;/span&gt;", False),
+    ("link_label", "[{marker}](https://example.org/policy)", False),
+]
+_A04_FLAGS = [
+    ("delegation=off", False),
+    ("delegation=off-mode", True),
+    ("x-delegation=off", True),
+    ("delegation=OFF", True),
+]
+
+
+def _a04_replace(monkeypatch, relative, old, new):
+    source = ROOT / relative
+    original = source.read_text()
+    bare = old.strip("`")
+    assert infra._delegation_owner_text(original).count(bare) >= 1
+    if "=" not in old:
+        assert original.count(old) == 1
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(old, new)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+@pytest.mark.parametrize(
+    ("template", "missing"),
+    [p[1:] for p in _A04_POSITIVE],
+    ids=[p[0] for p in _A04_POSITIVE],
+)
+def test_a04_positive_boundary_marker(monkeypatch, relative, template, missing):
+    marker = _A04_MARKERS[relative]
+    replacement = (
+        marker.swapcase() if template is None else template.format(marker=marker)
+    )
+    _a04_replace(monkeypatch, relative, marker, replacement)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    needle = f"{relative} is missing delegation marker {marker!r}"
+    assert any(needle in e for e in errors) is missing
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+@pytest.mark.parametrize(("flag", "missing"), _A04_FLAGS)
+def test_a04_positive_boundary_flag(monkeypatch, relative, flag, missing):
+    _a04_replace(monkeypatch, relative, "delegation=off", flag)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    needle = f"{relative} is missing delegation marker '`delegation=off`'"
+    assert any(needle in e for e in errors) is missing

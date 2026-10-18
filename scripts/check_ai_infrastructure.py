@@ -5829,9 +5829,7 @@ def exercise_scenarios(
                     local_errors.append(str(error))
                     break
                 for marker in required:
-                    pattern = rf"\b{re.escape(_delegation_owner_text(marker))}\b"
-                    if marker == "`delegation=off`":
-                        pattern = rf"(?<![\w-]){re.escape(_delegation_owner_text(marker))}(?![\w-])"
+                    pattern = rf"(?<![\w-]){re.escape(_delegation_owner_text(marker))}(?![\w-])"
                     if not re.search(pattern, owner_text):
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
