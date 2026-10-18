@@ -175,6 +175,10 @@
 
 * Python
 
+  * CMake development builds report the DART version in `dartpy.__version__`
+    instead of an empty string. Explicit packaging versions remain supported.
+    [#3809](https://github.com/dartsim/dart/pull/3809)
+
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
     handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
