@@ -41,58 +41,88 @@ FLIP = 1.0
 # Chart.in_limits can stall on the degenerate chart of a singular target, such
 # as the straight-up rest pose turned in place.
 SAMPLES = 64
-REFINEMENTS = 3
+LEVELS = 8
+# Charts close forward kinematics to about 1e-7 at a fold, but can miss by far
+# more near a wrist singularity.
+FK_TOLERANCE = 1e-6
 
 
 def swivel_solver(chain, wam):
     """Hold the current elbow's swivel, so redundancy follows body drags.
 
-    When no held solution is within limits, or every one would flip a joint,
-    also offers each branch's in-limit swivel nearest the current pose. DART
-    then applies the valid solution nearest the current pose.
+    When no held solution is usable, or every one would flip a joint, also
+    offers each branch's in-limit swivel nearest the current pose, then ssik's
+    seeded solve. DART applies the valid solution nearest the current pose.
     """
     lower = wam.getPositionLowerLimits()
     upper = wam.getPositionUpperLimits()
     center = 0.5 * (lower + upper)
     # The skeleton owns this callback, so a strong reference would leak it.
     wam = weakref.ref(wam)
+    # DART calls again with the same pose while it iterates; reuse the answer.
+    last = [None, []]
 
     def into_limits(q):
-        # Charts return any turn of each angle; DART checks limits literally.
-        return q - 2.0 * np.pi * np.round((q - center) / (2.0 * np.pi))
+        # Charts return any turn of each angle; DART checks limits literally,
+        # so also snap roundoff past a limit onto it.
+        q = q - 2.0 * np.pi * np.round((q - center) / (2.0 * np.pi))
+        bounded = np.clip(q, lower, upper)
+        return np.where(np.abs(q - bounded) < 1e-9, bounded, q)
 
     def within_limits(q):
         # Also rejects NaN, which marks a swivel where a branch does not exist.
         return np.all((lower <= q) & (q <= upper), axis=-1)
 
-    def nearest_in_limits(chart, q):
-        # Zoom in on the least limit violation; arcs near limits can be narrow.
+    def usable(q, desired):
+        return within_limits(q) and np.abs(chain.fk(q) - desired).max() < FK_TOLERANCE
+
+    def nearest_in_limits(chart, q, desired):
+        # Zoom in on the least limit violation until some swivel is in limits,
+        # then on the in-limit solution nearest q; arcs near limits are narrow.
         swivels = np.linspace(-np.pi, np.pi, SAMPLES, endpoint=False)
-        for _ in range(REFINEMENTS):
+        best, best_distance = None, np.inf
+        for _ in range(LEVELS):
             samples = into_limits(chart.q(swivels))
             valid = within_limits(samples)
             if valid.any():
-                distances = np.linalg.norm(samples - q, axis=1)
-                return samples[np.argmin(np.where(valid, distances, np.inf))]
-            excess = np.maximum(lower - samples, 0) + np.maximum(samples - upper, 0)
-            worst = np.nan_to_num(excess.sum(axis=1), nan=np.inf)
+                distances = np.where(valid, np.linalg.norm(samples - q, axis=1), np.inf)
+                index = np.argmin(distances)
+                if distances[index] < best_distance and usable(samples[index], desired):
+                    best, best_distance = samples[index], distances[index]
+            else:
+                excess = np.maximum(lower - samples, 0) + np.maximum(samples - upper, 0)
+                index = np.argmin(np.nan_to_num(excess.sum(axis=1), nan=np.inf))
             step = swivels[1] - swivels[0]
-            swivels = swivels[np.argmin(worst)] + np.linspace(-step, step, SAMPLES)
-        return None
+            swivels = swivels[index] + np.linspace(-step, step, SAMPLES)
+        return best
 
-    def solve(desired):
-        q = wam().getPositions()
+    def candidates(desired, q):
         motion = chain.self_motion(desired)
         # Measure the current elbow in the target's swivel basis, which ssik
         # rebuilds per pose and switches near a vertical shoulder-wrist line.
         swivel = motion.param_of(q)
         charts = list(motion)
         held = [into_limits(chart.q(swivel)) for chart in charts]
-        held = [c for c in held if within_limits(c)]
+        held = [c for c in held if usable(c, desired)]
         if held and min(np.abs(c - q).max() for c in held) < FLIP:
             return held
-        nearest = (nearest_in_limits(chart, q) for chart in charts)
-        return held + [c for c in nearest if c is not None]
+        nearest = (nearest_in_limits(chart, q, desired) for chart in charts)
+        found = [c for c in nearest if c is not None]
+        if not found:
+            # The seeded solve also handles the singular continua charts miss;
+            # an SRS arm has at most eight branches.
+            seeded = chain.solve(desired, q_seed=q, max_solutions=8)
+            found = [into_limits(s.q) for s in seeded]
+            found = [c for c in found if usable(c, desired)]
+        return held + found
+
+    def solve(desired):
+        desired = np.asarray(desired)
+        q = wam().getPositions()
+        key = desired.tobytes() + q.tobytes()
+        if last[0] != key:
+            last[:] = [key, candidates(desired, q)]
+        return last[1]
 
     return solve
 

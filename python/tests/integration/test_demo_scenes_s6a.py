@@ -400,61 +400,58 @@ def test_wam_ssik_keeps_a_dragged_elbow_pose():
     assert motion.param_of(wam.getPositions()) == pytest.approx(moved, abs=1e-9)
 
 
-def test_wam_ssik_follows_a_drag_across_the_swivel_basis_switch():
+_NARROW = np.array([-2.6, -2.0, 2.8, 3.1, -4.76, -1.6, 3.0])
+_INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
+
+
+@pytest.mark.parametrize(
+    ("start", "goal"),
+    [
+        (
+            [0.3, -0.036474599, 0.2, 0.5, -0.3, 0.5, 0.1],
+            [0.3, -0.036274599, 0.2, 0.5, -0.3, 0.5, 0.1],
+        ),
+        ([0.3, 1e-5, 0.2, 1.5, -0.3, 1e-5, 0.1], [0.3, 1.1e-4, 0.2, 1.5, -0.3, 1e-5, 0.1]),
+        ([0.3, 0.6, 0.2, 3.0999, -0.3, 0.5, 0.1], [0.3, 0.6, 0.2, 3.1, -0.3, 0.5, 0.1]),
+        (_NARROW + 1e-4 * _INWARD, _NARROW + 1e-6 * _INWARD),
+        (
+            [-1.499, -1.99999, 2.79999, 2.6, -1.1, 1.59999, 2.2],
+            [-1.5, -1.99999, 2.79999, 2.6, -1.1, 1.59999, 2.2],
+        ),
+    ],
+    # ssik switches the swivel basis between the first pair; the held swivel
+    # would flip joints near the singular pose of the second; the third goal
+    # lies on the elbow limit; the last two goals' in-limit arcs are narrower
+    # than the coarse swivel samples.
+    ids=["basis-switch", "near-singular", "on-limit", "narrow-arc", "narrow-arc-2"],
+)
+def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
     setup, wam, ee, _ = _wam_with_ssik()
-    # ssik rebuilds the swivel basis around a near-vertical shoulder-wrist line
-    # between these two poses, 0.0002 rad apart.
-    start = np.array([0.3, -0.036474599, 0.2, 0.5, -0.3, 0.5, 0.1])
-    goal = start + [0.0, 0.0002, 0.0, 0.0, 0.0, 0.0, 0.0]
-    target = _activate_at(setup, wam, goal)
-    desired = target.getTransform().matrix()
-    target.setTransform(ee.getWorldTransform())
-    wam.setPositions(start)
-    transform = dart.math.Isometry3()
-    transform.set_rotation(desired[:3, :3])
-    transform.set_translation(desired[:3, 3])
-    target.setTransform(transform)
+    wam.setPositions(goal)
+    desired = ee.getWorldTransform()
+    target = _activate_at(setup, wam, start)
+    target.setTransform(desired)
     setup.pre_refresh()
     assert np.abs(wam.getPositions() - start).max() < 0.01
-    np.testing.assert_allclose(ee.getWorldTransform().matrix(), desired, atol=1e-7)
+    np.testing.assert_allclose(
+        ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
+    )
 
 
-def test_wam_ssik_fallback_finds_narrow_in_limit_arcs():
-    from examples.demos.scenes import wam_analytical_ik
-
-    upper = np.ones(7)
-    upper[0] = 0.001
-
-    class Arm:
-        def getPositionLowerLimits(self):
-            return -np.ones(7)
-
-        def getPositionUpperLimits(self):
-            return upper
-
-        def getPositions(self):
-            return np.zeros(7)
-
-    class Chart:
-        def q(self, swivel):
-            # Joint 0 is within limits only on a 0.063 rad arc around 0.049,
-            # between two of the 64 coarse samples, and never wraps into them.
-            q = np.zeros(np.shape(swivel) + (7,))
-            q[..., 0] = 2.0 * (1.0 - np.cos(np.asarray(swivel) - 0.049))
-            return q
-
-    class Motion(list):
-        def param_of(self, q):
-            return 2.0
-
-    class Chain:
-        def self_motion(self, desired):
-            return Motion([Chart()])
-
-    arm = Arm()
-    solutions = wam_analytical_ik.swivel_solver(Chain(), arm)(np.eye(4))
-    assert len(solutions) == 1
-    assert -1.0 <= solutions[0][0] <= upper[0]
+def test_wam_ssik_rejects_inaccurate_charts_at_a_wrist_singularity():
+    setup, wam, ee, _ = _wam_with_ssik()
+    start = np.array([-0.77, 0.54, 0.82, -0.77, -1.77, 0.0001, 0.93])
+    wam.setPositions(start - [0.0, 0.0, 0.0, 0.0, 0.0, 0.0001, 0.0])
+    desired = ee.getWorldTransform()
+    target = _activate_at(setup, wam, start)
+    target.setTransform(desired)
+    for _ in range(3):
+        setup.pre_refresh()
+    # Near the aligned wrist, ssik's charts close FK to only about 0.05 rad.
+    np.testing.assert_allclose(
+        ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
+    )
+    assert np.abs(wam.getPositions() - start).max() < 0.5
 
 
 @pytest.mark.parametrize(
