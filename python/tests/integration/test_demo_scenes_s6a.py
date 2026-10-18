@@ -454,6 +454,32 @@ def test_wam_ssik_rejects_inaccurate_charts_at_a_wrist_singularity():
     assert np.abs(wam.getPositions() - start).max() < 0.5
 
 
+def test_wam_ssik_reuses_a_failed_solve_while_dart_iterates():
+    from examples.demos.scenes import wam_analytical_ik
+
+    setup, wam, ee, chain = _wam_with_ssik()
+    calls = []
+
+    class CountingChain:
+        def __getattr__(self, name):
+            return getattr(chain, name)
+
+        def self_motion(self, desired):
+            calls.append(desired)
+            return chain.self_motion(desired)
+
+    ee.getIK().setPythonAnalytical(
+        wam_analytical_ik.swivel_solver(CountingChain(), wam), methodName="ssik SRS"
+    )
+    # Only elbow angles past the 3.1 rad limit reach this target.
+    wam.setPositions([0.3, 0.6, 0.2, 3.3, -0.3, 0.5, 0.1])
+    desired = ee.getWorldTransform()
+    target = _activate_at(setup, wam, [0.3, 0.6, 0.2, 3.0, -0.3, 0.5, 0.1])
+    target.setTransform(desired)
+    setup.pre_refresh()
+    assert len(calls) == 1
+
+
 @pytest.mark.parametrize(
     ("move", "turn"),
     [
