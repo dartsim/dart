@@ -28932,3 +28932,1049 @@ def test_nested_callback_foreign_receiver_is_not_dart(extractor, tmp_path):
         header.replace("struct A{void hit();}", "struct A{void hit()=delete;}"),
         NESTED_CALLBACK_RECEIVER,
     )
+
+
+# Five-fix closure: grouped typedefs, alias owner/mask storage, grouped variant
+# arrays, class NTTP masks and braced trailing returns. Native flags record the
+# compiler oracle (g++/clang++; MSVC target for the alias rows).
+FIVE_FIX_MARKERS = (
+    "__template_parameter",
+    "__array_identity__",
+    "__declared_type__",
+    "alias_packs",
+)
+
+
+def _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, header.replace(old, new, 1), source)
+    text = json.dumps([before, after])
+    assert not [marker for marker in FIVE_FIX_MARKERS if marker in text]
+    assert (before != after) == expected
+    assert expected or not native
+
+
+FIVE_FIX_FRESH = [
+    (
+        "typedef_single_class_layout",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};typedef A(F)();}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+        ["dart::F"],
+        ["dart::A"],
+    ),
+    (
+        "typedef_siblings_class_layout",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};typedef A(F)(),G();}",
+        "static_assert(sizeof(dart::A)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+        ["dart::F", "dart::G"],
+        ["dart::A"],
+    ),
+    (
+        "typedef_first_callback",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};typedef A(F)(),G();extern F*first;extern G*second;}",
+        "void use(){dart::first().hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+        ["dart::F", "dart::G"],
+        ["dart::A"],
+    ),
+    (
+        "typedef_second_callback",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};typedef A(F)(),G();extern F*first;extern G*second;}",
+        "void use(){dart::second().hit();}",
+        "void hit();",
+        "void hit()=delete;",
+        True,
+        True,
+        ["dart::F", "dart::G"],
+        ["dart::A"],
+    ),
+    (
+        "typedef_functions_not_constructions",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};typedef A(F)(),G();}",
+        "dart::F f;dart::G g;void use(){}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        ["dart::F", "dart::G"],
+        ["dart::A"],
+    ),
+    (
+        "grouped_variant_no_initializer",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int> (values[2]);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "grouped_variant_empty",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int> (values[2])={};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "grouped_variant_partial",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int> (values[2])={1};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "grouped_variant_full",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int> (values[2])={1,2};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        [],
+        [],
+    ),
+    (
+        "grouped_variant_explicit_empty_tail",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "void use(){std::variant<dart::A,int> (values[2])={1,{}};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "grouped_variant_api_alias_later",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};using V=std::variant<A,int>;}",
+        "void use(){dart::V first[2]={1,2},(values[2]);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "grouped_variant_source_alias_later",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "using V=std::variant<dart::A,int>;void use(){V first[2]={1,2},(values[2]);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "trailing_variant_default",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "auto make()->std::variant<dart::A,int>{return {};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+        [],
+        [],
+    ),
+    (
+        "trailing_variant_int_first",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "auto make()->std::variant<int,dart::A>{return {};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        [],
+        [],
+    ),
+    (
+        "trailing_pointer",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "auto make()->dart::A*{return {};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        [],
+        [],
+    ),
+    (
+        "trailing_callback_alias",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};using F=A(*)();}",
+        "auto make()->dart::F{return {};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        [],
+        [],
+    ),
+    (
+        "trailing_array_fully_supplied",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};}",
+        "auto make()->std::array<std::variant<dart::A,int>,2>{return {1,2};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        [],
+        [],
+    ),
+    (
+        "trailing_array_whole_copy",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A();explicit A(int);void hit();};using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "auto make()->dart::X{return {dart::get()};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+        [],
+        [],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native,aliases,forbidden",
+    FIVE_FIX_FRESH,
+    ids=[row[0] for row in FIVE_FIX_FRESH],
+)
+def test_five_fix_fresh_closure(
+    extractor,
+    tmp_path,
+    label,
+    header,
+    source,
+    old,
+    new,
+    expected,
+    native,
+    aliases,
+    forbidden,
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    headers = tmp_path / "dart"
+    for text in (header, header.replace(old, new, 1)):
+        (headers / "api.hpp").write_text(text)
+        alias_map = extractor.index_api(headers).alias_arguments
+        keys = set(alias_map)
+        assert set(aliases) <= keys
+        assert all(alias_map[name] == (["A", "(", ")"], ("dart",)) for name in aliases)
+        assert not set(forbidden) & keys
+
+
+FIVE_FIX_MASK = [
+    (
+        "default_definition_scope",
+        "namespace dart{struct B1{int x;};struct B2{int y;};namespace defs{struct Owner:B1{};template<class T=Owner>using CB=void(T::*)();}struct Owner:B1{};struct H{defs::CB<>f;};}",
+        "#ifdef _MSC_VER\nstatic_assert(sizeof(dart::H)==8);\n#else\nstatic_assert(sizeof(dart::H)==2*sizeof(void*));\n#endif",
+        "defs{struct Owner:B1{}",
+        "defs{struct Owner:B1,B2{}",
+        True,
+        False,
+        True,
+    ),
+    (
+        "explicit_foreign_override",
+        "namespace dart{struct B1{int x;};struct B2{int y;};struct Owner:B1{};struct Other:B1{};template<class T=Owner>using CB=void(T::*)();struct H{CB<Other>f;};}",
+        "#ifdef _MSC_VER\nstatic_assert(sizeof(dart::H)==8);\n#else\nstatic_assert(sizeof(dart::H)==2*sizeof(void*));\n#endif",
+        "struct Owner:B1{}",
+        "struct Owner:B1,B2{}",
+        False,
+        False,
+        False,
+    ),
+    (
+        "explicit_actual_caller_scope",
+        "namespace dart{struct B1{int x;};struct B2{int y;};namespace defs{struct Owner:B1{};template<class T>using CB=void(T::*)();}struct Actual:B1{};using Owner=Actual;struct H{defs::CB<Owner>f;};}",
+        "#ifdef _MSC_VER\nstatic_assert(sizeof(dart::H)==8);\n#else\nstatic_assert(sizeof(dart::H)==2*sizeof(void*));\n#endif",
+        "struct Actual:B1{}",
+        "struct Actual:B1,B2{}",
+        True,
+        False,
+        True,
+    ),
+    (
+        "unknown_enclosing_parameter",
+        "namespace dart{struct B1{int x;};struct B2{int y;};struct T:B1{};struct Other:B1{};template<class T>using CB=void(T::*)();template<class T>struct H{CB<T>f;};}",
+        "#ifdef _MSC_VER\nstatic_assert(sizeof(dart::H<dart::Other>)==8);\n#else\nstatic_assert(sizeof(dart::H<dart::Other>)==2*sizeof(void*));\n#endif",
+        "struct T:B1{}",
+        "struct T:B1,B2{}",
+        False,
+        False,
+        False,
+    ),
+    (
+        "outer_pointer_storage",
+        "namespace dart{struct B1{int x;};struct B2{int y;};struct Owner:B1{};template<class T>using CB=void(T::*)();struct H{CB<Owner>*f;};}",
+        "static_assert(sizeof(dart::H)==sizeof(void*));",
+        "struct Owner:B1{}",
+        "struct Owner:B1,B2{}",
+        False,
+        False,
+        False,
+    ),
+    (
+        "alias_actual_class_nttp_mask",
+        "namespace dart{struct B1{int x;};struct B2{int y;};constexpr int N=2;template<int K>using CB=int(*[K])();template<int N>struct H{CB<N>f;};}",
+        "static_assert(sizeof(dart::H<3>)==3*sizeof(void*));",
+        "N=2",
+        "N=4",
+        False,
+        False,
+        False,
+    ),
+    (
+        "alias_definition_bound_ignores_caller_mask",
+        "namespace dart{struct B1{int x;};struct B2{int y;};constexpr int N=2;template<class T>using CB=T(*[N])();template<int N>struct H{CB<int>f;};}",
+        "static_assert(sizeof(dart::H<3>)==2*sizeof(void*));",
+        "N=2",
+        "N=4",
+        True,
+        True,
+        True,
+    ),
+    (
+        "qualified_namespace_bound",
+        "namespace dart{struct B1{int x;};struct B2{int y;};constexpr int N=2;template<int N>struct H{int(*f[::dart::N])();};}",
+        "static_assert(sizeof(dart::H<3>)==2*sizeof(void*));",
+        "N=2",
+        "N=4",
+        True,
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native,msvc",
+    FIVE_FIX_MASK,
+    ids=[row[0] for row in FIVE_FIX_MASK],
+)
+def test_five_fix_alias_mask_closure(
+    extractor, tmp_path, label, header, source, old, new, expected, native, msvc
+):
+    _five_fix_check(
+        extractor, tmp_path, header, source, old, new, expected, native or msvc
+    )
+    headers = tmp_path / "dart"
+    for text in (header, header.replace(old, new, 1)):
+        (headers / "api.hpp").write_text(text)
+        layout = extractor.index_api(headers).layout_declarations("dart::H")
+        assert layout and not any(
+            marker in json.dumps(layout) for marker in FIVE_FIX_MARKERS
+        )
+
+
+FIVE_FIX_TYPEDEF = [
+    ("object", "typedef A(F);", ["dart::F"], {"dart::F": ["A"]}),
+    (
+        "object_siblings",
+        "typedef A((F)),G;",
+        ["dart::F", "dart::G"],
+        {"dart::F": ["A"], "dart::G": ["A"]},
+    ),
+    ("array", "typedef A(F)[2];", ["dart::F"], {"dart::F": ["A", "[", "2", "]"]}),
+    (
+        "typed_parameter",
+        "typedef A F(T);",
+        ["dart::F"],
+        {"dart::F": ["A", "(", "T", ")"]},
+    ),
+    (
+        "decltype_plain",
+        "typedef decltype(A{}) F;",
+        ["dart::F"],
+        {"dart::F": ["decltype", "(", "A", "{", "}", ")"]},
+    ),
+    (
+        "decltype_grouped",
+        "typedef decltype(A{}) (F);",
+        ["dart::F"],
+        {"dart::F": ["decltype", "(", "A", "{", "}", ")"]},
+    ),
+    ("const_type", "typedef const A(F);", ["dart::F"], {"dart::F": ["const", "A"]}),
+    (
+        "qualified_type",
+        "typedef ::dart::A(F);",
+        ["dart::F"],
+        {"dart::F": ["::", "dart", "::", "A"]},
+    ),
+    (
+        "builtin_type",
+        "typedef unsigned long(F);",
+        ["dart::F"],
+        {"dart::F": ["unsigned", "long"]},
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,tail,aliases,targets",
+    FIVE_FIX_TYPEDEF,
+    ids=[row[0] for row in FIVE_FIX_TYPEDEF],
+)
+def test_five_fix_typedef_closure(extractor, tmp_path, label, tail, aliases, targets):
+    header = "namespace dart{struct A{int storage;};struct T{};" + tail + "}"
+    source = "static_assert(sizeof(dart::A)==sizeof(int));"
+    _five_fix_check(
+        extractor,
+        tmp_path,
+        header,
+        source,
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+    )
+    headers = tmp_path / "dart"
+    for text in (header, header.replace("int storage;", "double storage;", 1)):
+        (headers / "api.hpp").write_text(text)
+        api = extractor.index_api(headers)
+        assert set(api.alias_arguments) == set(aliases)
+        assert api.alias_arguments == {
+            name: (tokens, ("dart",)) for name, tokens in targets.items()
+        }
+        assert not {"dart::A", "dart::T"} & set(api.alias_arguments)
+        assert api.layout_declarations("dart::A")
+
+
+# Operator-name arrows are not trailing-return separators; native flags are the
+# GCC/Clang oracle (language drift) for each braced return.
+FIVE_FIX_ARROW = [
+    (
+        "ordinary_variant",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "auto make()->dart::V{return{};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "operator_variant",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->dart::V{return{};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "operator_concrete",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->dart::A{return{};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "operator_pointer",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->dart::A*{return{};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "operator_int_first",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->std::variant<int,dart::A>{return{};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "operator_callback",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->dart::F{return{};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "operator_array_full",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->dart::X{return{1,2};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "operator_array_copy",
+        "#include <variant>\n#include <array>\nnamespace dart{class A{int storage;public:A()=default;};using F=A(*)();using V=std::variant<A,int>;using X=std::array<V,2>;X get();}",
+        "struct Proxy{auto operator->()->dart::X{return{dart::get()};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_ARROW,
+    ids=[row[0] for row in FIVE_FIX_ARROW],
+)
+def test_five_fix_operator_arrow_closure(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+# Field alignment dependencies use the owning declaration's template mask. The
+# last column is the per-compiler native break; GNU alias alignment is GCC-only.
+FIVE_FIX_ALIGNMENT = [
+    (
+        "shadowed_prefix_alignas",
+        "namespace dart{constexpr int N=16;template<int N>struct H{alignas(N)int(*f)();};}",
+        "static_assert(sizeof(dart::H<64>)==64);",
+        "N=16",
+        "N=32",
+        False,
+        False,
+    ),
+    (
+        "shadowed_suffix_gnu",
+        "namespace dart{constexpr int N=16;template<int N>struct H{int(*f)() __attribute__((aligned(N)));};}",
+        "static_assert(sizeof(dart::H<64>)==64);",
+        "N=16",
+        "N=32",
+        False,
+        False,
+    ),
+    (
+        "shadowed_nested_gnu",
+        "namespace dart{constexpr int N=16;template<int N>struct H{int(* __attribute__((aligned(N))) f)();};}",
+        "static_assert(sizeof(dart::H<64>)==64);",
+        "N=16",
+        "N=32",
+        False,
+        False,
+    ),
+    (
+        "qualified_global_alignment",
+        "namespace dart{constexpr int N=16;template<int N>struct H{alignas(::dart::N)int(*f)();};}",
+        "static_assert(sizeof(dart::H<64>)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+    (
+        "unshadowed_global_alignment",
+        "namespace dart{constexpr int N=16;struct H{alignas(N)int(*f)();};}",
+        "static_assert(sizeof(dart::H)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+    (
+        "alias_definition_alignment_retains_free_constant",
+        "namespace dart{namespace defs{constexpr int N=16;template<class T>using CB __attribute__((aligned(N)))=T(*)();}template<int N>struct H{defs::CB<int>f;};}",
+        "#ifdef __clang__\nstatic_assert(sizeof(dart::H<64>)==sizeof(void*));\n#else\nstatic_assert(sizeof(dart::H<64>)==16);\n#endif",
+        "N=16",
+        "N=32",
+        True,
+        {"g++": True, "clang++": False},
+    ),
+    (
+        "owning_mask_on_alias_field_alignment",
+        "namespace dart{constexpr int N=16;template<class T>using CB=T(*)();template<int N>struct H{alignas(N)CB<int>f;};}",
+        "static_assert(sizeof(dart::H<64>)==64);",
+        "N=16",
+        "N=32",
+        False,
+        False,
+    ),
+    (
+        "outer_alias_pointer_qualified_alignment",
+        "namespace dart{constexpr int N=16;template<class T>using CB=T(*)();template<int N>struct H{alignas(::dart::N)CB<int>*f;};}",
+        "static_assert(sizeof(dart::H<64>)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+    (
+        "ordinary_field_shadowed_alignment",
+        "namespace dart{constexpr int N=16;template<int N>struct H{alignas(N)int f;};}",
+        "static_assert(sizeof(dart::H<64>)==64);",
+        "N=16",
+        "N=32",
+        False,
+        False,
+    ),
+    (
+        "ordinary_field_qualified_alignment",
+        "namespace dart{constexpr int N=16;template<int N>struct H{alignas(::dart::N)int f;};}",
+        "static_assert(sizeof(dart::H<64>)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+    (
+        "ordinary_field_free_alignment",
+        "namespace dart{constexpr int N=16;struct H{alignas(N)int f;};}",
+        "static_assert(sizeof(dart::H)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+    (
+        "nested_class_enclosing_mask",
+        "namespace dart{constexpr int N=16;template<int N>struct Outer{struct H{alignas(N)int(*f)();};H inner;};}",
+        "static_assert(sizeof(dart::Outer<64>)==64);",
+        "N=16",
+        "N=32",
+        False,
+        False,
+    ),
+    (
+        "explicit_specialization_member_free_constant",
+        "namespace dart{constexpr int N=16;template<int N>struct H{};template<>struct H<1>{alignas(N)int(*f)();};}",
+        "static_assert(sizeof(dart::H<1>)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+    (
+        "explicit_specialization_class_free_constant",
+        "namespace dart{constexpr int N=16;template<int N>struct alignas(N) H{};template<>struct alignas(N) H<1>{};}",
+        "static_assert(sizeof(dart::H<1>)==16);",
+        "N=16",
+        "N=32",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_ALIGNMENT,
+    ids=[row[0] for row in FIVE_FIX_ALIGNMENT],
+)
+def test_five_fix_alignment_mask_closure(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(
+        extractor,
+        tmp_path,
+        header,
+        source,
+        old,
+        new,
+        expected,
+        any(native.values()) if isinstance(native, dict) else native,
+    )
+    text = json.dumps(_scan_receiver_api(extractor, tmp_path, header, source))
+    # The namespace constant is evidence only when the alignment names it freely.
+    assert ("constexpr int N" in text) == expected
+    assert expected or "( N )" in text  # the genuine spelling stays public
+
+
+FIVE_FIX_BOUND_MASK = [
+    (
+        "array_owning_parameter",
+        "namespace dart{constexpr int N=1;template<int N>struct H{int a[N];};}",
+        "static_assert(sizeof(dart::H<3>)==3*sizeof(int));",
+        "N=1",
+        "N=2",
+        False,
+        False,
+    ),
+    (
+        "array_qualified_namespace",
+        "namespace dart{constexpr int N=1;template<int N>struct H{int a[::dart::N];};}",
+        "static_assert(sizeof(dart::H<3>)==sizeof(int));",
+        "N=1",
+        "N=2",
+        True,
+        True,
+    ),
+    (
+        "array_free_namespace",
+        "namespace dart{constexpr int N=1;struct H{int a[N];};}",
+        "static_assert(sizeof(dart::H)==sizeof(int));",
+        "N=1",
+        "N=2",
+        True,
+        True,
+    ),
+    (
+        "array_nested_owning_parameter",
+        "namespace dart{constexpr int N=1;template<int N>struct Outer{struct H{int a[N];};H child;};}",
+        "static_assert(sizeof(dart::Outer<3>)==3*sizeof(int));",
+        "N=1",
+        "N=2",
+        False,
+        False,
+    ),
+    (
+        "array_specialization_free_namespace",
+        "namespace dart{constexpr int N=1;template<int N>struct H{};template<>struct H<3>{int a[N];};}",
+        "static_assert(sizeof(dart::H<3>)==sizeof(int));",
+        "N=1",
+        "N=2",
+        True,
+        True,
+    ),
+    (
+        "bit_width_owning_parameter",
+        "namespace dart{constexpr int N=1;template<int N>struct H{unsigned a:N;unsigned b:31;};}",
+        "static_assert(sizeof(dart::H<3>)==2*sizeof(unsigned));",
+        "N=1",
+        "N=2",
+        False,
+        False,
+    ),
+    (
+        "bit_width_qualified_namespace",
+        "namespace dart{constexpr int N=1;template<int N>struct H{unsigned a: ::dart::N;unsigned b:31;};}",
+        "static_assert(sizeof(dart::H<3>)==sizeof(unsigned));",
+        "N=1",
+        "N=2",
+        True,
+        True,
+    ),
+    (
+        "bit_width_free_namespace",
+        "namespace dart{constexpr int N=1;struct H{unsigned a:N;unsigned b:31;};}",
+        "static_assert(sizeof(dart::H)==sizeof(unsigned));",
+        "N=1",
+        "N=2",
+        True,
+        True,
+    ),
+    (
+        "bit_width_nested_owning_parameter",
+        "namespace dart{constexpr int N=1;template<int N>struct Outer{struct H{unsigned a:N;unsigned b:31;};H child;};}",
+        "static_assert(sizeof(dart::Outer<3>)==2*sizeof(unsigned));",
+        "N=1",
+        "N=2",
+        False,
+        False,
+    ),
+    (
+        "bit_width_specialization_free_namespace",
+        "namespace dart{constexpr int N=1;template<int N>struct H{};template<>struct H<3>{unsigned a:N;unsigned b:31;};}",
+        "static_assert(sizeof(dart::H<3>)==sizeof(unsigned));",
+        "N=1",
+        "N=2",
+        True,
+        True,
+    ),
+]
+
+
+FIVE_FIX_UNION_MASK = [
+    (
+        "anonymous_union_primary",
+        "namespace dart{constexpr int N=8;template<int N>struct H{union{alignas(N)int(*f)();};};}",
+        "static_assert(sizeof(dart::H<16>)==16);",
+        "N=8",
+        "N=16",
+        False,
+        False,
+    ),
+    (
+        "anonymous_union_specialization",
+        "namespace dart{constexpr int N=8;template<int N>struct H{int x;};template<>struct H<0>{union{alignas(N)int(*f)();};};}",
+        "static_assert(sizeof(dart::H<0>)==8);",
+        "N=8",
+        "N=16",
+        True,
+        True,
+    ),
+    (
+        "inline_union_primary",
+        "namespace dart{constexpr int N=8;template<int N>struct H{union U{int x;} value __attribute__((aligned(N)));};}",
+        "static_assert(sizeof(dart::H<16>)==16);",
+        "N=8",
+        "N=16",
+        False,
+        False,
+    ),
+    (
+        "inline_union_specialization",
+        "namespace dart{constexpr int N=8;template<int N>struct H{int x;};template<>struct H<0>{union U{int x;} value __attribute__((aligned(N)));};}",
+        "static_assert(sizeof(dart::H<0>)==8);",
+        "N=8",
+        "N=16",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_BOUND_MASK + FIVE_FIX_UNION_MASK,
+    ids=[row[0] for row in FIVE_FIX_BOUND_MASK + FIVE_FIX_UNION_MASK],
+)
+def test_five_fix_field_mask_completion(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    text = json.dumps(_scan_receiver_api(extractor, tmp_path, header, source))
+    assert "enclosing_templates" not in text
+    # The namespace constant is evidence only when the bound/width/alignment names it freely.
+    assert ("constexpr int N" in text) == expected
+
+
+FIVE_FIX_FIELD_TYPE_OWNER = [
+    (
+        "class_owning_type_parameter",
+        "namespace dart{struct T{int storage;};template<class T>struct H{T value;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        False,
+        False,
+        True,
+    ),
+    (
+        "class_nested_owning_type_parameter",
+        "namespace dart{struct T{int storage;};template<class T>struct H{struct Inner{T value;};Inner nested;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        False,
+        False,
+        True,
+    ),
+    (
+        "class_qualified_namespace",
+        "namespace dart{struct T{int storage;};template<class T>struct H{::dart::T value;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+        True,
+    ),
+    (
+        "class_unshadowed_namespace",
+        "namespace dart{struct T{int storage;};struct H{T value;};}",
+        "static_assert(sizeof(dart::H)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+        True,
+    ),
+    (
+        "class_specialization_free_namespace",
+        "namespace dart{struct T{int storage;};template<class T>struct H{};template<>struct H<int>{T value;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "int storage;",
+        "double storage;",
+        True,
+        True,
+        True,
+    ),
+    (
+        "callback_alias_owning_type_parameter",
+        "namespace dart{using T=int(*[2])();template<class T>struct H{T value;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "[2]",
+        "[3]",
+        False,
+        False,
+        True,
+    ),
+    (
+        "callback_alias_qualified_namespace",
+        "namespace dart{using T=int(*[2])();template<class T>struct H{::dart::T value;};}",
+        "static_assert(sizeof(dart::H<int>)==2*sizeof(void*));",
+        "[2]",
+        "[3]",
+        True,
+        True,
+        True,
+    ),
+    (
+        "dependent_function_alias_preclassification",
+        "namespace dart{using T=void();template<class T>struct H{T value;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "T value;",
+        "T value[2];",
+        True,
+        True,
+        True,
+    ),
+    (
+        "qualified_function_alias_is_member_function",
+        "namespace dart{using T=void();template<class T>struct H{::dart::T value;};}",
+        "static_assert(sizeof(dart::H<int>)==1);",
+        "T=void()",
+        "T=void(int)",
+        False,
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native,field",
+    FIVE_FIX_FIELD_TYPE_OWNER,
+    ids=[row[0] for row in FIVE_FIX_FIELD_TYPE_OWNER],
+)
+def test_five_fix_field_type_owner(
+    extractor, tmp_path, label, header, source, old, new, expected, native, field
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    scan = _scan_receiver_api(extractor, tmp_path, header, source)
+    text = json.dumps(scan)
+    assert "enclosing_templates" not in text
+    # A shadowed type parameter keeps its raw spelling; the field is never dropped.
+    layouts = [
+        json.dumps(item)
+        for entry in scan.get("types", ())
+        for item in entry.get("layout_declarations", ())
+    ]
+    assert any(" value" in item for item in layouts) == field
+    if label[:5] != "class" and "qualified" not in label:
+        assert any("T value" in item for item in layouts)
+
+
+FIVE_FIX_CONSTRUCTION_OWNER = [
+    (
+        "alignment_owning_type",
+        "namespace dart{struct alignas(8)T{int storage;};template<class T>struct H{T value;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "alignas(8)",
+        "alignas(16)",
+        False,
+        False,
+    ),
+    (
+        "alignment_qualified_type",
+        "namespace dart{struct alignas(8)T{int storage;};template<class T>struct H{::dart::T value;};}",
+        "static_assert(sizeof(dart::H<int>)==8);",
+        "alignas(8)",
+        "alignas(16)",
+        True,
+        True,
+    ),
+    (
+        "alignment_nested_type",
+        "namespace dart{struct alignas(8)T{int storage;};template<class T>struct H{struct Inner{T value;};Inner nested;};}",
+        "static_assert(sizeof(dart::H<int>)==sizeof(int));",
+        "alignas(8)",
+        "alignas(16)",
+        False,
+        False,
+    ),
+    (
+        "alignment_specialization_free_type",
+        "namespace dart{struct alignas(8)T{int storage;};template<class T>struct H{};template<>struct H<int>{T value;};}",
+        "static_assert(sizeof(dart::H<int>)==8);",
+        "alignas(8)",
+        "alignas(16)",
+        True,
+        True,
+    ),
+    (
+        "constructor_owning",
+        "namespace dart{class T{int storage;public:T()=default;};template<class T>struct H{T value;};}",
+        "void use(){dart::H<int> value{};}",
+        "T()=default",
+        "T()=delete",
+        False,
+        False,
+    ),
+    (
+        "api_default_owning",
+        "namespace dart{class T{int storage;public:T()=default;};template<class T>struct H{T value;};void f(H<int> value={});}",
+        "void use(){dart::f();}",
+        "T()=default",
+        "T()=delete",
+        False,
+        False,
+    ),
+    (
+        "initializer_owning",
+        "namespace dart{constexpr int K=1;struct T{int storage=K;};template<class T>struct H{T value;};}",
+        "static_assert(dart::H<int>{}.value==0);",
+        "K=1",
+        "K=2",
+        False,
+        False,
+    ),
+    (
+        "constructor_qualified",
+        "namespace dart{class T{int storage;public:T()=default;};template<class T>struct H{::dart::T value;};}",
+        "void use(){dart::H<int> value{};}",
+        "T()=default",
+        "T()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_default_qualified",
+        "namespace dart{class T{int storage;public:T()=default;};template<class T>struct H{::dart::T value;};void f(H<int> value={});}",
+        "void use(){dart::f();}",
+        "T()=default",
+        "T()=delete",
+        True,
+        True,
+    ),
+    (
+        "initializer_qualified",
+        "namespace dart{constexpr int K=1;struct T{int storage=K;};template<class T>struct H{::dart::T value;};}",
+        "static_assert(dart::H<int>{}.value.storage==1);",
+        "K=1",
+        "K=2",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_CONSTRUCTION_OWNER,
+    ids=[row[0] for row in FIVE_FIX_CONSTRUCTION_OWNER],
+)
+def test_five_fix_construction_owner(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    scan = _scan_receiver_api(extractor, tmp_path, header, source)
+    assert "enclosing_templates" not in json.dumps(scan)

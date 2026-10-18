@@ -245,6 +245,12 @@ retains conservative candidates for unresolved receivers. Known limitations:
   subscripting is not recorded.
 - Explicitly selected `std::variant` alternatives (`std::in_place_type` or
   `std::in_place_index`) are not tracked for construction.
+- API-default same-type prvalue elision recognizes indexed direct calls;
+  casts and other default-expression forms may retain conservative extra
+  constructor evidence.
+- Constructor arguments of sequence modifier `emplace_back` are not recorded.
+- Associative insertion projects iterator, pair and mapped receivers but does
+  not record insertion-side constructor arguments (for example `try_emplace`).
 
 Operator syntax is associated with declarations for `->`, `[]` and `()` when
 the receiver type is known. The Gazebo build and test lanes remain the
