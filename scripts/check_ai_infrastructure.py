@@ -5505,11 +5505,11 @@ def exercise_scenarios(
                 lowered = re.sub(r"\*\*|__|`", "", lowered)
                 # Exempt complete opt-out clauses; surrounding text can widen scope.
                 unconditional = re.sub(
-                    r"(?:(?:^|(?<=[.;|\n])) *(?:[-*+>] +)*"
+                    r"(?:(?:^|(?<=[.!?;|\n])) *(?:[-*+>] +)*"
                     r"(?:with|when|if) +delegation=off"
                     r"(?: +is +(?:set|enabled))?,? +(?:" + negation + r")"
                     r"|(?:" + negation + r") +(?:when|if) +delegation=off"
-                    r"(?: +is +(?:set|enabled))?) *(?=[.;|\n]|$)",
+                    r"(?: +is +(?:set|enabled))?) *(?=[.!?;|\n]|$)",
                     "",
                     lowered,
                 )
