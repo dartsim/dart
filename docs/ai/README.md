@@ -78,6 +78,15 @@ hosted platform CI, or claim-tied semantic image review. `test-ai-infra` and
 the visual debug-overlay gate use the same guarded pytest runner, which fails
 when no test body executes. The direct structural checker form is reserved for
 fast staged/setup internals and is not sufficient completion evidence.
+The checker's delegation-policy reading uses the Pixi-supplied `markdown-it-py`;
+run it through `pixi run` and it fails closed, never falling back to raw text,
+under an interpreter without that parser.
+That reading is a deterministic CommonMark text and finite HTML filter under
+the default no-scripting interpretation of the
+[`noscript` element](https://html.spec.whatwg.org/multipage/scripting.html#the-noscript-element):
+`noscript` fallback text counts for required markers, stale gates, and negative
+checks. Conditional scripting visibility, CSS computed visibility, and browser
+recovery are not modeled.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;
@@ -151,8 +160,8 @@ on 2026-10-17:
   (`claude-haiku-5-5`) for quick lookups and repeatable packets. Claude Code
   offers `low`, `medium`, `high`, `xhigh`, and `max`; use `--effort` for a
   session override, while `/effort` normally saves per-model preferences.
-  Reserve `max` for a hard task. Fable 5.1, Opus 5.5, and Sonnet 5.5 run
-  safety classifiers that can occasionally decline dual-use content; treat
+  Reserve `max` for a hard task. Fable 5.1, Opus 5.5, Sonnet 5.5, and Haiku 5.5
+  run safety classifiers that can occasionally decline dual-use content; treat
   such a refusal as expected model behavior rather than a DART harness defect.
   (Mythos-class models are restricted to approved organizations — do not try
   to select one.) If the refused task is legitimate DART work, restate it with
@@ -160,9 +169,10 @@ on 2026-10-17:
   if it still refuses. See Anthropic's
   [model catalog](https://platform.claude.com/docs/en/models/overview) and
   [Claude Code effort guidance](https://code.claude.com/docs/en/model-config#adjust-effort-level).
-- **Muse — Muse Code 1.4.10.** Use `muse-wonder-full-1.0`, available in Muse
-  Code by subscription, for the most critical work; `muse-wonder-1.0` for
-  complex software engineering and long-horizon agentic work; and
+- **Muse — Muse Code 1.4.10.** Use `muse-wonder-full-1.0`, available only on
+  the Muse Code Power Usage and Maximum Usage plans, for the most critical
+  work; `muse-wonder-1.0`, on every plan, for complex software engineering and
+  long-horizon agentic work and as the fallback for Wonder Full; and
   `muse-spark-1.3` for high-volume, latency-sensitive, or cost-sensitive
   packets such as subagent tasks. Muse Wonder accepts reasoning effort
   `minimal` through `max`, and neither Wonder nor Spark accepts `none`; the

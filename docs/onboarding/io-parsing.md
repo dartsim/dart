@@ -12,6 +12,11 @@ package metadata used by IO components.
 `SdfParser` uses sdformat for schema validation, version conversion and frame
 resolution. IO requires sdformat 14.8 or newer; supported library majors are
 14, 15 and 16. The accepted document versions follow the selected library.
+Standard Pixi environments use sdformat 16.1 or newer within major 16 and
+urdfdom 6. SDFormat 16 [shares schema descriptions](https://github.com/gazebosim/sdformat/pull/1589),
+avoiding repeated schema copies when loading large worlds. The Ionic
+environment uses sdformat 16 for DART and 15 for Gazebo; the isolated Harmonic
+and Jetty lanes use 14 and 16 respectively.
 Public `dart::utils::SdfParser` entrypoints and options remain available.
 Authored world gravity, physics timestep and joint limits, including effort and
 velocity, are honored. Existing controllers that relied on ignored limits must

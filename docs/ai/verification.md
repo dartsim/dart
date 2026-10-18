@@ -87,8 +87,11 @@ comments, scissors and verbose diffs Git removes before publication. When
 that invocation cannot be read or parsed, the checker falls back to Git's
 editor-template instructions. Without invocation or template evidence, it
 scans every line. Comments and literal scissors that Git retains are scanned.
-Each hook selects a compatible interpreter: Python 3.9+ for commit-msg and
-pre-push, and Python with `tomllib` (3.11+) for pre-commit. All share
+Each hook selects a compatible interpreter: Python 3.9+ for commit-msg,
+pre-push, and the pre-commit staged local-path scan, which needs only the
+standard library. The pre-commit AI gate then reselects Python with `tomllib`
+(3.11+) and the Pixi-supplied Markdown parser; when none exists, it falls back to
+the staged whitespace check while the path scan still runs. All share
 foreign-hook chaining, `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older
 worktrees without the checker or a compatible interpreter print a notice and
 skip the message and pre-push scans; the pre-commit hook retains its staged
@@ -365,3 +368,17 @@ Before calling work complete, verify every explicit requirement against current
 evidence: files, command output, tests, PR state, review evidence, GUI/demo
 artifacts when relevant, and downstream gates where applicable. If evidence is
 indirect or missing, keep working.
+
+## Delegation Policy Language Scope
+
+The delegation-policy check recognizes a finite catalog, not arbitrary English.
+The checker recognizes canonical `disabled`/`off` reversals of the delegation
+default. A negated
+state scoped by `for`, `about` or a quoted label stays local; other
+continuations stay conservative. Synonyms such as `prohibited` and
+`disallowed`, and scopes such as `in`, `on` and `during`, are not interpreted;
+use the canonical `disabled`/`off` and `for ...` wording.
+The by-default qualifier is recognized only fronted (`By default, delegation is
+disabled.`) or trailing (`Delegation is disabled by default.`); an infixed
+placement such as `Delegation is by default disabled.` is not interpreted, so
+use one of the two recognized positions.
