@@ -37,6 +37,9 @@ def ssik_chain(ssik, wam, ee):
 # A held swivel that would turn a joint this far is ill-conditioned, as at the
 # straight-up rest pose, where the shoulder-wrist line is the base axis.
 FLIP = 1.0
+# Keep the held swivel unless Newton continuation from the current pose reaches
+# the target with this much less joint motion, as near wrist singularities.
+JUMP = 0.5
 # Fallback swivels are searched coarse to fine, because ssik's native
 # Chart.in_limits can stall on the degenerate chart of a singular target, such
 # as the straight-up rest pose turned in place.
@@ -50,10 +53,12 @@ FK_TOLERANCE = 1e-6
 def swivel_solver(chain, wam):
     """Hold the current elbow's swivel, so redundancy follows body drags.
 
-    When no held solution is usable, or every one would flip a joint, also
-    offers each branch's in-limit swivel nearest the current pose, then ssik's
-    seeded solve. DART applies the valid solution nearest the current pose.
+    Prefers Newton continuation from the current pose where the held swivel is
+    ill-conditioned. When neither helps, also offers each branch's in-limit
+    swivel nearest the current pose, then ssik's seeded solve. DART applies the
+    valid solution nearest the current pose.
     """
+    refinement = importlib.import_module("ssik.refinement")
     lower = wam.getPositionLowerLimits()
     upper = wam.getPositionUpperLimits()
     center = 0.5 * (lower + upper)
@@ -96,6 +101,9 @@ def swivel_solver(chain, wam):
             swivels = swivels[index] + np.linspace(-step, step, SAMPLES)
         return best
 
+    def jacobian(q):
+        return refinement.kinbody_jacobian(chain.kinbody, q)
+
     def candidates(desired, q):
         motion = chain.self_motion(desired)
         # Measure the current elbow in the target's swivel basis, which ssik
@@ -104,14 +112,24 @@ def swivel_solver(chain, wam):
         charts = list(motion)
         held = [into_limits(chart.q(swivel)) for chart in charts]
         held = [c for c in held if usable(c, desired)]
-        if held and min(np.abs(c - q).max() for c in held) < FLIP:
+        move = min((np.abs(c - q).max() for c in held), default=np.inf)
+        # Newton-continue from the current pose, as ssik's own trackers do: it
+        # stays continuous where the swivel is ill-conditioned or near limits.
+        tracked = refinement.seeded_track(q, chain.fk, jacobian, desired)
+        if tracked is not None:
+            tracked = into_limits(tracked.q)
+            if usable(tracked, desired) and np.abs(tracked - q).max() + JUMP < move:
+                return [tracked]
+        if move < FLIP:
             return held
         nearest = (nearest_in_limits(chart, q, desired) for chart in charts)
         found = [c for c in nearest if c is not None]
         if not found:
             # The seeded solve also handles the singular continua charts miss;
             # an SRS arm has at most eight branches.
-            seeded = chain.solve(desired, q_seed=q, max_solutions=8)
+            seeded = chain.solve(
+                desired, q_seed=q, max_solutions=8, allow_rescue=False
+            )
             found = [into_limits(s.q) for s in seeded]
             found = [c for c in found if usable(c, desired)]
         return held + found

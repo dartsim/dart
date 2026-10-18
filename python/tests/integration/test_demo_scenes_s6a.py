@@ -411,19 +411,42 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [0.3, -0.036474599, 0.2, 0.5, -0.3, 0.5, 0.1],
             [0.3, -0.036274599, 0.2, 0.5, -0.3, 0.5, 0.1],
         ),
-        ([0.3, 1e-5, 0.2, 1.5, -0.3, 1e-5, 0.1], [0.3, 1.1e-4, 0.2, 1.5, -0.3, 1e-5, 0.1]),
+        (
+            [0.3, 1e-5, 0.2, 1.5, -0.3, 1e-5, 0.1],
+            [0.3, 1.1e-4, 0.2, 1.5, -0.3, 1e-5, 0.1],
+        ),
         ([0.3, 0.6, 0.2, 3.0999, -0.3, 0.5, 0.1], [0.3, 0.6, 0.2, 3.1, -0.3, 0.5, 0.1]),
         (_NARROW + 1e-4 * _INWARD, _NARROW + 1e-6 * _INWARD),
         (
             [-1.499, -1.99999, 2.79999, 2.6, -1.1, 1.59999, 2.2],
             [-1.5, -1.99999, 2.79999, 2.6, -1.1, 1.59999, 2.2],
         ),
+        (
+            [0.3, 0.6, 0.2, 1.5, -0.3, 1e-4, 0.1],
+            [0.3001, 0.6, 0.2, 1.5, -0.3, 1e-4, 0.1],
+        ),
+        (
+            [2.5999, -0.2, 0.8, 1.85, -2.7, -1.5993, 1.89],
+            [2.5999, -0.2001, 0.8, 1.85, -2.7, -1.5993, 1.89],
+        ),
+        ([0.0, 1.8, 0.0, 1.9, 0.3, -1e-6, 1.9], [1e-4, 1.8, 0.0, 1.9, 0.3, -1e-6, 1.9]),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
-    # lies on the elbow limit; the last two goals' in-limit arcs are narrower
-    # than the coarse swivel samples.
-    ids=["basis-switch", "near-singular", "on-limit", "narrow-arc", "narrow-arc-2"],
+    # lies on the elbow limit; the next two goals' in-limit arcs are narrower
+    # than the coarse swivel samples; near an aligned wrist, the held swivel
+    # turns the wrist, and the nearest solution lies in a narrow basin between
+    # the coarse samples, also between two joint limits.
+    ids=[
+        "basis-switch",
+        "near-singular",
+        "on-limit",
+        "narrow-arc",
+        "narrow-arc-2",
+        "wrist-aligned",
+        "two-limits",
+        "wrist-basin",
+    ],
 )
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
     setup, wam, ee, _ = _wam_with_ssik()
@@ -452,6 +475,26 @@ def test_wam_ssik_rejects_inaccurate_charts_at_a_wrist_singularity():
         ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
     )
     assert np.abs(wam.getPositions() - start).max() < 0.5
+
+
+def test_wam_ssik_never_runs_the_slow_rescue_while_dragging(monkeypatch):
+    setup, wam, ee, _ = _wam_with_ssik()
+    rescue = pytest.importorskip("ssik.refinement.rescue")
+
+    def fail(*args, **kwargs):
+        raise AssertionError("interactive solves must not run ssik's rescue")
+
+    monkeypatch.setattr(rescue, "rescue_via_T_perturbation", fail)
+    target = _activate_at(setup, wam, np.zeros(7))
+    start = target.getTransform().matrix()
+    # Straight up from the stretched rest pose is out of reach but inside
+    # ssik's reach sphere, where its rescue would run for every new target.
+    for k in range(1, 6):
+        transform = dart.math.Isometry3()
+        transform.set_rotation(start[:3, :3])
+        transform.set_translation(start[:3, 3] + [0.0, 0.0, 0.002 * k])
+        target.setTransform(transform)
+        setup.pre_refresh()
 
 
 def test_wam_ssik_reuses_a_failed_solve_while_dart_iterates():
