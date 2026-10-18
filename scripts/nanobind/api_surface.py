@@ -13,6 +13,11 @@ from pathlib import Path
 
 from codemod import split
 
+# Quoted defaults stay intact; any other "<... at 0x...>" address is masked.
+ADDRESS_PATTERN = re.compile(
+    r"""(?P<quoted>'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|(?<= at )0x[0-9a-fA-F]+(?=>)"""
+)
+
 
 def signatures(value):
     native = getattr(value, "__nb_signature__", None)
@@ -30,9 +35,8 @@ def signatures(value):
             for line in doc.splitlines()
             if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
         ]
-    # Mask only addresses inside object representations, keeping other text.
     return [
-        re.sub(r"(<[^<>]* object at )0x[0-9a-fA-F]+(?=>)", r"\1ADDRESS", sig)
+        ADDRESS_PATTERN.sub(lambda match: match["quoted"] or "ADDRESS", sig)
         for sig in result
     ]
 

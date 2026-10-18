@@ -371,14 +371,17 @@ def test_api_snapshot_keeps_hexadecimal_text_in_signatures(api_surface, monkeypa
     module.__version__ = "test"
 
     def operation():
-        """(tag: str = '0xdead', note: str = 'look at 0xbeef', option: object = <object object at 0x7f00beef>) -> None"""
+        """(tag: str = '0xdead', note: str = 'look at 0xbeef', text: str = '<object object at 0xbeef>', option: object = <object object at 0x7f00beef>, callback: object = <function callback at 0x7f00>, local: object = <f.<locals>.Default object at 0x7f01>) -> None"""
 
     module.operation = operation
     monkeypatch.setitem(sys.modules, "dartpy", module)
 
     assert api_surface.snapshot()["dartpy.operation"]["signatures"] == [
         "(tag: str = '0xdead', note: str = 'look at 0xbeef', "
-        "option: object = <object object at ADDRESS>) -> None"
+        "text: str = '<object object at 0xbeef>', "
+        "option: object = <object object at ADDRESS>, "
+        "callback: object = <function callback at ADDRESS>, "
+        "local: object = <f.<locals>.Default object at ADDRESS>) -> None"
     ]
 
 
