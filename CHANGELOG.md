@@ -126,6 +126,7 @@
   * Keep prepared Worlds ready after topology edits in unrelated Worlds,
     while still rebuilding after changes to their own skeletons, solver
     membership, or collision-group dependencies.
+    [#3818](https://github.com/dartsim/dart/pull/3818)
 
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
