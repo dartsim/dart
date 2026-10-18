@@ -300,6 +300,8 @@ step_gz_sim() {
 # directory then reads. The models come from the tests and from the example
 # worlds the tests load; the cache is rebuilt when that list changes. Delete it
 # to download the models again.
+# The C locale keeps the list, and so the Fuel cache key, independent of the
+# caller's locale.
 fuel_model_uris() {
   local worlds=()
   mapfile -t worlds < <(
@@ -307,9 +309,10 @@ fuel_model_uris() {
       grep -rhoE 'examples/worlds/[A-Za-z0-9_.-]+\.sdf' "$src_dir/gz-sim/test"
       grep -rhoE '"examples",[[:space:]]*"worlds",[[:space:]]*"[A-Za-z0-9_.-]+\.sdf"' \
         "$src_dir/gz-sim/test" | sed -E 's/.*"([A-Za-z0-9_.-]+\.sdf)"$/examples\/worlds\/\1/'
-    } | sort -u | sed "s|^|$src_dir/gz-sim/|")
+    } | LC_ALL=C sort -u | sed "s|^|$src_dir/gz-sim/|")
   grep -rhIoE 'https://fuel\.gazebosim\.org/1\.0/[^/<"]+/models/[^/<"]+(/[0-9]+)?' \
-    "$src_dir/gz-sim/test" "${worlds[@]}" | sed 's/[[:space:]]*$//' | sort -u
+    "$src_dir/gz-sim/test" "${worlds[@]}" | sed 's/[[:space:]]*$//' |
+    LC_ALL=C sort -u
 }
 
 step_fuel_cache() {
