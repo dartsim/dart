@@ -135,6 +135,8 @@ MAPPING = "__mapping__"
 MULTIMAPPING = "__multimapping__"
 OPTIONAL = "__optional__:"
 PRODUCTS = {"std::pair": "__pair__:", "std::tuple": "__tuple__:"}
+# `position` is the iterator member of C++17 node_type insertion results.
+PAIR_MEMBERS = {"first", "second", "position"}
 SMART_POINTERS = {
     "std::shared_ptr": "__shared_ptr__:",
     "std::unique_ptr": "__unique_ptr__:",
@@ -402,6 +404,8 @@ def qualified(values):
     return "".join(values).lstrip(":")
 
 
+# MSVC pointer-width modifiers change the field size, so they stay in storage.
+POINTER_WIDTHS = {"__ptr32", "__ptr64"}
 CALLING_CONVENTIONS = {
     "__cdecl",
     "__clrcall",
@@ -477,8 +481,11 @@ def function_pointer_declarator(values):
             member_pointer = name < group
         if name == group:
             continue
+        widths = []
         while name < group:
-            if values[name] in {"*", "&", "&&", "const", "volatile"}:
+            if values[name] in {"*", "&", "&&", "const", "volatile"} | POINTER_WIDTHS:
+                if values[name] in POINTER_WIDTHS:
+                    widths.append(name)
                 name += 1
             elif values[name] in CALLING_CONVENTIONS:
                 attributes.add(name)
@@ -499,13 +506,18 @@ def function_pointer_declarator(values):
         if values[name : name + 1] == ["("] and name in tokens.pairs:
             nested_end = tokens.pairs[name]
             name += 1
-            while name < nested_end and values[name] in {
-                "*",
-                "&",
-                "&&",
-                "const",
-                "volatile",
-            }:
+            while (
+                name < nested_end
+                and values[name]
+                in {
+                    "*",
+                    "&",
+                    "&&",
+                    "const",
+                    "volatile",
+                }
+                | POINTER_WIDTHS
+            ):
                 outer.append(values[name])
                 name += 1
         name_index = name if name < group and IDENTIFIER.match(values[name]) else None
@@ -559,6 +571,7 @@ def function_pointer_declarator(values):
                 "array_pointer": dimensions > 0 and "*" in outer,
                 "array_reference": dimensions > 0
                 and bool({"&", "&&"}.intersection(outer)),
+                "element_widths": widths,
             }
     return None
 
@@ -1944,7 +1957,9 @@ class ApiIndex:
                 opening = pointer["opening"]
                 retained.update(range(opening, tokens.pairs[opening] + 1))
                 if pointer["array_pointer"] or pointer["array_reference"]:
-                    # The referred-to array's extents are not part of the pointer.
+                    # The referred-to array's extents and element pointer width
+                    # are not part of the pointer.
+                    retained.difference_update(pointer["element_widths"])
                     for first, last in tokens.pairs.items():
                         if (
                             values[first] == "["
@@ -1999,10 +2014,19 @@ class ApiIndex:
                 or function_type_signature(expanded)
             )
             result = []
+            # An outer pointer or reference owns its storage; the referred-to
+            # alias's width, extents and alignment are not part of it.
+            indirect = any(
+                value in {"*", "&", "&&"}
+                and tokens.enclosing[index] is None
+                and not in_template_argument(values, index)
+                for index, value in enumerate(values)
+            )
             for start, _, spelling in names_in(values):
                 resolved = self.layout_type(spelling, where)
                 if (
-                    not in_template_argument(values, start)
+                    not indirect
+                    and not in_template_argument(values, start)
                     and resolved in self.alias_arguments
                     and resolved not in seen
                     and len(seen) < 8
@@ -2282,6 +2306,113 @@ class ApiIndex:
             and all(map(returned, declarations))
         )
 
+    def layout_operand_owners(self, operand, scope):
+        """Value owners of a direct call operand, after its dereferences."""
+        # shortcut: direct indexed call operands; extend for other default expressions.
+        depth = 0
+        while operand:
+            tokens = Tokens(" ".join(operand))
+            if operand[0] == "(" and tokens.pairs.get(0) == len(operand) - 1:
+                operand = operand[1:-1]
+            elif operand[0] == "*":
+                depth, operand = depth + 1, operand[1:]
+            elif operand[-1] == "]" and any(
+                closing == len(operand) - 1 and opening
+                for opening, closing in tokens.pairs.items()
+            ):
+                depth += 1
+                operand = operand[
+                    : next(o for o, c in tokens.pairs.items() if c == len(operand) - 1)
+                ]
+            else:
+                break
+        base = 2 if operand[:2] == ["this", "->"] else 0
+        names = list(names_in(operand[base:]))
+        if not names or names[0][0]:
+            return []
+        opening = base + template_end(operand[base:], names[0][1])
+        if (
+            operand[opening : opening + 1] != ["("]
+            or Tokens(" ".join(operand)).pairs.get(opening) != len(operand) - 1
+        ):
+            return []
+        result = []
+        # Argument calls do not determine the outer call's return type.
+        for declaration in self.decltype_declarations(
+            ["decltype", "(", *operand[:opening], "(", ")", ")"], scope
+        ):
+            where = declaration.get("declaration_scope") or tuple(
+                (declaration["class"] or declaration["name"].rpartition("::")[0]).split(
+                    "::"
+                )
+            )
+            returned = self.masked_aliases(
+                return_type_tokens(declaration),
+                where,
+                self.declaration_template_names(
+                    declaration, TOKEN.findall(declaration["signature"])
+                ),
+            )
+            for _ in range(depth):
+                while returned[-1:] in (["const"], ["volatile"], ["&"], ["&&"]):
+                    returned = returned[:-1]
+                if returned[-1:] == ["*"]:
+                    returned = returned[:-1]
+                else:
+                    break
+            else:
+                result.extend(self.layout_owners(returned, where, references=True))
+        return result
+
+    def declaration_template_names(self, item, values):
+        """Template parameters of a declaration's own and enclosing templates."""
+        headers = [values] if values[:2] == ["template", "<"] else []
+        # Enclosing class templates contribute parameters absent from the member.
+        owner = (item.get("class") or "").split("::")
+        if "enclosing_templates" in item:
+            headers.extend(map(TOKEN.findall, item["enclosing_templates"]))
+        else:
+            for depth in range(1, len(owner) + 1):
+                headers.extend(
+                    TOKEN.findall(declaration)
+                    for declaration in self.type_templates.get(
+                        "::".join(owner[:depth]), ()
+                    )
+                )
+        return set().union(*map(template_parameter_names, headers))
+
+    def masked_aliases(self, values, scope, shadowed, depth=0):
+        """Expand aliases, masking each declaration's own template parameters."""
+        if depth > 8:
+            return values
+        result, previous = [], 0
+        for start, end, spelling in names_in(values):
+            result.extend(values[previous:start])
+            name = self.resolve(spelling, scope) or spelling
+            if spelling.split("::")[0] in shadowed and (
+                not start or values[start - 1] != "::"
+            ):
+                result.append("__template_parameter")
+            elif name in self.alias_arguments:
+                arguments, where = self.alias_arguments[name]
+                result.extend(
+                    self.masked_aliases(
+                        arguments,
+                        where,
+                        set().union(
+                            *(
+                                template_parameter_names(TOKEN.findall(header))
+                                for header in self.alias_templates.get(name, ())
+                            )
+                        ),
+                        depth + 1,
+                    )
+                )
+            else:
+                result.extend(TOKEN.findall(name))
+            previous = end
+        return result + values[previous:]
+
     def default_argument_declarations(self, item, seen=()):
         """Constants and constructed class dependencies in parameter defaults."""
         key = item.get("class"), item.get("signature")
@@ -2302,22 +2433,7 @@ class ApiIndex:
             (item["class"] or item["name"].rpartition("::")[0]).split("::")
         )
         result, constants = [], []
-        shadowed = set()
-        headers = [values] if values[:2] == ["template", "<"] else []
-        # Enclosing class templates contribute parameters absent from the member.
-        owner = (item.get("class") or "").split("::")
-        if "enclosing_templates" in item:
-            headers.extend(map(TOKEN.findall, item["enclosing_templates"]))
-        else:
-            for depth in range(1, len(owner) + 1):
-                headers.extend(
-                    TOKEN.findall(declaration)
-                    for declaration in self.type_templates.get(
-                        "::".join(owner[:depth]), ()
-                    )
-                )
-        for header in headers:
-            shadowed |= template_parameter_names(header)
+        shadowed = self.declaration_template_names(item, values)
         for first, last in construction_arguments(tokens, opening):
             default = next(
                 (
@@ -2416,19 +2532,25 @@ class ApiIndex:
                 ]
                 for part in (prefix, expression)
             )
-            # shortcut: handle parenthesized type operands; extend for expressions.
             operands = Tokens(" ".join(expression))
             for index, value in enumerate(expression):
-                closing = operands.pairs.get(index + 1)
-                if value not in {"sizeof", "alignof"} or closing is None:
+                span = (
+                    layout_operator_operand(operands, index)
+                    if value in {"sizeof", "alignof"}
+                    else None
+                )
+                if span is None:
                     continue
-                operand = expression[index + 2 : closing]
-                if not any(
+                operand = expression[span[0] : span[1]]
+                if operands.values[index + 1] == "(" and not any(
                     token in {"(", "{", ".", "->", "?", "=", "+", "-", "/", "%", "!"}
                     and not in_template_argument(operand, position)
                     for position, token in enumerate(operand)
                 ):
                     for owner in self.layout_owners(operand, scope, references=True):
+                        result.extend(self.layout_evidence(owner))
+                else:
+                    for owner in self.layout_operand_owners(operand, scope):
                         result.extend(self.layout_evidence(owner))
             prefix = construction_aliases(prefix, self, scope)
             function = function_type_signature(prefix)
@@ -2694,6 +2816,41 @@ def expand(name, namespace_aliases):
     if head not in namespace_aliases:
         return name
     return namespace_aliases[head] + ("::" + tail if tail else "")
+
+
+def layout_operator_operand(tokens, index):
+    values = tokens.values
+    first = index + 1
+    if values[first : first + 1] == ["("] and first in tokens.pairs:
+        return first + 1, tokens.pairs[first]
+    if values[index] not in {"sizeof", "&"}:
+        return None
+    end = first
+    while values[end : end + 1] in (["*"], ["&"], ["+"], ["-"], ["!"], ["~"]):
+        end += 1
+    if values[end : end + 1] == ["::"]:
+        end += 1
+    if end >= len(values):
+        return None
+    if values[end] == "(" and end in tokens.pairs:
+        end = tokens.pairs[end] + 1
+    else:
+        end += 1
+    while end < len(values):
+        if values[end] in {"::", ".", "->"} and end + 1 < len(values):
+            end += 2
+        elif values[end] in {"(", "["} and end in tokens.pairs:
+            end = tokens.pairs[end] + 1
+        elif values[end] == "<":
+            closing = template_end(values, end)
+            if values[closing - 1 : closing] != [">"] or values[
+                closing : closing + 1
+            ] not in (["("], ["::"]):
+                break
+            end = closing
+        else:
+            break
+    return first, end
 
 
 def template_end(values, index):
@@ -4795,40 +4952,6 @@ def scan_sources(api, source_root):
             ):
                 return True
         return False
-
-    def layout_operator_operand(tokens, index):
-        values = tokens.values
-        first = index + 1
-        if values[first : first + 1] == ["("] and first in tokens.pairs:
-            return first + 1, tokens.pairs[first]
-        if values[index] not in {"sizeof", "&"}:
-            return None
-        end = first
-        while values[end : end + 1] in (["*"], ["&"], ["+"], ["-"], ["!"], ["~"]):
-            end += 1
-        if values[end : end + 1] == ["::"]:
-            end += 1
-        if end >= len(values):
-            return None
-        if values[end] == "(" and end in tokens.pairs:
-            end = tokens.pairs[end] + 1
-        else:
-            end += 1
-        while end < len(values):
-            if values[end] in {"::", ".", "->"} and end + 1 < len(values):
-                end += 2
-            elif values[end] in {"(", "["} and end in tokens.pairs:
-                end = tokens.pairs[end] + 1
-            elif values[end] == "<":
-                closing = template_end(values, end)
-                if values[closing - 1 : closing] != [">"] or values[
-                    closing : closing + 1
-                ] not in (["("], ["::"]):
-                    break
-                end = closing
-            else:
-                break
-        return first, end
 
     def layout_operand(tokens, index):
         opening = tokens.enclosing[index]
@@ -7170,7 +7293,7 @@ def scan_sources(api, source_root):
                         values[function - 1],
                     ):
                         return source_result
-                    if method in {"first", "second"} and any(
+                    if method in PAIR_MEMBERS and any(
                         marker.startswith(PRODUCTS["std::pair"]) for marker in types
                     ):
                         projected = product_values(
@@ -7586,7 +7709,7 @@ def scan_sources(api, source_root):
             owner = receiver(tokens, before - 2, imports, namespace_aliases, depth + 1)
             if values[before - 1] == "->":
                 owner = arrow_types(owner)
-            if value in {"first", "second"} and any(
+            if value in PAIR_MEMBERS and any(
                 marker.startswith(PRODUCTS["std::pair"]) for marker in owner
             ):
                 return product_values(owner, int(value == "second"), "std::pair")

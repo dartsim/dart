@@ -23656,3 +23656,222 @@ def test_default_layout_alias_follows_declaration_scope_template_parameters(
         )
         == drift
     )
+
+
+@pytest.mark.parametrize(
+    ("receiver", "drift"),
+    [
+        ("v.insert(v.extract(v.begin())).position->second.hit()", True),
+        ("v.insert(v.begin(), v.extract(v.begin()))->second.hit()", True),
+        ("v.insert({1, dart::A{}}).first->second.hit()", True),
+        ("v.emplace(1, dart::A{}).first->second.hit()", True),
+    ],
+)
+def test_map_node_insertion_result_position_keeps_mapped_receiver(
+    extractor, tmp_path, receiver, drift
+):
+    header = (
+        "#include <map>\nnamespace dart { struct A { void hit(); };"
+        " std::map<int, A>& values(); }"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("void hit();", "void hit()=delete;"),
+            f"void use(){{auto& v=dart::values(); {receiver};}}",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("declarations", "default", "drift"),
+    [
+        ("A* get(); A make();", "sizeof(make())", True),
+        ("A* get();", "sizeof get()", False),
+        ("A* get();", "sizeof *get()", True),
+        ("A* get(); B* select(A*);", "sizeof *select(get())", False),
+        ("B* get(); A* select(B*);", "sizeof *select(get())", True),
+        ("A* get(int*); int* other();", "sizeof get(other())[0]", True),
+        ("using PA = A*; PA get();", "sizeof *get()", True),
+        ("using PA = A*; PA get();", "sizeof get()", False),
+        ("using PPA = A**; PPA get();", "sizeof **get()", True),
+        ("using PPA = A**; PPA get();", "sizeof *get()", False),
+        ("using PRA = A*&; PRA get();", "sizeof *get()", True),
+        ("A*& get();", "sizeof *get()", True),
+        ("A* const& get();", "sizeof *get()", True),
+        ("A** get();", "sizeof *(*get())", True),
+        ("A* get();", "sizeof(get()[0])", True),
+        ("A* get();", "sizeof get()[0]", True),
+        ("A** get();", "sizeof get()[0]", False),
+        ("struct M { using P = A*; static P get(); };", "sizeof *M::get()", True),
+    ],
+)
+def test_default_sizeof_operand_follows_return_type_operations(
+    extractor, tmp_path, declarations, default, drift
+):
+    header = (
+        "namespace dart { struct A { int x; }; struct B { double x; };"
+        f" {declarations} constexpr int f(int n = {default}) {{ return n; }} }}"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("int x;", "double x;"),
+            "void use(){dart::f();}",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("declarator", "before32", "before64", "drift"),
+    [
+        ("int (* {m} callback)();", 4, 8, True),
+        ("int ((* {m} callback))();", 4, 8, True),
+        ("int (__cdecl * {m} callback)();", 4, 8, True),
+        ("int (* {m} callback[2])();", 8, 16, True),
+        ("int (* (* {m} callback)[2])();", 4, 8, True),
+        ("int (* {m} (*callback)[2])();", 8, 8, False),
+        ("int (* {m} (&callback)[2])();", 8, 8, False),
+    ],
+)
+@pytest.mark.parametrize("modifier", ["__ptr32", "__ptr64"])
+def test_msvc_pointer_width_modifier_is_callback_storage_evidence(
+    extractor, tmp_path, modifier, declarator, before32, before64, drift
+):
+    other = "__ptr64" if modifier == "__ptr32" else "__ptr32"
+    header = (
+        "namespace dart { struct H { " + declarator.replace("{m}", modifier) + " }; }"
+    )
+    size = before32 if modifier == "__ptr32" else before64
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace(modifier, other),
+            f"static_assert(sizeof(dart::H)=={size});",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("declarations", "call", "drift"),
+    [
+        (
+            "template <class A> struct H { using P = A*; static P get();",
+            "H<char>",
+            False,
+        ),
+        ("template <class A> struct H { static A* get();", "H<char>", False),
+        (
+            "template <class A> struct H { using P = A*; using Q = P; static Q get();",
+            "H<char>",
+            False,
+        ),
+        (
+            "template <class A> struct H { using P = A*;"
+            " struct N { static P get(); };",
+            "H<char>",
+            False,
+        ),
+        (
+            "using P = A*; template <class A> struct H { static P get();",
+            "H<char>",
+            True,
+        ),
+        (
+            "template <class A> struct H { using P = ::dart::A*; static P get();",
+            "H<char>",
+            True,
+        ),
+        ("template <class A> struct H { static ::dart::A* get();", "H<char>", True),
+    ],
+)
+def test_default_return_layout_masks_declaration_local_template_parameters(
+    extractor, tmp_path, declarations, call, drift
+):
+    getter = "N::get" if "struct N" in declarations else "get"
+    header = (
+        "namespace dart { struct A { int x; }; " + declarations + " static constexpr"
+        f" int f(int n = sizeof *{getter}()) {{ return n; }} }}; }}"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("int x;", "double x;"),
+            f"void use(){{dart::{call}::f();}}",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("getter", "drift"),
+    [
+        ("using P = typename A::P; static P get();", False),
+        ("static typename A::P get();", False),
+        ("using P = ::dart::A::P; static P get();", True),
+        ("using P = dart::A::P; static P get();", True),
+        ("static ::dart::A::P get();", True),
+        ("static dart::A::P get();", True),
+    ],
+)
+def test_default_return_qualified_names_mask_only_template_parameter_heads(
+    extractor, tmp_path, getter, drift
+):
+    header = (
+        "namespace dart { struct B { int x; }; struct A { using P = B*; };"
+        " struct Actual { using P = int*; };"
+        " template <class A> struct H { " + getter + " static constexpr int f("
+        "int n = sizeof *get()) { return n; } }; }"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("int x;", "double x;"),
+            "void use(){dart::H<dart::Actual>::f();}",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "drift"),
+    [
+        ("F callback;", True),
+        ("F callback[2];", True),
+        ("Arr callback;", True),
+        ("Arr* callback;", False),
+        ("Arr& callback;", False),
+        ("F* callback;", False),
+        ("Ptr callback;", False),
+    ],
+)
+def test_aliased_callback_referent_width_is_not_pointer_storage(
+    extractor, tmp_path, field, drift
+):
+    header = (
+        "namespace dart { struct H { using F = int (* __ptr32)();"
+        " using Arr = F[2]; using Ptr = F*; " + field + " }; }"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("__ptr32", "__ptr64"),
+            "static_assert(sizeof(dart::H)>0);",
+        )
+        == drift
+    )
