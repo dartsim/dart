@@ -127,6 +127,7 @@
     the default `Shape` constructor now always compute their volume and
     bounding box on the first query, instead of possibly returning zero
     volume or an empty box.
+    [#3819](https://github.com/dartsim/dart/pull/3819)
 
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
