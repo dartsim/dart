@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -5461,7 +5462,34 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
 
     errors = infra.exercise_scenarios(ROOT, emit=False)
 
-    assert any(f"missing contract marker {marker!r}" in error for error in errors)
+    assert any(f"missing delegation marker {marker!r}" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "marker,changed,missing",
+    [
+        ("Delegate by default", "<!-- Delegate by default -->", True),
+        ("`delegation=off`", "<!-- `delegation=off` -->", True),
+        ("Delegate by default", "Delegate by <em>default</em>", False),
+    ],
+)
+def test_model_upgrade_delegation_markers_use_visible_text(
+    monkeypatch, marker, changed, missing
+):
+    source = ROOT / ".claude/commands/dart-model-upgrade.md"
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(marker, changed)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any("delegation marker" in error for error in errors) is missing
 
 
 @pytest.mark.parametrize(
@@ -5489,9 +5517,513 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
         ),
         ("docs/ai/workflows.md", "`delegation=off`", "missing-marker"),
         ("docs/ai/workflows.md", "Delegation by default", "missing-marker"),
+        ("AGENTS.md", "Delegate by default", "Do not Delegate by default"),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; delegation is not the default",
+        ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; delegation isn't the default",
+        ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; delegation is no longer the default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Don\u2019t delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default and honor "
+            "`delegation=off`",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default, even if "
+            "`delegation=off` is unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`, do not delegate "
+            "by default, otherwise never delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`,\n\n"
+            "do not delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; except when `delegation=off` is set, "
+            "do not delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; never delegate by default if "
+            "`delegation=off` is set or unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; except, when `delegation=off` is set, "
+            "do not delegate by default",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; never delegate by default if "
+            "`delegation=off` is set, or unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; never delegate by default if "
+            "`delegation=off` is set/unset",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`, do not delegate "
+            "by default, even after the opt-out is removed",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation is not the default when "
+            "`delegation=off` is set, even after the opt-out is removed",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; even when `delegation=off`, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n- Even when `delegation=off`, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation should not be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation must never be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation shouldn't be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation cannot be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation won't be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is disabled by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation must be off by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is *not* the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is _not_ the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation is not enabled by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. Delegation must not be active by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. We cannot delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; even without delegation=off, do not delegate by "
+            "default when delegation=off.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; even with `delegation=off`, do not delegate by "
+            "default when `delegation=off`.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when `delegation=off`, "
+            "even after it is removed.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> Do not\n> delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> > Do not\n> > delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> Do not\ndelegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n1. Do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Do [not](policy.md) Delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; [do not](a.md) delegate [by default](b.md).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default with [flag](a.md) set.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; [when](a.md#x;y?z!) `delegation=off`, [also](b.md) "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off`, even then do not delegate "
+            "by default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default when `delegation=off`, do not delegate by default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; (do not delegate by default (when `delegation=off`)).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (even when `delegation=off`, do not delegate by "
+            "default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off`) (do not delegate by default).",
+        ),
+        *(
+            ("AGENTS.md", "Delegate by default", f"Delegate by default; {text}")
+            for text in (
+                "even without `delegation=off`, (when `delegation=off`, do not "
+                "delegate by default).",
+                "even without `delegation=off`, (do not delegate by default when "
+                "`delegation=off`).",
+                "(do not delegate by default when `delegation=off`), even after it "
+                "is removed.",
+                "(even without `delegation=off`) (do not delegate by default when "
+                "`delegation=off`).",
+                "(do not delegate by default when `delegation=off`) (or unset).",
+                "except (do not delegate by default when `delegation=off`).",
+            )
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(
+    monkeypatch, relative, old, new
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            # Missing-marker cases remove the visible spelling everywhere, since
+            # rendered text no longer distinguishes code from plain occurrences.
+            target = old.strip("`") if new == "missing-marker" else old
+            replaced = original.replace(target, new)
+            if new == "missing-marker":
+                assert target not in infra._delegation_owner_text(replaced)
+            return replaced
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any(relative in error and "delegat" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("relative", "old", "new"),
+    [
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when "
+            "`delegation=off` is set.",
+        ),
+        (
+            "docs/ai/orchestration.md",
+            "delegation is the default",
+            "delegation is the default; with `delegation=off`, delegation "
+            "is not the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off`, do not\n"
+            "delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n- When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n- When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. **When delegation=off, do not delegate by default.**",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. `When delegation=off, do not delegate by default.`",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when `delegation=off`.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation must never be the default "
+            "if `delegation=off`.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`, delegation "
+            "should not be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default! When `delegation=off`, do not delegate by default!",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when `delegation=off`?",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`: do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; if `delegation=off` is enabled: "
+            "delegation must not be the default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off` is active, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default "
+            "when `delegation=off` is active.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n### When `delegation=off`, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n### When `delegation=off`, "
+            "do not delegate by default. ###\nUse this flag for this task.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n> ### When `delegation=off`, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`, "
+            "delegation must not be enabled by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. *When `delegation=off`, do not delegate by default.*",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`, "
+            "delegation is disabled by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; delegation must be off by default "
+            "when `delegation=off` is active.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default with delegation=off.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default with `delegation=off` is set.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; with `delegation=off` is enabled, do not delegate "
+            "by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when delegation=off, do not delegate by default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (do not delegate by default if `delegation=off`).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default (when `delegation=off` is active: delegation must not be "
+            "the default).",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> When `delegation=off`,\n> do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> > When `delegation=off`, do not\n> > delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n> When `delegation=off`, do not delegate by default\n\n",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n1. When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; [when](a.md#x;y?z!) `delegation=off`, do [not](b.md) "
+            "delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; do not delegate by default when "
+            '[`delegation=off`](a_(b).md "t").',
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "[Delegate](a.md) [by default](b.md); with `delegation=off`, "
+            "delegation is [not](c.md) the default.",
+        ),
+    ],
+)
+def test_delegation_owners_permit_opt_out_scoped_negation(
     monkeypatch, relative, old, new
 ):
     source = ROOT / relative
@@ -5507,7 +6039,508 @@ def test_delegation_owners_require_default_and_reject_request_gate(
 
     errors = infra.exercise_scenarios(ROOT, emit=False)
 
-    assert any(relative in error and "delegat" in error for error in errors)
+    assert not any("delegat" in error for error in errors)
+
+
+_NEGATIONS = [
+    "do not delegate by default",
+    "don\u2019t delegate by default",
+    "never delegate by default",
+    "cannot delegate by default",
+    "delegation is not the default",
+    "delegation is no longer the default",
+    "delegation must not be the default",
+    "delegation shouldn't be the default",
+    "delegation is disabled by default",
+    "delegation must not be enabled by default",
+]
+_FLAGS = [
+    "delegation=off",
+    "`delegation=off`",
+    "[`delegation=off`](flag.md#a;b?c=1)",
+    "delegation=off is set",
+    "delegation=off is enabled",
+    "delegation=off is active",
+]
+_BLOCKS = [
+    "{}",
+    "Delegate by default. {}.",
+    "Delegate by default; {}!",
+    "Delegate by default\n- {}.",
+    "Delegate by default\n1. {}.",
+    "Delegate by default.\n> {}.",
+    "Delegate by default.\n> > {}.",
+    "Delegate by default.\n### {}.",
+    "**{}.**",
+    "Delegate by default ({}).",
+]
+
+
+def _exceptions(negation, flag, word):
+    yield f"{word} {flag}, {negation}"
+    yield f"{word} {flag}: {negation}"
+    yield f"{negation} {word} {flag}"
+
+
+def test_delegation_negation_scopes_parenthetical_exception_context():
+    for flag in _FLAGS:
+        for exc in (
+            f"when {flag}, do not delegate by default",
+            f"do not delegate by default when {flag}",
+        ):
+            for ok in (
+                f"({exc})",
+                f"({exc}.)",
+                f"Delegate by default ({exc}).",
+                f"Delegate by default; ({exc})",
+            ):
+                assert (
+                    infra._delegation_negation(infra._delegation_owner_text(ok)) is None
+                ), ok
+            for bad in (
+                f"even without {flag}, ({exc})",
+                f"except ({exc})",
+                f"({exc}), even after it is removed",
+                f"({exc}) (or unset)",
+                f"(even without {flag}) ({exc})",
+            ):
+                assert infra._delegation_negation(
+                    infra._delegation_owner_text(bad)
+                ), bad
+
+
+def test_delegation_negation_scopes_exact_opt_out_clauses():
+    for negation in _NEGATIONS:
+        assert infra._delegation_negation(negation) is not None
+        for flag in _FLAGS:
+            for word in ("with", "when", "if"):
+                for clause in _exceptions(negation, flag, word):
+                    widened = (
+                        f"even {clause}",
+                        f"{clause}, otherwise {negation}",
+                        f"{clause} or unset",
+                        f"{clause}; {negation}",
+                        f"({clause}",
+                        f"{clause})",
+                        f"({clause}, but only today)",
+                        f"({negation} ({word} {flag}))",
+                    )
+                    for block in _BLOCKS:
+                        text = infra._delegation_owner_text(block.format(clause))
+                        assert infra._delegation_negation(text) is None, text
+                        for bad in widened:
+                            if "(" in block and bad.count("(") != bad.count(")"):
+                                continue  # stray paren beside a balanced exception
+                            text = infra._delegation_owner_text(block.format(bad))
+                            assert infra._delegation_negation(text), text
+
+
+_FRONTED = [
+    "do not delegate",
+    "don't delegate",
+    "never delegate",
+    "cannot delegate",
+    "not delegate",
+    "no longer delegate",
+    "delegation is not enabled",
+    "delegation isn't on",
+    "delegation must not be active",
+    "delegation shouldn't be enabled",
+    "delegation is disabled",
+    "delegation must be off",
+]
+
+
+def _fronted_forms(action):
+    for lead in ("By default,", "By default:", "By default", "by  default,"):
+        yield f"{lead} {action}"
+
+
+def test_delegation_negation_recognizes_fronted_by_default_forms():
+    for action in _FRONTED:
+        for text in _fronted_forms(action):
+            assert infra._delegation_negation(text), text
+            for flag in ("delegation=off", "`delegation=off`"):
+                for scoped in (
+                    f"when {flag}, {text}",
+                    f"if {flag}: {text}",
+                    f"{text} with {flag}",
+                    f"{text} when {flag} is set",
+                ):
+                    owner = infra._delegation_owner_text(scoped)
+                    assert infra._delegation_negation(owner) is None, scoped
+                    for bad in (
+                        text,
+                        f"even {scoped}",
+                        f"{scoped} or unset",
+                        f"{scoped}; {text}",
+                        f"{scoped}, otherwise {text}",
+                        f"when {flag} or unset, {text}",
+                        f"{scoped}\n\nBy default, do not delegate",
+                    ):
+                        owner = infra._delegation_owner_text(bad)
+                        assert infra._delegation_negation(owner), bad
+
+
+_AUX_HEADS = [
+    f"{aux} {neg}"
+    for aux in (
+        "do",
+        "does",
+        "did",
+        "should",
+        "must",
+        "can",
+        "could",
+        "will",
+        "would",
+        "shall",
+        "may",
+        "might",
+    )
+    for neg in ("not", "never", "no longer")
+] + [
+    "don't",
+    "doesn't",
+    "didn't",
+    "shouldn't",
+    "mustn't",
+    "can't",
+    "couldn't",
+    "won't",
+    "wouldn't",
+    "shan't",
+    "mayn't",
+    "mightn't",
+    "cannot",
+]
+
+
+def test_delegation_negation_fronted_consumes_whole_action_heads():
+    for head in _AUX_HEADS:
+        text = f"By default, {head} delegate"
+        assert infra._delegation_negation(text), text
+        assert infra._delegation_negation(f"{head} delegate by default"), text
+        for scoped in (
+            f"when `delegation=off`, {text}",
+            f"{text} with `delegation=off`",
+        ):
+            owner = infra._delegation_owner_text(scoped)
+            assert infra._delegation_negation(owner) is None, scoped
+        for bad in (
+            f"even when `delegation=off`, {text}",
+            f"{text} when delegation=off or unset",
+        ):
+            assert infra._delegation_negation(infra._delegation_owner_text(bad)), bad
+        assert infra._delegation_negation(f"By default, {head} delegated") is None
+
+
+@pytest.mark.parametrize(
+    "head", ["can't", "won't", "must not", "does not", "will never"]
+)
+@pytest.mark.parametrize(
+    ("new_suffix", "rejected"),
+    [
+        ("; By default, {} delegate.", True),
+        ("; when `delegation=off`, by default, {} delegate.", False),
+        ("; By default, {} delegate when `delegation=off`.", False),
+        ("; By default, {} delegate when `delegation=off` or unset.", True),
+    ],
+)
+def test_delegation_owners_reject_fronted_modal_heads(
+    monkeypatch, head, new_suffix, rejected
+):
+    source = ROOT / "AGENTS.md"
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(
+                "Delegate by default",
+                "Delegate by default" + new_suffix.format(head),
+                1,
+            )
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any("AGENTS.md" in e and "delegat" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "By default, delegate",
+        "By default, delegate when delegation=off",
+        "By default, do not delegated",
+        "By default, don't delegates",
+        "By default, delegation is enabled",
+        "By default. Do not delegate",
+        "Delegate by default.\n\nDo not delegate",
+        "By default, the build does not delegate",
+    ],
+)
+def test_delegation_negation_ignores_unrelated_fronted_text(text):
+    assert infra._delegation_negation(text) is None
+
+
+@pytest.mark.parametrize(
+    ("relative", "old"),
+    [
+        ("AGENTS.md", "Delegate by default"),
+        ("docs/ai/orchestration.md", "delegation is the default"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("new_suffix", "rejected"),
+    [
+        ("; By default, do not delegate.", True),
+        ("; By default: delegation is disabled.", True),
+        ("; by default, delegation must not be active.", True),
+        ("; when `delegation=off`, by default, do not delegate.", False),
+        ("; By default, do not delegate when `delegation=off`.", False),
+        ("; By default, don't delegate with `delegation=off` is set.", False),
+        ("; even when `delegation=off`, by default, do not delegate.", True),
+        ("; By default, do not delegate when `delegation=off` or unset.", True),
+        ("; when `delegation=off`. By default, do not delegate.", True),
+    ],
+)
+def test_delegation_owners_handle_fronted_by_default_negation(
+    monkeypatch, relative, old, new_suffix, rejected
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(old, old + new_suffix, 1)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any(relative in e and "delegat" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Delegate by default.\n> Do not\n> delegate by default.",
+        "Delegate by default.\n> Do not\ndelegate by default.",
+        "- do\n  not delegate by default",
+        "Do [not](a.md) delegate [by](b.md) default",
+        "Do [not][ref] delegate by default",
+        '[Do not](a(b).md "title") delegate by default',
+        "Delegate by default\n> when delegation=off\n> and then more.\n\nDo not delegate by default",
+        "Delegate by default.\n- > Do not\n  > delegate by default.",
+        "Delegate by default.\n1. > > Do not\n   > > delegate by default.",
+        "- > even without delegation=off, do not\n  > delegate by default when `delegation=off`.",
+        "Delegate by default; do not delegate by default when `delegation=off` (or unset).",
+        "Delegate by default; (even without delegation=off) do not delegate by default when `delegation=off`.",
+    ],
+)
+def test_delegation_owner_text_exposes_negation(text):
+    assert infra._delegation_negation(infra._delegation_owner_text(text))
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Delegate by default.\n> Delegate by default.",
+        "[Delegate by default](policy.md) with [`delegation=off`](f.md) opt-out",
+        "Delegate by default (see [not](a.md), do [this](b.md)).",
+        "Delegate by default\n\n## Do not\n\ndelegate by default",
+        "- > when `delegation=off` is set,\n  > do not delegate by default.",
+        "1. > > when `delegation=off`,\n   > > do not delegate by default.",
+        "Delegate by default (when `delegation=off`, do not delegate by default.)",
+        "Delegate by default (do not delegate by default with `delegation=off`!)",
+        "(when `delegation=off`, do not delegate by default?)",
+    ],
+)
+def test_delegation_owner_text_keeps_positives_and_boundaries(text):
+    owner = infra._delegation_owner_text(text)
+    assert "Delegate by default" in owner or "delegate by default" in owner
+    assert infra._delegation_negation(owner) is None
+
+
+_P = "Delegate by default. "
+_OPT = "When `delegation=off`, do not delegate by default."
+# (source, negated?) for formatting that must not change what a reader sees.
+_FORMATTING_CASES = [
+    # HTML comments are invisible, also across lines and inside words.
+    (_P + "<!-- Do not delegate by default. -->", False),
+    (_P + "<!-- Do not\ndelegate by default. -->", False),
+    (_P + "Do no<!--hidden-->t delegate by default.", True),
+    # Shortcut references need a real definition; definitions are invisible.
+    (_P + "Do [not] delegate by default.\n\n[not]: policy.md", True),
+    (_P + "Do [NOT] delegate by default.\n\n[ not ]: policy.md", True),
+    (
+        _P + "[When] `delegation=off`, do not delegate by default.\n\n[when]: p.md",
+        False,
+    ),
+    (_P + "Do [not] delegate by default.", False),
+    (_P + "[When] `delegation=off`, do not delegate by default.", True),
+    (_P + "Do \\[not] delegate by default.\n\n[not]: policy.md", False),
+    (_P + "Do &#91;not&#93; delegate by default.\n\n[not]: policy.md", False),
+    (_P + '\n\n[unused]: policy.md "Do not delegate by default."', False),
+    (_P + "Do [not] delegate by default.\n\n\\[not]: policy.md", False),
+    # A single trailing backslash is a hard break; an escaped one is literal.
+    (_P + "Do not\\\ndelegate by default.", True),
+    (_P + "When `delegation=off`, do not\\\ndelegate by default.", False),
+    (_P + "Do not\\\\\ndelegate by default.", False),
+    # GFM task markers only after a real list prefix.
+    (_P + "\n- [ ] " + _OPT, False),
+    (_P + "\n- [x] " + _OPT, False),
+    (_P + "\n> - [X] " + _OPT, False),
+    (_P + "\n- [ ] Do not delegate by default.", True),
+    (_P + "[ ] " + _OPT, True),
+    (_P + "\n- \\[ ] " + _OPT, True),
+    (_P + "\n- &#91; &#93; " + _OPT, True),
+    (_P + "\n- [no] " + _OPT, True),
+    # Character references decode exactly once, outside code.
+    (_P + "Do n&#111;t delegate by default.", True),
+    (_P + "Do n&#x6f;t delegate by default.", True),
+    (_P + "Do not&nbsp;delegate by default.", True),
+    (_P + "Do not&NewLine;delegate by default.", True),
+    (_P + "Do not&NewLine;&NewLine;delegate by default.", True),
+    (_P + "Do not&#10;&#10;delegate by default.", True),
+    (_P + "Do not&NewLine;&#x0A;delegate by default.", True),
+    (_P + "Do <em>not</em>&NewLine;&NewLine;delegate by default.", True),
+    (_P + "Do <span>not&NewLine;&NewLine;</span>delegate by default.", True),
+    (_P + "<p>Do not&NewLine;&NewLine;delegate by default.</p>", True),
+    (_P + "<div>Do not&#10;&#10;delegate by default.</div>", True),
+    (
+        _P + "When `delegation=off`,&NewLine;&NewLine; do not delegate by default.",
+        False,
+    ),
+    # Genuine boundaries still split.
+    (_P + "Do not\n\ndelegate by default.", False),
+    (_P + "<p>Do not</p><p>delegate by default.</p>", False),
+    (_P + "Do n&amp;#111;t delegate by default.", False),
+    (_P + "Do `n&#111;t` delegate by default.", False),
+    # Inline tags concatenate; <br> separates; literal markup stays literal.
+    (_P + "Do <em>not</em> delegate by default.", True),
+    (_P + "<span>" + _OPT + "</span>", False),
+    (_P + "Do not<br>delegate by default.", True),
+    (_P + "Do n<em>o</em>t delegate by default.", True),
+    (_P + '<span title="Do not delegate by default.">Ordinary text</span>', False),
+    (_P + "Do &lt;em&gt;not&lt;/em&gt; delegate by default.", False),
+    (_P + "Do \\<em>not\\</em> delegate by default.", False),
+    (_P + "Do `<em>not</em>` delegate by default.", False),
+    # Existing behavior and combinations.
+    (_P + "`When delegation=off, do not delegate by default.`", False),
+    (_P + "Do `not` delegate by default.", True),
+    (
+        _P
+        + "When delegation=off, do not delegate by default. Do not delegate by default.",
+        True,
+    ),
+    (_P + "When delegation=off,\n\nDo not delegate by default.", True),
+    # Images keep their alt text; block HTML splits paragraphs, inline HTML does not.
+    (_P + "Do ![not](p.svg) delegate by default.", True),
+    (_P + "<p>When delegation=off,</p>\n<p>Do not delegate by default.</p>", True),
+    (
+        _P + "<div>When delegation=off, </div><div>Do not delegate by default.</div>",
+        True,
+    ),
+    (_P + "<span>When delegation=off,<br>do not delegate by default.</span>", False),
+    (_P + "<!-- retired -->Do <em>n&#111;t</em> delegate by default.", True),
+    (
+        _P
+        + "\n- [x] <span>When `delegation=off`, do not\\\ndelegate by default.</span>",
+        False,
+    ),
+    (
+        _P + "Do [<em>n&#111;t</em>] delegate by default.\n\n[<em>n&#111;t</em>]: p.md",
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize("text,negated", _FORMATTING_CASES)
+def test_delegation_owner_text_follows_visible_formatting(text, negated):
+    owner = infra._delegation_owner_text(text)
+    assert bool(infra._delegation_negation(owner)) is negated, owner
+
+
+_CODE_LITERAL_CASES = [
+    # Literal markup inside code never becomes the canonical negation.
+    ("    Do <em>not</em> delegate by default.", False),
+    ("```\nDo <em>not</em> delegate by default.\n```", False),
+    ("~~~\nDo n&#111;t delegate by default.\n~~~", False),
+    ("`Do n&#111;t\ndelegate by default.`", False),
+    ("`Do <em>not</em>\ndelegate by default.`", False),
+    ("```\nDo not \\\ndelegate by default.\n```", False),
+    # Plain canonical policy shown in code is still policy.
+    ("```\nDo not delegate by default.\n```", True),
+    # Fence metadata and delimiters are not text; blank lines still split clauses.
+    ("```text\nWhen `delegation=off`, do not delegate by default.\n```", False),
+    ("~~~text\nWhen `delegation=off`, do not delegate by default.\n~~~", False),
+    ("~~~text\nDo not delegate by default.\n~~~", True),
+    ("```\nWhen delegation=off,\n\nDo not delegate by default.\n```", True),
+    # Fence-looking text inside comments or code does not change block structure.
+    ("<!--\n```\n-->\nDo not delegate by default.", True),
+    ("    ```\n\nDo <em>not</em> delegate by default.", True),
+    ("```\n- ```\nDo <em>not</em> delegate by default.\n```", False),
+    # Only a real, separated, valid definition is hidden from the reader.
+    ("Do [not] delegate by default.\n[not]: policy.md", False),
+    ("[hint]: Do not delegate by default.", True),
+    ("    Do not delegate by default.", True),
+    ("`Do not\ndelegate by default.`", True),
+    # Opt-out clauses inside code keep their exemption.
+    ("```\nWhen `delegation=off`, do not delegate by default.\n```", False),
+    # Interior task brackets are literal text, not a task marker.
+    ("- When [ ] delegation=off, do not delegate by default.", True),
+    ("- When [x] delegation=off, do not delegate by default.", True),
+    ("- [ ] When delegation=off, do not delegate by default.", False),
+    ("- [X] When delegation=off, do not delegate by default.", False),
+    ("> - [x] When delegation=off, do not delegate by default.", False),
+    ("- > [x] When delegation=off, do not delegate by default.", True),
+]
+
+
+@pytest.mark.parametrize("text,negated", _CODE_LITERAL_CASES)
+def test_delegation_owner_text_keeps_code_and_task_literals(text, negated):
+    owner = infra._delegation_owner_text("Delegate by default.\n\n" + text)
+    assert bool(infra._delegation_negation(owner)) is negated, owner
+
+
+def test_delegation_owner_text_does_not_leak_definitions_between_owners():
+    assert "[not]" in infra._delegation_owner_text("Do [not] delegate.")
+    infra._delegation_owner_text("Policy.\n\n[not]: policy.md")
+    assert "[not]" in infra._delegation_owner_text("Do [not] delegate.")
+
+
+def test_delegation_owner_text_fails_closed_without_markdown_parser(monkeypatch):
+    monkeypatch.setitem(sys.modules, "markdown_it", None)
+
+    with pytest.raises(infra.MarkdownParserMissing, match="pixi run check-ai-infra"):
+        infra._delegation_owner_text("Delegate by default.")
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any("pixi run check-ai-infra" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "text,marker,visible",
+    [
+        (
+            "<!-- Delegate by default --> Use `delegation=off`.",
+            "Delegate by default",
+            False,
+        ),
+        ("Delegate by default <!-- `delegation=off` -->", "`delegation=off`", False),
+        ("Delegate by default. Use `delegation=off`.", "`delegation=off`", True),
+        ("Delegate by default. Use `delegation=off`.", "Delegate by default", True),
+    ],
+)
+def test_delegation_markers_must_be_visible(text, marker, visible):
+    owner = infra._delegation_owner_text(text)
+    assert (infra._delegation_owner_text(marker) in owner) is visible
 
 
 def test_ultrawork_uses_default_delegation_and_lean_prompt_shape():
@@ -7347,3 +8380,1684 @@ def test_main_release_target_matches_branch_profile(tmp_path, version, expected)
         assert errors == []
     else:
         assert len(errors) == 1 and "branch profile `dart7`" in errors[0]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Delegate&NewLine;&NewLine;by default. Use `delegation=off`.",
+        "Delegate&#10;&#10;by default. Use `delegation=off`.",
+        "<p>Delegate&NewLine;&NewLine;by default.</p> Use `delegation=off`.",
+        "Delegate only&NewLine;&NewLine;when the user asks.",
+    ],
+)
+def test_entity_newlines_do_not_split_required_markers(text):
+    owner = infra._delegation_owner_text(text)
+    assert "Delegate by default" in owner or "Delegate only when the user asks" in owner
+
+
+@pytest.mark.parametrize("state", ["disabled", "off"])
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("Delegation defaults to {}.", True),
+        ("When delegation=off, delegation defaults to {}.", False),
+        ("Delegation defaults to {} if delegation=off.", False),
+        (
+            "Delegate by default (when delegation=off, delegation defaults to {}).",
+            False,
+        ),
+        ("Even when delegation=off, delegation defaults to {}.", True),
+        ("Delegation defaults to {} when delegation=off or unset.", True),
+        ("When delegation=off,\n\ndelegation defaults to {}.", True),
+        ("Delegation defaults to {}line.", False),
+    ],
+)
+def test_delegation_negation_recognizes_defaults_to_disabled_off(
+    state, template, rejected
+):
+    owner = infra._delegation_owner_text(template.format(state))
+    assert bool(infra._delegation_negation(owner)) is rejected, template
+
+
+@pytest.mark.parametrize("state", ["on", "enabled", "active"])
+def test_delegation_defaults_to_positive_states_stay_accepted(state):
+    owner = infra._delegation_owner_text(f"Delegation defaults to {state}.")
+    assert infra._delegation_negation(owner) is None
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("<pre>When delegation=off,\n\nDo not delegate by default.</pre>", True),
+        (
+            "<pre><code>When delegation=off,\n\nDo not delegate by default.</code></pre>",
+            True,
+        ),
+        (
+            "<pre><span>When delegation=off,</span>\n\nDo not delegate by default.</pre>",
+            True,
+        ),
+        ("<pre>When delegation=off,\n\nDo not delegate by default.", True),
+        ("<pre>Do not\n\ndelegate by default.</pre>", False),
+        ("<pre>When delegation=off,\nDo not delegate by default.</pre>", False),
+        (
+            "<pre><code>When delegation=off,\nDo not delegate by default.</code></pre>",
+            False,
+        ),
+    ],
+)
+def test_html_pre_keeps_blank_line_paragraph_boundaries(source, rejected):
+    owner = infra._delegation_owner_text(source)
+    assert bool(infra._delegation_negation(owner)) is rejected, source
+
+
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nDelegation defaults to off.", True),
+        ("\n\nDelegation defaults to disabled.", True),
+        ("\n\nWhen delegation=off, delegation defaults to off.", False),
+        ("\n\n<pre>When delegation=off,\n\nDo not delegate by default.</pre>", True),
+        ("\n\n<pre>When delegation=off,\nDo not delegate by default.</pre>", False),
+    ],
+)
+@pytest.mark.parametrize(
+    "relative",
+    ["AGENTS.md", "docs/ai/orchestration.md", ".claude/commands/dart-ultrawork.md"],
+)
+def test_delegation_owners_reject_defaults_to_off_and_pre_blank_lines(
+    monkeypatch, relative, suffix, rejected
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "delegat" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("When delegation=of_f, do not delegate by default.", True),
+        ("When delegation=o*ff, do not delegate by default.", True),
+        ("When `delegation=of_f`, do not delegate by default.", True),
+        ("When `delegation=o*ff`, do not delegate by default.", True),
+        ("When delegation=o`ff, do not delegate by default.", True),
+        ("When `delegation=off, do not delegate by default.", True),
+        ("When \\`delegation=off\\`, do not delegate by default.", False),
+        ("```\nWhen delegation=of_f, do not delegate by default.\n```", True),
+        ("```\nWhen delegation=o*ff, do not delegate by default.\n```", True),
+        ("```\nWhen `delegation=off`, do not delegate by default.\n```", False),
+        ("When `delegation=off`, do not delegate by default.", False),
+        ("When delegation=off, do not delegate by default.", False),
+        ("Do no_t delegate by default.", False),
+        ("Do not delegate by default.", True),
+        ("Do **not** delegate by default.", True),
+        ("Do _not_ delegate by default.", True),
+        ("Don\\'t delegate by default.", True),
+        ("Delegation isn\\'t the default.", True),
+        ("By default, can\\'t delegate.", True),
+        ("When delegation=off, don\\'t delegate by default.", False),
+        ("Do \\[not\\] delegate by default, <b>ok</b>.", False),
+        ("\\<b>Do not delegate by default.", True),
+    ],
+)
+def test_delegation_negation_preserves_literal_punctuation(source, rejected):
+    owner = infra._delegation_owner_text(source)
+    assert bool(infra._delegation_negation(owner)) is rejected, source
+
+
+_OWNERS = (
+    "AGENTS.md",
+    "docs/ai/README.md",
+    "docs/ai/orchestration.md",
+    "docs/ai/workflows.md",
+    ".claude/commands/dart-ultrawork.md",
+    ".claude/commands/dart-model-upgrade.md",
+)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nWhen delegation=of_f, do not delegate by default.", True),
+        ("\n\nWhen `delegation=o*ff`, do not delegate by default.", True),
+        ("\n\nDon\\'t delegate by default.", True),
+        ("\n\nWhen `delegation=off`, do not delegate by default.", False),
+    ],
+)
+def test_delegation_owners_literal_punctuation(monkeypatch, relative, suffix, rejected):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("replacement", "missing"),
+    [
+        ("delegation=office", True),
+        ("xdelegation=off", True),
+        ("delegation=off_", True),
+        ("delegation=off2", True),
+        ("delegation=off", False),
+        ("**delegation=off**", False),
+    ],
+)
+def test_delegation_flag_marker_needs_whole_word(
+    monkeypatch, relative, replacement, missing
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace("`delegation=off`", f"`{replacement}`").replace(
+                "[delegation=off]", f"[{replacement}]"
+            )
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert (
+        any(relative in e and "missing delegation marker" in e for e in errors)
+        is missing
+    )
+
+
+_COMMA_FORMS = [
+    # Trailing ", by default" on the action and both state branches.
+    ("Do not delegate, by default.", True),
+    ("Don't delegate, by default.", True),
+    ("Delegation is disabled, by default.", True),
+    ("Delegation is off, by default.", True),
+    ("Delegation is not enabled, by default.", True),
+    ("Delegation must not be active, by default.", True),
+    ("Do not delegate by default.", True),
+    ("Delegation is disabled by default.", True),
+    # The full opt-out exception still exempts the comma form in every position.
+    ("When delegation=off, do not delegate, by default.", False),
+    ("Do not delegate, by default when delegation=off.", False),
+    ("Delegate by default (when delegation=off, do not delegate, by default).", False),
+    ("When delegation=off, delegation is disabled, by default.", False),
+    ("Delegation is not enabled, by default if delegation=off.", False),
+    # Wideners and extra qualifiers stay rejected.
+    ("Even when delegation=off, do not delegate, by default.", True),
+    ("Do not delegate, by default, when delegation=off or unset.", True),
+    ("When delegation=off,\n\ndo not delegate, by default.", True),
+    # The comma must not cross a sentence, clause or paragraph boundary.
+    ("Do not delegate.\n\nBy default, delegate.", False),
+    ("Do not delegate. By default, delegate.", False),
+    ("Do not delegate; by default, delegate.", False),
+    ("Do not delegate!, by default.", False),
+    ("Do not delegate\n\n, by default.", False),
+    ("Delegation is disabled; by default, delegate.", False),
+    ("Delegation is not enabled.\n\nBy default, delegate.", False),
+    # Literal near-word text and unrelated punctuation stay unrelated.
+    ("Do not delegate,, by default.", False),
+    ("Do not delegate , by default.", False),
+    ("Do not delegates, by default.", False),
+    ("Do not delegate, by defaults.", False),
+    ("Delegation is disabled, by defaultx.", False),
+    ("Delegation is enabled, by default.", False),
+    ("Delegation is on, by default.", False),
+    ("Do no_t delegate, by default.", False),
+    ("Do \\[not\\] delegate, by default.", False),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _COMMA_FORMS)
+def test_delegation_negation_accepts_comma_before_trailing_by_default(source, rejected):
+    owner = infra._delegation_owner_text(source)
+    assert bool(infra._delegation_negation(owner)) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nDo not delegate, by default.", True),
+        ("\n\nDelegation is disabled, by default.", True),
+        ("\n\nDelegation is not enabled, by default.", True),
+        ("\n\nEven when `delegation=off`, do not delegate, by default.", True),
+        ("\n\nWhen `delegation=off`, do not delegate, by default.", False),
+        ("\n\nDo not delegate, by default when `delegation=off`.", False),
+        ("\n\nWhen `delegation=off`, delegation is disabled, by default.", False),
+        ("\n\nDo not delegate.\n\nBy default, delegate.", False),
+        ("\n\nDelegation is enabled, by default.", False),
+    ],
+)
+def test_delegation_owners_comma_before_trailing_by_default(
+    monkeypatch, relative, suffix, rejected
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_POLICY_SUBJECTS = [
+    "I", "we", "you", "agent", "agents", "the agent", "the agents", "an agent",
+    "assistant", "assistants", "the assistant", "the assistants",
+    "the orchestrator", "the executor", "the parent",
+]  # fmt: skip
+
+
+def _rejected(source):
+    return bool(infra._delegation_negation(infra._delegation_owner_text(source)))
+
+
+@pytest.mark.parametrize("subject", _POLICY_SUBJECTS)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("By default, {s} do not delegate.", True),
+        ("By default: {s} cannot delegate.", True),
+        ("By default {s} won't delegate.", True),
+        ("By default, {s} must no longer delegate.", True),
+        ("{s} do not delegate by default.", True),
+        ("When delegation=off, {s} do not delegate by default.", False),
+        ("{s} do not delegate by default when delegation=off.", False),
+        ("({s} do not delegate by default when `delegation=off`).", False),
+        ("When delegation=off, by default, {s} do not delegate.", False),
+        ("When delegation=o*ff, by default, {s} do not delegate.", True),
+        ("Even when delegation=off, {s} do not delegate by default.", True),
+        ("When delegation=off, {s} do not delegate by default or ever.", True),
+    ],
+)
+def test_delegation_negation_recognizes_policy_subjects(subject, template, rejected):
+    assert _rejected(template.format(s=subject)) is rejected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "By default, the build does not delegate.",
+        "By default, weird agents do not delegate.",
+        "By default, agentship does not delegate.",
+        "By default, the agentic task does not delegate.",
+        "By default, we always do not delegate.",
+    ],
+)
+def test_delegation_negation_ignores_unlisted_subjects(source):
+    assert not _rejected(source)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("\n\nBy default, we do not delegate.", True),
+        ("\n\nWhen delegation=off, we do not delegate by default.", False),
+        ("\n\nWe do not delegate by default when delegation=off.", False),
+        ("\n\nWhen delegation=o*ff, by default, we do not delegate.", True),
+        ("\n\nBy default, the build does not delegate.", False),
+    ],
+)
+def test_delegation_owners_policy_subjects(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+def _owner_suffix(monkeypatch, relative, suffix):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original + suffix
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+
+_NEG = "Do not delegate by default."
+_HIDDEN = ["script", "style", "title", "template", "iframe", "noembed", "noframes"]
+
+
+@pytest.mark.parametrize("tag", _HIDDEN)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("<{t}>" + _NEG + "</{t}>", False),
+        ("<span><{t}>" + _NEG + "</{t}></span>", False),
+        ("<{T}>" + _NEG + "</{T}>", False),
+        ("<{t}>" + _NEG, False),
+        ("<{t}>x</{t}>\n" + _NEG, True),
+        ("Do no<{t}>ignored</{t}>t delegate by default.", True),
+        ("Do no<{t}>ignored\n\nignored</{t}>t delegate by default.", True),
+        ("<div><{t}>When delegation=off,</{t}>" + _NEG + "</div>", True),
+        ("<{t}>Delegation is disabled.</{t}>Delegate by default.", False),
+        (
+            "<{t}>When delegation=off,</{t}><{t}>Do not delegate by default.</{t}>",
+            False,
+        ),
+    ],
+)
+def test_delegation_owner_text_skips_nonrendered_html(tag, template, rejected):
+    assert _rejected(template.format(t=tag, T=tag.upper())) is rejected
+
+
+def test_delegation_owner_text_nests_hidden_templates():
+    nested = "<template><template>x</template>" + _NEG + "</template>"
+    assert not _rejected(nested)
+    assert _rejected(nested + _NEG)
+    assert _rejected("<span>Do not delegate by default.</span>")
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "<script>Do not delegate by default.</script>",
+        "<style>Do not delegate by default.</style>",
+    ],
+)
+def test_delegation_marker_in_hidden_html_is_not_visible(source):
+    assert infra._delegation_owner_text(source) == ""
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "```\n<script>Do not delegate by default.</script>\n```",
+        "`<script>`Do not delegate by default.",
+        "Do not delegate by default.\\<script>x",
+        "Do not delegate by default. &lt;script&gt;x&lt;/script&gt;",
+    ],
+)
+def test_delegation_literal_script_text_stays_visible(source):
+    assert "delegate by default" in infra._delegation_owner_text(source)
+    assert _rejected(source)
+
+
+@pytest.mark.parametrize("tag", ["center", "dir", "menu", "dialog", "frame"])
+def test_delegation_html_blocks_use_commonmark_names(tag):
+    source = f"<{tag}>When delegation=off,</{tag}>\n<{tag}>{_NEG}</{tag}>"
+    assert _rejected(source)
+    sibling = f"<{tag}>When delegation=off,</{tag}><{tag}>{_NEG}</{tag}>"
+    assert "\n\n" in infra._delegation_owner_text(sibling) or _rejected(sibling)
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("<textarea>When delegation=off,</textarea>" + _NEG, True),
+        ("<span>When delegation=off,</span> " + _NEG, False),
+        ("<em>Do no</em>t delegate by default.", True),
+    ],
+)
+def test_delegation_html_inline_and_textarea_boundaries(source, rejected):
+    assert _rejected(source) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "visible"),
+    [
+        ("Do ![`not`](p.svg) delegate by default.", True),
+        ("Do ![not <script>](p.svg) delegate by default.", True),
+        ('Do <img alt="not" src="p.svg"> delegate by default.', False),
+        ('<img alt="Do not delegate by default.">', False),
+        ("![<script>junk](p.svg) " + _NEG, True),
+        ("![](p.svg)" + _NEG, True),
+    ],
+)
+def test_delegation_image_labels_keep_code_and_ignore_img_alt(source, visible):
+    assert _rejected(source) is visible
+
+
+def test_delegation_image_code_label_text_and_no_state_leak():
+    owner = infra._delegation_owner_text("![`code` and **b**](p.svg)")
+    assert owner == "!code and b"
+    owner = infra._delegation_owner_text("![<template>x](p.svg) " + _NEG)
+    assert owner.endswith(_NEG)
+    assert "\n" not in owner
+
+
+_TEXTAREA_FORMS = [
+    ("<textarea>When delegation=off,\n\nDo not delegate by default.</textarea>", True),
+    (
+        "<TEXTAREA>When delegation=off,&#10;&#10;Do not delegate by default.</TEXTAREA>",
+        True,
+    ),
+    (
+        "Pre <textarea>When delegation=off,\n\nDo not delegate by default.</textarea>",
+        True,
+    ),
+    ("<textarea>Do not\n\ndelegate by default.</textarea>", False),
+    ("<TextArea>Do not&#10;&#10;delegate by default.</TextArea>", False),
+    ("Pre <textarea>Do not&#10;&#10;delegate by default.</textarea> post", False),
+    ("<textarea>When delegation=off,\ndo not delegate by default.</textarea>", False),
+    (
+        "<textarea>When delegation=off,&#10;do not delegate by default.</textarea>",
+        False,
+    ),
+    ("<textarea>Do not delegate by default.</textarea>", True),
+    ("<pre>When delegation=off,\n\nDo not delegate by default.</pre>", True),
+    ("<pre>Do not\n\ndelegate by default.</pre>", False),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _TEXTAREA_FORMS)
+def test_delegation_textarea_keeps_structural_whitespace(source, rejected):
+    assert _rejected(source) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (
+            "<textarea>When delegation=off,\n\nDo not delegate by default.</textarea>",
+            True,
+        ),
+        ("<textarea>Do not&#10;&#10;delegate by default.</textarea>", False),
+        (
+            "<textarea>When delegation=off,\ndo not delegate by default.</textarea>",
+            False,
+        ),
+    ],
+)
+def test_delegation_owners_textarea_whitespace(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_COPULA_HEADS = [
+    "is not", "is never", "is no longer", "isn't", "cannot be",
+    "should not be", "must never be", "won't be", "shouldn't be",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("head", _COPULA_HEADS)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("Delegation {h} allowed by default.", True),
+        ("Delegation {h} allowed, by default.", True),
+        ("By default, delegation {h} allowed.", True),
+        ("By default delegation {h} allowed.", True),
+        ("When delegation=off, delegation {h} allowed by default.", False),
+        ("Delegation {h} allowed by default when `delegation=off`.", False),
+        ("When delegation=off, by default, delegation {h} allowed.", False),
+        ("When delegation=o*ff, by default, delegation {h} allowed.", True),
+        ("Even when delegation=off, delegation {h} allowed by default.", True),
+        ("When delegation=off, by default, delegation {h} allowed or unset.", True),
+        ("By default, delegation {h} allowedly.", False),
+        ("By default, delegation {h} disallowed.", False),
+    ],
+)
+def test_delegation_negation_recognizes_not_allowed(head, template, rejected):
+    assert _rejected(template.format(h=head)) is rejected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "Delegation is allowed by default.",
+        "By default, delegation is allowed.",
+        "By default, delegation can be allowed.",
+    ],
+)
+def test_delegation_positive_allowed_stays_unrelated(source):
+    assert not _rejected(source)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("Delegation is not allowed by default.", True),
+        ("By default delegation cannot be allowed.", True),
+        ("When delegation=off, delegation is not allowed by default.", False),
+        ("When delegation=o*ff, delegation is not allowed by default.", True),
+        ("By default, agents do not delegate release approval.", False),
+        ("By default, agents do not delegate.", True),
+    ],
+)
+def test_delegation_owners_not_allowed_and_objects(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_ACTION_HEADS = ["do not", "does not", "cannot", "can't", "must no longer", "won't"]
+
+
+@pytest.mark.parametrize("subject", ["we", "agents", "the orchestrator", "an agent"])
+@pytest.mark.parametrize("head", _ACTION_HEADS)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("By default, {s} {h} delegate release approval.", False),
+        ("By default, {s} {h} delegate tasks to the build agents.", False),
+        ("By default, {s} {h} delegate.", True),
+        ("By default, {s} {h} delegate", True),
+        ("By default: {s} {h} delegate, always.", True),
+        ("By default, {s} {h} delegate and review.", True),
+        ("By default, {s} {h} delegate or unset.", True),
+        ("By default, {s} {h} delegate otherwise.", True),
+        ("By default, {s} {h} delegate when delegation=off.", False),
+        ("By default, {s} {h} delegate when delegation=o*ff.", True),
+        ("By default, {s} {h} delegate if asked.", True),
+        ("By default, {s} {h} delegate release approval. Delegate otherwise.", False),
+        (
+            "By default, {s} {h} delegate release approval. By default, we {h} delegate.",
+            True,
+        ),
+        ("{s} {h} delegate release approval by default.", False),
+        ("(By default, {s} {h} delegate)", True),
+    ],
+)
+def test_delegation_fronted_action_is_standalone(subject, head, template, rejected):
+    text = template.format(s=subject, h=head)
+    assert _rejected(text) is rejected, text
+
+
+_HIDDEN_ATTR = ["hidden", "hidden=''", 'hidden="hidden"', 'hidden="false"',
+                'hidden="until-found"', "HIDDEN", "id=x hidden"]  # fmt: skip
+
+
+@pytest.mark.parametrize("attr", _HIDDEN_ATTR)
+@pytest.mark.parametrize(
+    ("template", "rejected"),
+    [
+        ("<span {a}>" + _NEG + "</span>", False),
+        ("<div {a}>" + _NEG + "</div>", False),
+        ("<custom-x {a}>" + _NEG + "</custom-x>", False),
+        ("<span {a}>" + _NEG, False),
+        ("Do no<span {a}>junk</span>t delegate by default.", True),
+        ("Do no<div {a}>junk\n\njunk</div>t delegate by default.", True),
+        ("<span {a}>x <span>y</span> " + _NEG + "</span> after", False),
+        ("<span {a}><span><span>y</span></span>" + _NEG + "</span>", False),
+        ("<div {a}><div>y</div>" + _NEG + "</div>", False),
+        ("<span {a}>x</span>" + _NEG, True),
+        ("<span {a}><span {a}>x</span>" + _NEG + "</span>", False),
+        ("<pre {a}>" + _NEG + "</pre>", False),
+        ("<textarea {a}>" + _NEG + "</textarea>", False),
+        ("<pre>When delegation=off,<span {a}>x</span>\n\n" + _NEG + "</pre>", True),
+        ("<template {a}>" + _NEG + "</template>", False),
+        ("<script {a}>" + _NEG + "</script>", False),
+        ("<SPAN {a}>" + _NEG + "</SPAN>", False),
+        # WHATWG ignores the slash on a nonvoid HTML start tag, so it stays hidden.
+        ("<span {a}/>" + _NEG, False),
+        ("<span {a}/>x</span>" + _NEG, True),
+    ],
+)
+def test_delegation_owner_text_honors_hidden_attribute(attr, template, rejected):
+    assert _rejected(template.format(a=attr)) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("<span data-hidden>" + _NEG + "</span>", True),
+        ('<span aria-hidden="true">' + _NEG + "</span>", True),
+        ('<span class="hidden">' + _NEG + "</span>", True),
+        ('<span title="hidden">' + _NEG + "</span>", True),
+        ("`<span hidden>`" + _NEG, True),
+        ("```\n<span hidden>" + _NEG + "</span>\n```", True),
+        ("&lt;span hidden&gt;" + _NEG + "&lt;/span&gt;", True),
+        ('<span title="<b hidden>">' + _NEG + "</span>", True),
+        ("Do ![no <span hidden>](p.svg)t delegate by default.", False),
+        ("![<span hidden>](p.svg) " + _NEG, True),
+        ('<img hidden alt="x">' + _NEG, True),
+    ],
+)
+def test_delegation_owner_text_hidden_attribute_limits(source, rejected):
+    assert _rejected(source) is rejected
+
+
+@pytest.mark.parametrize("tag", ["br", "hr", "img", "input", "wbr", "col", "meta"])
+@pytest.mark.parametrize("form", ["<{t} hidden>", "<{t} hidden/>", "<{t} hidden />"])
+def test_delegation_hidden_void_tags_leave_no_trace(tag, form):
+    open_tag = form.format(t=tag)
+    text = infra._delegation_owner_text(f"a{open_tag}b")
+    assert text == "ab"
+    assert _rejected(f"Do no{open_tag}t delegate by default.")
+    assert _rejected(f"{open_tag}{_NEG}")
+    assert _rejected(f"Do not{open_tag} delegate by default.")
+
+
+def test_delegation_hidden_void_tags_keep_visible_counterparts():
+    assert infra._delegation_owner_text("a<br>b") == "a b"
+    assert infra._delegation_owner_text("a<hr hidden>b") == "ab"
+    assert infra._delegation_owner_text("a<hr/>b") == "a\n\nb"
+    assert infra._delegation_owner_text("a<br hidden/>b") == "ab"
+
+
+_OWNER_DEFAULT_MARKERS = {
+    "docs/ai/orchestration.md": "delegation is the default",
+    "docs/ai/workflows.md": "Delegation by default",
+}
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize("attr", ["hidden", 'hidden="false"'])
+@pytest.mark.parametrize("which", ["flag", "default"])
+def test_delegation_owners_hidden_markers_are_not_visible(
+    monkeypatch, relative, attr, which
+):
+    path = ROOT / relative
+    text = path.read_text()
+    marker = (
+        "`delegation=off`"
+        if which == "flag"
+        else _OWNER_DEFAULT_MARKERS.get(relative, "Delegate by default")
+    )
+    assert marker in text
+    read_text = Path.read_text
+
+    def hide(p, *args, **kwargs):
+        if p == path:
+            hidden = f"<span {attr}>{marker.strip('`')}</span>"
+            if which == "flag":  # bare mentions (front matter) count as visible too
+                return re.sub(r"`?delegation=off`?", hidden, text)
+            return text.replace(marker, hidden)
+        return read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", hide)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "marker" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize("tag", ["iframe", "noembed", "noframes"])
+@pytest.mark.parametrize("which", ["flag", "default"])
+def test_delegation_owners_fallback_container_markers_are_not_visible(
+    monkeypatch, relative, tag, which
+):
+    path = ROOT / relative
+    text = path.read_text()
+    marker = (
+        "`delegation=off`"
+        if which == "flag"
+        else _OWNER_DEFAULT_MARKERS.get(relative, "Delegate by default")
+    )
+    assert marker in text
+    read_text = Path.read_text
+
+    def wrap(p, *args, **kwargs):
+        if p == path:
+            hidden = f"<{tag}>{marker.strip('`')}</{tag}>"
+            if which == "flag":
+                return re.sub(r"`?delegation=off`?", hidden, text)
+            return text.replace(marker, hidden)
+        return read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", wrap)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "marker" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("<span hidden>Do not delegate by default.</span>", False),
+        ('<div HIDDEN="false">Delegation is not allowed by default.</div>', False),
+        ("<span>Do not delegate by default.</span>", True),
+    ],
+)
+def test_delegation_owners_hidden_negations(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_QUOTED_OBJECT_FORMS = [
+    # An opening quote or backtick starts an object noun: not a global reversal.
+    ('By default, agents do not delegate "release approval".', False),
+    ("By default, agents do not delegate 'release approval'.", False),
+    ("By default, agents do not delegate `release approval`.", False),
+    ('By default, agents do not delegate "release approval"', False),
+    ('By default, we cannot delegate "tasks" to the build agents.', False),
+    ('By default, the orchestrator won\'t delegate "x" or "y".', False),
+    # A closing quote ends a fully quoted standalone negative.
+    ('"By default, agents do not delegate".', True),
+    ('"By default, agents do not delegate ".', True),
+    ("'By default, agents do not delegate'.", True),
+    ("“By default, agents do not delegate”.", True),
+    ("“By default, agents do not delegate ”.", True),
+    ("‘By default, agents do not delegate’.", True),
+    ("`By default, agents do not delegate`.", True),
+    ("(By default, agents do not delegate)", True),
+    # Finite continuations and widened or wrong-flag scopes stay rejected.
+    ('By default, agents do not delegate "x" when delegation=off.', False),
+    ('"By default, agents do not delegate" when delegation=o*ff.', True),
+    ('By default, agents do not delegate when delegation=o*ff, "x".', True),
+    ('By default, agents do not delegate "release approval". We delegate.', False),
+    ('By default, agents do not delegate "release approval". By default, we '
+     "do not delegate.", True),
+    ('When delegation=off, by default, agents do not delegate "x" or unset.', False),
+    ('"When delegation=off, by default, agents do not delegate" or unset.', True),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _QUOTED_OBJECT_FORMS)
+def test_delegation_fronted_action_distinguishes_quoted_objects(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ('By default, agents do not delegate "release approval".', False),
+        ("By default, agents do not delegate `release approval`.", False),
+        ('"By default, agents do not delegate".', True),
+        ("By default, agents do not delegate.", True),
+    ],
+)
+def test_delegation_owners_quoted_objects(monkeypatch, relative, suffix, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_SPAN_BASE = "By default, agents do not delegate"
+_SPAN_OBJECTS = [
+    '" release approval "', '"#release-approval"', '" if approval "',
+    "' release approval '", "“ release approval ”", "`.release-approval`",
+    "`!release-approval`", "`;release-approval`", "`|release-approval`",
+    "![release approval](p.svg)", "![when delegation=off](p.svg)",
+]  # fmt: skip
+_SPAN_CASES = (
+    # Object-qualified spans: whitespace/punctuation-leading quotes, labels, code.
+    [(f"{_SPAN_BASE} {o}{end}", False) for o in _SPAN_OBJECTS for end in (".", " when delegation=off.")]
+    # An object-qualified span never hides a later real reversal.
+    + [(f"{_SPAN_BASE} {o}{sep}{later}", True)
+       for o in ('" release approval "', "`.release-approval`", "![release approval](p.svg)")
+       for sep in (". ", "; ", "| ", ", ", "\n\n")
+       for later in ("By default, we do not delegate.", "Do not delegate by default.")]
+    # Every separator ends a standalone action, immediate or spaced.
+    + [(f"{_SPAN_BASE}{p}{s}", True) for p in ".!?;|" for s in ("", " Next policy.")]
+    + [(f"{_SPAN_BASE} {p} Next policy.", True) for p in ".!?;|"]
+    # Canonical paired negatives, with or without space before the closing quote.
+    + [(f"{a}{_SPAN_BASE}{sp}{b}.", True)
+       for a, b in ('""', "''", "“”", "‘’", "``") for sp in ("", " ", "  ")]
+    # Exact, widened and wrong-flag scopes.
+    + [
+        (f"When delegation=off, {_SPAN_BASE.lower()}.", False),
+        (f"{_SPAN_BASE} when delegation=off.", False),
+        (f"When delegation=off, {_SPAN_BASE.lower()} or unset.", True),
+        (f"{_SPAN_BASE} when delegation=off or unset.", True),
+        (f"{_SPAN_BASE} when delegation=of_f.", True),
+        (f'"{_SPAN_BASE} " when delegation=of_f.', True),
+        # An unrelated quote in an earlier paragraph is not this action's opener.
+        (f'He said "hi\n\n{_SPAN_BASE}".', True),
+        (f'"hi" and\n\n{_SPAN_BASE} "x".', False),
+    ]
+)  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _SPAN_CASES)
+def test_delegation_fronted_action_uses_original_span_context(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (f'{_SPAN_BASE} " release approval ".', False),
+        (f"{_SPAN_BASE} `.release-approval`.", False),
+        (f"{_SPAN_BASE} ![release approval](p.svg).", False),
+        (f'{_SPAN_BASE} " release approval ". Do not delegate by default.', True),
+        (f"{_SPAN_BASE} `!x`; By default, we do not delegate.", True),
+        (f'"{_SPAN_BASE} ".', True),
+        (f"{_SPAN_BASE}; Next policy.", True),
+        (f"When delegation=off, {_SPAN_BASE.lower()}.", False),
+        (f"{_SPAN_BASE} when delegation=of_f.", True),
+    ],
+)
+def test_delegation_owners_original_span_context(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_APOSTROPHE_CASES = [
+    # A possessive or contraction prefix never opens a quote scope.
+    ("By default, the agent's helpers do not delegate \"release approval\".", False),
+    ("By default, the agents' helpers do not delegate \"release approval\".", False),
+    ("By default, the agents’ helpers do not delegate 'release approval'.", False),
+    ("The agent's rule: by default, agents do not delegate `.x`.", False),
+    ("Agents' rule: by default, agents do not delegate 'release approval'.", False),
+    # A completed earlier quote, including a mixed-family one, leaves no context.
+    ("\"Use 'x'\" says by default, agents do not delegate \"release approval\".", False),
+    ("\"A ' token\" by default, agents do not delegate 'release approval'.", False),
+    ("`a` and \"b\" by default, agents do not delegate \"release approval\".", False),
+    # A genuinely open quote, even with a contraction or when-prefix, closes it.
+    ("\"Don't: by default, agents do not delegate\" or unset.", True),
+    ("\"The agent's rule: by default, agents do not delegate\" or unset.", True),
+    ("'When delegation=off, by default, agents do not delegate' or unset.", True),
+    ("\"When delegation=off, by default, agents do not delegate\" or unset.", True),
+    ("“The agents’ rule: by default, agents do not delegate” or unset.", True),
+    # An earlier closed quote does not hide a later open one.
+    ("\"x\" \"by default, agents do not delegate\" or unset.", True),
+    # Paragraph isolation and an exact quoted exception stay as before.
+    ("\"hi\n\nThe agent's by default, agents do not delegate \"x\".", False),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _APOSTROPHE_CASES)
+def test_delegation_fronted_action_quote_scope_ignores_apostrophes(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (
+            'The agent\'s rule: by default, agents do not delegate "release approval".',
+            False,
+        ),
+        (
+            "The agents' rule: by default, agents do not delegate 'release approval'.",
+            False,
+        ),
+        ('"The agent\'s rule: by default, agents do not delegate" or unset.', True),
+        ("'When delegation=off, by default, agents do not delegate' or unset.", True),
+    ],
+)
+def test_delegation_owners_quote_scope_ignores_apostrophes(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_QUOTE_FAMILIES = [('"', '"', '"'), ("'", "'", "'"), ("“", "”", '"'),
+                   ("‘", "’", "'")]  # fmt: skip
+_PARA_BASE = "By default, agents do not delegate"
+_PARA_CASES = (
+    # A quote still open across a clause separator closes the standalone action.
+    [(f"{o}A rule{sep} {_PARA_BASE}{c} or unset.", True)
+     for o, c, _ in _QUOTE_FAMILIES for sep in ".!?;|"]
+    # A prefix quote closed before the action leaves no context for its object.
+    + [(f"{o}Previous guidance{sep}{c} {_PARA_BASE} {q}release approval{q}.", False)
+       for o, c, q in _QUOTE_FAMILIES for sep in ".!?;|"]
+    + [
+        # Scopes with an open quote: exact still rejects the standalone form.
+        (f'"A rule. {_PARA_BASE}".', True),
+        (f'"A rule. {_PARA_BASE} ".', True),
+        (f'"A rule. {_PARA_BASE}" when delegation=o*ff.', True),
+        (f'"A rule. {_PARA_BASE}" or "another policy".', True),
+        (f'"A rule. {_PARA_BASE}" or unset. Do not delegate by default.', True),
+        # Closed prefix followed by an object, a paragraph break, a later reversal.
+        (f'"A rule. " {_PARA_BASE} "release approval".', False),
+        (f'"A rule\n\n{_PARA_BASE} "release approval".', False),
+        (f'"A rule." {_PARA_BASE} "x". Do not delegate by default.', True),
+        (f'"A rule." {_PARA_BASE} "x"; By default, we do not delegate.', True),
+    ]
+)  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _PARA_CASES)
+def test_delegation_fronted_action_quote_scope_spans_clauses(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        (f'"Previous guidance." {_PARA_BASE} "release approval".', False),
+        (f"'Previous guidance.' {_PARA_BASE} 'release approval'.", False),
+        (f'"Previous guidance. {_PARA_BASE}" or unset.', True),
+        (f"“Previous guidance; {_PARA_BASE}” when delegation=o*ff.", True),
+    ],
+)
+def test_delegation_owners_quote_scope_spans_clauses(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+# A nonvoid HTML trailing slash is ignored (WHATWG), so `<span hidden/>` stays open;
+# void tags and SVG/MathML elements keep their self-closing meaning.
+_SELF_CLOSE_CASES = [
+    ("<span hidden/>" + _NEG, False),
+    ("<div hidden/>" + _NEG, False),
+    ("<span hidden/>x</span>" + _NEG, True),
+    ("<span hidden/><span>x</span>" + _NEG, False),
+    ("<span hidden/><span hidden/>x</span>" + _NEG, False),
+    ("<span/>" + _NEG, True),
+    ("<hr hidden/>" + _NEG, True),
+    # A fake close tag inside raw or RCDATA content cannot release the hidden root.
+    ("<div hidden/><script/></div>" + _NEG, False),
+    ("<div hidden/><style/></div>" + _NEG, False),
+    ("<div hidden/><title/></div>" + _NEG, False),
+    ("<div hidden/><textarea/><b></div>" + _NEG, False),
+    ("<div hidden/><script/>x</script></div>" + _NEG, True),
+    # SVG/MathML keep the lexical start+end pair and return to HTML afterwards.
+    ("<svg/>" + _NEG, True),
+    ("<svg><g hidden/></svg>" + _NEG, True),
+    ("<svg><g hidden/>" + _NEG, True),
+    ("<math><mi hidden/></math>" + _NEG, True),
+    ("<svg hidden><circle/>" + _NEG + "</svg>", False),
+    ("<svg/><span hidden/>" + _NEG, False),
+    ("<svg><g/></svg><span hidden/>" + _NEG, False),
+    ("<svg><svg/></svg><span hidden/>" + _NEG, False),
+    ("<math/><div hidden/>" + _NEG, False),
+    # Literal, escaped, and code spellings are text, not tags.
+    ("`<span hidden/>`" + _NEG, True),
+    ("&lt;span hidden/&gt;" + _NEG, True),
+    ("```\n<span hidden/>\n```\n" + _NEG, True),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _SELF_CLOSE_CASES)
+def test_delegation_owner_text_nonvoid_self_close_stays_open(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+def test_delegation_owner_text_hidden_self_close_hides_default_and_flag():
+    assert not infra._delegation_owner_text(
+        "<span hidden/>Delegate by default. Use delegation=off."
+    ).strip()
+    assert infra._delegation_owner_text("<span hidden/>x</span>y") == "y"
+    assert infra._delegation_owner_text("<svg/>x") == "x"
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "script",
+        "style",
+        "title",
+        "textarea",
+        "plaintext",
+        "xmp",
+        "iframe",
+        "noembed",
+        "noframes",
+        "noscript",
+    ],
+)
+def test_delegation_owner_text_self_close_reads_raw_content_like_start_tag(tag):
+    body = "x\n\n\n&amp;<b></div>\n\n</p>"
+    assert infra._delegation_owner_text(
+        f"a<{tag}/>{body}</{tag}>c"
+    ) == infra._delegation_owner_text(f"a<{tag}>{body}</{tag}>c")
+
+
+def test_delegation_owner_text_hidden_plaintext_self_close_matches_start_tag():
+    tail = "Do not delegate by default."
+    assert infra._delegation_owner_text(
+        f"<span hidden><plaintext/>fake</span>{tail}"
+    ) == infra._delegation_owner_text(f"<span hidden><plaintext>fake</span>{tail}")
+
+
+def test_delegation_self_close_html_reader_runs_on_python_311():
+    python311 = shutil.which("python3.11")
+    if not python311:
+        pytest.skip("needs Python 3.11")
+    try:
+        version = subprocess.run(
+            [
+                python311,
+                "-I",
+                "-c",
+                "import sys; sys.exit(sys.version_info[:2] != (3, 11))",
+            ],
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        pytest.skip("Python 3.11 is not runnable")
+    if version.returncode:
+        pytest.skip("Python 3.11 is not runnable")
+    # 3.11 has no RCDATA elements and set_cdata_mode takes no keyword: no crash.
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]);"
+        "import check_ai_infrastructure as c\n"
+        # Neutral block inventory: the stdlib API is under test, not markdown-it.
+        "c._html_block_tags = lambda: frozenset()\n"
+        "for t in ('span','script','style','title','textarea','plaintext'):\n"
+        "    p = c._VisibleHTML(); p.feed(f'<{t} hidden/>x</{t}>y'); p.close()\n"
+        "p = c._VisibleHTML(); p.feed('<div hidden/><script/></div>z'); p.close()\n"
+        "assert 'z' not in ''.join(p.parts)"
+    )
+    run = subprocess.run(
+        [python311, "-I", "-c", code, str(ROOT / "scripts")],
+        capture_output=True,
+        text=True,
+    )
+    assert run.returncode == 0, run.stderr
+
+
+_UNLESS_BECAUSE_CASES = [
+    # Qualifying clause tails do not make the fronted negative an object noun.
+    ("By default, we do not delegate unless the user requests it.", True),
+    ("By default, we do not delegate because the parent must perform it.", True),
+    ("Do not delegate by default unless the user requests it.", True),
+    ("By default, we do not delegate unless the user requests it or because x.", True),
+    # Neither word is an exemption; only with/when/if delegation=off is.
+    ("By default, we do not delegate unless delegation=off.", True),
+    ("By default, we do not delegate because delegation=off.", True),
+    ("By default, we do not delegate unless the user requests it, when delegation=o*ff.", True),
+    # A later reversal is still a negative.
+    ("By default, we do not delegate unless the user requests it. By default, we do not delegate.", True),
+    # Quoted, code, and dotted or hyphenated identifiers stay object nouns.
+    ('By default, we do not delegate "unless approval".', False),
+    ("By default, we do not delegate `unless-requested`.", False),
+    ("By default, we do not delegate unless-requested.", False),
+    ("By default, we do not delegate because.cfg.", False),
+    ("By default, we do not delegate because.cfg when delegation=o*ff.", False),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _UNLESS_BECAUSE_CASES)
+def test_delegation_fronted_action_unless_because_tails(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("<span hidden/>Do not delegate by default.", False),
+        ("<span hidden/>x</span>Do not delegate by default.", True),
+        ("<svg/>Do not delegate by default.", True),
+        ("By default, we do not delegate unless the user requests it.", True),
+        ("By default, we do not delegate because the parent must perform it.", True),
+        ("By default, we do not delegate `unless-requested`.", False),
+        ("By default, we do not delegate because.cfg.", False),
+    ],
+)
+def test_delegation_owners_self_close_and_qualifier_tails(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize("which", ["flag", "default"])
+def test_delegation_owners_hidden_self_close_markers_are_not_visible(
+    monkeypatch, relative, which
+):
+    path = ROOT / relative
+    text = path.read_text()
+    marker = (
+        "`delegation=off`"
+        if which == "flag"
+        else _OWNER_DEFAULT_MARKERS.get(relative, "Delegate by default")
+    )
+    assert marker in text
+    read_text = Path.read_text
+
+    def hide(p, *args, **kwargs):
+        if p == path:
+            hidden = f"<span hidden/>{marker.strip('`')}"
+            if which == "flag":
+                return re.sub(r"`?delegation=off`?", hidden, text)
+            return text.replace(marker, hidden)
+        return read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", hide)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "marker" in e for e in errors)
+
+
+_SCOPE_BASES = [
+    "Delegation is not the default",
+    "Delegation is not default",
+    "Delegation is not enabled by default",
+    "Delegation is not on by default",
+    "Delegation is not active by default",
+    "Delegation is not allowed by default",
+    "By default, delegation is not enabled",
+    "By default, delegation is not on",
+    "By default, delegation is not active",
+    "By default, delegation is not allowed",
+    "Delegation is disabled by default",
+    "Delegation is off by default",
+    "By default, delegation is disabled",
+    "By default, delegation is off",
+    "Delegation defaults to disabled",
+    "Delegation defaults to off",
+    "Do not delegate by default",
+]
+_SCOPE_TEMPLATES = [
+    ("{base}.", True),
+    ("{base} for release approval.", False),
+    ("{base} about release approval.", False),
+    ('{base} "release approval".', False),
+    ('"{base}" or unset.', True),
+    ("{base} policy.", True),
+    ("{base} for release approval; Do not delegate by default.", True),
+    ("When delegation=o*ff, {base}.", True),
+    ("When delegation=off, {base}.", False),
+]
+_SCOPE_CASES = [
+    (template.format(base=base), rejected)
+    for base in _SCOPE_BASES
+    for template, rejected in _SCOPE_TEMPLATES
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _SCOPE_CASES)
+def test_delegation_negative_scope_tails(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("Delegation is not the default for release approval.", False),
+        ("By default, delegation is disabled about release approval.", False),
+        ('Do not delegate by default "release approval".', False),
+        ("Delegation is not the default.", True),
+        ('"Delegation is not the default" or unset.', True),
+        (
+            "Delegation is not the default for release approval. "
+            "Delegation is not the default.",
+            True,
+        ),
+    ],
+)
+def test_delegation_owners_negative_scope_tails(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("No delegation by default.", True),
+        ("By default, no delegation.", True),
+        ("No delegation, by default.", True),
+        ("By default: no delegation.", True),
+        ("No delegation by default for release approval.", False),
+        ("No delegation by default about release approval.", False),
+        ('No delegation by default "release approval".', False),
+        ('"No delegation by default" or unset.', True),
+        ("When delegation=off, no delegation by default.", False),
+        ("When delegation=o*ff, no delegation by default.", True),
+        (
+            "No delegation by default for release approval. "
+            "No delegation by default.",
+            True,
+        ),
+        ("`No delegation by default.`", True),
+        ("<script>No delegation by default.</script>", False),
+        ("By default, delegation is off-process.", False),
+        ("By default, delegation is off-board.", False),
+        ("By default, delegation is disabled-process.", False),
+        ("By default, delegation is off - process.", True),
+        ("By default, delegation is off-", True),
+        ("By default, delegation is off.", True),
+        ("Delegation is off-process by default.", False),
+        ("Delegation is off by default - note.", True),
+        ("Delegation is off-process by default. Do not delegate by default.", True),
+        ("Do not delegate by default-x.", False),
+        ("Do not delegate by default - x.", True),
+        ("Do not delegate by default-", True),
+    ],
+)
+def test_delegation_noun_and_compound_forms(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("No delegation by default.", True),
+        ("By default, no delegation.", True),
+        ("No delegation by default for release approval.", False),
+        ("When delegation=off, no delegation by default.", False),
+        (
+            "No delegation by default for release approval. "
+            "No delegation by default.",
+            True,
+        ),
+        ("By default, delegation is off-process.", False),
+        ("By default, delegation is off - process.", True),
+    ],
+)
+def test_delegation_owners_noun_and_compound_forms(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "gated"),
+    [
+        ("Delegate only when the user requests it.", True),
+        ("delegate only when the user requests it.", True),
+        ("DELEGATE ONLY WHEN THE USER REQUESTS IT.", True),
+        ("Explicit User Authorization For Delegation.", True),
+        ("When The User Authorized Delegation.", True),
+        ("WHEN DELEGATION IS AUTHORIZED.", True),
+        ("Delegation is authorized by default.", False),
+    ],
+)
+def test_delegation_owners_stale_gate_is_case_insensitive(
+    monkeypatch, relative, suffix, gated
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "gates delegation" in e for e in errors) is gated
+
+
+_F2BC_BOUNDARY_SOURCES = [
+    ("Do not delegate by default, when delegation=off.", False),
+    ("Do not delegate by default, with delegation=off.", False),
+    ("Do not delegate by default, if delegation=off.", False),
+    ("Do not delegate by default when delegation=off.", False),
+    ("When delegation=off, do not delegate by default.", False),
+    ("Delegation is disabled by default, when delegation=off.", False),
+    ("By default, delegation is off, when delegation=off.", False),
+    ("Do not delegate, by default, when delegation=off.", False),
+    ("(Do not delegate by default, when delegation=off.)", False),
+    ("Delegate by default (Do not delegate by default, when delegation=off.)", False),
+    ("`Do not delegate by default, when delegation=off.`", False),
+    ("Do not delegate by default, when delegation=off or unset.", True),
+    ("Do not delegate by default, when delegation=off-mode.", True),
+    ("Do not delegate by default, when delegation=OFFICE.", True),
+    ("Do not delegate by default, even when delegation=off.", True),
+    ("Do not delegate by default. When delegation=off.", True),
+    ("When delegation=off,\n\nDo not delegate by default.", True),
+    (
+        "Do not delegate by default, when delegation=off; Do not delegate by default.",
+        True,
+    ),
+    ("<span hidden>Do not delegate by default, when delegation=off.</span>", False),
+    ("Delegation is disabled by default.", True),
+    ("By default, delegation is disabled.", True),
+    ("Delegation is off, by default.", True),
+    ("By default, delegation is off.", True),
+    ("Delegation is disabled by default for release workflows.", False),
+    ("Delegation is by default disabled. Do not delegate by default.", True),
+]
+
+_F2BC_FLAG_REPLACEMENTS = [
+    ("delegation=off", False),
+    ("delegation=off-mode", True),
+    ("x-delegation=off", True),
+    ("delegation=off--mode", True),
+    ("delegation=office", True),
+    ("delegation=off_mode", True),
+    ("delegation=off2", True),
+    ("xdelegation=off", True),
+    ("delegation=OFF", True),
+    ("delegation=off -", False),
+    ("delegation=off,", False),
+    ("delegation=off.", False),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _F2BC_BOUNDARY_SOURCES)
+def test_f2bc_boundary_helper(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(("source", "rejected"), _F2BC_BOUNDARY_SOURCES)
+def test_f2bc_boundary_owners(monkeypatch, relative, source, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + source)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(("replacement", "missing"), _F2BC_FLAG_REPLACEMENTS)
+def test_f2bc_boundary_required_flag(monkeypatch, relative, replacement, missing):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace("delegation=off", replacement)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert (
+        any(relative in e and "missing delegation marker" in e for e in errors)
+        is missing
+    )
+
+
+_EF5_SCOPE_BOUNDARY_SOURCES = [
+    pytest.param("Sub-Delegation is disabled by default.", False, id="0-compound"),
+    pytest.param("Re-Delegation is disabled by default.", False, id="1-compound"),
+    pytest.param("Other_Delegation is disabled by default.", False, id="2-compound"),
+    pytest.param("Delegation is disabled by default.", True, id="3-standalone"),
+    pytest.param("Sub-Delegation is not the default.", False, id="4-compound"),
+    pytest.param("Re-Delegation is not the default.", False, id="5-compound"),
+    pytest.param("Other_Delegation is not the default.", False, id="6-compound"),
+    pytest.param("Delegation is not the default.", True, id="7-standalone"),
+    pytest.param("Sub-Delegation defaults to off.", False, id="8-compound"),
+    pytest.param("Re-Delegation defaults to off.", False, id="9-compound"),
+    pytest.param("Other_Delegation defaults to off.", False, id="10-compound"),
+    pytest.param("Delegation defaults to off.", True, id="11-standalone"),
+    pytest.param(
+        "By default, sub-delegation is disabled.", False, id="12-compound-opposite"
+    ),
+    pytest.param(
+        "`Sub-delegation is disabled by default.`", False, id="13-compound-opposite"
+    ),
+    pytest.param(
+        "<span hidden>Sub-delegation is disabled by default.</span>",
+        False,
+        id="14-compound-opposite",
+    ),
+    pytest.param(
+        "Sub-delegation is disabled by default. Do not delegate by default.",
+        True,
+        id="15-compound-opposite",
+    ),
+    pytest.param(
+        "Delegation is disabled by default for release approval.", False, id="16-scope"
+    ),
+    pytest.param(
+        "Delegation is disabled by default, for release approval.",
+        False,
+        id="17-comma-scope",
+    ),
+    pytest.param(
+        "Delegation is not the default for release approval.", False, id="18-scope"
+    ),
+    pytest.param(
+        "Delegation is not the default, for release approval.",
+        False,
+        id="19-comma-scope",
+    ),
+    pytest.param(
+        "Delegation defaults to off for release approval.", False, id="20-scope"
+    ),
+    pytest.param(
+        "Delegation defaults to off, for release approval.", False, id="21-comma-scope"
+    ),
+    pytest.param(
+        "By default, delegation is off for release approval.", False, id="22-scope"
+    ),
+    pytest.param(
+        "By default, delegation is off, for release approval.",
+        False,
+        id="23-comma-scope",
+    ),
+    pytest.param(
+        "Do not delegate by default for release approval.", False, id="24-scope"
+    ),
+    pytest.param(
+        "Do not delegate by default, for release approval.", False, id="25-comma-scope"
+    ),
+    pytest.param(
+        "By default, agents do not delegate for release approval.", False, id="26-scope"
+    ),
+    pytest.param(
+        "By default, agents do not delegate, for release approval.",
+        False,
+        id="27-comma-scope",
+    ),
+    pytest.param(
+        "Delegation is disabled by default about release approval.",
+        False,
+        id="28-scope",
+    ),
+    pytest.param(
+        "Delegation is disabled by default, about release approval.",
+        False,
+        id="29-comma-scope",
+    ),
+    pytest.param(
+        'Delegation is disabled by default "release approval".', False, id="30-scope"
+    ),
+    pytest.param(
+        'Delegation is disabled by default, "release approval".',
+        False,
+        id="31-comma-scope",
+    ),
+    pytest.param(
+        '"Delegation is disabled by default, " or unset.',
+        True,
+        id="32-retained-conservative-control",
+    ),
+    pytest.param(
+        "'Delegation is disabled by default, ' or unset.",
+        True,
+        id="33-retained-conservative-control",
+    ),
+    pytest.param(
+        "“Delegation is disabled by default, ” or unset.",
+        True,
+        id="34-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default, in release workflows.",
+        True,
+        id="35-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default,, for release approval.",
+        True,
+        id="36-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default: for release approval.",
+        True,
+        id="37-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default; for release approval.",
+        True,
+        id="38-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default,\n\nfor release approval.",
+        True,
+        id="39-retained-conservative-control",
+    ),
+    pytest.param(
+        "Delegation is disabled by default, for release approval; Do not delegate by default.",
+        True,
+        id="40-retained-conservative-control",
+    ),
+    pytest.param(
+        "Do not delegate by default, when delegation=off.",
+        False,
+        id="41-retained-conservative-control",
+    ),
+    pytest.param(
+        "Do not delegate by default, when delegation=off-mode.",
+        True,
+        id="42-retained-conservative-control",
+    ),
+    pytest.param(
+        "Do not delegate by default, when delegation=off or unset.",
+        True,
+        id="43-retained-conservative-control",
+    ),
+    pytest.param(
+        "<span hidden>Delegation is disabled by default, for release approval.</span>",
+        False,
+        id="44-retained-conservative-control",
+    ),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _EF5_SCOPE_BOUNDARY_SOURCES)
+def test_ef5_scope_boundary_helper(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(("source", "rejected"), _EF5_SCOPE_BOUNDARY_SOURCES)
+def test_ef5_scope_boundary_owners(monkeypatch, relative, source, rejected):
+    _owner_suffix(monkeypatch, relative, "\n\n" + source)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+_A04_MARKERS = {
+    "AGENTS.md": "Delegate by default",
+    "docs/ai/orchestration.md": "delegation is the default",
+    "docs/ai/README.md": "Delegate by default",
+    "docs/ai/workflows.md": "Delegation by default",
+    ".claude/commands/dart-ultrawork.md": "Delegate by default",
+    ".claude/commands/dart-model-upgrade.md": "Delegate by default",
+}
+_A04_POSITIVE = [
+    ("genuine", "{marker}", False),
+    ("dont_hyphen", "Don't-{marker}", True),
+    ("non_hyphen", "non-{marker}", True),
+    ("hyphen_suffix", "{marker}-only", True),
+    ("word_prefix", "x{marker}", True),
+    ("underscore_suffix", "{marker}_suffix", True),
+    ("wrong_case", None, True),
+    ("bold", "**{marker}**", False),
+    ("code", "`{marker}`", False),
+    ("visible_html", "<span>{marker}</span>", False),
+    ("hidden_html", "<span hidden>{marker}</span>", True),
+    ("terminal_period", "{marker}.", False),
+    ("terminal_comma", "{marker},", False),
+    ("separated_hyphen", "{marker} -", False),
+    ("encoded_hyphen", "Don't&#45;{marker}", True),
+    ("escaped_html_literal", "&lt;span hidden&gt;{marker}&lt;/span&gt;", False),
+    ("link_label", "[{marker}](https://example.org/policy)", False),
+]
+_A04_FLAGS = [
+    ("delegation=off", False),
+    ("delegation=off-mode", True),
+    ("x-delegation=off", True),
+    ("delegation=OFF", True),
+]
+
+
+def _a04_replace(monkeypatch, relative, old, new):
+    source = ROOT / relative
+    original = source.read_text()
+    bare = old.strip("`")
+    assert infra._delegation_owner_text(original).count(bare) >= 1
+    if "=" not in old:
+        assert original.count(old) == 1
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(old, new)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+@pytest.mark.parametrize(
+    ("template", "missing"),
+    [p[1:] for p in _A04_POSITIVE],
+    ids=[p[0] for p in _A04_POSITIVE],
+)
+def test_a04_positive_boundary_marker(monkeypatch, relative, template, missing):
+    marker = _A04_MARKERS[relative]
+    replacement = (
+        marker.swapcase() if template is None else template.format(marker=marker)
+    )
+    _a04_replace(monkeypatch, relative, marker, replacement)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    needle = f"{relative} is missing delegation marker {marker!r}"
+    assert any(needle in e for e in errors) is missing
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+@pytest.mark.parametrize(("flag", "missing"), _A04_FLAGS)
+def test_a04_positive_boundary_flag(monkeypatch, relative, flag, missing):
+    _a04_replace(monkeypatch, relative, "delegation=off", flag)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    needle = f"{relative} is missing delegation marker '`delegation=off`'"
+    assert any(needle in e for e in errors) is missing
+
+
+# noscript is read in the checker's default no-scripting view (not universal
+# browser visibility): its fallback text counts for markers and negative checks.
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+def test_noscript_no_scripting_view_counts_required_markers(monkeypatch, relative):
+    marker = _A04_MARKERS[relative]
+    source = ROOT / relative
+    original = source.read_text()
+    stripped = original.replace(marker, "missing-positive").replace(
+        "delegation=off", "missing-flag"
+    )
+    body = f"{stripped}\n\n<noscript>{marker}. Use delegation=off.</noscript>"
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return body
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert not any(relative in e and "missing delegation marker" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+def test_noscript_no_scripting_view_rejects_negation(monkeypatch, relative):
+    _owner_suffix(
+        monkeypatch, relative, "\n\n<noscript>Do not delegate by default.</noscript>"
+    )
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+def test_noscript_no_scripting_view_rejects_stale_gate(monkeypatch, relative):
+    _owner_suffix(
+        monkeypatch,
+        relative,
+        "\n\n<noscript>Delegate only when the user requests it.</noscript>",
+    )
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "still gates delegation" in e for e in errors)

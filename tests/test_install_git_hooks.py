@@ -862,7 +862,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
-    assert "DART-MANAGED-HOOK v13 " in hook.read_text()
+    assert "DART-MANAGED-HOOK v15 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)
@@ -989,7 +989,7 @@ def test_hooks_select_python_for_their_own_requirements(tmp_path, name):
     bin_dir.mkdir()
     python = bin_dir / "python3"
     python.write_text(
-        '#!/bin/sh\n[ "$1" = "-c" ] && [ "$2" = "import tomllib" ] && exit 1\n'
+        '#!/bin/sh\n[ "$1" = "-c" ] && case "$2" in *tomllib*) exit 1;; esac\n'
         f'exec "{sys.executable}" "$@"\n'
     )
     python.chmod(0o755)
@@ -2737,3 +2737,234 @@ def test_guard_runs_for_config_file_env_even_with_dart_managed_hook(
 
     assert returncode == 0
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def _bare_runtime(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
+    """Repo with a real stdlib-only venv (tomllib, no Markdown parser) and a
+    controlled PATH, so interpreter selection cannot reach host packages."""
+    if sys.version_info < (3, 11):
+        pytest.skip("needs a tomllib interpreter to model the missing parser")
+    repo, env = _init_repo(tmp_path)
+    for key, value in (("user.email", "t@example.com"), ("user.name", "DART Test")):
+        subprocess.run(["git", "config", key, value], cwd=repo, check=True, env=env)
+    (repo / "doc.md").write_text("base\n")
+    subprocess.run(["git", "add", "doc.md"], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "commit", "--no-verify", "-q", "-m", "base"],
+        cwd=repo,
+        check=True,
+        env=env,
+    )
+    assert _install(repo, env).returncode == 0
+    venv = tmp_path / "bare-venv"
+    subprocess.run(
+        [sys.executable, "-m", "venv", "--without-pip", str(venv)], check=True
+    )
+    bare = venv / "bin" / "python"
+    probe = [str(bare), "-I", "-c"]
+    assert subprocess.run([*probe, "import tomllib"]).returncode == 0
+    assert subprocess.run([*probe, "import markdown_it"]).returncode != 0
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for tool in ("git", "cat", "sed", "tr"):
+        (bin_dir / tool).symlink_to(shutil.which(tool))
+    env.update(
+        {
+            "PATH": str(bin_dir),
+            "DART_HOOK_PYTHON": str(bare),
+            "CLAUDE_PROJECT_DIR": str(repo),
+        }
+    )
+    return repo, bare, env
+
+
+def _stage(repo: Path, env: dict[str, str], text: str) -> None:
+    (repo / "doc.md").write_text(text)
+    subprocess.run(["git", "add", "doc.md"], cwd=repo, check=True, env=env)
+
+
+@pytest.mark.parametrize("surface", ["installed-hook", "pretool-guard"])
+@pytest.mark.parametrize(
+    "text, expected", [("updated\n", 0), ("updated \n", 1)], ids=["valid", "whitespace"]
+)
+def test_hooks_without_markdown_parser_use_staged_whitespace_fallback(
+    tmp_path, surface, text, expected
+):
+    repo, _, env = _bare_runtime(tmp_path)
+    _write_gate(repo)  # a selected interpreter would print direct-agent-gate
+    _stage(repo, env, text)
+
+    if surface == "installed-hook":
+        run = subprocess.run(
+            [str(_hook(repo))], cwd=repo, env=env, capture_output=True, text=True
+        )
+        code = run.returncode
+        stderr = run.stderr
+    else:
+        code, stderr = _run_guard(repo, env, "git commit --no-verify -m x")
+        expected *= 2  # the guard blocks with exit 2
+
+    assert code == expected, stderr
+    assert "staged diff fallback" in stderr
+    assert "direct-agent-gate" not in stderr
+
+
+@pytest.mark.parametrize(
+    "layout", ["bin/python", "python.exe"], ids=["posix-pixi", "windows-layout-pixi"]
+)
+@pytest.mark.parametrize("surface", ["installed-hook", "pretool-guard"])
+def test_hooks_select_later_complete_pixi_runtime_over_bare_python(
+    tmp_path, layout, surface
+):
+    repo, _, env = _bare_runtime(tmp_path)
+    _write_gate(repo)
+    pixi_python = repo / ".pixi" / "envs" / "default" / layout
+    pixi_python.parent.mkdir(parents=True)
+    # Model a complete runtime: only the import probe is answered by the stub.
+    pixi_python.write_text(
+        '#!/bin/sh\n[ "$1" = "-c" ] && case "$2" in *markdown_it*) exit 0;; esac\n'
+        f'exec "{sys.executable}" "$@"\n'
+    )
+    pixi_python.chmod(0o755)
+    _stage(repo, env, "updated\n")
+
+    if surface == "installed-hook":
+        run = subprocess.run(
+            [str(_hook(repo))], cwd=repo, env=env, capture_output=True, text=True
+        )
+        code, stderr = run.returncode, run.stderr
+    else:
+        env.pop("DART_HOOK_PYTHON")  # the guard only searches Pixi when unset
+        code, stderr = _run_guard(repo, env, "git commit --no-verify -m x")
+
+    assert code == 0, stderr
+    assert "direct-agent-gate" in stderr
+    assert "staged diff fallback" not in stderr
+
+
+def test_bare_runtime_keeps_message_scan_and_direct_checker_fail_closed(tmp_path):
+    repo, bare, env = _bare_runtime(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    private_path = "/home/" + "example/notes.md"
+    for message, expected in (("public\n", 0), (private_path + "\n", 1)):
+        (repo / "COMMIT_EDITMSG").write_text(message)
+        run = subprocess.run(
+            [str(_hook(repo, "commit-msg")), "COMMIT_EDITMSG"],
+            cwd=repo,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == expected, run.stderr
+
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]);"
+        "import check_ai_infrastructure as c; c._markdown_parser()"
+    )
+    direct = subprocess.run(
+        [str(bare), "-I", "-c", code, str(ROOT / "scripts")],
+        capture_output=True,
+        text=True,
+    )
+    assert direct.returncode != 0
+    assert "MarkdownParserMissing" in direct.stderr
+
+
+def _run_pre_commit(repo: Path, env: dict[str, str]):
+    return subprocess.run(
+        [str(_hook(repo))], cwd=repo, env=env, capture_output=True, text=True
+    )
+
+
+def _write_path_checker(repo: Path) -> None:
+    (repo / "scripts").mkdir(exist_ok=True)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [("updated\n", 0), ("/home/" + "example/notes.md\n", 1), ("updated \n", 1)],
+    ids=["public", "private-path", "whitespace"],
+)
+def test_bare_runtime_pre_commit_keeps_stdlib_staged_path_scan(
+    tmp_path, text, expected
+):
+    repo, _, env = _bare_runtime(tmp_path)
+    _write_gate(repo)
+    _write_path_checker(repo)
+    _stage(repo, env, text)
+
+    run = _run_pre_commit(repo, env)
+
+    assert run.returncode == expected, run.stderr
+    assert "staged diff fallback" in run.stderr or expected == 1
+    assert "direct-agent-gate" not in run.stderr
+
+
+@pytest.mark.parametrize(
+    "layout", ["bin/python", "python.exe"], ids=["posix-pixi", "windows-layout-pixi"]
+)
+def test_pre_commit_scans_paths_then_selects_complete_runtime_for_ai_gate(
+    tmp_path, layout
+):
+    repo, _, env = _bare_runtime(tmp_path)
+    _write_gate(repo)
+    _write_path_checker(repo)
+    pixi_python = repo / ".pixi" / "envs" / "default" / layout
+    pixi_python.parent.mkdir(parents=True)
+    pixi_python.write_text(
+        '#!/bin/sh\n[ "$1" = "-c" ] && case "$2" in *markdown_it*) exit 0;; esac\n'
+        f'exec "{sys.executable}" "$@"\n'
+    )
+    pixi_python.chmod(0o755)
+    env.pop("DART_HOOK_PYTHON")
+
+    _stage(repo, env, "updated\n")
+    run = _run_pre_commit(repo, env)
+    assert run.returncode == 0, run.stderr
+    assert "direct-agent-gate" in run.stderr
+    assert "staged diff fallback" not in run.stderr
+
+    _stage(repo, env, "/home/" + "example/notes.md\n")
+    run = _run_pre_commit(repo, env)
+    assert run.returncode == 1, run.stderr
+    assert "local-path hook FAILED" in run.stderr
+
+
+def test_bare_runtime_pre_commit_recovers_tracked_path_checker(tmp_path):
+    repo, _, env = _bare_runtime(tmp_path)
+    (_bare_bin := Path(env["PATH"])).joinpath("mktemp").symlink_to(
+        shutil.which("mktemp")
+    )
+    (_bare_bin / "rm").symlink_to(shutil.which("rm"))
+    _write_path_checker(repo)
+    subprocess.run(["git", "add", "scripts"], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "commit", "--no-verify", "-q", "-m", "checker"],
+        cwd=repo,
+        check=True,
+        env=env,
+    )
+    (repo / "scripts/check_local_paths.py").unlink()
+    _stage(repo, env, "/home/" + "example/notes.md\n")
+
+    run = _run_pre_commit(repo, env)
+
+    assert run.returncode == 1, run.stderr
+    assert "using tracked scripts/check_local_paths.py" in run.stderr
+    assert "local-path hook FAILED" in run.stderr
+
+
+def test_bare_runtime_pre_commit_skips_untracked_missing_path_checker(tmp_path):
+    repo, _, env = _bare_runtime(tmp_path)
+    _stage(repo, env, "/home/" + "example/notes.md\n")
+
+    run = _run_pre_commit(repo, env)
+
+    assert run.returncode == 0, run.stderr
+    assert "skipping staged scan" in run.stderr
