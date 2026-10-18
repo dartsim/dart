@@ -5494,7 +5494,11 @@ def exercise_scenarios(
                 negation = (
                     r"(?:\bdo\s+not|\bdon't|\bnot|n't|\bnever|\bno longer)"
                     r"\s+delegate\s+by\s+default\b"
-                    r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't)"
+                    r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't"
+                    r"|cannot\s+be"
+                    r"|(?:(?:should|must|can|could|will|would|shall|may|might)"
+                    r"\s+(?:not|never|no\s+longer)"
+                    r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
                     r"\s+(?:the\s+)?default\b"
                 )
                 lowered = owner_text.lower().replace("\u2019", "'")
@@ -5505,7 +5509,7 @@ def exercise_scenarios(
                     r"(?:with|when|if) +delegation=off"
                     r"(?: +is +(?:set|enabled))?,? +(?:" + negation + r")"
                     r"|(?:" + negation + r") +(?:when|if) +delegation=off"
-                    r" +is +(?:set|enabled)) *(?=[.;|\n]|$)",
+                    r"(?: +is +(?:set|enabled))?) *(?=[.;|\n]|$)",
                     "",
                     lowered,
                 )
