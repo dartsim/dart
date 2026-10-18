@@ -1876,12 +1876,16 @@ class ApiIndex:
                         break
         return result
 
-    def storage_alignment_spans(self, values):
-        """Balanced alignment spellings on a physical field declaration."""
+    def storage_alignment_spans(self, values, nested=False):
+        """Balanced alignment spellings on a physical field declaration.
+
+        ``nested`` also enumerates spans inside groups, such as a callback's
+        pointer declarator; callers must filter them to retained storage tokens.
+        """
         tokens = Tokens(" ".join(values))
         result = []
         for index, value in enumerate(values):
-            if tokens.enclosing[index] is not None:
+            if tokens.enclosing[index] is not None and not nested:
                 continue
             if index + 1 in tokens.pairs and (
                 value == "alignas"
@@ -1917,7 +1921,7 @@ class ApiIndex:
                     bounds.extend(
                         self.constant_dependencies(values[opening + 1 : closing], where)
                     )
-            for first, last in self.storage_alignment_spans(values):
+            for first, last in self.storage_alignment_spans(values, nested=True):
                 if set(range(first, last)).issubset(retained):
                     alignments.append(
                         {
@@ -2725,7 +2729,8 @@ def variable_after_type(values, end, grouped=False):
         and j + 3 < len(values)
         and IDENTIFIER.match(values[j + 1])
         and values[j + 2] == ")"
-        and values[j + 3] in {";", "=", ",", "{"}
+        and values[declarator_attributes_end(Tokens(" ".join(values)), j + 3) :][:1]
+        in [[";"], ["="], [","], ["{"]]
     ):
         return j + 1  # a parenthesized object declarator, `T (name);`
     while j + 2 < len(values) and IDENTIFIER.match(values[j]) and values[j + 1] == "::":

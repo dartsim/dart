@@ -19449,6 +19449,86 @@ ROUND22_SPEC_STORAGE_CASES = [
         [],
     ),
     (
+        "callback_nested_gnu_alignment_dependency",
+        "namespace dart {constexpr int K=32; struct H {int (* __attribute__((aligned(K))) callback)();}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==32);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_nested_grouped_alignment_dependency",
+        "namespace dart {constexpr int K=32; struct H {int ((* __attribute__((aligned(K))) callback))();}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==32);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_nested_namespace_alias_alignment_dependency",
+        "namespace dart {constexpr int K=32; typedef int (* __attribute__((aligned(K))) Cb)(); struct H {Cb callback;}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==32);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_nested_class_alias_alignment_dependency",
+        "namespace dart {constexpr int K=32; struct H {typedef int (* __attribute__((aligned(K))) Cb)(); Cb callback;}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==32);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_suffix_alignment_constant_tracked",
+        "namespace dart {constexpr int K=32; struct H {int (*callback)() __attribute__((aligned(K)));}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==32);",
+        True,
+        True,
+        [],
+    ),
+    (
+        "callback_unused_constant_not_owned",
+        "namespace dart {constexpr int K=32; struct H {int (*callback)();}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==8);",
+        False,
+        False,
+        [],
+    ),
+    (
+        "callback_parameter_class_alignment_not_storage",
+        "namespace dart {constexpr int K=32; struct alignas(K) A {int p;}; struct H {int (*callback)(A);}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==8);",
+        False,
+        False,
+        [],
+    ),
+    (
+        "callback_return_class_alignment_not_storage",
+        "namespace dart {constexpr int K=32; struct alignas(K) A {int p;}; struct H {A (*callback)();}; }",
+        "K=32",
+        "K=64",
+        "static_assert(alignof(dart::H)==8);",
+        False,
+        False,
+        [],
+    ),
+    (
         "callback_parameter_layout_not_owned",
         "namespace dart {struct A {int payload;}; struct H {int(*factory[2])(A);}; }",
         "int payload;",
@@ -23170,6 +23250,38 @@ def test_parenthesized_variant_declarator_owns_first_alternative(
     assert _scan_receiver_api(extractor, tmp_path, header, source) == (
         _scan_receiver_api(extractor, tmp_path, changed, source)
     )
+
+
+@pytest.mark.parametrize(
+    ("suffix", "drift"),
+    [
+        (" __attribute__((unused));", True),
+        (" __attribute((unused));", True),
+        (" __attribute__((unused)) __attribute__((used));", True),
+        (" __attribute__((unused)){};", True),
+        (" __attribute__((unused))={};", True),
+        (" __attribute__((unused)), other(1);", True),
+        (" __attribute__((unused))(1);", False),
+        (" __attribute__((unused)){1};", False),
+    ],
+)
+@pytest.mark.parametrize("scope", ["local", "alias", "file"])
+def test_parenthesized_variant_declarator_skips_suffix_attributes(
+    extractor, tmp_path, suffix, drift, scope
+):
+    header = R20_VARIANT_INCLUDES + R20_VARIANT_A + "namespace dart {}"
+    changed = R20_VARIANT_INCLUDES + R20_VARIANT_DELETED + "namespace dart {}"
+    declaration = "std::variant<dart::A,int> (value)" + suffix
+    source = {
+        "local": f"void use(){{{declaration}}}",
+        "alias": "using V=std::variant<dart::A,int>;void use()"
+        f"{{{declaration.replace('std::variant<dart::A,int>', 'V')}}}",
+        "file": declaration,
+    }[scope]
+    assert (
+        _scan_receiver_api(extractor, tmp_path, header, source)
+        != _scan_receiver_api(extractor, tmp_path, changed, source)
+    ) == drift
 
 
 @pytest.mark.parametrize(
