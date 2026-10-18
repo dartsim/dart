@@ -369,6 +369,7 @@ class Tokens:
     raw_pointers: set = field(default_factory=set)
     using: list = field(default_factory=list)
     template_headers: dict = field(default_factory=lambda: defaultdict(set))
+    alias_templates: dict = field(default_factory=dict)
     enum_headers: dict = field(default_factory=lambda: defaultdict(set))
     union_headers: dict = field(default_factory=lambda: defaultdict(set))
     alignment_headers: dict = field(default_factory=lambda: defaultdict(set))
@@ -414,6 +415,30 @@ CALLING_CONVENTIONS = {
 }
 
 
+def template_parameter_names(header):
+    """Names of the type/non-type parameters a `template <...>` header declares."""
+    result = set()
+    for part in template_arguments(header, 1):
+        default = next(
+            (
+                index
+                for index, value in enumerate(part)
+                if value == "=" and not in_template_argument(part, index)
+            ),
+            len(part),
+        )
+        part = part[:default]
+        names = [value for value in part if IDENTIFIER.match(value)]
+        if (
+            names
+            and part[-1] == names[-1]
+            and part[-2:-1] != ["::"]
+            and names[-1] not in {"class", "typename"}
+        ):
+            result.add(names[-1])
+    return result
+
+
 def function_pointer_declarator(values):
     """A grouped callable's element type, name and surrounding array shape."""
     tokens = Tokens(" ".join(values))
@@ -428,6 +453,12 @@ def function_pointer_declarator(values):
             continue
         name = opening + 1
         attributes = set()
+        group, inside = closing, opening  # innermost redundant grouping
+        while values[name : name + 1] == ["("] and tokens.pairs.get(name) == group - 1:
+            attributes.add(name)
+            inside = name
+            name += 1
+            group -= 1
         while values[name : name + 1] and values[name] in CALLING_CONVENTIONS:
             attributes.add(name)
             name += 1
@@ -436,17 +467,17 @@ def function_pointer_declarator(values):
             name = next(
                 (
                     index + 1
-                    for index in range(name + 1, closing - 1)
+                    for index in range(name + 1, group - 1)
                     if values[index : index + 2] == ["::", "*"]
-                    and tokens.enclosing[index] == opening
+                    and tokens.enclosing[index] == inside
                     and not in_template_argument(values, index)
                 ),
-                closing,
+                group,
             )
-            member_pointer = name < closing
-        if name == closing:
+            member_pointer = name < group
+        if name == group:
             continue
-        while name < closing:
+        while name < group:
             if values[name] in {"*", "&", "&&", "const", "volatile"}:
                 name += 1
             elif values[name] in CALLING_CONVENTIONS:
@@ -477,7 +508,7 @@ def function_pointer_declarator(values):
             }:
                 outer.append(values[name])
                 name += 1
-        name_index = name if name < closing and IDENTIFIER.match(values[name]) else None
+        name_index = name if name < group and IDENTIFIER.match(values[name]) else None
         suffix = name + 1 if name_index is not None else name
         if nested_end is not None:
             if suffix != nested_end:
@@ -495,7 +526,7 @@ def function_pointer_declarator(values):
                 continue
             dimensions += 1
             suffix = tokens.pairs[suffix] + 1
-        if suffix == closing:
+        if suffix == group:
             parameters_end = tokens.pairs.get(closing + 1, closing)
             trailing = parameters_end + 1
             if name_index is None:
@@ -511,6 +542,7 @@ def function_pointer_declarator(values):
             return {
                 "name_index": name_index,
                 "opening": opening,
+                "inside": inside,
                 "parameters_end": parameters_end,
                 "return_tokens": [
                     value
@@ -1104,6 +1136,7 @@ def scopes(tokens, annotation_text=None):
         access="public",
         linkage_literals=(),
         union_header=None,
+        templates=(),
     ):
         here = tuple(owner.split("::")) if owner else namespace
         i = start
@@ -1253,6 +1286,7 @@ def scopes(tokens, annotation_text=None):
                             tokens.enum_headers[full_name].add(" ".join(values[i:k]))
                         if value == "union":
                             tokens.union_headers[full_name].add(" ".join(values[i:k]))
+                        class_header = None
                         if values[segment : segment + 2] == ["template", "<"]:
                             stop, angle = segment + 1, 0
                             while stop < i:
@@ -1267,12 +1301,11 @@ def scopes(tokens, annotation_text=None):
                                 if angle == 0:
                                     break
                             if angle == 0:
-                                tokens.template_headers[full_name].add(
-                                    " ".join(
-                                        values[segment:stop]
-                                        + values[i : template_end(values, j + 1)]
-                                    )
+                                class_header = " ".join(
+                                    values[segment:stop]
+                                    + values[i : template_end(values, j + 1)]
                                 )
+                                tokens.template_headers[full_name].add(class_header)
                         if k < end and values[k] == "{" and k in tokens.pairs:
                             tokens.bodies[k] = tuple(full_name.split("::"))
                             parents = []
@@ -1320,6 +1353,11 @@ def scopes(tokens, annotation_text=None):
                                     full_name,
                                     "private" if value == "class" else "public",
                                     linkage_literals=linkage_literals,
+                                    templates=(
+                                        (*templates, class_header)
+                                        if class_header
+                                        else templates
+                                    ),
                                     union_header=(
                                         " ".join(values[i:k])
                                         if value == "union"
@@ -1414,6 +1452,9 @@ def scopes(tokens, annotation_text=None):
                     method["index"] = segment
                     method["name_index"] += segment
                     method["access"] = access
+                    if owner:
+                        # Only this definition's own class templates apply.
+                        method["enclosing_templates"] = templates
                     if annotation_text is not None:
                         declaration_end = (
                             method["name_index"]
@@ -1501,30 +1542,29 @@ def scopes(tokens, annotation_text=None):
                 if prefix and "using" in prefix and "=" in prefix:
                     equals = prefix.index("=")
                     using = prefix.index("using")
-                    aliases.append(
-                        (
-                            "::".join(
-                                (owner or "::".join(namespace), prefix[using + 1])
-                            ).strip(":"),
-                            prefix[equals + 1 :],
-                            segment,
-                        )
-                    )
+                    alias_name = "::".join(
+                        (owner or "::".join(namespace), prefix[using + 1])
+                    ).strip(":")
+                    aliases.append((alias_name, prefix[equals + 1 :], segment))
+                    # Only the enclosing class templates' parameters shadow its target.
+                    tokens.alias_templates[alias_name] = templates
                 elif prefix and prefix[0] == "typedef" and len(prefix) > 2:
                     for target, _ in declarators(prefix[1:], owner):
                         member = data_member(target, owner) or declaration(
                             target, owner
                         )
                         name_index = member["name_index"] if member else len(target) - 1
+                        alias_name = "::".join(
+                            (owner or "::".join(namespace), target[name_index])
+                        ).strip(":")
                         aliases.append(
                             (
-                                "::".join(
-                                    (owner or "::".join(namespace), target[name_index])
-                                ).strip(":"),
+                                alias_name,
                                 target[:name_index] + target[name_index + 1 :],
                                 segment,
                             )
                         )
+                        tokens.alias_templates[alias_name] = templates
                 if value == "{" and i in tokens.pairs:
                     # shortcut: local classes are omitted; add lexical identities when local adapters need inventory coverage.
                     for p in range(inside, tokens.pairs[i] + 1):
@@ -1558,6 +1598,7 @@ class ApiIndex:
     free_functions: dict = field(default_factory=lambda: defaultdict(list))
     aliases: dict = field(default_factory=dict)
     alias_arguments: dict = field(default_factory=dict)
+    alias_templates: dict = field(default_factory=dict)
     alias_literals: dict = field(default_factory=dict)
     macros: set = field(default_factory=set)
     headers: set = field(default_factory=set)
@@ -1753,6 +1794,22 @@ class ApiIndex:
             resolved = self.layout_type(spelling, scope)
             if resolved in self.alias_arguments:
                 argument, where = self.alias_arguments[resolved]
+                # A class-local alias of an enclosing template parameter is dependent.
+                shadowed = set().union(
+                    *(
+                        template_parameter_names(TOKEN.findall(header))
+                        for header in self.alias_templates.get(resolved, ())
+                    )
+                )
+                argument = [
+                    (
+                        "__template_parameter"
+                        if value in shadowed
+                        and (not index or argument[index - 1] != "::")
+                        else value
+                    )
+                    for index, value in enumerate(argument)
+                ]
                 return self.layout_owners(argument, where, references, depth + 1)
             if resolved in self.classes:
                 return [resolved]
@@ -1882,6 +1939,15 @@ class ApiIndex:
             if pointer := function_pointer_declarator(values):
                 opening = pointer["opening"]
                 retained.update(range(opening, tokens.pairs[opening] + 1))
+                if pointer["array_pointer"] or pointer["array_reference"]:
+                    # The referred-to array's extents are not part of the pointer.
+                    for first, last in tokens.pairs.items():
+                        if (
+                            values[first] == "["
+                            and values[first + 1 : first + 2] != ["["]
+                            and tokens.enclosing[first] == pointer["inside"]
+                        ):
+                            retained.difference_update(range(first, last + 1))
                 dependencies(values, where, retained)
                 if pointer["member_pointer"]:
                     # MSVC sizes a member pointer by its owner's inheritance model.
@@ -2233,26 +2299,21 @@ class ApiIndex:
         )
         result, constants = [], []
         shadowed = set()
-        if values[:2] == ["template", "<"]:
-            # shortcut: read this function's header; extend for enclosing templates.
-            for part in template_arguments(values, 1):
-                default = next(
-                    (
-                        index
-                        for index, value in enumerate(part)
-                        if value == "=" and not in_template_argument(part, index)
-                    ),
-                    len(part),
+        headers = [values] if values[:2] == ["template", "<"] else []
+        # Enclosing class templates contribute parameters absent from the member.
+        owner = (item.get("class") or "").split("::")
+        if "enclosing_templates" in item:
+            headers.extend(map(TOKEN.findall, item["enclosing_templates"]))
+        else:
+            for depth in range(1, len(owner) + 1):
+                headers.extend(
+                    TOKEN.findall(declaration)
+                    for declaration in self.type_templates.get(
+                        "::".join(owner[:depth]), ()
+                    )
                 )
-                part = part[:default]
-                names = [value for value in part if IDENTIFIER.match(value)]
-                if (
-                    names
-                    and part[-1] == names[-1]
-                    and part[-2:-1] != ["::"]
-                    and names[-1] not in {"class", "typename"}
-                ):
-                    shadowed.add(names[-1])
+        for header in headers:
+            shadowed |= template_parameter_names(header)
         for first, last in construction_arguments(tokens, opening):
             default = next(
                 (
@@ -2351,6 +2412,20 @@ class ApiIndex:
                 ]
                 for part in (prefix, expression)
             )
+            # shortcut: handle parenthesized type operands; extend for expressions.
+            operands = Tokens(" ".join(expression))
+            for index, value in enumerate(expression):
+                closing = operands.pairs.get(index + 1)
+                if value not in {"sizeof", "alignof"} or closing is None:
+                    continue
+                operand = expression[index + 2 : closing]
+                if not any(
+                    token in {"(", "{", ".", "->", "?", "=", "+", "-", "/", "%", "!"}
+                    and not in_template_argument(operand, position)
+                    for position, token in enumerate(operand)
+                ):
+                    for owner in self.layout_owners(operand, scope, references=True):
+                        result.extend(self.layout_evidence(owner))
             prefix = construction_aliases(prefix, self, scope)
             function = function_type_signature(prefix)
             if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
@@ -2385,29 +2460,7 @@ class ApiIndex:
                         self.construction_initializer_declarations(constructed)
                     )
                 for owner in self.construction_dependencies(constructed):
-                    result.extend(self.alignment_declarations(owner))
-                    result.extend(
-                        {"class": owner, "signature": annotation}
-                        for annotation in sorted(self.type_annotations.get(owner, ()))
-                    )
-                    for field in self.layout_declarations(owner):
-                        result.append(
-                            {**public_declaration(field), "access": field["access"]}
-                        )
-                        aliases, enums, field_constants = self.layout_type_declarations(
-                            field["return_tokens"], tuple(field["class"].split("::"))
-                        )
-                        result.extend([*aliases, *enums, *field_constants])
-                        if "storage_array_bound_declarations" in field:
-                            result.extend(field["storage_array_bound_declarations"])
-                            result.extend(field["storage_alignment_declarations"])
-                        else:
-                            result.extend(
-                                self.constant_dependencies(
-                                    TOKEN.findall(field["signature"]),
-                                    tuple(field["class"].split("::")),
-                                )
-                            )
+                    result.extend(self.layout_evidence(owner))
                     for constructor in (
                         () if parameter_value else self.constructors.get(owner, ())
                     ):
@@ -2432,6 +2485,33 @@ class ApiIndex:
                 for declaration in [*constants, *result]
             }.values()
         )
+
+    def layout_evidence(self, owner):
+        """Alignment, annotation and ordered-field evidence for a value of `owner`."""
+        result = [
+            *self.alignment_declarations(owner),
+            *(
+                {"class": owner, "signature": annotation}
+                for annotation in sorted(self.type_annotations.get(owner, ()))
+            ),
+        ]
+        for field in self.layout_declarations(owner):
+            result.append({**public_declaration(field), "access": field["access"]})
+            aliases, enums, field_constants = self.layout_type_declarations(
+                field["return_tokens"], tuple(field["class"].split("::"))
+            )
+            result.extend([*aliases, *enums, *field_constants])
+            if "storage_array_bound_declarations" in field:
+                result.extend(field["storage_array_bound_declarations"])
+                result.extend(field["storage_alignment_declarations"])
+            else:
+                result.extend(
+                    self.constant_dependencies(
+                        TOKEN.findall(field["signature"]),
+                        tuple(field["class"].split("::")),
+                    )
+                )
+        return result
 
     def alignment_declarations(self, name):
         """Alignment spellings and their owned-type/constant dependencies."""
@@ -2762,6 +2842,9 @@ def default_value_initializer(tokens, end, grouped=False):
             and values[opening : opening + 1] == ["("]
         )
         and tokens.pairs.get(opening) == opening + 1
+        # `T value({})` copy-list-initializes from an empty list.
+        or values[opening : opening + 3] == ["(", "{", "}"]
+        and tokens.pairs.get(opening) == opening + 3
     )
 
 
@@ -3519,6 +3602,9 @@ def index_api(header_root):
         for name, declarations in tokens.template_headers.items():
             if name.startswith("dart::"):
                 api.type_templates[name].update(declarations)
+        for name, headers in tokens.alias_templates.items():
+            if name.startswith("dart::"):
+                api.alias_templates[name] = headers
         for name, declarations in tokens.enum_headers.items():
             if name.startswith("dart::"):
                 api.type_enums[name].update(declarations)

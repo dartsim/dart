@@ -23250,3 +23250,297 @@ def test_unnamed_qualified_parameter_does_not_shadow_type(extractor, tmp_path):
         header.replace("type()=default", "type()=delete"),
         "void use(){dart::f<int>();}",
     )
+
+
+@pytest.mark.parametrize(
+    ("template", "call", "drift"),
+    [
+        (
+            "template<class A> struct H{static void f(A value={});};",
+            "dart::H<int>",
+            False,
+        ),
+        (
+            "template<class B> struct H{static void f(A value={});};",
+            "dart::H<int>",
+            True,
+        ),
+        (
+            "struct O{template<class A> struct H{static void f(A value={});};};",
+            "dart::O::H<int>",
+            False,
+        ),
+        (
+            "template<class A> struct O{struct H{static void f(A value={});};};",
+            "dart::O<int>::H",
+            False,
+        ),
+        (
+            "template<class A> struct H{static void f(dart::A value={});};",
+            "dart::H<int>",
+            True,
+        ),
+        (
+            "template<class A> struct H{}; "
+            "template<> struct H<int>{static void f(A value={});};",
+            "dart::H<int>",
+            True,
+        ),
+        (
+            "template<class A> struct H; "
+            "template<class B> struct H<B*>{static void f(A value={});};",
+            "dart::H<int*>",
+            True,
+        ),
+        (
+            "template<class A> struct H{}; "
+            "template<class B> struct H<B*>{static void f(B value={});};",
+            "dart::H<int*>",
+            False,
+        ),
+        (
+            "template<class A> struct H{}; "
+            "template<class A> struct H<A*>{static void f(A value={});};",
+            "dart::H<int*>",
+            False,
+        ),
+    ],
+)
+def test_enclosing_class_template_parameter_shadows_dart_type_in_defaults(
+    extractor, tmp_path, template, call, drift
+):
+    header = (
+        "namespace dart { struct A { A()=default; private: int storage; }; "
+        f"{template} }}"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("A()=default", "A()=delete"),
+            f"void use(){{{call}::f();}}",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("declaration", "drift"),
+    [
+        ("value({})", True),
+        ("value()", False),
+        ("value({1})", False),
+        ("value(std::variant<dart::A,int>({}))", True),
+        ("value(std::in_place_type<int>, 1)", False),
+    ],
+)
+def test_variant_parenthesized_empty_braces_default_construct(
+    extractor, tmp_path, declaration, drift
+):
+    source = f"void use(){{std::variant<dart::A,int> {declaration};}}"
+    header = R20_VARIANT_INCLUDES + R20_VARIANT_A
+    changed = R20_VARIANT_INCLUDES + R20_VARIANT_DELETED
+    assert _api_changes(extractor, tmp_path, header, changed, source) == drift
+
+
+@pytest.mark.parametrize("declarator", ["((*factory))", "(((*factory)))"])
+def test_redundantly_grouped_callback_field_keeps_return_receiver(
+    extractor, tmp_path, declarator
+):
+    header = (
+        "namespace dart { struct A { void hit() const; };"
+        f" struct H {{ A* {declarator}(); }}; }}"
+    )
+    assert _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("void hit() const;", "void hit() const=delete;"),
+        "void use(dart::H& h){h.factory()->hit();}",
+    )
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "drift"),
+    [
+        ("A(*(*factory)[2])()", "A(*(*factory)[3])()", False),
+        ("A(*(&factory)[2])()", "A(*(&factory)[3])()", False),
+        ("A((*(*factory)[2]))()", "A((*(*factory)[3]))()", False),
+        ("A((*(&factory)[2]))()", "A((*(&factory)[3]))()", False),
+        ("A(((*(*factory)[2])))()", "A(((*(*factory)[3])))()", False),
+        ("A((*factory[2]))()", "A((*factory[3]))()", True),
+        ("A(*factory[2])()", "A(*factory[3])()", True),
+    ],
+)
+def test_callback_array_referent_extent_is_not_storage(
+    extractor, tmp_path, old, new, drift
+):
+    header = f"namespace dart {{ struct A {{}}; struct H {{ {old}; }}; }}"
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace(old, new),
+            "static_assert(sizeof(dart::H)>0);",
+        )
+        == drift
+    )
+
+
+@pytest.mark.parametrize(
+    ("expression", "drift"),
+    [
+        ("sizeof(A)", True),
+        ("alignof(A)", True),
+        ("sizeof(B)", True),
+        ("sizeof(A*)", False),
+        ("alignof(A*)", False),
+        ("sizeof(B*)", False),
+    ],
+)
+def test_default_argument_sizeof_alignof_retain_layout(
+    extractor, tmp_path, expression, drift
+):
+    header = (
+        "namespace dart { struct A { A()=default; private: int storage; };"
+        f" using B=A; int f(int n={expression}); }}"
+    )
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("int storage", "double storage"),
+            "void use(){dart::f();}",
+        )
+        == drift
+    )
+
+
+def test_default_argument_sizeof_does_not_construct(extractor, tmp_path):
+    header = (
+        "namespace dart { struct A { A()=default; private: int storage; };"
+        " int f(int n=sizeof(A)); }"
+    )
+    assert not _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("A()=default", "A()=delete"),
+        "void use(){dart::f();}",
+    )
+
+
+def test_redundantly_grouped_member_pointer_callback_is_member_pointer(
+    extractor, tmp_path
+):
+    header = (
+        "namespace dart { struct B1 {}; struct B2 {}; struct Owner : B1 { void run(); };"
+        " struct H { void ((Owner::*callback))(); }; }"
+    )
+    source = "static_assert(sizeof(dart::H)==16);"
+    assert _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("Owner : B1", "Owner : virtual B1"),
+        source,
+    )
+
+
+@pytest.mark.parametrize(
+    ("declarations", "call", "drift"),
+    [
+        (
+            "template<class A> struct H{using B=A; static void f(int n=sizeof(B));};",
+            "H<int>::f()",
+            False,
+        ),
+        (
+            "template<class A> struct H{using B=A; using C=B;"
+            " static void f(int n=sizeof(C));};",
+            "H<int>::f()",
+            False,
+        ),
+        (
+            "template<class A> struct O{using B=A;"
+            " struct H{static void f(int n=sizeof(B));};};",
+            "O<int>::H::f()",
+            False,
+        ),
+        (
+            "struct O{template<class A> struct H{using B=A;"
+            " static void f(int n=sizeof(B));};};",
+            "O::H<int>::f()",
+            False,
+        ),
+        (
+            "template<class A> struct O{using B=A; template<class C> struct H{"
+            "using D=B; static void f(int n=sizeof(D));};};",
+            "O<int>::H<char>::f()",
+            False,
+        ),
+        (
+            "template<class T> struct H; template<class A> struct H<A*>{"
+            "using B=A; static void f(int n=sizeof(B));};",
+            "H<int*>::f()",
+            False,
+        ),
+        (
+            "template<class A> struct H{using B=A&; static void f(int n=sizeof(B));};",
+            "H<int>::f()",
+            False,
+        ),
+        (
+            "template<class A> struct H{};"
+            " template<> struct H<int>{using B=A; static void f(int n=sizeof(B));};",
+            "H<int>::f()",
+            True,
+        ),
+        (
+            "template<class T> struct H; template<class B> struct H<B*>{"
+            "using C=A; static void f(int n=sizeof(C));};",
+            "H<int*>::f()",
+            True,
+        ),
+        (
+            "using B=A; template<class A> struct H{"
+            "static void f(int n=sizeof(B));};",
+            "H<int>::f()",
+            True,
+        ),
+        (
+            "template<class A> struct H{using B=dart::A;"
+            " static void f(int n=sizeof(B));};",
+            "H<int>::f()",
+            True,
+        ),
+        (
+            "template<class A> struct H{using B=::dart::A;"
+            " static void f(int n=sizeof(B));};",
+            "H<int>::f()",
+            True,
+        ),
+        (
+            "struct H{using B=A; template<class A> static void f(int n=sizeof(B));};",
+            "H::f<int>()",
+            True,
+        ),
+    ],
+)
+def test_default_layout_alias_follows_declaration_scope_template_parameters(
+    extractor, tmp_path, declarations, call, drift
+):
+    header = f"namespace dart {{ struct A {{ int storage; }}; {declarations} }}"
+    assert (
+        _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("int storage", "double storage"),
+            f"void use(){{dart::{call};}}",
+        )
+        == drift
+    )
