@@ -173,7 +173,8 @@ public:
 
   /// Restore channels directly after complete validation. Mobile Skeletons
   /// wake and soft activation restarts; frame count and exact solver/contact
-  /// history are not restored. Contact and solver warm starts are cleared.
+  /// history are not restored. Contact and solver warm starts and sleep
+  /// smoothing are cleared; for custom collision detectors, only the solver's.
   /// Parameters remain those of this World.
   /// Commands follow this World's actuator types and limits, as setCommand()
   /// would. EndEffector Support active flags remain those of this World.
@@ -527,6 +528,9 @@ protected:
   /// Wakes sleeping mobile skeletons after world-level or external kinematic
   /// changes that may invalidate filtered resting contacts.
   void wakeRestingSkeletonsForWorldChange();
+
+  /// Restarts the first-frame rest credit, as a new World would get it.
+  void restartFirstFrameRestCredit();
 
   /// Invalidates simulation preparation after a world-shape change.
   void invalidateSimulationMode();

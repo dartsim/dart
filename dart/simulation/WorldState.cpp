@@ -568,12 +568,15 @@ void World::restoreState(const WorldState& state)
     skeleton->setPositionImpulseApplied(false);
     skeleton->resetUnion();
     skeleton->setIslandIndex(-1);
+    skeleton->setSmoothedLinearSpeed(0.0);
+    skeleton->setSmoothedAngularSpeed(0.0);
     DART_SUPPRESS_DEPRECATED_BEGIN
     skeleton->clearCollidingBodies();
     DART_SUPPRESS_DEPRECATED_END
   }
   // Dynamic restoration starts a fresh active trajectory, not exact history.
   wakeRestingSkeletonsForWorldChange();
+  restartFirstFrameRestCredit();
   mTime = state.time;
 }
 

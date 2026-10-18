@@ -565,6 +565,10 @@ public:
 
   std::vector<char> mIslandJointDwellReady;
 
+  // Frames since construction, reset() or restoreState(). Rest detection
+  // credits bodies that start a run at rest on the first two of these frames.
+  int mFramesSinceStart = 0;
+
   // Contacts of resting pairs, as solved when the set of resting skeletons
   // last changed; the solver no longer computes or solves them. Their
   // CollisionObjects are only used while mRetainedGroup and
@@ -1525,6 +1529,7 @@ void World::reset()
 {
   mTime = 0.0;
   mFrame = 0;
+  mDeactivationState->mFramesSinceStart = 0;
   mInitialRestSpeedLimits.clear();
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
@@ -1644,6 +1649,7 @@ inline void World::stepWithoutDeactivation(const StepContext& context)
 
   mTime += mTimeStep;
   mFrame++;
+  ++mDeactivationState->mFramesSinceStart;
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
 }
@@ -1675,6 +1681,7 @@ inline bool World::tryAllRestingFastPath(StepContext& context)
     }
     mTime += mTimeStep;
     mFrame++;
+    ++mDeactivationState->mFramesSinceStart;
     if (!mLastStepRestingWorldStateValid)
       updateLastStepRestingWorldState();
     return true;
@@ -1704,7 +1711,7 @@ inline void World::advanceVelocities(const StepContext& context)
 
   // The first-frame dwell credit is only for bodies that start at rest (see
   // updateRestStates()), so note which skeletons start the first step moving.
-  if (mFrame == 0) {
+  if (mDeactivationState->mFramesSinceStart == 0) {
     auto& initiallyMoving = mInitiallyMovingSkeletonScratch;
     initiallyMoving.assign(mSkeletons.size(), 0);
     for (std::size_t i = 0; i < mSkeletons.size(); ++i)
@@ -1792,7 +1799,8 @@ DART_FORCEINLINE void World::solveConstraints(StepContext& context)
   auto& deactivationState = *mDeactivationState;
   if (isReplayed(deactivationState, collisionFilter.get())
       && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
-      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
+      && (deactivationState.mFramesSinceStart < 2
+          || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
           || hasRestingOrCandidateMobileSkeleton(mSkeletons)
           || hasDwellingMobileSkeleton(mSkeletons))) {
     // Record before a body can freeze; moving bodies with no quiet dwell
@@ -1925,6 +1933,7 @@ inline void World::finishDeactivationStep(const StepContext& context)
 
   mTime += mTimeStep;
   mFrame++;
+  ++mDeactivationState->mFramesSinceStart;
 
   // A snapshot can only serve a next step on which a mobile body can freeze.
   if (mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
@@ -2048,10 +2057,12 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
   // The first-frame dwell credit (see islandInInitialEquilibrium below) is
   // checked on the first solve and confirmed on the second.
+  const int framesSinceStart = mDeactivationState->mFramesSinceStart;
   const bool confirmingInitialRest
-      = mFrame == 1
+      = framesSinceStart == 1
         && mInitialRestSpeedLimits.size() == countBodyNodes(mSkeletons);
-  const bool checkingInitialRest = mFrame == 0 || confirmingInitialRest;
+  const bool checkingInitialRest
+      = framesSinceStart == 0 || confirmingInitialRest;
 
   // Skeletons whose contacts on those frames cannot certify a settled body: a
   // deep contact, or a support tilted enough for gravity to drive motion along
@@ -2183,7 +2194,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       if (island < 0)
         continue;
 
-      const bool startedMoving = mFrame == 0
+      const bool startedMoving = framesSinceStart == 0
                                  && i < mInitiallyMovingSkeletonScratch.size()
                                  && mInitiallyMovingSkeletonScratch[i];
       bool inEquilibrium
@@ -2209,7 +2220,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // On the first solve, record the speeds that the second may leave on each
   // body of a member of an island in equilibrium; the bodies of a skeleton
   // outside such an island get limits that no speed meets.
-  if (mFrame == 0 && canSleep) {
+  if (framesSinceStart == 0 && canSleep) {
     const double initialRestMaxSpeedGrowth
         = kInitialRestMaxSpeedGrowthRatio * gravityNorm * mTimeStep;
     mInitialRestSpeedLimits.clear();
@@ -3108,6 +3119,12 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
   mAllRestingSnapshotVelocityVersion = 0u;
+}
+
+//==============================================================================
+void World::restartFirstFrameRestCredit()
+{
+  mDeactivationState->mFramesSinceStart = 0;
 }
 
 //==============================================================================

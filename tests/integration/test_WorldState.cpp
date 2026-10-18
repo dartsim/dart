@@ -634,6 +634,47 @@ TEST(WorldState, AllBuiltInJointSpacesRoundTrip)
   expectEqual(state, world->captureState());
 }
 
+TEST(WorldState, RestoredSleepDecisionsMatchFreshWorld)
+{
+  // Rest detection smooths body speeds across steps and credits bodies that
+  // start a run at rest, so a restored World must restart both like a new
+  // World restoring the same snapshot.
+  const auto makeWorld = [] {
+    auto world = makeSleepingWorld();
+    world->getConstraintSolver()->setCollisionDetector(
+        collision::DARTCollisionDetector::create());
+    auto options = world->getDeactivationOptions();
+    options.mEnabled = true;
+    options.mTimeUntilSleep = 0.01;
+    world->setDeactivationOptions(options);
+    return world;
+  };
+  auto a = makeWorld();
+  for (int i = 0; i < 20; ++i)
+    a->step();
+  const auto state = a->captureState();
+  a->getSkeleton(1)->setVelocity(3, 2.0);
+  for (int i = 0; i < 5; ++i)
+    a->step();
+  ASSERT_GT(a->getSkeleton(1)->getSmoothedLinearSpeed(), 0.0);
+  auto b = makeWorld();
+  a->restoreState(state);
+  b->restoreState(state);
+  bool rested = false;
+  for (int i = 0; i < 3000 && !rested; ++i) {
+    SCOPED_TRACE(i);
+    a->step();
+    b->step();
+    ASSERT_EQ(a->getSkeleton(1)->isResting(), b->getSkeleton(1)->isResting());
+    const auto sa = a->captureState();
+    const auto sb = b->captureState();
+    ASSERT_TRUE((sa.positions.array() == sb.positions.array()).all());
+    ASSERT_TRUE((sa.velocities.array() == sb.velocities.array()).all());
+    rested = b->getSkeleton(1)->isResting();
+  }
+  EXPECT_TRUE(rested);
+}
+
 TEST(WorldState, RestoreInvalidatesWarmedCachesAndSleepingFastPath)
 {
   auto world = makeSleepingWorld();
