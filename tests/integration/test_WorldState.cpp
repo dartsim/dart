@@ -519,7 +519,7 @@ TEST(WorldState, SoftPointInputsSurviveFrozenActivationAndNextStep)
   soft->setAdaptiveContactActivationLingerSteps(0);
   target->step();
   target->step();
-  ASSERT_EQ(soft->getNumActivePointMasses(), 0);
+  ASSERT_EQ(soft->getNumActivePointMasses(), 0u);
   auto state = control->captureState();
   state.softBodies[0].points[0].mPositions = Eigen::Vector3d(0.2, 0.3, 0.4);
   state.softBodies[0].points[0].mVelocities = Eigen::Vector3d(0.5, 0.6, 0.7);
@@ -533,7 +533,7 @@ TEST(WorldState, SoftPointInputsSurviveFrozenActivationAndNextStep)
   auto clone = target->clone();
   clone->restoreState(state);
   expectEqual(state, clone->captureState());
-  EXPECT_EQ(soft->getNumActivePointMasses(), 1);
+  EXPECT_EQ(soft->getNumActivePointMasses(), 1u);
   target->step(false);
   control->step(false);
   expectEqual(target->captureState(), control->captureState());
@@ -610,8 +610,8 @@ TEST(WorldState, ReusableGatherDoesNotAllocate)
     world->captureState(output);
   heap.stop();
   raw.stop();
-  EXPECT_EQ(heap.allocationCount(), 0);
+  EXPECT_EQ(heap.allocationCount(), 0u);
   if (!raw.skipped()) {
-    EXPECT_EQ(raw.allocationCount(), 0);
+    EXPECT_EQ(raw.allocationCount(), 0u);
   }
 }
