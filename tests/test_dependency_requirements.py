@@ -391,6 +391,40 @@ def test_parent_ode_target_version(tmp_path, version, use_version_metadata):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize("languages", ["C", "CXX", "C;CXX"])
+@pytest.mark.parametrize("has_macro", [0, 1])
+def test_ode_libccd_probe_uses_an_enabled_language(tmp_path, languages, has_macro):
+    # The probe runs during find_package(DART COMPONENTS collision-ode), so it
+    # must work in consumer projects that enable only C++. DART reads the cached
+    # result outside the finder's scope, where its local default is not visible.
+    include = tmp_path / "ode-config" / "include"
+    header = include / "ode" / "odeconfig.h"
+    header.parent.mkdir(parents=True)
+    header.write_text(
+        "#define dLIBCCD_BOX_CYL\n" if has_macro else "/* libccd disabled */\n"
+    )
+    config_package(
+        tmp_path,
+        "ODE",
+        "0.16.2",
+        "ODE::ODE",
+        extra="set_target_properties(ODE::ODE PROPERTIES "
+        f'INTERFACE_INCLUDE_DIRECTORIES "{include.as_posix()}")\n',
+    )
+    result = configure(
+        tmp_path,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\n"
+        + "".join(f"enable_language({language})\n" for language in languages.split(";"))
+        + "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
+        "include(DARTFindODE)\n"
+        "if(NOT ODE_FOUND OR NOT "
+        f'"$CACHE{{DART_ODE_HAS_LIBCCD_BOX_CYL}}" EQUAL {has_macro})\n'
+        'message(FATAL_ERROR "Unexpected ODE libccd box-cylinder probe: '
+        '$CACHE{DART_ODE_HAS_LIBCCD_BOX_CYL}")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize("version", ["7.1.3", "8.1.1", None])
 @pytest.mark.parametrize(
     "version_source", ["metadata", "core.h", "base.h", "build-interface"]

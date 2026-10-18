@@ -90,8 +90,9 @@ public:
     // Note: constructDofMap() is intentionally not called here. Both
     // construction paths invoke it after the object is registered as the IK's
     // analytical method: InverseKinematics::setGradientMethod() and
-    // InverseKinematics::clone(). Calling it in the constructor would run it
-    // twice and double-emit the non-dependent-DOF warning.
+    // InverseKinematics::clone(), which leaves it to Skeleton for a copied
+    // Node until the copy joins its Skeleton. Calling it in the constructor
+    // would run it twice and double-emit the non-dependent-DOF warning.
   }
 
   ~PythonAnalyticalIk() override
