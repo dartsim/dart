@@ -5507,7 +5507,7 @@ def exercise_scenarios(
                 unconditional = re.sub(
                     r"(?:(?:^|(?<=[.!?;|\n])) *(?:[-*+>] +)*"
                     r"(?:with|when|if) +delegation=off"
-                    r"(?: +is +(?:set|enabled))?,? +(?:" + negation + r")"
+                    r"(?: +is +(?:set|enabled))?[:,]? +(?:" + negation + r")"
                     r"|(?:" + negation + r") +(?:when|if) +delegation=off"
                     r"(?: +is +(?:set|enabled))?) *(?=[.!?;|\n]|$)",
                     "",

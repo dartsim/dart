@@ -5712,6 +5712,17 @@ def test_delegation_owners_require_default_and_reject_request_gate(
             "Delegate by default",
             "Delegate by default; do not delegate by default when `delegation=off`?",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; when `delegation=off`: do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; if `delegation=off` is enabled: "
+            "delegation must not be the default.",
+        ),
     ],
 )
 def test_delegation_owners_permit_opt_out_scoped_negation(
