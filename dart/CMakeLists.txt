@@ -99,6 +99,8 @@ if(DART_VERBOSE)
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
 install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+# Also in the headers component; the rule above keeps the default component's
+# contents unchanged.
 install(
   FILES ${DART_CONFIG_HPP_OUT}
   DESTINATION include/dart

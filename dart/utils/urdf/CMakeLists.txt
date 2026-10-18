@@ -25,6 +25,8 @@ install(
   FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
   DESTINATION include/dart/utils/urdf
 )
+# Also in the headers component; the rule above keeps the default component's
+# contents unchanged.
 install(
   FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
   DESTINATION include/dart/utils/urdf
