@@ -15402,6 +15402,39 @@ ROUND20_RECEIVER_CASES = [
         "dart::Derived",
     ),
     (
+        "map_erase_iterator",
+        "namespace dart {struct A {void hit() const; bool operator<(const A&) const; A* operator->(); A& operator[](int);}; struct Factory {std::map<int,A> values();};}",
+        "void hit() const;",
+        "void hit() const=delete;",
+        "void use(dart::Factory& f,std::map<int,dart::A>& values){values.erase(values.begin())->second.hit();}",
+        True,
+        True,
+        "dart::A",
+        None,
+    ),
+    (
+        "map_erase_range",
+        "namespace dart {struct A {void hit() const; bool operator<(const A&) const; A* operator->(); A& operator[](int);}; struct Factory {std::map<int,A> values();};}",
+        "void hit() const;",
+        "void hit() const=delete;",
+        "void use(dart::Factory& f,std::map<int,dart::A>& values){values.erase(values.begin(),values.end())->second.hit();}",
+        True,
+        True,
+        "dart::A",
+        None,
+    ),
+    (
+        "function_pointer_attribute_field",
+        "namespace dart {struct A {void hit() const; bool operator<(const A&) const; A* operator->(); A& operator[](int);}; struct Holder {A* (* __attribute__((aligned(32))) factory)();};}",
+        "void hit() const;",
+        "void hit() const=delete;",
+        "void use(dart::Holder& h){h.factory()->hit();}",
+        True,
+        True,
+        "dart::A",
+        "dart::Holder",
+    ),
+    (
         "map_find",
         "namespace dart {struct A {void hit() const; bool operator<(const A&) const; A* operator->(); A& operator[](int);}; struct Factory {std::map<int,A> values();}; }",
         "void hit() const;",
@@ -16212,6 +16245,22 @@ def test_qualified_member_hiding_and_map_lookup_shapes(
     assert (
         _scan(extractor, extractor.index_api(headers), tmp_path, source) != before
     ) == changed
+
+
+@pytest.mark.parametrize("key", ["0", "key<int,int>()"])
+def test_map_key_erasure_preserves_sequence_count(extractor, tmp_path, key):
+    header = "namespace dart {struct A {}; struct B {B()=default;};}"
+    source = (
+        "template<class,class> int key();"
+        "void use(std::map<int,dart::A>& values){"
+        f"auto count=values.erase({key});std::vector<dart::B> copies(count);}}"
+    )
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(
+        extractor, tmp_path, header.replace("B()=default", "B()=delete"), source
+    )
+    assert "dart::B" in _entries(before, "constructors")
+    assert before != after
 
 
 ROUND20_GROUPED_TYPEDEF_CASES = [

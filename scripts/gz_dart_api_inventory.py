@@ -428,8 +428,20 @@ def function_pointer_declarator(values):
             member_pointer = name < closing
         if name == closing:
             continue
-        while name < closing and values[name] in {"*", "&", "&&", "const", "volatile"}:
-            name += 1
+        attributes = set()
+        while name < closing:
+            if values[name] in {"*", "&", "&&", "const", "volatile"}:
+                name += 1
+            elif (
+                values[name] in {"__attribute__", "__attribute", "alignas"}
+                and values[name + 1 : name + 2] == ["("]
+                and name + 1 in tokens.pairs
+            ):
+                stop = tokens.pairs[name + 1] + 1
+                attributes.update(range(name, stop))
+                name = stop
+            else:
+                break
         element_end = name
         outer = []
         nested_end = None
@@ -472,10 +484,15 @@ def function_pointer_declarator(values):
                 "name_index": name_index,
                 "opening": opening,
                 "parameters_end": parameters_end,
-                "return_tokens": (
-                    values[:element_end] + values[closing : parameters_end + 1]
+                "return_tokens": [
+                    value
+                    for index, value in enumerate(values[:element_end])
+                    if index not in attributes
+                ]
+                + (
+                    values[closing : parameters_end + 1]
                     if trailing > parameters_end + 1
-                    else values[:element_end] + values[closing:]
+                    else values[closing:]
                 ),
                 "array_dimensions": dimensions,
                 "member_pointer": member_pointer,
@@ -6953,6 +6970,33 @@ def scan_sources(api, source_root):
                         return inferred | {REFERENCE} if inferred else inferred
                     if method in {"at", "back", "front"} and elements(types):
                         return elements(types) | {REFERENCE}
+                    erase_end = tokens.pairs.get(function + 1, function + 1)
+                    if (
+                        MAPPING in types
+                        and method == "erase"
+                        and erase_end > function + 2
+                        and (
+                            any(
+                                values[index] == ","
+                                and tokens.enclosing[index] == function + 1
+                                and not in_template_argument(values, index)
+                                for index in range(function + 2, erase_end)
+                            )
+                            or ITERATOR
+                            in expression_receiver(
+                                tokens,
+                                function + 2,
+                                erase_end - 1,
+                                imports,
+                                namespace_aliases,
+                                depth + 1,
+                            )
+                        )
+                    ):
+                        # Only the iterator overloads of erase return an iterator.
+                        return {ITERATOR} | {
+                            value for value in types if value.startswith("__element__:")
+                        }
                     if MAPPING in types and method in {
                         "find",
                         "lower_bound",
