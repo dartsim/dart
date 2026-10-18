@@ -194,6 +194,13 @@ def test_api_snapshot_attributes_runtime_aliases(api_surface, monkeypatch):
     assert rows["dartpy.Alias.value"]["getter_signatures"] == [
         "(self: X) -> float | None"
     ]
+    # A property is described by its getter's module and qualified name.
+    assert rows["dartpy.Alias.value"]["runtime"]["module"] == (
+        Example.value.fget.__module__
+    )
+    assert rows["dartpy.Alias.value"]["runtime"]["qualname"] == (
+        Example.value.fget.__qualname__
+    )
     assert "dartpy.domain.Example.value" not in rows
     assert "0x" not in json.dumps(rows)
     assert rows == api_surface.snapshot()
@@ -364,13 +371,14 @@ def test_api_snapshot_keeps_hexadecimal_text_in_signatures(api_surface, monkeypa
     module.__version__ = "test"
 
     def operation():
-        """(tag: str = '0xdead', option: object = <object object at 0x7f00beef>) -> None"""
+        """(tag: str = '0xdead', note: str = 'look at 0xbeef', option: object = <object object at 0x7f00beef>) -> None"""
 
     module.operation = operation
     monkeypatch.setitem(sys.modules, "dartpy", module)
 
     assert api_surface.snapshot()["dartpy.operation"]["signatures"] == [
-        "(tag: str = '0xdead', option: object = <object object at ADDRESS>) -> None"
+        "(tag: str = '0xdead', note: str = 'look at 0xbeef', "
+        "option: object = <object object at ADDRESS>) -> None"
     ]
 
 

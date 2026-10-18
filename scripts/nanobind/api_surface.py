@@ -30,8 +30,11 @@ def signatures(value):
             for line in doc.splitlines()
             if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
         ]
-    # Mask only object addresses, keeping hexadecimal text such as defaults.
-    return [re.sub(r"(?<= at )0x[0-9a-fA-F]+", "ADDRESS", sig) for sig in result]
+    # Mask only addresses inside object representations, keeping other text.
+    return [
+        re.sub(r"(<[^<>]* object at )0x[0-9a-fA-F]+(?=>)", r"\1ADDRESS", sig)
+        for sig in result
+    ]
 
 
 def canonical_type(value):
@@ -156,10 +159,14 @@ def snapshot():
             owner = next(
                 (cls for cls in parent.__mro__ if name in cls.__dict__), type(parent)
             )
+        # A property has no name of its own; describe it by its accessor.
+        source = value
+        if isinstance(value, property):
+            source = value.fget or value.fset or value
         result = {
             "identity_path": None,
-            "module": getattr(value, "__module__", None),
-            "qualname": getattr(value, "__qualname__", None),
+            "module": getattr(source, "__module__", None),
+            "qualname": getattr(source, "__qualname__", None),
         }
         if isinstance(value, types.ModuleType):
             result["name"] = value.__name__
