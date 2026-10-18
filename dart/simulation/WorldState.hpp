@@ -49,6 +49,9 @@ namespace dart::simulation {
 
 /// Owning dynamic channels in public Skeleton/DOF and BodyNode order.
 /// Parameters and exact stepping history are not part of this value.
+/// Supported manual joint membership and ordered endpoints are structural;
+/// restoring discards their previous solve impulses, retaining target
+/// parameters.
 class WorldState final
 {
 public:

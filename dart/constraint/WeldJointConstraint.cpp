@@ -41,6 +41,13 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
+void WeldJointConstraint::resetDynamicState()
+{
+  for (auto& impulse : mOldX)
+    impulse = 0.0;
+}
+
+//==============================================================================
 WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body)
   : DynamicJointConstraint(_body),
     mRelativeTransform(_body->getTransform()),

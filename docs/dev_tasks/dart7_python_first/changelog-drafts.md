@@ -10,8 +10,10 @@ consolidation under the program's hot-file rule:
   clone; parameters and solver or contact history are not part of it.
   Commands follow the target's actuator types and limits; EndEffector support
   flags remain target-owned.
-  Unsupported custom joints, stateful aspects and manual constraints are
-  rejected before any state changes.
+  Manual ball, revolute, cylindrical and weld joint constraints are
+  supported, and restoring resets their previous solve impulses; custom
+  joints, stateful aspects and other manual constraints are rejected before
+  any state changes.
 
 These demo-consolidation entries move into `CHANGELOG.md` only in M6b's
 milestone consolidation PR, following the program's hot-file rule.

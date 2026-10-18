@@ -432,14 +432,14 @@ TEST(WorldState, CustomJointAndStatefulAspectsRejectCaptureAndRestore)
       world->getSkeleton(0)->getPositions().isApprox(state.positions, 0));
 }
 
-TEST(WorldState, ManualConstraintMembershipIsExplicitlyUnsupported)
+TEST(WorldState, ManualConstraintMembershipChangesRejectBeforeEffects)
 {
   auto world = makeWorld();
   const auto state = world->captureState();
   world->getConstraintSolver()->addConstraint(
       std::make_shared<constraint::BallJointConstraint>(
           world->getSkeleton(0)->getBodyNode(0), Eigen::Vector3d::Zero()));
-  EXPECT_THROW(world->captureState(), std::invalid_argument);
+  EXPECT_NO_THROW(world->captureState());
   EXPECT_THROW(world->restoreState(state), std::invalid_argument);
   EXPECT_EQ(world->getTime(), state.time);
   EXPECT_TRUE(

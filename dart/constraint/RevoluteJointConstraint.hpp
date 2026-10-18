@@ -40,6 +40,9 @@
 #include <Eigen/Dense>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
 namespace constraint {
 
 /// RevoluteJointConstraint enforces a 1-DOF hinge relationship between two
@@ -116,6 +119,11 @@ protected:
   void uniteSkeletons() override;
 
 private:
+  friend class simulation::World;
+
+  /// Discard the previous solve warm start while retaining target parameters.
+  void resetDynamicState();
+
   /// Returns true if this constraint is between two different skeletons.
   bool isCollidingTwoDifferentSkeletons() const;
 
