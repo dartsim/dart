@@ -5152,17 +5152,34 @@ def scenario_gate_error(root: Path, command: Any, pixi_tasks: set[str]) -> str |
 
 
 _DELEGATION_MODAL = r"(?:should|must|can|could|will|would|shall|may|might)"
-_DELEGATION_NEGATION_PATTERN = (
-    r"(?:\bdo\s+not|\bdon't|\bcannot|\bnot|n't|\bnever|\bno longer)"
-    r"\s+delegate\s+by\s+default\b"
-    r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't"
-    r"|cannot\s+be"
-    rf"|(?:{_DELEGATION_MODAL}"
-    r"\s+(?:not|never|no\s+longer)"
+# Whole auxiliary/modal heads, so a fronted "By default, can't delegate" consumes "can't".
+_DELEGATION_NEGATED_AUX = (
+    rf"(?:(?:do|does|did|{_DELEGATION_MODAL})\s+(?:not|never|no\s+longer)"
+    r"|(?:do|does|did|should|must|ca|could|wo|would|sha|may|might)n't)"
+)
+_DELEGATION_NEGATED_ACTION = (
+    rf"(?:\b{_DELEGATION_NEGATED_AUX}|\bcannot|\bnot|n't|\bnever|\bno longer)"
+    r"\s+delegate"
+)
+_DELEGATION_NEGATED_COPULA = (
+    r"(?:is\s+(?:not|never|no\s+longer)|isn't|cannot\s+be"
+    rf"|(?:{_DELEGATION_MODAL}\s+(?:not|never|no\s+longer)"
     r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
+)
+_DELEGATION_POSITIVE_COPULA = rf"(?:is|{_DELEGATION_MODAL}\s+be)"
+_DELEGATION_BY_DEFAULT = r"\bby\s+default[,:]?\s+"
+# Trailing "... by default" forms, then the same states fronted as "By default, ...".
+_DELEGATION_NEGATION_PATTERN = (
+    rf"{_DELEGATION_NEGATED_ACTION}\s+by\s+default\b"
+    rf"|\bdelegation\s+{_DELEGATION_NEGATED_COPULA}"
     r"\s+(?:(?:the\s+)?default|(?:enabled|on|active)\s+by\s+default)\b"
-    rf"|\bdelegation\s+(?:is|{_DELEGATION_MODAL}\s+be)\s+"
+    rf"|\bdelegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
     r"(?:disabled|off)\s+by\s+default\b"
+    rf"|{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
+    rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_NEGATED_COPULA}"
+    r"\s+(?:enabled|on|active)\b"
+    rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_POSITIVE_COPULA}"
+    r"\s+(?:disabled|off)\b"
 )
 _DELEGATION_NEGATION = re.compile(_DELEGATION_NEGATION_PATTERN)
 _DELEGATION_OPT_OUT = (

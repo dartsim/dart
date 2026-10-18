@@ -6128,6 +6128,196 @@ def test_delegation_negation_scopes_exact_opt_out_clauses():
                             assert infra._delegation_negation(text), text
 
 
+_FRONTED = [
+    "do not delegate",
+    "don't delegate",
+    "never delegate",
+    "cannot delegate",
+    "not delegate",
+    "no longer delegate",
+    "delegation is not enabled",
+    "delegation isn't on",
+    "delegation must not be active",
+    "delegation shouldn't be enabled",
+    "delegation is disabled",
+    "delegation must be off",
+]
+
+
+def _fronted_forms(action):
+    for lead in ("By default,", "By default:", "By default", "by  default,"):
+        yield f"{lead} {action}"
+
+
+def test_delegation_negation_recognizes_fronted_by_default_forms():
+    for action in _FRONTED:
+        for text in _fronted_forms(action):
+            assert infra._delegation_negation(text), text
+            for flag in ("delegation=off", "`delegation=off`"):
+                for scoped in (
+                    f"when {flag}, {text}",
+                    f"if {flag}: {text}",
+                    f"{text} with {flag}",
+                    f"{text} when {flag} is set",
+                ):
+                    owner = infra._delegation_owner_text(scoped)
+                    assert infra._delegation_negation(owner) is None, scoped
+                    for bad in (
+                        text,
+                        f"even {scoped}",
+                        f"{scoped} or unset",
+                        f"{scoped}; {text}",
+                        f"{scoped}, otherwise {text}",
+                        f"when {flag} or unset, {text}",
+                        f"{scoped}\n\nBy default, do not delegate",
+                    ):
+                        owner = infra._delegation_owner_text(bad)
+                        assert infra._delegation_negation(owner), bad
+
+
+_AUX_HEADS = [
+    f"{aux} {neg}"
+    for aux in (
+        "do",
+        "does",
+        "did",
+        "should",
+        "must",
+        "can",
+        "could",
+        "will",
+        "would",
+        "shall",
+        "may",
+        "might",
+    )
+    for neg in ("not", "never", "no longer")
+] + [
+    "don't",
+    "doesn't",
+    "didn't",
+    "shouldn't",
+    "mustn't",
+    "can't",
+    "couldn't",
+    "won't",
+    "wouldn't",
+    "shan't",
+    "mayn't",
+    "mightn't",
+    "cannot",
+]
+
+
+def test_delegation_negation_fronted_consumes_whole_action_heads():
+    for head in _AUX_HEADS:
+        text = f"By default, {head} delegate"
+        assert infra._delegation_negation(text), text
+        assert infra._delegation_negation(f"{head} delegate by default"), text
+        for scoped in (
+            f"when `delegation=off`, {text}",
+            f"{text} with `delegation=off`",
+        ):
+            owner = infra._delegation_owner_text(scoped)
+            assert infra._delegation_negation(owner) is None, scoped
+        for bad in (
+            f"even when `delegation=off`, {text}",
+            f"{text} when delegation=off or unset",
+        ):
+            assert infra._delegation_negation(infra._delegation_owner_text(bad)), bad
+        assert infra._delegation_negation(f"By default, {head} delegated") is None
+
+
+@pytest.mark.parametrize(
+    "head", ["can't", "won't", "must not", "does not", "will never"]
+)
+@pytest.mark.parametrize(
+    ("new_suffix", "rejected"),
+    [
+        ("; By default, {} delegate.", True),
+        ("; when `delegation=off`, by default, {} delegate.", False),
+        ("; By default, {} delegate when `delegation=off`.", False),
+        ("; By default, {} delegate when `delegation=off` or unset.", True),
+    ],
+)
+def test_delegation_owners_reject_fronted_modal_heads(
+    monkeypatch, head, new_suffix, rejected
+):
+    source = ROOT / "AGENTS.md"
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(
+                "Delegate by default",
+                "Delegate by default" + new_suffix.format(head),
+                1,
+            )
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any("AGENTS.md" in e and "delegat" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "By default, delegate",
+        "By default, delegate when delegation=off",
+        "By default, do not delegated",
+        "By default, don't delegates",
+        "By default, delegation is enabled",
+        "By default. Do not delegate",
+        "Delegate by default.\n\nDo not delegate",
+        "By default, the build does not delegate",
+    ],
+)
+def test_delegation_negation_ignores_unrelated_fronted_text(text):
+    assert infra._delegation_negation(text) is None
+
+
+@pytest.mark.parametrize(
+    ("relative", "old"),
+    [
+        ("AGENTS.md", "Delegate by default"),
+        ("docs/ai/orchestration.md", "delegation is the default"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("new_suffix", "rejected"),
+    [
+        ("; By default, do not delegate.", True),
+        ("; By default: delegation is disabled.", True),
+        ("; by default, delegation must not be active.", True),
+        ("; when `delegation=off`, by default, do not delegate.", False),
+        ("; By default, do not delegate when `delegation=off`.", False),
+        ("; By default, don't delegate with `delegation=off` is set.", False),
+        ("; even when `delegation=off`, by default, do not delegate.", True),
+        ("; By default, do not delegate when `delegation=off` or unset.", True),
+        ("; when `delegation=off`. By default, do not delegate.", True),
+    ],
+)
+def test_delegation_owners_handle_fronted_by_default_negation(
+    monkeypatch, relative, old, new_suffix, rejected
+):
+    source = ROOT / relative
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(old, old + new_suffix, 1)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any(relative in e and "delegat" in e for e in errors) is rejected
+
+
 @pytest.mark.parametrize(
     "text",
     [
