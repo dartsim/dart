@@ -211,6 +211,9 @@ def test_rigid_and_soft_mass_live_surfaces_tessellation_inertia_and_controller_c
         )
         assert model.world.getNumSimulationThreads() == 1
         np.testing.assert_array_equal(model.world.getGravity(), [0, -9.81, 0])
+        # Both variants retain the experiment's historical unbounded velocities.
+        assert np.all(model.atlas.getVelocityLowerLimits() == -np.inf)
+        assert np.all(model.atlas.getVelocityUpperLimits() == np.inf)
     for name in ("left_foot", "right_foot"):
         control, compliant = getattr(rigid, name), getattr(soft, name)
         assert abs(control.getMass() - compliant.getMass()) <= 1e-9

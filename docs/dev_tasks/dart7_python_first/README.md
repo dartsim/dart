@@ -11,6 +11,8 @@ tracks its roadmap status. The durable API and engine rules live in the
   their rationale.
 - [Verification](verification.md): evidence, review passes and gates per
   packet.
+- [Shape/query capability draft](shape-query-capabilities.md): current native
+  and FCL conversion, pair/query routes and remaining M1f qualification.
 - [Progress log](progress-log.md): completed chunks.
 - [Resume](RESUME.md): the next-session handoff.
 - [Deferred changelog drafts](changelog-drafts.md): demo entries for M6b's

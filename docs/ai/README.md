@@ -78,6 +78,15 @@ hosted platform CI, or claim-tied semantic image review. `test-ai-infra` and
 the visual debug-overlay gate use the same guarded pytest runner, which fails
 when no test body executes. The direct structural checker form is reserved for
 fast staged/setup internals and is not sufficient completion evidence.
+The checker's delegation-policy reading uses the Pixi-supplied `markdown-it-py`;
+run it through `pixi run` and it fails closed, never falling back to raw text,
+under an interpreter without that parser.
+That reading is a deterministic CommonMark text and finite HTML filter under
+the default no-scripting interpretation of the
+[`noscript` element](https://html.spec.whatwg.org/multipage/scripting.html#the-noscript-element):
+`noscript` fallback text counts for required markers, stale gates, and negative
+checks. Conditional scripting visibility, CSS computed visibility, and browser
+recovery are not modeled.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;
@@ -123,36 +132,61 @@ through `dart-verify-sim`: the same text oracle, assessed Filament view, and
 claim-specific debug layers. Rendering or native image-review limitations are
 reported rather than converted into model-quality claims.
 
-The project pins neither a model nor an effort. Routing is per tool lane, one
-bounded entry per validated lane:
+The project pins neither a model nor an effort. Delegate by default under
+[`orchestration.md`](orchestration.md), honoring a per-task `delegation=off`
+opt-out; delegation does not require a particular reasoning setting. Routing
+is per tool lane, one bounded entry per lane, refreshed from primary guidance
+on 2026-10-17:
 
-- **Codex — GPT-5.6 family.** Use Sol for hard ambiguous work, Terra for
-  everyday or read-heavy work, and Luna for clear repeatable work. Max spends
-  more reasoning on one difficult task; Ultra is useful only for independently
-  parallelizable work when delegation is authorized. Most tasks need neither.
+- **Codex — GPT-6 family.** Start with GPT-6.1 Sol (`gpt-6.1-sol`) for most
+  work, including ambiguous multi-step work that needs planning and
+  validation; use GPT-6 Astra (`gpt-6-astra`) for the hardest end-to-end work
+  and GPT-6 Luna (`gpt-6-luna`) for clear, repeatable, or narrowly scoped
+  packets. In the API, `gpt-6.1-sol` accepts reasoning effort `low`, `medium`
+  (the API default), `high`, `xhigh`, and `max`, but not `none` or `minimal`;
+  other models' ranges differ. In Codex, start from the effort your client
+  offers by default. API reasoning modes `standard` and `pro` are independent of
+  effort. In Codex, `max` gives one task more reasoning time, and `ultra`, on
+  supported models, uses subagents for complex work. Select only settings the
+  current client and model advertise. See OpenAI's
+  [model guide](https://developers.openai.com/api/docs/guides/latest-model),
+  [reasoning guide](https://developers.openai.com/api/docs/guides/reasoning),
+  [Codex models](https://learn.chatgpt.com/docs/models), and
+  [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 - **Claude Code — current Claude models.** Use Fable 5.1 (`claude-fable-5-1`,
   the tier above Opus) for the hardest ambiguous or long-horizon work; Opus
-  5.5 (`claude-opus-5-5`) as the everyday strong default for substantial
-  maintenance work (Claude Code fast mode, toggled with `/fast`, runs Opus
-  with faster output); Sonnet 5.5 (`claude-sonnet-5-5`) for standard bounded
-  work; and Haiku 4.5 (`claude-haiku-4-5-20251001`) for quick lookups.
-  Reasoning effort is a session-level setting; reserve `max` effort for one
-  hard task rather than making it a default. Fable 5.1, Opus 5.5, and Sonnet
-  5.5 run safety classifiers that can occasionally decline dual-use content;
-  treat such a refusal as expected model behavior rather than a DART harness
-  defect. (Mythos-class models are restricted to approved organizations — do
-  not try to select one.) If the refused task is legitimate DART work,
-  restate it with its physics/simulation context made explicit, and surface
-  it to a maintainer if it still refuses.
-- **Muse — Muse models.** Reads the root `AGENTS.md` and the
-  generated `.agents/skills/` natively; invoke DART workflows by their
-  `/dart-*` slash shortcut. The project pins no model or effort: reasoning effort is a
-  session-level setting (`--reasoning-effort`, default `high`), so reserve
-  `max`/`ultra` for one hard task. Validated on Muse 1.4.6
-  (`muse-wonder-full-1.0`) for rules and skill discovery; the
-  representative `dart-verify-sim` Filament investigation for this lane is
-  still outstanding, so treat its visual-debug claims as unproven until
-  that evidence exists.
+  5.5 (`claude-opus-5-5`) for substantial maintenance work; Sonnet 5.5
+  (`claude-sonnet-5-5`) for standard bounded work; and Haiku 5.5
+  (`claude-haiku-5-5`) for quick lookups and repeatable packets. Claude Code
+  offers `low`, `medium`, `high`, `xhigh`, and `max`; use `--effort` for a
+  session override, while `/effort` normally saves per-model preferences.
+  Reserve `max` for a hard task. Fable 5.1, Opus 5.5, Sonnet 5.5, and Haiku 5.5
+  run safety classifiers that can occasionally decline dual-use content; treat
+  such a refusal as expected model behavior rather than a DART harness defect.
+  (Mythos-class models are restricted to approved organizations — do not try
+  to select one.) If the refused task is legitimate DART work, restate it with
+  its physics/simulation context made explicit, and surface it to a maintainer
+  if it still refuses. See Anthropic's
+  [model catalog](https://platform.claude.com/docs/en/models/overview) and
+  [Claude Code effort guidance](https://code.claude.com/docs/en/model-config#adjust-effort-level).
+- **Muse — Muse Code 1.4.10.** Use `muse-wonder-full-1.0`, available only on
+  the Muse Code Power Usage and Maximum Usage plans, for the most critical
+  work; `muse-wonder-1.0`, on every plan, for complex software engineering and
+  long-horizon agentic work and as the fallback for Wonder Full; and
+  `muse-spark-1.3` for high-volume, latency-sensitive, or cost-sensitive
+  packets such as subagent tasks. Muse Wonder accepts reasoning effort
+  `minimal` through `max`, and neither Wonder nor Spark accepts `none`; the
+  Muse Code CLI also lists `ultra`, which the reasoning guide does not, so
+  prefer the model-specific values and reserve `max` for a hard task. See the
+  [reasoning guide](https://dev.meta.ai/docs/reasoning),
+  [Wonder catalog](https://dev.meta.ai/models/muse-wonder),
+  [model-selection guidance](https://dev.meta.ai/docs/models), and
+  [Muse Code configuration](https://dev.meta.ai/docs/muse-code/configuration).
+
+Published capabilities and installed-version probes do not establish behavioral
+or visual-debug quality. See the exercised scope in
+[`ai-tools.md`](../onboarding/ai-tools.md#codex-project-setup); Claude and Muse
+still need their own representative Filament investigations.
 
 Treat these entries as replaceable versioned guidance, not a permanent model
 taxonomy.

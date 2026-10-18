@@ -167,6 +167,10 @@ def create_model(feet):
             "these demo models load DART's sample data (dart://sample), "
             "which a DART source checkout provides"
         )
+    # Preserve the experiment's historical unbounded velocities in both variants.
+    dofs = atlas.getNumDofs()
+    atlas.setVelocityLowerLimits(np.full(dofs, -math.inf))
+    atlas.setVelocityUpperLimits(np.full(dofs, math.inf))
     if any(atlas.getBodyNode(name) is None for name in ("pelvis", "l_foot", "r_foot")):
         raise RuntimeError(f"{atlas_uri}: missing 'pelvis', 'l_foot', or 'r_foot'")
     normalize = _normalize_soft_foot if feet is Feet.SOFT else _normalize_rigid_foot

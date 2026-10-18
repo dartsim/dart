@@ -60,7 +60,15 @@
     must rebuild.
   * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
     legacy CMake names and public `dart::utils` headers for rebuilt consumers.
-    Enabling IO now requires both tinyxml2 and urdfdom.
+    Enabling IO now requires tinyxml2, urdfdom, and sdformat 14.8 or newer.
+  * SDF loading uses canonical sdformat validation, version conversion and
+    frame semantics, including authored world gravity and joint effort and
+    velocity limits that the old parser ignored. Parse, resource and
+    unsupported-model failures now report
+    diagnostics and return `nullptr` (`None` in Python), including invalid poses
+    that previously threw exceptions. Check the returned value when loading
+    SDF. General nested models and non-tree joint structures remain unsupported.
+    [#3789](https://github.com/dartsim/dart/pull/3789)
   * Compile ImGui into `dart-gui`, preserving the `external-imgui` component
     and `dart-external-imgui` target as CMake forwarding names. They no longer
     provide the OpenGL2 backend (`imgui_impl_opengl2.h`) or depend on OpenGL,
@@ -77,24 +85,18 @@
     resource retriever and root-joint options.
     [#3653](https://github.com/dartsim/dart/pull/3653)
 
-  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
+  * SKEL and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
     4- or 6-element vector or pose value has the wrong number of elements,
     instead of writing out of bounds or leaving values unset in release
     builds. An MJCF weld `solref` with one value keeps the default for the
     other.
 
-  * SDF model, link, joint, visual, and collision poses honor
-    `rotation_format="quat_xyzw"` and Euler `degrees="true"`.
-    Invalid formats, value counts, zero quaternions, and quaternion poses in
-    degrees throw `std::invalid_argument`. A `relative_to` frame other than
-    the element's default frame is explicitly rejected instead of silently
-    misplacing the pose.
-
-  * SDF loading preserves rotated inertial tensors and sphere, ellipsoid,
-    and cylinder soft-shape poses. Empty poses use the identity. Versions
-    1.7–1.9 are admitted for the supported model subset, with unsupported
-    frame composition rejected explicitly; joint axes support
-    `expressed_in="__model__"`.
+  * SDF loading resolves named pose frames, joint endpoint frames, expressed
+    axes, rotated inertia and relative includes through sdformat. Meshes retain
+    their originating document for resource resolution, including Windows native
+    paths. DART soft-shape poses,
+    empty identity poses and safely normalized quaternion poses remain supported.
+    [#3789](https://github.com/dartsim/dart/pull/3789)
 
   * Loading a SKEL world no longer crashes when the collision detector
     factory cannot create `fcl`, for example after an application
@@ -213,6 +215,10 @@
 
 * Build
 
+  * Standard Pixi environments use sdformat 16.1 and urdfdom 6, reducing memory
+    used to load large SDF worlds through shared schema descriptions.
+    [#3803](https://github.com/dartsim/dart/pull/3803)
+
   * Allow C++-only projects to find the installed CMake package with the
     `collision-ode` component without enabling C.
     [#3756](https://github.com/dartsim/dart/pull/3756)
@@ -255,6 +261,14 @@
     installed Filament 1.77.3 SDK. `OFF` uses DART's pinned private SDK, built
     from source on Linux (Clang 20 or newer and Ninja) and downloaded prebuilt
     on macOS arm64 and 64-bit Windows.
+
+  * Raise the minimum `wheel` version for isolated Python package builds
+    from 0.45.1 to 0.48.0.
+    [#3791](https://github.com/dartsim/dart/pull/3791)
+
+  * Raise the minimum `ninja` version for isolated Python package builds
+    from 1.12.1 to 1.13.2.
+    [#3792](https://github.com/dartsim/dart/pull/3792)
 
 ## DART 6
 

@@ -226,16 +226,45 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Implicit and contextual conversion operators are not recorded.
 - Structured-binding element types are not inferred.
 - Preprocessor conditions are not generally evaluated.
-- C++ template instantiation and overload resolution are not performed.
+- C++ template instantiation and overload resolution are not performed. Alias
+  templates substitute direct pack-name template arguments (`Ts...`); compound
+  pack patterns remain uninstantiated.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
 - Used type-alias target definitions outside field layout dependencies are not recorded.
-- Qualified member-function references without calls are not recorded.
+- Qualified member-function references without calls are not recorded, so
+  `decltype(&Owner::method)` does not produce a member-pointer callable; an
+  explicitly declared indexed member-pointer type is tracked.
 - Dependent `receiver->template method<T>()` calls are not recognized.
+- Unique-map node-handle results (`.node`, `.mapped()`) and `std::invoke`
+  callback results and iterator adapters (`std::next`, `std::prev`) do not
+  propagate receivers; the compiled Gazebo gates remain authoritative for them.
 - Base relationships of referenced DART types are not recorded.
 - Trailing return types are not used to infer chained-call receivers.
+- Implicit mapped-value construction by `std::map` and `std::unordered_map`
+  subscripting is not recorded.
+- Explicitly selected `std::variant` alternatives (`std::in_place_type`,
+  `std::in_place_index`, or `emplace<T>`/`emplace<I>`) are not tracked for construction.
+- API-default same-type prvalue elision recognizes indexed direct calls;
+  casts and other default-expression forms may retain conservative extra
+  constructor evidence.
+- Constructor arguments of sequence modifier `emplace_back` are not recorded.
+- Associative insertion projects iterator, pair and mapped receivers but does
+  not record insertion-side constructor arguments (for example `try_emplace`).
+- Explicit operator-function calls are modeled only as `operator->()` and
+  `operator*()` on known iterators. Other explicit spellings, including
+  `x.operator()()` and `x.operator[](i)`, do not propagate receiver shapes.
+  Ordinary call and subscript forms remain as documented.
+- Named nested standard-container iterator return types (for example
+  `std::vector<T>::iterator` and `std::map<K,V>::iterator`), including aliases
+  in indexed API returns, do not propagate receivers. Iterators obtained from
+  known container operations are modeled.
+- Owner base-clause evidence is retained only for direct and aliased
+  member-function-pointer fields. Data-member pointers and member pointers
+  inside template arguments do not retain that owner-inheritance evidence;
+  their field declarations are still retained.
 
 Operator syntax is associated with declarations for `->`, `[]` and `()` when
 the receiver type is known. The Gazebo build and test lanes remain the
@@ -259,8 +288,14 @@ their access, including private and deleted declarations, of the type, its
 bases and owned non-static members, including class template specializations.
 These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
-`std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
-`new`.
+`std::make_from_tuple`, engaged optional `std::in_place` initializers, known
+optional `emplace` calls, including explicit template arguments such as
+`emplace<int>(1)` on known receivers, value-producing `static_cast` targets and
+placement `new`. An optional callable element is a null callable and does not
+construct its return class; later declarators of a grouped optional declaration
+bind their own receivers.
+Elaborated `class`, `struct`, `union` and `typename` specifiers preserve value
+construction in cast targets, and `class`, `struct` and `union` in default parameters.
 A Gazebo class derived from a DART class counts as a construction of that base
 at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
@@ -270,12 +305,33 @@ Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
 Constructed `std::tuple` and `std::pair` values retain owned value elements;
-pointer and reference elements do not construct their pointees. Count initializers
+pointer and reference elements do not construct their pointees. Default-initialized
+`std::variant` values retain construction dependencies of their first alternative,
+with each value declarator checked independently in grouped declarations.
+Balanced declarator attributes preserve the following initializer or terminator.
+Function prototypes and function-type aliases, including `typedef` and `using`
+function types and `T (*callback)()` declarators, do not construct their return values.
+A variant array, or a `new` array, retains the first alternative's construction
+when it has no initializer, an empty `()` or `{}`, a brace list that is shorter than a
+literal bound, or an explicit `{}` element. This is constructor-viability evidence,
+not an element count: a rank above one, a named or runtime bound and an inferred
+`new` bound stay conservative, and only a fully supplied one-dimensional literal
+list, an inferred ordinary bound or an empty-braced literal-zero bound do not
+construct. A variant nested in a wrapper follows the wrapper's initializer: a
+sized sequence's count, `std::in_place` alone, an allocator-only
+`std::allocate_shared` or the enclosing tuple, pair or array's own default
+initialization. `volatile` qualifiers in either order do not hide the declarator.
+Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
 and count arguments forwarded by standard factories. This dependency applies at
-zero count too. Braced returns use their enclosing function's declared return
-type for construction evidence.
+zero count too. Explicit prvalues of the full sequence type are copies or moves.
+A sole explicitly typed element prvalue inside a braced initializer supplies an
+element list. Untyped single braced arguments such as `{1}` retain conservative
+count evidence without overload resolution. Source field constructor candidates
+are retained without proving the owner is instantiated.
+Braced returns use their enclosing named function's or explicit
+trailing-return lambda's declared return type for construction evidence.
 Constructed classes' default field initializer declarations and their named
 constant dependencies are retained in `default_member_initializer_declarations`.
 Quoted literals in indexed field and constant initializers are retained in
@@ -291,8 +347,19 @@ Union types retain `union_declarations`, and union fields retain their enclosing
 `union_declaration`, including anonymous union blocks.
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
-value-owned subobjects and unnamed bit-field padding. Owned union fields also
-retain their types' `union_declarations`. Inline field types retain alias targets and enum headers
+value-owned subobjects and unnamed bit-field padding.
+Direct and aliased function-pointer fields, including qualified member pointers,
+retain their physical pointer declarators, array extents and alignment spellings
+in `storage_declarator`, using fragments from the field and its indexed aliases.
+Their return and parameter types do not describe inline storage. Alignment
+evidence includes `alignas` and GNU alignment attributes, standard `[[...]]`
+attribute lists inside the callback group, and attributes on a `using` alias name.
+Function types spelled inside template arguments, such as `std::array<int(*)(),2>`,
+are field storage, and a callable that returns a callable keeps its stored pointer
+and array shape. A parenthesized later declarator such as `(b)[2]` keeps its array. Function declarations
+through aliases have no inline storage.
+Owned union fields also retain their types' `union_declarations`.
+Inline field types retain alias targets and enum headers
 in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
 `declaration_literals`. Indexed constants in inline array extents appear in
 `type_constant_declarations`. Known callees in field `decltype` expressions retain
@@ -301,7 +368,12 @@ indirection; dereferenced layout operands retain the referenced object fields.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
-initializer dependencies. Class annotations, including export macro spellings,
+initializer dependencies and the constructors required by class-valued defaults.
+Function-type parameters are adjusted to pointers before default construction
+analysis, so they do not construct their return types. Parenthesized object
+parameter names preserve their value, pointer, reference or array semantics.
+Parameter attributes preserve those semantics too.
+Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
 named bit-field widths are retained in `exception_specification_declarations`
@@ -322,17 +394,21 @@ and its bases. Source helpers with `auto` or `decltype(auto)` returns infer
 receiver candidates from their return expressions, excluding nested functions
 and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
-dereferences preserve pointer elements as pointers.
+dereferences, including explicit `operator->()` and `operator*()` calls on
+known iterators, preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
-iterators, aliases and range-for declarations. Returned `std::pair` and `std::tuple`
+iterators, aliases and range-for declarations. Map-family iterators obtained
+from known container operations preserve their key and mapped values as pair
+elements, including lookup iterators and both iterators returned by
+`equal_range`. Returned `std::pair` and `std::tuple`
 values retain each element's receiver shape for `first`, `second` and `std::get`
 projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
 contained receiver shapes through value, pointer and array expressions. Returned
 standard smart pointers preserve their wrapper types through `get()` and `lock()`
 chains.
-Source class aliases retain DART bases, and member lookup respects source declarations and
-class using-declarations. Lambda parameters and initialized captures stay within
+Source class aliases retain DART bases, and member lookup respects source declarations,
+nested types, type aliases and class using-declarations. Lambda parameters and initialized captures stay within
 their lambda body; capture initializers use the enclosing scope.
 Automatic declarations, including `decltype(auto)`, retain inferred return types.
 Concrete `decltype` declarations infer receiver shapes from their unevaluated
@@ -348,7 +424,18 @@ expressions retain both operand candidates without resolving their common type. 
 casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;
-data declarations retain array dimensions.
+data declarations retain array dimensions. Callable variables and data members
+retain their declarations when invoked through qualified names, object receivers
+or inherited fields, respecting member-name hiding. Grouped function pointers
+retain each name, array shape and any trailing return type. Callback fields do
+not construct their return types.
+Calls through qualified member-function pointers retain their declared return types.
+Known indexed function-type aliases and nested `std::function` or raw callback
+returns preserve callable shapes through repeated invocations and product-element
+projections. Used callable aliases retain their target declarations, including
+parameter types, in `type_alias_declarations`, including aliases named inside products and
+containers or aliasing `std::function`; inline field layout alone does not retain them. Dependent and explicitly declared source callbacks retain their
+existing conservative receiver handling.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
@@ -512,31 +599,36 @@ gz-sim.
 rows: it loads an SDF world with the collision setup gz-physics builds (see
 `examples/contact_benchmark/GazeboPreset.hpp`) and reports contact demand
 against the cap, starved pairs, sunk bodies and changed poses, keeping that
-census out of its step times. Its SDF allowlist accepts one world (SDF
-1.4–1.6), physics step size and `max_contacts`, scheduling-only real-time
-settings, and flat models with names, static flags, plain six-number poses,
-links, and fixed/revolute/prismatic/universal/ball joints. Links support
-gravity flags, mass and a complete inertia tensor, inertial translation,
-and box/sphere/cylinder/plane collisions; the preset uses Gazebo's default
-world gravity `0 0 -9.8` and accepts only that explicit world gravity.
-Joint axes support XYZ, damping, friction, springs, and position limits
-containing zero, with explicit model-frame axes supported in SDF 1.5–1.6;
-SDF 1.4 axis joints, closed joint chains, finite effort/velocity limits,
-screw/revolute2 joints, and non-default frame or pose attributes are
-rejected. Surface values must
-retain the default material (`mu`/`mu2` 1, slip and restitution 0, zero
-`fdir1` without a frame); collision masks must contain all `0xff` bits and
-not exceed `0x7fffffff`. Light, scene, GUI, visual and passive sensor
-contents may be ignored, but their embedded plugins are rejected; visual
-geometry and poses must still be safely readable by DART. Only empty
-standard world-level Physics, UserCommands and SceneBroadcaster
-systems are accepted. Everything else, including includes, nested models,
-world joints, frames, self-collision, rotated inertia, meshes, capsules,
-ellipsoids, heightmaps and engine-specific physics overrides, is rejected
-with the first unsupported XML path. Capsules and ellipsoids are absent
-from DART's rigid SDF shape reader; screw pitch and revolute2 construction
-differ from gz-physics. gz-sim's `3k_shapes.sdf` and all generated benchmark
-worlds fit this subset.
+census out of its step times. Its SDF allowlist accepts one world using
+sdformat's supported versions and conversion, physics step size and
+`max_contacts`, scheduling-only real-time settings, and flat models with
+static flags, resolved frame references, Euler or quaternion poses, links,
+and fixed/revolute/prismatic/universal/ball/screw joints. Links support
+gravity flags, mass and inertia tensors with translation-only inertial
+poses, and box/sphere/cylinder/plane collisions. Loaded worlds preserve their
+SDF gravity; omitted gravity and generated worlds use Gazebo's default
+`0 0 -9.8`. Joint axes use sdformat's frame resolution and normalization,
+including converted SDF 1.4 axes. Damping, friction, springs, position
+limits containing zero, and finite effort/velocity limits are supported.
+Screw pitch uses the canonical metres-per-revolution convention. Position
+limits excluding zero remain outside this subset because DART selects a
+valid initial position while gz-physics starts at zero.
+Quaternion and axis magnitudes that change Gazebo's native normalization
+are rejected; DART's general SDF reader also handles extreme magnitudes.
+
+Surface values must retain the default material (`mu`/`mu2` 1, slip and
+restitution 0, zero `fdir1` without a frame); collision masks must contain
+all `0xff` bits and not exceed `0x7fffffff`. Light, scene, GUI, visual and
+passive sensor contents may be ignored, but their embedded plugins are
+rejected; visual geometry and poses must still be safely readable by DART.
+Only empty standard world-level Physics, UserCommands and SceneBroadcaster
+systems are accepted. Includes, nested models, world joints, self-collision,
+automatic inertia, collision meshes, capsules, ellipsoids, heightmaps,
+revolute2 joints and engine-specific physics overrides remain outside the
+subset. Capsules and ellipsoids are absent from DART's rigid SDF shape
+reader; gz-physics falls back to a fixed joint for revolute2. The first
+unsupported authored XML path or sdformat diagnostic explains a rejection.
+gz-sim's `3k_shapes.sdf` and all generated benchmark worlds fit this subset.
 
 The preset's per-pair contact limit comes from the active SDF physics
 profile's `<max_contacts>` (20 when omitted). Released gz-sim selects the

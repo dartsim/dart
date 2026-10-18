@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
-<!-- Euler poses retain SDF 1.6 spelling for matched pre-fix captures. -->
 <sdf version="1.6">
   <world name="pose_frames">
-    <physics><max_step_size>0.001</max_step_size></physics>
+    <physics name="default" type="ignored"><max_step_size>0.001</max_step_size></physics>
     <gravity>0 0 0</gravity>
     <model name="inertia_frame">
       <static>true</static>

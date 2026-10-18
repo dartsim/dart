@@ -432,6 +432,30 @@ def guard_evidence(metrics: dict) -> tuple:
     )
 
 
+def stepalloc_report(text: str) -> tuple[str, ...] | None:
+    """Return the measured process's STEPALLOC groups, or None.
+
+    Google Benchmark 1.10+ runs an auxiliary process under LD_PRELOAD whose
+    shim prints an all-zero report before the measured process, and scene
+    drivers can leave a trailing all-zero unresolved report from a helper.
+    The measured process is the last report whose libdart resolved; any
+    earlier resolved report must be all-zero or the log is ambiguous.
+    """
+    reports = re.findall(
+        r"^STEPALLOC steps=(\d+) measured=(\d+) allocs=(\d+) bytes=(\d+) "
+        r"libdart=(.+)$",
+        text,
+        re.MULTILINE,
+    )
+    resolved = [report for report in reports if report[4].strip() != "unresolved"]
+    if not resolved:
+        return None
+    for report in resolved[:-1]:
+        if any(int(value) for value in report[:4]):
+            raise ValueError("multiple STEPALLOC reports")
+    return resolved[-1]
+
+
 def identity(path: str, prefix: Path) -> None:
     if not Path(path).resolve().is_relative_to(prefix.resolve()):
         raise ValueError(
@@ -653,19 +677,15 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         if error.flag in row.args:
             raise UnsupportedRow(f"{row.driver} lacks {error.flag}") from error
         raise
-    match = re.search(
-        r"^STEPALLOC steps=(\d+) measured=(\d+) allocs=(\d+) bytes=(\d+) libdart=(.+)$",
-        text,
-        re.MULTILINE,
-    )
-    if not match:
+    report = stepalloc_report(text)
+    if report is None:
         raise ValueError(f"missing STEPALLOC: {tag}")
-    steps, measured, allocs, size = map(int, match.groups()[:4])
+    steps, measured, allocs, size = map(int, report[:4])
     if (steps, measured) != (row.warmup + row.steps, row.steps):
         raise ValueError(
             f"interposition counted {steps}/{measured} steps, expected {row.warmup + row.steps}/{row.steps}"
         )
-    identity(match[5], args.prefix)
+    identity(report[4], args.prefix)
     rss = re.search(r"^PERFTIME maxrss_kb=(\d+)$", text, re.MULTILINE)
     if not rss:
         raise ValueError(f"missing RSS: {tag}")
@@ -678,7 +698,7 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         "bytes_per_step": size / measured,
         "allocs": allocs,
         "bytes": size,
-        "libdart": Path(match[5]).name,
+        "libdart": Path(report[4]).name,
         "max_rss_kb": int(rss[1]),
         "wall_ms_per_step": float(field(text, "Avg Step Time").split()[0]),
     }
@@ -753,12 +773,13 @@ def callgrind(row: Row, args, world: Path, steps: int) -> dict[str, int]:
             continue
         for obj in objects:
             identity(obj, args.prefix)
-            native_lib = re.search(
-                r"^STEPALLOC .* libdart=(.+)$",
-                native_log(args, row).read_text(),
-                re.MULTILINE,
+            native_report = stepalloc_report(
+                native_log(args, row).read_text(encoding="utf-8", errors="replace")
             )
-            if not native_lib or Path(obj).resolve() != Path(native_lib[1]).resolve():
+            if (
+                native_report is None
+                or Path(obj).resolve() != Path(native_report[4]).resolve()
+            ):
                 raise ValueError(
                     f"callgrind/native libdart identity differs: {Path(obj).name}"
                 )
@@ -971,14 +992,10 @@ def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
             path.with_suffix(".log"),
             args.timeout,
         )
-        match = re.search(
-            r"^STEPALLOC steps=(\d+) measured=(\d+) allocs=(\d+) bytes=(\d+) libdart=(.+)$",
-            text,
-            re.MULTILINE,
-        )
-        if not match:
+        report = stepalloc_report(text)
+        if report is None:
             raise ValueError(f"missing micro native identity: {row.key}")
-        identity(match[5], args.prefix)
+        identity(report[4], args.prefix)
         data = json.loads(path.read_text(encoding="utf-8"))
         cases = data.get("benchmarks", [])
         for item in cases:
@@ -996,8 +1013,8 @@ def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
         # Older archives have neither checksums nor explicit allocation hooks.
         # Partial instrumentation still fails rather than hiding a broken hook.
         expected = (len(names), len(names)) if instrumented else (0, 0)
-        if tuple(map(int, match.groups()[:2])) != expected or (
-            not instrumented and any(int(match[index]) for index in (3, 4))
+        if tuple(map(int, report[:2])) != expected or (
+            not instrumented and any(int(report[index]) for index in (2, 3))
         ):
             raise ValueError(f"micro allocation window count differs: {row.key}")
         counts.append(
@@ -1005,8 +1022,8 @@ def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
                 "cases": names,
                 "micro_instrumented": instrumented,
                 "guards": observed,
-                "allocs": int(match[3]) if instrumented else None,
-                "bytes": int(match[4]) if instrumented else None,
+                "allocs": int(report[2]) if instrumented else None,
+                "bytes": int(report[3]) if instrumented else None,
             }
         )
     result = counts[1]
@@ -1976,11 +1993,12 @@ def markdown(record: dict) -> str:
     lines += [f"- {item}" for item in [*verdict["failures"], *verdict["warnings"]]]
     if verdict["ir_geomean"] is not None:
         lines += [f"Ir geomean: {percent(verdict['ir_geomean'])}."]
-    lines += [
-        "",
+    table_header = [
         "| Row | Threads | Base Ir/step | Head Ir/step | Delta | Allocs/step | Bytes/step delta | Guards | Class | Gate qualification |",
         "|---|---:|---:|---:|---:|---:|---:|---|---|---|",
     ]
+    visible_lines = []
+    neutral_lines = []
 
     def number(value):
         return f"{value:,.2f}".rstrip("0").rstrip(".") if value is not None else "—"
@@ -2015,7 +2033,26 @@ def markdown(record: dict) -> str:
             change["class"],
             row["gate_reason"],
         ]
-        lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
+        rendered = "| " + " | ".join(map(markdown_cell, values)) + " |"
+        if row_change(row) == "neutral":
+            neutral_lines.append(rendered)
+        else:
+            visible_lines.append(rendered)
+    if visible_lines:
+        lines += ["", *table_header, *visible_lines]
+    if neutral_lines:
+        lines += [
+            "",
+            "<details>",
+            f"<summary>Neutral rows ({len(neutral_lines)})</summary>",
+            "",
+            *table_header,
+            *neutral_lines,
+            "",
+            "</details>",
+        ]
+    if not visible_lines and not neutral_lines:
+        lines += ["", *table_header]
     lines += [
         "",
         "Wall time is recorded as advisory; RSS warns at +5%. Diagnostic and behaviour-change deltas do not enter the Ir gate.",

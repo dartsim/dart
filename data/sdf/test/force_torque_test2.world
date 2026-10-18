@@ -46,13 +46,6 @@
       <max_step_size>0.001000</max_step_size>
     </physics>
 
-    <include>
-      <uri>model://ground_plane</uri>
-    </include>
-    <include>
-      <uri>model://sun</uri>
-    </include>
-
     <!-- test contributed by jesper -->
     <model name="boxes">
       <pose>0 0 0 0 0 1.57</pose>
