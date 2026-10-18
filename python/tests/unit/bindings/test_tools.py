@@ -325,6 +325,55 @@ def test_api_snapshot_collapses_members_shared_by_unrelated_classes(
     assert rows == api_surface.snapshot()
 
 
+def test_api_snapshot_prefers_walked_defining_owner_of_shared_objects(
+    api_surface, monkeypatch
+):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    def method():
+        """() -> None"""
+
+    class BFirst:
+        pass
+
+    class ZBase:
+        pass
+
+    class ADerived(ZBase):
+        pass
+
+    for cls in (BFirst, ZBase, ADerived):
+        cls.__module__ = "dartpy"
+    # An inherited row visited first must not claim a shared object before the
+    # first walked class that defines it.
+    BFirst.method = staticmethod(method)
+    ZBase.method = staticmethod(method)
+    module.ADerived = ADerived
+    module.BFirst = BFirst
+    module.ZBase = ZBase
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    rows = api_surface.snapshot()
+    for path in ("dartpy.ADerived.method", "dartpy.BFirst.method", "dartpy.ZBase.method"):
+        assert rows[path]["runtime"]["identity_path"] == "dartpy.BFirst.method"
+
+
+def test_api_snapshot_keeps_hexadecimal_text_in_signatures(api_surface, monkeypatch):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+
+    def operation():
+        """(tag: str = '0xdead', option: object = <object object at 0x7f00beef>) -> None"""
+
+    module.operation = operation
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+
+    assert api_surface.snapshot()["dartpy.operation"]["signatures"] == [
+        "(tag: str = '0xdead', option: object = <object object at ADDRESS>) -> None"
+    ]
+
+
 def test_api_compare_ignores_additive_inventory_metadata(api_surface):
     legacy = {
         "module": {"kind": "module"},

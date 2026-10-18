@@ -30,7 +30,8 @@ def signatures(value):
             for line in doc.splitlines()
             if re.match(r"^(?:\d+\. )?(?:\w+)?\(.*\) ->", line.strip())
         ]
-    return [re.sub(r"0x[0-9a-fA-F]+", "ADDRESS", sig) for sig in result]
+    # Mask only object addresses, keeping hexadecimal text such as defaults.
+    return [re.sub(r"(?<= at )0x[0-9a-fA-F]+", "ADDRESS", sig) for sig in result]
 
 
 def canonical_type(value):
@@ -163,7 +164,8 @@ def snapshot():
         if isinstance(value, types.ModuleType):
             result["name"] = value.__name__
         # Keep objects alive, and resolve owners after all classes have been walked.
-        pending_runtime.append((result, value, path, owner, name))
+        inherited = owner is not None and owner is not parent
+        pending_runtime.append((result, value, path, owner, name, inherited))
         return result
 
     def walk(value, path):
@@ -241,13 +243,16 @@ def snapshot():
     # Defining owners take precedence over inherited rows and module re-exports.
     # Members stay under the first walked class path to preserve comparison keys;
     # a nested class reached through an alias may lack rows at <identity_path>.member.
-    for _, value, _, owner, name in pending_runtime:
-        if owner is not None and id(owner) in seen:
+    # Rows a class defines claim identities in walk order before inherited rows.
+    for claim_inherited in (False, True):
+        for _, value, _, owner, name, inherited in pending_runtime:
+            if inherited != claim_inherited or owner is None or id(owner) not in seen:
+                continue
             member = getattr(owner, name)
             owner_path = seen[id(owner)] + "." + name
             identities.setdefault(identity(member), (owner_path, member))
             identities.setdefault(identity(value), (owner_path, value))
-    for metadata, value, path, owner, name in pending_runtime:
+    for metadata, value, path, owner, name, _ in pending_runtime:
         if owner is not None:
             if id(owner) not in seen:
                 continue
