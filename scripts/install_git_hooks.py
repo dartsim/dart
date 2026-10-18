@@ -59,7 +59,7 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "14"
+HOOK_VERSION = "15"
 
 CHECKER_SELECTION = """\
 # Recover removed/renamed checkers without trusting the post-change worktree.
@@ -208,11 +208,10 @@ def hook_template(name: str) -> str:
     command = f"scripts/{script} {arguments}"
     display_command = command.replace('"', '\\"')
     gate = "agent" if name == "pre-commit" else "local-path"
-    compatibility_check = (
+    compatibility_check = "import sys; sys.exit(sys.version_info < (3, 9))"
+    full_check = (
         "import tomllib; from markdown_it import MarkdownIt; "
         "from markdown_it.common.html_blocks import block_names"
-        if name == "pre-commit"
-        else "import sys; sys.exit(sys.version_info < (3, 9))"
     )
     fix = (
         "pixi run lint   (then re-stage and commit)"
@@ -234,7 +233,8 @@ def hook_template(name: str) -> str:
     chain = f'    "$hooks_dir/{name}.local" "$@" || exit $?'
     staged_scan = ""
     if name == "pre-commit":
-        staged_scan = """\
+        staged_scan = (
+            """\
 if ! select_checker "$checker_revision" scripts/check_local_paths.py; then
     echo "DART pre-commit: cannot recover tracked checker — commit blocked." >&2
     exit 1
@@ -247,7 +247,12 @@ if [ -n "$checker_path" ] && [ -n "$python_cmd" ]; then
 else
     echo "DART pre-commit: local-path gate unavailable in this worktree; skipping staged scan." >&2
 fi
+# The staged path scan is stdlib-only; the AI gate needs the full runtime.
+python_cmd=$(select_hook_python '"""
+            + full_check
+            + """') || python_cmd=
 """
+        )
     run_gate = f"""\
 checker_revision=$(git rev-parse --verify --quiet HEAD)
 revision_status=$?
@@ -299,7 +304,7 @@ select_hook_python() {{
     do
         [ -n "$candidate" ] || continue
         if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-            if "$candidate" -c '{compatibility_check}' >/dev/null 2>&1; then
+            if "$candidate" -c "$1" >/dev/null 2>&1; then
                 printf '%s\n' "$candidate"
                 return 0
             fi
@@ -308,7 +313,7 @@ select_hook_python() {{
     return 1
 }}
 
-python_cmd=$(select_hook_python) || python_cmd=
+python_cmd=$(select_hook_python '{compatibility_check}') || python_cmd=
 
 if [ -n "${{DART_HOOK_DRY_RUN:-}}" ]; then
     echo "DART {name} (dry run): would run selected Python: {display_command}" >&2

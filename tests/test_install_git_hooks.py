@@ -862,7 +862,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
-    assert "DART-MANAGED-HOOK v14 " in hook.read_text()
+    assert "DART-MANAGED-HOOK v15 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)
@@ -2871,3 +2871,100 @@ def test_bare_runtime_keeps_message_scan_and_direct_checker_fail_closed(tmp_path
     )
     assert direct.returncode != 0
     assert "MarkdownParserMissing" in direct.stderr
+
+
+def _run_pre_commit(repo: Path, env: dict[str, str]):
+    return subprocess.run(
+        [str(_hook(repo))], cwd=repo, env=env, capture_output=True, text=True
+    )
+
+
+def _write_path_checker(repo: Path) -> None:
+    (repo / "scripts").mkdir(exist_ok=True)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [("updated\n", 0), ("/home/" + "example/notes.md\n", 1), ("updated \n", 1)],
+    ids=["public", "private-path", "whitespace"],
+)
+def test_bare_runtime_pre_commit_keeps_stdlib_staged_path_scan(
+    tmp_path, text, expected
+):
+    repo, _, env = _bare_runtime(tmp_path)
+    _write_gate(repo)
+    _write_path_checker(repo)
+    _stage(repo, env, text)
+
+    run = _run_pre_commit(repo, env)
+
+    assert run.returncode == expected, run.stderr
+    assert "staged diff fallback" in run.stderr or expected == 1
+    assert "direct-agent-gate" not in run.stderr
+
+
+@pytest.mark.parametrize(
+    "layout", ["bin/python", "python.exe"], ids=["posix-pixi", "windows-layout-pixi"]
+)
+def test_pre_commit_scans_paths_then_selects_complete_runtime_for_ai_gate(
+    tmp_path, layout
+):
+    repo, _, env = _bare_runtime(tmp_path)
+    _write_gate(repo)
+    _write_path_checker(repo)
+    pixi_python = repo / ".pixi" / "envs" / "default" / layout
+    pixi_python.parent.mkdir(parents=True)
+    pixi_python.write_text(
+        '#!/bin/sh\n[ "$1" = "-c" ] && case "$2" in *markdown_it*) exit 0;; esac\n'
+        f'exec "{sys.executable}" "$@"\n'
+    )
+    pixi_python.chmod(0o755)
+    env.pop("DART_HOOK_PYTHON")
+
+    _stage(repo, env, "updated\n")
+    run = _run_pre_commit(repo, env)
+    assert run.returncode == 0, run.stderr
+    assert "direct-agent-gate" in run.stderr
+    assert "staged diff fallback" not in run.stderr
+
+    _stage(repo, env, "/home/" + "example/notes.md\n")
+    run = _run_pre_commit(repo, env)
+    assert run.returncode == 1, run.stderr
+    assert "local-path hook FAILED" in run.stderr
+
+
+def test_bare_runtime_pre_commit_recovers_tracked_path_checker(tmp_path):
+    repo, _, env = _bare_runtime(tmp_path)
+    (_bare_bin := Path(env["PATH"])).joinpath("mktemp").symlink_to(
+        shutil.which("mktemp")
+    )
+    (_bare_bin / "rm").symlink_to(shutil.which("rm"))
+    _write_path_checker(repo)
+    subprocess.run(["git", "add", "scripts"], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "commit", "--no-verify", "-q", "-m", "checker"],
+        cwd=repo,
+        check=True,
+        env=env,
+    )
+    (repo / "scripts/check_local_paths.py").unlink()
+    _stage(repo, env, "/home/" + "example/notes.md\n")
+
+    run = _run_pre_commit(repo, env)
+
+    assert run.returncode == 1, run.stderr
+    assert "using tracked scripts/check_local_paths.py" in run.stderr
+    assert "local-path hook FAILED" in run.stderr
+
+
+def test_bare_runtime_pre_commit_skips_untracked_missing_path_checker(tmp_path):
+    repo, _, env = _bare_runtime(tmp_path)
+    _stage(repo, env, "/home/" + "example/notes.md\n")
+
+    run = _run_pre_commit(repo, env)
+
+    assert run.returncode == 0, run.stderr
+    assert "skipping staged scan" in run.stderr
