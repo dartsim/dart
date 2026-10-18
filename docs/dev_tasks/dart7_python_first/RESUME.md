@@ -40,7 +40,10 @@ macOS and Windows Python 3.15 wheels for 6.20.x wait for conda-forge's Python
 found no crash or hang during finalization on Python 3.15, so they are
 unchanged.
 
-M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696). Main uses
+M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) and closed
+on 2026-10-18: Nightly qualifies all eight Filament wheels, its task folder is
+retired, and its remaining release gates, quiet-host renderer performance and
+the final renderer reviews, moved to checkpoint C2. Main uses
 Filament and the interim camelCase `dartpy.gui`, and
 [#3713](https://github.com/dartsim/dart/pull/3713) applied WP-7.0.4's
 finalization rule to the `python/dartpy/gui/` binding sites. M6b, sensor
