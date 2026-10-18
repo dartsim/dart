@@ -56,6 +56,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -63,6 +107,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -77,6 +165,36 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "bool enableNearestPoints",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "double distanceLowerBound",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < DistanceFilter > distanceFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "DistanceOption ( bool enableNearestPoints = false , double distanceLowerBound = 0 . 0 , const std :: shared_ptr < DistanceFilter > & distanceFilter = nullptr )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual double distance ( CollisionGroup * group , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -84,6 +202,36 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "bool enableNearestPoints",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "double distanceLowerBound",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < DistanceFilter > distanceFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "DistanceOption ( bool enableNearestPoints = false , double distanceLowerBound = 0 . 0 , const std :: shared_ptr < DistanceFilter > & distanceFilter = nullptr )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual double distance ( CollisionGroup * group1 , CollisionGroup * group2 , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -282,6 +430,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -289,6 +481,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -303,6 +539,36 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "bool enableNearestPoints",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "double distanceLowerBound",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < DistanceFilter > distanceFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "DistanceOption ( bool enableNearestPoints = false , double distanceLowerBound = 0 . 0 , const std :: shared_ptr < DistanceFilter > & distanceFilter = nullptr )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual double distance ( CollisionGroup * group , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -310,6 +576,36 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "bool enableNearestPoints",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "double distanceLowerBound",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < DistanceFilter > distanceFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::DistanceOption",
+                  "const": false,
+                  "signature": "DistanceOption ( bool enableNearestPoints = false , double distanceLowerBound = 0 . 0 , const std :: shared_ptr < DistanceFilter > & distanceFilter = nullptr )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual double distance ( CollisionGroup * group1 , CollisionGroup * group2 , const DistanceOption & option = DistanceOption ( false , 0 . 0 , nullptr ) , DistanceResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -1338,6 +1634,34 @@
               "access": "public",
               "class": "dart::dynamics::detail::FreeJointProperties",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::FreeJointUniqueProperties",
+                  "const": false,
+                  "signature": "CoordinateChart mCoordinateChart",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail::CoordinateChart",
+                  "signature": "enum class CoordinateChart : int"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::FreeJointUniqueProperties",
+                  "const": false,
+                  "signature": "FreeJointUniqueProperties ( CoordinateChart _chart = CoordinateChart :: EXP_MAP )",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail::CoordinateChart",
+                  "const": true,
+                  "enum_declaration": "enum class CoordinateChart : int",
+                  "enum_type": "dart::dynamics::detail::CoordinateChart",
+                  "signature": "EXP_MAP = 0",
+                  "virtual": false
+                }
+              ],
               "signature": "FreeJointProperties ( const GenericJoint < math :: SE3Space > :: Properties & genericJointProperties = GenericJoint < math :: SE3Space > :: Properties ( ) , const FreeJointUniqueProperties & freeJointProperties = FreeJointUniqueProperties ( ) )",
               "virtual": false
             },
@@ -2158,6 +2482,22 @@
               "access": "public",
               "class": "dart::dynamics::detail::PrismaticJointProperties",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::PrismaticJointUniqueProperties",
+                  "const": false,
+                  "signature": "Eigen :: Vector3d mAxis",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::PrismaticJointUniqueProperties",
+                  "const": false,
+                  "signature": "PrismaticJointUniqueProperties ( const Eigen :: Vector3d & _axis = Eigen :: Vector3d :: UnitZ ( ) )",
+                  "virtual": false
+                }
+              ],
               "signature": "PrismaticJointProperties ( const GenericJoint < math :: R1Space > :: Properties & genericJointProperties = GenericJoint < math :: R1Space > :: Properties ( ) , const PrismaticJointUniqueProperties & prismaticProperties = PrismaticJointUniqueProperties ( ) )",
               "virtual": false
             },
@@ -2456,6 +2796,22 @@
               "access": "public",
               "class": "dart::dynamics::detail::RevoluteJointProperties",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::RevoluteJointUniqueProperties",
+                  "const": false,
+                  "signature": "Eigen :: Vector3d mAxis",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::RevoluteJointUniqueProperties",
+                  "const": false,
+                  "signature": "RevoluteJointUniqueProperties ( const Eigen :: Vector3d & _axis = Eigen :: Vector3d :: UnitZ ( ) )",
+                  "virtual": false
+                }
+              ],
               "signature": "RevoluteJointProperties ( const GenericJoint < math :: R1Space > :: Properties & genericJointProperties = GenericJoint < math :: R1Space > :: Properties ( ) , const RevoluteJointUniqueProperties & revoluteProperties = RevoluteJointUniqueProperties ( ) )",
               "virtual": false
             },
@@ -2930,6 +3286,22 @@
               "access": "public",
               "class": "dart::dynamics::detail::UniversalJointProperties",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::UniversalJointUniqueProperties",
+                  "const": false,
+                  "signature": "std :: array < Eigen :: Vector3d , 2 > mAxis",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::UniversalJointUniqueProperties",
+                  "const": false,
+                  "signature": "UniversalJointUniqueProperties ( const Eigen :: Vector3d & _axis1 = Eigen :: Vector3d :: UnitX ( ) , const Eigen :: Vector3d & _axis2 = Eigen :: Vector3d :: UnitY ( ) )",
+                  "virtual": false
+                }
+              ],
               "signature": "UniversalJointProperties ( const GenericJoint < math :: R2Space > :: Properties & genericJointProperties = GenericJoint < math :: R2Space > :: Properties ( ) , const UniversalJointUniqueProperties & universalProperties = UniversalJointUniqueProperties ( ) )",
               "virtual": false
             },
@@ -2983,6 +3355,85 @@
               "access": "public",
               "class": "dart::dynamics::WeldJoint::Properties",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "std :: string mName",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "Eigen :: Isometry3d mT_ParentBodyToJoint",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "Eigen :: Isometry3d mT_ChildBodyToJoint",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "bool mIsPositionLimitEnforced",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "ActuatorType mActuatorType",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail::ActuatorType",
+                  "signature": "enum ActuatorType"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "std :: vector < std :: pair < std :: size_t , ActuatorType > > mActuatorTypes",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "std :: vector < MimicDofProperties > mMimicDofProps",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "declaration_literals": [
+                    "\"Joint\""
+                  ],
+                  "signature": "JointProperties ( const std :: string & _name = , const Eigen :: Isometry3d & _T_ParentBodyToJoint = Eigen :: Isometry3d :: Identity ( ) , const Eigen :: Isometry3d & _T_ChildBodyToJoint = Eigen :: Isometry3d :: Identity ( ) , bool _isPositionLimitEnforced = false , ActuatorType _actuatorType = DefaultActuatorType , const Joint * _mimicJoint = nullptr , double _mimicMultiplier = 1 . 0 , double _mimicOffset = 0 . 0 )",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail",
+                  "const": true,
+                  "enum_declaration": "enum ActuatorType",
+                  "enum_type": "dart::dynamics::detail::ActuatorType",
+                  "signature": "FORCE",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail",
+                  "const": true,
+                  "signature": "const ActuatorType DefaultActuatorType = FORCE",
+                  "virtual": false
+                }
+              ],
               "signature": "Properties ( const Joint :: Properties & _properties = Joint :: Properties ( ) )",
               "virtual": false
             },
@@ -2990,6 +3441,85 @@
               "access": "public",
               "class": "dart::dynamics::ZeroDofJoint::Properties",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "std :: string mName",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "Eigen :: Isometry3d mT_ParentBodyToJoint",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "Eigen :: Isometry3d mT_ChildBodyToJoint",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "bool mIsPositionLimitEnforced",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "ActuatorType mActuatorType",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail::ActuatorType",
+                  "signature": "enum ActuatorType"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "std :: vector < std :: pair < std :: size_t , ActuatorType > > mActuatorTypes",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "signature": "std :: vector < MimicDofProperties > mMimicDofProps",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::detail::JointProperties",
+                  "const": false,
+                  "declaration_literals": [
+                    "\"Joint\""
+                  ],
+                  "signature": "JointProperties ( const std :: string & _name = , const Eigen :: Isometry3d & _T_ParentBodyToJoint = Eigen :: Isometry3d :: Identity ( ) , const Eigen :: Isometry3d & _T_ChildBodyToJoint = Eigen :: Isometry3d :: Identity ( ) , bool _isPositionLimitEnforced = false , ActuatorType _actuatorType = DefaultActuatorType , const Joint * _mimicJoint = nullptr , double _mimicMultiplier = 1 . 0 , double _mimicOffset = 0 . 0 )",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail",
+                  "const": true,
+                  "enum_declaration": "enum ActuatorType",
+                  "enum_type": "dart::dynamics::detail::ActuatorType",
+                  "signature": "FORCE",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::dynamics::detail",
+                  "const": true,
+                  "signature": "const ActuatorType DefaultActuatorType = FORCE",
+                  "virtual": false
+                }
+              ],
               "signature": "Properties ( const Joint :: Properties & _properties = Joint :: Properties ( ) )",
               "virtual": false
             },
@@ -3388,6 +3918,101 @@
               "access": "public",
               "class": "dart::utils::DartLoader",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "double mMass",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Eigen :: Vector3d mCenterOfMass",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "std :: array < double , 6 > mMoment",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Eigen :: Matrix6d mSpatialTensor",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Inertia ( double _mass = 1 , const Eigen :: Vector3d & _com = Eigen :: Vector3d :: Zero ( ) , const Eigen :: Matrix3d & _momentOfInertia = Eigen :: Matrix3d :: Identity ( ) )",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Inertia ( const Eigen :: Matrix6d & _spatialInertiaTensor )",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Inertia ( double _mass , double _comX , double _comY , double _comZ , double _Ixx , double _Iyy , double _Izz , double _Ixy , double _Ixz , double _Iyz )",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::utils::DartLoader::Options",
+                  "const": false,
+                  "signature": "common :: ResourceRetrieverPtr mResourceRetriever",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::common::ResourceRetrieverPtr",
+                  "signature": "using dart::common::ResourceRetrieverPtr = std :: shared_ptr < ResourceRetriever >"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::utils::DartLoader::Options",
+                  "const": false,
+                  "signature": "RootJointType mDefaultRootJointType",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::utils::DartLoader::RootJointType",
+                  "signature": "enum class RootJointType"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::utils::DartLoader::Options",
+                  "const": false,
+                  "signature": "dynamics :: Inertia mDefaultInertia",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::utils::DartLoader::Options",
+                  "const": false,
+                  "signature": "Options ( common :: ResourceRetrieverPtr resourceRetriever = nullptr , RootJointType defaultRootJointType = RootJointType :: FLOATING , const dynamics :: Inertia & defaultInertia = dynamics :: Inertia ( ) )",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::utils::DartLoader::RootJointType",
+                  "const": true,
+                  "enum_declaration": "enum class RootJointType",
+                  "enum_type": "dart::utils::DartLoader::RootJointType",
+                  "signature": "FLOATING = 0",
+                  "virtual": false
+                }
+              ],
               "signature": "explicit DartLoader ( const Options & options = Options ( ) )",
               "virtual": false
             },
@@ -3402,6 +4027,55 @@
                   "enum_declaration": "enum class RootJointType",
                   "enum_type": "dart::utils::DartLoader::RootJointType",
                   "signature": "FLOATING = 0",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "double mMass",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Eigen :: Vector3d mCenterOfMass",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "std :: array < double , 6 > mMoment",
+                  "virtual": false
+                },
+                {
+                  "access": "protected",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Eigen :: Matrix6d mSpatialTensor",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Inertia ( double _mass = 1 , const Eigen :: Vector3d & _com = Eigen :: Vector3d :: Zero ( ) , const Eigen :: Matrix3d & _momentOfInertia = Eigen :: Matrix3d :: Identity ( ) )",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Inertia ( const Eigen :: Matrix6d & _spatialInertiaTensor )",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::dynamics::Inertia",
+                  "const": false,
+                  "signature": "Inertia ( double _mass , double _comX , double _comY , double _comZ , double _Ixx , double _Iyy , double _Izz , double _Ixy , double _Ixz , double _Iyz )",
                   "virtual": false
                 }
               ],
@@ -3858,8 +4532,14 @@
             "dartsim/src/CustomMeshShape.cc:223"
           ],
           "name": "mIsBoundingBoxDirty",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::MeshShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 1,
@@ -3914,8 +4594,14 @@
             "dartsim/src/CustomMeshShape.cc:224"
           ],
           "name": "mIsVolumeDirty",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::MeshShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 2,
@@ -3953,8 +4639,14 @@
             "dartsim/src/CustomMeshShape.cc:222"
           ],
           "name": "mMesh",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::MeshShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "count": 11,
@@ -5152,6 +5844,50 @@
               "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
@@ -5159,27 +5895,101 @@
               "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
-              "virtual": true
-            },
-            {
-              "access": "public",
-              "class": "dart::collision::CollisionDetector",
-              "const": false,
-              "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
-              "virtual": true
-            },
-            {
-              "access": "public",
-              "class": "dart::collision::CollisionDetector",
-              "const": false,
-              "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
             {
               "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
@@ -5187,6 +5997,50 @@
               "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             }
@@ -5219,13 +6073,6 @@
               "class": "dart::collision::FCLCollisionDetector",
               "const": false,
               "signature": "static std :: shared_ptr < FCLCollisionDetector > create ( )",
-              "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::common::detail::CompositeData",
-              "const": false,
-              "signature": "template < class AspectT , typename ... Args > typename GetData < AspectT > :: Type & create ( Args && ... args )",
               "virtual": false
             },
             {
@@ -5911,8 +6758,11 @@
             "dartsim/src/GzCollisionDetector.cc:401"
           ],
           "name": "getBulletCollisionWorld",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::collision::BulletCollisionGroup",
+            "dart::collision::CollisionGroup"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "accessor",
@@ -8591,13 +9441,6 @@
               "const": true,
               "signature": "bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const override",
               "virtual": true
-            },
-            {
-              "access": "public",
-              "class": "dart::collision::CollisionFilter",
-              "const": true,
-              "signature": "virtual bool ignoresCollision ( const CollisionObject * object1 , const CollisionObject * object2 ) const = 0",
-              "virtual": true
             }
           ],
           "examples": [
@@ -8675,8 +9518,10 @@
             "test/plugins/DARTDoublePendulum.cc:317"
           ],
           "name": "lock",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::dynamics::WeakBodyNodePtr"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -8816,6 +9661,40 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "bool mEnableAllHits",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "bool mSortByClosest",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "RaycastFilter mFilter",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::collision::RaycastOption::RaycastFilter",
+                  "signature": "using dart::collision::RaycastOption::RaycastFilter = std :: function < bool ( const CollisionObject * ) >"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "RaycastOption ( bool enableAllHits = false , bool sortByClosest = false , RaycastFilter filter = nullptr )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool raycast ( CollisionGroup * group , const Eigen :: Vector3d & from , const Eigen :: Vector3d & to , const RaycastOption & option = RaycastOption ( ) , RaycastResult * result = nullptr )",
               "virtual": true
             }
@@ -9580,8 +10459,14 @@
             "dartsim/src/CustomHeightmapShape.cc:57"
           ],
           "name": "setHeightField",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::HeightmapShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -10178,28 +11063,20 @@
               "const": false,
               "signature": "void setScale ( const Vector3 & scale )",
               "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::dynamics::MeshShape",
-              "const": false,
-              "signature": "void setScale ( const Eigen :: Vector3d & scale )",
-              "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::dynamics::MeshShape",
-              "const": false,
-              "signature": "void setScale ( double scale )",
-              "virtual": false
             }
           ],
           "examples": [
             "dartsim/src/CustomHeightmapShape.cc:58"
           ],
           "name": "setScale",
-          "receiver_types": [],
-          "unresolved_count": 1
+          "receiver_types": [
+            "dart::common::Castable",
+            "dart::common::Subject",
+            "dart::common::VersionCounter",
+            "dart::dynamics::HeightmapShape",
+            "dart::dynamics::Shape"
+          ],
+          "unresolved_count": 0
         },
         {
           "classification": "mutation",
@@ -10589,6 +11466,50 @@
               "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
@@ -10596,6 +11517,50 @@
               "access": "public",
               "class": "dart::collision::BulletCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
@@ -10603,6 +11568,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -10610,6 +11619,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             }
@@ -10665,6 +11718,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -10672,6 +11769,50 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) = 0",
               "virtual": true
             },
@@ -10679,6 +11820,50 @@
               "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             },
@@ -10686,6 +11871,50 @@
               "access": "public",
               "class": "dart::collision::OdeCollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool enableContact",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: size_t maxNumContactsPerPair",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "bool allowNegativePenetrationDepthContacts",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "std :: shared_ptr < CollisionFilter > collisionFilter",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::CollisionOption",
+                  "const": false,
+                  "signature": "CollisionOption ( bool enableContact = true , std :: size_t maxNumContacts = 1 0 0 0 u , const std :: shared_ptr < CollisionFilter > & collisionFilter = nullptr , bool allowNegativePenetrationDepthContacts = false )",
+                  "virtual": false
+                }
+              ],
               "signature": "bool collide ( CollisionGroup * group1 , CollisionGroup * group2 , const CollisionOption & option = CollisionOption ( false , 1 u , nullptr ) , CollisionResult * result = nullptr ) override",
               "virtual": true
             }
@@ -10741,6 +11970,40 @@
               "access": "public",
               "class": "dart::collision::CollisionDetector",
               "const": false,
+              "default_argument_declarations": [
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "bool mEnableAllHits",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "bool mSortByClosest",
+                  "virtual": false
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "RaycastFilter mFilter",
+                  "virtual": false
+                },
+                {
+                  "class": "dart::collision::RaycastOption::RaycastFilter",
+                  "signature": "using dart::collision::RaycastOption::RaycastFilter = std :: function < bool ( const CollisionObject * ) >"
+                },
+                {
+                  "access": "public",
+                  "class": "dart::collision::RaycastOption",
+                  "const": false,
+                  "signature": "RaycastOption ( bool enableAllHits = false , bool sortByClosest = false , RaycastFilter filter = nullptr )",
+                  "virtual": false
+                }
+              ],
               "signature": "virtual bool raycast ( CollisionGroup * group , const Eigen :: Vector3d & from , const Eigen :: Vector3d & to , const RaycastOption & option = RaycastOption ( ) , RaycastResult * result = nullptr )",
               "virtual": true
             }
@@ -11090,116 +12353,6 @@
             "dartsim/src/GzCollisionDetector.cc:112",
             "dartsim/src/GzCollisionDetector.cc:163",
             "dartsim/src/GzCollisionDetector.cc:170"
-          ],
-          "layout_declarations": [
-            {
-              "access": "protected",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "CollisionDetectorPtr mCollisionDetector",
-              "type_alias_declarations": [
-                {
-                  "class": "dart::collision::CollisionDetectorPtr",
-                  "signature": "using dart::collision::CollisionDetectorPtr = std :: shared_ptr < CollisionDetector >"
-                }
-              ],
-              "virtual": false
-            },
-            {
-              "access": "protected",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "ObjectInfoList mObjectInfoList",
-              "type_alias_declarations": [
-                {
-                  "class": "dart::collision::CollisionGroup::ObjectInfoList",
-                  "signature": "using dart::collision::CollisionGroup::ObjectInfoList = std :: vector < std :: unique_ptr < ObjectInfo > >"
-                }
-              ],
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "bool mUpdateAutomatically",
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "SkeletonSources mSkeletonSources",
-              "type_alias_declarations": [
-                {
-                  "class": "dart::collision::CollisionGroup::SkeletonSources",
-                  "signature": "using dart::collision::CollisionGroup::SkeletonSources = std :: unordered_map < const dynamics :: MetaSkeleton * , SkeletonSource >"
-                }
-              ],
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "BodyNodeSources mBodyNodeSources",
-              "type_alias_declarations": [
-                {
-                  "class": "dart::collision::CollisionGroup::BodyNodeSources",
-                  "signature": "using dart::collision::CollisionGroup::BodyNodeSources = std :: unordered_map < const dynamics :: BodyNode * , BodyNodeSource >"
-                }
-              ],
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "std :: vector < Subscription > mSubscriptionOrder",
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "ShapeFrameObserver mObserver",
-              "virtual": false
-            },
-            {
-              "access": "protected",
-              "class": "dart::common::Observer",
-              "const": false,
-              "signature": "std :: set < const Subject * > mSubjects",
-              "virtual": false
-            },
-            {
-              "access": "public",
-              "class": "dart::collision::CollisionGroup::ShapeFrameObserver",
-              "const": false,
-              "signature": "std :: unordered_set < const dynamics :: ShapeFrame * > mDeletedFrames",
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup::ShapeFrameObserver",
-              "const": false,
-              "signature": "CollisionGroup * mGroup",
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup::ShapeFrameObserver",
-              "const": false,
-              "signature": "std :: unordered_map < const common :: Subject * , const dynamics :: ShapeFrame * > mMap",
-              "virtual": false
-            },
-            {
-              "access": "private",
-              "class": "dart::collision::CollisionGroup",
-              "const": false,
-              "signature": "std :: size_t mContentVersion = 0 u",
-              "virtual": false
-            }
           ],
           "name": "dart::collision::CollisionGroup"
         },
