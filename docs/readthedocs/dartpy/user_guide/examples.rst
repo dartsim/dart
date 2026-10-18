@@ -182,7 +182,7 @@ dartpy and is only used by the IK examples:
    # from a DART checkout
    pixi run install-ssik
    # or directly
-   pip install "ssik>=2.3.0"
+   pip install "ssik>=8.1.0"
 
 The sketch below registers an ssik prebuilt solver on an end effector and solves
 for a target pose. Build the skeleton so its DOFs match the ssik chain with the

@@ -41,3 +41,13 @@ milestone consolidation PR, following the program's hot-file rule.
   layout; rebuild applications that include them. `DART_IMGUI_DOCKING` is
   removed. With a system ImGui that lacks docking, dart-gui still builds, but
   dartpy omits `dartpy.viewer`.
+- **Breaking Changes:** Remove IKFast support: the
+  `dart::dynamics::IkFast` and `SharedLibraryIkFast` classes,
+  `dart::dynamics::wrapCyclicSolution`, and the installed
+  `dart/dynamics/IkFast.hpp`, `dart/dynamics/SharedLibraryIkFast.hpp`,
+  `dart/dynamics/ikfast.h` and `dart/external/ikfast/ikfast.h` headers.
+  Implement `InverseKinematics::Analytical` for a C++ analytical solver, or
+  pass a Python solver such as ssik to `InverseKinematics.setPythonAnalytical`.
+- **Examples:** The WAM scene is now `wam_analytical_ik` and solves with
+  ssik's closed-form analytical IK. Like `ssik_ik_gui`, it needs the optional
+  ssik package (`pixi run install-ssik`) and is skipped without it.

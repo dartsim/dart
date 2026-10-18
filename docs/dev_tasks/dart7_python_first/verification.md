@@ -1006,6 +1006,14 @@ the named earlier packets, including the C++ app and transitional tests that
 WP-PD.18 removes; commands and source names here are historical evidence.
 Current gates live in [catalog verification](../../onboarding/testing.md#demo-catalog-verification).
 
+The packets landed as #3732 (WP-PD.0), #3745 (WP-PD.1), #3746 with #3755
+(WP-PD.2, WP-PD.6), #3747 (WP-PD.3), #3758 (WP-PD.4), #3761 (WP-PD.5), #3762
+(WP-PD.7), #3763 with #3764 (WP-PD.10, WP-PD.11), #3737 (WP-PD.8), #3744,
+#3751 (WP-PD.9), #3779 and #3780 (WP-PD.12 to WP-PD.18). The last merges
+landed before their CI finished, at the maintainer's request. The arm64,
+macOS and Windows Filament, and Windows Python jobs that then failed on
+#3763, #3779 and #3780 pass from #3784 on, through `812310ffb`.
+
 ### 2026-10-12: WP-PD.0, decision and project home
 
 - **Change:**
@@ -1212,6 +1220,140 @@ with 24 workers; no source fix was needed.
 - **Limitations:** Linux verification only; Windows/macOS runtime, wheels,
   vanilla dartpy runtime and downstream Gazebo suites were not run for this
   private application removal.
+
+## Python demo implementation evidence
+
+These records moved from the retired Python demo implementation project home
+(2026-10-13 to 2026-10-18). Each packet compared its Python port with the
+native implementation in one process before it deleted the native source,
+binding and tests. Comparison scripts, baselines and captures stayed outside
+Git; the checked-in tests carry the transferred assertions. Captures used
+Vulkan/Lavapipe, passed `image-verdict` and semantic inspection, and make no
+performance claim.
+
+| Packet (native reference) | Ported families | Numerical evidence | `test-all`; `test-gui` |
+| --- | --- | --- | --- |
+| Controllers and terrain (`4ff47d438`) | Heightmap; biped-stand, joint-constraint and operational-space controllers | SPD torques within 9.84e-13 over 520 calls each; OSC forces within 1.59e-11; heightmap fields, scales and all 10,125 float draws exact; scene states within 4.43e-14 after 200 steps | 191 CTests, 1,642 Python; 10, 539 |
+| Arm helpers and posture (`d13c20545`) | ssik arm catalog, construction and targets; Atlas `RelaxedPosture` | Posture gradients exact and costs within 1.14e-13 over 600 cases; 190 Atlas refreshes exact; all 19 arms' frames, shapes and bounds exact | 189, 1,672; 10, 522 |
+| Boxed LCP and contact replay (`e18517de1`) | Backend selection and wake; contact inverse-dynamics replay | 1,307 LCP state comparisons bit-identical; 3,131 replay comparisons agree, with derived status within 1.14e-13 | 187, 1,694; 10, 515 |
+| Soft worm and adaptive contact (`3e55e373c`) | Soft-worm gait; adaptive soft contact | All 3,001 worm states bit-identical; adaptive traces exact over 2,000 steps, diagnostics within 5.56e-17 | 185, 1,782; 10, 516 |
+| History and point cloud (`5a3a36635`) | World history; point-cloud sensor | 6,121 history arrays over 31 events exact; 462 sampling and 510 boundary arrays exact | 183, 1,907; 10, 516 |
+| Locomotion (`7572b9c5b`) | SIMBICON and soft-foot SIMBICON; the contact-arrow layout moved to `dart/gui/app` | 707 controller and 1,078 boundary arrays exact; all 27,205 recovery-sweep rows exact, including the nonmonotonic 18 kN soft and 8 kN rigid curve | 181, 2,000; 10, 516 |
+
+- **Counts:** `test-all` also reports two Python-version skips and 54
+  expected failures that track planned DART 7 acceptance features;
+  `test-gui` reports one skip and two expected final-render-API failures.
+- **Every packet:** The strict catalog cycle passed 37 scenes twice with zero
+  skips. GUI-off `tests` builds ran the retained native-model CTests, and
+  vanilla system ImGui builds ran the GUI-free Python tests. Lint,
+  `check-lint` and two independent final reviews passed.
+- **Library fixes found by the ports**, each with regression tests:
+  optimizer gradient arrays stay alive after callbacks (`0df4896ab`, with
+  its own changelog entry); capture assessment retains visited wrappers
+  (`6a04cf3ec`); body and skeleton restores reject mismatched soft-point
+  counts before mutating; PointMass handles reject destroyed points; and the
+  Python soft models convert arguments as native conversion does
+  (`3c9ba6223`).
+- **Invalid attempts:** Aggregate runs that overlapped a rebuild of the same
+  build tree, and launchers that returned status 143 after passing subgates,
+  were excluded and rerun sequentially.
+
+### 2026-10-18: WAM analytical IK, IKFast removal and follow-ups
+
+- **Change:** The WAM scene, renamed `wam_analytical_ik`, solves with ssik
+  8.1.0's closed-form `seven_r.srs` solver through `setPythonAnalytical`.
+  DART 7 drops IKFast (D33), and `dartpy._demos`, `dart-demo-models` and the
+  generated WAM solver are removed. The ssik scene hides its solved marker
+  after failed or empty solves, the last open demo follow-up.
+- **Routing:** A Claude Opus 5.5 worker ported the scene, a bounded Python
+  port with numerical acceptance. A Codex `gpt-6.1-sol` worker at high effort
+  removed IKFast and the native module and ran the compatibility audit. The
+  orchestrator reviewed both and fixed the solver findings below. Codex
+  reviewed the port in seventeen rounds of two adversarial passes; the last
+  reproduced no actionable defect. An independent Claude Opus pass and the
+  orchestrator reviewed the removal. Muse was routed a review but had
+  exhausted its quota until 2026-10-19.
+- **Lesson:** Adversarial review of an interactive IK solver keeps finding
+  configurations on several limits or singularities at once. Each round's
+  fixes needed their own regression test, and two rounds caught regressions
+  from the previous round's fix.
+
+| WAM check | Result |
+| --- | --- |
+| FK parity, 100 random in-limit configurations | Maximum error 8.8e-15 |
+| Validity, 100 random targets from unrelated start poses | All solved; 1,022 valid solutions within limits; position within 7.6e-10 m and rotation within 1.0e-9 rad |
+| Continuity, a 3 cm circle with a ±11.5° roll in 200 steps | Hand within 3.8e-13 of the target at every step; largest joint step 0.0065 rad |
+| Redundancy, `/j3` moved by 0.4 rad with the target active | Hand back on the target within 3.7e-15; swivel, measured in the target's basis, held within 4.2e-17 |
+| Frame time, the same 200-step drag | `pre_refresh` median 0.30 ms, maximum 0.82 ms; one solve per active frame |
+
+- **Singular rest pose:** At the straight-up rest pose the shoulder-wrist line
+  is the base axis. From there, over 20 steps of 1 mm or 0.29°, IKFast
+  flipped `/j1` by 1.57 rad for a sideways drag and did not follow downward,
+  roll or yaw targets. It also always left the hand 9 cm from the target,
+  because it solved for `/wam7` without the hand offset. The port follows all
+  six probes within 1.6e-10. Forward and yaw drags move at most 0.0015 rad
+  per step. Newton continuation does not converge from that pose, where the
+  Jacobian loses rank, so sideways and roll drags take one first step of
+  0.46 rad from the sampled swivel search, and a diagonal drag with pitch one
+  of 0.62 rad at the held swivel. Those first steps take up to 57 ms.
+- **Review fixes:** Each fix has a regression test that fails without it.
+
+| Finding | Before | After |
+| --- | --- | --- |
+| ssik's native `Chart.in_limits` stalls on the degenerate chart of the rest pose turned about z | Scene frozen | Swivels searched coarse to fine instead |
+| The held swivel is copied across ssik's per-pose basis switch | 0.54 rad jump for a 0.0002 rad drag | 0.002 rad; swivel measured in the target's basis |
+| The first in-limit coarse sample is taken near the singular pose | 1.41 rad jump for a 1e-4 rad drag | 1e-4 rad |
+| Charts near an aligned wrist miss the target | Pose error 0.05 accepted | Candidates must close FK within 1e-6; seeded solve as last resort |
+| A target on a joint limit is reconstructed a few ulps past it | Arm stalls | Roundoff snapped onto the limit |
+| In-limit swivel arcs near limits fall between samples | Arm stalls | Eight zoom levels find them |
+| DART repeats a solve that has no in-limit answer | 1.2 to 1.6 s per frame | Last answer reused; about 2 ms |
+| Near an aligned wrist or between two limits, the held swivel or the coarse search turns joints far | 0.7 rad to π for a 1e-4 rad drag | 1e-4 rad; Newton continuation from the current pose wins when it moves 0.5 rad less |
+| ssik's seeded solve runs its rescue for every new target out of reach | 0.16 to 0.62 s per frame while dragging | Rescue disabled; at most 21 ms |
+| Next to two joint limits, Newton crosses a limit and the coarse search locks onto a distant arc | 2.9 to 5.9 rad for a 1e-4 rad drag | 1e-4 rad; the search also zooms in from the held swivel |
+| At full extension and with aligned shoulder and wrist axes, Newton converges only linearly and misses ssik's default 1e-10 gate | 2.1 to 2.7 rad for a 1e-4 to 1e-3 rad drag | At most 0.0011 rad; continuations within 1e-9 accepted |
+| Next to an active joint limit, Newton steps a few 1e-7 rad past it and is rejected | 1.1 rad to π for a 1e-4 rad drag | 1e-4 rad; a damped continuation from the current pose holds joints on limits while a step pushes past |
+| From poses on several limits or singularities at once, ssik's tracker gives up after 20 iterations, or clipping freezes a joint that should leave its limit | 1.5 to 2.9 rad for a 1e-4 to 0.015 rad drag | Within the goal's own distance; ssik's `lm_refine` gets a 100-iteration budget |
+| Fixed damping stalls the limit-aware continuation just above its gate, and an exhausted `lm_refine` skips it | Up to π for a 0.13 mm drag | At most 0.0011 rad; damping shrinks with the squared residual, and the limit-aware continuation also runs when `lm_refine` stops |
+| Continuation runs even when the held swivel already wins | About 10 ms per such frame | Skipped; 0.6 ms |
+| A rank-deficient constrained solve raises `LinAlgError`, and the viewer then disables the scene's refresh | Scene stops tracking | Steps use SciPy's bounded-variable least squares on the damped, augmented system; numerical failures cannot escape |
+| The hand-rolled active set goes stale, keeps a bound it should release, or drops a usable iterate | 1.2 to 3.1 rad for a 1e-4 to 0.0069 rad drag | Within the goal's own distance; at most 55 ms for such a frame |
+| Continuation runs for every new target out of reach | 40 to 51 ms per frame | A 20-iteration continuation when ssik finds no chart, which still reaches boundary targets at full extension; 11 ms |
+| Newton lands on a root 6 rad away and bypasses the bounded continuation | 3.0 rad for a 0.05 rad drag | Within the goal's own distance |
+| A target that needs the elbow past its limit runs every search | 0.1 to 0.27 s per drag frame | No candidates, without searching; 5 ms |
+| The bounded continuation checks FK only before each step | Target first reached on the last permitted step is dropped | The final iterate is checked too |
+| At full extension on several limits, damping capped at 1e-6 overshoots onto the wrong limits, and continuation from the elbow fold settles on the wrong side | A 28 mrad move unsolved; 2.5 rad for a 1.9 mm drag | Damping capped at 1e-2, and retries from each in-limit target elbow angle; within the goal's own distance |
+| On an infeasible near-limit drag, bounded steps shrink to roundoff but run their whole budget | About 60 ms and 200 bounded steps per frame | Stops on a stalled step; 15 to 22 steps |
+| Bounded continuation refines past the reach bound after a usable iterate | 1.24 rad for a 7 mrad move | Returns the usable iterate nearest the current pose |
+| Continuation and elbow retries run when no target elbow is within reach, or repeat the first seed | 60 to 160 ms per drag frame | Skipped when no target elbow is within reach, about 13 ms; repeated seeds skipped |
+| Several active limits trap every attempt at one stationary point | 2.5 rad for a 1.65 mm drag | 4.5 mrad; one retry from a seed nudged 10 mrad off the active limits |
+| Past the wrist limit, bounded steps cycle without stalling | 202 bounded solves and up to 0.3 s per drag frame | Stops after ten steps without a 1 % gain in the least-squares residual; 29 to 45 solves |
+| A first stall guard judged the largest pose error with five steps of patience | About 3 rad for a 20 to 44 mrad drag that recovers from an overshoot | Judged by the least-squares residual the steps minimize, with ten steps of patience |
+| Each retry gets a fresh budget on a failed drag past a shoulder limit | 236 bounded solves, about 80 ms per frame | All attempts share 60 bounded steps; about 42 ms |
+| Strong damping holds every attempt just above tolerance | 2.5 rad for a 40 mrad move | 40 mrad; a last weakly damped attempt |
+| A chartless target at full extension skips the nudged retry that reaches it | Arm stays put; pose error 0.073 | 75 mrad; the nudged retry runs within the short budget |
+| The elbow filter drops a branch whose elbow lies 2.8e-6 rad past its limit on an intermediate target | 2.3 rad for a 0.1 mrad drag | 0.1 mrad; elbows within 1e-5 rad of their limits count |
+
+- **Capture:** A 1600x1000 headless capture after a 5 cm target move shows
+  the arm on its base, the target gizmo on the hand and "IK target: active".
+  It corroborates the scene; the checks above are the evidence.
+- **Removal:** In its worktree, the removal passed fresh `config`, `build` and
+  `build-py-dev` runs; 179 CTest entries with 2,769 GoogleTest cases, after
+  two deleted registrations and eight deleted cases with one added; 1,976
+  Python tests with the seven old-WAM cases deselected; a GUI-off `all` and
+  `tests` build; 5,077 AI-infrastructure tests; `lint`, `check-lint`,
+  `docs-build` and `docs-build-ko`; and `pixi run -e gazebo test-gz`, which
+  ran 203 gz-physics entries and the gz-sim entity-system test against the
+  source-built DART. The removed symbols are absent from the built library,
+  while `SharedLibrary` and `InverseKinematics::Analytical` remain. Gazebo's
+  API inventory and the gz-physics and gz-sim sources use none of the removed
+  names.
+- **Changelog:** The marker fix and the optimizer gradient fix keep their own
+  7.0.0 entries. The IKFast removal and the WAM scene are drafted for M6b's
+  consolidation PR. `dartpy._demos` and `dart-demo-models` were private and
+  never released. The #3722 entry drops its `IkFast::getDofs()` sentence.
+- **Limitations:** The Windows launch tasks remain unverified on this Linux
+  host. Interactive window dragging was not exercised, and only ssik 8.1.0
+  was validated.
 
 ## M1a: World step stages
 

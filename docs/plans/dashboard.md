@@ -70,7 +70,7 @@ Priority order is document order. Active implementation handoff remains in
   and a complete paired benchmark artifact or approved disposition. New GUI
   examples are Python scenes in the demo catalog (`python/examples/demos`),
   with controllers and demo models written in Python over the engine, IO,
-  and GUI bindings. Remaining native demo helpers are being ported.
+  and GUI bindings. No demo implementation remains in C++.
 - Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
   one-thread and host-capped multi-thread determinism/scaling; allocation and
   Gazebo gates before any collision, constraint, or backend-default change.

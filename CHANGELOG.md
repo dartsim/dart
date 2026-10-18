@@ -137,8 +137,6 @@
     `JacobianDLS` with normal iterative error settings, preserving user bounds
     and task-space regions. Set up the analytical solver again for the copy;
     whole-skeleton clones keep their analytical solvers.
-    `IkFast::getDofs()` now returns an empty list when IkFast cannot configure,
-    as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
   * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
