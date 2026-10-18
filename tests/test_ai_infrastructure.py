@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -9005,7 +9006,8 @@ _HIDDEN_ATTR = ["hidden", "hidden=''", 'hidden="hidden"', 'hidden="false"',
         ("<template {a}>" + _NEG + "</template>", False),
         ("<script {a}>" + _NEG + "</script>", False),
         ("<SPAN {a}>" + _NEG + "</SPAN>", False),
-        ("<span {a}/>" + _NEG, True),
+        # WHATWG ignores the slash on a nonvoid HTML start tag, so it stays hidden.
+        ("<span {a}/>" + _NEG, False),
         ("<span {a}/>x</span>" + _NEG, True),
     ],
 )
@@ -9315,3 +9317,174 @@ def test_delegation_owners_quote_scope_spans_clauses(
     _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+# A nonvoid HTML trailing slash is ignored (WHATWG), so `<span hidden/>` stays open;
+# void tags and SVG/MathML elements keep their self-closing meaning.
+_SELF_CLOSE_CASES = [
+    ("<span hidden/>" + _NEG, False),
+    ("<div hidden/>" + _NEG, False),
+    ("<span hidden/>x</span>" + _NEG, True),
+    ("<span hidden/><span>x</span>" + _NEG, False),
+    ("<span hidden/><span hidden/>x</span>" + _NEG, False),
+    ("<span/>" + _NEG, True),
+    ("<hr hidden/>" + _NEG, True),
+    # A fake close tag inside raw or RCDATA content cannot release the hidden root.
+    ("<div hidden/><script/></div>" + _NEG, False),
+    ("<div hidden/><style/></div>" + _NEG, False),
+    ("<div hidden/><title/></div>" + _NEG, False),
+    ("<div hidden/><textarea/><b></div>" + _NEG, False),
+    ("<div hidden/><script/>x</script></div>" + _NEG, True),
+    # SVG/MathML keep the lexical start+end pair and return to HTML afterwards.
+    ("<svg/>" + _NEG, True),
+    ("<svg><g hidden/></svg>" + _NEG, True),
+    ("<svg><g hidden/>" + _NEG, True),
+    ("<math><mi hidden/></math>" + _NEG, True),
+    ("<svg hidden><circle/>" + _NEG + "</svg>", False),
+    ("<svg/><span hidden/>" + _NEG, False),
+    ("<svg><g/></svg><span hidden/>" + _NEG, False),
+    ("<svg><svg/></svg><span hidden/>" + _NEG, False),
+    ("<math/><div hidden/>" + _NEG, False),
+    # Literal, escaped, and code spellings are text, not tags.
+    ("`<span hidden/>`" + _NEG, True),
+    ("&lt;span hidden/&gt;" + _NEG, True),
+    ("```\n<span hidden/>\n```\n" + _NEG, True),
+]
+
+
+@pytest.mark.parametrize(("source", "rejected"), _SELF_CLOSE_CASES)
+def test_delegation_owner_text_nonvoid_self_close_stays_open(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+def test_delegation_owner_text_hidden_self_close_hides_default_and_flag():
+    assert not infra._delegation_owner_text(
+        "<span hidden/>Delegate by default. Use delegation=off."
+    ).strip()
+    assert infra._delegation_owner_text("<span hidden/>x</span>y") == "y"
+    assert infra._delegation_owner_text("<svg/>x") == "x"
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "script",
+        "style",
+        "title",
+        "textarea",
+        "plaintext",
+        "xmp",
+        "iframe",
+        "noembed",
+        "noframes",
+        "noscript",
+    ],
+)
+def test_delegation_owner_text_self_close_reads_raw_content_like_start_tag(tag):
+    body = "x\n\n\n&amp;<b></div>\n\n</p>"
+    assert infra._delegation_owner_text(
+        f"a<{tag}/>{body}</{tag}>c"
+    ) == infra._delegation_owner_text(f"a<{tag}>{body}</{tag}>c")
+
+
+def test_delegation_owner_text_hidden_plaintext_self_close_matches_start_tag():
+    tail = "Do not delegate by default."
+    assert infra._delegation_owner_text(
+        f"<span hidden><plaintext/>fake</span>{tail}"
+    ) == infra._delegation_owner_text(f"<span hidden><plaintext>fake</span>{tail}")
+
+
+@pytest.mark.skipif(not shutil.which("python3.11"), reason="needs Python 3.11")
+def test_delegation_self_close_html_reader_runs_on_python_311():
+    # 3.11 has no RCDATA elements and set_cdata_mode takes no keyword: no crash.
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]);"
+        "import check_ai_infrastructure as c\n"
+        # Neutral block inventory: the stdlib API is under test, not markdown-it.
+        "c._html_block_tags = lambda: frozenset()\n"
+        "for t in ('span','script','style','title','textarea','plaintext'):\n"
+        "    p = c._VisibleHTML(); p.feed(f'<{t} hidden/>x</{t}>y'); p.close()\n"
+        "p = c._VisibleHTML(); p.feed('<div hidden/><script/></div>z'); p.close()\n"
+        "assert 'z' not in ''.join(p.parts)"
+    )
+    run = subprocess.run(
+        [shutil.which("python3.11"), "-I", "-c", code, str(ROOT / "scripts")],
+        capture_output=True,
+        text=True,
+    )
+    assert run.returncode == 0, run.stderr
+
+
+_UNLESS_BECAUSE_CASES = [
+    # Qualifying clause tails do not make the fronted negative an object noun.
+    ("By default, we do not delegate unless the user requests it.", True),
+    ("By default, we do not delegate because the parent must perform it.", True),
+    ("Do not delegate by default unless the user requests it.", True),
+    ("By default, we do not delegate unless the user requests it or because x.", True),
+    # Neither word is an exemption; only with/when/if delegation=off is.
+    ("By default, we do not delegate unless delegation=off.", True),
+    ("By default, we do not delegate because delegation=off.", True),
+    ("By default, we do not delegate unless the user requests it, when delegation=o*ff.", True),
+    # A later reversal is still a negative.
+    ("By default, we do not delegate unless the user requests it. By default, we do not delegate.", True),
+    # Quoted, code, and dotted or hyphenated identifiers stay object nouns.
+    ('By default, we do not delegate "unless approval".', False),
+    ("By default, we do not delegate `unless-requested`.", False),
+    ("By default, we do not delegate unless-requested.", False),
+    ("By default, we do not delegate because.cfg.", False),
+    ("By default, we do not delegate because.cfg when delegation=o*ff.", False),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("source", "rejected"), _UNLESS_BECAUSE_CASES)
+def test_delegation_fronted_action_unless_because_tails(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("<span hidden/>Do not delegate by default.", False),
+        ("<span hidden/>x</span>Do not delegate by default.", True),
+        ("<svg/>Do not delegate by default.", True),
+        ("By default, we do not delegate unless the user requests it.", True),
+        ("By default, we do not delegate because the parent must perform it.", True),
+        ("By default, we do not delegate `unless-requested`.", False),
+        ("By default, we do not delegate because.cfg.", False),
+    ],
+)
+def test_delegation_owners_self_close_and_qualifier_tails(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize("which", ["flag", "default"])
+def test_delegation_owners_hidden_self_close_markers_are_not_visible(
+    monkeypatch, relative, which
+):
+    path = ROOT / relative
+    text = path.read_text()
+    marker = (
+        "`delegation=off`"
+        if which == "flag"
+        else _OWNER_DEFAULT_MARKERS.get(relative, "Delegate by default")
+    )
+    assert marker in text
+    read_text = Path.read_text
+
+    def hide(p, *args, **kwargs):
+        if p == path:
+            hidden = f"<span hidden/>{marker.strip('`')}"
+            if which == "flag":
+                return re.sub(r"`?delegation=off`?", hidden, text)
+            return text.replace(marker, hidden)
+        return read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", hide)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "marker" in e for e in errors)

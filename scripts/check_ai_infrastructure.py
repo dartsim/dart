@@ -5249,6 +5249,7 @@ class _VisibleHTML(HTMLParser):
         self.block_tags = _html_block_tags()
         self.hidden: str | None = None  # root tag of the hidden container
         self.hidden_depth = 0
+        self.foreign_depth = 0  # preserve prior lexical handling within SVG/MathML
 
     def handle_data(self, data: str) -> None:
         if self.hidden:
@@ -5257,12 +5258,25 @@ class _VisibleHTML(HTMLParser):
         self.parts.append(data if self.keep_space_depth else re.sub(r"\s+", " ", data))
 
     def handle_startendtag(self, tag: str, attrs: Any) -> None:
-        # Void tags have no end event, so a hidden `<hr hidden/>` adds no boundary.
+        # Foreign self-close syntax keeps the existing lexical start/end pair.
+        foreign = self.foreign_depth or tag in {"svg", "math"}
         self.handle_starttag(tag, attrs)
-        if tag not in _HTML_VOID_TAGS:
+        if foreign:
             self.handle_endtag(tag)
+            return
+        # HTML nonvoid trailing slashes do not close the element.
+        # The stdlib skips raw/RCDATA mode on its startend callback.
+        # `scripting` marks stdlib builds whose start tags also enter plaintext mode.
+        if tag in self.CDATA_CONTENT_ELEMENTS or (
+            tag == "plaintext" and hasattr(self, "scripting")
+        ):
+            self.set_cdata_mode(tag)
+        elif tag in getattr(self, "RCDATA_CONTENT_ELEMENTS", ()):
+            self.set_cdata_mode(tag, escapable=True)
 
     def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag in {"svg", "math"}:
+            self.foreign_depth += 1
         if self.hidden:
             if tag == self.hidden:
                 self.hidden_depth += 1
@@ -5283,6 +5297,8 @@ class _VisibleHTML(HTMLParser):
             self.parts.append("\n\n")
 
     def handle_endtag(self, tag: str) -> None:
+        if tag in {"svg", "math"}:
+            self.foreign_depth = max(self.foreign_depth - 1, 0)
         if self.hidden:
             if tag == self.hidden:
                 self.hidden_depth -= 1
@@ -5421,7 +5437,9 @@ def _fronted_action_ends(text: str, start: int, end: int) -> bool:
         after = tail[1:2]
         return not (spaced and after and not after.isspace() and after not in ",)\"'`”")
     return tail[0] in ",)" or bool(
-        re.match(r"(?:with|when|if|and|or|otherwise)\b", tail)
+        re.match(
+            r"(?:(?:with|when|if|and|or|otherwise)\b|(?:unless|because)(?=\s))", tail
+        )
     )
 
 

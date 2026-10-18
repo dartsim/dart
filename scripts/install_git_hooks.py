@@ -59,7 +59,7 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "13"
+HOOK_VERSION = "14"
 
 CHECKER_SELECTION = """\
 # Recover removed/renamed checkers without trusting the post-change worktree.
@@ -209,7 +209,8 @@ def hook_template(name: str) -> str:
     display_command = command.replace('"', '\\"')
     gate = "agent" if name == "pre-commit" else "local-path"
     compatibility_check = (
-        "import tomllib"
+        "import tomllib; from markdown_it import MarkdownIt; "
+        "from markdown_it.common.html_blocks import block_names"
         if name == "pre-commit"
         else "import sys; sys.exit(sys.version_info < (3, 9))"
     )

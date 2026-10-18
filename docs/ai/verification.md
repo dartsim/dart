@@ -88,7 +88,8 @@ that invocation cannot be read or parsed, the checker falls back to Git's
 editor-template instructions. Without invocation or template evidence, it
 scans every line. Comments and literal scissors that Git retains are scanned.
 Each hook selects a compatible interpreter: Python 3.9+ for commit-msg and
-pre-push, and Python with `tomllib` (3.11+) for pre-commit. All share
+pre-push, and Python with `tomllib` (3.11+) and the Pixi-supplied Markdown parser for
+pre-commit. All share
 foreign-hook chaining, `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older
 worktrees without the checker or a compatible interpreter print a notice and
 skip the message and pre-push scans; the pre-commit hook retains its staged
