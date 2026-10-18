@@ -78,6 +78,9 @@ hosted platform CI, or claim-tied semantic image review. `test-ai-infra` and
 the visual debug-overlay gate use the same guarded pytest runner, which fails
 when no test body executes. The direct structural checker form is reserved for
 fast staged/setup internals and is not sufficient completion evidence.
+The checker's delegation-policy reading uses the Pixi-supplied `markdown-it-py`;
+run it through `pixi run` and it fails closed, never falling back to raw text,
+under an interpreter without that parser.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;

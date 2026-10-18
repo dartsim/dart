@@ -5461,7 +5461,34 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
 
     errors = infra.exercise_scenarios(ROOT, emit=False)
 
-    assert any(f"missing contract marker {marker!r}" in error for error in errors)
+    assert any(f"missing delegation marker {marker!r}" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "marker,changed,missing",
+    [
+        ("Delegate by default", "<!-- Delegate by default -->", True),
+        ("`delegation=off`", "<!-- `delegation=off` -->", True),
+        ("Delegate by default", "Delegate by <em>default</em>", False),
+    ],
+)
+def test_model_upgrade_delegation_markers_use_visible_text(
+    monkeypatch, marker, changed, missing
+):
+    source = ROOT / ".claude/commands/dart-model-upgrade.md"
+    original = source.read_text()
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return original.replace(marker, changed)
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any("delegation marker" in error for error in errors) is missing
 
 
 @pytest.mark.parametrize(
@@ -6140,6 +6167,182 @@ def test_delegation_owner_text_keeps_positives_and_boundaries(text):
     owner = infra._delegation_owner_text(text)
     assert "Delegate by default" in owner or "delegate by default" in owner
     assert infra._delegation_negation(owner) is None
+
+
+_P = "Delegate by default. "
+_OPT = "When `delegation=off`, do not delegate by default."
+# (source, negated?) for formatting that must not change what a reader sees.
+_FORMATTING_CASES = [
+    # HTML comments are invisible, also across lines and inside words.
+    (_P + "<!-- Do not delegate by default. -->", False),
+    (_P + "<!-- Do not\ndelegate by default. -->", False),
+    (_P + "Do no<!--hidden-->t delegate by default.", True),
+    # Shortcut references need a real definition; definitions are invisible.
+    (_P + "Do [not] delegate by default.\n\n[not]: policy.md", True),
+    (_P + "Do [NOT] delegate by default.\n\n[ not ]: policy.md", True),
+    (
+        _P + "[When] `delegation=off`, do not delegate by default.\n\n[when]: p.md",
+        False,
+    ),
+    (_P + "Do [not] delegate by default.", False),
+    (_P + "[When] `delegation=off`, do not delegate by default.", True),
+    (_P + "Do \\[not] delegate by default.\n\n[not]: policy.md", False),
+    (_P + "Do &#91;not&#93; delegate by default.\n\n[not]: policy.md", False),
+    (_P + '\n\n[unused]: policy.md "Do not delegate by default."', False),
+    (_P + "Do [not] delegate by default.\n\n\\[not]: policy.md", False),
+    # A single trailing backslash is a hard break; an escaped one is literal.
+    (_P + "Do not\\\ndelegate by default.", True),
+    (_P + "When `delegation=off`, do not\\\ndelegate by default.", False),
+    (_P + "Do not\\\\\ndelegate by default.", False),
+    # GFM task markers only after a real list prefix.
+    (_P + "\n- [ ] " + _OPT, False),
+    (_P + "\n- [x] " + _OPT, False),
+    (_P + "\n> - [X] " + _OPT, False),
+    (_P + "\n- [ ] Do not delegate by default.", True),
+    (_P + "[ ] " + _OPT, True),
+    (_P + "\n- \\[ ] " + _OPT, True),
+    (_P + "\n- &#91; &#93; " + _OPT, True),
+    (_P + "\n- [no] " + _OPT, True),
+    # Character references decode exactly once, outside code.
+    (_P + "Do n&#111;t delegate by default.", True),
+    (_P + "Do n&#x6f;t delegate by default.", True),
+    (_P + "Do not&nbsp;delegate by default.", True),
+    (_P + "Do not&NewLine;delegate by default.", True),
+    (_P + "Do not&NewLine;&NewLine;delegate by default.", True),
+    (_P + "Do not&#10;&#10;delegate by default.", True),
+    (_P + "Do not&NewLine;&#x0A;delegate by default.", True),
+    (_P + "Do <em>not</em>&NewLine;&NewLine;delegate by default.", True),
+    (_P + "Do <span>not&NewLine;&NewLine;</span>delegate by default.", True),
+    (_P + "<p>Do not&NewLine;&NewLine;delegate by default.</p>", True),
+    (_P + "<div>Do not&#10;&#10;delegate by default.</div>", True),
+    (
+        _P + "When `delegation=off`,&NewLine;&NewLine; do not delegate by default.",
+        False,
+    ),
+    # Genuine boundaries still split.
+    (_P + "Do not\n\ndelegate by default.", False),
+    (_P + "<p>Do not</p><p>delegate by default.</p>", False),
+    (_P + "Do n&amp;#111;t delegate by default.", False),
+    (_P + "Do `n&#111;t` delegate by default.", False),
+    # Inline tags concatenate; <br> separates; literal markup stays literal.
+    (_P + "Do <em>not</em> delegate by default.", True),
+    (_P + "<span>" + _OPT + "</span>", False),
+    (_P + "Do not<br>delegate by default.", True),
+    (_P + "Do n<em>o</em>t delegate by default.", True),
+    (_P + '<span title="Do not delegate by default.">Ordinary text</span>', False),
+    (_P + "Do &lt;em&gt;not&lt;/em&gt; delegate by default.", False),
+    (_P + "Do \\<em>not\\</em> delegate by default.", False),
+    (_P + "Do `<em>not</em>` delegate by default.", False),
+    # Existing behavior and combinations.
+    (_P + "`When delegation=off, do not delegate by default.`", False),
+    (_P + "Do `not` delegate by default.", True),
+    (
+        _P
+        + "When delegation=off, do not delegate by default. Do not delegate by default.",
+        True,
+    ),
+    (_P + "When delegation=off,\n\nDo not delegate by default.", True),
+    # Images keep their alt text; block HTML splits paragraphs, inline HTML does not.
+    (_P + "Do ![not](p.svg) delegate by default.", True),
+    (_P + "<p>When delegation=off,</p>\n<p>Do not delegate by default.</p>", True),
+    (
+        _P + "<div>When delegation=off, </div><div>Do not delegate by default.</div>",
+        True,
+    ),
+    (_P + "<span>When delegation=off,<br>do not delegate by default.</span>", False),
+    (_P + "<!-- retired -->Do <em>n&#111;t</em> delegate by default.", True),
+    (
+        _P
+        + "\n- [x] <span>When `delegation=off`, do not\\\ndelegate by default.</span>",
+        False,
+    ),
+    (
+        _P + "Do [<em>n&#111;t</em>] delegate by default.\n\n[<em>n&#111;t</em>]: p.md",
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize("text,negated", _FORMATTING_CASES)
+def test_delegation_owner_text_follows_visible_formatting(text, negated):
+    owner = infra._delegation_owner_text(text)
+    assert bool(infra._delegation_negation(owner)) is negated, owner
+
+
+_CODE_LITERAL_CASES = [
+    # Literal markup inside code never becomes the canonical negation.
+    ("    Do <em>not</em> delegate by default.", False),
+    ("```\nDo <em>not</em> delegate by default.\n```", False),
+    ("~~~\nDo n&#111;t delegate by default.\n~~~", False),
+    ("`Do n&#111;t\ndelegate by default.`", False),
+    ("`Do <em>not</em>\ndelegate by default.`", False),
+    ("```\nDo not \\\ndelegate by default.\n```", False),
+    # Plain canonical policy shown in code is still policy.
+    ("```\nDo not delegate by default.\n```", True),
+    # Fence metadata and delimiters are not text; blank lines still split clauses.
+    ("```text\nWhen `delegation=off`, do not delegate by default.\n```", False),
+    ("~~~text\nWhen `delegation=off`, do not delegate by default.\n~~~", False),
+    ("~~~text\nDo not delegate by default.\n~~~", True),
+    ("```\nWhen delegation=off,\n\nDo not delegate by default.\n```", True),
+    # Fence-looking text inside comments or code does not change block structure.
+    ("<!--\n```\n-->\nDo not delegate by default.", True),
+    ("    ```\n\nDo <em>not</em> delegate by default.", True),
+    ("```\n- ```\nDo <em>not</em> delegate by default.\n```", False),
+    # Only a real, separated, valid definition is hidden from the reader.
+    ("Do [not] delegate by default.\n[not]: policy.md", False),
+    ("[hint]: Do not delegate by default.", True),
+    ("    Do not delegate by default.", True),
+    ("`Do not\ndelegate by default.`", True),
+    # Opt-out clauses inside code keep their exemption.
+    ("```\nWhen `delegation=off`, do not delegate by default.\n```", False),
+    # Interior task brackets are literal text, not a task marker.
+    ("- When [ ] delegation=off, do not delegate by default.", True),
+    ("- When [x] delegation=off, do not delegate by default.", True),
+    ("- [ ] When delegation=off, do not delegate by default.", False),
+    ("- [X] When delegation=off, do not delegate by default.", False),
+    ("> - [x] When delegation=off, do not delegate by default.", False),
+    ("- > [x] When delegation=off, do not delegate by default.", True),
+]
+
+
+@pytest.mark.parametrize("text,negated", _CODE_LITERAL_CASES)
+def test_delegation_owner_text_keeps_code_and_task_literals(text, negated):
+    owner = infra._delegation_owner_text("Delegate by default.\n\n" + text)
+    assert bool(infra._delegation_negation(owner)) is negated, owner
+
+
+def test_delegation_owner_text_does_not_leak_definitions_between_owners():
+    assert "[not]" in infra._delegation_owner_text("Do [not] delegate.")
+    infra._delegation_owner_text("Policy.\n\n[not]: policy.md")
+    assert "[not]" in infra._delegation_owner_text("Do [not] delegate.")
+
+
+def test_delegation_owner_text_fails_closed_without_markdown_parser(monkeypatch):
+    monkeypatch.setitem(sys.modules, "markdown_it", None)
+
+    with pytest.raises(infra.MarkdownParserMissing, match="pixi run check-ai-infra"):
+        infra._delegation_owner_text("Delegate by default.")
+
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+
+    assert any("pixi run check-ai-infra" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "text,marker,visible",
+    [
+        (
+            "<!-- Delegate by default --> Use `delegation=off`.",
+            "Delegate by default",
+            False,
+        ),
+        ("Delegate by default <!-- `delegation=off` -->", "`delegation=off`", False),
+        ("Delegate by default. Use `delegation=off`.", "`delegation=off`", True),
+        ("Delegate by default. Use `delegation=off`.", "Delegate by default", True),
+    ],
+)
+def test_delegation_markers_must_be_visible(text, marker, visible):
+    assert (marker in infra._delegation_owner_text(text)) is visible
 
 
 def test_ultrawork_uses_default_delegation_and_lean_prompt_shape():
@@ -7979,3 +8182,17 @@ def test_main_release_target_matches_branch_profile(tmp_path, version, expected)
         assert errors == []
     else:
         assert len(errors) == 1 and "branch profile `dart7`" in errors[0]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Delegate&NewLine;&NewLine;by default. Use `delegation=off`.",
+        "Delegate&#10;&#10;by default. Use `delegation=off`.",
+        "<p>Delegate&NewLine;&NewLine;by default.</p> Use `delegation=off`.",
+        "Delegate only&NewLine;&NewLine;when the user asks.",
+    ],
+)
+def test_entity_newlines_do_not_split_required_markers(text):
+    owner = infra._delegation_owner_text(text)
+    assert "Delegate by default" in owner or "Delegate only when the user asks" in owner

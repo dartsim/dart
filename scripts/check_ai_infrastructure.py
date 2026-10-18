@@ -16,6 +16,7 @@ import tempfile
 import tomllib
 import xml.etree.ElementTree as ET
 from datetime import date
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
@@ -5150,12 +5151,6 @@ def scenario_gate_error(root: Path, command: Any, pixi_tasks: set[str]) -> str |
     return None
 
 
-_MD_INLINE_LINK = re.compile(
-    r"\[([^\[\]]*)\]\((?:[^()\s]|\([^()\s]*\))*(?:\s+(?:\"[^\"]*\"|'[^']*'))?\)"
-)
-_MD_REF_LINK = re.compile(r"\[([^\[\]]*)\]\[[^\[\]]*\]")
-_MD_HEADING = re.compile(r"#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?")
-_MD_PREFIX = re.compile(r"[ \t]*(?:(>)|(?:[-*+]|\d+[.)])(?=[ \t]))")
 _DELEGATION_MODAL = r"(?:should|must|can|could|will|would|shall|may|might)"
 _DELEGATION_NEGATION_PATTERN = (
     r"(?:\bdo\s+not|\bdon't|\bcannot|\bnot|n't|\bnever|\bno longer)"
@@ -5187,43 +5182,122 @@ _DELEGATION_EXEMPT_CLAUSE = re.compile(
 )
 
 
+# Block tags that end a visible paragraph inside raw HTML; inline tags stay transparent.
+_HTML_BLOCK_TAGS = frozenset(
+    "address article aside blockquote body dd details div dl dt fieldset figure "
+    "footer form h1 h2 h3 h4 h5 h6 header hr li main nav ol p pre section "
+    "summary table tbody td tfoot th thead tr ul".split()
+)
+_MD_FULL_REFERENCE = re.compile(r"\[([^\[\]]*)\]\[[^\[\]]*\]")
+_MD_TASK = re.compile(r"^\[[ xX]\][ \t]+")
+
+
+class MarkdownParserMissing(RuntimeError):
+    """The Pixi-supplied Markdown parser is unavailable to this interpreter."""
+
+
+class _VisibleHTML(HTMLParser):
+    """Keep text; drop comments and attributes; <br> is a space, blocks split."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(re.sub(r"\s+", " ", data))  # lexical, not structural
+
+    def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag == "br":
+            self.parts.append(" ")
+        elif tag in _HTML_BLOCK_TAGS:
+            self.parts.append("\n\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in _HTML_BLOCK_TAGS:
+            self.parts.append("\n\n")
+
+
+def _html_text(raw: str) -> str:
+    parser = _VisibleHTML()
+    parser.feed(raw)
+    parser.close()
+    return "".join(parser.parts)
+
+
+def _legacy_full_reference(state: Any, silent: bool) -> bool:
+    """Keep the checker's tested contract that `[label][ref]` shows its label."""
+    match = _MD_FULL_REFERENCE.match(state.src, state.pos, state.posMax)
+    if not match:
+        return False
+    maximum = state.posMax
+    if not silent:
+        state.pos, state.posMax = match.span(1)
+        state.md.inline.tokenize(state)
+    state.pos, state.posMax = match.end(), maximum
+    return True
+
+
+def _markdown_parser() -> Any:
+    try:
+        from markdown_it import MarkdownIt
+    except ImportError as error:
+        raise MarkdownParserMissing(
+            "the delegation policy check needs the Pixi-supplied markdown-it-py; "
+            "run it with `pixi run check-ai-infra` or the Pixi interpreter"
+        ) from error
+    parser = MarkdownIt("commonmark", {"html": True}).disable("text_join")
+    parser.inline.ruler.after("link", "legacy_full_reference", _legacy_full_reference)
+    return parser
+
+
+def _inline_parts(children: Any) -> str:
+    """Visible text of inline tokens; escapes keep spelling, entities decode once."""
+    parts: list[str] = []
+    for child in children or ():
+        if child.type in {"text", "text_special"}:
+            text = child.markup if child.info == "escape" else child.content
+            parts.append(re.sub(r"\s+", " ", text))  # entity newlines are lexical
+        elif child.type == "code_inline":
+            parts.append(f"`{child.content}`")
+        elif child.type == "html_inline":
+            parts.append(_html_text(child.content))
+        elif child.type == "image":
+            parts.append("!" + _inline_parts(child.children))
+        elif child.type in {"softbreak", "hardbreak"}:
+            parts.append(" ")
+    return "".join(parts)
+
+
+def _folded_paragraphs(text: str) -> list[str]:
+    """Fold whitespace inside blank-line separated paragraphs."""
+    return [
+        " ".join(part.split()) for part in re.split(r"\n[ \t]*\n", text) if part.strip()
+    ]
+
+
 def _delegation_owner_text(source: str) -> str:
-    """Visible owner text: links reduced to labels, blocks folded to paragraphs."""
-    # shortcut: one parenthesis level in link targets; extend for richer owner links.
-    source = _MD_REF_LINK.sub(r"\1", _MD_INLINE_LINK.sub(r"\1", source))
+    """Visible owner text: CommonMark blocks folded to blank-line paragraphs."""
+    markdown = _markdown_parser()
+    env: dict[str, Any] = {}  # fresh per owner so definitions never leak
+    tokens = markdown.parse(source, env)
     paragraphs: list[str] = []
-    current: list[str] = []
-    previous_depth = 0
-
-    def flush() -> None:
-        if current:
-            paragraphs.append(" ".join(" ".join(current).split()))
-            current.clear()
-
-    for line in source.splitlines():
-        # Quote and list prefixes may interleave (`- > text`); depth counts quotes.
-        depth, item, body = 0, False, line
-        while match := _MD_PREFIX.match(body):
-            depth += bool(match.group(1))
-            item = item or not match.group(1)
-            body = body[match.end() :]
-        body = body.strip()
-        heading = _MD_HEADING.fullmatch(body)
-        if heading:
-            flush()
-            current.append(heading.group(1))
-            flush()
-        elif not body:
-            flush()
-        elif item or depth > previous_depth:
-            # List items and deeper quotes start a new block; a shallower or
-            # equal depth is a continuation (lazy or not).
-            flush()
-            current.append(body)
-        else:
-            current.append(body)
-        previous_depth = depth
-    flush()
+    for index, token in enumerate(tokens):
+        if token.type == "inline":
+            children = token.children
+            task = _MD_TASK.match(token.content)
+            if (
+                task
+                and index >= 2
+                and tokens[index - 2].type == "list_item_open"
+                and tokens[index - 1].type == "paragraph_open"
+            ):
+                rest = markdown.parseInline(token.content[task.end() :], env)
+                children = rest[0].children
+            paragraphs.extend(_folded_paragraphs(_inline_parts(children)))
+        elif token.type in {"fence", "code_block"}:
+            paragraphs.extend(_folded_paragraphs(token.content))
+        elif token.type == "html_block":
+            paragraphs.extend(_folded_paragraphs(_html_text(token.content)))
     return "\n\n".join(paragraphs)
 
 
@@ -5531,8 +5605,6 @@ def exercise_scenarios(
                 "one lower effort",
                 "structural",
                 "Deeper reasoning modes give one difficult task more time",
-                "Delegate by default",
-                "`delegation=off`",
                 '`docs/ai/README.md` § "Updating Models And Coding Agents"',
                 "Do not substitute a model",
                 "durable project context",
@@ -5576,13 +5648,19 @@ def exercise_scenarios(
                     ".claude/commands/dart-ultrawork.md",
                     ("Delegate by default", "`delegation=off`"),
                 ),
-                (".claude/commands/dart-model-upgrade.md", ()),
+                (
+                    ".claude/commands/dart-model-upgrade.md",
+                    ("Delegate by default", "`delegation=off`"),
+                ),
             ):
                 try:
                     owner_source = (root / relative).read_text(encoding="utf-8")
                     owner_text = _delegation_owner_text(owner_source)
                 except OSError:
                     owner_text = ""
+                except MarkdownParserMissing as error:
+                    local_errors.append(str(error))
+                    break
                 for marker in required:
                     if marker not in owner_text:
                         local_errors.append(
