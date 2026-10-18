@@ -1622,7 +1622,9 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   addSkeletons(other.getSkeletons());
   mManualConstraints = other.mManualConstraints;
 
-  mContactSurfaceHandler = other.mContactSurfaceHandler;
+  // Publish before releasing the old handler, as in setCollisionDetector().
+  ContactSurfaceHandlerPtr(other.mContactSurfaceHandler)
+      .swap(mContactSurfaceHandler);
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
 }

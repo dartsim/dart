@@ -5725,10 +5725,14 @@ TEST(ConstraintSolver, SetCollisionDetectorPublishesNewDetectorBeforeRelease)
   bool sameDetector = false;
   bool sameOwner = false;
   {
+    // The solver's pointer must own the detector by itself: collision groups
+    // keep the detector they created alive through shared_from_this().
     auto inner = collision::DARTCollisionDetector::create();
     auto* raw = inner.get();
     std::shared_ptr<collision::CollisionDetector> previous(
         raw, [&, inner](collision::CollisionDetector*) mutable {
+          // Without the fix, libstdc++ pairs the new pointer with this dying
+          // owner (undefined behavior), and releasing that copy re-enters.
           if (inDeleter)
             return;
           inDeleter = true;
@@ -5745,5 +5749,40 @@ TEST(ConstraintSolver, SetCollisionDetectorPublishesNewDetectorBeforeRelease)
 
   EXPECT_TRUE(inDeleter);
   EXPECT_TRUE(sameDetector);
+  EXPECT_TRUE(sameOwner);
+}
+
+//==============================================================================
+// Copying another solver's handlers releases the replaced handler last.
+TEST(ConstraintSolver, SetFromOtherSolverPublishesHandlerBeforeRelease)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  constraint::BoxedLcpConstraintSolver other;
+  const auto next = other.getLastContactSurfaceHandler();
+
+  bool inDeleter = false;
+  bool sameHandler = false;
+  bool sameOwner = false;
+  {
+    auto inner = std::make_shared<constraint::DefaultContactSurfaceHandler>();
+    auto* raw = inner.get();
+    std::shared_ptr<constraint::ContactSurfaceHandler> previous(
+        raw, [&, inner](constraint::ContactSurfaceHandler*) mutable {
+          if (inDeleter)
+            return;
+          inDeleter = true;
+          const auto current = solver.getLastContactSurfaceHandler();
+          sameHandler = current.get() == next.get();
+          sameOwner
+              = !current.owner_before(next) && !next.owner_before(current);
+          inner.reset();
+        });
+    solver.addContactSurfaceHandler(previous);
+  }
+
+  solver.setFromOtherConstraintSolver(other);
+
+  EXPECT_TRUE(inDeleter);
+  EXPECT_TRUE(sameHandler);
   EXPECT_TRUE(sameOwner);
 }
