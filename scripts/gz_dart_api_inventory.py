@@ -428,7 +428,16 @@ CALLING_CONVENTIONS = {
 
 def outer_type_tokens(values):
     """Drop only leading cv/storage specifiers, preserving nested type tokens."""
-    storage = {"const", "volatile", "extern", "static", "inline", "mutable"}
+    storage = {
+        "const",
+        "volatile",
+        "extern",
+        "static",
+        "inline",
+        "mutable",
+        "thread_local",
+        "constexpr",
+    }
     start = 0
     while values[start : start + 1] and values[start] in storage:
         start += 1
@@ -1954,6 +1963,71 @@ class ApiIndex:
             return name
         return None
 
+    def ordinary(self, candidate, seen=()):
+        """The declaring spelling of a real indexed ordinary non-type declaration
+        that `candidate` names, through bases unless the class declares the name."""
+        scope, _, leaf = candidate.rpartition("::")
+        methods = [
+            *(d for d in self.members.get(leaf, ()) if d["class"] == scope),
+            # Full raw class metadata keeps private names, which still hide types.
+            *(
+                d
+                for d in self.classes.get(scope, {}).get("methods", ())
+                if d.get("name") == leaf
+            ),
+        ]
+        values = [
+            *self.variables.get(candidate, ()),
+            *(d for d in self.data_members.get(leaf, ()) if d["class"] == scope),
+            *(
+                d
+                for d in self.classes.get(scope, {}).get("fields", ())
+                if d.get("name") == leaf
+            ),
+        ]
+        if (
+            any(real_function(item) for item in self.free_functions.get(candidate, ()))
+            or any(real_function(item) for item in methods)
+            or any(item.get("return_tokens") for item in values)
+        ):
+            return candidate
+        # An own type, including the injected class name, hides base names.
+        if (
+            candidate in self.types
+            or leaf == scope.rpartition("::")[2]
+            or scope in seen
+        ):
+            return None
+        for base in self.classes.get(scope, {}).get("bases", ()):
+            owner = self.owner(base)
+            if owner and (found := self.ordinary(owner + "::" + leaf, (*seen, scope))):
+                return found
+        return None
+
+    def value_heads(self, values, scope):
+        """`values` with each call head that lookup in `scope` finds as an indexed
+        function or value before a type qualified as that declaration, so alias
+        expansion keeps it a value."""
+        result, previous = [], 0
+        for start, end, spelling in names_in(values):
+            result.extend(values[previous:start])
+            previous = end
+            if (
+                values[end : end + 1] == ["("]
+                and values[start - 1 : start] not in (["::"], ["."], ["->"])
+                and self.resolve(spelling, scope)
+            ):
+                for candidate in self.spellings(spelling, scope):
+                    if found := self.ordinary(candidate):
+                        result.extend(TOKEN.findall(found))
+                        break
+                    if candidate in self.types:
+                        result.extend(values[start:end])
+                        break
+            else:
+                result.extend(values[start:end])
+        return result + values[previous:]
+
     def constructible(self, name):
         """The class that `name` constructs, unless an alias only wraps it."""
         seen = set()
@@ -2017,8 +2091,11 @@ class ApiIndex:
                 )
                 if function_type_signature(prefix):
                     continue
-                values = self.field_template_mask(
-                    member, TOKEN.findall(member["signature"])
+                values = self.value_heads(
+                    self.field_template_mask(
+                        member, TOKEN.findall(member["signature"])
+                    ),
+                    tuple(current.split("::")),
                 )
                 expanded = construction_aliases(
                     values, self, tuple(current.split("::"))
@@ -3119,7 +3196,7 @@ class ApiIndex:
                         result.extend(self.layout_evidence(owner))
             prefix, expression = (
                 self.masked_aliases(part, scope, shadowed)
-                for part in (prefix, expression)
+                for part in (prefix, self.value_heads(expression, scope))
             )
             function = function_type_signature(prefix)
             if function and not {"*", "&", "&&"}.intersection(function["suffix"]):
@@ -3862,6 +3939,52 @@ def allocator_argument(tokens, argument, allocators=()):
     )
 
 
+def explicit_typed_prvalue(tokens, first, last):
+    """The `Type{...}` or `Type(...)` opening spanning exactly first..last."""
+    values = tokens.values
+    while values[first] == "(" and tokens.pairs.get(first) == last:
+        first, last = first + 1, last - 1
+    if first >= last:
+        return None
+    return next(
+        (
+            (first, opening)
+            for opening in range(first + 1, last)
+            if values[opening] in {"(", "{"} and tokens.pairs.get(opening) == last
+        ),
+        None,
+    )
+
+
+def without_redundant_global(values):
+    """Drop a `::` that starts the type or a template argument (after any cv)."""
+    result = []
+    for value in values:
+        index = len(result)
+        while index and result[index - 1] in {"const", "volatile"}:
+            index -= 1
+        if value == "::" and (not index or result[index - 1] in {"<", ","}):
+            continue
+        result.append(value)
+    return result
+
+
+def known_sequence_copy_or_element(tokens, end, opening, argument):
+    """An explicit typed prvalue that is the sequence itself (a copy or move)
+    or, inside braces, its element (an initializer list) is never a count."""
+    head = explicit_typed_prvalue(tokens, *argument)
+    if head is None:
+        return False
+    values = tokens.values
+    typed = without_redundant_global(values[head[0] : head[1]])
+    return typed == without_redundant_global(
+        values[end - 3 : template_end(values, end)]
+    ) or (
+        values[opening] == "{"
+        and typed == without_redundant_global(first_template_argument(values, end))
+    )
+
+
 def sequence_count_initializer(tokens, end, allocators=()):
     """A count, optionally with a known allocator, default-constructs elements."""
     values = tokens.values
@@ -3890,6 +4013,10 @@ def sequence_count_initializer(tokens, end, allocators=()):
     if closing is None or values[opening] not in {"(", "{"}:
         return False
     arguments = construction_arguments(tokens, opening)
+    if len(arguments) == 1 and known_sequence_copy_or_element(
+        tokens, end, opening, arguments[0]
+    ):
+        return False
     return (
         len(arguments) == 1
         and not allocator_argument(tokens, arguments[0], allocators)
@@ -5369,31 +5496,9 @@ def scan_sources(api, source_root):
 
     def ordinary_declaration(candidate, closed):
         """Whether a real ordinary non-type declaration of this spelling is visible."""
+        if api.ordinary(candidate):
+            return True
         scope, _, leaf = candidate.rpartition("::")
-        methods = [
-            *(d for d in api.members.get(leaf, ()) if d["class"] == scope),
-            # Full raw class metadata keeps private names, which still hide types.
-            *(
-                d
-                for d in api.classes.get(scope, {}).get("methods", ())
-                if d.get("name") == leaf
-            ),
-        ]
-        values = [
-            *api.variables.get(candidate, ()),
-            *(d for d in api.data_members.get(leaf, ()) if d["class"] == scope),
-            *(
-                d
-                for d in api.classes.get(scope, {}).get("fields", ())
-                if d.get("name") == leaf
-            ),
-        ]
-        if any(real_function(item) for item in api.free_functions.get(candidate, ())):
-            return True
-        if any(real_function(item) for item in methods) or any(
-            item.get("return_tokens") for item in values
-        ):
-            return True
         return any(
             item["source"][0] in closed and real_function(item)
             for item in source_returns.get((scope, leaf), ())
@@ -5419,11 +5524,43 @@ def scan_sources(api, source_root):
                 for item in source_functions[header].get(candidate, ())
             ):
                 return True
-            if candidate in api.types or candidate in source_classes:
+            if (
+                candidate in api.types
+                or candidate in source_classes
+                or any(  # a nearer namespace- or class-scope alias declared before
+                    candidate in alias_declarations[header]
+                    and (
+                        header != tokens.source_path
+                        or alias_declarations[header][candidate][1] < index
+                    )
+                    for header in closed
+                )
+            ):
                 return False
+            scope, _, leaf = candidate.rpartition("::")
+            if scope in source_classes and inherited_ordinary(scope, leaf, closed):
+                return True
         return False
 
-    parents = defaultdict(list)
+    def inherited_ordinary(owner, leaf, closed, seen=()):
+        """Whether a base of source class `owner` declares `leaf` as an ordinary
+        name before a base, or `owner` itself, declares it as a type."""
+        if owner in seen or leaf == owner.rpartition("::")[2]:
+            return False
+        for parent in parents.get(owner, ()):
+            candidate = parent + "::" + leaf
+            if ordinary_declaration(candidate, closed):
+                return True
+            if not (
+                candidate in source_classes
+                or any(candidate in alias_declarations[header] for header in closed)
+            ) and inherited_ordinary(parent, leaf, closed, (*seen, owner)):
+                return True
+        return any(
+            api.ordinary(base + "::" + leaf) for base in api_parents.get(owner, ())
+        )
+
+    parents, api_parents = defaultdict(list), defaultdict(list)
     for _, tokens, classes, _, _, imports, namespace_aliases in files:
         for cls in classes:
             for raw in cls["bases"]:
@@ -5798,6 +5935,9 @@ def scan_sources(api, source_root):
                     )
                     if resolved:
                         bases.update(api.ancestors(resolved))
+                        owner = api.owner(resolved)
+                        if owner and owner not in api_parents[cls["name"]]:
+                            api_parents[cls["name"]].append(owner)
                     bases.update(local_bases.get(raw, set()))
                 if bases:
                     local_bases[cls["name"]] = bases
@@ -5921,6 +6061,66 @@ def scan_sources(api, source_root):
             previous = end
         return result + prefix[previous:]
 
+    def head_hidden(name, tokens, index, imports, namespace_aliases):
+        """Whether a live local binding (settled once late) or an ordinary
+        function or value declaration hides an unqualified head at index."""
+        return any(
+            b[0] <= index <= b[1]
+            and b[2] <= index
+            and b[3] == name
+            and compatible(tokens.branches[b[2]], tokens.branches[index])
+            for b in tokens.bindings
+        ) or function_hides(name, tokens, index, imports, namespace_aliases)
+
+    def shadowed_head(tokens, head, context):
+        """Whether a live local binding may hide the unqualified call head: unknown
+        until the binding pass has run, so the site is deferred until then."""
+        _, file_tokens, index, imports, namespace_aliases = context
+        if head[1] - head[0] != 1 or not IDENTIFIER.match(tokens.values[head[0]]):
+            return False
+        if not file_tokens.late:
+            file_tokens.ambiguous = True
+            return False
+        return head_hidden(
+            tokens.values[head[0]], file_tokens, index, imports, namespace_aliases
+        )
+
+    def pending_sequence(sequence):
+        """Whether the deferred count filter owns a sized sequence's elements:
+        its normalized or raw-alternative candidates are nonempty."""
+        return bool(sequence and (sequence[0] or sequence[5] and sequence[5][0]))
+
+    def normalized_typed_clause(tokens, first, last, context, defer=True):
+        """The clause, with an explicit `Type{...}` or `Type(...)` head normalized
+        where it is written rather than in an alias target's scope."""
+        values = tokens.values
+        head = explicit_typed_prvalue(tokens, first, last)
+        if head is None or (defer and shadowed_head(tokens, head, context)):
+            return values[first : last + 1]
+        return (
+            values[first : head[0]]
+            + construction_aliases(
+                layout_prefix(values[head[0] : head[1]], context), api
+            )
+            + values[head[1] : last + 1]
+        )
+
+    def normalized_initializer(initializer, context):
+        """A declarator initializer with its sole typed clause normalized."""
+        tokens = Tokens(" ".join(initializer))
+        opening = int(initializer[:1] == ["="])
+        if initializer[opening : opening + 1] not in (["("], ["{"]):
+            return initializer
+        arguments = construction_arguments(tokens, opening)
+        if len(arguments) != 1:
+            return initializer
+        first, last = arguments[0]
+        return (
+            initializer[:first]
+            + normalized_typed_clause(tokens, first, last, context)
+            + initializer[last + 1 :]
+        )
+
     def sized_sequence(tokens, start, end, context, declarations, heads):
         """Constructor candidates and the count operand for one source use."""
         values = tokens.values
@@ -5975,26 +6175,41 @@ def scan_sources(api, source_root):
         ):
             return None
         count_first, count_last = arguments[0]
-        initialized = Tokens(
-            " ".join(
-                prefix
-                + ["__sequence_value", "("]
-                + values[count_first : count_last + 1]
-                + [")", ";"]
+
+        def candidates_for(clause):
+            initialized = Tokens(
+                " ".join(
+                    prefix
+                    + ["__sequence_value", values[opening]]
+                    + clause
+                    + [values[closing], ";"]
+                )
             )
-        )
-        candidates = set()
-        for first, last, name in names_in(prefix):
-            resolved = api.resolve(name)
-            constructed = api.constructible(resolved)
-            if constructed and constructs(initialized, first, last, set(), []):
-                candidates.add((resolved, constructed))
+            result = set()
+            for first, last, name in names_in(prefix):
+                resolved = api.resolve(name)
+                constructed = api.constructible(resolved)
+                if constructed and constructs(initialized, first, last, set(), []):
+                    result.add((resolved, constructed))
+            return result
+
+        raw = values[count_first : count_last + 1]
+        clause, alternative = raw, None
+        head = explicit_typed_prvalue(tokens, count_first, count_last)
+        if len(arguments) == 1 and head:
+            clause = normalized_typed_clause(
+                tokens, count_first, count_last, context, defer=False
+            )
+            if head[1] - head[0] == 1:  # a local binding may still hide the alias
+                alternative = candidates_for(raw), head[0]
+        candidates = candidates_for(clause)
         return (
             candidates,
             count_first,
             count_last,
             lead,
             arguments[1] if len(arguments) == 2 else None,
+            alternative,
         )
 
     def sequence_allocator(path, tokens, first, last, imports, namespace_aliases):
@@ -6246,7 +6461,12 @@ def scan_sources(api, source_root):
             if opening in tokens.pairs and values[opening] in {"(", "{"}:
                 opening = tokens.pairs[opening] + 1
             wrap = (["new"] if values[lead - 1 : lead] == ["new"] else []), [
-                *mark_array_copy(tokens, values[after:opening], after, context, prefix),
+                *normalized_initializer(
+                    mark_array_copy(
+                        tokens, values[after:opening], after, context, prefix
+                    ),
+                    context,
+                ),
                 ";",
             ]
             return [
@@ -6303,7 +6523,14 @@ def scan_sources(api, source_root):
                         prefix,
                         context,
                         temporary=False,
-                        wrap=([], ["__returned_value", *initializer, ";"]),
+                        wrap=(
+                            [],
+                            [
+                                "__returned_value",
+                                *normalized_initializer(initializer, context),
+                                ";",
+                            ],
+                        ),
                     )
                 )
             )
@@ -6430,7 +6657,7 @@ def scan_sources(api, source_root):
             # The deferred count filter owns a sized sequence's elements.
             else (
                 None
-                if sequence and sequence[0]
+                if pending_sequence(sequence)
                 else default_variant_constructions(
                     tokens,
                     start,
@@ -6524,14 +6751,15 @@ def scan_sources(api, source_root):
             sequence = sized_sequence(
                 tokens, start, type_end, context, declaration_indices, heads
             )
-            if sequence and sequence[0]:
-                sequence_classes, first, last, lead, allocator = sequence
+            if pending_sequence(sequence):
+                sequence_classes, first, last, lead, allocator, alternative = sequence
                 sequence_pending[path, lead] = (
                     tokens,
                     sequence_classes,
                     first,
                     last,
                     allocator,
+                    alternative,
                     imports,
                     namespace_aliases,
                 )
@@ -9705,6 +9933,7 @@ def scan_sources(api, source_root):
         first,
         last,
         allocator,
+        alternative,
         imports,
         namespace_aliases,
     ) in sequence_pending.items():
@@ -9724,6 +9953,14 @@ def scan_sources(api, source_root):
             for name in argument
         ):
             continue
+        if alternative and head_hidden(  # the type alias is hidden: a real count
+            tokens.values[alternative[1]],
+            tokens,
+            alternative[1],
+            imports,
+            namespace_aliases,
+        ):
+            sequence_classes = alternative[0]
         for resolved, constructed in sorted(sequence_classes):
             record_constructed_value(resolved, constructed, path, tokens, index)
 

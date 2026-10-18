@@ -31358,3 +31358,665 @@ def test_five_fix_named_return_context(
     _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
     scan = _scan_receiver_api(extractor, tmp_path, header, source)
     assert [c["count"] for c in scan["constructors"] if c["name"] == "dart::A"] == [1]
+
+
+FIVE_FIX_STORAGE_SEQUENCE = [
+    (
+        "storage_sequence_api_thread_local_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}namespace dart{extern thread_local X x;}",
+        "void use(){dart::X y{dart::x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_source_thread_local_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "extern thread_local dart::X x;void use(){dart::X y{x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_api_thread_local_partial",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}namespace dart{extern thread_local V x;}",
+        "void use(){dart::X y{dart::x};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_target_thread_local_default",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "thread_local dart::X y;",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_vector_typed_list",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "void use(){std::vector<dart::V> values{dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_vector_element_variable_list",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "void use(const dart::V&v){std::vector<dart::V> values{v};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_vector_count_parens",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "void use(){std::vector<dart::V> values(1);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_vector_default_element_list",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "void use(){std::vector<dart::V> values{dart::V{}};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_vector_int_element_list",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "void use(){std::vector<dart::V> values{1};}",
+        "A();",
+        "A()=delete;",
+        True,
+        False,
+    ),
+    (
+        "storage_sequence_vector_explicit_count_allocator",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}",
+        "void use(){std::vector<dart::V> values{1,std::allocator<dart::V>{}};}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_api_const_thread_local_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}namespace dart{extern const thread_local X x;}",
+        "void use(){dart::X y{dart::x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_api_constexpr_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}namespace dart{inline constexpr X x{V{1},V{2}};}",
+        "void use(){dart::X y{dart::x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_api_thread_local_pointer_deref_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}namespace dart{extern thread_local X* x;}",
+        "void use(){dart::X y{*dart::x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_deque_typed",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::deque<dart::V> values{dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_list_typed",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::list<dart::V> values{dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_forward_list_typed",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::forward_list<dart::V> values{dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_source_alias",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "using Element=dart::V;using Seq=std::vector<Element>;void use(){Seq values{Element{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_api_owned",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}namespace dart{struct H{std::vector<V> values{V{1}};};}",
+        "void use(){dart::H value;}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_api_default",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}namespace dart{void f(std::vector<V> values={V{1}});}",
+        "void use(){dart::f();}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_factory_nested",
+        "#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\n#include <memory>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){auto p=std::make_shared<std::vector<dart::V>>(std::vector<dart::V>{dart::V{1}});}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_vector_paren_typed_element",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\n",
+        "void use(){std::vector<dart::V> values{dart::V(1)};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_vector_equal_typed_list",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\n",
+        "void use(){std::vector<dart::V> values={dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_vector_runtime_count",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\n",
+        "void use(unsigned n){std::vector<dart::V> values(n);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_factory_shared_count",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\n",
+        "void use(){auto p=std::make_shared<std::vector<dart::V>>(2);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_factory_unique_zero_count",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\n",
+        "void use(){auto p=std::make_unique<std::vector<dart::V>>(0);}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_sequence_api_static_thread_local_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\nnamespace dart{struct H{static thread_local X x;};}",
+        "void use(){dart::X y{dart::H::x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_api_static_constexpr_copy",
+        "#include <array>\n#include <variant>\n#include <vector>\n#include <deque>\n#include <list>\n#include <forward_list>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;}\n#include <memory>\nnamespace dart{struct H{static constexpr X x{V{1},V{2}};};}",
+        "void use(){dart::X y{dart::H::x};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_sequence_source_variant_field_unconstructed",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct H{std::variant<dart::A,int> value;};",
+        "A()=default",
+        "A()=delete",
+        True,
+        False,
+    ),
+    (
+        "storage_sequence_source_plain_field_unconstructed",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct H{dart::A value;};",
+        "A()=default",
+        "A()=delete",
+        True,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_STORAGE_SEQUENCE,
+    ids=[row[0] for row in FIVE_FIX_STORAGE_SEQUENCE],
+)
+def test_five_fix_storage_sequence(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_STORAGE_ADMISSION = [
+    (
+        "storage_admission_global_element",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::vector<dart::V> values{::dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_admission_global_sequence_copy",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::vector<dart::V> values(::std::vector<dart::V>{dart::V{1}});}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_admission_scoped_alias",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "namespace n{using E=dart::V;using S=std::vector<E>;}using E=int;void use(){n::S values{n::E{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_admission_foreign_count",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "struct Count{operator unsigned()const;};void use(){std::vector<dart::V> values(Count{});}",
+        "A();",
+        "A()=delete;",
+        True,
+        True,
+    ),
+    (
+        "storage_admission_local_callable_hides_alias",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}\n",
+        "using Element=dart::V; struct Count{std::size_t operator()(int) const;}; void use(){Count Element;std::vector<dart::V> values{Element(2)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "storage_admission_local_lambda_hides_alias",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}\n",
+        "using Element=dart::V;void use(){auto Element=[](int){return 2u;};std::vector<dart::V> values{Element(2)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_STORAGE_ADMISSION,
+    ids=[row[0] for row in FIVE_FIX_STORAGE_ADMISSION],
+)
+def test_five_fix_storage_admission(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_STORAGE_BRANCH = [
+    (
+        "storage_branch_branch_excludes_callable_hider",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}\n",
+        "using Element=dart::V;struct Count{std::size_t operator()(int)const;};\nvoid use(){\n#if CHOICE\nCount Element;\n#else\nstd::vector<dart::V> values{Element(2)};\n#endif\n}\n",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_STORAGE_BRANCH,
+    ids=[row[0] for row in FIVE_FIX_STORAGE_BRANCH],
+)
+def test_five_fix_storage_branch(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_STORAGE_GLOBAL = [
+    (
+        "storage_global_global_element_target",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::vector<::dart::V> values{dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_global_global_both",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::vector<::dart::V> values{::dart::V{1}};}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+    (
+        "storage_global_global_nested_copy",
+        "#include <variant>\n#include <vector>\nnamespace dart{class A{int storage;public:A();explicit A(int);};using V=std::variant<A,int>;}",
+        "void use(){std::vector<::dart::V> values(std::vector<dart::V>{dart::V{1}});}",
+        "A();",
+        "A()=delete;",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_STORAGE_GLOBAL,
+    ids=[row[0] for row in FIVE_FIX_STORAGE_GLOBAL],
+)
+def test_five_fix_storage_global(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_ORDINARY_ADMISSION = [
+    (
+        "ordinary_admission_source_member_function",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}",
+        "using Element=dart::V;struct H{std::size_t Element(int);void use(){std::vector<dart::V> values{Element(2)};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "ordinary_admission_api_member_function",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}namespace dart{class H{public:std::size_t Element(int);void use();};}",
+        "using Element=dart::V;void dart::H::use(){std::vector<dart::V> values{Element(2)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "ordinary_admission_source_member_value",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}",
+        "using Element=dart::V;struct Count{std::size_t operator()(int)const;};struct H{Count Element;void use();};void H::use(){std::vector<dart::V> values{Element(2)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "ordinary_admission_api_member_value",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}namespace dart{struct Count{std::size_t operator()(int)const;};class H{Count Element;public:void use();};}",
+        "using Element=dart::V;void dart::H::use(){std::vector<dart::V> values{Element(2)};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_ORDINARY_ADMISSION,
+    ids=[row[0] for row in FIVE_FIX_ORDINARY_ADMISSION],
+)
+def test_five_fix_ordinary_admission(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_COUNT_CONTROLS = {
+    row[0]: row[1:3]
+    for row in FIVE_FIX_STORAGE_ADMISSION + FIVE_FIX_ORDINARY_ADMISSION
+    if "hides_alias" in row[0] or row[0].startswith("ordinary_admission_")
+}
+
+
+@pytest.mark.parametrize("label", sorted(FIVE_FIX_COUNT_CONTROLS))
+def test_five_fix_single_sequence_construction_count(extractor, tmp_path, label):
+    header, source = FIVE_FIX_COUNT_CONTROLS[label]
+    result = _scan_receiver_api(extractor, tmp_path, header, source)
+    assert _entries(result, "constructors")["dart::A"]["count"] == 1
+
+
+FIVE_FIX_API_ORDINARY_KIND = [
+    (
+        "api_field_hider",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;using Element=V;struct Count{std::size_t operator()(int)const;};struct H{Count Element;std::vector<V> values{Element(2)};};}",
+        "void use(){dart::H h;}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_field_method_hider",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;using Element=V;struct H{std::size_t Element(int);std::vector<V> values{Element(2)};};}",
+        "void use(){dart::H h;}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_default_method_hider",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;using Element=V;struct H{static std::size_t Element(int);static void f(std::vector<V> values=std::vector<V>{Element(2)});};}",
+        "void use(){dart::H::f();}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_default_private_static_value_direct_temporary",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;using Element=V;struct Count{std::size_t operator()(int)const;};class H{static Count Element;public:static void f(std::vector<V> values=std::vector<V>{Element(2)});};}",
+        "void use(){dart::H::f();}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "source_class_alias_before_outer_function",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}",
+        "std::size_t Element(int);struct H{using Element=dart::V;void use(){std::vector<dart::V> values{Element(2)};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "api_class_alias_before_outer_function",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;std::size_t Element(int);struct H{using Element=V;std::vector<V> values{Element(2)};};}",
+        "void use(){dart::H h;}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_API_ORDINARY_KIND,
+    ids=[row[0] for row in FIVE_FIX_API_ORDINARY_KIND],
+)
+def test_five_fix_api_ordinary_kind(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_API_KIND_FOLLOWUP = [
+    (
+        "api_default_whole_array_ordinary_call_identity",
+        "#include <array>\n#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;using X=std::array<V,2>;struct get{};X get();void f(X value={get()});}",
+        "void use(){dart::f();}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "api_inherited_callable_value_hides_outer_alias",
+        "#include <vector>\n#include <variant>\n#include <array>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;using X=std::array<V,2>;using Element=V;struct Count{std::size_t operator()(int)const;};struct B{Count Element;};struct H:B{std::vector<V> values{Element(2)};};}",
+        "void use(){dart::H h;}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "api_own_alias_hides_inherited_callable_value",
+        "#include <vector>\n#include <variant>\n#include <array>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;using X=std::array<V,2>;using Element=V;struct Count{std::size_t operator()(int)const;};struct B{Count Element;};struct H:B{using Element=V;std::vector<V> values{Element(2)};};}",
+        "void use(){dart::H h;}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_API_KIND_FOLLOWUP,
+    ids=[row[0] for row in FIVE_FIX_API_KIND_FOLLOWUP],
+)
+def test_five_fix_api_kind_followup(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_SOURCE_OWNER_KIND = [
+    (
+        "api_injected_self_type_before_base_method",
+        "namespace dart{struct B{unsigned H(int);};class H:public B{int storage;public:H()=default;void use();};}",
+        "void dart::H::use(){H value;}",
+        "H()=default",
+        "H()=delete",
+        True,
+        True,
+    ),
+    (
+        "source_owner_api_base_callable_hides_alias",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;struct Count{std::size_t operator()(int)const;};struct B{Count Element;};}",
+        "using Element=dart::V;struct H:dart::B{void use(){std::vector<dart::V> values{Element(2)};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "source_owner_source_base_callable_hides_alias",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;struct Count{std::size_t operator()(int)const;};struct B{Count Element;};}",
+        "struct Base{dart::Count Element;};using Element=dart::V;struct H:Base{void use(){std::vector<dart::V> values{Element(2)};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "source_owner_alias_before_base_callable",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;struct Count{std::size_t operator()(int)const;};struct B{Count Element;};}",
+        "struct H:dart::B{using Element=dart::V;void use(){std::vector<dart::V> values{Element(2)};}};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_SOURCE_OWNER_KIND,
+    ids=[row[0] for row in FIVE_FIX_SOURCE_OWNER_KIND],
+)
+def test_five_fix_source_owner_kind(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_SOURCE_ALIAS_BASE = [
+    (
+        "source_owner_alias_to_api_base_callable",
+        "#include <vector>\n#include <variant>\n#include <cstddef>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;struct Count{std::size_t operator()(int)const;};struct B{Count Element;};}",
+        "using Element=dart::V;using Parent=dart::B;struct H:Parent{void use(){std::vector<dart::V> values{Element(2)};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_SOURCE_ALIAS_BASE,
+    ids=[row[0] for row in FIVE_FIX_SOURCE_ALIAS_BASE],
+)
+def test_five_fix_source_alias_base(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)

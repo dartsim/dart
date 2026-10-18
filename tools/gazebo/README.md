@@ -234,17 +234,19 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
 - Used type-alias target definitions outside field layout dependencies are not recorded.
-- Qualified member-function references without calls are not recorded.
+- Qualified member-function references without calls are not recorded, so
+  `decltype(&Owner::method)` does not produce a member-pointer callable; an
+  explicitly declared indexed member-pointer type is tracked.
 - Dependent `receiver->template method<T>()` calls are not recognized.
 - Unique-map node-handle results (`.node`, `.mapped()`) and `std::invoke`
-  callback results do not propagate receivers; the compiled Gazebo gates
-  remain authoritative for them.
+  callback results and iterator adapters (`std::next`, `std::prev`) do not
+  propagate receivers; the compiled Gazebo gates remain authoritative for them.
 - Base relationships of referenced DART types are not recorded.
 - Trailing return types are not used to infer chained-call receivers.
 - Implicit mapped-value construction by `std::map` and `std::unordered_map`
   subscripting is not recorded.
-- Explicitly selected `std::variant` alternatives (`std::in_place_type` or
-  `std::in_place_index`) are not tracked for construction.
+- Explicitly selected `std::variant` alternatives (`std::in_place_type`,
+  `std::in_place_index`, or `emplace<T>`/`emplace<I>`) are not tracked for construction.
 - API-default same-type prvalue elision recognizes indexed direct calls;
   casts and other default-expression forms may retain conservative extra
   constructor evidence.
@@ -311,7 +313,12 @@ Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
 and count arguments forwarded by standard factories. This dependency applies at
-zero count too. Braced returns use their enclosing named function's or explicit
+zero count too. Explicit prvalues of the full sequence type are copies or moves.
+A sole explicitly typed element prvalue inside a braced initializer supplies an
+element list. Untyped single braced arguments such as `{1}` retain conservative
+count evidence without overload resolution. Source field constructor candidates
+are retained without proving the owner is instantiated.
+Braced returns use their enclosing named function's or explicit
 trailing-return lambda's declared return type for construction evidence.
 Constructed classes' default field initializer declarations and their named
 constant dependencies are retained in `default_member_initializer_declarations`.
