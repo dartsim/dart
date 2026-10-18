@@ -239,12 +239,14 @@ def snapshot():
 
     walk(dartpy, "dartpy")
     # Defining owners take precedence over inherited rows and module re-exports.
-    for _, _, _, owner, name in pending_runtime:
+    # Members stay under the first walked class path to preserve comparison keys;
+    # a nested class reached through an alias may lack rows at <identity_path>.member.
+    for _, value, _, owner, name in pending_runtime:
         if owner is not None and id(owner) in seen:
             member = getattr(owner, name)
-            identities.setdefault(
-                identity(member), (seen[id(owner)] + "." + name, member)
-            )
+            owner_path = seen[id(owner)] + "." + name
+            identities.setdefault(identity(member), (owner_path, member))
+            identities.setdefault(identity(value), (owner_path, value))
     for metadata, value, path, owner, name in pending_runtime:
         if owner is not None:
             if id(owner) not in seen:

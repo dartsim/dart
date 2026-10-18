@@ -281,12 +281,9 @@ def test_api_snapshot_links_bound_classmethod_reexports(api_surface, monkeypatch
         "dartpy.ZBase.operation",
         "dartpy.AOperation",
         "dartpy.operation",
+        "dartpy.derived_operation",
     ):
         assert rows[path]["runtime"]["identity_path"] == "dartpy.ZBase.operation"
-    assert (
-        rows["dartpy.derived_operation"]["runtime"]["identity_path"]
-        == "dartpy.derived_operation"
-    )
     assert rows == api_surface.snapshot()
 
 
