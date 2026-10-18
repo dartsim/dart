@@ -400,6 +400,19 @@ def qualified(values):
     return "".join(values).lstrip(":")
 
 
+CALLING_CONVENTIONS = {
+    "__cdecl",
+    "__clrcall",
+    "__fastcall",
+    "__stdcall",
+    "__thiscall",
+    "__vectorcall",
+    "_cdecl",
+    "_fastcall",
+    "_stdcall",
+}
+
+
 def function_pointer_declarator(values):
     """A grouped callable's element type, name and surrounding array shape."""
     tokens = Tokens(" ".join(values))
@@ -413,6 +426,10 @@ def function_pointer_declarator(values):
         ):
             continue
         name = opening + 1
+        attributes = set()
+        while values[name : name + 1] and values[name] in CALLING_CONVENTIONS:
+            attributes.add(name)
+            name += 1
         member_pointer = False
         if values[name : name + 1] not in (["*"], ["&"], ["&&"]):
             name = next(
@@ -428,9 +445,11 @@ def function_pointer_declarator(values):
             member_pointer = name < closing
         if name == closing:
             continue
-        attributes = set()
         while name < closing:
             if values[name] in {"*", "&", "&&", "const", "volatile"}:
+                name += 1
+            elif values[name] in CALLING_CONVENTIONS:
+                attributes.add(name)
                 name += 1
             elif (
                 values[name] in {"__attribute__", "__attribute", "alignas"}
@@ -1800,8 +1819,8 @@ class ApiIndex:
                 continue
             if index + 1 in tokens.pairs and (
                 value == "alignas"
-                or value in {"__attribute__", "__attribute"}
-                and {"aligned", "__aligned__"}.intersection(
+                or value in {"__attribute__", "__attribute", "__declspec"}
+                and {"aligned", "__aligned__", "align"}.intersection(
                     values[index + 2 : tokens.pairs[index + 1]]
                 )
             ):
@@ -1817,7 +1836,7 @@ class ApiIndex:
 
     def layout_storage_declarator(self, member, scope):
         """Physical callable-storage fragments, including genuine alias targets."""
-        bounds, alignments = [], []
+        bounds, alignments, bases = [], [], set()
 
         def dependencies(values, where, retained):
             tokens = Tokens(" ".join(values))
@@ -1855,6 +1874,29 @@ class ApiIndex:
                 opening = pointer["opening"]
                 retained.update(range(opening, tokens.pairs[opening] + 1))
                 dependencies(values, where, retained)
+                if pointer["member_pointer"]:
+                    # MSVC sizes a member pointer by its owner's inheritance model.
+                    group = values[opening + 1 : tokens.pairs[opening]]
+                    star = next(
+                        (
+                            index
+                            for index in range(len(group) - 1)
+                            if group[index : index + 2] == ["::", "*"]
+                        ),
+                        0,
+                    )
+                    for _, _, spelling in names_in(group[:star]):
+                        pending = [self.owner(self.resolve(spelling, where))]
+                        while pending:
+                            current = pending.pop()
+                            cls = self.classes.get(current)
+                            if cls and current not in bases:
+                                bases.add(current)
+                                alignments.extend(
+                                    {"class": current, "signature": f": {raw}"}
+                                    for raw in cls["base_clauses"]
+                                )
+                                pending.extend(map(self.owner, cls["bases"]))
                 return [
                     value for index, value in enumerate(values) if index in retained
                 ]
@@ -2117,6 +2159,50 @@ class ApiIndex:
                         )
         return sorted(result, key=lambda d: (d["class"], d["signature"]))
 
+    def prvalue_default(self, prefix, expression, scope):
+        """Whether a default is a direct call returning the parameter class by value."""
+        # shortcut: resolve indexed direct calls only; extend for other default forms.
+        names = list(names_in(expression))
+        if not value_argument(prefix) or not names or names[0][0]:
+            return False
+        opening = template_end(expression, names[0][1])
+        if (
+            expression[opening : opening + 1] != ["("]
+            or Tokens(" ".join(expression)).pairs.get(opening) != len(expression) - 1
+            or self.resolve(names[0][2], scope)
+        ):
+            return False
+        parameter = {
+            self.owner(self.resolve(n, scope))
+            for _, _, n in names_in(prefix)
+            if n not in {"const", "volatile"}
+        }
+        # Argument calls do not determine the outer call's return type.
+        declarations = self.decltype_declarations(
+            ["decltype", "(", *expression[:opening], "(", ")", ")"], scope
+        )
+
+        def returned(item):
+            where = tuple(
+                (item["class"] or item["name"].rpartition("::")[0]).split("::")
+            )
+            values = construction_aliases(return_type_tokens(item), self, where)
+            return (
+                value_argument(values)
+                and {
+                    self.owner(self.resolve(n, where))
+                    for _, _, n in names_in(values)
+                    if n not in {"const", "volatile"}
+                }
+                == parameter
+            )
+
+        return (
+            None not in parameter
+            and bool(declarations)
+            and all(map(returned, declarations))
+        )
+
     def default_argument_declarations(self, item, seen=()):
         """Constants and constructed class dependencies in parameter defaults."""
         key = item.get("class"), item.get("signature")
@@ -2242,6 +2328,7 @@ class ApiIndex:
             initialized = Tokens(
                 " ".join(prefix + ["__default_value", "="] + expression + [";"])
             )
+            elided = self.prvalue_default(prefix, expression, scope)
             for start, end, spelling in names_in(initialized.values):
                 if start < len(prefix) and not value_argument(prefix):
                     continue
@@ -2251,7 +2338,11 @@ class ApiIndex:
                     initialized, start, end, set(), []
                 ):
                     continue
-                result.extend(self.construction_initializer_declarations(constructed))
+                parameter_value = elided and start < len(prefix)
+                if not parameter_value:
+                    result.extend(
+                        self.construction_initializer_declarations(constructed)
+                    )
                 for owner in self.construction_dependencies(constructed):
                     result.extend(self.alignment_declarations(owner))
                     result.extend(
@@ -2276,7 +2367,9 @@ class ApiIndex:
                                     tuple(field["class"].split("::")),
                                 )
                             )
-                    for constructor in self.constructors.get(owner, ()):
+                    for constructor in (
+                        () if parameter_value else self.constructors.get(owner, ())
+                    ):
                         result.append(
                             {
                                 **public_declaration(constructor),
@@ -3394,6 +3487,7 @@ def index_api(header_root):
                     cls["name"],
                     {
                         "bases_raw": [],
+                        "base_clauses": [],
                         "bases": [],
                         "final": False,
                         "fields": [],
@@ -3537,6 +3631,7 @@ def index_api(header_root):
             break
     for name, cls in api.classes.items():
         scope = tuple(name.split("::")[:-1])
+        cls["base_clauses"] = list(cls["bases_raw"])
         for raw in cls.pop("bases_raw"):
             for _, _, value in names_in(TOKEN.findall(raw)):
                 resolved = api.resolve(value, scope)

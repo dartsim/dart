@@ -22950,3 +22950,113 @@ def test_round25_standards_attributed_sequence_counts(
     before = _scan_receiver_api(extractor, tmp_path, before_header, source)
     after = _scan_receiver_api(extractor, tmp_path, after_header, source)
     assert (before != after) == drift
+
+
+def _api_changes(extractor, tmp_path, header, changed, source):
+    before = _scan_receiver_api(extractor, tmp_path, header, source)
+    after = _scan_receiver_api(extractor, tmp_path, changed, source)
+    return before != after
+
+
+def test_msvc_declspec_align_is_callback_storage_evidence(extractor, tmp_path):
+    header = "namespace dart { struct H { __declspec(align(32)) int (*callback)(); }; }"
+    assert _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("align(32)", "align(64)"),
+        "static_assert(alignof(dart::H)==32);",
+    )
+
+
+def test_calling_convention_callback_keeps_return_receiver(extractor, tmp_path):
+    header = (
+        "namespace dart { struct A { void hit() const; };"
+        " struct Holder { A* (__stdcall *factory)(); }; }"
+    )
+    assert _api_changes(
+        extractor,
+        tmp_path,
+        header,
+        header.replace("void hit() const;", "void hit() const=delete;"),
+        "void use(dart::Holder& h){h.factory()->hit();}",
+    )
+
+
+def test_member_pointer_owner_inheritance_is_storage_evidence(extractor, tmp_path):
+    header = (
+        "namespace dart { struct B1 {}; struct B2 {}; struct Owner : B1 { void run(); };"
+        " struct H { void (Owner::*callback)(); }; }"
+    )
+    source = "static_assert(sizeof(dart::H)==8);"
+    for changed in (
+        header.replace("Owner : B1", "Owner : B1, B2"),
+        header.replace("Owner : B1", "Owner : virtual B1"),
+    ):
+        assert _api_changes(extractor, tmp_path, header, changed, source)
+
+
+@pytest.mark.parametrize(
+    ("declarations", "default", "parameter"),
+    [
+        ("A make();", "make()", "A"),
+        ("struct B {}; B other(); A make(B);", "make(other())", "A"),
+        ("using Result=A; Result make();", "make()", "A"),
+        ("A make();", "make()", "const A"),
+        ("const A make();", "make()", "A"),
+    ],
+)
+def test_same_type_prvalue_default_skips_constructors(
+    extractor, tmp_path, declarations, default, parameter
+):
+    header = (
+        "namespace dart { struct A { A()=default; A(const A&)=default; A(A&&)=default; };"
+        f" {declarations} void f({parameter} value = {default}); }}"
+    )
+    for old, new in (
+        ("A()=default", "A()=delete"),
+        ("A(const A&)=default", "A(const A&)=delete"),
+        ("A(A&&)=default", "A(A&&)=delete"),
+    ):
+        assert not _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace(old, new),
+            "void use(){dart::f();}",
+        )
+
+
+@pytest.mark.parametrize(
+    ("returned", "old", "new"),
+    [
+        ("A*", "A(A*);", "A(A*)=delete;"),
+        ("A&", "A(const A&)=default;", "A(const A&)=delete;"),
+        ("A&&", "A(A&&)=default;", "A(A&&)=delete;"),
+    ],
+)
+def test_prvalue_default_preserves_aliased_indirection(
+    extractor, tmp_path, returned, old, new
+):
+    header = (
+        f"namespace dart {{struct A {{A()=default;{old}}};"
+        f"using Result={returned};Result make();void f(A value=make());}}"
+    )
+    assert _api_changes(
+        extractor, tmp_path, header, header.replace(old, new), "void use(){dart::f();}"
+    )
+
+
+def test_converting_or_explicit_default_keeps_constructors(extractor, tmp_path):
+    for default in ("make()", "A(make())"):
+        header = (
+            "namespace dart { struct B {}; struct A { A()=default; A(B); };"
+            f" B make(); void f(A value = {default}); }}"
+        )
+        assert _api_changes(
+            extractor,
+            tmp_path,
+            header,
+            header.replace("A(B);", "A(B)=delete;"),
+            "void use(){dart::f();}",
+        )
