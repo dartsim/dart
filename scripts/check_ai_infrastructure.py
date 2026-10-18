@@ -5477,6 +5477,13 @@ def exercise_scenarios(
             ):
                 try:
                     owner_source = (root / relative).read_text(encoding="utf-8")
+                    # ATX headings end at their line, even without blank lines.
+                    owner_source = re.sub(
+                        r"(?m)^[ \t]*(?:>[ \t]*)*#{1,6}[ \t]+"
+                        r"(.*?)(?:[ \t]+#+)?[ \t]*$",
+                        r"\n\n\1\n\n",
+                        owner_source,
+                    )
                     # Fold wrapping while preserving paragraph and list boundaries.
                     owner_text = "\n\n".join(
                         " ".join(paragraph.split())
@@ -5494,14 +5501,14 @@ def exercise_scenarios(
                 # shortcut: match canonical clauses; extend for new owner wording.
                 modal = r"(?:should|must|can|could|will|would|shall|may|might)"
                 negation = (
-                    r"(?:\bdo\s+not|\bdon't|\bnot|n't|\bnever|\bno longer)"
+                    r"(?:\bdo\s+not|\bdon't|\bcannot|\bnot|n't|\bnever|\bno longer)"
                     r"\s+delegate\s+by\s+default\b"
                     r"|\bdelegation\s+(?:is\s+(?:not|never|no\s+longer)|isn't"
                     r"|cannot\s+be"
                     rf"|(?:{modal}"
                     r"\s+(?:not|never|no\s+longer)"
                     r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
-                    r"\s+(?:the\s+)?default\b"
+                    r"\s+(?:(?:the\s+)?default|(?:enabled|on|active)\s+by\s+default)\b"
                     rf"|\bdelegation\s+(?:is|{modal}\s+be)\s+"
                     r"(?:disabled|off)\s+by\s+default\b"
                 )
