@@ -215,6 +215,10 @@
 
 * Build
 
+  * Include the generated `dart/config.hpp` and
+    `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.
+    [#3811](https://github.com/dartsim/dart/pull/3811)
+
   * Standard Pixi environments use sdformat 16.1 and urdfdom 6, reducing memory
     used to load large SDF worlds through shared schema descriptions.
     [#3803](https://github.com/dartsim/dart/pull/3803)
