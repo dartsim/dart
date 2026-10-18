@@ -109,6 +109,7 @@
   * Fix undefined behavior when a custom deleter of a replaced collision
     detector or contact surface handler reads the constraint solver's
     current one.
+    [#3820](https://github.com/dartsim/dart/pull/3820)
 
   * An exception thrown by a collision filter during an ODE collision check
     now reaches the caller after ODE finishes the check, instead of unwinding
