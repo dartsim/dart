@@ -5245,6 +5245,12 @@ class _VisibleHTML(HTMLParser):
     script/style/title/template plus iframe/noembed/noframes, whose legacy
     fallback bodies are not rendered as owner text.
 
+    Scope: a deterministic CommonMark text plus finite HTML filter under the
+    parser's default no-scripting interpretation. <noscript> fallback text is
+    kept, so required markers, stale gates and negative checks all see it.
+    Conditional scripting visibility, CSS computed visibility and browser
+    recovery are not modeled.
+
     shortcut: HTMLParser has no browser recovery; revisit if owner markup needs it.
     """
 

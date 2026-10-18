@@ -81,6 +81,12 @@ fast staged/setup internals and is not sufficient completion evidence.
 The checker's delegation-policy reading uses the Pixi-supplied `markdown-it-py`;
 run it through `pixi run` and it fails closed, never falling back to raw text,
 under an interpreter without that parser.
+That reading is a deterministic CommonMark text and finite HTML filter under
+the default no-scripting interpretation of the
+[`noscript` element](https://html.spec.whatwg.org/multipage/scripting.html#the-noscript-element):
+`noscript` fallback text counts for required markers, stale gates, and negative
+checks. Conditional scripting visibility, CSS computed visibility, and browser
+recovery are not modeled.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;

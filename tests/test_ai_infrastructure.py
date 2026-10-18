@@ -10018,3 +10018,46 @@ def test_a04_positive_boundary_flag(monkeypatch, relative, flag, missing):
     errors = infra.exercise_scenarios(ROOT, emit=False)
     needle = f"{relative} is missing delegation marker '`delegation=off`'"
     assert any(needle in e for e in errors) is missing
+
+
+# noscript is read in the checker's default no-scripting view (not universal
+# browser visibility): its fallback text counts for markers and negative checks.
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+def test_noscript_no_scripting_view_counts_required_markers(monkeypatch, relative):
+    marker = _A04_MARKERS[relative]
+    source = ROOT / relative
+    original = source.read_text()
+    stripped = original.replace(marker, "missing-positive").replace(
+        "delegation=off", "missing-flag"
+    )
+    body = f"{stripped}\n\n<noscript>{marker}. Use delegation=off.</noscript>"
+    read_text = Path.read_text
+
+    def changed_text(path, *args, **kwargs):
+        if path == source:
+            return body
+        return read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_text)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert not any(relative in e and "missing delegation marker" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+def test_noscript_no_scripting_view_rejects_negation(monkeypatch, relative):
+    _owner_suffix(
+        monkeypatch, relative, "\n\n<noscript>Do not delegate by default.</noscript>"
+    )
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors)
+
+
+@pytest.mark.parametrize("relative", _A04_MARKERS)
+def test_noscript_no_scripting_view_rejects_stale_gate(monkeypatch, relative):
+    _owner_suffix(
+        monkeypatch,
+        relative,
+        "\n\n<noscript>Delegate only when the user requests it.</noscript>",
+    )
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "still gates delegation" in e for e in errors)
