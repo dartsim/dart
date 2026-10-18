@@ -36,11 +36,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/CylindricalJointConstraint.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/constraint/WeldJointConstraint.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -537,6 +539,38 @@ void World::restoreState(const WorldState& state)
             ->resetDynamicState();
         break;
     }
+  }
+  // Retire references to detector-owned contacts before invalidating history.
+  auto& solver = *mConstraintSolver;
+  solver.mConstrainedGroups.clear();
+  solver.mActiveConstraints.clear();
+  solver.mContactConstraints.clear();
+  solver.mReusableContactConstraints.clear();
+  solver.mSoftContactConstraints.clear();
+  solver.mReusableSoftContactConstraints.clear();
+  solver.mJointConstraints.clear();
+  solver.mMimicMotorConstraints.clear();
+  solver.mCouplerConstraints.clear();
+  solver.mJointCoulombFrictionConstraints.clear();
+  solver.mGroupResting.clear();
+  solver.mGroupAllSleepCandidates.clear();
+  solver.mGroupPreserveSleepCandidates.clear();
+  solver.mHadDeactivationGroups = false;
+  solver.clearLastCollisionResult();
+  if (auto* cache = constraint::detail::findContactWarmStartCache(&solver))
+    cache->clear();
+  collision::detail::CollisionHistory::clear(*solver.getCollisionGroup());
+  for (const auto& skeleton : mSkeletons) {
+    skeleton->clearConstraintImpulses();
+    skeleton->setImpulseApplied(false);
+    skeleton->clearPositionConstraintImpulses();
+    skeleton->clearPositionVelocityChanges();
+    skeleton->setPositionImpulseApplied(false);
+    skeleton->resetUnion();
+    skeleton->setIslandIndex(-1);
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    skeleton->clearCollidingBodies();
+    DART_SUPPRESS_DEPRECATED_END
   }
   // Dynamic restoration starts a fresh active trajectory, not exact history.
   wakeRestingSkeletonsForWorldChange();

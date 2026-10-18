@@ -35,11 +35,24 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/collision/detail/CollisionHistory.hpp"
 
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 namespace dart {
 namespace collision {
+
+void detail::CollisionHistory::clear(BulletCollisionGroup& group)
+{
+  auto* world = group.getBulletCollisionWorld();
+  auto* pairs = world->getBroadphase()->getOverlappingPairCache();
+  for (int i = 0; i < world->getNumCollisionObjects(); ++i) {
+    auto* object = world->getCollisionObjectArray()[i];
+    if (auto* proxy = object->getBroadphaseHandle())
+      pairs->cleanProxyFromPairs(proxy, world->getDispatcher());
+  }
+  group.resetPersistentPairFilterCache();
+}
 
 //==============================================================================
 BulletCollisionGroup::BulletCollisionGroup(

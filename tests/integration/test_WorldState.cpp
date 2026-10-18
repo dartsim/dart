@@ -37,12 +37,19 @@
  */
 
 #include "AllocationCounting.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Aspect.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -108,6 +115,119 @@ WorldPtr makeSleepingWorld()
   box->setPosition(5, 0.05 - 1e-6);
   world->addSkeleton(box);
   return world;
+}
+
+enum class SnapshotSolver
+{
+  Nsgs,
+  Pgs,
+  Fbf
+};
+
+WorldPtr makeContactWorld(
+    SnapshotSolver backend = SnapshotSolver::Nsgs,
+    bool splitImpulse = false,
+    const std::string& detector = "dart")
+{
+  auto world = makeSleepingWorld();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      world->getConstraintSolver());
+  solver->setCollisionDetector(
+      collision::CollisionDetector::getFactory()->create(detector));
+  solver->setSplitImpulseEnabled(splitImpulse);
+  constraint::NsgsFrictionSolver::Options options;
+  options.maxSweeps = 2;
+  solver->setBoxedLcpSolver(
+      std::make_shared<constraint::NsgsFrictionSolver>(options));
+  solver->setSecondaryBoxedLcpSolver(nullptr);
+  if (backend == SnapshotSolver::Fbf) {
+    constraint::FbfFrictionSolver::Options fbfOptions;
+    fbfOptions.maxOuterIterations = 2;
+    solver->setBoxedLcpSolver(
+        std::make_shared<constraint::FbfFrictionSolver>(fbfOptions));
+  }
+  if (backend == SnapshotSolver::Pgs) {
+    auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+    // Accept the capped iterate so cold and warm seeds remain observable.
+    pgs->setOption(constraint::PgsBoxedLcpSolver::Option(2, 1e-6, 1e6));
+    solver->setBoxedLcpSolver(pgs);
+    solver->setSecondaryBoxedLcpSolver(nullptr);
+    auto limited = Skeleton::create("limited");
+    auto* joint = limited->createJointAndBodyNodePair<PrismaticJoint>().first;
+    joint->setPositionLowerLimit(0, 0.0);
+    joint->setPosition(0, -1e-6);
+    joint->setLimitEnforcement(true);
+    world->addSkeleton(limited);
+  }
+  world->getSkeleton(1)->setVelocity(3, 0.02);
+  if (detector == "ode") {
+    auto box = world->getSkeleton(1);
+    box->getBodyNode(0)->getShapeNode(0)->setShape(
+        std::make_shared<CapsuleShape>(0.03, 0.04));
+    box->setPosition(1, math::constantsd::pi() / 2.0);
+    box->setPosition(5, 0.03 - 1e-6);
+  }
+  return world;
+}
+
+void expectFreshTrajectory(
+    SnapshotSolver backend = SnapshotSolver::Nsgs,
+    bool splitImpulse = false,
+    const std::string& detector = "dart")
+{
+  auto a = makeContactWorld(backend, splitImpulse, detector);
+  for (int i = 0; i < 40; ++i)
+    a->step();
+  ASSERT_GT(a->getLastCollisionResult().getNumContacts(), 0u);
+  if (backend == SnapshotSolver::Pgs) {
+    ASSERT_GT(a->getSkeleton(2)->getJoint(0)->getConstraintImpulse(0), 0.0);
+  }
+  const auto state = a->captureState();
+  for (int i = 0; i < 30; ++i)
+    a->step();
+  auto b = makeContactWorld(backend, splitImpulse, detector);
+  auto* group = a->getConstraintSolver()->getCollisionGroup().get();
+  const auto contentVersion = group->getContentVersion();
+  a->restoreState(state);
+  b->restoreState(state);
+  EXPECT_EQ(a->getConstraintSolver()->getCollisionGroup().get(), group);
+  EXPECT_EQ(group->getContentVersion(), contentVersion);
+  EXPECT_EQ(a->getLastCollisionResult().getNumContacts(), 0u);
+  for (int i = 0; i < 8; ++i) {
+    SCOPED_TRACE(i);
+    a->step();
+    b->step();
+    const auto sa = a->captureState();
+    const auto sb = b->captureState();
+    ASSERT_TRUE((sa.positions.array() == sb.positions.array()).all())
+        << "position delta: " << (sa.positions - sb.positions).transpose();
+    ASSERT_TRUE((sa.velocities.array() == sb.velocities.array()).all())
+        << "velocity delta: " << (sa.velocities - sb.velocities).transpose();
+    const auto& ca = a->getLastCollisionResult();
+    const auto& cb = b->getLastCollisionResult();
+    ASSERT_EQ(ca.getNumContacts(), cb.getNumContacts());
+    EXPECT_EQ(ca.isCollision(), cb.isCollision());
+    for (std::size_t c = 0; c < ca.getNumContacts(); ++c) {
+      const auto& x = ca.getContact(c);
+      const auto& y = cb.getContact(c);
+      EXPECT_TRUE((x.point.array() == y.point.array()).all());
+      EXPECT_TRUE((x.normal.array() == y.normal.array()).all());
+      EXPECT_TRUE((x.force.array() == y.force.array()).all());
+      EXPECT_EQ(x.penetrationDepth, y.penetrationDepth);
+      EXPECT_EQ(
+          x.collisionObject1->getBodyNode()->getSkeleton()->getName(),
+          y.collisionObject1->getBodyNode()->getSkeleton()->getName());
+      EXPECT_EQ(
+          x.collisionObject2->getBodyNode()->getSkeleton()->getName(),
+          y.collisionObject2->getBodyNode()->getSkeleton()->getName());
+      EXPECT_EQ(
+          x.collisionObject1->getBodyNode()->getName(),
+          y.collisionObject1->getBodyNode()->getName());
+      EXPECT_EQ(
+          x.collisionObject2->getBodyNode()->getName(),
+          y.collisionObject2->getBodyNode()->getName());
+    }
+  }
 }
 
 template <typename JointType = WeldJoint>
@@ -614,4 +734,97 @@ TEST(WorldState, ReusableGatherDoesNotAllocate)
   if (!raw.skipped()) {
     EXPECT_EQ(raw.allocationCount(), 0u);
   }
+}
+
+TEST(WorldState, RestoreClearsPersistentContactHistory)
+{
+  expectFreshTrajectory();
+}
+
+TEST(WorldState, RestoreClearsIterativeContactHistoryWithJointLimits)
+{
+  expectFreshTrajectory(SnapshotSolver::Pgs);
+}
+
+TEST(WorldState, RestoreClearsSplitImpulseHistory)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, true);
+}
+
+TEST(WorldState, RestoreClearsFbfContactHistory)
+{
+  expectFreshTrajectory(SnapshotSolver::Fbf);
+}
+
+TEST(WorldState, RestoreClearsFclContactHistory)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, false, "fcl");
+}
+
+#if HAVE_BULLET
+TEST(WorldState, RestoreClearsBulletContactHistory)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, false, "bullet");
+}
+#endif
+
+#if HAVE_ODE
+TEST(WorldState, RestoreClearsOdeContactHistory)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, false, "ode");
+}
+#endif
+
+TEST(WorldState, RestoreDoesNotAllocate)
+{
+  const auto measure = [](const WorldPtr& world) {
+    const auto state = world->captureState();
+    test::ScopedHeapAllocationCounter heap;
+    test::ScopedRawHeapAllocationCounter raw;
+    for (int i = 0; i < 10; ++i)
+      world->restoreState(state);
+    heap.stop();
+    raw.stop();
+    EXPECT_EQ(heap.allocationCount(), 0u);
+    if (!raw.skipped()) {
+      EXPECT_EQ(raw.allocationCount(), 0u);
+    }
+  };
+  for (const auto* detector : {
+         "dart", "fcl",
+#if HAVE_BULLET
+             "bullet",
+#endif
+#if HAVE_ODE
+             "ode",
+#endif
+       }) {
+    SCOPED_TRACE(detector);
+    auto world = makeContactWorld(SnapshotSolver::Nsgs, false, detector);
+    for (int i = 0; i < 40; ++i)
+      world->step();
+    measure(world);
+  }
+  measure(makeSoftWorld());
+}
+
+TEST(WorldState, InvalidRestorePreservesContactHistory)
+{
+  auto world = makeContactWorld();
+  auto control = makeContactWorld();
+  for (int i = 0; i < 40; ++i) {
+    world->step();
+    control->step();
+  }
+  const auto before = world->captureState();
+  const auto contacts = world->getLastCollisionResult().getNumContacts();
+  ASSERT_GT(contacts, 0u);
+  auto invalid = before;
+  invalid.positions[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(world->restoreState(invalid), std::invalid_argument);
+  expectEqual(before, world->captureState());
+  EXPECT_EQ(world->getLastCollisionResult().getNumContacts(), contacts);
+  world->step();
+  control->step();
+  expectEqual(world->captureState(), control->captureState());
 }

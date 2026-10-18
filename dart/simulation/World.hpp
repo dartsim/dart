@@ -173,7 +173,8 @@ public:
 
   /// Restore channels directly after complete validation. Mobile Skeletons
   /// wake and soft activation restarts; frame count and exact solver/contact
-  /// history are not restored. Parameters remain those of this World.
+  /// history are not restored. Contact and solver warm starts are cleared.
+  /// Parameters remain those of this World.
   /// Commands follow this World's actuator types and limits, as setCommand()
   /// would. EndEffector Support active flags remain those of this World.
   /// Supported manual Ball/Revolute/Cylindrical/Weld constraint impulses reset;

@@ -35,6 +35,8 @@
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/detail/DARTCollisionDetectorAccessor.hpp"
+#include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
@@ -44,6 +46,7 @@
 
 #if HAVE_BULLET
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+  #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #endif
 #if HAVE_ODE
   #include "dart/collision/ode/OdeCollisionDetector.hpp"
@@ -53,6 +56,24 @@
 
 namespace dart {
 namespace collision {
+
+void detail::CollisionHistory::clear(CollisionGroup& group)
+{
+  const auto detector = group.getCollisionDetector();
+  if (auto* dart = dynamic_cast<DARTCollisionDetector*>(detector.get())) {
+    DARTCollisionDetectorAccessor::clearHistory(*dart, group);
+  }
+#if HAVE_BULLET
+  else if (auto* bullet = dynamic_cast<BulletCollisionGroup*>(&group)) {
+    clear(*bullet);
+  }
+#endif
+#if HAVE_ODE
+  else if (auto* ode = dynamic_cast<OdeCollisionDetector*>(detector.get())) {
+    clear(*ode, group);
+  }
+#endif
+}
 
 //==============================================================================
 CollisionDetector::Factory* CollisionDetector::getFactory()
