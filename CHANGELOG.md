@@ -127,6 +127,7 @@
     write their state out of bounds, and they now appear in the soft mesh
     and the skeleton version. `removeAllPointMasses()` no longer leaks the
     removed point masses.
+    [#3813](https://github.com/dartsim/dart/pull/3813)
 
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
