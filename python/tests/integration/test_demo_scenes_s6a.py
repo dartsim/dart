@@ -454,6 +454,26 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [-2.6, 0.02, -2.8, 1.3, 0.4, 1.6, 2.3],
             [-2.6, 0.0201, -2.8, 1.3, 0.4, 1.6, 2.3],
         ),
+        (
+            [-2.377, 0.0, 2.8, 0.2315263, -4.76, 1.6, -0.5],
+            [-2.377, 0.0, 2.8, 0.2315263, -4.76, 1.6, -0.5001],
+        ),
+        (
+            [2.23, -0.1, -2.79999, 0.2315263, 1.24, 0.0, -2.49],
+            [2.229995, -0.099935, -2.8, 0.2315056, 1.24, -0.0000918, -2.490026],
+        ),
+        (
+            [-0.34, 0.04, -2.79996, 1.4, 1.24, 0.115, -2.99999],
+            [-0.3399, 0.04, -2.79996, 1.4, 1.24, 0.115, -2.99999],
+        ),
+        (
+            [0.0, -0.004, -2.79, -0.9, 1.24, 1e-4, -1.3],
+            [0.007, -0.006, -2.79, -0.9, 1.24, -0.0149, -1.308],
+        ),
+        (
+            [2.0, 0.0, 0.3, 0.2315263, 0.0, 0.0, 2.1],
+            [1.999, 0.0014, 0.2998, 0.2318263, 0.0008, 0.0005, 2.1012],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -464,7 +484,8 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
     # limit next to the last two-limit goals, and converges only linearly at
     # full extension and with aligned shoulder and wrist axes; for the last two
     # goals, Newton steps a few 1e-7 rad past a limit that another goal joint
-    # sits on.
+    # sits on; the remaining starts sit on several limits or singularities at
+    # once, where Newton crosses limits or converges only linearly.
     ids=[
         "basis-switch",
         "near-singular",
@@ -480,6 +501,11 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
         "aligned-axes",
         "limit-crossing",
         "limit-crossing-2",
+        "full-extension-on-limits",
+        "full-extension-on-limits-2",
+        "limit-release",
+        "aligned-wrist-on-limits",
+        "full-extension-aligned",
     ],
 )
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
@@ -489,7 +515,8 @@ def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
     target = _activate_at(setup, wam, start)
     target.setTransform(desired)
     setup.pre_refresh()
-    assert np.abs(wam.getPositions() - start).max() < 0.01
+    reach = max(0.01, 2.0 * np.abs(np.subtract(goal, start)).max())
+    assert np.abs(wam.getPositions() - start).max() < reach
     np.testing.assert_allclose(
         ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
     )

@@ -48,9 +48,13 @@ LEVELS = 8
 # Charts close forward kinematics to about 1e-7 at a fold, but can miss by far
 # more near a wrist singularity.
 FK_TOLERANCE = 1e-6
-# ssik's tracker default, 1e-10, rejects accurate continuations near full
-# extension and aligned axes, where Newton converges only linearly.
+# Newton continuation from the current pose converges only linearly near full
+# extension and aligned axes, so it gets a looser gate and more iterations
+# than ssik's own tracker. Damping bounds steps along active limits.
 TRACK_TOLERANCE = 1e-9
+TRACK_ITERATIONS = 100
+TRACK_DAMPING = 1e-6
+TRACK_REACH = 0.5
 
 
 def swivel_solver(chain, wam):
@@ -116,18 +120,49 @@ def swivel_solver(chain, wam):
     def jacobian(q):
         return refinement.kinbody_jacobian(chain.kinbody, q)
 
-    def hold_limits(q, desired):
-        # Newton ignores limits and can step just past one near an active
-        # limit; hold those joints on it and re-solve with the others.
-        if within_limits(q):
-            return q
-        q = np.clip(q, lower, upper)
-        free = (lower < q) & (q < upper)
-        for _ in range(3):
-            twist = refinement.se3_log_residual(desired @ np.linalg.inv(chain.fk(q)))
-            q[free] += np.linalg.lstsq(jacobian(q)[:, free], twist, rcond=None)[0]
-            q = np.clip(q, lower, upper)
-        return q
+    def track(q, desired):
+        # ssik's damped Newton continuation from the current pose, with a
+        # looser gate and a larger budget than its tracker.
+        result = refinement.lm_refine(
+            q,
+            chain.fk,
+            desired,
+            fk_atol=TRACK_TOLERANCE,
+            max_iters=TRACK_ITERATIONS,
+            jacobian_fn=jacobian,
+            divergence_factor=np.inf,
+            stall_patience=TRACK_ITERATIONS,
+        )
+        if result is None:
+            return None
+        x = into_limits(result[0])
+        if not within_limits(x):
+            x = track_within_limits(q, desired)
+        if x is None or np.abs(x - q).max() > TRACK_REACH:
+            return None
+        return x
+
+    def track_within_limits(q, desired):
+        # Where the unconstrained step crosses a limit, continue again with
+        # damped steps that hold each joint on a limit while a step would push
+        # it past.
+        x = q.copy()
+        for _ in range(TRACK_ITERATIONS):
+            pose = chain.fk(x)
+            if np.abs(pose - desired).max() < TRACK_TOLERANCE:
+                return x
+            twist = refinement.se3_log_residual(desired @ np.linalg.inv(pose))
+            jac = jacobian(x)
+            free = np.ones(x.size, dtype=bool)
+            for _ in range(2):
+                part = jac[:, free]
+                step = np.zeros_like(x)
+                step[free] = part.T @ np.linalg.solve(
+                    part @ part.T + TRACK_DAMPING * np.eye(6), twist
+                )
+                free &= ~(((x <= lower) & (step < 0)) | ((x >= upper) & (step > 0)))
+            x = np.clip(x + np.clip(step, -TRACK_REACH, TRACK_REACH), lower, upper)
+        return None
 
     def candidates(desired, q):
         motion = chain.self_motion(desired)
@@ -138,15 +173,11 @@ def swivel_solver(chain, wam):
         held = [into_limits(chart.q(swivel)) for chart in charts]
         held = [c for c in held if usable(c, desired)]
         move = min((np.abs(c - q).max() for c in held), default=np.inf)
-        # Newton-continue from the current pose, as ssik's own trackers do: it
-        # stays continuous where the swivel is ill-conditioned or near limits.
-        tracked = refinement.seeded_track(
-            q, chain.fk, jacobian, desired, fk_atol=TRACK_TOLERANCE
-        )
-        if tracked is not None:
-            tracked = hold_limits(into_limits(tracked.q), desired)
-            if usable(tracked, desired) and np.abs(tracked - q).max() + JUMP < move:
-                return [tracked]
+        # Newton continuation, as ssik's own trackers use, stays continuous
+        # where the swivel is ill-conditioned or near limits.
+        tracked = track(q, desired)
+        if tracked is not None and np.abs(tracked - q).max() + JUMP < move:
+            return [tracked]
         if move < FLIP:
             return held
         nearest = (nearest_in_limits(chart, q, desired, swivel) for chart in charts)
