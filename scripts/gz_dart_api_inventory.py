@@ -6707,6 +6707,7 @@ def scan_sources(api, source_root):
         # Init-capture initializers see the enclosing scope; their names exist
         # only in the lambda body, including bodies of nested lambdas.
         tokens.lambda_captures = []
+        tokens.lambda_returns = []
         for opening, closing in sorted(tokens.pairs.items()):
             if opening >= closing or values[opening] != "[":
                 continue
@@ -6715,13 +6716,18 @@ def scan_sources(api, source_root):
                 body = tokens.pairs[body] + 1
             elif values[body : body + 1] != ["{"]:
                 continue
+            arrow = None
             while body < len(values) and values[body] not in {"{", ";", "="}:
                 if values[body] in {"(", "["} and body in tokens.pairs:
                     body = tokens.pairs[body] + 1
                 else:
+                    if values[body] == "->" and arrow is None:
+                        arrow = body
                     body += 1
             if values[body : body + 1] != ["{"] or body not in tokens.pairs:
                 continue
+            if arrow is not None:
+                tokens.lambda_returns.append((opening, values[arrow + 1 : body], body))
             span = (body, tokens.pairs[body])
             start = index = opening + 1
             angle = 0
@@ -8657,6 +8663,21 @@ def scan_sources(api, source_root):
                     return {owner, RAW_POINTER}
         if value == ")" and before in tokens.pairs:
             opening = tokens.pairs[before]
+            if (
+                opening == before - 1
+                and values[opening - 1 : opening] in (["->"], ["*"])
+                and values[opening - 2 : opening - 1] == ["operator"]
+                and values[opening - 3 : opening - 2] in (["."], ["->"])
+            ):
+                # Explicit iterator operator->() / operator*() project like the
+                # built-in spellings; any other receiver keeps the generic path.
+                types = receiver(
+                    tokens, opening - 4, imports, namespace_aliases, depth + 1
+                )
+                if ITERATOR in types:
+                    if values[opening - 1] == "->":
+                        return arrow_types(types)
+                    return elements(types) | {REFERENCE}
             function = opening - 1
             if function >= 0 and values[function] == ">":
                 angle = 1
@@ -9802,9 +9823,26 @@ def scan_sources(api, source_root):
             )
         declaration_indices = {function["name_index"] for function in functions}
         class_bodies = {cls["body"] for cls in classes}
-        for function in functions:
-            context = (path, tokens, function["index"], imports, namespace_aliases)
-            returned = return_type_tokens(function, trailing=True)
+        for index, returned, function in [
+            (
+                # An explicit trailing return resolves in the body's class scope.
+                (
+                    f["body"]
+                    if f.get("body") is not None
+                    and return_type_tokens(f, trailing=True) != return_type_tokens(f)
+                    else f["index"]
+                ),
+                return_type_tokens(f, trailing=True),
+                f,
+            )
+            for f in functions
+        ] + [
+            (opening, returned, {"body": body})
+            for opening, returned, body in tokens.lambda_returns
+            # A named operator[]'s brackets are not lambda captures.
+            if body not in {f.get("body") for f in functions}
+        ]:
+            context = (path, tokens, index, imports, namespace_aliases)
             for first, last in return_expressions(tokens, function):
                 if values[first] != "{" or tokens.pairs.get(first) != last:
                     continue

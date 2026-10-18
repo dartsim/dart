@@ -311,8 +311,8 @@ Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
 and count arguments forwarded by standard factories. This dependency applies at
-zero count too. Braced returns use their enclosing function's declared return
-type for construction evidence.
+zero count too. Braced returns use their enclosing named function's or explicit
+trailing-return lambda's declared return type for construction evidence.
 Constructed classes' default field initializer declarations and their named
 constant dependencies are retained in `default_member_initializer_declarations`.
 Quoted literals in indexed field and constant initializers are retained in
@@ -375,7 +375,8 @@ and its bases. Source helpers with `auto` or `decltype(auto)` returns infer
 receiver candidates from their return expressions, excluding nested functions
 and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
-dereferences preserve pointer elements as pointers.
+dereferences, including explicit `operator->()` and `operator*()` calls on
+known iterators, preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
 iterators, aliases and range-for declarations. Map-family iterators preserve their
 key and mapped values as pair elements, including lookup iterators and both

@@ -31098,3 +31098,263 @@ def test_five_fix_method_kinds(
     extractor, tmp_path, label, header, source, old, new, expected, native
 ):
     _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_CLOUD_RETURNS5 = [
+    (
+        "explicit_variant_default",
+        "#include <variant>\n#include <array>\n#include <optional>\nnamespace dart { class A { int storage; public: A()=default; explicit A(int); }; using V=std::variant<A,int>; using X=std::array<V,2>; using O=std::optional<V>; }\n",
+        "auto x=[]()->std::variant<dart::A,int>{return {};};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "explicit_array_source_alias_partial",
+        "#include <variant>\n#include <array>\n#include <optional>\nnamespace dart { class A { int storage; public: A()=default; explicit A(int); }; using V=std::variant<A,int>; using X=std::array<V,2>; using O=std::optional<V>; }\n",
+        "using Local=dart::X; auto x=[]()->Local{return {1};};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "explicit_optional_disengaged",
+        "#include <variant>\n#include <array>\n#include <optional>\nnamespace dart { class A { int storage; public: A()=default; explicit A(int); }; using V=std::variant<A,int>; using X=std::array<V,2>; using O=std::optional<V>; }\n",
+        "auto x=[]()->dart::O{return {};};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "explicit_variant_int_first",
+        "#include <variant>\n#include <array>\n#include <optional>\nnamespace dart { class A { int storage; public: A()=default; explicit A(int); }; using V=std::variant<A,int>; using X=std::array<V,2>; using O=std::optional<V>; }\n",
+        "auto x=[]()->std::variant<int,dart::A>{return {};};",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "nested_named_lambda_ownership",
+        "#include <variant>\n#include <array>\n#include <optional>\nnamespace dart { class A { int storage; public: A()=default; explicit A(int); }; using V=std::variant<A,int>; using X=std::array<V,2>; using O=std::optional<V>; }\n",
+        "dart::V named(){auto inner=[]()->std::variant<int,dart::A>{return {};}; (void)inner; return {1};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_CLOUD_RETURNS5,
+    ids=[row[0] for row in FIVE_FIX_CLOUD_RETURNS5],
+)
+def test_five_fix_cloud_returns(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_ITERATOR_OPERATORS6 = [
+    (
+        "map_explicit_arrow_mapped",
+        "#include <map>\n#include <list>\nnamespace foreign{struct F{void hit() const;};}\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "void use(std::map<int,dart::A>&m){m.find(0).operator->()->second.hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        True,
+        True,
+    ),
+    (
+        "map_explicit_star_mapped",
+        "#include <map>\n#include <list>\nnamespace foreign{struct F{void hit() const;};}\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "void use(std::map<int,dart::A>&m){m.find(0).operator*().second.hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        True,
+        True,
+    ),
+    (
+        "map_builtin_arrow_star_control",
+        "#include <map>\n#include <list>\nnamespace foreign{struct F{void hit() const;};}\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "void use(std::map<int,dart::A>&m){m.find(0)->second.hit();(*m.find(0)).second.hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        True,
+        True,
+    ),
+    (
+        "map_explicit_arrow_known_source_foreign",
+        "#include <map>\n#include <list>\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "namespace foreign{struct F{void hit() const;};}void use(std::map<dart::A*,foreign::F>&m){m.find(nullptr).operator->()->second.hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        False,
+        False,
+    ),
+    (
+        "sequence_explicit_star_pointer_element",
+        "#include <map>\n#include <list>\nnamespace foreign{struct F{void hit() const;};}\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "void use(std::list<dart::A*>&v){v.begin().operator*()->hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        True,
+        True,
+    ),
+    (
+        "source_unrelated_operator_arrow",
+        "#include <map>\n#include <list>\nnamespace foreign{struct F{void hit() const;};}\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "struct Other{foreign::F* operator->();};void use(Other&p){p.operator->()->hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        False,
+        False,
+    ),
+    (
+        "map_unknown_header_cell_conservative",
+        "#include <map>\n#include <list>\nnamespace foreign{struct F{void hit() const;};}\nnamespace dart{class A{int storage;public:void hit() const;};class B{int storage;public:void hit() const;};struct Trap{B second;};}",
+        "void use(std::map<dart::A*,foreign::F>&m){m.find(nullptr).operator->()->second.hit();}",
+        "public:void hit() const;",
+        "public:void hit() const=delete;",
+        True,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_ITERATOR_OPERATORS6,
+    ids=[row[0] for row in FIVE_FIX_ITERATOR_OPERATORS6],
+)
+def test_five_fix_iterator_operators(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_TRAILING_MEMBER_SCOPE7 = [
+    (
+        "trailing_direct_alias",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct S{using R=std::variant<dart::A,int>;auto g()->R;};auto S::g()->R{return {};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "trailing_api_alias",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct S{using R=dart::V;auto g()->R;};auto S::g()->R{return {};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "trailing_qualified_alias",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct S{using R=dart::V;auto g()->R;};auto S::g()->S::R{return {};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "inline_alias",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct S{using R=dart::V;auto g()->R{return {};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "leading_qualified_alias",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct S{using R=dart::V;R g();};S::R S::g(){return {};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "trailing_int_first",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "struct S{using R=std::variant<int,dart::A>;auto g()->R;};auto S::g()->R{return {};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+    (
+        "leading_namespace_shadow",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;explicit A(int);};using V=std::variant<A,int>;}",
+        "using R=std::variant<int,dart::A>;struct S{using R=dart::V;::R g();};R S::g(){return {};}",
+        "A()=default",
+        "A()=delete",
+        False,
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_TRAILING_MEMBER_SCOPE7,
+    ids=[row[0] for row in FIVE_FIX_TRAILING_MEMBER_SCOPE7],
+)
+def test_five_fix_trailing_member_scope(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+
+
+FIVE_FIX_NAMED_RETURN_CONTEXT = [
+    (
+        "named_subscript_inline",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}",
+        "struct S{auto operator[](int)->dart::V{return {};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "named_subscript_out_of_line",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}",
+        "struct S{using R=dart::V;auto operator[](int)->R;};auto S::operator[](int)->R{return {};}",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+    (
+        "named_subscript_nested_lambda",
+        "#include <variant>\nnamespace dart{class A{int storage;public:A()=default;};using V=std::variant<A,int>;}",
+        "struct S{auto operator[](int)->dart::V{auto x=[]()->dart::V{return {};};(void)x;return {1};}};",
+        "A()=default",
+        "A()=delete",
+        True,
+        True,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "label,header,source,old,new,expected,native",
+    FIVE_FIX_NAMED_RETURN_CONTEXT,
+    ids=[row[0] for row in FIVE_FIX_NAMED_RETURN_CONTEXT],
+)
+def test_five_fix_named_return_context(
+    extractor, tmp_path, label, header, source, old, new, expected, native
+):
+    _five_fix_check(extractor, tmp_path, header, source, old, new, expected, native)
+    scan = _scan_receiver_api(extractor, tmp_path, header, source)
+    assert [c["count"] for c in scan["constructors"] if c["name"] == "dart::A"] == [1]
