@@ -543,31 +543,36 @@ gz-sim.
 rows: it loads an SDF world with the collision setup gz-physics builds (see
 `examples/contact_benchmark/GazeboPreset.hpp`) and reports contact demand
 against the cap, starved pairs, sunk bodies and changed poses, keeping that
-census out of its step times. Its SDF allowlist accepts one world (SDF
-1.4–1.6), physics step size and `max_contacts`, scheduling-only real-time
-settings, and flat models with names, static flags, plain six-number poses,
-links, and fixed/revolute/prismatic/universal/ball joints. Links support
-gravity flags, mass and a complete inertia tensor, inertial translation,
-and box/sphere/cylinder/plane collisions; the preset uses Gazebo's default
-world gravity `0 0 -9.8` and accepts only that explicit world gravity.
-Joint axes support XYZ, damping, friction, springs, and position limits
-containing zero, with explicit model-frame axes supported in SDF 1.5–1.6;
-SDF 1.4 axis joints, closed joint chains, finite effort/velocity limits,
-screw/revolute2 joints, and non-default frame or pose attributes are
-rejected. Surface values must
-retain the default material (`mu`/`mu2` 1, slip and restitution 0, zero
-`fdir1` without a frame); collision masks must contain all `0xff` bits and
-not exceed `0x7fffffff`. Light, scene, GUI, visual and passive sensor
-contents may be ignored, but their embedded plugins are rejected; visual
-geometry and poses must still be safely readable by DART. Only empty
-standard world-level Physics, UserCommands and SceneBroadcaster
-systems are accepted. Everything else, including includes, nested models,
-world joints, frames, self-collision, rotated inertia, meshes, capsules,
-ellipsoids, heightmaps and engine-specific physics overrides, is rejected
-with the first unsupported XML path. Capsules and ellipsoids are absent
-from DART's rigid SDF shape reader; screw pitch and revolute2 construction
-differ from gz-physics. gz-sim's `3k_shapes.sdf` and all generated benchmark
-worlds fit this subset.
+census out of its step times. Its SDF allowlist accepts one world using
+sdformat's supported versions and conversion, physics step size and
+`max_contacts`, scheduling-only real-time settings, and flat models with
+static flags, resolved frame references, Euler or quaternion poses, links,
+and fixed/revolute/prismatic/universal/ball/screw joints. Links support
+gravity flags, mass and inertia tensors with translation-only inertial
+poses, and box/sphere/cylinder/plane collisions. Loaded worlds preserve their
+SDF gravity; omitted gravity and generated worlds use Gazebo's default
+`0 0 -9.8`. Joint axes use sdformat's frame resolution and normalization,
+including converted SDF 1.4 axes. Damping, friction, springs, position
+limits containing zero, and finite effort/velocity limits are supported.
+Screw pitch uses the canonical metres-per-revolution convention. Position
+limits excluding zero remain outside this subset because DART selects a
+valid initial position while gz-physics starts at zero.
+Quaternion and axis magnitudes that change Gazebo's native normalization
+are rejected; DART's general SDF reader also handles extreme magnitudes.
+
+Surface values must retain the default material (`mu`/`mu2` 1, slip and
+restitution 0, zero `fdir1` without a frame); collision masks must contain
+all `0xff` bits and not exceed `0x7fffffff`. Light, scene, GUI, visual and
+passive sensor contents may be ignored, but their embedded plugins are
+rejected; visual geometry and poses must still be safely readable by DART.
+Only empty standard world-level Physics, UserCommands and SceneBroadcaster
+systems are accepted. Includes, nested models, world joints, self-collision,
+automatic inertia, collision meshes, capsules, ellipsoids, heightmaps,
+revolute2 joints and engine-specific physics overrides remain outside the
+subset. Capsules and ellipsoids are absent from DART's rigid SDF shape
+reader; gz-physics falls back to a fixed joint for revolute2. The first
+unsupported authored XML path or sdformat diagnostic explains a rejection.
+gz-sim's `3k_shapes.sdf` and all generated benchmark worlds fit this subset.
 
 The preset's per-pair contact limit comes from the active SDF physics
 profile's `<max_contacts>` (20 when omitted). Released gz-sim selects the

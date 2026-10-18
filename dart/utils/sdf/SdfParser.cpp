@@ -33,13 +33,8 @@
 #include "dart/utils/sdf/SdfParser.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
-#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/ResourceRetriever.hpp"
-#include "dart/common/String.hpp"
-#include "dart/common/Uri.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -52,295 +47,847 @@
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
-#include "dart/math/Geometry.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/simulation/World.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/SkelParser.hpp"
-#include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/sdf/detail/SdfResources.hpp"
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-#include <tinyxml2.h>
+#include <sdf/Box.hh>
+#include <sdf/Collision.hh>
+#include <sdf/Cylinder.hh>
+#include <sdf/Element.hh>
+#include <sdf/Geometry.hh>
+#include <sdf/Joint.hh>
+#include <sdf/JointAxis.hh>
+#include <sdf/Link.hh>
+#include <sdf/Material.hh>
+#include <sdf/Mesh.hh>
+#include <sdf/Model.hh>
+#include <sdf/Physics.hh>
+#include <sdf/Plane.hh>
+#include <sdf/Root.hh>
+#include <sdf/SemanticPose.hh>
+#include <sdf/Sphere.hh>
+#include <sdf/Visual.hh>
+#include <sdf/World.hh>
 
 #include <algorithm>
-#include <fstream>
-#include <functional>
-#include <iostream>
+#include <limits>
 #include <map>
+#include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace utils {
-
 namespace SdfParser {
 
 namespace {
 
 //==============================================================================
-Eigen::Isometry3d readSdfPose(
-    const tinyxml2::XMLElement* parentElement, const std::string& defaultFrame)
+void requireSdf(bool condition, const std::string& message)
 {
-  const auto* poseElement = parentElement->FirstChildElement("pose");
-  const std::string element
-      = "<" + std::string(parentElement->Name()) + "><pose>";
+  if (!condition)
+    throw std::invalid_argument(message);
+}
 
-  if (const char* relativeTo = poseElement->Attribute("relative_to")) {
-    const std::string frame = common::trim(relativeTo);
-    if (!frame.empty() && frame != defaultFrame) {
-      throw std::invalid_argument(
-          element + " relative_to [" + frame
-          + "]: DART does not support SDF frame semantics for that frame");
-    }
+//==============================================================================
+void checkSdfErrors(const sdf::Errors& errors, const std::string& context)
+{
+  for (const auto& error : errors) {
+    if (error.Code() == sdf::ErrorCode::WARNING)
+      dtwarn << "[SdfParser] " << context << ": " << error.Message() << '\n';
+    else
+      throw std::invalid_argument(context + ": " + error.Message());
   }
+}
 
-  const char* rotationFormat = poseElement->Attribute("rotation_format");
-  const std::string format = rotationFormat ? rotationFormat : "euler_rpy";
-  if (format != "euler_rpy" && format != "quat_xyzw") {
-    throw std::invalid_argument(
-        element + " has unsupported rotation_format [" + format + "]");
-  }
+//==============================================================================
+Eigen::Vector3d sdfVector(const gz::math::Vector3d& vector)
+{
+  return Eigen::Vector3d(vector.X(), vector.Y(), vector.Z());
+}
 
-  bool degrees = false;
-  if (const char* attribute = poseElement->Attribute("degrees")) {
-    const std::string value = common::toUpper(common::trim(attribute));
-    if (value != "TRUE" && value != "FALSE" && value != "1" && value != "0") {
-      throw std::invalid_argument(
-          element + " has invalid degrees [" + attribute + "]");
-    }
-    degrees = toBool(value);
-  }
-  if (degrees && format == "quat_xyzw") {
-    throw std::invalid_argument(
-        element + " degrees=true is invalid with rotation_format=quat_xyzw");
-  }
-
-  const std::string text = poseElement->GetText() ? poseElement->GetText() : "";
-  const auto values = common::split(text);
-  if (values.empty())
-    return Eigen::Isometry3d::Identity();
-  const std::size_t count = format == "euler_rpy" ? 6u : 7u;
-  if (values.size() != count) {
-    throw std::invalid_argument(
-        element + " rotation_format [" + format + "] requires exactly "
-        + std::to_string(count) + " values; got "
-        + std::to_string(values.size()) + " in [" + text + "]");
-  }
-
-  if (format == "euler_rpy" && !degrees)
-    return toIsometry3dWithExtrinsicRotation(text);
-
-  const Eigen::VectorXd pose = toVectorXd(text);
+//==============================================================================
+Eigen::Isometry3d sdfTransform(const gz::math::Pose3d& pose)
+{
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.translation() = pose.head<3>();
-  if (format == "euler_rpy") {
-    const Eigen::Vector3d rpy = pose.tail<3>() * math::toRadian(1.0);
-    transform.linear() = math::eulerZYXToMatrix(rpy.reverse().eval());
-  } else {
-    Eigen::Quaterniond rotation(pose[6], pose[3], pose[4], pose[5]);
-    const double scale = rotation.coeffs().cwiseAbs().maxCoeff();
-    if (!rotation.coeffs().allFinite() || scale == 0.0) {
-      throw std::invalid_argument(
-          element + " rotation_format=quat_xyzw requires a finite, nonzero "
-                    "quaternion");
-    }
-    // Scale first so finite nonzero quaternions cannot overflow or underflow.
-    rotation.coeffs() /= scale;
-    transform.linear() = rotation.normalized().toRotationMatrix();
-  }
+  transform.translation() = sdfVector(pose.Pos());
+  const auto& rotation = pose.Rot();
+  Eigen::Quaterniond quaternion(
+      rotation.W(), rotation.X(), rotation.Y(), rotation.Z());
+  const double scale = quaternion.coeffs().cwiseAbs().maxCoeff();
+  requireSdf(
+      transform.translation().allFinite() && quaternion.coeffs().allFinite()
+          && scale > 0.0,
+      "Pose must contain a finite position and a finite nonzero quaternion");
+  quaternion.coeffs() /= scale;
+  transform.linear() = quaternion.normalized().toRotationMatrix();
   return transform;
 }
 
-using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
-
-struct SDFBodyNode
+//==============================================================================
+Eigen::Isometry3d resolveSdfPose(
+    const sdf::SemanticPose& pose, const std::string& frame = "")
 {
-  BodyPropPtr properties;
-  Eigen::Isometry3d initTransform;
-  std::string type;
+  gz::math::Pose3d resolved;
+  checkSdfErrors(pose.Resolve(resolved, frame), "Resolving pose");
+  return sdfTransform(resolved);
+}
+
+//==============================================================================
+double positiveSdf(double value, const std::string& name)
+{
+  requireSdf(std::isfinite(value) && value > 0.0, name + " must be positive");
+  return value;
+}
+
+//==============================================================================
+Eigen::Vector3d positiveSdfVector(
+    const gz::math::Vector3d& value, const std::string& name)
+{
+  const Eigen::Vector3d vector = sdfVector(value);
+  requireSdf(
+      vector.allFinite() && (vector.array() > 0.0).all(),
+      name + " must contain positive finite values");
+  return vector;
+}
+
+//==============================================================================
+template <typename T>
+T readSdfExtension(const sdf::ElementPtr& element, const std::string& name)
+{
+  const auto child = element ? element->FindElement(name) : nullptr;
+  requireSdf(child != nullptr, "Missing DART extension element <" + name + ">");
+  sdf::Errors errors;
+  const T value = child->Get<T>(errors);
+  checkSdfErrors(errors, "Reading DART extension <" + name + ">");
+  return value;
+}
+
+//==============================================================================
+std::size_t readSdfCount(
+    const sdf::ElementPtr& element,
+    const std::string& name,
+    std::size_t minimum)
+{
+  const double value = readSdfExtension<double>(element, name);
+  requireSdf(
+      std::isfinite(value) && value >= minimum && std::floor(value) == value
+          && value <= std::numeric_limits<int>::max(),
+      "DART extension <" + name + "> has an invalid subdivision count");
+  return static_cast<std::size_t>(value);
+}
+
+//==============================================================================
+dynamics::SoftBodyNode::UniqueProperties readSdfSoftBody(const sdf::Link& link)
+{
+  const auto soft = link.Element()->FindElement("soft_shape");
+  const double mass = positiveSdf(
+      readSdfExtension<double>(soft, "total_mass"), "Soft body mass");
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  if (soft->FindElement("pose")) {
+    pose = sdfTransform(readSdfExtension<gz::math::Pose3d>(soft, "pose"));
+    const auto poseElement = soft->FindElement("pose");
+    const auto relativeTo = poseElement->GetAttribute("relative_to");
+    if (relativeTo) {
+      const std::string frame = relativeTo->GetAsString();
+      if (!frame.empty() && frame != link.Name())
+        pose = resolveSdfPose(link.SemanticPose(), frame).inverse() * pose;
+    }
+    requireSdf(pose.matrix().allFinite(), "Resolved soft shape pose overflow");
+  }
+
+  const auto geometry = soft->FindElement("geometry");
+  requireSdf(geometry != nullptr, "Soft shape is missing <geometry>");
+  dynamics::SoftBodyNode::UniqueProperties properties;
+  if (const auto sphere = geometry->FindElement("sphere")) {
+    const auto slices = readSdfCount(sphere, "num_slices", 3);
+    const auto stacks = readSdfCount(sphere, "num_stacks", 2);
+    requireSdf(
+        static_cast<long double>(slices) * (stacks - 1) + 2
+            <= std::numeric_limits<int>::max(),
+        "Soft sphere point count exceeds DART's index range");
+    properties = dynamics::SoftBodyNodeHelper::makeSphereProperties(
+        positiveSdf(readSdfExtension<double>(sphere, "radius"), "Soft radius"),
+        slices,
+        stacks,
+        mass);
+  } else if (const auto box = geometry->FindElement("box")) {
+    const auto fragments
+        = sdfVector(readSdfExtension<gz::math::Vector3d>(box, "frags"));
+    requireSdf(
+        fragments.allFinite() && (fragments.array() >= 2.0).all()
+            && (fragments.array() <= std::numeric_limits<int>::max()).all()
+            && (fragments.array().floor() == fragments.array()).all(),
+        "Soft box subdivisions must be integers of at least two");
+    const Eigen::Vector3d edges = fragments.cwiseMax(3.0).array() - 2.0;
+    requireSdf(
+        8.0 + 4.0 * edges.sum()
+                + 2.0
+                      * (edges[0] * edges[1] + edges[1] * edges[2]
+                         + edges[0] * edges[2])
+            <= std::numeric_limits<int>::max(),
+        "Soft box point count exceeds DART's index range");
+    properties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+        positiveSdfVector(
+            readSdfExtension<gz::math::Vector3d>(box, "size"), "Soft box size"),
+        pose,
+        fragments.cast<int>(),
+        mass);
+  } else if (const auto ellipsoid = geometry->FindElement("ellipsoid")) {
+    const auto slices = readSdfCount(ellipsoid, "num_slices", 3);
+    const auto stacks = readSdfCount(ellipsoid, "num_stacks", 2);
+    requireSdf(
+        static_cast<long double>(slices) * (stacks - 1) + 2
+            <= std::numeric_limits<int>::max(),
+        "Soft ellipsoid point count exceeds DART's index range");
+    properties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
+        positiveSdfVector(
+            readSdfExtension<gz::math::Vector3d>(ellipsoid, "size"),
+            "Soft ellipsoid size"),
+        slices,
+        stacks,
+        mass);
+  } else if (const auto cylinder = geometry->FindElement("cylinder")) {
+    const auto slices = readSdfCount(cylinder, "num_slices", 3);
+    const auto stacks = readSdfCount(cylinder, "num_stacks", 1);
+    const auto rings = readSdfCount(cylinder, "num_rings", 1);
+    requireSdf(
+        static_cast<long double>(slices) * (stacks + 1)
+                + 2 * (static_cast<long double>(slices) * (rings - 1) + 1)
+            <= std::numeric_limits<int>::max(),
+        "Soft cylinder point count exceeds DART's index range");
+    properties = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
+        positiveSdf(
+            readSdfExtension<double>(cylinder, "radius"), "Soft radius"),
+        positiveSdf(
+            readSdfExtension<double>(cylinder, "height"), "Soft height"),
+        slices,
+        stacks,
+        rings,
+        mass);
+  } else {
+    throw std::invalid_argument("Unsupported DART soft geometry");
+  }
+
+  // The box helper already applies the pose to its rest points.
+  if (!geometry->FindElement("box")) {
+    for (auto& point : properties.mPointProps)
+      point.mX0 = pose * point.mX0;
+  }
+  for (const auto& point : properties.mPointProps)
+    requireSdf(point.mX0.allFinite(), "Soft geometry rest point overflow");
+  for (const auto& entry : std::vector<std::pair<std::string, double*>>{
+           {"kv", &properties.mKv},
+           {"ke", &properties.mKe},
+           {"damp", &properties.mDampCoeff}}) {
+    if (soft->FindElement(entry.first)) {
+      const double value = readSdfExtension<double>(soft, entry.first);
+      requireSdf(
+          std::isfinite(value) && value >= 0.0,
+          "Soft <" + entry.first + "> must be nonnegative and finite");
+      *entry.second = value;
+    }
+  }
+  return properties;
+}
+
+struct SdfBody
+{
+  std::shared_ptr<dynamics::BodyNode::Properties> properties;
+  Eigen::Isometry3d worldTransform;
+  bool soft = false;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+using SdfBodies = common::aligned_map<std::string, SdfBody>;
 
-using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
-
-struct SDFJoint
+struct SdfJoint
 {
-  JointPropPtr properties;
-  std::string parentName;
-  std::string childName;
-  std::string type;
-  struct MimicInfo
+  std::shared_ptr<dynamics::Joint::Properties> properties;
+  std::string parent;
+  std::string child;
+  sdf::JointType type;
+  struct Mimic
   {
-    std::string referenceJointName;
-    std::size_t referenceDof = 0;
-    double multiplier = 1.0;
-    double offset = 0.0;
+    std::string reference;
+    std::size_t followerAxis;
+    std::size_t referenceAxis;
+    double multiplier;
+    double offset;
   };
-  std::vector<MimicInfo> mimicInfos;
+  std::vector<Mimic> mimics;
 };
+using SdfJoints = std::map<std::string, SdfJoint>;
 
-std::vector<SDFJoint::MimicInfo> readMimicElements(
-    const tinyxml2::XMLElement* axisElement);
-
-// Maps the name of a BodyNode to its properties
-using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
-
-// Maps a child BodyNode to the properties of its parent Joint
-using JointMap = std::map<std::string, SDFJoint>;
-
-void applyMimicConstraints(
-    const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints);
-
-simulation::WorldPtr readWorld(
-    tinyxml2::XMLElement* worldElement,
-    const common::Uri& baseUri,
-    const Options& options);
-
-void readPhysics(
-    tinyxml2::XMLElement* physicsElement, simulation::WorldPtr world);
-
-dynamics::SkeletonPtr readSkeleton(
-    tinyxml2::XMLElement* skeletonElement,
-    const common::Uri& baseUri,
-    const Options& options);
-
-bool createPair(
-    dynamics::SkeletonPtr skeleton,
-    dynamics::BodyNode* parent,
-    const SDFJoint& newJoint,
-    const SDFBodyNode& newBody);
-
-enum NextResult
+//==============================================================================
+SdfBody readSdfBody(
+    const sdf::Link& link, const Eigen::Isometry3d& modelTransform)
 {
-  VALID,
-  CONTINUE,
-  BREAK,
-  CREATE_ROOT_JOINT
-};
+  dynamics::BodyNode::Properties properties;
+  properties.mName = link.Name();
+  properties.mGravityMode = link.EnableGravity();
+  gz::math::Inertiald inertial;
+  checkSdfErrors(
+      link.ResolveInertial(inertial, link.Name()), "Resolving link inertia");
+  // DART has no fluid added-mass dynamics; dropping an authored tensor
+  // would silently change the link's acceleration response.
+  if (const auto& fluidAddedMass = inertial.FluidAddedMass();
+      fluidAddedMass.has_value()) {
+    bool zero = true;
+    for (std::size_t row = 0; row < 6 && zero; ++row)
+      for (std::size_t column = 0; column < 6; ++column)
+        zero = zero && (*fluidAddedMass)(row, column) == 0.0;
+    requireSdf(
+        zero,
+        "Link [" + link.Name()
+            + "] fluid added mass is not supported by DART's SDF parser");
+  }
+  const auto& matrix = inertial.MassMatrix();
+  const auto mass = positiveSdf(matrix.Mass(), "Link mass");
+  properties.mInertia.setMass(mass);
+  const auto pose = sdfTransform(inertial.Pose());
+  properties.mInertia.setLocalCOM(pose.translation());
+  const sdf::ElementPtr inertialElement
+      = link.Element() ? link.Element()->FindElement("inertial") : nullptr;
+  const bool authoredInertia
+      = inertialElement && inertialElement->FindElement("inertia");
+  Eigen::Matrix3d moment;
+  if (authoredInertia) {
+    const auto moi = matrix.Moi();
+    for (int row = 0; row < 3; ++row)
+      for (int column = 0; column < 3; ++column)
+        moment(row, column) = moi(row, column);
+    requireSdf(moment.allFinite(), "Link inertia must be finite");
+    moment = pose.linear() * moment * pose.linear().transpose();
+  } else {
+    // sdformat resolves an omitted <inertia> to its unit-diagonal default;
+    // the legacy DART parser used mass * I, so keep that fallback instead of
+    // silently changing the angular response of mass-only links.
+    moment = mass * Eigen::Matrix3d::Identity();
+  }
+  requireSdf(moment.allFinite(), "Resolved link inertia must be finite");
+  properties.mInertia.setMoment(moment);
 
-NextResult getNextJointAndNodePair(
-    BodyMap::iterator& body,
-    JointMap::const_iterator& parentJoint,
-    dynamics::BodyNode*& parentBody,
-    const dynamics::SkeletonPtr skeleton,
-    BodyMap& sdfBodyNodes,
-    const JointMap& sdfJoints);
+  SdfBody body;
+  body.worldTransform
+      = modelTransform * resolveSdfPose(link.SemanticPose(), "__model__");
+  requireSdf(body.worldTransform.matrix().allFinite(), "Link pose overflow");
+  body.soft = link.Element() && link.Element()->FindElement("soft_shape");
+  if (body.soft) {
+    body.properties = dynamics::SoftBodyNode::Properties::createShared(
+        properties, readSdfSoftBody(link));
+  } else {
+    body.properties = dynamics::BodyNode::Properties::createShared(properties);
+  }
+  return body;
+}
 
-dynamics::SkeletonPtr makeSkeleton(
-    tinyxml2::XMLElement* skeletonElement, Eigen::Isometry3d& skeletonFrame);
+//==============================================================================
+template <typename Properties>
+void readSdfAxis(
+    const sdf::Joint& joint,
+    unsigned int index,
+    Eigen::Vector3d& direction,
+    Properties& properties)
+{
+  const auto axis = joint.Axis(index);
+  requireSdf(
+      axis != nullptr, "Joint [" + joint.Name() + "] is missing an axis");
+  gz::math::Vector3d resolved;
+  checkSdfErrors(axis->ResolveXyz(resolved), "Resolving joint axis");
+  direction = sdfVector(resolved);
+  const double scale = direction.cwiseAbs().maxCoeff();
+  requireSdf(direction.allFinite() && scale > 0.0, "Invalid joint axis");
 
+  const double lower = axis->Lower();
+  const double upper = axis->Upper();
+  requireSdf(
+      !std::isnan(lower) && !std::isnan(upper) && lower <= upper
+          && lower != std::numeric_limits<double>::infinity()
+          && upper != -std::numeric_limits<double>::infinity(),
+      "Joint limits must be ordered and admit a finite position");
+  properties.mPositionLowerLimits[index] = lower;
+  properties.mPositionUpperLimits[index] = upper;
+  properties.mIsPositionLimitEnforced = properties.mIsPositionLimitEnforced
+                                        || std::isfinite(lower)
+                                        || std::isfinite(upper);
+  double initial = 0.0;
+  if (lower > 0.0 || upper < 0.0) {
+    if (std::isfinite(lower) && std::isfinite(upper))
+      initial = lower / 2.0 + upper / 2.0;
+    else
+      initial = std::isfinite(lower) ? lower : upper;
+  }
+  properties.mInitialPositions[index] = initial;
+  properties.mRestPositions[index] = axis->SpringReference();
+  properties.mDampingCoefficients[index] = axis->Damping();
+  properties.mFrictions[index] = axis->Friction();
+  properties.mSpringStiffnesses[index] = axis->SpringStiffness();
+  requireSdf(
+      std::isfinite(axis->SpringReference()) && std::isfinite(axis->Damping())
+          && axis->Damping() >= 0.0 && std::isfinite(axis->Friction())
+          && axis->Friction() >= 0.0 && std::isfinite(axis->SpringStiffness())
+          && axis->SpringStiffness() >= 0.0,
+      "Joint dynamics must be finite with nonnegative damping, friction and "
+      "stiffness");
+  for (const auto& limit : std::vector<std::pair<double, bool>>{
+           {axis->MaxVelocity(), true}, {axis->Effort(), false}}) {
+    requireSdf(
+        !std::isnan(limit.first)
+            && limit.first != -std::numeric_limits<double>::infinity(),
+        "Joint velocity and effort limits must be valid numbers");
+    if (limit.first >= 0.0) {
+      if (limit.second) {
+        properties.mVelocityLowerLimits[index] = -limit.first;
+        properties.mVelocityUpperLimits[index] = limit.first;
+      } else {
+        properties.mForceLowerLimits[index] = -limit.first;
+        properties.mForceUpperLimits[index] = limit.first;
+      }
+    }
+  }
+}
+
+//==============================================================================
+SdfJoint readSdfJoint(
+    const sdf::Joint& joint,
+    const SdfBodies& bodies,
+    const Eigen::Isometry3d& modelTransform)
+{
+  SdfJoint result;
+  result.type = joint.Type();
+  checkSdfErrors(
+      joint.ResolveParentLink(result.parent), "Resolving joint parent");
+  checkSdfErrors(joint.ResolveChildLink(result.child), "Resolving joint child");
+  requireSdf(
+      result.parent == "world" || bodies.count(result.parent),
+      "Joint [" + joint.Name() + "] has a missing parent link");
+  requireSdf(
+      bodies.count(result.child) && result.parent != result.child,
+      "Joint [" + joint.Name() + "] has an invalid child link");
+  switch (joint.Type()) {
+    case sdf::JointType::FIXED:
+      result.properties = dynamics::WeldJoint::Properties::createShared();
+      break;
+    case sdf::JointType::BALL:
+      result.properties = dynamics::BallJoint::Properties::createShared();
+      break;
+    case sdf::JointType::REVOLUTE: {
+      dynamics::RevoluteJoint::Properties properties;
+      readSdfAxis(joint, 0, properties.mAxis, properties);
+      result.properties
+          = dynamics::RevoluteJoint::Properties::createShared(properties);
+      break;
+    }
+    case sdf::JointType::PRISMATIC: {
+      dynamics::PrismaticJoint::Properties properties;
+      readSdfAxis(joint, 0, properties.mAxis, properties);
+      result.properties
+          = dynamics::PrismaticJoint::Properties::createShared(properties);
+      break;
+    }
+    case sdf::JointType::SCREW: {
+      dynamics::ScrewJoint::Properties properties;
+      readSdfAxis(joint, 0, properties.mAxis, properties);
+      properties.mPitch = joint.ScrewThreadPitch();
+      requireSdf(
+          std::isfinite(properties.mPitch), "Invalid screw thread pitch");
+      result.properties
+          = dynamics::ScrewJoint::Properties::createShared(properties);
+      break;
+    }
+    case sdf::JointType::REVOLUTE2:
+    case sdf::JointType::UNIVERSAL: {
+      dynamics::UniversalJoint::Properties properties;
+      readSdfAxis(joint, 0, properties.mAxis[0], properties);
+      readSdfAxis(joint, 1, properties.mAxis[1], properties);
+      requireSdf(
+          properties.mAxis[0].cross(properties.mAxis[1]).norm() > 1e-12,
+          "Universal joint axes must not be parallel");
+      result.properties
+          = dynamics::UniversalJoint::Properties::createShared(properties);
+      break;
+    }
+    default:
+      throw std::invalid_argument(
+          "Unsupported joint type in [" + joint.Name() + "]");
+  }
+  result.properties->mName = joint.Name();
+  const Eigen::Isometry3d worldJoint
+      = modelTransform * resolveSdfPose(joint.SemanticPose(), "__model__");
+  const Eigen::Isometry3d parentWorld
+      = result.parent == "world" ? Eigen::Isometry3d::Identity()
+                                 : bodies.at(result.parent).worldTransform;
+  result.properties->mT_ParentBodyToJoint = parentWorld.inverse() * worldJoint;
+  result.properties->mT_ChildBodyToJoint
+      = bodies.at(result.child).worldTransform.inverse() * worldJoint;
+  requireSdf(
+      result.properties->mT_ParentBodyToJoint.matrix().allFinite()
+          && result.properties->mT_ChildBodyToJoint.matrix().allFinite(),
+      "Resolved joint pose overflow");
+  for (unsigned int index = 0; index < 2; ++index) {
+    const auto axis = joint.Axis(index);
+    const auto mimic = axis ? axis->Mimic() : std::nullopt;
+    if (!mimic)
+      continue;
+    requireSdf(
+        mimic->Axis() == "axis" || mimic->Axis() == "axis2",
+        "Mimic reference axis must be axis or axis2");
+    const double offset
+        = mimic->Offset() - mimic->Multiplier() * mimic->Reference();
+    requireSdf(
+        std::isfinite(mimic->Multiplier()) && std::isfinite(mimic->Offset())
+            && std::isfinite(mimic->Reference()) && std::isfinite(offset),
+        "Mimic parameters must be finite");
+    result.mimics.push_back(
+        {mimic->Joint(),
+         index,
+         mimic->Axis() == "axis2" ? 1u : 0u,
+         mimic->Multiplier(),
+         offset});
+  }
+  return result;
+}
+
+//==============================================================================
 template <class NodeType>
-std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
-    dynamics::SkeletonPtr skeleton,
-    dynamics::BodyNode* parent,
-    const SDFJoint& joint,
-    const SDFBodyNode& node);
-
-BodyMap readAllBodyNodes(
-    tinyxml2::XMLElement* skeletonElement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    const Eigen::Isometry3d& skeletonFrame);
-
-SDFBodyNode readBodyNode(
-    tinyxml2::XMLElement* bodyNodeElement,
-    const Eigen::Isometry3d& skeletonFrame,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
-
-dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
-    tinyxml2::XMLElement* softBodyNodeElement);
-
-dynamics::ShapePtr readShape(
-    tinyxml2::XMLElement* shapelement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane);
-
-dynamics::ShapeNode* readShapeNode(
-    dynamics::BodyNode* bodyNode,
-    tinyxml2::XMLElement* shapeNodeEle,
-    const std::string& shapeNodeName,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane);
-
-void readMaterial(
-    tinyxml2::XMLElement* materialEle, dynamics::ShapeNode* shapeNode);
-
-void readVisualizationShapeNode(
-    dynamics::BodyNode* bodyNode,
-    tinyxml2::XMLElement* vizShapeNodeEle,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane);
-
-void readCollisionShapeNode(
-    dynamics::BodyNode* bodyNode,
-    tinyxml2::XMLElement* collShapeNodeEle,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane);
-
-void readAspects(
+std::pair<dynamics::Joint*, dynamics::BodyNode*> createSdfPair(
     const dynamics::SkeletonPtr& skeleton,
-    tinyxml2::XMLElement* skeletonElement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane);
+    dynamics::BodyNode* parent,
+    const SdfJoint& joint,
+    const SdfBody& body)
+{
+  const auto& properties
+      = static_cast<const typename NodeType::Properties&>(*body.properties);
+  switch (joint.type) {
+    case sdf::JointType::PRISMATIC:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::PrismaticJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::PrismaticJoint::Properties&>(
+                  *joint.properties),
+              properties);
+    case sdf::JointType::REVOLUTE:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::RevoluteJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::RevoluteJoint::Properties&>(
+                  *joint.properties),
+              properties);
+    case sdf::JointType::SCREW:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::ScrewJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::ScrewJoint::Properties&>(
+                  *joint.properties),
+              properties);
+    case sdf::JointType::REVOLUTE2:
+    case sdf::JointType::UNIVERSAL:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::UniversalJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::UniversalJoint::Properties&>(
+                  *joint.properties),
+              properties);
+    case sdf::JointType::BALL:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::BallJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::BallJoint::Properties&>(
+                  *joint.properties),
+              properties);
+    case sdf::JointType::FIXED:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::WeldJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::WeldJoint::Properties&>(
+                  *joint.properties),
+              properties);
+    default:
+      return skeleton
+          ->createJointAndBodyNodePair<dynamics::FreeJoint, NodeType>(
+              parent,
+              static_cast<const dynamics::FreeJoint::Properties&>(
+                  *joint.properties),
+              properties);
+  }
+}
 
-JointMap readAllJoints(
-    tinyxml2::XMLElement* skeletonElement,
-    const Eigen::Isometry3d& skeletonFrame,
-    const BodyMap& sdfBodyNodes);
+//==============================================================================
+dynamics::ShapePtr readSdfShape(
+    const sdf::Geometry* geometry,
+    const Options& options,
+    const detail::SdfResources& resources)
+{
+  requireSdf(geometry != nullptr, "Missing shape geometry");
+  switch (geometry->Type()) {
+    case sdf::GeometryType::SPHERE:
+      return std::make_shared<dynamics::SphereShape>(
+          positiveSdf(geometry->SphereShape()->Radius(), "Sphere radius"));
+    case sdf::GeometryType::BOX:
+      return std::make_shared<dynamics::BoxShape>(
+          positiveSdfVector(geometry->BoxShape()->Size(), "Box size"));
+    case sdf::GeometryType::CYLINDER:
+      return std::make_shared<dynamics::CylinderShape>(
+          positiveSdf(geometry->CylinderShape()->Radius(), "Cylinder radius"),
+          positiveSdf(geometry->CylinderShape()->Length(), "Cylinder length"));
+    case sdf::GeometryType::PLANE: {
+      const auto plane = geometry->PlaneShape();
+      Eigen::Vector3d normal = sdfVector(plane->Normal());
+      const double scale = normal.cwiseAbs().maxCoeff();
+      requireSdf(normal.allFinite() && scale > 0.0, "Invalid plane normal");
+      normal /= scale;
+      normal.normalize();
+      if (options.mUsePlaneShapeForPlane)
+        return std::make_shared<dynamics::PlaneShape>(normal, 0.0);
+      return std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(
+          positiveSdf(plane->Size().X(), "Plane size"),
+          positiveSdf(plane->Size().Y(), "Plane size"),
+          0.001));
+    }
+    case sdf::GeometryType::MESH: {
+      const auto mesh = geometry->MeshShape();
+      requireSdf(!mesh->Uri().empty(), "Mesh is missing a URI");
+      requireSdf(
+          mesh->Submesh().empty(), "SDF mesh submesh selection is unsupported");
+      const Eigen::Vector3d scale = sdfVector(mesh->Scale());
+      requireSdf(
+          scale.allFinite() && (scale.array() != 0.0).all(),
+          "Mesh scale must contain finite, nonzero values");
+      const auto uri = resources.resolveUri(mesh->Element(), mesh->Uri());
+      DART_SUPPRESS_DEPRECATED_BEGIN
+      const aiScene* scene
+          = dynamics::MeshShape::loadMesh(uri, options.mResourceRetriever);
+      DART_SUPPRESS_DEPRECATED_END
+      requireSdf(
+          scene != nullptr, "Failed to load mesh [" + uri.toString() + "]");
+      DART_SUPPRESS_DEPRECATED_BEGIN
+      auto shape = std::make_shared<dynamics::MeshShape>(
+          scale, scene, uri, options.mResourceRetriever);
+      DART_SUPPRESS_DEPRECATED_END
+      return shape;
+    }
+    default:
+      throw std::invalid_argument("Unsupported SDF geometry");
+  }
+}
 
-SDFJoint readJoint(
-    tinyxml2::XMLElement* jointElement,
-    const BodyMap& bodies,
-    const Eigen::Isometry3d& skeletonFrame);
+//==============================================================================
+template <typename Shape>
+dynamics::ShapeNode* readSdfShapeNode(
+    dynamics::BodyNode* body,
+    const Shape& shape,
+    const Options& options,
+    const detail::SdfResources& resources)
+{
+  auto geometry = readSdfShape(shape.Geom(), options, resources);
+  auto transform = resolveSdfPose(shape.SemanticPose(), body->getName());
+  if (shape.Geom()->Type() == sdf::GeometryType::PLANE
+      && !options.mUsePlaneShapeForPlane) {
+    const auto normal
+        = sdfVector(shape.Geom()->PlaneShape()->Normal()).normalized();
+    // Orient the finite plane approximation along the authored plane normal.
+    transform.linear()
+        *= Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), normal)
+               .toRotationMatrix();
+  }
+  auto* node
+      = body->createShapeNode(geometry, body->getName() + " - " + shape.Name());
+  node->setRelativeTransform(transform);
+  return node;
+}
 
-dart::dynamics::WeldJoint::Properties readWeldJoint(
-    tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+//==============================================================================
+void readSdfAspects(
+    const sdf::Model& model,
+    const dynamics::SkeletonPtr& skeleton,
+    const Options& options,
+    const detail::SdfResources& resources)
+{
+  for (uint64_t index = 0; index < model.LinkCount(); ++index) {
+    const auto link = model.LinkByIndex(index);
+    auto* body = skeleton->getBodyNode(link->Name());
+    for (uint64_t visualIndex = 0; visualIndex < link->VisualCount();
+         ++visualIndex) {
+      const auto visual = link->VisualByIndex(visualIndex);
+      auto* node = readSdfShapeNode(body, *visual, options, resources);
+      auto* aspect = node->createVisualAspect();
+      if (visual->Material()) {
+        const auto color = visual->Material()->Diffuse();
+        const Eigen::Vector4d rgba(color.R(), color.G(), color.B(), color.A());
+        requireSdf(rgba.allFinite(), "Material color must be finite");
+        aspect->setColor(rgba);
+      }
+    }
+    for (uint64_t collisionIndex = 0; collisionIndex < link->CollisionCount();
+         ++collisionIndex) {
+      const auto collision = link->CollisionByIndex(collisionIndex);
+      auto* node = readSdfShapeNode(body, *collision, options, resources);
+      node->createCollisionAspect();
+      node->createDynamicsAspect();
+    }
+  }
+}
 
-dynamics::RevoluteJoint::Properties readRevoluteJoint(
-    tinyxml2::XMLElement* revoluteJointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+//==============================================================================
+void applySdfMimics(
+    const dynamics::SkeletonPtr& skeleton, const SdfJoints& joints)
+{
+  using Dof = std::pair<std::string, std::size_t>;
+  std::map<Dof, Dof> references;
+  for (const auto& entry : joints) {
+    auto* joint = skeleton->getJoint(entry.second.properties->mName);
+    auto properties = joint->getMimicDofProperties();
+    properties.resize(joint->getNumDofs());
+    for (const auto& mimic : entry.second.mimics) {
+      auto* reference = skeleton->getJoint(mimic.reference);
+      requireSdf(
+          reference && mimic.referenceAxis < reference->getNumDofs()
+              && mimic.followerAxis < joint->getNumDofs(),
+          "Mimic references a missing joint or axis");
+      auto& prop = properties[mimic.followerAxis];
+      prop.mReferenceJoint = reference;
+      prop.mReferenceDofIndex = mimic.referenceAxis;
+      prop.mMultiplier = mimic.multiplier;
+      prop.mOffset = mimic.offset;
+      references[{joint->getName(), mimic.followerAxis}]
+          = {reference->getName(), mimic.referenceAxis};
+    }
+    if (!entry.second.mimics.empty()) {
+      joint->setMimicJointDofs(properties);
+      if (entry.second.mimics.size() == joint->getNumDofs())
+        joint->setActuatorType(dynamics::Joint::MIMIC);
+      else
+        for (const auto& mimic : entry.second.mimics)
+          joint->setActuatorType(mimic.followerAxis, dynamics::Joint::MIMIC);
+    }
+  }
+  for (const auto& entry : references) {
+    std::set<Dof> visiting;
+    Dof current = entry.first;
+    while (references.count(current)) {
+      requireSdf(
+          visiting.insert(current).second, "Mimic references form a cycle");
+      current = references.at(current);
+    }
+  }
+}
 
-dynamics::PrismaticJoint::Properties readPrismaticJoint(
-    tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+//==============================================================================
+dynamics::SkeletonPtr readSdfModel(
+    const sdf::Model& model,
+    const Options& options,
+    const detail::SdfResources& resources)
+{
+  requireSdf(model.ModelCount() == 0, "Nested SDF models are unsupported");
+  const auto modelTransform = resolveSdfPose(model.SemanticPose());
+  SdfBodies bodies;
+  for (uint64_t index = 0; index < model.LinkCount(); ++index) {
+    const auto link = model.LinkByIndex(index);
+    requireSdf(
+        bodies.emplace(link->Name(), readSdfBody(*link, modelTransform)).second,
+        "Duplicate link name [" + link->Name() + "]");
+  }
+  SdfJoints joints;
+  std::set<std::string> jointNames;
+  for (uint64_t index = 0; index < model.JointCount(); ++index) {
+    auto joint
+        = readSdfJoint(*model.JointByIndex(index), bodies, modelTransform);
+    jointNames.insert(joint.properties->mName);
+    const auto child = joint.child;
+    requireSdf(
+        joints.emplace(child, std::move(joint)).second,
+        "Multiple joints claim child link [" + child + "]");
+  }
 
-dynamics::ScrewJoint::Properties readScrewJoint(
-    tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+  // Order links by ancestry before constructing any DART joints.
+  std::vector<std::string> order;
+  std::set<std::string> ordered;
+  for (const auto& entry : bodies) {
+    std::vector<std::string> ancestors;
+    std::set<std::string> visiting;
+    std::string current = entry.first;
+    while (current != "world" && !ordered.count(current)) {
+      requireSdf(
+          visiting.insert(current).second, "Link topology forms a cycle");
+      ancestors.push_back(current);
+      const auto joint = joints.find(current);
+      if (joint == joints.end())
+        break;
+      current = joint->second.parent;
+    }
+    for (auto ancestor = ancestors.rbegin(); ancestor != ancestors.rend();
+         ++ancestor) {
+      ordered.insert(*ancestor);
+      order.push_back(*ancestor);
+    }
+  }
 
-dynamics::UniversalJoint::Properties readUniversalJoint(
-    tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+  auto skeleton = dynamics::Skeleton::create(model.Name());
+  skeleton->setMobile(!model.Static());
+  for (const auto& name : order) {
+    const auto& body = bodies.at(name);
+    SdfJoint root;
+    const SdfJoint* joint = nullptr;
+    dynamics::BodyNode* parent = nullptr;
+    if (const auto found = joints.find(name); found != joints.end()) {
+      joint = &found->second;
+      if (joint->parent != "world")
+        parent = skeleton->getBodyNode(joint->parent);
+    } else {
+      root.type = options.mDefaultRootJointType == RootJointType::FIXED
+                      ? sdf::JointType::FIXED
+                      : sdf::JointType::INVALID;
+      std::string rootName = "root";
+      for (std::size_t suffix = 1; jointNames.count(rootName); ++suffix)
+        rootName = "root(" + std::to_string(suffix) + ")";
+      jointNames.insert(rootName);
+      const dynamics::Joint::Properties properties(
+          rootName, body.worldTransform);
+      if (root.type == sdf::JointType::FIXED)
+        root.properties
+            = dynamics::WeldJoint::Properties::createShared(properties);
+      else
+        root.properties
+            = dynamics::FreeJoint::Properties::createShared(properties);
+      joint = &root;
+    }
+    const auto pair = body.soft ? createSdfPair<dynamics::SoftBodyNode>(
+                          skeleton, parent, *joint, body)
+                                : createSdfPair<dynamics::BodyNode>(
+                                    skeleton, parent, *joint, body);
+    requireSdf(pair.first && pair.second, "Failed to create a joint and body");
+  }
+  readSdfAspects(model, skeleton, options, resources);
+  skeleton->resetPositions();
+  applySdfMimics(skeleton, joints);
+  return skeleton;
+}
 
-dynamics::BallJoint::Properties readBallJoint(
-    tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
+//==============================================================================
+Options resolveSdfOptions(const Options& options)
+{
+  Options resolved = options;
+  if (!resolved.mResourceRetriever) {
+    auto retriever = std::make_shared<CompositeResourceRetriever>();
+    retriever->addSchemaRetriever(
+        "file", std::make_shared<common::LocalResourceRetriever>());
+    retriever->addSchemaRetriever("dart", DartResourceRetriever::create());
+    resolved.mResourceRetriever = retriever;
+  }
+  return resolved;
+}
 
-common::ResourceRetrieverPtr getRetriever(
-    const common::ResourceRetrieverPtr& retriever);
-
-} // anonymous namespace
+} // namespace
 
 //==============================================================================
 Options::Options(
@@ -353,1545 +900,92 @@ Options::Options(
     mCollisionDetector(std::move(collisionDetector)),
     mUsePlaneShapeForPlane(usePlaneShapeForPlane)
 {
-  // Do nothing
 }
 
 //==============================================================================
 simulation::WorldPtr readSdfFile(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
-  Options options;
-  options.mResourceRetriever = nullOrRetriever;
-  return readWorld(uri, options);
-}
-
-//==============================================================================
-void checkFrameScope(const tinyxml2::XMLElement& scope)
-{
-  const std::string name = scope.Name();
-  for (const char* element : {"frame", "include"}) {
-    if (scope.FirstChildElement(element)) {
-      throw std::invalid_argument(
-          "<" + name + "><" + element
-          + ">: DART does not support SDF frame composition");
-    }
-  }
-  if (name == "model") {
-    if (scope.FirstChildElement("model")) {
-      throw std::invalid_argument("DART does not support nested SDF models");
-    }
-    if (const char* attribute = scope.Attribute("placement_frame")) {
-      const std::string frame = common::trim(attribute);
-      if (!frame.empty() && frame != "__model__") {
-        throw std::invalid_argument(
-            "<model> placement_frame [" + frame
-            + "]: DART does not support SDF placement frames");
-      }
-    }
-  }
-}
-
-//==============================================================================
-bool checkVersion(
-    const tinyxml2::XMLElement& sdfElement, const common::Uri& uri)
-{
-  const std::string version = getAttributeString(&sdfElement, "version");
-  // TODO: We need version aware SDF parser (see #264)
-  if (version != "1.4" && version != "1.5" && version != "1.6"
-      && version != "1.7" && version != "1.8" && version != "1.9") {
-    dtwarn << "[SdfParser] The file format of [" << uri.toString()
-           << "] was found to be [" << version << "], but we only support SDF "
-           << "versions 1.4 through 1.9!\n";
-    return false;
-  }
-
-  if (version == "1.7" || version == "1.8" || version == "1.9") {
-    for (const auto* model = sdfElement.FirstChildElement("model"); model;
-         model = model->NextSiblingElement("model"))
-      checkFrameScope(*model);
-    if (const auto* world = sdfElement.FirstChildElement("world")) {
-      checkFrameScope(*world);
-      for (const auto* model = world->FirstChildElement("model"); model;
-           model = model->NextSiblingElement("model"))
-        checkFrameScope(*model);
-    }
-  }
-
-  return true;
+  return readWorld(uri, Options(retriever));
 }
 
 //==============================================================================
 simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 {
-  const auto retriever = getRetriever(options.mResourceRetriever);
-  Options resolvedOptions = options;
-  resolvedOptions.mResourceRetriever = retriever;
-
-  //--------------------------------------------------------------------------
-  // Load xml and create Document
-  tinyxml2::XMLDocument sdfFile;
   try {
-    openXMLFile(sdfFile, uri, retriever);
-  } catch (std::exception const& e) {
-    dtwarn << "[SdfParser::readSdfFile] Loading file [" << uri.toString()
-           << "] failed: " << e.what() << "\n";
+    const bool useNativeFileLookup = !options.mResourceRetriever;
+    const auto resolved = resolveSdfOptions(options);
+    detail::SdfResources resources(
+        resolved.mResourceRetriever, useNativeFileLookup);
+    sdf::Root root;
+    if (!resources.load(uri, root))
+      return nullptr;
+    requireSdf(root.WorldCount() > 0, "Expected an SDF world");
+    if (root.WorldCount() > 1)
+      dtwarn << "[SdfParser] Multiple worlds found; loading the first world\n";
+    const auto sdfWorld = root.WorldByIndex(0);
+    requireSdf(
+        sdfWorld->JointCount() == 0, "World-level SDF joints are unsupported");
+    const auto gravity = sdfVector(sdfWorld->Gravity());
+    requireSdf(gravity.allFinite(), "World gravity must be finite");
+    const auto physics = sdfWorld->PhysicsDefault();
+    const double timeStep
+        = physics ? positiveSdf(physics->MaxStepSize(), "Time step") : 0.001;
+    std::vector<dynamics::SkeletonPtr> models;
+    for (uint64_t index = 0; index < sdfWorld->ModelCount(); ++index)
+      models.push_back(
+          readSdfModel(*sdfWorld->ModelByIndex(index), resolved, resources));
+    auto world = simulation::World::create(sdfWorld->Name());
+    world->setGravity(gravity);
+    world->setTimeStep(timeStep);
+    if (resolved.mCollisionDetector)
+      world->getConstraintSolver()->setCollisionDetector(
+          resolved.mCollisionDetector);
+    for (const auto& model : models)
+      world->addSkeleton(model);
+    return world;
+  } catch (const std::exception& error) {
+    dtwarn << "[SdfParser] Loading world [" << uri.toString()
+           << "] failed: " << error.what() << '\n';
     return nullptr;
   }
-
-  //--------------------------------------------------------------------------
-  // Load DART
-  tinyxml2::XMLElement* sdfElement = nullptr;
-  sdfElement = sdfFile.FirstChildElement("sdf");
-  if (sdfElement == nullptr)
-    return nullptr;
-
-  //--------------------------------------------------------------------------
-  // version attribute
-  if (!checkVersion(*sdfElement, uri))
-    return nullptr;
-
-  //--------------------------------------------------------------------------
-  // Load World
-  tinyxml2::XMLElement* worldElement = nullptr;
-  worldElement = sdfElement->FirstChildElement("world");
-  if (worldElement == nullptr)
-    return nullptr;
-
-  return readWorld(worldElement, uri, resolvedOptions);
 }
 
 //==============================================================================
 simulation::WorldPtr readWorld(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
-  Options options;
-  options.mResourceRetriever = nullOrRetriever;
-  return readWorld(uri, options);
+  return readWorld(uri, Options(retriever));
 }
 
 //==============================================================================
 dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options)
 {
-  const auto retriever = getRetriever(options.mResourceRetriever);
-  Options resolvedOptions = options;
-  resolvedOptions.mResourceRetriever = retriever;
-
-  //--------------------------------------------------------------------------
-  // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
   try {
-    openXMLFile(_dartFile, uri, retriever);
-  } catch (std::exception const& e) {
-    dtwarn << "[SdfParser::readSkeleton] Loading file [" << uri.toString()
-           << "] failed: " << e.what() << "\n";
+    const bool useNativeFileLookup = !options.mResourceRetriever;
+    const auto resolved = resolveSdfOptions(options);
+    detail::SdfResources resources(
+        resolved.mResourceRetriever, useNativeFileLookup);
+    sdf::Root root;
+    if (!resources.load(uri, root))
+      return nullptr;
+    requireSdf(root.Model() != nullptr, "Expected a standalone SDF model");
+    return readSdfModel(*root.Model(), resolved, resources);
+  } catch (const std::exception& error) {
+    dtwarn << "[SdfParser] Loading model [" << uri.toString()
+           << "] failed: " << error.what() << '\n';
     return nullptr;
-  }
-
-  //--------------------------------------------------------------------------
-  // Load sdf
-  tinyxml2::XMLElement* sdfElement = nullptr;
-  sdfElement = _dartFile.FirstChildElement("sdf");
-  if (sdfElement == nullptr)
-    return nullptr;
-
-  //--------------------------------------------------------------------------
-  // version attribute
-  if (!checkVersion(*sdfElement, uri))
-    return nullptr;
-
-  //--------------------------------------------------------------------------
-  // Load skeleton
-  tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = sdfElement->FirstChildElement("model");
-  if (skelElement == nullptr)
-    return nullptr;
-
-  dynamics::SkeletonPtr newSkeleton
-      = readSkeleton(skelElement, uri, resolvedOptions);
-
-  return newSkeleton;
-}
-
-//==============================================================================
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& nullOrRetriever)
-{
-  Options options;
-  options.mResourceRetriever = nullOrRetriever;
-  return readSkeleton(uri, options);
-}
-
-namespace {
-
-//==============================================================================
-simulation::WorldPtr readWorld(
-    tinyxml2::XMLElement* worldElement,
-    const common::Uri& baseUri,
-    const Options& options)
-{
-  DART_ASSERT(worldElement != nullptr);
-
-  // Create a world
-  simulation::WorldPtr newWorld = simulation::World::create();
-
-  //--------------------------------------------------------------------------
-  // Name attribute
-  std::string name = getAttributeString(worldElement, "name");
-  newWorld->setName(name);
-
-  //--------------------------------------------------------------------------
-  // Load physics
-  if (hasElement(worldElement, "physics")) {
-    tinyxml2::XMLElement* physicsElement
-        = worldElement->FirstChildElement("physics");
-    readPhysics(physicsElement, newWorld);
-  }
-
-  if (options.mCollisionDetector) {
-    newWorld->getConstraintSolver()->setCollisionDetector(
-        options.mCollisionDetector);
-  }
-
-  //--------------------------------------------------------------------------
-  // Load skeletons
-  ElementEnumerator skeletonElements(worldElement, "model");
-  while (skeletonElements.next()) {
-    dynamics::SkeletonPtr newSkeleton
-        = readSkeleton(skeletonElements.get(), baseUri, options);
-
-    newWorld->addSkeleton(newSkeleton);
-  }
-
-  return newWorld;
-}
-
-//==============================================================================
-void readPhysics(
-    tinyxml2::XMLElement* physicsElement, simulation::WorldPtr world)
-{
-  // Type attribute
-  // std::string physicsEngineName = getAttribute(_physicsElement, "type");
-
-  // Time step
-  if (hasElement(physicsElement, "max_step_size")) {
-    double timeStep = getValueDouble(physicsElement, "max_step_size");
-    world->setTimeStep(timeStep);
-  }
-
-  // Number of max contacts
-  // if (hasElement(_physicsElement, "max_contacts"))
-  // {
-  //   int timeStep = getValueInt(_physicsElement, "max_contacts");
-  //   _world->setMaxNumContacts(timeStep);
-  // }
-
-  // Gravity
-  if (hasElement(physicsElement, "gravity")) {
-    Eigen::Vector3d gravity = getValueVector3d(physicsElement, "gravity");
-    world->setGravity(gravity);
   }
 }
 
 //==============================================================================
 dynamics::SkeletonPtr readSkeleton(
-    tinyxml2::XMLElement* skeletonElement,
-    const common::Uri& baseUri,
-    const Options& options)
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
-  DART_ASSERT(skeletonElement != nullptr);
-
-  Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
-  dynamics::SkeletonPtr newSkeleton
-      = makeSkeleton(skeletonElement, skeletonFrame);
-
-  //--------------------------------------------------------------------------
-  // Bodies
-  BodyMap sdfBodyNodes = readAllBodyNodes(
-      skeletonElement, baseUri, options.mResourceRetriever, skeletonFrame);
-
-  //--------------------------------------------------------------------------
-  // Joints
-  JointMap sdfJoints
-      = readAllJoints(skeletonElement, skeletonFrame, sdfBodyNodes);
-
-  // Iterate through the collected properties and construct the Skeleton from
-  // the root nodes downward
-  BodyMap::iterator body = sdfBodyNodes.begin();
-  JointMap::const_iterator parentJoint;
-  dynamics::BodyNode* parentBody{nullptr};
-  while (body != sdfBodyNodes.end()) {
-    NextResult result = getNextJointAndNodePair(
-        body, parentJoint, parentBody, newSkeleton, sdfBodyNodes, sdfJoints);
-
-    if (BREAK == result)
-      break;
-    else if (CONTINUE == result)
-      continue;
-    else if (CREATE_ROOT_JOINT == result) {
-      SDFJoint rootJoint;
-      if (options.mDefaultRootJointType == RootJointType::FLOATING) {
-        // If a root FreeJoint is needed for the parent of the current joint,
-        // then create it
-        rootJoint.properties = dynamics::FreeJoint::Properties::createShared(
-            dynamics::Joint::Properties("root", body->second.initTransform));
-        rootJoint.type = "free";
-      } else if (options.mDefaultRootJointType == RootJointType::FIXED) {
-        // If a root WeldJoint is needed for the parent of the current joint,
-        // then create it
-        rootJoint.properties = dynamics::WeldJoint::Properties::createShared(
-            dynamics::Joint::Properties("root", body->second.initTransform));
-        rootJoint.type = "fixed";
-      } else {
-        dtwarn << "Unsupported root joint type ["
-               << static_cast<int>(options.mDefaultRootJointType)
-               << "]. Using FLOATING by default.\n";
-      }
-
-      if (!createPair(newSkeleton, nullptr, rootJoint, body->second))
-        break;
-
-      sdfBodyNodes.erase(body);
-      body = sdfBodyNodes.begin();
-
-      continue;
-    }
-
-    if (!createPair(newSkeleton, parentBody, parentJoint->second, body->second))
-      break;
-
-    sdfBodyNodes.erase(body);
-    body = sdfBodyNodes.begin();
-  }
-
-  // Read aspects here since aspects cannot be added if the BodyNodes haven't
-  // created yet.
-  readAspects(
-      newSkeleton,
-      skeletonElement,
-      baseUri,
-      options.mResourceRetriever,
-      options.mUsePlaneShapeForPlane);
-
-  // Set positions to their initial values
-  newSkeleton->resetPositions();
-
-  applyMimicConstraints(newSkeleton, sdfJoints);
-
-  return newSkeleton;
+  return readSkeleton(uri, Options(retriever));
 }
-
-//==============================================================================
-bool createPair(
-    dynamics::SkeletonPtr skeleton,
-    dynamics::BodyNode* parent,
-    const SDFJoint& newJoint,
-    const SDFBodyNode& newBody)
-{
-  std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
-
-  if (newBody.type.empty()) {
-    pair = createJointAndNodePair<dynamics::BodyNode>(
-        skeleton, parent, newJoint, newBody);
-  } else if (std::string("soft") == newBody.type) {
-    pair = createJointAndNodePair<dynamics::SoftBodyNode>(
-        skeleton, parent, newJoint, newBody);
-  } else {
-    dterr << "[SdfParser::createPair] Unsupported Link type: " << newBody.type
-          << "\n";
-    return false;
-  }
-
-  if (!pair.first || !pair.second)
-    return false;
-
-  return true;
-}
-
-//==============================================================================
-NextResult getNextJointAndNodePair(
-    BodyMap::iterator& body,
-    JointMap::const_iterator& parentJoint,
-    dynamics::BodyNode*& parentBody,
-    const dynamics::SkeletonPtr skeleton,
-    BodyMap& sdfBodyNodes,
-    const JointMap& sdfJoints)
-{
-  parentJoint = sdfJoints.find(body->first);
-  if (parentJoint == sdfJoints.end()) {
-    return CREATE_ROOT_JOINT;
-  }
-
-  const std::string& parentBodyName = parentJoint->second.parentName;
-  const std::string& parentJointName = parentJoint->second.properties->mName;
-
-  // Check if the parent Body is created yet
-  parentBody = skeleton->getBodyNode(parentBodyName);
-  if (nullptr == parentBody && parentBodyName != "world"
-      && !parentBodyName.empty()) {
-    // Find the properties of the parent Joint of the current Joint, because it
-    // does not seem to be created yet.
-    BodyMap::iterator check_parent_body = sdfBodyNodes.find(parentBodyName);
-
-    if (check_parent_body == sdfBodyNodes.end()) {
-      // The Body does not exist in the file
-      dterr << "[SdfParser::getNextJointAndNodePair] Could not find Link "
-            << "named [" << parentBodyName << "] requested as parent of "
-            << "Joint [" << parentJointName << "]. We will now quit "
-            << "parsing.\n";
-      return BREAK;
-    } else {
-      body = check_parent_body;
-      return CONTINUE; // Create the parent before creating the current Joint
-    }
-  }
-
-  return VALID;
-}
-
-//==============================================================================
-void applyMimicConstraints(
-    const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints)
-{
-  for (const auto& entry : sdfJoints) {
-    const auto& jointInfo = entry.second;
-    if (jointInfo.mimicInfos.empty())
-      continue;
-
-    auto* joint = skeleton->getJoint(jointInfo.properties->mName);
-    if (!joint)
-      continue;
-
-    std::vector<dynamics::MimicDofProperties> props
-        = joint->getMimicDofProperties();
-    props.resize(joint->getNumDofs());
-
-    bool applied = false;
-    for (const auto& mimic : jointInfo.mimicInfos) {
-      auto* ref = skeleton->getJoint(mimic.referenceJointName);
-      if (!ref) {
-        DART_WARN(
-            "[SdfParser] Ignoring mimic joint [{}] referencing missing joint "
-            "[{}]",
-            jointInfo.properties->mName,
-            mimic.referenceJointName);
-        continue;
-      }
-
-      const std::size_t followerIndex
-          = std::min(mimic.referenceDof, joint->getNumDofs() - 1);
-      const std::size_t referenceIndex
-          = std::min(mimic.referenceDof, ref->getNumDofs() - 1);
-
-      auto& prop = props[followerIndex];
-      prop.mReferenceJoint = ref;
-      prop.mReferenceDofIndex = referenceIndex;
-      prop.mMultiplier = mimic.multiplier;
-      prop.mOffset = mimic.offset;
-      applied = true;
-    }
-
-    if (!applied)
-      continue;
-
-    joint->setMimicJointDofs(props);
-    joint->setActuatorType(dynamics::Joint::MIMIC);
-  }
-}
-
-dynamics::SkeletonPtr makeSkeleton(
-    tinyxml2::XMLElement* _skeletonElement, Eigen::Isometry3d& skeletonFrame)
-{
-  DART_ASSERT(_skeletonElement != nullptr);
-
-  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
-
-  //--------------------------------------------------------------------------
-  // Name attribute
-  std::string name = getAttributeString(_skeletonElement, "name");
-  newSkeleton->setName(name);
-
-  //--------------------------------------------------------------------------
-  // immobile attribute
-  if (hasElement(_skeletonElement, "static")) {
-    bool isStatic = getValueBool(_skeletonElement, "static");
-    newSkeleton->setMobile(!isStatic);
-  }
-
-  //--------------------------------------------------------------------------
-  // transformation
-  if (hasElement(_skeletonElement, "pose")) {
-    Eigen::Isometry3d W = readSdfPose(_skeletonElement, "world");
-    skeletonFrame = W;
-  }
-
-  return newSkeleton;
-}
-
-//==============================================================================
-template <class NodeType>
-std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
-    dynamics::SkeletonPtr skeleton,
-    dynamics::BodyNode* parent,
-    const SDFJoint& joint,
-    const SDFBodyNode& node)
-{
-  const std::string& type = joint.type;
-
-  // NodeType is forwarded as the BodyNode type so that a <soft_shape> link
-  // (NodeType == SoftBodyNode) actually creates a SoftBodyNode. Without the
-  // second template argument this defaults to a rigid dynamics::BodyNode and
-  // silently slices SoftBodyNode::Properties down to BodyNode::Properties,
-  // making every soft SDF body load as rigid.
-  if (std::string("prismatic") == type)
-    return skeleton
-        ->createJointAndBodyNodePair<dynamics::PrismaticJoint, NodeType>(
-            parent,
-            static_cast<const dynamics::PrismaticJoint::Properties&>(
-                *joint.properties),
-            static_cast<const typename NodeType::Properties&>(
-                *node.properties));
-  else if (std::string("revolute") == type)
-    return skeleton
-        ->createJointAndBodyNodePair<dynamics::RevoluteJoint, NodeType>(
-            parent,
-            static_cast<const dynamics::RevoluteJoint::Properties&>(
-                *joint.properties),
-            static_cast<const typename NodeType::Properties&>(
-                *node.properties));
-  else if (std::string("screw") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint, NodeType>(
-        parent,
-        static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("revolute2") == type || std::string("universal") == type)
-    return skeleton
-        ->createJointAndBodyNodePair<dynamics::UniversalJoint, NodeType>(
-            parent,
-            static_cast<const dynamics::UniversalJoint::Properties&>(
-                *joint.properties),
-            static_cast<const typename NodeType::Properties&>(
-                *node.properties));
-  else if (std::string("ball") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::BallJoint, NodeType>(
-        parent,
-        static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("fixed") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint, NodeType>(
-        parent,
-        static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("free") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint, NodeType>(
-        parent,
-        static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
-
-  dterr << "[SdfParser::createJointAndNodePair] Unsupported Joint type "
-           "encountered: "
-        << type << ". Please report this as a bug! We will now quit parsing.\n";
-  return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
-}
-
-//==============================================================================
-BodyMap readAllBodyNodes(
-    tinyxml2::XMLElement* skeletonElement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    const Eigen::Isometry3d& skeletonFrame)
-{
-  ElementEnumerator bodies(skeletonElement, "link");
-  BodyMap sdfBodyNodes;
-  while (bodies.next()) {
-    SDFBodyNode body
-        = readBodyNode(bodies.get(), skeletonFrame, baseUri, retriever);
-
-    BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
-    if (it != sdfBodyNodes.end()) {
-      dtwarn << "[SdfParser::readAllBodyNodes] Duplicate name in file: "
-             << body.properties->mName << "\n"
-             << "Every Link must have a unique name!\n";
-      continue;
-    }
-
-    sdfBodyNodes[body.properties->mName] = body;
-  }
-
-  return sdfBodyNodes;
-}
-
-//===============================================================================
-SDFBodyNode readBodyNode(
-    tinyxml2::XMLElement* bodyNodeElement,
-    const Eigen::Isometry3d& skeletonFrame,
-    const common::Uri& /*baseUri*/,
-    const common::ResourceRetrieverPtr& /*retriever*/)
-{
-  DART_ASSERT(bodyNodeElement != nullptr);
-
-  dynamics::BodyNode::Properties properties;
-  Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
-
-  // Name attribute
-  std::string name = getAttributeString(bodyNodeElement, "name");
-  properties.mName = name;
-  const std::string bodyName = name;
-
-  //--------------------------------------------------------------------------
-  // gravity
-  if (hasElement(bodyNodeElement, "gravity")) {
-    bool gravityMode = getValueBool(bodyNodeElement, "gravity");
-    properties.mGravityMode = gravityMode;
-  }
-
-  //--------------------------------------------------------------------------
-  // self_collide
-  //    if (hasElement(_bodyElement, "self_collide"))
-  //    {
-  //        bool gravityMode = getValueBool(_bodyElement, "self_collide");
-  //    }
-
-  //--------------------------------------------------------------------------
-  // transformation
-  if (hasElement(bodyNodeElement, "pose")) {
-    Eigen::Isometry3d W = readSdfPose(bodyNodeElement, "__model__");
-    initTransform = skeletonFrame * W;
-  } else {
-    initTransform = skeletonFrame;
-  }
-
-  //--------------------------------------------------------------------------
-  // inertia
-  constexpr double kMinReasonableMass = 1e-9; // 1 microgram
-  bool massSpecified = false;
-  if (hasElement(bodyNodeElement, "inertial")) {
-    tinyxml2::XMLElement* inertiaElement
-        = getElement(bodyNodeElement, "inertial");
-
-    // mass
-    if (hasElement(inertiaElement, "mass")) {
-      double mass = getValueDouble(inertiaElement, "mass");
-      if (mass <= 0.0) {
-        DART_WARN(
-            "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
-            "to continue parsing.",
-            bodyName,
-            mass,
-            kMinReasonableMass);
-        mass = kMinReasonableMass;
-      } else if (mass < kMinReasonableMass) {
-        DART_WARN(
-            "[SdfParser] Link [{}] has a very small mass [{} kg]; clamping to "
-            "{} to avoid numerical issues.",
-            bodyName,
-            mass,
-            kMinReasonableMass);
-        mass = kMinReasonableMass;
-      }
-      properties.mInertia.setMass(mass);
-      massSpecified = true;
-    }
-
-    // offset
-    Eigen::Matrix3d inertiaRotation = Eigen::Matrix3d::Identity();
-    if (hasElement(inertiaElement, "pose")) {
-      Eigen::Isometry3d T = readSdfPose(inertiaElement, bodyName);
-      properties.mInertia.setLocalCOM(T.translation());
-      inertiaRotation = T.linear();
-    }
-
-    // inertia
-    if (hasElement(inertiaElement, "inertia")) {
-      tinyxml2::XMLElement* moiElement = getElement(inertiaElement, "inertia");
-
-      double ixx = getValueDouble(moiElement, "ixx");
-      double iyy = getValueDouble(moiElement, "iyy");
-      double izz = getValueDouble(moiElement, "izz");
-
-      double ixy = getValueDouble(moiElement, "ixy");
-      double ixz = getValueDouble(moiElement, "ixz");
-      double iyz = getValueDouble(moiElement, "iyz");
-
-      properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
-      properties.mInertia.setMoment(
-          inertiaRotation * properties.mInertia.getMoment()
-          * inertiaRotation.transpose());
-    } else if (massSpecified) {
-      // Keep the inertia physically meaningful by matching the moment scale
-      // to the specified mass; geometry is unknown, so use an isotropic guess.
-      const double mass = properties.mInertia.getMass();
-      properties.mInertia.setMoment(Eigen::Matrix3d::Identity() * mass);
-      DART_WARN(
-          "[SdfParser] Link [{}] defines <mass> but no <inertia>; using an "
-          "isotropic inertia tensor (mass * I). Provide <inertia> for "
-          "physically correct behavior.",
-          bodyName);
-    }
-
-    if (!massSpecified) {
-      DART_WARN(
-          "[SdfParser] Link [{}] is missing <mass>; using default mass of 1 "
-          "kg. "
-          "Specify <inertial><mass> to avoid unstable simulation.",
-          bodyName);
-    }
-  } else {
-    DART_WARN(
-        "[SdfParser] Link [{}] is missing <inertial>; using default "
-        "mass/inertia "
-        "(1 kg, unit inertia). Specify <inertial> to avoid unstable "
-        "simulation.",
-        bodyName);
-  }
-
-  SDFBodyNode sdfBodyNode;
-  sdfBodyNode.initTransform = initTransform;
-  if (hasElement(bodyNodeElement, "soft_shape")) {
-    auto softProperties = readSoftBodyProperties(bodyNodeElement);
-
-    sdfBodyNode.properties = dynamics::SoftBodyNode::Properties::createShared(
-        properties, softProperties);
-    sdfBodyNode.type = "soft";
-  } else {
-    sdfBodyNode.properties
-        = dynamics::BodyNode::Properties::createShared(properties);
-    sdfBodyNode.type = "";
-  }
-
-  return sdfBodyNode;
-}
-
-//==============================================================================
-dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
-    tinyxml2::XMLElement* softBodyNodeElement)
-{
-  //---------------------------------- Note ------------------------------------
-  // SoftBodyNode is created if _softBodyNodeElement has <soft_shape>.
-  // Otherwise, BodyNode is created.
-
-  //----------------------------------------------------------------------------
-  DART_ASSERT(softBodyNodeElement != nullptr);
-
-  dynamics::SoftBodyNode::UniqueProperties softProperties;
-
-  //----------------------------------------------------------------------------
-  // Soft properties
-  if (hasElement(softBodyNodeElement, "soft_shape")) {
-    tinyxml2::XMLElement* softShapeEle
-        = getElement(softBodyNodeElement, "soft_shape");
-
-    // mass
-    double totalMass = getValueDouble(softShapeEle, "total_mass");
-
-    // pose
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    if (hasElement(softShapeEle, "pose"))
-      T = readSdfPose(
-          softShapeEle, getAttributeString(softBodyNodeElement, "name"));
-
-    // geometry
-    tinyxml2::XMLElement* geometryEle = getElement(softShapeEle, "geometry");
-    if (hasElement(geometryEle, "sphere")) {
-      tinyxml2::XMLElement* sphereEle = getElement(geometryEle, "sphere");
-      const auto radius = getValueDouble(sphereEle, "radius");
-      const auto nSlices = getValueUInt(sphereEle, "num_slices");
-      const auto nStacks = getValueUInt(sphereEle, "num_stacks");
-      softProperties = dynamics::SoftBodyNodeHelper::makeSphereProperties(
-          radius, nSlices, nStacks, totalMass);
-    } else if (hasElement(geometryEle, "box")) {
-      tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
-      Eigen::Vector3d size = getValueVector3d(boxEle, "size");
-      Eigen::Vector3i frags = getValueVector3i(boxEle, "frags");
-      softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
-          size, T, frags, totalMass);
-    } else if (hasElement(geometryEle, "ellipsoid")) {
-      tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
-      Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
-      const auto nSlices = getValueUInt(ellipsoidEle, "num_slices");
-      const auto nStacks = getValueUInt(ellipsoidEle, "num_stacks");
-      softProperties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
-          size, nSlices, nStacks, totalMass);
-    } else if (hasElement(geometryEle, "cylinder")) {
-      tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "cylinder");
-      double radius = getValueDouble(ellipsoidEle, "radius");
-      double height = getValueDouble(ellipsoidEle, "height");
-      double nSlices = getValueDouble(ellipsoidEle, "num_slices");
-      double nStacks = getValueDouble(ellipsoidEle, "num_stacks");
-      double nRings = getValueDouble(ellipsoidEle, "num_rings");
-      softProperties = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
-          radius, height, nSlices, nStacks, nRings, totalMass);
-    } else {
-      dterr << "Unknown soft shape.\n";
-    }
-
-    // The box helper already applies T; the other helpers produce local points.
-    if (!hasElement(geometryEle, "box")) {
-      for (auto& point : softProperties.mPointProps)
-        point.mX0 = T * point.mX0;
-    }
-
-    // kv
-    if (hasElement(softShapeEle, "kv")) {
-      softProperties.mKv = getValueDouble(softShapeEle, "kv");
-    }
-
-    // ke
-    if (hasElement(softShapeEle, "ke")) {
-      softProperties.mKe = getValueDouble(softShapeEle, "ke");
-    }
-
-    // damp
-    if (hasElement(softShapeEle, "damp")) {
-      softProperties.mDampCoeff = getValueDouble(softShapeEle, "damp");
-    }
-  }
-
-  return softProperties;
-}
-
-//==============================================================================
-dynamics::ShapePtr readShape(
-    tinyxml2::XMLElement* _shapelement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& _retriever,
-    bool usePlaneShapeForPlane)
-{
-  dynamics::ShapePtr newShape;
-
-  // type
-  DART_ASSERT(hasElement(_shapelement, "geometry"));
-  tinyxml2::XMLElement* geometryElement = getElement(_shapelement, "geometry");
-
-  if (hasElement(geometryElement, "sphere")) {
-    tinyxml2::XMLElement* sphereElement = getElement(geometryElement, "sphere");
-
-    const auto radius = getValueDouble(sphereElement, "radius");
-
-    newShape = dynamics::ShapePtr(new dynamics::SphereShape(radius));
-  } else if (hasElement(geometryElement, "box")) {
-    tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
-
-    Eigen::Vector3d size = getValueVector3d(boxElement, "size");
-
-    newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
-  } else if (hasElement(geometryElement, "cylinder")) {
-    tinyxml2::XMLElement* cylinderElement
-        = getElement(geometryElement, "cylinder");
-
-    double radius = getValueDouble(cylinderElement, "radius");
-    double height = getValueDouble(cylinderElement, "length");
-
-    newShape = dynamics::ShapePtr(new dynamics::CylinderShape(radius, height));
-  } else if (hasElement(geometryElement, "plane")) {
-    tinyxml2::XMLElement* planeElement = getElement(geometryElement, "plane");
-
-    if (usePlaneShapeForPlane) {
-      Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
-      if (hasElement(planeElement, "normal"))
-        normal = getValueVector3d(planeElement, "normal");
-
-      if (!normal.allFinite() || normal.squaredNorm() <= 0.0) {
-        dtwarn << "[SdfParser::readShape] Invalid <plane><normal>; using "
-                  "default [0 0 1].\n";
-        normal = Eigen::Vector3d::UnitZ();
-      }
-
-      newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
-    } else {
-      Eigen::Vector2d visSize = getValueVector2d(planeElement, "size");
-      Eigen::Vector3d size(visSize(0), visSize(1), 0.001);
-
-      newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
-    }
-  } else if (hasElement(geometryElement, "mesh")) {
-    tinyxml2::XMLElement* meshEle = getElement(geometryElement, "mesh");
-    // TODO(JS): We assume that uri is just file name for the mesh
-    if (!hasElement(meshEle, "uri")) {
-      // TODO(MXG): Figure out how to report the file name and line number of
-      dtwarn << "[SdfParser::readShape] Mesh is missing a URI, which is "
-             << "required in order to load it\n";
-      return nullptr;
-    }
-    std::string uri = getValueString(meshEle, "uri");
-
-    Eigen::Vector3d scale = hasElement(meshEle, "scale")
-                                ? getValueVector3d(meshEle, "scale")
-                                : Eigen::Vector3d::Ones();
-
-    const std::string meshUri = common::Uri::getRelativeUri(baseUri, uri);
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
-    DART_SUPPRESS_DEPRECATED_END
-
-    if (model) {
-      DART_SUPPRESS_DEPRECATED_BEGIN
-      newShape = std::make_shared<dynamics::MeshShape>(
-          scale, model, meshUri, _retriever);
-      DART_SUPPRESS_DEPRECATED_END
-    } else {
-      dtwarn << "[SdfParser::readShape] Failed to load mesh model [" << meshUri
-             << "].\n";
-      return nullptr;
-    }
-  } else {
-    std::cout << "Invalid shape type." << std::endl;
-    return nullptr;
-  }
-
-  return newShape;
-}
-
-//==============================================================================
-dynamics::ShapeNode* readShapeNode(
-    dynamics::BodyNode* bodyNode,
-    tinyxml2::XMLElement* shapeNodeEle,
-    const std::string& shapeNodeName,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane)
-{
-  DART_ASSERT(bodyNode);
-
-  auto shape
-      = readShape(shapeNodeEle, baseUri, retriever, usePlaneShapeForPlane);
-  auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
-
-  // Transformation
-  if (hasElement(shapeNodeEle, "pose")) {
-    const Eigen::Isometry3d W = readSdfPose(shapeNodeEle, bodyNode->getName());
-    shapeNode->setRelativeTransform(W);
-  }
-
-  return shapeNode;
-}
-
-//==============================================================================
-void readMaterial(
-    tinyxml2::XMLElement* materialEle, dynamics::ShapeNode* shapeNode)
-{
-  auto visualAspect = shapeNode->getVisualAspect();
-  if (hasElement(materialEle, "diffuse")) {
-    Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
-    if (color.size() == 3) {
-      Eigen::Vector3d color3d = color;
-      visualAspect->setColor(color3d);
-    } else if (color.size() == 4) {
-      Eigen::Vector4d color4d = color;
-      visualAspect->setColor(color4d);
-    } else {
-      dterr << "[SdfParse::readMaterial] Unsupported color vector size: "
-            << color.size() << "\n";
-    }
-  }
-}
-
-//==============================================================================
-void readVisualizationShapeNode(
-    dynamics::BodyNode* bodyNode,
-    tinyxml2::XMLElement* vizShapeNodeEle,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane)
-{
-  std::string visualName = "visual shape";
-  if (hasAttribute(vizShapeNodeEle, "name")) {
-    visualName = getAttributeString(vizShapeNodeEle, "name");
-  } else {
-    dtwarn << "Missing required attribute [name] in <visual> element of "
-           << "<link name = " << bodyNode->getName() << ">.\n";
-  }
-
-  dynamics::ShapeNode* newShapeNode = readShapeNode(
-      bodyNode,
-      vizShapeNodeEle,
-      bodyNode->getName() + " - " + visualName,
-      baseUri,
-      retriever,
-      usePlaneShapeForPlane);
-
-  newShapeNode->createVisualAspect();
-
-  // Material
-  if (hasElement(vizShapeNodeEle, "material")) {
-    tinyxml2::XMLElement* materialEle = getElement(vizShapeNodeEle, "material");
-    readMaterial(materialEle, newShapeNode);
-  }
-}
-
-//==============================================================================
-void readCollisionShapeNode(
-    dynamics::BodyNode* bodyNode,
-    tinyxml2::XMLElement* collShapeNodeEle,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane)
-{
-  std::string collName = "collision shape";
-  if (hasAttribute(collShapeNodeEle, "name")) {
-    collName = getAttributeString(collShapeNodeEle, "name");
-  } else {
-    dtwarn << "Missing required attribute [name] in <collision> element of "
-           << "<link name = " << bodyNode->getName() << ">.\n";
-  }
-
-  dynamics::ShapeNode* newShapeNode = readShapeNode(
-      bodyNode,
-      collShapeNodeEle,
-      bodyNode->getName() + " - " + collName,
-      baseUri,
-      retriever,
-      usePlaneShapeForPlane);
-
-  newShapeNode->createCollisionAspect();
-  newShapeNode->createDynamicsAspect();
-}
-
-//==============================================================================
-void readAspects(
-    const dynamics::SkeletonPtr& skeleton,
-    tinyxml2::XMLElement* skeletonElement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool usePlaneShapeForPlane)
-{
-  ElementEnumerator xmlBodies(skeletonElement, "link");
-  while (xmlBodies.next()) {
-    auto bodyElement = xmlBodies.get();
-    auto bodyNodeName = getAttributeString(bodyElement, "name");
-    auto bodyNode = skeleton->getBodyNode(bodyNodeName);
-
-    // visualization_shape
-    ElementEnumerator vizShapes(bodyElement, "visual");
-    while (vizShapes.next()) {
-      readVisualizationShapeNode(
-          bodyNode, vizShapes.get(), baseUri, retriever, usePlaneShapeForPlane);
-    }
-
-    // collision_shape
-    ElementEnumerator collShapes(bodyElement, "collision");
-    while (collShapes.next())
-      readCollisionShapeNode(
-          bodyNode,
-          collShapes.get(),
-          baseUri,
-          retriever,
-          usePlaneShapeForPlane);
-  }
-}
-
-//==============================================================================
-JointMap readAllJoints(
-    tinyxml2::XMLElement* _skeletonElement,
-    const Eigen::Isometry3d& skeletonFrame,
-    const BodyMap& sdfBodyNodes)
-{
-  JointMap sdfJoints;
-  ElementEnumerator joints(_skeletonElement, "joint");
-  while (joints.next()) {
-    SDFJoint joint = readJoint(joints.get(), sdfBodyNodes, skeletonFrame);
-
-    if (joint.childName.empty()) {
-      dterr << "[SdfParser::readAllJoints] Joint named ["
-            << joint.properties->mName << "] does not have a valid child "
-            << "Link, so it will not be added to the Skeleton\n";
-      continue;
-    }
-
-    JointMap::iterator it = sdfJoints.find(joint.childName);
-    if (it != sdfJoints.end()) {
-      dterr << "[SdfParser::readAllJoints] Joint named ["
-            << joint.properties->mName << "] is claiming Link ["
-            << joint.childName << "] as its child, but that is already "
-            << "claimed by Joint [" << it->second.properties->mName
-            << "]. Joint [" << joint.properties->mName
-            << "] will be discarded\n";
-      continue;
-    }
-
-    sdfJoints[joint.childName] = joint;
-  }
-
-  return sdfJoints;
-}
-
-std::vector<SDFJoint::MimicInfo> readMimicElements(
-    const tinyxml2::XMLElement* axisElement)
-{
-  std::vector<SDFJoint::MimicInfo> mimics;
-  if (!axisElement || !hasElement(axisElement, "mimic"))
-    return mimics;
-
-  const tinyxml2::XMLElement* mimicElement = getElement(axisElement, "mimic");
-  if (!mimicElement)
-    return mimics;
-
-  SDFJoint::MimicInfo info;
-  info.referenceJointName = getAttributeString(mimicElement, "joint");
-  if (hasAttribute(mimicElement, "axis")) {
-    const auto axisAttr = getAttributeString(mimicElement, "axis");
-    info.referenceDof = axisAttr == "axis2" ? 1u : 0u;
-  }
-  info.multiplier = hasElement(mimicElement, "multiplier")
-                        ? getValueDouble(mimicElement, "multiplier")
-                        : 1.0;
-  info.offset = hasElement(mimicElement, "offset")
-                    ? getValueDouble(mimicElement, "offset")
-                    : 0.0;
-  mimics.push_back(info);
-
-  return mimics;
-}
-
-SDFJoint readJoint(
-    tinyxml2::XMLElement* _jointElement,
-    const BodyMap& _sdfBodyNodes,
-    const Eigen::Isometry3d& _skeletonFrame)
-{
-  DART_ASSERT(_jointElement != nullptr);
-
-  //--------------------------------------------------------------------------
-  // Type attribute
-  std::string type = getAttributeString(_jointElement, "type");
-  DART_ASSERT(!type.empty());
-
-  //--------------------------------------------------------------------------
-  // Name attribute
-  std::string name = getAttributeString(_jointElement, "name");
-
-  //--------------------------------------------------------------------------
-  // parent
-  BodyMap::const_iterator parent_it = _sdfBodyNodes.end();
-
-  if (hasElement(_jointElement, "parent")) {
-    std::string strParent = getValueString(_jointElement, "parent");
-
-    if (strParent != std::string("world")) {
-      parent_it = _sdfBodyNodes.find(strParent);
-
-      if (parent_it == _sdfBodyNodes.end()) {
-        throw std::invalid_argument(
-            "<joint> [" + name + "] parent [" + strParent
-            + "]: DART requires a direct link name or world");
-      }
-    }
-  } else {
-    dterr << "[SdfParser::readJoint] You must set parent link for "
-          << "the Joint [" << name << "]!\n";
-    DART_ASSERT(0);
-  }
-
-  //--------------------------------------------------------------------------
-  // child
-  BodyMap::const_iterator child_it = _sdfBodyNodes.end();
-
-  if (hasElement(_jointElement, "child")) {
-    std::string strChild = getValueString(_jointElement, "child");
-
-    child_it = _sdfBodyNodes.find(strChild);
-
-    if (child_it == _sdfBodyNodes.end()) {
-      throw std::invalid_argument(
-          "<joint> [" + name + "] child [" + strChild
-          + "]: DART requires a direct link name");
-    }
-  } else {
-    dterr << "[SdfParser::readJoint] You must set the child link for the Joint "
-          << "[" << name << "]!\n";
-    DART_ASSERT(0);
-  }
-
-  SDFJoint newJoint;
-  newJoint.parentName
-      = (parent_it == _sdfBodyNodes.end()) ? "" : parent_it->first;
-  newJoint.childName = (child_it == _sdfBodyNodes.end()) ? "" : child_it->first;
-
-  //--------------------------------------------------------------------------
-  // Mimic metadata (captured before joint creation)
-  if (hasElement(_jointElement, "axis")) {
-    const tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
-    const auto mimics = readMimicElements(axisElement);
-    newJoint.mimicInfos.insert(
-        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
-  }
-  if (hasElement(_jointElement, "axis2")) {
-    const tinyxml2::XMLElement* axis2Element
-        = getElement(_jointElement, "axis2");
-    auto mimics = readMimicElements(axis2Element);
-    for (auto& m : mimics)
-      m.referenceDof = 1u; // axis2 maps to the second DoF
-    newJoint.mimicInfos.insert(
-        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
-  }
-
-  //--------------------------------------------------------------------------
-  // transformation
-  Eigen::Isometry3d parentWorld = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d childWorld = Eigen::Isometry3d::Identity();
-
-  if (parent_it != _sdfBodyNodes.end())
-    parentWorld = parent_it->second.initTransform;
-  if (child_it != _sdfBodyNodes.end())
-    childWorld = child_it->second.initTransform;
-  if (hasElement(_jointElement, "pose"))
-    childToJoint = readSdfPose(_jointElement, newJoint.childName);
-
-  Eigen::Isometry3d parentToJoint
-      = parentWorld.inverse() * childWorld * childToJoint;
-
-  // TODO: Workaround!!
-  Eigen::Isometry3d parentModelFrame
-      = (childWorld * childToJoint).inverse() * _skeletonFrame;
-
-  if (type == std::string("fixed")) {
-    newJoint.properties = dynamics::WeldJoint::Properties::createShared(
-        readWeldJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("prismatic")) {
-    newJoint.properties = dynamics::PrismaticJoint::Properties::createShared(
-        readPrismaticJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("revolute")) {
-    newJoint.properties = dynamics::RevoluteJoint::Properties::createShared(
-        readRevoluteJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("screw")) {
-    newJoint.properties = dynamics::ScrewJoint::Properties::createShared(
-        readScrewJoint(_jointElement, parentModelFrame, name));
-  } else if (
-      type == std::string("revolute2") || type == std::string("universal")) {
-    newJoint.properties = dynamics::UniversalJoint::Properties::createShared(
-        readUniversalJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("ball")) {
-    newJoint.properties = dynamics::BallJoint::Properties::createShared(
-        readBallJoint(_jointElement, parentModelFrame, name));
-  } else {
-    dterr << "Unsupported joint type [" << type
-          << "]. Using [fixed] joint type instead.\n";
-    newJoint.properties = dynamics::WeldJoint::Properties::createShared(
-        readWeldJoint(_jointElement, parentModelFrame, name));
-  }
-
-  newJoint.type = type;
-
-  newJoint.properties->mName = name;
-
-  newJoint.properties->mT_ChildBodyToJoint = childToJoint;
-  newJoint.properties->mT_ParentBodyToJoint = parentToJoint;
-
-  return newJoint;
-}
-
-static void reportMissingElement(
-    const std::string& functionName,
-    const std::string& elementName,
-    const std::string& objectType,
-    const std::string& objectName)
-{
-  dterr << "[SdfParser::" << functionName << "] Missing element " << elementName
-        << " for " << objectType << " named " << objectName << "\n";
-  DART_ASSERT(0);
-}
-
-static bool readAxisElement(
-    tinyxml2::XMLElement* axisElement,
-    const Eigen::Isometry3d& _parentModelFrame,
-    Eigen::Vector3d& axis,
-    double& lower,
-    double& upper,
-    double& initial,
-    double& rest,
-    double& damping,
-    double& friction,
-    double& spring_stiffness)
-{
-  bool hasFinitePositionLimit = false;
-
-  // use_parent_model_frame
-  bool useParentModelFrame = false;
-  if (hasElement(axisElement, "use_parent_model_frame"))
-    useParentModelFrame = getValueBool(axisElement, "use_parent_model_frame");
-
-  // xyz
-  Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
-  if (const char* attribute
-      = getElement(axisElement, "xyz")->Attribute("expressed_in")) {
-    const std::string frame = common::trim(attribute);
-    if (!frame.empty()) {
-      if (hasElement(axisElement, "use_parent_model_frame")) {
-        throw std::invalid_argument(
-            "<axis><xyz> expressed_in conflicts with use_parent_model_frame");
-      }
-      if (frame != "__model__") {
-        throw std::invalid_argument(
-            "<axis><xyz> expressed_in [" + frame
-            + "]: DART does not support SDF frame semantics for that frame");
-      }
-      useParentModelFrame = true;
-    }
-  }
-  if (useParentModelFrame) {
-    xyz = _parentModelFrame.rotation() * xyz;
-  }
-  axis = xyz;
-
-  // dynamics
-  if (hasElement(axisElement, "dynamics")) {
-    tinyxml2::XMLElement* dynamicsElement = getElement(axisElement, "dynamics");
-
-    // damping
-    if (hasElement(dynamicsElement, "damping")) {
-      damping = getValueDouble(dynamicsElement, "damping");
-    }
-
-    // friction
-    if (hasElement(dynamicsElement, "friction")) {
-      friction = getValueDouble(dynamicsElement, "friction");
-    }
-
-    // spring reference
-    if (hasElement(dynamicsElement, "spring_reference")) {
-      rest = getValueDouble(dynamicsElement, "spring_reference");
-    }
-
-    // spring stiffness
-    if (hasElement(dynamicsElement, "spring_stiffness")) {
-      spring_stiffness = getValueDouble(dynamicsElement, "spring_stiffness");
-    }
-  }
-
-  // limit
-  if (hasElement(axisElement, "limit")) {
-    tinyxml2::XMLElement* limitElement = getElement(axisElement, "limit");
-
-    // lower
-    if (hasElement(limitElement, "lower")) {
-      lower = getValueDouble(limitElement, "lower");
-      hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(lower);
-    }
-
-    // upper
-    if (hasElement(limitElement, "upper")) {
-      upper = getValueDouble(limitElement, "upper");
-      hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
-    }
-  }
-
-  // If the zero position is out of our limits, we should change the initial
-  // position instead of assuming zero
-  if (0.0 < lower || upper < 0.0) {
-    if (std::isfinite(lower) && std::isfinite(upper))
-      initial = (lower + upper) / 2.0;
-    else if (std::isfinite(lower))
-      initial = lower;
-    else if (std::isfinite(upper))
-      initial = upper;
-
-    // Any other case means the limits are both +inf, both -inf, or one is a NaN
-
-    // Apply the same logic to the rest position.
-    rest = initial;
-  }
-
-  return hasFinitePositionLimit;
-}
-
-dart::dynamics::WeldJoint::Properties readWeldJoint(
-    tinyxml2::XMLElement* /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    const std::string&)
-{
-  return dynamics::WeldJoint::Properties();
-}
-
-dynamics::RevoluteJoint::Properties readRevoluteJoint(
-    tinyxml2::XMLElement* _revoluteJointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
-{
-  DART_ASSERT(_revoluteJointElement != nullptr);
-
-  dynamics::RevoluteJoint::Properties newRevoluteJoint;
-
-  //--------------------------------------------------------------------------
-  // axis
-  if (hasElement(_revoluteJointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement
-        = getElement(_revoluteJointElement, "axis");
-
-    const bool hasLimitedAxis = readAxisElement(
-        axisElement,
-        _parentModelFrame,
-        newRevoluteJoint.mAxis,
-        newRevoluteJoint.mPositionLowerLimits[0],
-        newRevoluteJoint.mPositionUpperLimits[0],
-        newRevoluteJoint.mInitialPositions[0],
-        newRevoluteJoint.mRestPositions[0],
-        newRevoluteJoint.mDampingCoefficients[0],
-        newRevoluteJoint.mFrictions[0],
-        newRevoluteJoint.mSpringStiffnesses[0]);
-    newRevoluteJoint.mIsPositionLimitEnforced = hasLimitedAxis;
-  } else {
-    reportMissingElement("readRevoluteJoint", "axis", "joint", _name);
-  }
-
-  return newRevoluteJoint;
-}
-
-dynamics::PrismaticJoint::Properties readPrismaticJoint(
-    tinyxml2::XMLElement* _jointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
-{
-  DART_ASSERT(_jointElement != nullptr);
-
-  dynamics::PrismaticJoint::Properties newPrismaticJoint;
-
-  //--------------------------------------------------------------------------
-  // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
-
-    const bool hasLimitedAxis = readAxisElement(
-        axisElement,
-        _parentModelFrame,
-        newPrismaticJoint.mAxis,
-        newPrismaticJoint.mPositionLowerLimits[0],
-        newPrismaticJoint.mPositionUpperLimits[0],
-        newPrismaticJoint.mInitialPositions[0],
-        newPrismaticJoint.mRestPositions[0],
-        newPrismaticJoint.mDampingCoefficients[0],
-        newPrismaticJoint.mFrictions[0],
-        newPrismaticJoint.mSpringStiffnesses[0]);
-    newPrismaticJoint.mIsPositionLimitEnforced = hasLimitedAxis;
-  } else {
-    reportMissingElement("readPrismaticJoint", "axis", "joint", _name);
-  }
-
-  return newPrismaticJoint;
-}
-
-dynamics::ScrewJoint::Properties readScrewJoint(
-    tinyxml2::XMLElement* _jointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
-{
-  DART_ASSERT(_jointElement != nullptr);
-
-  dynamics::ScrewJoint::Properties newScrewJoint;
-
-  //--------------------------------------------------------------------------
-  // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
-
-    const bool hasLimitedAxis = readAxisElement(
-        axisElement,
-        _parentModelFrame,
-        newScrewJoint.mAxis,
-        newScrewJoint.mPositionLowerLimits[0],
-        newScrewJoint.mPositionUpperLimits[0],
-        newScrewJoint.mInitialPositions[0],
-        newScrewJoint.mRestPositions[0],
-        newScrewJoint.mDampingCoefficients[0],
-        newScrewJoint.mFrictions[0],
-        newScrewJoint.mSpringStiffnesses[0]);
-    newScrewJoint.mIsPositionLimitEnforced = hasLimitedAxis;
-  } else {
-    reportMissingElement("readScrewJoint", "axis", "joint", _name);
-  }
-
-  // pitch
-  if (hasElement(_jointElement, "thread_pitch")) {
-    double pitch = getValueDouble(_jointElement, "thread_pitch");
-    newScrewJoint.mPitch = pitch;
-  }
-
-  return newScrewJoint;
-}
-
-dynamics::UniversalJoint::Properties readUniversalJoint(
-    tinyxml2::XMLElement* _jointElement,
-    const Eigen::Isometry3d& _parentModelFrame,
-    const std::string& _name)
-{
-  DART_ASSERT(_jointElement != nullptr);
-
-  dynamics::UniversalJoint::Properties newUniversalJoint;
-  bool hasLimitedAxis1 = false;
-  bool hasLimitedAxis2 = false;
-
-  //--------------------------------------------------------------------------
-  // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
-
-    hasLimitedAxis1 = readAxisElement(
-        axisElement,
-        _parentModelFrame,
-        newUniversalJoint.mAxis[0],
-        newUniversalJoint.mPositionLowerLimits[0],
-        newUniversalJoint.mPositionUpperLimits[0],
-        newUniversalJoint.mInitialPositions[0],
-        newUniversalJoint.mRestPositions[0],
-        newUniversalJoint.mDampingCoefficients[0],
-        newUniversalJoint.mFrictions[0],
-        newUniversalJoint.mSpringStiffnesses[0]);
-  } else {
-    reportMissingElement("readUniversalJoint", "axis", "joint", _name);
-  }
-
-  //--------------------------------------------------------------------------
-  // axis2
-  if (hasElement(_jointElement, "axis2")) {
-    tinyxml2::XMLElement* axis2Element = getElement(_jointElement, "axis2");
-
-    hasLimitedAxis2 = readAxisElement(
-        axis2Element,
-        _parentModelFrame,
-        newUniversalJoint.mAxis[1],
-        newUniversalJoint.mPositionLowerLimits[1],
-        newUniversalJoint.mPositionUpperLimits[1],
-        newUniversalJoint.mInitialPositions[1],
-        newUniversalJoint.mRestPositions[1],
-        newUniversalJoint.mDampingCoefficients[1],
-        newUniversalJoint.mFrictions[1],
-        newUniversalJoint.mSpringStiffnesses[1]);
-  } else {
-    reportMissingElement("readUniversalJoint", "axis2", "joint", _name);
-  }
-
-  newUniversalJoint.mIsPositionLimitEnforced
-      = hasLimitedAxis1 || hasLimitedAxis2;
-
-  return newUniversalJoint;
-}
-
-dynamics::BallJoint::Properties readBallJoint(
-    tinyxml2::XMLElement* /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    const std::string&)
-{
-  return dynamics::BallJoint::Properties();
-}
-
-//==============================================================================
-common::ResourceRetrieverPtr getRetriever(
-    const common::ResourceRetrieverPtr& retriever)
-{
-  if (retriever) {
-    return retriever;
-  } else {
-    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
-    newRetriever->addSchemaRetriever(
-        "file", std::make_shared<common::LocalResourceRetriever>());
-    newRetriever->addSchemaRetriever("dart", DartResourceRetriever::create());
-
-    return newRetriever;
-  }
-}
-
-} // anonymous namespace
 
 } // namespace SdfParser
-
 } // namespace utils
 } // namespace dart

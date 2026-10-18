@@ -40,11 +40,9 @@ audits the current diff, and `dart_release_auditor` classifies named
 reference material as apply/adapt/omit against the branch's compatibility
 surface.
 
-**Tested Versions**: Claude Code CLI 2.1.296 (Claude Opus 5.5), Codex CLI
-0.162.0, Muse 1.4.6 (muse-wonder-full-1.0), 2026-10-12 —
-discovery, config, and hook checks exercised locally on this
-branch; Muse rules/skill discovery additionally probed with
-headless `muse exec --provider echo` runs in isolated workspaces.
+**Tested Versions**: Codex CLI 0.163.0, Claude Code CLI 2.1.302, and Muse Code
+1.4.10 — 2026-10-17: installed-version probes and repository discovery,
+config, hook, and scenario checks. Codex native specialists were exercised; Claude and Muse agent sessions were not exercised.
 
 Use `dart-model-upgrade` for future model or coding-agent changes; its audit
 includes configuration, prompts, generated adapters, runtime tooling, durable

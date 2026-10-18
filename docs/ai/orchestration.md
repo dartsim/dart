@@ -5,7 +5,16 @@ keeps a small workflow surface and a strict compatibility envelope.
 
 ## Roles
 
-DART AI work can split into two roles when the task is large enough:
+Maintainer decision (jslee02, 2026-10-17): delegation is the default in every
+supported client. The orchestrator splits work into bounded packets and assigns
+each to the best available agent: itself, native subagents or specialists, or
+another installed supported client, without waiting for a user request. A
+per-task `delegation=off` opt-out keeps execution and review in the parent:
+packets run serially, and a role-separated local review replaces the
+independent review lane, with the limitation recorded. Keep routing proportional: a small
+task or a single hard workstream may stay with one agent.
+
+DART AI work has two roles, which one agent may fulfill:
 
 - **Orchestrator** - owns understanding, decomposition, sequencing, and review.
   The orchestrator reads the north star, the plan dashboard, and relevant owner
@@ -25,10 +34,8 @@ tracked docs and `pixi run ...` commands usable without a specific AI tool.
 ## Codex Read-only Specialists
 
 Current model guidance lives in `docs/ai/README.md`; this file owns the roles
-and contract. For a hard single workstream, prefer giving one session more
-reasoning over delegating. Use delegated parallel specialists only for
-independently parallelizable discovery or review when the user authorized
-delegation: `dart_scout` gathers repository evidence,
+and contract. Use parallel specialists for independent discovery or review:
+`dart_scout` gathers repository evidence,
 `dart_reviewer` reviews the current diff and gates, and
 `dart_release_auditor` classifies reference material as apply/adapt/omit for
 this branch. They inherit the parent model, stay read-only, and must receive explicit
@@ -48,9 +55,11 @@ Use the strongest available reviewer for the risk: `dart-review-pr` for PR
 shape and release policy, `dart-analyze` for read-only compatibility or
 regression questions, test-focused agents for coverage and failure modes, and
 visual reviewers for GUI/example surfaces. When the environment supports
-cross-agent review, prefer Codex from a Claude-led workflow, Claude from a
-Codex-led workflow, or subagents with disjoint context. If unavailable, perform
-a role-separated local review and record the limitation.
+cross-agent review, prefer a reviewer from a different client or model family
+than the packet's writer: Codex, Claude, or Muse according to availability.
+Otherwise use a different native agent with disjoint context. If no independent
+reviewer is available or the task opts out of delegation, perform a
+role-separated local review and record the limitation.
 
 Reviewer findings are hypotheses, not commands. Investigate each substantive
 finding with code inspection, tests, docs, benchmarks, downstream checks, or
@@ -107,7 +116,10 @@ gate.
 1. The orchestrator drafts or revises packet state in `docs/plans/` or
    `docs/dev_tasks/<task>/`.
 2. An executor claims one unblocked packet, creates a topic branch, and keeps
-   the branch to that packet's verification story.
+   the branch to that packet's verification story. Executors that write at
+   the same time each use a separate git worktree on their packet branch, and
+   the orchestrator merges the results; agents sharing one checkout work
+   serially or read-only.
 3. The executor implements, verifies, and records evidence in the owning
    surface.
 4. A separate review pass checks the result against the acceptance evidence.

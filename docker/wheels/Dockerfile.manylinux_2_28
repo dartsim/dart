@@ -94,6 +94,40 @@ RUN git clone --depth 1 https://github.com/ros/urdfdom.git -b '4.0.1' \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
     && rm -rf urdfdom
 
+# sdformat embeds its schemas and conversion recipes in the library.
+# gz-cmake
+RUN git clone --depth 1 https://github.com/gazebosim/gz-cmake.git -b 'gz-cmake4_4.2.0' \
+    && cmake gz-cmake -B gz-cmake/build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF \
+    && cmake --build gz-cmake/build --target install -j${NUM_CORES} \
+    && rm -rf gz-cmake
+
+# gz-utils
+RUN git clone --depth 1 https://github.com/gazebosim/gz-utils.git -b 'gz-utils3_3.1.1' \
+    && cmake gz-utils -B gz-utils/build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_log=ON \
+    && cmake --build gz-utils/build --target install -j${NUM_CORES} \
+    && rm -rf gz-utils
+
+# gz-math
+RUN git clone --depth 1 https://github.com/gazebosim/gz-math.git -b 'gz-math8_8.4.0' \
+    && cmake gz-math -B gz-math/build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_SWIG=ON -DSKIP_PYBIND11=ON \
+    && cmake --build gz-math/build --target install -j${NUM_CORES} \
+    && rm -rf gz-math
+
+# sdformat
+RUN git clone --depth 1 https://github.com/gazebosim/sdformat.git -b 'sdformat15_15.3.0' \
+    && PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig \
+    cmake sdformat -B sdformat/build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_PYBIND11=ON -DUSE_INTERNAL_URDF=OFF \
+    && cmake --build sdformat/build --target install -j${NUM_CORES} \
+    && rm -rf sdformat
+
 # Bullet
 RUN git clone --depth 1 https://github.com/bulletphysics/bullet3.git -b '3.25' \
     && mkdir -p bullet3/build \

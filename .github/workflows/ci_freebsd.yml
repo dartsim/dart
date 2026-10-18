@@ -124,11 +124,15 @@ jobs:
               echo "Applying ${patch}"
               patch -p0 -N -i "${patch}"
             done
+            # FreeBSD ports ship sdformat 8, below dart-io's supported
+            # 14.8+/15/16 range, so keep this lane on the core libraries
+            # until ports provide a supported sdformat.
             cmake -G Ninja -S . -B build/freebsd/cpp/Release \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_CXX_FLAGS=-O2 \
               -DDART_BUILD_DARTPY=OFF \
               -DDART_BUILD_GUI=OFF \
+              -DDART_BUILD_IO=OFF \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_VERBOSE=ON
             cmake --build build/freebsd/cpp/Release --target tests -j2
