@@ -474,6 +474,18 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
             [2.0, 0.0, 0.3, 0.2315263, 0.0, 0.0, 2.1],
             [1.999, 0.0014, 0.2998, 0.2318263, 0.0008, 0.0005, 2.1012],
         ),
+        (
+            [-2.6, 1e-5, 2.8, 0.0, 1e-5, 0.0, 0.0],
+            [-2.6, 1e-5, 2.8, 0.00112, 1e-5, 0.0, 0.0],
+        ),
+        (
+            [0.0, 1e-7, -2.8, 0.0, 1.24, 0.0, 0.0],
+            [0.0, 1e-7, -2.8, -3.5e-4, 1.24, 0.0, 2.8e-4],
+        ),
+        (
+            [-0.16, 1.5, 2.44, 0.2315263, -4.76, 1.6, -3.0],
+            [-0.1601, 1.4999, 2.4401, 0.2314263, -4.76, 1.6, -2.9999],
+        ),
     ],
     # ssik switches the swivel basis between the first pair; the held swivel
     # would flip joints near the singular pose of the second; the third goal
@@ -485,7 +497,8 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
     # full extension and with aligned shoulder and wrist axes; for the last two
     # goals, Newton steps a few 1e-7 rad past a limit that another goal joint
     # sits on; the remaining starts sit on several limits or singularities at
-    # once, where Newton crosses limits or converges only linearly.
+    # once, where Newton crosses limits, converges only linearly, or stalls
+    # under too much damping.
     ids=[
         "basis-switch",
         "near-singular",
@@ -506,6 +519,9 @@ _INWARD = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0])
         "limit-release",
         "aligned-wrist-on-limits",
         "full-extension-aligned",
+        "unconstrained-budget",
+        "constrained-damping",
+        "constrained-damping-2",
     ],
 )
 def test_wam_ssik_reaches_nearby_targets_without_jumps(start, goal):
@@ -556,6 +572,25 @@ def test_wam_ssik_never_runs_the_slow_rescue_while_dragging(monkeypatch):
         transform.set_translation(start[:3, 3] + [0.0, 0.0, 0.002 * k])
         target.setTransform(transform)
         setup.pre_refresh()
+
+
+def test_wam_ssik_skips_continuation_the_held_swivel_already_beats(monkeypatch):
+    setup, wam, ee, _ = _wam_with_ssik()
+    refinement = pytest.importorskip("ssik.refinement")
+
+    def fail(*args, **kwargs):
+        raise AssertionError("continuation cannot win; skip it")
+
+    monkeypatch.setattr(refinement, "lm_refine", fail)
+    start = np.array([0.3, 0.6, 0.2, 0.2315263, -0.3, 0.5, 0.1])
+    wam.setPositions(start + [0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0])
+    desired = ee.getWorldTransform()
+    target = _activate_at(setup, wam, start)
+    target.setTransform(desired)
+    setup.pre_refresh()
+    np.testing.assert_allclose(
+        ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
+    )
 
 
 def test_wam_ssik_reuses_a_failed_solve_while_dart_iterates():

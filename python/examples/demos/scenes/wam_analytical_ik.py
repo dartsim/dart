@@ -133,33 +133,31 @@ def swivel_solver(chain, wam):
             divergence_factor=np.inf,
             stall_patience=TRACK_ITERATIONS,
         )
-        if result is None:
-            return None
-        x = into_limits(result[0])
-        if not within_limits(x):
+        x = None if result is None else into_limits(result[0])
+        if x is None or not within_limits(x):
             x = track_within_limits(q, desired)
         if x is None or np.abs(x - q).max() > TRACK_REACH:
             return None
         return x
 
     def track_within_limits(q, desired):
-        # Where the unconstrained step crosses a limit, continue again with
-        # damped steps that hold each joint on a limit while a step would push
-        # it past.
+        # Where the unconstrained steps cross a limit or stall, continue again
+        # with damped steps that hold each joint on a limit while a step would
+        # push it past. Damping shrinks with the residual, as in
+        # Levenberg-Marquardt, so the steps still converge quadratically.
         x = q.copy()
         for _ in range(TRACK_ITERATIONS):
             pose = chain.fk(x)
             if np.abs(pose - desired).max() < TRACK_TOLERANCE:
                 return x
             twist = refinement.se3_log_residual(desired @ np.linalg.inv(pose))
+            damping = min(TRACK_DAMPING, twist @ twist) * np.eye(6)
             jac = jacobian(x)
             free = np.ones(x.size, dtype=bool)
             for _ in range(2):
                 part = jac[:, free]
                 step = np.zeros_like(x)
-                step[free] = part.T @ np.linalg.solve(
-                    part @ part.T + TRACK_DAMPING * np.eye(6), twist
-                )
+                step[free] = part.T @ np.linalg.solve(part @ part.T + damping, twist)
                 free &= ~(((x <= lower) & (step < 0)) | ((x >= upper) & (step > 0)))
             x = np.clip(x + np.clip(step, -TRACK_REACH, TRACK_REACH), lower, upper)
         return None
@@ -173,6 +171,8 @@ def swivel_solver(chain, wam):
         held = [into_limits(chart.q(swivel)) for chart in charts]
         held = [c for c in held if usable(c, desired)]
         move = min((np.abs(c - q).max() for c in held), default=np.inf)
+        if move <= JUMP:
+            return held
         # Newton continuation, as ssik's own trackers use, stays continuous
         # where the swivel is ill-conditioned or near limits.
         tracked = track(q, desired)
