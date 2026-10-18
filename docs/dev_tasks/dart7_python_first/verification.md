@@ -1430,3 +1430,28 @@ performance claim.
   `compile()`, `edit()`, strict mutation tiers and unsupported-shape rejection
   remain open. This spike does not waive the recorded M0 exit or introduce
   exclusive ownership restrictions for lazy C++ Worlds.
+
+## M6a closeout
+
+- **Date:** 2026-10-18.
+- **Change:** retire `docs/dev_tasks/dart6_filament_renderer/` and record
+  M6a's final state in this program home.
+- **Wheels:** every `dartpy-wheels` row passed in two Nightly runs on main:
+  [39076746642](https://github.com/dartsim/dart/actions/runs/39076746642)
+  (dispatched at `7fccf149e0c` on 2026-10-17) and
+  [39128135570](https://github.com/dartsim/dart/actions/runs/39128135570)
+  (scheduled at `f630c91c80e` on 2026-10-18). The rows cover Linux x86_64 and
+  aarch64 for CPython 3.10, 3.11 and the 3.12 stable ABI, plus the Windows and
+  macOS stable-ABI wheels. Each row builds, repairs, verifies and tests its
+  wheel, and both Linux stable-ABI rows pass the slim-container headless
+  import. The rows took 13 to 53 minutes of their 120-minute limit, so the
+  separately cached SDK stage is dropped.
+- **Promotion:** the C2 gate takes the quiet-host performance contract and
+  the final renderer reviews, the M6a interface takes the wheel state and open
+  follow-ups, and testing takes the pixel-bound rule. Owner docs already held the build, test-label,
+  migration and renderer facts. The historical OSG comparisons and preview
+  evidence remain in Git history and #3696.
+- **Routing:** the orchestrator wrote this closeout because it depends on
+  M6a context; engines other than the writer reviewed it.
+- **Limitations:** no new renderer or wheel run; quiet-host renderer
+  performance and the final renderer reviews remain open.

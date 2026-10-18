@@ -37,6 +37,9 @@
 #include <dart/common/detail/CompositeData.hpp>
 
 namespace dart {
+namespace simulation {
+class World;
+}
 namespace common {
 
 /// Composite is a base class that should be virtually inherited by any class
@@ -51,6 +54,8 @@ namespace common {
 /// class SpecializedForAspect.
 class Composite
 {
+  friend class simulation::World;
+
 public:
   using State = detail::CompositeState;
   using Properties = detail::CompositeProperties;

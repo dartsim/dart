@@ -200,6 +200,9 @@ dart_format_add(
   "${PROJECT_SOURCE_DIR}/dart/gui/app/ContactArrowLayout.hpp"
 )
 
+dart_add_test("integration" test_WorldState)
+target_sources(test_WorldState PRIVATE AllocationCounting.cpp)
+
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)

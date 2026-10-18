@@ -39,6 +39,9 @@ capture smoke test. To include it when reproducing `CI Filament`, configure
 with `pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` before running
 `pixi run test-gui`.
 
+Pixel bounds in the GUI tests are tuned on a GPU and on Lavapipe. Widen a
+bound only with captures from the backend that fails it.
+
 `pixi run check-ai-infra` also reconfigures the current platform, queries
 CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target

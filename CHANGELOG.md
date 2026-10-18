@@ -123,6 +123,12 @@
 
 * Dynamics
 
+  * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
+    write their state out of bounds, and they now appear in the soft mesh
+    and the skeleton version. `removeAllPointMasses()` no longer leaks the
+    removed point masses.
+    [#3813](https://github.com/dartsim/dart/pull/3813)
+
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
     including GUI picks collected by Python.
@@ -173,6 +179,10 @@
 
 * Python
 
+  * CMake development builds report the DART version in `dartpy.__version__`
+    instead of an empty string. Explicit packaging versions remain supported.
+    [#3809](https://github.com/dartsim/dart/pull/3809)
+
   * Keep gradient arrays passed to Python `optimizer.Function.evalGradient`
     overrides alive after the callback returns, while applying their updates
     to the native solver.
@@ -216,6 +226,10 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Include the generated `dart/config.hpp` and
+    `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.
+    [#3811](https://github.com/dartsim/dart/pull/3811)
 
   * Standard Pixi environments use sdformat 16.1 and urdfdom 6, reducing memory
     used to load large SDF worlds through shared schema descriptions.

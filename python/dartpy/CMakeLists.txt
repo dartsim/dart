@@ -107,6 +107,9 @@ endif()
 if(TARGET dart-utils-assets)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
 endif()
+if("${DARTPY_VERSION_INFO}" STREQUAL "")
+  set(DARTPY_VERSION_INFO "${DART_VERSION}")
+endif()
 target_compile_definitions(
   dartpy
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"

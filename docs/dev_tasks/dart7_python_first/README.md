@@ -222,14 +222,14 @@ deciding M3.
 | M3 | Authoritative contiguous state | 7.x by default | Go/no-go at checkpoint C1 |
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
 | M5 | dartpy 7.0 API | Planned | [Order](#m5-dartpy-70-api); the rename table needs maintainer approval first |
-| M6a | Filament backend port | Merged in #3696 | [Interface](#m6a-interface); remaining release gates below |
+| M6a | Filament backend port | Complete | Merged in #3696; wheels qualified; its remaining release gates moved to [C2](#release-train-and-checkpoints) ([interface](#m6a-interface)) |
 | M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release; the D31b [demo consolidation](#demo-consolidation-d31b) is complete locally |
-| M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and the remaining rendering release gates |
+| M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and checkpoint C2 |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
 Remaining critical path: M1d → M1i →
-`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6a → M6b
-→ checkpoint C2. M5a starts when M0 exits.
+`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6b →
+checkpoint C2. M5a starts when M0 exits.
 
 ### M1 core seams
 
@@ -307,8 +307,15 @@ passed. Only additive work that is not a must-have and misses `F` moves to 7.1.
   - headless RGB, depth and segmentation from the wheel in a fresh environment,
     in the render environments defined under [M6a interface](#m6a-interface);
   - native Windows and macOS CI green;
-  - performance re-measured on a quiet host, with GPU and software rendering,
-    and the fast-profile disposition approved.
+  - Filament performance re-measured on a quiet Linux host, on a GPU and on
+    Lavapipe: completed frames, setup time, full-RGBA capture, RSS and GPU
+    memory, judged against a maintainer-approved fast-profile disposition
+    (D32). No renderer baseline is required, and the maintainer deferred
+    Windows and macOS performance. Record the host state, and never stop
+    other work to quiet the host;
+  - two clean independent reviews of the renderer's release state, covering
+    the fixes that wheel publication and Nightly required after #3696, such
+    as #3784.
 
   There is no render-less fallback. Escalate early if C2 is at risk.
 
@@ -389,15 +396,32 @@ M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11
   on the merged PR;
 - the GUI-backend flip in `docs/ai/branch-profile.json`.
 
-Merged evidence on 2026-10-11: the Linux x86_64 stable-ABI wheel builds,
-repairs, passes `abi3audit`, and passes fresh cp312/cp313 container smoke tests.
-The [merged handoff](../dart6_filament_renderer/RESUME.md) still identifies the
-separately cached SDK stage and Windows/macOS wheel qualification as open;
-aarch64 wheel qualification is not recorded in the merged evidence and also
-remains a release gate. Quiet-host renderer performance is still unmeasured.
-The headless-import check is already wired into `Publish dartpy` for Linux
-stable-ABI wheels; its wiring is complete, while full wheel qualification
-remains a release gate.
+M6a closed on 2026-10-18. Its task folder is retired, and the
+[closeout evidence](verification.md#m6a-closeout) is in the program record.
+The Nightly `dartpy-wheels` rows build, repair, verify and test all eight
+Filament wheels: Linux x86_64 and aarch64 for CPython 3.10, 3.11 and the 3.12
+stable ABI, plus the Windows and macOS stable-ABI wheels. The stable-ABI
+wheels also pass `abi3audit`, and both Linux stable-ABI rows pass the
+slim-container headless import. The slowest row finishes in under an hour of
+its 120-minute limit, so the image keeps building the pinned SDK during the
+wheel build; the separately cached SDK stage that M6a planned is unnecessary.
+M6a's two open release gates, quiet-host renderer performance and the final
+renderer reviews, are part of [C2](#release-train-and-checkpoints).
+
+Follow-ups M6a left open, none of them a release blocker:
+
+- The native app host opens a window with an explicit width or height at the
+  screen origin instead of centering it (`App::run`).
+- The installed `dart/gui/Viewer.hpp` exports the test-only
+  `detail::readViewerPixelsRGBA` and `detail::captureViewerPixelsRGBA` hooks.
+- In C++, a viewer's own event handler must not destroy it; in Python, the
+  call keeps the viewer alive until `frame()` or `run()` returns.
+- Configuration checks that `matc` and the Filament runtime agree on the
+  material version, but it does not enforce the 1.77.3 SDK minimum.
+- On Windows, the static-CRT Filament library selection
+  (`DART_RUNTIME_LIBRARY=/MT`) and the Pixi `test-gui` task override are
+  unqualified: wheel builds use `/MD`, and `CI Filament` runs CTest and pytest
+  directly.
 
 **Interim bindings (D31a).** M6a landed the effort's tested camelCase GUI
 module as the interim `dartpy.gui`. Main may mix styles until M6b; the
