@@ -5179,6 +5179,8 @@ _DELEGATION_TRAILING_BY_DEFAULT = r",?\s+by\s+default\b"
 # Trailing "... by default" forms, then the same states fronted as "By default, ...".
 _DELEGATION_NEGATION_PATTERN = (
     rf"{_DELEGATION_NEGATED_ACTION}{_DELEGATION_TRAILING_BY_DEFAULT}"
+    rf"|\bno\s+delegation{_DELEGATION_TRAILING_BY_DEFAULT}"
+    rf"|{_DELEGATION_BY_DEFAULT}no\s+delegation\b"
     rf"|\bdelegation\s+{_DELEGATION_NEGATED_COPULA}"
     rf"(?:\s+(?:the\s+)?default\b|\s+(?:enabled|on|active|allowed){_DELEGATION_TRAILING_BY_DEFAULT})"
     rf"|\bdelegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
@@ -5403,6 +5405,8 @@ def _delegation_negation_ends(
     one, and a label prefix like ` .name` from a sentence end.
     """
     tail = text[end:]
+    if re.match(r"-\w", tail):
+        return False
     spaced = bool(tail and tail[0] in " \t\r\f\v")
     tail = tail.lstrip(" \t\r\f\v")
     # Non-fronted negatives take explicit for/about scopes or quoted labels;
@@ -5841,7 +5845,7 @@ def exercise_scenarios(
                     "when the user authorized delegation",
                     "when delegation is authorized",
                 ):
-                    if stale in owner_text:
+                    if stale.casefold() in owner_text.casefold():
                         local_errors.append(
                             f"{relative} still gates delegation on request: {stale!r}"
                         )

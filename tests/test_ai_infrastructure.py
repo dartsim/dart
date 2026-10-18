@@ -9604,3 +9604,87 @@ def test_delegation_owners_negative_scope_tails(
     _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
     errors = infra.exercise_scenarios(ROOT, emit=False)
     assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize(
+    ("source", "rejected"),
+    [
+        ("No delegation by default.", True),
+        ("By default, no delegation.", True),
+        ("No delegation, by default.", True),
+        ("By default: no delegation.", True),
+        ("No delegation by default for release approval.", False),
+        ("No delegation by default about release approval.", False),
+        ('No delegation by default "release approval".', False),
+        ('"No delegation by default" or unset.', True),
+        ("When delegation=off, no delegation by default.", False),
+        ("When delegation=o*ff, no delegation by default.", True),
+        (
+            "No delegation by default for release approval. "
+            "No delegation by default.",
+            True,
+        ),
+        ("`No delegation by default.`", True),
+        ("<script>No delegation by default.</script>", False),
+        ("By default, delegation is off-process.", False),
+        ("By default, delegation is off-board.", False),
+        ("By default, delegation is disabled-process.", False),
+        ("By default, delegation is off - process.", True),
+        ("By default, delegation is off-", True),
+        ("By default, delegation is off.", True),
+        ("Delegation is off-process by default.", False),
+        ("Delegation is off by default - note.", True),
+        ("Delegation is off-process by default. Do not delegate by default.", True),
+        ("Do not delegate by default-x.", False),
+        ("Do not delegate by default - x.", True),
+        ("Do not delegate by default-", True),
+    ],
+)
+def test_delegation_noun_and_compound_forms(source, rejected):
+    assert _rejected(source) is rejected, source
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "rejected"),
+    [
+        ("No delegation by default.", True),
+        ("By default, no delegation.", True),
+        ("No delegation by default for release approval.", False),
+        ("When delegation=off, no delegation by default.", False),
+        (
+            "No delegation by default for release approval. "
+            "No delegation by default.",
+            True,
+        ),
+        ("By default, delegation is off-process.", False),
+        ("By default, delegation is off - process.", True),
+    ],
+)
+def test_delegation_owners_noun_and_compound_forms(
+    monkeypatch, relative, suffix, rejected
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "negates" in e for e in errors) is rejected
+
+
+@pytest.mark.parametrize("relative", _OWNERS)
+@pytest.mark.parametrize(
+    ("suffix", "gated"),
+    [
+        ("Delegate only when the user requests it.", True),
+        ("delegate only when the user requests it.", True),
+        ("DELEGATE ONLY WHEN THE USER REQUESTS IT.", True),
+        ("Explicit User Authorization For Delegation.", True),
+        ("When The User Authorized Delegation.", True),
+        ("WHEN DELEGATION IS AUTHORIZED.", True),
+        ("Delegation is authorized by default.", False),
+    ],
+)
+def test_delegation_owners_stale_gate_is_case_insensitive(
+    monkeypatch, relative, suffix, gated
+):
+    _owner_suffix(monkeypatch, relative, "\n\n" + suffix)
+    errors = infra.exercise_scenarios(ROOT, emit=False)
+    assert any(relative in e and "gates delegation" in e for e in errors) is gated
