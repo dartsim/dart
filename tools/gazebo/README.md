@@ -253,6 +253,18 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Constructor arguments of sequence modifier `emplace_back` are not recorded.
 - Associative insertion projects iterator, pair and mapped receivers but does
   not record insertion-side constructor arguments (for example `try_emplace`).
+- Explicit operator-function calls are modeled only as `operator->()` and
+  `operator*()` on known iterators. Other explicit spellings, including
+  `x.operator()()` and `x.operator[](i)`, do not propagate receiver shapes.
+  Ordinary call and subscript forms remain as documented.
+- Named nested standard-container iterator return types (for example
+  `std::vector<T>::iterator` and `std::map<K,V>::iterator`), including aliases
+  in indexed API returns, do not propagate receivers. Iterators obtained from
+  known container operations are modeled.
+- Owner base-clause evidence is retained only for direct and aliased
+  member-function-pointer fields. Data-member pointers and member pointers
+  inside template arguments do not retain that owner-inheritance evidence;
+  their field declarations are still retained.
 
 Operator syntax is associated with declarations for `->`, `[]` and `()` when
 the receiver type is known. The Gazebo build and test lanes remain the
@@ -385,9 +397,10 @@ begin/end iterators and their const and reverse variants. Iterator arrows and
 dereferences, including explicit `operator->()` and `operator*()` calls on
 known iterators, preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
-iterators, aliases and range-for declarations. Map-family iterators preserve their
-key and mapped values as pair elements, including lookup iterators and both
-iterators returned by `equal_range`. Returned `std::pair` and `std::tuple`
+iterators, aliases and range-for declarations. Map-family iterators obtained
+from known container operations preserve their key and mapped values as pair
+elements, including lookup iterators and both iterators returned by
+`equal_range`. Returned `std::pair` and `std::tuple`
 values retain each element's receiver shape for `first`, `second` and `std::get`
 projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
