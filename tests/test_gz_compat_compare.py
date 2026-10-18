@@ -601,15 +601,19 @@ def test_parallel_variants_share_one_clean_tagged_clone(tmp_path):
 
 
 def _locale_available(name):
-    probe = subprocess.run(
-        ["locale", "-a"], capture_output=True, text=True, check=False
-    ).stdout.lower()
+    try:
+        probe = subprocess.run(
+            ["locale", "-a"], capture_output=True, text=True, check=False
+        ).stdout.lower()
+    except OSError:
+        return False
     return name.lower().replace("-", "") in probe.replace("-", "")
 
 
+# The lane is Linux-only; the probe runs only where the lane can.
 @pytest.mark.skipif(
-    not _locale_available("en_US.UTF-8"),
-    reason="needs a locale whose collation differs from C",
+    sys.platform != "linux" or not _locale_available("en_US.UTF-8"),
+    reason="needs Linux and a locale whose collation differs from C",
 )
 def test_fuel_cache_key_does_not_depend_on_the_locale(tmp_path):
     git = shutil.which("git")
