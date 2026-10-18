@@ -554,7 +554,9 @@ public:
       std::weak_ptr<const dynamics::Skeleton>>>
       mPreparedSolverSkeletons;
   // Non-ShapeNode frames can change Skeleton ancestors without stamping the
-  // global structural version. Group identity/content guards their lifetime.
+  // global structural version. Group identity/content guards their lifetime:
+  // destroying a frame removes it from its group and bumps the content version
+  // at once, which isInSimulationMode() checks before reading these pointers.
   std::vector<std::pair<const dynamics::ShapeFrame*, const dynamics::Skeleton*>>
       mPreparedFrameAncestors;
   std::size_t mPreparedValidatedStructuralVersion = 0u;

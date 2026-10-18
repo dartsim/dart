@@ -2318,6 +2318,45 @@ TEST(WorldSimulationModeMemoryManager, SimpleFrameAncestorsAreDependencies)
   EXPECT_TRUE(world->isInSimulationMode());
 }
 
+TEST(WorldSimulationModeMemoryManager, DestroyedFramesLeavePreparedGroups)
+{
+  // Destroying a frame removes it from its collision group and bumps the
+  // group's content version at once, so readiness fails before any prepared
+  // frame is read, and preparation walks only the remaining frames.
+  for (const bool automaticUpdate : {true, false}) {
+    auto world = createFallingBoxWorld("destroyed_frames_world");
+    auto group = world->getConstraintSolver()->getCollisionGroup();
+    group->setAutomaticUpdate(automaticUpdate);
+    const auto initialFrames = group->getNumShapeFrames();
+    auto external = dart::dynamics::Skeleton::create("destroyed_frame_parent");
+    auto* body
+        = external
+              ->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+              .second;
+    {
+      dart::dynamics::SimpleFrame frame(body, "destroyed_collision_frame");
+      frame.setShape(std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.1)));
+      frame.createAspect<dart::dynamics::CollisionAspect>();
+      group->addShapeFrame(&frame);
+      world->enterSimulationMode();
+      ASSERT_TRUE(world->isInSimulationMode());
+    }
+    EXPECT_EQ(group->getNumShapeFrames(), initialFrames);
+    EXPECT_FALSE(world->isInSimulationMode());
+    world->step();
+    EXPECT_TRUE(world->isInSimulationMode());
+
+    auto* body0 = world->getSkeleton(0u)->getBodyNode(0u);
+    ASSERT_GT(body0->getNumShapeNodes(), 0u);
+    body0->getShapeNode(0u)->remove();
+    EXPECT_EQ(group->getNumShapeFrames(), initialFrames - 1u);
+    EXPECT_FALSE(world->isInSimulationMode());
+    world->step();
+    EXPECT_TRUE(world->isInSimulationMode());
+  }
+}
+
 TEST(WorldSimulationModeMemoryManager, SnapshotsDoNotRetainExternalSources)
 {
   auto world = createFallingBoxWorld("weak_source_snapshot_world");

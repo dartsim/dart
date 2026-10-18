@@ -45,6 +45,9 @@ namespace dart::constraint::detail {
 
 // A revalidation hint for canonical solver-list writes. Custom subclasses can
 // write the protected list directly, so World must still inspect their lists.
+// This header is private: the .h suffix keeps it out of the installed
+// detail/*.hpp headers. Its writers and readers must stay in the dart library;
+// a copy in another module would never advance.
 inline std::atomic<std::size_t> gSkeletonMembershipVersion{0u};
 
 } // namespace dart::constraint::detail
