@@ -176,8 +176,9 @@ StateShape inspectStructure(const World& world, Emit emit)
   emit(world.getNumSkeletons());
   for (std::size_t s = 0; s < world.getNumSkeletons(); ++s) {
     const auto skeleton = world.getSkeleton(s);
+    const dynamics::Skeleton& skeletonValue = *skeleton;
     require(
-        typeid(*skeleton) == typeid(dynamics::Skeleton),
+        typeid(skeletonValue) == typeid(dynamics::Skeleton),
         "WorldState does not support custom Skeleton state");
     emit(skeleton->getNumBodyNodes());
     emit(skeleton->getNumDofs());
