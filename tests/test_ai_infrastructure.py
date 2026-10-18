@@ -5576,6 +5576,18 @@ def test_model_upgrade_requires_default_delegation_and_opt_out(monkeypatch, mark
             "Delegate by default; delegation is not the default when "
             "`delegation=off` is set, even after the opt-out is removed",
         ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default; even when `delegation=off`, "
+            "do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n- Even when `delegation=off`, "
+            "do not delegate by default.",
+        ),
     ],
 )
 def test_delegation_owners_require_default_and_reject_request_gate(
@@ -5622,6 +5634,31 @@ def test_delegation_owners_require_default_and_reject_request_gate(
             "Delegate by default",
             "Delegate by default; with `delegation=off`, do not\n"
             "delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n- When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default\n- When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default.\n> When `delegation=off`, do not delegate by default.",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. **When delegation=off, do not delegate by default.**",
+        ),
+        (
+            "AGENTS.md",
+            "Delegate by default",
+            "Delegate by default. `When delegation=off, do not delegate by default.`",
         ),
     ],
 )

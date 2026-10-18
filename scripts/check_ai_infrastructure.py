@@ -5477,10 +5477,12 @@ def exercise_scenarios(
             ):
                 try:
                     owner_source = (root / relative).read_text(encoding="utf-8")
-                    # Fold wrapping while preserving paragraph boundaries.
+                    # Fold wrapping while preserving paragraph and list boundaries.
                     owner_text = "\n\n".join(
                         " ".join(paragraph.split())
-                        for paragraph in re.split(r"\n\s*\n", owner_source)
+                        for paragraph in re.split(
+                            r"\n\s*\n|\n(?=[ \t]*[-*+>][ \t]+)", owner_source
+                        )
                     )
                 except OSError:
                     owner_text = ""
@@ -5496,12 +5498,13 @@ def exercise_scenarios(
                     r"\s+(?:the\s+)?default\b"
                 )
                 lowered = owner_text.lower().replace("\u2019", "'")
-                # Exempt whole opt-out clauses; trailing text can widen their scope.
+                lowered = re.sub(r"\*\*|__|`", "", lowered)
+                # Exempt complete opt-out clauses; surrounding text can widen scope.
                 unconditional = re.sub(
-                    r"(?:(?<!except )(?<!unless )(?<!except, )(?<!unless, )"
-                    r"\b(?:with|when|if) +`?delegation=off`?"
+                    r"(?:(?:^|(?<=[.;|\n])) *(?:[-*+>] +)*"
+                    r"(?:with|when|if) +delegation=off"
                     r"(?: +is +(?:set|enabled))?,? +(?:" + negation + r")"
-                    r"|(?:" + negation + r") +(?:when|if) +`?delegation=off`?"
+                    r"|(?:" + negation + r") +(?:when|if) +delegation=off"
                     r" +is +(?:set|enabled)) *(?=[.;|\n]|$)",
                     "",
                     lowered,
