@@ -49,6 +49,7 @@ class _SsikState:
         self.world = world
         self.target = target
         self.solved_frame = solved_frame
+        self.solved_frame.getVisualAspect().hide()
         self.arm = ArmSkeleton(world)
         self.arms = get_ssik_arm_specs()
         self.module = None
@@ -238,6 +239,7 @@ class _SsikState:
         self.solutions = []
         self.fk_poses = []
         self.selected = 0
+        self.solved_frame.getVisualAspect().hide()
         arm = self.arms[self.arm_choice.value]
         self.status.label = "Loading ssik.prebuilt." + arm.module
         try:
@@ -259,14 +261,10 @@ class _SsikState:
             self.arm.build([])
             self.target_controls(self.home)
             self.sync_target()
-            failed_pose = dart.math.Isometry3(self.home)
-            failed_pose.set_translation(self.home.translation() + [0.0, 0.25, 0.0])
-            self.solved_frame.setTransform(failed_pose)
             self.refresh_text()
             return
         self.target_controls(self.home)
         self.sync_target()
-        self.solved_frame.setTransform(self.home)
         self.solve()
 
     def solve(self):
@@ -302,8 +300,7 @@ class _SsikState:
             self.solutions = []
             self.fk_poses = []
             self.status.label = "Solve failed: " + str(error)
-            self.arm.show_solutions([], -1)
-            self.refresh_text()
+            self.update_solution()
             return
         self.status.label = f"Solutions: {len(self.solutions)}"
         if self.max_solutions.value == 0:
@@ -321,6 +318,7 @@ class _SsikState:
         self.update_solution()
 
     def update_solution(self):
+        self.solved_frame.getVisualAspect().hide()
         self.arm.show_solutions(
             [solution.q for solution in self.solutions],
             self.selected if self.solutions else -1,
@@ -329,6 +327,7 @@ class _SsikState:
             pose = self.fk_poses[self.selected]
             if pose is not None:
                 self.solved_frame.setTransform(pose)
+                self.solved_frame.getVisualAspect().show()
         self.refresh_text()
 
     def refresh_text(self):

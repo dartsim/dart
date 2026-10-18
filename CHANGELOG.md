@@ -207,6 +207,10 @@
 
 * Examples
 
+  * Hide the ssik analytical IK demo's solved marker when no current
+    forward-kinematics pose is available, including failed solves and arm
+    loads.
+
   * Replace the four C++ tutorials with Python exercises and solutions in
     `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
     `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
