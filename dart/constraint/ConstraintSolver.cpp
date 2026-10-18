@@ -57,6 +57,7 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/ContactWarmStartCache.hpp"
+#include "dart/constraint/detail/SkeletonMembershipVersion.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
@@ -1001,6 +1002,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
+  detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
   mConstrainedGroups.reserve(mSkeletons.size());
 
   // A newly subscribed skeleton may carry constraint state from another
@@ -1048,6 +1050,8 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
+  if (contained)
+    detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
   mConstrainedGroups.reserve(mSkeletons.size());
 }
 
@@ -1062,8 +1066,11 @@ void ConstraintSolver::removeSkeletons(
 //==============================================================================
 void ConstraintSolver::removeAllSkeletons()
 {
+  const bool hadSkeletons = !mSkeletons.empty();
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
+  if (hadSkeletons)
+    detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
 }
 
 //==============================================================================
@@ -1701,6 +1708,7 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
   if (!hasSkeleton(skeleton)) {
     mSkeletons.push_back(skeleton);
+    detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
     return true;
   } else {
     dtwarn << "Skeleton [" << skeleton->getName()

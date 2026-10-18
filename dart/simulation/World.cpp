@@ -57,10 +57,12 @@
 #include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/detail/SkeletonMembershipVersion.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
@@ -75,6 +77,7 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
+#include <utility>
 #include <vector>
 
 #include <cctype>
@@ -538,6 +541,26 @@ public:
   // Current step's custom-filter eligibility, refreshed by its wake check.
   bool mStepCustomBodyFilter = false;
 
+  struct PreparedSkeleton
+  {
+    std::weak_ptr<const dynamics::Skeleton> mSkeleton;
+    std::size_t mVersion;
+  };
+  std::weak_ptr<const collision::CollisionGroup> mPreparedCollisionGroup;
+  bool mPreparedGroupAutomaticUpdate = true;
+  std::vector<PreparedSkeleton> mPreparedSkeletons;
+  std::vector<std::pair<
+      const dynamics::Skeleton*,
+      std::weak_ptr<const dynamics::Skeleton>>>
+      mPreparedSolverSkeletons;
+  // Non-ShapeNode frames can change Skeleton ancestors without stamping the
+  // global structural version. Group identity/content guards their lifetime.
+  std::vector<std::pair<const dynamics::ShapeFrame*, const dynamics::Skeleton*>>
+      mPreparedFrameAncestors;
+  std::size_t mPreparedValidatedStructuralVersion = 0u;
+  std::size_t mPreparedValidatedSolverMembershipVersion = 0u;
+  bool mPreparedSolverUsesMembershipVersion = false;
+
   std::vector<char> mIslandJointDwellReady;
 
   // Contacts of resting pairs, as solved when the set of resting skeletons
@@ -931,8 +954,41 @@ void World::enterSimulationMode()
   reserveSimulationScratch();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
+  auto& state = *mDeactivationState;
+  state.mPreparedSkeletons.clear();
+  state.mPreparedSolverSkeletons.clear();
+  state.mPreparedFrameAncestors.clear();
+  state.mPreparedCollisionGroup.reset();
+  state.mPreparedGroupAutomaticUpdate = true;
+  const auto* solver = mConstraintSolver.get();
+  state.mPreparedSolverUsesMembershipVersion
+      = solver
+        && typeid(*solver) == typeid(constraint::BoxedLcpConstraintSolver);
+  const auto rememberSkeleton = [&](const dynamics::Skeleton* skeleton) {
+    if (skeleton)
+      state.mPreparedSkeletons.push_back(
+          {skeleton->getPtr(), skeleton->getVersion()});
+  };
+  for (const auto& skeleton : mSkeletons)
+    rememberSkeleton(skeleton.get());
   if (mConstraintSolver) {
+    for (const auto& skeleton : mConstraintSolver->getSkeletons()) {
+      state.mPreparedSolverSkeletons.emplace_back(skeleton.get(), skeleton);
+      rememberSkeleton(skeleton.get());
+    }
     const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+    state.mPreparedCollisionGroup = collisionGroup;
+    state.mPreparedGroupAutomaticUpdate
+        = collisionGroup && collisionGroup->getAutomaticUpdate();
+    for (std::size_t i = 0u;
+         collisionGroup && i < collisionGroup->getNumShapeFrames();
+         ++i) {
+      const auto* frame = collisionGroup->getShapeFrame(i);
+      const auto* skeleton = dynamics::Skeleton::getSkeletonOf(*frame);
+      rememberSkeleton(skeleton);
+      if (!frame->asShapeNode())
+        state.mPreparedFrameAncestors.emplace_back(frame, skeleton);
+    }
     mSimulationModeCollisionGroup = collisionGroup.get();
     mSimulationModeCollisionGroupVersion
         = collisionGroup ? collisionGroup->getContentVersion() : 0u;
@@ -965,6 +1021,10 @@ void World::enterSimulationMode()
     mSimulationModeCollisionFilterTrackable = true;
     mSimulationModeCollisionFilterRevision = 0;
   }
+  state.mPreparedValidatedStructuralVersion = mSimulationModeStructuralVersion;
+  state.mPreparedValidatedSolverMembershipVersion
+      = constraint::detail::gSkeletonMembershipVersion.load(
+          std::memory_order_relaxed);
   mSimulationMode = true;
 }
 
@@ -985,13 +1045,65 @@ bool World::isInSimulationMode() const
             || mSimulationModeCollisionFilterRevision
                    == getCollisionFilterSnapshotRevision(collisionFilter));
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  auto& state = *mDeactivationState;
+  if (state.mPreparedCollisionGroup.owner_before(collisionGroup)
+      || collisionGroup.owner_before(state.mPreparedCollisionGroup)
+      || collisionGroup.get() != mSimulationModeCollisionGroup
+      || mSimulationModeCollisionGroupVersion
+             != (collisionGroup ? collisionGroup->getContentVersion() : 0u)
+      || (collisionGroup
+          && collisionGroup->getAutomaticUpdate()
+                 != state.mPreparedGroupAutomaticUpdate)) {
+    return false;
+  }
+
+  const auto solverMembershipVersion
+      = constraint::detail::gSkeletonMembershipVersion.load(
+          std::memory_order_relaxed);
+  if (!state.mPreparedSolverUsesMembershipVersion
+      || state.mPreparedValidatedSolverMembershipVersion
+             != solverMembershipVersion) {
+    const auto& solverSkeletons = mConstraintSolver->getSkeletons();
+    if (solverSkeletons.size() != state.mPreparedSolverSkeletons.size())
+      return false;
+    for (std::size_t i = 0u; i < solverSkeletons.size(); ++i) {
+      const auto& prepared = state.mPreparedSolverSkeletons[i];
+      if (solverSkeletons[i].get() != prepared.first
+          || prepared.second.owner_before(solverSkeletons[i])
+          || solverSkeletons[i].owner_before(prepared.second)) {
+        return false;
+      }
+    }
+    state.mPreparedValidatedSolverMembershipVersion = solverMembershipVersion;
+  }
+  for (const auto& ancestor : state.mPreparedFrameAncestors) {
+    if (dynamics::Skeleton::getSkeletonOf(*ancestor.first) != ancestor.second)
+      return false;
+  }
+
+  const auto structuralVersion
+      = dynamics::Skeleton::getGlobalStructuralVersion();
+  if (state.mPreparedValidatedStructuralVersion != structuralVersion) {
+    // Synchronize subscriptions before trusting their contents, including an
+    // external subscription that had no collision shapes at preparation.
+    if (collisionGroup && collisionGroup->getAutomaticUpdate()) {
+      collisionGroup->update();
+      if (collisionGroup->getContentVersion()
+          != mSimulationModeCollisionGroupVersion) {
+        return false;
+      }
+    }
+    for (const auto& snapshot : state.mPreparedSkeletons) {
+      const auto skeleton = snapshot.mSkeleton.lock();
+      if (!skeleton || skeleton->getVersion() != snapshot.mVersion)
+        return false;
+    }
+    // Only unrelated edits catch up this hint; a stale dependency stays stale
+    // until enterSimulationMode() captures a new preparation snapshot.
+    state.mPreparedValidatedStructuralVersion = structuralVersion;
+  }
 
   return mSimulationMode
-         && mSimulationModeStructuralVersion
-                == dynamics::Skeleton::getGlobalStructuralVersion()
-         && collisionGroup.get() == mSimulationModeCollisionGroup
-         && mSimulationModeCollisionGroupVersion
-                == (collisionGroup ? collisionGroup->getContentVersion() : 0u)
          && mConstraintSolver->getNumSimulationThreads()
                 == mSimulationModeConstraintSolverThreads
          && mSimulationModeCollisionEnableContact
@@ -2684,6 +2796,11 @@ bool World::isCollisionFilterSnapshotTrackable(
 std::size_t World::getCollisionFilterSnapshotRevision(
     const collision::CollisionFilter* filter) const
 {
+  if (filter && typeid(*filter) == typeid(collision::BodyNodeCollisionFilter)) {
+    return static_cast<const collision::BodyNodeCollisionFilter*>(filter)
+        ->getBodyNodePairBlackListRevision();
+  }
+
   const auto* snapshotTracker
       = dynamic_cast<const collision::detail::CollisionFilterSnapshotTracker*>(
           filter);
@@ -2876,8 +2993,7 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     // step of the new motion, and the following solve freezes the body
     // (#3056). Candidacy set by hand between steps is kept. Another World's
     // sleep transitions and deactivation-state edits stamp none of the
-    // skeletons checked here, so they do not restart it. (A structural edit
-    // in any World still re-prepares every World; see isInSimulationMode().)
+    // skeletons checked here, so they do not restart it.
     if (!recordedStateUnchanged) {
       mInitialRestSpeedLimits.clear();
       for (auto& skel : mSkeletons) {

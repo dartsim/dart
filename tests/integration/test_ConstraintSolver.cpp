@@ -2462,11 +2462,10 @@ dynamics::SkeletonPtr createSlidingPuck(
   return puck;
 }
 
-// Makes the world enter simulation mode again on its next step without
-// changing anything the step-start sleep check compares: either a skeleton of
-// another World changes (the structural version is process-wide), or the
-// thread count changes.
-void invalidateSimulationModeFromOutside(
+// An unrelated World's edit retains preparation; changing this World's
+// thread count requires preparation without changing its step-start sleep
+// state.
+void changeUnrelatedWorldOrSimulationThreads(
     simulation::World& world,
     simulation::World& otherWorld,
     bool changeOtherWorld)
@@ -2565,9 +2564,9 @@ TEST(
           box->getBodyNode(0)));
       const bool boxResting = box->isResting();
 
-      invalidateSimulationModeFromOutside(
+      changeUnrelatedWorldOrSimulationThreads(
           *world, *otherWorld, changeOtherWorld);
-      ASSERT_FALSE(world->isInSimulationMode());
+      ASSERT_EQ(world->isInSimulationMode(), changeOtherWorld);
       const auto sleepStates = getSleepStates(*world);
       world->enterSimulationMode();
       EXPECT_EQ(sleepStates, getSleepStates(*world));
@@ -2649,9 +2648,9 @@ TEST(ConstraintSolver, SimulationPreparationLeavesSleepStateUntouched)
       ASSERT_TRUE(boxA->isResting());
       ASSERT_TRUE(boxB->isResting());
 
-      invalidateSimulationModeFromOutside(
+      changeUnrelatedWorldOrSimulationThreads(
           *world, *otherWorld, changeOtherWorld);
-      ASSERT_FALSE(world->isInSimulationMode());
+      ASSERT_EQ(world->isInSimulationMode(), changeOtherWorld);
       const auto sleepStates = getSleepStates(*world);
       world->enterSimulationMode();
       EXPECT_EQ(sleepStates, getSleepStates(*world));
