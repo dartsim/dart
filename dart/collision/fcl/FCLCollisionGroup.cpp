@@ -33,6 +33,7 @@
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
 #include <algorithm>
@@ -74,6 +75,26 @@ bool containsObject(
 }
 
 } // namespace
+
+//==============================================================================
+void detail::CollisionHistory::clear(FCLCollisionGroup& group)
+{
+  // Incremental balancing retains tree topology and traversal history even at
+  // unchanged poses, and a replaced shape's object moves behind the others.
+  // Reinsert every object in group order at the restored poses; FCL's public
+  // tree reset requires allocating new nodes. Pick up shapes replaced since
+  // the last step first, as collide() would. Without automatic updates the
+  // caller synchronizes replaced shapes, so reinsert the engine objects as
+  // they are and let the next collision check refresh their poses.
+  const bool automaticUpdate = group.getAutomaticUpdate();
+  if (automaticUpdate)
+    group.update();
+  group.removeAllCollisionObjectsFromEngine();
+  if (automaticUpdate)
+    group.updateEngineData();
+  for (const auto& info : group.mObjectInfoList)
+    group.addCollisionObjectToEngine(info->mObject.get());
+}
 
 //==============================================================================
 FCLCollisionGroup::FCLCollisionGroup(

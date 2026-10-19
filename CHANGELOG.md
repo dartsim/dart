@@ -249,6 +249,24 @@
 
 * Build
 
+  * `find_package(DART)` no longer requires pkg-config: without it, the
+    installed package reads assimp's version from assimp's own CMake package.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Restore builds with Ubuntu 22.04's assimp and Bullet packages, which
+    failed to configure on assimp and skipped the `collision-bullet` component.
+    The minimum assimp is now 5.2.0 and the minimum Bullet 3.05, because
+    upstream assimp 5.2.2 reports itself as 5.2.0 and Bullet 3.06 as 3.05.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * GCC builds append `-Wl,--no-undefined` to the shared-library linker flags
+    instead of replacing them, so flags from `LDFLAGS` reach DART's libraries.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Add `DART_BUILD_EXAMPLES` (default `ON`); `OFF` skips the C++ examples,
+    which MSVC builds by default.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
   * Include the generated `dart/config.hpp` and
     `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.
     [#3811](https://github.com/dartsim/dart/pull/3811)
