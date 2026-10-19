@@ -31,7 +31,7 @@ def test_soft_foot_construction_push_steps_and_determinism(feet_name):
     assert soft_foot.default_push_magnitude > 0
     assert 0 < soft_foot.push_sweep_start < soft_foot.push_sweep_end
     assert soft_foot.push_sweep_step > 0
-    assert callable(soft_foot.max_recoverable_push)
+    assert callable(soft_foot.survives_push)
     initial_state = soft_foot.state_vector(lhs).copy()
 
     for model in (lhs, rhs):
@@ -322,6 +322,10 @@ def test_reset_clears_stale_soft_contacts_and_matches_fresh_for_300_steps():
         assert model.controller.current_state == fresh.controller.current_state
 
 
+# The soft biped falls from 6000 and 8000 N pushes the rigid control recovers
+# from. Its former 18000 N maximum was an isolated recovery (#3431) that Eigen
+# 5's contact-solve summation order removes (#3834). Report every trial and
+# assert the sweep brackets both arms, rather than comparing their maxima.
 def test_full_push_sweep_measures_every_nonmonotonic_trial(monkeypatch):
     create, advance, apply = (
         soft_foot.create_model,
@@ -361,22 +365,32 @@ def test_full_push_sweep_measures_every_nonmonotonic_trial(monkeypatch):
     monkeypatch.setattr(soft_foot, "create_model", record_create)
     monkeypatch.setattr(soft_foot, "apply_push", record_apply)
     monkeypatch.setattr(soft_foot, "step", record_step)
-    maxima = {}
+    recoveries = {}
     for feet in (soft_foot.Feet.RIGID, soft_foot.Feet.SOFT):
         current[0] = None
         outcomes.clear()
         magnitudes.clear()
-        measured = soft_foot.max_recoverable_push(feet)
+        measured = [
+            soft_foot.survives_push(feet, magnitude)
+            for magnitude in range(2000, 24001, 2000)
+        ]
         finish()
         assert magnitudes == list(range(2000, 24001, 2000))
         assert len(outcomes) == len(magnitudes)
-        maximum = max(
-            (force for force, survived in zip(magnitudes, outcomes) if survived),
-            default=0,
+        assert measured == outcomes
+        recoveries[feet] = measured
+    for magnitude, rigid, soft in zip(
+        range(2000, 24001, 2000),
+        recoveries[soft_foot.Feet.RIGID],
+        recoveries[soft_foot.Feet.SOFT],
+    ):
+        print(
+            f"push {magnitude} N  rigid {'recovers' if rigid else 'falls'}, "
+            f"soft {'recovers' if soft else 'falls'}"
         )
-        assert measured == maximum and 0 < measured < soft_foot.push_sweep_end
-        maxima[feet] = measured
-    assert maxima[soft_foot.Feet.SOFT] >= maxima[soft_foot.Feet.RIGID]
+    for feet, measured in recoveries.items():
+        assert measured[0], f"{feet.name} biped fell from the smallest push"
+        assert not measured[-1], f"{feet.name} biped recovered from the largest push"
 
 
 @pytest.mark.parametrize("feet", [2, -1, 1.0, "soft", None, np.bool_(True)])

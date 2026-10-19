@@ -1075,6 +1075,8 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     )
     assert '--commit-range "$BASE_SHA..refs/remotes/pr/head"' in workflow
     assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in workflow
+    assert "BASE_REF: ${{ github.event.pull_request.base.ref }}" in workflow
+    assert "DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}" in workflow
     assert "PR_TITLE: ${{ github.event.pull_request.title }}" in workflow
     assert "PR_BODY: ${{ github.event.pull_request.body }}" in workflow
     assert "PR_NUMBER: ${{ github.event.pull_request.number }}" in workflow
@@ -1274,6 +1276,8 @@ def test_pr_text_skips_changes_protected_release_branches_published(
             "PR_NUMBER": "1234",
             "PR_COMMITS": "3",
             "BASE_SHA": base,
+            "BASE_REF": "main",
+            "DEFAULT_BRANCH": "main",
             "RELEASES": releases,
             "LOOKUP_STATUS": str(lookup_status),
             "BRANCH_ARGS": str(repo / ".git/branch-args"),
@@ -1293,6 +1297,62 @@ def test_pr_text_skips_changes_protected_release_branches_published(
         "repos/example/repository/branches?protected=true",
         "--jq",
         '.[].name | select(startswith("release-"))',
+    ]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
+@pytest.mark.parametrize(
+    "base_ref, exclusions",
+    (("main", ["^refs/remotes/origin/release-1.0"]), ("release-1.0", [])),
+)
+def test_pr_text_passes_release_exclusions_only_into_default_branch(
+    tmp_path, base_ref, exclusions
+):
+    # pull_request_target runs main's workflow for every base, and a release
+    # branch's checker may accept only the range after --commit-range.
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/check_local_paths.py").write_text(
+        "import sys\n"
+        "with open('checker-args', 'a') as args:\n"
+        "    args.write(' '.join(sys.argv[1:]) + '\\n')\n"
+    )
+    _git(tmp_path, "init", "-q")
+    base = _commit(tmp_path)
+    remote = tmp_path / ".git/origin.git"
+    _git(tmp_path, "clone", "--bare", "-q", str(tmp_path), str(remote))
+    _git(remote, "update-ref", "refs/pull/1234/head", base)
+    _git(tmp_path, "remote", "add", "origin", str(remote))
+    gh = tmp_path / "gh"
+    gh.write_text(
+        "#!/bin/sh\n"
+        'case "$3" in */branches?protected=true) printf "release-1.0\\n";; esac\n'
+    )
+    gh.chmod(0o755)
+    workflow = (ROOT / ".github/workflows/pr_text.yml").read_text()
+    command = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
+    command = command.replace("${{ github.repository }}", "example/repository")
+    result = subprocess.run(
+        ["bash", "-eo", "pipefail", "-c", command],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PR_TITLE": "Public summary",
+            "PR_BODY": "Public body",
+            "PR_NUMBER": "1234",
+            "PR_COMMITS": "1",
+            "BASE_SHA": base,
+            "BASE_REF": base_ref,
+            "DEFAULT_BRANCH": "main",
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (tmp_path / "checker-args").read_text().splitlines()[-1].split() == [
+        "--commit-range",
+        f"{base}..refs/remotes/pr/head",
+        *exclusions,
     ]
 
 

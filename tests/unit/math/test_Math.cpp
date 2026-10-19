@@ -822,7 +822,7 @@ TEST(MATH, ADJOINT_MAPPING)
 
   // Affine3d A3 = Translation3d(0.1, 0.2, 0.3) * AngleAxisd(0.5, Vector3d(1.0 /
   // sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
-  Matrix<double, 6, 1> a5, a6;
+  Matrix<double, 6, 1> a5;
   a5 << 1, 2, 3, 4, 5, 6;
 
   Isometry3d I1;
@@ -939,14 +939,14 @@ TEST(MATH, INVERSION)
   Affine3d A1
       = Translation3d(0.1, 0.2, 0.3)
         * AngleAxisd(0.5, Vector3d(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0));
-  Affine3d A2 = A1, A3;
+  Affine3d A2 = A1;
 
   Isometry3d I1;
   I1.matrix() = A1.matrix();
-  Isometry3d I2 = I1, I3;
+  Isometry3d I2 = I1;
 
   Matrix4d M1 = A1.matrix();
-  Matrix4d M2 = M1, M3;
+  Matrix4d M2 = M1;
 
   clock_t start = clock();
   for (int i = 0; i < iterations; i++) {

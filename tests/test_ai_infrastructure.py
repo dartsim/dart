@@ -338,6 +338,25 @@ def test_release_references_allow_history_and_dependency_floors(
     assert errors == []
 
 
+def _release_line_rollover():
+    """Roll the release line on from the release that package.xml names.
+
+    A dated heading must match package.xml, which each release sync updates.
+    """
+    major, minor, patch = map(
+        int,
+        re.search(
+            r"<version>(\d+)\.(\d+)\.(\d+)</version>",
+            (ROOT / "package.xml").read_text(encoding="utf-8"),
+        ).groups(),
+    )
+    phase = "Maintenance" if patch else "Stabilization"
+    return (
+        f"| `release-{major}.{minor}` | {phase} | `{major}.{minor}.{patch}` |",
+        f"| `release-{major}.{minor}` | Maintenance | `{major}.{minor}.{patch + 1}` |",
+    )
+
+
 @pytest.mark.parametrize(
     "rows",
     [
@@ -345,10 +364,7 @@ def test_release_references_allow_history_and_dependency_floors(
             "| `main` | Development | `7.0.0` |",
             "| `main` | Development | `7.1.0` |",
         ),
-        (
-            "| `release-6.20` | Stabilization | `6.20.0` |",
-            "| `release-6.20` | Maintenance | `6.20.1` |",
-        ),
+        _release_line_rollover(),
     ],
 )
 def test_release_references_accept_release_metadata_only_rollover(
