@@ -142,10 +142,12 @@
     from the deprecated `getShapeType()`, like one built from a thickness.
     [#3823](https://github.com/dartsim/dart/pull/3823)
 
-  * Line segment, plane, point cloud, voxel grid and custom shapes built on
-    the default `Shape` constructor now always compute their volume and
-    bounding box on the first query, instead of possibly returning zero
-    volume or an empty box.
+  * Line segments built from two points, planes built from a normal and a
+    point, point clouds, and custom shapes built on the default `Shape`
+    constructor now always compute their bounding box on the first query,
+    instead of possibly returning a zero-size box at the shape's origin.
+    Custom shapes also compute their volume instead of possibly returning
+    zero.
     [#3819](https://github.com/dartsim/dart/pull/3819)
 
   * Keep prepared Worlds ready after topology edits in unrelated Worlds,
