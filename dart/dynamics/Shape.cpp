@@ -56,7 +56,9 @@ Shape::Shape(ShapeType type)
 //==============================================================================
 Shape::Shape()
   : mBoundingBox(),
+    mIsBoundingBoxDirty(true),
     mVolume(0.0),
+    mIsVolumeDirty(true),
     mID(mCounter++),
     mVariance(STATIC),
     mType(UNSUPPORTED),
