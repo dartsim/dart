@@ -128,15 +128,12 @@ additive, merges before the API freeze `F`; see the
   and the `dartpy` logging bridge.
 - `io.load_model`/`io.load_world`, `World.add`, the `add_*` builders with
   keyword-only specs, and the `dart.data` sample data.
-- Editing vs compiled simulation modes, where `compile()`, or a lazy world's
-  first step, prepares the dense articulated-body data (M2), and GIL-free
-  `step(n)` on the deterministic executor. The
-  [M2 stop rule](#release-train-and-checkpoints) can end M2's kernel PRs early.
+- Editing vs compiled simulation modes, where `compile()` freezes topology with
+  zero steady-state allocation, and GIL-free `step(n)` on the deterministic
+  executor.
 - The typed per-World solver policy (M1e), which the constraint module's 7.0
   bindings wait for; the written `World` and solver contract; and the rigid
-  step code behind an internal domain boundary with no behavior change. The
-  coupling seam and a first experimental domain (rods) ship in
-  `dartpy.experimental` if ready before `F`.
+  step code behind an internal domain boundary with no behavior change.
 - `WorldBatch` built from remapping clones.
 - `capture_state`/`restore_state` dynamic snapshots and exact checkpoints:
   record/replay levels L0 and L1. Exact checkpoints restore into the same
@@ -167,15 +164,20 @@ additive, merges before the API freeze `F`; see the
   Gazebo main lane (the gz-physics development branch).
 - Sharing one executor across independent Worlds moves after 7.0;
   `WorldBatch` owns its executor.
+- M2's dense articulated-body kernels are optional for 7.0 unless a
+  milestone-exit run regresses against `dart7-base`; the
+  [M2 stop rule](#release-train-and-checkpoints) can end them early.
+- The coupling seam and a first experimental domain (rods) ship in
+  `dartpy.experimental` in 7.0 if ready before `F`, and otherwise in 7.1.
 
 ### Priority and thresholds
 
 The Python API leads (D3, amended 2026-10-19). Four chains run in parallel:
 M5's package, arrays, errors, `Transform` and facade slice, then the
 rulebook-driven API areas with the codemod, stubs and API reference; compile
-and edit (M1b), counted stepping (M1d), per-solver parameters (M1e), the
-remapping clone (M1i) and `WorldBatch`, then actuators, sensors and
-checkpoints; the solver policy, the written contract and the rigid domain
+and edit (M1b), counted stepping (M1d), the remapping clone (M1i) and
+`WorldBatch`, then actuators, sensors and checkpoints; the typed solver policy
+with its per-solver parameters (M1e), the written contract and the rigid domain
 boundary; and M6b through checkpoint C2. Native work is ordered by the
 acceptance tests it unblocks, and each native feature ships its Python
 binding. The Python and MJCF default-detector switch (M1f) lands after the
@@ -191,8 +193,10 @@ deciding M3.
 ## Non-goals
 
 - GPU execution. The design keeps a path open, but no GPU code ships in 7.0.
-- New physics domains. Volumetric FEM stays out of scope, and there is no public
-  plugin ABI until a second domain exists.
+- New physics domains in the stable API. A first experimental domain (rods) may
+  ship in `dartpy.experimental` (see [Deferrals](#deferrals)); volumetric FEM
+  stays out of scope, and there is no public plugin ABI until a second domain
+  exists.
 - An entity-component system or third-party data-layout library in the core.
 - Python compatibility shims for 6.x names.
 - Removing deprecated C++ APIs during 7.x.
@@ -235,7 +239,7 @@ deciding M3.
 | --- | --- | --- | --- |
 | M0 | Release-line rollover, project home, baselines, safety nets | Done | Exited 2026-10-14; [packets](#m0-packets) |
 | M1 | Core seams | Active | M1a merged in [#3775](https://github.com/dartsim/dart/pull/3775); M1b's World-local preparation and M1c's snapshots merged, and the next packets are tracked in [RESUME](RESUME.md); remaining [sub-milestones](#m1-core-seams) are open |
-| M2 | Dense articulated-body data | Planned | [Stop rule](#release-train-and-checkpoints) |
+| M2 | Dense articulated-body data | Optional for 7.0 | Needed only if a milestone-exit run regresses; [stop rule](#release-train-and-checkpoints) |
 | M3 | Authoritative contiguous state | 7.x by default | Go/no-go at checkpoint C1 |
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
 | M5 | dartpy 7.0 API | Active | [Order](#m5-dartpy-70-api); designed first under the naming rulebook |
@@ -247,9 +251,9 @@ deciding M3.
 Remaining critical path, in four chains that run in parallel (Python first):
 the M5a package, arrays, errors, `Transform` and facade slice, then the
 rulebook-driven API areas, codemod, stubs and reference; compile and edit
-(M1b), counted stepping (M1d), per-solver parameters (M1e), the remapping clone
-(M1i) and `WorldBatch`; the solver policy, the written contract and the rigid
-domain boundary; and M6b → checkpoint C2.
+(M1b), counted stepping (M1d), the remapping clone (M1i) and `WorldBatch`; the
+typed solver policy with its per-solver parameters (M1e), the written contract
+and the rigid domain boundary; and M6b → checkpoint C2.
 
 ### M1 core seams
 
@@ -277,7 +281,7 @@ changes. The numerical rules they follow live in the design doc's
 M5a is open since M0 exited. The API is designed first: the maintainer
 approves a naming rulebook once, each API area lands as a normal PR showing
 the designed API, and the old-to-new mapping generated from those PRs drives
-the codemod, stubs and migration guide. An API-surface ratchet keeps the
+the codemod, the stubs, the generated docstrings and the migration guide. An API-surface ratchet keeps the
 parity surface from growing meanwhile. In this order:
 
 1. The naming rulebook.

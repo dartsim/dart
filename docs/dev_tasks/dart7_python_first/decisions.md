@@ -279,9 +279,9 @@ these decisions, one at a time:
 
 - **Design-first Python API.** The maintainer approves a naming rulebook once.
   Each API area lands as a normal pull request showing the designed API. The
-  old-to-new mapping is generated from those pull requests, only for the
-  codemod, stubs and migration guide; old members with no place in 7.0 are
-  dropped. Work that renames nothing merges on normal review. This replaces
+  old-to-new mapping is generated from those pull requests and used only for
+  the codemod, the stubs, the generated docstrings and the migration guide; old
+  members with no place in 7.0 are dropped. Work that renames nothing merges on normal review. This replaces
   M5a's single rename-table approval.
 - **Curated naming everywhere**: PEP 8 names; the D18 vocabulary; cheap state as
   properties that return read-only copies; computations as methods that accept

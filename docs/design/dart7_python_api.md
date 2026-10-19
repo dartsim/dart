@@ -161,13 +161,13 @@ Not bound in Python: internal preparation steps, the C++ recording accessor
 Worlds have two explicit modes on the same objects:
 
 - **Editing mode.** The object graph is freely mutable.
-- **Simulation mode.** `world.compile()` prepares dense internal data, may
-  restructure internal storage for locality while public order stays fixed,
-  and freezes topology. Steady-state stepping performs **zero dynamic
+- **Simulation mode.** `world.compile()` prepares the World's internal step
+  data, may restructure internal storage for locality while public order stays
+  fixed, and freezes topology. Steady-state stepping performs **zero dynamic
   allocation** on the DART and Bullet collision detectors.
 
 Worlds that were never compiled stay lazy, which is the C++ default. They
-prepare the same dense data on their first step and rebuild only the affected
+prepare the same data on their first step and rebuild only the affected
 parts after an edit, keeping object addresses stable, so downstream runtime
 edits keep working. Lazy and compiled worlds run the same kernels.
 
@@ -218,9 +218,12 @@ models, shape poses, inertia, and detector and solver replacement.
   Revision numbers are per World and are never compared across Worlds. A
   mismatched digest raises. `WorldBatch.restore_state(state, indices=...)`
   broadcasts one snapshot to selected clones.
-- `world.capture_checkpoint()` returns an **exact checkpoint**. It covers
-  declared built-in configurations at completed-step boundaries on the same
-  build and platform. Restoring it re-steps bit-identically. A mismatched
+- `world.capture_checkpoint()` returns an **exact checkpoint**. It restores
+  only into the World that captured it, at completed-step boundaries on the
+  same build and platform, for declared built-in configurations: in 7.0, the
+  DART collision detector (and ODE if it qualifies) with the Dantzig or PGS
+  solver. Capturing one with any other detector, such as FCL or Bullet, raises.
+  Restoring it re-steps bit-identically. A mismatched
   topology, parameter set, build, solver or extension raises
   `CheckpointMismatchError`.
 - Restoring never goes through ordinary setters, which have side effects (waking

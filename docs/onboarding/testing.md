@@ -253,6 +253,10 @@ pixi run gz-compat-jetty       # gz-physics 9.5.2, gz-sim 10.5.0
 pixi run gz-compat-harmonic    # gz-physics 7.8.0, gz-sim 8.10.0
 ```
 
+The gate depends on the release line. DART 7 on `main` requires Ubuntu 24.04
+or newer, so its gate is the Ionic and Jetty lanes; the Harmonic lane gates
+the `release-6.20` maintenance line, which keeps Ubuntu 22.04 support.
+
 A first run of a lane builds DART, gz-physics, and gz-sim (about 15 minutes
 with 12 build jobs on a 32-core workstation) and then runs the gz-sim suite
 serially (13 to 16 minutes); later runs rebuild incrementally. Release
