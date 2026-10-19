@@ -67,6 +67,38 @@ Revisit a decision only with new evidence and maintainer approval.
 - The per-dependency acquisition matrix under DD-8, and an inventory of
   in-tree bundled third-party code.
 
+## Second decision batch (2026-10-19, open)
+
+The balance review under DD-9 ([balance-review.md](balance-review.md)) asks
+five questions and lists the approvals its packet plan needs. The
+recommended option comes first.
+
+- **Q1. fmt (DD-4).** (a) DEP-15 as recorded: a standard-library formatter
+  without byte parity with fmt. (b) Keep fmt hidden in `Logging.cpp` until
+  `std::format` is allowed, which re-opens DD-4.
+- **Q2. C++ asset fetching in the 7.0 API (DD-6).** (a) Delete the
+  unreleased `utils-assets` component before F; a standard-library Python
+  helper fetches sample data and later becomes `dart.data`. (b) Keep it and
+  add DEP-2. Also: should D22's "a fetcher" fetch the humanoid bundles for
+  wheel users?
+- **Q3. SDF packaging (DEP-18).** (a) An optional part of `dart-io` that
+  warns and skips SDF without sdformat. (b) The same, but a missing sdformat
+  stops configure unless `DART_SKIP_SDFORMAT=ON`. (c) A separate
+  `dart-io-sdf` library.
+- **Q4. Fetch first for the libraries Gazebo also loads (re-opens DD-8).**
+  (a) Fetch first only for ImGui, nanobind, GoogleTest, Benchmark and Tracy
+  (and the prebuilt Filament SDK where the DEP-20 spike agrees); system only
+  for Eigen, libccd, octomap, FCL, assimp, tinyxml2, the urdfdom group,
+  sdformat, GLFW 3.3.10, libpng and libjpeg-turbo. (b) As (a), plus a
+  fetched static GLFW. (c) As (a), plus find-or-fetch fallbacks in 7.x.
+- **Q5. The Dear ImGui patch.** (a) Drop it in 7.0 once DEP-31 fixes DART's
+  own font path. (b) Keep its guards, applied without Git.
+- **Approvals:** DEP-17 PR4 (the urdfdom-typed headers leave the installed
+  set before F); DEP-12(b) keeps libpng at its API-minimum floor (a DD-1
+  exception); DEP-25 and DEP-8(f) as shared mechanical steps; DEP-19 PR2
+  removes curl and OpenSSL together; the release-6.20 backport of DEP-17
+  PR3's wheel bump; the labeled changes listed in the review's §4.
+
 ## Original questions (2026-10-18)
 
 Asked as one batch; the answers are above.

@@ -28,3 +28,13 @@
   - #3829 merged into `main` (`548ff24ad`).
   - The follow-up study started, and Wave 1 started: DEP-0, DEP-11 PRs 1-2
     and DEP-14.
+  - Wave 1 finished locally: DEP-0, DEP-1, DEP-11 PRs 1-2, DEP-12(a) and
+    DEP-14 are committed on their own branches, each with two clean reviews
+    from engines other than its writer. The Harmonic, Ionic and Jetty lanes
+    pass on their combined tree; the Harmonic and Jetty lanes caught a
+    missing `Threads::Threads` link in DEP-14 under the conda toolchain,
+    fixed before the final run.
+  - The branches were rebased onto `0d7f6d77a`; their integration branch
+    passes the default gates.
+  - The balance review under DD-9 re-scoped the packet plan and produced a
+    second decision batch ([balance-review.md](balance-review.md)).

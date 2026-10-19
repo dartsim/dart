@@ -192,7 +192,8 @@ quieter host.
   environment resolves; the 17 sources the wheel image builds were checked
   for Boost use.
 - Reviews: Codex (no actionable regressions) and Muse (nothing substantive).
-- Owed: the Gazebo lanes against `base548`.
+- Gazebo lanes: PASS on Harmonic, Ionic and Jetty in the Wave 1 integration
+  tree (below).
 
 ### DEP-11 PRs 1-2: C++20-clean code
 
@@ -205,8 +206,8 @@ quieter host.
 - Reviews: Claude (nothing substantive) and Muse (no blockers; follow-up:
   about 30 sibling property structs share the use-triggered deprecated-copy
   pattern).
-- Owed: the Gazebo lanes against `base548` (running with DEP-1 and DEP-12(a)
-  as one integration tree).
+- Gazebo lanes: PASS on Harmonic, Ionic and Jetty in the Wave 1 integration
+  tree (below).
 
 ### DEP-12(a): Ubuntu 24.04 toolchain floor
 
@@ -221,7 +222,8 @@ quieter host.
 - Review round 2 on the post-fix state: Codex (no actionable regressions) and
   Muse (nothing substantive; it asked for the changelog entry, added at
   commit). Committed locally on `build/ubuntu-2404-toolchain-floor`.
-- Owed: the Gazebo lanes (in the same integration tree as DEP-1 and DEP-11).
+- Gazebo lanes: PASS on Harmonic, Ionic and Jetty in the Wave 1 integration
+  tree (below).
 
 ### DEP-14: DART log sink; spdlog removed
 
@@ -253,8 +255,12 @@ quieter host.
   (literals take `const char*`; mutable `char[]` arrays take the array
   template).
 - Committed locally on `refactor/dart-log-sink` with changelog entries.
-- Owed: the Gazebo lanes on the full Wave 1 integration tree; Muse's two
-  cosmetic nits (an rvalue-string constructor, one `FMT_HEADER_ONLY`
+- Gazebo lanes: PASS on Harmonic, Ionic and Jetty in the Wave 1 integration
+  tree (below).
+- Owed: the migration note (the log format, the narrower `DART_*` argument
+  set, `Threads` in the package config, fmt no longer found through
+  `find_package(DART)`, and a `setLogSink` recipe for spdlog users). Muse's
+  two cosmetic nits (an rvalue-string constructor, one `FMT_HEADER_ONLY`
   definition site) move to DEP-15, which reworks the same files.
 
 ### Wave 1 Gazebo integration lanes (2026-10-19)
@@ -268,10 +274,22 @@ gate script.
 | --- | --- | --- | --- |
 | DEP-1 + DEP-11 + DEP-12(a) | PASS | PASS | not run |
 | DEP-1 + DEP-11 + DEP-12(a) + DEP-14 (before the Threads fix) | build failed: `pthread_create` undefined under the conda toolchain | same | not run |
-| DEP-1 + DEP-11 + DEP-12(a) + DEP-14 (final) | PASS | PASS | running |
+| DEP-1 + DEP-11 + DEP-12(a) + DEP-14 (final) | PASS | PASS | PASS |
 
 PASS means no new failures or slow cases against the stored expected-failure
 files and the `base548` results; gz-physics detected `ContactSurface.hpp` in
 every run, and the only remaining entries are the accepted
 `UnsupportedRayIntersections` difference and the external
-`INTEGRATION_reset_sensors` defect (reported `BASE`).
+`INTEGRATION_reset_sensors` defect (reported `BASE`). On Ionic,
+`INTEGRATION_entity_system`'s `PublishCmd` passed although the Ionic
+expected-failure file lists it (reported `FIXED`); the entry stays.
+
+### Wave 1 integration branch (2026-10-19)
+
+The five packet branches were rebased onto `origin/main` `0d7f6d77a` without
+conflicts and merged into a local integration branch. The merge conflicts in
+`ci_freebsd.yml`, `CHANGELOG.md` and `dart/CMakeLists.txt` resolve to DEP-14's
+side without Boost. Gates: `pixi install` (lock consistent), lint, check-lint,
+build, 186/186 C++ tests, 2,028 Python tests passed (121 skipped, 54 xfailed),
+and `pixi run test-package-core`. The Gazebo lanes above ran on the
+`548ff24ad` base; the packet diffs did not change in the rebase.

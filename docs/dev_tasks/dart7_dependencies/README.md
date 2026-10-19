@@ -150,8 +150,8 @@ shorthand is defined under [Gates](#gates).
 
 | ID | Packet | Needs | Gates | Owner | Target | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| DEP-0 | Assert the gz contact-surface probe in the Gazebo lanes | none | gz | Claude Sonnet | 7.0 | In progress |
-| DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Planned |
+| DEP-0 | Assert the gz contact-surface probe in the Gazebo lanes | none | gz | Claude Sonnet | 7.0 | Committed locally |
+| DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Committed locally |
 | DEP-2 | Export CURL and OpenSSL only for static builds | none | base, gz, pkg | Claude Sonnet | 7.0 | Planned |
 | DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Claude Sonnet | 7.0 | Planned |
 | DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet | 7.0 | Planned |
@@ -161,15 +161,15 @@ shorthand is defined under [Gates](#gates).
 | DEP-8 | Wheel hygiene (one concern per PR) | none (DD-7) | wheel | Claude Sonnet | 7.0 | Planned |
 | DEP-9 | Python 3.12 and NumPy 1.26.4 floors; one wheel per platform | none (D20) | base, py, wheel | Claude Sonnet | 7.0 | Planned |
 | DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Claude Sonnet | 7.0 | Planned |
-| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PRs 1-2 in progress |
-| DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | Planned |
+| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PRs 1-2 committed locally |
+| DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | (a) committed locally |
 | DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high + Claude Sonnet | 7.0 | Planned |
-| DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | In progress |
-| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Planned |
+| DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Committed locally |
+| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Waiting for Q1 |
 | DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Claude Sonnet + orchestrator | 7.0 | Planned |
-| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Claude Sonnet | 7.0 | Re-scoping |
-| DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Waiting for study |
-| DEP-19 | Asset networking (libcurl, OpenSSL) | follow-up study (DD-6) | base, gz, pkg, py, wheel, ai | Codex ultra + Claude Sonnet | 7.0, before F | Waiting for study |
+| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Claude Sonnet | 7.0 | Re-scoped; PR2b to PR4 need approval |
+| DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Waiting for Q3 |
+| DEP-19 | Asset networking (libcurl, OpenSSL) | follow-up study (DD-6) | base, gz, pkg, py, wheel, ai | Codex ultra + Claude Sonnet | 7.0, before F | Waiting for Q2 |
 | DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Claude + Codex high | 7.0 / 7.x | Planned |
 | DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, after M1d | Planned |
 | DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |
@@ -232,10 +232,14 @@ executor that finds the real scope materially different stops and reports.
 
 ## Blockers and next actions
 
-1. The follow-up study (asset networking, SDF packaging, the acquisition
-   matrix and bundled code) and the maintainer's answers to it.
-2. Wave 1 in progress: DEP-0, DEP-11 PRs 1-2 and DEP-14; next DEP-1, DEP-12(a)
-   and DEP-13, then the rest of the decision-free packets.
+1. The maintainer's answers to the second decision batch (Q1 to Q5 and the
+   approvals in [balance-review.md](balance-review.md) §4), and approval to
+   publish Wave 1.
+2. Wave 1 is committed locally: DEP-0, DEP-1, DEP-11 PRs 1-2, DEP-12(a) and
+   DEP-14, each on its own branch with two clean reviews; the Gazebo lanes
+   pass on the combined tree. Next: the decision-free packets in
+   [balance-review.md](balance-review.md) §3, "Order", item 2.
 3. Spikes still owed: the Werror C++20 budget on every toolchain, `abidiff`
-   between the C++17 and C++20 builds, and the stock-noble Tier 2 build (GUI
-   and dartpy with the private Filament SDK and clang-20).
+   between the C++17 and C++20 builds, the stock-noble Tier 2 build (GUI
+   and dartpy with the private Filament SDK and clang-20), and the triage of
+   the distro FCL assertion in `test_Distance`.
