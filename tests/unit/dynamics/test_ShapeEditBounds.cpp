@@ -72,8 +72,11 @@ TEST(ShapeEditBounds, PointCloudEditsRefreshBoundingBoxAndVersion)
   shape.addPoint(Eigen::Vector3d(1, 0, 0));
   EXPECT_EQ(Eigen::Vector3d(1, 0, 0), shape.getBoundingBox().getMax());
 
+  shape.addPoint(Eigen::Vector3d(2, 0, 0));
+  EXPECT_EQ(Eigen::Vector3d(2, 0, 0), shape.getBoundingBox().getMax());
+
   shape.addPoint(std::vector<Eigen::Vector3d>{Eigen::Vector3d(0, 2, 0)});
-  EXPECT_EQ(Eigen::Vector3d(1, 2, 0), shape.getBoundingBox().getMax());
+  EXPECT_EQ(Eigen::Vector3d(2, 2, 0), shape.getBoundingBox().getMax());
 
   shape.setPoint({Eigen::Vector3d(0, 0, 3)});
   EXPECT_EQ(Eigen::Vector3d(0, 0, 3), shape.getBoundingBox().getMax());
