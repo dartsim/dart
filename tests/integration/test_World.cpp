@@ -3893,6 +3893,73 @@ TEST(World, TopologyEditFromReplayedFilterDuringLazyStepThrows)
 }
 
 //==============================================================================
+namespace {
+class CommandHookJoint : public FreeJoint
+{
+public:
+  explicit CommandHookJoint(const Properties& properties)
+    : FreeJoint(properties)
+  {
+  }
+
+  double getCommand(std::size_t index) const override
+  {
+    if (mHook)
+      mHook();
+    return FreeJoint::getCommand(index);
+  }
+
+  std::function<void()> mHook;
+};
+} // namespace
+
+//==============================================================================
+TEST(World, TopologyEditFromJointOverrideOnCachedRestingStepThrows)
+{
+  auto world = World::create();
+  auto ground = createBox(Eigen::Vector3d(10.0, 10.0, 1.0));
+  ground->setMobile(false);
+  world->addSkeleton(ground);
+  auto box = Skeleton::create("hooked box");
+  auto pair = box->createJointAndBodyNodePair<CommandHookJoint>();
+  pair.second
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.translation() = Eigen::Vector3d(0.0, 0.0, 1.0 - 5e-7);
+  pair.first->setPositions(FreeJoint::convertToPositions(pose));
+  world->addSkeleton(box);
+  for (int i = 0; i < 2000 && !box->isResting(); ++i)
+    world->step(false);
+  ASSERT_TRUE(box->isResting());
+  // The first contact-free step captures the snapshot but leaves it unready.
+  for (int i = 0;
+       i < 1000 && world->getLastCollisionResult().getNumContacts() > 0;
+       ++i)
+    world->step(false);
+  ASSERT_EQ(world->getLastCollisionResult().getNumContacts(), 0u);
+  ASSERT_TRUE(box->isResting());
+  // Validate it without resetting, so step(true) takes the cached reset branch.
+  world->step(false);
+  ASSERT_TRUE(world->isInSimulationMode());
+  ASSERT_FALSE(world->isCompiled());
+
+  const auto time = world->getTime();
+  int calls = 0;
+  pair.first->mHook = [&] {
+    if (calls++ == 0)
+      box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0));
+  };
+  EXPECT_THROW(world->step(true), std::runtime_error);
+  EXPECT_EQ(calls, 1);
+  EXPECT_EQ(world->getTime(), time);
+  EXPECT_EQ(box->getNumBodyNodes(), 1u);
+  pair.first->mHook = nullptr;
+  EXPECT_NO_THROW(world->step(true));
+  EXPECT_GT(world->getTime(), time);
+}
+
+//==============================================================================
 TEST(World, TopologyEditFromFilterRevisionDuringLazyStepThrows)
 {
   auto world = World::create();

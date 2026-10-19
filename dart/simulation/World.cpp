@@ -2887,6 +2887,8 @@ void World::step(bool _resetCommand)
     {
       if (!mState.mSteppingSlot)
         return;
+      // Every callback stage engages first, so markers unwind in LIFO order.
+      DART_ASSERT(*mState.mSteppingSlot == &mState);
       gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
       *mState.mSteppingSlot = mState.mOuterSteppingWorld;
       mState.mOuterSteppingWorld = nullptr;
@@ -3994,6 +3996,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       && collisionDetectorUnchanged && collisionFilterUnchanged
       && collisionOptionScalarsUnchanged) {
     if (_resetCommand && !mAllRestingSnapshotResetCommand) {
+      // Resetting forces and commands reads and resets custom Joint overrides.
+      engageSameThreadMarker(*mDeactivationState);
       for (const auto& skel : mSkeletons) {
         if (!skel->isMobile())
           continue;
