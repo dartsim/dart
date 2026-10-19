@@ -104,9 +104,24 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
         "${_dart_bullet_collision_float64}"
         "${_dart_bullet_math_float64}"
       )
+      # Keep the dynamics and soft-body libraries that FindBullet also links.
+      foreach(_dart_bullet_name BulletDynamics BulletSoftBody)
+        find_library(
+          _dart_bullet_extra_float64
+          ${_dart_bullet_name}-float64
+          HINTS "${_dart_bullet_dir}"
+          NO_DEFAULT_PATH
+          NO_CACHE
+        )
+        if(_dart_bullet_extra_float64)
+          list(APPEND _dart_bullet_libraries "${_dart_bullet_extra_float64}")
+        endif()
+        unset(_dart_bullet_extra_float64)
+      endforeach()
       set(_dart_bullet_float64 TRUE)
     endif()
     unset(_dart_bullet_dir)
+    unset(_dart_bullet_name)
     unset(_dart_bullet_collision_float64)
     unset(_dart_bullet_math_float64)
   endif()
@@ -151,8 +166,34 @@ elseif(TARGET Bullet)
     "${_dart_bullet_target}"
     INTERFACE_LINK_LIBRARIES
   )
+  # Classify by library files, including those of linked imported targets.
+  set(_dart_bullet_files)
+  foreach(_dart_bullet_item IN LISTS _dart_bullet_links)
+    if(NOT TARGET "${_dart_bullet_item}")
+      list(APPEND _dart_bullet_files "${_dart_bullet_item}")
+      continue()
+    endif()
+    foreach(
+      _dart_bullet_property
+      IMPORTED_LOCATION
+      IMPORTED_LOCATION_RELEASE
+      IMPORTED_LOCATION_RELWITHDEBINFO
+      IMPORTED_LOCATION_NOCONFIG
+      IMPORTED_IMPLIB
+      IMPORTED_IMPLIB_RELEASE
+    )
+      get_target_property(
+        _dart_bullet_location
+        "${_dart_bullet_item}"
+        ${_dart_bullet_property}
+      )
+      if(_dart_bullet_location)
+        list(APPEND _dart_bullet_files "${_dart_bullet_location}")
+      endif()
+    endforeach()
+  endforeach()
   set(_dart_bullet_float64 FALSE)
-  if("${_dart_bullet_links}" MATCHES "-float64")
+  if("${_dart_bullet_files}" MATCHES "-float64")
     set(_dart_bullet_float64 TRUE)
   endif()
   if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
@@ -163,10 +204,14 @@ elseif(TARGET Bullet)
       "Whether DART links Bullet's -float64 libraries"
     )
   elseif(
-    DART_BULLET_REQUIRE_FLOAT64
-    AND NOT _dart_bullet_float64
-    OR NOT DART_BULLET_REQUIRE_FLOAT64
-    AND _dart_bullet_float64
+    _dart_bullet_files
+    AND
+      (
+        DART_BULLET_REQUIRE_FLOAT64
+        AND NOT _dart_bullet_float64
+        OR NOT DART_BULLET_REQUIRE_FLOAT64
+        AND _dart_bullet_float64
+      )
   )
     message(
       WARNING
@@ -179,5 +224,9 @@ elseif(TARGET Bullet)
   unset(_dart_bullet_target)
   unset(_dart_bullet_alias)
   unset(_dart_bullet_links)
+  unset(_dart_bullet_files)
+  unset(_dart_bullet_item)
+  unset(_dart_bullet_property)
+  unset(_dart_bullet_location)
   unset(_dart_bullet_float64)
 endif()

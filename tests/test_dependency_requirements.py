@@ -423,6 +423,37 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "rejected",
         ),
+        # ... and accepts one of the same variant, also through imported targets.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")',
+            True,
+            "accepted",
+        ),
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES IMPORTED_LOCATION\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
+            True,
+            "accepted",
+        ),
+        # The -float64 variant keeps FindBullet's dynamics and soft-body libraries.
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 ON)\n"
+            "foreach(stem BulletDynamics-float64 BulletSoftBody-float64)\n"
+            '  file(TOUCH "${lib}/${prefix}${stem}${ext}")\n'
+            "endforeach()",
+            True,
+            "float64-full",
+        ),
         # Building DART records the variant of a parent's Bullet target.
         (
             325,
@@ -463,6 +494,16 @@ def test_bullet_prefers_float64_libraries(
         check = "BULLET_FOUND"
     elif expected == "recorded":
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
+    elif expected == "accepted":
+        check = "NOT BULLET_FOUND"
+    elif expected == "float64-full":
+        check = (
+            "NOT linked STREQUAL "
+            '"${lib}/${prefix}BulletCollision-float64${ext};'
+            "${lib}/${prefix}LinearMath-float64${ext};"
+            "${lib}/${prefix}BulletDynamics-float64${ext};"
+            '${lib}/${prefix}BulletSoftBody-float64${ext}"'
+        )
     else:
         # FindBullet's results stay single precision for consumers' targets.
         check = (
