@@ -29,6 +29,14 @@ and NMake, and CMake builds of dartpy report the DART version in
     current one.
     [#3820](https://github.com/dartsim/dart/pull/3820)
 
+* Simulation
+
+  * Bodies that start at rest fall asleep within their `World`'s first steps
+    even when a skeleton outside that `World` changes in between, such as a
+    body renamed or a mass changed in another `World`. Before, such an edit
+    delayed their sleep by about `DeactivationOptions::mTimeUntilSleep`.
+    [#3840](https://github.com/dartsim/dart/pull/3840)
+
 * Dynamics
 
   * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
