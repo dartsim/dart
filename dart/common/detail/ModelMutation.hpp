@@ -135,6 +135,10 @@ void notifyBoxedSolverParameterMutation(const BoxedLcpSolver* solver);
 void notifyConstraintParameterMutation(const ConstraintBase* constraint);
 void notifyGlobalConstraintParameterMutation();
 void checkContactSurfaceMutation(const ContactSurfaceHandler* handler);
+// Whether checkContactSurfaceMutation() can reject anything: some World is
+// compiled, or this thread is stepping one. Callers skip walking handler chains
+// otherwise, so never-compiled Worlds read only what DART 6 read.
+bool contactSurfaceChecksActive();
 void notifyContactSurfaceMutation(const ContactSurfaceHandler* handler);
 } // namespace detail
 } // namespace constraint

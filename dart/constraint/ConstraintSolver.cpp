@@ -1526,14 +1526,16 @@ void ConstraintSolver::setFromOtherConstraintSolver(
     collision::detail::checkWorldDetectorTopologyMutation(detector);
   for (const auto& skeleton : other.getSkeletons())
     common::detail::checkTopologyMutation(skeleton.get());
-  std::vector<const ContactSurfaceHandler*> handlers;
-  for (auto handler = other.mContactSurfaceHandler; handler;
-       handler = handler->getParent()) {
-    if (std::find(handlers.begin(), handlers.end(), handler.get())
-        != handlers.end())
-      break;
-    detail::checkContactSurfaceMutation(handler.get());
-    handlers.push_back(handler.get());
+  if (detail::contactSurfaceChecksActive()) {
+    std::vector<const ContactSurfaceHandler*> handlers;
+    for (auto handler = other.mContactSurfaceHandler; handler;
+         handler = handler->getParent()) {
+      if (std::find(handlers.begin(), handlers.end(), handler.get())
+          != handlers.end())
+        break;
+      detail::checkContactSurfaceMutation(handler.get());
+      handlers.push_back(handler.get());
+    }
   }
   removeAllSkeletons();
   mManualConstraints.clear();

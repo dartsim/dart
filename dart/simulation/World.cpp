@@ -5802,6 +5802,12 @@ void notifyGlobalConstraintParameterMutation()
     owner->mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
 }
 
+bool contactSurfaceChecksActive()
+{
+  return !simulation::noIndexedWorlds()
+         || simulation::tlsSteppingWorld != nullptr;
+}
+
 void checkContactSurfaceMutation(const ContactSurfaceHandler* handler)
 {
   if (simulation::noGuardedWorlds())
