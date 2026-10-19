@@ -39,3 +39,6 @@
     passes the default gates.
   - The balance review under DD-9 re-scoped the packet plan and produced a
     second decision batch ([balance-review.md](balance-review.md)).
+  - Wave 2 committed locally: DEP-28, DEP-20(e), DEP-20(d), DEP-31,
+    DEP-17 PR2, DEP-32, DEP-3(a) and DEP-27a; Codex and Muse wrote every
+    packet, and each passed two clean reviews from other engines.

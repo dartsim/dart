@@ -21,6 +21,15 @@
   ([verification.md](verification.md)). Pushing the branches and opening
   draft PRs needs approval; each CHANGELOG entry gets its PR link in a
   follow-up commit once the PR exists.
+- Wave 2 is committed locally, one branch per packet on `0d7f6d77a`
+  (DEP-27a on DEP-28), each with two clean reviews
+  ([verification.md](verification.md#wave-2-2026-10-19)):
+  `refactor/delete-dead-files`, `build/enforce-filament-pin`,
+  `fix/gui-texture-decode-limits`, `fix/gui-empty-overlay-font`,
+  `refactor/urdf-glue-cleanup`, `fix/voxel-ray-key-limit`,
+  `build/bullet-collision-libraries-only`, `build/third-party-notices`.
+  DEP-13 PR1 is in progress; the Gazebo lanes for the core packets run
+  against `0d7f6d77a` base variants.
 - The balance review under DD-9 ([balance-review.md](balance-review.md))
   re-scoped the packet plan. Its second decision batch (Q1 to Q5 and the
   approvals) is open in [decisions.md](decisions.md). After the answers,

@@ -153,7 +153,7 @@ shorthand is defined under [Gates](#gates).
 | DEP-0 | Assert the gz contact-surface probe in the Gazebo lanes | none | gz | Claude Sonnet | 7.0 | Committed locally |
 | DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Committed locally |
 | DEP-2 | Export CURL and OpenSSL only for static builds | none | base, gz, pkg | Claude Sonnet | 7.0 | Planned |
-| DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Claude Sonnet | 7.0 | Planned |
+| DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Muse (a) | 7.0 | (a) committed locally |
 | DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet | 7.0 | Planned |
 | DEP-5 | Eigen 5 readiness and the `[3.4.0, 6)` range | none (DD-7) | base on both Eigen majors, gz, py | Codex high | 7.0 | Planned |
 | DEP-6 | Current fetched GoogleTest and Benchmark plus a fetch lane | none | base, apt | Claude Sonnet | 7.0 | Planned |
@@ -163,18 +163,22 @@ shorthand is defined under [Gates](#gates).
 | DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Claude Sonnet | 7.0 | Planned |
 | DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PR1 committed locally; the captures are in #3804 |
 | DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | (a) committed locally |
-| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high + Claude Sonnet | 7.0 | Planned |
+| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 in progress |
 | DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Committed locally |
 | DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Waiting for Q1 |
 | DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Claude Sonnet + orchestrator | 7.0 | Planned |
-| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Claude Sonnet | 7.0 | Re-scoped; PR2b to PR4 need approval |
+| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Codex high | 7.0 | PR2 committed locally; PR2b to PR4 need approval |
 | DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Waiting for Q3 |
 | DEP-19 | Asset networking (libcurl, OpenSSL) | follow-up study (DD-6) | base, gz, pkg, py, wheel, ai | Codex ultra + Claude Sonnet | 7.0, before F | Waiting for Q2 |
-| DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Claude + Codex high | 7.0 / 7.x | Planned |
+| DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Codex high, Muse | 7.0 / 7.x | (d), (e) committed locally |
 | DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, after M1d | Planned |
 | DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |
 | DEP-23 | Packaging section and downstream handoff notes | approval per upstream action | lint, local paths | Orchestrator | 7.0 / 7.x | Planned |
 | DEP-24 | 8.0 design record: optional assimp and FCL, backend facades, C++20 export | none | review | Orchestrator | 8.0 | Planned |
+| DEP-27a | Root NOTICE for derived code, installed and in wheels, with a coverage test | none | base, wheel | Codex high | 7.0 | Committed locally |
+| DEP-28 | Delete dead `dart/utils/*_` files and `tests/.deprecated` | none | base | Muse | 7.0 | Committed locally |
+| DEP-31 | Reject empty overlay font files before ImGui | none | base, gui | Muse | 7.0 | Committed locally |
+| DEP-32 | Skip voxel-grid rays longer than OctoMap can trace | none | base, py, gz | Codex | 7.0 | Committed locally; gz lanes running |
 
 Ordering: DEP-0 lands first, because no lane notices a lost contact-surface
 probe today and many later packets touch installed headers. DEP-1 to DEP-12

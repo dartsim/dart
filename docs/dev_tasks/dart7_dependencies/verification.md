@@ -296,3 +296,41 @@ side without Boost. Gates: `pixi install` (lock consistent), lint, check-lint,
 build, 186/186 C++ tests, 2,028 Python tests passed (121 skipped, 54 xfailed),
 and `pixi run test-package-core`. The Gazebo lanes above ran on the
 `548ff24ad` base; the packet diffs did not change in the rebase.
+
+### Wave 2 (2026-10-19)
+
+Decision-free packets from the balance review's order that need no unmerged
+Wave 1 branch. Each ran in its own worktree on `origin/main` `0d7f6d77a`
+(DEP-27a on top of DEP-28) and is committed locally with two clean reviews
+from engines other than its writer; fixes were re-reviewed on the final
+state.
+
+| Packet | Branch | Writer | Reviews | Gates |
+| --- | --- | --- | --- | --- |
+| DEP-28 | `refactor/delete-dead-files` | Muse | Codex, orchestrator | build is a no-op, installed file set identical, 186/186 |
+| DEP-20(e) | `build/enforce-filament-pin` | Muse | orchestrator, Codex | configure with the 1.77.3 SDK, a material-version-78 SDK fails configure, 251 requirement tests |
+| DEP-20(d) | `fix/gui-texture-decode-limits` | Codex | Muse and orchestrator, two rounds | 10 decoder tests (the valid-image cases also pass against the old decoders), 186/186, 2,024 Python, GUI gate |
+| DEP-31 | `fix/gui-empty-overlay-font` | Muse | orchestrator, Codex | 20/20 GuiDescriptors (the new test crashes without the fix), 186/186, GUI gate |
+| DEP-17 PR2 | `refactor/urdf-glue-cleanup` | Codex | Claude, Muse, then Muse and orchestrator | 33/33 DartLoader, the malformed-file regression under ASan, 186/186, 2,024 Python |
+| DEP-32 | `fix/voxel-ray-key-limit` | Codex | Claude, Muse, then Muse and orchestrator | 7 voxel tests also under ASan (they crash or hang without the fix), 186/186, 2,024 Python |
+| DEP-3(a) | `build/bullet-collision-libraries-only` | Muse | orchestrator, Codex | installed `Bullet` interface lists two libraries; libdart resolves 0 symbols from BulletDynamics or BulletSoftBody; 186/186, 2,024 Python |
+| DEP-27a | `build/third-party-notices` | Codex | Claude and Muse, three rounds | 93 notice tests, 341 requirement tests, LICENSE and NOTICE install |
+
+- DEP-28: Python sdists, which glob every file under `dart/`, also drop
+  the deleted files (accepted as intended).
+- DEP-20(e): the SDK exposes no release version, so configure checks the
+  material format version (77 for every 1.77.x release; 1.78.0 ships 78).
+- DEP-32: its first run stopped before the final report; the orchestrator
+  verified its logs and ran lint. Valid rays reach OctoMap unchanged in all
+  three overloads. It is a release-6.20 backport candidate (needs approval).
+- DEP-17 PR2: gz-physics includes `dart/utils/urdf/urdf.hpp` and uses only
+  `DartLoader`; no gz-physics or gz-sim code uses the
+  `URDFDOM_HEADERS_VERSION_*` macros.
+- DEP-27a: 16 entries with pinned sources, verified against upstream.
+  Outside the packet: the provenance of assets without copyright
+  declarations (Atlas, WAM, kima and Fetch meshes) and whether the
+  Roboti-derived MuJoCo models under `data/mjcf/openai/` ship (DEP-33,
+  maintainer); libccd attribution comments in the MPR sources after M1d; a
+  test that also checks entry contents.
+- Gazebo lanes for DEP-32, DEP-3(a), DEP-17 PR2 and DEP-13 PR1 run against
+  base variants built from `0d7f6d77a`.
