@@ -946,6 +946,26 @@ TEST(WorldState, RestoreAfterShapeReplacementSynchronizesCollisionGeometry)
   EXPECT_EQ(node->getShape(), softShape);
 }
 
+TEST(WorldState, RestoreClearsSolverOutputOfSolverOnlySkeletons)
+{
+  auto world = makeSleepingWorld();
+  auto solverOnly = world->getSkeleton(1)->cloneSkeleton("solverOnly");
+  solverOnly->setPosition(3, 0.5);
+  world->getConstraintSolver()->addSkeleton(solverOnly);
+  auto* body = solverOnly->getBodyNode(0);
+  world->step();
+  ASSERT_FALSE(body->getConstraintImpulse().isZero());
+  const auto state = world->captureState();
+  // Out of contact, the next solve has nothing that would clear this output.
+  solverOnly->setPosition(5, 1.0);
+  world->restoreState(state);
+  world->step();
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(body->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
 TEST(WorldState, ReusableGatherDoesNotAllocate)
 {
   auto world = makeWorld();

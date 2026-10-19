@@ -9,7 +9,7 @@ consolidation under the program's hot-file rule:
   restores into the same World or a structurally identical one, such as a
   clone; parameters and solver or contact history are not part of it.
   Restoring clears the contact, solver and sleep history left by earlier
-  steps; with FCL or Bullet, it rebuilds the broadphase and may allocate.
+  steps, and may allocate with FCL or Bullet.
   Clones omit manual constraints; re-add them in the same order with
   endpoints mapped to the clone's bodies before restoring.
   Commands follow the target's actuator types and limits; EndEffector support

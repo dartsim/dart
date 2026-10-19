@@ -560,7 +560,7 @@ void World::restoreState(const WorldState& state)
   if (auto* cache = constraint::detail::findContactWarmStartCache(&solver))
     cache->clear();
   collision::detail::CollisionHistory::clear(*solver.getCollisionGroup());
-  for (const auto& skeleton : mSkeletons) {
+  const auto clearSolverOutput = [](const dynamics::SkeletonPtr& skeleton) {
     skeleton->clearConstraintImpulses();
     skeleton->setImpulseApplied(false);
     skeleton->clearPositionConstraintImpulses();
@@ -568,11 +568,18 @@ void World::restoreState(const WorldState& state)
     skeleton->setPositionImpulseApplied(false);
     skeleton->resetUnion();
     skeleton->setIslandIndex(-1);
-    skeleton->setSmoothedLinearSpeed(0.0);
-    skeleton->setSmoothedAngularSpeed(0.0);
     DART_SUPPRESS_DEPRECATED_BEGIN
     skeleton->clearCollidingBodies();
     DART_SUPPRESS_DEPRECATED_END
+  };
+  // The cleared containers no longer tell the next solve to clear this output,
+  // including on Skeletons added only to the solver.
+  for (const auto& skeleton : solver.mSkeletons)
+    clearSolverOutput(skeleton);
+  for (const auto& skeleton : mSkeletons) {
+    clearSolverOutput(skeleton);
+    skeleton->setSmoothedLinearSpeed(0.0);
+    skeleton->setSmoothedAngularSpeed(0.0);
   }
   // Dynamic restoration starts a fresh active trajectory, not exact history.
   wakeRestingSkeletonsForWorldChange();
