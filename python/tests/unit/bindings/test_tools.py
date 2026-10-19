@@ -435,7 +435,12 @@ def test_api_budget_update_ratchets_and_keeps_absent_owners(
     api_surface.update_budget(path, surface, allow_growth=True)
     absent = {"dartpy": {"functions": empty, "classes": {}}}
     api_surface.update_budget(path, absent)
-    assert json.loads(path.read_text()) == original
+    kept = json.loads(path.read_text())
+    # dartpy.collision is unconditional, so its absence is a removal; the
+    # optional viewer is kept for builds that have it.
+    assert "dartpy.collision" not in kept
+    assert kept["dartpy.viewer"] == original["dartpy.viewer"]
+    assert not api_surface.budget_growth(absent, kept, check_stale=True)
     api_surface.update_budget(path, absent, prune=True)
     assert json.loads(path.read_text()) == {
         "dartpy": {"functions": dict.fromkeys(empty, 0), "classes": {}}
@@ -444,6 +449,87 @@ def test_api_budget_update_ratchets_and_keeps_absent_owners(
         "dartpy.collision.Example: public budget 0 -> 1"
         in api_surface.budget_growth(surface, json.loads(path.read_text()))[0]
     )
+
+
+def test_api_budget_counts_nested_container_aliases(api_surface):
+    rows = {
+        "dartpy.collision": {
+            "kind": "module",
+            "runtime": {"name": "dartpy.collision"},
+        },
+        "dartpy.collision.FCL": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "FCL"},
+        },
+        "dartpy.collision.FCL.PrimitiveShape": {
+            "kind": "enum",
+            "runtime": {"module": "dartpy.collision", "qualname": "FCL.PrimitiveShape"},
+            "members": {"BOX": 0},
+        },
+    }
+    surface = api_surface.budget_surface(rows)
+    fcl = surface["dartpy.collision"]["classes"]["FCL"]
+    assert fcl["public"] == ["PrimitiveShape"]
+    budget = {
+        module: {
+            "functions": {key: len(v) for key, v in scope["functions"].items()},
+            "containers": scope["containers"]["public"],
+            "classes": {
+                cls: {key: len(v) for key, v in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in surface.items()
+    }
+    aliased_rows = dict(rows)
+    aliased_rows["dartpy.collision.FCL.PrimitiveShapeAlias"] = {
+        "kind": "enum",
+        "runtime": {
+            "module": "dartpy.collision",
+            "qualname": "FCL.PrimitiveShape",
+            "identity_path": "dartpy.collision.FCL.PrimitiveShape",
+        },
+        "members": {"BOX": 0},
+    }
+    aliased = api_surface.budget_surface(aliased_rows)
+    assert aliased["dartpy.collision"]["classes"]["FCL"]["public"] == [
+        "PrimitiveShape",
+        "PrimitiveShapeAlias",
+    ]
+    assert any(
+        "dartpy.collision.FCL: public budget 1 -> 2" in failure
+        for failure in api_surface.budget_growth(aliased, budget)
+    )
+
+
+def test_api_budget_update_drops_removed_unconditional_class(api_surface, tmp_path):
+    path = tmp_path / "budget.json"
+    empty = {"public": [], "camel_case": [], "get_set": []}
+    full = {
+        "dartpy": {"functions": empty, "containers": empty, "classes": {}},
+        "dartpy.collision": {
+            "functions": empty,
+            "containers": {"public": ["Core", "Gone"], "camel_case": [], "get_set": []},
+            "classes": {"Core": empty, "Gone": empty},
+        },
+    }
+    api_surface.update_budget(path, full, allow_growth=True)
+    removed = {
+        "dartpy": full["dartpy"],
+        "dartpy.collision": {
+            "functions": empty,
+            "containers": {"public": ["Core"], "camel_case": [], "get_set": []},
+            "classes": {"Core": empty},
+        },
+    }
+    failures = api_surface.budget_growth(
+        removed, json.loads(path.read_text()), check_stale=True
+    )
+    assert any("dartpy.collision.Gone: budgeted class missing" in f for f in failures)
+    api_surface.update_budget(path, removed)
+    lowered = json.loads(path.read_text())
+    assert "Gone" not in lowered["dartpy.collision"]["classes"]
+    assert not api_surface.budget_growth(removed, lowered, check_stale=True)
 
 
 def test_api_budget_rejects_stale_counters(api_surface, tmp_path):

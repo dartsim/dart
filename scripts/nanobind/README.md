@@ -40,7 +40,8 @@ Snapshot runtime identities attribute inherited members to their walked defining
   are visited first. Data names are not deduplicated by value identity.
   Only owners that build options guard (`OPTIONAL_OWNERS` in `api_surface.py`:
   Bullet, ODE and Octomap classes, the model-asset retriever and the viewer) may
-  be absent; any other missing budgeted owner fails. Absent optional owners are
+  be absent; any other missing budgeted owner fails, and `--update-budget`
+  removes it from the budget. Absent optional owners are
   ignored by the test and retained by the updater: a module that lacks one
   skips container staleness, and `--update-budget` without `--prune` keeps the
   budgeted container names of such modules; only `--update-budget --prune`

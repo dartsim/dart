@@ -382,18 +382,29 @@ def budget_surface(rows):
             continue
         # Attribute inherited members to their defining owner, but count each
         # distinct exported name: aliases share an identity yet export new names.
-        # Containers are counted per exported path separately; here they only
-        # contribute their defining name once (for nested classes as members).
+        # Module-level containers are counted per exported path above. A nested
+        # container counts on its defining class once under its own name and
+        # once under each name a class exports it as, so a nested alias counts
+        # while inherited access adds nothing.
         if row["kind"] in {"module", "class", "enum"}:
-            if identity in seen:
-                continue
-            seen.add(identity)
             parent, _, name = identity.rpartition(".")
-            if name.startswith("_") or parent not in owners:
+            if parent not in owners:
                 continue
             module, cls = owners[parent]
-            if cls is not None:
-                surface[module]["classes"][cls].add(name)
+            if cls is None:
+                continue
+            names = surface[module]["classes"][cls]
+            if identity not in seen:
+                seen.add(identity)
+                if not name.startswith("_"):
+                    names.add(name)
+            exported_parent, _, exported_name = path.rpartition(".")
+            if (
+                exported_parent in owners
+                and owners[exported_parent][1] is not None
+                and not exported_name.startswith("_")
+            ):
+                names.add(exported_name)
             continue
         exported_parent, _, exported_name = path.rpartition(".")
         if exported_name.startswith("_"):
@@ -472,11 +483,6 @@ def _container_name_for_owner(owner, module):
     if not rest or "." in rest:
         return None
     return rest
-
-
-def _module_lacks_budgeted_owner(module, scope, surface, budget):
-    optional, unconditional = _absent_owners(module, scope, surface, budget)
-    return bool(optional) and not unconditional
 
 
 def budget_growth(surface, budget, *, check_stale=False):
@@ -580,6 +586,23 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
     if failures:
         print("\n".join(failures))
     budget = {} if prune else previous
+    if not prune:
+        # Unconditional owners missing from the build were removed: drop them
+        # (and any submodules below a removed module) so the next check passes.
+        for module, scope in surface.items():
+            _, unconditional = _absent_owners(module, scope, surface, previous)
+            for owner in unconditional:
+                if owner in budget:
+                    for key in [
+                        key
+                        for key in budget
+                        if key == owner or key.startswith(owner + ".")
+                    ]:
+                        del budget[key]
+                else:
+                    budget.get(module, {}).get("classes", {}).pop(
+                        owner[len(module) + 1 :], None
+                    )
     for module, scope in surface.items():
         target = budget.setdefault(module, {"classes": {}})
         if "functions" in scope:
