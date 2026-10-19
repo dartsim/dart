@@ -81,7 +81,10 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     assert {row["name"] for row in rows if row["runner"] == "ubuntu-24.04"} == {
         "gcc 16",
         "clang 19",
+        "Eigen 5 (gcc 13)",
     }
+    # Packagers build against Eigen 5, which the lockfile does not cover.
+    assert [row["eigen"] for row in rows if "eigen" in row] == ["5.*"]
     assert job["runs-on"] == "${{ matrix.runner }}"
     build = next(
         step for step in job["steps"] if "pixi run build-tests" in step.get("run", "")
