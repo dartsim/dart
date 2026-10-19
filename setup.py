@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from codecs import open  # To use a consistent encoding
 from glob import glob
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -49,6 +49,28 @@ def _split_windows_cmake_args(value: str) -> List[str]:
     return [
         _strip_matching_outer_quotes(arg) for arg in shlex.split(value, posix=False)
     ]
+
+
+def _cmake_generator(cmake_args: List[str], default: str) -> str:
+    """Return the generator selected by a -G argument, else the default."""
+    generator = default
+    for index, arg in enumerate(cmake_args):
+        if arg == "-G" and index + 1 < len(cmake_args):
+            generator = cmake_args[index + 1]
+        elif arg.startswith("-G") and len(arg) > 2:
+            generator = arg[2:]
+    return generator
+
+
+def _windows_generator_traits(generator: str) -> Tuple[bool, bool]:
+    """Return (single_config, takes_platform) for a Windows CMake generator."""
+    # Without a generator, CMake picks Visual Studio, which is multi-config and
+    # takes a platform. Ninja Multi-Config is multi-config but rejects -A.
+    single_config = "Multi-Config" not in generator and any(
+        x in generator for x in ("NMake", "Ninja")
+    )
+    takes_platform = not generator or generator.startswith("Visual Studio")
+    return single_config, takes_platform
 
 
 def _cmake_args_from_env() -> List[str]:
@@ -143,7 +165,8 @@ class CMakeBuild(build_ext):
 
         else:
             # Single config generators are handled "normally"
-            single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
+            generator = _cmake_generator(cmake_args, cmake_generator)
+            single_config, takes_platform = _windows_generator_traits(generator)
 
             # CMake allows an arch-in-generator style for backward compatibility
             # contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
@@ -154,7 +177,7 @@ class CMakeBuild(build_ext):
             # if not single_config and not contains_arch:
             #     cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
 
-            if sys.maxsize > 2**32:
+            if sys.maxsize > 2**32 and takes_platform:
                 cmake_args += ["-A", "x64"]
 
             # Multi-config generators have a different way to specify configs
@@ -188,7 +211,10 @@ class CMakeBuild(build_ext):
         else:
             build_args += [f"-j{os.environ['CMAKE_BUILD_PARALLEL_LEVEL']}"]
 
-        build_temp = Path(self.build_temp) / ext.name
+        # DARTPY_BUILD_TEMP lets packagers move the CMake build tree, for
+        # example to a larger disk.
+        build_temp = Path(os.environ.get("DARTPY_BUILD_TEMP") or self.build_temp)
+        build_temp /= ext.name
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
 

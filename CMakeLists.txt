@@ -112,7 +112,7 @@ set(
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.2.2, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, octomap >= 1.9.7"
+  "assimp >= 5.2.0, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, octomap >= 1.9.7"
 )
 
 #===============================================================================
@@ -170,6 +170,8 @@ else()
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+dart_option(DART_BUILD_EXAMPLES "Add the C++ example targets" ON)
+dart_option(DART_BUILD_TUTORIALS "Add the C++ tutorial targets" ON)
 dart_option(DART_ENABLE_GUI_OSG_SMOKE_TESTS "Build the off-screen GUI OSG capture smoke test (needs a DISPLAY or Xvfb)" OFF)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
 dart_option(DART_PROFILE_BUILTIN "Enable the built-in text profiling backend" ON)
@@ -443,7 +445,8 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}"
   )
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+  # Append so packagers' LDFLAGS, which seed this variable, still apply.
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined")
 
   # Enforce to colorize compilation output
   if(${DART_FORCE_COLORED_OUTPUT})
@@ -529,7 +532,9 @@ if(TARGET dart)
   endif()
 
   # Add example subdirectories and an "examples" target.
-  if(MSVC)
+  if(NOT DART_BUILD_EXAMPLES)
+    # Package builds can skip the examples entirely.
+  elseif(MSVC)
     add_subdirectory(examples)
   else()
     add_subdirectory(examples EXCLUDE_FROM_ALL)
@@ -549,7 +554,9 @@ if(TARGET dart)
   endif(DART_VERBOSE)
 
   # Add a "tutorials" target to build tutorials.
-  if(MSVC)
+  if(NOT DART_BUILD_TUTORIALS)
+    # Package builds can skip the tutorials entirely.
+  elseif(MSVC)
     add_subdirectory(tutorials)
   else()
     add_subdirectory(tutorials EXCLUDE_FROM_ALL)
