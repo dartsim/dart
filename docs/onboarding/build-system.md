@@ -88,13 +88,17 @@ With system Bullet 3.17 or newer, `DART_BULLET_FLOAT64` (default `ON`) links
 the `-float64` libraries installed beside the single-precision ones, because
 single-precision Bullet's absolute GJK tolerances lose contacts of
 centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
-The installed CMake components and `dart.pc` require the same libraries; an
-installed DART built with them does not fall back to the other variant, and it
-rejects an existing `Bullet` target whose library files show the other variant,
-warning instead when other targets hide those files. The
-two precisions share GNU unique symbols, such as the static in
-`btTransform::getIdentity()`, even across `RTLD_LOCAL` plugins, so a process
-must load only one Bullet precision.
+DART rejects Bullet libraries that mix the two variants, judging an existing
+`Bullet` target by its library files and those of the targets it links. The
+installed CMake components require the same variant without falling back to
+the other one, and Bullet 3.17 when DART was built against 3.17 or newer, whose
+heightfield constructor it calls; they also reject an existing target of the
+other variant and warn when it names no library files. `dart.pc`
+requires `bullet-float64` when pkg-config finds that module and otherwise omits
+Bullet rather than add the single-precision libraries. The two precisions
+share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
+even across `RTLD_LOCAL` plugins, so a process must load only one Bullet
+precision.
 
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the

@@ -387,13 +387,25 @@ def test_bullet_header_floor(tmp_path, bundled, version):
         (305, "set(DART_BULLET_FLOAT64 ON)", True, "single"),
         (325, "set(DART_BULLET_FLOAT64 ON)", False, "single"),
         # Installed DART: the recorded selection decides, without fallback.
-        (325, "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)", True, "float64"),
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\nset(DART_BULLET_REQUIRE_VERSION 3.17)",
+            True,
+            "float64",
+        ),
         (325, "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)", False, "missing"),
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 FALSE)\nset(DART_BULLET_FLOAT64 ON)",
             True,
             "single",
+        ),
+        # DART built against Bullet 3.17 calls its float heightfield constructor.
+        (
+            305,
+            "set(DART_BULLET_REQUIRE_FLOAT64 FALSE)\nset(DART_BULLET_REQUIRE_VERSION 3.17)",
+            True,
+            "missing",
         ),
         # Bundled Bullet ignores a cached system library.
         (
@@ -445,7 +457,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "accepted",
         ),
-        # Linked imported targets hide their files, so it can only warn.
+        # ... including the files of the imported targets it links.
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
@@ -454,6 +466,29 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
             "add_library(Bullet INTERFACE IMPORTED)\n"
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
+            True,
+            "accepted",
+        ),
+        # A target that mixes the variants is rejected.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext};${math}")',
+            True,
+            "rejected",
+        ),
+        # A target without library files can only be warned about.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\nadd_library(Bullet INTERFACE IMPORTED)",
+            True,
+            "warned",
+        ),
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 FALSE)\nadd_library(Bullet INTERFACE IMPORTED)",
             True,
             "warned",
         ),
@@ -508,6 +543,39 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "single-debug",
         ),
+        # Explicit libraries that mix the variants are rejected, including
+        # FindBullet's older BulletMath name for LinearMath.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            'set(collision "${lib}/${prefix}BulletCollision-float64${ext}")',
+            False,
+            "rejected",
+        ),
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 FALSE)\n"
+            'set(collision "${lib}/${prefix}BulletCollision-float64${ext}")',
+            True,
+            "rejected",
+        ),
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 OFF)\n"
+            'set(collision "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            'file(TOUCH "${collision}")',
+            False,
+            "rejected",
+        ),
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 OFF)\n"
+            'set(collision "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            'set(math "${lib}/${prefix}BulletMath${ext}")\n'
+            'file(TOUCH "${collision}" "${math}")',
+            False,
+            "rejected",
+        ),
         # Explicitly selected -float64 libraries are recorded as such.
         (
             325,
@@ -526,6 +594,93 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "add_library(Bullet ALIAS parent_bullet)",
             True,
             "recorded",
+        ),
+        # ... including per-configuration imported targets that it links,
+        # with or without a listed configuration, and namespaced targets in
+        # generator expressions.
+        (
+            325,
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES IMPORTED_CONFIGURATIONS CUSTOM\n"
+            '  IMPORTED_LOCATION_CUSTOM "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(parent_bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(parent_bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)\n"
+            "add_library(Bullet ALIAS parent_bullet)",
+            True,
+            "recorded",
+        ),
+        (
+            325,
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES IMPORTED_LOCATION_RELEASE\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
+            True,
+            "recorded",
+        ),
+        (
+            325,
+            "add_library(Bullet::BulletCollision UNKNOWN IMPORTED)\n"
+            "set_target_properties(Bullet::BulletCollision PROPERTIES IMPORTED_LOCATION\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "$<LINK_ONLY:Bullet::BulletCollision>")',
+            True,
+            "recorded",
+        ),
+        # Building DART also rejects a target that mixes the variants, which
+        # the files of indirectly linked targets reveal; link cycles end.
+        (
+            325,
+            "add_library(math32 UNKNOWN IMPORTED)\n"
+            'set_target_properties(math32 PROPERTIES IMPORTED_LOCATION "${math}")\n'
+            "add_library(wrapper INTERFACE IMPORTED)\n"
+            'set_target_properties(wrapper PROPERTIES INTERFACE_LINK_LIBRARIES "math32;Bullet")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext};wrapper")',
+            True,
+            "rejected",
+        ),
+        # ... including targets listed inside one generator expression.
+        (
+            325,
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES IMPORTED_LOCATION\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(math32 UNKNOWN IMPORTED)\n"
+            'set_target_properties(math32 PROPERTIES IMPORTED_LOCATION "${math}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "$<BUILD_INTERFACE:collision64;math32>")',
+            True,
+            "rejected",
+        ),
+        (
+            325,
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES IMPORTED_LOCATION\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(math32 UNKNOWN IMPORTED)\n"
+            'set_target_properties(math32 PROPERTIES IMPORTED_LOCATION "${math}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "$<1:collision64;math32>")',
+            True,
+            "rejected",
+        ),
+        # Generator expressions that it cannot unwrap leave the precision
+        # unknown, and the walk still ends.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "$<$<AND:$<NOT:$<CONFIG:Debug>>,1>:collision64;math32>")',
+            True,
+            "warned",
         ),
     ],
 )
@@ -555,7 +710,11 @@ def test_bullet_prefers_float64_libraries(
     lib = (tmp_path / "bullet" / "lib").as_posix()
     suffix = "-float64" if expected == "float64" else ""
     if expected == "bundled":
-        check = 'NOT linked STREQUAL "BulletCollision;LinearMath"'
+        # Bundled targets' precision is not recorded.
+        check = (
+            'NOT linked STREQUAL "BulletCollision;LinearMath"'
+            ' OR NOT DART_BULLET_USES_FLOAT64 STREQUAL ""'
+        )
     elif expected == "missing":
         check = "TARGET Bullet OR BULLET_FOUND"
     elif expected == "warned":
@@ -598,7 +757,11 @@ def test_bullet_prefers_float64_libraries(
         )
         if "DART_BULLET_REQUIRE_FLOAT64" not in settings:
             recorded = "TRUE" if suffix else "FALSE"
-            check += f" OR NOT DART_BULLET_USES_FLOAT64 STREQUAL {recorded}"
+            minimum = "3.17" if version >= 317 else "3.05"
+            check += (
+                f" OR NOT DART_BULLET_USES_FLOAT64 STREQUAL {recorded}"
+                f" OR NOT DART_BULLET_MINIMUM_VERSION STREQUAL {minimum}"
+            )
     result = configure(
         tmp_path,
         f'set(lib "{lib}")\n'
