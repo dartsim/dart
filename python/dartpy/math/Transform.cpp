@@ -628,7 +628,8 @@ EIGEN_DONT_INLINE void requireResultEnvelopeFull(
   throw nb::value_error(
       (name
        + " rotation is outside the near-rotation envelope; rebuild the "
-         "inputs with normalize=True before retrying")
+         "drifted operand from its matrix with normalize=True before "
+         "composing or inverting it")
           .c_str());
 }
 
