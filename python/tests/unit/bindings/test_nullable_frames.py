@@ -184,17 +184,32 @@ def test_free_joint_spatial_motion_needs_frames_only_for_set_motions():
         skeleton = dart.dynamics.Skeleton()
         joint, body = skeleton.createFreeJointAndBodyNodePair()
         world = dart.dynamics.Frame.World()
+        transform = np.eye(4)
+        transform[:3, 3] = [1.0, 2.0, 3.0]
+        joint.setSpatialMotion(transform, world, None, None, None, None, None, None)
+        np.testing.assert_allclose(body.getTransform().matrix(), transform)
         velocity = np.arange(6, dtype=float)
         joint.setSpatialMotion(None, None, velocity, world, world, None, None, None)
         np.testing.assert_allclose(body.getSpatialVelocity(world, world), velocity)
-        joint.setSpatialMotion(np.eye(4), world, None, None, None, None, None, None)
-        np.testing.assert_allclose(body.getTransform().matrix(), np.eye(4))
-        try:
-            joint.setSpatialMotion(None, None, velocity, None, world, None, None, None)
-        except TypeError:
-            pass
-        else:
-            raise AssertionError("a set motion without its frame must raise TypeError")
+        acceleration = np.arange(6, dtype=float) + 1
+        joint.setSpatialMotion(None, None, None, None, None, acceleration, world, world)
+        np.testing.assert_allclose(
+            body.getSpatialAcceleration(world, world), acceleration
+        )
+        for args, name in [
+            ((transform, None, None, None, None, None, None, None), "withRespectTo"),
+            ((None, None, velocity, None, world, None, None, None), "velRelativeTo"),
+            (
+                (None, None, None, None, None, acceleration, world, None),
+                "accInCoordinatesOf",
+            ),
+        ]:
+            try:
+                joint.setSpatialMotion(*args)
+            except TypeError as error:
+                assert name in str(error), error
+            else:
+                raise AssertionError(f"a missing {name} must raise TypeError")
         """
     )
 

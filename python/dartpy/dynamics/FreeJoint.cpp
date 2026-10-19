@@ -109,13 +109,34 @@ void FreeJoint(nb::module_& m)
               const dart::dynamics::Frame* accInCoordinatesOf) {
             // C++ ignores the frames of a motion that is not set, so None is
             // accepted for them; a motion that is set needs its frames.
-            if ((newTransform && !withRespectTo)
-                || (newSpatialVelocity
-                    && (!velRelativeTo || !velInCoordinatesOf))
-                || (newSpatialAcceleration
-                    && (!accRelativeTo || !accInCoordinatesOf))) {
-              throw nb::type_error("a motion that is set needs its frames");
-            }
+            const auto require = [](bool motionSet,
+                                    const dart::dynamics::Frame* frame,
+                                    const char* message) {
+              if (motionSet && !frame)
+                throw nb::type_error(message);
+            };
+            require(
+                newTransform.has_value(),
+                withRespectTo,
+                "withRespectTo is required when newTransform is set");
+            require(
+                newSpatialVelocity.has_value(),
+                velRelativeTo,
+                "velRelativeTo is required when newSpatialVelocity is set");
+            require(
+                newSpatialVelocity.has_value(),
+                velInCoordinatesOf,
+                "velInCoordinatesOf is required when newSpatialVelocity is "
+                "set");
+            require(
+                newSpatialAcceleration.has_value(),
+                accRelativeTo,
+                "accRelativeTo is required when newSpatialAcceleration is set");
+            require(
+                newSpatialAcceleration.has_value(),
+                accInCoordinatesOf,
+                "accInCoordinatesOf is required when newSpatialAcceleration "
+                "is set");
             self->setSpatialMotion(
                 newTransform ? &*newTransform : nullptr,
                 withRespectTo,
