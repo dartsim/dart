@@ -95,7 +95,7 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.0
+     - 5.3 (Ubuntu 24.04's 5.3.1 reports 5.3.0)
      - Core mesh loading
    * - Eigen
      - 3.4.0
