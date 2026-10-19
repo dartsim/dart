@@ -10,10 +10,16 @@ DART 6.20 checks Gazebo in two ways:
 `test-gz` is the forward lane that CI runs. Its patches change gz-physics
 source (the `ChangedWorldPoses` tolerance) and relax test expectations, so a
 green `test-gz` does not show that released Gazebo still works. It also
-configures gz-physics once, so the common tests compile without the dartsim
-plugin's `DART_HAS_CONTACT_SURFACE` and skip their contact-callback
-expectations (gz-physics `ContactPropertiesCallback`). The unpatched lanes
-configure twice and run them.
+configures gz-physics twice, like the unpatched lanes, so the common tests see
+the dartsim plugin's `DART_HAS_CONTACT_SURFACE` and run their contact-callback
+expectations (gz-physics `ContactPropertiesCallback`).
+
+Both lanes also run [`scripts/check_gz_contact_surface.sh`](../../scripts/check_gz_contact_surface.sh)
+after configuring gz-physics. It fails unless gz-physics cached
+`DART_HAS_CONTACT_SURFACE_HEADER=1` (its check for
+`dart/constraint/ContactSurface.hpp`), and prints an excerpt of the probe's log
+from `CMakeConfigureLog.yaml`. Without it, a failed check silently
+drops the plugin's contact-properties callback and gz-sim's `TrackController`.
 
 ## Unpatched compatibility lanes
 
@@ -44,7 +50,8 @@ feature instead of the default feature. The lane tasks require Linux.
    `.deps/gz-compat/<lane>/candidate/dart`, so no file an earlier build
    installed is left behind (the build directory is kept);
 2. builds the released gz-physics with its tests against that DART and runs
-   its CTest suite (`PERFORMANCE_` tests excluded);
+   its CTest suite (`PERFORMANCE_` tests excluded), after checking that
+   gz-physics detected `dart/constraint/ContactSurface.hpp`;
 3. builds gz-sim with its tests against that gz-physics and runs every
    `INTEGRATION_` test serially, with `GZ_SIM_SERVER_CONFIG_PATH` set (without
    it, worlds that declare no systems get no Physics system), a private
@@ -639,8 +646,6 @@ remains 10000.
 ## Not covered yet
 
 - The lanes are not in CI (see `docs/onboarding/ci-cd.md`).
-- `test-gz` should configure gz-physics twice once DART 6.20 passes gz-physics
-  `ContactPropertiesCallback` again; until then it would turn red.
 - Benchmark worlds beyond the generated ones: a box pile, a mesh ground, a
   heightmap (gz-sim's example downloads one from Fuel), a conveyor with a
   payload under a commanded belt, and 3k_shapes with a fixed-base arm under a

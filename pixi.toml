@@ -259,6 +259,7 @@ test-gz-compat-tools = { cmd = [
   "scripts/run_pytest.py",
   "tests/test_gz_compat_compare.py",
   "tests/test_gz_bench_worlds.py",
+  "tests/test_gz_contact_surface_gate.py",
   "tests/test_gz_dart_version.py",
   "tests/test_gz_dart_api_inventory.py",
   "-q",
@@ -1050,8 +1051,12 @@ patch-gz-physics = { cmd = """
   "download-gz",
 ] }
 
+# Configures twice: the common tests see DART_HAS_CONTACT_SURFACE only once the
+# dartsim plugin's include check is cached. The first pass drops the cached
+# result so a reused build re-runs the check, and -e stops on a failed pass.
+# pixi's shell has no `for`.
 config-gz = { cmd = """
-    cmake \
+    bash -ec 'for pass in 1 2; do reset=; if [ "$pass" = 1 ]; then reset=-UDART_HAS_CONTACT_SURFACE_HEADER; fi; cmake $reset \
         -G Ninja \
         -S .deps/gz-physics \
         -B .deps/gz-physics/build \
@@ -1060,7 +1065,7 @@ config-gz = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-physics/test/gtest_vendor/include \
         -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_force_vendor_gtest.cmake \
-        -DBUILD_TESTING=ON
+        -DBUILD_TESTING=ON; done'
 """, depends-on = [
   "patch-gz-physics",
   "install-dart-gz",
@@ -1075,6 +1080,7 @@ config-gz-install = { cmd = """
         -G Ninja \
         -S .deps/gz-physics \
         -B .deps/gz-physics/build-install \
+        -UDART_HAS_CONTACT_SURFACE_HEADER \
         -DCMAKE_INSTALL_PREFIX=$PWD/.deps/gz-physics/install \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
