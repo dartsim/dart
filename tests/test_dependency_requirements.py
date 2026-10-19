@@ -216,7 +216,7 @@ def test_imgui_release_suffix_floor(tmp_path, version, accepted):
 
 
 @pytest.mark.parametrize("bundled", [False, True])
-@pytest.mark.parametrize("version", [305, 306, 325, None])
+@pytest.mark.parametrize("version", [304, 305, 325, None])
 def test_bullet_header_floor(tmp_path, bundled, version):
     include = tmp_path / "bullet" / "src"
     header = include / "LinearMath" / "btScalar.h"
@@ -235,7 +235,8 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             f'set(DART_BULLET_SOURCE_DIR "{include.parent.as_posix()}")\n'
         )
     content += "include(DARTFindBullet)\n"
-    if version and version >= 306:
+    # Bullet 3.06 and 3.07 report 305, so 305 is the checkable floor.
+    if version and version >= 305:
         content += 'if(NOT BULLET_FOUND OR NOT TARGET Bullet)\nmessage(FATAL_ERROR "Missing Bullet")\nendif()\n'
     else:
         content += 'if(BULLET_FOUND OR Bullet_FOUND OR TARGET Bullet)\nmessage(FATAL_ERROR "Accepted old Bullet")\nendif()\n'
@@ -298,7 +299,7 @@ def test_config_header_version_fallback(
 @pytest.mark.parametrize(
     "package,minimum,prefix,header,definition",
     [
-        ("assimp", "5.2.2", "ASSIMP", "assimp/scene.h", None),
+        ("assimp", "5.2.0", "ASSIMP", "assimp/scene.h", None),
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
         ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
@@ -343,6 +344,80 @@ def test_module_floors(
         + "else()\n"
         + ('message(FATAL_ERROR "Rejected supported version")\n' if accepted else "")
         + "endif()\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("preset", ["cache", "normal"])
+@pytest.mark.parametrize("msvc", [False, True])
+@pytest.mark.parametrize(
+    "version,accepted", [("6.0.5", True), ("5.2.0", True), ("5.1.0", False)]
+)
+def test_assimp_version_from_config_without_pkg_config(
+    tmp_path, version, accepted, msvc, preset
+):
+    # Without pkg-config, assimp's CMake package supplies the version. Selected
+    # paths win over the variables that package sets, except that MSVC builds
+    # link the package's target, as Findassimp.cmake always did.
+    config_package(
+        tmp_path,
+        "assimp",
+        version,
+        "assimp::assimp",
+        'set(ASSIMP_INCLUDE_DIRS "config-include")\n'
+        "set(ASSIMP_LIBRARIES assimp::assimp)\n",
+    )
+    include = tmp_path / "include"
+    (include / "assimp").mkdir(parents=True)
+    (include / "assimp" / "scene.h").touch()
+    library = tmp_path / "library"
+    library.touch()
+    expected = "assimp::assimp" if msvc else library.as_posix()
+    path_cache = ' CACHE PATH ""' if preset == "cache" else ""
+    file_cache = ' CACHE FILEPATH ""' if preset == "cache" else ""
+    result = configure(
+        tmp_path,
+        f"set(MSVC {'TRUE' if msvc else 'FALSE'})\n"
+        f'set(ASSIMP_INCLUDE_DIRS "{include.as_posix()}"{path_cache})\n'
+        f'set(ASSIMP_LIBRARIES "{library.as_posix()}"{file_cache})\n'
+        "include(DARTFindassimp)\n"
+        "get_target_property(libraries assimp INTERFACE_LINK_LIBRARIES)\n"
+        f"if(NOT ASSIMP_VERSION VERSION_EQUAL {version}\n"
+        f'   OR NOT libraries STREQUAL "{expected}")\n'
+        '  message(FATAL_ERROR "Wrong assimp: ${ASSIMP_VERSION} ${libraries}")\n'
+        "endif()\n",
+    )
+    assert (result.returncode == 0) == accepted, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("module", ["dart", "foreign"])
+def test_assimp_module_lookup_skips_config(tmp_path, module):
+    # When the module lookup succeeds, DART must not load assimp's CMake
+    # package, so lookups that already work stay unchanged. A consumer's own
+    # Findassimp.cmake comes first and may set only assimp_FOUND.
+    config_package(
+        tmp_path, "assimp", "5.2.0", None, 'message(FATAL_ERROR "Loaded config")\n'
+    )
+    include = tmp_path / "include"
+    (include / "assimp").mkdir(parents=True)
+    (include / "assimp" / "scene.h").touch()
+    library = tmp_path / "library"
+    library.touch()
+    lookup = (
+        f'set(ASSIMP_INCLUDE_DIRS "{include.as_posix()}")\n'
+        f'set(ASSIMP_LIBRARIES "{library.as_posix()}")\n'
+    )
+    if module == "foreign":
+        (tmp_path / "modules").mkdir()
+        (tmp_path / "modules" / "Findassimp.cmake").write_text(
+            lookup + "set(assimp_FOUND TRUE)\n"
+        )
+        lookup = ""
+    result = configure(
+        tmp_path,
+        lookup + "set(assimp_VERSION 5.2.0)\n"
+        "include(DARTFindassimp)\n"
+        'if(NOT TARGET assimp)\n  message(FATAL_ERROR "No assimp target")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
 

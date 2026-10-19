@@ -88,7 +88,7 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.2
+     - 5.2.0
      - Core mesh loading
    * - Eigen
      - 3.4.0
@@ -100,7 +100,7 @@ Optional components remain optional.
      - 8.1.1
      - Core formatting
    * - Bullet
-     - 3.06
+     - 3.05
      - Bullet collision backend
    * - OctoMap
      - 1.9.7
@@ -184,6 +184,14 @@ include:
    * - ``DART_BUILD_GUI_OSG``
      - ``ON``
      - Build the OpenSceneGraph GUI component.
+   * - ``DART_BUILD_EXAMPLES``
+     - ``ON``
+     - Add the C++ example targets, which MSVC builds by default. Package
+       builds can set ``OFF`` to skip them.
+   * - ``DART_BUILD_TUTORIALS``
+     - ``ON``
+     - Add the C++ tutorial targets, which MSVC builds by default. Package
+       builds can set ``OFF`` to skip them.
    * - ``DART_ENABLE_GUI_OSG_SMOKE_TESTS``
      - ``OFF``
      - Build off-screen GUI capture smoke tests when a display or Xvfb is
