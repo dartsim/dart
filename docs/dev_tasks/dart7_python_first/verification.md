@@ -554,7 +554,7 @@ Known gaps:
     no XPASS (262 passed, 1 skipped, 1 XFAIL).
   - With xfail markers ignored, each test fails for its intended missing
     feature. The command is
-    `pixi run python -I scripts/run_pytest.py --pythonpath build/default/cpp/Release/python/dartpy --runxfail`
+    `pixi run python -I scripts/run_pytest.py --pythonpath build/default/cpp/Release/python --runxfail`
     with each test file:
 
   | Test | Observed failure |
