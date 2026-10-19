@@ -51,9 +51,11 @@ DART 7.0 is released when all of these hold:
   cover: load, compile, step, read state, snapshot round trip, headless render,
   and batch.
 - **`import dartpy` works without graphics libraries** in a slim container.
-- **Unmodified gz-physics and gz-sim pass** the Harmonic, Ionic and Jetty
-  compatibility lanes, with no new failures or slow cases against baselines from
-  the last 6.20.x release.
+- **Unmodified gz-physics and gz-sim pass** the Ionic and Jetty compatibility
+  lanes, each building `dart-io` against its distribution's sdformat, with no
+  new failures or slow cases against baselines from the last 6.20.x release.
+  DART 7 supports Ubuntu 24.04 LTS and newer; Gazebo Harmonic and Ubuntu 22.04
+  users stay on DART 6.20.x.
 - **Performance and determinism hold.** Each performance and determinism row is
   equal or better against the pinned pre-refactor baseline, each detector
   compared with its own baseline.
@@ -113,9 +115,10 @@ requirements wait for; this list summarizes it. Every must-have, breaking or
 additive, merges before the API freeze `F`; see the
 [release rules](#release-train-and-checkpoints).
 
-- **Every breaking Python change:** native renames from the reviewed rename
-  table (the `Multibody`/`Link`/`Dof` vocabulary, `Collider`/`Visual` handles
-  and named collections), the package layout with its curated top level,
+- **Every breaking Python change:** the curated API designed area by area
+  under the approved naming rulebook (the `Multibody`/`Link`/`Dof` vocabulary,
+  `Collider`/`Visual` handles and named collections), the package layout with
+  its curated top level,
   read-only arrays, error types, `UPPER_CASE` enums, keyword-only arguments,
   `Transform`/`Rotation`, raising loaders, the breaking parts of otherwise
   additive work, such as `step` rejecting `bool` arguments, and the DART
@@ -129,17 +132,24 @@ additive, merges before the API freeze `F`; see the
   first step, prepares the dense articulated-body data (M2), and GIL-free
   `step(n)` on the deterministic executor. The
   [M2 stop rule](#release-train-and-checkpoints) can end M2's kernel PRs early.
-- Typed solver selection in `WorldConfig` (M1e), which the constraint module's
-  7.0 bindings wait for.
+- The typed per-World solver policy (M1e), which the constraint module's 7.0
+  bindings wait for; the written `World` and solver contract; and the rigid
+  step code behind an internal domain boundary with no behavior change. The
+  coupling seam and a first experimental domain (rods) ship in
+  `dartpy.experimental` if ready before `F`.
 - `WorldBatch` built from remapping clones.
 - `capture_state`/`restore_state` dynamic snapshots and exact checkpoints:
-  record/replay levels L0 and L1.
+  record/replay levels L0 and L1. Exact checkpoints restore into the same
+  World for the DART detector (and ODE if it qualifies) with the Dantzig or
+  PGS solver; FCL and Bullet raise.
 - Compliant `PositionServo`/`VelocityServo` actuators, `StepHook` step hooks
   and native sensors.
 - `dart.render`, `dart.viewer` and `dart.Material` on Filament, with the
   interim camelCase GUI module deleted. M6a merged the backend in #3696; M6b
   owns sensor rendering and the Python API.
-- The codemod and migration guide.
+- The codemod and migration guide, generated from the old-to-new mapping.
+- A generated Python API reference built in CI from the stubs and docstrings,
+  with a docstring coverage floor.
 - One `cp312-abi3` wheel per platform (Linux x86_64/aarch64, macOS arm64 and
   Windows x64) that imports without graphics libraries.
 
@@ -153,8 +163,10 @@ additive, merges before the API freeze `F`; see the
 - The C++ `World` keeps FCL as its default detector in 7.0; switching it to
   DART is a labeled 7.x change (see the
   [default-detector switch](#default-detector-switch)).
-- Items allowed to slip to 7.1: autoapi docs, notebooks, the example runner and
-  the weekly Gazebo main lane (the gz-physics development branch).
+- Items allowed to slip to 7.1: notebooks, the example runner and the weekly
+  Gazebo main lane (the gz-physics development branch).
+- Sharing one executor across independent Worlds moves after 7.0;
+  `WorldBatch` owns its executor.
 
 ### Priority and thresholds
 
@@ -189,10 +201,11 @@ deciding M3.
   for every core change.
 - Refactor PRs are bit-identical per detector at one and several threads, with
   no new steady-state allocations. Numeric changes are separate, labeled PRs.
-- Step-path quiet window: from the M1a PR until the M1d executor PR
-  merges, changes to World stepping, the constraint solver, the native
-  collision detector or generic-joint dynamics go through this program. Plans
-  cite symbols, with line numbers only as of a named revision.
+- Step-path merge order: changes to World stepping, the constraint solver,
+  collision or generic-joint dynamics land in an order this program owns,
+  each re-qualified on current `main`. Plans cite symbols, with line numbers
+  only as of a named revision. (This replaced the quiet window that ran from
+  the M1a PR until M1d's executor PR merged.)
 - **Behavior evidence.** Bit-identical refactors are not behavior-bearing; the
   bit-identical gate is their evidence. Behavior-bearing changes (labeled
   numeric changes, actuators, sensors, snapshots) use `dart-verify-sim` with a
@@ -221,25 +234,27 @@ deciding M3.
 | M2 | Dense articulated-body data | Planned | [Stop rule](#release-train-and-checkpoints) |
 | M3 | Authoritative contiguous state | 7.x by default | Go/no-go at checkpoint C1 |
 | M4 | Recorder and replay | Optional for 7.0 | Snapshots and checkpoints are required |
-| M5 | dartpy 7.0 API | Planned | [Order](#m5-dartpy-70-api); the rename table needs maintainer approval first |
+| M5 | dartpy 7.0 API | Active | [Order](#m5-dartpy-70-api); designed first under the naming rulebook |
 | M6a | Filament backend port | Complete | Merged in #3696; wheels qualified; its remaining release gates moved to [C2](#release-train-and-checkpoints) ([interface](#m6a-interface)) |
 | M6b | Sensor rendering and Python render/viewer API | Planned | Checkpoint C2 gates the release; the D31b [demo consolidation](#demo-consolidation-d31b) is complete locally |
 | M7 | Release 7.0 (release candidates first) | Planned | Waits for M6b and checkpoint C2 |
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
-Remaining critical path: M1d → M1i →
-`WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6b →
-checkpoint C2. M5a is open since M0 exited. The re-prioritization proposed in
-[RESUME.md](RESUME.md) would reorder this path; it changes only if approved.
+Remaining critical path, in four chains that run in parallel (Python first):
+the M5a package, arrays, errors, `Transform` and facade slice, then the
+rulebook-driven API areas, codemod, stubs and reference; compile and edit
+(M1b), counted stepping (M1d), per-solver parameters (M1e), the remapping clone
+(M1i) and `WorldBatch`; the solver policy, the written contract and the rigid
+domain boundary; and M6b → checkpoint C2.
 
 ### M1 core seams
 
 | ID | Content | Notes |
 | --- | --- | --- |
-| M1a | `World::step` split into internal stages: private, non-virtual stage member functions and a forward-declared private `StepContext`, with no data member, vtable or layout change | One PR with one commit per stage; moved lines stay verbatim and the gates are bit-identical. `getConstraintSolver()` is unchanged. Opens the quiet window |
+| M1a | `World::step` split into internal stages: private, non-virtual stage member functions and a forward-declared private `StepContext`, with no data member, vtable or layout change | One PR with one commit per stage; moved lines stay verbatim and the gates are bit-identical. `getConstraintSolver()` is unchanged. Opened the step-path quiet window, since replaced by the program-owned merge order |
 | M1b | `compile()`, `edit()`, the strict flag, per-World revisions and strict tiers, including strict rejection of unsupported shapes when a World compiles | Mutation classes in the design doc. M1f waits for the shape rejection |
 | M1c | Snapshots, checkpoints, and the field and frame oracle | One PR per hidden-state gap; moving the solver's random-number state is a labeled numeric change |
-| M1d | One deterministic executor, GIL release, `step(n)` | Closes the quiet window. The 64-world row must show scaling from 1 to 8 threads before batch bindings start |
+| M1d | One deterministic executor, GIL release, `step(n)` | The 64-world row must show scaling from 1 to 8 threads before batch bindings start |
 | M1e | Typed solver selection in `WorldConfig` | Per-World solver parameters are opt-in; the process-wide statistics keep last-write-wins |
 | M1f | DART detector as the default of dartpy's `dart.World` and `dart.io.load_world` for MJCF | A breaking Python default change, so a must-have before `F`. Lands after the published capability matrix and M1b's strict shape rejection. The C++ `World`, `dart::utils::MjcfParser::readWorld` and its direct dartpy binding keep FCL; see the [switch](#default-detector-switch) |
 | M1g | Actuator channels, compliant motor rows, `StepHook` | |
@@ -255,20 +270,24 @@ changes. The numerical rules they follow live in the design doc's
 
 ### M5 dartpy 7.0 API
 
-M5a is open since M0 exited, in this order:
+M5a is open since M0 exited. The API is designed first: the maintainer
+approves a naming rulebook once, each API area lands as a normal PR showing
+the designed API, and the old-to-new mapping generated from those PRs drives
+the codemod, stubs and migration guide. An API-surface ratchet keeps the
+parity surface from growing meanwhile. In this order:
 
-1. The rename table v0, generated by `scripts/nanobind/api_surface.py
-   --snapshot` and approved by the maintainer in one PR. It gates everything
-   else.
+1. The naming rulebook.
 2. The package layout: private extension, pure-Python helpers, scikit-build-core,
    one stable-ABI wheel for Python 3.12+. It also updates the 7.0 changelog's
    Python-support entries.
 3. The array casters: read-only copies.
 4. Errors and logging.
 5. `Transform` and `Rotation`.
-6. Module renames: math, then dynamics (member renames, then the class
-   vocabulary, then `Collider`/`Visual` and collections), then collision, io,
-   common and optimizer.
+6. A vertical slice of the facade: `World` keyword construction, `Multibody`,
+   `Link`, `Joint` and `Dof` with named collections, the builders, `world.add`
+   and `Collider`/`Visual` handles.
+7. The remaining API areas: math, dynamics, collision, io, common and
+   optimizer, each designed under the rulebook.
 
 Defects found on the way (missing `None` checks, dropped out-parameters,
 unregistered types) ship as separate PRs.
@@ -515,8 +534,8 @@ World.
 Each packet records its scope, non-goals, gates and evidence in
 [verification.md](verification.md) before it is marked done. M0 exited on
 2026-10-14, when #3728 (WP-7.0.7) and #3729 (the gz API inventory) merged.
-The capability matrix (#3788) followed. M1 and M5a's rename table are in
-progress; [RESUME.md](RESUME.md) tracks the M1 packets.
+The capability matrix (#3788) followed. M1 and M5a are in progress;
+[RESUME.md](RESUME.md) tracks the packets.
 
 ## Gates
 
@@ -537,11 +556,12 @@ progress; [RESUME.md](RESUME.md) tracks the M1 packets.
     `pixi run test` runs (added in #3725);
   - the many-World rows (added in #3720);
   - the snapshot and checkpoint oracle (arrives with M1c);
-  - for every step-path core PR in the quiet window, starting with M1a,
-    `pixi run -e gazebo test-gz` plus the unpatched Ionic, Jetty and Harmonic
-    lanes (`pixi run gz-compat-ionic`, `gz-compat-jetty` and
-    `gz-compat-harmonic`) against a base variant (`GZ_COMPAT_BASE_VARIANT`)
-    with no `NEW` or `SLOW` results, and the sleep oracle
+  - for every PR that changes step, solver, collision, packaging or
+    Gazebo-lock files, `pixi run -e gazebo test-gz` plus the unpatched Ionic
+    and Jetty lanes (`pixi run gz-compat-ionic` and `gz-compat-jetty`), each
+    building `dart-io` against its distribution's sdformat, against a base
+    variant (`GZ_COMPAT_BASE_VARIANT`) with no `NEW` or `SLOW` results, and
+    the sleep oracle
     (`pixi run gz-compat-ionic sleep-oracle`) on head and base.
 - **Milestone exits:** the core gates with `--base dart7-base`.
 - **Python changes:**
@@ -589,7 +609,8 @@ Every packet needs two clean review passes on its final state.
   checkpoint C2 is at risk.
 - **Downstream drift.** Mitigation: the shim test runs against the current
   gz-physics development branch, plus a scheduled lane.
-- **Concurrent work on core files.** Mitigation: the step-path quiet window.
+- **Concurrent work on core files.** Mitigation: the program-owned step-path
+  merge order.
 
 ## Blockers and next actions
 
@@ -600,36 +621,9 @@ Every packet needs two clean review passes on its final state.
 - Publishing each packet needs maintainer approval.
 - Pending maintainer action: check PyPI's project history for deleted 7.0.0
   files; PyPI never accepts a reused file name.
-- Maintainer decisions pending; the first three gate Python work today:
-  - How renames are approved: one table covering the whole parity surface, as
-    M5a plans today, or naming rules plus an exceptions list and a frozen
-    old-to-new mapping, with mechanical PRs approved as a series and 7.0.0
-    pre-releases.
-  - The naming rules: keep `get_`/`set_` names, or a curated API with
-    keyword-only options, private generated helper types, cheap state as
-    properties and a name budget per class.
-  - Whether `None` for a frame argument means the world frame where C++
-    defaults to it, and raises `TypeError` elsewhere.
-  - Multi-solver and multi-physics scope for 7.0: the proposal ships the typed
-    solver policy, the written contract and the private rigid domain boundary,
-    and builds the coupling seam together with a first experimental domain,
-    which revisits D2 and D7.
-  - A standing window, until 7.0.0 is packaged, for ABI layout changes in
-    classes Gazebo neither subclasses nor reads, gated by the API inventory
-    check and the Gazebo lanes. It would also settle the typed primary-solver
-    selection (M1e), which grows `WorldConfig` from 72 to 80 bytes.
-  - Whether never-compiled C++ Worlds keep 6.20 behaviour, apart from the
-    labeled rejection of re-entrant stepping and edits during a step, with
-    model-ownership tracking starting at `compile()`.
-  - Whether the shared executor moves after 7.0, with `WorldBatch` owning its
-    executor, which revisits the shared-executor plan under D14; the shared
-    executor cannot reach the per-row and geometric-mean instruction limits
-    today.
-  - Checkpoint scope for 7.0 and the milestone-exit performance baseline after
-    #3789 changed the contact benchmark workload.
-  - For compiled Worlds, whether replacing mesh data or voxel occupancy counts
-    as a topology edit allowed only inside `edit()`; this gates M1b's strict
-    shape rejection and M1f.
-  - Whether the step-path quiet window becomes a merge queue with
-    path-triggered Gazebo lanes.
+- The maintainer decided the program's open questions on 2026-10-19; see
+  [Re-prioritization](decisions.md#re-prioritization-2026-10-19). Questions
+  specific to later packets (servos and actuators, native sensors, the solver
+  policy) are settled when each packet starts.
+- Pending: the C2 fast-profile criteria, settled with M6b.
 - See [RESUME.md](RESUME.md) for the immediate next steps.

@@ -60,9 +60,12 @@ introspection. Native renames in the binding sources avoid all three.
 - Typed stubs (`.pyi` plus `py.typed`) ship in every wheel. CI fails on stub
   drift.
 
-A single reviewed rename table drives the binding-source rename, the stubs, the
-user codemod and the migration guide. Docstrings generated from the C++
-documentation pass through the same table.
+The API is designed first, area by area, under one naming rulebook the
+maintainer approves. The old-to-new mapping generated from those designs drives
+the user codemod, the stubs and the migration guide; old members with no place
+in 7.0 are dropped. Docstrings generated from the C++ documentation pass
+through the same mapping, and the generated API reference is built from the
+stubs and docstrings.
 
 ## Model vocabulary
 
