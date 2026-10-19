@@ -12,13 +12,16 @@ Snapshot runtime identities attribute inherited members to their walked defining
   required to create a budget) and prints every raised counter. Review the
   resulting diff. The normal binding tests reject increases and stale ceilings
   in public, camelCase/C++ `m_` names, or `get`/`set` accessor names, per class
-  and per module. The JSON key `functions` includes every non-container module
-  member: callables, constants, exported enum values, properties, and descriptors.
-  The JSON key `containers` counts exported container names per module --
-  classes, enums, and submodules -- per exported path and not deduplicated by
-  identity, so an alias or re-export in a second module counts in that module;
-  nested classes count as members of their defining class instead. A new module
-  or class that appears with empty counters is also reported as growth.
+  and per module for `functions` and `classes`. The JSON key `functions`
+  includes every non-container module member: callables, constants, exported
+  enum values, properties, and descriptors. The JSON key `containers` is a
+  sorted list of the public exported container names per module -- classes,
+  enums, and submodules -- per exported path and not deduplicated by
+  identity, so an alias or re-export in a second module is listed in that
+  module; nested classes count as members of their defining class instead.
+  Any current container name missing from the budget fails as growth on every
+  build, with the name in the message. A new module or class that appears
+  with empty counters is also reported as growth.
   Accessors match `^(?i:get|set)([A-Z_]|$)`: the verb is case-insensitive, but
   the following capital-or-underscore boundary is case-sensitive. `settings`
   and `setup` do not count; `setUpView` counts as a setter verb under this naming
@@ -32,16 +35,20 @@ Snapshot runtime identities attribute inherited members to their walked defining
   Class constants, exported enum values, and descriptors count only at the first
   class in the MRO whose `__dict__` defines the name, including when subclasses
   are visited first. Data names are not deduplicated by value identity.
-  Absent optional modules and classes are ignored by the test and retained by
-  the updater, and their names lower their module's container ceilings; only
-  `--update-budget --prune` deletes absent owners, so after removing or
-  renaming a class, run it on a full-feature build. For present
-  owners, removals require lowering budgets with `--update-budget`, without
-  `--allow-growth`. Growth requires reverting the change or deliberately raising
-  budgets with `--update-budget --allow-growth`. Failure diagnostics list the
-  count and sorted current names for each exceeded counter, including additions,
-  truncated to 40 names with `... (N more)`: counts alone cannot identify which
-  specific names are new. With `PYTHONPATH` already
+  Absent optional modules, classes, and submodules are ignored by the test and
+  retained by the updater: a module that lacks any budgeted class or submodule
+  skips container staleness, and `--update-budget` without `--prune` keeps the
+  budgeted container names of such modules; only `--update-budget --prune`
+  rewrites container lists from the build and deletes absent owners, so after
+  removing or renaming a class, run it on a full-feature build. For present
+  owners and complete modules, removals require lowering budgets with
+  `--update-budget`, without `--allow-growth`. Growth requires reverting the
+  change or deliberately raising budgets with `--update-budget --allow-growth`.
+  Failure diagnostics for `functions` and `classes` list the count and sorted
+  current names for each exceeded counter, including additions, truncated to 40
+  names with `... (N more)`: counts alone cannot identify which specific names
+  are new. Container failures name the new or missing container names directly.
+  With `PYTHONPATH` already
   selecting a build, `pixi run python scripts/nanobind/api_surface.py
   --update-budget` also works.
 - `probe_gui_rss.py` checks 1,000 GUI owner lifecycles without opening a window.

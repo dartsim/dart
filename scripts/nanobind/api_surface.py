@@ -381,38 +381,62 @@ def budget_surface(rows):
     }
 
 
+def _surface_containers(scope):
+    raw = scope.get("containers", {})
+    if isinstance(raw, dict):
+        return sorted(raw.get("public", []))
+    return sorted(raw)
+
+
+def _budgeted_containers(previous):
+    raw = previous.get("containers", [])
+    if isinstance(raw, dict):
+        return []
+    return sorted(raw)
+
+
+def _module_lacks_budgeted_owner(module, scope, surface, budget):
+    previous = budget.get(module, {})
+    current_classes = scope.get("classes", {})
+    for cls in previous.get("classes", {}):
+        if cls not in current_classes:
+            return True
+    return any(
+        child not in surface and child.rpartition(".")[0] == module
+        for child in budget
+        if child != module
+    )
+
+
 def budget_growth(surface, budget, *, check_stale=False):
     """Describe growth and optionally stale ceilings for present owners."""
     failures = []
     for module, scope in surface.items():
         previous = budget.get(module, {})
-        # The names of budgeted classes and submodules this build lacks (optional
-        # bindings, or removals not yet pruned) lower the module's container
-        # ceilings, so growth and staleness stay exact on reduced builds.
-        absent = {
-            cls
-            for cls in previous.get("classes", {})
-            if "." not in cls and cls not in scope.get("classes", {})
-        } | {
-            child.rpartition(".")[2]
-            for child in budget
-            if child not in surface and child.rpartition(".")[0] == module
-        }
-        container_limits = dict(previous.get("containers", {}))
-        for counter, names in name_counters(absent).items():
-            container_limits[counter] = max(
-                0, container_limits.get(counter, 0) - len(names)
+        current_containers = _surface_containers(scope)
+        budgeted_containers = _budgeted_containers(previous)
+        new_names = sorted(set(current_containers) - set(budgeted_containers))
+        if new_names:
+            failures.append(
+                f"{module} (containers): new container names: "
+                f"{', '.join(new_names)}; run {BUDGET_UPDATE} "
+                "--allow-growth to add them"
             )
+        if check_stale and not _module_lacks_budgeted_owner(
+            module, scope, surface, budget
+        ):
+            missing = sorted(set(budgeted_containers) - set(current_containers))
+            if missing:
+                failures.append(
+                    f"{module} (containers): budgeted containers missing "
+                    f"from build: {', '.join(missing)}; run {BUDGET_UPDATE} "
+                    "to lower it (no --allow-growth needed)"
+                )
         owners = [
             (
                 module + " (functions)",
                 scope.get("functions", {}),
                 previous.get("functions", {}),
-            ),
-            (
-                module + " (containers)",
-                scope.get("containers", {}),
-                container_limits,
             ),
         ]
         previous_classes = previous.get("classes", {})
@@ -438,12 +462,14 @@ def budget_growth(surface, budget, *, check_stale=False):
                         "(no --allow-growth needed)"
                     )
         if module not in budget:
-            module_names = [
-                name
-                for key in ("functions", "containers")
-                for names in scope.get(key, {}).values()
-                for name in names
-            ]
+            module_names = []
+            for key in ("functions", "containers"):
+                raw = scope.get(key, {})
+                if isinstance(raw, dict):
+                    for names in raw.values():
+                        module_names.extend(names)
+                else:
+                    module_names.extend(raw)
             if not module_names:
                 failures.append(
                     f"{module}: new module; run {BUDGET_UPDATE} --allow-growth "
@@ -478,9 +504,14 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
                 key: len(names) for key, names in scope["functions"].items()
             }
         if "containers" in scope:
-            target["containers"] = {
-                key: len(names) for key, names in scope["containers"].items()
-            }
+            current = _surface_containers(scope)
+            if prune:
+                target["containers"] = current
+            elif _module_lacks_budgeted_owner(module, scope, surface, previous):
+                retained = _budgeted_containers(previous.get(module, {}))
+                target["containers"] = sorted(set(retained) | set(current))
+            else:
+                target["containers"] = current
         target.setdefault("classes", {}).update(
             {
                 cls: {key: len(names) for key, names in counters.items()}

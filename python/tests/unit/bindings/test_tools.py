@@ -73,7 +73,8 @@ def test_api_surface_budget(api_surface):
     )
     assert not failures, (
         "\n".join(failures)
-        + "\nThe counts-only budget cannot distinguish old names from additions. "
+        + "\nThe functions/classes counters cannot distinguish old names from "
+        + "additions; container failures name the additions directly. "
         + "Revert growth, or deliberately raise budgets with "
         + f"{api_surface.BUDGET_UPDATE} --allow-growth. "
         + f"Lowering is automatic with {api_surface.BUDGET_UPDATE}."
@@ -300,9 +301,7 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
     budget = {
         module: {
             "functions": {key: len(names) for key, names in scope["functions"].items()},
-            "containers": {
-                key: len(names) for key, names in scope["containers"].items()
-            },
+            "containers": sorted(scope["containers"]["public"]),
             "classes": {
                 cls: {key: len(names) for key, names in counters.items()}
                 for cls, counters in scope["classes"].items()
@@ -330,7 +329,7 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
     aliased = api_surface.budget_surface(aliased_rows)
     assert aliased["dartpy.collision"]["containers"]["public"] == ["Core", "Extra"]
     assert any(
-        "dartpy.collision (containers): public budget 1 -> 2" in failure
+        "dartpy.collision (containers)" in failure and "Extra" in failure
         for failure in api_surface.budget_growth(aliased, budget, check_stale=True)
     )
     # ...and still reports growth.
@@ -344,17 +343,17 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
         for failure in api_surface.budget_growth(grown, budget, check_stale=True)
     )
 
-    # A stale container ceiling is still reported, with or without absent
+    # A stale container name is still reported, with or without absent
     # owners elsewhere.
-    budget["dartpy"]["containers"]["public"] += 1
+    budget["dartpy"]["containers"].append("StaleDummy")
     for surface in (reduced, full):
         assert any(
-            "dartpy (containers): public budget 2 exceeds" in failure
+            "dartpy (containers)" in failure and "StaleDummy" in failure
             for failure in api_surface.budget_growth(surface, budget, check_stale=True)
         )
-    budget["dartpy"]["containers"]["public"] -= 1
+    budget["dartpy"]["containers"].remove("StaleDummy")
 
-    # An absent optional submodule lowers its parent's container ceiling, where
+    # An absent optional submodule skips its parent's container staleness, where
     # growth is still reported.
     absent = api_surface.budget_surface({})
     assert not api_surface.budget_growth(absent, budget, check_stale=True)
@@ -370,6 +369,135 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
         "dartpy.Added: new class" in failure
         for failure in api_surface.budget_growth(added, budget, check_stale=True)
     )
+
+
+def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path):
+    full_rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        "dartpy.collision.Core": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Core"},
+        },
+        "dartpy.collision.Optional": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Optional"},
+        },
+        "dartpy.collision.Alternate": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Optional"},
+        },
+    }
+    full = api_surface.budget_surface(full_rows)
+    assert full["dartpy.collision"]["containers"]["public"] == [
+        "Alternate",
+        "Core",
+        "Optional",
+    ]
+    budget = {
+        module: {
+            "functions": {key: len(names) for key, names in scope["functions"].items()},
+            "containers": sorted(scope["containers"]["public"]),
+            "classes": {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in full.items()
+    }
+    assert not api_surface.budget_growth(full, budget, check_stale=True)
+
+    # Both the optional class and its alias vanish, but the reduced build
+    # still passes unchanged.
+    reduced_rows = dict(full_rows)
+    del reduced_rows["dartpy.collision.Optional"]
+    del reduced_rows["dartpy.collision.Alternate"]
+    reduced = api_surface.budget_surface(reduced_rows)
+    assert reduced["dartpy.collision"]["containers"]["public"] == ["Core"]
+    assert not api_surface.budget_growth(reduced, budget, check_stale=True)
+
+    # A new alias cannot hide behind the absent names.
+    extra_rows = dict(reduced_rows)
+    extra_rows["dartpy.collision.Extra"] = {
+        "kind": "class",
+        "runtime": {"module": "dartpy.collision", "qualname": "Core"},
+    }
+    extra = api_surface.budget_surface(extra_rows)
+    assert any(
+        "dartpy.collision (containers)" in failure and "Extra" in failure
+        for failure in api_surface.budget_growth(extra, budget, check_stale=True)
+    )
+
+    # A nested class exported at module level behaves the same way.
+    nested_full_rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        "dartpy.collision.Core": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Core"},
+        },
+        "dartpy.collision.Outer": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Outer"},
+        },
+        "dartpy.collision.AInner": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Outer.Inner"},
+        },
+    }
+    nested_full = api_surface.budget_surface(nested_full_rows)
+    nested_budget = {
+        module: {
+            "functions": {key: len(names) for key, names in scope["functions"].items()},
+            "containers": sorted(scope["containers"]["public"]),
+            "classes": {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in nested_full.items()
+    }
+    nested_reduced_rows = dict(nested_full_rows)
+    del nested_reduced_rows["dartpy.collision.Outer"]
+    del nested_reduced_rows["dartpy.collision.AInner"]
+    nested_reduced = api_surface.budget_surface(nested_reduced_rows)
+    assert not api_surface.budget_growth(
+        nested_reduced, nested_budget, check_stale=True
+    )
+    nested_extra_rows = dict(nested_reduced_rows)
+    nested_extra_rows["dartpy.collision.Extra"] = {
+        "kind": "class",
+        "runtime": {"module": "dartpy.collision", "qualname": "Core"},
+    }
+    assert any(
+        "dartpy.collision (containers)" in failure and "Extra" in failure
+        for failure in api_surface.budget_growth(
+            api_surface.budget_surface(nested_extra_rows),
+            nested_budget,
+            check_stale=True,
+        )
+    )
+
+    # The updater writes name lists, retaining absent names without --prune.
+    path = tmp_path / "budget.json"
+    path.write_text(json.dumps(budget))
+    api_surface.update_budget(path, reduced)
+    retained = json.loads(path.read_text())
+    assert retained["dartpy.collision"]["containers"] == [
+        "Alternate",
+        "Core",
+        "Optional",
+    ]
+    with pytest.raises(ValueError, match="Extra"):
+        api_surface.update_budget(path, extra)
+    api_surface.update_budget(path, extra, allow_growth=True)
+    grown = json.loads(path.read_text())
+    assert grown["dartpy.collision"]["containers"] == [
+        "Alternate",
+        "Core",
+        "Extra",
+        "Optional",
+    ]
+    api_surface.update_budget(path, reduced, prune=True)
+    assert json.loads(path.read_text())["dartpy.collision"]["containers"] == ["Core"]
 
 
 def test_api_budget_reports_empty_new_class(api_surface):
@@ -411,17 +539,17 @@ def test_api_budget_reports_container_alias_in_second_module(api_surface):
     budget = {
         "dartpy": {
             "functions": dict(empty),
-            "containers": {"public": 2, "camel_case": 0, "get_set": 0},
+            "containers": ["domain", "gui"],
             "classes": {},
         },
         "dartpy.domain": {
             "functions": dict(empty),
-            "containers": {"public": 1, "camel_case": 0, "get_set": 0},
+            "containers": ["Foo"],
             "classes": {"Foo": dict(empty)},
         },
         "dartpy.gui": {
             "functions": dict(empty),
-            "containers": dict(empty),
+            "containers": [],
             "classes": {},
         },
     }
