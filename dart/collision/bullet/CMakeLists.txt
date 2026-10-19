@@ -4,7 +4,7 @@
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
-dart_check_optional_package(BULLET "dart" "Bullet" "3.06")
+dart_check_optional_package(BULLET "dart" "Bullet" "3.05")
 if(DART_USE_SYSTEM_BULLET)
   # Test whether Bullet was built with double precision. If so, we need to
   # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
