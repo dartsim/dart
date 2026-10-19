@@ -44,3 +44,5 @@
     packet, and each passed two clean reviews from other engines.
   - DEP-13 PR1 committed (assimp 5.3 floor; raw scenes owned again, as in
     DART 6). The Gazebo lanes pass on the full Wave 2 tree; DEP-15 started.
+  - DEP-15 committed on DEP-14: fmt leaves DART; a differential test
+    against fmt caught a float layout bug that both reviewers missed.

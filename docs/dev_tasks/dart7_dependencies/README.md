@@ -165,7 +165,7 @@ shorthand is defined under [Gates](#gates).
 | DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | (a) committed locally |
 | DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 committed locally |
 | DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Committed locally |
-| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | In progress on DEP-14 (Q1 default) |
+| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Committed locally on DEP-14 (Q1 default) |
 | DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Claude Sonnet + orchestrator | 7.0 | Planned |
 | DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Codex high | 7.0 | PR2 committed locally; PR2b to PR4 need approval |
 | DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Waiting for Q3 |

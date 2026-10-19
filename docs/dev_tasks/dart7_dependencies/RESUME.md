@@ -31,7 +31,8 @@
   `build/assimp-5.3-floor`. The Harmonic, Ionic and Jetty lanes pass on
   their combined tree against `0d7f6d77a` base variants.
 - DEP-15 (fmt replaced by a standard-library formatter, the Q1 default) is
-  in progress on top of DEP-14's branch.
+  committed locally on `refactor/remove-fmt`, stacked on DEP-14's branch;
+  it lands after DEP-12(a).
 - The balance review under DD-9 ([balance-review.md](balance-review.md))
   re-scoped the packet plan. Its second decision batch (Q1 to Q5 and the
   approvals) is open in [decisions.md](decisions.md). After the answers,

@@ -355,3 +355,32 @@ The local integration branch (all Wave 2 packets but DEP-13) passes
 `pixi install`, lint, check-lint, build, 186/186 C++ tests, 2,024 Python
 tests, `test-package-core`, 344 build-requirement tests and the notices
 tests.
+
+### DEP-15: fmt replaced by a standard-library formatter (2026-10-19)
+
+- Writer: Codex. Committed locally on `refactor/remove-fmt`, stacked on
+  DEP-14's `refactor/dart-log-sink` (the Q1 default, DD-4).
+- Gates: `pixi install` (lock consistent), build, 24 logging tests (a table
+  of every argument type and grammar form), 63 XmlHelpers tests, 186/186,
+  2,028 Python tests, package consumers, 160 dependency tests; `nm -DC`
+  shows no `fmt::` or spdlog symbols in libdart or libdart-io; all 92 in-tree
+  `DART_*` call sites use the supported grammar.
+- Differential test against fmt 11.2 through the log sink (1,039,336 values:
+  random double and float bit patterns, human-scale values, specials, every
+  supported form, surplus arguments): the first version printed float `{}`
+  in [1e7, 1e16) in fixed notation, where fmt uses exponent notation
+  (85,390 mismatches, all of that kind; fmt's threshold is
+  min(16, digits10 + 1)). After the fix: 0 mismatches. Both round-1
+  reviewers had judged the threshold correct; the differential test caught
+  it.
+- Reviews: round 1 (Claude, Muse) led to the float fix, a precision cap of
+  1000, checked conversions, surplus arguments ignored as fmt does, explicit
+  `nan`/`inf` spelling, and a macOS availability define scoped to conda or
+  pixi compilers (CONDA_PREFIX or BUILD_PREFIX) with targets below 13.3.
+  Rounds 2 and 3 (Claude, Muse): no blockers or majors; Muse's round 3 had
+  no findings. Floating-point `std::to_chars` needs GCC 11 or libc++ 14, so
+  DEP-15 lands after DEP-12(a)'s floors.
+- Gazebo lanes on DEP-14 + DEP-15 against the `0d7f6d77a` base: Harmonic
+  and Ionic PASS. Jetty flagged gz-physics' `StepWorld` once at 15.6 s
+  (limit 6.1 s); the same build took 2.2-2.5 s in three solo reruns and
+  2.6-3.5 s on the other lanes, so it was load, not a regression.
