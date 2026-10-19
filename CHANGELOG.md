@@ -11,6 +11,7 @@
     17.2) and CMake 3.28. Projects that use an installed DART through
     `find_package(DART)` still need only CMake 3.22.1. `release-6.20` keeps the
     Ubuntu 22.04 floor.
+    [#3850](https://github.com/dartsim/dart/pull/3850)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
