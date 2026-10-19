@@ -248,7 +248,7 @@
   * `dartpy` is a Python package around a private native extension.
     `import dartpy` and every public `dartpy.<module>` name are unchanged; the
     package adds a `py.typed` marker and an empty `dartpy.experimental`
-    namespace outside semantic versioning. Source builds use scikit-build-core
+    subpackage outside semantic versioning. Source builds use scikit-build-core
     through `pyproject.toml`: `setup.py` is gone, sdist and editable installs
     are refused, the wheel no longer ships a `tests` package, and the
     `SKBUILD_BUILD_DIR` environment variable replaces `DARTPY_BUILD_TEMP`.
