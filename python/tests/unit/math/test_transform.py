@@ -368,6 +368,24 @@ def test_setstate_rejects_initialized_values(cls, batched):
         assert restored.__getstate__() == before
 
 
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+@pytest.mark.parametrize("batched", [False, True])
+def test_init_rejects_initialized_values(cls, batched):
+    value = cls(rpy=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)] if batched else (0.1, 0.2, 0.3))
+    before = value.__getstate__()
+    original_hash = None if batched else hash(value)
+    mapping = None if batched else {value: "unchanged"}
+    # nanobind refuses to initialize a live instance: it warns and the call
+    # raises, so the value and its hash cannot change.
+    with pytest.warns(RuntimeWarning, match="already-initialized"):
+        with pytest.raises(TypeError):
+            value.__init__(rpy=(0.7, 0.8, 0.9))
+    assert value.__getstate__() == before
+    if not batched:
+        assert hash(value) == original_hash
+        assert mapping[value] == "unchanged"
+
+
 @pytest.mark.parametrize("operation", ["compose", "rotate", "inverse"])
 @pytest.mark.parametrize("batched", [False, True])
 def test_computed_values_reject_nonfinite_translation(operation, batched):
