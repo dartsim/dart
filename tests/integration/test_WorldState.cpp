@@ -162,18 +162,22 @@ WorldPtr makeContactWorld(
     world->addSkeleton(limited);
   }
   world->getSkeleton(1)->setVelocity(3, 0.02);
-  for (int i = 0; i < extraBoxes; ++i) {
-    auto box
-        = world->getSkeleton(1)->cloneSkeleton("box" + std::to_string(i + 1));
-    box->setPosition(5, 0.05 + 0.14 * (i + 1) - 1e-6);
-    world->addSkeleton(box);
-  }
   if (detector == "ode") {
     auto box = world->getSkeleton(1);
     box->getBodyNode(0)->getShapeNode(0)->setShape(
         std::make_shared<CapsuleShape>(0.03, 0.04));
     box->setPosition(1, math::constantsd::pi() / 2.0);
     box->setPosition(5, 0.03 - 1e-6);
+  }
+  for (int i = 0; i < extraBoxes; ++i) {
+    auto box
+        = world->getSkeleton(1)->cloneSkeleton("box" + std::to_string(i + 1));
+    // Capsules rest side by side; boxes stack.
+    if (detector == "ode")
+      box->setPosition(3, 0.15 * (i + 1));
+    else
+      box->setPosition(5, 0.05 + 0.14 * (i + 1) - 1e-6);
+    world->addSkeleton(box);
   }
   return world;
 }
@@ -964,6 +968,11 @@ TEST(WorldState, RestoreClearsPersistentContactHistory)
   expectFreshTrajectory();
 }
 
+TEST(WorldState, RestoreClearsPersistentContactHistoryForAStack)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, false, "dart", 4);
+}
+
 TEST(WorldState, RestoreClearsIterativeContactHistoryWithJointLimits)
 {
   expectFreshTrajectory(SnapshotSolver::Pgs);
@@ -1010,6 +1019,11 @@ TEST(WorldState, RestoreRebuildsBulletObjectsInGroupOrder)
 TEST(WorldState, RestoreClearsOdeContactHistory)
 {
   expectFreshTrajectory(SnapshotSolver::Nsgs, false, "ode");
+}
+
+TEST(WorldState, RestoreClearsOdeContactHistoryForSeveralBodies)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, false, "ode", 4);
 }
 #endif
 
