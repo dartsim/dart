@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/InverseKinematics.hpp"
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -1705,7 +1706,11 @@ void InverseKinematics::Objective::evalGradient(
     mIK->setPositions(_x);
 
     const math::Jacobian& J = mIK->computeJacobian();
+    // Eigen 5 deprecates runtime SVD options, but mSVDCache's type is part of
+    // the installed class layout, so it cannot take compile-time options.
+    DART_SUPPRESS_DEPRECATED_BEGIN
     mSVDCache.compute(J, Eigen::ComputeFullV);
+    DART_SUPPRESS_DEPRECATED_END
     math::extractNullSpace(mSVDCache, mNullSpaceCache);
     _grad += mNullSpaceCache * mNullSpaceCache.transpose() * mGradCache;
   }

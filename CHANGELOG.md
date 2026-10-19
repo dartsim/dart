@@ -90,6 +90,11 @@
     `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.
     [#3811](https://github.com/dartsim/dart/pull/3811)
 
+  * Release builds against Eigen 5 no longer fail under the default
+    warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
+    options Eigen 5 deprecates, and the C++ tests pass against Eigen 5.
+    [#3834](https://github.com/dartsim/dart/pull/3834)
+
 * Python
 
   * Source builds of `dartpy` on Windows work with the Ninja and NMake

@@ -33,17 +33,15 @@
 // atlas_simbicon SIMBICON controller stay GUI-free so the paper's soft-vs-rigid
 // contact claim can be exercised directly here.
 //
-// The three gates below reproduce the paper's row:
+// The three gates below check the paper's row:
 //  1. The soft-foot biped stays finite and standing under the controller and is
 //     bit-for-bit deterministic across runs.
 //  2. Soft feet maintain at least as many ground contact points as rigid feet
 //     over a settled window (the paper's headline: "maintaining more ground
 //     contact points") -- here a large, robust margin.
-//  3. Soft feet withstand at least as large a recoverable pelvis push as the
-//     matched rigid control (the paper's "withstands larger perturbations"):
-//     measured 18000 N soft vs 8000 N rigid once the control carries the soft
-//     rest-pose inertia and the asset's feet are properly damped. See gate 3
-//     for the decision evidence.
+//  3. The paper's "withstands larger perturbations" is measured, not asserted:
+//     a lateral pelvis push sweep reports which pushes each foot type recovers
+//     from. This model does not reproduce the claim; see gate 3.
 //
 // A fourth gate covers the scene's Reset action, which has to restore the soft
 // feet's independent point-mass state and the gait phase, not just the
@@ -560,65 +558,41 @@ TEST(SoftFootSimbiconModelTest, SoftMaintainsAtLeastRigidFootContacts)
 }
 
 //==============================================================================
-// Gate 3 (paper: soft withstands larger perturbations): the largest
-// recoverable lateral pelvis push for the soft feet must be at least the
-// matched rigid control's.
+// Gate 3 (paper: soft withstands larger perturbations) is measured, not
+// asserted, because this model does not reproduce it: the soft biped falls from
+// the 6000 and 8000 N pushes that the matched rigid control recovers from.
+// This gate used to compare each arm's largest recovered push, but recovery is
+// not monotone in the magnitude. The soft arm's 18000 N was a single recovery
+// above falls from 6000 to 16000 N (#3431), and it disappears when Eigen 5
+// sums one dot product of the contact solve in a different order, a 2-ULP
+// change (#3834).
 //
-// The claim reproduces once two confounds were removed, both found by
-// measurement rather than tuning toward the desired answer:
-//
-//  - The control used to keep the SDF link's compact inertia tensor while the
-//    soft foot carries its mass out at the surface (1.8-2.0x the principal
-//    moments, 5.9 mm COM shift). Matching the control to the soft rest-pose
-//    inertia moved its measured threshold from 12000 N to 8000 N.
-//  - The asset shipped under-damped feet (kv 5e4, damp 1e3): the surface
-//    returned push energy instead of absorbing it, capping the soft biped at
-//    4000 N. A (kv, damp) grid measured a wide plateau at 18000 N whose
-//    interior is kv 5e4 / damp 4e3 -- every adjacent cell also reads
-//    18000 N -- so the asset keeps its shipped stiffness and raises <damp> to
-//    4000. Damping is what the recovery mechanism needed: absorbing the
-//    perturbation is the paper's own story.
-//
-// A third confound surfaced in review and is fixed in the controller itself:
-// SIMBICON's balance feedback read Skeleton::getCOM(), which is blind to soft
-// point masses, so it observed the soft biped as a kilogram lighter with a
-// shifted center. State::getCOM()/getCOMVelocity() now accumulate point
-// masses; re-measuring moved the settled contacts 51.4 -> 51.2 and left both
-// thresholds unchanged, so the conclusions survive the corrected sensor.
-//
-// Measured with all fixes: soft 18000 N vs control 8000 N, alongside the
-// contact gate's 51.2-vs-15.6 spread, so the two Jain/Liu claims hold
-// together at the shipped asset values.
+// The sweep still has to bracket both arms: each recovers from its smallest
+// push and falls from its largest.
 TEST(SoftFootSimbiconModelTest, MeasuresRecoverablePushForBothFeet)
 {
-  const double rigidPush = sfs::maxRecoverablePush(sfs::Feet::Rigid);
-  const double softPush = sfs::maxRecoverablePush(sfs::Feet::Soft);
+  const int pushes
+      = static_cast<int>(
+            (sfs::kPushSweepEnd - sfs::kPushSweepStart) / sfs::kPushSweepStep)
+        + 1;
+  for (int i = 0; i < pushes; ++i) {
+    const double magnitude = sfs::kPushSweepStart + i * sfs::kPushSweepStep;
+    const bool rigid = sfs::survivesPush(sfs::Feet::Rigid, magnitude);
+    const bool soft = sfs::survivesPush(sfs::Feet::Soft, magnitude);
 
-  std::cout << "max_recoverable_push  rigid=" << rigidPush
-            << " N  soft=" << softPush << " N"
-            << (softPush >= rigidPush ? "  (soft >= rigid)"
-                                      : "  (soft < rigid)")
-            << "\n";
+    std::cout << "push " << magnitude << " N  rigid "
+              << (rigid ? "recovers" : "falls") << ", soft "
+              << (soft ? "recovers" : "falls") << "\n";
 
-  // Both thresholds must be real measurements -- nonzero and inside the sweep
-  // -- or the comparison below would be vacuous or a floor rather than a
-  // number.
-  ASSERT_GT(rigidPush, 0.0)
-      << "rigid biped recovered no push in the sweep -- sweep range too high";
-  ASSERT_GT(softPush, 0.0)
-      << "soft biped recovered no push in the sweep -- sweep range too high";
-  ASSERT_LT(rigidPush, sfs::kPushSweepEnd)
-      << "rigid threshold saturated the sweep ceiling, so it is a floor on the "
-         "real threshold rather than a measurement";
-  ASSERT_LT(softPush, sfs::kPushSweepEnd)
-      << "soft threshold saturated the sweep ceiling, so it is a floor on the "
-         "real threshold rather than a measurement";
-
-  // The paper's claim, asserted on same-run measurements so cross-platform
-  // floating-point drift moves both arms together.
-  EXPECT_GE(softPush, rigidPush)
-      << "the soft feet no longer withstand at least the rigid control's "
-         "push; the Jain/Liu push-recovery claim regressed";
+    if (i == 0) {
+      EXPECT_TRUE(rigid) << "rigid biped fell from the smallest push";
+      EXPECT_TRUE(soft) << "soft biped fell from the smallest push";
+    }
+    if (i == pushes - 1) {
+      EXPECT_FALSE(rigid) << "rigid biped recovered from the largest push";
+      EXPECT_FALSE(soft) << "soft biped recovered from the largest push";
+    }
+  }
 }
 
 //==============================================================================

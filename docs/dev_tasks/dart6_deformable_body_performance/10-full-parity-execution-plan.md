@@ -7,8 +7,8 @@ and what it taught about the per-step seam is in the
 [design doc](../../design/dart6_deformable_body.md#per-step-extension-seam).
 
 PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
-push-recovery row reproduces and is gate-asserted; its motor-noise clause
-stays open in §5. Goal: fully complete this plan, bundling the remaining rows
+push-recovery row's contact claim reproduces and is gate-asserted, but its push
+claim does not, and its motor-noise clause stays open in §5. Goal: fully complete this plan, bundling the remaining rows
 into as few PRs as review quality allows. The maintainer's 2026-08-01 goal
 targeted DART 6.20; the 2026-10-10 release closeout retargeted the unmet rows
 to DART 6.21. The competitive-envelope definition is settled (the 2026-07-23
@@ -76,11 +76,13 @@ Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 
 No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
 shipped through #3408/#3423 (`decisions.md` records the
-resolved decisions), completing the push/contact portion of the **biped push
-recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
-18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
-against the §1 Done rule until three more things have evidence: its
-motor-noise clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
+resolved decisions), completing the contact portion of the **biped push
+recovery** row: 51.2 soft vs 15.64 rigid contacts, gate-asserted. Its push
+claim does not reproduce: the soft biped falls from the 6000 and 8000 N pushes
+the rigid control recovers from, and the former 18000 N soft maximum was an
+isolated recovery (#3431, #3692). The row stays open against the §1 Done rule
+until the push claim and three more things have evidence: its motor-noise
+clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
 and 1-thread/host-capped multi-thread rows — PR-3a supplies neither, since
 its comparison deliberately pins FCL and one thread for validity (the two
 foot representations only share a narrow phase under FCL, and single-thread
@@ -91,7 +93,7 @@ keeps runs bit-identical), so that evidence needs its own configuration.
 ### Jain/Liu (controllers + hand scenes missing)
 | Row | Needs |
 | --- | --- |
-| Biped push recovery (soft vs rigid) | **Push/contact portion shipped** (#3408/#3423); still open: the motor-noise variant, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — PR-3a's comparison deliberately pins FCL and one thread) |
+| Biped push recovery (soft vs rigid) | **Contact portion shipped** (#3408/#3423); still open: the push claim, which asset tuning alone does not restore (#3431), the motor-noise variant, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — PR-3a's comparison deliberately pins FCL and one thread) |
 | Noisy-floor biped | seeded 5×5cm tile floor with 0–2cm offsets; rigid-vs-soft outcome |
 | Biped walk | SIMBICON walk, LCP every 8 controller steps |
 | Finger flick / arm fold / pinch grasp | hand/arm models + manipulation + adaptive-DOF/contact/LCP-time rows |
@@ -143,10 +145,12 @@ deformable substrate. What exists to reuse:
 
 What must be **built/authored** for PR-3:
 - ~~soft-foot SIMBICON integration~~ — **shipped** by #3408/#3423 as
-  `soft_foot_simbicon` with the push-recovery threshold, contact-count, and
-  finite-state gates. What remains from that row is the **motor-noise
-  variant** of the same rigid-vs-soft comparison (deterministic seeded noise
-  on the controller torques; soft sustains at least the rigid level).
+  `soft_foot_simbicon` with contact-count and finite-state gates and a
+  push-recovery sweep that reports each push without gating soft >= rigid.
+  What remains from that row is the push claim itself, which does not
+  reproduce (§4), and the **motor-noise variant** of the same rigid-vs-soft
+  comparison (deterministic seeded noise on the controller torques; soft
+  sustains at least the rigid level).
 - **noisy-floor** scene: seeded 5×5 cm tiles with 0–2 cm random offsets;
   deterministic rigid-vs-soft outcome.
 - **biped walk** with soft contact (LCP cadence per paper).
