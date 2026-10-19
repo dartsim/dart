@@ -34,6 +34,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/common/Factory.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
@@ -3604,16 +3605,31 @@ public:
 
 // Runs a callback from the collision filter, which the solver's preparation
 // pass and every collide() query reach.
-class CallbackCollisionFilter final : public collision::CollisionFilter
+class CallbackCollisionFilter final : public collision::BodyNodeCollisionFilter
 {
 public:
   bool ignoresCollision(
-      const collision::CollisionObject*,
-      const collision::CollisionObject*) const override
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
   {
     if (mCallback)
       mCallback();
-    return false;
+    return BodyNodeCollisionFilter::ignoresCollision(object1, object2);
+  }
+
+  std::function<void()> mCallback;
+};
+
+class RevisionCallbackCollisionFilter final
+  : public collision::BodyNodeCollisionFilter,
+    public collision::detail::CollisionFilterSnapshotTracker
+{
+public:
+  std::size_t getCollisionFilterSnapshotRevision() const override
+  {
+    if (mCallback)
+      mCallback();
+    return getBodyNodePairBlackListRevision();
   }
 
   std::function<void()> mCallback;
@@ -3836,6 +3852,69 @@ TEST(World, TopologyEditFromPreparationFilterDuringStepThrows)
   filter->mCallback = nullptr;
   EXPECT_NO_THROW(world->step());
   EXPECT_GT(world->getTime(), 0.0);
+}
+
+//==============================================================================
+TEST(World, TopologyEditFromReplayedFilterDuringLazyStepThrows)
+{
+  auto world = World::create();
+  auto ground = createBox(Eigen::Vector3d(10.0, 10.0, 1.0));
+  ground->setMobile(false);
+  auto box = createBox(
+      Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 1.0 - 5e-7));
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+  auto filter = std::make_shared<CallbackCollisionFilter>();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+  for (int i = 0; i < 2000 && !box->isResting(); ++i)
+    world->step();
+  ASSERT_TRUE(box->isResting());
+  ASSERT_TRUE(world->isInSimulationMode());
+  ASSERT_FALSE(world->isCompiled());
+
+  const auto time = world->getTime();
+  const auto bodies = box->getNumBodyNodes();
+  int calls = 0;
+  filter->mCallback = [&] {
+    if (calls++ == 0)
+      box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0));
+  };
+  // Preparation is current: the first callback replays the previous solve's
+  // filter decisions in the wake check, before either stepping path.
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(calls, 1);
+  EXPECT_EQ(world->getTime(), time);
+  EXPECT_EQ(box->getNumBodyNodes(), bodies);
+  filter->mCallback = nullptr;
+  EXPECT_NO_THROW(world->step());
+  EXPECT_GT(world->getTime(), time);
+  EXPECT_NO_THROW(
+      box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0)));
+}
+
+//==============================================================================
+TEST(World, TopologyEditFromFilterRevisionDuringLazyStepThrows)
+{
+  auto world = World::create();
+  auto box = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(box);
+  auto filter = std::make_shared<RevisionCallbackCollisionFilter>();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+  world->step();
+  ASSERT_TRUE(world->isInSimulationMode());
+  ASSERT_FALSE(world->isCompiled());
+  const auto bodies = box->getNumBodyNodes();
+  const auto time = world->getTime();
+  filter->mCallback = [&] {
+    box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0));
+  };
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(box->getNumBodyNodes(), bodies);
+  EXPECT_EQ(world->getTime(), time);
+  filter->mCallback = nullptr;
+  EXPECT_NO_THROW(world->step());
+  EXPECT_NO_THROW(
+      box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0)));
 }
 
 //==============================================================================

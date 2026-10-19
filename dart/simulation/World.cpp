@@ -644,6 +644,8 @@ public:
   std::shared_ptr<const char> mRegistryIdentity;
   // Worlds stepping on this thread form a chain through this pointer.
   WorldDeactivationState* mOuterSteppingWorld = nullptr;
+  // Set lazily before callbacks, so an unchanged resting step avoids TLS.
+  WorldDeactivationState** mSteppingSlot = nullptr;
   // A recompile that failed at World::edit() scope exit, reported by the next
   // step() or compile().
   std::exception_ptr mPendingRecompileError;
@@ -793,6 +795,16 @@ std::atomic<std::size_t> gRegistryLocks{0u};
 // Innermost World stepping on this thread. Its own callbacks may not change
 // its model's topology, whether or not it is indexed.
 thread_local WorldDeactivationState* tlsSteppingWorld = nullptr;
+
+void engageSameThreadMarker(WorldDeactivationState& state)
+{
+  if (state.mSteppingSlot)
+    return;
+  state.mSteppingSlot = &tlsSteppingWorld;
+  state.mOuterSteppingWorld = *state.mSteppingSlot;
+  *state.mSteppingSlot = &state;
+  gGuardedWorlds.fetch_add(1u, std::memory_order_release);
+}
 
 inline bool noIndexedWorlds()
 {
@@ -1773,8 +1785,7 @@ void finishRecord(
 // World's version and snapshot checks, so the pairs the last query asked about
 // are all the pairs that can produce contacts.
 bool replayRecord(
-    const WorldDeactivationState& state,
-    const constraint::ConstraintSolver& solver)
+    WorldDeactivationState& state, const constraint::ConstraintSolver& solver)
 {
   const auto* filter = solver.getCollisionOption().collisionFilter.get();
   if (!state.mRecordValid || filter != state.mRecordedFilter)
@@ -1788,6 +1799,7 @@ bool replayRecord(
   }
 
   for (const auto& decision : state.mRecorder->mDecisions) {
+    engageSameThreadMarker(state);
     if (filter->ignoresCollision(decision.object1, decision.object2)
         != decision.ignored) {
       return false;
@@ -2166,6 +2178,9 @@ void World::validateCompiledModel() const
     if (changed)
       break;
     const auto source = subscription.mSource.lock();
+    if (source && typeid(*source) != typeid(dynamics::Skeleton)
+        && state.mStepping.load(std::memory_order_acquire))
+      engageSameThreadMarker(*mDeactivationState);
     changed
         = !source || source->getNumBodyNodes() != subscription.mBodies.size();
     for (std::size_t i = 0u; !changed && i < subscription.mBodies.size(); ++i)
@@ -2534,6 +2549,8 @@ bool World::isInSimulationMode() const
     // Synchronize subscriptions before trusting their contents, including an
     // external subscription that had no collision shapes at preparation.
     if (collisionGroup && collisionGroup->getAutomaticUpdate()) {
+      if (state.mStepping.load(std::memory_order_acquire))
+        engageSameThreadMarker(state);
       collisionGroup->update();
       if (collisionGroup->getContentVersion()
           != mSimulationModeCollisionGroupVersion) {
@@ -2862,39 +2879,35 @@ void World::step(bool _resetCommand)
       flag.store(false, std::memory_order_release);
     }
   } release{state.mStepping};
-  // Marks this World as stepping on this thread before any stage that can run
-  // user callbacks (handlers, filters, detectors): preparation on the first
-  // step and custom-filter replay in beginStep() reach them too.
+  // Callback stages engage lazily; release once, including on exceptions.
   struct SameThreadMarker
   {
     WorldDeactivationState& mState;
-    WorldDeactivationState*& mSlot;
-    explicit SameThreadMarker(WorldDeactivationState& state)
-      : mState(state), mSlot(tlsSteppingWorld)
-    {
-      mState.mOuterSteppingWorld = mSlot;
-      mSlot = &mState;
-      gGuardedWorlds.fetch_add(1u, std::memory_order_release);
-    }
     ~SameThreadMarker()
     {
+      if (!mState.mSteppingSlot)
+        return;
       gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
-      mSlot = mState.mOuterSteppingWorld;
+      *mState.mSteppingSlot = mState.mOuterSteppingWorld;
       mState.mOuterSteppingWorld = nullptr;
+      mState.mSteppingSlot = nullptr;
     }
   };
-  const SameThreadMarker marker(state);
+  const SameThreadMarker marker{state};
   if (state.mEditDepth)
     throw std::runtime_error("Cannot step inside a World::edit() scope");
   if (state.mPendingRecompileError)
     std::rethrow_exception(state.mPendingRecompileError);
-  validateCompiledModel();
+  if (state.mCompiled)
+    validateCompiledModel();
   StepContext context;
   context.resetCommand = _resetCommand;
   beginStep(context);
   if (!context.deactivationEnabled) {
+    engageSameThreadMarker(state);
     stepWithoutDeactivation(context);
   } else if (!tryAllRestingFastPath(context)) {
+    engageSameThreadMarker(state);
     advanceVelocities(context);
     solveConstraints(context);
     advancePositions(context);
@@ -2905,8 +2918,10 @@ void World::step(bool _resetCommand)
 //==============================================================================
 inline void World::beginStep(StepContext& context)
 {
-  if (!isInSimulationMode())
+  if (!isInSimulationMode()) {
+    engageSameThreadMarker(*mDeactivationState);
     enterSimulationMode();
+  }
   getMemoryManager().getFrameAllocator().reset();
 
   const bool deactivationEnabled = mDeactivationOptions.mEnabled;
@@ -3003,8 +3018,10 @@ inline bool World::tryAllRestingFastPath(StepContext& context)
   if (lastStepHadNoContacts && allRestingFastPathReady) {
     if (customFilterSleeping) {
       for (const auto& skel : mSkeletons) {
-        if (skel->isMobile() && skel->isResting())
+        if (skel->isMobile() && skel->isResting()) {
+          engageSameThreadMarker(*mDeactivationState);
           clearRestingAccelerations(*skel);
+        }
       }
     }
     mTime += mTimeStep;
@@ -4003,6 +4020,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
+  // Slow pose validation can evaluate custom Joint kinematics.
+  engageSameThreadMarker(*mDeactivationState);
   bool hasMobileSkeleton = false;
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
@@ -4155,8 +4174,11 @@ std::size_t World::getCollisionFilterSnapshotRevision(
   const auto* snapshotTracker
       = dynamic_cast<const collision::detail::CollisionFilterSnapshotTracker*>(
           filter);
-  if (snapshotTracker != nullptr)
+  if (snapshotTracker != nullptr) {
+    if (mDeactivationState->mStepping.load(std::memory_order_acquire))
+      engageSameThreadMarker(*mDeactivationState);
     return snapshotTracker->getCollisionFilterSnapshotRevision();
+  }
 
   const auto* bodyNodeFilter
       = dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter);
