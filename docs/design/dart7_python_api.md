@@ -15,8 +15,9 @@ between those audiences are resolved by layering, not by dropping one of them.
 
 The C++ API stays source- and behavior-compatible for the subset that
 gz-physics and gz-sim use. Other C++ APIs are best effort: they may change,
-but each public-API or ABI-layout change needs maintainer approval. No
-deprecated C++ API is removed during 7.x.
+but each public-API or ABI-layout change needs maintainer approval, apart from
+the ABI window `AGENTS.md` records for classes Gazebo neither subclasses nor
+reads. No deprecated C++ API is removed during 7.x.
 
 DART 7.0 is a **clean break for Python**:
 - there are no runtime aliases or deprecation shims for the 6.x names;
