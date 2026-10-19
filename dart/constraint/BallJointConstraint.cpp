@@ -42,6 +42,13 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
+void BallJointConstraint::resetDynamicState()
+{
+  for (auto& impulse : mOldX)
+    impulse = 0.0;
+}
+
+//==============================================================================
 BallJointConstraint::BallJointConstraint(
     dynamics::BodyNode* _body, const Eigen::Vector3d& _jointPos)
   : DynamicJointConstraint(_body),

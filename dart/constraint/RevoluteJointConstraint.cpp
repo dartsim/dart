@@ -56,6 +56,13 @@ Eigen::Vector3d normalizeOrFallback(const Eigen::Vector3d& axis)
 } // namespace
 
 //==============================================================================
+void RevoluteJointConstraint::resetDynamicState()
+{
+  for (auto& impulse : mOldX)
+    impulse = 0.0;
+}
+
+//==============================================================================
 RevoluteJointConstraint::RevoluteJointConstraint(
     dynamics::BodyNode* body,
     const Eigen::Vector3d& jointPos,

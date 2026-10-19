@@ -2017,6 +2017,426 @@ TEST(WorldSimulationModeMemoryManager, ShapeChangeInvalidatesAndRebakes)
   EXPECT_FALSE(world->isInSimulationMode());
 }
 
+TEST(WorldSimulationModeMemoryManager, UnrelatedTopologyKeepsWorldPrepared)
+{
+  auto world = createFallingBoxWorld("independent_prepared_world");
+  auto reference = createFallingBoxWorld("independent_reference_world");
+  auto otherWorld = createFallingBoxWorld("independent_edited_world");
+  world->addSkeleton(createGround());
+  reference->addSkeleton(createGround());
+  Eigen::Isometry3d placement = Eigen::Isometry3d::Identity();
+  placement.translation().z() = 0.14;
+  world->getSkeleton(0u)->getJoint(0u)->setTransformFromParentBodyNode(
+      placement);
+  reference->getSkeleton(0u)->getJoint(0u)->setTransformFromParentBodyNode(
+      placement);
+  world->enterSimulationMode();
+  reference->enterSimulationMode();
+  otherWorld->enterSimulationMode();
+
+  otherWorld->getSkeleton(0u)
+      ->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
+          otherWorld->getSkeleton(0u)->getBodyNode(0u));
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(world->isInSimulationMode());
+    EXPECT_FALSE(otherWorld->isInSimulationMode());
+  }
+
+  for (int i = 0; i < 20; ++i) {
+    world->step();
+    reference->step();
+    expectWorldStateExactlyEqual(*world, *reference);
+    const auto& actual = world->getLastCollisionResult();
+    const auto& expected = reference->getLastCollisionResult();
+    ASSERT_EQ(actual.getNumContacts(), expected.getNumContacts());
+    for (std::size_t contact = 0u; contact < actual.getNumContacts();
+         ++contact) {
+      EXPECT_TRUE(actual.getContact(contact).point.isApprox(
+          expected.getContact(contact).point, 0.0));
+      EXPECT_TRUE(actual.getContact(contact).normal.isApprox(
+          expected.getContact(contact).normal, 0.0));
+      EXPECT_EQ(
+          actual.getContact(contact).penetrationDepth,
+          expected.getContact(contact).penetrationDepth);
+      EXPECT_TRUE(actual.getContact(contact).force.isApprox(
+          expected.getContact(contact).force, 0.0));
+    }
+  }
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(WorldSimulationModeMemoryManager, OwnTopologyStaysStaleUntilPrepared)
+{
+  auto world = createFallingBoxWorld("own_topology_world");
+  auto skeleton = world->getSkeleton(0u);
+  world->enterSimulationMode();
+  ASSERT_EQ(world->getIndex(1), 6);
+
+  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
+      skeleton->getBodyNode(0u));
+  for (int i = 0; i < 3; ++i)
+    EXPECT_FALSE(world->isInSimulationMode());
+
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+  EXPECT_EQ(world->getIndex(1), 12);
+}
+
+TEST(WorldSimulationModeMemoryManager, SharedTopologyInvalidatesEachWorld)
+{
+  auto world = createFallingBoxWorld("shared_first_world");
+  auto otherWorld = dart::simulation::World::create("shared_second_world");
+  auto skeleton = world->getSkeleton(0u);
+  otherWorld->addSkeleton(skeleton);
+  world->enterSimulationMode();
+  otherWorld->enterSimulationMode();
+
+  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
+      skeleton->getBodyNode(0u));
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(otherWorld->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+  EXPECT_FALSE(otherWorld->isInSimulationMode());
+  otherWorld->step();
+  EXPECT_TRUE(otherWorld->isInSimulationMode());
+  EXPECT_EQ(world->getIndex(1), 12);
+  EXPECT_EQ(otherWorld->getIndex(1), 12);
+}
+
+TEST(WorldSimulationModeMemoryManager, SolverOnlyShapelessDependencies)
+{
+  auto world = createFallingBoxWorld("solver_sources_world");
+  auto external = dart::dynamics::Skeleton::create("shapeless_solver_source");
+  auto* body
+      = external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+  auto replacement = dart::dynamics::Skeleton::create("solver_replacement");
+  replacement->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr);
+  auto* solver = world->getConstraintSolver();
+  solver->addSkeleton(external);
+  world->enterSimulationMode();
+
+  external->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(body);
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  solver->removeSkeleton(external);
+  solver->addSkeleton(replacement);
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(body);
+  EXPECT_TRUE(world->isInSimulationMode());
+  replacement->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
+      replacement->getBodyNode(0u));
+  EXPECT_FALSE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, EmptySolverReplacementChangesOwnership)
+{
+  auto world = dart::simulation::World::create("empty_solver_ownership_world");
+  auto* solver = world->getConstraintSolver();
+  auto external = dart::dynamics::Skeleton::create();
+  solver->addSkeleton(external);
+  std::size_t addressReuse = 0u;
+  for (int i = 0; i < 64; ++i) {
+    world->enterSimulationMode();
+    ASSERT_TRUE(world->isInSimulationMode());
+    const auto* previous = external.get();
+    solver->removeSkeleton(external);
+    external.reset();
+    external = dart::dynamics::Skeleton::create();
+    solver->addSkeleton(external);
+    addressReuse += external.get() == previous;
+    EXPECT_FALSE(world->isInSimulationMode());
+    EXPECT_FALSE(world->isInSimulationMode());
+  }
+  RecordProperty("empty_solver_address_reuse_count", addressReuse);
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
+TEST(
+    WorldSimulationModeMemoryManager,
+    CustomSolverProtectedListReplacementInvalidates)
+{
+  class DirectListSolver final
+    : public dart::constraint::BoxedLcpConstraintSolver
+  {
+  public:
+    void replaceFirstSkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+    {
+      mSkeletons.at(0u) = skeleton;
+    }
+  };
+
+  struct StructuralVersionProbe : dart::dynamics::Skeleton
+  {
+    using dart::dynamics::Skeleton::getGlobalStructuralVersion;
+  };
+
+  auto world = dart::simulation::World::create("custom_solver_membership");
+  auto solver = std::make_unique<DirectListSolver>();
+  auto* inspectedSolver = solver.get();
+  world->setConstraintSolver(std::move(solver));
+  auto original = dart::dynamics::Skeleton::create();
+  auto replacement = dart::dynamics::Skeleton::create();
+  inspectedSolver->addSkeleton(original);
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+  const auto structuralVersion
+      = StructuralVersionProbe::getGlobalStructuralVersion();
+  const auto groupVersion
+      = inspectedSolver->getCollisionGroup()->getContentVersion();
+  std::weak_ptr<dart::dynamics::Skeleton> originalLifetime = original;
+
+  inspectedSolver->replaceFirstSkeleton(replacement);
+  original.reset();
+  EXPECT_TRUE(originalLifetime.expired());
+  EXPECT_EQ(
+      StructuralVersionProbe::getGlobalStructuralVersion(), structuralVersion);
+  EXPECT_EQ(
+      inspectedSolver->getCollisionGroup()->getContentVersion(), groupVersion);
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
+TEST(
+    WorldSimulationModeMemoryManager,
+    EmptySolverMembershipEditsAreLocalAndNoOpsStayPrepared)
+{
+  auto world = dart::simulation::World::create("empty_solver_edits");
+  auto otherWorld = dart::simulation::World::create("unrelated_solver_edits");
+  world->enterSimulationMode();
+  otherWorld->enterSimulationMode();
+  auto external = dart::dynamics::Skeleton::create();
+  auto absent = dart::dynamics::Skeleton::create();
+  auto* solver = world->getConstraintSolver();
+
+  solver->addSkeleton(external);
+  EXPECT_TRUE(otherWorld->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  solver->addSkeleton(external);
+  EXPECT_TRUE(world->isInSimulationMode());
+  solver->removeSkeleton(absent);
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  solver->removeAllSkeletons();
+  EXPECT_TRUE(otherWorld->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+  solver->removeAllSkeletons();
+  EXPECT_TRUE(world->isInSimulationMode());
+  EXPECT_TRUE(otherWorld->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, CollisionGroupOnlyDependencies)
+{
+  auto world = createFallingBoxWorld("group_sources_world");
+  auto external = createGround();
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->subscribeTo(external);
+  world->enterSimulationMode();
+
+  external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      external->getBodyNode(0u));
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  group->unsubscribeFrom(external.get());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      external->getBodyNode(0u));
+  EXPECT_TRUE(world->isInSimulationMode());
+  std::weak_ptr<dart::dynamics::Skeleton> lifetime = external;
+  external.reset();
+  EXPECT_TRUE(lifetime.expired());
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, EmptyGroupSubscriptionSynchronizes)
+{
+  auto world = createFallingBoxWorld("empty_subscription_world");
+  auto external = dart::dynamics::Skeleton::create("empty_group_source");
+  auto* body
+      = external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->subscribeTo(external);
+  world->enterSimulationMode();
+  const auto previousFrames = group->getNumShapeFrames();
+
+  body->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+  EXPECT_EQ(group->getNumShapeFrames(), previousFrames + 1u);
+}
+
+TEST(WorldSimulationModeMemoryManager, EnablingUpdatesInvalidatesPendingShapes)
+{
+  auto world = createFallingBoxWorld("manual_subscription_world");
+  auto external = dart::dynamics::Skeleton::create("manual_group_source");
+  auto* body
+      = external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->setAutomaticUpdate(false);
+  group->subscribeTo(external);
+  world->enterSimulationMode();
+  const auto previousFrames = group->getNumShapeFrames();
+
+  body->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  EXPECT_TRUE(world->isInSimulationMode());
+  EXPECT_EQ(group->getNumShapeFrames(), previousFrames);
+  group->setAutomaticUpdate(true);
+  EXPECT_FALSE(world->isInSimulationMode());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+  EXPECT_EQ(group->getNumShapeFrames(), previousFrames + 1u);
+}
+
+TEST(WorldSimulationModeMemoryManager, SimpleFrameAncestorsAreDependencies)
+{
+  auto world = createFallingBoxWorld("frame_ancestors_world");
+  auto external = dart::dynamics::Skeleton::create("frame_ancestor");
+  auto* body
+      = external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+  auto replacement = dart::dynamics::Skeleton::create("new_frame_ancestor");
+  auto* replacementBody
+      = replacement
+            ->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+  dart::dynamics::SimpleFrame parent(body, "intermediate_parent");
+  dart::dynamics::SimpleFrame frame(&parent, "external_collision_frame");
+  frame.setShape(std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(0.1)));
+  frame.createAspect<dart::dynamics::CollisionAspect>();
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->addShapeFrame(&frame);
+  world->enterSimulationMode();
+
+  external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(body);
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  parent.setParentFrame(replacementBody);
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(body);
+  EXPECT_TRUE(world->isInSimulationMode());
+  replacement->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      replacementBody);
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  group->removeShapeFrame(&frame);
+  world->enterSimulationMode();
+  replacement->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      replacementBody);
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, DestroyedFramesLeavePreparedGroups)
+{
+  // Destroying a frame removes it from its collision group and bumps the
+  // group's content version at once, so readiness fails before any prepared
+  // frame is read, and preparation walks only the remaining frames.
+  for (const bool automaticUpdate : {true, false}) {
+    auto world = createFallingBoxWorld("destroyed_frames_world");
+    auto group = world->getConstraintSolver()->getCollisionGroup();
+    group->setAutomaticUpdate(automaticUpdate);
+    const auto initialFrames = group->getNumShapeFrames();
+    auto external = dart::dynamics::Skeleton::create("destroyed_frame_parent");
+    auto* body
+        = external
+              ->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+              .second;
+    {
+      dart::dynamics::SimpleFrame frame(body, "destroyed_collision_frame");
+      frame.setShape(std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.1)));
+      frame.createAspect<dart::dynamics::CollisionAspect>();
+      group->addShapeFrame(&frame);
+      world->enterSimulationMode();
+      ASSERT_TRUE(world->isInSimulationMode());
+    }
+    EXPECT_EQ(group->getNumShapeFrames(), initialFrames);
+    EXPECT_FALSE(world->isInSimulationMode());
+    world->step();
+    EXPECT_TRUE(world->isInSimulationMode());
+
+    auto* body0 = world->getSkeleton(0u)->getBodyNode(0u);
+    ASSERT_GT(body0->getNumShapeNodes(), 0u);
+    body0->getShapeNode(0u)->remove();
+    EXPECT_EQ(group->getNumShapeFrames(), initialFrames - 1u);
+    EXPECT_FALSE(world->isInSimulationMode());
+    world->step();
+    EXPECT_TRUE(world->isInSimulationMode());
+  }
+}
+
+TEST(WorldSimulationModeMemoryManager, SnapshotsDoNotRetainExternalSources)
+{
+  auto world = createFallingBoxWorld("weak_source_snapshot_world");
+  auto external = dart::dynamics::Skeleton::create("weak_frame_ancestor");
+  auto* body
+      = external->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+  dart::dynamics::SimpleFrame frame(body, "weak_collision_frame");
+  frame.setShape(std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(0.1)));
+  frame.createAspect<dart::dynamics::CollisionAspect>();
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(&frame);
+  world->enterSimulationMode();
+
+  std::weak_ptr<dart::dynamics::Skeleton> lifetime = external;
+  external.reset();
+  EXPECT_TRUE(lifetime.expired());
+  EXPECT_EQ(frame.getParentFrame(), dart::dynamics::Frame::World());
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, ReadinessChecksDoNotAllocate)
+{
+  auto world = createFallingBoxWorld("allocation_free_readiness_world");
+  auto other = createFallingBoxWorld("allocation_free_other_world");
+  world->enterSimulationMode();
+  other->getSkeleton(0u)->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      other->getSkeleton(0u)->getBodyNode(0u));
+
+  dart::test::ScopedHeapAllocationCounter counter;
+  bool ready = true;
+  for (int i = 0; i < 100; ++i)
+    ready = world->isInSimulationMode() && ready;
+  counter.stop();
+  EXPECT_TRUE(ready);
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(counter.allocationBytes(), 0u);
+}
+
 TEST(WorldSimulationModeMemoryManager, ThreadCountChangeInvalidatesBake)
 {
   auto world = createFallingBoxWorld("thread_count_rebake_world");

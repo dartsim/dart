@@ -106,6 +106,11 @@
 
 * Collision
 
+  * Fix undefined behavior when a custom deleter of a replaced collision
+    detector or contact surface handler reads the constraint solver's
+    current one.
+    [#3820](https://github.com/dartsim/dart/pull/3820)
+
   * An exception thrown by a collision filter during an ODE collision check
     now reaches the caller after ODE finishes the check, instead of unwinding
     through ODE and leaving its collision space locked.
@@ -122,6 +127,11 @@
     [#3721](https://github.com/dartsim/dart/pull/3721)
 
 * Dynamics
+
+  * Keep prepared Worlds ready after topology edits in unrelated Worlds,
+    while still rebuilding after changes to their own skeletons, solver
+    membership, or collision-group dependencies.
+    [#3818](https://github.com/dartsim/dart/pull/3818)
 
   * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
     write their state out of bounds, and they now appear in the soft mesh
@@ -178,6 +188,10 @@
     [#3751](https://github.com/dartsim/dart/pull/3751)
 
 * Python
+
+  * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
+    raycasts and releasing the stored Python callback.
+    [#3810](https://github.com/dartsim/dart/pull/3810)
 
   * CMake development builds report the DART version in `dartpy.__version__`
     instead of an empty string. Explicit packaging versions remain supported.

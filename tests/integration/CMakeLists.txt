@@ -202,6 +202,8 @@ dart_format_add(
 
 dart_add_test("integration" test_WorldState)
 target_sources(test_WorldState PRIVATE AllocationCounting.cpp)
+dart_add_test("integration" test_WorldStateManual)
+target_sources(test_WorldStateManual PRIVATE AllocationCounting.cpp)
 
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)

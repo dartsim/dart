@@ -40,6 +40,9 @@
 #include <Eigen/Dense>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
 namespace constraint {
 
 /// BallJointConstraint represents ball joint constraint between a body and the
@@ -108,6 +111,11 @@ protected:
   void uniteSkeletons() override;
 
 private:
+  friend class simulation::World;
+
+  /// Discard the previous solve warm start while retaining target parameters.
+  void resetDynamicState();
+
   /// Offset from the origin of body frame 1 to the ball joint position where
   /// the offset is expressed in body frame 1
   Eigen::Vector3d mOffset1;
