@@ -4194,7 +4194,9 @@ TEST(WorldDeathTest, LazySolverCopyLeavesSharedHandlerParentsUnread)
               *source->getConstraintSolver());
         }
         reparent.join();
-        std::_Exit(
+        // std::exit runs ThreadSanitizer's exit hook, which turns a reported
+        // race into a failing exit code; std::_Exit would skip it.
+        std::exit(
             lazyOnly && !target->isCompiled()
                     && shared->getParent() == secondParent
                 ? 0
