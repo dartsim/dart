@@ -8,7 +8,6 @@ ARG NUM_CORES=8
 RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.22.1,<4.3.4" ninja
 
 RUN yum install -y \
-    boost-devel \
     clang \
     libX11-devel \
     libXcursor-devel \

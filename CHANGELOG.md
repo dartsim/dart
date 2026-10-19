@@ -270,6 +270,10 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+  * The `dart` target no longer exports the `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS`
+    compile definition, and DART's build environments no longer install Boost,
+    which DART does not use. Projects that include Boost headers and relied on
+    the definition must define it themselves.
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
