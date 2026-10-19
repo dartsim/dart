@@ -157,8 +157,12 @@ def test_flush_logs_delivers_on_the_calling_thread(caplog):
 def test_a_raising_filter_is_unraisable_and_does_not_stop_delivery(
     caplog, monkeypatch
 ):
+    # Keep the exception, not the UnraisableHookArgs: CPython never GC-tracks
+    # that object, and the traceback pins this frame through f_back, so a
+    # cycle through it is uncollectable and nanobind reports the frame's
+    # dartpy objects as leaked at exit.
     unraisable = []
-    monkeypatch.setattr(sys, "unraisablehook", unraisable.append)
+    monkeypatch.setattr(sys, "unraisablehook", lambda u: unraisable.append(u.exc_value))
 
     def explode(record):
         if record.getMessage() == "boom":
@@ -177,8 +181,8 @@ def test_a_raising_filter_is_unraisable_and_does_not_stop_delivery(
         logger.removeFilter(explode)
     assert [r.getMessage() for r in _records(caplog)] == ["after"]
     assert len(unraisable) == 1
-    assert isinstance(unraisable[0].exc_value, RuntimeError)
-    assert str(unraisable[0].exc_value) == "filter failed"
+    assert isinstance(unraisable[0], RuntimeError)
+    assert str(unraisable[0]) == "filter failed"
 
 
 @needs_testing_hooks
@@ -267,6 +271,36 @@ def test_warnings_reach_stderr_without_logging_configuration():
     assert "[module.cpp:" in result.stderr
     assert "[dartpy warning] after-atexit" in result.stderr
     assert "info-line" not in result.stderr + result.stdout
+
+
+def test_bridge_state_is_released_at_exit():
+    # nanobind reports every dartpy type, function and instance still alive
+    # when the interpreter shuts down; a reference the bridge keeps through
+    # finalization would show up here.
+    code = (
+        "import logging\n"
+        "import dartpy as dart\n"
+        "world = dart.simulation.World()\n"
+        "logger = logging.getLogger('dartpy')\n"
+        "def explode(record):\n"
+        "    raise RuntimeError('filter failed')\n"
+        "logger.addFilter(explode)\n"
+        "dart.common.warn('boom')\n"
+        "dart.common.flush_logs()\n"
+        "logger.removeFilter(explode)\n"
+        "dart.dynamics.SphereShape(1.0).setRadius(-1.0)\n"
+        "dart.common.warn('still queued at exit')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ),
+    )
+    assert "filter failed" in result.stderr
+    assert "still queued at exit" in result.stderr
+    assert "nanobind: leaked" not in result.stderr
 
 
 def _wait_for_child(pid, timeout):
