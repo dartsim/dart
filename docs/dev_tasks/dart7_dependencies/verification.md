@@ -315,6 +315,7 @@ state.
 | DEP-32 | `fix/voxel-ray-key-limit` | Codex | Claude, Muse, then Muse and orchestrator | 7 voxel tests also under ASan (they crash or hang without the fix), 186/186, 2,024 Python |
 | DEP-3(a) | `build/bullet-collision-libraries-only` | Muse | orchestrator, Codex | installed `Bullet` interface lists two libraries; libdart resolves 0 symbols from BulletDynamics or BulletSoftBody; 186/186, 2,024 Python |
 | DEP-27a | `build/third-party-notices` | Codex | Claude and Muse, three rounds | 93 notice tests, 341 requirement tests, LICENSE and NOTICE install |
+| DEP-13 PR1 | `build/assimp-5.3-floor` | Codex | Claude and Muse, then Muse and orchestrator | 9 MeshShape tests (the gz-physics-style custom mesh leaked 5,208 bytes before), ASan/LSan mesh tests, 186/186, 2,024 Python, 252 requirement tests, gz-physics and gz-sim build and test |
 
 - DEP-28: Python sdists, which glob every file under `dart/`, also drop
   the deleted files (accepted as intended).
@@ -332,5 +333,25 @@ state.
   Roboti-derived MuJoCo models under `data/mjcf/openai/` ship (DEP-33,
   maintainer); libccd attribution comments in the MPR sources after M1d; a
   test that also checks entry contents.
-- Gazebo lanes for DEP-32, DEP-3(a), DEP-17 PR2 and DEP-13 PR1 run against
-  base variants built from `0d7f6d77a`.
+- DEP-13 PR1: upstream assimp 5.3.1 and Ubuntu 24.04's package report
+  5.3.0, so the floor is 5.3.0 (as 5.2.0 was for Ubuntu 22.04's 5.2.2); the
+  v5.3.0 tag contains every API the removed code guarded. A raw scene
+  assigned to `MeshShape::mMesh` is owned again, as in DART 6; gz-physics'
+  custom mesh shape relies on that and frees it nowhere. It lands after
+  DEP-12(a), which moves the documented OS baseline to Ubuntu 24.04.
+- Found and parked (pre-existing, unrelated to dependencies): under LSan,
+  DART's Bullet detector and its filter group leak about 4.4 MB in 35
+  allocations through an ownership cycle.
+
+| Tree on `0d7f6d77a` | Harmonic | Jetty | Ionic |
+| --- | --- | --- | --- |
+| base (`main`) | only `reset_sensors` | only `reset_sensors` | only `reset_sensors` |
+| Wave 2 without DEP-13 | PASS | PASS | PASS |
+| Wave 2 with DEP-13 PR1 | PASS | PASS | PASS |
+
+PASS means no new failures or slow cases against the expected-failure files
+and the base results; gz-physics detected `ContactSurface.hpp` in every run.
+The local integration branch (all Wave 2 packets but DEP-13) passes
+`pixi install`, lint, check-lint, build, 186/186 C++ tests, 2,024 Python
+tests, `test-package-core`, 344 build-requirement tests and the notices
+tests.

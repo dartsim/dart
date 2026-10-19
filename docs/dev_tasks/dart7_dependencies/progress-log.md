@@ -42,3 +42,5 @@
   - Wave 2 committed locally: DEP-28, DEP-20(e), DEP-20(d), DEP-31,
     DEP-17 PR2, DEP-32, DEP-3(a) and DEP-27a; Codex and Muse wrote every
     packet, and each passed two clean reviews from other engines.
+  - DEP-13 PR1 committed (assimp 5.3 floor; raw scenes owned again, as in
+    DART 6). The Gazebo lanes pass on the full Wave 2 tree; DEP-15 started.

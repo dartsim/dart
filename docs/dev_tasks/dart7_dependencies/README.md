@@ -163,9 +163,9 @@ shorthand is defined under [Gates](#gates).
 | DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Claude Sonnet | 7.0 | Planned |
 | DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PR1 committed locally; the captures are in #3804 |
 | DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | (a) committed locally |
-| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 in progress |
+| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 committed locally |
 | DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Committed locally |
-| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Waiting for Q1 |
+| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | In progress on DEP-14 (Q1 default) |
 | DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Claude Sonnet + orchestrator | 7.0 | Planned |
 | DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Codex high | 7.0 | PR2 committed locally; PR2b to PR4 need approval |
 | DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Waiting for Q3 |
@@ -178,7 +178,7 @@ shorthand is defined under [Gates](#gates).
 | DEP-27a | Root NOTICE for derived code, installed and in wheels, with a coverage test | none | base, wheel | Codex high | 7.0 | Committed locally |
 | DEP-28 | Delete dead `dart/utils/*_` files and `tests/.deprecated` | none | base | Muse | 7.0 | Committed locally |
 | DEP-31 | Reject empty overlay font files before ImGui | none | base, gui | Muse | 7.0 | Committed locally |
-| DEP-32 | Skip voxel-grid rays longer than OctoMap can trace | none | base, py, gz | Codex | 7.0 | Committed locally; gz lanes running |
+| DEP-32 | Skip voxel-grid rays longer than OctoMap can trace | none | base, py, gz | Codex | 7.0 | Committed locally |
 
 Ordering: DEP-0 lands first, because no lane notices a lost contact-surface
 probe today and many later packets touch installed headers. DEP-1 to DEP-12
