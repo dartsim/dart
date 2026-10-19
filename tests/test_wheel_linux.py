@@ -126,7 +126,7 @@ def test_wheels_do_not_require_python_embedding_library(tmp_path, wheels, succee
         "set(Python3_FOUND TRUE)\n"
     )
     (tmp_path / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(PythonComponents NONE)\n"
         "macro(dart_find_package)\nendmacro()\n"
         "macro(dart_check_required_package)\nendmacro()\n"

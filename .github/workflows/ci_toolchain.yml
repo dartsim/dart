@@ -46,19 +46,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: gcc 11 (Ubuntu 22.04 baseline)
-            runner: ubuntu-22.04
+          - name: gcc 13 (Ubuntu 24.04 baseline)
+            runner: ubuntu-24.04
             family: gcc
-            version: "11"
-            cc: gcc-11
-            cxx: g++-11
-            distribution: true
-          - name: clang 13 (Ubuntu 22.04 baseline)
-            runner: ubuntu-22.04
-            family: clang
             version: "13"
-            cc: clang-13
-            cxx: clang++-13
+            cc: gcc-13
+            cxx: g++-13
+            distribution: true
+          - name: clang 18 (Ubuntu 24.04 baseline)
+            runner: ubuntu-24.04
+            family: clang
+            version: "18"
+            cc: clang-18
+            cxx: clang++-18
             distribution: true
           # GCC 16 is not in Ubuntu 24.04; it comes from the Ubuntu toolchain
           # PPA. It is the compiler that exposed dartsim/dart#3447 (aligned
@@ -149,13 +149,6 @@ jobs:
           # first (it does not pin a compiler), so the whole tree is compiled
           # with the selected toolchain.
           pixi run -- bash -euc '
-            case "${CC}" in
-              gcc-11|clang-13)
-                # Pixi dependencies need a newer runtime than Ubuntu 22.04 ships.
-                export LDFLAGS="-L${CONDA_PREFIX}/lib${LDFLAGS:+ ${LDFLAGS}}"
-                export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-                ;;
-            esac
             pixi run build-tests
             ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2 -LE gui-device
           '

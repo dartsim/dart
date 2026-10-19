@@ -5,7 +5,7 @@ ARG NUM_CORES=8
 
 # Build every native dependency with the manylinux toolchain: Conda libraries
 # require newer GLIBCXX/CXXABI symbols even when their glibc floor is 2.28.
-RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.22.1,<4.3.4" ninja
+RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.28,<4.3.4" ninja
 
 RUN yum install -y \
     boost-devel \
