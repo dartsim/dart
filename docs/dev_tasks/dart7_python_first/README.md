@@ -566,11 +566,12 @@ The capability matrix (#3788) followed. M1 and M5a are in progress;
   - the snapshot and checkpoint oracle (arrives with M1c);
   - for every PR that changes step, solver, collision, packaging or
     Gazebo-lock files, `pixi run -e gazebo test-gz` plus the unpatched Ionic
-    and Jetty lanes (`pixi run gz-compat-ionic` and `gz-compat-jetty`), each
-    building `dart-io` against its distribution's sdformat, against a base
-    variant (`GZ_COMPAT_BASE_VARIANT`) with no `NEW` or `SLOW` results, and
-    the sleep oracle
-    (`pixi run gz-compat-ionic sleep-oracle`) on head and base.
+    and Jetty lanes (`pixi run gz-compat-ionic` and `gz-compat-jetty`)
+    against a base variant (`GZ_COMPAT_BASE_VARIANT`) with no `NEW` or `SLOW`
+    results, and the sleep oracle (`pixi run gz-compat-ionic sleep-oracle`) on
+    head and base. Building `dart-io` against each distribution's sdformat in
+    those lanes is a pending lane change: the Ionic lane's DART still uses
+    sdformat 16.
 - **Milestone exits:** the core gates with `--base dart7-base`.
 - **Python changes:**
   - stub-drift, new-`Any` and pyright checks (arrive with M5's stub PRs);

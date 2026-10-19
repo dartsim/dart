@@ -70,9 +70,10 @@ parallel tracks, Python first:
    step code behind an internal domain boundary; the coupling seam is built
    together with a first experimental domain (rods), in 7.0 if ready before
    `F` and otherwise in 7.1.
-4. Gazebo gate: the Ionic and Jetty lanes, each against its distribution's
-   sdformat, run for every step, solver, collision, packaging or Gazebo-lock
-   change, against baselines from the last 6.20.x.
+4. Gazebo gate: the Ionic and Jetty lanes, run for every step, solver,
+   collision, packaging or Gazebo-lock change, against baselines from the last
+   6.20.x. Building `dart-io` against each distribution's sdformat in those
+   lanes is pending; the Ionic lane's DART still uses sdformat 16.
 
 Python packets in review:
 

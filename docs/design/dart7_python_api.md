@@ -192,7 +192,10 @@ kind bumps a revision, because articulated-body dynamics branch on it.
 Strict enforcement has two tiers:
 
 1. DART-owned mutators check the owning World and raise before changing state.
-   Adding a Multibody that another World owns raises.
+   Adding a Multibody that another World owns raises. Worlds that were never
+   compiled keep DART 6 behavior instead: they track no ownership, so a
+   Multibody may join several of them, and only a re-entrant `step()` and
+   topology edits from the stepping World's own callbacks raise.
 2. Writes through raw references (such as collision-option fields or
    collision-group contents) are detected at the next `step()` or `compile()`,
    which raises. This tier is documented as detected late.
@@ -343,12 +346,14 @@ identifiers:
 
 Anything that cannot be cloned, such as a handler without a clone hook, makes
 construction raise. Nothing is silently dropped. Clone `i` derives its random
-seed from the base seed and `i`.
+seed from the base seed and `i`. Until each solver owns its random state, a
+World that uses randomized PGS also makes construction raise.
 
 The gate for remapping clones uses URDF, SDF, MJCF-with-weld and custom-filter
 scenes. Without randomness, clone `i` stepped `n` times matches the source
-stepped `n` times. With randomized solver passes or seeded sensor noise, clone
-`i` matches a serial reference World seeded like clone `i`.
+stepped `n` times. With seeded sensor noise, and with randomized solver passes
+once solvers own their random state, clone `i` matches a serial reference World
+seeded like clone `i`.
 
 Batch arrays use the World's degree-of-freedom order, shaped `(count, ...)`.
 
