@@ -44,8 +44,9 @@ cp315 wheels cover Linux x86_64 and aarch64. macOS arm64 and Windows x64 cp315
 wheels follow once conda-forge's bullet-cpp has Python 3.15 builds
 (`conda-forge/bullet-feedstock#70 <https://github.com/conda-forge/bullet-feedstock/pull/70>`_).
 
-Starting with DART 6.20.1, Python 3.10 and 3.11 no longer receive new wheels;
-``pip`` on those versions continues to install dartpy 6.20.0.
+Starting with DART 6.20.1, Python 3.10 and 3.11 no longer receive new wheels.
+On x86_64 and aarch64 Linux with glibc 2.28 or newer, ``pip`` on those versions
+continues to install dartpy 6.20.0, whose wheels cover only those systems.
 
 The source-build platform requirements in the
 :doc:`DART build guide </dart/developer_guide/build>` differ from the wheel

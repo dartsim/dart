@@ -2,6 +2,8 @@
 
 ## DART 6
 
+### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
+
 ### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
 
 DART 6.20.1 is a patch release on the DART 6 line. It fixes mimic joints that
@@ -13,10 +15,11 @@ locked, and SKEL, SDF and MJCF files with the wrong number of vector or pose
 values now fail to load instead of writing out of bounds. Builds work again
 with urdfdom 3.x packages that ship no CMake version file, and C++-only
 projects can find the `collision-ode` component. dartpy wheels now cover
-Python 3.12 to 3.14, plus Python 3.15 on Linux; pip on Python 3.10 and 3.11
-keeps installing 6.20.0. There is no API or ABI change, so code built against
-6.20.0 runs unchanged; rebuild it to pick up the `NodePtr` and
-`HeightmapShape` fixes, which are in header-only templates.
+Python 3.12 to 3.14, plus Python 3.15 on Linux; on x86_64 and aarch64 Linux
+with glibc 2.28 or newer, pip on Python 3.10 and 3.11 keeps installing 6.20.0.
+There is no API or ABI change, so code built against 6.20.0 runs unchanged;
+rebuild it to pick up the `NodePtr` and `HeightmapShape` fixes, which are in
+header-only templates.
 
 * Collision
 
@@ -29,9 +32,10 @@ keeps installing 6.20.0. There is no API or ABI change, so code built against
 
   * Fix mimic joints enforced by the coupler constraint
     (`Joint::setUseCouplerConstraint(true)`). Coupled joints no longer gain
-    energy, or diverge when the follower has more inertia than the leader;
-    per-DoF couplers on multi-DoF joints no longer crash; and a joint that
-    mimics only a later DoF now gets its constraint:
+    energy, or diverge when the follower has more inertia than the leader,
+    and per-DoF couplers on multi-DoF joints no longer crash. With or without
+    the coupler, a joint that mimics only a later DoF, such as an SDF
+    universal joint with an `<axis2>` mimic, now gets its mimic constraint:
     [#3702](https://github.com/dartsim/dart/pull/3702),
     [#3700](https://github.com/dartsim/dart/pull/3700)
 
@@ -74,11 +78,12 @@ keeps installing 6.20.0. There is no API or ABI change, so code built against
 
 * Parsers
 
-  * SKEL, SDF and MJCF loading throws `std::invalid_argument` when a 2-, 3-,
-    4- or 6-element vector or pose value has the wrong number of elements,
-    instead of writing out of bounds or leaving values unset in release
-    builds. An MJCF weld `solref` with one value keeps the default for the
-    other.
+  * SKEL, SDF and MJCF loading, and the `dart::utils` XML conversions such as
+    `toVector3d()` and `toIsometry3d()`, throw `std::invalid_argument` when a
+    2-, 3-, 4- or 6-element vector or pose value has the wrong number of
+    elements, instead of writing out of bounds or leaving values unset in
+    release builds. An MJCF weld `solref` with one value keeps the default for
+    the other.
     [#3698](https://github.com/dartsim/dart/pull/3698)
 
   * Loading a SKEL world no longer crashes when the collision detector
@@ -91,8 +96,9 @@ keeps installing 6.20.0. There is no API or ABI change, so code built against
 
   * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,
     aarch64), macOS (arm64) and Windows. Python 3.10 (end of life) and 3.11
-    no longer get wheels, so pip on those versions keeps installing dartpy
-    6.20.0. Source builds still support Python 3.10 and newer:
+    no longer get wheels, so on x86_64 and aarch64 Linux with glibc 2.28 or
+    newer, pip with those versions keeps installing dartpy 6.20.0. Source
+    builds still support Python 3.10 and newer:
     [#3704](https://github.com/dartsim/dart/pull/3704)
 
   * dartpy publishes Python 3.15 wheels for Linux x86_64 and aarch64. macOS
