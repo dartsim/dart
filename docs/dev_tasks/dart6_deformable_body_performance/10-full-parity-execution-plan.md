@@ -145,10 +145,12 @@ deformable substrate. What exists to reuse:
 
 What must be **built/authored** for PR-3:
 - ~~soft-foot SIMBICON integration~~ — **shipped** by #3408/#3423 as
-  `soft_foot_simbicon` with the push-recovery threshold, contact-count, and
-  finite-state gates. What remains from that row is the **motor-noise
-  variant** of the same rigid-vs-soft comparison (deterministic seeded noise
-  on the controller torques; soft sustains at least the rigid level).
+  `soft_foot_simbicon` with contact-count and finite-state gates and a
+  push-recovery sweep that reports each push without gating soft >= rigid.
+  What remains from that row is the push claim itself, which does not
+  reproduce (§4), and the **motor-noise variant** of the same rigid-vs-soft
+  comparison (deterministic seeded noise on the controller torques; soft
+  sustains at least the rigid level).
 - **noisy-floor** scene: seeded 5×5 cm tiles with 0–2 cm random offsets;
   deterministic rigid-vs-soft outcome.
 - **biped walk** with soft contact (LCP cadence per paper).
