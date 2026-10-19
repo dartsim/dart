@@ -44,13 +44,15 @@ namespace collision {
 
 void detail::CollisionHistory::clear(BulletCollisionGroup& group)
 {
-  auto* world = group.getBulletCollisionWorld();
-  auto* pairs = world->getBroadphase()->getOverlappingPairCache();
-  for (int i = 0; i < world->getNumCollisionObjects(); ++i) {
-    auto* object = world->getCollisionObjectArray()[i];
-    if (auto* proxy = object->getBroadphaseHandle())
-      pairs->cleanProxyFromPairs(proxy, world->getDispatcher());
-  }
+  // Cleaning pair algorithms leaves pair order and DBVT history intact. Remove
+  // all proxies so resetPool() resets the trees, stages and proxy IDs, then
+  // reinsert in group order at restored poses. Bullet allocates new proxies.
+  if (group.getAutomaticUpdate())
+    group.update();
+  group.removeAllCollisionObjectsFromEngine();
+  group.updateEngineData();
+  for (const auto& info : group.mObjectInfoList)
+    group.addCollisionObjectToEngine(info->mObject.get());
   group.resetPersistentPairFilterCache();
 }
 

@@ -127,7 +127,8 @@ enum class SnapshotSolver
 WorldPtr makeContactWorld(
     SnapshotSolver backend = SnapshotSolver::Nsgs,
     bool splitImpulse = false,
-    const std::string& detector = "dart")
+    const std::string& detector = "dart",
+    int extraBoxes = 0)
 {
   auto world = makeSleepingWorld();
   auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
@@ -160,6 +161,12 @@ WorldPtr makeContactWorld(
     world->addSkeleton(limited);
   }
   world->getSkeleton(1)->setVelocity(3, 0.02);
+  for (int i = 0; i < extraBoxes; ++i) {
+    auto box
+        = world->getSkeleton(1)->cloneSkeleton("box" + std::to_string(i + 1));
+    box->setPosition(5, 0.05 + 0.14 * (i + 1) - 1e-6);
+    world->addSkeleton(box);
+  }
   if (detector == "ode") {
     auto box = world->getSkeleton(1);
     box->getBodyNode(0)->getShapeNode(0)->setShape(
@@ -173,19 +180,30 @@ WorldPtr makeContactWorld(
 void expectFreshTrajectory(
     SnapshotSolver backend = SnapshotSolver::Nsgs,
     bool splitImpulse = false,
-    const std::string& detector = "dart")
+    const std::string& detector = "dart",
+    int extraBoxes = 0)
 {
-  auto a = makeContactWorld(backend, splitImpulse, detector);
-  for (int i = 0; i < 40; ++i)
+  auto a = makeContactWorld(backend, splitImpulse, detector, extraBoxes);
+  for (int i = 0; i < (extraBoxes ? 200 : 40); ++i)
     a->step();
   ASSERT_GT(a->getLastCollisionResult().getNumContacts(), 0u);
+  if (extraBoxes) {
+    for (std::size_t s = 1; s < a->getNumSkeletons(); ++s) {
+      ASSERT_TRUE(a->getLastCollisionResult().inCollision(
+          a->getSkeleton(s)->getBodyNode(0)))
+          << s;
+    }
+  }
   if (backend == SnapshotSolver::Pgs) {
     ASSERT_GT(a->getSkeleton(2)->getJoint(0)->getConstraintImpulse(0), 0.0);
   }
   const auto state = a->captureState();
+  // Force old stack pairs out of the broadphase before restoring the stack.
+  if (extraBoxes)
+    a->getSkeleton(1)->setVelocity(3, 10.0);
   for (int i = 0; i < 30; ++i)
     a->step();
-  auto b = makeContactWorld(backend, splitImpulse, detector);
+  auto b = makeContactWorld(backend, splitImpulse, detector, extraBoxes);
   auto* group = a->getConstraintSolver()->getCollisionGroup().get();
   const auto contentVersion = group->getContentVersion();
   a->restoreState(state);
@@ -933,6 +951,11 @@ TEST(WorldState, RestoreClearsBulletContactHistory)
 {
   expectFreshTrajectory(SnapshotSolver::Nsgs, false, "bullet");
 }
+
+TEST(WorldState, RestoreClearsBulletBroadphaseHistory)
+{
+  expectFreshTrajectory(SnapshotSolver::Nsgs, false, "bullet", 4);
+}
 #endif
 
 #if HAVE_ODE
@@ -957,13 +980,10 @@ TEST(WorldState, RestoreDoesNotAllocate)
       EXPECT_EQ(raw.allocationCount(), 0u);
     }
   };
-  // FCL rebuilds its history-dependent broad-phase tree on restore, which
-  // allocates nodes through FCL's public registration API.
+  // FCL and Bullet rebuild their history-dependent broadphases on restore,
+  // allocating tree nodes and proxies through their public APIs.
   for (const auto* detector : {
          "dart",
-#if HAVE_BULLET
-             "bullet",
-#endif
 #if HAVE_ODE
              "ode",
 #endif
