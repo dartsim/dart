@@ -282,6 +282,66 @@ def test_api_budget_counts_module_data_but_not_containers(api_surface):
     ]
 
 
+def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
+    api_surface,
+):
+    full_rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        "dartpy.collision.Core": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Core"},
+        },
+        "dartpy.collision.Optional": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Optional"},
+        },
+    }
+    full = api_surface.budget_surface(full_rows)
+    budget = {
+        module: {
+            "functions": {key: len(names) for key, names in scope["functions"].items()},
+            "containers": {
+                key: len(names) for key, names in scope["containers"].items()
+            },
+            "classes": {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in full.items()
+    }
+    assert not api_surface.budget_growth(full, budget, check_stale=True)
+
+    # A build without the optional binding still passes...
+    reduced_rows = dict(full_rows)
+    del reduced_rows["dartpy.collision.Optional"]
+    reduced = api_surface.budget_surface(reduced_rows)
+    assert not api_surface.budget_growth(reduced, budget, check_stale=True)
+    # ...and still reports growth.
+    reduced_rows["dartpy.collision.Added"] = {
+        "kind": "class",
+        "runtime": {"module": "dartpy.collision", "qualname": "Added"},
+    }
+    grown = api_surface.budget_surface(reduced_rows)
+    assert any(
+        "dartpy.collision.Added: new class" in failure
+        for failure in api_surface.budget_growth(grown, budget, check_stale=True)
+    )
+
+    # On a full-feature build a removed class makes the ceiling stale.
+    budget["dartpy.collision"]["classes"]["Gone"] = {
+        "public": 0,
+        "camel_case": 0,
+        "get_set": 0,
+    }
+    budget["dartpy.collision"]["containers"]["public"] += 1
+    del budget["dartpy.collision"]["classes"]["Gone"]
+    assert any(
+        "dartpy.collision (containers): public budget 3 exceeds" in failure
+        for failure in api_surface.budget_growth(full, budget, check_stale=True)
+    )
+
+
 def test_api_budget_reports_empty_new_class(api_surface):
     rows = {
         "dartpy.Example": {
