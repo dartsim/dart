@@ -56,6 +56,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -3340,6 +3341,40 @@ TEST_F(Collision, BulletBinaryCollideFiltersProximityContacts)
   EXPECT_TRUE(group->collide(option, nullptr));
   EXPECT_TRUE(group1->collide(group2.get(), option));
   EXPECT_TRUE(group1->collide(group2.get(), option, nullptr));
+}
+
+//==============================================================================
+// btMultiSphereShape subtracts its collision margin from every radius to form
+// the core that GJK works on, so Bullet's 0.04 default margin used to turn the
+// core of smaller spheres inside out and tilt or misplace their contacts.
+TEST_F(Collision, BulletSmallMultiSphereContactsBox)
+{
+  auto detector = BulletCollisionDetector::create();
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1)));
+  boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  const double radius = 0.005;
+  const double depth = 0.0005;
+  auto spheresFrame = SimpleFrame::createShared(Frame::World());
+  spheresFrame->setShape(std::make_shared<MultiSphereConvexHullShape>(
+      MultiSphereConvexHullShape::Spheres{
+          {radius, Eigen::Vector3d(0.0, 0.0, -radius)},
+          {radius, Eigen::Vector3d(0.0, 0.0, radius)}}));
+  spheresFrame->setTranslation(Eigen::Vector3d(0.1, 0.2, 2.0 * radius - depth));
+
+  auto group
+      = detector->createCollisionGroup(boxFrame.get(), spheresFrame.get());
+
+  CollisionOption option;
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_NEAR(std::abs(contact.normal.z()), 1.0, 1e-3);
+    EXPECT_NEAR(contact.penetrationDepth, depth, 1e-4);
+  }
 }
 #endif
 

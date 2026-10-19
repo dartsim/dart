@@ -663,6 +663,14 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     auto bulletCollisionShape = std::make_unique<btMultiSphereShape>(
         bulletPositions.data(), bulletRadii.data(), numSpheres);
+    // btMultiSphereShape subtracts the margin from every radius to form the
+    // core used by GJK, so a margin larger than a radius (Bullet's default is
+    // 0.04) turns that core inside out.
+    if (numSpheres > 0u) {
+      bulletCollisionShape->setMargin(std::min(
+          bulletCollisionShape->getMargin(),
+          *std::min_element(bulletRadii.begin(), bulletRadii.end())));
+    }
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
@@ -1123,14 +1131,20 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
   const auto minHeight = heightMap->getMinHeight();
   const auto maxHeight = heightMap->getMaxHeight();
 
-  // determine which data type (float or double) is to be used for the field
-  PHY_ScalarType scalarType = PHY_FLOAT;
   if (std::is_same<typename HeightmapShapeT::S, double>::value) {
     dterr << "Bullet does not support DOUBLE as heightmap field yet.\n";
     return nullptr;
-    // take this back in as soon as it is supported
-    // scalarType = PHY_DOUBLE;
   }
+
+#if BT_BULLET_VERSION < 317 && defined(BT_USE_DOUBLE_PRECISION)
+  // Before Bullet 3.17 a heightfield's PHY_FLOAT data means btScalar, so a
+  // double-precision build would read these float heights as doubles.
+  dterr << "[BulletCollisionDetector] Bullet " << BT_BULLET_VERSION
+        << " built with double precision cannot use float height fields; use "
+        << "Bullet 3.17 or newer. Creating a sphere with 0.1 radius instead.\n";
+  return std::make_unique<BulletCollisionShape>(
+      std::make_unique<btSphereShape>(0.1));
+#endif
 
   // the y-values in the height field need to be flipped
   heightMap->flipY();
@@ -1140,6 +1154,18 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
   // create the height field
   const btVector3 localScaling(scale.x(), scale.y(), scale.z());
   const bool flipQuadEdges = false;
+#if BT_BULLET_VERSION >= 317
+  // The typed overload reads floats in any Bullet precision. The legacy one
+  // treats PHY_FLOAT as btScalar, which is double in double-precision builds.
+  auto heightFieldShape = std::make_unique<btHeightfieldTerrainShape>(
+      heightMap->getWidth(), // Width of height field
+      heightMap->getDepth(), // Depth of height field
+      heights.data(),        // Height values
+      minHeight,             // Min height
+      maxHeight,             // Max height
+      2,                     // Up axis
+      flipQuadEdges);        // Flip quad edges
+#else
   auto heightFieldShape = std::make_unique<btHeightfieldTerrainShape>(
       heightMap->getWidth(), // Width of height field
       heightMap->getDepth(), // Depth of height field
@@ -1148,8 +1174,9 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
       minHeight,             // Min height
       maxHeight,             // Max height
       2,                     // Up axis
-      scalarType,            // Float or double field
+      PHY_FLOAT,             // Float field
       flipQuadEdges);        // Flip quad edges
+#endif
   heightFieldShape->setLocalScaling(localScaling);
   heightFieldShape->setUseZigzagSubdivision(true);
 
