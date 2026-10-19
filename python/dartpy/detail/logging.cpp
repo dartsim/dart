@@ -421,7 +421,13 @@ void installLogBridge()
   // atexit is LIFO: import logging first so our drain precedes
   // logging.shutdown. Py_AtExit covers embedding hosts that skip the atexit
   // module.
-  nb::module_::import_("logging");
+  try {
+    nb::module_::import_("logging");
+  } catch (nb::python_error& e) {
+    // A broken or shadowed logging module must not break `import dartpy`;
+    // the drain below still runs, and emitting reports its own errors.
+    e.discard_as_unraisable("dartpy log bridge");
+  }
   nb::module_::import_("atexit").attr("register")(nb::cpp_function([] {
     Queue::queue().drain();
     shutdown();

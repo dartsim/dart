@@ -492,15 +492,25 @@ TEST(LoggingTest, LogCallbackThrows)
   dart::common::setLogCallback(nullptr);
 
   EXPECT_EQ(calls.calls.load(), 2);
+#if DART_HAVE_spdlog
   // The report uses the error console, separately from spdlog's default output.
-  EXPECT_EQ(output.count(), DART_HAVE_spdlog ? 2 : 3);
+  EXPECT_EQ(output.count(), 2);
+#else
+  // The one-time report adds a third output unless an earlier test or
+  // repetition in this process already made it.
+  EXPECT_GE(output.count(), 2);
+  EXPECT_LE(output.count(), 3);
+#endif
 }
 
 #if DART_HAVE_spdlog
 //==============================================================================
 TEST(LoggingDeathTest, LogCallbackThrowsWithQuietDefaultOutput)
 {
-  // A fresh process keeps the one-time report independent of other tests.
+  // A fresh process keeps the one-time report independent of other tests and
+  // of --gtest_repeat: the threadsafe style re-executes the binary instead of
+  // forking this process, whose report may already have been made.
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
   EXPECT_EXIT(
       {
         Counter calls;

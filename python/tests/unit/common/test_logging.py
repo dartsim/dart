@@ -453,6 +453,9 @@ def test_child_of_a_fork_can_log_and_flush(caplog):
         dart.common.warn("parent")  # may still be queued at the fork
         pid = os.fork()
         if pid == 0:  # child
+            # The child must never return into pytest: any exception, including
+            # KeyboardInterrupt, still ends it through os._exit.
+            status = 2
             try:
                 delivered = []
                 handler = logging.Handler()
@@ -470,9 +473,8 @@ def test_child_of_a_fork_can_log_and_flush(caplog):
                     and delivered[1] == "child"
                     else 3
                 )
-            except Exception:
-                status = 2
-            os._exit(status)
+            finally:
+                os._exit(status)
         assert _wait_for_child(pid, timeout=10) == 0
         dart.common.flush_logs()
     assert [r.getMessage() for r in _records(caplog)] == ["parent"]
