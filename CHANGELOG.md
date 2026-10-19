@@ -2,7 +2,18 @@
 
 ## DART 6
 
-### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
+### [DART 6.20.2 (2026-10-19)](https://github.com/dartsim/dart/milestone/107?closed=1)
+
+DART 6.20.2 is a patch release on the DART 6 line. SDF joints that mimic only
+some of their axes keep their other axes under normal control. The rest of the
+release makes DART easier to package: `find_package(DART)` no longer needs
+pkg-config, builds work again with Ubuntu 22.04's assimp and Bullet packages,
+GCC builds keep the linker flags from `LDFLAGS`, `DART_BUILD_EXAMPLES` and
+`DART_BUILD_TUTORIALS` can skip the C++ examples and tutorials, and Release
+builds against Eigen 5 no longer fail. MSVC projects that link DART now inherit
+`/permissive-` and `/Zc:twoPhase-`, so DART's templates compile there, and
+Windows source builds of dartpy work with Ninja and NMake. There is no API or
+ABI change, so code built against 6.20.1 runs unchanged.
 
 * Parsers
 
