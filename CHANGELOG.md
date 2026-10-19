@@ -186,6 +186,10 @@
 
 * Python
 
+  * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
+    raycasts and releasing the stored Python callback.
+    [#3810](https://github.com/dartsim/dart/pull/3810)
+
   * CMake development builds report the DART version in `dartpy.__version__`
     instead of an empty string. Explicit packaging versions remain supported.
     [#3809](https://github.com/dartsim/dart/pull/3809)
