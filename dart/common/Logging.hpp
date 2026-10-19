@@ -84,7 +84,70 @@
   #define DART_FATAL(...) (void)0
 #endif
 
+#include <cstddef>
+
 namespace dart::common {
+
+/// Severity of a message from trace() through fatal().
+enum class LogLevel
+{
+  Trace,
+  Debug,
+  Info,
+  Warn,
+  Error,
+  Fatal
+};
+
+/// Receives one formatted message from trace() through fatal(). It runs on the
+/// logging thread, so it must be thread-safe. \p message holds \p length
+/// bytes, has no terminating newline and is valid only during the call. A
+/// message logged from inside the callback goes to the default output instead
+/// of re-entering it. An exception thrown by the callback is swallowed: DART
+/// reports the first one through the default output and sends that message
+/// there too. Do not fork() from inside the callback: the child would inherit
+/// the forking thread's re-entry state.
+using LogCallback = void (*)(
+    LogLevel level, const char* message, std::size_t length, void* userData);
+
+/// Routes every message from trace() through fatal() to \p callback instead of
+/// spdlog, or of the console streams in a build without spdlog, whichever
+/// library instantiated the logging call. Messages below the compile-time
+/// DART_ACTIVE_LOG_LEVEL are still compiled out. The callback receives every
+/// remaining message regardless of spdlog's runtime level, so the receiver
+/// filters by level itself.
+///
+/// Each message is formatted once and offered first to the callback, which
+/// consults no spdlog registry and takes no lock, so it works after
+/// spdlog::drop_all() and in the child of a fork() taken from a
+/// single-threaded process. A message the callback declines goes to spdlog's
+/// default logger if one exists, or else to the console streams. Each call
+/// publishes an immutable
+/// {callback, userData} pair through one atomic pointer; a logging thread
+/// loads that pointer once per message, which adds one acquire load to the
+/// path without a callback. Old pairs are never freed, so \p userData must
+/// outlive every in-flight call: unset the callback only while no thread
+/// logs, or keep \p userData alive for the rest of the process. A null
+/// callback restores the default output. Call setLogCallback() from one
+/// thread at a time.
+void setLogCallback(LogCallback callback, void* userData = nullptr);
+
+namespace detail {
+
+/// Whether setLogCallback() installed a callback. The answer can be stale by
+/// the time the caller acts on it, so a caller must not drop a message on its
+/// account; it only decides whether to format a message that spdlog's runtime
+/// level would otherwise discard.
+bool hasLogCallback();
+
+/// Hands \p message to the installed callback. Returns false, without
+/// touching the message, when no callback is installed, when this thread is
+/// already inside the callback, or when the callback threw; the caller then
+/// sends the message to the default output, so none is dropped.
+bool forwardToLogCallback(
+    LogLevel level, const char* message, std::size_t length);
+
+} // namespace detail
 
 /// \brief Logs for a trace message
 ///
