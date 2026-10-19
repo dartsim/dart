@@ -130,6 +130,8 @@ def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
     monkeypatch.chdir(tmp_path)
     dart_license = b"DART BSD license\r\n" if crlf else b"DART BSD license\n"
     (tmp_path / "LICENSE").write_bytes(dart_license)
+    dart_notice = (Path(__file__).resolve().parents[1] / "NOTICE").read_bytes()
+    (tmp_path / "NOTICE").write_bytes(dart_notice)
     (tmp_path / "setup.py").write_text("# Wheel fixture\n", encoding="utf-8")
     sdk_license = tmp_path / "sdk" / "LICENSE"
     sdk_license.parent.mkdir()
@@ -153,7 +155,6 @@ def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
         {
             "name": "dartpy",
             "version": "1.0",
-            "license_files": ["LICENSE"],
             "packages": [],
             "py_modules": [],
             "ext_modules": [Extension("dartpy", sources=[], py_limited_api=abi3)],
@@ -165,15 +166,17 @@ def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
         }
     )
     distribution.script_name = "setup.py"
+    distribution.parse_config_files()
     if reuse_metadata:
         prepared = tmp_path / "prepared" / "dartpy-1.0.dist-info"
         (prepared / "licenses").mkdir(parents=True)
         (prepared / "licenses" / "LICENSE").write_bytes(
             (tmp_path / "LICENSE").read_bytes()
         )
+        (prepared / "licenses" / "NOTICE").write_bytes(dart_notice)
         (prepared / "METADATA").write_text(
             "Metadata-Version: 2.4\nName: dartpy\nVersion: 1.0\n"
-            "License-File: LICENSE\n\nPrepared description\n",
+            "License-File: LICENSE\nLicense-File: NOTICE\n\nPrepared description\n",
             encoding="utf-8",
         )
         distribution.get_command_obj("bdist_wheel").dist_info_dir = str(prepared)
@@ -187,10 +190,12 @@ def test_wheel_preserves_dart_license_and_copies_fetched_sdk(
     with zipfile.ZipFile(wheel) as archive:
         prefix = "dartpy-1.0.dist-info/"
         assert archive.read(prefix + "licenses/LICENSE") == dart_license
+        assert archive.read(prefix + "licenses/NOTICE") == dart_notice
         metadata = (
             archive.read(prefix + "METADATA").decode("utf-8").replace("\r\n", "\n")
         )
         assert "License-File: LICENSE\n" in metadata
+        assert "License-File: NOTICE\n" in metadata
         if reuse_metadata:
             assert metadata.endswith("Prepared description\n")
         if with_filament:

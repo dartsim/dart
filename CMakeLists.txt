@@ -38,6 +38,12 @@ set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 include(GNUInstallDirs)
 
+# Use the same default install component as libdart.
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
+)
+
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
 set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})

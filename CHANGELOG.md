@@ -270,6 +270,8 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+  * Ship third-party attribution in `NOTICE`, included in dartpy's license
+    metadata and installed alongside `LICENSE` in `share/licenses/dart`.
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
