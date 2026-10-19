@@ -75,10 +75,17 @@ NUDGE = 0.01
 def swivel_solver(chain, wam):
     """Hold the current elbow's swivel, so redundancy follows body drags.
 
-    Prefers Newton continuation from the current pose where the held swivel is
-    ill-conditioned. When neither helps, also offers each branch's in-limit
-    swivel nearest the current pose, then ssik's seeded solve. DART applies the
-    valid solution nearest the current pose.
+    For each target, in order:
+
+    1. No candidates when every branch needs the elbow past its limits.
+    2. The held-swivel solutions, when one moves no joint more than JUMP.
+    3. Otherwise the continuation from the current pose, when it moves at least
+       JUMP less than every held-swivel solution.
+    4. Otherwise the held-swivel solutions, when one moves less than FLIP.
+    5. Otherwise those plus each branch's in-limit swivel nearest the current
+       pose, or ssik's seeded solve when no swivel search succeeds.
+
+    DART applies the valid candidate nearest the current pose.
     """
     refinement = importlib.import_module("ssik.refinement")
     # SciPy is an ssik dependency.
@@ -268,14 +275,18 @@ def swivel_solver(chain, wam):
         return held + found
 
     def solve(desired):
+        skeleton = wam()
+        if skeleton is None:
+            return []
         desired = np.asarray(desired)
-        q = wam().getPositions()
+        q = skeleton.getPositions()
         key = desired.tobytes() + q.tobytes()
         if last[0] != key:
             try:
                 found = candidates(desired, q)
-            except np.linalg.LinAlgError:
-                # A numerical failure must not disable the scene's refresh.
+            except Exception:  # noqa: BLE001 - keep the scene's refresh alive
+                # A solver or numerical failure leaves the arm in place for this
+                # target; an exception would disable the refresh for good.
                 found = []
             last[:] = [key, found]
         return last[1]
@@ -286,7 +297,12 @@ def swivel_solver(chain, wam):
 def build() -> dart.viewer.SceneSetup:
     try:
         ssik = importlib.import_module("ssik")
-        ssik.Manipulator.self_motion
+        refinement = importlib.import_module("ssik.refinement")
+        optimize = importlib.import_module("scipy.optimize")
+        # Probe every API the solver uses, so an incompatible ssik skips.
+        ssik.Manipulator.self_motion, optimize.lsq_linear
+        refinement.lm_refine, refinement.kinbody_jacobian
+        refinement.se3_log_residual
     except (ImportError, AttributeError) as error:
         raise dart.viewer.AssetsNotPrefetchedError(
             "Install ssik>=8.1.0 in this Python environment with: "

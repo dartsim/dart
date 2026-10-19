@@ -345,8 +345,9 @@ def test_wam_ssik_solutions_reach_target_within_limits():
             assert np.all((lower <= q) & (q <= upper))
             wam.setPositions(q)
             reached = ee.getWorldTransform().matrix()
-            assert np.abs(reached[:3, 3] - target.translation()).max() <= 1e-8
-            assert _rotation_error(reached, target.matrix()) <= 1e-8
+            # The solver accepts candidates that close FK within 1e-6.
+            assert np.abs(reached[:3, 3] - target.translation()).max() <= 1e-6
+            assert _rotation_error(reached, target.matrix()) <= 1e-6
     # A random in-limit target is always reachable; the fallback keeps it so.
     assert found == 100
 
@@ -687,6 +688,23 @@ def test_wam_ssik_keeps_a_continuation_reached_on_its_last_step():
     assert len(found) == 1
     np.testing.assert_allclose(chain.fk(found[0]), desired, atol=1e-6)
     assert np.abs(found[0] - start).max() <= wam_analytical_ik.TRACK_REACH
+
+
+def test_wam_ssik_solver_errors_leave_the_arm_in_place():
+    from examples.demos.scenes import wam_analytical_ik
+
+    _, wam, _, chain = _wam_with_ssik()
+
+    class FailingChain:
+        def __getattr__(self, name):
+            return getattr(chain, name)
+
+        def self_motion(self, desired):
+            raise ValueError("ssik failed")
+
+    # An exception would escape into DART's IK and disable the scene's refresh.
+    solve = wam_analytical_ik.swivel_solver(FailingChain(), wam)
+    assert solve(chain.fk(wam.getPositions())) == []
 
 
 def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):

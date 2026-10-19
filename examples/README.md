@@ -56,7 +56,7 @@ Useful flags (`pixi run demos -- --help` for the full list):
 
 Each scene's source lives under `python/examples/demos/scenes/`; scene ids match
 their original standalone example names (e.g. `scenes/boxes.py` is
-`--scene boxes`).
+`--scene boxes`), except `wam_analytical_ik`, which replaced `wam_ikfast`.
 
 ## Adding catalog scenes
 

@@ -59,8 +59,9 @@ milestone consolidation PR, following the program's hot-file rule.
   `dart::dynamics::wrapCyclicSolution`, and the installed
   `dart/dynamics/IkFast.hpp`, `dart/dynamics/SharedLibraryIkFast.hpp`,
   `dart/dynamics/ikfast.h` and `dart/external/ikfast/ikfast.h` headers.
-  Implement `InverseKinematics::Analytical` for a C++ analytical solver, or
-  pass a Python solver such as ssik to `InverseKinematics.setPythonAnalytical`.
+  Implement `InverseKinematics::Analytical` for a C++ analytical solver, which
+  can load a generated solver through `dart::common::SharedLibrary`, or pass a
+  Python solver such as ssik to `InverseKinematics.setPythonAnalytical`.
 - **Examples:** The WAM scene is now `wam_analytical_ik` and solves with
   ssik's closed-form analytical IK. Like `ssik_ik_gui`, it needs the optional
   ssik package (`pixi run install-ssik`) and is skipped without it.
