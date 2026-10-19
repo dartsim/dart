@@ -972,7 +972,7 @@ std::size_t SoftBodyNode::getNumActivePointMasses() const
 //==============================================================================
 void SoftBodyNode::removeAllPointMasses()
 {
-  mPointMasses.clear();
+  // configurePointMasses() deletes the point masses and their states together.
   mAspectProperties.mPointProps.clear();
   mAspectProperties.mFaces.clear();
   configurePointMasses(mSoftShapeNode.lock());
@@ -981,8 +981,7 @@ void SoftBodyNode::removeAllPointMasses()
 //==============================================================================
 PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 {
-  mPointMasses.push_back(new PointMass(this));
-  mPointMasses.back()->mIndex = mPointMasses.size() - 1;
+  // configurePointMasses() creates the point mass and its state together.
   mAspectProperties.mPointProps.push_back(_properties);
   configurePointMasses(mSoftShapeNode.lock());
 
