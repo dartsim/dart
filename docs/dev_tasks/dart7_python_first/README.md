@@ -229,7 +229,8 @@ deciding M3.
 
 Remaining critical path: M1d → M1i →
 `WorldBatch` → M5b simulation bindings → acceptance. In parallel: M6b →
-checkpoint C2. M5a is open since M0 exited.
+checkpoint C2. M5a is open since M0 exited. The re-prioritization proposed in
+[RESUME.md](RESUME.md) would reorder this path; it changes only if approved.
 
 ### M1 core seams
 
@@ -599,17 +600,36 @@ Every packet needs two clean review passes on its final state.
 - Publishing each packet needs maintainer approval.
 - Pending maintainer action: check PyPI's project history for deleted 7.0.0
   files; PyPI never accepts a reused file name.
-- Maintainer decisions pending for M1 and M5a:
-  - Typed primary-solver selection (M1e) grows `WorldConfig` from 72 to 80
-    bytes, an ABI layout change; that packet waits for approval.
-  - The milestone-exit performance baseline after #3789 changed the contact
-    benchmark workload.
-  - Whether a packet that cannot reach the per-row and geometric-mean
-    instruction limits may land with a bounded rationale until M2 recovers the
-    cost (the shared executor is the current case).
+- Maintainer decisions pending; the first three gate Python work today:
+  - How renames are approved: one table covering the whole parity surface, as
+    M5a plans today, or naming rules plus an exceptions list and a frozen
+    old-to-new mapping, with mechanical PRs approved as a series and 7.0.0
+    pre-releases.
+  - The naming rules: keep `get_`/`set_` names, or a curated API with
+    keyword-only options, private generated helper types, cheap state as
+    properties and a name budget per class.
+  - Whether `None` for a frame argument means the world frame where C++
+    defaults to it, and raises `TypeError` elsewhere.
+  - Multi-solver and multi-physics scope for 7.0: the proposal ships the typed
+    solver policy, the written contract and the private rigid domain boundary,
+    and builds the coupling seam together with a first experimental domain,
+    which revisits D2 and D7.
+  - A standing window, until 7.0.0 is packaged, for ABI layout changes in
+    classes Gazebo neither subclasses nor reads, gated by the API inventory
+    check and the Gazebo lanes. It would also settle the typed primary-solver
+    selection (M1e), which grows `WorldConfig` from 72 to 80 bytes.
+  - Whether never-compiled C++ Worlds keep 6.20 behaviour, apart from the
+    labeled rejection of re-entrant stepping and edits during a step, with
+    model-ownership tracking starting at `compile()`.
+  - Whether the shared executor moves after 7.0, with `WorldBatch` owning its
+    executor, which revisits the shared-executor plan under D14; the shared
+    executor cannot reach the per-row and geometric-mean instruction limits
+    today.
+  - Checkpoint scope for 7.0 and the milestone-exit performance baseline after
+    #3789 changed the contact benchmark workload.
   - For compiled Worlds, whether replacing mesh data or voxel occupancy counts
     as a topology edit allowed only inside `edit()`; this gates M1b's strict
     shape rejection and M1f.
-  - M5a rename-table policy: the keyword-only boundary rule, retiring generated
-    helper types, and the approved table's home and format.
+  - Whether the step-path quiet window becomes a merge queue with
+    path-triggered Gazebo lanes.
 - See [RESUME.md](RESUME.md) for the immediate next steps.
