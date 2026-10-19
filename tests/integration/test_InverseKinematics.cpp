@@ -414,6 +414,25 @@ private:
 };
 
 //==============================================================================
+class CandidateIKAnalytical : public PrismaticIKCloneAnalytical
+{
+public:
+  using PrismaticIKCloneAnalytical::PrismaticIKCloneAnalytical;
+
+  const std::vector<Solution>& computeSolutions(
+      const Eigen::Isometry3d&) override
+  {
+    mSolutions.clear();
+    mSolutions.emplace_back(Eigen::VectorXd::Constant(1, 2.0));
+    mSolutions.emplace_back(Eigen::VectorXd::Constant(1, 0.1), OUT_OF_REACH);
+    mSolutions.emplace_back(Eigen::VectorXd::Constant(1, 0.8));
+    mSolutions.emplace_back(Eigen::VectorXd::Constant(1, 0.2));
+    checkSolutionJointLimits();
+    return mSolutions;
+  }
+};
+
+//==============================================================================
 // Solves for the DOFs that its IK module selects, so its copies follow the
 // copied selection.
 class SelectedDofsIKCloneAnalytical : public PrismaticIKCloneAnalytical
@@ -482,8 +501,8 @@ public:
 
 //==============================================================================
 // Stores the DOFs of a torso that turns about z and of an arm that slides along
-// x from one unit off the torso's axis, as IkFast stores the DOFs of an arm,
-// and solves for the position of a tool on the arm.
+// x from one unit off the torso's axis, and solves for the position of a tool
+// on the arm using those stored DOFs.
 class TorsoArmIKCloneAnalytical : public PrismaticIKCloneAnalytical
 {
 public:
@@ -760,6 +779,47 @@ SkeletonPtr createSkeletonWithDofs()
 } // namespace
 
 //==============================================================================
+TEST(InverseKinematics, AnalyticalSolutionOrderingAndJointLimits)
+{
+  auto skeleton = Skeleton::create();
+  auto pair = skeleton->createJointAndBodyNodePair<PrismaticJoint>();
+  pair.first->setPositionLowerLimit(0, 0.0);
+  pair.first->setPositionUpperLimit(0, 1.0);
+  skeleton->setPosition(0, 0.3);
+  auto ik = pair.second->createEndEffector("analytical")->getIK(true);
+  ik->setGradientMethod<CandidateIKAnalytical>();
+  auto* analytical = ik->getAnalytical();
+
+  const auto& solutions
+      = analytical->getSolutions(Eigen::Isometry3d::Identity());
+  ASSERT_EQ(solutions.size(), 4u);
+  EXPECT_EQ(solutions[0].mValidity, InverseKinematics::Analytical::VALID);
+  EXPECT_DOUBLE_EQ(solutions[0].mConfig[0], 0.2);
+  EXPECT_EQ(solutions[1].mValidity, InverseKinematics::Analytical::VALID);
+  EXPECT_DOUBLE_EQ(solutions[1].mConfig[0], 0.8);
+  EXPECT_EQ(
+      solutions[2].mValidity, InverseKinematics::Analytical::OUT_OF_REACH);
+  EXPECT_DOUBLE_EQ(solutions[2].mConfig[0], 0.1);
+  EXPECT_EQ(
+      solutions[3].mValidity, InverseKinematics::Analytical::LIMIT_VIOLATED);
+  EXPECT_DOUBLE_EQ(solutions[3].mConfig[0], 2.0);
+  EXPECT_DOUBLE_EQ(skeleton->getPosition(0), 0.3);
+
+  analytical->setQualityComparisonFunction(
+      [](const Eigen::VectorXd& a,
+         const Eigen::VectorXd& b,
+         const InverseKinematics*) { return a[0] > b[0]; });
+  const auto& reordered
+      = analytical->getSolutions(Eigen::Isometry3d::Identity());
+  EXPECT_DOUBLE_EQ(reordered[0].mConfig[0], 0.8);
+  EXPECT_DOUBLE_EQ(reordered[1].mConfig[0], 0.2);
+  EXPECT_EQ(
+      reordered[2].mValidity, InverseKinematics::Analytical::OUT_OF_REACH);
+  EXPECT_EQ(
+      reordered[3].mValidity, InverseKinematics::Analytical::LIMIT_VIOLATED);
+}
+
+//==============================================================================
 TEST(InverseKinematics, CloneBodyNodeWithAnalytical)
 {
   checkPrismaticIKClone(false, true);
@@ -978,7 +1038,7 @@ TEST(InverseKinematics, CopyToolWithinSkeletonReplacesStaleAnalytical)
       = torso.second->createChildJointAndBodyNodePair<WeldJoint>(fixed).second;
 
   // Both end effectors select the torso and arm DOFs. One solver stores them,
-  // as IkFast does, and the other solves for the DOFs that its node depends on.
+  // and the other solves for the DOFs that its node depends on.
   auto storedIK = tool->createEndEffector("stored")->getIK(true);
   storedIK->setDofs({0, 1});
   storedIK->setGradientMethod<TorsoArmIKCloneAnalytical>();

@@ -1,12 +1,13 @@
-"""Contact-local activation markers around the native soft-contact model."""
+"""Contact-local activation markers around the soft-contact model."""
 
 import dartpy as dart
 import numpy as np
 
+from ..models import adaptive_soft_contact as adaptive_model
+
 
 def build() -> dart.viewer.SceneSetup:
-    native = dart._demos.adaptive_soft_contact
-    model = native.create_model()
+    model = adaptive_model.create_model()
     world = model.world
     markers = []
     for i in range(model.soft_body.getNumPointMasses()):
@@ -21,10 +22,14 @@ def build() -> dart.viewer.SceneSetup:
     panel = dart.viewer.Panel()
     adaptive = panel.add_checkbox("Adaptive activation", True)
     rings = panel.add_slider(
-        "Contact rings", native.default_ring_count, min=0, max=4, integer=True
+        "Contact rings", adaptive_model.default_ring_count, min=0, max=4, integer=True
     )
     linger = panel.add_slider(
-        "Linger steps", native.default_linger_steps, min=0, max=120, integer=True
+        "Linger steps",
+        adaptive_model.default_linger_steps,
+        min=0,
+        max=120,
+        integer=True,
     )
     panel.add_separator()
     active_text = panel.add_text("")
@@ -44,7 +49,7 @@ def build() -> dart.viewer.SceneSetup:
     finite = True
 
     def apply_settings():
-        native.configure(
+        adaptive_model.configure(
             model,
             adaptive_enabled=adaptive.value,
             ring_count=rings.value,
@@ -52,8 +57,8 @@ def build() -> dart.viewer.SceneSetup:
         )
 
     def update_markers():
-        positions = native.point_positions(model)
-        flags = native.active_flags(model)
+        positions = adaptive_model.point_positions(model)
+        flags = adaptive_model.active_flags(model)
         for marker, position, active in zip(markers, positions, flags):
             if np.isfinite(position).all():
                 marker.setRelativeTranslation(position)
@@ -63,17 +68,17 @@ def build() -> dart.viewer.SceneSetup:
 
     def pre_step():
         apply_settings()
-        native.prepare_step(model)
+        adaptive_model.prepare_step(model)
 
     def post_step():
         nonlocal finite
-        finite = native.is_finite(model)
+        finite = adaptive_model.is_finite(model)
         update_markers()
 
     def pre_refresh():
         apply_settings()
         update_markers()
-        active = native.compute_checksum(model).active
+        active = adaptive_model.compute_checksum(model).active
         total = model.soft_body.getNumPointMasses()
         active_text.label = f"Active point masses:   {active}"
         inactive_text.label = f"Inactive point masses: {total - active}"

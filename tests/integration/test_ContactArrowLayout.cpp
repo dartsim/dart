@@ -44,7 +44,7 @@
 // scene rather than to an absolute constant, and their length still orders by
 // force magnitude.
 
-#include "demo_models/ContactArrowLayout.hpp"
+#include "dart/gui/app/ContactArrowLayout.hpp"
 
 #include <dart/simulation/World.hpp>
 
@@ -83,7 +83,7 @@ constexpr std::size_t kMaxArrows = 256;
 /// scene-dependent references, so this is how a test advances the layout the
 /// way ContactVisualizer does.
 void pump(
-    dart_demos::ContactArrowLayout& layout,
+    dart::gui::app::ContactArrowLayout& layout,
     const dart::simulation::WorldPtr& world)
 {
   layout.update(*world, {}, kMaxArrows);
@@ -166,7 +166,7 @@ TEST(ContactArrowLayoutTest, ArrowsStayAnchoredToTheirContactPoints)
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(180.0, 0.3, box);
 
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   // Step long enough to cover the impact transient and the resting phase after
@@ -212,12 +212,12 @@ TEST(ContactArrowLayoutTest, ReferenceLengthTracksTheSceneNotTheForce)
 {
   dart::dynamics::SkeletonPtr smallBox;
   auto smallWorld = makeBoxOnGround(180.0, 0.3, smallBox);
-  dart_demos::ContactArrowLayout smallLayout;
+  dart::gui::app::ContactArrowLayout smallLayout;
   smallLayout.resetForWorld(*smallWorld);
 
   dart::dynamics::SkeletonPtr bigBox;
   auto bigWorld = makeBoxOnGround(180.0, 3.0, bigBox);
-  dart_demos::ContactArrowLayout bigLayout;
+  dart::gui::app::ContactArrowLayout bigLayout;
   bigLayout.resetForWorld(*bigWorld);
 
   // Same mass, ten times the size: the arrows scale with the geometry.
@@ -247,7 +247,7 @@ TEST(ContactArrowLayoutTest, ArrowLengthOrdersByForceMagnitude)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const Eigen::Vector3d up = Eigen::Vector3d::UnitY();
@@ -283,7 +283,7 @@ TEST(ContactArrowLayoutTest, DropsNonFiniteAndNegligibleContacts)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const double nan = std::numeric_limits<double>::quiet_NaN();
@@ -311,7 +311,7 @@ TEST(ContactArrowLayoutTest, ReferenceForceRecoversAfterASpike)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const std::vector<dart::collision::Contact> spike = {
@@ -330,7 +330,8 @@ TEST(ContactArrowLayoutTest, ReferenceForceRecoversAfterASpike)
 
   // One decay time later it is readable again.
   const int stepsPerDecayTime = static_cast<int>(
-      dart_demos::ContactArrowLayout::kForceDecayTime / world->getTimeStep());
+      dart::gui::app::ContactArrowLayout::kForceDecayTime
+      / world->getTimeStep());
   for (int step = 0; step < 4 * stepsPerDecayTime; ++step) {
     tick(world);
     layout.update(*world, resting, kMaxArrows);
@@ -357,7 +358,7 @@ TEST(ContactArrowLayoutTest, IgnoresNoncollidableBodies)
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.3, box);
 
-  dart_demos::ContactArrowLayout withoutPool;
+  dart::gui::app::ContactArrowLayout withoutPool;
   withoutPool.resetForWorld(*world);
   const double baselineLength = withoutPool.getReferenceLength();
 
@@ -384,7 +385,7 @@ TEST(ContactArrowLayoutTest, IgnoresNoncollidableBodies)
     world->addSkeleton(parked);
   }
 
-  dart_demos::ContactArrowLayout withPool;
+  dart::gui::app::ContactArrowLayout withPool;
   withPool.resetForWorld(*world);
 
   EXPECT_DOUBLE_EQ(withPool.getReferenceLength(), baselineLength)
@@ -424,7 +425,7 @@ TEST(ContactArrowLayoutTest, DecayIsInvariantAcrossTimesteps)
   const auto referenceAfter = [&](double dt, int steps) {
     world->setTimeStep(dt);
     world->setTime(0.0);
-    dart_demos::ContactArrowLayout layout;
+    dart::gui::app::ContactArrowLayout layout;
     layout.resetForWorld(*world);
     layout.update(*world, spike, kMaxArrows);
     for (int s = 0; s < steps; ++s) {
@@ -465,19 +466,19 @@ TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
           Eigen::Vector3d(20.0, 0.2, 20.0)));
   world->addSkeleton(ground);
 
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   // Nothing mobile yet, so the fallback is all there is to go on.
   EXPECT_DOUBLE_EQ(
       layout.getReferenceLength(),
-      dart_demos::ContactArrowLayout::kFallbackReferenceLength);
+      dart::gui::app::ContactArrowLayout::kFallbackReferenceLength);
 
   // A no-op update must not disturb anything.
   pump(layout, world);
   EXPECT_DOUBLE_EQ(
       layout.getReferenceLength(),
-      dart_demos::ContactArrowLayout::kFallbackReferenceLength);
+      dart::gui::app::ContactArrowLayout::kFallbackReferenceLength);
 
   // Spawn a cube, the way add_delete_skels does on 'q'.
   auto cube = dart::dynamics::Skeleton::create("cube");
@@ -511,7 +512,7 @@ TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
       << "re-deriving the scale discarded the force reference being tracked";
 
   std::cout << "contact_arrow_refresh  ground_only_ref_len="
-            << dart_demos::ContactArrowLayout::kFallbackReferenceLength
+            << dart::gui::app::ContactArrowLayout::kFallbackReferenceLength
             << " m  after_cube_spawn=" << layout.getReferenceLength()
             << " m  tracked_force_kept=" << layout.getReferenceForce()
             << " N\n";
@@ -546,7 +547,7 @@ TEST(ContactArrowLayoutTest, RefreshesWhenCollidabilityChanges)
   projectile->getJoint(0)->setPositions(parked);
   world->addSkeleton(projectile);
 
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
   const double parkedLength = layout.getReferenceLength();
 
@@ -581,7 +582,7 @@ TEST(ContactArrowLayoutTest, RejectsForcesThatOverflowUnderNorm)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const double huge = 1e200; // finite, but 3 * huge^2 overflows
@@ -616,7 +617,7 @@ TEST(ContactArrowLayoutTest, ForceFloorFollowsLiveGravity)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(100.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   // 100 kg at 9.81 puts the floor at 5% of ~981 N.
@@ -661,7 +662,7 @@ TEST(ContactArrowLayoutTest, RefreshesWhenASkeletonIsReplacedBySameTopology)
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.3, box);
 
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
   const double smallLength = layout.getReferenceLength();
 
@@ -706,36 +707,36 @@ TEST(ContactArrowLayoutTest, HandlesDegenerateWorldsAndInputs)
   // the force floor collapses to the negligible-force threshold.
   auto empty = dart::simulation::World::create("empty");
   empty->setTimeStep(0.001);
-  dart_demos::ContactArrowLayout emptyLayout;
+  dart::gui::app::ContactArrowLayout emptyLayout;
   emptyLayout.resetForWorld(*empty);
   EXPECT_DOUBLE_EQ(
       emptyLayout.getReferenceLength(),
-      dart_demos::ContactArrowLayout::kFallbackReferenceLength);
+      dart::gui::app::ContactArrowLayout::kFallbackReferenceLength);
   EXPECT_TRUE(emptyLayout.update(*empty, {}, kMaxArrows).empty());
 
   // A scene far smaller than the minimum, and one far larger than the maximum,
   // both clamp rather than producing invisible or scene-swallowing arrows.
   dart::dynamics::SkeletonPtr tiny;
   auto tinyWorld = makeBoxOnGround(0.001, 0.0005, tiny);
-  dart_demos::ContactArrowLayout tinyLayout;
+  dart::gui::app::ContactArrowLayout tinyLayout;
   tinyLayout.resetForWorld(*tinyWorld);
   EXPECT_DOUBLE_EQ(
       tinyLayout.getReferenceLength(),
-      dart_demos::ContactArrowLayout::kMinReferenceLength);
+      dart::gui::app::ContactArrowLayout::kMinReferenceLength);
 
   dart::dynamics::SkeletonPtr huge;
   auto hugeWorld = makeBoxOnGround(1000.0, 400.0, huge);
-  dart_demos::ContactArrowLayout hugeLayout;
+  dart::gui::app::ContactArrowLayout hugeLayout;
   hugeLayout.resetForWorld(*hugeWorld);
   EXPECT_DOUBLE_EQ(
       hugeLayout.getReferenceLength(),
-      dart_demos::ContactArrowLayout::kMaxReferenceLength);
+      dart::gui::app::ContactArrowLayout::kMaxReferenceLength);
 
   // A non-positive timestep must not produce a NaN decay. The reference simply
   // stops carrying anything forward.
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const std::vector<dart::collision::Contact> spike = {
@@ -795,7 +796,7 @@ TEST(ContactArrowLayoutTest, DropsTheFloorWhenItsBodyLeavesTheScale)
   projectileBody->setCollidable(true);
   world->addSkeleton(projectile);
 
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   // With the heavy projectile in play the floor is high, so a light contact on
@@ -832,7 +833,7 @@ TEST(ContactArrowLayoutTest, DecayAdvancesWhileUpdatesAreSkipped)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const std::vector<dart::collision::Contact> spike = {
@@ -875,7 +876,7 @@ TEST(ContactArrowLayoutTest, DecaySurvivesASceneRefresh)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  dart_demos::ContactArrowLayout layout;
+  dart::gui::app::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
   const std::vector<dart::collision::Contact> spike = {

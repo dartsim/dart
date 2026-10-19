@@ -135,6 +135,15 @@ only with new evidence and maintainer approval.
 - **D26. Built-in native sensors** under `world.sensors`: IMU, force-torque,
   contact and joint state, with seeded noise. Recording arrives with the
   recorder (M4) and batch support with `WorldBatch`.
+- **D33. DART 7 drops IKFast (maintainer, 2026-10-18).** The `IkFast` and
+  `SharedLibraryIkFast` analytical IK classes, `wrapCyclicSolution`, and the
+  installed `dart/dynamics/ikfast.h` header with its
+  `dart/external/ikfast/ikfast.h` forwarding header are removed without
+  replacement. C++ analytical solvers implement
+  `InverseKinematics::Analytical` directly, and Python solvers such as ssik
+  plug in through `InverseKinematics.setPythonAnalytical`.
+  - Evidence: Gazebo's API inventory uses none of these names. The WAM demo
+    was the last IKFast user, and it moves to ssik (D31b).
 
 ## Python API
 
@@ -181,9 +190,15 @@ only with new evidence and maintainer approval.
   list, cycle and capture.
   - Its bindings start in the 7.0 style as `dartpy.viewer`, the managed-loop
     core that M6b's `launch()` can reuse.
-  - Python declares scenes, key actions, light step hooks and declarative
-    panel controls. There is no Python ImGui API. Heavy controllers and
-    models stay native behind the private `dartpy._demos`.
+  - Python declares scenes, key actions, simulation hooks and declarative
+    panel controls. There is no Python ImGui API. On 2026-10-13 the maintainer
+    revised the implementation boundary: demo controllers and models move to
+    Python over the engine, IO, and GUI bindings. All demo implementation is
+    now Python, and `dartpy._demos` and `dart-demo-models` are removed.
+  - On 2026-10-18 the maintainer accepted a change of joint selection for the
+    WAM scene. ssik's closed-form `seven_r.srs` solver replaces the generated
+    IKFast solver, which held `/j3` as a free joint. The scene, now
+    `wam_analytical_ik`, needs the optional ssik package, like `ssik_ik_gui`.
   - The Python demo catalog is D22's example runner. All 37 retained scenes
     reached parity before WP-PD.18 removed the C++ app and its aliases.
     The TinyDNN-only `human_joint_limits` scene is retired: no supported
@@ -206,9 +221,8 @@ only with new evidence and maintainer approval.
     and count one callback; interrupts stop the loop and are re-raised only
     after teardown. Panels remain declarative C++ control trees, with
     numeric precision instead of printf formats.
-  - The WAM solver is linked into `dart-demo-models` without exported IKFast
-    symbols or a LAPACK dependency; ssik runs directly from Python instead
-    of an embedded-interpreter bridge. The memory-diagnostics option keeps
+  - Both ssik scenes call the solver directly from Python, without an
+    embedded-interpreter bridge. The memory-diagnostics option keeps
     its existing name and defaults to off. `DART_IMGUI_DOCKING` is removed;
     the ImGui provider determines host availability.
 

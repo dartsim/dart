@@ -769,6 +769,8 @@ private:
   // Callers have already checked the index or are iterating over valid DoFs.
   Joint::ActuatorType getActuatorTypeForValidIndex(std::size_t index) const;
 
+  // setCommand()'s per-actuator rule without its warnings, for restoring
+  // state; keep the two in sync.
   double clampCommandToActuatorLimits(std::size_t index, double command) const;
 
   //----------------------------------------------------------------------------

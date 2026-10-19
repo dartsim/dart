@@ -40,6 +40,7 @@ namespace python {
 void Random(nb::module_& sm);
 void Geometry(nb::module_& sm);
 void Transform(nb::module_& sm);
+void TriMesh(nb::module_& sm);
 
 void dart_math(nb::module_& m)
 {
@@ -51,6 +52,7 @@ void dart_math(nb::module_& m)
   // Top-level re-exports of the DART 7 allowlist; dartpy.math stays canonical.
   m.attr("Transform") = sm.attr("Transform");
   m.attr("Rotation") = sm.attr("Rotation");
+  TriMesh(sm);
 }
 
 } // namespace python
