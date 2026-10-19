@@ -33,6 +33,7 @@
 #include "AllocationCounting.hpp"
 #include "TestHelpers.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionOption.hpp"
@@ -5844,4 +5845,66 @@ TEST(ConstraintSolver, SetFromOtherSolverPublishesHandlerBeforeRelease)
   EXPECT_TRUE(inDeleter);
   EXPECT_TRUE(sameHandler);
   EXPECT_TRUE(sameOwner);
+}
+
+namespace dart::collision::detail {
+
+class BodyNodeCollisionFilterAccessor
+{
+public:
+  static bool isSolverRestingContactFilterActive(
+      const BodyNodeCollisionFilter& filter)
+  {
+    return filter.isSolverRestingContactFilterActive();
+  }
+};
+
+} // namespace dart::collision::detail
+
+//==============================================================================
+TEST(ConstraintSolver, ContactQueryExceptionsResetRestingContactFiltering)
+{
+  class ThrowingFilter : public collision::BodyNodeCollisionFilter
+  {
+  public:
+    bool ignoresCollision(
+        const collision::CollisionObject* object1,
+        const collision::CollisionObject* object2) const override
+    {
+      // Throw from inside the solver's contact query.
+      if (mArmed
+          && collision::detail::BodyNodeCollisionFilterAccessor::
+              isSolverRestingContactFilterActive(*this)) {
+        throw std::runtime_error("filter");
+      }
+      return BodyNodeCollisionFilter::ignoresCollision(object1, object2);
+    }
+
+    bool mArmed = false;
+  };
+
+  auto world = simulation::World::create();
+  auto ground = createSleepTestGround();
+  world->addSkeleton(ground);
+  auto box = createSolverTestBox(
+      "box",
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Vector3d(0.0, 0.0, 0.2495),
+      true);
+  world->addSkeleton(box);
+  auto filter = std::make_shared<ThrowingFilter>();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+  ASSERT_TRUE(world->getDeactivationOptions().mEnabled);
+
+  filter->mArmed = true;
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_FALSE(collision::detail::BodyNodeCollisionFilterAccessor::
+                   isSolverRestingContactFilterActive(*filter));
+
+  filter->mArmed = false;
+  world->step();
+  EXPECT_TRUE(hasContactBetween(
+      world->getLastCollisionResult(),
+      ground->getBodyNode(0),
+      box->getBodyNode(0)));
 }

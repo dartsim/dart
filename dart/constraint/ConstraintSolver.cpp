@@ -1636,19 +1636,29 @@ bool ConstraintSolver::updateConstraintsWithQueryFilter(
   }
 
   bool contactQueryComplete;
-  if (queryFilter) {
-    // Keep the user's collision option intact for downstream readers.
-    auto queryOption = mCollisionOption;
-    queryOption.collisionFilter = queryFilter;
-    contactQueryComplete = collideWithContactBudget(
-        *mCollisionGroup, queryOption, mCollisionResult);
-  } else {
-    contactQueryComplete = collideWithContactBudget(
-        *mCollisionGroup, mCollisionOption, mCollisionResult);
-  }
+  {
+    // The flags are per thread; clear them even when the query throws.
+    struct RestingContactFilterReset
+    {
+      collision::BodyNodeCollisionFilter* filter;
+      ~RestingContactFilterReset()
+      {
+        if (filter != nullptr)
+          filter->setSolverRestingContactFilterActive(false, false);
+      }
+    } restingContactFilterReset{restingContactFilter};
 
-  if (restingContactFilter != nullptr)
-    restingContactFilter->setSolverRestingContactFilterActive(false, false);
+    if (queryFilter) {
+      // Keep the user's collision option intact for downstream readers.
+      auto queryOption = mCollisionOption;
+      queryOption.collisionFilter = queryFilter;
+      contactQueryComplete = collideWithContactBudget(
+          *mCollisionGroup, queryOption, mCollisionResult);
+    } else {
+      contactQueryComplete = collideWithContactBudget(
+          *mCollisionGroup, mCollisionOption, mCollisionResult);
+    }
+  }
 
   const bool useBuiltInDefaultContactActiveState
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler);
