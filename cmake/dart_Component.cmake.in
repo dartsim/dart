@@ -9,8 +9,8 @@ endif()
 set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_@component@_FOUND" TRUE)
 foreach(external_dep @external_dependencies@)
   if(external_dep STREQUAL "Bullet")
-    # Link the Bullet precision that this DART was built with.
-    set(DART_BULLET_FLOAT64 "@BT_USE_DOUBLE_PRECISION@")
+    # Link the Bullet libraries that this DART was built with.
+    set(DART_BULLET_REQUIRE_FLOAT64 "@DART_BULLET_USES_FLOAT64@")
   endif()
   include(${CMAKE_CURRENT_LIST_DIR}/DARTFind${external_dep}.cmake)
 

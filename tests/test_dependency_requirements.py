@@ -378,16 +378,40 @@ def test_bullet_header_floor(tmp_path, bundled, version):
 
 
 @pytest.mark.parametrize(
-    "version,option,installed,suffix",
+    "version,settings,installed,expected",
     [
-        (325, "ON", True, "-float64"),
-        (325, "OFF", True, ""),
-        (305, "ON", True, ""),  # double-precision float heightfields need 3.17
-        (325, "ON", False, ""),
+        # Building DART: DART_BULLET_FLOAT64 prefers the -float64 libraries.
+        (325, "set(DART_BULLET_FLOAT64 ON)", True, "float64"),
+        (325, "set(DART_BULLET_FLOAT64 OFF)", True, "single"),
+        # Double-precision float heightfields need Bullet 3.17.
+        (305, "set(DART_BULLET_FLOAT64 ON)", True, "single"),
+        (325, "set(DART_BULLET_FLOAT64 ON)", False, "single"),
+        # Installed DART: the recorded selection decides, without fallback.
+        (325, "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)", True, "float64"),
+        (325, "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)", False, "missing"),
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 FALSE)\nset(DART_BULLET_FLOAT64 ON)",
+            True,
+            "single",
+        ),
+        # Bundled Bullet ignores a cached system library.
+        (
+            325,
+            "set(DART_USE_SYSTEM_BULLET OFF)\nset(DART_BULLET_FLOAT64 ON)\n"
+            "add_library(BulletCollision INTERFACE)\n"
+            "add_library(LinearMath INTERFACE)\n"
+            'set(DART_BULLET_SOURCE_DIR "${lib}/..")\n'
+            'set(BULLET_COLLISION_LIBRARY "${collision}")',
+            True,
+            "bundled",
+        ),
     ],
 )
-def test_bullet_prefers_float64_libraries(tmp_path, version, option, installed, suffix):
-    include = tmp_path / "bullet" / "include"
+def test_bullet_prefers_float64_libraries(
+    tmp_path, version, settings, installed, expected
+):
+    include = tmp_path / "bullet" / "src"
     header = include / "LinearMath" / "btScalar.h"
     header.parent.mkdir(parents=True)
     header.write_text(f"#define BT_BULLET_VERSION {version}\n")
@@ -403,6 +427,20 @@ def test_bullet_prefers_float64_libraries(tmp_path, version, option, installed, 
     if installed:
         stems += " BulletCollision-float64 LinearMath-float64"
     lib = (tmp_path / "bullet" / "lib").as_posix()
+    suffix = "-float64" if expected == "float64" else ""
+    if expected == "bundled":
+        check = 'NOT linked STREQUAL "BulletCollision;LinearMath"'
+    elif expected == "missing":
+        check = "TARGET Bullet OR BULLET_FOUND"
+    else:
+        # FindBullet's results stay single precision for consumers' targets.
+        check = (
+            "NOT linked STREQUAL expected"
+            " OR NOT BULLET_COLLISION_LIBRARY STREQUAL collision"
+        )
+        if "DART_BULLET_REQUIRE_FLOAT64" not in settings:
+            recorded = "TRUE" if suffix else "FALSE"
+            check += f" OR NOT DART_BULLET_USES_FLOAT64 STREQUAL {recorded}"
     result = configure(
         tmp_path,
         f'set(lib "{lib}")\n'
@@ -417,14 +455,14 @@ def test_bullet_prefers_float64_libraries(tmp_path, version, option, installed, 
         "endforeach()\n"
         'set(collision "${lib}/${prefix}BulletCollision${ext}")\n'
         'set(math "${lib}/${prefix}LinearMath${ext}")\n'
-        f"set(DART_USE_SYSTEM_BULLET ON)\nset(DART_BULLET_FLOAT64 {option})\n"
+        f"set(DART_USE_SYSTEM_BULLET ON)\n{settings}\n"
         "include(DARTFindBullet)\n"
         f'set(expected "${{lib}}/${{prefix}}BulletCollision{suffix}${{ext}}" '
         f'"${{lib}}/${{prefix}}LinearMath{suffix}${{ext}}")\n'
-        "get_target_property(linked Bullet INTERFACE_LINK_LIBRARIES)\n"
-        # FindBullet's results stay single precision for consumers' targets.
-        "if(NOT linked STREQUAL expected\n"
-        "    OR NOT BULLET_COLLISION_LIBRARY STREQUAL collision)\n"
+        "if(TARGET Bullet)\n"
+        "  get_target_property(linked Bullet INTERFACE_LINK_LIBRARIES)\n"
+        "endif()\n"
+        f"if({check})\n"
         '  message(FATAL_ERROR "Bullet links ${linked}")\n'
         "endif()\n",
     )

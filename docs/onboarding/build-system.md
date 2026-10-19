@@ -88,10 +88,11 @@ With system Bullet 3.17 or newer, `DART_BULLET_FLOAT64` (default `ON`) links
 the `-float64` libraries installed beside the single-precision ones, because
 single-precision Bullet's absolute GJK tolerances lose contacts of
 centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
-The installed CMake components and `dart.pc` record the chosen precision, so
-consumers link the same libraries. The two precisions share GNU unique symbols
-such as `btTransform::getIdentity()`'s static even across `RTLD_LOCAL` plugins,
-so one process must not load both; Gazebo loads one physics engine per server.
+The installed CMake components and `dart.pc` require the same libraries; an
+installed DART built with them does not fall back to the other variant. The
+two precisions share GNU unique symbols, such as the static in
+`btTransform::getIdentity()`, even across `RTLD_LOCAL` plugins, so a process
+must load only one Bullet precision.
 
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the

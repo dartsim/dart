@@ -28,8 +28,10 @@ if(NOT DART_USE_SYSTEM_BULLET)
   endif()
 endif()
 
+set(_dart_bullet_system FALSE)
 if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
   find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+  set(_dart_bullet_system TRUE)
 endif()
 
 if(BULLET_FOUND OR Bullet_FOUND)
@@ -49,51 +51,86 @@ if(BULLET_FOUND OR Bullet_FOUND)
   unset(_bullet_minor)
 endif()
 
-# Single-precision Bullet's fixed GJK tolerances drop or tilt contacts of
-# centimeter-scale shapes (gz-physics#1117), so prefer the double-precision
-# libraries that Ubuntu and conda-forge install beside the single-precision
-# ones. Float heightfields need Bullet 3.17 in double precision. Leave
-# FindBullet's variables alone: consumers may run it for their own targets.
-set(_dart_bullet_libraries ${BULLET_LIBRARIES})
-if(
-  DART_BULLET_FLOAT64
-  AND BULLET_COLLISION_LIBRARY
-  AND BULLET_VERSION VERSION_GREATER_EQUAL 3.17
-)
-  get_filename_component(
-    _dart_bullet_dir
-    "${BULLET_COLLISION_LIBRARY}"
-    DIRECTORY
+if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
+  # Single-precision Bullet's fixed GJK tolerances drop or tilt contacts of
+  # centimeter-scale shapes (gz-physics#1117), so prefer the double-precision
+  # libraries that Ubuntu and conda-forge install beside the single-precision
+  # ones. Float heightfields need Bullet 3.17 in double precision. Leave
+  # FindBullet's variables alone: consumers may run it for their own targets.
+  # An installed DART sets DART_BULLET_REQUIRE_FLOAT64 to the selection it was
+  # built with, because a consumer must not load both Bullet precisions.
+  if(DEFINED DART_BULLET_REQUIRE_FLOAT64)
+    set(_dart_bullet_want_float64 "${DART_BULLET_REQUIRE_FLOAT64}")
+  elseif(DART_BULLET_FLOAT64 AND BULLET_VERSION VERSION_GREATER_EQUAL 3.17)
+    set(_dart_bullet_want_float64 TRUE)
+  else()
+    set(_dart_bullet_want_float64 FALSE)
+  endif()
+  set(_dart_bullet_libraries ${BULLET_LIBRARIES})
+  set(_dart_bullet_float64 FALSE)
+  if(
+    _dart_bullet_system
+    AND BULLET_COLLISION_LIBRARY
+    AND _dart_bullet_want_float64
   )
-  find_library(
-    DART_BULLET_COLLISION_FLOAT64_LIBRARY
-    BulletCollision-float64
-    HINTS "${_dart_bullet_dir}"
-    NO_DEFAULT_PATH
-  )
-  find_library(
-    DART_BULLET_MATH_FLOAT64_LIBRARY
-    LinearMath-float64
-    HINTS "${_dart_bullet_dir}"
-    NO_DEFAULT_PATH
-  )
-  mark_as_advanced(
-    DART_BULLET_COLLISION_FLOAT64_LIBRARY
-    DART_BULLET_MATH_FLOAT64_LIBRARY
-  )
-  if(DART_BULLET_COLLISION_FLOAT64_LIBRARY AND DART_BULLET_MATH_FLOAT64_LIBRARY)
+    get_filename_component(
+      _dart_bullet_dir
+      "${BULLET_COLLISION_LIBRARY}"
+      DIRECTORY
+    )
+    find_library(
+      DART_BULLET_COLLISION_FLOAT64_LIBRARY
+      BulletCollision-float64
+      HINTS "${_dart_bullet_dir}"
+      NO_DEFAULT_PATH
+    )
+    find_library(
+      DART_BULLET_MATH_FLOAT64_LIBRARY
+      LinearMath-float64
+      HINTS "${_dart_bullet_dir}"
+      NO_DEFAULT_PATH
+    )
+    mark_as_advanced(
+      DART_BULLET_COLLISION_FLOAT64_LIBRARY
+      DART_BULLET_MATH_FLOAT64_LIBRARY
+    )
+    if(
+      DART_BULLET_COLLISION_FLOAT64_LIBRARY
+      AND DART_BULLET_MATH_FLOAT64_LIBRARY
+    )
+      set(
+        _dart_bullet_libraries
+        "${DART_BULLET_COLLISION_FLOAT64_LIBRARY}"
+        "${DART_BULLET_MATH_FLOAT64_LIBRARY}"
+      )
+      set(_dart_bullet_float64 TRUE)
+    endif()
+    unset(_dart_bullet_dir)
+  endif()
+
+  if(DART_BULLET_REQUIRE_FLOAT64 AND NOT _dart_bullet_float64)
+    message(
+      WARNING
+      "DART was built with Bullet's -float64 libraries, which were not found "
+      "beside '${BULLET_COLLISION_LIBRARY}'."
+    )
+    set(BULLET_FOUND FALSE)
+    set(Bullet_FOUND FALSE)
+  else()
+    add_library(Bullet INTERFACE IMPORTED)
+    target_include_directories(Bullet INTERFACE ${BULLET_INCLUDE_DIRS})
+    target_link_libraries(Bullet INTERFACE ${_dart_bullet_libraries})
+  endif()
+  if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
     set(
-      _dart_bullet_libraries
-      "${DART_BULLET_COLLISION_FLOAT64_LIBRARY}"
-      "${DART_BULLET_MATH_FLOAT64_LIBRARY}"
+      DART_BULLET_USES_FLOAT64
+      ${_dart_bullet_float64}
+      CACHE INTERNAL
+      "Whether DART links Bullet's -float64 libraries"
     )
   endif()
-  unset(_dart_bullet_dir)
+  unset(_dart_bullet_libraries)
+  unset(_dart_bullet_float64)
+  unset(_dart_bullet_want_float64)
 endif()
-
-if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
-  add_library(Bullet INTERFACE IMPORTED)
-  target_include_directories(Bullet INTERFACE ${BULLET_INCLUDE_DIRS})
-  target_link_libraries(Bullet INTERFACE ${_dart_bullet_libraries})
-endif()
-unset(_dart_bullet_libraries)
+unset(_dart_bullet_system)
