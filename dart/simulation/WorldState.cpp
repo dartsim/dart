@@ -547,11 +547,12 @@ void World::restoreState(const WorldState& state)
   // Retires the island buffers for reuse, keeping the next step allocation
   // free.
   solver.clearInactiveConstrainedGroups();
-  // Contact constraints stay for the next update to recycle. It resets each
-  // one from a new contact before use, and nothing reads them before then.
-  // Destroying them would make the next step allocate wherever the constraint
-  // pool cannot recycle over-aligned blocks (libc++ with an 8-byte
-  // std::max_align_t, as on Apple arm64).
+  // Contact and soft contact constraints stay for the next update, which
+  // resets each one it reuses from a new contact and destroys the rest without
+  // reading them; nothing reads them before then. Destroying them here would
+  // make the next step allocate replacements: soft contacts always, and
+  // contacts wherever the constraint pool cannot recycle over-aligned blocks
+  // (libc++ with an 8-byte std::max_align_t, as on Apple arm64).
   solver.mJointConstraints.clear();
   solver.mMimicMotorConstraints.clear();
   solver.mCouplerConstraints.clear();
