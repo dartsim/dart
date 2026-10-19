@@ -1002,6 +1002,36 @@ def test_commit_range_scans_merge_resolution_and_side_commit(repo):
     assert f"{merged}:resolution.md:1: /home/example/resolution.md" in result.stdout
 
 
+def test_commit_range_skips_commits_excluded_revisions_reach(repo):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    _git(repo, "checkout", "-qb", "release")
+    (repo / "release.md").write_text("/home/example/release.md\n")
+    leaked = _commit(repo)
+    (repo / "release.md").write_text("Public release notes\n")
+    release = _commit(repo)
+    _git(repo, "checkout", "-qb", "sync", base)
+    _git(
+        repo,
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "merge",
+        "--no-commit",
+        "--no-ff",
+        "release",
+    )
+    (repo / "resolution.md").write_text("/home/example/resolution.md\n")
+    merged = _commit(repo)
+    full = _cli("--commit-range", f"{base}..{merged}", cwd=repo)
+    assert f"{leaked}:release.md:1: /home/example/release.md" in full.stdout
+    result = _cli("--commit-range", f"{base}..{merged}", f"^{release}", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    # The merge still diffs against its first parent, so its resolution counts.
+    assert result.stdout == f"{merged}:resolution.md:1: /home/example/resolution.md\n"
+
+
 @pytest.mark.parametrize("mode", ["--staged", "--files", "--all-tracked"])
 def test_file_names_are_scanned_even_with_public_contents(repo, mode):
     path = repo / "scratchpad" / "example.md"
@@ -1068,6 +1098,7 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     gh = tmp_path / "gh"
     gh.write_text(
         '#!/bin/sh\n[ "$GH_TOKEN" = synthetic-token ] || exit 2\n'
+        'case "$3" in */branches?protected=true) exit 0;; esac\n'
         'printf "%s\\n" "$@" > gh-args\n'
         'printf "%s\\n" "$COMMIT_MESSAGES"\nexit "$GH_STATUS"\n'
     )
@@ -1152,7 +1183,11 @@ def test_pr_text_scans_removed_leak_without_using_head_checker(repo):
     bin_dir = repo / ".git/bin"
     bin_dir.mkdir()
     gh = bin_dir / "gh"
-    gh.write_text("#!/bin/sh\nprintf 'Public commit message\\n'\n")
+    gh.write_text(
+        "#!/bin/sh\n"
+        'case "$3" in */branches?protected=true) exit 0;; esac\n'
+        "printf 'Public commit message\\n'\n"
+    )
     gh.chmod(0o755)
     workflow = (ROOT / ".github/workflows/pr_text.yml").read_text()
     command = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
@@ -1177,6 +1212,88 @@ def test_pr_text_scans_removed_leak_without_using_head_checker(repo):
     assert "PR commit-change local-path scan failed." in result.stdout
     assert (tree / "scripts/check_local_paths.py").read_bytes() == SCRIPT.read_bytes()
     assert _git(tree, "rev-parse", "HEAD").stdout.strip() == base
+
+
+@pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
+@pytest.mark.parametrize(
+    "releases, lookup_status, rescanned",
+    (("release-1.0", 0, False), ("", 0, True), ("release-1.0", 1, True)),
+)
+def test_pr_text_skips_changes_protected_release_branches_published(
+    repo, releases, lookup_status, rescanned
+):
+    (repo / "scripts").mkdir()
+    (repo / "scripts/check_local_paths.py").write_bytes(SCRIPT.read_bytes())
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    _git(repo, "checkout", "-qb", "release-1.0")
+    (repo / "release.md").write_text("/home/example/release.md\n")
+    leaked = _commit(repo)
+    (repo / "release.md").write_text("Public release notes\n")
+    _commit(repo)
+    _git(repo, "checkout", "-qb", "sync", base)
+    _git(
+        repo,
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "merge",
+        "-q",
+        "--no-ff",
+        "--no-edit",
+        "release-1.0",
+    )
+    _git(repo, "update-ref", "refs/pull/1234/head", "HEAD")
+    tree = repo / ".git/trusted-checkout"
+    _git(repo, "clone", "--no-checkout", "-q", str(repo), str(tree))
+    _git(tree, "checkout", "-q", "--detach", base)
+    bin_dir = repo / ".git/bin"
+    bin_dir.mkdir()
+    gh = bin_dir / "gh"
+    gh.write_text(
+        "#!/bin/sh\n"
+        'case "$3" in */branches?protected=true)\n'
+        '  printf "%s\\n" "$@" > "$BRANCH_ARGS"\n'
+        '  printf "%s\\n" "$RELEASES"\n'
+        '  exit "$LOOKUP_STATUS";;\n'
+        "esac\n"
+        "printf 'Public commit message\\n'\n"
+    )
+    gh.chmod(0o755)
+    workflow = (ROOT / ".github/workflows/pr_text.yml").read_text()
+    command = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
+    command = command.replace("${{ github.repository }}", "example/repository")
+    result = subprocess.run(
+        ["bash", "-eo", "pipefail", "-c", command],
+        cwd=tree,
+        env={
+            **os.environ,
+            "PR_TITLE": "Public summary",
+            "PR_BODY": "Public body",
+            "PR_NUMBER": "1234",
+            "PR_COMMITS": "3",
+            "BASE_SHA": base,
+            "RELEASES": releases,
+            "LOOKUP_STATUS": str(lookup_status),
+            "BRANCH_ARGS": str(repo / ".git/branch-args"),
+            "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == int(rescanned), result.stderr
+    assert (
+        f"{leaked}:release.md:1: /home/example/release.md" in result.stdout
+    ) == rescanned
+    assert ("::warning::" in result.stdout) == bool(lookup_status)
+    assert (repo / ".git/branch-args").read_text().splitlines() == [
+        "api",
+        "--paginate",
+        "repos/example/repository/branches?protected=true",
+        "--jq",
+        '.[].name | select(startswith("release-"))',
+    ]
 
 
 @pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
