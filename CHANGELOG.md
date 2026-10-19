@@ -128,6 +128,20 @@
 
 * Dynamics
 
+  * Line segment and point cloud shapes now report bounding boxes that
+    include vertices and points edited after a query, and clearing a point
+    cloud now refreshes collision geometry.
+    [#3826](https://github.com/dartsim/dart/pull/3826)
+
+  * `Skeleton::getSupportIndices()` now names the end effector behind each
+    support polygon vertex instead of returning an empty list, so
+    `BalanceConstraint` no longer reads past its end.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * A `LineSegmentShape` built from two points now reports `LINE_SEGMENT`
+    from the deprecated `getShapeType()`, like one built from a thickness.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
   * Line segment, plane, point cloud, voxel grid and custom shapes built on
     the default `Shape` constructor now always compute their volume and
     bounding box on the first query, instead of possibly returning zero
@@ -159,8 +173,6 @@
     `JacobianDLS` with normal iterative error settings, preserving user bounds
     and task-space regions. Set up the analytical solver again for the copy;
     whole-skeleton clones keep their analytical solvers.
-    `IkFast::getDofs()` now returns an empty list when IkFast cannot configure,
-    as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
   * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
@@ -205,6 +217,11 @@
     instead of an empty string. Explicit packaging versions remain supported.
     [#3809](https://github.com/dartsim/dart/pull/3809)
 
+  * Keep gradient arrays passed to Python `optimizer.Function.evalGradient`
+    overrides alive after the callback returns, while applying their updates
+    to the native solver.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
+
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
     handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
@@ -233,6 +250,11 @@
 
 * Examples
 
+  * Hide the ssik analytical IK demo's solved marker when no current
+    forward-kinematics pose is available, including failed solves and arm
+    loads.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
+
   * Replace the four C++ tutorials with Python exercises and solutions in
     `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
     `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
@@ -240,6 +262,24 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * `find_package(DART)` no longer requires pkg-config: without it, the
+    installed package reads assimp's version from assimp's own CMake package.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Restore builds with Ubuntu 22.04's assimp and Bullet packages, which
+    failed to configure on assimp and skipped the `collision-bullet` component.
+    The minimum assimp is now 5.2.0 and the minimum Bullet 3.05, because
+    upstream assimp 5.2.2 reports itself as 5.2.0 and Bullet 3.06 as 3.05.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * GCC builds append `-Wl,--no-undefined` to the shared-library linker flags
+    instead of replacing them, so flags from `LDFLAGS` reach DART's libraries.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Add `DART_BUILD_EXAMPLES` (default `ON`); `OFF` skips the C++ examples,
+    which MSVC builds by default.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
 
   * Include the generated `dart/config.hpp` and
     `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.

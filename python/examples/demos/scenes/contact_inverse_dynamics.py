@@ -2,6 +2,7 @@
 
 import dartpy as dart
 
+from ..models.contact_inverse_dynamics import ContactInverseDynamicsModel
 from .common import reorient_z_up
 
 
@@ -13,7 +14,7 @@ class _ContactInverseDynamics:
         if self.world is None:
             raise RuntimeError("failed to load dart://sample/skel/fullbody1.skel")
         reorient_z_up(self.world)
-        self.model = dart._demos.ContactInverseDynamicsModel(self.world)
+        self.model = ContactInverseDynamicsModel(self.world)
 
         self.panel = dart.viewer.Panel()
         controls = self.panel.add_group("Controls")
@@ -101,7 +102,7 @@ class _ContactInverseDynamics:
             if text.visible:
                 magnitude = forces[index].dot(forces[index]) ** 0.5
                 text.label = f"  Contact {index}: {magnitude:.2f} N"
-        # Native histories retain the C++ ring's raw order (ImGui offset zero).
+        # Histories retain the original ring's raw order (ImGui offset zero).
         for plot, samples in zip(
             [*self.torque_plots, self.force_plot],
             [*self.model.torque_plots, self.model.plot_samples],

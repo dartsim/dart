@@ -1,24 +1,25 @@
-"""A native five-link soft worm controlled by a traveling-wave gait."""
+"""A five-link soft worm controlled by a traveling-wave gait."""
 
 import dartpy as dart
 
+from ..models import soft_worm as worm_model
+
 
 def build() -> dart.viewer.SceneSetup:
-    native = dart._demos.soft_worm
-    world, worm = native.create_world()
-    initial_root_x = native.root_x(worm)
+    world, worm = worm_model.create_world()
+    initial_root_x = worm_model.root_x(worm)
     finite = True
 
     panel = dart.viewer.Panel()
     gait = panel.add_checkbox("Traveling-wave gait", True)
-    panel.add_text(f"Links: {native.num_links}")
-    panel.add_text(f"Driven joints: {native.num_links - 1}")
+    panel.add_text(f"Links: {worm_model.num_links}")
+    panel.add_text(f"Driven joints: {worm_model.num_links - 1}")
     root_text = panel.add_text("")
     displacement_text = panel.add_text("")
     frame_text = panel.add_text("")
     panel.add_text(
-        f"Gait: {native.gait_frequency_hz:.2f} Hz   "
-        f"amplitude: {native.gait_amplitude:.2f} rad"
+        f"Gait: {worm_model.gait_frequency_hz:.2f} Hz   "
+        f"amplitude: {worm_model.gait_amplitude:.2f} rad"
     )
     checksum_text = panel.add_text("")
     nonfinite_text = panel.add_text("State is non-finite")
@@ -31,16 +32,16 @@ def build() -> dart.viewer.SceneSetup:
     )
 
     def pre_step():
-        native.apply_gait(worm, world.getTime(), gait.value and finite)
+        worm_model.apply_gait(worm, world.getTime(), gait.value and finite)
 
     def post_step():
         nonlocal finite
-        finite = native.is_finite(worm)
+        finite = worm_model.is_finite(worm)
         if not finite:
             gait.value = False
 
     def pre_refresh():
-        root_x = native.root_x(worm)
+        root_x = worm_model.root_x(worm)
         root_text.label = f"Root x: {root_x:.3f} m"
         displacement_text.label = f"Displacement: {root_x - initial_root_x:.3f} m"
         frame_text.label = (
@@ -48,7 +49,7 @@ def build() -> dart.viewer.SceneSetup:
             f"contacts: {world.getLastCollisionResult().getNumContacts()}"
         )
         checksum_text.label = (
-            f"Position checksum: {native.position_checksum(worm):.6e}"
+            f"Position checksum: {worm_model.position_checksum(worm):.6e}"
         )
         nonfinite_text.visible = not finite
 

@@ -1,7 +1,9 @@
 """Construction and deterministic frame hooks for the final demo batch."""
 
+import gc
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import dartpy as dart
 import numpy as np
@@ -41,8 +43,8 @@ def test_s6b_catalog_order_and_metadata():
     scenes = _scenes()
     ids = [scene.id for scene in scenes]
     assert ids.index("contact_inverse_dynamics") + 1 == ids.index("ssik_ik_gui")
-    assert ids.index("ssik_ik_gui") + 1 == ids.index("wam_ikfast")
-    assert ids.index("wam_ikfast") + 1 == ids.index("atlas_puppet")
+    assert ids.index("ssik_ik_gui") + 1 == ids.index("wam_analytical_ik")
+    assert ids.index("wam_analytical_ik") + 1 == ids.index("atlas_puppet")
     for scene_id, title, summary in (
         (
             "atlas_puppet",
@@ -109,3 +111,56 @@ def test_s6b_world_structure_and_deterministic_steps(scene_id):
         )
     assert np.isfinite(states[0]).all()
     np.testing.assert_array_equal(*states)
+
+
+@pytest.mark.parametrize("failure", ["empty", "solve", "fk", "missing_fk", "load"])
+def test_ssik_solved_marker_requires_current_fk_pose(monkeypatch, failure):
+    from examples.demos.scenes import ssik_ik_gui
+
+    pose = np.eye(4)
+    pose[:3, 3] = [0.3, -0.2, 0.5]
+    module = SimpleNamespace(
+        DOF=1,
+        T_HOME=np.eye(4),
+        solve=lambda target, **kwargs: [SimpleNamespace(q=np.array([0.4]))],
+        fk=lambda q: pose,
+    )
+    monkeypatch.setattr(ssik_ik_gui.importlib, "import_module", lambda name: module)
+    setup = ssik_ik_gui.build()
+    state = setup.pre_refresh.__self__
+    marker = setup.world.getSimpleFrame("ssik_fk_solution")
+    visual = marker.getVisualAspect()
+    solve = next(
+        child
+        for child in gc.get_referents(setup.panel)
+        if isinstance(child, viewer.Control) and child.label == "Solve"
+    )
+    assert visual.isHidden()
+    setup.on_activate(_Context())
+    assert not visual.isHidden()
+    np.testing.assert_array_equal(marker.getTransform().matrix(), pose)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("unavailable")
+
+    with monkeypatch.context() as failing:
+        if failure == "empty":
+            failing.setattr(module, "solve", lambda target, **kwargs: [])
+        elif failure in ("solve", "fk"):
+            failing.setattr(module, failure, fail)
+        elif failure == "missing_fk":
+            failing.delattr(module, "fk")
+        else:
+            failing.setattr(ssik_ik_gui.importlib, "import_module", fail)
+        if failure == "load":
+            state.arm_choice.on_change()
+        else:
+            solve.on_change()
+        assert visual.isHidden()
+        if failure != "missing_fk":
+            assert state.solutions == [] and state.fk_poses == []
+
+    pose[:3, 3] = [-0.1, 0.4, 0.6]
+    state.arm_choice.on_change()
+    assert not visual.isHidden()
+    np.testing.assert_array_equal(marker.getTransform().matrix(), pose)

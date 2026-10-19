@@ -275,9 +275,10 @@ test-perf-regression = { cmd = [
 ] }
 
 # ssik is an optional, PyPI-only analytical IK solver used only by the
-# ssik_ik_gui scene in the Python demo catalog. It is not a dependency of
-# DART or dartpy; install it on demand with this convenience task.
-install-ssik = { cmd = "python -m pip install 'ssik>=2.3.0'" }
+# ssik_ik_gui and wam_analytical_ik scenes in the Python demo catalog. It is
+# not a dependency of DART or dartpy; install it on demand with this
+# convenience task.
+install-ssik = { cmd = "python -m pip install 'ssik>=8.1.0'" }
 
 build = { cmd = """
     cmake \
@@ -492,7 +493,6 @@ coverage-report = { cmd = """
         '*/.deps/*' \
         '*/tests/*' \
         '*/examples/*' \
-        '*/python/native/*' \
         '*/tutorials/*' \
         --output-file coverage.info \
     && lcov --list coverage.info

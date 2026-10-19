@@ -45,7 +45,7 @@ makes it accurate and stable.
   through FCL (default), Bullet, ODE, or DART's native detector
 - **Model loading** — URDF, SDF, SKEL, and MJCF (experimental) parsers
 - **Kinematics and control** — hierarchical whole-body inverse kinematics with
-  analytical solver support (e.g., IkFast), plus operational-space and
+  analytical solver support, plus operational-space and
   stable-PD control examples
 - **C++ and Python** — the same engine through dartpy, packages on PyPI,
   conda-forge, and major package managers, and reproducible source builds with
