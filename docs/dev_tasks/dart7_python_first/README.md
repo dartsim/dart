@@ -458,7 +458,7 @@ not run on a Windows host; hosted CI runs the catalog through Python directly.
 M6b still owns `dart.render`, the final viewer API, and migration of the
 interim `dartpy.gui` primitives (InteractiveFrame, drag and drop, GridVisual,
 SupportPolygonVisual, DebugOverlay, and GUIEventHandler). Pre-existing host
-gaps also remain: LogCapture misses spdlog and Python output and is not
+gaps also remain: LogCapture misses Python output and is not
 thread-safe, Copy does not reach the system clipboard, and `GuiScaleTheme`
 duplicates Viewer scaling. A native host loop releases the GIL; until the
 program's World-busy guard lands, other Python threads can still touch its

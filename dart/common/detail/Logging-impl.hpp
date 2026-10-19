@@ -35,172 +35,199 @@
 
 #include <dart/common/Logging.hpp>
 
-#if DART_HAVE_spdlog
-  #include <fmt/format.h>
-  #include <spdlog/spdlog.h>
+#include <array>
+#include <type_traits>
+#include <utility>
 
-  #include <exception>
-#else
-  #include <iostream>
-  #include <string>
-#endif
+#include <cstddef>
 
-namespace dart::common {
-
-#if DART_HAVE_spdlog
+namespace dart {
+namespace common {
 namespace detail {
 
-//==============================================================================
-/// Logs a runtime-formatted message through spdlog without handing spdlog the
-/// format string. spdlog's variadic log() funnels the format string through
-/// spdlog::details::to_string_view(), whose implicit fmt::format_string ->
-/// string_view conversion was deprecated in fmt 12.2.0 ("use
-/// format_string::get() instead"). Because DART's logging templates are
-/// header-only and instantiated by downstreams, that deprecation warning
-/// surfaces in every consumer built against fmt >= 12.2.0 (e.g. gz-physics,
-/// see https://github.com/gazebosim/gz-physics/issues/1018). Pre-formatting
-/// with fmt and handing spdlog a ready-made string sidesteps the deprecated
-/// conversion entirely.
-template <typename S, typename... Args>
-void logToSpdlog(
-    spdlog::level::level_enum level, const S& format_str, Args&&... args)
+// Keep formatter types out of installed headers and preserve scalar types until
+// formatting in the library. This boundary must also compile as C++14.
+struct LogArgument
 {
-  auto* const logger = spdlog::default_logger_raw();
+  enum class Type
+  {
+    String,
+    Signed,
+    Unsigned,
+    Float,
+    Double,
+    LongDouble,
+    Bool,
+    Char,
+    Pointer
+  };
 
-  // Skip all work for a fully disabled message. should_backtrace() preserves
-  // the behaviour of the prior spdlog::*() calls, which still recorded
-  // below-level messages into spdlog's backtrace ring when one is enabled.
-  if (!logger->should_log(level) && !logger->should_backtrace()) {
+  Type type;
+  union
+  {
+    long long signedValue;
+    unsigned long long unsignedValue;
+    float floatValue;
+    double doubleValue;
+    long double longDoubleValue;
+    bool boolValue;
+    char charValue;
+    const void* pointerValue;
+  };
+  std::string stringValue;
+
+  LogArgument(const std::string& value);
+  LogArgument(const char* value);
+  LogArgument(bool value);
+  LogArgument(char value);
+  LogArgument(float value);
+  LogArgument(double value);
+  LogArgument(long double value);
+  LogArgument(const void* value);
+  LogArgument(std::nullptr_t);
+
+  // Mutable char arrays use this overload; string literals use const char*.
+  template <std::size_t N>
+  LogArgument(const char (&value)[N])
+    : LogArgument(static_cast<const char*>(value))
+  {
+  }
+
+  template <
+      typename T,
+      typename std::enable_if<
+          !std::is_scalar<T>::value
+              && std::is_constructible<std::string, const T&>::value,
+          int>::type
+      = 0>
+  LogArgument(const T& value) : LogArgument(std::string(value))
+  {
+  }
+
+  template <
+      typename T,
+      typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
+  LogArgument(T value)
+    // Promote char and bool enum bases so they format as integers.
+    : LogArgument(+static_cast<typename std::underlying_type<T>::type>(value))
+  {
+  }
+
+  template <
+      typename T,
+      typename std::enable_if<std::is_function<T>::value, int>::type = 0>
+  LogArgument(T*) = delete;
+
+  template <typename T, typename C>
+  LogArgument(T C::*) = delete;
+
+  // Only scalar, string-like and enum arguments cross this lean boundary.
+  template <
+      typename UnsupportedLogArgument,
+      typename std::enable_if<
+          !std::is_scalar<UnsupportedLogArgument>::value
+              && !std::is_constructible<
+                  std::string,
+                  const UnsupportedLogArgument&>::value,
+          int>::type
+      = 0>
+  LogArgument(const UnsupportedLogArgument&) = delete;
+
+  template <
+      typename T,
+      typename std::enable_if<std::is_integral<T>::value, int>::type = 0>
+  LogArgument(T value)
+    : type(std::is_signed<T>::value ? Type::Signed : Type::Unsigned)
+  {
+    if (std::is_signed<T>::value)
+      signedValue = static_cast<long long>(value);
+    else
+      unsignedValue = static_cast<unsigned long long>(value);
+  }
+};
+
+void logMessage(
+    LogLevel level,
+    const std::string& format,
+    const LogArgument* arguments,
+    std::size_t count);
+
+//==============================================================================
+template <typename S>
+void log(LogLevel level, const S& format)
+{
+  if (level < getLogLevel())
     return;
-  }
 
-  // A logging call must never throw, so a malformed format string (only caught
-  // at runtime, since the format is not a compile-time constant) falls back to
-  // logging the raw format string instead of propagating the fmt error.
-  // fmt::vformat takes a runtime format string directly, so it works across
-  // every fmt version DART supports (unlike fmt::runtime, which is fmt 8+ only)
-  // and independent of spdlog's formatting backend.
   try {
-    logger->log(
-        level, fmt::vformat(format_str, fmt::make_format_args(args...)));
-  } catch (const std::exception& e) {
-    logger->log(
-        level, fmt::format("[log format error: {}] {}", e.what(), format_str));
+    logMessage(level, std::string(format), nullptr, 0);
+  } catch (...) {
+    // Logging must not interrupt application error handling.
+  }
+}
+
+//==============================================================================
+template <typename S, typename... Args>
+void log(LogLevel level, const S& format, Args&&... args)
+{
+  // In particular, disabled logging must not allocate or initialize the sink.
+  if (level < getLogLevel())
+    return;
+
+  try {
+    const std::array<LogArgument, sizeof...(Args)> arguments{
+        {LogArgument(std::forward<Args>(args))...}};
+    logMessage(level, std::string(format), arguments.data(), arguments.size());
+  } catch (...) {
+    // Logging must not interrupt application error handling.
   }
 }
 
 } // namespace detail
-#endif
-
-#if !DART_HAVE_spdlog
-namespace detail {
-
-//==============================================================================
-template <typename S1, typename S2>
-void print(std::ostream& os, const S1& header, const S2& format_str, int color)
-{
-  os << "\033[1;" << color << "m" << header << "\033[0m " << format_str
-     << std::endl;
-}
-
-//==============================================================================
-template <typename S, typename Arg, typename... Args>
-void print(
-    std::ostream& os,
-    const S& header,
-    std::string format_str,
-    int color,
-    Arg&& arg,
-    Args&&... args)
-{
-  os << "\033[1;" << color << "m" << header << "\033[0m " << format_str
-     << " [args]: ";
-  os << std::forward<Arg>(arg);
-  ((os << ", " << std::forward<Args>(args)), ...);
-  os << std::endl;
-}
-
-} // namespace detail
-#endif
 
 //==============================================================================
 template <typename S, typename... Args>
-void trace(const S& format_str, [[maybe_unused]] Args&&... args)
+void trace(const S& format_str, Args&&... args)
 {
-#if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::trace, format_str, std::forward<Args>(args)...);
-#else
-  detail::print(
-      std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
-#endif
+  detail::log(LogLevel::Trace, format_str, std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void debug(const S& format_str, [[maybe_unused]] Args&&... args)
+void debug(const S& format_str, Args&&... args)
 {
-#if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::debug, format_str, std::forward<Args>(args)...);
-#else
-  detail::print(
-      std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
-#endif
+  detail::log(LogLevel::Debug, format_str, std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void info(const S& format_str, [[maybe_unused]] Args&&... args)
+void info(const S& format_str, Args&&... args)
 {
-#if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::info, format_str, std::forward<Args>(args)...);
-#else
-  detail::print(
-      std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
-#endif
+  detail::log(LogLevel::Info, format_str, std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void warn(const S& format_str, [[maybe_unused]] Args&&... args)
+void warn(const S& format_str, Args&&... args)
 {
-#if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::warn, format_str, std::forward<Args>(args)...);
-#else
-  detail::print(
-      std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
-#endif
+  detail::log(LogLevel::Warn, format_str, std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void error(const S& format_str, [[maybe_unused]] Args&&... args)
+void error(const S& format_str, Args&&... args)
 {
-#if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::err, format_str, std::forward<Args>(args)...);
-#else
-  detail::print(
-      std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
-#endif
+  detail::log(LogLevel::Error, format_str, std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
+void fatal(const S& format_str, Args&&... args)
 {
-#if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::critical, format_str, std::forward<Args>(args)...);
-#else
-  detail::print(
-      std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);
-#endif
+  detail::log(LogLevel::Fatal, format_str, std::forward<Args>(args)...);
 }
 
-} // namespace dart::common
+} // namespace common
+} // namespace dart
 
 #endif // DART_COMMON_DETAIL_LOGGING_IMPL_HPP_

@@ -47,7 +47,6 @@ libsdformat = ">=16.1.0,<17"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openssl = ">=1.1.1,<4"
-spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=6.0.0,<7"
 pyperf = ">=2.10.0,<3"
@@ -1127,7 +1126,7 @@ gz-compat-ionic = { cmd = "bash tools/gazebo/compat/lane.sh ionic" }
 #=============================================
 # Features: unpatched Gazebo compatibility lanes
 #=============================================
-# Harmonic and Jetty pin newer urdfdom/fmt/spdlog than the default feature, so
+# Harmonic and Jetty pin newer urdfdom/fmt than the default feature, so
 # their environments skip the default feature and take DART's build
 # dependencies from `gz-compat-base` instead.
 
@@ -1153,7 +1152,6 @@ ninja = ">=1.13.2,<2"
 octomap = "*"
 pkg-config = "*"
 python = ">=3.10"
-spdlog = ">=1.15.3,<2"
 tinyxml2 = "*"
 urdfdom = "*"
 

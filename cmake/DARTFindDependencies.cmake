@@ -9,6 +9,9 @@ if(DART_VERBOSE)
   message(STATUS "[ Required dependencies for DART core ]")
 endif()
 
+# Threads
+dart_find_package(Threads)
+
 # fmt
 dart_find_package(fmt)
 dart_check_required_package(fmt "libfmt")
@@ -181,16 +184,9 @@ else()
   find_package(Python3 3.10 COMPONENTS Interpreter Development)
 endif()
 
-option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
+# Deprecated compatibility option; DART owns its logging implementation.
+option(DART_SKIP_spdlog "Deprecated compatibility option (no effect)." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
-if(NOT DART_SKIP_spdlog)
-  dart_find_package(spdlog)
-else()
-  # dart/CMakeLists.txt keys DART_HAVE_spdlog and the exported package
-  # dependency off spdlog_FOUND, so reset a value inherited from a parent
-  # project too.
-  set(spdlog_FOUND FALSE)
-endif()
 
 if(
   (NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)

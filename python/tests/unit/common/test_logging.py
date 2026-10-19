@@ -16,5 +16,14 @@ def test_arguments():
     dart.common.info("Log with param '{}' and '{}'".format(1, val))
 
 
+@pytest.mark.parametrize("level", ["info", "warn", "error", "fatal"])
+def test_user_text_is_literal(level, capfd):
+    text = "literal {} {broken} {{braces}}"
+    getattr(dart.common, level)(text)
+    out, err = capfd.readouterr()
+    assert text in (out if level == "info" else err)
+    assert "log format error" not in out + err
+
+
 if __name__ == "__main__":
     pytest.main()

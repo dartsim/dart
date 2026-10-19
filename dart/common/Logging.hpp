@@ -33,6 +33,11 @@
 #ifndef DART_COMMON_LOGGING_HPP_
 #define DART_COMMON_LOGGING_HPP_
 
+#include <dart/config.hpp>
+
+#include <functional>
+#include <string>
+
 // clang-format off
 #define DART_LOG_LEVEL_TRACE 0
 #define DART_LOG_LEVEL_DEBUG 1
@@ -43,11 +48,8 @@
 #define DART_LOG_LEVEL_OFF   6
 // clang-format on
 
-// Default active log level
-#if !defined(DART_ACTIVE_LOG_LEVEL)
-  #define DART_ACTIVE_LOG_LEVEL DART_LOG_LEVEL_INFO
-#endif
-
+// Defining DART_ACTIVE_LOG_LEVEL in a consumer changes only which DART_* macros
+// compile. Use setLogLevel() to change the library's runtime threshold.
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
   #define DART_TRACE(...) ::dart::common::trace(__VA_ARGS__)
 #else
@@ -84,7 +86,46 @@
   #define DART_FATAL(...) (void)0
 #endif
 
-namespace dart::common {
+namespace dart {
+namespace common {
+
+/// Logging severity, ordered from most verbose to disabled.
+enum class LogLevel
+{
+  Trace = DART_LOG_LEVEL_TRACE,
+  Debug = DART_LOG_LEVEL_DEBUG,
+  Info = DART_LOG_LEVEL_INFO,
+  Warn = DART_LOG_LEVEL_WARN,
+  Error = DART_LOG_LEVEL_ERROR,
+  Fatal = DART_LOG_LEVEL_FATAL,
+  Off = DART_LOG_LEVEL_OFF
+};
+
+using LogSink = std::function<void(LogLevel, const std::string&)>;
+
+/// Replace the process-wide sink. An empty sink restores the default sink.
+/// Return a copy of the previous sink for restoration, or empty for the
+/// default. Callbacks run synchronously and are serialized, including across
+/// threads. They may log or replace the sink; exceptions from callbacks are
+/// ignored. The message reference is valid only for the duration of the
+/// callback. Captured resources must remain alive until the sink is replaced or
+/// reset.
+LogSink setLogSink(LogSink sink);
+
+/// Restore console output: warn and above to stderr, others to stdout. Color
+/// requires a terminal, NO_COLOR unset and TERM other than "dumb"; this is
+/// checked once per stream.
+void resetLogSink();
+
+/// Set the runtime threshold, initially the more restrictive of Info and the
+/// library's DART_ACTIVE_LOG_LEVEL. Lower it to enable debug or trace messages.
+/// Off disables all messages. Compile-time disabled DART_* macros cannot be
+/// enabled at runtime.
+void setLogLevel(LogLevel level);
+
+/// Return the runtime threshold without allocating; lock-free on typical
+/// platforms.
+LogLevel getLogLevel();
 
 /// \brief Logs for a trace message
 ///
@@ -139,7 +180,8 @@ void error(const S& format_str, Args&&... args);
 template <typename S, typename... Args>
 void fatal(const S& format_str, Args&&... args);
 
-} // namespace dart::common
+} // namespace common
+} // namespace dart
 
 #include <dart/common/detail/Logging-impl.hpp>
 

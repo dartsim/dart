@@ -152,7 +152,6 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
         ("Eigen3", "3.4.0", "Eigen3::Eigen", True),
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
-        ("spdlog", "1.9.2", "spdlog::spdlog", False),
         ("tinyxml2", "9.0.0", "tinyxml2::tinyxml2", False),
         ("urdfdom", "3.0.0", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
@@ -865,3 +864,19 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_spdlog_finder_is_a_compatibility_noop(tmp_path):
+    result = configure(
+        tmp_path,
+        "set(CMAKE_DISABLE_FIND_PACKAGE_spdlog TRUE)\n"
+        "include(DARTFindspdlog)\n"
+        "if(NOT spdlog_FOUND)\n"
+        'message(FATAL_ERROR "Deprecated dependency should be satisfied")\n'
+        "endif()\n"
+        "if(TARGET spdlog::spdlog OR TARGET spdlog::spdlog_header_only)\n"
+        'message(FATAL_ERROR "Deprecated finder created a dependency")\n'
+        "endif()\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "DARTFindspdlog is deprecated" in result.stderr
