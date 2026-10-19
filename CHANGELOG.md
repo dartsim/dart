@@ -256,6 +256,7 @@
     `SKBUILD_BUILD_DIR` environment variable replaces `DARTPY_BUILD_TEMP`.
     Development builds import the package from `build/<env>/cpp/<type>/python`
     instead of its `dartpy` subdirectory.
+    [#3847](https://github.com/dartsim/dart/pull/3847)
 
   * Source builds of `dartpy` on Windows work with the Ninja and NMake
     generators.
