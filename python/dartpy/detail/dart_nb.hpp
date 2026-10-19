@@ -23,6 +23,7 @@ class Entity;
 class Node;
 class Joint;
 class DegreeOfFreedom;
+class PointMass;
 class Skeleton;
 class BodyNode;
 class ShapeFrame;

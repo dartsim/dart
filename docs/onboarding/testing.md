@@ -92,9 +92,9 @@ The Python catalog is the only demo app. `pixi run cycle-demos` constructs,
 steps, and tears down every registered scene without a graphics context.
 Its strict cycle exits nonzero if a callback fails. Device-free `test_GuiApp`
 and Python viewer tests cover the host, CLI, lifecycle, controls, callback
-failures, garbage collection, and interrupts. The native model tests remain
-in the C++ suite; `test_GuiAppMemoryDiagnostics` covers the opt-in diagnostic
-model. Rendered catalog and viewer checks run through `pixi run test-gui`.
+failures, garbage collection, and interrupts. Tests for Python demo models live
+under `python/tests/unit/demos`. `test_GuiAppMemoryDiagnostics` covers the opt-in
+diagnostic model. Rendered catalog and viewer checks run through `pixi run test-gui`.
 
 Provision `ssik` and cached robot assets with `pixi run install-ssik` and
 `pixi run fetch-robot-assets` before claiming a full 37-scene cycle. Otherwise
@@ -123,12 +123,12 @@ changes:
    pick and drag and verify that the spring force moves the picked body.
    Add an interaction capture when the effect is visible.
 
-For changes to the private libraries, also configure a vanilla-ImGui build
+For changes to the private app host, also configure a vanilla-ImGui build
 with `-DDART_USE_SYSTEM_IMGUI=ON` and build `tests` and dartpy: the host is
 compiled out, dartpy still imports, and the catalog gives a rebuild hint.
 Configure a GUI-off build with
 `-DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF`, build `tests`, and run the
-affected model tests. These checks preserve the library boundaries described
+affected C++ tests. These checks preserve the library boundaries described
 in [the architecture owner](architecture.md#python-demo-catalog).
 
 For dependency minimization, run focused tests for the touched component and

@@ -505,7 +505,6 @@ add_subdirectory(dart)
 set(DART_IN_SOURCE_BUILD TRUE)
 
 if(TARGET dart)
-  add_subdirectory(python/native/demo_models EXCLUDE_FROM_ALL)
   # Add a "tests" target to build unit tests.
   if(BUILD_TESTING)
     if(MSVC)

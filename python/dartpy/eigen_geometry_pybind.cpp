@@ -44,6 +44,8 @@
 #include <Eigen/Geometry>
 #include <Eigen/LU>
 
+#include <limits>
+
 #include <cassert>
 #include <cmath>
 
@@ -271,6 +273,23 @@ void eigen_geometry(nb::module_& parent_m)
     nb::object py_class_obj = py_class;
     py_class.def(dartnb::factory([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
+        .def_static(
+            "from_two_vectors",
+            [](const Eigen::Matrix<T, 3, 1>& from,
+               const Eigen::Matrix<T, 3, 1>& to) {
+              const T fromNorm = from.norm();
+              const T toNorm = to.norm();
+              if (!from.allFinite() || !to.allFinite()
+                  || !std::isfinite(fromNorm) || !std::isfinite(toNorm)
+                  || from.squaredNorm() < std::numeric_limits<T>::min()
+                  || to.squaredNorm() < std::numeric_limits<T>::min())
+                throw nb::value_error(
+                    "vectors must be finite and nonzero with representable "
+                    "squared norms");
+              return Class::FromTwoVectors(from, to);
+            },
+            nb::arg("from_vector"),
+            nb::arg("to_vector"))
         .def(
             dartnb::factory([](const Eigen::Matrix<T, 4, 1>& wxyz) {
               Class out(wxyz(0), wxyz(1), wxyz(2), wxyz(3));

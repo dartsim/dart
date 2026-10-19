@@ -54,7 +54,6 @@ void bind_gui_probe(nb::module_& m);
 #ifdef DARTPY_HAS_VIEWER
 void dart_viewer(nb::module_& m);
 #endif
-void bind_demos(nb::module_& m);
 
 NB_MODULE(_dartpy, m)
 {
@@ -89,7 +88,6 @@ NB_MODULE(_dartpy, m)
 #ifdef DARTPY_HAS_VIEWER
   dart_viewer(dartpy);
 #endif
-  bind_demos(dartpy);
 }
 
 } // namespace python

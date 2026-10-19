@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/collision/ode/OdeCollisionGroup.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
@@ -403,6 +404,22 @@ struct OdeCollisionCallbackData
 };
 
 } // anonymous namespace
+
+void detail::CollisionHistory::clear(
+    OdeCollisionDetector& detector, CollisionGroup& group)
+{
+  auto& history = detector.mContactHistory;
+  history.erase(
+      std::remove_if(
+          history.begin(),
+          history.end(),
+          [&](const auto& item) {
+            return group.hasShapeFrame(item.pair.first->getShapeFrame())
+                   || group.hasShapeFrame(item.pair.second->getShapeFrame());
+          }),
+      history.end());
+  ++historyEraseCount();
+}
 
 //==============================================================================
 OdeCollisionDetector::Registrar<OdeCollisionDetector>

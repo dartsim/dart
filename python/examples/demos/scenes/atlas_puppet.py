@@ -5,6 +5,8 @@ from functools import partial
 import dartpy as dart
 import numpy as np
 
+from examples.demos.models.relaxed_posture import RelaxedPosture
+
 
 class _Puppet:
     def __init__(self, atlas, world, posture, balance):
@@ -247,7 +249,7 @@ def _setup_whole_body_solver(atlas):
     indices = [0, 1, 5, 6, 7, 8]
     lower[indices] = [-0.35, -0.35, 0.600, -0.1, -0.1, -0.1]
     upper[indices] = [0.35, 0.35, 0.885, 0.1, 0.1, 0.1]
-    posture = dart._demos.RelaxedPosture(atlas.getPositions(), lower, upper, weights)
+    posture = RelaxedPosture(atlas.getPositions(), lower, upper, weights)
     ik.setObjective(posture)
     balance = dart.constraint.BalanceConstraint(ik)
     ik.getProblem().addEqConstraint(balance)

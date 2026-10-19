@@ -135,15 +135,6 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "scopes": ("if:TARGET dart-utils-urdf", "if:NOT MSVC"),
         "msvc": True,
     },
-    "tests/integration/test_IkFast.cpp": {
-        "owner": "tests/integration/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-utils-urdf",
-            "if:BUILD_SHARED_LIBS",
-        ),
-        "cache": {"BUILD_SHARED_LIBS": "OFF"},
-    },
     **{
         f"tests/integration/test_{name}.cpp": {
             "owner": "tests/integration/CMakeLists.txt",
@@ -184,28 +175,6 @@ APPROVED_CTEST_SELECTIONS = {
     },
     "test_FrictionAnalytic_iterative": {
         "arguments": ("--gtest_filter=*/Nsgs*:*/Fbf",),
-        "environment": (),
-    },
-    "test_AdaptiveSoftContactModel": {
-        "arguments": ("--gtest_filter=AdaptiveSoftContactModelTest.*",),
-        "environment": (),
-    },
-    "test_SoftWormModel": {
-        "arguments": ("--gtest_filter=SoftWormModelTest.*",),
-        "environment": (),
-    },
-    "test_SoftFootSimbiconModel": {
-        "arguments": (
-            "--gtest_filter=SoftFootSimbiconModelTest.*"
-            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
-        ),
-        "environment": (),
-    },
-    "test_SoftFootSimbiconPushSweep": {
-        "arguments": (
-            "--gtest_filter="
-            "SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
-        ),
         "environment": (),
     },
     "test_ContactArrowLayout": {
