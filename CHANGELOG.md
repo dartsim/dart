@@ -274,6 +274,7 @@
     compile definition, and DART's build environments no longer install Boost,
     which DART does not use. Projects that include Boost headers and relied on
     the definition must define it themselves.
+    [#3851](https://github.com/dartsim/dart/pull/3851)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
