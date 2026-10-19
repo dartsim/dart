@@ -33,7 +33,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # dart - common, math, lcpsolver, optimizer, dynamics, collision,
 #        collision/dart, collision/fcl, optional collision/bullet and
-#        collision/ode, constraint, simulation, [assimp, eigen3, fcl, fmt]
+#        collision/ode, constraint, simulation, [assimp, eigen3, fcl]
 # dart-collision-bullet, dart-collision-ode - forwarding interfaces to dart
 # dart-io - {dart}, utils, utils/mjcf, utils/sdf, utils/urdf, [tinyxml2, urdfdom]
 # dart-utils, dart-utils-urdf - forwarding interfaces to dart-io
@@ -166,17 +166,42 @@ if(ASSIMP_VERSION_MAJOR)
   )
 endif()
 
-# Embed the private formatter so static installs also need no fmt link target.
-target_compile_definitions(dart PRIVATE FMT_HEADER_ONLY)
-if(TARGET fmt::fmt-header-only)
-  target_link_libraries(dart PRIVATE "$<BUILD_INTERFACE:fmt::fmt-header-only>")
-elseif(TARGET fmt::fmt)
-  target_include_directories(
-    dart
-    PRIVATE "$<TARGET_PROPERTY:fmt::fmt,INTERFACE_INCLUDE_DIRECTORIES>"
+# Logging libc++ availability guard.
+# libc++ marks floating-point to_chars as macOS 13.3+. Conda and Pixi ship their
+# own libc++; suppress availability only in this TU for older explicit targets.
+# System libc++ lacks the runtime symbols there, so keep its availability error.
+string(
+  FIND "${CMAKE_CXX_COMPILER}"
+  "$ENV{CONDA_PREFIX}/"
+  dart_conda_compiler_prefix
+)
+string(
+  FIND "${CMAKE_CXX_COMPILER}"
+  "$ENV{BUILD_PREFIX}/"
+  dart_build_compiler_prefix
+)
+if(
+  APPLE
+  AND
+    (
+      (
+        NOT "$ENV{CONDA_PREFIX}" STREQUAL ""
+        AND dart_conda_compiler_prefix EQUAL 0
+      )
+      OR
+        (
+          NOT "$ENV{BUILD_PREFIX}" STREQUAL ""
+          AND dart_build_compiler_prefix EQUAL 0
+        )
+    )
+  AND CMAKE_OSX_DEPLOYMENT_TARGET
+  AND CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS "13.3"
+)
+  set_property(
+    SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/common/Logging.cpp"
+    APPEND
+    PROPERTY COMPILE_DEFINITIONS _LIBCPP_DISABLE_AVAILABILITY
   )
-else()
-  message(FATAL_ERROR "Failed to find fmt targets")
 endif()
 
 # Boost gdb helper scripts embed inline asm that breaks GCC with our flags.

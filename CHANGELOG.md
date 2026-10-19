@@ -12,7 +12,13 @@
     logger settings no longer affect DART; use `dart::common::setLogLevel` and
     `dart::common::setLogSink` instead. `DART_*` logging arguments must be
     integers, floating-point values, strings, pointers or enums; convert other
-    types to strings first. Projects that used fmt through `find_package(DART)`
+    types to strings first. Format strings support only `{}`, `{:.Ne}`,
+    `{:.Nf}`, `{:.Ng}` (a decimal precision `N` from 0 to 1000 for floating-point
+    values), and escaped braces `{{` and `}}`. Unsupported fields, invalid
+    precision or missing arguments produce a format-error marker followed by
+    the raw format string; surplus arguments are ignored. Default `long double`
+    formatting preserves round trips but may differ in layout from fmt.
+    Projects that used fmt through `find_package(DART)`
     must find it themselves, and `DART_SKIP_spdlog` no longer has any effect.
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
@@ -283,6 +289,8 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+  * DART no longer uses fmt. `DART_USE_SYSTEM_FMT` is a deprecated no-op
+    retained through DART 7.x.
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.

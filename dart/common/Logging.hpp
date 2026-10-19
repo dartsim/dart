@@ -147,10 +147,11 @@ void debug(const S& format_str, Args&&... args);
 ///
 /// Logs for useful information from normal operations.
 ///
-/// You can use a Python like formatting API as
-/// \code
-/// dart::common::info("Hello {}!", "World");  // logged as "Hello World!"
-/// \endcode
+/// Format strings support {}, {:.Ne}, {:.Nf}, {:.Ng} (decimal precision N for
+/// floating-point values, from 0 to 1000), and escaped braces {{ and }}.
+/// Invalid formats or argument counts log a format-error marker followed by the
+/// raw format string. For example: \code dart::common::info("Hello {}!",
+/// "World");  // logged as "Hello World!" \endcode
 template <typename S, typename... Args>
 void info(const S& format_str, Args&&... args);
 

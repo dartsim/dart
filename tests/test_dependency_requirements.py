@@ -148,7 +148,6 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
 @pytest.mark.parametrize(
     "package,minimum,target,required",
     [
-        ("fmt", "8.1.1", "fmt::fmt", False),
         ("Eigen3", "3.4.0", "Eigen3::Eigen", True),
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
@@ -180,7 +179,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
     accepted = version_kind in ("minimum", "newer")
     result = configure(
         tmp_path,
-        f"set(DART_USE_SYSTEM_FMT ON)\nset(DART_USE_SYSTEM_ODE ON)\n"
+        "set(DART_USE_SYSTEM_ODE ON)\n"
         f"include(DARTFind{package})\n"
         f"if({package}_FOUND OR {package.upper()}_FOUND)\n"
         + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
@@ -598,43 +597,6 @@ def test_parent_ode_target_version(tmp_path, version, use_version_metadata):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize("version", ["7.1.3", "8.1.1", None])
-@pytest.mark.parametrize(
-    "version_source", ["metadata", "core.h", "base.h", "build-interface"]
-)
-def test_parent_fmt_target_version(tmp_path, version, version_source):
-    include = tmp_path / "fmt-parent" / "include"
-    header = (
-        include
-        / "fmt"
-        / ("base.h" if version_source == "build-interface" else version_source)
-    )
-    header.parent.mkdir(parents=True)
-    if version and version_source != "metadata":
-        major, minor, patch = map(int, version.split("."))
-        header.write_text(
-            f"#define FMT_VERSION {major * 10000 + minor * 100 + patch}\n"
-        )
-    include_path = (
-        f"$<BUILD_INTERFACE:{include.as_posix()}>"
-        if version_source == "build-interface"
-        else include.as_posix()
-    )
-    content = (
-        "set(DART_USE_SYSTEM_FMT OFF)\n"
-        "add_library(fmt::fmt INTERFACE IMPORTED)\n"
-        f'set_target_properties(fmt::fmt PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include_path}")\n'
-    )
-    if version and version_source == "metadata":
-        content += f"set(fmt_VERSION {version})\n"
-    result = configure(tmp_path, content + "include(DARTFindfmt)\n")
-    if version == "8.1.1":
-        assert result.returncode == 0, result.stdout + result.stderr
-    else:
-        assert result.returncode != 0, result.stdout + result.stderr
-        assert "fmt >= 8.1.1" in result.stdout + result.stderr
-
-
 @pytest.mark.parametrize("package", ["tinyxml2", "urdfdom", "ODE"])
 def test_rejected_config_resets_mixed_case_flags(tmp_path, package):
     config_package(tmp_path, package, "0.1.0")
@@ -862,6 +824,50 @@ def test_installed_legacy_components_propagate_sdformat_failure(
             if major == 15
             else ""
         ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "apple,conda,build,compiler,deployment,disabled",
+    [
+        (True, "prefix", None, "prefix/bin/clang++", "11.0", True),
+        (True, "prefix", None, "prefix/bin/clang++", "13.2", True),
+        (True, "prefix", None, "prefix/bin/clang++", "13.3", False),
+        (True, "prefix", None, "prefix/bin/clang++", "14.0", False),
+        (True, "prefix", None, "prefix/bin/clang++", "", False),
+        (True, "prefix", None, "system/bin/clang++", "11.0", False),
+        (True, "prefix", None, "prefix-other/bin/clang++", "11.0", False),
+        (True, None, None, "prefix/bin/clang++", "11.0", False),
+        (False, "prefix", None, "prefix/bin/clang++", "11.0", False),
+        (False, None, None, "system/bin/clang++", "", False),
+        (True, None, "build-prefix", "build-prefix/bin/clang++", "11.0", True),
+        (True, "prefix", "build-prefix", "build-prefix/bin/clang++", "11.0", True),
+        (True, None, "build-prefix", "build-prefix-other/bin/clang++", "11.0", False),
+        (True, "", "", "/bin/clang++", "11.0", False),
+    ],
+)
+def test_logging_libcpp_availability_guard(
+    tmp_path, monkeypatch, apple, conda, build, compiler, deployment, disabled
+):
+    for variable, prefix in (("CONDA_PREFIX", conda), ("BUILD_PREFIX", build)):
+        if prefix is None:
+            monkeypatch.delenv(variable, raising=False)
+        else:
+            monkeypatch.setenv(variable, str(tmp_path / prefix) if prefix else "")
+    source = (ROOT / "dart/CMakeLists.txt").read_text()
+    end = source.index("PROPERTY COMPILE_DEFINITIONS _LIBCPP_DISABLE_AVAILABILITY")
+    start = source.index("# Logging libc++ availability guard.")
+    guard = source[start : source.index("endif()", end) + len("endif()")]
+    result = configure(
+        tmp_path,
+        f"set(APPLE {'TRUE' if apple else 'FALSE'})\n"
+        f'set(CMAKE_CXX_COMPILER "{(tmp_path / compiler).as_posix()}")\n'
+        f'set(CMAKE_OSX_DEPLOYMENT_TARGET "{deployment}")\n'
+        + guard
+        + '\nget_property(definitions SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/common/Logging.cpp" PROPERTY COMPILE_DEFINITIONS)\n'
+        + f"if({'NOT ' if disabled else ''}_LIBCPP_DISABLE_AVAILABILITY IN_LIST definitions)\n"
+        + 'message(FATAL_ERROR "Incorrect libc++ availability guard")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
 

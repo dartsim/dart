@@ -77,6 +77,7 @@ struct LogArgument
   std::string stringValue;
 
   LogArgument(const std::string& value);
+  LogArgument(std::string&& value);
   LogArgument(const char* value);
   LogArgument(bool value);
   LogArgument(char value);

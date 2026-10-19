@@ -103,9 +103,6 @@ Optional components remain optional.
    * - FCL
      - 0.7.0
      - Core collision detection
-   * - fmt
-     - 8.1.1
-     - Core formatting
    * - Bullet
      - 3.05
      - Bullet collision backend

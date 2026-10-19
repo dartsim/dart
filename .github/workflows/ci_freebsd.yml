@@ -84,7 +84,7 @@ jobs:
             # Install build dependencies from pkg.
             sudo pkg update -f
             sudo pkg install -y \
-              assimp boost-libs cmake eigen libfmt git gmake googletest \
+              assimp boost-libs cmake eigen git gmake googletest \
               ninja octomap ode-double pkgconf tinyxml2 \
               ros-urdfdom ros-urdfdom_headers
             # FreeBSD's libccd package keeps libccd's single-precision default,

@@ -12,10 +12,6 @@ endif()
 # Threads
 dart_find_package(Threads)
 
-# fmt
-dart_find_package(fmt)
-dart_check_required_package(fmt "libfmt")
-
 # Eigen
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")

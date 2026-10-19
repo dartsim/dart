@@ -40,7 +40,9 @@
 #include <atomic>
 #include <iostream>
 #include <limits>
+#include <locale>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -51,6 +53,7 @@
   #include <string_view>
 #endif
 
+#include <cmath>
 #include <cstdlib>
 
 using namespace dart::common;
@@ -280,8 +283,8 @@ TEST_F(LoggingTest, FormatsScalarAndStringArguments)
       "text c string true false x -2 3 -4 5 -6 7 -9223372036854775808 "
       "18446744073709551615 8",
       messages[0]);
-  info("{} {} {}", 0.1f, 0.1, 0.1L);
-  EXPECT_EQ("0.1 0.1 0.1", messages.back());
+  info("{} {} {}", 0.1f, 0.1, 0.125L);
+  EXPECT_EQ("0.1 0.1 0.125", messages.back());
   info("{:.4e} {:.6e} {:.2f} {:.3g}", 0.125, 0.125, 0.125, 0.125);
   EXPECT_EQ("1.2500e-01 1.250000e-01 0.12 0.125", messages.back());
   info("{{{}}} {{}}", "braces");
@@ -296,6 +299,214 @@ TEST_F(LoggingTest, FormatsScalarAndStringArguments)
       std::numeric_limits<double>::infinity(),
       std::numeric_limits<double>::quiet_NaN());
   EXPECT_EQ("inf nan", messages.back());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FormatTable)
+{
+  struct Case
+  {
+    std::string format;
+    std::vector<detail::LogArgument> arguments;
+    std::string expected;
+  };
+  const Case cases[]{
+      {"plain", {}, "plain"},
+      {"{{}}", {}, "{}"},
+      {"{{{}}}", {"text"}, "{text}"},
+      {"{}", {std::string("string")}, "string"},
+      {"{}", {"c string"}, "c string"},
+      {"{}", {static_cast<const char*>(nullptr)}, "(null)"},
+      {"{}", {true}, "true"},
+      {"{}", {false}, "false"},
+      {"{}", {'x'}, "x"},
+      {"{}", {'\0'}, std::string(1, '\0')},
+      {"{}", {static_cast<signed char>(-2)}, "-2"},
+      {"{}", {static_cast<unsigned char>(3)}, "3"},
+      {"{}", {static_cast<short>(-4)}, "-4"},
+      {"{}", {static_cast<unsigned short>(5)}, "5"},
+      {"{}", {-6}, "-6"},
+      {"{}", {7u}, "7"},
+      {"{}", {-8L}, "-8"},
+      {"{}", {9ul}, "9"},
+      {"{}", {std::numeric_limits<long long>::min()}, "-9223372036854775808"},
+      {"{}",
+       {std::numeric_limits<unsigned long long>::max()},
+       "18446744073709551615"},
+      {"{}", {std::size_t{10}}, "10"},
+      {"{}", {0.1f}, "0.1"},
+      {"{}", {0.1}, "0.1"},
+      {"{}", {0.125L}, "0.125"},
+      {"{}", {0.0}, "0"},
+      {"{}", {-0.0}, "-0"},
+      {"{}", {1e-4}, "0.0001"},
+      {"{}", {1e-5}, "1e-05"},
+      {"{}", {1e5f}, "100000"},
+      {"{}", {1234567.0f}, "1234567"},
+      {"{}", {9999999.0f}, "9999999"},
+      {"{}", {1e7f}, "1e+07"},
+      {"{}", {12345678.0f}, "1.2345678e+07"},
+      {"{}", {1e11f}, "1e+11"},
+      {"{}", {1e15f}, "1e+15"},
+      {"{}", {-1e11f}, "-1e+11"},
+      {"{}", {0.0001f}, "0.0001"},
+      {"{}", {1e-5f}, "1e-05"},
+      {"{}", {0.0125f}, "0.0125"},
+      {"{}", {12.5}, "12.5"},
+      {"{}", {1e15}, "1000000000000000"},
+      {"{}", {1e16}, "1e+16"},
+      {"{}", {1e17}, "1e+17"},
+      {"{}", {1.2345678f}, "1.2345678"},
+      {"{}", {1.2345678901234567}, "1.2345678901234567"},
+      {"{}", {std::numeric_limits<float>::denorm_min()}, "1e-45"},
+      {"{}", {std::numeric_limits<float>::max()}, "3.4028235e+38"},
+      {"{}", {std::numeric_limits<double>::denorm_min()}, "5e-324"},
+      {"{}", {std::numeric_limits<double>::max()}, "1.7976931348623157e+308"},
+      {"{}", {std::numeric_limits<double>::infinity()}, "inf"},
+      {"{}", {-std::numeric_limits<double>::infinity()}, "-inf"},
+      {"{}", {std::numeric_limits<double>::quiet_NaN()}, "nan"},
+      {"{}", {-std::numeric_limits<double>::quiet_NaN()}, "-nan"},
+      {"{}", {nullptr}, "0x0"},
+      {"{}", {static_cast<const void*>(nullptr)}, "0x0"},
+      {"{:.4e}", {0.125f}, "1.2500e-01"},
+      {"{:.4e}", {0.125}, "1.2500e-01"},
+      {"{:.4e}", {0.125L}, "1.2500e-01"},
+      {"{:.2f}", {0.125f}, "0.12"},
+      {"{:.2f}", {0.125}, "0.12"},
+      {"{:.2f}", {0.125L}, "0.12"},
+      {"{:.3g}", {0.125f}, "0.125"},
+      {"{:.3g}", {0.125}, "0.125"},
+      {"{:.3g}", {0.125L}, "0.125"},
+      {"{:.0e}", {1.5}, "2e+00"},
+      {"{:.0f}", {1.5}, "2"},
+      {"{:.0g}", {1.5f}, "2"},
+      {"{:.0g}", {1.5}, "2"},
+      {"{:.0g}", {1.5L}, "2"},
+      {"{:.140f}", {1.5}, "1.5" + std::string(139, '0')},
+      {"{:.1000f}", {1.5f}, "1.5" + std::string(999, '0')},
+      {"{:.1000f}", {1.5}, "1.5" + std::string(999, '0')},
+      {"{:.1000f}", {1.5L}, "1.5" + std::string(999, '0')},
+      {"{:.1001f}", {1.5f}, "[log format error: invalid precision] {:.1001f}"},
+      {"{:.1001e}", {1.5}, "[log format error: invalid precision] {:.1001e}"},
+      {"{:.1001g}", {1.5L}, "[log format error: invalid precision] {:.1001g}"},
+      {"{:.1001f}",
+       {std::numeric_limits<double>::infinity()},
+       "[log format error: invalid precision] {:.1001f}"},
+      {"{}", {}, "[log format error: too few arguments] {}"},
+      {"{} {}", {1}, "[log format error: too few arguments] {} {}"},
+      {"literal", {1}, "literal"},
+      {"{}", {1, 2}, "1"},
+      {"{", {}, "[log format error: unmatched '{'] {"},
+      {"}", {}, "[log format error: unmatched '}'] }"},
+      {"{}{", {1}, "[log format error: unmatched '{'] {}{"},
+      {"{0}", {1}, "[log format error: unsupported format field] {0}"},
+      {"{:bogus}",
+       {1},
+       "[log format error: unsupported format field] {:bogus}"},
+      {"{:x}", {1}, "[log format error: unsupported format field] {:x}"},
+      {"{:.f}", {1.5}, "[log format error: unsupported format field] {:.f}"},
+      {"{:.2E}", {1.5}, "[log format error: unsupported format field] {:.2E}"},
+      {"{:.+2f}",
+       {1.5},
+       "[log format error: unsupported format field] {:.+2f}"},
+      {"{:.2fX}",
+       {1.5},
+       "[log format error: unsupported format field] {:.2fX}"},
+      {"{:.{}f}",
+       {1.5},
+       "[log format error: unsupported format field] {:.{}f}"},
+      {"{:.2f}",
+       {1},
+       "[log format error: precision requires floating-point argument] {:.2f}"},
+      {"{:.2f}",
+       {"text"},
+       "[log format error: precision requires floating-point argument] {:.2f}"},
+      {"{:.999999999999f}",
+       {1.5},
+       "[log format error: invalid precision] {:.999999999999f}"},
+  };
+  for (const auto& test : cases) {
+    SCOPED_TRACE(test.format);
+    detail::logMessage(
+        LogLevel::Info,
+        test.format,
+        test.arguments.data(),
+        test.arguments.size());
+    ASSERT_FALSE(messages.empty());
+    EXPECT_EQ(test.expected, messages.back());
+    messages.clear();
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FormatsNonFiniteValues)
+{
+  const auto check = [&](auto value) {
+    using T = decltype(value);
+    for (const std::string format : {"{}", "{:.2e}", "{:.2f}", "{:.2g}"}) {
+      SCOPED_TRACE(format);
+      for (const bool negative : {false, true}) {
+        const T sign = negative ? T(-1) : T(1);
+        info(format, std::copysign(std::numeric_limits<T>::quiet_NaN(), sign));
+        EXPECT_EQ(negative ? "-nan" : "nan", messages.back());
+        info(format, std::copysign(std::numeric_limits<T>::infinity(), sign));
+        EXPECT_EQ(negative ? "-inf" : "inf", messages.back());
+      }
+    }
+  };
+  check(0.0f);
+  check(0.0);
+  check(0.0L);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, DefaultLongDoublePreservesRoundTrips)
+{
+  for (const long double value :
+       {0.1L,
+        std::nextafter(1.0L, 2.0L),
+        std::numeric_limits<long double>::min(),
+        std::numeric_limits<long double>::max()}) {
+    info("{}", value);
+    std::istringstream stream(messages.back());
+    stream.imbue(std::locale::classic());
+    long double parsed = 0;
+    ASSERT_TRUE(stream >> parsed);
+    EXPECT_EQ(value, parsed);
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FormattingIgnoresGlobalLocale)
+{
+  struct CommaDecimal : std::numpunct<char>
+  {
+    char do_decimal_point() const override
+    {
+      return ',';
+    }
+  };
+  struct RestoreLocale
+  {
+    std::locale previous;
+    ~RestoreLocale()
+    {
+      std::locale::global(previous);
+    }
+  } restore{std::locale()};
+  std::locale::global(std::locale(restore.previous, new CommaDecimal));
+  info("{} {:.2f} {:.2f}", 1.5, 1.5f, 1.5L);
+  EXPECT_EQ("1.5 1.50 1.50", messages.back());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, MovesStringArgument)
+{
+  std::string value(256, 'x');
+  const auto* data = value.data();
+  const detail::LogArgument argument(std::move(value));
+  EXPECT_EQ(data, argument.stringValue.data());
+  EXPECT_EQ(std::string(256, 'x'), argument.stringValue);
 }
 
 //==============================================================================

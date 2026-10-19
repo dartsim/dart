@@ -19,18 +19,6 @@ RUN yum install -y \
     libjpeg-turbo-devel \
     libpng-devel
 
-# fmt
-RUN git clone --depth 1 https://github.com/fmtlib/fmt.git -b '11.1.4' \
-    && mkdir -p fmt/build \
-    && cmake fmt -B fmt/build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    -DFMT_TEST=OFF \
-    -DCMAKE_C_FLAGS="-fPIC" \
-    -DCMAKE_CXX_FLAGS="-fPIC" \
-    && cmake --build fmt/build --target install -j${NUM_CORES} \
-    && rm -rf fmt
-
 # assimp
 RUN git clone --depth 1 https://github.com/assimp/assimp.git -b 'v6.0.5' \
     && mkdir -p assimp/build \
