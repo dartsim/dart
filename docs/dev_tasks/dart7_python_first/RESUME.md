@@ -15,8 +15,8 @@ agents (#3799, #3802) and lower SDF loading memory (#3803).
 
 #3789 changed the contact benchmark's workload, so comparisons against
 `dart7-base` withhold the `contact_benchmark` rows as behavior changes; the
-portable and micro rows still compare. The milestone-exit baseline for those
-rows is an open decision (see [README](README.md#blockers-and-next-actions)).
+portable and micro rows still compare. Milestone exits compare those rows
+against `812310ffb` instead (decided 2026-10-19).
 
 M1 is active. M1a merged in #3775. The first M1b, M1c and M1d packets,
 developed on unpublished branches, were re-cut from current `main` and

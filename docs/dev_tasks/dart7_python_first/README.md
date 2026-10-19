@@ -170,12 +170,16 @@ additive, merges before the API freeze `F`; see the
 
 ### Priority and thresholds
 
-The remaining critical path starts with the M1 seams, including edit/compile
-(M1b), the executor (M1d) and remapping clone (M1i), then
-`WorldBatch`, M5b's simulation bindings and the acceptance tests. M5 and
-M6b run in parallel with that path. The Python and MJCF default-detector
-switch (M1f) is off the critical path: it lands after the capability matrix
-and M1b's strict shape rejection, and before `F`.
+The Python API leads (D3, amended 2026-10-19). Four chains run in parallel:
+M5's package, arrays, errors, `Transform` and facade slice, then the
+rulebook-driven API areas with the codemod, stubs and API reference; compile
+and edit (M1b), counted stepping (M1d), per-solver parameters (M1e), the
+remapping clone (M1i) and `WorldBatch`, then actuators, sensors and
+checkpoints; the solver policy, the written contract and the rigid domain
+boundary; and M6b through checkpoint C2. Native work is ordered by the
+acceptance tests it unblocks, and each native feature ships its Python
+binding. The Python and MJCF default-detector switch (M1f) lands after the
+capability matrix and M1b's strict shape rejection, and before `F`.
 
 M3's C1 gate requires M2 to cut instruction counts (`Ir`) on the `dyn`/`robot`
 rows by at least 15% and improve K = 64 wall time. The flagged contiguous-state
@@ -255,7 +259,7 @@ domain boundary; and M6b → checkpoint C2.
 | M1b | `compile()`, `edit()`, the strict flag, per-World revisions and strict tiers, including strict rejection of unsupported shapes when a World compiles | Mutation classes in the design doc. M1f waits for the shape rejection |
 | M1c | Snapshots, checkpoints, and the field and frame oracle | One PR per hidden-state gap; moving the solver's random-number state is a labeled numeric change |
 | M1d | One deterministic executor, GIL release, `step(n)` | The 64-world row must show scaling from 1 to 8 threads before batch bindings start |
-| M1e | Typed solver selection in `WorldConfig` | Per-World solver parameters are opt-in; the process-wide statistics keep last-write-wins |
+| M1e | Typed per-World solver policy | Per-World solver parameters are opt-in; the process-wide statistics keep last-write-wins |
 | M1f | DART detector as the default of dartpy's `dart.World` and `dart.io.load_world` for MJCF | A breaking Python default change, so a must-have before `F`. Lands after the published capability matrix and M1b's strict shape rejection. The C++ `World`, `dart::utils::MjcfParser::readWorld` and its direct dartpy binding keep FCL; see the [switch](#default-detector-switch) |
 | M1g | Actuator channels, compliant motor rows, `StepHook` | |
 | M1h | Native sensors, without recording | |
@@ -348,9 +352,9 @@ Release rules:
   detector as the Python and MJCF default. Only additive work that is not a
   must-have and misses `F` moves to 7.1.
 - 7.0 requires snapshots and checkpoints. The recorder (M4) is optional.
-- Items allowed to slip to 7.1: the generated API reference, notebooks, and
-  the scheduled lane against the
-  gz-physics development branch.
+- Items allowed to slip to 7.1: notebooks, the example runner and the
+  scheduled lane against the gz-physics development branch. The generated API
+  reference is a 7.0 must-have.
 - While 7.0 waits for M6b and the remaining rendering gates, only fixes and
   M6b land on the release path. M6b includes the D31b demo host, the Python
   demo catalog that runs on it, and the core bindings its scenes need.
@@ -596,15 +600,17 @@ The capability matrix (#3788) followed. M1 and M5a are in progress;
   - the slim-container import test;
   - the Gazebo lanes;
   - performance rows equal or better against `dart7-base`, each detector
-    against its own baseline;
+    against its own baseline, with the contact-benchmark rows compared
+    against `812310ffb` because #3789 changed their workload;
   - the codemod on at least three external codebases.
 
 Every packet needs two clean review passes on its final state.
 
 ## Risks
 
-- **Scope.** The program spans about 90–130 PRs. Mitigations: core-first gates,
-  one PR per change, the M2 stop rule, and M3 is 7.x by default.
+- **Scope.** The program spans about 90–130 PRs. Mitigations: Python-first
+  priority with native work ordered by the acceptance tests it unblocks, one
+  PR per change, the M2 stop rule, and M3 is 7.x by default.
 - **The release waits for the renderer.** Mitigation: escalate early if
   checkpoint C2 is at risk.
 - **Downstream drift.** Mitigation: the shim test runs against the current

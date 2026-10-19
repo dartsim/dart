@@ -2,8 +2,7 @@
 
 All decisions below were taken by the maintainer on 2026-10-10 and 2026-10-11,
 one at a time, after read-only research and independent reviews; D13 was
-amended on 2026-10-12, and D2, D3, D7, D14 and the platform scope on
-2026-10-19 (see [Re-prioritization](#re-prioritization-2026-10-19)). Durable API rules derived from them live in the
+amended on 2026-10-12, and D2, D3, D6, D7, D14, D20 and D30 on 2026-10-19 (see [Re-prioritization](#re-prioritization-2026-10-19)). Durable API rules derived from them live in the
 [DART 7 Python API design](../../design/dart7_python_api.md). Revisit a decision
 only with new evidence and maintainer approval.
 
@@ -35,7 +34,7 @@ only with new evidence and maintainer approval.
     including the version macros.
 - **D20. Python 3.12 or newer**: one stable-ABI wheel per platform (Linux x86_64
   and aarch64, macOS arm64, Windows x64). Wheel-only.
-  - Added 2026-10-19: DART 7's minimum platform is Ubuntu 24.04 LTS. DART 6
+  - Amended 2026-10-19: DART 7's minimum platform is Ubuntu 24.04 LTS. DART 6
     keeps supporting Ubuntu 22.04 LTS.
 - **D22. Conventions bundle**:
   - errors and the logging bridge;
@@ -58,6 +57,8 @@ only with new evidence and maintainer approval.
     versions.
   - The active performance work folds into M1d and M2. PLAN-622's core changes
     outside its parity rows pause during the step-path quiet window.
+  - Amended 2026-10-19: the quiet window is closed. PLAN-622, the point-mass
+    soft-body work, resumes in the program-owned step-path merge order.
 - **D32. DART 7.0 waits for the Filament renderer.** There is no render-less
   fallback.
 
@@ -165,6 +166,9 @@ only with new evidence and maintainer approval.
 - **D6. Native rename in the binding sources**, driven by one reviewed table.
   dartpy becomes a package with a private extension and pure-Python helpers.
   There are no wrapper classes except the `Collider`/`Visual` handles.
+  - Amended 2026-10-19: the API is designed first under one naming rulebook,
+    and the old-to-new mapping is generated from the designed API instead of
+    being reviewed as one table.
 - **D16. Read-only array copies by default.** `out=` fills caller buffers
   without allocating; it copies and never aliases. Zero-copy live views arrive
   with authoritative contiguous state (M3) and are named separately.
