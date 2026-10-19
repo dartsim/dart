@@ -110,6 +110,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -793,12 +794,12 @@ thread_local WorldDeactivationState* tlsSteppingWorld = nullptr;
 
 inline bool noIndexedWorlds()
 {
-  return gIndexedWorlds.load(std::memory_order_relaxed) == 0u;
+  return gIndexedWorlds.load(std::memory_order_acquire) == 0u;
 }
 
 inline bool noGuardedWorlds()
 {
-  return gGuardedWorlds.load(std::memory_order_relaxed) == 0u;
+  return gGuardedWorlds.load(std::memory_order_acquire) == 0u;
 }
 
 // Slow paths stay out of line so a gated hook costs a load and a branch.
@@ -1027,11 +1028,22 @@ void forEachOwner(const ModelKeys& keys, Visit visit)
 
 using KeyCounts = std::unordered_map<const void*, std::size_t>;
 
+// Test hook: the n-th index allocation from now throws std::bad_alloc.
+std::size_t gFailIndexAllocationIn = 0u;
+
+// Called before each step of index building that may allocate.
+void indexAllocation()
+{
+  if (gFailIndexAllocationIn != 0u && --gFailIndexAllocationIn == 0u)
+    throw std::bad_alloc();
+}
+
 // Requires the registry mutex.
 void addOwner(KeyCounts& counts, WorldDeactivationState& state, const void* key)
 {
   if (!key)
     return;
+  indexAllocation();
   if (++counts[key] == 1u)
     modelOwners().mOwners[key].push_back(&state);
 }
@@ -1153,44 +1165,59 @@ std::vector<std::pair<const void*, const void*>> sourceEntries(
   return entries;
 }
 
-// Objects the World's solver currently refers to. Handlers are model keys and
-// take part in compile() conflicts; the rest only route World-level hooks.
-void collectSolverKeys(
-    const World& world,
-    std::vector<const void*>& worldKeys,
-    std::vector<const void*>& handlerKeys)
+// Objects the World's solver currently refers to, apart from its contact
+// handlers. They only route World-level hooks.
+std::vector<const void*> collectSolverKeys(const World& world)
 {
+  std::vector<const void*> keys;
   const auto* solver = world.getConstraintSolver();
-  worldKeys.push_back(solver);
-  worldKeys.push_back(solver->getCollisionDetector().get());
-  worldKeys.push_back(solver->getCollisionGroup().get());
+  keys.push_back(solver);
+  keys.push_back(solver->getCollisionDetector().get());
+  keys.push_back(solver->getCollisionGroup().get());
   if (const auto* boxed
       = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(solver)) {
-    worldKeys.push_back(boxed->getBoxedLcpSolver().get());
-    worldKeys.push_back(boxed->getSecondaryBoxedLcpSolver().get());
+    keys.push_back(boxed->getBoxedLcpSolver().get());
+    keys.push_back(boxed->getSecondaryBoxedLcpSolver().get());
   }
   for (std::size_t i = 0u; i < solver->getNumConstraints(); ++i)
-    worldKeys.push_back(solver->getConstraint(i).get());
-  for (auto handler = solver->getLastContactSurfaceHandler(); handler;
-       handler = handler->getParent()) {
-    if (std::find(handlerKeys.begin(), handlerKeys.end(), handler.get())
-        != handlerKeys.end())
-      break;
-    handlerKeys.push_back(handler.get());
-  }
+    keys.push_back(solver->getConstraint(i).get());
+  return keys;
 }
 
-// Requires the registry mutex; reads only the owner's own solver.
+// The solver's contact handler chain. Handlers are model keys and take part in
+// compile() conflicts. A handler's parent may be shared with other solvers and
+// reparented from another thread, so only the hooks of operations that already
+// walk the chain (adding, removing or copying handlers) collect it; constraint
+// and skeleton changes never read it.
+std::vector<const void*> collectHandlerKeys(const World& world)
+{
+  std::vector<const void*> keys;
+  const auto* solver = world.getConstraintSolver();
+  for (auto handler = solver->getLastContactSurfaceHandler(); handler;
+       handler = handler->getParent()) {
+    if (std::find(keys.begin(), keys.end(), handler.get()) != keys.end())
+      break;
+    keys.push_back(handler.get());
+  }
+  return keys;
+}
+
+// Requires the registry mutex; reads only the owner's own solver, not its
+// handler chain.
 void refreshSolverKeys(WorldDeactivationState& state)
 {
-  std::vector<const void*> worldKeys;
-  std::vector<const void*> handlerKeys;
-  collectSolverKeys(*state.mWorld, worldKeys, handlerKeys);
+  auto worldKeys = collectSolverKeys(*state.mWorld);
   for (const void* key : state.mSolverKeys)
     removeOwner(state.mWorldKeys, state, key);
   for (const void* key : worldKeys)
     addOwner(state.mWorldKeys, state, key);
   state.mSolverKeys = std::move(worldKeys);
+}
+
+// Requires the registry mutex; walks the owner's own handler chain.
+void refreshHandlerKeys(WorldDeactivationState& state)
+{
+  auto handlerKeys = collectHandlerKeys(*state.mWorld);
   for (const void* key : state.mHandlerKeys)
     removeOwner(state.mModelKeys, state, key);
   for (const void* key : handlerKeys)
@@ -1277,23 +1304,50 @@ void applyIndex(WorldDeactivationState& state, const IndexSnapshot& snapshot)
     addOwner(state.mModelKeys, state, key);
   }
   refreshSolverKeys(state);
+  refreshHandlerKeys(state);
+}
+
+// Requires the registry mutex. Drops the World from the registry; the counters
+// were published when it joined.
+void leaveRegistry(WorldDeactivationState& state) noexcept
+{
+  auto& worlds = modelOwners().mWorlds;
+  worlds.erase(std::remove(worlds.begin(), worlds.end(), &state), worlds.end());
+  state.mIndexed = false;
+  gIndexedWorlds.fetch_sub(1u, std::memory_order_release);
+  gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
 }
 
 // Rebuilds the World's index from its own containers, joining the registry on
-// the first call. This is where index memory is allocated.
+// the first call. This is where index memory is allocated. A failure leaves
+// no entry behind: a joining World leaves the registry again, and an indexed
+// World keeps its membership with an empty index and is no longer compiled.
 void reindexWorld(WorldDeactivationState& state)
 {
   const IndexSnapshot snapshot = collectIndex(*state.mWorld);
   const auto lock = lockRegistry();
   auto& owners = modelOwners();
-  if (!state.mIndexed) {
+  const bool joining = !state.mIndexed;
+  if (joining) {
+    // Reserve before publishing anything: each step below either completes
+    // or leaves the registry as it was.
+    indexAllocation();
+    owners.mScratch.reserve(owners.mWorlds.size() + 1u);
     owners.mWorlds.push_back(&state);
-    owners.mScratch.reserve(owners.mWorlds.size());
     state.mIndexed = true;
-    gIndexedWorlds.fetch_add(1u, std::memory_order_relaxed);
-    gGuardedWorlds.fetch_add(1u, std::memory_order_relaxed);
+    gIndexedWorlds.fetch_add(1u, std::memory_order_release);
+    gGuardedWorlds.fetch_add(1u, std::memory_order_release);
   }
-  applyIndex(state, snapshot);
+  try {
+    applyIndex(state, snapshot);
+  } catch (...) {
+    unregisterWorld(state);
+    if (joining)
+      leaveRegistry(state);
+    else
+      state.mCompiled.store(false, std::memory_order_relaxed);
+    throw;
+  }
 }
 
 // Leaves the registry; a no-op for lazy Worlds.
@@ -1303,11 +1357,7 @@ void unindexWorld(WorldDeactivationState& state)
     return;
   const auto lock = lockRegistry();
   unregisterWorld(state);
-  auto& worlds = modelOwners().mWorlds;
-  worlds.erase(std::remove(worlds.begin(), worlds.end(), &state), worlds.end());
-  state.mIndexed = false;
-  gIndexedWorlds.fetch_sub(1u, std::memory_order_relaxed);
-  gGuardedWorlds.fetch_sub(1u, std::memory_order_relaxed);
+  leaveRegistry(state);
 }
 
 // Requires the registry mutex.
@@ -1422,7 +1472,8 @@ void purgeModelKey(const void* key)
 }
 
 // Why a World rejects a model mutation. Decided under the registry mutex and
-// thrown after releasing it, so no allocation happens while it is held.
+// thrown after releasing it, so the check paths allocate nothing while it is
+// held.
 enum class Rejection
 {
   None,
@@ -1463,71 +1514,86 @@ void checkModelMutation(const WorldDeactivationState& state)
 }
 
 // Same-thread guard of a lazy World inside step(): reads only that World's own
-// containers, which no other thread may touch while it steps.
+// containers, which no other thread may touch while it steps. Members are
+// matched through the same ancestry as the compiled index records: a frame,
+// its frame ancestors and the Skeletons of the BodyNodes among them.
+template <class Keys>
 bool steppingWorldOwnsModel(
-    const WorldDeactivationState& state, const void* key)
+    const WorldDeactivationState& state, const Keys& keys)
 {
+  bool owned = false;
+  const auto match = [&](const void* candidate) {
+    keys.each([&](const void* key) { owned = owned || key == candidate; });
+  };
+  const auto matchChain = [&](const dynamics::Frame* member) {
+    ModelKeys chain;
+    collectFrameKeys(member, chain, true);
+    chain.each(match);
+  };
   const World& world = *state.mWorld;
-  for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i) {
-    if (world.getSkeleton(i).get() == key)
-      return true;
-  }
-  for (std::size_t i = 0u; i < world.getNumSimpleFrames(); ++i) {
-    if (static_cast<const dynamics::Frame*>(world.getSimpleFrame(i).get())
-        == key)
-      return true;
-  }
+  for (std::size_t i = 0u; !owned && i < world.getNumSkeletons(); ++i)
+    match(world.getSkeleton(i).get());
+  for (std::size_t i = 0u; !owned && i < world.getNumSimpleFrames(); ++i)
+    matchChain(world.getSimpleFrame(i).get());
   const auto* solver = world.getConstraintSolver();
   for (const auto& skeleton : solver->getSkeletons()) {
-    if (skeleton.get() == key)
-      return true;
+    if (owned)
+      break;
+    match(skeleton.get());
   }
   const auto group = solver->getCollisionGroup();
-  for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
-    if (static_cast<const dynamics::Frame*>(group->getShapeFrame(i)) == key)
-      return true;
-  }
-  bool owned = false;
+  for (std::size_t i = 0u; !owned && i < group->getNumShapeFrames(); ++i)
+    matchChain(group->getShapeFrame(i));
   collision::detail::CollisionGroupOwnershipAccessor::forEachSource(
       *group, [&](const auto& weakSource) {
         const auto source = weakSource.lock();
         if (!source || owned)
           return;
-        owned = source.get() == key;
+        match(source.get());
         for (std::size_t i = 0u; !owned && i < source->getNumBodyNodes(); ++i)
-          owned = source->getBodyNode(i)->getSkeleton().get() == key;
+          match(source->getBodyNode(i)->getSkeleton().get());
       });
   collision::detail::CollisionGroupOwnershipAccessor::forEachBodySource(
       *group, [&](const auto& weakSource) {
+        if (owned)
+          return;
         if (const auto body = weakSource.lock())
-          owned = owned || body->getSkeleton().get() == key;
+          match(body->getSkeleton().get());
       });
   return owned;
 }
 
+template <class Keys>
 bool steppingWorldOwnsSolverObject(
-    const WorldDeactivationState& state, const void* key)
+    const WorldDeactivationState& state, const Keys& keys)
 {
+  bool owned = false;
+  const auto match = [&](const void* candidate) {
+    keys.each([&](const void* key) { owned = owned || key == candidate; });
+  };
   const auto* solver = state.mWorld->getConstraintSolver();
-  if (solver == key || solver->getCollisionDetector().get() == key
-      || solver->getCollisionGroup().get() == key)
-    return true;
+  match(solver);
+  match(solver->getCollisionDetector().get());
+  match(solver->getCollisionGroup().get());
   if (const auto* boxed
       = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(solver)) {
-    if (boxed->getBoxedLcpSolver().get() == key
-        || boxed->getSecondaryBoxedLcpSolver().get() == key)
-      return true;
+    match(boxed->getBoxedLcpSolver().get());
+    match(boxed->getSecondaryBoxedLcpSolver().get());
   }
-  for (std::size_t i = 0u; i < solver->getNumConstraints(); ++i) {
-    if (solver->getConstraint(i).get() == key)
+  for (std::size_t i = 0u; !owned && i < solver->getNumConstraints(); ++i)
+    match(solver->getConstraint(i).get());
+  if (owned)
+    return true;
+  // The same walk as collectHandlerKeys(): a repeated handler ends the chain.
+  std::vector<const void*> seen;
+  for (auto handler = solver->getLastContactSurfaceHandler(); handler;
+       handler = handler->getParent()) {
+    match(handler.get());
+    if (owned)
       return true;
-  }
-  std::size_t depth = 0u;
-  for (auto handler = solver->getLastContactSurfaceHandler();
-       handler && depth < 64u;
-       handler = handler->getParent(), ++depth) {
-    if (handler.get() == key)
-      return true;
+    if (std::find(seen.begin(), seen.end(), handler.get()) != seen.end())
+      break;
+    seen.push_back(handler.get());
   }
   return false;
 }
@@ -1541,9 +1607,7 @@ Rejection lazyStepRejection(Owns owns, const Keys& keys)
        state = state->mOuterSteppingWorld) {
     if (state->mIndexed)
       continue;
-    bool owned = false;
-    keys.each([&](const void* key) { owned = owned || owns(*state, key); });
-    if (owned)
+    if (owns(*state, keys))
       return Rejection::Busy;
   }
   return Rejection::None;
@@ -1561,13 +1625,13 @@ struct SingleKey
 
 Rejection lazyStepRejection(const ModelKeys& keys)
 {
-  return lazyStepRejection(steppingWorldOwnsModel, keys);
+  return lazyStepRejection(steppingWorldOwnsModel<ModelKeys>, keys);
 }
 
 Rejection lazyStepRejection(const void* solverObject)
 {
   return lazyStepRejection(
-      steppingWorldOwnsSolverObject, SingleKey{solverObject});
+      steppingWorldOwnsSolverObject<SingleKey>, SingleKey{solverObject});
 }
 
 // Records the first rejection among visited owners.
@@ -2775,9 +2839,9 @@ void World::step(bool _resetCommand)
       flag.store(false, std::memory_order_release);
     }
   } release{state.mStepping};
-  // Marks this World as stepping on this thread while user callbacks can run
-  // (handlers, filters, detectors). The all-resting fast path runs none and
-  // stays free of the thread-local access.
+  // Marks this World as stepping on this thread before any stage that can run
+  // user callbacks (handlers, filters, detectors): preparation on the first
+  // step and custom-filter replay in beginStep() reach them too.
   struct SameThreadMarker
   {
     WorldDeactivationState& mState;
@@ -2787,15 +2851,16 @@ void World::step(bool _resetCommand)
     {
       mState.mOuterSteppingWorld = mSlot;
       mSlot = &mState;
-      gGuardedWorlds.fetch_add(1u, std::memory_order_relaxed);
+      gGuardedWorlds.fetch_add(1u, std::memory_order_release);
     }
     ~SameThreadMarker()
     {
-      gGuardedWorlds.fetch_sub(1u, std::memory_order_relaxed);
+      gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
       mSlot = mState.mOuterSteppingWorld;
       mState.mOuterSteppingWorld = nullptr;
     }
   };
+  const SameThreadMarker marker(state);
   if (state.mEditDepth)
     throw std::runtime_error("Cannot step inside a World::edit() scope");
   if (state.mPendingRecompileError)
@@ -2805,10 +2870,8 @@ void World::step(bool _resetCommand)
   context.resetCommand = _resetCommand;
   beginStep(context);
   if (!context.deactivationEnabled) {
-    const SameThreadMarker marker(state);
     stepWithoutDeactivation(context);
   } else if (!tryAllRestingFastPath(context)) {
-    const SameThreadMarker marker(state);
     advanceVelocities(context);
     solveConstraints(context);
     advancePositions(context);
@@ -5648,6 +5711,18 @@ void notifyWorldTopologyMutation(const ConstraintSolver* solver)
       });
 }
 
+void notifyWorldContactHandlersChanged(const ConstraintSolver* solver)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      solver, [](simulation::WorldDeactivationState& owner) {
+        simulation::refreshHandlerKeys(owner);
+        simulation::notifyModelTopology(owner);
+      });
+}
+
 void notifyWorldParameterMutation(const ConstraintSolver* solver)
 {
   if (simulation::noIndexedWorlds())
@@ -5741,7 +5816,12 @@ namespace detail {
 
 std::size_t getIndexedWorldCount()
 {
-  return gIndexedWorlds.load(std::memory_order_relaxed);
+  return gIndexedWorlds.load(std::memory_order_acquire);
+}
+
+void failIndexAllocation(std::size_t nth)
+{
+  gFailIndexAllocationIn = nth;
 }
 
 std::size_t getRegistryLockCount()

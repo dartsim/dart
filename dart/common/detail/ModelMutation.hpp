@@ -128,6 +128,8 @@ void notifyWorldSolverSkeletonAdded(
 void notifyWorldSolverSkeletonRemoved(
     const ConstraintSolver* solver, const dynamics::Skeleton* skeleton);
 void notifyWorldTopologyMutation(const ConstraintSolver* solver);
+// The solver's contact handler chain changed: it was walked by the caller.
+void notifyWorldContactHandlersChanged(const ConstraintSolver* solver);
 void notifyWorldParameterMutation(const ConstraintSolver* solver);
 void notifyBoxedSolverParameterMutation(const BoxedLcpSolver* solver);
 void notifyConstraintParameterMutation(const ConstraintBase* constraint);

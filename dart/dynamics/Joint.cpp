@@ -822,7 +822,6 @@ void Joint::setLimitEnforcement(bool enforced)
     return;
 
   mAspectProperties.mIsPositionLimitEnforced = enforced;
-  common::detail::notifyParameterMutation(this);
   notifyAutomaticConstraintPropertiesUpdated();
 }
 

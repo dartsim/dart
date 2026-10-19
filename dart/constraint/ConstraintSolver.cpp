@@ -1550,6 +1550,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
   detail::notifyWorldTopologyMutation(this);
+  detail::notifyWorldContactHandlersChanged(this);
 }
 
 //==============================================================================
@@ -3746,7 +3747,7 @@ void ConstraintSolver::addContactSurfaceHandler(
   detail::checkWorldTopologyMutation(this);
   handler->setParent(mContactSurfaceHandler);
   mContactSurfaceHandler = std::move(handler);
-  detail::notifyWorldTopologyMutation(this);
+  detail::notifyWorldContactHandlersChanged(this);
 }
 
 //==============================================================================
@@ -3768,7 +3769,7 @@ bool ConstraintSolver::removeContactSurfaceHandler(
       found = true;
       if (previous)
         detail::notifyContactSurfaceMutation(previous.get());
-      detail::notifyWorldTopologyMutation(this);
+      detail::notifyWorldContactHandlersChanged(this);
       break;
     }
     previous = current;

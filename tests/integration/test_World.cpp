@@ -84,6 +84,7 @@
 #include <limits>
 #include <memory>
 #include <new>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -119,6 +120,8 @@ using namespace simulation;
 namespace dart::simulation::detail {
 std::size_t getIndexedWorldCount();
 std::size_t getRegistryLockCount();
+// The nth index allocation from now throws std::bad_alloc; 0 disarms.
+void failIndexAllocation(std::size_t nth);
 } // namespace dart::simulation::detail
 
 namespace {
@@ -1739,6 +1742,19 @@ TEST(World, LazyWorldSettersKeepVersionsAndSkipTheRegistry)
   before = read();
   joint->setDampingCoefficient(0, 0.25);
   expectDelta(before, read(), 0u, 0u, 1u);
+  // 6.20 moves no version for these: limit enforcement only restamps the
+  // automatic constraints, and the joint offsets only the kinematic version.
+  before = read();
+  joint->setLimitEnforcement(!joint->areLimitsEnforced());
+  expectDelta(before, read(), 0u, 0u, 0u);
+  before = read();
+  joint->setTransformFromParentBodyNode(
+      Eigen::Isometry3d(Eigen::Translation3d(0.1, 0.0, 0.0)));
+  expectDelta(before, read(), 0u, 0u, 0u);
+  before = read();
+  joint->setTransformFromChildBodyNode(
+      Eigen::Isometry3d(Eigen::Translation3d(0.0, 0.1, 0.0)));
+  expectDelta(before, read(), 0u, 0u, 0u);
 
   // Topology edits, membership, stepping and destruction of lazy Worlds never
   // touch the ownership registry.
@@ -3585,6 +3601,23 @@ public:
   std::function<void()> mCallback;
 };
 
+// Runs a callback from the collision filter, which the solver's preparation
+// pass and every collide() query reach.
+class CallbackCollisionFilter final : public collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const collision::CollisionObject*,
+      const collision::CollisionObject*) const override
+  {
+    if (mCallback)
+      mCallback();
+    return false;
+  }
+
+  std::function<void()> mCallback;
+};
+
 class CountingFclDetector final : public collision::FCLCollisionDetector
 {
 public:
@@ -3774,6 +3807,174 @@ TEST(World, ReentrantStepAndTopologyEditDuringStepThrow)
   handler->mCallback = nullptr;
   EXPECT_NO_THROW(world->step());
   EXPECT_GT(world->getTime(), time);
+}
+
+//==============================================================================
+TEST(World, TopologyEditFromPreparationFilterDuringStepThrows)
+{
+  auto world = World::create();
+  auto ground = createBox(Eigen::Vector3d(10.0, 10.0, 1.0));
+  ground->setMobile(false);
+  auto box
+      = createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.95));
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+  auto filter = std::make_shared<CallbackCollisionFilter>();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+  const auto bodies = box->getNumBodyNodes();
+  int calls = 0;
+  filter->mCallback = [&] {
+    if (calls++ == 0)
+      box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0));
+  };
+  // The first step prepares the solver, which queries the filter before any
+  // solve stage runs.
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(calls, 1);
+  EXPECT_EQ(box->getNumBodyNodes(), bodies);
+  filter->mCallback = nullptr;
+  EXPECT_NO_THROW(world->step());
+  EXPECT_GT(world->getTime(), 0.0);
+}
+
+//==============================================================================
+TEST(World, LazyStepGuardsAncestorsAndSkeletonsOfOwnedFrames)
+{
+  auto world = World::create();
+  DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  auto ground = createBox(Eigen::Vector3d(10.0, 10.0, 1.0));
+  ground->setMobile(false);
+  auto box
+      = createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.95));
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+  auto handler = std::make_shared<StepCallbackHandler>();
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  // An owned frame below an ancestor the World never added.
+  auto parent = std::make_shared<SimpleFrame>(Frame::World(), "parent");
+  auto child = std::make_shared<SimpleFrame>(parent.get(), "child");
+  world->addSimpleFrame(child);
+  auto other = std::make_shared<SimpleFrame>(Frame::World(), "other");
+  // A Skeleton reached only through a collision frame added to the group.
+  auto foreign
+      = createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(5.0, 0.0, 0.0));
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(
+      foreign->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0));
+  int calls = 0;
+  handler->mCallback = [&] {
+    ++calls;
+  };
+  world->step();
+  ASSERT_GT(calls, 0);
+
+  handler->mCallback = [&] {
+    parent->setParentFrame(other.get());
+  };
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(parent->getParentFrame(), Frame::World());
+  handler->mCallback = [&] {
+    other->setParentFrame(parent.get());
+  };
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(other->getParentFrame(), Frame::World());
+  const auto bodies = foreign->getNumBodyNodes();
+  handler->mCallback = [&] {
+    foreign->createJointAndBodyNodePair<RevoluteJoint>(foreign->getBodyNode(0));
+  };
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(foreign->getNumBodyNodes(), bodies);
+  // Unrelated models stay editable from the callback.
+  auto unrelated = createBox(Eigen::Vector3d::Ones());
+  handler->mCallback = [&] {
+    if (unrelated->getNumBodyNodes() == 1u) {
+      unrelated->createJointAndBodyNodePair<RevoluteJoint>(
+          unrelated->getBodyNode(0));
+    }
+  };
+  EXPECT_NO_THROW(world->step());
+  EXPECT_EQ(unrelated->getNumBodyNodes(), 2u);
+  handler->mCallback = nullptr;
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, IndexAllocationFailureLeavesNoPartialMembership)
+{
+  using dart::constraint::ContactConstraint;
+  using dart::simulation::detail::failIndexAllocation;
+  using dart::simulation::detail::getIndexedWorldCount;
+  auto first = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  first->addSkeleton(robot);
+  first->compile();
+  const auto indexed = getIndexedWorldCount();
+  auto second = World::create();
+  auto box = createBox(Eigen::Vector3d::Ones());
+  second->addSkeleton(box);
+
+  // Failing before any membership is published.
+  failIndexAllocation(1u);
+  EXPECT_THROW(second->compile(), std::bad_alloc);
+  EXPECT_FALSE(second->isCompiled());
+  EXPECT_EQ(getIndexedWorldCount(), indexed);
+  // Failing while the entries are registered, after the World joined.
+  failIndexAllocation(3u);
+  EXPECT_THROW(second->compile(), std::bad_alloc);
+  EXPECT_FALSE(second->isCompiled());
+  EXPECT_EQ(getIndexedWorldCount(), indexed);
+  // The World stayed lazy: its model is neither frozen nor stamped.
+  const auto revision = second->getTopologyRevision();
+  EXPECT_NO_THROW(
+      box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0)));
+  EXPECT_EQ(second->getTopologyRevision(), revision);
+  second.reset();
+  // Global notifications visit every registered World, so a destroyed one
+  // must have left the registry.
+  const auto allowance = ContactConstraint::getErrorAllowance();
+  ContactConstraint::setErrorAllowance(allowance + 0.1);
+  ContactConstraint::setErrorAllowance(allowance);
+
+  // An indexed World that cannot rebuild its index stops being compiled and
+  // keeps no stale entries; the next compile() restores its guards.
+  failIndexAllocation(2u);
+  EXPECT_THROW(first->compile(), std::bad_alloc);
+  EXPECT_FALSE(first->isCompiled());
+  EXPECT_EQ(getIndexedWorldCount(), indexed);
+  EXPECT_NO_THROW(first->compile());
+  EXPECT_TRUE(first->isCompiled());
+  EXPECT_THROW(
+      robot->createJointAndBodyNodePair<RevoluteJoint>(robot->getBodyNode(0)),
+      std::runtime_error);
+  failIndexAllocation(0u);
+}
+
+//==============================================================================
+TEST(World, OwnerLookupCoversMoreIndexedWorldsThanTheInlineScratch)
+{
+  // Indexed Worlds cannot share a Skeleton, but they can share a detector,
+  // which lists every one of them under a single key.
+  constexpr std::size_t kWorlds = 10u;
+  auto detector = collision::DARTCollisionDetector::create();
+  std::vector<WorldPtr> worlds;
+  for (std::size_t i = 0u; i < kWorlds; ++i) {
+    auto world = World::create();
+    world->getConstraintSolver()->setCollisionDetector(detector);
+    world->addSkeleton(
+        createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(3.0 * i, 0.0, 0.0)));
+    world->compile();
+    worlds.push_back(world);
+  }
+  std::vector<std::size_t> parameters;
+  for (const auto& world : worlds)
+    parameters.push_back(world->getParameterRevision());
+  detector->setSoftFaceInteriorContactsEnabled(
+      !detector->getSoftFaceInteriorContactsEnabled());
+  for (std::size_t i = 0u; i < kWorlds; ++i) {
+    EXPECT_EQ(worlds[i]->getParameterRevision(), parameters[i] + 1u) << i;
+    EXPECT_TRUE(worlds[i]->isCompiled()) << i;
+  }
 }
 
 //==============================================================================
