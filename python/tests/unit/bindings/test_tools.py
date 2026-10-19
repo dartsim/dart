@@ -317,6 +317,22 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
     del reduced_rows["dartpy.collision.Optional"]
     reduced = api_surface.budget_surface(reduced_rows)
     assert not api_surface.budget_growth(reduced, budget, check_stale=True)
+    # ...but an alias cannot take the absent class's place unnoticed.
+    aliased_rows = dict(reduced_rows)
+    aliased_rows["dartpy.collision.Extra"] = {
+        "kind": "class",
+        "runtime": {
+            "module": "dartpy.collision",
+            "qualname": "Core",
+            "identity_path": "dartpy.collision.Core",
+        },
+    }
+    aliased = api_surface.budget_surface(aliased_rows)
+    assert aliased["dartpy.collision"]["containers"]["public"] == ["Core", "Extra"]
+    assert any(
+        "dartpy.collision (containers): public budget 1 -> 2" in failure
+        for failure in api_surface.budget_growth(aliased, budget, check_stale=True)
+    )
     # ...and still reports growth.
     reduced_rows["dartpy.collision.Added"] = {
         "kind": "class",
@@ -328,8 +344,8 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
         for failure in api_surface.budget_growth(grown, budget, check_stale=True)
     )
 
-    # Only the module missing a class is exempt: a stale container ceiling in
-    # another module is still reported, as it is when nothing is absent.
+    # A stale container ceiling is still reported, with or without absent
+    # owners elsewhere.
     budget["dartpy"]["containers"]["public"] += 1
     for surface in (reduced, full):
         assert any(
@@ -338,7 +354,7 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
         )
     budget["dartpy"]["containers"]["public"] -= 1
 
-    # An absent optional submodule exempts its parent's container count, where
+    # An absent optional submodule lowers its parent's container ceiling, where
     # growth is still reported.
     absent = api_surface.budget_surface({})
     assert not api_surface.budget_growth(absent, budget, check_stale=True)

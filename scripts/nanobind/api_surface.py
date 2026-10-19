@@ -301,6 +301,18 @@ def snapshot():
     return rows
 
 
+def name_counters(names):
+    """Sort public names into the budget's counters."""
+    names = sorted(name for name in names if not name.startswith("_"))
+    return {
+        "public": names,
+        "camel_case": [name for name in names if re.search(r"[a-z0-9][A-Z]|^m_", name)],
+        "get_set": [
+            name for name in names if re.match(r"^(?i:get|set)([A-Z_]|$)", name)
+        ],
+    }
+
+
 def budget_surface(rows):
     """Group snapshot identities by canonical module and class, retaining names."""
     owners = {"dartpy": ("dartpy", None)}
@@ -356,24 +368,13 @@ def budget_surface(rows):
         elif row["kind"] not in {"module", "class", "enum"}:
             scope["functions"].add(name)
 
-    def counters(names):
-        names = sorted(name for name in names if not name.startswith("_"))
-        return {
-            "public": names,
-            "camel_case": [
-                name for name in names if re.search(r"[a-z0-9][A-Z]|^m_", name)
-            ],
-            "get_set": [
-                name for name in names if re.match(r"^(?i:get|set)([A-Z_]|$)", name)
-            ],
-        }
-
     return {
         module: {
-            "functions": counters(scope["functions"]),
-            "containers": counters(scope["containers"]),
+            "functions": name_counters(scope["functions"]),
+            "containers": name_counters(scope["containers"]),
             "classes": {
-                cls: counters(names) for cls, names in sorted(scope["classes"].items())
+                cls: name_counters(names)
+                for cls, names in sorted(scope["classes"].items())
             },
         }
         for module, scope in sorted(surface.items())
@@ -383,21 +384,25 @@ def budget_surface(rows):
 def budget_growth(surface, budget, *, check_stale=False):
     """Describe growth and optionally stale ceilings for present owners."""
     failures = []
-    # A module whose budgeted classes or submodules are absent (optional bindings,
-    # or removals not yet pruned) has a container count that cannot be told apart
-    # from removals, so its container ceiling is not checked for staleness. Like
-    # absent owners, such removals are pruned on a full-feature build.
-    partial = set()
-    for module, limits in budget.items():
-        if module not in surface:
-            partial.add(module.rpartition(".")[0])
-        elif any(
-            cls not in surface[module].get("classes", {})
-            for cls in limits.get("classes", {})
-        ):
-            partial.add(module)
     for module, scope in surface.items():
         previous = budget.get(module, {})
+        # The names of budgeted classes and submodules this build lacks (optional
+        # bindings, or removals not yet pruned) lower the module's container
+        # ceilings, so growth and staleness stay exact on reduced builds.
+        absent = {
+            cls
+            for cls in previous.get("classes", {})
+            if "." not in cls and cls not in scope.get("classes", {})
+        } | {
+            child.rpartition(".")[2]
+            for child in budget
+            if child not in surface and child.rpartition(".")[0] == module
+        }
+        container_limits = dict(previous.get("containers", {}))
+        for counter, names in name_counters(absent).items():
+            container_limits[counter] = max(
+                0, container_limits.get(counter, 0) - len(names)
+            )
         owners = [
             (
                 module + " (functions)",
@@ -407,7 +412,7 @@ def budget_growth(surface, budget, *, check_stale=False):
             (
                 module + " (containers)",
                 scope.get("containers", {}),
-                previous.get("containers", {}),
+                container_limits,
             ),
         ]
         previous_classes = previous.get("classes", {})
@@ -426,11 +431,7 @@ def budget_growth(surface, budget, *, check_stale=False):
                         f"{owner}: {counter} budget {limit} -> {len(names)}; "
                         f"current names (including additions): {shown}"
                     )
-                elif (
-                    check_stale
-                    and len(names) < limit
-                    and not (owner == module + " (containers)" and module in partial)
-                ):
+                elif check_stale and len(names) < limit:
                     failures.append(
                         f"{owner}: {counter} budget {limit} exceeds current count "
                         f"{len(names)}; run {BUDGET_UPDATE} to lower it "
