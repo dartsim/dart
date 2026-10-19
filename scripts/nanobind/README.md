@@ -33,8 +33,9 @@ Snapshot runtime identities attribute inherited members to their walked defining
   class in the MRO whose `__dict__` defines the name, including when subclasses
   are visited first. Data names are not deduplicated by value identity.
   Absent optional modules and classes are ignored by the test and retained by
-  the updater; only `--update-budget --prune` deletes absent owners, so after
-  removing or renaming a class, run it on a full-feature build. For present
+  the updater, and so is the container ceiling of the module that lacks them;
+  only `--update-budget --prune` deletes absent owners, so after removing or
+  renaming a class, run it on a full-feature build. For present
   owners, removals require lowering budgets with `--update-budget`, without
   `--allow-growth`. Growth requires reverting the change or deliberately raising
   budgets with `--update-budget --allow-growth`. Failure diagnostics list the

@@ -383,17 +383,19 @@ def budget_surface(rows):
 def budget_growth(surface, budget, *, check_stale=False):
     """Describe growth and optionally stale ceilings for present owners."""
     failures = []
-    # A build without optional bindings lacks budgeted modules or classes. Their
-    # names cannot be told apart from removals in a module's container counts,
-    # so those ceilings are checked for staleness only on full-feature builds.
-    reduced = any(
-        module not in surface
-        or any(
+    # A module whose budgeted classes or submodules are absent (optional bindings,
+    # or removals not yet pruned) has a container count that cannot be told apart
+    # from removals, so its container ceiling is not checked for staleness. Like
+    # absent owners, such removals are pruned on a full-feature build.
+    partial = set()
+    for module, limits in budget.items():
+        if module not in surface:
+            partial.add(module.rpartition(".")[0])
+        elif any(
             cls not in surface[module].get("classes", {})
             for cls in limits.get("classes", {})
-        )
-        for module, limits in budget.items()
-    )
+        ):
+            partial.add(module)
     for module, scope in surface.items():
         previous = budget.get(module, {})
         owners = [
@@ -427,7 +429,7 @@ def budget_growth(surface, budget, *, check_stale=False):
                 elif (
                     check_stale
                     and len(names) < limit
-                    and not (reduced and owner.endswith(" (containers)"))
+                    and not (owner == module + " (containers)" and module in partial)
                 ):
                     failures.append(
                         f"{owner}: {counter} budget {limit} exceeds current count "

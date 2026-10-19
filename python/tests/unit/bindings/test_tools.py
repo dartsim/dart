@@ -328,17 +328,31 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
         for failure in api_surface.budget_growth(grown, budget, check_stale=True)
     )
 
-    # On a full-feature build a removed class makes the ceiling stale.
-    budget["dartpy.collision"]["classes"]["Gone"] = {
-        "public": 0,
-        "camel_case": 0,
-        "get_set": 0,
-    }
-    budget["dartpy.collision"]["containers"]["public"] += 1
-    del budget["dartpy.collision"]["classes"]["Gone"]
+    # Only the module missing a class is exempt: a stale container ceiling in
+    # another module is still reported, as it is when nothing is absent.
+    budget["dartpy"]["containers"]["public"] += 1
+    for surface in (reduced, full):
+        assert any(
+            "dartpy (containers): public budget 2 exceeds" in failure
+            for failure in api_surface.budget_growth(surface, budget, check_stale=True)
+        )
+    budget["dartpy"]["containers"]["public"] -= 1
+
+    # An absent optional submodule exempts its parent's container count, where
+    # growth is still reported.
+    absent = api_surface.budget_surface({})
+    assert not api_surface.budget_growth(absent, budget, check_stale=True)
+    added = api_surface.budget_surface(
+        {
+            "dartpy.Added": {
+                "kind": "class",
+                "runtime": {"module": "dartpy", "qualname": "Added"},
+            }
+        }
+    )
     assert any(
-        "dartpy.collision (containers): public budget 3 exceeds" in failure
-        for failure in api_surface.budget_growth(full, budget, check_stale=True)
+        "dartpy.Added: new class" in failure
+        for failure in api_surface.budget_growth(added, budget, check_stale=True)
     )
 
 
