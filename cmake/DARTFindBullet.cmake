@@ -11,6 +11,19 @@
 # with Bullet, which uses relative paths and may break transitive dependencies.
 include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 
+# Sets <out> to TRUE when a library file name, not its directory, has the
+# -float64 suffix.
+function(_dart_bullet_names_float64 out)
+  set(found FALSE)
+  foreach(library IN LISTS ARGN)
+    get_filename_component(name "${library}" NAME)
+    if(name MATCHES "-float64")
+      set(found TRUE)
+    endif()
+  endforeach()
+  set(${out} ${found} PARENT_SCOPE)
+endfunction()
+
 if(NOT DART_USE_SYSTEM_BULLET)
   if(TARGET BulletCollision AND TARGET LinearMath)
     if(DEFINED DART_BULLET_SOURCE_DIR)
@@ -117,16 +130,21 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
     unset(_dart_bullet_complete)
   endif()
   # Explicitly selected -float64 libraries count as well.
-  set(_dart_bullet_float64 FALSE)
-  if("${_dart_bullet_libraries}" MATCHES "-float64")
-    set(_dart_bullet_float64 TRUE)
-  endif()
+  _dart_bullet_names_float64(_dart_bullet_float64 ${_dart_bullet_libraries})
 
   if(DART_BULLET_REQUIRE_FLOAT64 AND NOT _dart_bullet_float64)
     message(
       WARNING
       "DART was built with Bullet's -float64 libraries, which were not found "
       "beside '${BULLET_COLLISION_LIBRARY}'."
+    )
+    set(BULLET_FOUND FALSE)
+    set(Bullet_FOUND FALSE)
+  elseif(DART_BULLET_REQUIRE_FLOAT64 STREQUAL "FALSE" AND _dart_bullet_float64)
+    message(
+      WARNING
+      "DART was built with single-precision Bullet, but the selected Bullet "
+      "libraries are -float64 ones."
     )
     set(BULLET_FOUND FALSE)
     set(Bullet_FOUND FALSE)
@@ -174,10 +192,7 @@ elseif(TARGET Bullet)
       list(APPEND _dart_bullet_libraries "${_dart_bullet_value}")
     endif()
   endforeach()
-  set(_dart_bullet_float64 FALSE)
-  if("${_dart_bullet_libraries}" MATCHES "-float64")
-    set(_dart_bullet_float64 TRUE)
-  endif()
+  _dart_bullet_names_float64(_dart_bullet_float64 ${_dart_bullet_libraries})
   if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
     set(
       DART_BULLET_USES_FLOAT64

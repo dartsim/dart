@@ -456,6 +456,26 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "float64-full",
         ),
+        # Only library file names, not directories, mark the variant.
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 OFF)\n"
+            'file(MAKE_DIRECTORY "${lib}/prefix-float64")\n'
+            'set(collision "${lib}/prefix-float64/${prefix}BulletCollision${ext}")\n'
+            'set(math "${lib}/prefix-float64/${prefix}LinearMath${ext}")\n'
+            'file(TOUCH "${collision}" "${math}")',
+            True,
+            "unrecorded",
+        ),
+        # An installed single-precision DART refuses -float64 libraries.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 FALSE)\n"
+            'set(collision "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            'set(math "${lib}/${prefix}LinearMath-float64${ext}")',
+            True,
+            "missing",
+        ),
         # Explicitly selected -float64 libraries are recorded as such.
         (
             325,
@@ -507,6 +527,8 @@ def test_bullet_prefers_float64_libraries(
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
     elif expected == "accepted":
         check = "NOT BULLET_FOUND"
+    elif expected == "unrecorded":
+        check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL FALSE"
     elif expected == "float64-full":
         check = (
             "NOT linked STREQUAL "
