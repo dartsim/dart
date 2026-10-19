@@ -47,6 +47,16 @@ if(DART_USE_SYSTEM_BULLET)
     BT_USE_DOUBLE_PRECISION
   )
   cmake_pop_check_state()
+  # Unsuffixed libraries built in double precision do not show their
+  # precision, so an installed DART cannot check the variant it finds.
+  if(BT_USE_DOUBLE_PRECISION AND DART_BULLET_USES_FLOAT64 STREQUAL "FALSE")
+    set(
+      DART_BULLET_USES_FLOAT64
+      ""
+      CACHE INTERNAL
+      "Whether DART links Bullet's -float64 libraries; empty when unknown"
+    )
+  endif()
 else()
   # FetchContent builds Bullet with USE_DOUBLE_PRECISION=ON, so keep DART in sync.
   set(BT_USE_DOUBLE_PRECISION TRUE)

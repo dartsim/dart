@@ -710,10 +710,11 @@ def test_bullet_prefers_float64_libraries(
     lib = (tmp_path / "bullet" / "lib").as_posix()
     suffix = "-float64" if expected == "float64" else ""
     if expected == "bundled":
-        # Bundled targets' precision is not recorded.
+        # Bundled targets' precision and pkg-config flags are not recorded.
         check = (
             'NOT linked STREQUAL "BulletCollision;LinearMath"'
             ' OR NOT DART_BULLET_USES_FLOAT64 STREQUAL ""'
+            ' OR NOT DART_BULLET_PC_LIBS STREQUAL ""'
         )
     elif expected == "missing":
         check = "TARGET Bullet OR BULLET_FOUND"
@@ -728,6 +729,9 @@ def test_bullet_prefers_float64_libraries(
             ' OR NOT "${linked}" MATCHES "CONFIG:DEBUG>:[^>]*LinearMath-float64_d"'
             ' OR "${linked}" MATCHES "BulletCollision_d"'
             " OR NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
+            # pkg-config names the release libraries.
+            ' OR NOT DART_BULLET_PC_LIBS MATCHES "BulletCollision-float64"'
+            ' OR DART_BULLET_PC_LIBS MATCHES "float64_d"'
         )
     elif expected == "single-debug":
         check = (
@@ -761,6 +765,8 @@ def test_bullet_prefers_float64_libraries(
             check += (
                 f" OR NOT DART_BULLET_USES_FLOAT64 STREQUAL {recorded}"
                 f" OR NOT DART_BULLET_MINIMUM_VERSION STREQUAL {minimum}"
+                ' OR NOT DART_BULLET_PC_LIBS STREQUAL " ${expected_pc}"'
+                ' OR NOT DART_BULLET_PC_CFLAGS STREQUAL " -I${BULLET_INCLUDE_DIRS}"'
             )
     result = configure(
         tmp_path,
@@ -780,6 +786,7 @@ def test_bullet_prefers_float64_libraries(
         "include(DARTFindBullet)\n"
         f'set(expected "${{lib}}/${{prefix}}BulletCollision{suffix}${{ext}}" '
         f'"${{lib}}/${{prefix}}LinearMath{suffix}${{ext}}")\n'
+        'list(JOIN expected " " expected_pc)\n'
         "if(TARGET Bullet)\n"
         "  get_target_property(linked Bullet INTERFACE_LINK_LIBRARIES)\n"
         "endif()\n"

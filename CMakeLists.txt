@@ -650,8 +650,11 @@ if(HAVE_BULLET)
     if(BULLET_FLOAT64_FOUND)
       set(bullet_pc bullet-float64)
     elseif(DART_BULLET_USES_FLOAT64)
-      # bullet.pc would add the single-precision libraries.
+      # bullet.pc would add the single-precision libraries; name the -float64
+      # ones directly.
       set(bullet_pc)
+      string(APPEND DART_PKG_CFLAGS "${DART_BULLET_PC_CFLAGS}")
+      string(APPEND DART_PKG_PRIVATE_LIBS "${DART_BULLET_PC_LIBS}")
     endif()
   endif()
   if(bullet_pc)

@@ -93,9 +93,11 @@ DART rejects Bullet libraries that mix the two variants, judging an existing
 installed CMake components require the same variant without falling back to
 the other one, and Bullet 3.17 when DART was built against 3.17 or newer, whose
 heightfield constructor it calls; they also reject an existing target of the
-other variant and warn when it names no library files. `dart.pc`
-requires `bullet-float64` when pkg-config finds that module and otherwise omits
-Bullet rather than add the single-precision libraries. The two precisions
+other variant and warn when it names no library files. Unsuffixed libraries
+that the build finds in double precision do not show their variant, so an
+installed DART does not check it. `dart.pc` requires `bullet-float64` when
+pkg-config finds that module and otherwise names the `-float64` libraries and
+Bullet's include directories directly. The two precisions
 share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
 even across `RTLD_LOCAL` plugins, so a process must load only one Bullet
 precision.

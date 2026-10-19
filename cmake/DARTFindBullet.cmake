@@ -53,7 +53,9 @@ function(_dart_bullet_variant out)
   set(${out} "${variant}" PARENT_SCOPE)
 endfunction()
 
-# Records the variant that DART links while building it.
+# Records the variant that DART links while building it, and pkg-config
+# flags for the Bullet libraries among the remaining arguments, for dart.pc
+# to name when no bullet-float64 module describes them.
 function(_dart_bullet_record variant)
   set(uses "")
   if(variant STREQUAL "float64")
@@ -66,6 +68,36 @@ function(_dart_bullet_record variant)
     "${uses}"
     CACHE INTERNAL
     "Whether DART links Bullet's -float64 libraries; empty when unknown"
+  )
+  set(cflags "")
+  set(libs "")
+  if(ARGN)
+    foreach(dir IN LISTS BULLET_INCLUDE_DIRS)
+      string(APPEND cflags " -I${dir}")
+    endforeach()
+  endif()
+  # Keep FindBullet's release libraries.
+  set(skip FALSE)
+  foreach(library IN LISTS ARGN)
+    if(skip)
+      set(skip FALSE)
+    elseif(library STREQUAL "debug")
+      set(skip TRUE)
+    elseif(NOT library MATCHES "^(optimized|general)$")
+      string(APPEND libs " ${library}")
+    endif()
+  endforeach()
+  set(
+    DART_BULLET_PC_CFLAGS
+    "${cflags}"
+    CACHE INTERNAL
+    "Bullet's pkg-config flags"
+  )
+  set(
+    DART_BULLET_PC_LIBS
+    "${libs}"
+    CACHE INTERNAL
+    "Bullet's pkg-config libraries"
   )
 endfunction()
 
@@ -251,7 +283,11 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
     target_link_libraries(Bullet INTERFACE ${_dart_bullet_libraries})
   endif()
   if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
-    _dart_bullet_record("${_dart_bullet_found}")
+    if(_dart_bullet_files)
+      _dart_bullet_record("${_dart_bullet_found}" ${_dart_bullet_libraries})
+    else()
+      _dart_bullet_record("${_dart_bullet_found}")
+    endif()
   endif()
   unset(_dart_bullet_want_float64)
   unset(_dart_bullet_files)

@@ -3383,8 +3383,9 @@ TEST_F(Collision, BulletSmallMultiSphereContactsBox)
 // with 5.4 cm cells. See https://github.com/gazebosim/gz-physics/issues/1117
 TEST_F(Collision, BulletSmallBoxesRestOnHeightmap)
 {
-  #ifndef BT_USE_DOUBLE_PRECISION
-  GTEST_SKIP() << "Small shapes need double-precision Bullet";
+  #if !defined(BT_USE_DOUBLE_PRECISION) || BT_BULLET_VERSION < 317
+  GTEST_SKIP() << "Heightmaps of small shapes need double-precision Bullet "
+                  "3.17 or newer";
   #endif
 
   auto world = World::create();
