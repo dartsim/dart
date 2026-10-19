@@ -49,7 +49,7 @@ Kinematics
 * Flexible conversion of coordinate frames.
 * Fully modular inverse kinematics framework.
 * Plug-and-play hierarchical whole-body inverse kinematics solver.
-* Analytic inverse kinematics interface with ikfast support.
+* Analytic inverse kinematics interface with custom solver support.
 
 Dynamics
 ~~~~~~~~

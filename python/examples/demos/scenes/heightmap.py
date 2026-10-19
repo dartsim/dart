@@ -1,10 +1,11 @@
-"""Visualization > heightmap: native float-random terrain and a grid editor."""
+"""Visualization > heightmap: float-random terrain and a grid editor."""
 
 from __future__ import annotations
 
 import dartpy as dart
 import numpy as np
 
+from ..models.heightmap import create_heightmap_shape
 from .common import add_grid_editor
 
 
@@ -65,13 +66,13 @@ def build() -> dart.viewer.SceneSetup:
             low, high = sorted(parameters[-2:])
             with np.errstate(over="ignore"):
                 span = np.float32(high) - np.float32(low)
-            # Native generation rejects overflowing float spans; keep the last range.
+            # Generation rejects overflowing float spans; keep the last range.
             if not np.isfinite(span):
                 low, high = applied[-2:]
             parameters = (*parameters[:4], low, high)
             z_min.value, z_max.value = low, high
             if parameters != applied:
-                terrain.setShape(dart._demos.create_heightmap_shape(*parameters))
+                terrain.setShape(create_heightmap_shape(*parameters))
                 transform = terrain.getRelativeTransform()
                 translation = transform.translation().copy()
                 translation[:2] = [-parameters[2] / 2, parameters[3] / 2]

@@ -46,6 +46,10 @@
 namespace dart {
 namespace collision {
 
+namespace detail {
+struct CollisionHistory;
+} // namespace detail
+
 /// OdeCollisionDetector wraps the ODE collision detector.
 ///
 /// The supported collision shape types are sphere, box, capsule, cylinder,
@@ -60,6 +64,8 @@ namespace collision {
 /// yet.
 class OdeCollisionDetector : public CollisionDetector
 {
+  friend struct detail::CollisionHistory;
+
 public:
   using CollisionDetector::createCollisionGroup;
 

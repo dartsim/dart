@@ -1,6 +1,7 @@
 import math
 
 import dartpy as dart
+import numpy as np
 import pytest
 
 
@@ -55,6 +56,57 @@ def test_function_gradient_override_is_called():
 
     assert solver.solve() is True
     assert calls == ["gradient"]
+
+
+def test_gradient_callbacks_retain_independent_arrays_and_apply_updates():
+    gradients = []
+    snapshots = []
+    positions = []
+
+    class RetainingFunction(dart.optimizer.Function):
+        def eval(self, x):
+            return float(x @ x)
+
+        def evalGradient(self, x, grad):
+            for previous, expected in zip(gradients, snapshots):
+                np.testing.assert_array_equal(previous, expected)
+            assert grad.flags.writeable and grad.flags.owndata
+            grad[:] = 2 * x
+            gradients.append(grad)
+            snapshots.append(grad.copy())
+            positions.append(x.copy())
+
+    problem = dart.optimizer.Problem(2)
+    problem.setInitialGuess([1.0, 2.0])
+    problem.setObjective(RetainingFunction())
+    solver = dart.optimizer.GradientDescentSolver(problem)
+    solver.setNumMaxIterations(2)
+    solver.setStepSize(0.1)
+    solver.setMaxAttempts(1)
+    solver.setPerturbationStep(0)
+    solver.solve()
+    np.testing.assert_allclose(positions, [[1, 2], [0.8, 1.6], [0.64, 1.28]])
+    assert not np.shares_memory(gradients[0], gradients[1])
+    del solver, problem
+    for gradient, expected in zip(gradients, snapshots):
+        np.testing.assert_array_equal(gradient, expected)
+
+
+def test_gradient_callback_rejects_changed_output_size():
+    class ResizingFunction(dart.optimizer.Function):
+        def eval(self, x):
+            return float(x @ x)
+
+        def evalGradient(self, x, grad):
+            grad.resize(grad.size + 1, refcheck=False)
+
+    problem = dart.optimizer.Problem(1)
+    problem.setInitialGuess([1.0])
+    problem.setObjective(ResizingFunction())
+    solver = dart.optimizer.GradientDescentSolver(problem)
+    solver.setNumMaxIterations(1)
+    with pytest.raises(ValueError, match="gradient.*size"):
+        solver.solve()
 
 
 def test_gradient_descent_solver():
