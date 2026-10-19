@@ -713,17 +713,21 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
     setup, wam, ee, _ = _wam_with_ssik()
     rescue = pytest.importorskip("ssik.refinement.rescue")
     refinement = pytest.importorskip("ssik.refinement")
-    budgets = []
+    budgets, rescues = [], []
     lm_refine = refinement.lm_refine
+    rescue_via_T_perturbation = rescue.rescue_via_T_perturbation
 
-    def fail(*args, **kwargs):
-        raise AssertionError("interactive solves must not run ssik's rescue")
+    # Record calls rather than raise: the solver keeps exceptions from
+    # disabling the scene's refresh, which would hide a raised assertion.
+    def record_rescue(*args, **kwargs):
+        rescues.append(args)
+        return rescue_via_T_perturbation(*args, **kwargs)
 
     def record(*args, **kwargs):
         budgets.append(kwargs["max_iters"])
         return lm_refine(*args, **kwargs)
 
-    monkeypatch.setattr(rescue, "rescue_via_T_perturbation", fail)
+    monkeypatch.setattr(rescue, "rescue_via_T_perturbation", record_rescue)
     monkeypatch.setattr(refinement, "lm_refine", record)
 
     def drag(start, offsets):
@@ -786,16 +790,20 @@ def test_wam_ssik_keeps_infeasible_drags_cheap(monkeypatch):
         actions = {chr(action.key): action for action in setup.key_actions}
         actions["1"].callback()
     assert max(steps) <= 60
+    assert rescues == []
 
 
 def test_wam_ssik_skips_continuation_the_held_swivel_already_beats(monkeypatch):
     setup, wam, ee, _ = _wam_with_ssik()
     refinement = pytest.importorskip("ssik.refinement")
+    calls = []
+    lm_refine = refinement.lm_refine
 
-    def fail(*args, **kwargs):
-        raise AssertionError("continuation cannot win; skip it")
+    def record(*args, **kwargs):
+        calls.append(args)
+        return lm_refine(*args, **kwargs)
 
-    monkeypatch.setattr(refinement, "lm_refine", fail)
+    monkeypatch.setattr(refinement, "lm_refine", record)
     start = np.array([0.3, 0.6, 0.2, 0.2315263, -0.3, 0.5, 0.1])
     wam.setPositions(start + [0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0])
     desired = ee.getWorldTransform()
@@ -805,6 +813,7 @@ def test_wam_ssik_skips_continuation_the_held_swivel_already_beats(monkeypatch):
     np.testing.assert_allclose(
         ee.getWorldTransform().matrix(), desired.matrix(), atol=1e-6
     )
+    assert calls == []
 
 
 def test_wam_ssik_reuses_a_failed_solve_while_dart_iterates():
