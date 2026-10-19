@@ -217,6 +217,7 @@
     into Python overrides, such as `Function.eval(x)`, are read-only too.
     Existing live views and output buffers, such as a gradient's `grad`, keep
     their mutability.
+    [#3843](https://github.com/dartsim/dart/pull/3843)
 
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
