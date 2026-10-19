@@ -18,6 +18,15 @@
     volume or an empty box.
     [#3819](https://github.com/dartsim/dart/pull/3819)
 
+  * `Skeleton::getSupportIndices()` now names the end effector behind each
+    support polygon vertex instead of returning an empty list, so
+    `BalanceConstraint` no longer reads past its end.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * A `LineSegmentShape` built from two points now reports `LINE_SEGMENT`
+    from the deprecated `getShapeType()`, like one built from a thickness.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
 * Parsers
 
   * SDF joints that mimic only some of their axes, such as a universal
