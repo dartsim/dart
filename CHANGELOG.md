@@ -132,6 +132,7 @@
     subclasses when the shape is destroyed. These scenes must be heap-allocated
     with `new` or by an assimp import; callers must not free or share them.
     Callers retaining ownership use `setMesh(..., MeshOwnership::None)`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
 
   * Line segment and point cloud shapes now report bounding boxes that
     include vertices and points edited after a query, and clearing a point
@@ -277,13 +278,16 @@
     [#3836](https://github.com/dartsim/dart/pull/3836)
   * Raise the minimum assimp version to 5.3 (Ubuntu 24.04's 5.3.1, which
     reports 5.3.0).
+    [#3865](https://github.com/dartsim/dart/pull/3865)
 
   * Remove `ASSIMP_AISCENE_CTOR_DTOR_DEFINED` and
     `ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED` from the installed `dart/config.hpp`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
 
   * The installed `BulletCollisionDetector.hpp` no longer includes
     `<assimp/scene.h>`; code using assimp types through it must include that
     header directly.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
