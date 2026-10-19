@@ -1251,7 +1251,7 @@ void Shape(nb::module_& m)
       m, "SoftMeshShape")
       .def(
           dartnb::init<dart::dynamics::SoftBodyNode*>(),
-          nb::arg("softBodyNode").none())
+          nb::arg("softBodyNode"))
       .def(
           "getType",
           +[](const dart::dynamics::SoftMeshShape* self) -> const std::string& {

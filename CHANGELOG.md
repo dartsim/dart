@@ -197,6 +197,15 @@
 
 * Python
 
+  * Passing `None` for a frame, body or shape-node argument no longer crashes
+    the interpreter. Where C++ defaults the argument to the world frame, `None`
+    now means the world frame. Arguments where C++ gives `None` a meaning, such
+    as `setParentFrame` to detach, keep that meaning. Everywhere else `None`
+    raises `TypeError`, including `World.addSkeleton`, `World.removeSkeleton`,
+    `CollisionGroup.addShapeFrame` and `BodyNode.createShapeNode`, which used
+    to ignore it. `FreeJoint.setSpatialMotion` now accepts arrays for its
+    transform, velocity and acceleration; `None` skips a motion and its frames.
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
