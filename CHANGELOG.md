@@ -14,6 +14,7 @@
     integers, floating-point values, strings, pointers or enums; convert other
     types to strings first. Projects that used fmt through `find_package(DART)`
     must find it themselves, and `DART_SKIP_spdlog` no longer has any effect.
+    [#3853](https://github.com/dartsim/dart/pull/3853)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
@@ -88,6 +89,7 @@
   * Add `dart::common::setLogSink`, `resetLogSink`, `setLogLevel` and
     `getLogLevel` to route DART's log messages to an application and filter
     them at run time.
+    [#3853](https://github.com/dartsim/dart/pull/3853)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
