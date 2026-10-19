@@ -385,6 +385,8 @@ Eigen::Vector4d toWxyz(const Eigen::Matrix3d& R)
 {
   const Eigen::Quaterniond q(R);
   Eigen::Vector4d out(q.w(), q.x(), q.y(), q.z());
+  out /= out.cwiseAbs().maxCoeff();
+  out /= out.norm();
   for (int i = 0; i < 4; ++i) {
     if (out[i] != 0) {
       if (out[i] < 0)
@@ -613,6 +615,46 @@ Isometry validateItem(
   return item;
 }
 
+// Keep SVD and error formatting out of the composition fast path.
+EIGEN_DONT_INLINE void requireResultEnvelopeFull(
+    const Eigen::Matrix3d& R, const char* op, bool batched, std::size_t index)
+{
+  Eigen::JacobiSVD<Eigen::Matrix3d> svd(R);
+  if (R.determinant() > 0 && Deviation(svd.singularValues()).nearRotation())
+    return;
+  std::string name = std::string(op) + " result";
+  if (batched)
+    name += " at batch index " + std::to_string(index);
+  throw nb::value_error(
+      (name
+       + " rotation is outside the near-rotation envelope; rebuild the "
+         "inputs with normalize=True before retrying")
+          .c_str());
+}
+
+void requireResultEnvelope(
+    const Isometry& item, const char* op, bool batched, std::size_t index)
+{
+  const auto& R = item.matrix();
+  // R^T R - I is symmetric; compute its six distinct entries directly.
+  const double g00
+      = R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0) + R(2, 0) * R(2, 0) - 1;
+  const double g11
+      = R(0, 1) * R(0, 1) + R(1, 1) * R(1, 1) + R(2, 1) * R(2, 1) - 1;
+  const double g22
+      = R(0, 2) * R(0, 2) + R(1, 2) * R(1, 2) + R(2, 2) * R(2, 2) - 1;
+  const double g01 = R(0, 0) * R(0, 1) + R(1, 0) * R(1, 1) + R(2, 0) * R(2, 1);
+  const double g02 = R(0, 0) * R(0, 2) + R(1, 0) * R(1, 2) + R(2, 0) * R(2, 2);
+  const double g12 = R(0, 1) * R(0, 2) + R(1, 1) * R(1, 2) + R(2, 1) * R(2, 2);
+  // Products and inverses retain positive determinants; this bound also
+  // implies the singular-value stretch and spread limits.
+  if (g00 * g00 + g11 * g11 + g22 * g22
+          + 2 * (g01 * g01 + g02 * g02 + g12 * g12)
+      <= 1e-6)
+    return;
+  requireResultEnvelopeFull(item.linear(), op, batched, index);
+}
+
 // scalar (x) batch broadcasts; batches must have equal length.
 template <class F>
 Storage zip(const Poses& a, const Poses& b, const char* op, F&& fn)
@@ -624,22 +666,29 @@ Storage zip(const Poses& a, const Poses& b, const char* op, F&& fn)
                               .c_str());
   Storage out;
   if (!a.batched && !b.batched) {
-    out.push_back(fn(a.items[0], b.items[0]));
+    out.push_back(fn(a.items[0], b.items[0], 0));
     return out;
   }
   const std::size_t n = std::max(a.count(), b.count());
   out.reserve(n);
   for (std::size_t i = 0; i < n; ++i)
-    out.push_back(fn(a.items[a.batched ? i : 0], b.items[b.batched ? i : 0]));
+    out.push_back(
+        fn(a.items[a.batched ? i : 0], b.items[b.batched ? i : 0], i));
   return out;
 }
 
 nb::object compose(const Poses& a, const Poses& b, bool rotationResult)
 {
-  Storage out = zip(a, b, "@", [](const Isometry& x, const Isometry& y) {
-    return Isometry(x * y);
-  });
   const bool batched = a.batched || b.batched;
+  Storage out = zip(
+      a,
+      b,
+      "@",
+      [batched](const Isometry& x, const Isometry& y, std::size_t i) {
+        Isometry result(x * y);
+        requireResultEnvelope(result, "@", batched, i);
+        return result;
+      });
   if (rotationResult)
     return nb::cast(fromStorage<RotationValue>(std::move(out), batched));
   return nb::cast(fromStorage<TransformValue>(std::move(out), batched));
@@ -820,10 +869,13 @@ T inverse(const T& self)
 {
   Storage out;
   out.reserve(self.count());
-  for (const Isometry& item : self.items)
+  for (const Isometry& item : self.items) {
     // A general inverse of the stored rotation block: values may carry drift
     // within the tolerance, which the transpose would double.
     out.push_back(item.inverse(Eigen::Affine));
+    requireResultEnvelope(
+        out.back(), "inverse()", self.batched, out.size() - 1);
+  }
   return fromStorage<T>(std::move(out), self.batched);
 }
 
@@ -846,7 +898,8 @@ void bindCommon(Class& cls, const char* name)
           "Inverse of the stored value. A rotation accepted within the "
           "tolerance or drifted by composition is inverted as stored, not "
           "transposed, so value @ value.inverse() is the identity to "
-          "floating-point precision.")
+          "floating-point precision. Raises ValueError if the result leaves "
+          "the normalize=True near-rotation envelope.")
       .def(
           "__matmul__",
           [](nb::handle self, nb::handle other) { return matmul(self, other); },

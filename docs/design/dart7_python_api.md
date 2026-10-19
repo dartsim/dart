@@ -372,8 +372,11 @@ scalar fast path.
   suggests `normalize=True`. That option projects onto the nearest rotation when
   every singular value lies within `1e-2` of 1 and their relative spread
   `(max - min) / max` is at most `1e-3`; reflections, and shear or non-uniform
-  scale beyond that spread, still raise. Composition never normalizes
-  silently, and drift is documented; unpickling restores the exact bits.
+  scale beyond that spread, still raise. Composition and `inverse()` never
+  project silently. Each output rotation must stay within that same envelope
+  (with positive determinant); otherwise they raise `ValueError` suggesting
+  `normalize=True`, naming the first failing index for a batch. Every returned
+  value therefore pickles and unpickles with its exact bits preserved.
   `inverse()` inverts the stored rotation as stored rather than transposing
   it, so `T @ T.inverse()` is the identity to floating-point precision even for
   a rotation accepted within the tolerance or drifted by composition.

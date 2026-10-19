@@ -419,8 +419,7 @@ def test_repr_round_trips_floats():
 
 
 def test_composition_drift_is_not_normalized():
-    # Composition is plain matrix multiplication; validation happens only at
-    # construction, so drift accumulates slowly and never changes silently.
+    # Composition keeps matrix multiplication's exact result inside the envelope.
     step = dart.Rotation(rpy=(0.01, 0.02, 0.03))
     acc = dart.Rotation()
     for _ in range(2000):
@@ -649,3 +648,73 @@ def test_normalize_projects_rotation_valued_input(cls):
     np.testing.assert_allclose(
         block(projected), np.stack([np.eye(3), np.eye(3)]), atol=1e-12
     )
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+def test_quaternion_exports_are_unit_for_non_normalized_matrices(cls):
+    matrices = (1 + 2e-6) * np.stack([np.eye(3), rx(np.pi), rz(0.7)])
+    for matrix in (*matrices, matrices):
+        value = cls(rotation=matrix)
+        before = value.__getstate__()
+        for quaternion in (value.wxyz, value.xyzw):
+            np.testing.assert_allclose(
+                np.linalg.norm(quaternion, axis=-1), 1, rtol=0, atol=2e-15
+            )
+        np.testing.assert_array_equal(value.xyzw, value.wxyz[..., [1, 2, 3, 0]])
+        assert value.__getstate__() == before
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+def test_composition_stays_inside_pickle_envelope(cls):
+    step = cls(rotation=(1 + 2e-6) * np.eye(3))
+    value = cls()
+    for _ in range(6000):
+        try:
+            value = value @ step
+        except ValueError as error:
+            assert "normalize=True" in str(error)
+            assert value.matrix[0, 0] > 1.0099
+            break
+        assert pickle.loads(pickle.dumps(value)) == value
+    else:
+        pytest.fail("composition did not reject accumulated scale outside the envelope")
+
+
+@pytest.mark.parametrize("left_cls", [dart.Transform, dart.Rotation])
+@pytest.mark.parametrize("right_cls", [dart.Transform, dart.Rotation])
+@pytest.mark.parametrize("diagonal", [(1.009999,) * 3, (1.001, 1, 1)])
+@pytest.mark.parametrize("left_batched,right_batched", [(False, False), (True, False), (False, True), (True, True)])
+def test_composition_envelope_checks_mixed_types_and_first_batch_index(
+    left_cls, right_cls, diagonal, left_batched, right_batched
+):
+    matrices = np.repeat(np.eye(4)[None], 3 if left_batched else 1, axis=0)
+    matrices[1 if left_batched else 0 :, :3, :3] = np.diag(diagonal)
+    left = left_cls.__new__(left_cls)
+    left.__setstate__((left_batched, matrices.transpose(0, 2, 1).tobytes()))
+    rotation = np.diag([1 + 2e-6, 1, 1])
+    if right_batched:
+        rotation = np.stack([np.eye(3), rotation, rotation])
+    right = right_cls(rotation=rotation)
+    pattern = r"index 1.*normalize=True" if left_batched or right_batched else "normalize=True"
+    with pytest.raises(ValueError, match=pattern):
+        _ = left @ right
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+@pytest.mark.parametrize("batched", [False, True])
+def test_inverse_checks_pickle_envelope_edge(cls, batched):
+    for scale in (1 / 1.0099, 0.99001):
+        matrices = np.repeat(np.eye(4)[None], 3 if batched else 1, axis=0)
+        matrices[1 if batched else 0 :, :3, :3] *= scale
+        value = cls.__new__(cls)
+        value.__setstate__((batched, matrices.transpose(0, 2, 1).tobytes()))
+        if scale == 0.99001:
+            pattern = r"index 1.*normalize=True" if batched else "normalize=True"
+            with pytest.raises(ValueError, match=pattern):
+                value.inverse()
+        else:
+            inverted = value.inverse()
+            assert pickle.loads(pickle.dumps(inverted)) == inverted
+            np.testing.assert_allclose(
+                inverted.matrix, np.linalg.inv(value.matrix), rtol=0, atol=1e-15
+            )
