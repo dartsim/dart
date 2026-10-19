@@ -414,16 +414,17 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "float64",
         ),
-        # An installed DART rejects an existing target of the other variant.
+        # An installed DART links an existing target as is but warns when its
+        # libraries show the other variant.
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
             "add_library(Bullet INTERFACE IMPORTED)\n"
             'set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES "${collision};${math}")',
             True,
-            "rejected",
+            "warned",
         ),
-        # ... and accepts one of the same variant, also through imported targets.
+        # ... and accepts one of the same variant silently.
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
@@ -433,6 +434,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "accepted",
         ),
+        # Linked imported targets hide their files, so it can only warn.
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
@@ -442,7 +444,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "add_library(Bullet INTERFACE IMPORTED)\n"
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
             True,
-            "accepted",
+            "warned",
         ),
         # The -float64 variant keeps FindBullet's dynamics and soft-body libraries.
         (
@@ -453,6 +455,15 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "endforeach()",
             True,
             "float64-full",
+        ),
+        # Explicitly selected -float64 libraries are recorded as such.
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 OFF)\n"
+            'set(collision "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            'set(math "${lib}/${prefix}LinearMath-float64${ext}")',
+            True,
+            "recorded",
         ),
         # Building DART records the variant of a parent's Bullet target.
         (
@@ -490,8 +501,8 @@ def test_bullet_prefers_float64_libraries(
         check = 'NOT linked STREQUAL "BulletCollision;LinearMath"'
     elif expected == "missing":
         check = "TARGET Bullet OR BULLET_FOUND"
-    elif expected == "rejected":
-        check = "BULLET_FOUND"
+    elif expected == "warned":
+        check = "NOT BULLET_FOUND"
     elif expected == "recorded":
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
     elif expected == "accepted":
@@ -499,9 +510,9 @@ def test_bullet_prefers_float64_libraries(
     elif expected == "float64-full":
         check = (
             "NOT linked STREQUAL "
-            '"${lib}/${prefix}BulletCollision-float64${ext};'
+            '"${lib}/${prefix}BulletDynamics-float64${ext};'
+            "${lib}/${prefix}BulletCollision-float64${ext};"
             "${lib}/${prefix}LinearMath-float64${ext};"
-            "${lib}/${prefix}BulletDynamics-float64${ext};"
             '${lib}/${prefix}BulletSoftBody-float64${ext}"'
         )
     else:
@@ -539,6 +550,9 @@ def test_bullet_prefers_float64_libraries(
         "endif()\n",
     )
     assert result.returncode == 0, result.stdout + result.stderr
+    # CMake wraps warning text, so compare whitespace-normalized output.
+    warning = "must not load both Bullet precisions" in " ".join(result.stderr.split())
+    assert warning == (expected == "warned"), result.stderr
 
 
 @pytest.mark.parametrize(

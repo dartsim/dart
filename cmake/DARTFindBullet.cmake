@@ -73,7 +73,6 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
     endif()
   endforeach()
   set(_dart_bullet_libraries ${BULLET_LIBRARIES})
-  set(_dart_bullet_float64 FALSE)
   if(
     _dart_bullet_want_float64
     AND _dart_bullet_files
@@ -84,46 +83,43 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
       "${BULLET_COLLISION_LIBRARY}"
       DIRECTORY
     )
-    find_library(
-      _dart_bullet_collision_float64
-      BulletCollision-float64
-      HINTS "${_dart_bullet_dir}"
-      NO_DEFAULT_PATH
-      NO_CACHE
+    # Keep FindBullet's libraries in its link order; the collision and math
+    # libraries are required.
+    set(_dart_bullet_float64_libraries)
+    set(_dart_bullet_complete TRUE)
+    foreach(
+      _dart_bullet_name
+      BulletDynamics
+      BulletCollision
+      LinearMath
+      BulletSoftBody
     )
-    find_library(
-      _dart_bullet_math_float64
-      LinearMath-float64
-      HINTS "${_dart_bullet_dir}"
-      NO_DEFAULT_PATH
-      NO_CACHE
-    )
-    if(_dart_bullet_collision_float64 AND _dart_bullet_math_float64)
-      set(
-        _dart_bullet_libraries
-        "${_dart_bullet_collision_float64}"
-        "${_dart_bullet_math_float64}"
+      find_library(
+        _dart_bullet_library
+        ${_dart_bullet_name}-float64
+        HINTS "${_dart_bullet_dir}"
+        NO_DEFAULT_PATH
+        NO_CACHE
       )
-      # Keep the dynamics and soft-body libraries that FindBullet also links.
-      foreach(_dart_bullet_name BulletDynamics BulletSoftBody)
-        find_library(
-          _dart_bullet_extra_float64
-          ${_dart_bullet_name}-float64
-          HINTS "${_dart_bullet_dir}"
-          NO_DEFAULT_PATH
-          NO_CACHE
-        )
-        if(_dart_bullet_extra_float64)
-          list(APPEND _dart_bullet_libraries "${_dart_bullet_extra_float64}")
-        endif()
-        unset(_dart_bullet_extra_float64)
-      endforeach()
-      set(_dart_bullet_float64 TRUE)
+      if(_dart_bullet_library)
+        list(APPEND _dart_bullet_float64_libraries "${_dart_bullet_library}")
+      elseif(_dart_bullet_name MATCHES "^(BulletCollision|LinearMath)$")
+        set(_dart_bullet_complete FALSE)
+      endif()
+      unset(_dart_bullet_library)
+    endforeach()
+    if(_dart_bullet_complete)
+      set(_dart_bullet_libraries ${_dart_bullet_float64_libraries})
     endif()
     unset(_dart_bullet_dir)
     unset(_dart_bullet_name)
-    unset(_dart_bullet_collision_float64)
-    unset(_dart_bullet_math_float64)
+    unset(_dart_bullet_float64_libraries)
+    unset(_dart_bullet_complete)
+  endif()
+  # Explicitly selected -float64 libraries count as well.
+  set(_dart_bullet_float64 FALSE)
+  if("${_dart_bullet_libraries}" MATCHES "-float64")
+    set(_dart_bullet_float64 TRUE)
   endif()
 
   if(DART_BULLET_REQUIRE_FLOAT64 AND NOT _dart_bullet_float64)
@@ -153,47 +149,33 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   unset(_dart_bullet_libraries)
   unset(_dart_bullet_float64)
 elseif(TARGET Bullet)
-  # A parent project or an earlier include created the Bullet target. Record
-  # its variant when building DART; an installed DART links it, so reject one
-  # that links the other variant instead of loading both precisions.
+  # A parent project or an earlier include created the Bullet target, which
+  # DART links as is. Record the variant its libraries show when building DART,
+  # and warn an installed DART's consumer when they do not show the expected
+  # one.
   set(_dart_bullet_target Bullet)
   get_target_property(_dart_bullet_alias Bullet ALIASED_TARGET)
   if(_dart_bullet_alias)
     set(_dart_bullet_target "${_dart_bullet_alias}")
   endif()
-  get_target_property(
-    _dart_bullet_links
-    "${_dart_bullet_target}"
+  set(_dart_bullet_libraries)
+  foreach(
+    _dart_bullet_property
     INTERFACE_LINK_LIBRARIES
+    IMPORTED_LOCATION
+    IMPORTED_LOCATION_RELEASE
   )
-  # Classify by library files, including those of linked imported targets.
-  set(_dart_bullet_files)
-  foreach(_dart_bullet_item IN LISTS _dart_bullet_links)
-    if(NOT TARGET "${_dart_bullet_item}")
-      list(APPEND _dart_bullet_files "${_dart_bullet_item}")
-      continue()
-    endif()
-    foreach(
-      _dart_bullet_property
-      IMPORTED_LOCATION
-      IMPORTED_LOCATION_RELEASE
-      IMPORTED_LOCATION_RELWITHDEBINFO
-      IMPORTED_LOCATION_NOCONFIG
-      IMPORTED_IMPLIB
-      IMPORTED_IMPLIB_RELEASE
+    get_target_property(
+      _dart_bullet_value
+      "${_dart_bullet_target}"
+      ${_dart_bullet_property}
     )
-      get_target_property(
-        _dart_bullet_location
-        "${_dart_bullet_item}"
-        ${_dart_bullet_property}
-      )
-      if(_dart_bullet_location)
-        list(APPEND _dart_bullet_files "${_dart_bullet_location}")
-      endif()
-    endforeach()
+    if(_dart_bullet_value)
+      list(APPEND _dart_bullet_libraries "${_dart_bullet_value}")
+    endif()
   endforeach()
   set(_dart_bullet_float64 FALSE)
-  if("${_dart_bullet_files}" MATCHES "-float64")
+  if("${_dart_bullet_libraries}" MATCHES "-float64")
     set(_dart_bullet_float64 TRUE)
   endif()
   if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
@@ -204,29 +186,20 @@ elseif(TARGET Bullet)
       "Whether DART links Bullet's -float64 libraries"
     )
   elseif(
-    _dart_bullet_files
-    AND
-      (
-        DART_BULLET_REQUIRE_FLOAT64
-        AND NOT _dart_bullet_float64
-        OR NOT DART_BULLET_REQUIRE_FLOAT64
-        AND _dart_bullet_float64
-      )
+    DART_BULLET_REQUIRE_FLOAT64 MATCHES "^(TRUE|FALSE)$"
+    AND NOT DART_BULLET_REQUIRE_FLOAT64 STREQUAL _dart_bullet_float64
   )
     message(
       WARNING
-      "The existing Bullet target links a different Bullet precision than "
-      "DART was built with."
+      "The existing Bullet target should link the Bullet libraries that DART "
+      "was built with (-float64: ${DART_BULLET_REQUIRE_FLOAT64}); a process "
+      "must not load both Bullet precisions."
     )
-    set(BULLET_FOUND FALSE)
-    set(Bullet_FOUND FALSE)
   endif()
   unset(_dart_bullet_target)
   unset(_dart_bullet_alias)
-  unset(_dart_bullet_links)
-  unset(_dart_bullet_files)
-  unset(_dart_bullet_item)
+  unset(_dart_bullet_libraries)
   unset(_dart_bullet_property)
-  unset(_dart_bullet_location)
+  unset(_dart_bullet_value)
   unset(_dart_bullet_float64)
 endif()
