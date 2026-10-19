@@ -821,7 +821,9 @@ T inverse(const T& self)
   Storage out;
   out.reserve(self.count());
   for (const Isometry& item : self.items)
-    out.push_back(item.inverse());
+    // A general inverse of the stored rotation block: values may carry drift
+    // within the tolerance, which the transpose would double.
+    out.push_back(item.inverse(Eigen::Affine));
   return fromStorage<T>(std::move(out), self.batched);
 }
 
@@ -841,12 +843,10 @@ void bindCommon(Class& cls, const char* name)
       .def(
           "inverse",
           &inverse<T>,
-          "Rigid inverse: the rotation is transposed and the translation "
-          "negated through it, matching Eigen's Isometry3d::inverse(). Exact "
-          "for an orthonormal rotation; for a rotation accepted within the "
-          "tolerance or drifted by composition, value @ value.inverse() is "
-          "the identity only up to that drift. normalize=True gives an "
-          "exactly orthonormal rotation.")
+          "Inverse of the stored value. A rotation accepted within the "
+          "tolerance or drifted by composition is inverted as stored, not "
+          "transposed, so value @ value.inverse() is the identity to "
+          "floating-point precision.")
       .def(
           "__matmul__",
           [](nb::handle self, nb::handle other) { return matmul(self, other); },

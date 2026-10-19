@@ -374,11 +374,9 @@ scalar fast path.
   `(max - min) / max` is at most `1e-3`; reflections, and shear or non-uniform
   scale beyond that spread, still raise. Composition never normalizes
   silently, and drift is documented; unpickling restores the exact bits.
-  `inverse()` is the rigid inverse (the rotation transposed, the translation
-  negated through it), exact for an orthonormal rotation: for a rotation
-  accepted within the tolerance or drifted by composition,
-  `T @ T.inverse()` is the identity only up to that drift, and
-  `normalize=True` gives an exactly orthonormal rotation.
+  `inverse()` inverts the stored rotation as stored rather than transposing
+  it, so `T @ T.inverse()` is the identity to floating-point precision even for
+  a rotation accepted within the tolerance or drifted by composition.
 - **Quaternion order is always named.** Inputs use `wxyz=`/`xyzw=`; outputs use
   `.wxyz`/`.xyzw`. No API accepts or returns an unnamed 4-vector. `wxyz` is the
   canonical display order.

@@ -611,21 +611,24 @@ def test_pickle_round_trips_envelope_drift_bit_exactly(cls):
     np.testing.assert_array_equal(restored.matrix, drifted.matrix)
 
 
-def test_inverse_is_rigid_for_non_normalized_rotation():
+def test_inverse_is_exact_for_non_normalized_rotation():
+    # Accepted within the tolerance; a transpose would leave 4e-6 of scale.
     R = (1 + 2e-6) * np.eye(3)
     rotation = dart.Rotation(rotation=R)
-    np.testing.assert_array_equal(rotation.inverse().matrix, rotation.matrix.T)
+    np.testing.assert_allclose(
+        (rotation @ rotation.inverse()).matrix, np.eye(3), rtol=0, atol=1e-15
+    )
     transform = dart.Transform(rotation=R, translation=(1, 2, 3))
-    np.testing.assert_array_equal(
-        transform.inverse().matrix[:3, :3], transform.matrix[:3, :3].T
+    np.testing.assert_allclose(
+        transform.inverse().matrix, np.linalg.inv(transform.matrix), rtol=0, atol=1e-15
     )
-    np.testing.assert_array_equal(
-        transform.inverse().translation,
-        -transform.matrix[:3, :3].T @ transform.translation,
+    np.testing.assert_allclose(
+        (transform @ transform.inverse()).matrix, np.eye(4), rtol=0, atol=1e-15
     )
-    product = (transform @ transform.inverse()).matrix
-    assert not np.array_equal(product, np.eye(4))
-    np.testing.assert_allclose(product, np.eye(4), atol=1e-4)
+    far = np.array([1e6, 0.0, 0.0])
+    np.testing.assert_allclose(
+        transform.inverse() @ (transform @ far), far, rtol=0, atol=1e-8
+    )
 
 
 @pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
