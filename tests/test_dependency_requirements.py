@@ -523,9 +523,11 @@ def test_assimp_version_from_config_without_pkg_config(
     assert (result.returncode == 0) == accepted, result.stdout + result.stderr
 
 
-def test_assimp_module_lookup_skips_config(tmp_path):
+@pytest.mark.parametrize("module", ["dart", "foreign"])
+def test_assimp_module_lookup_skips_config(tmp_path, module):
     # When the module lookup succeeds, DART must not load assimp's CMake
-    # package, so lookups that already work stay unchanged.
+    # package, so lookups that already work stay unchanged. A consumer's own
+    # Findassimp.cmake comes first and may set only assimp_FOUND.
     config_package(
         tmp_path, "assimp", "5.2.0", None, 'message(FATAL_ERROR "Loaded config")\n'
     )
@@ -534,12 +536,21 @@ def test_assimp_module_lookup_skips_config(tmp_path):
     (include / "assimp" / "scene.h").touch()
     library = tmp_path / "library"
     library.touch()
-    result = configure(
-        tmp_path,
+    lookup = (
         f'set(ASSIMP_INCLUDE_DIRS "{include.as_posix()}")\n'
         f'set(ASSIMP_LIBRARIES "{library.as_posix()}")\n'
-        "set(assimp_VERSION 5.2.0)\n"
-        "include(DARTFindassimp)\n",
+    )
+    if module == "foreign":
+        (tmp_path / "modules").mkdir()
+        (tmp_path / "modules" / "Findassimp.cmake").write_text(
+            lookup + "set(assimp_FOUND TRUE)\n"
+        )
+        lookup = ""
+    result = configure(
+        tmp_path,
+        lookup + "set(assimp_VERSION 5.2.0)\n"
+        "include(DARTFindassimp)\n"
+        'if(NOT TARGET assimp)\n  message(FATAL_ERROR "No assimp target")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
 

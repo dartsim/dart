@@ -8,7 +8,7 @@
 
 # Upstream assimp 5.2.2 still reports 5.2.0 (Ubuntu 22.04 ships it).
 find_package(assimp 5.2.0 QUIET MODULE)
-if(NOT ASSIMP_FOUND)
+if(NOT ASSIMP_FOUND AND NOT assimp_FOUND)
   # Without pkg-config, take assimp's version from its own CMake package, loaded
   # only now so lookups that already work stay unchanged. Search without a
   # version: a lookup nested in Findassimp.cmake inherits the version request,
