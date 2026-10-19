@@ -40,6 +40,9 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <memory>
+#include <new>
+#include <string>
 #include <vector>
 
 #include <cmath>
@@ -47,6 +50,40 @@
 using namespace dart::dynamics;
 
 namespace {
+
+class DefaultConstructedShape : public Shape
+{
+public:
+  const std::string& getType() const override
+  {
+    static const std::string type("DefaultConstructedShape");
+    return type;
+  }
+
+  Eigen::Matrix3d computeInertia(double mass) const override
+  {
+    return Eigen::Matrix3d::Identity() * mass;
+  }
+
+  ShapePtr clone() const override
+  {
+    return std::make_shared<DefaultConstructedShape>();
+  }
+
+protected:
+  void updateVolume() const override
+  {
+    mVolume = 8.0;
+    mIsVolumeDirty = false;
+  }
+
+  void updateBoundingBox() const override
+  {
+    mBoundingBox.setMin(-Eigen::Vector3d::Ones());
+    mBoundingBox.setMax(Eigen::Vector3d::Ones());
+    mIsBoundingBoxDirty = false;
+  }
+};
 
 //==============================================================================
 // The set of invalid scalar dimensions every validated setter must reject.
@@ -62,6 +99,24 @@ const std::vector<double>& invalidScalars()
 }
 
 } // namespace
+
+TEST(ShapeInitialization, DefaultConstructorComputesLazyGeometryBeforeCaching)
+{
+  // Zero-filled storage makes a skipped first calculation reproducible.
+  alignas(DefaultConstructedShape) unsigned char
+      storage[sizeof(DefaultConstructedShape)]{};
+  auto destroy = [](DefaultConstructedShape* shape) {
+    shape->~DefaultConstructedShape();
+  };
+  std::unique_ptr<DefaultConstructedShape, decltype(destroy)> shape(
+      new (storage) DefaultConstructedShape, destroy);
+  EXPECT_DOUBLE_EQ(shape->getVolume(), 8.0);
+  EXPECT_TRUE(
+      shape->getBoundingBox().getMin().isApprox(-Eigen::Vector3d::Ones(), 0));
+  EXPECT_TRUE(
+      shape->getBoundingBox().getMax().isApprox(Eigen::Vector3d::Ones(), 0));
+  EXPECT_DOUBLE_EQ(shape->getVolume(), 8.0);
+}
 
 //==============================================================================
 TEST(ShapeDimensionValidation, BoxShapeRejectsInvalidSize)
