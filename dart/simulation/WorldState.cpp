@@ -540,17 +540,18 @@ void World::restoreState(const WorldState& state)
         break;
     }
   }
-  // Retire references to detector-owned contacts before invalidating history.
+  // Retire the active set before invalidating history.
   auto& solver = *mConstraintSolver;
   solver.mActiveConstraints.clear();
   solver.mHadDeactivationGroups = false;
   // Retires the island buffers for reuse, keeping the next step allocation
   // free.
   solver.clearInactiveConstrainedGroups();
-  solver.mContactConstraints.clear();
-  solver.mReusableContactConstraints.clear();
-  solver.mSoftContactConstraints.clear();
-  solver.mReusableSoftContactConstraints.clear();
+  // Contact constraints stay for the next update to recycle. It resets each
+  // one from a new contact before use, and nothing reads them before then.
+  // Destroying them would make the next step allocate wherever the constraint
+  // pool cannot recycle over-aligned blocks (libc++ with an 8-byte
+  // std::max_align_t, as on Apple arm64).
   solver.mJointConstraints.clear();
   solver.mMimicMotorConstraints.clear();
   solver.mCouplerConstraints.clear();
