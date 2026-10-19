@@ -4,6 +4,43 @@
 
 ### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
 
+* Collision
+
+  * Fix undefined behavior when a custom deleter of a replaced collision
+    detector or contact surface handler reads the constraint solver's
+    current one.
+    [#3820](https://github.com/dartsim/dart/pull/3820)
+
+* Dynamics
+
+  * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
+    write their state out of bounds, and they now appear in the soft mesh
+    and the skeleton version. `removeAllPointMasses()` no longer leaks the
+    removed point masses.
+    [#3813](https://github.com/dartsim/dart/pull/3813)
+
+  * Line segments built from two points, planes built from a normal and a
+    point, point clouds, and custom shapes built on the default `Shape`
+    constructor now always compute their bounding box on the first query,
+    instead of possibly returning a zero-size box at the shape's origin.
+    Custom shapes also compute their volume instead of possibly returning
+    zero.
+    [#3819](https://github.com/dartsim/dart/pull/3819)
+
+  * `Skeleton::getSupportIndices()` now names the end effector behind each
+    support polygon vertex instead of returning an empty list, so
+    `BalanceConstraint` no longer reads past its end.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * A `LineSegmentShape` built from two points now reports `LINE_SEGMENT`
+    from the deprecated `getShapeType()`, like one built from a thickness.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * Line segment and point cloud shapes now report bounding boxes that
+    include vertices and points edited after a query, and clearing a point
+    cloud now refreshes collision geometry.
+    [#3826](https://github.com/dartsim/dart/pull/3826)
+
 * Parsers
 
   * SDF joints that mimic only some of their axes, such as a universal
