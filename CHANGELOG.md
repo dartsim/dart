@@ -79,7 +79,18 @@
   * Add opt-in C++ `World::compile()` and scoped `World::edit()` to freeze
     and recompile model topology, with per-World topology and parameter
     revisions. Worlds that are never compiled retain lazy runtime editing
-    and shared model membership.
+    and shared model membership; `edit()` on such a World leaves it lazy.
+    Scope exit never throws: when the recompile fails, the next `step()` or
+    `compile()` throws that error.
+
+  * Worlds that are never compiled change default behavior in three ways:
+    a re-entrant `World::step()` and any model mutation during `step()` now
+    throw `std::runtime_error` instead of corrupting the step; parameter
+    setters such as mass, friction, slip compliance and joint limits no
+    longer advance the process-wide structural version that forces every
+    World to re-prepare; and name and appearance edits no longer advance the
+    `BodyNode` and `Skeleton` versions, while the edited `ShapeFrame`'s own
+    version still advances.
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,

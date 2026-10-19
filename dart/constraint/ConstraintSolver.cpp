@@ -59,7 +59,6 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/ContactWarmStartCache.hpp"
-#include "dart/constraint/detail/NativeDetectorInitialization.h"
 #include "dart/constraint/detail/SkeletonMembershipVersion.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -838,6 +837,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   common::detail::checkTopologyMutation(skeleton.get());
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
+  detail::notifyWorldSolverSkeletonAdded(this, skeleton.get());
   detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
   mConstrainedGroups.reserve(mSkeletons.size());
 
@@ -894,8 +894,10 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
-  if (contained)
+  if (contained) {
+    detail::notifyWorldSolverSkeletonRemoved(this, skeleton.get());
     detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
+  }
   mConstrainedGroups.reserve(mSkeletons.size());
   if (contained)
     detail::notifyWorldTopologyMutation(this);
@@ -915,6 +917,8 @@ void ConstraintSolver::removeAllSkeletons()
   detail::checkWorldTopologyMutation(this);
   const bool hadSkeletons = !mSkeletons.empty();
   mCollisionGroup->removeAllShapeFrames();
+  for (const auto& skeleton : mSkeletons)
+    detail::notifyWorldSolverSkeletonRemoved(this, skeleton.get());
   mSkeletons.clear();
   if (hadSkeletons)
     detail::gSkeletonMembershipVersion.fetch_add(1u, std::memory_order_relaxed);
@@ -1157,9 +1161,9 @@ std::size_t ConstraintSolver::getNumSimulationThreads() const
 void ConstraintSolver::setCollisionDetector(
     collision::CollisionDetector* collisionDetector)
 {
-  detail::checkWorldTopologyMutation(this);
-  setCollisionDetector(
-      std::unique_ptr<collision::CollisionDetector>(collisionDetector));
+  // Own the pointer before any check can throw.
+  std::unique_ptr<collision::CollisionDetector> owned(collisionDetector);
+  setCollisionDetector(std::move(owned));
 }
 
 //==============================================================================
@@ -1176,8 +1180,6 @@ void ConstraintSolver::setCollisionDetector(
   if (mCollisionDetector == collisionDetector)
     return;
 
-  detail::NativeDetectorInitialization initialization(
-      this, collisionDetector.get());
   detail::checkWorldTopologyMutation(this);
   const auto* incoming = dynamic_cast<const collision::DARTCollisionDetector*>(
       collisionDetector.get());
@@ -1191,6 +1193,7 @@ void ConstraintSolver::setCollisionDetector(
   configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
 
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
+  detail::notifyWorldCollisionGroupReplaced(this);
 
   for (const auto& skeleton : mSkeletons)
     mCollisionGroup->subscribeTo(skeleton);

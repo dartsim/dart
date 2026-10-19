@@ -194,6 +194,14 @@ Strict enforcement has two tiers:
    collision-group contents) are detected at the next `step()` or `compile()`,
    which raises. This tier is documented as detected late.
 
+Ownership is resolved from a registry index that World membership changes
+maintain (adding or removing multibodies, frames, collision-group members and
+subscriptions, and detector or solver replacement), never by reading another
+World's containers. A body that reaches a World only through a subscribed view
+(`Group`, `Linkage`) belongs to it once the collision group synchronizes with
+the view, at `update()`, `compile()` or `step()`; editing the view before that
+is a raw write of tier 2.
+
 Python exposes typed setters instead of raw references. Tests cover every
 mutation path downstream simulators use: re-parenting, adding and removing
 models, shape poses, inertia, and detector and solver replacement.
@@ -304,7 +312,8 @@ c = h·D + h²·K
 ### Concurrency
 
 - A World has one stepping owner. Re-entrant stepping and concurrent mutation
-  raise.
+  raise. Independent Worlds step and edit their own models on separate threads
+  without reading each other's containers.
 - While a World steps, any access from another thread raises
   `WorldBusyError`. Reads count, because getters fill lazy caches. The busy flag
   is set before the GIL is released.

@@ -477,6 +477,7 @@ std::unique_ptr<common::LockableReference> Skeleton::getLockableReference()
 //==============================================================================
 Skeleton::~Skeleton()
 {
+  common::detail::notifyModelDestruction(this);
   for (BodyNode* bn : mSkelCache.mBodyNodes)
     delete bn;
 }

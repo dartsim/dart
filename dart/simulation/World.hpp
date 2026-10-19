@@ -357,17 +357,22 @@ public:
   {
   public:
     explicit EditScope(World& world);
-    ~EditScope() noexcept(false);
+    ~EditScope();
     EditScope(const EditScope&) = delete;
     EditScope& operator=(const EditScope&) = delete;
 
   private:
     World& mWorld;
     int mUncaughtExceptions;
+    bool mRecompile;
   };
 
-  /// Permit topology changes until the returned scope exits, then recompile.
-  EditScope edit();
+  /// Permit topology changes until the returned scope exits. A World that was
+  /// compiled when the scope opened recompiles at scope exit; a lazy World
+  /// stays lazy. Scope exit never throws: when the recompile fails, the World
+  /// stays uncompiled and the next step() or compile() throws that error. The
+  /// World must outlive the scope.
+  [[nodiscard]] EditScope edit();
 
   std::size_t getTopologyRevision() const;
   std::size_t getParameterRevision() const;

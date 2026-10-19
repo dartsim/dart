@@ -57,7 +57,6 @@
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/WeldJointConstraint.hpp"
-#include "dart/constraint/detail/NativeDetectorInitialization.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FixedFrame.hpp"
 #include "dart/dynamics/Group.hpp"
@@ -77,10 +76,12 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <new>
 #include <stdexcept>
@@ -108,95 +109,6 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/simulation/World.hpp"
-
-namespace {
-
-thread_local std::function<bool()>* gDetectorAllocationCallback = nullptr;
-
-class ScopedDetectorAllocationCallback
-{
-public:
-  explicit ScopedDetectorAllocationCallback(std::function<bool()> callback)
-    : mCallback(std::move(callback)), mPrevious(gDetectorAllocationCallback)
-  {
-    gDetectorAllocationCallback = &mCallback;
-  }
-
-  ~ScopedDetectorAllocationCallback()
-  {
-    gDetectorAllocationCallback = mPrevious;
-  }
-
-private:
-  std::function<bool()> mCallback;
-  std::function<bool()>* mPrevious;
-};
-
-} // namespace
-
-void* operator new(std::size_t bytes)
-{
-  if (auto* callback = std::exchange(gDetectorAllocationCallback, nullptr)) {
-    if (!(*callback)())
-      gDetectorAllocationCallback = callback;
-  }
-  if (auto* pointer = std::malloc(bytes == 0u ? 1u : bytes))
-    return pointer;
-  throw std::bad_alloc();
-}
-
-void* operator new[](std::size_t bytes)
-{
-  return ::operator new(bytes);
-}
-
-void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
-{
-  try {
-    return ::operator new(bytes);
-  } catch (const std::bad_alloc&) {
-    return nullptr;
-  }
-}
-
-void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
-{
-  try {
-    return ::operator new[](bytes);
-  } catch (const std::bad_alloc&) {
-    return nullptr;
-  }
-}
-
-void operator delete(void* pointer) noexcept
-{
-  std::free(pointer);
-}
-
-void operator delete[](void* pointer) noexcept
-{
-  std::free(pointer);
-}
-
-void operator delete(void* pointer, std::size_t) noexcept
-{
-  std::free(pointer);
-}
-
-void operator delete[](void* pointer, std::size_t) noexcept
-{
-  std::free(pointer);
-}
-
-void operator delete(void* pointer, const std::nothrow_t&) noexcept
-{
-  ::operator delete(pointer);
-}
-
-void operator delete[](void* pointer, const std::nothrow_t&) noexcept
-{
-  ::operator delete[](pointer);
-}
 
 using namespace dart;
 using namespace math;
@@ -2565,101 +2477,8 @@ namespace {
 // A custom Node may manage a property and change its associated body without
 // attaching itself to a BodyNode's NodeMap. The ownership readers must observe
 // its current association on every World visit.
-class OwnershipQueryNode final : public Node, public common::Composite
-{
-public:
-  explicit OwnershipQueryNode(BodyNode* body) : Node(body) {}
-
-  const std::string& setName(const std::string& name) override
-  {
-    mName = name;
-    return mName;
-  }
-
-  const std::string& getName() const override
-  {
-    return mName;
-  }
-
-  void setValue(int value)
-  {
-    common::detail::notifyParameterMutation(this);
-    mValue = value;
-  }
-
-  void associate(BodyNode* body)
-  {
-    mBodyNode = body;
-  }
-
-  std::shared_ptr<const Skeleton> getSkeleton() const override
-  {
-    mTrace->push_back("get");
-    if (mThrow)
-      throw std::runtime_error("later owner getter");
-    const auto* skeleton = mBodyNode->getSkeleton().get();
-    return std::shared_ptr<const Skeleton>(skeleton, [this](const Skeleton*) {
-      mTrace->push_back("release");
-      if (mOnRelease) {
-        auto callback = std::move(mOnRelease);
-        mOnRelease = nullptr;
-        callback();
-      }
-    });
-  }
-
-  std::vector<std::string>* mTrace = nullptr;
-  mutable std::function<void()> mOnRelease;
-  bool mThrow = false;
-  int mValue = 0;
-
-protected:
-  Node* cloneNode(BodyNode* body) const override
-  {
-    return new OwnershipQueryNode(body);
-  }
-
-private:
-  std::string mName;
-};
-
-class OwnershipQuerySource final : public Group
-{
-public:
-  explicit OwnershipQuerySource(BodyNode* body)
-    : Group("query_source", std::vector<BodyNode*>{body}, false, false)
-  {
-  }
-
-  std::size_t getNumBodyNodes() const override
-  {
-    if (mOnRead) {
-      auto callback = std::move(mOnRead);
-      mOnRead = nullptr;
-      callback();
-    }
-    return Group::getNumBodyNodes();
-  }
-
-  mutable std::function<void()> mOnRead;
-};
-
 // Quiet Frames have no registered child-set entries. A custom reader can
 // change this protected association without recursively taking the World lock.
-class OwnershipQueryFrame final : public SimpleFrame
-{
-public:
-  OwnershipQueryFrame()
-    : Entity(Frame::World(), true), Frame(Frame::World()), SimpleFrame()
-  {
-  }
-
-  void associate(Frame* parent)
-  {
-    mParentFrame = parent;
-  }
-};
-
 class OwnershipQueryFrameArm : public Frame
 {
 public:
@@ -2727,56 +2546,6 @@ private:
   Eigen::Vector6d mZero = Eigen::Vector6d::Zero();
 };
 
-class OwnershipQueryLeft : public OwnershipQueryFrameArm
-{
-};
-class OwnershipQueryRight : public OwnershipQueryFrameArm
-{
-};
-class OwnershipQueryAmbiguous final : public OwnershipQueryLeft,
-                                      public OwnershipQueryRight,
-                                      public common::Composite
-{
-public:
-  OwnershipQueryAmbiguous() : Entity(Frame::World(), true) {}
-
-  const std::string& setName(const std::string& name) override
-  {
-    mName = name;
-    return mName;
-  }
-  const std::string& getName() const override
-  {
-    return mName;
-  }
-
-  void dirtyTransform() override
-  {
-    OwnershipQueryLeft::dirtyTransform();
-    OwnershipQueryRight::dirtyTransform();
-  }
-  void dirtyVelocity() override
-  {
-    OwnershipQueryLeft::dirtyVelocity();
-    OwnershipQueryRight::dirtyVelocity();
-  }
-  void dirtyAcceleration() override
-  {
-    OwnershipQueryLeft::dirtyAcceleration();
-    OwnershipQueryRight::dirtyAcceleration();
-  }
-
-protected:
-  void changeParentFrame(Frame* parent) override
-  {
-    OwnershipQueryLeft::changeParentFrame(parent);
-    OwnershipQueryRight::changeParentFrame(parent);
-  }
-
-private:
-  std::string mName;
-};
-
 class OwnershipQueryLifecycle final : public OwnershipQueryFrameArm,
                                       public common::Composite
 {
@@ -2788,159 +2557,6 @@ public:
 };
 
 } // namespace
-
-TEST(World, OwnershipQueryReadsChangedNodeAssociationForEachWorld)
-{
-  auto first = World::create();
-  auto second = World::create();
-  auto loose = createBox(Eigen::Vector3d::Ones());
-  auto owned = createBox(Eigen::Vector3d::Ones());
-  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
-  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
-  second->addSkeleton(owned);
-  std::vector<std::string> trace;
-  OwnershipQueryNode node(loose->getBodyNode(0));
-  node.mTrace = &trace;
-  source->mOnRead = [&] {
-    trace.push_back("source");
-    node.associate(owned->getBodyNode(0));
-  };
-  const auto firstRevision = first->getParameterRevision();
-  const auto secondRevision = second->getParameterRevision();
-  node.setValue(1);
-  EXPECT_EQ(node.mValue, 1);
-  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
-  EXPECT_EQ(second->getParameterRevision(), secondRevision + 1u);
-  ASSERT_GE(trace.size(), 5u);
-  EXPECT_EQ(
-      (std::vector<std::string>(trace.end() - 5, trace.end())),
-      (std::vector<std::string>{"get", "release", "source", "get", "release"}));
-}
-
-TEST(World, OwnershipQueryReleasesGetterBeforePositiveMembership)
-{
-  auto observer = World::create();
-  auto first = World::create();
-  auto second = World::create();
-  auto firstModel = createBox(Eigen::Vector3d::Ones());
-  auto secondModel = createBox(Eigen::Vector3d::Ones());
-  auto source
-      = std::make_shared<OwnershipQuerySource>(firstModel->getBodyNode(0));
-  observer->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
-  first->addSkeleton(firstModel);
-  second->addSkeleton(secondModel);
-  std::vector<std::string> trace;
-  OwnershipQueryNode node(firstModel->getBodyNode(0));
-  node.mTrace = &trace;
-  source->mOnRead = [&] {
-    trace.push_back("source");
-    node.mOnRelease = [&] {
-      node.associate(secondModel->getBodyNode(0));
-    };
-  };
-  const auto observerRevision = observer->getParameterRevision();
-  const auto firstRevision = first->getParameterRevision();
-  const auto secondRevision = second->getParameterRevision();
-  node.setValue(1);
-  EXPECT_EQ(observer->getParameterRevision(), observerRevision + 1u);
-  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
-  EXPECT_EQ(second->getParameterRevision(), secondRevision + 1u);
-  ASSERT_GE(trace.size(), 5u);
-  EXPECT_EQ(
-      (std::vector<std::string>(trace.end() - 5, trace.end())),
-      (std::vector<std::string>{"source", "get", "release", "get", "release"}));
-}
-
-TEST(World, OwnershipQueryLaterThrowPreservesEarlierOwnerEffects)
-{
-  auto first = World::create();
-  auto second = World::create();
-  auto loose = createBox(Eigen::Vector3d::Ones());
-  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
-  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
-  std::vector<std::string> trace;
-  OwnershipQueryNode node(loose->getBodyNode(0));
-  node.mTrace = &trace;
-  source->mOnRead = [&] {
-    trace.push_back("source");
-    node.mThrow = true;
-  };
-  const auto firstRevision = first->getParameterRevision();
-  const auto secondRevision = second->getParameterRevision();
-  EXPECT_THROW(node.setValue(1), std::runtime_error);
-  EXPECT_EQ(node.mValue, 0);
-  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
-  EXPECT_EQ(second->getParameterRevision(), secondRevision);
-  ASSERT_GE(trace.size(), 4u);
-  EXPECT_EQ(
-      (std::vector<std::string>(trace.end() - 4, trace.end())),
-      (std::vector<std::string>{"get", "release", "source", "get"}));
-}
-
-TEST(World, OwnershipQueryNullBodySkipsGetterForLaterWorld)
-{
-  auto first = World::create();
-  auto second = World::create();
-  auto loose = createBox(Eigen::Vector3d::Ones());
-  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
-  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
-  std::vector<std::string> trace;
-  OwnershipQueryNode node(loose->getBodyNode(0));
-  node.mTrace = &trace;
-  source->mOnRead = [&] {
-    trace.push_back("source");
-    node.associate(nullptr);
-    node.mThrow = true;
-  };
-  const auto firstRevision = first->getParameterRevision();
-  const auto secondRevision = second->getParameterRevision();
-  EXPECT_NO_THROW(node.setValue(1));
-  EXPECT_EQ(node.mValue, 1);
-  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
-  EXPECT_EQ(second->getParameterRevision(), secondRevision);
-  ASSERT_GE(trace.size(), 3u);
-  EXPECT_EQ(
-      (std::vector<std::string>(trace.end() - 3, trace.end())),
-      (std::vector<std::string>{"get", "release", "source"}));
-}
-
-TEST(World, OwnershipQueryReadsChangedFrameAncestryForEachWorld)
-{
-  auto first = World::create();
-  auto second = World::create();
-  auto loose = createBox(Eigen::Vector3d::Ones());
-  auto owned = createBox(Eigen::Vector3d::Ones());
-  auto source = std::make_shared<OwnershipQuerySource>(loose->getBodyNode(0));
-  first->getConstraintSolver()->getCollisionGroup()->subscribeTo(source);
-  second->addSkeleton(owned);
-  OwnershipQueryFrame frame;
-  frame.createDynamicsAspect();
-  frame.associate(loose->getBodyNode(0));
-  source->mOnRead = [&] {
-    frame.associate(owned->getBodyNode(0));
-  };
-  const auto firstRevision = first->getParameterRevision();
-  const auto secondRevision = second->getParameterRevision();
-  frame.getDynamicsAspect()->setFrictionCoeff(0.7);
-  EXPECT_EQ(first->getParameterRevision(), firstRevision + 1u);
-  EXPECT_EQ(second->getParameterRevision(), secondRevision + 1u);
-}
-
-TEST(World, OwnershipQueryPreservesAmbiguousFrameRoundTrip)
-{
-  auto world = World::create();
-  auto model = createBox(Eigen::Vector3d::Ones());
-  world->addSkeleton(model);
-  OwnershipQueryAmbiguous query;
-  auto* left = static_cast<OwnershipQueryLeft*>(&query);
-  left->associate(model->getBodyNode(0));
-  const auto* object = dynamic_cast<const common::Composite*>(left);
-  ASSERT_NE(object, nullptr);
-  ASSERT_EQ(dynamic_cast<const Frame*>(object), nullptr);
-  const auto topology = world->getTopologyRevision();
-  left->announce();
-  EXPECT_EQ(world->getTopologyRevision(), topology);
-}
 
 TEST(World, OwnershipQueryResolvesEachLifecyclePhaseSeparately)
 {
@@ -3088,31 +2704,22 @@ public:
   {
   }
 
+  // The old group keeps resolving ownership until the solver publishes its
+  // replacement.
   void checkLiveBeforeGroupNotification(
       const collision::CollisionGroupPtr& group)
   {
-    bool observed = false;
+    group->addShapeFrame(mBody->getShapeNodeWith<CollisionAspect>(0));
     const auto topology = mWorld->getTopologyRevision();
-    {
-      ScopedDetectorAllocationCallback allocation([&] {
-        if (group->getNumShapeFrames() == 0u)
-          return false;
-        observed = true;
-        EXPECT_EQ(mWorld->getTopologyRevision(), topology);
-        const auto parameters = mWorld->getParameterRevision();
-        mBody->setCollidable(false);
-        EXPECT_GT(mWorld->getParameterRevision(), parameters);
-        auto descendant = std::make_shared<BareFrame>(mParent.get());
-        EXPECT_GT(mWorld->getTopologyRevision(), topology);
-        return true;
-      });
-      group->addShapeFrame(mBody->getShapeNodeWith<CollisionAspect>(0));
-    }
-    EXPECT_TRUE(observed);
-    group->removeAllShapeFrames();
     const auto parameters = mWorld->getParameterRevision();
+    mBody->setCollidable(false);
+    EXPECT_GT(mWorld->getParameterRevision(), parameters);
+    auto descendant = std::make_shared<BareFrame>(mParent.get());
+    EXPECT_GT(mWorld->getTopologyRevision(), topology);
+    group->removeAllShapeFrames();
+    const auto cleared = mWorld->getParameterRevision();
     mBody->setCollidable(true);
-    EXPECT_EQ(mWorld->getParameterRevision(), parameters);
+    EXPECT_EQ(mWorld->getParameterRevision(), cleared);
     EXPECT_EQ(group->getNumShapeFrames(), 0u);
   }
 
@@ -3122,10 +2729,13 @@ public:
     auto group = mWorld->getConstraintSolver()->getCollisionGroup();
     group->subscribeTo(view);
     ASSERT_TRUE(view->addBodyNode(mBody));
+    // Views resolve ownership when the collision group synchronizes.
+    group->update();
     auto parameters = mWorld->getParameterRevision();
     mBody->setCollidable(false);
     EXPECT_GT(mWorld->getParameterRevision(), parameters);
     ASSERT_TRUE(view->removeBodyNode(mBody));
+    group->update();
     parameters = mWorld->getParameterRevision();
     mBody->setCollidable(true);
     EXPECT_EQ(mWorld->getParameterRevision(), parameters);
@@ -3148,67 +2758,7 @@ private:
   std::shared_ptr<BareFrame> mParent;
 };
 
-void expectDetectorCertificateStaysRetired(constraint::ConstraintSolver* solver)
-{
-  EXPECT_FALSE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  solver->setCollisionDetector(collision::FCLCollisionDetector::create());
-  EXPECT_FALSE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  EXPECT_EQ(solver->getCollisionGroup()->getNumShapeFrames(), 0u);
-  EXPECT_EQ(
-      solver->getCollisionGroup()->getCollisionDetector(),
-      solver->getCollisionDetector());
-}
-
 } // namespace
-
-TEST(World, DetectorInitializationAllocationKeepsBorrowedOwnershipLive)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  auto oldGroup = solver->getCollisionGroup();
-  auto incoming = collision::FCLCollisionDetector::create();
-  DetectorInitializationOwnershipProbe probe(world);
-  bool called = false;
-  {
-    ScopedDetectorAllocationCallback allocation([&] {
-      called = true;
-      EXPECT_EQ(solver->getCollisionDetector(), incoming);
-      EXPECT_EQ(solver->getCollisionGroup(), oldGroup);
-      probe.checkLiveBeforeGroupNotification(oldGroup);
-      return true;
-    });
-    solver->setCollisionDetector(incoming);
-  }
-  ASSERT_TRUE(called);
-  EXPECT_NE(solver->getCollisionGroup(), oldGroup);
-  probe.checkBorrowedViewAndFrozenMutation();
-}
-
-TEST(World, DetectorInitializationPreservesOnlyPristineNativeCertificate)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  std::vector<collision::CollisionDetectorPtr> detectors{
-      collision::FCLCollisionDetector::create(),
-      collision::DARTCollisionDetector::create(),
-      collision::FCLCollisionDetector::create()};
-#if HAVE_BULLET
-  detectors.push_back(collision::BulletCollisionDetector::create());
-#endif
-#if HAVE_ODE
-  detectors.push_back(collision::OdeCollisionDetector::create());
-#endif
-  for (const auto& detector : detectors) {
-    const auto topology = world->getTopologyRevision();
-    solver->setCollisionDetector(detector);
-    EXPECT_EQ(world->getTopologyRevision(), topology + 1u);
-    EXPECT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-    EXPECT_EQ(solver->getCollisionGroup()->getCollisionDetector(), detector);
-  }
-  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
-  EXPECT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-}
 
 TEST(World, DetectorInitializationReleaseKeepsBorrowedOwnershipLive)
 {
@@ -3229,115 +2779,6 @@ TEST(World, DetectorInitializationReleaseKeepsBorrowedOwnershipLive)
   ASSERT_TRUE(called);
   EXPECT_NE(solver->getCollisionGroup(), oldGroup);
   probe.checkBorrowedViewAndFrozenMutation();
-}
-
-TEST(World, DetectorInitializationNestedReplacementCannotRecertify)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  auto nested = collision::FCLCollisionDetector::create();
-  bool called = false;
-  NativeDetectorReleaseCallback release(solver, [&] {
-    called = true;
-    solver->setCollisionDetector(nested);
-    EXPECT_EQ(solver->getCollisionDetector(), nested);
-  });
-  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  solver->setCollisionDetector(collision::FCLCollisionDetector::create());
-  ASSERT_TRUE(called);
-  EXPECT_EQ(solver->getCollisionDetector(), nested);
-  expectDetectorCertificateStaysRetired(solver);
-  DetectorInitializationOwnershipProbe(world)
-      .checkBorrowedViewAndFrozenMutation();
-}
-
-TEST(World, DetectorInitializationMutationThenEmptyCannotRecertify)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  auto view = Group::create("temporary_detector_view");
-  auto loose = Skeleton::create();
-  auto* body = loose->createJointAndBodyNodePair<FreeJoint>().second;
-  bool called = false;
-  NativeDetectorReleaseCallback release(solver, [&] {
-    called = true;
-    auto group = solver->getCollisionGroup();
-    group->subscribeTo(view);
-    ASSERT_TRUE(view->addBodyNode(body));
-    const auto parameters = world->getParameterRevision();
-    body->setCollidable(false);
-    EXPECT_GT(world->getParameterRevision(), parameters);
-    ASSERT_TRUE(view->removeBodyNode(body));
-    group->unsubscribeFrom(view.get());
-    EXPECT_EQ(group->getNumShapeFrames(), 0u);
-  });
-  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  solver->setCollisionDetector(collision::FCLCollisionDetector::create());
-  ASSERT_TRUE(called);
-  expectDetectorCertificateStaysRetired(solver);
-}
-
-TEST(World, DetectorInitializationTopologyChangeThenRestoreCannotRecertify)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  auto incoming = collision::DARTCollisionDetector::create();
-  ASSERT_EQ(incoming->getNumCollisionThreads(), 1u);
-  bool called = false;
-  NativeDetectorReleaseCallback release(solver, [&] {
-    called = true;
-    const auto topology = world->getTopologyRevision();
-    incoming->setNumCollisionThreads(2u);
-    incoming->setNumCollisionThreads(1u);
-    EXPECT_GT(world->getTopologyRevision(), topology);
-    EXPECT_EQ(incoming->getNumCollisionThreads(), 1u);
-  });
-  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  solver->setCollisionDetector(incoming);
-  ASSERT_TRUE(called);
-  expectDetectorCertificateStaysRetired(solver);
-}
-
-TEST(World, DetectorInitializationThreadMismatchCannotRecertify)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  auto incoming = collision::DARTCollisionDetector::create();
-  incoming->setNumCollisionThreads(2u);
-  ASSERT_EQ(solver->getNumSimulationThreads(), 1u);
-  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  solver->setCollisionDetector(incoming);
-  EXPECT_EQ(incoming->getNumCollisionThreads(), 1u);
-  expectDetectorCertificateStaysRetired(solver);
-}
-
-TEST(World, DetectorInitializationAllocationFailureRecoversWithoutRecertifying)
-{
-  auto world = World::create();
-  auto* solver = world->getConstraintSolver();
-  auto oldGroup = solver->getCollisionGroup();
-  auto incoming = collision::FCLCollisionDetector::create();
-  ASSERT_TRUE(constraint::detail::hasNativeOwnershipCertificate(solver));
-  bool called = false;
-  bool caught = false;
-  {
-    ScopedDetectorAllocationCallback allocation([&]() -> bool {
-      called = true;
-      EXPECT_EQ(solver->getCollisionDetector(), incoming);
-      EXPECT_EQ(solver->getCollisionGroup(), oldGroup);
-      throw std::bad_alloc();
-    });
-    try {
-      solver->setCollisionDetector(incoming);
-    } catch (const std::bad_alloc&) {
-      caught = true;
-    }
-  }
-  ASSERT_TRUE(called);
-  EXPECT_TRUE(caught);
-  expectDetectorCertificateStaysRetired(solver);
-  DetectorInitializationOwnershipProbe(world)
-      .checkBorrowedViewAndFrozenMutation();
 }
 
 TEST(World, OwnershipUsesRawIdentityAndReleasesRemovedAliases)
@@ -3361,27 +2802,36 @@ TEST(World, OwnershipUsesRawIdentityAndReleasesRemovedAliases)
   EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
 }
 
-TEST(World, OwnershipReadsLiveBorrowedViewMembershipAndExpiry)
+// A subscribed view's bodies belong to the World once the collision group
+// synchronizes with the view (update(), compile() or step()).
+TEST(World, OwnershipFollowsBorrowedViewMembershipAtSynchronization)
 {
   auto world = World::create();
   world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
   auto view = Group::create("view");
-  world->getConstraintSolver()->getCollisionGroup()->subscribeTo(view);
+  const auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->subscribeTo(view);
   auto loose = Skeleton::create();
   auto* first = loose->createJointAndBodyNodePair<FreeJoint>().second;
   auto* second = loose->createJointAndBodyNodePair<FreeJoint>().second;
   ASSERT_TRUE(view->addBodyNode(first));
   auto parameter = world->getParameterRevision();
   first->setCollidable(false);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+  group->update();
+  first->setCollidable(true);
   EXPECT_GT(world->getParameterRevision(), parameter);
   ASSERT_TRUE(view->removeBodyNode(first));
+  group->update();
   parameter = world->getParameterRevision();
-  first->setCollidable(true);
+  first->setCollidable(false);
   EXPECT_EQ(world->getParameterRevision(), parameter);
   ASSERT_TRUE(view->addBodyNode(second));
+  EXPECT_NO_THROW(world->step());
   second->setCollidable(false);
   EXPECT_GT(world->getParameterRevision(), parameter);
   view.reset();
+  group->update();
   parameter = world->getParameterRevision();
   second->setCollidable(true);
   EXPECT_EQ(world->getParameterRevision(), parameter);
@@ -3459,7 +2909,8 @@ TEST(World, OwnershipKeepsSharedBorrowedMembershipLive)
       robot->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
 }
 
-TEST(World, OwnershipCustomShapeCallbackCannotRecertifyRawView)
+// A view subscribed from inside a model addition is owned once synchronized.
+TEST(World, OwnershipTracksViewSubscribedDuringModelAddition)
 {
   auto world = World::create();
   auto robot = createBox(Eigen::Vector3d::Ones());
@@ -3473,12 +2924,13 @@ TEST(World, OwnershipCustomShapeCallbackCannotRecertifyRawView)
     called = true;
     world->getConstraintSolver()->getCollisionGroup()->subscribeTo(view);
     ASSERT_TRUE(view->addBodyNode(body));
-    const auto parameter = world->getParameterRevision();
-    body->setCollidable(false);
-    EXPECT_GT(world->getParameterRevision(), parameter);
   };
   world->addSkeleton(robot);
   ASSERT_TRUE(called);
+  world->getConstraintSolver()->getCollisionGroup()->update();
+  const auto parameter = world->getParameterRevision();
+  body->setCollidable(false);
+  EXPECT_GT(world->getParameterRevision(), parameter);
   world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
   world->compile();
   EXPECT_THROW(
@@ -3769,4 +3221,265 @@ TEST(World, RuntimeSkeletonParametersPreserveSubscriptionVersions)
   checkChange([&] { robot->setTimeStep(0.002); });
   checkChange([&] { robot->setGravity(Eigen::Vector3d(1.0, 0.0, -9.81)); });
   EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+namespace {
+
+class StepCallbackHandler final : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactSurfaceParams createParams(
+      const collision::Contact& contact,
+      std::size_t numContactsOnCollisionObject) const override
+  {
+    if (mCallback)
+      mCallback();
+    return ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+  }
+
+  std::function<void()> mCallback;
+};
+
+class CountingFclDetector final : public collision::FCLCollisionDetector
+{
+public:
+  explicit CountingFclDetector(int& destroyed) : mDestroyed(destroyed) {}
+
+  ~CountingFclDetector() override
+  {
+    ++mDestroyed;
+  }
+
+private:
+  int& mDestroyed;
+};
+
+template <class Body>
+void runCaptured(Body body, std::exception_ptr& error)
+{
+  try {
+    body();
+  } catch (...) {
+    error = std::current_exception();
+  }
+}
+
+} // namespace
+
+//==============================================================================
+// Independent lazy Worlds on separate threads never read each other's model
+// containers; ownership resolves from the registry index alone.
+TEST(World, IndependentLazyWorldsMutateConcurrently)
+{
+  auto worldA = World::create();
+  auto groundA = createBox(Eigen::Vector3d(10.0, 10.0, 0.2));
+  groundA->setMobile(false);
+  auto boxA
+      = createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.6));
+  worldA->addSkeleton(groundA);
+  worldA->addSkeleton(boxA);
+  auto looseA = Skeleton::create("looseA");
+  auto* looseBodyA = looseA->createJointAndBodyNodePair<FreeJoint>().second;
+  looseBodyA->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  looseA->setPositions(
+      (Eigen::Vector6d() << 0.0, 0.0, 0.0, 5.0, 5.0, 5.0).finished());
+  auto* shapeNodeA = boxA->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0);
+  const auto groupA = worldA->getConstraintSolver()->getCollisionGroup();
+
+  auto worldB = World::create();
+  auto robotB = createBox(Eigen::Vector3d::Ones());
+  worldB->addSkeleton(robotB);
+  auto* bodyB = robotB->getBodyNode(0);
+  auto* dynamicsB
+      = bodyB->getShapeNodeWith<CollisionAspect>(0)->getDynamicsAspect();
+  auto* jointB = robotB->getJoint(0);
+
+  std::exception_ptr errorA;
+  std::exception_ptr errorB;
+  std::thread threadA([&] {
+    runCaptured(
+        [&] {
+          for (int i = 0; i < 300; ++i) {
+            auto frame = std::make_shared<SimpleFrame>(Frame::World(), "fA");
+            worldA->addSimpleFrame(frame);
+            groupA->subscribeTo(looseA);
+            shapeNodeA->setShape(std::make_shared<BoxShape>(
+                Eigen::Vector3d::Constant(1.0 + 0.01 * (i % 2))));
+            worldA->step();
+            groupA->unsubscribeFrom(looseA.get());
+            worldA->removeSimpleFrame(frame);
+          }
+        },
+        errorA);
+  });
+  std::thread threadB([&] {
+    runCaptured(
+        [&] {
+          for (int i = 0; i < 3000; ++i) {
+            bodyB->setMass(1.0 + 0.1 * (i % 7));
+            dynamicsB->setFrictionCoeff(0.3 + 0.01 * (i % 5));
+            dynamicsB->setPrimarySlipCompliance(1e-6 * (i % 3));
+            jointB->setPositionUpperLimit(0, 1.0 + 0.001 * (i % 11));
+            auto* child
+                = robotB->createJointAndBodyNodePair<RevoluteJoint>(bodyB)
+                      .second;
+            child->remove("detached");
+            if (i % 100 == 0)
+              worldB->step();
+          }
+        },
+        errorB);
+  });
+  threadA.join();
+  threadB.join();
+  if (errorA)
+    std::rethrow_exception(errorA);
+  if (errorB)
+    std::rethrow_exception(errorB);
+  EXPECT_EQ(worldA->getNumSimpleFrames(), 0u);
+  EXPECT_EQ(robotB->getNumBodyNodes(), 1u);
+}
+
+//==============================================================================
+TEST(World, EditOnLazyWorldLeavesItLazy)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  first->addSkeleton(robot);
+  second->addSkeleton(robot);
+  {
+    auto edit = first->edit();
+    first->addSimpleFrame(std::make_shared<SimpleFrame>());
+  }
+  EXPECT_FALSE(first->isCompiled());
+  EXPECT_NO_THROW(
+      robot->createJointAndBodyNodePair<RevoluteJoint>(robot->getBodyNode(0)));
+  EXPECT_NO_THROW(first->step());
+  EXPECT_NO_THROW(second->step());
+  first->removeSkeleton(robot);
+  second->removeSkeleton(robot);
+  {
+    auto edit = first->edit();
+  }
+  EXPECT_FALSE(first->isCompiled());
+  EXPECT_NO_THROW(first->addSkeleton(robot));
+}
+
+//==============================================================================
+TEST(World, FailedRecompileAtScopeExitSurfacesAtNextStep)
+{
+  auto world = World::create();
+  auto other = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  world->compile();
+  auto scope = std::make_unique<World::EditScope>(*world);
+  other->addSkeleton(robot);
+  EXPECT_NO_THROW(scope.reset());
+  EXPECT_FALSE(world->isCompiled());
+  const auto time = world->getTime();
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(world->getTime(), time);
+  EXPECT_THROW(world->compile(), std::runtime_error);
+  other->removeSkeleton(robot);
+  EXPECT_NO_THROW(world->compile());
+  EXPECT_TRUE(world->isCompiled());
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, ReentrantStepAndTopologyEditDuringStepThrow)
+{
+  auto world = World::create();
+  auto ground = createBox(Eigen::Vector3d(10.0, 10.0, 1.0));
+  ground->setMobile(false);
+  auto box
+      = createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.95));
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+  auto handler = std::make_shared<StepCallbackHandler>();
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  int calls = 0;
+  handler->mCallback = [&] {
+    ++calls;
+  };
+  world->step();
+  ASSERT_GT(calls, 0);
+
+  const auto time = world->getTime();
+  const auto bodies = box->getNumBodyNodes();
+  handler->mCallback = [&] {
+    world->step();
+  };
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(world->getTime(), time);
+  handler->mCallback = [&] {
+    box->createJointAndBodyNodePair<RevoluteJoint>(box->getBodyNode(0));
+  };
+  EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_EQ(world->getTime(), time);
+  EXPECT_EQ(box->getNumBodyNodes(), bodies);
+  handler->mCallback = nullptr;
+  EXPECT_NO_THROW(world->step());
+  EXPECT_GT(world->getTime(), time);
+}
+
+//==============================================================================
+TEST(World, SlipSetterCostDoesNotScaleWithIdleWorlds)
+{
+  auto world = World::create();
+  std::vector<DynamicsAspect*> wheels;
+  for (int i = 0; i < 4; ++i) {
+    auto wheel = createBox(
+        Eigen::Vector3d::Ones(), Eigen::Vector3d(3.0 * i, 0.0, 0.0));
+    world->addSkeleton(wheel);
+    wheels.push_back(wheel->getBodyNode(0)
+                         ->getShapeNodeWith<CollisionAspect>(0)
+                         ->getDynamicsAspect());
+  }
+  const auto measure = [&] {
+    double best = std::numeric_limits<double>::infinity();
+    for (int repeat = 0; repeat < 5; ++repeat) {
+      const auto start = std::chrono::steady_clock::now();
+      for (int i = 0; i < 2000; ++i) {
+        for (auto* wheel : wheels)
+          wheel->setPrimarySlipCompliance(1e-6 * ((i & 1) + 1));
+      }
+      best = std::min(
+          best,
+          std::chrono::duration<double, std::nano>(
+              std::chrono::steady_clock::now() - start)
+              .count());
+    }
+    return best;
+  };
+  const double alone = measure();
+  std::vector<WorldPtr> idle;
+  for (int i = 0; i < 256; ++i) {
+    idle.push_back(World::create());
+    idle.back()->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  }
+  const double crowded = measure();
+  EXPECT_LT(crowded, 8.0 * alone + 1.0e6)
+      << "alone " << alone << " ns, with 256 idle Worlds " << crowded << " ns";
+}
+
+//==============================================================================
+TEST(World, RawDetectorRejectionDoesNotLeak)
+{
+  auto world = World::create();
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  world->compile();
+  int destroyed = 0;
+  auto* detector = new CountingFclDetector(destroyed);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_THROW(
+      world->getConstraintSolver()->setCollisionDetector(detector),
+      std::runtime_error);
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(destroyed, 1);
 }

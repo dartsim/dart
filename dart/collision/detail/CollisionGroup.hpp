@@ -126,6 +126,7 @@ void CollisionGroup::subscribeTo(
           entry->second.mObjects.insert(
               {shapeNode, addShapeFrameImpl(shapeNode, bodyNode.get())});
         });
+    detail::notifyWorldGroupSubscribed(this, bodyNode.get());
   }
 
   subscribeTo(others...);
@@ -162,6 +163,7 @@ void CollisionGroup::subscribeTo(
             childInfo.mFrames.insert(shapeNode);
           });
     }
+    detail::notifyWorldGroupSubscribed(this, metaSkeleton.get());
   }
 
   subscribeTo(others...);
@@ -250,6 +252,7 @@ void CollisionGroup::unsubscribeFrom(
 
     mBodyNodeSources.erase(it);
     removeSubscriptionOrder(bodyNode);
+    detail::notifyWorldGroupUnsubscribed(this, bodyNode);
   }
 
   unsubscribeFrom(others...);
@@ -269,6 +272,7 @@ void CollisionGroup::unsubscribeFrom(
 
     mSkeletonSources.erase(it);
     removeSubscriptionOrder(skeleton);
+    detail::notifyWorldGroupUnsubscribed(this, skeleton);
   }
 
   unsubscribeFrom(others...);

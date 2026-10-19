@@ -549,12 +549,14 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
            << "solver, which is discouraged. Ignoring this request.\n";
   }
 
-  if (mBoxedLcpSolver != lcpSolver) {
+  const bool changed = mBoxedLcpSolver != lcpSolver;
+  if (changed) {
     detail::checkWorldTopologyMutation(this);
     detail::eraseContactWarmStartCache(this);
-    detail::notifyWorldTopologyMutation(this);
   }
   mBoxedLcpSolver = std::move(lcpSolver);
+  if (changed)
+    detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================

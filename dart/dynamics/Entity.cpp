@@ -259,6 +259,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
   }
 
   mParentFrame = _newParentFrame;
+  if (_newParentFrame && mAmFrame)
+    common::detail::notifyFrameParentChanged(dynamic_cast<const Frame*>(this));
 
   if (!mAmQuiet && nullptr != mParentFrame) {
     if (!mParentFrame->isWorld()) {

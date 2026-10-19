@@ -39,7 +39,11 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Frame;
+class Joint;
+class MetaSkeleton;
 class Shape;
+class ShapeFrame;
+class Skeleton;
 } // namespace dynamics
 namespace common {
 class Aspect;
@@ -48,12 +52,28 @@ class VersionCounter;
 namespace detail {
 
 // Ownership lives outside model objects to preserve their public layouts.
+// Typed overloads let the common callers skip dynamic_cast.
 void checkTopologyMutation(const Composite* object);
 void checkTopologyMutation(const dynamics::BodyNode* object);
+void checkTopologyMutation(const dynamics::ShapeFrame* object);
+void checkTopologyMutation(const dynamics::Skeleton* object);
+void checkTopologyMutation(const dynamics::Joint* object);
 void notifyTopologyMutation(const Composite* object);
+void notifyTopologyMutation(const dynamics::BodyNode* object);
+void notifyTopologyMutation(const dynamics::ShapeFrame* object);
+void notifyTopologyMutation(const dynamics::Skeleton* object);
+void notifyTopologyMutation(const dynamics::Joint* object);
 void notifyParameterMutation(const Composite* object);
+void notifyParameterMutation(const dynamics::BodyNode* object);
+void notifyParameterMutation(const dynamics::ShapeFrame* object);
+void notifyParameterMutation(const dynamics::Skeleton* object);
+void notifyParameterMutation(const dynamics::Joint* object);
 void checkFrameTopologyMutation(const dynamics::Frame* frame);
 void notifyFrameTopologyMutation(const dynamics::Frame* frame);
+// After a Frame's parent changed: members below it record new ancestors.
+void notifyFrameParentChanged(const dynamics::Frame* frame);
+// A Skeleton only weakly referenced by Worlds is being destroyed.
+void notifyModelDestruction(const dynamics::Skeleton* skeleton);
 std::size_t incrementAspectVersion(
     VersionCounter* object, const Aspect* aspect);
 bool isVisualShapeVersionUpdate(const dynamics::Shape* shape);
@@ -66,6 +86,24 @@ class CollisionGroup;
 class CollisionDetector;
 namespace detail {
 void notifyWorldGroupMutation(const CollisionGroup* group);
+// Membership changes of a World's collision group, keyed by the group.
+void notifyWorldGroupShapeFrameAdded(
+    const CollisionGroup* group, const dynamics::ShapeFrame* frame);
+void notifyWorldGroupShapeFrameRemoved(
+    const CollisionGroup* group, const dynamics::ShapeFrame* frame);
+void notifyWorldGroupSubscribed(
+    const CollisionGroup* group, const dynamics::MetaSkeleton* source);
+void notifyWorldGroupSubscribed(
+    const CollisionGroup* group, const dynamics::BodyNode* source);
+void notifyWorldGroupUnsubscribed(
+    const CollisionGroup* group, const void* source);
+void notifyWorldGroupSourceBodyAdded(
+    const CollisionGroup* group,
+    const void* source,
+    const dynamics::BodyNode* body);
+void notifyWorldGroupSourceBodyRemoved(
+    const CollisionGroup* group, const void* source, const void* body);
+void notifyWorldGroupCleared(const CollisionGroup* group);
 void checkWorldDetectorTopologyMutation(const CollisionDetector* detector);
 void notifyWorldDetectorTopologyMutation(const CollisionDetector* detector);
 void notifyWorldDetectorParameterMutation(const CollisionDetector* detector);
@@ -79,6 +117,12 @@ class ConstraintBase;
 class BoxedLcpSolver;
 namespace detail {
 void checkWorldTopologyMutation(const ConstraintSolver* solver);
+// The solver replaced its collision group (before it resubscribes).
+void notifyWorldCollisionGroupReplaced(const ConstraintSolver* solver);
+void notifyWorldSolverSkeletonAdded(
+    const ConstraintSolver* solver, const dynamics::Skeleton* skeleton);
+void notifyWorldSolverSkeletonRemoved(
+    const ConstraintSolver* solver, const dynamics::Skeleton* skeleton);
 void notifyWorldTopologyMutation(const ConstraintSolver* solver);
 void notifyWorldParameterMutation(const ConstraintSolver* solver);
 void notifyBoxedSolverParameterMutation(const BoxedLcpSolver* solver);

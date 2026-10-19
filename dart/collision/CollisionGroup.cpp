@@ -126,6 +126,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
     if (nullptr == source)
       continue;
 
+    detail::notifyWorldGroupUnsubscribed(this, source);
     const auto* skeleton = static_cast<const dynamics::MetaSkeleton*>(source);
     if (mSkeletonSources.erase(skeleton) > 0) {
       removeSubscriptionOrder(skeleton);
@@ -139,6 +140,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   mObjectInfoList.erase(search);
   mObserver.removeShapeFrame(shapeFrame);
+  detail::notifyWorldGroupShapeFrameRemoved(this, shapeFrame);
   incrementContentVersion();
 }
 
@@ -185,6 +187,7 @@ void CollisionGroup::removeAllShapeFrames()
   mBodyNodeSources.clear();
   mSubscriptionOrder.clear();
   mObserver.removeAllShapeFrames();
+  detail::notifyWorldGroupCleared(this);
   if (hadObjects)
     incrementContentVersion();
 }
@@ -325,6 +328,7 @@ void CollisionGroup::update()
                 return false;
 
               mSkeletonSources.erase(skeleton);
+              detail::notifyWorldGroupUnsubscribed(this, *key);
               return true;
             }
 
@@ -336,6 +340,8 @@ void CollisionGroup::update()
               return false;
 
             mBodyNodeSources.erase(body);
+            detail::notifyWorldGroupUnsubscribed(
+                this, std::get<const dynamics::BodyNode*>(source));
             return true;
           }),
       mSubscriptionOrder.end());
@@ -384,6 +390,7 @@ void CollisionGroup::removeDeletedShapeFrames()
 
     removeCollisionObjectFromEngine((*search)->mObject.get());
     mObjectInfoList.erase(search);
+    detail::notifyWorldGroupShapeFrameRemoved(this, shapeFrame);
     incrementContentVersion();
   }
 
@@ -503,6 +510,7 @@ auto CollisionGroup::addShapeFrameImpl(
         shape ? shape->getVersion() : 0,
         {}});
     mObserver.addShapeFrame(shapeFrame);
+    detail::notifyWorldGroupShapeFrameAdded(this, shapeFrame);
     incrementContentVersion();
 
     it = --mObjectInfoList.end();
@@ -537,6 +545,7 @@ void CollisionGroup::removeShapeFrameInternal(
     removeCollisionObjectFromEngine((*search)->mObject.get());
     mObjectInfoList.erase(search);
     mObserver.removeShapeFrame(shapeFrame);
+    detail::notifyWorldGroupShapeFrameRemoved(this, shapeFrame);
     incrementContentVersion();
   }
 }
@@ -594,6 +603,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
       // This child was newly introduced, so we need to add it to the
       // CollisionGroup.
       updateNeeded = true;
+      detail::notifyWorldGroupSourceBodyAdded(this, meta.get(), bn);
 
       bn->eachShapeNodeWith<dynamics::CollisionAspect>(
           [&](const dynamics::ShapeNode* shapeNode) {
@@ -656,6 +666,8 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
       source.mObjects.erase(unusedFrame);
     }
 
+    detail::notifyWorldGroupSourceBodyRemoved(
+        this, meta.get(), unusedChild.first);
     source.mChildren.erase(unusedChild.first);
   }
 
