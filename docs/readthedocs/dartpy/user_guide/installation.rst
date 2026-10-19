@@ -45,7 +45,7 @@ wheels follow once conda-forge's bullet-cpp has Python 3.15 builds
 (`conda-forge/bullet-feedstock#70 <https://github.com/conda-forge/bullet-feedstock/pull/70>`_).
 
 Starting with DART 6.20.1, Python 3.10 and 3.11 no longer receive new wheels;
-``pip`` on those versions continues to install dartpy 6.20.0.
+on Linux, ``pip`` on those versions continues to install dartpy 6.20.0.
 
 The source-build platform requirements in the
 :doc:`DART build guide </dart/developer_guide/build>` differ from the wheel
