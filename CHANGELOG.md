@@ -128,6 +128,10 @@
 
 * Dynamics
 
+  * Line segment and point cloud shapes now report bounding boxes that
+    include vertices and points edited after a query, and clearing a point
+    cloud now refreshes collision geometry.
+
   * Keep prepared Worlds ready after topology edits in unrelated Worlds,
     while still rebuilding after changes to their own skeletons, solver
     membership, or collision-group dependencies.
