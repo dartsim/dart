@@ -281,20 +281,20 @@ changes. The numerical rules they follow live in the design doc's
 M5a is open since M0 exited. The API is designed first: the maintainer
 approves a naming rulebook once, each API area lands as a normal PR showing
 the designed API, and the old-to-new mapping generated from those PRs drives
-the codemod, the stubs, the generated docstrings and the migration guide. An API-surface ratchet keeps the
-parity surface from growing meanwhile. In this order:
+the codemod, the stubs, the generated docstrings and the migration guide. An
+API-surface ratchet keeps the parity surface from growing meanwhile. In this
+order:
 
-1. The naming rulebook.
-2. The package layout: private extension, pure-Python helpers, scikit-build-core,
-   one stable-ABI wheel for Python 3.12+. It also updates the 7.0 changelog's
-   Python-support entries.
-3. The array casters: read-only copies.
-4. Errors and logging.
-5. `Transform` and `Rotation`.
-6. A vertical slice of the facade: `World` keyword construction, `Multibody`,
+1. Mechanism packets that add no names the rulebook decides, in review: the
+   package layout (private extension, pure-Python helpers, scikit-build-core,
+   one stable-ABI wheel for Python 3.12+, and the 7.0 changelog's
+   Python-support entries); read-only array copies; errors and logging; and
+   `Transform` and `Rotation`.
+2. The naming rulebook, which also decides the curated top level.
+3. A vertical slice of the facade: `World` keyword construction, `Multibody`,
    `Link`, `Joint` and `Dof` with named collections, the builders, `world.add`
    and `Collider`/`Visual` handles.
-7. The remaining API areas: math, dynamics, collision, io, common and
+4. The remaining API areas: math, dynamics, collision, io, common and
    optimizer, each designed under the rulebook.
 
 Defects found on the way (missing `None` checks, dropped out-parameters,
