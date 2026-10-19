@@ -112,6 +112,7 @@
     with double-precision Bullet, where they read garbage heights, and
     `MultiSphereConvexHullShape` spheres smaller than 4 cm get correct
     contacts.
+    [#3868](https://github.com/dartsim/dart/pull/3868),
     [gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)
 
   * Fix undefined behavior when a custom deleter of a replaced collision
@@ -281,6 +282,7 @@
     both Bullet precisions, so applications that load another
     single-precision Bullet must switch it to double precision or build DART
     with that option.
+    [#3868](https://github.com/dartsim/dart/pull/3868)
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
