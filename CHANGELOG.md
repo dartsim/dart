@@ -4,6 +4,13 @@
 
 ### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
 
+* Collision
+
+  * Fix undefined behavior when a custom deleter of a replaced collision
+    detector or contact surface handler reads the constraint solver's
+    current one.
+    [#3820](https://github.com/dartsim/dart/pull/3820)
+
 * Dynamics
 
   * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
@@ -28,6 +35,11 @@
   * A `LineSegmentShape` built from two points now reports `LINE_SEGMENT`
     from the deprecated `getShapeType()`, like one built from a thickness.
     [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * Line segment and point cloud shapes now report bounding boxes that
+    include vertices and points edited after a query, and clearing a point
+    cloud now refreshes collision geometry.
+    [#3826](https://github.com/dartsim/dart/pull/3826)
 
 * Parsers
 
