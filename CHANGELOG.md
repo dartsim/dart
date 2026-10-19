@@ -272,6 +272,7 @@
     [#3836](https://github.com/dartsim/dart/pull/3836)
   * Ship third-party attribution in `NOTICE`, included in dartpy's license
     metadata and installed alongside `LICENSE` in `share/licenses/dart`.
+    [#3857](https://github.com/dartsim/dart/pull/3857)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
