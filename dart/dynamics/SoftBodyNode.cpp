@@ -818,10 +818,10 @@ void SoftBodyNode::handlePointMassMassChange()
   const SkeletonPtr& skel = getSkeleton();
   if (skel) {
     skel->updateTotalMass();
-    skel->incrementParameterVersion();
     skel->incrementDeactivationStateVersion();
   }
-  ++mVersion;
+  incrementVersion();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -834,9 +834,9 @@ void SoftBodyNode::handlePointMassRestingPositionChange()
   // scratch.
   activation.mForceAllActiveNextStep = true;
   dirtyArticulatedInertia();
-  ++mVersion;
+  incrementVersion();
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 }
@@ -851,9 +851,9 @@ void SoftBodyNode::setVertexSpringStiffness(double _kv)
 
   mAspectProperties.mKv = _kv;
   dirtyArticulatedInertia();
-  ++mVersion;
+  incrementVersion();
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 }
@@ -873,9 +873,9 @@ void SoftBodyNode::setEdgeSpringStiffness(double _ke)
     return;
 
   mAspectProperties.mKe = _ke;
-  ++mVersion;
+  incrementVersion();
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 }
@@ -904,9 +904,9 @@ void SoftBodyNode::setDampingCoefficient(double _damp)
 
   mAspectProperties.mDampCoeff = _damp;
   dirtyArticulatedInertia();
-  ++mVersion;
+  incrementVersion();
+  common::detail::notifyParameterMutation(this);
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 }

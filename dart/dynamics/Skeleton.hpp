@@ -187,9 +187,6 @@ public:
   /// Increments the structural version counter.
   std::size_t incrementVersion() override;
 
-  /// Increment the model parameter version without changing topology.
-  std::size_t incrementParameterVersion();
-
   /// Remove copy operator
   Skeleton& operator=(const Skeleton& _other) = delete;
 

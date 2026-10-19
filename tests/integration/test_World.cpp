@@ -115,6 +115,12 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
+// Private registry probes defined in World.cpp for tests only.
+namespace dart::simulation::detail {
+std::size_t getIndexedWorldCount();
+std::size_t getRegistryLockCount();
+} // namespace dart::simulation::detail
+
 namespace {
 
 // Its destructor follows function-local static objects first initialized by
@@ -1650,18 +1656,296 @@ TEST(World, LazySharedMembershipAndOwnerLifetimeRemainSupported)
   auto second = World::create();
   first->addSkeleton(robot);
   second->addSkeleton(robot);
-  EXPECT_THROW(first->compile(), std::runtime_error);
-  EXPECT_FALSE(first->isCompiled());
-  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<RevoluteJoint>(body));
+  // Lazy Worlds have no registry entry, so a lazy sharer goes undetected and
+  // the model freezes for it too.
+  EXPECT_NO_THROW(first->compile());
+  EXPECT_TRUE(first->isCompiled());
+  EXPECT_THROW(
+      robot->createJointAndBodyNodePair<RevoluteJoint>(body),
+      std::runtime_error);
   EXPECT_NO_THROW(first->step());
   EXPECT_NO_THROW(second->step());
   second->removeSkeleton(robot);
-  first->compile();
   EXPECT_THROW(second->addSkeleton(robot), std::runtime_error);
   EXPECT_FALSE(second->hasSkeleton(robot));
   first.reset();
   EXPECT_NO_THROW(robot->createJointAndBodyNodePair<RevoluteJoint>(body));
   EXPECT_NO_THROW(second->addSkeleton(robot));
+}
+
+//==============================================================================
+TEST(World, LazyWorldSettersKeepVersionsAndSkipTheRegistry)
+{
+  if (dart::simulation::detail::getIndexedWorldCount() != 0u)
+    GTEST_SKIP() << "an earlier test keeps a compiled World alive";
+  const auto locks = dart::simulation::detail::getRegistryLockCount();
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  world->addSimpleFrame(std::make_shared<SimpleFrame>());
+  auto* body = robot->getBodyNode(0);
+  auto* joint = robot->getJoint(0);
+  auto* shape = body->getShapeNodeWith<CollisionAspect>(0);
+  ASSERT_NE(shape->getVisualAspect(), nullptr);
+  ASSERT_NE(shape->getDynamicsAspect(), nullptr);
+  world->step();
+
+  struct Versions
+  {
+    std::size_t shape, body, joint, skeleton, structural;
+  };
+  const auto read = [&] {
+    return Versions{
+        shape->getVersion(),
+        body->getVersion(),
+        joint->getVersion(),
+        robot->getVersion(),
+        SkeletonVersionAccess::getGlobalStructuralVersion()};
+  };
+  const auto expectDelta = [&](const Versions& before,
+                               const Versions& after,
+                               std::size_t shapeDelta,
+                               std::size_t bodyDelta,
+                               std::size_t jointDelta) {
+    EXPECT_EQ(after.shape, before.shape + shapeDelta);
+    EXPECT_EQ(after.body, before.body + bodyDelta);
+    EXPECT_EQ(after.joint, before.joint + jointDelta);
+    const std::size_t skeletonDelta
+        = std::max({shapeDelta, bodyDelta, jointDelta});
+    EXPECT_EQ(after.skeleton, before.skeleton + skeletonDelta);
+    EXPECT_EQ(after.structural, before.structural + skeletonDelta);
+  };
+
+  // gz-sim's WheelSlip setter runs every step and bumps no version (6.20).
+  auto before = read();
+  shape->getDynamicsAspect()->setPrimarySlipCompliance(1e-5);
+  expectDelta(before, read(), 0u, 0u, 0u);
+  // Cosmetic and parameter setters propagate BodyNode -> Skeleton -> global.
+  before = read();
+  body->setName("renamed");
+  expectDelta(before, read(), 0u, 1u, 0u);
+  before = read();
+  shape->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+  expectDelta(before, read(), 1u, 1u, 0u);
+  before = read();
+  body->setMass(2.0 * body->getMass());
+  expectDelta(before, read(), 0u, 1u, 0u);
+  before = read();
+  body->setMomentOfInertia(2.0, 3.0, 4.0);
+  expectDelta(before, read(), 0u, 1u, 0u);
+  before = read();
+  joint->setPositionUpperLimit(0, 1.5);
+  expectDelta(before, read(), 0u, 0u, 1u);
+  before = read();
+  joint->setDampingCoefficient(0, 0.25);
+  expectDelta(before, read(), 0u, 0u, 1u);
+
+  // Topology edits, membership, stepping and destruction of lazy Worlds never
+  // touch the ownership registry.
+  auto* child = robot->createJointAndBodyNodePair<RevoluteJoint>(body).second;
+  child->remove();
+  world->removeSimpleFrame(world->getSimpleFrame(0));
+  world->step();
+  EXPECT_EQ(world->getTopologyRevision(), world->getTopologyRevision());
+  world.reset();
+  EXPECT_EQ(dart::simulation::detail::getRegistryLockCount(), locks);
+  EXPECT_EQ(dart::simulation::detail::getIndexedWorldCount(), 0u);
+}
+
+//==============================================================================
+TEST(World, LazyWorldsOnTwoThreadsNeverTouchTheRegistry)
+{
+  if (dart::simulation::detail::getIndexedWorldCount() != 0u)
+    GTEST_SKIP() << "an earlier test keeps a compiled World alive";
+  const auto locks = dart::simulation::detail::getRegistryLockCount();
+  std::exception_ptr errors[2];
+  std::thread threads[2];
+  for (int lane = 0; lane < 2; ++lane) {
+    threads[lane] = std::thread([&, lane] {
+      try {
+        auto world = World::create();
+        auto ground = createBox(Eigen::Vector3d(10.0, 10.0, 0.2));
+        ground->setMobile(false);
+        auto robot = createBox(
+            Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.6));
+        world->addSkeleton(ground);
+        world->addSkeleton(robot);
+        auto* body = robot->getBodyNode(0);
+        auto* dynamics
+            = body->getShapeNodeWith<CollisionAspect>(0)->getDynamicsAspect();
+        for (int i = 0; i < 200; ++i) {
+          dynamics->setPrimarySlipCompliance(1e-6 * ((i + lane) % 3));
+          body->setMass(1.0 + 0.1 * (i % 5));
+          body->setName(i % 2 ? "even" : "odd");
+          auto frame = std::make_shared<SimpleFrame>(body, "attached");
+          world->addSimpleFrame(frame);
+          auto* child
+              = robot->createJointAndBodyNodePair<RevoluteJoint>(body).second;
+          world->step();
+          child->remove();
+          world->removeSimpleFrame(frame);
+        }
+      } catch (...) {
+        errors[lane] = std::current_exception();
+      }
+    });
+  }
+  for (auto& thread : threads)
+    thread.join();
+  for (auto& error : errors) {
+    if (error)
+      std::rethrow_exception(error);
+  }
+  EXPECT_EQ(dart::simulation::detail::getRegistryLockCount(), locks);
+}
+
+//==============================================================================
+TEST(World, TransferredRootBodyRechainsAttachedFrames)
+{
+  auto world = World::create();
+  auto source = Skeleton::create("source");
+  auto* body = source->createJointAndBodyNodePair<FreeJoint>().second;
+  auto target = Skeleton::create("target");
+  auto frame = std::make_shared<SimpleFrame>(body, "attached");
+  world->addSimpleFrame(frame);
+  world->compile();
+  EXPECT_THROW(
+      source->createJointAndBodyNodePair<RevoluteJoint>(body),
+      std::runtime_error);
+  {
+    auto edit = world->edit();
+    // Root to root: no parent Frame changes, only the Skeleton does.
+    ASSERT_TRUE(body->moveTo(target, nullptr));
+    ASSERT_EQ(body->getSkeleton(), target);
+    auto parameter = world->getParameterRevision();
+    source->setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+    EXPECT_EQ(world->getParameterRevision(), parameter);
+    target->setGravity(Eigen::Vector3d(0.0, 0.0, -2.0));
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    parameter = world->getParameterRevision();
+    frame->setRelativeTranslation(Eigen::Vector3d::UnitX());
+    EXPECT_GT(world->getParameterRevision(), parameter);
+  }
+  EXPECT_NO_THROW(source->createJointAndBodyNodePair<RevoluteJoint>());
+  EXPECT_THROW(
+      target->createJointAndBodyNodePair<RevoluteJoint>(body),
+      std::runtime_error);
+}
+
+namespace {
+
+class ThrowingGroupDetector final : public collision::FCLCollisionDetector
+{
+public:
+  ThrowingGroupDetector() = default;
+
+  std::unique_ptr<collision::CollisionGroup> createCollisionGroup() override
+  {
+    throw std::runtime_error("collision group factory failure");
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(World, ThrowingDetectorGroupFactoryLeavesSolverAndIndexUnchanged)
+{
+  auto world = World::create();
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  world->compile();
+  auto* solver = world->getConstraintSolver();
+  const auto detector = solver->getCollisionDetector();
+  const auto group = solver->getCollisionGroup();
+  auto fcl
+      = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
+  ASSERT_NE(fcl, nullptr);
+  {
+    auto edit = world->edit();
+    EXPECT_THROW(
+        solver->setCollisionDetector(std::make_shared<ThrowingGroupDetector>()),
+        std::runtime_error);
+    EXPECT_EQ(solver->getCollisionDetector(), detector);
+    EXPECT_EQ(solver->getCollisionGroup(), group);
+    // The retained detector is still indexed.
+    const auto topology = world->getTopologyRevision();
+    fcl->setPrimitiveShapeType(
+        fcl->getPrimitiveShapeType() == collision::FCLCollisionDetector::MESH
+            ? collision::FCLCollisionDetector::PRIMITIVE
+            : collision::FCLCollisionDetector::MESH);
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
+  EXPECT_TRUE(world->isCompiled());
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+// Shared handler re-parenting must not read another owner's solver under the
+// registry mutex while that owner edits its constraints (run under TSan).
+TEST(World, SharedHandlerReparentDoesNotReadOtherOwnersSolver)
+{
+  using dart::constraint::ContactSurfaceHandler;
+  auto first = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  first->addSkeleton(robot);
+  first->compile();
+  auto second = World::create();
+  second->compile();
+  auto shared = std::make_shared<ContactSurfaceHandler>();
+  auto firstParent = std::make_shared<ContactSurfaceHandler>();
+  auto secondParent = std::make_shared<ContactSurfaceHandler>();
+  {
+    auto firstEdit = first->edit();
+    auto secondEdit = second->edit();
+    first->getConstraintSolver()->addContactSurfaceHandler(shared);
+    second->getConstraintSolver()->addContactSurfaceHandler(shared);
+    std::exception_ptr errors[2];
+    std::thread editor([&] {
+      try {
+        auto* solver = first->getConstraintSolver();
+        for (int i = 0; i < 300; ++i) {
+          auto constraint
+              = std::make_shared<dart::constraint::WeldJointConstraint>(
+                  robot->getBodyNode(0));
+          solver->addConstraint(constraint);
+          solver->removeConstraint(constraint);
+        }
+      } catch (...) {
+        errors[0] = std::current_exception();
+      }
+    });
+    std::thread reparent([&] {
+      try {
+        for (int i = 0; i < 300; ++i) {
+          shared->setParent(firstParent);
+          shared->setParent(secondParent);
+        }
+      } catch (...) {
+        errors[1] = std::current_exception();
+      }
+    });
+    editor.join();
+    reparent.join();
+    for (auto& error : errors) {
+      if (error)
+        std::rethrow_exception(error);
+    }
+    EXPECT_EQ(shared->getParent(), secondParent);
+    // Leave only the spliced parent in the first World's chain.
+    EXPECT_TRUE(
+        first->getConstraintSolver()->removeContactSurfaceHandler(shared));
+    EXPECT_TRUE(
+        second->getConstraintSolver()->removeContactSurfaceHandler(shared));
+    EXPECT_TRUE(second->getConstraintSolver()->removeContactSurfaceHandler(
+        secondParent));
+  }
+  EXPECT_TRUE(first->isCompiled());
+  EXPECT_TRUE(second->isCompiled());
+  EXPECT_EQ(
+      first->getConstraintSolver()->getLastContactSurfaceHandler(),
+      secondParent);
+  // The spliced chain froze the current parent, not the stale one.
+  EXPECT_THROW(secondParent->setParent(firstParent), std::runtime_error);
+  EXPECT_NO_THROW(firstParent->setParent(shared));
 }
 
 //==============================================================================
@@ -1689,16 +1973,20 @@ TEST(World, CompiledRevisionsSeparateParametersStateAndAppearance)
   shape->getDynamicsAspect()->setFrictionCoeff(0.7);
   world->setTimeStep(0.002);
   world->setGravity(Eigen::Vector3d(0, 0, -9.8));
-  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  // Versions keep their DART 6.20 propagation; only the revisions classify.
+  EXPECT_GT(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
   EXPECT_GT(world->getParameterRevision(), parameter);
   EXPECT_EQ(world->getTopologyRevision(), topology);
   const auto changedParameters = world->getParameterRevision();
+  const auto changedStructural
+      = SkeletonVersionAccess::getGlobalStructuralVersion();
   robot->setPosition(0, 0.1);
   robot->setVelocity(0, 0.2);
   robot->setCommand(0, 0.3);
   body->setName("renamed");
   shape->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  EXPECT_GT(
+      SkeletonVersionAccess::getGlobalStructuralVersion(), changedStructural);
   EXPECT_EQ(world->getParameterRevision(), changedParameters);
   EXPECT_EQ(world->getTopologyRevision(), topology);
   EXPECT_NO_THROW(world->step());
@@ -1793,7 +2081,7 @@ TEST(World, ExplicitCompileAdmitsSpecializedSoftMeshRoute)
   body->setVertexSpringStiffness(1000.0);
   body->setDampingCoefficient(2.0);
   EXPECT_NE(point->getImplicitPsi(), previousPsi);
-  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  EXPECT_GT(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
   EXPECT_EQ(world->getTopologyRevision(), topology);
   EXPECT_GT(world->getParameterRevision(), parameter);
   EXPECT_NO_THROW(world->step());
@@ -2048,7 +2336,7 @@ TEST(World, VisualShapeVersionSignalsPreserveNestedGeometryClassification)
   EXPECT_TRUE(nested);
   EXPECT_GT(world->getParameterRevision(), parameter);
   EXPECT_EQ(world->getTopologyRevision(), topology);
-  EXPECT_EQ(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
+  EXPECT_GT(SkeletonVersionAccess::getGlobalStructuralVersion(), structural);
 }
 
 //==============================================================================
@@ -2319,6 +2607,7 @@ TEST(World, GlobalConstraintParametersStampAllAffectedWorlds)
   auto first = World::create();
   auto second = World::create();
   first->compile();
+  second->compile();
   const auto topology = first->getTopologyRevision();
   const auto structural = SkeletonVersionAccess::getGlobalStructuralVersion();
   for (const auto& parameter : parameters) {
@@ -2397,7 +2686,8 @@ TEST(World, SharedDetectorConfigurationChecksEveryOwnerBeforeThreadEffects)
   detector->setSoftFaceInteriorContactsEnabled(
       !detector->getSoftFaceInteriorContactsEnabled());
   EXPECT_GT(frozen->getParameterRevision(), frozenParameters);
-  EXPECT_GT(lazy->getParameterRevision(), lazyParameters);
+  // Lazy Worlds track no revisions through shared objects.
+  EXPECT_EQ(lazy->getParameterRevision(), lazyParameters);
   EXPECT_NO_THROW(frozen->step());
   auto fclWorld = World::create();
   auto fcl = std::dynamic_pointer_cast<dart::collision::FCLCollisionDetector>(
@@ -2563,20 +2853,31 @@ TEST(World, OwnershipQueryResolvesEachLifecyclePhaseSeparately)
   auto world = World::create();
   auto model = createBox(Eigen::Vector3d::Ones());
   world->addSkeleton(model);
+  world->compile();
   bool compositeInBasePhase = true;
-  const auto beforeConstruction = world->getTopologyRevision();
-  auto query = std::make_unique<OwnershipQueryLifecycle>(
-      &compositeInBasePhase, model->getBodyNode(0));
-  EXPECT_FALSE(compositeInBasePhase);
-  EXPECT_GT(world->getTopologyRevision(), beforeConstruction);
-  const auto topology = world->getTopologyRevision();
-  query->announce();
-  EXPECT_GT(world->getTopologyRevision(), topology);
-  const auto beforeDestruction = world->getTopologyRevision();
-  compositeInBasePhase = true;
-  query.reset();
-  EXPECT_FALSE(compositeInBasePhase);
-  EXPECT_GT(world->getTopologyRevision(), beforeDestruction);
+  std::unique_ptr<OwnershipQueryLifecycle> query;
+  {
+    auto edit = world->edit();
+    const auto beforeConstruction = world->getTopologyRevision();
+    query = std::make_unique<OwnershipQueryLifecycle>(
+        &compositeInBasePhase, model->getBodyNode(0));
+    EXPECT_FALSE(compositeInBasePhase);
+    EXPECT_GT(world->getTopologyRevision(), beforeConstruction);
+  }
+  {
+    auto edit = world->edit();
+    const auto topology = world->getTopologyRevision();
+    query->announce();
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
+  {
+    auto edit = world->edit();
+    const auto beforeDestruction = world->getTopologyRevision();
+    compositeInBasePhase = true;
+    query.reset();
+    EXPECT_FALSE(compositeInBasePhase);
+    EXPECT_GT(world->getTopologyRevision(), beforeDestruction);
+  }
 }
 
 //==============================================================================
@@ -2710,12 +3011,9 @@ public:
       const collision::CollisionGroupPtr& group)
   {
     group->addShapeFrame(mBody->getShapeNodeWith<CollisionAspect>(0));
-    const auto topology = mWorld->getTopologyRevision();
     const auto parameters = mWorld->getParameterRevision();
     mBody->setCollidable(false);
     EXPECT_GT(mWorld->getParameterRevision(), parameters);
-    auto descendant = std::make_shared<BareFrame>(mParent.get());
-    EXPECT_GT(mWorld->getTopologyRevision(), topology);
     group->removeAllShapeFrames();
     const auto cleared = mWorld->getParameterRevision();
     mBody->setCollidable(true);
@@ -2727,20 +3025,23 @@ public:
   {
     auto view = Group::create("detector_initialization_view");
     auto group = mWorld->getConstraintSolver()->getCollisionGroup();
-    group->subscribeTo(view);
-    ASSERT_TRUE(view->addBodyNode(mBody));
-    // Views resolve ownership when the collision group synchronizes.
-    group->update();
-    auto parameters = mWorld->getParameterRevision();
-    mBody->setCollidable(false);
-    EXPECT_GT(mWorld->getParameterRevision(), parameters);
-    ASSERT_TRUE(view->removeBodyNode(mBody));
-    group->update();
-    parameters = mWorld->getParameterRevision();
-    mBody->setCollidable(true);
-    EXPECT_EQ(mWorld->getParameterRevision(), parameters);
-    ASSERT_TRUE(view->addBodyNode(mBody));
-    mWorld->compile();
+    {
+      auto edit = mWorld->edit();
+      group->subscribeTo(view);
+      ASSERT_TRUE(view->addBodyNode(mBody));
+      // Views resolve ownership when the collision group synchronizes.
+      group->update();
+      auto parameters = mWorld->getParameterRevision();
+      mBody->setCollidable(false);
+      EXPECT_GT(mWorld->getParameterRevision(), parameters);
+      ASSERT_TRUE(view->removeBodyNode(mBody));
+      group->update();
+      parameters = mWorld->getParameterRevision();
+      mBody->setCollidable(true);
+      EXPECT_EQ(mWorld->getParameterRevision(), parameters);
+      ASSERT_TRUE(view->addBodyNode(mBody));
+    }
+    EXPECT_NO_THROW(mWorld->compile());
     const auto children = mParent->getChildFrames();
     EXPECT_THROW(
         std::make_shared<BareFrame>(mParent.get()), std::runtime_error);
@@ -2763,21 +3064,27 @@ private:
 TEST(World, DetectorInitializationReleaseKeepsBorrowedOwnershipLive)
 {
   auto world = World::create();
+  world->compile();
   auto* solver = world->getConstraintSolver();
   DetectorInitializationOwnershipProbe probe(world);
   collision::CollisionGroupPtr oldGroup;
   auto incoming = collision::FCLCollisionDetector::create();
   bool called = false;
+  auto install = std::make_unique<World::EditScope>(*world);
   NativeDetectorReleaseCallback release(solver, [&] {
     called = true;
     EXPECT_EQ(solver->getCollisionDetector(), incoming);
     EXPECT_EQ(solver->getCollisionGroup(), oldGroup);
     probe.checkLiveBeforeGroupNotification(oldGroup);
   });
-  oldGroup = solver->getCollisionGroup();
-  solver->setCollisionDetector(incoming);
-  ASSERT_TRUE(called);
-  EXPECT_NE(solver->getCollisionGroup(), oldGroup);
+  install.reset();
+  {
+    auto edit = world->edit();
+    oldGroup = solver->getCollisionGroup();
+    solver->setCollisionDetector(incoming);
+    ASSERT_TRUE(called);
+    EXPECT_NE(solver->getCollisionGroup(), oldGroup);
+  }
   probe.checkBorrowedViewAndFrozenMutation();
 }
 
@@ -2811,30 +3118,39 @@ TEST(World, OwnershipFollowsBorrowedViewMembershipAtSynchronization)
   auto view = Group::create("view");
   const auto group = world->getConstraintSolver()->getCollisionGroup();
   group->subscribeTo(view);
+  world->compile();
   auto loose = Skeleton::create();
   auto* first = loose->createJointAndBodyNodePair<FreeJoint>().second;
   auto* second = loose->createJointAndBodyNodePair<FreeJoint>().second;
-  ASSERT_TRUE(view->addBodyNode(first));
+  {
+    auto edit = world->edit();
+    ASSERT_TRUE(view->addBodyNode(first));
+    auto parameter = world->getParameterRevision();
+    first->setCollidable(false);
+    EXPECT_EQ(world->getParameterRevision(), parameter);
+    group->update();
+    first->setCollidable(true);
+    EXPECT_GT(world->getParameterRevision(), parameter);
+    ASSERT_TRUE(view->removeBodyNode(first));
+    group->update();
+    parameter = world->getParameterRevision();
+    first->setCollidable(false);
+    EXPECT_EQ(world->getParameterRevision(), parameter);
+    ASSERT_TRUE(view->addBodyNode(second));
+  }
+  // The recompile at scope exit synchronized the group.
   auto parameter = world->getParameterRevision();
-  first->setCollidable(false);
-  EXPECT_EQ(world->getParameterRevision(), parameter);
-  group->update();
-  first->setCollidable(true);
-  EXPECT_GT(world->getParameterRevision(), parameter);
-  ASSERT_TRUE(view->removeBodyNode(first));
-  group->update();
-  parameter = world->getParameterRevision();
-  first->setCollidable(false);
-  EXPECT_EQ(world->getParameterRevision(), parameter);
-  ASSERT_TRUE(view->addBodyNode(second));
-  EXPECT_NO_THROW(world->step());
   second->setCollidable(false);
   EXPECT_GT(world->getParameterRevision(), parameter);
-  view.reset();
-  group->update();
-  parameter = world->getParameterRevision();
-  second->setCollidable(true);
-  EXPECT_EQ(world->getParameterRevision(), parameter);
+  EXPECT_NO_THROW(world->step());
+  {
+    auto edit = world->edit();
+    view.reset();
+    group->update();
+    parameter = world->getParameterRevision();
+    second->setCollidable(true);
+    EXPECT_EQ(world->getParameterRevision(), parameter);
+  }
 }
 
 TEST(World, OwnershipDoesNotCallCustomFrameReaderUnderRegistryLock)
@@ -2844,6 +3160,7 @@ TEST(World, OwnershipDoesNotCallCustomFrameReaderUnderRegistryLock)
   auto frame = std::make_shared<OwnershipReaderFrame>();
   frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
   world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(frame.get());
+  world->compile();
   frame->mReads = 0u;
   frame->mArmed = true;
   auto loose = Skeleton::create("unrelated");
@@ -2894,19 +3211,26 @@ TEST(World, OwnershipKeepsSharedBorrowedMembershipLive)
   auto robot = createBox(Eigen::Vector3d::Ones());
   first->addSkeleton(robot);
   second->getConstraintSolver()->getCollisionGroup()->subscribeTo(robot);
+  first->compile();
   auto firstParameter = first->getParameterRevision();
   auto secondParameter = second->getParameterRevision();
   robot->getBodyNode(0)->setCollidable(false);
   EXPECT_GT(first->getParameterRevision(), firstParameter);
-  EXPECT_GT(second->getParameterRevision(), secondParameter);
+  // A lazy borrower has no registry entry and tracks no revisions.
+  EXPECT_EQ(second->getParameterRevision(), secondParameter);
+  const auto indexed = dart::simulation::detail::getIndexedWorldCount();
   EXPECT_THROW(second->compile(), std::runtime_error);
+  EXPECT_FALSE(second->isCompiled());
+  // A failed first compile leaves the registry again.
+  EXPECT_EQ(dart::simulation::detail::getIndexedWorldCount(), indexed);
   second->getConstraintSolver()->getCollisionGroup()->unsubscribeFrom(
       robot.get());
   EXPECT_NO_THROW(second->compile());
-  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
-  first->compile();
+  EXPECT_EQ(dart::simulation::detail::getIndexedWorldCount(), indexed + 1u);
   EXPECT_THROW(
       robot->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+  first.reset();
+  EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
 }
 
 // A view subscribed from inside a model addition is owned once synchronized.
@@ -2927,12 +3251,11 @@ TEST(World, OwnershipTracksViewSubscribedDuringModelAddition)
   };
   world->addSkeleton(robot);
   ASSERT_TRUE(called);
-  world->getConstraintSolver()->getCollisionGroup()->update();
+  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
+  world->compile();
   const auto parameter = world->getParameterRevision();
   body->setCollidable(false);
   EXPECT_GT(world->getParameterRevision(), parameter);
-  world->addSkeleton(createBox(Eigen::Vector3d::Ones()));
-  world->compile();
   EXPECT_THROW(
       body->createShapeNodeWith<CollisionAspect>(
           std::make_shared<BoxShape>(Eigen::Vector3d::Ones())),
@@ -2979,6 +3302,8 @@ TEST(World, OwnershipThrowingAdditionTracksActualPartialMembership)
   shape->mCallback = [] {
     throw std::runtime_error("shape reader failure");
   };
+  world->compile();
+  auto edit = world->edit();
   EXPECT_THROW(world->addSkeleton(robot), std::runtime_error);
   ASSERT_EQ(world->getNumSkeletons(), 1u);
   ASSERT_EQ(world->getSkeleton(0).get(), robot.get());
@@ -3025,6 +3350,7 @@ TEST(World, OwnershipFrameCallbacksSeeCurrentLiveAncestry)
   child->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
   child->createDynamicsAspect();
   world->addSkeleton(owned);
+  world->compile();
   bool added = false;
   bool removed = false;
   parent->mOnAdd = [&](Entity* entity) {
@@ -3041,9 +3367,15 @@ TEST(World, OwnershipFrameCallbacksSeeCurrentLiveAncestry)
     EXPECT_GT(world->getParameterRevision(), parameter);
     removed = true;
   };
-  child->setParentFrame(parent.get());
+  {
+    auto edit = world->edit();
+    child->setParentFrame(parent.get());
+  }
   EXPECT_TRUE(added);
-  child->setParentFrame(Frame::World());
+  {
+    auto edit = world->edit();
+    child->setParentFrame(Frame::World());
+  }
   EXPECT_TRUE(removed);
   const auto parameter = world->getParameterRevision();
   child->getDynamicsAspect()->setFrictionCoeff(0.9);
@@ -3169,27 +3501,38 @@ TEST(World, NonCompositeFramePreflightsConstructionAndReparenting)
 }
 
 //==============================================================================
-TEST(World, NonCompositeFrameChangesStampLazyTopology)
+TEST(World, NonCompositeFrameChangesStampEditedTopology)
 {
   auto world = World::create();
   auto parent = std::make_shared<BareFrame>(Frame::World());
   auto member = std::make_shared<SimpleFrame>(parent.get());
   world->addSimpleFrame(member);
-  const auto topology = world->getTopologyRevision();
+  world->compile();
   const auto parameters = world->getParameterRevision();
-  auto sibling = std::make_shared<SimpleFrame>(parent.get());
-  EXPECT_GT(world->getTopologyRevision(), topology);
-  const auto attachedTopology = world->getTopologyRevision();
-  sibling->setParentFrame(Frame::World());
-  EXPECT_GT(world->getTopologyRevision(), attachedTopology);
+  std::shared_ptr<SimpleFrame> sibling;
+  {
+    auto edit = world->edit();
+    const auto topology = world->getTopologyRevision();
+    sibling = std::make_shared<SimpleFrame>(parent.get());
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
+  {
+    auto edit = world->edit();
+    const auto topology = world->getTopologyRevision();
+    sibling->setParentFrame(Frame::World());
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
   EXPECT_EQ(world->getParameterRevision(), parameters);
   const auto& children = parent->getChildFrames();
   EXPECT_EQ(children.size(), 1u);
   EXPECT_EQ(children.count(member.get()), 1u);
-  const auto detachedTopology = world->getTopologyRevision();
   auto destination = std::make_shared<SimpleFrame>();
-  parent->setParentFrame(destination.get());
-  EXPECT_GT(world->getTopologyRevision(), detachedTopology);
+  {
+    auto edit = world->edit();
+    const auto topology = world->getTopologyRevision();
+    parent->setParentFrame(destination.get());
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
   EXPECT_EQ(world->getParameterRevision(), parameters);
 }
 
@@ -3270,7 +3613,7 @@ void runCaptured(Body body, std::exception_ptr& error)
 
 //==============================================================================
 // Independent lazy Worlds on separate threads never read each other's model
-// containers; ownership resolves from the registry index alone.
+// containers; lazy Worlds have no registry entries at all.
 TEST(World, IndependentLazyWorldsMutateConcurrently)
 {
   auto worldA = World::create();
@@ -3373,19 +3716,24 @@ TEST(World, EditOnLazyWorldLeavesItLazy)
 TEST(World, FailedRecompileAtScopeExitSurfacesAtNextStep)
 {
   auto world = World::create();
-  auto other = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
   auto robot = createBox(Eigen::Vector3d::Ones());
+  auto* shape = robot->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0);
+  const auto box = shape->getShape();
   world->addSkeleton(robot);
   world->compile();
   auto scope = std::make_unique<World::EditScope>(*world);
-  other->addSkeleton(robot);
+  shape->setShape(std::make_shared<LineSegmentShape>());
   EXPECT_NO_THROW(scope.reset());
   EXPECT_FALSE(world->isCompiled());
   const auto time = world->getTime();
   EXPECT_THROW(world->step(), std::runtime_error);
+  EXPECT_THROW(world->step(), std::runtime_error);
   EXPECT_EQ(world->getTime(), time);
+  // Repairing the model does not silence the deferred error: the next
+  // compile() reports it once and the one after that compiles.
+  EXPECT_NO_THROW(shape->setShape(box));
   EXPECT_THROW(world->compile(), std::runtime_error);
-  other->removeSkeleton(robot);
   EXPECT_NO_THROW(world->compile());
   EXPECT_TRUE(world->isCompiled());
   EXPECT_NO_THROW(world->step());

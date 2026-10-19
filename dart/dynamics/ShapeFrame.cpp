@@ -392,11 +392,9 @@ void ShapeFrame::setShape(const ShapePtr& shape)
         = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
             DART_ASSERT(
                 shape == this->ShapeFrame::mAspectProperties.mShape.get());
-            if (common::detail::isVisualShapeVersionUpdate(shape)) {
-              this->incrementLocalVersion();
+            this->incrementVersion();
+            if (common::detail::isVisualShapeVersionUpdate(shape))
               return;
-            }
-            this->incrementParameterVersion();
             common::detail::notifyParameterMutation(this);
 
             if (auto* shapeNode = this->asShapeNode()) {

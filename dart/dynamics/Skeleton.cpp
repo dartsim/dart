@@ -253,7 +253,7 @@ BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel)
 void setAllBodyNodeProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties)
 {
-  if (skel) {
+  if (skel && common::detail::hasGuardedModels()) {
     const std::size_t count
         = std::min(skel->getNumBodyNodes(), properties.size());
     for (std::size_t i = 0; i < count; ++i)
@@ -313,7 +313,7 @@ BodyNodeStateVector getAllJointStates(const Skeleton* skel)
 void setAllJointProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties)
 {
-  if (skel) {
+  if (skel && common::detail::hasGuardedModels()) {
     const std::size_t count = std::min(skel->getNumJoints(), properties.size());
     for (std::size_t i = 0; i < count; ++i)
       common::detail::checkTopologyProperties(skel->getJoint(i), properties[i]);
@@ -487,14 +487,6 @@ std::size_t Skeleton::incrementVersion()
 {
   const std::size_t version = common::VersionCounter::incrementVersion();
   incrementGlobal(gStructuralVersion);
-  return version;
-}
-
-//==============================================================================
-std::size_t Skeleton::incrementParameterVersion()
-{
-  const std::size_t version = common::VersionCounter::incrementVersion();
-  common::detail::notifyParameterMutation(this);
   return version;
 }
 
@@ -2722,6 +2714,9 @@ bool Skeleton::moveBodyNodeTree(
     }
   }
   _newSkeleton->receiveBodyNodeTree(tree);
+  // Members below the moved tree now resolve to the new Skeleton, including
+  // after a root-to-root transfer that changed no parent Frame.
+  common::detail::notifyFrameParentChanged(_bodyNode);
 
   return true;
 }

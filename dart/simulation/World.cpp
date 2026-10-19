@@ -636,6 +636,11 @@ public:
   std::size_t mCompiledTopologyRevision = 0u;
   std::atomic<std::size_t> mParameterRevision{0u};
   std::atomic<bool> mStepping{false};
+  // Set by the first successful compile() and cleared at destruction. Only
+  // indexed Worlds have registry entries, model-object hooks and revisions.
+  bool mIndexed = false;
+  // Worlds stepping on this thread form a chain through this pointer.
+  WorldDeactivationState* mOuterSteppingWorld = nullptr;
   // A recompile that failed at World::edit() scope exit, reported by the next
   // step() or compile().
   std::exception_ptr mPendingRecompileError;
@@ -749,17 +754,22 @@ public:
 
 namespace {
 
-// Ownership registry. ModelOwners::mMutex guards every structure here and the
-// per-World index bookkeeping in WorldDeactivationState. Mutation hooks resolve
-// ownership from this index alone: while holding the mutex they never read
-// another World's containers, call user-overridable virtuals, lock weak
-// pointers or release a model object.
+// Ownership registry of indexed Worlds: those compiled at least once. Lazy
+// Worlds never appear here and never take mMutex. ModelOwners::mMutex guards
+// every structure here and the per-World index bookkeeping in
+// WorldDeactivationState. Mutation hooks resolve ownership from this index
+// alone: while holding the mutex they never read another World's containers,
+// call user-overridable virtuals, lock weak pointers or release a model object.
 struct ModelOwners
 {
   std::mutex mMutex;
   std::vector<WorldDeactivationState*> mWorlds;
-  // Model object -> Worlds that reference it, each listed once.
+  // Model object -> indexed Worlds that reference it, each listed once.
   std::unordered_map<const void*, std::vector<WorldDeactivationState*>> mOwners;
+  // Lookup scratch, reserved for every indexed World when it joins, so owner
+  // deduplication never allocates under mMutex.
+  std::vector<WorldDeactivationState*> mScratch;
+  bool mScratchInUse = false;
 };
 
 ModelOwners& modelOwners()
@@ -769,6 +779,39 @@ ModelOwners& modelOwners()
   // until process exit without running a destructor before those Worlds.
   static auto* owners = new ModelOwners;
   return *owners;
+}
+
+// Lock-free gates. Every hook returns before any registry work while no World
+// is indexed; the check hooks also run while a World is inside step().
+std::atomic<std::size_t> gIndexedWorlds{0u};
+std::atomic<std::size_t> gGuardedWorlds{0u};
+// Registry lock acquisitions, read by tests to prove lazy paths take none.
+std::atomic<std::size_t> gRegistryLocks{0u};
+// Innermost World stepping on this thread. Its own callbacks may not change
+// its model's topology, whether or not it is indexed.
+thread_local WorldDeactivationState* tlsSteppingWorld = nullptr;
+
+inline bool noIndexedWorlds()
+{
+  return gIndexedWorlds.load(std::memory_order_relaxed) == 0u;
+}
+
+inline bool noGuardedWorlds()
+{
+  return gGuardedWorlds.load(std::memory_order_relaxed) == 0u;
+}
+
+// Slow paths stay out of line so a gated hook costs a load and a branch.
+#if defined(_MSC_VER)
+  #define DART_REGISTRY_NOINLINE __declspec(noinline)
+#else
+  #define DART_REGISTRY_NOINLINE __attribute__((noinline))
+#endif
+
+std::unique_lock<std::mutex> lockRegistry()
+{
+  gRegistryLocks.fetch_add(1u, std::memory_order_relaxed);
+  return std::unique_lock<std::mutex>(modelOwners().mMutex);
 }
 
 // Keys identifying an object's ownership: the object, its frame ancestors and
@@ -912,42 +955,45 @@ void collectModelKeys(const common::Composite* object, ModelKeys& keys)
     collectBodyKeys(joint->getChildBodyNode(), keys, false);
 }
 
+// Requires the registry mutex. Deduplicates into the registry scratch, whose
+// capacity covers every indexed World, so a lookup never allocates.
 class OwnerSet
 {
 public:
+  OwnerSet() : mOwners(modelOwners().mScratch)
+  {
+    DART_ASSERT(!modelOwners().mScratchInUse);
+    modelOwners().mScratchInUse = true;
+    mOwners.clear();
+  }
+
+  ~OwnerSet()
+  {
+    modelOwners().mScratchInUse = false;
+  }
+
   bool insert(WorldDeactivationState* owner)
   {
-    for (std::size_t i = 0u; i < mSize; ++i) {
-      if (mInline[i] == owner)
-        return false;
-    }
-    if (std::find(mOverflow.begin(), mOverflow.end(), owner) != mOverflow.end())
+    if (std::find(mOwners.begin(), mOwners.end(), owner) != mOwners.end())
       return false;
-    if (mSize < kInline)
-      mInline[mSize++] = owner;
-    else
-      mOverflow.push_back(owner);
+    DART_ASSERT(mOwners.size() < mOwners.capacity());
+    mOwners.push_back(owner);
     return true;
   }
 
   template <class Visit>
   void each(Visit visit) const
   {
-    for (std::size_t i = 0u; i < mSize; ++i)
-      visit(*mInline[i]);
-    for (auto* owner : mOverflow)
+    for (auto* owner : mOwners)
       visit(*owner);
   }
 
 private:
-  static constexpr std::size_t kInline = 8u;
-  WorldDeactivationState* mInline[kInline];
-  std::size_t mSize = 0u;
-  std::vector<WorldDeactivationState*> mOverflow;
+  std::vector<WorldDeactivationState*>& mOwners;
 };
 
 // Requires the registry mutex. Visitors may update the index, so the owners
-// are gathered first; lookups do not allocate unless a key has many owners.
+// are gathered first.
 template <class Visit>
 void forEachOwner(const void* key, Visit visit)
 {
@@ -973,11 +1019,10 @@ void forEachOwner(const ModelKeys& keys, Visit visit)
     const auto it = owners.find(key);
     if (it == owners.end())
       return;
-    for (auto* owner : it->second) {
-      if (seen.insert(owner))
-        visit(*owner);
-    }
+    for (auto* owner : it->second)
+      seen.insert(owner);
   });
+  seen.each(visit);
 }
 
 using KeyCounts = std::unordered_map<const void*, std::size_t>;
@@ -1153,54 +1198,116 @@ void refreshSolverKeys(WorldDeactivationState& state)
   state.mHandlerKeys = std::move(handlerKeys);
 }
 
-// Reindexes everything the World's current solver owns. Collects from the
-// World's own containers first and takes the registry mutex only to swap.
-void rebuildSolverIndex(WorldDeactivationState& state)
+// Everything a World owns, collected from its own containers without the
+// registry mutex so no user-overridable virtual runs under it.
+struct IndexSnapshot
 {
-  const auto* solver = state.mWorld->getConstraintSolver();
-  const auto group = solver->getCollisionGroup();
-  std::vector<std::pair<const dynamics::Frame*, ModelKeys>> frames;
-  frames.reserve(group->getNumShapeFrames());
-  for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
-    frames.emplace_back(group->getShapeFrame(i), ModelKeys());
-    collectFrameKeys(frames.back().first, frames.back().second, true);
-  }
+  std::vector<std::pair<const dynamics::Frame*, ModelKeys>> mSimpleFrames;
+  std::vector<std::pair<const dynamics::Frame*, ModelKeys>> mGroupFrames;
   std::vector<
       std::pair<const void*, std::vector<std::pair<const void*, const void*>>>>
-      sources;
+      mSources;
+  std::vector<const void*> mSkeletons;
+  std::vector<const void*> mSolverSkeletons;
+};
+
+IndexSnapshot collectIndex(const World& world)
+{
+  IndexSnapshot snapshot;
+  for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i)
+    snapshot.mSkeletons.push_back(world.getSkeleton(i).get());
+  snapshot.mSimpleFrames.reserve(world.getNumSimpleFrames());
+  for (std::size_t i = 0u; i < world.getNumSimpleFrames(); ++i) {
+    snapshot.mSimpleFrames.emplace_back(
+        world.getSimpleFrame(i).get(), ModelKeys());
+    collectFrameKeys(
+        snapshot.mSimpleFrames.back().first,
+        snapshot.mSimpleFrames.back().second,
+        true);
+  }
+  const auto* solver = world.getConstraintSolver();
+  const auto group = solver->getCollisionGroup();
+  snapshot.mGroupFrames.reserve(group->getNumShapeFrames());
+  for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
+    snapshot.mGroupFrames.emplace_back(group->getShapeFrame(i), ModelKeys());
+    collectFrameKeys(
+        snapshot.mGroupFrames.back().first,
+        snapshot.mGroupFrames.back().second,
+        true);
+  }
   collision::detail::CollisionGroupOwnershipAccessor::forEachSource(
       *group, [&](const auto& weakSource) {
-        if (const auto source = weakSource.lock())
-          sources.emplace_back(source.get(), sourceEntries(source.get()));
+        if (const auto source = weakSource.lock()) {
+          snapshot.mSources.emplace_back(
+              source.get(), sourceEntries(source.get()));
+        }
       });
   collision::detail::CollisionGroupOwnershipAccessor::forEachBodySource(
       *group, [&](const auto& weakSource) {
         if (const auto body = weakSource.lock()) {
-          sources.emplace_back(
+          snapshot.mSources.emplace_back(
               body.get(),
               std::vector<std::pair<const void*, const void*>>{
                   {body.get(), body->getSkeleton().get()}});
         }
       });
-  std::vector<const void*> skeletons;
   for (const auto& skeleton : solver->getSkeletons())
-    skeletons.push_back(skeleton.get());
+    snapshot.mSolverSkeletons.push_back(skeleton.get());
+  return snapshot;
+}
 
-  const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
-  unregisterAllChains(state.mGroupFrameChains, state);
-  unregisterAllSources(state);
-  for (const void* key : state.mSolverSkeletonKeys)
-    removeOwner(state.mModelKeys, state, key);
-  state.mSolverSkeletonKeys.clear();
-  for (const auto& frame : frames)
+// Requires the registry mutex. Drops every entry of the World but keeps it
+// indexed.
+void unregisterWorld(WorldDeactivationState& state);
+
+// Requires the registry mutex.
+void applyIndex(WorldDeactivationState& state, const IndexSnapshot& snapshot)
+{
+  unregisterWorld(state);
+  for (const void* key : snapshot.mSkeletons)
+    addOwner(state.mModelKeys, state, key);
+  for (const auto& frame : snapshot.mSimpleFrames)
+    registerChain(state.mSimpleFrameChains, state, frame.first, frame.second);
+  for (const auto& frame : snapshot.mGroupFrames)
     registerChain(state.mGroupFrameChains, state, frame.first, frame.second);
-  for (const auto& source : sources)
+  for (const auto& source : snapshot.mSources)
     registerSource(state, source.first, source.second);
-  for (const void* key : skeletons) {
+  for (const void* key : snapshot.mSolverSkeletons) {
     state.mSolverSkeletonKeys.push_back(key);
     addOwner(state.mModelKeys, state, key);
   }
   refreshSolverKeys(state);
+}
+
+// Rebuilds the World's index from its own containers, joining the registry on
+// the first call. This is where index memory is allocated.
+void reindexWorld(WorldDeactivationState& state)
+{
+  const IndexSnapshot snapshot = collectIndex(*state.mWorld);
+  const auto lock = lockRegistry();
+  auto& owners = modelOwners();
+  if (!state.mIndexed) {
+    owners.mWorlds.push_back(&state);
+    owners.mScratch.reserve(owners.mWorlds.size());
+    state.mIndexed = true;
+    gIndexedWorlds.fetch_add(1u, std::memory_order_relaxed);
+    gGuardedWorlds.fetch_add(1u, std::memory_order_relaxed);
+  }
+  applyIndex(state, snapshot);
+}
+
+// Leaves the registry; a no-op for lazy Worlds.
+void unindexWorld(WorldDeactivationState& state)
+{
+  if (!state.mIndexed)
+    return;
+  const auto lock = lockRegistry();
+  unregisterWorld(state);
+  auto& worlds = modelOwners().mWorlds;
+  worlds.erase(std::remove(worlds.begin(), worlds.end(), &state), worlds.end());
+  state.mIndexed = false;
+  gIndexedWorlds.fetch_sub(1u, std::memory_order_relaxed);
+  gGuardedWorlds.fetch_sub(1u, std::memory_order_relaxed);
 }
 
 // Requires the registry mutex.
@@ -1243,7 +1350,7 @@ void rechainMembersUnder(const dynamics::Frame* frame)
   };
   std::vector<Pending> pending;
   {
-    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    const auto lock = lockRegistry();
     const auto& owners = modelOwners().mOwners;
     const auto it = owners.find(frame);
     if (it == owners.end())
@@ -1263,7 +1370,7 @@ void rechainMembersUnder(const dynamics::Frame* frame)
     return;
   for (auto& entry : pending)
     collectFrameKeys(entry.mMember, entry.mKeys, true);
-  const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+  const auto lock = lockRegistry();
   const auto& worlds = modelOwners().mWorlds;
   for (auto& entry : pending) {
     if (std::find(worlds.begin(), worlds.end(), entry.mState) == worlds.end()
@@ -1278,7 +1385,7 @@ void rechainMembersUnder(const dynamics::Frame* frame)
 // is not mistaken for an owned model.
 void purgeModelKey(const void* key)
 {
-  const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+  const auto lock = lockRegistry();
   auto& owners = modelOwners().mOwners;
   const auto it = owners.find(key);
   if (it == owners.end())
@@ -1353,6 +1460,114 @@ void throwRejection(Rejection reason)
 void checkModelMutation(const WorldDeactivationState& state)
 {
   throwRejection(rejection(state));
+}
+
+// Same-thread guard of a lazy World inside step(): reads only that World's own
+// containers, which no other thread may touch while it steps.
+bool steppingWorldOwnsModel(
+    const WorldDeactivationState& state, const void* key)
+{
+  const World& world = *state.mWorld;
+  for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i) {
+    if (world.getSkeleton(i).get() == key)
+      return true;
+  }
+  for (std::size_t i = 0u; i < world.getNumSimpleFrames(); ++i) {
+    if (static_cast<const dynamics::Frame*>(world.getSimpleFrame(i).get())
+        == key)
+      return true;
+  }
+  const auto* solver = world.getConstraintSolver();
+  for (const auto& skeleton : solver->getSkeletons()) {
+    if (skeleton.get() == key)
+      return true;
+  }
+  const auto group = solver->getCollisionGroup();
+  for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
+    if (static_cast<const dynamics::Frame*>(group->getShapeFrame(i)) == key)
+      return true;
+  }
+  bool owned = false;
+  collision::detail::CollisionGroupOwnershipAccessor::forEachSource(
+      *group, [&](const auto& weakSource) {
+        const auto source = weakSource.lock();
+        if (!source || owned)
+          return;
+        owned = source.get() == key;
+        for (std::size_t i = 0u; !owned && i < source->getNumBodyNodes(); ++i)
+          owned = source->getBodyNode(i)->getSkeleton().get() == key;
+      });
+  collision::detail::CollisionGroupOwnershipAccessor::forEachBodySource(
+      *group, [&](const auto& weakSource) {
+        if (const auto body = weakSource.lock())
+          owned = owned || body->getSkeleton().get() == key;
+      });
+  return owned;
+}
+
+bool steppingWorldOwnsSolverObject(
+    const WorldDeactivationState& state, const void* key)
+{
+  const auto* solver = state.mWorld->getConstraintSolver();
+  if (solver == key || solver->getCollisionDetector().get() == key
+      || solver->getCollisionGroup().get() == key)
+    return true;
+  if (const auto* boxed
+      = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(solver)) {
+    if (boxed->getBoxedLcpSolver().get() == key
+        || boxed->getSecondaryBoxedLcpSolver().get() == key)
+      return true;
+  }
+  for (std::size_t i = 0u; i < solver->getNumConstraints(); ++i) {
+    if (solver->getConstraint(i).get() == key)
+      return true;
+  }
+  std::size_t depth = 0u;
+  for (auto handler = solver->getLastContactSurfaceHandler();
+       handler && depth < 64u;
+       handler = handler->getParent(), ++depth) {
+    if (handler.get() == key)
+      return true;
+  }
+  return false;
+}
+
+// Rejection by the lazy Worlds stepping on this thread. Indexed ones answer
+// through the registry instead.
+template <class Owns, class Keys>
+Rejection lazyStepRejection(Owns owns, const Keys& keys)
+{
+  for (const auto* state = tlsSteppingWorld; state;
+       state = state->mOuterSteppingWorld) {
+    if (state->mIndexed)
+      continue;
+    bool owned = false;
+    keys.each([&](const void* key) { owned = owned || owns(*state, key); });
+    if (owned)
+      return Rejection::Busy;
+  }
+  return Rejection::None;
+}
+
+struct SingleKey
+{
+  const void* mKey;
+  template <class Visit>
+  void each(Visit visit) const
+  {
+    visit(mKey);
+  }
+};
+
+Rejection lazyStepRejection(const ModelKeys& keys)
+{
+  return lazyStepRejection(steppingWorldOwnsModel, keys);
+}
+
+Rejection lazyStepRejection(const void* solverObject)
+{
+  return lazyStepRejection(
+      steppingWorldOwnsSolverObject, SingleKey{solverObject});
 }
 
 // Records the first rejection among visited owners.
@@ -1934,7 +2149,11 @@ void World::compile()
     throw std::runtime_error("WorldBusyError: compile during step");
   if (state.mEditDepth)
     throw std::runtime_error("Cannot compile inside a World::edit() scope");
-  state.mPendingRecompileError = nullptr;
+  if (state.mPendingRecompileError) {
+    // Report the failed scope-exit recompile once; the next call compiles.
+    const auto error = std::exchange(state.mPendingRecompileError, nullptr);
+    std::rethrow_exception(error);
+  }
   validateCompiledModel();
   const auto group = mConstraintSolver->getCollisionGroup();
   group->update();
@@ -1950,11 +2169,25 @@ void World::compile()
     contactHandlers.push_back(handler.get());
   }
 
-  // A strict World cannot freeze a model whose lazy owner can still edit it.
+  // The first compile joins the registry; a failed one leaves it again.
+  const bool wasIndexed = state.mIndexed;
+  reindexWorld(state);
+  struct IndexRollback
+  {
+    WorldDeactivationState& mState;
+    bool mArmed;
+    ~IndexRollback()
+    {
+      if (mArmed)
+        unindexWorld(mState);
+    }
+  } rollback{state, !wasIndexed};
+
+  // A strict World cannot freeze a model another indexed World still edits.
   {
     Rejection reason = Rejection::None;
     {
-      const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+      const auto lock = lockRegistry();
       const auto& owners = modelOwners().mOwners;
       for (const auto& entry : state.mModelKeys) {
         const auto it = owners.find(entry.first);
@@ -2090,6 +2323,7 @@ void World::compile()
   state.mTopologyDirty = false;
   state.mCompiledTopologyRevision = state.mTopologyRevision;
   state.mCompiled = true;
+  rollback.mArmed = false;
 }
 
 //==============================================================================
@@ -2324,24 +2558,12 @@ World::World(const WorldConfig& config)
   // default detector (FCL with PRIMITIVE shapes) is preserved unchanged.
   if (auto detector = resolveCollisionDetector(config))
     setCollisionDetector(detector);
-
-  const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
-  modelOwners().mWorlds.push_back(mDeactivationState.get());
 }
 
 //==============================================================================
 World::~World()
 {
-  {
-    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
-    unregisterWorld(*mDeactivationState);
-    modelOwners().mWorlds.erase(
-        std::remove(
-            modelOwners().mWorlds.begin(),
-            modelOwners().mWorlds.end(),
-            mDeactivationState.get()),
-        modelOwners().mWorlds.end());
-  }
+  unindexWorld(*mDeactivationState);
   delete mRecording;
 
   for (common::Connection& connection : mNameConnectionsForSkeletons)
@@ -2553,6 +2775,27 @@ void World::step(bool _resetCommand)
       flag.store(false, std::memory_order_release);
     }
   } release{state.mStepping};
+  // Marks this World as stepping on this thread while user callbacks can run
+  // (handlers, filters, detectors). The all-resting fast path runs none and
+  // stays free of the thread-local access.
+  struct SameThreadMarker
+  {
+    WorldDeactivationState& mState;
+    WorldDeactivationState*& mSlot;
+    explicit SameThreadMarker(WorldDeactivationState& state)
+      : mState(state), mSlot(tlsSteppingWorld)
+    {
+      mState.mOuterSteppingWorld = mSlot;
+      mSlot = &mState;
+      gGuardedWorlds.fetch_add(1u, std::memory_order_relaxed);
+    }
+    ~SameThreadMarker()
+    {
+      gGuardedWorlds.fetch_sub(1u, std::memory_order_relaxed);
+      mSlot = mState.mOuterSteppingWorld;
+      mState.mOuterSteppingWorld = nullptr;
+    }
+  };
   if (state.mEditDepth)
     throw std::runtime_error("Cannot step inside a World::edit() scope");
   if (state.mPendingRecompileError)
@@ -2562,8 +2805,10 @@ void World::step(bool _resetCommand)
   context.resetCommand = _resetCommand;
   beginStep(context);
   if (!context.deactivationEnabled) {
+    const SameThreadMarker marker(state);
     stepWithoutDeactivation(context);
   } else if (!tryAllRestingFastPath(context)) {
+    const SameThreadMarker marker(state);
     advanceVelocities(context);
     solveConstraints(context);
     advancePositions(context);
@@ -4282,11 +4527,13 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   checkModelMutation(*mDeactivationState);
   common::detail::checkTopologyMutation(_skeleton.get());
-  {
+  if (!mDeactivationState->mIndexed) {
+    mSkeletons.push_back(_skeleton);
+  } else {
     auto& state = *mDeactivationState;
     Rejection reason = Rejection::None;
     {
-      const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+      const auto lock = lockRegistry();
       if (state.mCompiled || state.mEditDepth) {
         const auto& owners = modelOwners().mOwners;
         const auto it = owners.find(_skeleton.get());
@@ -4366,8 +4613,12 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   wakeRestingSkeletonsForWorldChange();
 
   // Remove _skeleton from mSkeletons
-  {
-    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+  if (!mDeactivationState->mIndexed) {
+    mSkeletons.erase(
+        remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+        mSkeletons.end());
+  } else {
+    const auto lock = lockRegistry();
     mSkeletons.erase(
         remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
         mSkeletons.end());
@@ -4484,10 +4735,12 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 
   checkModelMutation(*mDeactivationState);
   common::detail::checkTopologyMutation(_frame.get());
-  {
+  if (!mDeactivationState->mIndexed) {
+    mSimpleFrames.push_back(_frame);
+  } else {
     ModelKeys keys;
     collectFrameKeys(_frame.get(), keys, true);
-    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+    const auto lock = lockRegistry();
     mSimpleFrames.push_back(_frame);
     registerChain(
         mDeactivationState->mSimpleFrameChains,
@@ -4531,8 +4784,10 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 
   // Remove the frame
   checkModelMutation(*mDeactivationState);
-  {
-    const std::lock_guard<std::mutex> lock(modelOwners().mMutex);
+  if (!mDeactivationState->mIndexed) {
+    mSimpleFrames.erase(mSimpleFrames.begin() + index);
+  } else {
+    const auto lock = lockRegistry();
     mSimpleFrames.erase(mSimpleFrames.begin() + index);
     unregisterChain(
         mDeactivationState->mSimpleFrameChains,
@@ -4742,7 +4997,8 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
   solver->setTimeStep(mTimeStep);
   solver->setNumSimulationThreads(mNumSimulationThreads);
   mConstraintSolver = std::move(solver);
-  rebuildSolverIndex(*mDeactivationState);
+  if (mDeactivationState->mIndexed)
+    reindexWorld(*mDeactivationState);
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
@@ -4930,47 +5186,117 @@ namespace detail {
 namespace {
 
 template <class Object>
-void checkTopology(const Object* object)
+DART_REGISTRY_NOINLINE void checkTopologySlow(const Object* object)
 {
   simulation::ModelKeys keys;
   simulation::collectModelKeys(object, keys);
   if (keys.empty())
     return;
+  simulation::throwRejection(simulation::lazyStepRejection(keys));
+  if (simulation::noIndexedWorlds())
+    return;
   simulation::RejectionCollector rejection;
   {
-    const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+    const auto lock = simulation::lockRegistry();
     simulation::forEachOwner(keys, std::ref(rejection));
   }
   simulation::throwRejection(rejection.mReason);
 }
 
 template <class Object>
-void notifyTopology(const Object* object)
+DART_REGISTRY_NOINLINE void notifyTopologySlow(const Object* object)
 {
   simulation::ModelKeys keys;
   simulation::collectModelKeys(object, keys);
   if (keys.empty())
     return;
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
     simulation::notifyModelTopology(owner);
   });
 }
 
 template <class Object>
-void notifyParameter(const Object* object)
+DART_REGISTRY_NOINLINE void notifyParameterSlow(const Object* object)
 {
   simulation::ModelKeys keys;
   simulation::collectModelKeys(object, keys);
   if (keys.empty())
     return;
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
     owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
   });
 }
 
+// Requires the registry mutex.
+void stampParameter(simulation::WorldDeactivationState& owner)
+{
+  owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
+}
+
+template <class Object>
+inline void checkTopology(const Object* object)
+{
+  if (!simulation::noGuardedWorlds())
+    checkTopologySlow(object);
+}
+
+template <class Object>
+inline void notifyTopology(const Object* object)
+{
+  if (!simulation::noIndexedWorlds())
+    notifyTopologySlow(object);
+}
+
+template <class Object>
+inline void notifyParameter(const Object* object)
+{
+  if (!simulation::noIndexedWorlds())
+    notifyParameterSlow(object);
+}
+
+DART_REGISTRY_NOINLINE void checkFrameTopologySlow(const dynamics::Frame* frame)
+{
+  simulation::ModelKeys keys;
+  simulation::collectFrameKeys(frame, keys, false);
+  simulation::throwRejection(simulation::lazyStepRejection(keys));
+  if (simulation::noIndexedWorlds())
+    return;
+  simulation::RejectionCollector rejection;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(keys, std::ref(rejection));
+  }
+  simulation::throwRejection(rejection.mReason);
+}
+
+DART_REGISTRY_NOINLINE void notifyFrameTopologySlow(
+    const dynamics::Frame* frame)
+{
+  // ShapeFrame's Subject observer runs after its virtual Frame base. During
+  // that teardown, its group entry must not be converted through old bases.
+  if (frame->isShapeFrame() && !dynamic_cast<const Composite*>(frame))
+    return;
+  simulation::ModelKeys keys;
+  simulation::collectFrameKeys(frame, keys, false);
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
+    simulation::notifyModelTopology(owner);
+  });
+}
+
 } // namespace
+
+bool hasTrackedModels()
+{
+  return !simulation::noIndexedWorlds();
+}
+
+bool hasGuardedModels()
+{
+  return !simulation::noGuardedWorlds();
+}
 
 void checkTopologyMutation(const Composite* object)
 {
@@ -5049,45 +5375,30 @@ void notifyParameterMutation(const dynamics::Joint* object)
 
 void checkFrameTopologyMutation(const dynamics::Frame* frame)
 {
-  if (!frame || frame->isWorld())
+  if (simulation::noGuardedWorlds() || !frame || frame->isWorld())
     return;
-  simulation::ModelKeys keys;
-  simulation::collectFrameKeys(frame, keys, false);
-  simulation::RejectionCollector rejection;
-  {
-    const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-    simulation::forEachOwner(keys, std::ref(rejection));
-  }
-  simulation::throwRejection(rejection.mReason);
+  checkFrameTopologySlow(frame);
 }
 
 void notifyFrameTopologyMutation(const dynamics::Frame* frame)
 {
-  if (!frame || frame->isWorld())
+  if (simulation::noIndexedWorlds() || !frame || frame->isWorld())
     return;
-  // ShapeFrame's Subject observer runs after its virtual Frame base. During
-  // that teardown, its group entry must not be converted through old bases.
-  if (frame->isShapeFrame() && !dynamic_cast<const Composite*>(frame))
-    return;
-  simulation::ModelKeys keys;
-  simulation::collectFrameKeys(frame, keys, false);
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
-    simulation::notifyModelTopology(owner);
-  });
+  notifyFrameTopologySlow(frame);
 }
 
 void notifyFrameParentChanged(const dynamics::Frame* frame)
 {
-  if (!frame || frame->isWorld())
+  if (simulation::noIndexedWorlds() || !frame || frame->isWorld())
     return;
   simulation::rechainMembersUnder(frame);
 }
 
 void notifyModelDestruction(const dynamics::Skeleton* skeleton)
 {
-  if (skeleton)
-    simulation::purgeModelKey(skeleton);
+  if (simulation::noIndexedWorlds() || !skeleton)
+    return;
+  simulation::purgeModelKey(skeleton);
 }
 
 } // namespace detail
@@ -5097,7 +5408,9 @@ namespace detail {
 
 void notifyWorldGroupMutation(const CollisionGroup* group)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [](simulation::WorldDeactivationState& owner) {
         if (owner.mCompiled.load(std::memory_order_relaxed)
@@ -5110,11 +5423,11 @@ void notifyWorldGroupMutation(const CollisionGroup* group)
 void notifyWorldGroupShapeFrameAdded(
     const CollisionGroup* group, const dynamics::ShapeFrame* frame)
 {
-  if (!frame)
+  if (simulation::noIndexedWorlds() || !frame)
     return;
   simulation::ModelKeys keys;
   simulation::collectFrameKeys(frame, keys, true);
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         simulation::registerChain(owner.mGroupFrameChains, owner, frame, keys);
@@ -5124,7 +5437,9 @@ void notifyWorldGroupShapeFrameAdded(
 void notifyWorldGroupShapeFrameRemoved(
     const CollisionGroup* group, const dynamics::ShapeFrame* frame)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         simulation::unregisterChain(owner.mGroupFrameChains, owner, frame);
@@ -5134,8 +5449,10 @@ void notifyWorldGroupShapeFrameRemoved(
 void notifyWorldGroupSubscribed(
     const CollisionGroup* group, const dynamics::MetaSkeleton* source)
 {
+  if (simulation::noIndexedWorlds())
+    return;
   const auto entries = simulation::sourceEntries(source);
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         simulation::registerSource(owner, source, entries);
@@ -5145,11 +5462,11 @@ void notifyWorldGroupSubscribed(
 void notifyWorldGroupSubscribed(
     const CollisionGroup* group, const dynamics::BodyNode* source)
 {
-  if (!source)
+  if (simulation::noIndexedWorlds() || !source)
     return;
   const std::vector<std::pair<const void*, const void*>> entries{
       {source, source->getSkeleton().get()}};
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         simulation::registerSource(owner, source, entries);
@@ -5159,7 +5476,9 @@ void notifyWorldGroupSubscribed(
 void notifyWorldGroupUnsubscribed(
     const CollisionGroup* group, const void* source)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         simulation::unregisterSource(owner, source);
@@ -5171,10 +5490,10 @@ void notifyWorldGroupSourceBodyAdded(
     const void* source,
     const dynamics::BodyNode* body)
 {
-  if (!body)
+  if (simulation::noIndexedWorlds() || !body)
     return;
   const void* skeleton = body->getSkeleton().get();
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         const auto it = owner.mGroupSourceChains.find(source);
@@ -5188,7 +5507,9 @@ void notifyWorldGroupSourceBodyAdded(
 void notifyWorldGroupSourceBodyRemoved(
     const CollisionGroup* group, const void* source, const void* body)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [&](simulation::WorldDeactivationState& owner) {
         const auto it = owner.mGroupSourceChains.find(source);
@@ -5208,7 +5529,9 @@ void notifyWorldGroupSourceBodyRemoved(
 
 void notifyWorldGroupCleared(const CollisionGroup* group)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       group, [](simulation::WorldDeactivationState& owner) {
         simulation::unregisterAllChains(owner.mGroupFrameChains, owner);
@@ -5218,9 +5541,14 @@ void notifyWorldGroupCleared(const CollisionGroup* group)
 
 void checkWorldDetectorTopologyMutation(const CollisionDetector* detector)
 {
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(detector));
+  if (simulation::noIndexedWorlds())
+    return;
   simulation::RejectionCollector rejection;
   {
-    const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+    const auto lock = simulation::lockRegistry();
     simulation::forEachOwner(detector, std::ref(rejection));
   }
   simulation::throwRejection(rejection.mReason);
@@ -5228,7 +5556,9 @@ void checkWorldDetectorTopologyMutation(const CollisionDetector* detector)
 
 void notifyWorldDetectorTopologyMutation(const CollisionDetector* detector)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       detector, [](simulation::WorldDeactivationState& owner) {
         simulation::notifyModelTopology(owner);
@@ -5237,11 +5567,10 @@ void notifyWorldDetectorTopologyMutation(const CollisionDetector* detector)
 
 void notifyWorldDetectorParameterMutation(const CollisionDetector* detector)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  simulation::forEachOwner(
-      detector, [](simulation::WorldDeactivationState& owner) {
-        owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
-      });
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(detector, common::detail::stampParameter);
 }
 
 } // namespace detail
@@ -5251,7 +5580,9 @@ namespace detail {
 
 void notifyWorldCollisionGroupReplaced(const ConstraintSolver* solver)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       solver, [](simulation::WorldDeactivationState& owner) {
         simulation::unregisterAllChains(owner.mGroupFrameChains, owner);
@@ -5263,9 +5594,9 @@ void notifyWorldCollisionGroupReplaced(const ConstraintSolver* solver)
 void notifyWorldSolverSkeletonAdded(
     const ConstraintSolver* solver, const dynamics::Skeleton* skeleton)
 {
-  if (!skeleton)
+  if (simulation::noIndexedWorlds() || !skeleton)
     return;
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       solver, [&](simulation::WorldDeactivationState& owner) {
         owner.mSolverSkeletonKeys.push_back(skeleton);
@@ -5276,7 +5607,9 @@ void notifyWorldSolverSkeletonAdded(
 void notifyWorldSolverSkeletonRemoved(
     const ConstraintSolver* solver, const dynamics::Skeleton* skeleton)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       solver, [&](simulation::WorldDeactivationState& owner) {
         auto& keys = owner.mSolverSkeletonKeys;
@@ -5290,9 +5623,14 @@ void notifyWorldSolverSkeletonRemoved(
 
 void checkWorldTopologyMutation(const ConstraintSolver* solver)
 {
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(solver));
+  if (simulation::noIndexedWorlds())
+    return;
   simulation::RejectionCollector rejection;
   {
-    const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+    const auto lock = simulation::lockRegistry();
     simulation::forEachOwner(solver, std::ref(rejection));
   }
   simulation::throwRejection(rejection.mReason);
@@ -5300,7 +5638,9 @@ void checkWorldTopologyMutation(const ConstraintSolver* solver)
 
 void notifyWorldTopologyMutation(const ConstraintSolver* solver)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       solver, [](simulation::WorldDeactivationState& owner) {
         simulation::refreshSolverKeys(owner);
@@ -5310,43 +5650,47 @@ void notifyWorldTopologyMutation(const ConstraintSolver* solver)
 
 void notifyWorldParameterMutation(const ConstraintSolver* solver)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  simulation::forEachOwner(
-      solver, [](simulation::WorldDeactivationState& owner) {
-        owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
-      });
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(solver, common::detail::stampParameter);
 }
 
 void notifyBoxedSolverParameterMutation(const BoxedLcpSolver* solver)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  simulation::forEachOwner(
-      solver, [](simulation::WorldDeactivationState& owner) {
-        owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
-      });
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(solver, common::detail::stampParameter);
 }
 
 void notifyConstraintParameterMutation(const ConstraintBase* constraint)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
-  simulation::forEachOwner(
-      constraint, [](simulation::WorldDeactivationState& owner) {
-        owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
-      });
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(constraint, common::detail::stampParameter);
 }
 
 void notifyGlobalConstraintParameterMutation()
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
   for (auto* owner : simulation::modelOwners().mWorlds)
     owner->mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
 }
 
 void checkContactSurfaceMutation(const ContactSurfaceHandler* handler)
 {
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(handler));
+  if (simulation::noIndexedWorlds())
+    return;
   simulation::RejectionCollector rejection;
   {
-    const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+    const auto lock = simulation::lockRegistry();
     simulation::forEachOwner(handler, std::ref(rejection));
   }
   simulation::throwRejection(rejection.mReason);
@@ -5354,14 +5698,57 @@ void checkContactSurfaceMutation(const ContactSurfaceHandler* handler)
 
 void notifyContactSurfaceMutation(const ContactSurfaceHandler* handler)
 {
-  const std::lock_guard<std::mutex> lock(simulation::modelOwners().mMutex);
+  if (simulation::noIndexedWorlds())
+    return;
+  // The handler's new chain comes from the caller's own object before locking.
+  // Owners splice it below the changed handler; none of their solvers is read.
+  std::vector<const void*> parents;
+  for (auto parent = const_cast<ContactSurfaceHandler*>(handler)->getParent();
+       parent;
+       parent = parent->getParent()) {
+    if (parent.get() == handler
+        || std::find(parents.begin(), parents.end(), parent.get())
+               != parents.end())
+      break;
+    parents.push_back(parent.get());
+  }
+  const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
-      handler, [](simulation::WorldDeactivationState& owner) {
-        simulation::refreshSolverKeys(owner);
+      handler, [&](simulation::WorldDeactivationState& owner) {
+        auto& keys = owner.mHandlerKeys;
+        const auto it = std::find(keys.begin(), keys.end(), handler);
+        if (it == keys.end())
+          return;
+        std::vector<const void*> chain(keys.begin(), std::next(it));
+        for (const void* parent : parents) {
+          if (std::find(chain.begin(), chain.end(), parent) == chain.end())
+            chain.push_back(parent);
+        }
+        for (const void* key : keys)
+          simulation::removeOwner(owner.mModelKeys, owner, key);
+        for (const void* key : chain)
+          simulation::addOwner(owner.mModelKeys, owner, key);
+        keys = std::move(chain);
         simulation::notifyModelTopology(owner);
       });
 }
 
 } // namespace detail
 } // namespace constraint
+
+namespace simulation {
+namespace detail {
+
+std::size_t getIndexedWorldCount()
+{
+  return gIndexedWorlds.load(std::memory_order_relaxed);
+}
+
+std::size_t getRegistryLockCount()
+{
+  return gRegistryLocks.load(std::memory_order_relaxed);
+}
+
+} // namespace detail
+} // namespace simulation
 } // namespace dart

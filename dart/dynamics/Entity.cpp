@@ -288,6 +288,10 @@ void Detachable::setParentFrame(Frame* _newParentFrame)
 {
   if (_newParentFrame == getParentFrame())
     return;
+  if (!common::detail::hasGuardedModels()) {
+    changeParentFrame(_newParentFrame);
+    return;
+  }
   auto* composite = dynamic_cast<common::Composite*>(this);
   auto* frame = dynamic_cast<Frame*>(this);
   if (frame)

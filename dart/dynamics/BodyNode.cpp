@@ -325,6 +325,8 @@ BodyNode::AllNodeStates BodyNode::getAllNodeStates() const
 void BodyNode::setAllNodeProperties(const AllNodeProperties& properties)
 {
   for (const auto& [type, data] : properties.getMap()) {
+    if (!common::detail::hasGuardedModels())
+      break;
     const auto nodes = mNodeMap.find(type);
     if (nodes == mNodeMap.end() || !data)
       continue;
@@ -507,7 +509,7 @@ const std::string& BodyNode::setName(const std::string& _name)
     mAspectProperties.mName = _name;
   }
 
-  ++mVersion;
+  incrementVersion();
   Entity::mNameChangedSignal.raise(this, oldName, mAspectProperties.mName);
 
   // Return the final name (which might have been altered by the Skeleton's
@@ -532,10 +534,11 @@ void BodyNode::setGravityMode(bool _gravityMode)
   SKEL_SET_FLAGS(mGravityForces);
   SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 
-  ++mVersion;
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
   // Gravity acts on resting bodies too, so they must wake.
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 }
@@ -682,11 +685,12 @@ void BodyNode::setMass(const double mass)
   const SkeletonPtr& skel = getSkeleton();
   if (skel) {
     skel->updateTotalMass();
-    skel->incrementParameterVersion();
     skel->incrementDeactivationStateVersion();
   }
 
-  ++mVersion;
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -711,11 +715,12 @@ void BodyNode::setMomentOfInertia(
 
   dirtyArticulatedInertia();
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 
-  ++mVersion;
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -756,11 +761,12 @@ void BodyNode::setInertia(const Inertia& inertia)
   const SkeletonPtr& skel = getSkeleton();
   if (skel) {
     skel->updateTotalMass();
-    skel->incrementParameterVersion();
     skel->incrementDeactivationStateVersion();
   }
 
-  ++mVersion;
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -802,11 +808,12 @@ void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 
   dirtyArticulatedInertia();
   if (auto* skeleton = getSkeletonRawPtr()) {
-    skeleton->incrementParameterVersion();
     skeleton->incrementDeactivationStateVersion();
   }
 
-  ++mVersion;
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -879,9 +886,9 @@ void BodyNode::setFrictionCoeff(double coeff)
       0.0 <= coeff && "Coefficient of friction should be non-negative value.");
   mAspectProperties.mFrictionCoeff = coeff;
 
-  ++mVersion;
-  if (auto* skeleton = getSkeletonRawPtr())
-    skeleton->incrementParameterVersion();
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -909,9 +916,9 @@ void BodyNode::setRestitutionCoeff(double coeff)
       && "Coefficient of restitution should be in range of [0, 1].");
   mAspectProperties.mRestitutionCoeff = coeff;
 
-  ++mVersion;
-  if (auto* skeleton = getSkeletonRawPtr())
-    skeleton->incrementParameterVersion();
+  incrementVersion();
+
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================

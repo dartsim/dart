@@ -1185,6 +1185,9 @@ void ConstraintSolver::setCollisionDetector(
       collisionDetector.get());
   if (incoming && incoming->getNumCollisionThreads() != mNumSimulationThreads)
     collision::detail::checkWorldDetectorTopologyMutation(incoming);
+  // The group factory is virtual and may throw: create the group before any
+  // state changes so a failure leaves detector, group and World index intact.
+  auto group = collisionDetector->createCollisionGroupAsSharedPtr();
   if (auto* cache = detail::findContactWarmStartCache(this))
     cache->clear();
   // Publish both the pointer and its owner before releasing the old detector:
@@ -1192,7 +1195,7 @@ void ConstraintSolver::setCollisionDetector(
   collision::CollisionDetectorPtr(collisionDetector).swap(mCollisionDetector);
   configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
 
-  mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
+  mCollisionGroup = std::move(group);
   detail::notifyWorldCollisionGroupReplaced(this);
 
   for (const auto& skeleton : mSkeletons)

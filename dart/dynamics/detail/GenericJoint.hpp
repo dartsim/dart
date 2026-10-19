@@ -76,7 +76,7 @@
   if (value == Base::mAspectProperties.mField)                                 \
     return;                                                                    \
   Base::mAspectProperties.mField = value;                                      \
-  ++Joint::mVersion;
+  Joint::incrementVersion();
 
 #define GenericJoint_SET_PARAMETER_IF_DIFFERENT(mField, value)                 \
   if (value == Base::mAspectProperties.mField)                                 \

@@ -59,22 +59,6 @@ std::size_t VersionCounter::incrementVersion()
 }
 
 //==============================================================================
-std::size_t VersionCounter::incrementParameterVersion()
-{
-  ++mVersion;
-  if (mDependent)
-    mDependent->incrementParameterVersion();
-
-  return mVersion;
-}
-
-//==============================================================================
-std::size_t VersionCounter::incrementLocalVersion()
-{
-  return ++mVersion;
-}
-
-//==============================================================================
 std::size_t VersionCounter::getVersion() const
 {
   return mVersion;

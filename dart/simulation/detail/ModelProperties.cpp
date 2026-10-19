@@ -47,29 +47,27 @@ namespace detail {
 //==============================================================================
 std::size_t incrementAspectVersion(VersionCounter* object, const Aspect* aspect)
 {
-  if (auto* shape = dynamic_cast<dynamics::ShapeFrame*>(object)) {
-    if (dynamic_cast<const dynamics::VisualAspect*>(aspect))
-      return object->incrementLocalVersion();
+  // DART 6.20 version propagation; only compiled Worlds classify the aspect.
+  const std::size_t version = object->incrementVersion();
+  if (!hasTrackedModels())
+    return version;
 
+  if (auto* shape = dynamic_cast<dynamics::ShapeFrame*>(object)) {
     if (dynamic_cast<const dynamics::CollisionAspect*>(aspect)
         || dynamic_cast<const dynamics::DynamicsAspect*>(aspect)) {
-      const std::size_t version = object->incrementParameterVersion();
       notifyParameterMutation(shape);
-      if (auto* node = shape->asShapeNode()) {
-        if (const auto skeleton = node->getSkeleton())
-          skeleton->incrementDeactivationStateVersion();
-      }
-      return version;
     }
   }
-
-  return object->incrementVersion();
+  return version;
 }
 
 //==============================================================================
 void checkTopologyProperties(
     const Composite* object, const Composite::Properties& properties)
 {
+  if (!hasGuardedModels())
+    return;
+
   if (const auto* shape = dynamic_cast<const dynamics::ShapeFrame*>(object)) {
     if (object->has<dynamics::ShapeFrame::Aspect>()) {
       if (const auto* incoming = properties.get<dynamics::ShapeFrame>()) {

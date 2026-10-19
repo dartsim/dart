@@ -127,7 +127,7 @@ void SimpleFrame::copy(
     common::detail::checkTopologyMutation(
         dynamic_cast<const common::Composite*>(_refFrame));
   }
-  if (_copyProperties) {
+  if (_copyProperties && common::detail::hasGuardedModels()) {
     if (const auto* shapeFrame = dynamic_cast<const ShapeFrame*>(_otherFrame))
       common::detail::checkTopologyProperties(
           this, shapeFrame->getCompositeProperties());

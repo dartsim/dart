@@ -48,12 +48,6 @@ public:
   /// Increment the version for this object
   virtual std::size_t incrementVersion();
 
-  /// Increment this object and its dependents without structural overrides.
-  std::size_t incrementParameterVersion();
-
-  /// Increment only this object's version.
-  std::size_t incrementLocalVersion();
-
   /// Get the version number of this object
   virtual std::size_t getVersion() const;
 

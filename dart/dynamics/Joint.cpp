@@ -822,7 +822,7 @@ void Joint::setLimitEnforcement(bool enforced)
     return;
 
   mAspectProperties.mIsPositionLimitEnforced = enforced;
-  incrementParameterVersion();
+  common::detail::notifyParameterMutation(this);
   notifyAutomaticConstraintPropertiesUpdated();
 }
 
@@ -935,7 +935,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
     return;
   }
   mAspectProperties.mT_ParentBodyToJoint = _T;
-  incrementParameterVersion();
+  common::detail::notifyParameterMutation(this);
   notifyPositionUpdated();
 }
 
@@ -950,7 +950,7 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
     return;
   }
   mAspectProperties.mT_ChildBodyToJoint = _T;
-  incrementParameterVersion();
+  common::detail::notifyParameterMutation(this);
   updateRelativeJacobian();
   notifyPositionUpdated();
 }
@@ -1163,9 +1163,8 @@ void Joint::notifyAutomaticConstraintPropertiesUpdated()
 //==============================================================================
 void Joint::incrementParameterVersion()
 {
-  ++mVersion;
-  if (const auto skeleton = getSkeleton())
-    skeleton->incrementParameterVersion();
+  incrementVersion();
+  common::detail::notifyParameterMutation(this);
 }
 
 } // namespace dynamics

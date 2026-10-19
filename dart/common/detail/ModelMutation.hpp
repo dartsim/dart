@@ -76,6 +76,10 @@ void notifyFrameParentChanged(const dynamics::Frame* frame);
 void notifyModelDestruction(const dynamics::Skeleton* skeleton);
 std::size_t incrementAspectVersion(
     VersionCounter* object, const Aspect* aspect);
+// Whether any World tracks model ownership (compiled at least once).
+bool hasTrackedModels();
+// Whether mutation guards can apply: a tracked World exists or one is stepping.
+bool hasGuardedModels();
 bool isVisualShapeVersionUpdate(const dynamics::Shape* shape);
 
 } // namespace detail
