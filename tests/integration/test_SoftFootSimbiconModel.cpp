@@ -565,7 +565,7 @@ TEST(SoftFootSimbiconModelTest, SoftMaintainsAtLeastRigidFootContacts)
 // not monotone in the magnitude. The soft arm's 18000 N was a single recovery
 // above falls from 6000 to 16000 N (#3431), and it disappears when Eigen 5
 // sums one dot product of the contact solve in a different order, a 2-ULP
-// change (#3692).
+// change (#3834).
 //
 // The sweep still has to bracket both arms: each recovers from its smallest
 // push and falls from its largest.
