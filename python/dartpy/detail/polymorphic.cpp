@@ -8,9 +8,11 @@
 #include <dart/dynamics/DegreeOfFreedom.hpp>
 #include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/PointMass.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/common/Subject.hpp>
+#include <dart/common/sub_ptr.hpp>
 
 #include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/vector.h>
@@ -31,11 +33,17 @@ struct Descendant
   Key type;
   Path path;
 };
+struct PointMassGuard
+{
+  PyObject* wrapper;
+  dart::common::sub_ptr<dart::dynamics::PointMass> point;
+};
 struct Identity
 {
   Key exact;
   void* complete;
   nb::weakref reference;
+  std::unique_ptr<PointMassGuard> point_mass;
 };
 struct Owner
 {
@@ -47,6 +55,7 @@ struct Registry
   std::unordered_map<Key, Entry> entries;
   std::unordered_map<void*, Owner> owners;
   std::unordered_map<void*, std::unordered_map<Key, Identity*>> identities;
+  std::unordered_map<PyObject*, Identity*> point_masses;
   std::unordered_map<Key, std::unordered_map<Key, Path>> paths;
   std::unordered_map<Key, std::vector<Descendant>> descendants;
 };
@@ -183,10 +192,21 @@ void remember_wrapper(Key exact, void* complete, nb::handle wrapper)
 {
   // The payload owns the weakref; the static registry owns no Python
   // references.
-  auto* identity = new Identity{exact, complete, nb::weakref(wrapper)};
+  auto* identity = new Identity{exact, complete, nb::weakref(wrapper), nullptr};
+  if (exact == typeid(dart::dynamics::PointMass)) {
+    identity->point_mass = std::make_unique<PointMassGuard>(PointMassGuard{
+        wrapper.ptr(), nb::inst_ptr<dart::dynamics::PointMass>(wrapper)});
+    registry().point_masses[wrapper.ptr()] = identity;
+  }
   registry().identities[complete][exact] = identity;
   nb::keep_alive_cb(wrapper, identity, [](void* p) noexcept {
     auto* entry = static_cast<Identity*>(p);
+    if (entry->point_mass) {
+      auto& points = registry().point_masses;
+      auto found = points.find(entry->point_mass->wrapper);
+      if (found != points.end() && found->second == entry)
+        points.erase(found);
+    }
     auto& identities = registry().identities;
     auto object = identities.find(entry->complete);
     if (object != identities.end()) {
@@ -198,6 +218,13 @@ void remember_wrapper(Key exact, void* complete, nb::handle wrapper)
     }
     delete entry;
   });
+}
+
+bool point_mass_alive(nb::handle wrapper) noexcept
+{
+  auto& points = registry().point_masses;
+  auto found = points.find(wrapper.ptr());
+  return found != points.end() && found->second->point_mass->point.get();
 }
 
 void register_type(Key key, Entry entry)
@@ -286,7 +313,9 @@ nb::handle wrap(
   auto object = data.identities.find(complete);
   if (object != data.identities.end()) {
     auto type = object->second.find(selected->first);
-    if (type != object->second.end())
+    // Reused native addresses must not revive a deleted PointMass wrapper.
+    if (type != object->second.end()
+        && (!type->second->point_mass || type->second->point_mass->point.get()))
       existing = type->second->reference();
   }
   // Existing identity retains its original ownership, as in both libraries.

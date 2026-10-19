@@ -205,8 +205,8 @@ msgid "Plug-and-play hierarchical whole-body inverse kinematics solver."
 msgstr "플러그 앤 플레이 형태의 계층적 전신 역운동학 솔버를 제공합니다."
 
 #: ../../overview.rst:52 22860d3b9fce478aafb2d21902ce91dc
-msgid "Analytic inverse kinematics interface with ikfast support."
-msgstr "ikfast 지원을 갖춘 해석학적 역운동학 인터페이스를 제공합니다."
+msgid "Analytic inverse kinematics interface with custom solver support."
+msgstr "사용자 정의 솔버를 지원하는 해석학적 역운동학 인터페이스를 제공합니다."
 
 #: ../../overview.rst:55 e46d99fbbdce41adb18f1123cb60fdf6
 msgid "Dynamics"

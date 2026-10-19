@@ -1,10 +1,11 @@
-"""Native point-cloud sampling and voxel occupancy on a moving KR5 robot."""
+"""Point-cloud sampling and voxel occupancy on a moving KR5 robot."""
 
 from __future__ import annotations
 
 import dartpy as dart
 import numpy as np
 
+from ..models.point_cloud import PointCloudSensor
 from .common import add_grid_editor
 
 
@@ -50,7 +51,7 @@ def build() -> dart.viewer.SceneSetup:
     sensor_frame.setShape(dart.dynamics.SphereShape(0.05))
     sensor_frame.createVisualAspect().setRGB([0.9, 0.1, 0.1])
     world.addSimpleFrame(sensor_frame)
-    sensor = dart._demos.PointCloudSensor(robot, sensor_frame, point_cloud, voxel_grid)
+    sensor = PointCloudSensor(robot, sensor_frame, point_cloud, voxel_grid)
     grid = dart.gui.GridVisual()
 
     panel = dart.viewer.Panel()

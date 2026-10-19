@@ -37,13 +37,17 @@
 namespace dart::collision {
 
 class DARTCollisionDetector;
+class CollisionGroup;
 
 namespace detail {
 
-// Private inspection seam for lifecycle regressions. This header is compiled
+// Private lifecycle seam for tests and restoration. This header is compiled
 // with the core library but is deliberately excluded from installation.
 struct DARTCollisionDetectorAccessor
 {
+  static void clearHistory(
+      DARTCollisionDetector& detector, CollisionGroup& group);
+
   static std::size_t getNumCollisionGroupEngineData(
       const DARTCollisionDetector& detector);
 

@@ -3,6 +3,62 @@ import numpy as np
 import pytest
 
 
+def test_mesh_vertex_groups_preserve_order_scale_and_own_their_arrays(tmp_path):
+    (tmp_path / "groups.mtl").write_text(
+        "newmtl first\nKd 1 0 0\nnewmtl second\nKd 0 1 0\n"
+    )
+    (tmp_path / "groups.obj").write_text(
+        "mtllib groups.mtl\n"
+        "v 0.117 0 0\nv 0.25 0 0\nv 0.117 0.5 0\n"
+        "v 1 0 0\nv 2 0 0\nv 2 1 0\nv 1 1 0\n"
+        "o first\nusemtl first\nf 1 2 3\n"
+        "o second\nusemtl second\nf 4 5 6\nf 4 6 7\n"
+    )
+    urdf = tmp_path / "groups.urdf"
+    urdf.write_text(
+        '<robot name="groups"><link name="body"><visual><geometry>'
+        '<mesh filename="groups.obj" scale="2 3 4"/>'
+        "</geometry></visual></link></robot>"
+    )
+    skeleton = dart.utils.DartLoader().parseSkeleton(str(urdf))
+    assert skeleton is not None
+    shape = skeleton.getBodyNode(0).getShapeNode(0).getShape()
+    expected = [
+        np.array(
+            [[0.117, 0, 0], [0.25, 0, 0], [0.117, 0.5, 0]], dtype=np.float32
+        ).astype(float),
+        np.array([[1, 0, 0], [2, 0, 0], [2, 1, 0], [1, 1, 0]], dtype=float),
+    ]
+    groups = shape.mesh_vertex_groups
+    assert [group.shape for group in groups] == [(3, 3), (4, 3)]
+    np.testing.assert_array_equal(shape.getScale(), [2, 3, 4])
+    for actual, vertices in zip(groups, expected):
+        assert actual.dtype == np.float64
+        np.testing.assert_array_equal(actual, vertices)
+        actual[:] = 99
+    for actual, vertices in zip(shape.mesh_vertex_groups, expected):
+        np.testing.assert_array_equal(actual, vertices)
+    with pytest.raises(AttributeError):
+        shape.mesh_vertex_groups = []
+    copies = shape.mesh_vertex_groups
+    shape.setMesh(None)
+    assert shape.mesh_vertex_groups == []
+    for actual, vertices in zip(copies, expected):
+        np.testing.assert_array_equal(actual, vertices)
+
+
+def test_mesh_vertex_groups_for_an_empty_mesh():
+    assert dart.dynamics.MeshShape([1, 1, 1], None).mesh_vertex_groups == []
+
+
+def test_point_cloud_supports_native_point_shape_type():
+    shape = dart.dynamics.PointCloudShape()
+    point = dart.dynamics.PointCloudShape.PointShapeType.POINT
+    assert int(point) == 3
+    shape.setPointShapeType(point)
+    assert shape.getPointShapeType() == point
+
+
 @pytest.mark.parametrize("layout", ["C", "F", "strided"])
 def test_heightmap_round_trip(layout):
     shape = dart.dynamics.HeightmapShapef()
@@ -321,7 +377,9 @@ def test_voxel_grid_rejects_rays_float_cannot_measure():
 def test_voxel_grid_traces_across_the_grid_at_the_largest_resolution():
     shape = dart.dynamics.VoxelGridShape(resolution=1e6)
     inside = float(np.nextafter(np.float32(32768 * 1e6), np.float32(0)))
-    shape.updateOccupancy(points=np.array([[inside, 0, 0]]), sensorOrigin=[-inside, 0, 0])
+    shape.updateOccupancy(
+        points=np.array([[inside, 0, 0]]), sensorOrigin=[-inside, 0, 0]
+    )
     assert shape.getOccupancy([inside, 0, 0]) > 0.5
     assert 0 < shape.getOccupancy([0, 0, 0]) < 0.5
 
@@ -337,3 +395,52 @@ def test_voxel_grid_validates_single_points_at_double_precision():
     # Outside as a double, although it rounds into range as a float.
     with pytest.raises(ValueError, match="lies outside the voxel grid"):
         shape.updateOccupancy([-4096.00001, 0, 0])
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+@pytest.mark.parametrize("layout", ["C", "F", "strided"])
+def test_voxel_grid_occupancy_preflight_preserves_all_occupancy(layout):
+    shape = dart.dynamics.VoxelGridShape(resolution=0.1)
+    shape.updateOccupancy([1, 0, 0])
+    occupied = shape.getOccupancy([1, 0, 0])
+    points = np.array([[2, 0, 0], [0, 2, 0]], dtype=float)
+    if layout == "F":
+        points = np.asfortranarray(points)
+    elif layout == "strided":
+        points = np.repeat(points, 2, axis=1)[:, ::2]
+    assert (
+        shape.validate_occupancy_update(points=points, sensor_origin=[0, 0, 0]) is None
+    )
+    assert shape.getOccupancy([1, 0, 0]) == occupied
+    assert shape.getOccupancy([2, 0, 0]) == 0
+    assert shape.getOccupancy([0, 2, 0]) == 0
+
+
+@pytest.mark.skipif(
+    not hasattr(dart.dynamics, "VoxelGridShape"), reason="Octomap is unavailable"
+)
+@pytest.mark.parametrize(
+    "points, origin, resolution",
+    [
+        (np.zeros((2, 2)), [0, 0, 0], 0.01),
+        (np.array([[np.nan, 0, 0]]), [0, 0, 0], 0.01),
+        (np.array([[1e39, 0, 0]]), [0, 0, 0], 0.01),
+        (np.array([[400, 0, 0]]), [0, 0, 0], 0.01),
+        (np.array([[2, 0, 0]]), [np.inf, 0, 0], 0.01),
+        (np.array([[20, 20, 20]]), [-20, -20, -20], 0.001),
+        (np.array([[1e-30, 0, 0]]), [-1e-30, 0, 0], 1e-6),
+    ],
+)
+def test_voxel_grid_preflight_matches_update_validation(points, origin, resolution):
+    shape = dart.dynamics.VoxelGridShape(resolution)
+    shape.updateOccupancy([0, 0, 0])
+    occupied = shape.getOccupancy([0, 0, 0])
+    with pytest.raises((TypeError, ValueError)) as preflight:
+        shape.validate_occupancy_update(points, sensor_origin=origin)
+    with pytest.raises(type(preflight.value)) as update:
+        shape.updateOccupancy(points=points, sensorOrigin=origin)
+    if isinstance(preflight.value, ValueError):
+        assert str(update.value) == str(preflight.value)
+    assert shape.getOccupancy([0, 0, 0]) == occupied

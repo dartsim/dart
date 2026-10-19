@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/composite_state.hpp"
 #include "detail/hierarchical_ik.hpp"
 // clang-format on
 
@@ -74,6 +75,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -144,6 +146,9 @@ namespace python {
 
 void Skeleton(nb::module_& m)
 {
+  dartnb::dart_class<dart::dynamics::Skeleton::Configuration>(
+      m, "SkeletonConfiguration");
+
   dartnb::dart_class<dart::dynamics::Skeleton, dart::dynamics::MetaSkeleton>(
       m, "Skeleton")
       .def(dartnb::factory(+[]() -> dart::dynamics::SkeletonPtr {
@@ -239,6 +244,22 @@ void Skeleton(nb::module_& m)
           "setState",
           +[](dart::dynamics::Skeleton* self,
               const dart::dynamics::Skeleton::State& state) -> void {
+            const auto* savedBodies = dartnb::find_state<
+                dart::dynamics::detail::BodyNodeVectorProxyAspect>(state);
+            if (savedBodies) {
+              const auto& bodies = savedBodies->get();
+              for (std::size_t i = 0;
+                   i < std::min(bodies.size(), self->getNumBodyNodes());
+                   ++i) {
+                const auto* soft = self->getBodyNode(i)->asSoftBodyNode();
+                const auto* saved
+                    = dartnb::find_state<dart::dynamics::SoftBodyNode>(bodies[i]);
+                if (soft && saved
+                    && saved->mPointStates.size() != soft->getNumPointMasses())
+                  throw nb::value_error(
+                      "state point count must match the soft body");
+              }
+            }
             return self->setState(state);
           },
           nb::arg("state"))
@@ -351,7 +372,19 @@ void Skeleton(nb::module_& m)
           "setResting",
           &dart::dynamics::Skeleton::setResting,
           nb::arg("resting"))
+      .def(
+          "is_sleep_candidate", &dart::dynamics::Skeleton::isSleepCandidate)
+      .def(
+          "set_sleep_candidate",
+          &dart::dynamics::Skeleton::setSleepCandidate,
+          nb::arg("candidate"),
+          "Setting false also resets the accumulated quiet dwell time.")
       .def("getIslandIndex", &dart::dynamics::Skeleton::getIslandIndex)
+      .def(
+          "set_island_index",
+          &dart::dynamics::Skeleton::setIslandIndex,
+          nb::arg("index"),
+          "Constraint solver bookkeeping; other callers should not set it.")
       .def(
           "setTimeStep",
           +[](dart::dynamics::Skeleton* self, double _timeStep) -> void {
@@ -401,6 +434,21 @@ void Skeleton(nb::module_& m)
           nb::arg("parent").none(),
           nb::arg("jointProperties"),
           nb::arg("bodyProperties"))
+      .def(
+          "create_revolute_joint_and_soft_body_node_pair",
+          [](dart::dynamics::Skeleton* self,
+             dart::dynamics::BodyNode* parent,
+             const dart::dynamics::RevoluteJoint::Properties& jointProperties,
+             const dart::dynamics::SoftBodyNode::Properties& bodyProperties) {
+            return self->createJointAndBodyNodePair<
+                dart::dynamics::RevoluteJoint,
+                dart::dynamics::SoftBodyNode>(
+                parent, jointProperties, bodyProperties);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("parent").none(),
+          nb::arg("joint_properties"),
+          nb::arg("body_properties"))
       // clang-format on
       .def(
           "getNumBodyNodes",
@@ -1251,8 +1299,11 @@ void Skeleton(nb::module_& m)
           +[](const dart::dynamics::Skeleton* self) -> double {
             return self->computePotentialEnergy();
           })
-      //      .def("clearCollidingBodies", +[](dart::dynamics::Skeleton *self)
-      //      -> void { return self->clearCollidingBodies(); })
+      .def("clear_colliding_bodies", [](dart::dynamics::Skeleton& self) {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        self.clearCollidingBodies();
+        DART_SUPPRESS_DEPRECATED_END
+      })
       .def(
           "getCOM",
           +[](const dart::dynamics::Skeleton* self) -> Eigen::Vector3d {

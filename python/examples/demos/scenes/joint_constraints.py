@@ -5,6 +5,7 @@ from __future__ import annotations
 import dartpy as dart
 import numpy as np
 
+from ..models.joint_constraints import JointConstraintsController
 from .common import reorient_z_up
 
 
@@ -22,7 +23,7 @@ def build() -> dart.viewer.SceneSetup:
         [1, 4, 6, 9, 10, 13, 16, 17, 21],
         [-0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1],
     )
-    controller = dart._demos.JointConstraintsController(biped, world.getTimeStep())
+    controller = JointConstraintsController(biped, world.getTimeStep())
     perturbation_force = np.zeros(3)
     impulse_duration = 0
     harness_on = False
