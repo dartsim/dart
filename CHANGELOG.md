@@ -273,6 +273,7 @@
   * Link only BulletCollision and LinearMath instead of all four Bullet
     libraries, so the exported link interface and wheels no longer carry
     BulletDynamics and BulletSoftBody.
+    [#3864](https://github.com/dartsim/dart/pull/3864)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
