@@ -406,6 +406,33 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "bundled",
         ),
+        # An installed DART also checks Bullet that the consumer found first.
+        (
+            325,
+            "unset(DART_USE_SYSTEM_BULLET)\nfind_package(Bullet MODULE)\n"
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)",
+            True,
+            "float64",
+        ),
+        # An installed DART rejects an existing target of the other variant.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            'set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES "${collision};${math}")',
+            True,
+            "rejected",
+        ),
+        # Building DART records the variant of a parent's Bullet target.
+        (
+            325,
+            "add_library(parent_bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(parent_bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(Bullet ALIAS parent_bullet)",
+            True,
+            "recorded",
+        ),
     ],
 )
 def test_bullet_prefers_float64_libraries(
@@ -432,6 +459,10 @@ def test_bullet_prefers_float64_libraries(
         check = 'NOT linked STREQUAL "BulletCollision;LinearMath"'
     elif expected == "missing":
         check = "TARGET Bullet OR BULLET_FOUND"
+    elif expected == "rejected":
+        check = "BULLET_FOUND"
+    elif expected == "recorded":
+        check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
     else:
         # FindBullet's results stay single precision for consumers' targets.
         check = (

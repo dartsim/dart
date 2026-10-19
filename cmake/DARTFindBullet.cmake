@@ -28,10 +28,8 @@ if(NOT DART_USE_SYSTEM_BULLET)
   endif()
 endif()
 
-set(_dart_bullet_system FALSE)
 if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
   find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
-  set(_dart_bullet_system TRUE)
 endif()
 
 if(BULLET_FOUND OR Bullet_FOUND)
@@ -66,12 +64,20 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   else()
     set(_dart_bullet_want_float64 FALSE)
   endif()
+  # Bundled Bullet supplies targets; only FindBullet's library files have
+  # -float64 siblings.
+  set(_dart_bullet_files TRUE)
+  foreach(_dart_bullet_item IN LISTS BULLET_LIBRARIES)
+    if(TARGET "${_dart_bullet_item}")
+      set(_dart_bullet_files FALSE)
+    endif()
+  endforeach()
   set(_dart_bullet_libraries ${BULLET_LIBRARIES})
   set(_dart_bullet_float64 FALSE)
   if(
-    _dart_bullet_system
+    _dart_bullet_want_float64
+    AND _dart_bullet_files
     AND BULLET_COLLISION_LIBRARY
-    AND _dart_bullet_want_float64
   )
     get_filename_component(
       _dart_bullet_dir
@@ -79,33 +85,30 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
       DIRECTORY
     )
     find_library(
-      DART_BULLET_COLLISION_FLOAT64_LIBRARY
+      _dart_bullet_collision_float64
       BulletCollision-float64
       HINTS "${_dart_bullet_dir}"
       NO_DEFAULT_PATH
+      NO_CACHE
     )
     find_library(
-      DART_BULLET_MATH_FLOAT64_LIBRARY
+      _dart_bullet_math_float64
       LinearMath-float64
       HINTS "${_dart_bullet_dir}"
       NO_DEFAULT_PATH
+      NO_CACHE
     )
-    mark_as_advanced(
-      DART_BULLET_COLLISION_FLOAT64_LIBRARY
-      DART_BULLET_MATH_FLOAT64_LIBRARY
-    )
-    if(
-      DART_BULLET_COLLISION_FLOAT64_LIBRARY
-      AND DART_BULLET_MATH_FLOAT64_LIBRARY
-    )
+    if(_dart_bullet_collision_float64 AND _dart_bullet_math_float64)
       set(
         _dart_bullet_libraries
-        "${DART_BULLET_COLLISION_FLOAT64_LIBRARY}"
-        "${DART_BULLET_MATH_FLOAT64_LIBRARY}"
+        "${_dart_bullet_collision_float64}"
+        "${_dart_bullet_math_float64}"
       )
       set(_dart_bullet_float64 TRUE)
     endif()
     unset(_dart_bullet_dir)
+    unset(_dart_bullet_collision_float64)
+    unset(_dart_bullet_math_float64)
   endif()
 
   if(DART_BULLET_REQUIRE_FLOAT64 AND NOT _dart_bullet_float64)
@@ -129,8 +132,52 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
       "Whether DART links Bullet's -float64 libraries"
     )
   endif()
+  unset(_dart_bullet_want_float64)
+  unset(_dart_bullet_files)
+  unset(_dart_bullet_item)
   unset(_dart_bullet_libraries)
   unset(_dart_bullet_float64)
-  unset(_dart_bullet_want_float64)
+elseif(TARGET Bullet)
+  # A parent project or an earlier include created the Bullet target. Record
+  # its variant when building DART; an installed DART links it, so reject one
+  # that links the other variant instead of loading both precisions.
+  set(_dart_bullet_target Bullet)
+  get_target_property(_dart_bullet_alias Bullet ALIASED_TARGET)
+  if(_dart_bullet_alias)
+    set(_dart_bullet_target "${_dart_bullet_alias}")
+  endif()
+  get_target_property(
+    _dart_bullet_links
+    "${_dart_bullet_target}"
+    INTERFACE_LINK_LIBRARIES
+  )
+  set(_dart_bullet_float64 FALSE)
+  if("${_dart_bullet_links}" MATCHES "-float64")
+    set(_dart_bullet_float64 TRUE)
+  endif()
+  if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
+    set(
+      DART_BULLET_USES_FLOAT64
+      ${_dart_bullet_float64}
+      CACHE INTERNAL
+      "Whether DART links Bullet's -float64 libraries"
+    )
+  elseif(
+    DART_BULLET_REQUIRE_FLOAT64
+    AND NOT _dart_bullet_float64
+    OR NOT DART_BULLET_REQUIRE_FLOAT64
+    AND _dart_bullet_float64
+  )
+    message(
+      WARNING
+      "The existing Bullet target links a different Bullet precision than "
+      "DART was built with."
+    )
+    set(BULLET_FOUND FALSE)
+    set(Bullet_FOUND FALSE)
+  endif()
+  unset(_dart_bullet_target)
+  unset(_dart_bullet_alias)
+  unset(_dart_bullet_links)
+  unset(_dart_bullet_float64)
 endif()
-unset(_dart_bullet_system)

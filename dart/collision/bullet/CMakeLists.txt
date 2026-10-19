@@ -16,8 +16,13 @@ if(DART_USE_SYSTEM_BULLET)
   set(CMAKE_REQUIRED_FLAGS "-w")
   set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
   set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-  # The Bullet target links the libraries DARTFindBullet selected.
+  # The Bullet target links the libraries DARTFindBullet selected. try_compile
+  # accepts an alias of an imported target only since CMake 3.29.
   set(CMAKE_REQUIRED_LIBRARIES Bullet)
+  get_target_property(bullet_probe_alias Bullet ALIASED_TARGET)
+  if(bullet_probe_alias)
+    set(CMAKE_REQUIRED_LIBRARIES ${bullet_probe_alias})
+  endif()
   unset(BT_USE_DOUBLE_PRECISION CACHE)
   check_cxx_source_compiles(
     "
