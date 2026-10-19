@@ -170,7 +170,11 @@ so after an environment update this failure appeared at once in all three
 lanes, for every DART version tested. With a base variant the lane reports it `BASE`.
 Re-fetching the component after the reset makes the checks pass.
 
-Any other case or value pattern in that test is a real failure.
+A failure in any other case of that test is a real failure. A failure of the
+altitude checks with another value, or a crash, can still be this
+use-after-free, since what the freed memory holds depends on the allocator.
+Before treating one as a DART regression, rerun the test under
+AddressSanitizer or with the component re-fetched after the reset.
 
 `compare` requires an existing, readable expected-failure file; only
 `--write-baseline` may create a missing one. Timing multipliers
