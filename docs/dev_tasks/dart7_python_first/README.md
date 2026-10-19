@@ -173,8 +173,9 @@ additive, merges before the API freeze `F`; see the
 ### Priority and thresholds
 
 The Python API leads (D3, amended 2026-10-19). Four chains run in parallel:
-M5's package, arrays, errors, `Transform` and facade slice, then the
-rulebook-driven API areas with the codemod, stubs and API reference; compile
+M5's package, arrays, errors and `Transform` packets, then the naming
+rulebook, the facade slice and the rulebook-driven API areas with the codemod,
+stubs and API reference; compile
 and edit (M1b), counted stepping (M1d), the remapping clone (M1i) and
 `WorldBatch`, then actuators, sensors and checkpoints; the typed solver policy
 with its per-solver parameters (M1e), the written contract and the rigid domain
@@ -249,8 +250,9 @@ deciding M3.
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
 Remaining critical path, in four chains that run in parallel (Python first):
-the M5a package, arrays, errors, `Transform` and facade slice, then the
-rulebook-driven API areas, codemod, stubs and reference; compile and edit
+the M5a package, arrays, errors and `Transform` packets, then the naming
+rulebook, the facade slice and the rulebook-driven API areas, codemod, stubs
+and reference; compile and edit
 (M1b), counted stepping (M1d), the remapping clone (M1i) and `WorldBatch`; the
 typed solver policy with its per-solver parameters (M1e), the written contract
 and the rigid domain boundary; and M6b → checkpoint C2.

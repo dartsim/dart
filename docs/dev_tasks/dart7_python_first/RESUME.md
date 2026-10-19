@@ -58,9 +58,10 @@ parallel tracks, Python first:
 
 1. Python API (M5), designed first under one naming rulebook: binding fixes,
    an API-surface ratchet, snapshot bindings, the package layout, read-only
-   arrays, errors and logging, `Transform` and `Rotation`, a vertical slice of
-   the facade, then the remaining API areas, with the codemod, stubs,
-   migration guide and API reference generated from the old-to-new mapping.
+   arrays, errors and logging, `Transform` and `Rotation`, then the naming
+   rulebook, a vertical slice of the facade and the remaining API areas, with
+   the codemod, stubs, migration guide and API reference generated from the
+   old-to-new mapping.
    Every native feature ships its Python binding and acceptance test.
 2. Native core (M1): compile and edit, counted stepping, the remapping clone
    and `WorldBatch` with its own executor, then actuators and servos, sensors
