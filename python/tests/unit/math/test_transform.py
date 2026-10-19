@@ -1,5 +1,6 @@
 """dartpy.math.Transform and Rotation: immutable scalar or batched values."""
 
+import operator
 import pickle
 
 import dartpy as dart
@@ -211,9 +212,9 @@ def test_composition_and_inverse():
     np.testing.assert_allclose((r @ a).matrix, dart.Transform(rotation=r).matrix @ a.matrix, atol=1e-15)
     np.testing.assert_allclose((r @ r.inverse()).matrix, np.eye(3), atol=1e-15)
     with pytest.raises(TypeError):
-        a * b
+        _ = a * b
     with pytest.raises(TypeError):
-        a * 2.0
+        _ = a * 2.0
 
 
 def test_points_shapes():
@@ -234,7 +235,7 @@ def test_points_shapes():
     np.testing.assert_allclose(T @ strided, T @ points)
     for bad in (np.zeros(4), np.zeros((3, 2)), 1.0):
         with pytest.raises(ValueError, match=r"\(\.\.\., 3\)"):
-            T @ bad
+            _ = T @ bad
 
 
 def test_batches():
@@ -255,12 +256,12 @@ def test_batches():
         np.testing.assert_array_equal(item.translation, translations[i])
         assert item == batch[i - n]
     with pytest.raises(IndexError):
-        batch[n]
+        _ = batch[n]
     scalar = dart.Transform(translation=(1, 0, 0))
     with pytest.raises(TypeError):
         len(scalar)
     with pytest.raises(TypeError):
-        scalar[0]
+        _ = scalar[0]
     # One-item arrays with a leading axis are batches of one.
     one = dart.Transform(wxyz=[[1, 0, 0, 0]])
     assert len(one) == 1
@@ -317,7 +318,7 @@ def test_equality_and_hash_are_bit_exact():
     b = dart.Transform(matrix=a.matrix)
     assert a == b
     assert hash(a) == hash(b)
-    assert not (a != b)
+    assert operator.ne(a, b) is False
     assert a != dart.Transform(rpy=(0.1, 0.2, 0.3), translation=(1, 2, np.nextafter(3, 4)))
     # -0.0 and 0.0 differ in bits, so they are different values.
     assert dart.Transform(translation=(0, 0, 0.0)) != dart.Transform(translation=(0, 0, -0.0))
@@ -360,20 +361,18 @@ def test_immutability():
         with pytest.raises(AttributeError):
             setattr(T, name, 0)
     with pytest.raises(TypeError):
-
-        class Sub(dart.Transform):
-            pass
+        _ = type("Sub", (dart.Transform,), {})
 
 
 def test_numpy_defers_to_matmul():
     T = dart.Transform(translation=(1, 2, 3))
     points = np.zeros((2, 3))
     with pytest.raises(TypeError, match="value @ points"):
-        points @ T
+        _ = points @ T
     with pytest.raises(TypeError):
         np.matmul(points, T)
     with pytest.raises(TypeError):
-        points * T
+        _ = points * T
     np.testing.assert_array_equal(T @ points, np.tile((1, 2, 3), (2, 1)))
 
 
@@ -446,7 +445,7 @@ def test_points_of_any_rank_and_empty():
         assert (T @ np.empty(shape)).shape == shape
     for scalar in (np.float64(1.0), np.array(2.0)):
         with pytest.raises(ValueError, match=r"\(\.\.\., 3\)"):
-            T @ scalar
+            _ = T @ scalar
 
 
 def test_quaternion_normalization_extremes():
@@ -580,3 +579,70 @@ def test_normalize_spread_threshold_boundary():
     dart.Rotation(rotation=inside, normalize=True)
     with pytest.raises(ValueError):
         dart.Rotation(rotation=outside, normalize=True)
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+def test_pickle_rejects_scale_and_shear(cls):
+    def restore(raw):
+        value = cls.__new__(cls)
+        value.__setstate__((False, raw))
+        return value
+
+    scaled = np.diag([2.0, 1.0, 1.0, 1.0])
+    sheared = np.eye(4)
+    sheared[:3, :3] = np.array([[1, 0.25, 0], [0, 1, 0], [0, 0, 1]])
+    # Storage is column-major, so transpose before serializing.
+    for bad in (scaled, sheared):
+        with pytest.raises(ValueError):
+            restore(bad.T.tobytes())
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+def test_pickle_round_trips_envelope_drift_bit_exactly(cls):
+    drifted = cls(rotation=(1 + 2e-6) * np.eye(3))
+    drifted = drifted @ drifted
+    block = drifted.matrix if cls is dart.Rotation else drifted.matrix[:3, :3]
+    # Past the 1e-5 construction tolerance, so the raw matrix is rejected...
+    with pytest.raises(ValueError):
+        cls(rotation=block)
+    # ...but inside the normalize=True envelope, so pickle keeps the exact bits.
+    restored = pickle.loads(pickle.dumps(drifted))
+    assert restored == drifted
+    np.testing.assert_array_equal(restored.matrix, drifted.matrix)
+
+
+def test_inverse_is_rigid_for_non_normalized_rotation():
+    R = (1 + 2e-6) * np.eye(3)
+    rotation = dart.Rotation(rotation=R)
+    np.testing.assert_array_equal(rotation.inverse().matrix, rotation.matrix.T)
+    transform = dart.Transform(rotation=R, translation=(1, 2, 3))
+    np.testing.assert_array_equal(
+        transform.inverse().matrix[:3, :3], transform.matrix[:3, :3].T
+    )
+    np.testing.assert_array_equal(
+        transform.inverse().translation,
+        -transform.matrix[:3, :3].T @ transform.translation,
+    )
+    product = (transform @ transform.inverse()).matrix
+    assert not np.array_equal(product, np.eye(4))
+    np.testing.assert_allclose(product, np.eye(4), atol=1e-4)
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+def test_normalize_projects_rotation_valued_input(cls):
+    def block(value):
+        return value.matrix if cls is dart.Rotation else value.rotation.matrix
+
+    skewed = dart.Rotation(rotation=(1 + 2e-6) * np.eye(3))
+    # Without normalize the stored matrix is copied bit-exactly.
+    np.testing.assert_array_equal(block(cls(rotation=skewed)), skewed.matrix)
+    np.testing.assert_allclose(
+        block(cls(rotation=skewed, normalize=True)), np.eye(3), atol=1e-12
+    )
+    # Batched Rotation input is projected item-wise too.
+    batch = dart.Rotation(rotation=np.stack([skewed.matrix, np.eye(3)]))
+    projected = cls(rotation=batch, normalize=True)
+    assert len(projected) == 2
+    np.testing.assert_allclose(
+        block(projected), np.stack([np.eye(3), np.eye(3)]), atol=1e-12
+    )

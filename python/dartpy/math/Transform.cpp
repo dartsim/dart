@@ -464,8 +464,13 @@ Parsed parse(
   if (!rotation.is_none() && nb::isinstance<RotationValue>(rotation)) {
     const auto& value = nb::cast<const RotationValue&>(rotation);
     rotationBatched = value.batched;
+    // Without normalize the stored matrix is copied as is, so composition
+    // results round-trip bit-exactly; normalize=True projects every rotation
+    // input, whatever its type.
     for (const Isometry& item : value.items)
-      parsed.rotations.push_back(item.linear());
+      parsed.rotations.push_back(
+          normalize ? validateRotation(item.linear(), true, "rotation")
+                    : item.linear());
   } else if (!rotation.is_none()) {
     InArray array = asArray(rotation);
     requireShape(array, 3, 3, "rotation", "(3, 3) or (N, 3, 3)");
@@ -572,8 +577,10 @@ T fromStorage(Storage items, bool batched)
 // homogeneous row and a rotation within kTolerance. Rotations also need a
 // zero translation. Shared by from_isometry and unpickling.
 template <class T>
-// Pickle state restores exact bits, so it skips the rotation tolerance that
-// construction applies: composition may drift past it (see drift above).
+// Pickle state restores exact bits without projecting, so it checks the
+// rotation against the same envelope that normalize=True accepts (positive
+// determinant, singular values near 1): composition may drift past the
+// construction tolerance, but scale and shear in crafted bytes are rejected.
 Isometry validateItem(
     const Eigen::Matrix4d& M, const char* name, bool checkRotation = true)
 {
@@ -589,10 +596,12 @@ Isometry validateItem(
   if (checkRotation) {
     item.linear() = validateRotation(M.topLeftCorner<3, 3>(), false, name);
   } else {
-    if (!(M.topLeftCorner<3, 3>().determinant() > 0.0))
+    const Eigen::Matrix3d R = M.topLeftCorner<3, 3>();
+    if (!(R.determinant() > 0.0))
       throw nb::value_error(
           (std::string(name) + " must have a positive determinant").c_str());
-    item.linear() = M.topLeftCorner<3, 3>();
+    validateRotation(R, true, name); // envelope check; projection discarded
+    item.linear() = R;
   }
   item.translation() = M.topRightCorner<3, 1>();
   if constexpr (std::is_same_v<T, RotationValue>) {
@@ -773,7 +782,7 @@ void setState(T& self, nb::tuple state)
   if (raw.size() % itemBytes != 0 || (raw.size() == 0)
       || (!batched && raw.size() != itemBytes))
     throw nb::value_error("invalid pickle state: wrong byte length");
-  // Crafted bytes get the same checks as construction.
+  // Crafted bytes get the normalize=True envelope check (see validateItem).
   Storage items;
   items.reserve(raw.size() / itemBytes);
   for (std::size_t i = 0; i < raw.size() / itemBytes; ++i) {
@@ -829,7 +838,15 @@ void bindCommon(Class& cls, const char* name)
           [](const T& self) { return quaternion(self, false); },
           nb::rv_policy::automatic,
           "Unit quaternion as (x, y, z, w), w >= 0; (N, 4) for a batch.")
-      .def("inverse", &inverse<T>)
+      .def(
+          "inverse",
+          &inverse<T>,
+          "Rigid inverse: the rotation is transposed and the translation "
+          "negated through it, matching Eigen's Isometry3d::inverse(). Exact "
+          "for an orthonormal rotation; for a rotation accepted within the "
+          "tolerance or drifted by composition, value @ value.inverse() is "
+          "the identity only up to that drift. normalize=True gives an "
+          "exactly orthonormal rotation.")
       .def(
           "__matmul__",
           [](nb::handle self, nb::handle other) { return matmul(self, other); },
