@@ -10,6 +10,7 @@
     includes `BackwardCompatibility.hpp`. Code using its
     `URDFDOM_HEADERS_VERSION_*` macros must include
     `dart/utils/urdf/BackwardCompatibility.hpp` directly.
+    [#3863](https://github.com/dartsim/dart/pull/3863)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
@@ -84,6 +85,7 @@
   * URDF world loading returns `nullptr` when an include is missing its
     filename or model name, or an entity is missing its model, instead of
     constructing strings from null attributes.
+    [#3863](https://github.com/dartsim/dart/pull/3863)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
