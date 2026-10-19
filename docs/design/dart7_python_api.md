@@ -181,7 +181,7 @@ Every mutator belongs to exactly one class:
 
 | Class | Allowed while compiled | Examples | Effect |
 | --- | --- | --- | --- |
-| Topology | Only inside `edit()` | add/remove multibody, link, joint, node or aspect; joint type changes; re-parenting, splitting or merging; shape replacement; collision-group membership; detector or solver replacement; manual constraints; attaching or detaching actuator rows; sensors and hooks | New topology revision |
+| Topology | Only inside `edit()` | add/remove multibody, link, joint, node or aspect; joint type changes; re-parenting, splitting or merging; shape replacement; collision-group membership; detector or solver replacement; manual constraints; attaching or detaching actuator rows; sensors and hooks; replacing the mesh data or voxel occupancy of an attached shape | New topology revision |
 | Parameter | Yes | mass, inertia, center of mass; limits; spring, damping, rest position, friction; actuator gains and bounds; contact material; gravity; time step; actuator kind on lazy worlds | New parameter revision, no allocation |
 | State and control | Yes | positions, velocities, commands, external forces, actuator targets | No model revision; caches invalidate and sleeping bodies wake as today |
 | Cosmetic | Yes | appearance, material, visibility, shadows, segmentation id | None |
@@ -198,8 +198,10 @@ Strict enforcement has two tiers:
    Multibody may join several of them, and only a re-entrant `step()` and
    topology edits from the stepping World's own callbacks raise.
 2. Writes through raw references (such as collision-option fields or
-   collision-group contents) are detected at the next `step()` or `compile()`,
-   which raises. This tier is documented as detected late.
+   collision-group contents) to a compiled World are detected at the next
+   `step()` or `compile()`, which raises. This tier is documented as detected
+   late. Never-compiled Worlds do not track such writes; `compile()` validates
+   the model when it begins.
 
 Python exposes typed setters instead of raw references. Tests cover every
 mutation path downstream simulators use: re-parenting, adding and removing
@@ -407,7 +409,10 @@ Binding rules:
 - roll-pitch-yaw construction does not reuse the existing XYZ Euler helper,
   whose convention differs;
 - every C++ function that takes a non-const rigid-transform reference is
-  audited before binding.
+  audited before binding;
+- `None` for a frame argument means the world frame where C++ defaults that
+  argument to `Frame::World()`, keeps the meaning C++ documents for a null
+  frame elsewhere, and otherwise raises `TypeError`.
 
 ## Loading and building models
 
