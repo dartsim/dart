@@ -359,15 +359,21 @@ scalar fast path.
 
 - `@` composes transforms and applies them to `(..., 3)` points. `*` is not
   defined.
-- Constructors are keyword-only and accept exactly one rotation form, such as
+- Constructors are keyword-only and accept at most one rotation form (none
+  means identity), such as
   `rotation=` or `wxyz=`/`xyzw=`. Roll-pitch-yaw construction is extrinsic
-  X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The complete
-  constructor set is settled in M5's transform PR.
+  X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The
+  constructor set is `rotation=` (a 3x3 or a `Rotation`), `wxyz=`, `xyzw=`,
+  `rpy=` and, for `Transform`, `matrix=` and `translation=`; arrays with a
+  leading axis build batches.
 - Inputs are validated (finite values, `‖RᵀR − I‖_F`, `|det R − 1|`, the
-  homogeneous row) and raise `ValueError`. The default tolerance is calibrated
-  in M5, and the error suggests `normalize=True`. That option projects onto the
-  nearest rotation; reflections and shear still raise. Composition never
-  normalizes silently, and drift is documented.
+  homogeneous row) and raise `ValueError`. The default tolerance is `1e-5`,
+  calibrated as `docs/onboarding/python-bindings.md` records, and the error
+  suggests `normalize=True`. That option projects onto the nearest rotation when
+  every singular value lies within `1e-2` of 1 and their relative spread
+  `(max - min) / max` is at most `1e-3`; reflections, and shear or non-uniform
+  scale beyond that spread, still raise. Composition never normalizes
+  silently, and drift is documented; unpickling restores the exact bits.
 - **Quaternion order is always named.** Inputs use `wxyz=`/`xyzw=`; outputs use
   `.wxyz`/`.xyzw`. No API accepts or returns an unnamed 4-vector. `wxyz` is the
   canonical display order.

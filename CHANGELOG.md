@@ -197,6 +197,16 @@
 
 * Python
 
+  * Add the immutable `dartpy.Transform` and `dartpy.Rotation` values
+    (canonical module `dartpy.math`): keyword-only constructors with at
+    most one rotation form (`rotation=`, `wxyz=`, `xyzw=`, `rpy=` as
+    extrinsic X-Y-Z, or `matrix=`; none means identity) plus `translation=`,
+    batches from arrays with a leading axis, validation with `ValueError` and an opt-in `normalize=True`
+    projection, `@` for composition and `(..., 3)` points, read-only array
+    properties, bit-exact `==` and pickling, and explicit
+    `Transform.from_isometry()`/`to_isometry()` conversion with
+    `dartpy.math.Isometry3`.
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
