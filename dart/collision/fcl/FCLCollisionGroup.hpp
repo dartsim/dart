@@ -44,8 +44,14 @@ namespace collision {
 class CollisionObject;
 class FCLCollisionObjectUserData;
 
+namespace detail {
+struct CollisionHistory;
+} // namespace detail
+
 class FCLCollisionGroup : public CollisionGroup
 {
+  friend struct detail::CollisionHistory;
+
 public:
   friend class FCLCollisionDetector;
 

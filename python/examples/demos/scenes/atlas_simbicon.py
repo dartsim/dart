@@ -1,9 +1,11 @@
-"""Y-up Atlas balance and push perturbations with the native SIMBICON controller."""
+"""Y-up Atlas balance and push perturbations with a Python SIMBICON controller."""
 
 import math
 
 import dartpy as dart
 import numpy as np
+
+from ..models.simbicon import Controller
 
 
 class _AtlasSimbicon:
@@ -28,7 +30,7 @@ class _AtlasSimbicon:
         self.pelvis = atlas.getBodyNode("pelvis")
         if self.pelvis is None:
             raise RuntimeError("atlas_v3_no_head.sdf: missing body node 'pelvis'")
-        self.controller = dart._demos.simbicon.Controller(atlas, self.world)
+        self.controller = Controller(atlas, self.world)
         self.external_force = np.zeros(3)
         self.force_duration = 0
         self.viewer = None

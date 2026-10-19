@@ -43,6 +43,9 @@ namespace python {
 
 void Composite(nb::module_& m)
 {
+  dartnb::dart_class<dart::common::Composite::State>(m, "CompositeState")
+      .def(dartnb::init<>());
+
   dartnb::dart_class<dart::common::Composite>(m, "Composite")
       .def(dartnb::init<>())
       .def(

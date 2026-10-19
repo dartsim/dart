@@ -1,10 +1,10 @@
-"""The native KR5 task-space controller with a draggable red-ball target."""
+"""The KR5 task-space controller with a draggable red-ball target."""
 
 from __future__ import annotations
 
 import dartpy as dart
 import numpy as np
-from dartpy import _demos
+from examples.demos.models.operational_space_control import OperationalSpaceController
 
 
 def build() -> dart.viewer.SceneSetup:
@@ -40,7 +40,7 @@ def build() -> dart.viewer.SceneSetup:
     target.setShape(dart.dynamics.SphereShape(0.025))
     target.getVisualAspect(True).setColor([0.9, 0, 0])
     world.addSimpleFrame(target)
-    controller = _demos.OperationalSpaceController(robot, target)
+    controller = OperationalSpaceController(robot, target)
     controller.offset = ee.getWorldTransform().rotation().transpose() @ offset
 
     constrained = [False, False, False]
@@ -65,7 +65,7 @@ def build() -> dart.viewer.SceneSetup:
         if key not in (ord("1"), ord("2"), ord("3")):
             return False
         if event.getEventType() == dart.gui.GUIEventAdapter.KEYDOWN:
-            if _demos.keyboard_capture_active():
+            if dart.viewer.keyboard_capture_active():
                 return False
             constrained[key - ord("1")] = True
         elif event.getEventType() == dart.gui.GUIEventAdapter.KEYUP:

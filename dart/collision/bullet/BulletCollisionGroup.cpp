@@ -35,11 +35,26 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/collision/detail/CollisionHistory.hpp"
 
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 namespace dart {
 namespace collision {
+
+void detail::CollisionHistory::clear(BulletCollisionGroup& group)
+{
+  // Cleaning pair algorithms leaves pair order and DBVT history intact. Remove
+  // all proxies so resetPool() resets the trees, stages and proxy IDs, then
+  // reinsert in group order at restored poses. Bullet allocates new proxies.
+  if (group.getAutomaticUpdate())
+    group.update();
+  group.removeAllCollisionObjectsFromEngine();
+  group.updateEngineData();
+  for (const auto& info : group.mObjectInfoList)
+    group.addCollisionObjectToEngine(info->mObject.get());
+  group.resetPersistentPairFilterCache();
+}
 
 //==============================================================================
 BulletCollisionGroup::BulletCollisionGroup(

@@ -90,6 +90,7 @@ void PointCloudShape::reserve(std::size_t size)
 void PointCloudShape::addPoint(const Eigen::Vector3d& point)
 {
   mPoints.emplace_back(point);
+  mIsBoundingBoxDirty = true;
   incrementVersion();
 }
 
@@ -99,6 +100,7 @@ void PointCloudShape::addPoint(const std::vector<Eigen::Vector3d>& points)
   mPoints.reserve(mPoints.size() + points.size());
   for (const auto& point : points)
     mPoints.emplace_back(point);
+  mIsBoundingBoxDirty = true;
   incrementVersion();
 }
 
@@ -106,6 +108,7 @@ void PointCloudShape::addPoint(const std::vector<Eigen::Vector3d>& points)
 void PointCloudShape::setPoint(const std::vector<Eigen::Vector3d>& points)
 {
   mPoints = points;
+  mIsBoundingBoxDirty = true;
   incrementVersion();
 }
 
@@ -116,6 +119,7 @@ void PointCloudShape::setPoints(const ::octomap::Pointcloud& pointCloud)
   mPoints.resize(pointCloud.size());
   for (auto i = 0u; i < mPoints.size(); ++i)
     mPoints[i] = toVector3d(pointCloud[i]);
+  mIsBoundingBoxDirty = true;
   incrementVersion();
 }
 
@@ -125,6 +129,7 @@ void PointCloudShape::addPoints(const ::octomap::Pointcloud& pointCloud)
   mPoints.reserve(mPoints.size() + pointCloud.size());
   for (const auto& point : pointCloud)
     mPoints.emplace_back(toVector3d(point));
+  mIsBoundingBoxDirty = true;
   incrementVersion();
 }
 #endif
@@ -145,6 +150,8 @@ std::size_t PointCloudShape::getNumPoints() const
 void PointCloudShape::removeAllPoints()
 {
   mPoints.clear();
+  mIsBoundingBoxDirty = true;
+  incrementVersion();
 }
 
 //==============================================================================
