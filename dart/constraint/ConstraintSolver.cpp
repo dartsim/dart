@@ -41,6 +41,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/common/detail/DeterministicExecutor.h"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
@@ -67,12 +68,9 @@
 
 #include <algorithm>
 #include <atomic>
-#include <condition_variable>
 #include <limits>
 #include <memory_resource>
-#include <mutex>
 #include <thread>
-#include <type_traits>
 #include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
@@ -780,174 +778,8 @@ bool jointHasMimicReference(const dynamics::Joint* joint)
 } // namespace
 
 //==============================================================================
-class ConstraintThreadPool
+class ConstraintThreadPool : public common::detail::DeterministicExecutor
 {
-public:
-  ConstraintThreadPool() = default;
-
-  ~ConstraintThreadPool()
-  {
-    setWorkerCount(0u);
-  }
-
-  void setWorkerCount(std::size_t workerCount)
-  {
-    if (workerCount == mWorkers.size())
-      return;
-
-    stopWorkers();
-    if (workerCount == 0u)
-      return;
-
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      mStop = false;
-    }
-
-    mWorkers.reserve(workerCount);
-    for (std::size_t i = 0; i < workerCount; ++i)
-      mWorkers.emplace_back([this] { workerLoop(); });
-  }
-
-  template <typename Func>
-  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
-  {
-    if (count == 0u)
-      return;
-
-    const std::size_t totalParticipants = std::min<std::size_t>(
-        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
-    if (totalParticipants <= 1u) {
-      for (std::size_t i = 0; i < count; ++i)
-        func(i);
-      return;
-    }
-
-    const std::size_t chunkSize
-        = (count + totalParticipants - 1u) / totalParticipants;
-    const std::size_t workerCount = totalParticipants - 1u;
-    using Function = typename std::remove_reference<Func>::type;
-
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      DART_ASSERT(!mTaskActive);
-      mTaskActive = true;
-      mTaskCallable = static_cast<void*>(std::addressof(func));
-      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
-        auto& task = *static_cast<Function*>(callable);
-        for (std::size_t i = begin; i < end; ++i)
-          task(i);
-      };
-      mTaskCount = count;
-      mTaskChunkSize = chunkSize;
-      mWorkerLimit = totalParticipants;
-      mNextWorkerIndex = 1u;
-      mActiveWorkerCount = workerCount;
-      ++mTaskGeneration;
-    }
-
-    mTaskCv.notify_all();
-
-    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
-    for (std::size_t i = 0; i < mainEnd; ++i)
-      func(i);
-
-    {
-      std::unique_lock<std::mutex> lock(mMutex);
-      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
-      mTaskActive = false;
-      mTaskCallable = nullptr;
-      mTaskInvoker = nullptr;
-      mWorkerLimit = 1u;
-    }
-  }
-
-private:
-  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
-
-  void stopWorkers()
-  {
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      mStop = true;
-      ++mTaskGeneration;
-    }
-
-    mTaskCv.notify_all();
-
-    for (auto& worker : mWorkers) {
-      if (worker.joinable())
-        worker.join();
-    }
-    mWorkers.clear();
-
-    std::lock_guard<std::mutex> lock(mMutex);
-    mStop = false;
-    mTaskActive = false;
-    mTaskCallable = nullptr;
-    mTaskInvoker = nullptr;
-    mActiveWorkerCount = 0u;
-    mWorkerLimit = 1u;
-    mNextWorkerIndex = 1u;
-  }
-
-  void workerLoop()
-  {
-    std::size_t observedGeneration = 0u;
-
-    while (true) {
-      void* callable = nullptr;
-      TaskInvoker invoker = nullptr;
-      std::size_t begin = 0u;
-      std::size_t end = 0u;
-
-      {
-        std::unique_lock<std::mutex> lock(mMutex);
-        mTaskCv.wait(lock, [&] {
-          return mStop || observedGeneration != mTaskGeneration;
-        });
-
-        if (mStop)
-          return;
-
-        observedGeneration = mTaskGeneration;
-        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
-          continue;
-
-        const std::size_t workerIndex = mNextWorkerIndex++;
-        begin = workerIndex * mTaskChunkSize;
-        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
-        callable = mTaskCallable;
-        invoker = mTaskInvoker;
-      }
-
-      if (begin < end)
-        invoker(callable, begin, end);
-
-      {
-        std::lock_guard<std::mutex> lock(mMutex);
-        DART_ASSERT(mActiveWorkerCount > 0u);
-        --mActiveWorkerCount;
-        if (mActiveWorkerCount == 0u)
-          mDoneCv.notify_one();
-      }
-    }
-  }
-
-  std::vector<std::thread> mWorkers;
-  std::mutex mMutex;
-  std::condition_variable mTaskCv;
-  std::condition_variable mDoneCv;
-  bool mStop = false;
-  bool mTaskActive = false;
-  std::size_t mTaskGeneration = 0u;
-  std::size_t mTaskCount = 0u;
-  std::size_t mTaskChunkSize = 0u;
-  std::size_t mWorkerLimit = 1u;
-  std::size_t mNextWorkerIndex = 1u;
-  std::size_t mActiveWorkerCount = 0u;
-  void* mTaskCallable = nullptr;
-  TaskInvoker mTaskInvoker = nullptr;
 };
 
 //==============================================================================
@@ -1804,19 +1636,29 @@ bool ConstraintSolver::updateConstraintsWithQueryFilter(
   }
 
   bool contactQueryComplete;
-  if (queryFilter) {
-    // Keep the user's collision option intact for downstream readers.
-    auto queryOption = mCollisionOption;
-    queryOption.collisionFilter = queryFilter;
-    contactQueryComplete = collideWithContactBudget(
-        *mCollisionGroup, queryOption, mCollisionResult);
-  } else {
-    contactQueryComplete = collideWithContactBudget(
-        *mCollisionGroup, mCollisionOption, mCollisionResult);
-  }
+  {
+    // The flags are per thread; clear them even when the query throws.
+    struct RestingContactFilterReset
+    {
+      collision::BodyNodeCollisionFilter* filter;
+      ~RestingContactFilterReset()
+      {
+        if (filter != nullptr)
+          filter->setSolverRestingContactFilterActive(false, false);
+      }
+    } restingContactFilterReset{restingContactFilter};
 
-  if (restingContactFilter != nullptr)
-    restingContactFilter->setSolverRestingContactFilterActive(false, false);
+    if (queryFilter) {
+      // Keep the user's collision option intact for downstream readers.
+      auto queryOption = mCollisionOption;
+      queryOption.collisionFilter = queryFilter;
+      contactQueryComplete = collideWithContactBudget(
+          *mCollisionGroup, queryOption, mCollisionResult);
+    } else {
+      contactQueryComplete = collideWithContactBudget(
+          *mCollisionGroup, mCollisionOption, mCollisionResult);
+    }
+  }
 
   const bool useBuiltInDefaultContactActiveState
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler);
