@@ -406,12 +406,13 @@ Known gaps:
     after every factory creator is removed. Registering the base Bullet detector
     makes it fail. Its Bullet and ODE cases run only when those components are
     built.
-  - Still open: the machine-checked inventories of gz-used accessors and
-    mutation paths.
-- **Status:** in progress.
+- **Status:** done.
   [#3725](https://github.com/dartsim/dart/pull/3725) merged WP-7.0.6a and
-  WP-7.0.6b; [#3729](https://github.com/dartsim/dart/pull/3729), in review,
-  adds the inventories. [#3731](https://github.com/dartsim/dart/pull/3731)
+  WP-7.0.6b; [#3729](https://github.com/dartsim/dart/pull/3729) merged the
+  machine-checked inventories of gz-used accessors and mutation paths on
+  2026-10-14 as `4ff47d438`, and
+  [#3787](https://github.com/dartsim/dart/pull/3787) added their missing
+  construction and callable dependencies. [#3731](https://github.com/dartsim/dart/pull/3731)
   closed in favor of [#3741](https://github.com/dartsim/dart/pull/3741), merged
   as `3c4c68813`. The replacement keeps the Unix probe in C++14, accepting
   the existing compiler extensions, and runs the MSVC probe in DART's required
@@ -421,8 +422,8 @@ Known gaps:
 ### M0 follow-up fixes merged on 2026-10-12
 
 - [#3722](https://github.com/dartsim/dart/pull/3722) merged the analytical-IK
-  clone and node-copy crash fixes as `13ebab5aa`. It no longer holds M0's
-  exit; its `release-6.20` backport remains a next step.
+  clone and node-copy crash fixes as `13ebab5aa`; its `release-6.20` backport
+  merged in [#3805](https://github.com/dartsim/dart/pull/3805).
 - [#3750](https://github.com/dartsim/dart/pull/3750) merged the skel-parser
   detector fallback null-check fix as `039fdf497`. It no longer needs a
   parallel follow-up after M0.
@@ -979,7 +980,8 @@ Known gaps:
     before the evidence update; it is removed.
 - **Pending maintainer action:** check PyPI's project history for deleted
   7.0.0 files, because PyPI never accepts a reused file name.
-- **Status:** in review.
+- **Status:** done; merged in [#3728](https://github.com/dartsim/dart/pull/3728)
+  on 2026-10-14 as `d76ac19fc`.
 
 ### WP-7.0.8 Newer-Python wheels for 6.20.x
 
