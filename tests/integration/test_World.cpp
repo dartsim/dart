@@ -4161,35 +4161,47 @@ TEST(World, RechainSkipsRejoinedWorldAtSameAddress)
 }
 
 //==============================================================================
-TEST(World, LazySolverCopyLeavesSharedHandlerParentsUnread)
+TEST(WorldDeathTest, LazySolverCopyLeavesSharedHandlerParentsUnread)
 {
   // With no World compiled, copying a solver reads only what DART 6 read, so
   // another thread may reparent a handler in the copied chain (checked by
-  // TSan builds).
-  using dart::constraint::ContactSurfaceHandler;
-  auto source = World::create();
-  auto target = World::create();
-  auto shared = std::make_shared<ContactSurfaceHandler>();
-  auto firstParent = std::make_shared<ContactSurfaceHandler>();
-  auto secondParent = std::make_shared<ContactSurfaceHandler>();
-  source->getConstraintSolver()->addContactSurfaceHandler(shared);
-  std::atomic<bool> start{false};
-  std::thread reparent([&] {
-    while (!start.load(std::memory_order_acquire)) {
-    }
-    for (int i = 0; i < 200; ++i) {
-      shared->setParent(firstParent);
-      shared->setParent(secondParent);
-    }
-  });
-  start.store(true, std::memory_order_release);
-  for (int i = 0; i < 200; ++i) {
-    target->getConstraintSolver()->setFromOtherConstraintSolver(
-        *source->getConstraintSolver());
-  }
-  reparent.join();
-  EXPECT_FALSE(target->isCompiled());
-  EXPECT_EQ(shared->getParent(), secondParent);
+  // TSan builds). Other tests keep compiled Worlds alive, so this runs in a
+  // re-executed process where none exists.
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        using dart::constraint::ContactSurfaceHandler;
+        const bool lazyOnly
+            = !dart::constraint::detail::contactSurfaceChecksActive();
+        auto source = World::create();
+        auto target = World::create();
+        auto shared = std::make_shared<ContactSurfaceHandler>();
+        auto firstParent = std::make_shared<ContactSurfaceHandler>();
+        auto secondParent = std::make_shared<ContactSurfaceHandler>();
+        source->getConstraintSolver()->addContactSurfaceHandler(shared);
+        std::atomic<bool> start{false};
+        std::thread reparent([&] {
+          while (!start.load(std::memory_order_acquire)) {
+          }
+          for (int i = 0; i < 200; ++i) {
+            shared->setParent(firstParent);
+            shared->setParent(secondParent);
+          }
+        });
+        start.store(true, std::memory_order_release);
+        for (int i = 0; i < 200; ++i) {
+          target->getConstraintSolver()->setFromOtherConstraintSolver(
+              *source->getConstraintSolver());
+        }
+        reparent.join();
+        std::_Exit(
+            lazyOnly && !target->isCompiled()
+                    && shared->getParent() == secondParent
+                ? 0
+                : 1);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
 }
 
 //==============================================================================

@@ -793,7 +793,11 @@ std::atomic<std::size_t> gGuardedWorlds{0u};
 // Registry lock acquisitions, read by tests to prove lazy paths take none.
 std::atomic<std::size_t> gRegistryLocks{0u};
 // Innermost World stepping on this thread. Its own callbacks may not change
-// its model's topology, whether or not it is indexed.
+// its model's topology, whether or not it is indexed. A step engages it before
+// running user extension points: collision filters, detectors and contact
+// handlers, constraint and solver hooks, and Joint and BodyNode dynamics
+// overrides. Overrides of introspection getters (versions, counts, frame
+// casts) are not extension points and may run before it.
 thread_local WorldDeactivationState* tlsSteppingWorld = nullptr;
 
 void engageSameThreadMarker(WorldDeactivationState& state)
