@@ -2,6 +2,8 @@
 
 ## DART 6
 
+### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
+
 ### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
 
 DART 6.20.1 is a patch release on the DART 6 line. It fixes mimic joints that
