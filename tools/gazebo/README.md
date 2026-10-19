@@ -141,16 +141,36 @@ lane:
 | `STALE` | an accepted difference that now passes; drop the entry |
 | `FIXED` | an expected failure that ran and passed |
 
-gz-sim `INTEGRATION_reset_sensors` is a known test race, not a DART
-regression: right after `server.Run()`, `ResetFixture.HandleReset` reads the
-last asynchronous air-pressure message (`reset_sensors.cc` lines 259 and 352)
-and sometimes gets the previous 100 Hz sample, for example 100360.66 versus
-100362.99 Pa, while its altitude check passes. In 20 interleaved Harmonic-lane
-runs each, the 6.20.0 candidate and DART 6.19.5 both failed 4 times with
-identical values. The lane reports it `FLAKY` when the retry passes and `NEW`
-when both attempts fail (about 4% of lane runs). If `NEW` names only this
-failure, rerun the lane before investigating; any other case or value pattern
-in that test is a real failure. The fix belongs in gz-sim's test.
+gz-sim `INTEGRATION_reset_sensors` has two known test bugs. Neither is a DART
+regression, and the fixes for both belong in gz-sim's test.
+
+The first is a race: right after `server.Run()`,
+`ResetFixture.HandleReset` reads the last asynchronous air-pressure message
+(`reset_sensors.cc` lines 259 and 352) and sometimes gets the previous 100 Hz
+sample, for example 100360.66 versus 100362.99 Pa, while its altitude check
+passes. In 20 interleaved Harmonic-lane runs each, the 6.20.0 candidate and
+DART 6.19.5 both failed 4 times with identical values. The lane reports it
+`FLAKY` when the retry passes and `NEW` when both attempts fail (about 4% of
+lane runs). If `NEW` names only this failure, rerun the lane before
+investigating.
+
+The second is a use-after-free that hits the altitude checks. The box reads
+Z = 1 in place of 100 and 80.39 (Harmonic's `reset_sensors.cc` lines 301 and
+351; the other distributions number them differently). The test keeps the
+`Pose` component pointer it fetched before the reset. The reset replaces the
+entity-component manager's components, so those checks read freed memory.
+
+- AddressSanitizer reports a heap-use-after-free in a reproducer that uses
+  the entity-component manager alone, without DART.
+- DART 6.20.0, rebuilt in the same environment, fails the same way.
+- A DART-only replay of the calls gz-physics makes on reset passes.
+
+Whether the freed memory still holds the old pose depends on the allocator,
+so after an environment update this failure appeared at once in all three
+lanes, for every DART version tested. With a base variant the lane reports it `BASE`.
+Re-fetching the component after the reset makes the checks pass.
+
+Any other case or value pattern in that test is a real failure.
 
 `compare` requires an existing, readable expected-failure file; only
 `--write-baseline` may create a missing one. Timing multipliers
