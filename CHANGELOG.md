@@ -219,6 +219,7 @@
     `CollisionGroup.addShapeFrame` and `BodyNode.createShapeNode`, which used
     to ignore it. `FreeJoint.setSpatialMotion` now accepts arrays for its
     transform, velocity and acceleration; `None` skips a motion and its frames.
+    [#3841](https://github.com/dartsim/dart/pull/3841)
 
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
