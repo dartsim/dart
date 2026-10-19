@@ -40,6 +40,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_COMMITS: ${{ github.event.pull_request.commits }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ ! -f scripts/check_local_paths.py ]; then
@@ -59,10 +61,26 @@ jobs:
             echo "::error::PR commit-message local-path scan failed."
             scan_status=1
           fi
+          # Protected release branches already published their commits, so a
+          # release sync into main rescans only its own commits and merge
+          # resolutions, not release history under main's fixture rules.
+          # pull_request_target runs this file from main for every base, and a
+          # release branch's checker may take only the range, so PRs into other
+          # bases scan the range alone.
+          published=()
+          if [ "$BASE_REF" = "$DEFAULT_BRANCH" ]; then
+            if releases=$(gh api --paginate "repos/${{ github.repository }}/branches?protected=true" --jq '.[].name | select(startswith("release-"))'); then
+              for release in $releases; do
+                published+=("^refs/remotes/origin/$release")
+              done
+            else
+              echo "::warning::Protected release branch lookup failed; scanning every PR commit's changes."
+            fi
+          fi
           if ! git fetch --no-tags origin "$BASE_SHA" "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/head"; then
             echo "::error::PR commit-change fetch failed."
             scan_status=1
-          elif ! python3 scripts/check_local_paths.py --commit-range "$BASE_SHA..refs/remotes/pr/head"; then
+          elif ! python3 scripts/check_local_paths.py --commit-range "$BASE_SHA..refs/remotes/pr/head" "${published[@]}"; then
             echo "::error::PR commit-change local-path scan failed."
             scan_status=1
           fi

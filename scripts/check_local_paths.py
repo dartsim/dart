@@ -4,7 +4,8 @@
 These checks catch accidental publication by contributors and agents. Local
 hooks are conveniences that explicit bypasses can skip.
 The PR Text workflow checks the title, body, messages and changes of every PR
-commit using the base branch's checker as the backstop before merge.
+commit using the base branch's checker as the backstop before merge. It skips
+the changes of commits that protected release branches already published.
 """
 
 from __future__ import annotations
@@ -520,7 +521,7 @@ def scan_staged(root: Path) -> bool:
     return scan_changes(root, ("diff", "--cached"))
 
 
-def scan_commit_range(root: Path, commit_range: str) -> bool:
+def scan_commit_range(root: Path, *revisions: str) -> bool:
     found = False
     commits = git_output(
         root,
@@ -529,7 +530,7 @@ def scan_commit_range(root: Path, commit_range: str) -> bool:
         "--topo-order",
         "--parents",
         "--end-of-options",
-        commit_range,
+        *revisions,
         "--",
     )
     for entry in commits.decode("ascii").splitlines():
@@ -569,7 +570,10 @@ def main() -> int:
     mode.add_argument("--all-tracked", action="store_true")
     mode.add_argument(
         "--commit-range",
-        help="scan messages, names and added lines of every commit in BASE..HEAD",
+        nargs="+",
+        metavar="REVISION",
+        help="scan messages, names and added lines of every commit in BASE..HEAD;"
+        " each further ^REV skips the commits that REV reaches",
     )
     mode.add_argument(
         "--text-file", type=Path, help="scan free text without exceptions"
@@ -626,7 +630,7 @@ def main() -> int:
         if args.staged:
             return int(scan_staged(root))
         if args.commit_range:
-            return int(scan_commit_range(root, args.commit_range))
+            return int(scan_commit_range(root, *args.commit_range))
         paths = args.files
         if args.all_tracked:
             paths = [
