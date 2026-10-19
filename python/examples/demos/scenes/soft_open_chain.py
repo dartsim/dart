@@ -1,4 +1,4 @@
-"""Open chain of soft links with native recorded-state playback."""
+"""Open chain of soft links with recorded-state playback."""
 
 import dartpy as dart
 

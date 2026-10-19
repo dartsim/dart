@@ -39,7 +39,7 @@ from .scenes import (
     tinkertoy,
     unitree_g1,
     vehicle,
-    wam_ikfast,
+    wam_analytical_ik,
 )
 
 
@@ -65,7 +65,8 @@ def make_demo_scenes():
         biped_stand,
         operational_space_control,
         contact_inverse_dynamics,
-        wam_ikfast,
+        ssik_ik_gui,
+        wam_analytical_ik,
         atlas_puppet,
         atlas_simbicon,
         mixed_chain,
@@ -76,8 +77,6 @@ def make_demo_scenes():
         soft_cubes,
         soft_open_chain,
     ]
-    if hasattr(dart._demos, "ArmSkeleton"):
-        modules.insert(modules.index(wam_ikfast), ssik_ik_gui)
     if hasattr(dart.utils, "ModelResourceRetriever"):
         modules.extend([atlas_v5, unitree_g1])
     modules.extend([vehicle, heightmap])

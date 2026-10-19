@@ -173,8 +173,6 @@
     `JacobianDLS` with normal iterative error settings, preserving user bounds
     and task-space regions. Set up the analytical solver again for the copy;
     whole-skeleton clones keep their analytical solvers.
-    `IkFast::getDofs()` now returns an empty list when IkFast cannot configure,
-    as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
   * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
@@ -219,6 +217,11 @@
     instead of an empty string. Explicit packaging versions remain supported.
     [#3809](https://github.com/dartsim/dart/pull/3809)
 
+  * Keep gradient arrays passed to Python `optimizer.Function.evalGradient`
+    overrides alive after the callback returns, while applying their updates
+    to the native solver.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
+
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
     handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
@@ -246,6 +249,11 @@
     CMake build tree, for example to a larger disk.
 
 * Examples
+
+  * Hide the ssik analytical IK demo's solved marker when no current
+    forward-kinematics pose is available, including failed solves and arm
+    loads.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
 
   * Replace the four C++ tutorials with Python exercises and solutions in
     `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing

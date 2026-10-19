@@ -33,7 +33,7 @@
 #ifndef DART_GUI_APP_CONTACTVISUALIZER_HPP_
 #define DART_GUI_APP_CONTACTVISUALIZER_HPP_
 
-#include "demo_models/ContactArrowLayout.hpp"
+#include "ContactArrowLayout.hpp"
 
 #include <dart/dart.hpp>
 #include <dart/external/imgui/imgui.h>
@@ -94,7 +94,7 @@ private:
   dart::simulation::WorldPtr mWorld;
   bool mEnabled = true;
 
-  dart_demos::ContactArrowLayout mLayout;
+  ContactArrowLayout mLayout;
   double mShaftRadius = 0.0;
   std::vector<dart::dynamics::SimpleFramePtr> mFrames;
   std::vector<std::shared_ptr<dart::dynamics::ArrowShape>> mArrows;

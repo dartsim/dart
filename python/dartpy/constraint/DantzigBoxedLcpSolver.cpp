@@ -48,6 +48,7 @@ void DantzigBoxedLcpSolver(nb::module_& m)
   dartnb::dart_class<
       dart::constraint::DantzigBoxedLcpSolver,
       dart::constraint::BoxedLcpSolver>(m, "DantzigBoxedLcpSolver")
+      .def(dartnb::init<>())
       .def(
           "getType",
           +[](const dart::constraint::DantzigBoxedLcpSolver* self)

@@ -175,7 +175,7 @@ def _iter_shape_owners(world: Any):
             label = str(body.getName())
             for shape_node in body.getShapeNodes():
                 yield f"{skeleton_name}:{label}", label, shape_node
-    seen: set[int] = set()
+    seen: dict[int, Any] = {}
     pending = [
         world.getSimpleFrame(index) for index in range(world.getNumSimpleFrames())
     ]
@@ -184,7 +184,8 @@ def _iter_shape_owners(world: Any):
         identity = id(frame)
         if identity in seen:
             continue
-        seen.add(identity)
+        # Keep wrappers alive so their IDs cannot be reused during traversal.
+        seen[identity] = frame
         pending.extend(frame.getChildFrames())
         if hasattr(frame, "getShape") and frame.getShape() is not None:
             name = str(frame.getName())

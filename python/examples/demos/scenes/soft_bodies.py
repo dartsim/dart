@@ -1,8 +1,9 @@
-"""Soft-body simulation with native recorded-state playback."""
+"""Soft-body simulation with recorded-state playback."""
 
 import dartpy as dart
 import numpy as np
 
+from ..models.world_history import WorldHistory
 from .common import reorient_z_up
 
 
@@ -63,7 +64,7 @@ def _build(uri, eye, center):
                         visual.hide()
 
     style_visuals()
-    history = dart._demos.WorldHistory(world)
+    history = WorldHistory(world)
     viewer = None
     world_node = None
 

@@ -1,4 +1,4 @@
-"""Soft cube stack with native recorded-state playback."""
+"""Soft cube stack with recorded-state playback."""
 
 import dartpy as dart
 

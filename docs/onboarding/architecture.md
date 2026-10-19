@@ -31,27 +31,28 @@ boundaries instead of adding task-local bypasses.
 ## Python Demo Catalog
 
 DART has one demo application, `python/examples/demos/`, launched through
-`dartpy.viewer`. Python declares worlds, key actions, light step hooks, and
+`dartpy.viewer`. Python declares worlds, key actions, simulation hooks, and
 declarative `Control` panels. C++ owns the docking workspace, navigator,
 inspector, tools, profiler, log console, scene lifecycle, and headless list,
-cycle, and capture. Heavy controllers and models stay native; Python has no
-ImGui drawing API.
+cycle, and capture. Demo controllers and models belong in Python and call the
+engine, IO, and GUI bindings; Python has no ImGui drawing API.
 
 | Piece | Location and target | Boundary |
 | --- | --- | --- |
 | App host | `dart/gui/app/` → `dart-gui-app` | Private static target in `dart::gui::app`, excluded from `ALL` unless a consumer needs it; never installed or exported |
-| GUI-free models | `python/native/demo_models/` → `dart-demo-models` | Private static target in `dart_demos`, shared by dartpy and C++ model tests; builds with the GUI off |
+| Python models | `python/examples/demos/models/` | Demo controllers, model helpers, data and scene logic using ordinary library bindings |
 | Host bindings | `python/dartpy/viewer/` → `dartpy.viewer` | Compiled only when `dart-gui-app` exists; names follow the DART 7 Python style |
-| Model bindings | `python/dartpy/demos/` → `dartpy._demos` | Private native helpers for the source-tree catalog |
 | Scenes | `python/examples/demos/scenes/`, `registry.py`, `__main__.py` | Python factories and catalog registration; the catalog is not included in wheels |
 
-`dart-gui-app` links `dart-gui` and `dart-demo-models`. Its placement under
+`dart-gui-app` links `dart-gui`. Its placement under
 `dart/` makes it available before `tests/` and `python/` are configured.
-The model library is added immediately after `dart/`; IO-dependent sources
-are included only when `dart-utils` and `dart-utils-urdf` exist, and the
-point-cloud sensor requires OctoMap. Both libraries link into the dartpy
-extension without adding installed headers, package components, or a
-Gazebo-facing API.
+The host links into the dartpy extension without adding installed headers,
+package components, or a Gazebo-facing API. Demo implementation lives entirely
+in Python.
+
+Contact-force arrow layout belongs to the GUI app. Its implementation uses
+core state without a renderer and is compiled directly into the existing
+constraint-solver test binary, retaining headless coverage.
 
 The host requires `IMGUI_HAS_DOCK` in the copied ImGui header. Bundled builds
 use the docking release; a vanilla system ImGui compiles out the host and

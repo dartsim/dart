@@ -157,13 +157,11 @@ if(TARGET dart-collision-ode)
 endif()
 
 set(
-  soft_demo_model_test_sources
-  test_AdaptiveSoftContactModel.cpp
-  test_SoftWormModel.cpp
+  contact_arrow_test_sources
   test_ContactArrowLayout.cpp
+  "${PROJECT_SOURCE_DIR}/dart/gui/app/ContactArrowLayout.cpp"
 )
-target_sources(test_ConstraintSolver PRIVATE ${soft_demo_model_test_sources})
-target_link_libraries(test_ConstraintSolver dart-demo-models)
+target_sources(test_ConstraintSolver PRIVATE ${contact_arrow_test_sources})
 set_tests_properties(
   test_ConstraintSolver
   PROPERTIES
@@ -189,152 +187,23 @@ set_tests_properties(
     LABELS "no-coverage-value"
 )
 add_test(
-  NAME test_AdaptiveSoftContactModel
-  COMMAND
-    $<TARGET_FILE:test_ConstraintSolver>
-    --gtest_filter=AdaptiveSoftContactModelTest.*
-)
-add_test(
-  NAME test_SoftWormModel
-  COMMAND
-    $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=SoftWormModelTest.*
-)
-add_test(
   NAME test_ContactArrowLayout
   COMMAND
     $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
 )
-dart_add_test("integration" test_BoxedLcpSolver)
-target_link_libraries(test_BoxedLcpSolver dart-demo-models)
-dart_add_test("integration" test_HeightmapModel)
-target_link_libraries(test_HeightmapModel dart-demo-models)
 set_tests_properties(
-  test_AdaptiveSoftContactModel
-  test_SoftWormModel
   test_ContactArrowLayout
-  test_BoxedLcpSolver
-  test_HeightmapModel
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
-dart_format_add(${soft_demo_model_test_sources})
+dart_format_add(
+  ${contact_arrow_test_sources}
+  "${PROJECT_SOURCE_DIR}/dart/gui/app/ContactArrowLayout.hpp"
+)
 
 dart_add_test("integration" test_WorldState)
 target_sources(test_WorldState PRIVATE AllocationCounting.cpp)
 dart_add_test("integration" test_WorldStateManual)
 target_sources(test_WorldStateManual PRIVATE AllocationCounting.cpp)
-dart_add_test("integration" test_WorldHistory)
-target_link_libraries(test_WorldHistory dart-demo-models)
-
-dart_add_test("integration" test_RelaxedPosture)
-target_link_libraries(test_RelaxedPosture dart-demo-models)
-
-dart_add_test("integration" test_ArmSkeleton)
-target_link_libraries(test_ArmSkeleton dart-demo-models)
-
-if(TARGET dart-utils)
-  dart_add_test("integration" test_ContactInverseDynamicsModel)
-  target_link_libraries(
-    test_ContactInverseDynamicsModel
-    dart-demo-models
-    dart-utils
-  )
-endif()
-
-if(TARGET dart-utils)
-  foreach(
-    demo_model_test
-    BipedStandController
-    JointConstraintsController
-    OperationalSpaceController
-  )
-    dart_add_test("integration" test_${demo_model_test})
-    target_link_libraries(test_${demo_model_test} dart-demo-models dart-utils)
-    set_tests_properties(
-      test_${demo_model_test}
-      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
-    )
-  endforeach()
-  if(HAVE_OCTOMAP)
-    dart_add_test("integration" test_PointCloudSensor)
-    target_link_libraries(test_PointCloudSensor dart-demo-models dart-utils)
-    set_tests_properties(
-      test_PointCloudSensor
-      PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
-    )
-  else()
-    dart_format_add(test_PointCloudSensor.cpp)
-  endif()
-else()
-  dart_format_add(
-    test_BipedStandController.cpp
-    test_JointConstraintsController.cpp
-    test_OperationalSpaceController.cpp
-    test_PointCloudSensor.cpp
-  )
-endif()
-
-# The soft-foot locomotion model drives the Atlas soft-feet SDF with the
-# existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
-# components are optional, so the gate only exists when both are built.
-if(TARGET dart-utils AND TARGET dart-utils-urdf)
-  set(soft_foot_simbicon_test_sources test_SoftFootSimbiconModel.cpp)
-  target_sources(
-    test_ConstraintSolver
-    PRIVATE ${soft_foot_simbicon_test_sources}
-  )
-  # The push-recovery sweep is a multi-minute parameter measurement (a dozen
-  # settle+push+recover trials per foot type), so it gets its own CTest entry:
-  # bundled with the correctness gates it exceeds the 30-minute per-test
-  # ceiling on the FreeBSD VM, which runs roughly 35x slower than bare metal.
-  add_test(
-    NAME test_SoftFootSimbiconModel
-    COMMAND
-      $<TARGET_FILE:test_ConstraintSolver>
-      "--gtest_filter=SoftFootSimbiconModelTest.*:-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet"
-  )
-  add_test(
-    NAME test_SoftFootSimbiconPushSweep
-    COMMAND
-      $<TARGET_FILE:test_ConstraintSolver>
-      --gtest_filter=SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet
-  )
-  set_tests_properties(
-    test_SoftFootSimbiconModel
-    test_SoftFootSimbiconPushSweep
-    PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
-  )
-  # Explicit budgets, overriding the CI workflows' `ctest --timeout 1800`
-  # default. Measured on the FreeBSD repro VM, this Atlas world steps ~190x
-  # slower than bare metal (the correctness gates alone took 1161 s there),
-  # so the 30-minute default cannot hold either entry: the gates need ~22
-  # minutes and the sweep projects to ~62. Budgets are sized at roughly twice
-  # the projection.
-  set_tests_properties(test_SoftFootSimbiconModel PROPERTIES TIMEOUT 3600)
-  set_tests_properties(test_SoftFootSimbiconPushSweep PROPERTIES TIMEOUT 7200)
-  # The gcov-instrumented coverage job excludes this pair (`--label-exclude
-  # no-coverage-value` in pixi's build-coverage): measured there, the gates
-  # took 3337 s and the sweep overran even 7200 s at a ~490x slowdown, while
-  # contributing no coverage the report can see -- coverage-report strips
-  # */python/native/* and */tests/* from coverage.info, and the dart-core paths
-  # these drive are already executed by test_SoftWormModel and
-  # test_AdaptiveSoftContactModel. Every functional CI job still runs both.
-  set_tests_properties(
-    test_SoftFootSimbiconModel
-    test_SoftFootSimbiconPushSweep
-    PROPERTIES LABELS "no-coverage-value"
-  )
-  # The sweep additionally carries `long-measurement`, which the FreeBSD VM
-  # job excludes: it passed there in 3674 s but consumed half the job's
-  # 120-minute wall clock and starved the remaining suite, while re-running
-  # the same code paths the 19-minute correctness gates (which stay in that
-  # job) already exercise. Labels are cumulative, so the coverage exclusion
-  # above still applies to both entries.
-  set_tests_properties(
-    test_SoftFootSimbiconPushSweep
-    PROPERTIES LABELS "no-coverage-value;long-measurement"
-  )
-  dart_format_add(${soft_foot_simbicon_test_sources})
-endif()
 
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)
@@ -385,30 +254,7 @@ if(TARGET dart-utils-urdf)
     dart_add_test("integration" test_DartLoader)
     target_link_libraries(test_DartLoader dart-utils-urdf)
   endif()
-
-  dart_add_test("integration" test_WamIkFast)
-  target_link_libraries(test_WamIkFast dart-demo-models dart-utils-urdf)
-
-  dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
-  target_link_libraries(GeneratedWamIkFast PUBLIC dart)
-  target_compile_definitions(
-    GeneratedWamIkFast
-    PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY
-  )
-  target_compile_options(GeneratedWamIkFast PRIVATE -w)
-
-  if(BUILD_SHARED_LIBS)
-    dart_add_test("integration" test_IkFast)
-    target_compile_definitions(
-      test_IkFast
-      PRIVATE DART_TEST_IKFAST_LIBRARY="$<TARGET_FILE_NAME:GeneratedWamIkFast>"
-    )
-    target_link_libraries(test_IkFast dart-utils-urdf)
-    add_dependencies(test_IkFast GeneratedWamIkFast)
-  endif()
 endif()
-
-dart_format_add(GeneratedWamIkFast.cpp)
 
 dart_add_test("integration" test_Distance)
 if(TARGET dart-collision-bullet)
