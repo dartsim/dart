@@ -144,4 +144,134 @@ Required before DEP-21 lands (option B):
 
 ## Packet evidence
 
-None yet; each packet records its gates and review passes here.
+All packets below are based on `main` `548ff24ad` and are local until the
+maintainer approves publishing them.
+
+### Gazebo base variants at `548ff24ad` (2026-10-19)
+
+Built from an exported `548ff24ad` tree as variant `base548` in shared lane
+work directories, for every Wave 1 packet to compare against. Harmonic and
+Jetty: the only failures are the accepted `UnsupportedRayIntersections`
+difference and the external `INTEGRATION_reset_sensors` defect; gz-physics
+detects `ContactSurface.hpp` (`DART_HAS_CONTACT_SURFACE_HEADER=1`). Ionic adds
+`INTEGRATION_contact_system`, which is already in the Ionic expected-failure
+file: its two attempts failed different cases that count asynchronous contact
+messages (`ExtraContactData`, then `MultipleCollisionsAsContactSensors`) while
+several lanes ran concurrently on the host, the documented load sensitivity of
+timing-dependent gz-sim tests. Ionic candidates are compared against it on a
+quieter host.
+
+### DEP-0: assert the gz contact-surface probe
+
+- Writer: Claude Sonnet; orchestrator follow-up edits.
+- Gates: `pixi run test-gz-compat-tools`, `pixi run lint`; on a reused Jetty
+  lane build, the positive control passed and a C++20-only token injected
+  into the installed `ContactSurface.hpp` failed the gate with the probe log;
+  `pixi run -e gazebo test-gz` passed with gz-physics configured twice
+  (gz-physics 199/199 tests, 4 performance tests, gz-sim
+  `INTEGRATION_entity_system`), so the README's warning that a second
+  configure would turn `test-gz` red was stale and is removed;
+  `pixi run -e gazebo config-gz` plus the gate on the final `pixi.toml`.
+- Review round 1: Codex found that `config-gz` hid a failed first pass
+  (fixed with `bash -ec`); Muse found the stale README warning, a stale-cache
+  gap in `config-gz-install`, the untested empty-cache failure shape, and
+  wording nits (all fixed).
+- Review round 2: Codex (no actionable defects; 3,727 tooling tests pass)
+  and Muse (no blockers or majors; every supported flow fails closed on a lost
+  probe). Its two optional suggestions, gating manual single-step invocations
+  (`run_gz_physics_task.sh test`, `lane.sh <lane> test-gz-physics`), are not
+  applied: the supported flows are gated, and DD-9 favors not adding more.
+- Committed locally on `test/gz-contact-surface-probe-gate`; its gate also
+  ran inside every Wave 1 integration lane below.
+
+### DEP-1: remove Boost
+
+- Writer: Claude Sonnet. Committed locally on `build/remove-boost`.
+- Gates: lint, check-lint, build, 199/199 tests, `pixi run test-package-core`
+  (no Boost definition in the installed targets), every Gazebo pixi
+  environment resolves; the 17 sources the wheel image builds were checked
+  for Boost use.
+- Reviews: Codex (no actionable regressions) and Muse (nothing substantive).
+- Owed: the Gazebo lanes against `base548`.
+
+### DEP-11 PRs 1-2: C++20-clean code
+
+- Writer: Codex. Committed locally on `refactor/cxx20-clean-code` as two
+  commits.
+- Gates: default build and 199/199 tests; a C++20 build passes 199 C++ and
+  1,641 Python tests; all 12,852 exported dynamic symbols unchanged; C++17 and
+  C++20 header checks and a C++14 ODR-use probe pass; the only remaining C++20
+  diagnostics are the two `World.cpp` captures (quiet window).
+- Reviews: Claude (nothing substantive) and Muse (no blockers; follow-up:
+  about 30 sibling property structs share the use-triggered deprecated-copy
+  pattern).
+- Owed: the Gazebo lanes against `base548` (running with DEP-1 and DEP-12(a)
+  as one integration tree).
+
+### DEP-12(a): Ubuntu 24.04 toolchain floor
+
+- Writer: Claude Sonnet; orchestrator follow-up edits.
+- Gates: lint, check-lint, `pixi run test-build-requirements` (245), build,
+  199/199 tests, `pixi run test-package-core`; a consumer with
+  `cmake_minimum_required(VERSION 3.5.1)` finds the installed package.
+- Review round 1: Codex (no actionable regressions); Muse found that consumer
+  projects and the installed examples had been raised to CMake 3.28, which
+  removed the committed 3.22.1 consumer coverage (fixed: they stay at 3.22.1).
+  The macOS host for Xcode 16.3 is 15.2 per Apple's support table (fixed).
+- Review round 2 on the post-fix state: Codex (no actionable regressions) and
+  Muse (nothing substantive; it asked for the changelog entry, added at
+  commit). Committed locally on `build/ubuntu-2404-toolchain-floor`.
+- Owed: the Gazebo lanes (in the same integration tree as DEP-1 and DEP-11).
+
+### DEP-14: DART log sink; spdlog removed
+
+- Writer: Codex.
+- Gates (round 2 state): lint, check-lint, build, 199/199 tests, 1,645 Python
+  tests, `pixi run test-package-core` with both fmt layouts, the
+  ContactSurfaceProbe and a strict C++14 logging consumer,
+  INTEGRATION_StepAllocation (disabled levels allocate nothing), 16/16
+  logging tests under ThreadSanitizer; libdart exports 0 spdlog symbols
+  (was 731); `Logging.hpp` preprocesses to about 39K lines (was 80K).
+- Review round 1 (Claude, Muse): fifteen findings fixed, among them
+  `std::string_view` and enum arguments, zero-argument calls, colors only on
+  terminals, and the Debug-build runtime level. Round 2 (Claude, Muse): no
+  blockers; a final small fix round followed (GUI panel classification
+  without colors, `setLogSink` returning the previous sink, stream flush at
+  exit, fmt include-only linking in `dart-io`). Round 3 (Claude, Muse): no
+  blockers.
+- Regression caught by the Gazebo integration lane: under the conda-forge
+  toolchain (older glibc sysroot, `-Wl,--no-undefined`) `libdart.so` failed to
+  link with `undefined reference to pthread_create`. DART uses `std::thread`
+  in core but never linked `Threads::Threads` itself; spdlog's CMake target
+  had supplied it, and the host's glibc 2.39 hid the gap. Fixed: `dart` links
+  `Threads::Threads` PUBLIC, an installed `DARTFindThreads.cmake` resolves it
+  for consumers, and `dart.pc` carries the thread flags; the conda-toolchain
+  DART build and a gz-physics build against it pass with the probe at 1, and
+  the installed `libdart.so` NEEDs `libpthread.so.0`. Round 4 on the fix
+  (Claude, Muse): nothing substantive. A disputed comment about which
+  overload string literals take was settled by compiling with GCC and Clang
+  (literals take `const char*`; mutable `char[]` arrays take the array
+  template).
+- Committed locally on `refactor/dart-log-sink` with changelog entries.
+- Owed: the Gazebo lanes on the full Wave 1 integration tree; Muse's two
+  cosmetic nits (an rvalue-string constructor, one `FMT_HEADER_ONLY`
+  definition site) move to DEP-15, which reworks the same files.
+
+### Wave 1 Gazebo integration lanes (2026-10-19)
+
+Each packet branch was applied to an exported `548ff24ad` tree (Codex and
+Claude review the packets separately; the lanes judge their combination) and
+run as an unpatched lane variant against `base548`, using DEP-0's `lane.sh` and
+gate script.
+
+| Tree | Harmonic | Jetty | Ionic |
+| --- | --- | --- | --- |
+| DEP-1 + DEP-11 + DEP-12(a) | PASS | PASS | not run |
+| DEP-1 + DEP-11 + DEP-12(a) + DEP-14 (before the Threads fix) | build failed: `pthread_create` undefined under the conda toolchain | same | not run |
+| DEP-1 + DEP-11 + DEP-12(a) + DEP-14 (final) | PASS | PASS | running |
+
+PASS means no new failures or slow cases against the stored expected-failure
+files and the `base548` results; gz-physics detected `ContactSurface.hpp` in
+every run, and the only remaining entries are the accepted
+`UnsupportedRayIntersections` difference and the external
+`INTEGRATION_reset_sensors` defect (reported `BASE`).

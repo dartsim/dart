@@ -25,6 +25,24 @@
 - gz-sim's `INTEGRATION_reset_sensors` is an external test defect; the DART 7
   program session documents it and drafts the upstream report.
 
+## Paused state (2026-10-19, usage limit)
+
+- DD-9 (balance, not blind removal) is recorded but uncommitted in this
+  branch's working tree. The balance review and the follow-up study's final
+  revision were stopped; resume each from its workflow run ID in the same
+  session, or rerun them. The follow-up study's verified results, draft and
+  critique were extracted to the orchestrator's local scratch files.
+- DEP-1 is committed locally on `build/remove-boost`, with two clean reviews
+  (Codex, Muse). Its Gazebo lane run is still owed.
+- DEP-0 has fixes from both reviews applied and uncommitted in its worktree.
+  It needs a second review round, a `config-gz` re-check, and a decision on
+  `test-gz`'s single configure, which tools/gazebo/README.md documents.
+- DEP-14's fix round (Codex) and DEP-11 (Codex) may still be running in their
+  worktrees; read their reports before reviewing.
+- DEP-12(a)'s Sonnet worker finished; its report is unread.
+- DEP-15 (in-house fmt formatter) is on hold until the balance review rules
+  under DD-9.
+
 ## Next steps
 
 1. Review each Wave 1 report against its done-when list, get two reviews from

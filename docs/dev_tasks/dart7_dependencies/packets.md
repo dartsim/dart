@@ -175,6 +175,11 @@ Four PRs in order; the default standard stays C++17.
   -DDART_TREAT_WARNINGS_AS_ERRORS=ON` build on GCC 13.3, GCC 15 and Clang 21,
   plus a variant with octomap 1.10.0; bit-identical outputs; gz.
 
+Follow-up (from the DEP-11 review): about 30 other property and state
+structs with virtual destructors (joint, body node, skeleton, point mass and
+optimizer function properties) share the use-triggered deprecated-copy
+pattern. A mechanical PR can default their copy operations the same way.
+
 ## DEP-12. Ubuntu 24.04 floor
 
 - **Before starting:** #3829 is the maintainer's own open PR and is

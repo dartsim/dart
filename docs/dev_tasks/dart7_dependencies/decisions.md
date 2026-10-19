@@ -48,6 +48,17 @@ Revisit a decision only with new evidence and maintainer approval.
   in-tree bundled copies give way to fetched or system packages. The
   per-dependency matrix is part of the follow-up study.
 
+- **DD-9. Balance, not blind removal.** The maintainer's words: "find good
+  balance between self-contained (less dependency) vs.
+  simplify/productivity (more dependency)" and "not simply/blindly removing
+  dependencies". Every removal, replacement or internalization must show a
+  net benefit: what it saves (packaging, footprint, exposure in installed
+  headers, upstream churn, security surface) against what it costs (code DART
+  then owns and maintains, its bugs and security fixes, build and developer
+  productivity, features the library provided). A dependency that is well
+  maintained, cheap to obtain and kept out of DART's public interface may stay.
+  This also governs how DD-4 and DD-8 apply case by case.
+
 ## Follow-up study (requested 2026-10-19)
 
 - Asset networking: keep, isolate or move to Python, with security,
