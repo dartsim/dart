@@ -4,6 +4,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 dart_add_core_headers(${hdrs} ${detail_hdrs})
+dart_format_add("${CMAKE_CURRENT_SOURCE_DIR}/detail/DeterministicExecutor.h")
 dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
