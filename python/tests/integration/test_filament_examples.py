@@ -33,7 +33,7 @@ CATALOG_IDS = set(
     "hardcoded_design rigid_loop box_stacking dynamic_joint_constraints "
     "tinkertoy joint_constraints hybrid_dynamics "
     "biped_stand operational_space_control contact_inverse_dynamics "
-    "ssik_ik_gui wam_ikfast atlas_puppet atlas_simbicon mixed_chain "
+    "ssik_ik_gui wam_analytical_ik atlas_puppet atlas_simbicon mixed_chain "
     "adaptive_soft_contact soft_worm soft_foot_simbicon soft_bodies "
     "soft_cubes soft_open_chain atlas_v5 unitree_g1 vehicle heightmap "
     "point_cloud drag_and_drop".split()
@@ -46,8 +46,6 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
     ids = [scene.id for scene in scenes]
     assert ids and len(ids) == len(set(ids))
     expected = CATALOG_IDS.copy()
-    if not hasattr(dart._demos, "ArmSkeleton"):
-        expected.remove("ssik_ik_gui")
     if not hasattr(dart.utils, "ModelResourceRetriever"):
         expected.difference_update(HUMANOID_IDS)
     if not hasattr(dart.dynamics, "VoxelGridShape"):
@@ -102,15 +100,21 @@ def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
 
 
 @requires_app_host
-def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(monkeypatch, capfd):
+@pytest.mark.parametrize(
+    ("scene_id", "title"),
+    [("ssik_ik_gui", "ssik Analytical IK"), ("wam_analytical_ik", "WAM Analytical IK")],
+)
+def test_ssik_catalog_does_not_require_a_renderer_or_optional_solver(
+    monkeypatch, capfd, scene_id, title
+):
     monkeypatch.setitem(sys.modules, "ssik", None)
-    scene = next(scene for scene in _demo_scenes() if scene.id == "ssik_ik_gui")
+    scene = next(scene for scene in _demo_scenes() if scene.id == scene_id)
     assert viewer.run([scene], ["examples.demos", "--list-scenes"]) == 0
-    assert "ssik Analytical IK" in capfd.readouterr().out
+    assert title in capfd.readouterr().out
     with pytest.raises(viewer.AssetsNotPrefetchedError, match="ssik"):
         scene.factory()
     assert viewer.run([scene], ["examples.demos", "--cycle-scenes", "--frames", "2"]) == 0
-    assert "demo 'ssik_ik_gui' skipped:" in capfd.readouterr().out
+    assert f"demo '{scene_id}' skipped:" in capfd.readouterr().out
 
 
 @requires_app_host

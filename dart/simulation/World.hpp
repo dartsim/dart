@@ -173,7 +173,14 @@ public:
 
   /// Restore channels directly after complete validation. Mobile Skeletons
   /// wake and soft activation restarts; frame count and exact solver/contact
-  /// history are not restored. Parameters remain those of this World.
+  /// history are not restored. Contact and solver warm starts, detector
+  /// contact history and sleep smoothing are cleared; for custom collision
+  /// detectors, only the solver's. FCL and Bullet also rebuild their
+  /// broadphase, which allocates. Contacts can still arrive in a different
+  /// order than in a new World restoring the same snapshot after collision
+  /// shapes were added, removed or replaced, and with FCL or Bullet once a
+  /// group holds three or more objects, because their broadphase trees order
+  /// pairs by memory address. Parameters remain those of this World.
   /// Commands follow this World's actuator types and limits, as setCommand()
   /// would. EndEffector Support active flags remain those of this World.
   /// Supported manual Ball/Revolute/Cylindrical/Weld constraint impulses reset;
@@ -526,6 +533,9 @@ protected:
   /// Wakes sleeping mobile skeletons after world-level or external kinematic
   /// changes that may invalidate filtered resting contacts.
   void wakeRestingSkeletonsForWorldChange();
+
+  /// Restarts the first-frame rest credit, as a new World would get it.
+  void restartFirstFrameRestCredit();
 
   /// Invalidates simulation preparation after a world-shape change.
   void invalidateSimulationMode();

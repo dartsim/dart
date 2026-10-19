@@ -82,6 +82,13 @@ namespace python {
 #if HAVE_OCTOMAP
 namespace {
 
+using VoxelPoints = nb::ndarray<
+    nb::numpy,
+    const double,
+    nb::shape<-1, 3>,
+    nb::c_contig,
+    nb::device::cpu>;
+
 // Single points reach OctoMap as doubles, while rays and point clouds are
 // narrowed to float first; validate the coordinates OctoMap will use.
 void validateVoxelPoint(
@@ -136,6 +143,20 @@ void validateVoxelRay(
       throw nb::value_error(
           "the ray from sensorOrigin to a point is too short for OctoMap's "
           "float arithmetic");
+  }
+}
+
+void validateVoxelUpdate(
+    const dart::dynamics::VoxelGridShape* shape,
+    const VoxelPoints& points,
+    const Eigen::Vector3d& sensorOrigin)
+{
+  validateVoxelPoint(shape, sensorOrigin, true, "sensorOrigin");
+  const auto view = points.view<nb::ndim<2>>();
+  for (std::size_t i = 0; i < points.shape(0); ++i) {
+    const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
+    validateVoxelPoint(shape, point, true);
+    validateVoxelRay(shape, sensorOrigin, point);
   }
 }
 
@@ -355,29 +376,26 @@ void Shape(nb::module_& m)
           +[](dart::dynamics::VoxelGridShape* self,
               // The (N, 3) shape is part of overload matching, so a single
               // point given as a column vector reaches the overload above.
-              nb::ndarray<
-                  nb::numpy,
-                  const double,
-                  nb::shape<-1, 3>,
-                  nb::c_contig,
-                  nb::device::cpu> points,
+              VoxelPoints points,
               const Eigen::Vector3d& sensorOrigin) {
-            validateVoxelPoint(self, sensorOrigin, true, "sensorOrigin");
+            validateVoxelUpdate(self, points, sensorOrigin);
 
             const auto view = points.view<nb::ndim<2>>();
             octomap::Pointcloud cloud;
             cloud.reserve(points.shape(0));
-            for (std::size_t i = 0; i < points.shape(0); ++i) {
-              const Eigen::Vector3d point(view(i, 0), view(i, 1), view(i, 2));
-              validateVoxelPoint(self, point, true);
-              validateVoxelRay(self, sensorOrigin, point);
-              cloud.push_back(point.x(), point.y(), point.z());
-            }
+            for (std::size_t i = 0; i < points.shape(0); ++i)
+              cloud.push_back(view(i, 0), view(i, 1), view(i, 2));
             self->updateOccupancy(
                 cloud, sensorOrigin, dart::dynamics::Frame::World());
           },
           nb::arg("points"),
           nb::arg("sensorOrigin") = Eigen::Vector3d::Zero().eval())
+      .def(
+          "validate_occupancy_update",
+          &validateVoxelUpdate,
+          nb::arg("points"),
+          nb::arg("sensor_origin") = Eigen::Vector3d::Zero().eval(),
+          "Check a point cloud and sensor rays without changing occupancy.")
       .def(
           "getOccupancy",
           +[](const dart::dynamics::VoxelGridShape* self,
@@ -505,6 +523,16 @@ void Shape(nb::module_& m)
       m, "MeshShape")
       .def(
           dartnb::factory(
+              [](const Eigen::Vector3d& scale,
+                 std::shared_ptr<dart::math::TriMesh<double>> mesh) {
+                return std::make_shared<dart::dynamics::MeshShape>(
+                    scale, std::move(mesh));
+              }),
+          nb::arg("scale"),
+          nb::arg("mesh"))
+      .def_prop_ro("tri_mesh", &dart::dynamics::MeshShape::getTriMesh)
+      .def(
+          dartnb::factory(
               +[](const Eigen::Vector3d& scale, const aiScene* mesh) {
                 DART_SUPPRESS_DEPRECATED_BEGIN
                 auto shape
@@ -624,6 +652,26 @@ void Shape(nb::module_& m)
               -> dart::common::ResourceRetrieverPtr {
             return self->getResourceRetriever();
           })
+      .def_prop_ro(
+          "mesh_vertex_groups",
+          [](const dart::dynamics::MeshShape* self) {
+            nb::list groups;
+            const aiScene* scene = self->getMesh();
+            if (!scene)
+              return groups;
+            for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+              const aiMesh* mesh = scene->mMeshes[i];
+              const unsigned int count = mesh ? mesh->mNumVertices : 0;
+              Eigen::Matrix<double, Eigen::Dynamic, 3> vertices(count, 3);
+              for (unsigned int j = 0; j < count; ++j) {
+                const auto& vertex = mesh->mVertices[j];
+                vertices.row(j) << vertex.x, vertex.y, vertex.z;
+              }
+              groups.append(nb::cast(std::move(vertices)));
+            }
+            return groups;
+          },
+          "Return independent unscaled vertex arrays, in Assimp mesh order.")
       .def(
           "setScale",
           nb::overload_cast<const Eigen::Vector3d&>(
@@ -1082,6 +1130,7 @@ void Shape(nb::module_& m)
       .value(
           "BILLBOARD_CIRCLE",
           dart::dynamics::PointCloudShape::PointShapeType::BILLBOARD_CIRCLE)
+      .value("POINT", dart::dynamics::PointCloudShape::PointShapeType::POINT)
       .export_values();
 
   dartnb::dart_class<dart::dynamics::SphereShape, dart::dynamics::Shape>(

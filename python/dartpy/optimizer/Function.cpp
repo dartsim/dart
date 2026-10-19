@@ -71,7 +71,18 @@ public:
     // Function has no public Python evalGradient method.
     if (!nb::hasattr(nb_trampoline.base(), "evalGradient"))
       return Function::evalGradient(x, grad);
-    NB_OVERRIDE(evalGradient, x, grad);
+    constexpr auto hash = nb::detail::str_hash("evalGradient");
+    nb::detail::ticket ticket(nb_trampoline, "evalGradient", hash, false);
+    if (!ticket.key.is_valid())
+      return Function::evalGradient(x, grad);
+    // The callback may retain its output array after native scratch storage
+    // dies.
+    nb::object gradient = nb::cast(grad, nb::rv_policy::copy);
+    nb::cast<void>(nb_trampoline.base().attr(ticket.key)(x, gradient));
+    const auto updated = nb::cast<Eigen::VectorXd>(gradient);
+    if (updated.size() != grad.size())
+      throw nb::value_error("gradient must retain its original size");
+    grad = updated;
   }
 };
 

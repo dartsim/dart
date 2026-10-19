@@ -42,7 +42,7 @@ endif()
 add_library(dart-gui-app STATIC EXCLUDE_FROM_ALL ${app_sources})
 set_target_properties(dart-gui-app PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(dart-gui-app PUBLIC cxx_std_17)
-target_link_libraries(dart-gui-app PUBLIC dart-gui dart-demo-models)
+target_link_libraries(dart-gui-app PUBLIC dart-gui)
 target_include_directories(
   dart-gui-app
   PRIVATE "${PROJECT_SOURCE_DIR}/examples"

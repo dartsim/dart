@@ -2,6 +2,8 @@
 
 import dartpy as dart
 
+from ..models.boxed_lcp_solver import set_boxed_lcp_solver
+
 
 def _box(name, position, size, color, *, fixed=False):
     skeleton = dart.dynamics.Skeleton(name)
@@ -41,7 +43,7 @@ def build() -> dart.viewer.SceneSetup:
             )
         )
     solver_kind = "dantzig"
-    dart._demos.set_boxed_lcp_solver(world, solver_kind)
+    set_boxed_lcp_solver(world, solver_kind)
 
     panel = dart.viewer.Panel()
     time_text = panel.add_text("Time: 0.000")
@@ -52,7 +54,7 @@ def build() -> dart.viewer.SceneSetup:
         new_kind = "dantzig" if solver.value == 0 else "pgs"
         if new_kind != solver_kind:
             solver_kind = new_kind
-            dart._demos.set_boxed_lcp_solver(world, solver_kind)
+            set_boxed_lcp_solver(world, solver_kind)
 
     solver.on_change = change_solver
     panel.add_text(

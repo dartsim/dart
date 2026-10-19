@@ -52,6 +52,7 @@ void EndEffector(nb::module_& sm);
 void DegreeOfFreedom(nb::module_& sm);
 
 void BodyNode(nb::module_& sm);
+void PointMass(nb::module_& sm);
 void SoftBodyNode(nb::module_& sm);
 
 void Joint(nb::module_& sm);
@@ -99,6 +100,7 @@ void dart_dynamics(nb::module_& m)
   DegreeOfFreedom(sm);
 
   BodyNode(sm);
+  PointMass(sm);
   SoftBodyNode(sm);
 
   Joint(sm);

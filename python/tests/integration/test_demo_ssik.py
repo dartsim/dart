@@ -9,6 +9,12 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+from examples.demos.models.arm_skeleton import (
+    ArmSkeleton,
+    get_ssik_arm_specs,
+    make_ssik_target_transform,
+    ssik_target_controls,
+)
 viewer = getattr(dart, "viewer", None)
 requires_viewer = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
@@ -68,11 +74,11 @@ def test_ssik_arm_fk_and_python_analytical_targets(arm_index):
     """Keep both independent checks from the removed example's self-test."""
     pytest.importorskip("ssik")
     scene_module = _scene_module()
-    specs = dart._demos.get_ssik_arm_specs()
+    specs = get_ssik_arm_specs()
     assert len(specs) == 19
     module = importlib.import_module("ssik.prebuilt." + specs[arm_index].module)
     world = dart.simulation.World()
-    arm = dart._demos.ArmSkeleton(world)
+    arm = ArmSkeleton(world)
     arm.build(scene_module.arm_chain(module))
     arm.show_solutions([], -1)
     skeleton = world.getSkeleton(0)
@@ -162,7 +168,7 @@ def test_ssik_panel_controls_dragging_and_solution_diagnostics(controls, monkeyp
     assert world.getNumSkeletons() == 16
     assert world.getNumSimpleFrames() == 2
     arm_choice = _control(controls, "Arm")
-    assert arm_choice.options == [arm.label for arm in dart._demos.get_ssik_arm_specs()]
+    assert arm_choice.options == [arm.label for arm in get_ssik_arm_specs()]
     assert len(arm_choice.options) == 19
     assert calls[-1][1] == {
         "max_solutions": None,
@@ -232,7 +238,7 @@ def test_ssik_panel_controls_dragging_and_solution_diagnostics(controls, monkeyp
     )
     np.testing.assert_allclose(
         target.getTransform().matrix(),
-        dart._demos.make_ssik_target_transform(position.value, rpy.value).matrix(),
+        make_ssik_target_transform(position.value, rpy.value).matrix(),
     )
     unchanged = target.getTransform().matrix().copy()
     _edit(position, [float("nan"), 0, 0])
@@ -248,7 +254,7 @@ def test_ssik_panel_controls_dragging_and_solution_diagnostics(controls, monkeyp
     assert len(calls) == count + 1
     np.testing.assert_array_equal(calls[-1][0], unchanged)
     _edit(_control(controls, "Home target"))
-    home_position, home_rpy = dart._demos.ssik_target_controls(
+    home_position, home_rpy = ssik_target_controls(
         _scene_module().isometry(module.T_HOME)
     )
     np.testing.assert_array_equal(position.value, home_position)
@@ -272,7 +278,7 @@ def test_ssik_panel_controls_dragging_and_solution_diagnostics(controls, monkeyp
     setup.pre_refresh()
     assert len(calls) == count + 3
 
-    for arm_index, spec in enumerate(dart._demos.get_ssik_arm_specs()):
+    for arm_index, spec in enumerate(get_ssik_arm_specs()):
         _edit(arm_choice, arm_index)
         setup.pre_refresh()
         assert _control(controls, "Module: ssik.prebuilt." + spec.module).visible
