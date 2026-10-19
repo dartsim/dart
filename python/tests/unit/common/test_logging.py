@@ -393,6 +393,30 @@ def test_bridge_state_is_released_at_exit():
     assert "nanobind: leaked" not in result.stderr
 
 
+def test_import_survives_a_failing_logging_import():
+    # A broken or shadowed logging module must not break `import dartpy`.
+    code = """
+import sys
+class Refuse:
+    def find_spec(self, name, path=None, target=None):
+        if name == 'logging':
+            raise ImportError('logging is unavailable')
+        return None
+sys.modules.pop('logging', None)
+sys.meta_path.insert(0, Refuse())
+import dartpy
+print('imported')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ),
+    )
+    assert result.returncode == 0, result.stderr
+    assert "imported" in result.stdout
+
+
 @needs_testing_hooks
 def test_exit_drain_precedes_logging_shutdown_when_dartpy_is_imported_first(tmp_path):
     log_file = tmp_path / "exit.log"
