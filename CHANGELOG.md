@@ -200,6 +200,7 @@
   * Keep gradient arrays passed to Python `optimizer.Function.evalGradient`
     overrides alive after the callback returns, while applying their updates
     to the native solver.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
 
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
@@ -232,6 +233,7 @@
   * Hide the ssik analytical IK demo's solved marker when no current
     forward-kinematics pose is available, including failed solves and arm
     loads.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
 
   * Replace the four C++ tutorials with Python exercises and solutions in
     `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
