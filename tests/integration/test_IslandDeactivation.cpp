@@ -1175,6 +1175,10 @@ TEST(IslandDeactivation, InitialCreditConfirmationRestartsWhenWorldSetupChanges)
            [](World& world) {
              world.setNumSimulationThreads(2);
            }},
+          {"solver thread count",
+           [](World& world) {
+             world.getConstraintSolver()->setNumSimulationThreads(2);
+           }},
           {"contact limit",
            [](World& world) {
              world.getConstraintSolver()->getCollisionOption().maxNumContacts
