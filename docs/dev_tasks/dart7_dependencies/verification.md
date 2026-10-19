@@ -384,3 +384,36 @@ tests.
   and Ionic PASS. Jetty flagged gz-physics' `StepWorld` once at 15.6 s
   (limit 6.1 s); the same build took 2.2-2.5 s in three solo reruns and
   2.6-3.5 s on the other lanes, so it was load, not a regression.
+
+### Spike: the distro FCL assertion in `test_Distance` (2026-10-19)
+
+- Trigger: `Distance.testBasicInterface` and `Distance.Options` query the
+  distance between two ellipsoids (radii 0.5 and 0.25, centers at the origin
+  and (0.75, 0, 0)) that touch exactly at (0.5, 0, 0). FCL 0.7.0's GJK
+  (libccd path) takes an initial Minkowski support point that is already the
+  origin, then asks for support in a zero direction and gets NaN
+  (`gjk_libccd-inl.h`, initialization and the ellipsoid support function).
+  Ellipsoid-sphere pairs and non-spherical ellipsoids reproduce it; the
+  input order matters; the collision query reports no contact at that exact
+  tangency.
+- Ubuntu's `libfcl0.7` 0.7.0-3build2 keeps assertions, so the process
+  aborts in `doSimplex2` ("A is not in region 1"); defining `NDEBUG` in
+  DART does not change the prebuilt library. With assertions compiled out
+  (as conda-forge builds FCL), FCL returns its unsigned sentinel distance
+  -1 and nearest points (0, 0, 0) for both shapes; DART clamps the distance
+  to 0, which is correct, but the nearest points are wrong (the contact is
+  (0.5, 0, 0)). DART's tests pass there only because they check that the
+  points are finite.
+- Upstream: FCL issue #366 (open) covers related GJK defects; PR #367
+  (merged before 0.7.0) does not fix this case, and the reproducer still
+  aborts with FCL master's GJK source (`708d2e10`). No Debian or Ubuntu
+  report matches.
+- Exposure: FCL-backed distance queries between ellipsoids or spheres at
+  exact tangency, from C++ and from dartpy, on stock Ubuntu 24.04.
+- Recommendation: fix upstream in FCL with a regression test, link Debian
+  and Ubuntu reports, and document the stock-noble limitation; keep DART's
+  ellipsoid coverage (no jitter or skip). The noble apt lane (DEP-12(b))
+  records `test_Distance` as an expected external failure tied to the
+  upstream report. The opt-in `MESH` primitive mode gives correct results
+  but changes approximation and speed, so it is not a default change.
+  Filing upstream reports needs maintainer approval.

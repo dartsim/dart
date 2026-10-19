@@ -51,8 +51,9 @@
 2. Run the decision-free packets in the review's §3 "Order", item 2,
    starting with those that do not depend on an unmerged Wave 1 branch.
 3. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
-   the C++17 and C++20 builds, the stock-noble Tier 2 build, and the triage of
-   the distro FCL assertion in `test_Distance`.
+   the C++17 and C++20 builds, and the stock-noble Tier 2 build. The distro
+   FCL assertion is triaged ([verification.md](verification.md)); filing the
+   upstream FCL and Debian/Ubuntu reports needs approval.
 4. After M1d: DEP-21, the `World.cpp` captures from DEP-11, and any
    quiet-window hunk the PLAN-624 owner did not clear earlier.
 

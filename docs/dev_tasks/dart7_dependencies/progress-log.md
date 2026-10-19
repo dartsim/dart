@@ -46,3 +46,6 @@
     DART 6). The Gazebo lanes pass on the full Wave 2 tree; DEP-15 started.
   - DEP-15 committed on DEP-14: fmt leaves DART; a differential test
     against fmt caught a float layout bug that both reviewers missed.
+  - The distro FCL assertion is an FCL GJK bug at exact ellipsoid
+    tangency (aborts with Ubuntu's asserting build, wrong nearest points
+    otherwise); upstream reports await approval.
