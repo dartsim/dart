@@ -4,6 +4,20 @@
 
 ### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
 
+* Dynamics
+
+  * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
+    write their state out of bounds, and they now appear in the soft mesh
+    and the skeleton version. `removeAllPointMasses()` no longer leaks the
+    removed point masses.
+    [#3813](https://github.com/dartsim/dart/pull/3813)
+
+  * Line segment, plane, point cloud, voxel grid and custom shapes built on
+    the default `Shape` constructor now always compute their volume and
+    bounding box on the first query, instead of possibly returning zero
+    volume or an empty box.
+    [#3819](https://github.com/dartsim/dart/pull/3819)
+
 ### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
 
 DART 6.20.1 is a patch release on the DART 6 line. It fixes mimic joints that
