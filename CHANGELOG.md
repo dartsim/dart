@@ -82,12 +82,14 @@
     and shared model membership; `edit()` on such a World leaves it lazy.
     Scope exit never throws: when the recompile fails, the next `step()` or
     `compile()` throws that error.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Worlds that are never compiled keep DART 6 behavior, including version
     propagation and shared model membership, with one labeled change: a
     re-entrant `World::step()` and a topology edit of the stepping World's
     model from its own step callbacks now throw `std::runtime_error` instead
     of corrupting the step. Ownership tracking starts at `compile()`.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
