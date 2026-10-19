@@ -1,5 +1,6 @@
 """dartpy.math.Transform and Rotation: immutable scalar or batched values."""
 
+import copy
 import operator
 import pickle
 
@@ -337,6 +338,8 @@ def test_pickle_keeps_bits():
         dart.Rotation(rpy=RNG.normal(size=(2, 3))),
     ]
     for value in values:
+        assert copy.copy(value) == value
+        assert copy.deepcopy(value) == value
         for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1):
             restored = pickle.loads(pickle.dumps(value, protocol=protocol))
             assert type(restored) is type(value)
@@ -345,6 +348,45 @@ def test_pickle_keeps_bits():
     assert len(pickle.loads(pickle.dumps(values[2]))) == 3
     with pytest.raises(ValueError):
         dart.Transform.__new__(dart.Transform).__setstate__((False, b"short"))
+
+
+@pytest.mark.parametrize("cls", [dart.Transform, dart.Rotation])
+@pytest.mark.parametrize("batched", [False, True])
+def test_setstate_rejects_initialized_values(cls, batched):
+    value = cls(rpy=[(0.1, 0.2, 0.3), (0.4, 0.5, 0.6)] if batched else (0.1, 0.2, 0.3))
+    before = value.__getstate__()
+    original_hash = None if batched else hash(value)
+    mapping = None if batched else {value: "unchanged"}
+    with pytest.raises(TypeError, match="already initialized"):
+        value.__setstate__(cls.identity().__getstate__())
+    assert value.__getstate__() == before
+    if not batched:
+        assert hash(value) == original_hash
+        assert mapping[value] == "unchanged"
+    for restored in (copy.copy(value), copy.deepcopy(value), pickle.loads(pickle.dumps(value))):
+        assert restored == value
+        assert restored.__getstate__() == before
+
+
+@pytest.mark.parametrize("operation", ["compose", "rotate", "inverse"])
+@pytest.mark.parametrize("batched", [False, True])
+def test_computed_values_reject_nonfinite_translation(operation, batched):
+    translation = (1e308, 0, 0) if operation == "compose" else (1.7e308, 1.7e308, 0)
+    value = dart.Transform(
+        rpy=(0, 0, np.pi / 4) if operation == "inverse" else None,
+        translation=[(0, 0, 0), translation] if batched else translation,
+    )
+    before = value.__getstate__()
+    pattern = r"index 1.*finite" if batched else "finite"
+    with pytest.raises(ValueError, match=pattern):
+        if operation == "compose":
+            _ = value @ value
+        elif operation == "rotate":
+            _ = dart.Rotation(rpy=(0, 0, np.pi / 4)) @ value
+        else:
+            value.inverse()
+    assert value.__getstate__() == before
+    assert pickle.loads(pickle.dumps(value)) == value
 
 
 def test_immutability():

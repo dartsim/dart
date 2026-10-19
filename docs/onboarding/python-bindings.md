@@ -264,8 +264,10 @@ level) are immutable values backed by contiguous `Eigen::Isometry3d` storage:
 one item for a scalar, `N >= 1` items for a batch built from arrays with a
 leading axis (an empty leading axis raises `ValueError`). Constructors are
 keyword-only and take at most one rotation form (`rotation=` a 3x3 or a
-`Rotation`, `wxyz=`, `xyzw=`, `rpy=`, or for `Transform` a homogeneous
-`matrix=`) plus `translation=`; no rotation form gives the identity, and
+`Rotation`, `wxyz=`, `xyzw=`, `rpy=`) plus `translation=` for a `Transform`.
+Alternatively, `Transform(matrix=...)` takes a homogeneous matrix that already
+contains translation and excludes `translation=` and all other rotation forms.
+No rotation form gives the identity, and
 `identity()` spells that out. `Rotation.from_axis_angle(axis, angle)` builds a
 scalar rotation from a nonzero axis of any magnitude (it is scaled by its
 largest component before normalization) and an angle in radians. `rpy` is
@@ -303,7 +305,9 @@ the error message suggests `normalize=True` only for inputs that meet both
 criteria. Composition and
 `inverse()` never normalize: a chain of 1e4 compositions drifts by about 1e-13,
 and `Transform(matrix=value.matrix, normalize=True)` restores exactness when
-needed.
+needed. Composition and `inverse()` raise `ValueError` if any result entry is
+nonfinite or its rotation leaves the near-rotation envelope above; batch errors
+identify the first failing index.
 
 Quaternion order is always named (`wxyz=`/`xyzw=` in, `.wxyz`/`.xyzw` out).
 Matrix-to-quaternion conversion uses Eigen's largest-diagonal branch, and the
@@ -313,9 +317,13 @@ the quaternion, and only an exact zero defers to the next coefficient. Array
 properties return read-only copies. `==` and `hash()` are bit-exact over the
 stored 4x4 matrix, so `-0.0` and `0.0` are different values; `hash()` works for
 scalars only (batches raise `TypeError`, like NumPy arrays). Pickling keeps
-the exact bits, and unpickling validates every item like construction does
-(byte length, finite entries, homogeneous row, rotation tolerance, and a zero
-translation for a `Rotation`), so crafted state raises `ValueError`.
+the exact bits, and unpickling validates byte length, finite entries, the
+homogeneous row, a rotation inside the `normalize=True` near-rotation envelope
+(positive determinant, singular-value stretch at most `1e-2` and relative
+spread at most `1e-3`), and zero translation for a `Rotation`. It preserves
+drift beyond the construction tolerance without projecting; crafted state
+outside these invariants raises `ValueError`. Restoring state on an already
+initialized value raises `TypeError`; pickle, copy and deepcopy create new values.
 `Transform.from_isometry()`
 validates a `dartpy.math.Isometry3` and `to_isometry()` returns a mutable
 copy for the camelCase API; there is no implicit conversion in either

@@ -637,6 +637,12 @@ void requireResultEnvelope(
     const Isometry& item, const char* op, bool batched, std::size_t index)
 {
   const auto& R = item.matrix();
+  if (!R.allFinite()) {
+    std::string name = std::string(op) + " result";
+    if (batched)
+      name += " at batch index " + std::to_string(index);
+    throw nb::value_error((name + " must be finite").c_str());
+  }
   // R^T R - I is symmetric; compute its six distinct entries directly.
   const double g00
       = R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0) + R(2, 0) * R(2, 0) - 1;
@@ -819,8 +825,12 @@ nb::tuple getState(const T& self)
 }
 
 template <class T>
-void setState(T& self, nb::tuple state)
+void setState(nb::handle self, nb::tuple state)
 {
+  if (!nb::isinstance<T>(self))
+    throw nb::type_error("incompatible restoration type");
+  if (nb::inst_ready(self))
+    throw nb::type_error("value is already initialized");
   if (state.size() != 2)
     throw nb::value_error("invalid pickle state");
   if (!nb::isinstance<nb::bool_>(state[0])
@@ -840,7 +850,8 @@ void setState(T& self, nb::tuple state)
     std::memcpy(M.data(), raw.c_str() + itemBytes * i, itemBytes);
     items.push_back(validateItem<T>(M, "pickle state", false));
   }
-  new (&self) T(fromStorage<T>(std::move(items), batched));
+  new (nb::inst_ptr<T>(self)) T(fromStorage<T>(std::move(items), batched));
+  nb::inst_mark_ready(self);
 }
 
 nb::str formatVector(const double* data, std::size_t n)
@@ -899,8 +910,8 @@ void bindCommon(Class& cls, const char* name)
           "Inverse of the stored value. A rotation accepted within the "
           "tolerance or drifted by composition is inverted as stored, not "
           "transposed, so value @ value.inverse() is the identity to "
-          "floating-point precision. Raises ValueError if the result leaves "
-          "the normalize=True near-rotation envelope.")
+          "floating-point precision. Raises ValueError if the result is "
+          "nonfinite or leaves the normalize=True near-rotation envelope.")
       .def(
           "__matmul__",
           [](nb::handle self, nb::handle other) { return matmul(self, other); },
@@ -1056,9 +1067,10 @@ void Transform(nb::module_& sm)
           nb::arg("matrix") = nb::none(),
           nb::arg("translation") = nb::none(),
           nb::arg("normalize") = false,
-          "Build from at most one rotation form (rotation=, wxyz=, xyzw=, rpy= "
-          "or a homogeneous matrix=) plus translation=; omitted parts are the "
-          "identity. Arrays with a leading N >= 1 build a batch.")
+          "Build from at most one rotation form (rotation=, wxyz=, xyzw= or "
+          "rpy=) plus translation=, or from a homogeneous matrix=, which "
+          "already contains translation and excludes translation=. Omitted "
+          "parts are the identity. Arrays with a leading N >= 1 build a batch.")
       .def_static(
           "from_isometry",
           [](nb::handle iso) {
