@@ -347,6 +347,8 @@ public:
   void enterSimulationMode();
 
   /// Returns true if simulation preparation is current for the world shape.
+  /// It may synchronize the constraint solver's collision group, so do not call
+  /// it concurrently with step() or other changes to this World.
   bool isInSimulationMode() const;
 
   /// Returns the World-owned memory manager.

@@ -128,6 +128,11 @@
 
 * Dynamics
 
+  * Keep prepared Worlds ready after topology edits in unrelated Worlds,
+    while still rebuilding after changes to their own skeletons, solver
+    membership, or collision-group dependencies.
+    [#3818](https://github.com/dartsim/dart/pull/3818)
+
   * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
     write their state out of bounds, and they now appear in the soft mesh
     and the skeleton version. `removeAllPointMasses()` no longer leaks the
