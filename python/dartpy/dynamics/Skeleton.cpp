@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/composite_state.hpp"
 #include "detail/hierarchical_ik.hpp"
 // clang-format on
 
@@ -241,15 +242,16 @@ void Skeleton(nb::module_& m)
           "setState",
           +[](dart::dynamics::Skeleton* self,
               const dart::dynamics::Skeleton::State& state) -> void {
-            const auto* savedBodies
-                = state.get<dart::dynamics::detail::BodyNodeVectorProxyAspect>();
+            const auto* savedBodies = dartnb::find_state<
+                dart::dynamics::detail::BodyNodeVectorProxyAspect>(state);
             if (savedBodies) {
               const auto& bodies = savedBodies->get();
               for (std::size_t i = 0;
                    i < std::min(bodies.size(), self->getNumBodyNodes());
                    ++i) {
                 const auto* soft = self->getBodyNode(i)->asSoftBodyNode();
-                const auto* saved = bodies[i].get<dart::dynamics::SoftBodyNode>();
+                const auto* saved
+                    = dartnb::find_state<dart::dynamics::SoftBodyNode>(bodies[i]);
                 if (soft && saved
                     && saved->mPointStates.size() != soft->getNumPointMasses())
                   throw nb::value_error(

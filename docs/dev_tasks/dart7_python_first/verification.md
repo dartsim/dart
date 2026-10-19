@@ -1349,6 +1349,15 @@ performance claim.
   while `SharedLibrary` and `InverseKinematics::Analytical` remain. Gazebo's
   API inventory and the gz-physics and gz-sim sources use none of the removed
   names.
+- **CI:** The first two CI runs of #3824 failed four macOS arm64 cases of
+  `test_soft_snapshot_rejects_wrong_point_count_without_changing_state`, where
+  the soft-point count check never raised. The check found the saved soft
+  state with a `typeid` lookup. On Apple arm64, which compares hidden typeinfo
+  by address, dartpy's hidden copy of the aspect template's typeinfo never
+  equals libdart's. The check now matches type names through
+  `detail/composite_state.hpp`. A Linux dartpy build with address-only typeinfo
+  comparison (`__GXX_MERGED_TYPEINFO_NAMES=1`) failed the same four cases with
+  the old lookup and passed all eight snapshot tests with the new one.
 - **Changelog:** The marker fix and the optimizer gradient fix keep their own
   7.0.0 entries. The IKFast removal and the WAM scene are drafted for M6b's
   consolidation PR. `dartpy._demos` and `dart-demo-models` were private and

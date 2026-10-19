@@ -155,7 +155,10 @@ bindings and `detail/array.hpp` to preserve pybind11's `FixedSize` array
 annotations using nanobind's array conversion. Use
 `detail/optimizer_properties.hpp` for optimizer property values and
 `detail/ik_properties.hpp` for inverse-kinematics property values. The property
-headers also assert their caster selection. CMake runs
+headers also assert their caster selection. Find an aspect's entry in a
+composite state with `detail/composite_state.hpp`, which matches type names:
+`state.get<T>()` misses on macOS arm64, where dartpy's hidden copy of an aspect
+template's typeinfo never equals libdart's. CMake runs
 `scripts/nanobind/check_guards.py` to enforce the first include and required
 headers and reject conflicting stock Eigen, `shared_ptr`, and `array.h`
 casters. Missing optional STL casters fail compilation. Keep DART headers and

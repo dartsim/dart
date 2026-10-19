@@ -1,5 +1,6 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/composite_state.hpp"
 // clang-format on
 
 #include <nanobind/stl/map.h>
@@ -394,9 +395,9 @@ void BodyNode(nb::module_& m)
           "set_composite_state",
           [](dart::dynamics::BodyNode& self,
              const dart::common::Composite::State& state) {
-            if (const auto* soft
-                = dynamic_cast<const dart::dynamics::SoftBodyNode*>(&self)) {
-              const auto* saved = state.get<dart::dynamics::SoftBodyNode>();
+            if (const auto* soft = self.asSoftBodyNode()) {
+              const auto* saved
+                  = dartnb::find_state<dart::dynamics::SoftBodyNode>(state);
               if (saved
                   && saved->mPointStates.size() != soft->getNumPointMasses())
                 throw nb::value_error(
