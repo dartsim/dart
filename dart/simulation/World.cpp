@@ -518,6 +518,15 @@ public:
   // by revision (DART_CUSTOM_FILTER_SLEEPING, read at construction).
   const bool mCustomFilterSleeping;
 
+  // This World's skeletons at its last simulation preparation. A weak pointer
+  // tells a removed skeleton from another allocated at its address.
+  struct PreparedSkeleton
+  {
+    std::weak_ptr<const dynamics::Skeleton> mSkeleton;
+    std::size_t mVersion = 0u;
+  };
+  std::vector<PreparedSkeleton> mPreparedSkeletons;
+
   std::size_t mSolverSkeletonOwnershipCheckCount = 0u;
   std::size_t mSolverSkeletonCount = 0u;
   std::weak_ptr<const collision::CollisionGroup> mSolverSkeletonGroup;
@@ -903,9 +912,31 @@ void World::enterSimulationMode()
     return;
 
   // The first-frame dwell credit's speed limits belong to the skeletons and
-  // bodies that the first solve saw, so a change between the first two steps
-  // drops a pending confirmation.
-  mInitialRestSpeedLimits.clear();
+  // bodies that the first solve saw, so a change to the membership, order or
+  // version of this World's skeletons between the first two steps drops a
+  // pending confirmation. So does a new thread count, or any World edit that
+  // calls invalidateSimulationMode(), which zeroes the recorded count.
+  // Collision setup changes drop it in
+  // wakeRestingSkeletonsIfStepStateChanged(). Edits to other skeletons also
+  // re-prepare (see isInSimulationMode()) and keep it.
+  if (mConstraintSolver
+      && mConstraintSolver->getNumSimulationThreads()
+             != mSimulationModeConstraintSolverThreads) {
+    mInitialRestSpeedLimits.clear();
+  }
+  auto& preparedSkeletons = mDeactivationState->mPreparedSkeletons;
+  if (preparedSkeletons.size() != mSkeletons.size())
+    mInitialRestSpeedLimits.clear();
+  preparedSkeletons.resize(mSkeletons.size());
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    auto& snapshot = preparedSkeletons[i];
+    const auto& skeleton = mSkeletons[i];
+    if (snapshot.mSkeleton.lock() != skeleton
+        || snapshot.mVersion != skeleton->getVersion()) {
+      mInitialRestSpeedLimits.clear();
+    }
+    snapshot = {skeleton, skeleton->getVersion()};
+  }
   refreshSkeletonDofIndices();
   reserveSimulationScratch();
   if (mConstraintSolver) {

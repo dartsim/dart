@@ -1116,6 +1116,103 @@ TEST(IslandDeactivation, InitialCreditConfirmationRestartsWhenSkeletonsChange)
 }
 
 //==============================================================================
+// Among skeleton edits, only those to this World's own skeletons make the
+// first solve's credit stale. Edits elsewhere, even to another World's
+// skeletons, keep the pending confirmation, so a pre-settled box rests as
+// promptly as it does alone.
+TEST(IslandDeactivation, InitialCreditConfirmationIgnoresEditsOutsideTheWorld)
+{
+  const Eigen::Vector3d cube = Eigen::Vector3d::Constant(kBoxSize);
+  auto other = makeSleepWorld();
+  auto otherBox
+      = createFreeBox("other", cube, Eigen::Vector3d(0, 0, kHalf + 0.5));
+  other->addSkeleton(otherBox);
+  const std::vector<std::pair<std::string, std::function<void()>>> edits = {
+      {"rename a body in another World",
+       [&] {
+         otherBox->getBodyNode(0)->setName("renamed");
+       }},
+      {"change a mass in another World",
+       [&] {
+         auto* body = otherBox->getBodyNode(0);
+         body->setMass(body->getMass() + 1.0);
+       }},
+      {"create a skeleton in no World",
+       [&] {
+         createFreeBox("loose", cube, Eigen::Vector3d::Zero());
+       }},
+  };
+
+  for (const auto& [description, edit] : edits) {
+    SCOPED_TRACE(description);
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox("box", cube, Eigen::Vector3d(0, 0, kHalf - 5e-7));
+    world->addSkeleton(box);
+
+    world->step();
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    ASSERT_FALSE(box->isSleepCandidate());
+
+    edit();
+    world->step();
+    EXPECT_TRUE(box->isSleepCandidate()) << "the edit dropped the credit";
+    EXPECT_FALSE(box->isResting());
+
+    world->step();
+    EXPECT_TRUE(box->isResting());
+  }
+}
+
+//==============================================================================
+// Changes to this World's setup between the first two steps still drop the
+// pending confirmation although they leave its skeletons alone.
+TEST(IslandDeactivation, InitialCreditConfirmationRestartsWhenWorldSetupChanges)
+{
+  const std::vector<std::pair<std::string, std::function<void(World&)>>> edits
+      = {
+          {"thread count",
+           [](World& world) {
+             world.setNumSimulationThreads(2);
+           }},
+          {"solver thread count",
+           [](World& world) {
+             world.getConstraintSolver()->setNumSimulationThreads(2);
+           }},
+          {"contact limit",
+           [](World& world) {
+             world.getConstraintSolver()->getCollisionOption().maxNumContacts
+                 += 1u;
+           }},
+          {"collision filter",
+           [](World& world) {
+             world.getConstraintSolver()->getCollisionOption().collisionFilter
+                 = std::make_shared<BodyNodeCollisionFilter>();
+           }},
+      };
+
+  for (const auto& [description, edit] : edits) {
+    SCOPED_TRACE(description);
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-7));
+    world->addSkeleton(box);
+
+    world->step();
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    ASSERT_FALSE(box->isSleepCandidate());
+
+    edit(*world);
+    world->step();
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isSleepCandidate()) << "credited after a setup change";
+  }
+}
+
+//==============================================================================
 // The first-frame dwell credit is only for gravity-supported shallow contacts.
 // A mobile pair touching in midair must keep falling instead of sleeping as a
 // frozen island.
