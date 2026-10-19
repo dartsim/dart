@@ -226,8 +226,8 @@
     `ValueError`, `OverflowError` and `MemoryError` translations.
     DART's C++ diagnostics (`dtwarn`, `dterr`, `DART_WARN` and the other
     levels, with or without spdlog) now reach `logging.getLogger("dartpy")`
-    instead of the console, including from C++ worker threads and in the
-    child of a `fork()`; configure that logger to silence or redirect them,
+    instead of the console, including from C++ worker threads; configure
+    that logger to silence or redirect them,
     or call `dartpy.common.flush_logs()` to deliver queued records on the
     calling thread. Without logging configuration, warnings and errors still
     print to stderr and info messages stay quiet. C++ gains
@@ -235,6 +235,7 @@
     formatted messages in place of spdlog or the console, and
     `dart::common::setConsoleStreams()` to redirect the console macros, per
     thread if the caller wants.
+    [#3844](https://github.com/dartsim/dart/pull/3844)
 
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
