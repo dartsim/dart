@@ -52,12 +52,9 @@ constexpr int kSettleSteps = 500;
 constexpr int kRecoverySteps = 800;
 constexpr int kSettledTailSteps = 250;
 
-// Lateral (coronal, world +Z) push-magnitude sweep. Lateral perturbations are
-// the harder push-recovery axis (narrow coronal base of support) and are the
-// perturbation the Jain/Liu row highlights. The range brackets the biped's
-// actual topple threshold: both foot types comfortably recover the lower
-// magnitudes and topple at the top of the range, so the returned value is a
-// real measured threshold, not a saturated sweep ceiling.
+// Lateral (coronal, world +Z) push direction. Lateral perturbations are the
+// harder push-recovery axis (narrow coronal base of support) and are the
+// perturbation the Jain/Liu row highlights.
 const Eigen::Vector3d kPushDirection = Eigen::Vector3d::UnitZ();
 
 //==============================================================================
@@ -66,36 +63,6 @@ std::string sdfUriFor(Feet feet)
   return feet == Feet::Soft
              ? "dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf"
              : "dart://sample/sdf/atlas/atlas_v3_no_head.sdf";
-}
-
-//==============================================================================
-/// Builds a fresh model, settles it, applies a single lateral push of the given
-/// magnitude, and reports whether the biped stays finite and upright throughout
-/// the settled tail of the recovery window. Requiring uprightness across the
-/// whole tail (not just the final instant) rejects a biped that is still
-/// toppling or momentarily passes through an upright pose while tumbling.
-bool survivesPush(Feet feet, double magnitude)
-{
-  Model model = createModel(feet);
-
-  for (int i = 0; i < kSettleSteps; ++i) {
-    step(model);
-    if (!isFinite(model))
-      return false;
-  }
-
-  applyPush(model, kPushDirection * magnitude, kPushSteps);
-
-  const int tailStart = kRecoverySteps - kSettledTailSteps;
-  for (int i = 0; i < kRecoverySteps; ++i) {
-    step(model);
-    if (!isFinite(model))
-      return false;
-    if (i >= tailStart && !isUpright(model))
-      return false;
-  }
-
-  return true;
 }
 
 //==============================================================================
@@ -543,15 +510,28 @@ void resetModel(Model& model)
 }
 
 //==============================================================================
-double maxRecoverablePush(Feet feet)
+bool survivesPush(Feet feet, double magnitude)
 {
-  double largestRecovered = 0.0;
-  for (double magnitude = kPushSweepStart; magnitude <= kPushSweepEnd + 1e-9;
-       magnitude += kPushSweepStep) {
-    if (survivesPush(feet, magnitude))
-      largestRecovered = magnitude;
+  Model model = createModel(feet);
+
+  for (int i = 0; i < kSettleSteps; ++i) {
+    step(model);
+    if (!isFinite(model))
+      return false;
   }
-  return largestRecovered;
+
+  applyPush(model, kPushDirection * magnitude, kPushSteps);
+
+  const int tailStart = kRecoverySteps - kSettledTailSteps;
+  for (int i = 0; i < kRecoverySteps; ++i) {
+    step(model);
+    if (!isFinite(model))
+      return false;
+    if (i >= tailStart && !isUpright(model))
+      return false;
+  }
+
+  return true;
 }
 
 } // namespace soft_foot_simbicon_model

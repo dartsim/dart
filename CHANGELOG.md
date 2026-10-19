@@ -41,6 +41,10 @@
     [#1622](https://github.com/dartsim/dart/issues/1622),
     [#3685](https://github.com/dartsim/dart/pull/3685)
 
+  * Release builds against Eigen 5 no longer fail under the default
+    warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
+    options Eigen 5 deprecates, and the C++ tests pass against Eigen 5.
+
 * Python
 
   * Source builds of `dartpy` on Windows work with the Ninja and NMake

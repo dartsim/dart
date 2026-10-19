@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/HierarchicalIK.hpp"
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -297,7 +298,11 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
         mJacCache.block<6, 1>(0, k) = J.block<6, 1>(0, d);
       }
 
+      // Eigen 5 deprecates runtime SVD options, but mSVDCache's type is part of
+      // the installed class layout, so it cannot take compile-time options.
+      DART_SUPPRESS_DEPRECATED_BEGIN
       mSVDCache.compute(mJacCache, Eigen::ComputeFullV);
+      DART_SUPPRESS_DEPRECATED_END
       math::extractNullSpace(mSVDCache, mPartialNullspaceCache);
 
       if (mPartialNullspaceCache.rows() > 0

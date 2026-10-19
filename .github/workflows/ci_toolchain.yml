@@ -11,7 +11,8 @@
 #
 # To add a toolchain (e.g. an oldest-supported gcc, or a pinned compiler), add a
 # row to the matrix below: { name, runner, family (gcc|clang), version, cc, cxx,
-# distribution (true for Ubuntu-packaged compilers) }.
+# distribution (true for Ubuntu-packaged compilers) }. An optional `eigen` spec
+# replaces the default environment's Eigen pin and re-solves it.
 
 name: CI Toolchain (Linux)
 
@@ -76,9 +77,29 @@ jobs:
             cc: clang-19
             cxx: clang++-19
             distribution: false
+          # conda-forge and Homebrew build DART against Eigen 5, which the
+          # lockfile does not cover.
+          - name: Eigen 5 (gcc 13)
+            runner: ubuntu-24.04
+            family: gcc
+            version: "13"
+            cc: gcc-13
+            cxx: g++-13
+            distribution: true
+            eigen: "5.*"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Use Eigen ${{ matrix.eigen }}
+        if: matrix.eigen
+        env:
+          EIGEN: ${{ matrix.eigen }}
+        run: |
+          set -euo pipefail
+          # Only the default feature's pin; the pixi setup below re-solves it.
+          sed -i "0,/^eigen = \">=3.4.0,<4\"\$/s//eigen = \"${EIGEN}\"/" pixi.toml
+          grep -qxF "eigen = \"${EIGEN}\"" pixi.toml
 
       - name: Install ${{ matrix.cc }}
         env:
@@ -111,6 +132,7 @@ jobs:
         with:
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          locked: ${{ !matrix.eigen }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Configure, build tests, and run ctest

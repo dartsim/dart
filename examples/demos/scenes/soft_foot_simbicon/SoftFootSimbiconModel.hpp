@@ -129,16 +129,18 @@ Eigen::VectorXd stateVector(const Model& model);
 /// point-mass state, gait phase, and any pending push.
 void resetModel(Model& model);
 
-/// Bounds of the lateral push sweep maxRecoverablePush() searches. Exported so
-/// a caller can tell a measured threshold from one that saturated the ceiling.
+/// Bounds of the lateral push sweep the push-recovery test samples.
 constexpr double kPushSweepStart = 2000.0;
 constexpr double kPushSweepEnd = 24000.0;
 constexpr double kPushSweepStep = 2000.0;
 
-/// Largest pelvis push magnitude (N) from which the biped recovers upright,
-/// found by sweeping magnitudes in a fixed lateral direction and returning the
-/// largest that leaves the biped upright after a fixed recovery window.
-double maxRecoverablePush(Feet feet);
+/// Whether a fresh biped, once settled into its gait, recovers from a single
+/// lateral pelvis push of `magnitude` (N): it must stay finite and stay upright
+/// throughout the settled tail of a fixed recovery window, which rejects a
+/// biped that is still toppling or passes upright while tumbling. Recovery is
+/// not monotone in the magnitude: the biped can fall from one push and recover
+/// from a larger one.
+bool survivesPush(Feet feet, double magnitude);
 
 } // namespace soft_foot_simbicon_model
 } // namespace dart_demos

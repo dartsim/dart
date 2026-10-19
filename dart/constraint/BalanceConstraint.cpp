@@ -32,6 +32,7 @@
 
 #include "dart/constraint/BalanceConstraint.hpp"
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -200,7 +201,11 @@ void BalanceConstraint::evalGradient(
 
       mEEJacCache = skel->getLinearJacobian(ee);
 
+      // Eigen 5 deprecates runtime SVD options, but mSVDCache's type is part of
+      // the installed class layout, so it cannot take compile-time options.
+      DART_SUPPRESS_DEPRECATED_BEGIN
       mSVDCache.compute(mEEJacCache, Eigen::ComputeFullV);
+      DART_SUPPRESS_DEPRECATED_END
       math::extractNullSpace(mSVDCache, mPartialNullSpaceCache);
 
       if (mPartialNullSpaceCache.rows() > 0
@@ -226,7 +231,9 @@ void BalanceConstraint::evalGradient(
 
       mComJacCache = skel->getCOMLinearJacobian();
 
+      DART_SUPPRESS_DEPRECATED_BEGIN
       mSVDCache.compute(mComJacCache, Eigen::ComputeFullV);
+      DART_SUPPRESS_DEPRECATED_END
       math::extractNullSpace(mSVDCache, mPartialNullSpaceCache);
 
       if (mPartialNullSpaceCache.rows() > 0
@@ -257,7 +264,9 @@ void BalanceConstraint::evalGradient(
 
       mComJacCache = skel->getCOMLinearJacobian();
 
+      DART_SUPPRESS_DEPRECATED_BEGIN
       mSVDCache.compute(mComJacCache, Eigen::ComputeFullV);
+      DART_SUPPRESS_DEPRECATED_END
       math::extractNullSpace(mSVDCache, mPartialNullSpaceCache);
 
       if (mPartialNullSpaceCache.rows() > 0
