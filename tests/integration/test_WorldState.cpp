@@ -922,28 +922,35 @@ TEST(WorldState, SoftConnectivityRejectsEqualSizedState)
 
 TEST(WorldState, RestoreAfterShapeReplacementSynchronizesCollisionGeometry)
 {
-  // Restoring rebuilds the FCL broadphase, so it must first pick up a shape
-  // replaced since the last step, as the next collision check would. Without
-  // that, the rebuild reads the replaced shape's geometry; run under memcheck
-  // or a sanitizer to see the invalid read.
-  auto world = makeSoftWorld();
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::CollisionDetector::getFactory()->create("fcl"));
-  auto* node = world->getSkeleton(0)->getSoftBodyNode(0)->getShapeNode(0);
-  if (!node->getCollisionAspect())
-    node->createCollisionAspect();
-  const auto softShape = node->getShape();
-  node->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)));
-  world->step();
-  ASSERT_GT(
-      world->getConstraintSolver()->getCollisionGroup()->getNumShapeFrames(),
-      0u);
-  const auto state = world->captureState();
-  node->setShape(softShape);
-  world->restoreState(state);
-  expectEqual(state, world->captureState());
-  world->step();
-  EXPECT_EQ(node->getShape(), softShape);
+  // Restoring rebuilds the FCL broadphase. With automatic updates it first
+  // picks up a shape replaced since the last step, as the next collision check
+  // would; without them it must leave the stale engine objects alone until the
+  // caller updates the group. Otherwise it reads the replaced shape against
+  // the old geometry; run under memcheck or a sanitizer to see the invalid
+  // read.
+  for (const bool automaticUpdate : {true, false}) {
+    SCOPED_TRACE(automaticUpdate);
+    auto world = makeSoftWorld();
+    world->getConstraintSolver()->setCollisionDetector(
+        collision::CollisionDetector::getFactory()->create("fcl"));
+    auto* group = world->getConstraintSolver()->getCollisionGroup().get();
+    auto* node = world->getSkeleton(0)->getSoftBodyNode(0)->getShapeNode(0);
+    if (!node->getCollisionAspect())
+      node->createCollisionAspect();
+    const auto softShape = node->getShape();
+    node->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)));
+    world->step();
+    ASSERT_GT(group->getNumShapeFrames(), 0u);
+    group->setAutomaticUpdate(automaticUpdate);
+    const auto state = world->captureState();
+    node->setShape(softShape);
+    world->restoreState(state);
+    expectEqual(state, world->captureState());
+    if (!automaticUpdate)
+      group->update();
+    world->step();
+    EXPECT_EQ(node->getShape(), softShape);
+  }
 }
 
 TEST(WorldState, RestoreClearsSolverOutputOfSolverOnlySkeletons)
