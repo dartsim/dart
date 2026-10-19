@@ -59,6 +59,8 @@ TEST(ShapeEditBounds, LineSegmentVertexEditsRefreshBoundingBox)
   shape.addVertex(Eigen::Vector3d(-4, 0, 0), 0u);
   EXPECT_EQ(Eigen::Vector3d(-4, 0, 0), shape.getBoundingBox().getMin());
 
+  // This constructor goes through Shape(LINE_SEGMENT), which initializes the
+  // lazy flags, so querying before the first vertex is well defined.
   LineSegmentShape empty;
   EXPECT_EQ(Eigen::Vector3d::Zero(), empty.getBoundingBox().getMax());
   empty.addVertex(Eigen::Vector3d(5, 0, 0));
