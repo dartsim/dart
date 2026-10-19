@@ -143,6 +143,11 @@
         "get_set": 4,
         "public": 8
       },
+      "CompositeState": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
       "LocalResource": {
         "camel_case": 1,
         "get_set": 0,
@@ -348,8 +353,8 @@
       },
       "BodyNode": {
         "camel_case": 92,
-        "get_set": 54,
-        "public": 95
+        "get_set": 56,
+        "public": 98
       },
       "BodyNodeAspectProperties": {
         "camel_case": 4,
@@ -844,7 +849,7 @@
       "MeshShape": {
         "camel_case": 18,
         "get_set": 15,
-        "public": 22
+        "public": 24
       },
       "MeshShape.ColorMode": {
         "camel_case": 0,
@@ -899,7 +904,7 @@
       "PointCloudShape": {
         "camel_case": 20,
         "get_set": 14,
-        "public": 27
+        "public": 28
       },
       "PointCloudShape.ColorMode": {
         "camel_case": 0,
@@ -909,7 +914,12 @@
       "PointCloudShape.PointShapeType": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 3
+        "public": 4
+      },
+      "PointMass": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 13
       },
       "PrismaticJoint": {
         "camel_case": 13,
@@ -1058,13 +1068,18 @@
       },
       "Skeleton": {
         "camel_case": 118,
-        "get_set": 74,
-        "public": 119
+        "get_set": 76,
+        "public": 124
+      },
+      "SkeletonConfiguration": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
       },
       "SoftBodyNode": {
         "camel_case": 5,
-        "get_set": 5,
-        "public": 5
+        "get_set": 7,
+        "public": 14
       },
       "SoftBodyNodeHelper": {
         "camel_case": 3,
@@ -1079,7 +1094,7 @@
       "SoftBodyNodeUniqueProperties": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 6
       },
       "SoftMeshShape": {
         "camel_case": 3,
@@ -1214,7 +1229,7 @@
       "VoxelGridShape": {
         "camel_case": 3,
         "get_set": 2,
-        "public": 3
+        "public": 4
       },
       "WeldJoint": {
         "camel_case": 6,
@@ -1437,12 +1452,17 @@
       "Quaternion": {
         "camel_case": 0,
         "get_set": 2,
-        "public": 14
+        "public": 15
       },
       "Random": {
         "camel_case": 2,
         "get_set": 2,
-        "public": 3
+        "public": 5
+      },
+      "TriMesh": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 4
       }
     },
     "functions": {
@@ -1675,7 +1695,7 @@
     "functions": {
       "camel_case": 0,
       "get_set": 0,
-      "public": 2
+      "public": 3
     }
   }
 }
