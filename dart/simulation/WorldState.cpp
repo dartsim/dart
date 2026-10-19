@@ -36,7 +36,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/CylindricalJointConstraint.hpp"
+#include "dart/constraint/RevoluteJointConstraint.hpp"
+#include "dart/constraint/WeldJointConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -118,6 +122,50 @@ void require(bool condition, const char* message)
     throw std::invalid_argument(message);
 }
 
+enum class StateConstraintType
+{
+  Ball,
+  Revolute,
+  Cylindrical,
+  Weld,
+};
+
+StateConstraintType constraintType(const constraint::ConstraintBase& manual)
+{
+  if (typeid(manual) == typeid(constraint::BallJointConstraint))
+    return StateConstraintType::Ball;
+  if (typeid(manual) == typeid(constraint::RevoluteJointConstraint))
+    return StateConstraintType::Revolute;
+  if (typeid(manual) == typeid(constraint::CylindricalJointConstraint))
+    return StateConstraintType::Cylindrical;
+  if (typeid(manual) == typeid(constraint::WeldJointConstraint))
+    return StateConstraintType::Weld;
+  throw std::invalid_argument(
+      "WorldState does not support this manual constraint type");
+}
+
+template <typename Emit>
+void inspectConstraintEndpoint(
+    const World& world, const dynamics::BodyNode* endpoint, Emit emit)
+{
+  if (!endpoint) {
+    emit(0); // World endpoint, distinct from every owned body.
+    return;
+  }
+  // Check ownership before dereferencing the constraint's non-owning pointer.
+  for (std::size_t s = 0; s < world.getNumSkeletons(); ++s) {
+    const auto skeleton = world.getSkeleton(s);
+    for (std::size_t b = 0; b < skeleton->getNumBodyNodes(); ++b)
+      if (skeleton->getBodyNode(b) == endpoint) {
+        emit(s + 1);
+        emit(b);
+        return;
+      }
+  }
+  throw std::invalid_argument(
+      "WorldState manual constraint endpoint is not owned by the World");
+}
+
 template <typename Emit>
 StateShape inspectStructure(const World& world, Emit emit)
 {
@@ -170,6 +218,20 @@ StateShape inspectStructure(const World& world, Emit emit)
           emit(static_cast<std::size_t>(softBody->getFace(f)[i]));
     }
   }
+  const auto* solver = world.getConstraintSolver();
+  emit(solver->getNumConstraints());
+  for (std::size_t c = 0; c < solver->getNumConstraints(); ++c) {
+    const auto manual = solver->getConstraint(c);
+    require(manual != nullptr, "WorldState manual constraint is null");
+    emit(static_cast<std::size_t>(constraintType(*manual)));
+    const auto& joint
+        = static_cast<const constraint::DynamicJointConstraint&>(*manual);
+    require(
+        joint.getBodyNode1() != nullptr,
+        "WorldState manual constraint requires a first body endpoint");
+    inspectConstraintEndpoint(world, joint.getBodyNode1(), emit);
+    inspectConstraintEndpoint(world, joint.getBodyNode2(), emit);
+  }
   return shape;
 }
 
@@ -214,9 +276,6 @@ void validateChannels(const WorldState& state, const StateShape& shape)
 
 void World::validateDynamicStateSupport() const
 {
-  require(
-      mConstraintSolver->getNumConstraints() == 0,
-      "WorldState does not support manual constraints");
   const auto validate = [](const common::Composite& composite) {
     for (const auto& entry : composite.mAspectMap) {
       const auto* aspect = entry.second.get();
@@ -457,6 +516,27 @@ void World::restoreState(const WorldState& state)
       }
     }
     skeletonOffset += static_cast<Eigen::Index>(skeleton->getNumDofs());
+  }
+  for (std::size_t c = 0; c < mConstraintSolver->getNumConstraints(); ++c) {
+    auto* manual = mConstraintSolver->getConstraint(c).get();
+    switch (constraintType(*manual)) {
+      case StateConstraintType::Ball:
+        static_cast<constraint::BallJointConstraint*>(manual)
+            ->resetDynamicState();
+        break;
+      case StateConstraintType::Revolute:
+        static_cast<constraint::RevoluteJointConstraint*>(manual)
+            ->resetDynamicState();
+        break;
+      case StateConstraintType::Cylindrical:
+        static_cast<constraint::CylindricalJointConstraint*>(manual)
+            ->resetDynamicState();
+        break;
+      case StateConstraintType::Weld:
+        static_cast<constraint::WeldJointConstraint*>(manual)
+            ->resetDynamicState();
+        break;
+    }
   }
   // Dynamic restoration starts a fresh active trajectory, not exact history.
   wakeRestingSkeletonsForWorldChange();

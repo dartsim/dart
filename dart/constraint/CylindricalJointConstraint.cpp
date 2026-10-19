@@ -65,6 +65,13 @@ Eigen::Matrix<double, 3, 6> makeAnchorJacobian(const Eigen::Vector3d& _offset)
 } // namespace
 
 //==============================================================================
+void CylindricalJointConstraint::resetDynamicState()
+{
+  for (auto& impulse : mOldX)
+    impulse = 0.0;
+}
+
+//==============================================================================
 CylindricalJointConstraint::CylindricalJointConstraint(
     dynamics::BodyNode* _body,
     const Eigen::Vector3d& _jointPos,
