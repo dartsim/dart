@@ -8,7 +8,8 @@ DART 6.20.2 is a patch release on the DART 6 line. It fixes point masses added
 with `SoftBodyNode::addPointMass()` reading and writing their state out of
 bounds, `BalanceConstraint` reading past the empty list that
 `Skeleton::getSupportIndices()` returned, shapes reporting zero-size or stale
-bounding boxes, and undefined behavior in custom collision-detector and
+bounding boxes, bodies that start at rest falling asleep late after an edit in
+another `World`, and undefined behavior in custom collision-detector and
 contact-surface-handler deleters. SDF joints that mimic only some of their axes
 keep their other axes under normal control. The rest of the release makes DART
 easier to package: `find_package(DART)` no longer needs pkg-config, builds work
