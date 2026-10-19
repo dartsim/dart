@@ -103,9 +103,11 @@ enum class LogLevel
 /// logging thread, so it must be thread-safe. \p message holds \p length
 /// bytes, has no terminating newline and is valid only during the call. A
 /// message logged from inside the callback goes to the default output instead
-/// of re-entering it. An exception thrown by the callback is swallowed: DART
-/// reports the first one through the default output and sends that message
-/// there too. Do not fork() from inside the callback: the child would inherit
+/// of re-entering it. An ordinary exception thrown by the callback is
+/// swallowed: DART reports the first one through the error console stream,
+/// unfiltered by spdlog's runtime level. The failed message goes to the default
+/// output, which still applies its own runtime level. Forced thread unwinding
+/// propagates. Do not fork() from inside the callback: the child would inherit
 /// the forking thread's re-entry state.
 using LogCallback = void (*)(
     LogLevel level, const char* message, std::size_t length, void* userData);
@@ -143,7 +145,7 @@ bool hasLogCallback();
 /// Hands \p message to the installed callback. Returns false, without
 /// touching the message, when no callback is installed, when this thread is
 /// already inside the callback, or when the callback threw; the caller then
-/// sends the message to the default output, so none is dropped.
+/// sends the message to the default output, whose runtime level still applies.
 bool forwardToLogCallback(
     LogLevel level, const char* message, std::size_t length);
 

@@ -41,6 +41,10 @@
 
 #include <gtest/gtest.h>
 
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+  #include <pthread.h>
+#endif
+
 #if DART_HAVE_spdlog
   #include <spdlog/sinks/base_sink.h>
 #endif
@@ -56,6 +60,8 @@
 #include <thread>
 #include <utility>
 #include <vector>
+
+#include <cstdlib>
 
 using namespace dart;
 
@@ -400,9 +406,7 @@ TEST(LoggingTest, LogCallbackConcurrentSetAndUnset)
   EXPECT_EQ(
       sCounterA.calls.load() + sCounterB.calls.load() + output.count(),
       kThreads * kMessages);
-  // The toggling ran long enough for both callbacks to see traffic.
-  EXPECT_GT(sCounterA.calls.load(), 0);
-  EXPECT_GT(sCounterB.calls.load(), 0);
+  // Scheduling may let the loggers finish before either callback is installed.
 }
 
 namespace {
@@ -488,12 +492,59 @@ TEST(LoggingTest, LogCallbackThrows)
   dart::common::setLogCallback(nullptr);
 
   EXPECT_EQ(calls.calls.load(), 2);
-  // Both messages fall through to the default output. The one-time report
-  // about the throw is logged inside libdart, whose spdlog registry is the
-  // test's own only when spdlog is a shared library.
-  EXPECT_GE(output.count(), 2);
-  EXPECT_LE(output.count(), 3);
+  // The report uses the error console, separately from spdlog's default output.
+  EXPECT_EQ(output.count(), DART_HAVE_spdlog ? 2 : 3);
 }
+
+#if DART_HAVE_spdlog
+//==============================================================================
+TEST(LoggingDeathTest, LogCallbackThrowsWithQuietDefaultOutput)
+{
+  // A fresh process keeps the one-time report independent of other tests.
+  EXPECT_EXIT(
+      {
+        Counter calls;
+        DefaultOutputCounter output;
+        spdlog::default_logger_raw()->set_level(spdlog::level::off);
+        sharedErr().str("");
+        dart::common::setConsoleStreams(nullptr, &sharedErrStream);
+        dart::common::setLogCallback(&throwFromInside, &calls);
+        DART_WARN("first");
+        DART_WARN("second");
+        dart::common::setLogCallback(nullptr);
+        dart::common::setConsoleStreams(nullptr, nullptr);
+        const std::string report = sharedErr().str();
+        std::_Exit(
+            calls.calls == 2 && output.count() == 0
+                    && report.find("Error [Logging.cpp:") != std::string::npos
+                    && report.find("A log callback threw") != std::string::npos
+                    && report.find('\n') == report.size() - 1
+                ? 0
+                : 1);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+#endif
+
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+//==============================================================================
+TEST(LoggingDeathTest, LogCallbackCanExitItsThread)
+{
+  EXPECT_EXIT(
+      {
+        dart::common::setLogCallback(
+            [](dart::common::LogLevel, const char*, std::size_t, void*) {
+              pthread_exit(nullptr);
+            });
+        std::thread([] { DART_WARN("thread exits from callback"); }).join();
+        dart::common::setLogCallback(nullptr);
+        std::_Exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+#endif
 
 //==============================================================================
 // A message logged while another one is being formatted reaches the callback

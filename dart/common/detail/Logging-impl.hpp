@@ -126,7 +126,9 @@ void logToSpdlog(LogLevel level, const S& format_str, Args&&... args)
   // spdlog::drop_all(); when the callback declines the message (it was
   // removed meanwhile, this thread is inside it, or it threw), to spdlog's
   // default logger, which applies its own runtime level; and with no default
-  // logger, to the console streams.
+  // logger, to the console streams. A callback's first exception is reported
+  // separately through the error console stream, unfiltered by spdlog's level;
+  // the failed message still obeys the default output's runtime level.
   const std::string message
       = formatMessage(format_str, std::forward<Args>(args)...);
   if (forwardToLogCallback(level, message.data(), message.size()))

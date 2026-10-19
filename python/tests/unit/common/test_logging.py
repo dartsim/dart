@@ -98,6 +98,96 @@ def test_native_diagnostics_reach_python_logging(caplog, capfd):
 
 
 @needs_testing_hooks
+@pytest.mark.parametrize("level", ["warning", "error", "info", "debug"])
+def test_console_headers_select_the_level(caplog, level):
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        _testing.log_console(level, "payload")
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelname for r in records] == [level.upper()]
+    assert CONSOLE_PREFIX.sub("", records[0].getMessage()) == "payload"
+
+
+@needs_testing_hooks
+@pytest.mark.parametrize("level", ["warning", "error", "info", "debug"])
+def test_console_continuations_keep_their_level_and_payload(caplog, level):
+    lines = [
+        "first",
+        "Error [payload]",
+        "Warning [payload]",
+        "Msg payload",
+        "Dbg payload",
+        "[trace] payload",
+        "[debug] payload",
+        "[info] payload",
+        "[warn] payload",
+        "[error] payload",
+        "[fatal] payload",
+    ]
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        _testing.log_console(level, "\n".join(lines))
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelname for r in records] == [level.upper()] * len(lines)
+    assert [CONSOLE_PREFIX.sub("", r.getMessage()) for r in records] == lines
+
+
+@needs_testing_hooks
+@pytest.mark.parametrize(
+    "level, color, expected_level",
+    [
+        ("trace", 38, 5),
+        ("debug", 36, logging.DEBUG),
+        ("info", 32, logging.INFO),
+        ("warn", 33, logging.WARNING),
+        ("error", 31, logging.ERROR),
+        ("fatal", 35, logging.CRITICAL),
+    ],
+)
+def test_colored_fallback_headers_select_the_level(
+    caplog, level, color, expected_level
+):
+    with caplog.at_level(5, logger="dartpy"):
+        _testing.log_console(
+            "warning", f"first\n\x1b[1;{color}m[{level}]\x1b[0m payload"
+        )
+        dart.common.flush_logs()
+    assert [
+        (r.levelno, CONSOLE_PREFIX.sub("", r.getMessage())) for r in _records(caplog)
+    ] == [
+        (logging.WARNING, "first"),
+        (expected_level, "payload"),
+    ]
+
+
+@needs_testing_hooks
+@pytest.mark.parametrize(
+    "message, expected",
+    [
+        ("\x1b[2Kkeep my message", "keep my message"),
+        ("\x1b[31mred\x1b[0m text", "red text"),
+        ("keep \x1b[12;", "keep \x1b[12;"),
+        ("keep \x1b[12;\tmy message", "keep \x1b[12;\tmy message"),
+        ("\x1b[?25lkeep my message", "keep my message"),
+        ("\x1b[1 qkeep my message", "keep my message"),
+    ],
+)
+def test_console_csi_sequences_preserve_the_payload(caplog, message, expected):
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        _testing.log_console("warning", message)
+        dart.common.flush_logs()
+    assert [CONSOLE_PREFIX.sub("", r.getMessage()) for r in _records(caplog)] == [
+        expected
+    ]
+
+
+@needs_testing_hooks
+def test_console_rejects_an_unknown_level():
+    with pytest.raises(ValueError, match="unknown console level"):
+        _testing.log_console("unknown", "payload")
+
+
+@needs_testing_hooks
 @pytest.mark.parametrize("hold_gil", [True, False])
 def test_worker_threads_log_while_python_holds_the_gil(caplog, hold_gil):
     threads, messages = 4, 25
@@ -303,6 +393,43 @@ def test_bridge_state_is_released_at_exit():
     assert "nanobind: leaked" not in result.stderr
 
 
+@needs_testing_hooks
+def test_exit_drain_precedes_logging_shutdown_when_dartpy_is_imported_first(tmp_path):
+    log_file = tmp_path / "exit.log"
+    code = f"""
+import atexit
+register = atexit.register
+def register_exit(callback, *args, **kwargs):
+    if getattr(callback, '__module__', None) == 'logging':
+        return register(callback, *args, **kwargs)
+    def queue_then_drain():
+        # Queue native records immediately before the bridge's exit drain.
+        dart._testing.log_from_threads(threads=1, messages=1, hold_gil=True)
+        callback(*args, **kwargs)
+    register(queue_then_drain)
+    return callback
+atexit.register = register_exit
+import dartpy as dart
+atexit.register = register
+import logging
+logger = logging.getLogger('dartpy')
+logger.setLevel(logging.WARNING)
+logger.addHandler(logging.FileHandler({str(log_file)!r}, mode='w'))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ),
+    )
+    text = log_file.read_text()
+    assert "worker 0 spdlog 0" in text
+    assert "SphereShape::setRadius: Invalid radius '-1'." in text
+    assert "worker 00 console 0" in text
+    assert "nanobind: leaked" not in result.stderr
+
+
 def _wait_for_child(pid, timeout):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -312,7 +439,7 @@ def _wait_for_child(pid, timeout):
         time.sleep(0.005)
     os.kill(pid, signal.SIGKILL)
     os.waitpid(pid, 0)
-    pytest.fail(f"forked child hung for {timeout}s")
+    raise AssertionError(f"forked child hung for {timeout}s")
 
 
 @pytest.mark.skipif(not hasattr(os, "fork"), reason="needs os.fork")
@@ -343,7 +470,7 @@ def test_child_of_a_fork_can_log_and_flush(caplog):
                     and delivered[1] == "child"
                     else 3
                 )
-            except BaseException:
+            except Exception:
                 status = 2
             os._exit(status)
         assert _wait_for_child(pid, timeout=10) == 0

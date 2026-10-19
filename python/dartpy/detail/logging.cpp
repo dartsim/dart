@@ -22,6 +22,10 @@
 #include <string_view>
 #include <utility>
 
+#if defined(__GLIBCXX__)
+  #include <cxxabi.h>
+#endif
+
 namespace dartnb {
 namespace {
 
@@ -58,8 +62,8 @@ std::string dropNotice(std::size_t dropped, std::size_t capacity)
          + " and nothing drained it in time";
 }
 
-// Nothing may propagate through the C frames of Py_AddPendingCall or a
-// std::streambuf.
+// Report ordinary exceptions at the pending-call and stream boundaries;
+// libstdc++ forced thread unwinding must propagate.
 template <typename F>
 void guarded(F&& call)
 {
@@ -69,6 +73,10 @@ void guarded(F&& call)
     e.discard_as_unraisable("dartpy log bridge");
   } catch (const std::exception& e) {
     print(kError, std::string("dartpy log bridge: ") + e.what());
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     print(kError, "dartpy log bridge: unknown C++ exception");
   }
@@ -251,34 +259,36 @@ private:
   {
     if (mText.empty())
       return;
+    classify(mText);
     std::string message = stripAnsi(mText);
     mText.clear();
     if (!message.empty() && message.back() == '\r')
       message.pop_back();
-    classify(message);
     if (!message.empty())
       Queue::queue().push(mLevel, std::move(message));
   }
 
-  // "Warning [File.cpp:12] text" from dtwarn, "[warn] text" from the
-  // spdlog-free DART_WARN fallback. Other lines continue the previous
-  // message at its level.
+  // Console.cpp and the spdlog-free fallback wrap real headers in SGR codes;
+  // plain level words and bracketed levels in continuation lines are payload.
   void classify(std::string& message)
   {
     static constexpr std::pair<std::string_view, int> kHeaders[] = {
-        {"Warning [", kWarning},
-        {"Error [", kError},
-        {"Msg ", kInfo},
-        {"Dbg ", kDebug},
-        {"[trace] ", kTrace},
-        {"[debug] ", kDebug},
-        {"[info] ", kInfo},
-        {"[warn] ", kWarning},
-        {"[error] ", kError},
-        {"[fatal] ", kCritical},
+        {"\033[1;33mWarning [", kWarning},
+        {"\033[1;31mError [", kError},
+        {"\033[1;32mMsg\033[0m ", kInfo},
+        {"\033[1;36mDbg\033[0m ", kDebug},
+        {"\033[1;38m[trace]\033[0m ", kTrace},
+        {"\033[1;36m[debug]\033[0m ", kDebug},
+        {"\033[1;32m[info]\033[0m ", kInfo},
+        {"\033[1;33m[warn]\033[0m ", kWarning},
+        {"\033[1;31m[error]\033[0m ", kError},
+        {"\033[1;35m[fatal]\033[0m ", kCritical},
     };
     for (const auto& [header, headerLevel] : kHeaders) {
       if (message.compare(0, header.size(), header) != 0)
+        continue;
+      if (header.back() == '['
+          && message.find("]\033[0m ", header.size()) == std::string::npos)
         continue;
       mLevel = headerLevel;
       // Keep "[File.cpp:12] text"; drop the level word.
@@ -295,11 +305,15 @@ private:
     result.reserve(text.size());
     for (std::size_t i = 0; i < text.size(); ++i) {
       if (text[i] == '\033' && i + 1 < text.size() && text[i + 1] == '[') {
-        const std::size_t end = text.find('m', i);
-        if (end == std::string_view::npos)
-          break;
-        i = end;
-        continue;
+        std::size_t end = i + 2;
+        while (end < text.size() && text[end] >= '\x30' && text[end] <= '\x3f')
+          ++end;
+        while (end < text.size() && text[end] >= '\x20' && text[end] <= '\x2f')
+          ++end;
+        if (end < text.size() && text[end] >= '\x40' && text[end] <= '\x7e') {
+          i = end;
+          continue;
+        }
       }
       result += text[i];
     }
@@ -404,8 +418,10 @@ void installLogBridge()
       &Queue::beforeFork, &Queue::afterForkParent, &Queue::afterForkChild);
 #endif
 
-  // Python atexit runs while logging still works, so queued records drain
-  // there; Py_AtExit covers embedding hosts that skip the atexit module.
+  // atexit is LIFO: import logging first so our drain precedes
+  // logging.shutdown. Py_AtExit covers embedding hosts that skip the atexit
+  // module.
+  nb::module_::import_("logging");
   nb::module_::import_("atexit").attr("register")(nb::cpp_function([] {
     Queue::queue().drain();
     shutdown();

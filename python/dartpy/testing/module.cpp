@@ -23,6 +23,23 @@ void dart_testing(nb::module_& m)
   auto sm = m.def_submodule(
       "_testing", "Hooks for dartpy's own tests; not part of the API.");
 
+  sm.def(
+      "log_console",
+      [](const std::string& level, const std::string& message) {
+        if (level == "warning")
+          dtwarn << message << '\n';
+        else if (level == "error")
+          dterr << message << '\n';
+        else if (level == "info")
+          dtmsg << message << '\n';
+        else if (level == "debug")
+          dtdbg << message << '\n';
+        else
+          throw std::invalid_argument("unknown console level: " + level);
+      },
+      nb::arg("level"),
+      nb::arg("message"));
+
   // Logs from C++ worker threads through DART's three paths, three records
   // per message: the DART_WARN family instantiated in this extension, a
   // diagnostic emitted inside libdart (SphereShape rejects a non-positive

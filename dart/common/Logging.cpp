@@ -34,6 +34,10 @@
 
 #include <atomic>
 
+#if defined(__GLIBCXX__)
+  #include <cxxabi.h>
+#endif
+
 namespace dart::common {
 
 namespace {
@@ -105,13 +109,18 @@ bool forwardToLogCallback(
   try {
     slot->callback(level, message, length, slot->userData);
     return true;
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     if (!sThrowReported.exchange(true)) {
-      // Inside the guard, so this reaches spdlog or the console, not the
-      // callback.
-      error(
-          "A log callback threw. DART ignores the exception and sends the "
-          "message to the default output; later throws are not reported.");
+      // DART's console header marks it as an error for consoles and for
+      // bridges that read the header, such as dartpy's.
+      colorErr("Error", __FILE__, __LINE__, 31)
+          << "A log callback threw. DART ignores the exception and sends the "
+             "message to the default output; later throws are not reported."
+          << std::endl;
     }
     return false;
   }
