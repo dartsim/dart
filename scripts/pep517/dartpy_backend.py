@@ -6,11 +6,12 @@ that way. CMake stages it inside the package (``dartpy/_filament_licenses``)
 and this backend moves it to ``dist-info/licenses/filament`` with matching
 ``License-File`` headers.
 
-Only ``build_wheel`` and ``get_requires_for_build_wheel`` are exported.
-``prepare_metadata_for_build_wheel`` is deliberately absent: its METADATA could
-not list the Filament license files, so frontends read metadata from the
-built wheel instead. dartpy is wheel-only (DART 7 decision D20): ``build_sdist``
-and ``build_editable`` raise ``UnsupportedOperation``.
+``build_wheel`` wraps scikit-build-core's, and ``get_requires_for_build_wheel``
+is scikit-build-core's own. ``prepare_metadata_for_build_wheel`` is
+deliberately absent: its METADATA could not list the Filament license files,
+so frontends read metadata from the built wheel instead. dartpy is wheel-only
+(DART 7 decision D20): ``build_sdist`` and ``build_editable`` raise
+``UnsupportedOperation``.
 """
 
 from __future__ import annotations
@@ -23,7 +24,15 @@ import zipfile
 from pathlib import Path
 
 from scikit_build_core.build import build_wheel as _build_wheel
-from scikit_build_core.build import get_requires_for_build_wheel  # noqa: F401
+from scikit_build_core.build import get_requires_for_build_wheel
+
+__all__ = [
+    "UnsupportedOperation",
+    "build_editable",
+    "build_sdist",
+    "build_wheel",
+    "get_requires_for_build_wheel",
+]
 
 STAGING = "dartpy/_filament_licenses/"
 DESTINATION = "licenses/filament/"
