@@ -131,6 +131,7 @@
   * Line segment and point cloud shapes now report bounding boxes that
     include vertices and points edited after a query, and clearing a point
     cloud now refreshes collision geometry.
+    [#3826](https://github.com/dartsim/dart/pull/3826)
 
   * Keep prepared Worlds ready after topology edits in unrelated Worlds,
     while still rebuilding after changes to their own skeletons, solver
