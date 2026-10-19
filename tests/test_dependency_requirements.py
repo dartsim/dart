@@ -378,6 +378,60 @@ def test_bullet_header_floor(tmp_path, bundled, version):
 
 
 @pytest.mark.parametrize(
+    "version,option,installed,suffix",
+    [
+        (325, "ON", True, "-float64"),
+        (325, "OFF", True, ""),
+        (305, "ON", True, ""),  # double-precision float heightfields need 3.17
+        (325, "ON", False, ""),
+    ],
+)
+def test_bullet_prefers_float64_libraries(tmp_path, version, option, installed, suffix):
+    include = tmp_path / "bullet" / "include"
+    header = include / "LinearMath" / "btScalar.h"
+    header.parent.mkdir(parents=True)
+    header.write_text(f"#define BT_BULLET_VERSION {version}\n")
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindBullet.cmake").write_text(
+        "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
+        f'set(BULLET_INCLUDE_DIRS "{include.as_posix()}")\n'
+        'set(BULLET_COLLISION_LIBRARY "${collision}")\n'
+        'set(BULLET_LIBRARIES "${collision}" "${math}")\n'
+    )
+    stems = "BulletCollision LinearMath"
+    if installed:
+        stems += " BulletCollision-float64 LinearMath-float64"
+    lib = (tmp_path / "bullet" / "lib").as_posix()
+    result = configure(
+        tmp_path,
+        f'set(lib "{lib}")\n'
+        'set(prefix "")\n'
+        "if(CMAKE_FIND_LIBRARY_PREFIXES)\n"
+        "  list(GET CMAKE_FIND_LIBRARY_PREFIXES 0 prefix)\n"
+        "endif()\n"
+        "list(GET CMAKE_FIND_LIBRARY_SUFFIXES 0 ext)\n"
+        'file(MAKE_DIRECTORY "${lib}")\n'
+        f"foreach(stem {stems})\n"
+        '  file(TOUCH "${lib}/${prefix}${stem}${ext}")\n'
+        "endforeach()\n"
+        'set(collision "${lib}/${prefix}BulletCollision${ext}")\n'
+        'set(math "${lib}/${prefix}LinearMath${ext}")\n'
+        f"set(DART_USE_SYSTEM_BULLET ON)\nset(DART_BULLET_FLOAT64 {option})\n"
+        "include(DARTFindBullet)\n"
+        f'set(expected "${{lib}}/${{prefix}}BulletCollision{suffix}${{ext}}" '
+        f'"${{lib}}/${{prefix}}LinearMath{suffix}${{ext}}")\n'
+        "get_target_property(linked Bullet INTERFACE_LINK_LIBRARIES)\n"
+        # FindBullet's results stay single precision for consumers' targets.
+        "if(NOT linked STREQUAL expected\n"
+        "    OR NOT BULLET_COLLISION_LIBRARY STREQUAL collision)\n"
+        '  message(FATAL_ERROR "Bullet links ${linked}")\n'
+        "endif()\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
     "package,minimum,header,defines,target",
     [
         (

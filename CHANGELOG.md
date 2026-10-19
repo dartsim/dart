@@ -106,6 +106,14 @@
 
 * Collision
 
+  * The Bullet detector no longer drops or tilts contacts of centimeter-scale
+    shapes, which let small boxes sink into or fall through heightmaps, now
+    that DART links double-precision Bullet (see Build). Heightmaps also work
+    with double-precision Bullet, where they read garbage heights, and
+    `MultiSphereConvexHullShape` spheres smaller than 4 cm get correct
+    contacts.
+    [gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)
+
   * Fix undefined behavior when a custom deleter of a replaced collision
     detector or contact surface handler reads the constraint solver's
     current one.
@@ -264,6 +272,15 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * With system Bullet 3.17 or newer, DART links the double-precision
+    `-float64` Bullet libraries when they are installed beside the
+    single-precision ones, as on Ubuntu and conda-forge, and the installed
+    CMake package and `dart.pc` require the same libraries.
+    `DART_BULLET_FLOAT64=OFF` keeps single precision. A process must not load
+    both Bullet precisions, so applications that load another
+    single-precision Bullet must switch it to double precision or build DART
+    with that option.
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`

@@ -159,6 +159,11 @@ FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
 
+Single-precision Bullet loses contacts of centimeter-scale shapes, so with
+Bullet 3.17 or newer DART links the double-precision ``-float64`` libraries
+that Ubuntu and conda-forge install beside the single-precision ones.
+``-DDART_BULLET_FLOAT64=OFF`` keeps single precision.
+
 On Linux, an installed Filament SDK must use libstdc++, as the conda-forge
 ``filament`` package does. With ``DART_USE_SYSTEM_FILAMENT=OFF``, Linux builds
 download and compile the pinned Filament sources, which requires Clang 20 or

@@ -84,6 +84,15 @@ collision shared-library filenames are no longer installed. `DART_SKIP_BULLET`
 and `DART_SKIP_ODE` disable the respective backends, including bundled downloads.
 The FCL default and public detector classes remain unchanged.
 
+With system Bullet 3.17 or newer, `DART_BULLET_FLOAT64` (default `ON`) links
+the `-float64` libraries installed beside the single-precision ones, because
+single-precision Bullet's absolute GJK tolerances lose contacts of
+centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
+The installed CMake components and `dart.pc` record the chosen precision, so
+consumers link the same libraries. The two precisions share GNU unique symbols
+such as `btTransform::getIdentity()`'s static even across `RTLD_LOCAL` plugins,
+so one process must not load both; Gazebo loads one physics engine per server.
+
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the
 [package checks](../../tools/package/README.md) for static builds, legacy

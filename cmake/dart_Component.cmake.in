@@ -8,6 +8,10 @@ endif()
 
 set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_@component@_FOUND" TRUE)
 foreach(external_dep @external_dependencies@)
+  if(external_dep STREQUAL "Bullet")
+    # Link the Bullet precision that this DART was built with.
+    set(DART_BULLET_FLOAT64 "@BT_USE_DOUBLE_PRECISION@")
+  endif()
   include(${CMAKE_CURRENT_LIST_DIR}/DARTFind${external_dep}.cmake)
 
   string(TOUPPER ${external_dep} EXTERNAL_DEP_UPPER)

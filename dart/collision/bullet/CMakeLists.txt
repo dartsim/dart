@@ -16,7 +16,8 @@ if(DART_USE_SYSTEM_BULLET)
   set(CMAKE_REQUIRED_FLAGS "-w")
   set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
   set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  # The Bullet target links the libraries DARTFindBullet selected.
+  set(CMAKE_REQUIRED_LIBRARIES Bullet)
   unset(BT_USE_DOUBLE_PRECISION CACHE)
   check_cxx_source_compiles(
     "

@@ -278,6 +278,10 @@ dart_option(
 )
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
+dart_option(DART_BULLET_FLOAT64
+  "Link system Bullet's double-precision (-float64) libraries when installed"
+  ON
+)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
 # The bundled ImGui is always the docking release; drop the removed option.
 if(DEFINED DART_IMGUI_DOCKING)

@@ -49,8 +49,51 @@ if(BULLET_FOUND OR Bullet_FOUND)
   unset(_bullet_minor)
 endif()
 
+# Single-precision Bullet's fixed GJK tolerances drop or tilt contacts of
+# centimeter-scale shapes (gz-physics#1117), so prefer the double-precision
+# libraries that Ubuntu and conda-forge install beside the single-precision
+# ones. Float heightfields need Bullet 3.17 in double precision. Leave
+# FindBullet's variables alone: consumers may run it for their own targets.
+set(_dart_bullet_libraries ${BULLET_LIBRARIES})
+if(
+  DART_BULLET_FLOAT64
+  AND BULLET_COLLISION_LIBRARY
+  AND BULLET_VERSION VERSION_GREATER_EQUAL 3.17
+)
+  get_filename_component(
+    _dart_bullet_dir
+    "${BULLET_COLLISION_LIBRARY}"
+    DIRECTORY
+  )
+  find_library(
+    DART_BULLET_COLLISION_FLOAT64_LIBRARY
+    BulletCollision-float64
+    HINTS "${_dart_bullet_dir}"
+    NO_DEFAULT_PATH
+  )
+  find_library(
+    DART_BULLET_MATH_FLOAT64_LIBRARY
+    LinearMath-float64
+    HINTS "${_dart_bullet_dir}"
+    NO_DEFAULT_PATH
+  )
+  mark_as_advanced(
+    DART_BULLET_COLLISION_FLOAT64_LIBRARY
+    DART_BULLET_MATH_FLOAT64_LIBRARY
+  )
+  if(DART_BULLET_COLLISION_FLOAT64_LIBRARY AND DART_BULLET_MATH_FLOAT64_LIBRARY)
+    set(
+      _dart_bullet_libraries
+      "${DART_BULLET_COLLISION_FLOAT64_LIBRARY}"
+      "${DART_BULLET_MATH_FLOAT64_LIBRARY}"
+    )
+  endif()
+  unset(_dart_bullet_dir)
+endif()
+
 if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   add_library(Bullet INTERFACE IMPORTED)
   target_include_directories(Bullet INTERFACE ${BULLET_INCLUDE_DIRS})
-  target_link_libraries(Bullet INTERFACE ${BULLET_LIBRARIES})
+  target_link_libraries(Bullet INTERFACE ${_dart_bullet_libraries})
 endif()
+unset(_dart_bullet_libraries)

@@ -3376,6 +3376,61 @@ TEST_F(Collision, BulletSmallMultiSphereContactsBox)
     EXPECT_NEAR(contact.penetrationDepth, depth, 1e-4);
   }
 }
+
+//==============================================================================
+// Single-precision Bullet's fixed GJK tolerances drop or tilt the contacts of
+// centimeter-scale shapes, so 2 cm boxes sank into or fell through a heightmap
+// with 5.4 cm cells. See https://github.com/gazebosim/gz-physics/issues/1117
+TEST_F(Collision, BulletSmallBoxesRestOnHeightmap)
+{
+  #ifndef BT_USE_DOUBLE_PRECISION
+  GTEST_SKIP() << "Small shapes need double-precision Bullet";
+  #endif
+
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  world->getConstraintSolver()->setCollisionDetector(
+      BulletCollisionDetector::create());
+
+  // A flat 7 m heightmap at z = 1, built as gz-physics builds one.
+  const std::size_t samples = 129;
+  const float cell = 7.0f / samples;
+  auto heightmap = std::make_shared<HeightmapShapef>();
+  heightmap->setHeightField(
+      samples, samples, std::vector<float>(samples * samples, 1.0f));
+  heightmap->setScale(Eigen::Vector3f(cell, cell, 1.0f));
+  auto ground = Skeleton::create("ground");
+  ground->createJointAndBodyNodePair<WeldJoint>()
+      .second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(heightmap);
+  world->addSkeleton(ground);
+
+  const double size = 0.02;
+  const double mass = 0.1;
+  std::vector<BodyNode*> boxes;
+  for (const auto& [x, y] : std::vector<std::pair<double, double>>{
+           {0, 0}, {3, 0}, {0, -3}, {1.5, 0}, {0.3, 0.3}, {2.5, -1.7}}) {
+    auto skeleton = Skeleton::create();
+    auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+    body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+        std::make_shared<BoxShape>(Eigen::Vector3d::Constant(size)));
+    body->setInertia(dynamics::Inertia(
+        mass,
+        Eigen::Vector3d::Zero(),
+        Eigen::Matrix3d::Identity() * mass * size * size / 6.0));
+    joint->setTransform(Eigen::Isometry3d(Eigen::Translation3d(x, y, 1.1)));
+    world->addSkeleton(skeleton);
+    boxes.push_back(body);
+  }
+
+  for (int i = 0; i < 1000; ++i)
+    world->step();
+
+  for (const auto* box : boxes) {
+    EXPECT_NEAR(
+        box->getWorldTransform().translation().z(), 1.0 + size / 2, 1e-3)
+        << box->getSkeleton()->getName();
+  }
+}
 #endif
 
 //==============================================================================
