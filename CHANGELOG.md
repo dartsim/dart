@@ -4,6 +4,35 @@
 
 ### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
 
+* Build
+
+  * `find_package(DART)` no longer requires pkg-config: without it, the
+    installed package reads assimp's version from assimp's own CMake package.
+
+  * Restore builds with Ubuntu 22.04's assimp and Bullet packages, which
+    failed to configure on assimp and skipped the `collision-bullet` component.
+    The minimum assimp is now 5.2.0 and the minimum Bullet 3.05, because
+    upstream assimp 5.2.2 reports itself as 5.2.0 and Bullet 3.06 as 3.05.
+
+  * GCC builds append `-Wl,--no-undefined` to the shared-library linker flags
+    instead of replacing them, so flags from `LDFLAGS` reach DART's libraries.
+
+  * Add `DART_BUILD_EXAMPLES` and `DART_BUILD_TUTORIALS` (default `ON`); `OFF`
+    skips the C++ examples or tutorials, which MSVC builds by default.
+
+  * MSVC projects that link the installed `dart` CMake target inherit
+    `/permissive-` and `/Zc:twoPhase-`, the conformance options DART is
+    compiled with, so DART's templates compile in those projects:
+    [#1622](https://github.com/dartsim/dart/issues/1622),
+    [#3685](https://github.com/dartsim/dart/pull/3685)
+
+* Python
+
+  * Source builds of `dartpy` on Windows work with the Ninja and NMake
+    generators, and the `DARTPY_BUILD_TEMP` environment variable moves the
+    CMake build tree, for example to a larger disk.
+    [#3686](https://github.com/dartsim/dart/pull/3686)
+
 ### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
 
 DART 6.20.1 is a patch release on the DART 6 line. It fixes mimic joints that
