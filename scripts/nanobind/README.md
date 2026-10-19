@@ -14,7 +14,10 @@ Snapshot runtime identities attribute inherited members to their walked defining
   in public, camelCase/C++ `m_` names, or `get`/`set` accessor names, per class
   and per module for `functions` and `classes`. The JSON key `functions`
   includes every non-container module member: callables, constants, exported
-  enum values, properties, and descriptors. The JSON key `containers` is a
+  enum values, properties, and descriptors. Each exported name counts once where
+  it is exported, so aliases and same-name re-exports into another module count
+  there; class members count on their defining class, so inherited members are
+  not counted twice. The JSON key `containers` is a
   sorted list of the public exported container names per module -- classes,
   enums, and submodules -- per exported path and not deduplicated by
   identity, so an alias or re-export in a second module is listed in that
@@ -35,8 +38,10 @@ Snapshot runtime identities attribute inherited members to their walked defining
   Class constants, exported enum values, and descriptors count only at the first
   class in the MRO whose `__dict__` defines the name, including when subclasses
   are visited first. Data names are not deduplicated by value identity.
-  Absent optional modules, classes, and submodules are ignored by the test and
-  retained by the updater: a module that lacks any budgeted class or submodule
+  Only owners that build options guard (`OPTIONAL_OWNERS` in `api_surface.py`:
+  Bullet, ODE and Octomap classes, the model-asset retriever and the viewer) may
+  be absent; any other missing budgeted owner fails. Absent optional owners are
+  ignored by the test and retained by the updater: a module that lacks one
   skips container staleness, and `--update-budget` without `--prune` keeps the
   budgeted container names of such modules; only `--update-budget --prune`
   rewrites container lists from the build and deletes absent owners, so after

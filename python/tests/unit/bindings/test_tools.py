@@ -135,10 +135,15 @@ def test_api_budget_uses_canonical_snapshot_identities(api_surface, monkeypatch)
     module.domain._private = lambda: None
     monkeypatch.setitem(sys.modules, "dartpy", module)
     surface = api_surface.budget_surface(api_surface.snapshot())
-    assert surface["dartpy"]["functions"]["public"] == []
+    # A module-level alias of a method counts where it is exported.
+    assert surface["dartpy"]["functions"] == {
+        "public": ["getAlias"],
+        "camel_case": ["getAlias"],
+        "get_set": ["getAlias"],
+    }
     domain = surface["dartpy.domain"]
     assert domain["functions"] == {
-        "public": ["get_value"],
+        "public": ["get_value", "z_alias"],
         "camel_case": [],
         "get_set": ["get_value"],
     }
@@ -165,6 +170,212 @@ def test_api_budget_uses_canonical_snapshot_identities(api_surface, monkeypatch)
     assert surface == api_surface.budget_surface(api_surface.snapshot())
 
 
+def test_api_budget_counts_same_name_reexport_in_its_module(api_surface):
+    """A function re-exported under the same name counts where it is exported."""
+    rows = {
+        "dartpy.domain": {"kind": "module", "runtime": {"name": "dartpy.domain"}},
+        "dartpy.domain.get_value": {
+            "kind": "callable",
+            "runtime": {"identity_path": "dartpy.domain.get_value"},
+        },
+    }
+    reexported = dict(rows)
+    reexported["dartpy.get_value"] = {
+        "kind": "callable",
+        "runtime": {"identity_path": "dartpy.domain.get_value"},
+    }
+    surface = api_surface.budget_surface(rows)
+    assert surface["dartpy"]["functions"]["public"] == []
+    assert surface["dartpy.domain"]["functions"]["public"] == ["get_value"]
+    budget = {
+        module: {
+            "functions": {
+                key: len(names) for key, names in scope["functions"].items()
+            },
+            "containers": scope["containers"]["public"],
+            "classes": {},
+        }
+        for module, scope in surface.items()
+    }
+    grown = api_surface.budget_surface(reexported)
+    assert grown["dartpy"]["functions"]["public"] == ["get_value"]
+    assert any(
+        "dartpy (functions): public budget 0 -> 1" in failure
+        for failure in api_surface.budget_growth(grown, budget)
+    )
+
+
+def test_api_budget_counts_function_and_member_aliases(api_surface):
+    """Aliases share an identity but export distinct public names."""
+    single = {
+        "dartpy.getFoo": {
+            "kind": "callable",
+            "runtime": {"identity_path": "dartpy.getFoo"},
+        },
+    }
+    aliased = dict(single)
+    aliased["dartpy.getFooAlias"] = {
+        "kind": "callable",
+        "runtime": {"identity_path": "dartpy.getFoo"},
+    }
+    budget = {
+        "dartpy": {
+            "functions": {"public": 1, "camel_case": 1, "get_set": 1},
+            "containers": [],
+            "classes": {},
+        }
+    }
+    assert api_surface.budget_surface(single)["dartpy"]["functions"]["public"] == [
+        "getFoo"
+    ]
+    surface = api_surface.budget_surface(aliased)
+    assert surface["dartpy"]["functions"]["public"] == ["getFoo", "getFooAlias"]
+    assert any(
+        "dartpy (functions)" in failure and "public budget 1 -> 2" in failure
+        for failure in api_surface.budget_growth(surface, budget)
+    )
+
+    member_single = {
+        "dartpy.Foo": {
+            "kind": "class",
+            "runtime": {"module": "dartpy", "qualname": "Foo"},
+        },
+        "dartpy.Foo.method": {
+            "kind": "callable",
+            "runtime": {"identity_path": "dartpy.Foo.method"},
+        },
+    }
+    member_aliased = dict(member_single)
+    member_aliased["dartpy.Foo.alias"] = {
+        "kind": "callable",
+        "runtime": {"identity_path": "dartpy.Foo.method"},
+    }
+    member_budget = {
+        "dartpy": {
+            "functions": {"public": 0, "camel_case": 0, "get_set": 0},
+            "containers": ["Foo"],
+            "classes": {"Foo": {"public": 1, "camel_case": 0, "get_set": 0}},
+        }
+    }
+    member_surface = api_surface.budget_surface(member_aliased)
+    assert member_surface["dartpy"]["classes"]["Foo"]["public"] == [
+        "alias",
+        "method",
+    ]
+    assert any(
+        "dartpy.Foo" in failure and "public budget 1 -> 2" in failure
+        for failure in api_surface.budget_growth(member_surface, member_budget)
+    )
+
+    # An inherited member keeps its defining name, so the subclass adds nothing.
+    inherited_rows = {
+        "dartpy.Base": {
+            "kind": "class",
+            "runtime": {"module": "dartpy", "qualname": "Base"},
+        },
+        "dartpy.Derived": {
+            "kind": "class",
+            "runtime": {"module": "dartpy", "qualname": "Derived"},
+        },
+        "dartpy.Base.method": {
+            "kind": "callable",
+            "runtime": {"identity_path": "dartpy.Base.method"},
+        },
+        "dartpy.Derived.method": {
+            "kind": "callable",
+            "runtime": {"identity_path": "dartpy.Base.method"},
+        },
+    }
+    inherited = api_surface.budget_surface(inherited_rows)
+    assert inherited["dartpy"]["classes"]["Base"]["public"] == ["method"]
+    assert inherited["dartpy"]["classes"]["Derived"]["public"] == []
+    inherited_budget = {
+        "dartpy": {
+            "functions": {"public": 0, "camel_case": 0, "get_set": 0},
+            "containers": ["Base", "Derived"],
+            "classes": {
+                "Base": {"public": 1, "camel_case": 0, "get_set": 0},
+                "Derived": {"public": 0, "camel_case": 0, "get_set": 0},
+            },
+        }
+    }
+    assert not api_surface.budget_growth(
+        inherited, inherited_budget, check_stale=True
+    )
+
+
+def test_api_budget_reports_unconditional_deletions_but_not_optional(api_surface):
+    """Only feature-conditional owners are exempt when absent."""
+    full_rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        "dartpy.collision.Core": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.collision", "qualname": "Core"},
+        },
+        "dartpy.collision.BulletCollisionDetector": {
+            "kind": "class",
+            "runtime": {
+                "module": "dartpy.collision",
+                "qualname": "BulletCollisionDetector",
+            },
+        },
+    }
+    full = api_surface.budget_surface(full_rows)
+    budget = {
+        module: {
+            "functions": {key: len(names) for key, names in scope["functions"].items()},
+            "containers": sorted(scope["containers"]["public"]),
+            "classes": {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in full.items()
+    }
+    assert not api_surface.budget_growth(full, budget, check_stale=True)
+
+    # Omitting the HAVE_BULLET class passes on a reduced build...
+    reduced_rows = dict(full_rows)
+    del reduced_rows["dartpy.collision.BulletCollisionDetector"]
+    reduced = api_surface.budget_surface(reduced_rows)
+    assert not api_surface.budget_growth(reduced, budget, check_stale=True)
+
+    # ...but deleting the unconditional class is a staleness failure.
+    deleted_rows = dict(full_rows)
+    del deleted_rows["dartpy.collision.Core"]
+    deleted = api_surface.budget_surface(deleted_rows)
+    assert api_surface.budget_growth(deleted, budget, check_stale=True)
+
+    submodule_rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        "dartpy.viewer": {"kind": "module", "runtime": {"name": "dartpy.viewer"}},
+    }
+    submodule_surface = api_surface.budget_surface(submodule_rows)
+    submodule_budget = {
+        module: {
+            "functions": {key: len(names) for key, names in scope["functions"].items()},
+            "containers": sorted(scope["containers"]["public"]),
+            "classes": {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in submodule_surface.items()
+    }
+    viewer_absent = api_surface.budget_surface(
+        {"dartpy.collision": submodule_rows["dartpy.collision"]}
+    )
+    assert not api_surface.budget_growth(
+        viewer_absent, submodule_budget, check_stale=True
+    )
+    collision_absent = api_surface.budget_surface(
+        {"dartpy.viewer": submodule_rows["dartpy.viewer"]}
+    )
+    assert api_surface.budget_growth(
+        collision_absent, submodule_budget, check_stale=True
+    )
+
+
 def test_api_budget_update_ratchets_and_keeps_absent_owners(
     api_surface, tmp_path, capsys
 ):
@@ -172,43 +383,51 @@ def test_api_budget_update_ratchets_and_keeps_absent_owners(
     empty = {"public": [], "camel_case": [], "get_set": []}
     members = {key: ["getFoo"] for key in empty}
     surface = {
-        "dartpy": {
+        "dartpy": {"functions": empty, "classes": {}},
+        "dartpy.collision": {
             "functions": empty,
-            "classes": {"Example": members, "Optional": members},
+            "classes": {"Example": members, "BulletCollisionDetector": members},
         },
-        "dartpy.gui": {"functions": members, "classes": {}},
+        "dartpy.viewer": {"functions": members, "classes": {}},
     }
     with pytest.raises(ValueError, match="--allow-growth"):
         api_surface.update_budget(path, surface)
     assert not path.exists()
     api_surface.update_budget(path, surface, allow_growth=True)
     output = capsys.readouterr().out
-    for owner in ("dartpy.Example", "dartpy.Optional", "dartpy.gui (functions)"):
+    for owner in (
+        "dartpy.collision.Example",
+        "dartpy.collision.BulletCollisionDetector",
+        "dartpy.viewer (functions)",
+    ):
         for counter in empty:
             assert f"{owner}: {counter} budget 0 -> 1" in output
     original = json.loads(path.read_text())
-    assert original["dartpy"]["classes"]["Example"] == {
+    assert original["dartpy.collision"]["classes"]["Example"] == {
         "public": 1,
         "camel_case": 1,
         "get_set": 1,
     }
 
-    smaller = {"dartpy": {"functions": empty, "classes": {"Example": empty}}}
+    smaller = {
+        "dartpy": {"functions": empty, "classes": {}},
+        "dartpy.collision": {"functions": empty, "classes": {"Example": empty}},
+    }
     api_surface.update_budget(path, smaller)
     lowered = json.loads(path.read_text())
-    assert lowered["dartpy"]["classes"]["Example"] == {
+    assert lowered["dartpy.collision"]["classes"]["Example"] == {
         "public": 0,
         "camel_case": 0,
         "get_set": 0,
     }
-    assert lowered["dartpy.gui"] == original["dartpy.gui"]
-    assert lowered["dartpy"]["classes"]["Optional"] == (
-        original["dartpy"]["classes"]["Optional"]
+    assert lowered["dartpy.viewer"] == original["dartpy.viewer"]
+    assert lowered["dartpy.collision"]["classes"]["BulletCollisionDetector"] == (
+        original["dartpy.collision"]["classes"]["BulletCollisionDetector"]
     )
     assert not api_surface.budget_growth(smaller, lowered)
     assert not api_surface.budget_growth(smaller, lowered, check_stale=True)
     with pytest.raises(
-        ValueError, match="dartpy.Example: public budget 0 -> 1.*getFoo"
+        ValueError, match="dartpy.collision.Example: public budget 0 -> 1.*getFoo"
     ):
         api_surface.update_budget(path, surface)
     assert json.loads(path.read_text()) == lowered
@@ -222,7 +441,7 @@ def test_api_budget_update_ratchets_and_keeps_absent_owners(
         "dartpy": {"functions": dict.fromkeys(empty, 0), "classes": {}}
     }
     assert (
-        "dartpy.Example: public budget 0 -> 1"
+        "dartpy.collision.Example: public budget 0 -> 1"
         in api_surface.budget_growth(surface, json.loads(path.read_text()))[0]
     )
 
@@ -292,9 +511,12 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
             "kind": "class",
             "runtime": {"module": "dartpy.collision", "qualname": "Core"},
         },
-        "dartpy.collision.Optional": {
+        "dartpy.collision.BulletCollisionDetector": {
             "kind": "class",
-            "runtime": {"module": "dartpy.collision", "qualname": "Optional"},
+            "runtime": {
+                "module": "dartpy.collision",
+                "qualname": "BulletCollisionDetector",
+            },
         },
     }
     full = api_surface.budget_surface(full_rows)
@@ -313,7 +535,7 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
 
     # A build without the optional binding still passes...
     reduced_rows = dict(full_rows)
-    del reduced_rows["dartpy.collision.Optional"]
+    del reduced_rows["dartpy.collision.BulletCollisionDetector"]
     reduced = api_surface.budget_surface(reduced_rows)
     assert not api_surface.budget_growth(reduced, budget, check_stale=True)
     # ...but an alias cannot take the absent class's place unnoticed.
@@ -354,20 +576,47 @@ def test_api_budget_container_ceilings_tolerate_absent_optional_classes(
     budget["dartpy"]["containers"].remove("StaleDummy")
 
     # An absent optional submodule skips its parent's container staleness, where
-    # growth is still reported.
-    absent = api_surface.budget_surface({})
-    assert not api_surface.budget_growth(absent, budget, check_stale=True)
+    # growth is still reported; an absent unconditional submodule fails.
+    viewer_rows = {
+        "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
+        "dartpy.viewer": {"kind": "module", "runtime": {"name": "dartpy.viewer"}},
+    }
+    viewer_surface = api_surface.budget_surface(viewer_rows)
+    viewer_budget = {
+        module: {
+            "functions": {key: len(names) for key, names in scope["functions"].items()},
+            "containers": sorted(scope["containers"]["public"]),
+            "classes": {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            },
+        }
+        for module, scope in viewer_surface.items()
+    }
+    viewer_absent = api_surface.budget_surface(
+        {"dartpy.collision": viewer_rows["dartpy.collision"]}
+    )
+    assert not api_surface.budget_growth(
+        viewer_absent, viewer_budget, check_stale=True
+    )
+    collision_absent = api_surface.budget_surface(
+        {"dartpy.viewer": viewer_rows["dartpy.viewer"]}
+    )
+    assert api_surface.budget_growth(
+        collision_absent, viewer_budget, check_stale=True
+    )
     added = api_surface.budget_surface(
         {
+            "dartpy.collision": viewer_rows["dartpy.collision"],
             "dartpy.Added": {
                 "kind": "class",
                 "runtime": {"module": "dartpy", "qualname": "Added"},
-            }
+            },
         }
     )
     assert any(
         "dartpy.Added: new class" in failure
-        for failure in api_surface.budget_growth(added, budget, check_stale=True)
+        for failure in api_surface.budget_growth(added, viewer_budget, check_stale=True)
     )
 
 
@@ -378,20 +627,26 @@ def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path)
             "kind": "class",
             "runtime": {"module": "dartpy.collision", "qualname": "Core"},
         },
-        "dartpy.collision.Optional": {
+        "dartpy.collision.BulletCollisionDetector": {
             "kind": "class",
-            "runtime": {"module": "dartpy.collision", "qualname": "Optional"},
+            "runtime": {
+                "module": "dartpy.collision",
+                "qualname": "BulletCollisionDetector",
+            },
         },
         "dartpy.collision.Alternate": {
             "kind": "class",
-            "runtime": {"module": "dartpy.collision", "qualname": "Optional"},
+            "runtime": {
+                "module": "dartpy.collision",
+                "qualname": "BulletCollisionDetector",
+            },
         },
     }
     full = api_surface.budget_surface(full_rows)
     assert full["dartpy.collision"]["containers"]["public"] == [
         "Alternate",
+        "BulletCollisionDetector",
         "Core",
-        "Optional",
     ]
     budget = {
         module: {
@@ -409,7 +664,7 @@ def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path)
     # Both the optional class and its alias vanish, but the reduced build
     # still passes unchanged.
     reduced_rows = dict(full_rows)
-    del reduced_rows["dartpy.collision.Optional"]
+    del reduced_rows["dartpy.collision.BulletCollisionDetector"]
     del reduced_rows["dartpy.collision.Alternate"]
     reduced = api_surface.budget_surface(reduced_rows)
     assert reduced["dartpy.collision"]["containers"]["public"] == ["Core"]
@@ -427,7 +682,7 @@ def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path)
         for failure in api_surface.budget_growth(extra, budget, check_stale=True)
     )
 
-    # A nested class exported at module level behaves the same way.
+    # Deleting an unconditional nested class and its module-level export fails.
     nested_full_rows = {
         "dartpy.collision": {"kind": "module", "runtime": {"name": "dartpy.collision"}},
         "dartpy.collision.Core": {
@@ -459,7 +714,7 @@ def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path)
     del nested_reduced_rows["dartpy.collision.Outer"]
     del nested_reduced_rows["dartpy.collision.AInner"]
     nested_reduced = api_surface.budget_surface(nested_reduced_rows)
-    assert not api_surface.budget_growth(
+    assert api_surface.budget_growth(
         nested_reduced, nested_budget, check_stale=True
     )
     nested_extra_rows = dict(nested_reduced_rows)
@@ -483,8 +738,8 @@ def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path)
     retained = json.loads(path.read_text())
     assert retained["dartpy.collision"]["containers"] == [
         "Alternate",
+        "BulletCollisionDetector",
         "Core",
-        "Optional",
     ]
     with pytest.raises(ValueError, match="Extra"):
         api_surface.update_budget(path, extra)
@@ -492,9 +747,9 @@ def test_api_budget_container_names_tolerate_absent_alias(api_surface, tmp_path)
     grown = json.loads(path.read_text())
     assert grown["dartpy.collision"]["containers"] == [
         "Alternate",
+        "BulletCollisionDetector",
         "Core",
         "Extra",
-        "Optional",
     ]
     api_surface.update_budget(path, reduced, prune=True)
     assert json.loads(path.read_text())["dartpy.collision"]["containers"] == ["Core"]
