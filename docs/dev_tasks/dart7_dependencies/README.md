@@ -161,7 +161,7 @@ shorthand is defined under [Gates](#gates).
 | DEP-8 | Wheel hygiene (one concern per PR) | none (DD-7) | wheel | Claude Sonnet | 7.0 | Planned |
 | DEP-9 | Python 3.12 and NumPy 1.26.4 floors; one wheel per platform | none (D20) | base, py, wheel | Claude Sonnet | 7.0 | Planned |
 | DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Claude Sonnet | 7.0 | Planned |
-| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PRs 1-2 committed locally |
+| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PR1 committed locally; the captures are in #3804 |
 | DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | (a) committed locally |
 | DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high + Claude Sonnet | 7.0 | Planned |
 | DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Committed locally |
@@ -235,7 +235,7 @@ executor that finds the real scope materially different stops and reports.
 1. The maintainer's answers to the second decision batch (Q1 to Q5 and the
    approvals in [balance-review.md](balance-review.md) §4), and approval to
    publish Wave 1.
-2. Wave 1 is committed locally: DEP-0, DEP-1, DEP-11 PRs 1-2, DEP-12(a) and
+2. Wave 1 is committed locally: DEP-0, DEP-1, DEP-11 PR1, DEP-12(a) and
    DEP-14, each on its own branch with two clean reviews; the Gazebo lanes
    pass on the combined tree. Next: the decision-free packets in
    [balance-review.md](balance-review.md) §3, "Order", item 2.

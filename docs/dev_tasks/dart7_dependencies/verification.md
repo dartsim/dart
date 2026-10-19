@@ -197,8 +197,11 @@ quieter host.
 
 ### DEP-11 PRs 1-2: C++20-clean code
 
-- Writer: Codex. Committed locally on `refactor/cxx20-clean-code` as two
-  commits.
+- Writer: Codex. Committed locally on `refactor/cxx20-clean-code`. Its
+  second commit (explicit `this` captures in `InverseKinematics.cpp` and
+  `optimizer/Function.cpp`) was dropped: open PR #3804 from an outside
+  contributor makes the identical change and also covers the two
+  `World.cpp` lambdas.
 - Gates: default build and 199/199 tests; a C++20 build passes 199 C++ and
   1,641 Python tests; all 12,852 exported dynamic symbols unchanged; C++17 and
   C++20 header checks and a C++14 ODR-use probe pass; the only remaining C++20

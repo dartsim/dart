@@ -12,7 +12,7 @@
   | --- | --- |
   | DEP-0 | `test/gz-contact-surface-probe-gate` |
   | DEP-1 | `build/remove-boost` |
-  | DEP-11 PRs 1-2 | `refactor/cxx20-clean-code` |
+  | DEP-11 PR1 | `refactor/cxx20-clean-code` |
   | DEP-12(a) | `build/ubuntu-2404-toolchain-floor` |
   | DEP-14 | `refactor/dart-log-sink` |
 
