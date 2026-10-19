@@ -102,6 +102,7 @@ struct SDFJoint
   struct MimicInfo
   {
     std::string referenceJointName;
+    std::size_t followerDof = 0;
     std::size_t referenceDof = 0;
     double multiplier = 1.0;
     double offset = 0.0;
@@ -662,8 +663,17 @@ void applyMimicConstraints(
         continue;
       }
 
+      if (joint->getNumDofs() == 0 || ref->getNumDofs() == 0) {
+        DART_WARN(
+            "[SdfParser] Ignoring mimic joint [{}] referencing joint [{}]: "
+            "both joints need at least one DoF",
+            jointInfo.properties->mName,
+            mimic.referenceJointName);
+        continue;
+      }
+
       const std::size_t followerIndex
-          = std::min(mimic.referenceDof, joint->getNumDofs() - 1);
+          = std::min(mimic.followerDof, joint->getNumDofs() - 1);
       const std::size_t referenceIndex
           = std::min(mimic.referenceDof, ref->getNumDofs() - 1);
 
@@ -679,7 +689,23 @@ void applyMimicConstraints(
       continue;
 
     joint->setMimicJointDofs(props);
-    joint->setActuatorType(dynamics::Joint::MIMIC);
+
+    // Only DoFs with a reference follow it; the others keep the joint-wide
+    // actuator type and accept commands.
+    const bool everyDofMimics = std::all_of(
+        props.begin(),
+        props.end(),
+        [](const dynamics::MimicDofProperties& prop) {
+          return prop.mReferenceJoint != nullptr;
+        });
+    if (everyDofMimics) {
+      joint->setActuatorType(dynamics::Joint::MIMIC);
+    } else {
+      for (std::size_t i = 0; i < props.size(); ++i) {
+        if (props[i].mReferenceJoint)
+          joint->setActuatorType(i, dynamics::Joint::MIMIC);
+      }
+    }
   }
 }
 
@@ -1396,7 +1422,7 @@ SDFJoint readJoint(
         = getElement(_jointElement, "axis2");
     auto mimics = readMimicElements(axis2Element);
     for (auto& m : mimics)
-      m.referenceDof = 1u; // axis2 maps to the second DoF
+      m.followerDof = 1u; // axis2 maps to the follower's second DoF
     newJoint.mimicInfos.insert(
         newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
   }

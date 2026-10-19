@@ -1,0 +1,166 @@
+<?xml version="1.0" ?>
+<!-- Universal joints exercising the SDF <mimic> axis mapping in SdfParser.
+     The element holding <mimic> (<axis> or <axis2>) selects the follower DoF,
+     and its axis attribute selects the reference DoF. The fixed joint carries
+     mimic metadata that must be ignored because it has no DoF. -->
+<sdf version="1.6">
+  <world name="default">
+    <gravity>0 0 0</gravity>
+    <physics type="dart">
+      <max_step_size>0.001</max_step_size>
+    </physics>
+
+    <model name="universal_mimic_model">
+      <pose>0 0 0 0 0 0</pose>
+
+      <link name="base">
+        <inertial>
+          <mass>10.0</mass>
+          <inertia>
+            <ixx>1.0</ixx>
+            <iyy>1.0</iyy>
+            <izz>1.0</izz>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyz>0.0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="reference_link">
+        <pose>0 0 1 0 0 0</pose>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyz>0.0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="axis2_only_link">
+        <pose>1 0 1 0 0 0</pose>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyz>0.0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="cross_link">
+        <pose>2 0 1 0 0 0</pose>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyz>0.0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="full_link">
+        <pose>3 0 1 0 0 0</pose>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyz>0.0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="fixed_link">
+        <pose>4 0 1 0 0 0</pose>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyz>0.0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <joint name="reference_joint" type="universal">
+        <parent>base</parent>
+        <child>reference_link</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+
+      <!-- Follower DoF 1 mimics reference DoF 0; DoF 0 stays free. -->
+      <joint name="axis2_only_joint" type="universal">
+        <parent>base</parent>
+        <child>axis2_only_link</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+          <mimic joint="reference_joint" axis="axis"/>
+        </axis2>
+      </joint>
+
+      <!-- Follower DoF 0 mimics reference DoF 1; DoF 1 stays free. -->
+      <joint name="cross_joint" type="universal">
+        <parent>base</parent>
+        <child>cross_link</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <mimic joint="reference_joint" axis="axis2"/>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+
+      <!-- Both DoFs mimic, each the other reference axis. -->
+      <joint name="full_joint" type="universal">
+        <parent>base</parent>
+        <child>full_link</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <mimic joint="reference_joint" axis="axis2"/>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+          <mimic joint="reference_joint" axis="axis"/>
+        </axis2>
+      </joint>
+
+      <joint name="fixed_joint" type="fixed">
+        <parent>base</parent>
+        <child>fixed_link</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <mimic joint="reference_joint" axis="axis"/>
+        </axis>
+      </joint>
+    </model>
+  </world>
+</sdf>

@@ -4,6 +4,17 @@
 
 ### [DART 6.20.2 (Unreleased)](https://github.com/dartsim/dart/milestone/107)
 
+* Parsers
+
+  * SDF joints that mimic only some of their axes, such as a universal
+    joint with an `<axis2>` mimic, keep their other axes under normal
+    control instead of zeroing their commands. Each mimic now follows the
+    axes the file names: `<axis>` or `<axis2>` picks the follower axis, and
+    the mimic's `axis` attribute picks the reference axis. A `<mimic>` on a
+    joint without DoFs, such as a fixed joint, is ignored with a warning
+    instead of indexing out of bounds.
+    [#3831](https://github.com/dartsim/dart/pull/3831)
+
 * Build
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
