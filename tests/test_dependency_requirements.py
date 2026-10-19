@@ -414,15 +414,15 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "float64",
         ),
-        # An installed DART links an existing target as is but warns when its
-        # libraries show the other variant.
+        # An installed DART rejects an existing target whose library files show
+        # the other variant.
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
             "add_library(Bullet INTERFACE IMPORTED)\n"
             'set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES "${collision};${math}")',
             True,
-            "warned",
+            "rejected",
         ),
         # ... and accepts one of the same variant silently.
         (
@@ -431,6 +431,17 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "add_library(Bullet INTERFACE IMPORTED)\n"
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
             '  "${lib}/${prefix}BulletCollision-float64${ext}")',
+            True,
+            "accepted",
+        ),
+        # ... including per-configuration files, as DART's own target has.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "target_link_libraries(Bullet INTERFACE\n"
+            '  optimized "${lib}/${prefix}BulletCollision-float64${ext}"\n'
+            '  debug "${lib}/${prefix}BulletCollision-float64_d${ext}")',
             True,
             "accepted",
         ),
@@ -476,6 +487,27 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "missing",
         ),
+        # Debug variants: link matching -float64 ones, or keep FindBullet's
+        # per-configuration single-precision selection without them.
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 ON)\n"
+            'set(collision_debug "${lib}/${prefix}BulletCollision_d${ext}")\n'
+            'set(math_debug "${lib}/${prefix}LinearMath_d${ext}")\n'
+            "foreach(stem BulletCollision-float64_d LinearMath-float64_d)\n"
+            '  file(TOUCH "${lib}/${prefix}${stem}${ext}")\n'
+            "endforeach()",
+            True,
+            "float64-debug",
+        ),
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 ON)\n"
+            'set(collision_debug "${lib}/${prefix}BulletCollision_d${ext}")\n'
+            'set(math_debug "${lib}/${prefix}LinearMath_d${ext}")',
+            True,
+            "single-debug",
+        ),
         # Explicitly selected -float64 libraries are recorded as such.
         (
             325,
@@ -511,6 +543,11 @@ def test_bullet_prefers_float64_libraries(
         f'set(BULLET_INCLUDE_DIRS "{include.as_posix()}")\n'
         'set(BULLET_COLLISION_LIBRARY "${collision}")\n'
         'set(BULLET_LIBRARIES "${collision}" "${math}")\n'
+        "if(DEFINED collision_debug)\n"
+        '  set(BULLET_COLLISION_LIBRARY_DEBUG "${collision_debug}")\n'
+        "  set(BULLET_LIBRARIES optimized ${collision} debug ${collision_debug}\n"
+        "    optimized ${math} debug ${math_debug})\n"
+        "endif()\n"
     )
     stems = "BulletCollision LinearMath"
     if installed:
@@ -523,6 +560,22 @@ def test_bullet_prefers_float64_libraries(
         check = "TARGET Bullet OR BULLET_FOUND"
     elif expected == "warned":
         check = "NOT BULLET_FOUND"
+    elif expected == "rejected":
+        check = "BULLET_FOUND"
+    elif expected == "float64-debug":
+        # target_link_libraries stores optimized/debug as $<CONFIG> expressions.
+        check = (
+            'NOT "${linked}" MATCHES "CONFIG:DEBUG>:[^>]*BulletCollision-float64_d"'
+            ' OR NOT "${linked}" MATCHES "CONFIG:DEBUG>:[^>]*LinearMath-float64_d"'
+            ' OR "${linked}" MATCHES "BulletCollision_d"'
+            " OR NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
+        )
+    elif expected == "single-debug":
+        check = (
+            'NOT "${linked}" MATCHES "CONFIG:DEBUG>:[^>]*BulletCollision_d"'
+            ' OR "${linked}" MATCHES "-float64"'
+            " OR NOT DART_BULLET_USES_FLOAT64 STREQUAL FALSE"
+        )
     elif expected == "recorded":
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
     elif expected == "accepted":
@@ -574,7 +627,7 @@ def test_bullet_prefers_float64_libraries(
     assert result.returncode == 0, result.stdout + result.stderr
     # CMake wraps warning text, so compare whitespace-normalized output.
     warning = "must not load both Bullet precisions" in " ".join(result.stderr.split())
-    assert warning == (expected == "warned"), result.stderr
+    assert warning == (expected in ("warned", "rejected")), result.stderr
 
 
 @pytest.mark.parametrize(

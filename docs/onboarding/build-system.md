@@ -90,8 +90,8 @@ single-precision Bullet's absolute GJK tolerances lose contacts of
 centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
 The installed CMake components and `dart.pc` require the same libraries; an
 installed DART built with them does not fall back to the other variant, and it
-links an existing `Bullet` target as is, warning when that target's libraries
-show the other variant. The
+rejects an existing `Bullet` target whose library files show the other variant,
+warning instead when other targets hide those files. The
 two precisions share GNU unique symbols, such as the static in
 `btTransform::getIdentity()`, even across `RTLD_LOCAL` plugins, so a process
 must load only one Bullet precision.
