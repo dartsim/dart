@@ -128,6 +128,11 @@
 
 * Dynamics
 
+  * Line segment and point cloud shapes now report bounding boxes that
+    include vertices and points edited after a query, and clearing a point
+    cloud now refreshes collision geometry.
+    [#3826](https://github.com/dartsim/dart/pull/3826)
+
   * `Skeleton::getSupportIndices()` now names the end effector behind each
     support polygon vertex instead of returning an empty list, so
     `BalanceConstraint` no longer reads past its end.
