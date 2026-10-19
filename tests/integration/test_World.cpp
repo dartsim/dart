@@ -38,6 +38,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/common/detail/ModelMutation.hpp"
+#include "dart/constraint/detail/NativeDetectorInitialization.h"
 #include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"

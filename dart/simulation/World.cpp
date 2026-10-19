@@ -55,6 +55,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/String.hpp"
 #include "dart/common/detail/ModelMutation.hpp"
+#include "dart/constraint/detail/NativeDetectorInitialization.h"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"

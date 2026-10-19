@@ -58,6 +58,7 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/ContactWarmStartCache.hpp"
+#include "dart/constraint/detail/NativeDetectorInitialization.h"
 #include "dart/constraint/detail/SkeletonMembershipVersion.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"

@@ -78,29 +78,6 @@ class ContactSurfaceHandler;
 class ConstraintBase;
 class BoxedLcpSolver;
 namespace detail {
-// Preserve only a pristine native World certificate while its detector is
-// installed. Ownership queries remain live until the complete setter returns.
-class NativeDetectorInitialization
-{
-public:
-  NativeDetectorInitialization(
-      const ConstraintSolver* solver,
-      const collision::CollisionDetector* incoming);
-  ~NativeDetectorInitialization();
-
-  NativeDetectorInitialization(const NativeDetectorInitialization&) = delete;
-  NativeDetectorInitialization& operator=(const NativeDetectorInitialization&)
-      = delete;
-
-private:
-  const ConstraintSolver* mSolver;
-  int mUncaughtExceptions;
-};
-
-// Internal invariant observation: later membership mutations would otherwise
-// mask an initialization scope incorrectly resurrecting a retired certificate.
-bool hasNativeOwnershipCertificate(const ConstraintSolver* solver);
-
 void checkWorldTopologyMutation(const ConstraintSolver* solver);
 void notifyWorldTopologyMutation(const ConstraintSolver* solver);
 void notifyWorldParameterMutation(const ConstraintSolver* solver);
