@@ -637,9 +637,11 @@ public:
   std::size_t mCompiledTopologyRevision = 0u;
   std::atomic<std::size_t> mParameterRevision{0u};
   std::atomic<bool> mStepping{false};
-  // Set by the first successful compile() and cleared at destruction. Only
+  // Set by compile() and cleared at destruction or a failed rebuild. Only
   // indexed Worlds have registry entries, model-object hooks and revisions.
   bool mIndexed = false;
+  // Pending work retains this token, so leaving and rejoining never reuses it.
+  std::shared_ptr<const char> mRegistryIdentity;
   // Worlds stepping on this thread form a chain through this pointer.
   WorldDeactivationState* mOuterSteppingWorld = nullptr;
   // A recompile that failed at World::edit() scope exit, reported by the next
@@ -755,7 +757,7 @@ public:
 
 namespace {
 
-// Ownership registry of indexed Worlds: those compiled at least once. Lazy
+// Ownership registry of indexed Worlds: those with a valid compile index. Lazy
 // Worlds never appear here and never take mMutex. ModelOwners::mMutex guards
 // every structure here and the per-World index bookkeeping in
 // WorldDeactivationState. Mutation hooks resolve ownership from this index
@@ -1030,6 +1032,8 @@ using KeyCounts = std::unordered_map<const void*, std::size_t>;
 
 // Test hook: the n-th index allocation from now throws std::bad_alloc.
 std::size_t gFailIndexAllocationIn = 0u;
+// One-shot test hook between the two rechain locks.
+std::function<void()> gRechainUnlockedHook;
 
 // Called before each step of index building that may allocate.
 void indexAllocation()
@@ -1185,10 +1189,12 @@ std::vector<const void*> collectSolverKeys(const World& world)
 }
 
 // The solver's contact handler chain. Handlers are model keys and take part in
-// compile() conflicts. A handler's parent may be shared with other solvers and
-// reparented from another thread, so only the hooks of operations that already
-// walk the chain (adding, removing or copying handlers) collect it; constraint
-// and skeleton changes never read it.
+// compile() conflicts. They are collected only while some World is compiled,
+// by the hooks of operations on the chain (adding, removing, copying or
+// reparenting handlers); constraint and skeleton changes never read it. Like
+// the step's contact handling, these reads are unsynchronized: reparenting a
+// handler that a World uses while another thread operates on that World is a
+// data race, as any concurrent mutation of one World's model is.
 std::vector<const void*> collectHandlerKeys(const World& world)
 {
   std::vector<const void*> keys;
@@ -1314,14 +1320,14 @@ void leaveRegistry(WorldDeactivationState& state) noexcept
   auto& worlds = modelOwners().mWorlds;
   worlds.erase(std::remove(worlds.begin(), worlds.end(), &state), worlds.end());
   state.mIndexed = false;
+  state.mRegistryIdentity.reset();
   gIndexedWorlds.fetch_sub(1u, std::memory_order_release);
   gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
 }
 
 // Rebuilds the World's index from its own containers, joining the registry on
 // the first call. This is where index memory is allocated. A failure leaves
-// no entry behind: a joining World leaves the registry again, and an indexed
-// World keeps its membership with an empty index and is no longer compiled.
+// no entry behind: the World becomes lazy until a successful compile().
 void reindexWorld(WorldDeactivationState& state)
 {
   const IndexSnapshot snapshot = collectIndex(*state.mWorld);
@@ -1332,8 +1338,10 @@ void reindexWorld(WorldDeactivationState& state)
     // Reserve before publishing anything: each step below either completes
     // or leaves the registry as it was.
     indexAllocation();
+    auto identity = std::make_shared<const char>();
     owners.mScratch.reserve(owners.mWorlds.size() + 1u);
     owners.mWorlds.push_back(&state);
+    state.mRegistryIdentity = std::move(identity);
     state.mIndexed = true;
     gIndexedWorlds.fetch_add(1u, std::memory_order_release);
     gGuardedWorlds.fetch_add(1u, std::memory_order_release);
@@ -1342,10 +1350,8 @@ void reindexWorld(WorldDeactivationState& state)
     applyIndex(state, snapshot);
   } catch (...) {
     unregisterWorld(state);
-    if (joining)
-      leaveRegistry(state);
-    else
-      state.mCompiled.store(false, std::memory_order_relaxed);
+    leaveRegistry(state);
+    state.mCompiled.store(false, std::memory_order_relaxed);
     throw;
   }
 }
@@ -1393,8 +1399,8 @@ void rechainMembersUnder(const dynamics::Frame* frame)
 {
   struct Pending
   {
-    WorldDeactivationState* mState;
-    FrameChains* mChains;
+    std::shared_ptr<const char> mIdentity;
+    bool mGroup;
     const dynamics::Frame* mMember;
     ModelKeys mKeys;
   };
@@ -1411,7 +1417,11 @@ void rechainMembersUnder(const dynamics::Frame* frame)
         for (const auto& entry : *chains) {
           if (std::find(entry.second.begin(), entry.second.end(), frame)
               != entry.second.end())
-            pending.push_back({state, chains, entry.first, ModelKeys()});
+            pending.push_back(
+                {state->mRegistryIdentity,
+                 chains == &state->mGroupFrameChains,
+                 entry.first,
+                 ModelKeys()});
         }
       }
     }
@@ -1420,13 +1430,23 @@ void rechainMembersUnder(const dynamics::Frame* frame)
     return;
   for (auto& entry : pending)
     collectFrameKeys(entry.mMember, entry.mKeys, true);
+  if (gRechainUnlockedHook)
+    std::exchange(gRechainUnlockedHook, {})();
   const auto lock = lockRegistry();
   const auto& worlds = modelOwners().mWorlds;
   for (auto& entry : pending) {
-    if (std::find(worlds.begin(), worlds.end(), entry.mState) == worlds.end()
-        || entry.mChains->find(entry.mMember) == entry.mChains->end())
+    const auto found
+        = std::find_if(worlds.begin(), worlds.end(), [&](const auto* state) {
+            return state->mRegistryIdentity == entry.mIdentity;
+          });
+    if (found == worlds.end())
       continue;
-    registerChain(*entry.mChains, *entry.mState, entry.mMember, entry.mKeys);
+    auto& state = **found;
+    auto& chains
+        = entry.mGroup ? state.mGroupFrameChains : state.mSimpleFrameChains;
+    if (chains.find(entry.mMember) == chains.end())
+      continue;
+    registerChain(chains, state, entry.mMember, entry.mKeys);
   }
 }
 
@@ -1585,15 +1605,18 @@ bool steppingWorldOwnsSolverObject(
   if (owned)
     return true;
   // The same walk as collectHandlerKeys(): a repeated handler ends the chain.
-  std::vector<const void*> seen;
+  ModelKeys seen;
   for (auto handler = solver->getLastContactSurfaceHandler(); handler;
        handler = handler->getParent()) {
     match(handler.get());
     if (owned)
       return true;
-    if (std::find(seen.begin(), seen.end(), handler.get()) != seen.end())
+    bool repeated = false;
+    seen.each(
+        [&](const void* key) { repeated = repeated || key == handler.get(); });
+    if (repeated)
       break;
-    seen.push_back(handler.get());
+    seen.add(handler.get());
   }
   return false;
 }
@@ -5718,6 +5741,7 @@ void notifyWorldContactHandlersChanged(const ConstraintSolver* solver)
   const auto lock = simulation::lockRegistry();
   simulation::forEachOwner(
       solver, [](simulation::WorldDeactivationState& owner) {
+        simulation::refreshSolverKeys(owner);
         simulation::refreshHandlerKeys(owner);
         simulation::notifyModelTopology(owner);
       });
@@ -5822,6 +5846,11 @@ std::size_t getIndexedWorldCount()
 void failIndexAllocation(std::size_t nth)
 {
   gFailIndexAllocationIn = nth;
+}
+
+void setRechainUnlockedHook(std::function<void()> hook)
+{
+  gRechainUnlockedHook = std::move(hook);
 }
 
 std::size_t getRegistryLockCount()

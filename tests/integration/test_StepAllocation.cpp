@@ -42,6 +42,7 @@
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Signal.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
@@ -1377,6 +1378,30 @@ TEST(StepAllocation, NativeCompiledFirstStepHasNoAllocation)
   if (measurement.rawHeap.skipped)
     GTEST_SKIP() << measurement.rawHeap.skipReason;
   EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+TEST(StepAllocation, LazyContactHandlerGuardDoesNotAllocate)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  auto world = createCountedStackedBoxesWorld(
+      "lazy_handler_guard",
+      dart::collision::DARTCollisionDetector::create(),
+      allocator);
+  auto handler = std::make_shared<AllocationGateCallbackHandler>();
+  auto unrelated = std::make_shared<dart::constraint::ContactSurfaceHandler>();
+  std::size_t checks = 0u;
+  std::size_t allocations = 0u;
+  handler->mCallback = [&](auto&) {
+    dart::test::ScopedHeapAllocationCounter counter;
+    dart::constraint::detail::checkContactSurfaceMutation(unrelated.get());
+    counter.stop();
+    allocations += counter.allocationCount();
+    ++checks;
+  };
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  world->step();
+  EXPECT_GT(checks, 0u);
+  EXPECT_EQ(allocations, 0u);
 }
 
 TEST(StepAllocation, NativeCompiledSoftFirstStepHasNoAllocation)

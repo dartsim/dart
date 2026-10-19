@@ -1549,7 +1549,6 @@ void ConstraintSolver::setFromOtherConstraintSolver(
       .swap(mContactSurfaceHandler);
   mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
-  detail::notifyWorldTopologyMutation(this);
   detail::notifyWorldContactHandlersChanged(this);
 }
 
