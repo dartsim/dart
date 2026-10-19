@@ -62,13 +62,14 @@ parallel tracks, Python first:
    the facade, then the remaining API areas, with the codemod, stubs,
    migration guide and API reference generated from the old-to-new mapping.
    Every native feature ships its Python binding and acceptance test.
-2. Native core (M1): compile and edit, counted stepping, per-solver
-   parameters, the remapping clone and `WorldBatch` with its own executor,
-   then actuators and servos, sensors and same-World checkpoints.
-3. Multi-solver and multi-physics: the typed solver policy, the written
-   `World` and solver contract, and the rigid step code behind an internal
-   domain boundary; the coupling seam is built together with a first
-   experimental domain (rods).
+2. Native core (M1): compile and edit, counted stepping, the remapping clone
+   and `WorldBatch` with its own executor, then actuators and servos, sensors
+   and same-World checkpoints.
+3. Multi-solver and multi-physics: the typed solver policy with its per-solver
+   parameters (M1e), the written `World` and solver contract, and the rigid
+   step code behind an internal domain boundary; the coupling seam is built
+   together with a first experimental domain (rods), in 7.0 if ready before
+   `F` and otherwise in 7.1.
 4. Gazebo gate: the Ionic and Jetty lanes, each against its distribution's
    sdformat, run for every step, solver, collision, packaging or Gazebo-lock
    change, against baselines from the last 6.20.x.
@@ -93,10 +94,11 @@ pass, 3 of 44.
 1. Land the Python packets in review.
 2. Compile and edit (M1b): its fix round keeps never-compiled C++ Worlds on
    6.20 behavior and starts ownership tracking at `compile()`; then counted
-   stepping, per-solver parameters and the remapping clone. Each packet is
-   re-qualified on current `main`.
+   stepping and the remapping clone. Each packet is re-qualified on current
+   `main`.
 3. The naming rulebook, then the facade slice.
-4. The solver policy and the written `World` and solver contract.
+4. The typed solver policy with its per-solver parameters (M1e), and the
+   written `World` and solver contract.
 5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
    `bullet-cpp` builds for Python 3.15.
 
