@@ -78,12 +78,20 @@
     [#1622](https://github.com/dartsim/dart/issues/1622),
     [#3685](https://github.com/dartsim/dart/pull/3685)
 
+  * Include the generated `dart/config.hpp` and
+    `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.
+    [#3811](https://github.com/dartsim/dart/pull/3811)
+
 * Python
 
   * Source builds of `dartpy` on Windows work with the Ninja and NMake
     generators, and the `DARTPY_BUILD_TEMP` environment variable moves the
     CMake build tree, for example to a larger disk.
     [#3686](https://github.com/dartsim/dart/pull/3686)
+
+  * CMake development builds report the DART version in `dartpy.__version__`
+    instead of an empty string. Explicit packaging versions remain supported.
+    [#3809](https://github.com/dartsim/dart/pull/3809)
 
 ### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
 
