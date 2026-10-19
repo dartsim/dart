@@ -95,7 +95,7 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.2
+     - 5.2.0
      - Core mesh loading
    * - Eigen
      - 3.4.0
@@ -107,7 +107,7 @@ Optional components remain optional.
      - 8.1.1
      - Core formatting
    * - Bullet
-     - 3.06
+     - 3.05
      - Bullet collision backend
    * - OctoMap
      - 1.9.7
@@ -218,6 +218,10 @@ include:
      - ``ON``
      - Build the Filament GUI and ImGui (``gui`` component, ``dart-gui``);
        ``OFF`` skips the whole GUI directory.
+   * - ``DART_BUILD_EXAMPLES``
+     - ``ON``
+     - Add the C++ example targets, which MSVC builds by default. Package
+       builds can set ``OFF`` to skip them.
    * - ``DART_ENABLE_GUI_SMOKE_TESTS``
      - ``OFF``
      - Build the offscreen GUI capture smoke test; needs a graphics device.

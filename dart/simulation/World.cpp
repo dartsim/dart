@@ -49,6 +49,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/String.hpp"
+#include "dart/common/detail/DeterministicExecutor.h"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -67,7 +68,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <condition_variable>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -75,7 +75,6 @@
 #include <string>
 #include <string_view>
 #include <thread>
-#include <type_traits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -564,6 +563,10 @@ public:
   bool mPreparedSolverUsesMembershipVersion = false;
 
   std::vector<char> mIslandJointDwellReady;
+
+  // Frames since construction, reset() or restoreState(). Rest detection
+  // credits bodies that start a run at rest on the first two of these frames.
+  int mFramesSinceStart = 0;
 
   // Contacts of resting pairs, as solved when the set of resting skeletons
   // last changed; the solver no longer computes or solves them. Their
@@ -1134,175 +1137,8 @@ const common::MemoryManager& World::getMemoryManager() const
 }
 
 //==============================================================================
-class SimulationThreadPool
+class SimulationThreadPool : public common::detail::DeterministicExecutor
 {
-public:
-  SimulationThreadPool() = default;
-
-  ~SimulationThreadPool()
-  {
-    setWorkerCount(0u);
-  }
-
-  void setWorkerCount(std::size_t workerCount)
-  {
-    if (workerCount == mWorkers.size())
-      return;
-
-    stopWorkers();
-    if (workerCount == 0u)
-      return;
-
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      mStop = false;
-    }
-
-    mWorkers.reserve(workerCount);
-    for (std::size_t i = 0; i < workerCount; ++i) {
-      mWorkers.emplace_back([this] { workerLoop(); });
-    }
-  }
-
-  template <typename Func>
-  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
-  {
-    if (count == 0u)
-      return;
-
-    const std::size_t totalParticipants = std::min<std::size_t>(
-        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
-    if (totalParticipants <= 1u) {
-      for (std::size_t i = 0; i < count; ++i)
-        func(i);
-      return;
-    }
-
-    const std::size_t chunkSize
-        = (count + totalParticipants - 1u) / totalParticipants;
-    const std::size_t workerCount = totalParticipants - 1u;
-    using Function = typename std::remove_reference<Func>::type;
-
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      DART_ASSERT(!mTaskActive);
-      mTaskActive = true;
-      mTaskCallable = static_cast<void*>(std::addressof(func));
-      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
-        auto& task = *static_cast<Function*>(callable);
-        for (std::size_t i = begin; i < end; ++i)
-          task(i);
-      };
-      mTaskCount = count;
-      mTaskChunkSize = chunkSize;
-      mWorkerLimit = totalParticipants;
-      mNextWorkerIndex = 1u;
-      mActiveWorkerCount = workerCount;
-      ++mTaskGeneration;
-    }
-
-    mTaskCv.notify_all();
-
-    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
-    for (std::size_t i = 0; i < mainEnd; ++i)
-      func(i);
-
-    {
-      std::unique_lock<std::mutex> lock(mMutex);
-      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
-      mTaskActive = false;
-      mTaskCallable = nullptr;
-      mTaskInvoker = nullptr;
-      mWorkerLimit = 1u;
-    }
-  }
-
-private:
-  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
-
-  void stopWorkers()
-  {
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      mStop = true;
-      ++mTaskGeneration;
-    }
-
-    mTaskCv.notify_all();
-
-    for (auto& worker : mWorkers) {
-      if (worker.joinable())
-        worker.join();
-    }
-    mWorkers.clear();
-
-    std::lock_guard<std::mutex> lock(mMutex);
-    mStop = false;
-    mTaskActive = false;
-    mTaskCallable = nullptr;
-    mTaskInvoker = nullptr;
-    mActiveWorkerCount = 0u;
-    mWorkerLimit = 1u;
-    mNextWorkerIndex = 1u;
-  }
-
-  void workerLoop()
-  {
-    std::size_t observedGeneration = 0u;
-
-    while (true) {
-      void* callable = nullptr;
-      TaskInvoker invoker = nullptr;
-      std::size_t begin = 0u;
-      std::size_t end = 0u;
-
-      {
-        std::unique_lock<std::mutex> lock(mMutex);
-        mTaskCv.wait(lock, [&] {
-          return mStop || observedGeneration != mTaskGeneration;
-        });
-
-        if (mStop)
-          return;
-
-        observedGeneration = mTaskGeneration;
-        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
-          continue;
-
-        const std::size_t workerIndex = mNextWorkerIndex++;
-        begin = workerIndex * mTaskChunkSize;
-        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
-        callable = mTaskCallable;
-        invoker = mTaskInvoker;
-      }
-
-      if (begin < end)
-        invoker(callable, begin, end);
-
-      {
-        std::lock_guard<std::mutex> lock(mMutex);
-        DART_ASSERT(mActiveWorkerCount > 0u);
-        --mActiveWorkerCount;
-        if (mActiveWorkerCount == 0u)
-          mDoneCv.notify_one();
-      }
-    }
-  }
-
-  std::vector<std::thread> mWorkers;
-  std::mutex mMutex;
-  std::condition_variable mTaskCv;
-  std::condition_variable mDoneCv;
-  bool mStop = false;
-  bool mTaskActive = false;
-  std::size_t mTaskGeneration = 0u;
-  std::size_t mTaskCount = 0u;
-  std::size_t mTaskChunkSize = 0u;
-  std::size_t mWorkerLimit = 1u;
-  std::size_t mNextWorkerIndex = 1u;
-  std::size_t mActiveWorkerCount = 0u;
-  void* mTaskCallable = nullptr;
-  TaskInvoker mTaskInvoker = nullptr;
 };
 
 //==============================================================================
@@ -1525,6 +1361,7 @@ void World::reset()
 {
   mTime = 0.0;
   mFrame = 0;
+  mDeactivationState->mFramesSinceStart = 0;
   mInitialRestSpeedLimits.clear();
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
@@ -1644,6 +1481,7 @@ inline void World::stepWithoutDeactivation(const StepContext& context)
 
   mTime += mTimeStep;
   mFrame++;
+  ++mDeactivationState->mFramesSinceStart;
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
 }
@@ -1675,6 +1513,7 @@ inline bool World::tryAllRestingFastPath(StepContext& context)
     }
     mTime += mTimeStep;
     mFrame++;
+    ++mDeactivationState->mFramesSinceStart;
     if (!mLastStepRestingWorldStateValid)
       updateLastStepRestingWorldState();
     return true;
@@ -1704,7 +1543,7 @@ inline void World::advanceVelocities(const StepContext& context)
 
   // The first-frame dwell credit is only for bodies that start at rest (see
   // updateRestStates()), so note which skeletons start the first step moving.
-  if (mFrame == 0) {
+  if (mDeactivationState->mFramesSinceStart == 0) {
     auto& initiallyMoving = mInitiallyMovingSkeletonScratch;
     initiallyMoving.assign(mSkeletons.size(), 0);
     for (std::size_t i = 0; i < mSkeletons.size(); ++i)
@@ -1792,7 +1631,8 @@ DART_FORCEINLINE void World::solveConstraints(StepContext& context)
   auto& deactivationState = *mDeactivationState;
   if (isReplayed(deactivationState, collisionFilter.get())
       && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
-      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
+      && (deactivationState.mFramesSinceStart < 2
+          || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
           || hasRestingOrCandidateMobileSkeleton(mSkeletons)
           || hasDwellingMobileSkeleton(mSkeletons))) {
     // Record before a body can freeze; moving bodies with no quiet dwell
@@ -1925,6 +1765,7 @@ inline void World::finishDeactivationStep(const StepContext& context)
 
   mTime += mTimeStep;
   mFrame++;
+  ++mDeactivationState->mFramesSinceStart;
 
   // A snapshot can only serve a next step on which a mobile body can freeze.
   if (mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
@@ -2048,10 +1889,12 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
   // The first-frame dwell credit (see islandInInitialEquilibrium below) is
   // checked on the first solve and confirmed on the second.
+  const int framesSinceStart = mDeactivationState->mFramesSinceStart;
   const bool confirmingInitialRest
-      = mFrame == 1
+      = framesSinceStart == 1
         && mInitialRestSpeedLimits.size() == countBodyNodes(mSkeletons);
-  const bool checkingInitialRest = mFrame == 0 || confirmingInitialRest;
+  const bool checkingInitialRest
+      = framesSinceStart == 0 || confirmingInitialRest;
 
   // Skeletons whose contacts on those frames cannot certify a settled body: a
   // deep contact, or a support tilted enough for gravity to drive motion along
@@ -2183,7 +2026,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       if (island < 0)
         continue;
 
-      const bool startedMoving = mFrame == 0
+      const bool startedMoving = framesSinceStart == 0
                                  && i < mInitiallyMovingSkeletonScratch.size()
                                  && mInitiallyMovingSkeletonScratch[i];
       bool inEquilibrium
@@ -2209,7 +2052,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // On the first solve, record the speeds that the second may leave on each
   // body of a member of an island in equilibrium; the bodies of a skeleton
   // outside such an island get limits that no speed meets.
-  if (mFrame == 0 && canSleep) {
+  if (framesSinceStart == 0 && canSleep) {
     const double initialRestMaxSpeedGrowth
         = kInitialRestMaxSpeedGrowthRatio * gravityNorm * mTimeStep;
     mInitialRestSpeedLimits.clear();
@@ -3108,6 +2951,12 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
   mAllRestingSnapshotVelocityVersion = 0u;
+}
+
+//==============================================================================
+void World::restartFirstFrameRestCredit()
+{
+  mDeactivationState->mFramesSinceStart = 0;
 }
 
 //==============================================================================

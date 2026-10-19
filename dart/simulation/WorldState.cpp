@@ -36,11 +36,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/detail/CollisionHistory.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/CylindricalJointConstraint.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/constraint/WeldJointConstraint.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -538,8 +540,51 @@ void World::restoreState(const WorldState& state)
         break;
     }
   }
+  // Retire the active set before invalidating history.
+  auto& solver = *mConstraintSolver;
+  solver.mActiveConstraints.clear();
+  solver.mHadDeactivationGroups = false;
+  // Retires the island buffers for reuse, keeping the next step allocation
+  // free.
+  solver.clearInactiveConstrainedGroups();
+  // Contact and soft contact constraints stay for the next update, which
+  // resets each one it reuses from a new contact and destroys the rest without
+  // reading them; nothing reads them before then. Destroying them here would
+  // make the next step allocate replacements: soft contacts always, and
+  // contacts wherever the constraint pool cannot recycle over-aligned blocks
+  // (libc++ with an 8-byte std::max_align_t, as on Apple arm64).
+  solver.mJointConstraints.clear();
+  solver.mMimicMotorConstraints.clear();
+  solver.mCouplerConstraints.clear();
+  solver.mJointCoulombFrictionConstraints.clear();
+  solver.clearLastCollisionResult();
+  if (auto* cache = constraint::detail::findContactWarmStartCache(&solver))
+    cache->clear();
+  collision::detail::CollisionHistory::clear(*solver.getCollisionGroup());
+  const auto clearSolverOutput = [](const dynamics::SkeletonPtr& skeleton) {
+    skeleton->clearConstraintImpulses();
+    skeleton->setImpulseApplied(false);
+    skeleton->clearPositionConstraintImpulses();
+    skeleton->clearPositionVelocityChanges();
+    skeleton->setPositionImpulseApplied(false);
+    skeleton->resetUnion();
+    skeleton->setIslandIndex(-1);
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    skeleton->clearCollidingBodies();
+    DART_SUPPRESS_DEPRECATED_END
+  };
+  // The cleared containers no longer tell the next solve to clear this output,
+  // including on Skeletons added only to the solver.
+  for (const auto& skeleton : solver.mSkeletons)
+    clearSolverOutput(skeleton);
+  for (const auto& skeleton : mSkeletons) {
+    clearSolverOutput(skeleton);
+    skeleton->setSmoothedLinearSpeed(0.0);
+    skeleton->setSmoothedAngularSpeed(0.0);
+  }
   // Dynamic restoration starts a fresh active trajectory, not exact history.
   wakeRestingSkeletonsForWorldChange();
+  restartFirstFrameRestCredit();
   mTime = state.time;
 }
 

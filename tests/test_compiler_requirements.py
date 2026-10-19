@@ -162,7 +162,7 @@ def test_compiler_options_preserve_caller_flags_and_parsing_guards(
         debug = "-g -fno-omit-frame-pointer -fno-inline-functions"
         if compiler == "GNU":
             debug += " -fno-inline-functions-called-once"
-            expected["CMAKE_SHARED_LINKER_FLAGS"] = "-Wl,--no-undefined"
+            expected["CMAKE_SHARED_LINKER_FLAGS"] = "caller -Wl,--no-undefined"
         debug += " -fno-optimize-sibling-calls" + (" -O1" if tuning else "")
         expected.update(
             CMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG",

@@ -119,7 +119,7 @@ list(GET DART_VERSION_PARTS 2 DART_PATCH_VERSION)
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.2.2, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, fmt >= 8.1.1"
+  "assimp >= 5.2.0, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, fmt >= 8.1.1"
 )
 
 #===============================================================================
@@ -220,6 +220,7 @@ if(DEFINED DART_BUILD_GUI_OSG)
 endif()
 dart_option(DART_BUILD_IO "Build model loading and file parsers" ON)
 dart_option(DART_BUILD_GUI "Build the Filament GUI and ImGui support" ON)
+dart_option(DART_BUILD_EXAMPLES "Add the C++ example targets" ON)
 dart_option(DART_USE_SYSTEM_FILAMENT "Use an installed Filament SDK" ON)
 if(DART_BUILD_DARTPY AND NOT DART_BUILD_IO)
   message(FATAL_ERROR "dartpy requires DART_BUILD_IO.")
@@ -515,7 +516,9 @@ if(TARGET dart)
   endif()
 
   # Add example subdirectories and an "examples" target.
-  if(MSVC)
+  if(NOT DART_BUILD_EXAMPLES)
+    # Package builds can skip the examples entirely.
+  elseif(MSVC)
     add_subdirectory(examples)
   else()
     add_subdirectory(examples EXCLUDE_FROM_ALL)
@@ -645,7 +648,7 @@ if(HAVE_BULLET)
       endif()
     endif()
   endif()
-  string(APPEND DART_PKG_EXTERNAL_DEPS ", ${bullet_pc} >= 3.06")
+  string(APPEND DART_PKG_EXTERNAL_DEPS ", ${bullet_pc} >= 3.05")
 endif()
 if(HAVE_ODE)
   string(APPEND DART_PKG_EXTERNAL_DEPS ", ode >= 0.16.2")
