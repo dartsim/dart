@@ -175,8 +175,11 @@ public:
   /// wake and soft activation restarts; frame count and exact solver/contact
   /// history are not restored. Contact and solver warm starts and sleep
   /// smoothing are cleared; for custom collision detectors, only the solver's.
-  /// With FCL or Bullet, restoring rebuilds the broadphase and allocates.
-  /// Parameters remain those of this World.
+  /// With the DART or ODE detector, the World then steps exactly like a new
+  /// World restoring the same snapshot. FCL and Bullet rebuild their
+  /// broadphase, which allocates, but their trees order pairs by memory
+  /// address, so contacts can still arrive in a different order once a group
+  /// holds three or more objects. Parameters remain those of this World.
   /// Commands follow this World's actuator types and limits, as setCommand()
   /// would. EndEffector Support active flags remain those of this World.
   /// Supported manual Ball/Revolute/Cylindrical/Weld constraint impulses reset;

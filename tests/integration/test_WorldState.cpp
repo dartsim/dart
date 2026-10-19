@@ -55,6 +55,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
@@ -245,6 +246,43 @@ void expectFreshTrajectory(
           x.collisionObject2->getBodyNode()->getName(),
           y.collisionObject2->getBodyNode()->getName());
     }
+  }
+}
+
+void expectGroupOrderAfterShapeReplacement(const std::string& detector)
+{
+  // A replaced shape's engine object moves behind the others, reordering its
+  // contacts with the unbounded ground; a new World keeps group order.
+  const auto make = [&] {
+    auto world = makeContactWorld(SnapshotSolver::Nsgs, false, detector);
+    world->getSkeleton(0)->getBodyNode(0)->getShapeNode(0)->setShape(
+        std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.05));
+    auto* body = world->getSkeleton(1)->getBodyNode(0);
+    body->getShapeNode(0)->setRelativeTranslation(Eigen::Vector3d(-0.1, 0, 0));
+    body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+            std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)))
+        ->setRelativeTranslation(Eigen::Vector3d(0.1, 0, 0));
+    return world;
+  };
+  auto a = make();
+  a->step();
+  ASSERT_EQ(a->getLastCollisionResult().getNumContacts(), 2u);
+  const auto state = a->captureState();
+  a->getSkeleton(1)->getBodyNode(0)->getShapeNode(0)->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)));
+  for (int i = 0; i < 30; ++i)
+    a->step();
+  auto b = make();
+  a->restoreState(state);
+  b->restoreState(state);
+  for (int i = 0; i < 8; ++i) {
+    a->step();
+    b->step();
+    const auto sa = a->captureState();
+    const auto sb = b->captureState();
+    ASSERT_TRUE((sa.velocities.array() == sb.velocities.array()).all())
+        << "step " << i
+        << " velocity delta: " << (sa.velocities - sb.velocities).transpose();
   }
 }
 
@@ -946,6 +984,11 @@ TEST(WorldState, RestoreClearsFclContactHistory)
   expectFreshTrajectory(SnapshotSolver::Nsgs, false, "fcl");
 }
 
+TEST(WorldState, RestoreRebuildsFclObjectsInGroupOrder)
+{
+  expectGroupOrderAfterShapeReplacement("fcl");
+}
+
 #if HAVE_BULLET
 TEST(WorldState, RestoreClearsBulletContactHistory)
 {
@@ -955,6 +998,11 @@ TEST(WorldState, RestoreClearsBulletContactHistory)
 TEST(WorldState, RestoreClearsBulletBroadphaseHistory)
 {
   expectFreshTrajectory(SnapshotSolver::Nsgs, false, "bullet", 4);
+}
+
+TEST(WorldState, RestoreRebuildsBulletObjectsInGroupOrder)
+{
+  expectGroupOrderAfterShapeReplacement("bullet");
 }
 #endif
 

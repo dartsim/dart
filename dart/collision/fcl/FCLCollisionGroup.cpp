@@ -80,14 +80,16 @@ bool containsObject(
 void detail::CollisionHistory::clear(FCLCollisionGroup& group)
 {
   // Incremental balancing retains tree topology and traversal history even at
-  // unchanged poses. Rebuild in group order using the restored bounds; FCL's
-  // public tree reset requires allocating new nodes on registration. Pick up
-  // shapes replaced since the last step first, as collide() would.
+  // unchanged poses, and a replaced shape's object moves behind the others.
+  // Reinsert every object in group order at the restored poses; FCL's public
+  // tree reset requires allocating new nodes. Pick up shapes replaced since
+  // the last step first, as collide() would.
   if (group.getAutomaticUpdate())
     group.update();
+  group.removeAllCollisionObjectsFromEngine();
   group.updateEngineData();
-  group.mBroadPhaseAlg->clear();
-  group.mBroadPhaseAlg->registerObjects(group.mFiniteObjects);
+  for (const auto& info : group.mObjectInfoList)
+    group.addCollisionObjectToEngine(info->mObject.get());
 }
 
 //==============================================================================
