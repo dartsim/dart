@@ -1,6 +1,7 @@
 """Snapshot each backend in a fresh process, then compare public API surfaces."""
 
 import argparse
+import copy
 import enum
 import inspect
 import json
@@ -585,7 +586,9 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
         )
     if failures:
         print("\n".join(failures))
-    budget = {} if prune else previous
+    # A copy, so removing owners below leaves `previous` intact for the
+    # container pass, which needs the absent owners.
+    budget = {} if prune else copy.deepcopy(previous)
     if not prune:
         # Unconditional owners missing from the build were removed: drop them
         # (and any submodules below a removed module) so the next check passes.

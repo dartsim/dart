@@ -532,6 +532,45 @@ def test_api_budget_update_drops_removed_unconditional_class(api_surface, tmp_pa
     assert not api_surface.budget_growth(removed, lowered, check_stale=True)
 
 
+def test_api_budget_update_handles_removed_and_optional_absences_together(
+    api_surface, tmp_path
+):
+    path = tmp_path / "budget.json"
+    empty = {"public": [], "camel_case": [], "get_set": []}
+
+    def containers(*names):
+        return {"public": list(names), "camel_case": [], "get_set": []}
+
+    full = {
+        "dartpy": {
+            "functions": empty,
+            "containers": containers("collision", "viewer"),
+            "classes": {},
+        },
+        "dartpy.collision": {"functions": empty, "containers": empty, "classes": {}},
+        "dartpy.viewer": {"functions": empty, "containers": empty, "classes": {}},
+    }
+    api_surface.update_budget(path, full, allow_growth=True)
+    # dartpy.collision was removed; the optional viewer is just not built.
+    neither = {
+        "dartpy": {"functions": empty, "containers": containers(), "classes": {}}
+    }
+    api_surface.update_budget(path, neither)
+    budget = json.loads(path.read_text())
+    assert "dartpy.collision" not in budget
+    assert budget["dartpy"]["containers"] == ["viewer"]
+    # A later build with the viewer passes without staleness.
+    with_viewer = {
+        "dartpy": {
+            "functions": empty,
+            "containers": containers("viewer"),
+            "classes": {},
+        },
+        "dartpy.viewer": full["dartpy.viewer"],
+    }
+    assert not api_surface.budget_growth(with_viewer, budget, check_stale=True)
+
+
 def test_api_budget_rejects_stale_counters(api_surface, tmp_path):
     path = tmp_path / "budget.json"
     counters = {key: ["getFoo"] for key in ("public", "camel_case", "get_set")}
