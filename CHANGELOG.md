@@ -263,6 +263,11 @@
 
 * Build
 
+  * Release builds against Eigen 5 no longer fail under the default
+    warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
+    options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
+    pass against Eigen 5.
+
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
     [#3829](https://github.com/dartsim/dart/pull/3829)

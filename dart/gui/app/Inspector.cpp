@@ -34,6 +34,8 @@
 
 #include <dart/gui/Viewer.hpp>
 
+#include <dart/common/Deprecated.hpp>
+
 #include <algorithm>
 #include <utility>
 
@@ -196,8 +198,11 @@ void Inspector::renderDetail(bool paused, dart::gui::WorldNode* worldNode)
   const Eigen::Isometry3d worldTf = body->getWorldTransform();
   const Eigen::Isometry3d relTf = body->getRelativeTransform();
   const Eigen::Vector3d worldPos = worldTf.translation();
+  // Preserve the displayed angle ranges; canonicalEulerAngles changes them.
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const Eigen::Vector3d worldRpy = worldTf.linear().eulerAngles(0, 1, 2) * 180.0
                                    / dart::math::constantsd::pi();
+  DART_SUPPRESS_DEPRECATED_END
   const Eigen::Vector3d relPos = relTf.translation();
 
   ImGui::Text(

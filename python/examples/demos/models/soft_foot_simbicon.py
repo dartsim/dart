@@ -325,25 +325,16 @@ def reset_model(model):
     object.__setattr__(model, "_force_duration", 0)
 
 
-def max_recoverable_push(feet):
-    feet = _feet(feet)
-    largest = 0.0
-    for magnitude in range(2000, 24001, 2000):
-        model = create_model(feet)
-        survived = True
-        for _ in range(500):
-            step(model)
-            if not is_finite(model):
-                survived = False
-                break
-        if survived:
-            apply_push(model, [0, 0, magnitude], push_steps)
-            for index in range(800):
-                step(model)
-                if not is_finite(model) or (index >= 550 and not is_upright(model)):
-                    survived = False
-                    break
-        # Recovery is nonmonotonic; every magnitude must get a fresh trial.
-        if survived:
-            largest = float(magnitude)
-    return largest
+def survives_push(feet, magnitude):
+    """Measure one fresh trial; recovery is not monotone in push magnitude."""
+    model = create_model(feet)
+    for _ in range(500):
+        step(model)
+        if not is_finite(model):
+            return False
+    apply_push(model, [0, 0, magnitude], push_steps)
+    for index in range(800):
+        step(model)
+        if not is_finite(model) or (index >= 550 and not is_upright(model)):
+            return False
+    return True
