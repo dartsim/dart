@@ -6,6 +6,11 @@
 
 * Breaking Changes
 
+  * `dart/utils/urdf/urdf.hpp`, through `urdf_world_parser.hpp`, no longer
+    includes `BackwardCompatibility.hpp`. Code using its
+    `URDFDOM_HEADERS_VERSION_*` macros must include
+    `dart/utils/urdf/BackwardCompatibility.hpp` directly.
+
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
     scaling, and display-free Linux capture. The `gui-osg` component
@@ -75,6 +80,10 @@
     and applications linked to the former ImGui shared library must rebuild.
 
 * API
+
+  * URDF world loading returns `nullptr` when an include is missing its
+    filename or model name, or an entity is missing its model, instead of
+    constructing strings from null attributes.
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,

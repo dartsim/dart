@@ -1,0 +1,4 @@
+<world name="testWorld">
+  <include filename="primitive_geometry.urdf" model_name="testRobot"/>
+  <entity name="testRobot"/>
+</world>
