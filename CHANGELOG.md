@@ -197,6 +197,10 @@
 
 * Python
 
+  * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
+    `World.restore_state(state)` for dynamic snapshots; state arrays are
+    read-only NumPy copies and a structure mismatch raises `ValueError`.
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
