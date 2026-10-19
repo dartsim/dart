@@ -61,6 +61,9 @@ if(TARGET dart-collision-ode)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
 endif()
 
+if("${DARTPY_VERSION_INFO}" STREQUAL "")
+  set(DARTPY_VERSION_INFO "${DART_VERSION}")
+endif()
 target_compile_definitions(
   ${pybind_module}
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
