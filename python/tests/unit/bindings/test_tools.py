@@ -282,6 +282,109 @@ def test_api_budget_counts_module_data_but_not_containers(api_surface):
     ]
 
 
+def test_api_budget_reports_empty_new_class(api_surface):
+    rows = {
+        "dartpy.Example": {
+            "kind": "class",
+            "runtime": {"module": "dartpy", "qualname": "Example"},
+        }
+    }
+    surface = api_surface.budget_surface(rows)
+    failures = api_surface.budget_growth(surface, {})
+    assert any(
+        "dartpy (containers)" in failure and "Example" in failure
+        for failure in failures
+    )
+    assert any("dartpy.Example: new class" in failure for failure in failures)
+    assert surface["dartpy"]["containers"]["public"] == ["Example"]
+    assert surface["dartpy"]["classes"]["Example"]["public"] == []
+
+
+def test_api_budget_reports_container_alias_in_second_module(api_surface):
+    base_rows = {
+        "dartpy.domain": {
+            "kind": "module",
+            "runtime": {"name": "dartpy.domain"},
+        },
+        "dartpy.domain.Foo": {
+            "kind": "class",
+            "runtime": {"module": "dartpy.domain", "qualname": "Foo"},
+        },
+        "dartpy.gui": {"kind": "module", "runtime": {"name": "dartpy.gui"}},
+    }
+    rows = dict(base_rows)
+    rows["dartpy.gui.FooAlias"] = {
+        "kind": "class",
+        "runtime": {"module": "dartpy.domain", "qualname": "Foo"},
+    }
+    empty = {"public": 0, "camel_case": 0, "get_set": 0}
+    budget = {
+        "dartpy": {
+            "functions": dict(empty),
+            "containers": {"public": 2, "camel_case": 0, "get_set": 0},
+            "classes": {},
+        },
+        "dartpy.domain": {
+            "functions": dict(empty),
+            "containers": {"public": 1, "camel_case": 0, "get_set": 0},
+            "classes": {"Foo": dict(empty)},
+        },
+        "dartpy.gui": {
+            "functions": dict(empty),
+            "containers": dict(empty),
+            "classes": {},
+        },
+    }
+    assert not api_surface.budget_growth(
+        api_surface.budget_surface(base_rows), budget
+    )
+    surface = api_surface.budget_surface(rows)
+    failures = api_surface.budget_growth(surface, budget)
+    assert any(
+        "dartpy.gui (containers)" in failure and "FooAlias" in failure
+        for failure in failures
+    )
+    assert surface["dartpy.gui"]["containers"]["public"] == ["FooAlias"]
+    assert surface["dartpy.domain"]["containers"]["public"] == ["Foo"]
+
+
+def test_api_budget_reports_empty_new_enum(api_surface):
+    rows = {
+        "dartpy.Mode": {
+            "kind": "enum",
+            "members": {},
+            "runtime": {"module": "dartpy", "qualname": "Mode"},
+        }
+    }
+    surface = api_surface.budget_surface(rows)
+    failures = api_surface.budget_growth(surface, {})
+    assert any(
+        "dartpy (containers)" in failure and "Mode" in failure
+        for failure in failures
+    )
+    assert any("dartpy.Mode: new class" in failure for failure in failures)
+    assert surface["dartpy"]["containers"]["public"] == ["Mode"]
+    assert surface["dartpy"]["classes"]["Mode"]["public"] == []
+
+
+def test_api_budget_reports_empty_new_submodule(api_surface):
+    rows = {
+        "dartpy.newsub": {
+            "kind": "module",
+            "runtime": {"name": "dartpy.newsub"},
+        }
+    }
+    surface = api_surface.budget_surface(rows)
+    failures = api_surface.budget_growth(surface, {})
+    assert any(
+        "dartpy (containers)" in failure and "newsub" in failure
+        for failure in failures
+    )
+    assert any("dartpy.newsub: new module" in failure for failure in failures)
+    assert surface["dartpy"]["containers"]["public"] == ["newsub"]
+    assert surface["dartpy.newsub"]["containers"]["public"] == []
+
+
 def test_api_budget_accessor_boundaries_and_single_word_pascal_case(api_surface):
     names = ["settings", "setup", "setUpView", "getFoo", "GET_FOO", "SET", "Step"]
     counters = api_surface.budget_surface(

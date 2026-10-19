@@ -14,6 +14,11 @@ Snapshot runtime identities attribute inherited members to their walked defining
   in public, camelCase/C++ `m_` names, or `get`/`set` accessor names, per class
   and per module. The JSON key `functions` includes every non-container module
   member: callables, constants, exported enum values, properties, and descriptors.
+  The JSON key `containers` counts exported container names per module --
+  classes, enums, and submodules -- per exported path and not deduplicated by
+  identity, so an alias or re-export in a second module counts in that module;
+  nested classes count as members of their defining class instead. A new module
+  or class that appears with empty counters is also reported as growth.
   Accessors match `^(?i:get|set)([A-Z_]|$)`: the verb is case-insensitive, but
   the following capital-or-underscore boundary is case-sensitive. `settings`
   and `setup` do not count; `setUpView` counts as a setter verb under this naming

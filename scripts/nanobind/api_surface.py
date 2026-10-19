@@ -304,7 +304,7 @@ def snapshot():
 def budget_surface(rows):
     """Group snapshot identities by canonical module and class, retaining names."""
     owners = {"dartpy": ("dartpy", None)}
-    surface = {"dartpy": {"functions": set(), "classes": {}}}
+    surface = {"dartpy": {"functions": set(), "containers": set(), "classes": {}}}
     for path, row in rows.items():
         runtime = row.get("runtime", {})
         if row["kind"] == "module":
@@ -316,11 +316,29 @@ def budget_surface(rows):
         else:
             continue
         owners[path] = (module, cls)
-        scope = surface.setdefault(module, {"functions": set(), "classes": {}})
+        scope = surface.setdefault(
+            module, {"functions": set(), "containers": set(), "classes": {}}
+        )
         if cls is not None:
             names = scope["classes"].setdefault(cls, set())
             # Enum machinery varies with Python; only snapshot enum names count.
             names.update(row.get("members", {}))
+
+    # Exported container names count per exported path, not by identity, so an
+    # alias in a second module counts in that module. Nested classes stay
+    # counted as members of their defining class.
+    for path, row in rows.items():
+        if row["kind"] not in {"module", "class", "enum"}:
+            continue
+        parent, _, name = path.rpartition(".")
+        if not parent or not name or name.startswith("_") or parent not in owners:
+            continue
+        parent_module, parent_cls = owners[parent]
+        if parent_cls is not None:
+            continue
+        scope = surface.get(parent_module)
+        if scope is not None:
+            scope["containers"].add(name)
 
     seen = set()
     for path, row in rows.items():
@@ -353,6 +371,7 @@ def budget_surface(rows):
     return {
         module: {
             "functions": counters(scope["functions"]),
+            "containers": counters(scope["containers"]),
             "classes": {
                 cls: counters(names) for cls, names in sorted(scope["classes"].items())
             },
@@ -367,11 +386,21 @@ def budget_growth(surface, budget, *, check_stale=False):
     for module, scope in surface.items():
         previous = budget.get(module, {})
         owners = [
-            (module + " (functions)", scope["functions"], previous.get("functions", {}))
+            (
+                module + " (functions)",
+                scope.get("functions", {}),
+                previous.get("functions", {}),
+            ),
+            (
+                module + " (containers)",
+                scope.get("containers", {}),
+                previous.get("containers", {}),
+            ),
         ]
+        previous_classes = previous.get("classes", {})
         owners.extend(
-            (module + "." + cls, counters, previous.get("classes", {}).get(cls, {}))
-            for cls, counters in scope["classes"].items()
+            (module + "." + cls, counters, previous_classes.get(cls, {}))
+            for cls, counters in scope.get("classes", {}).items()
         )
         for owner, counters, limits in owners:
             for counter, names in counters.items():
@@ -390,6 +419,26 @@ def budget_growth(surface, budget, *, check_stale=False):
                         f"{len(names)}; run {BUDGET_UPDATE} to lower it "
                         "(no --allow-growth needed)"
                     )
+        if module not in budget:
+            module_names = [
+                name
+                for key in ("functions", "containers")
+                for names in scope.get(key, {}).values()
+                for name in names
+            ]
+            if not module_names:
+                failures.append(
+                    f"{module}: new module; run {BUDGET_UPDATE} --allow-growth "
+                    "to add it"
+                )
+        for cls, counters in scope.get("classes", {}).items():
+            if cls not in previous_classes and all(
+                len(names) == 0 for names in counters.values()
+            ):
+                failures.append(
+                    f"{module}.{cls}: new class; run {BUDGET_UPDATE} --allow-growth "
+                    "to add it"
+                )
     return failures
 
 
@@ -406,13 +455,18 @@ def update_budget(path, surface, allow_growth=False, *, prune=False):
     budget = {} if prune else previous
     for module, scope in surface.items():
         target = budget.setdefault(module, {"classes": {}})
-        target["functions"] = {
-            key: len(names) for key, names in scope["functions"].items()
-        }
-        target["classes"].update(
+        if "functions" in scope:
+            target["functions"] = {
+                key: len(names) for key, names in scope["functions"].items()
+            }
+        if "containers" in scope:
+            target["containers"] = {
+                key: len(names) for key, names in scope["containers"].items()
+            }
+        target.setdefault("classes", {}).update(
             {
                 cls: {key: len(names) for key, names in counters.items()}
-                for cls, counters in scope["classes"].items()
+                for cls, counters in scope.get("classes", {}).items()
             }
         )
     path.write_text(json.dumps(budget, indent=2, sort_keys=True) + "\n")
