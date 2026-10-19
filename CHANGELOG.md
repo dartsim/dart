@@ -128,6 +128,15 @@
 
 * Dynamics
 
+  * `Skeleton::getSupportIndices()` now names the end effector behind each
+    support polygon vertex instead of returning an empty list, so
+    `BalanceConstraint` no longer reads past its end.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * A `LineSegmentShape` built from two points now reports `LINE_SEGMENT`
+    from the deprecated `getShapeType()`, like one built from a thickness.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
   * Line segment, plane, point cloud, voxel grid and custom shapes built on
     the default `Shape` constructor now always compute their volume and
     bounding box on the first query, instead of possibly returning zero
