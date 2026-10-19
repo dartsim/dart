@@ -128,6 +128,16 @@
 
 * Dynamics
 
+  * `Skeleton::getSupportIndices()` now names the end effector behind each
+    support polygon vertex instead of returning an empty list, so
+    `BalanceConstraint` no longer reads past its end.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * A `LineSegmentShape` built from two points now reports the
+    `LINE_SEGMENT` shape type and computes its bounding box on the first
+    query, like one built from a thickness.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
   * Keep prepared Worlds ready after topology edits in unrelated Worlds,
     while still rebuilding after changes to their own skeletons, solver
     membership, or collision-group dependencies.
