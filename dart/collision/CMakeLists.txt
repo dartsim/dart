@@ -23,6 +23,10 @@ install(
   DESTINATION include/dart/collision
   COMPONENT headers
 )
+list(
+  REMOVE_ITEM detail_hdrs
+  "${CMAKE_CURRENT_SOURCE_DIR}/detail/CollisionHistory.hpp"
+)
 install(
   FILES ${detail_hdrs}
   DESTINATION include/dart/collision/detail

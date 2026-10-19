@@ -1,9 +1,17 @@
-"""Browse ssik analytical IK branches for 19 native arm models."""
+"""Browse ssik analytical IK branches for 19 arm models."""
 
 import importlib
 
 import dartpy as dart
 import numpy as np
+
+from ..models.arm_skeleton import (
+    ArmSkeleton,
+    JointSpec,
+    get_ssik_arm_specs,
+    make_ssik_target_transform,
+    ssik_target_controls,
+)
 
 
 def isometry(matrix):
@@ -16,14 +24,14 @@ def isometry(matrix):
 
 
 def arm_chain(module):
-    """Pass ssik's product-of-exponentials chain to the native model."""
+    """Describe ssik's product-of-exponentials chain for the DART model."""
     if not all(
         hasattr(module, name)
         for name in ("_JOINT_T_LEFTS", "_JOINT_T_RIGHTS", "_JOINT_AXES", "_JOINT_TYPES")
     ):
         return []
     return [
-        dart._demos.JointSpec(
+        JointSpec(
             np.asarray(module._JOINT_T_LEFTS[i], dtype=float).reshape((4, 4)),
             np.asarray(module._JOINT_T_RIGHTS[i], dtype=float).reshape((4, 4)),
             np.asarray(module._JOINT_AXES[i], dtype=float),
@@ -41,8 +49,9 @@ class _SsikState:
         self.world = world
         self.target = target
         self.solved_frame = solved_frame
-        self.arm = dart._demos.ArmSkeleton(world)
-        self.arms = dart._demos.get_ssik_arm_specs()
+        self.solved_frame.getVisualAspect().hide()
+        self.arm = ArmSkeleton(world)
+        self.arms = get_ssik_arm_specs()
         self.module = None
         self.home = target.getTransform()
         self.seed = np.zeros(0)
@@ -183,7 +192,7 @@ class _SsikState:
         self.refresh_text()
 
     def target_controls(self, transform):
-        xyz, rpy = dart._demos.ssik_target_controls(transform)
+        xyz, rpy = ssik_target_controls(transform)
         self.target_xyz = xyz
         self.target_rpy = rpy
         self.position.value = xyz
@@ -191,7 +200,7 @@ class _SsikState:
 
     def sync_target(self):
         self.target.setTransform(
-            dart._demos.make_ssik_target_transform(self.position.value, self.rpy.value)
+            make_ssik_target_transform(self.position.value, self.rpy.value)
         )
         self.applied = self.target.getTransform().matrix().copy()
 
@@ -230,6 +239,7 @@ class _SsikState:
         self.solutions = []
         self.fk_poses = []
         self.selected = 0
+        self.solved_frame.getVisualAspect().hide()
         arm = self.arms[self.arm_choice.value]
         self.status.label = "Loading ssik.prebuilt." + arm.module
         try:
@@ -251,14 +261,10 @@ class _SsikState:
             self.arm.build([])
             self.target_controls(self.home)
             self.sync_target()
-            failed_pose = dart.math.Isometry3(self.home)
-            failed_pose.set_translation(self.home.translation() + [0.0, 0.25, 0.0])
-            self.solved_frame.setTransform(failed_pose)
             self.refresh_text()
             return
         self.target_controls(self.home)
         self.sync_target()
-        self.solved_frame.setTransform(self.home)
         self.solve()
 
     def solve(self):
@@ -294,8 +300,7 @@ class _SsikState:
             self.solutions = []
             self.fk_poses = []
             self.status.label = "Solve failed: " + str(error)
-            self.arm.show_solutions([], -1)
-            self.refresh_text()
+            self.update_solution()
             return
         self.status.label = f"Solutions: {len(self.solutions)}"
         if self.max_solutions.value == 0:
@@ -313,6 +318,7 @@ class _SsikState:
         self.update_solution()
 
     def update_solution(self):
+        self.solved_frame.getVisualAspect().hide()
         self.arm.show_solutions(
             [solution.q for solution in self.solutions],
             self.selected if self.solutions else -1,
@@ -321,6 +327,7 @@ class _SsikState:
             pose = self.fk_poses[self.selected]
             if pose is not None:
                 self.solved_frame.setTransform(pose)
+                self.solved_frame.getVisualAspect().show()
         self.refresh_text()
 
     def refresh_text(self):

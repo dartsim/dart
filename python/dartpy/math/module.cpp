@@ -39,6 +39,7 @@ namespace python {
 
 void Random(nb::module_& sm);
 void Geometry(nb::module_& sm);
+void TriMesh(nb::module_& sm);
 
 void dart_math(nb::module_& m)
 {
@@ -46,6 +47,7 @@ void dart_math(nb::module_& m)
 
   Random(sm);
   Geometry(sm);
+  TriMesh(sm);
 }
 
 } // namespace python

@@ -1,23 +1,24 @@
-"""SPD-balanced standing biped with native ankle strategy and push tests."""
+"""SPD-balanced standing biped with an ankle strategy and push tests."""
 
 from __future__ import annotations
 
 import dartpy as dart
 
+from ..models.biped_stand import BipedStandController as StandController
 from .common import reorient_z_up
 
 
 class BipedStandController:
-    """Forward the existing example controller entry point to native control."""
+    """Apply standing torques using the current world timestep."""
 
     def __init__(self, world, skel):
         self.world = world
         self.skel = skel
-        self.native = dart._demos.BipedStandController(skel, world.getTimeStep())
+        self.controller = StandController(skel, world.getTimeStep())
 
     def pre_step(self):
-        self.native.timestep = self.world.getTimeStep()
-        self.skel.setForces(self.native.compute_torques())
+        self.controller.timestep = self.world.getTimeStep()
+        self.skel.setForces(self.controller.compute_torques())
 
 
 def build() -> dart.viewer.SceneSetup:

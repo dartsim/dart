@@ -17,6 +17,10 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def test_keyboard_capture_query_without_gui_context():
+    assert viewer.keyboard_capture_active() is False
+
+
 def make_scene(scene_id="demo", factory=None, **setup):
     def build():
         return viewer.SceneSetup(dart.simulation.World(), **setup)

@@ -49,6 +49,8 @@
 
 #include <dart/dynamics/BodyNode.hpp>
 
+#include <dart/external/imgui/imgui.h>
+
 #include <nanobind/stl/optional.h>
 
 #include <iostream>
@@ -563,6 +565,14 @@ void dart_viewer(nb::module_& m)
   sm.doc()
       = "The DART demo app host: run a catalog of scenes in one window with "
         "docking panels, or display-free for cycling and captures.";
+
+  sm.def(
+      "keyboard_capture_active",
+      [] {
+        return ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureKeyboard;
+      },
+      "Whether scene input should yield to the native panel's keyboard "
+      "capture.");
 
   nb::exception<app::AssetsNotPrefetched>(
       sm, "AssetsNotPrefetchedError", PyExc_RuntimeError);

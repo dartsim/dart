@@ -92,6 +92,23 @@ def test_body_bounds_include_child_simple_frames():
     assert "child" in {b.name for b in avq.body_bounds(world)}
 
 
+@pytest.mark.skipif(not hasattr(dart, "gui"), reason="GUI bindings unavailable")
+def test_shape_traversal_includes_all_interactive_frame_children():
+    world = dart.simulation.World()
+    target = dart.gui.InteractiveFrame(dart.dynamics.Frame.World())
+    marker = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "marker")
+    marker.setShape(dart.dynamics.SphereShape(0.01))
+    world.addSimpleFrame(target)
+    world.addSimpleFrame(marker)
+
+    # Consume only shape types so the test does not retain visited wrappers.
+    types = [type(frame.getShape()).__name__ for _, _, frame in avq._iter_shape_owners(world)]
+    assert types.count("ArrowShape") == 6
+    assert types.count("MeshShape") == 6
+    assert types.count("LineSegmentShape") == 3
+    assert types.count("SphereShape") == 1
+
+
 def test_duplicate_body_names_keep_distinct_bounds():
     # Two skeletons whose bodies share the name "box" must yield two bounds
     # entries with distinct world-unique keys — merged bounds would let the

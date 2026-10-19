@@ -102,6 +102,7 @@ void PgsBoxedLcpSolver(nb::module_& m)
   dartnb::dart_class<
       dart::constraint::PgsBoxedLcpSolver,
       dart::constraint::BoxedLcpSolver>(m, "PgsBoxedLcpSolver")
+      .def(dartnb::init<>())
       .def(
           "getType",
           +[](const dart::constraint::PgsBoxedLcpSolver* self)

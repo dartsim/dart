@@ -1,4 +1,4 @@
-"""Y-up SIMBICON push recovery with native rigid or deformable Atlas feet."""
+"""Y-up SIMBICON push recovery with rigid or deformable Atlas feet."""
 
 import math
 import os
@@ -6,7 +6,7 @@ import re
 
 import dartpy as dart
 
-_model = dart._demos.soft_foot_simbicon
+from ..models import soft_foot_simbicon as _model
 
 
 def _atoi(text):
@@ -76,9 +76,11 @@ class _SoftFootSimbicon:
             "Compare the two. Both foot types collide as the same rest-pose "
             "mesh with the same rest inertia; only the soft one deforms. Soft "
             "feet spread far more contact points (about 51 vs 16 over a "
-            "settled window, gate-enforced at 1.5x) and recover from larger "
-            "pushes (measured 18000 N soft vs 8000 N rigid, gate-asserted "
-            "soft >= rigid) -- both Jain/Liu 2011 results.",
+            "settled window, gate-enforced at 1.5x), a Jain/Liu 2011 result. "
+            "Their other result, that soft feet recover from larger pushes, "
+            "does not reproduce here: in the test's push sweep, the soft biped "
+            "falls from 6000 and 8000 N pushes that the rigid one recovers "
+            "from.",
             wrap=True,
         )
         self.pre_refresh()

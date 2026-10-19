@@ -1197,6 +1197,20 @@ std::size_t DARTCollisionDetector::getNumCollisionObjectEngineData() const
 }
 
 //==============================================================================
+void detail::DARTCollisionDetectorAccessor::clearHistory(
+    DARTCollisionDetector& detector, CollisionGroup& group)
+{
+  auto* manager
+      = static_cast<DARTCollisionDetector::DARTCollisionObjectManager*>(
+          detector.mCollisionObjectManager.get());
+  const auto& data = detector.getCollisionGroupEngineData(
+      static_cast<DARTCollisionGroup*>(&group));
+  for (const auto& entry : data.objectToId)
+    manager->getEngineState().manifoldCache.removeObject(
+        getManifoldCacheId(entry.first));
+}
+
+//==============================================================================
 std::size_t
 detail::DARTCollisionDetectorAccessor::getNumCollisionGroupEngineData(
     const DARTCollisionDetector& detector)

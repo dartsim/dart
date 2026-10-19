@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+from examples.demos.models.boxed_lcp_solver import set_boxed_lcp_solver
+
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
@@ -329,41 +331,15 @@ def test_box_stacking_initial_geometry_and_transforms():
         )
 
 
-def test_boxed_lcp_solver_binding_validates_inputs():
-    world = dart.simulation.World()
-    for kind, backend in (
-        ("dantzig", "DantzigBoxedLcpSolver"),
-        ("pgs", "PgsBoxedLcpSolver"),
-    ):
-        assert dart._demos.set_boxed_lcp_solver(world, kind) is None
-        assert world.getConstraintSolver().getBoxedLcpSolver().getType() == backend
-    original = world.getConstraintSolver()
-    for kind in ("", "Dantzig", "other"):
-        with pytest.raises(ValueError):
-            dart._demos.set_boxed_lcp_solver(world, kind)
-        assert world.getConstraintSolver() is original
-    with pytest.raises(ValueError):
-        dart._demos.set_boxed_lcp_solver(None, "dantzig")
-
-
-def test_boxed_lcp_solver_switch_preserves_borrowed_wrapper():
-    world = dart.simulation.World()
-    dart._demos.set_boxed_lcp_solver(world, "dantzig")
-    borrowed = world.getConstraintSolver()
-    dart._demos.set_boxed_lcp_solver(world, "pgs")
-    assert world.getConstraintSolver() is borrowed
-    assert borrowed.getTimeStep() == world.getTimeStep()
-    assert borrowed.getBoxedLcpSolver().getType() == "PgsBoxedLcpSolver"
-
-
 @pytest.mark.parametrize("kind", ["dantzig", "pgs"])
 def test_boxed_lcp_solver_switch_preserves_simbicon_harness(kind):
-    native = dart._demos.soft_foot_simbicon
-    model = native.create_model(native.Feet.RIGID)
-    controller = dart._demos.simbicon.Controller(model.atlas, model.world)
+    from examples.demos.models import simbicon, soft_foot_simbicon
+
+    model = soft_foot_simbicon.create_model(soft_foot_simbicon.Feet.RIGID)
+    controller = simbicon.Controller(model.atlas, model.world)
     controller.harness_pelvis()
-    # The native controller borrows the solver without a Python solver wrapper.
-    dart._demos.set_boxed_lcp_solver(model.world, kind)
+    # Switching the boxed backend keeps the controller's solver and harness.
+    set_boxed_lcp_solver(model.world, kind)
     controller.unharness_pelvis()
     assert model.world.getConstraintSolver().getNumConstraints() == 0
     for _ in range(4):
@@ -718,44 +694,3 @@ def test_heightmap_grid_attachment_and_every_grid_control(controls):
         alpha = getter()[3]
         _edit(controls[label], [0.1, 0.3, 0.5, 0.2])
         np.testing.assert_allclose(getter(), [0.1, 0.3, 0.5, alpha])
-
-
-def test_native_heightmap_shape_owns_data_and_repeats_seeded_randomness():
-    fields = []
-    for _ in range(2):
-        dart.math.Random.setSeed(42)
-        shape = dart._demos.create_heightmap_shape(8, 6, 2, 3, -0.2, 0.1)
-        assert isinstance(shape, dart.dynamics.HeightmapShapef)
-        field = shape.getHeightField()
-        assert field.shape == (6, 8) and field.dtype == np.float32
-        assert np.float32(-0.2) <= field.min() <= field.max() <= np.float32(0.1)
-        np.testing.assert_array_equal(shape.getScale(), [0.25, 0.5, 1])
-        fields.append(field.copy())
-        field[:] = 99
-        np.testing.assert_array_equal(shape.getHeightField(), fields[-1])
-    np.testing.assert_array_equal(*fields)
-
-
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        (0, 6, 2, 3, 0, 0.1),
-        (-1, 6, 2, 3, 0, 0.1),
-        (8, 0, 2, 3, 0, 0.1),
-        (8, -1, 2, 3, 0, 0.1),
-        (sys.maxsize, 2, 2, 3, 0, 0.1),
-        (8, 6, 0, 3, 0, 0.1),
-        (8, 6, -1, 3, 0, 0.1),
-        (8, 6, 2, 0, 0, 0.1),
-        (8, 6, 2, -1, 0, 0.1),
-        (8, 6, np.nan, 3, 0, 0.1),
-        (8, 6, 2, np.inf, 0, 0.1),
-        (8, 6, 2, 3, np.nan, 0.1),
-        (8, 6, 2, 3, 0, np.inf),
-        (8, 6, 2, 3, 0.2, 0.1),
-        (8, 6, 2, 3, -np.finfo(np.float32).max, np.finfo(np.float32).max),
-    ],
-)
-def test_native_heightmap_shape_rejects_invalid_inputs(parameters):
-    with pytest.raises(ValueError):
-        dart._demos.create_heightmap_shape(*parameters)
