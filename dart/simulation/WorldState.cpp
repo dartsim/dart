@@ -542,8 +542,11 @@ void World::restoreState(const WorldState& state)
   }
   // Retire references to detector-owned contacts before invalidating history.
   auto& solver = *mConstraintSolver;
-  solver.mConstrainedGroups.clear();
   solver.mActiveConstraints.clear();
+  solver.mHadDeactivationGroups = false;
+  // Retires the island buffers for reuse, keeping the next step allocation
+  // free.
+  solver.clearInactiveConstrainedGroups();
   solver.mContactConstraints.clear();
   solver.mReusableContactConstraints.clear();
   solver.mSoftContactConstraints.clear();
@@ -552,10 +555,6 @@ void World::restoreState(const WorldState& state)
   solver.mMimicMotorConstraints.clear();
   solver.mCouplerConstraints.clear();
   solver.mJointCoulombFrictionConstraints.clear();
-  solver.mGroupResting.clear();
-  solver.mGroupAllSleepCandidates.clear();
-  solver.mGroupPreserveSleepCandidates.clear();
-  solver.mHadDeactivationGroups = false;
   solver.clearLastCollisionResult();
   if (auto* cache = constraint::detail::findContactWarmStartCache(&solver))
     cache->clear();

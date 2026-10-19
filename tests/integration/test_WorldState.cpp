@@ -1082,6 +1082,30 @@ TEST(WorldState, RestoreDoesNotAllocate)
   measure(soft);
 }
 
+TEST(WorldState, RestoreThenStepDoesNotAllocateWithDart)
+{
+  auto world = makeContactWorld();
+  for (int i = 0; i < 40; ++i)
+    world->step();
+  const auto state = world->captureState();
+  const auto cycle = [&] {
+    world->restoreState(state);
+    for (int i = 0; i < 3; ++i)
+      world->step();
+  };
+  cycle();
+  test::ScopedHeapAllocationCounter heap;
+  test::ScopedRawHeapAllocationCounter raw;
+  for (int i = 0; i < 5; ++i)
+    cycle();
+  heap.stop();
+  raw.stop();
+  EXPECT_EQ(heap.allocationCount(), 0u);
+  if (!raw.skipped()) {
+    EXPECT_EQ(raw.allocationCount(), 0u);
+  }
+}
+
 TEST(WorldState, InvalidRestorePreservesContactHistory)
 {
   auto world = makeContactWorld();
