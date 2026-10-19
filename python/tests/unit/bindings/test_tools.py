@@ -65,6 +65,248 @@ def api_surface(monkeypatch):
     return api_surface
 
 
+def test_api_surface_budget(api_surface):
+    """Pin World's current surface; the DART 7 target is about 20 public names."""
+    budget = json.loads(api_surface.BUDGET_PATH.read_text())
+    failures = api_surface.budget_growth(
+        api_surface.budget_surface(api_surface.snapshot()), budget, check_stale=True
+    )
+    assert not failures, (
+        "\n".join(failures)
+        + "\nThe counts-only budget cannot distinguish old names from additions. "
+        + "Revert growth, or deliberately raise budgets with "
+        + f"{api_surface.BUDGET_UPDATE} --allow-growth. "
+        + f"Lowering is automatic with {api_surface.BUDGET_UPDATE}."
+    )
+
+
+def test_api_budget_uses_canonical_snapshot_identities(api_surface, monkeypatch):
+    module = types.ModuleType("dartpy")
+    module.__version__ = "test"
+    module.domain = types.ModuleType("dartpy.domain")
+    module.a_alias = module.domain
+
+    class External:
+        def externalMethod(self):
+            pass
+
+    class Base(External):
+        @property
+        def m_value(self):
+            return 1
+
+        def getFoo(self):
+            pass
+
+        @property
+        def value(self):
+            pass
+
+    class Derived(Base):
+        def set_value(self):
+            pass
+
+    class Inner:
+        def SetValue(self):
+            pass
+
+    class Outer:
+        pass
+
+    for cls in (Base, Derived, Outer, Inner):
+        cls.__module__ = "dartpy.domain"
+        cls.__qualname__ = cls.__name__
+    Inner.__qualname__ = "Outer.Inner"
+    Outer.Inner = Inner
+    module.AInner = Inner
+    module.domain.ADerived = Derived
+    module.domain.Base = Base
+    module.domain.Outer = Outer
+    module.BaseAlias = Base
+    module.getAlias = Base.getFoo
+    module.domain.Mode = enum.Enum("Mode", {"FIRST": 1, "SECOND": 2})
+    module.domain.Mode.__module__ = "dartpy.domain"
+
+    def get_value():
+        pass
+
+    module.domain.get_value = module.domain.z_alias = get_value
+    module.domain._private = lambda: None
+    monkeypatch.setitem(sys.modules, "dartpy", module)
+    surface = api_surface.budget_surface(api_surface.snapshot())
+    assert surface["dartpy"]["functions"]["public"] == []
+    domain = surface["dartpy.domain"]
+    assert domain["functions"] == {
+        "public": ["get_value"],
+        "camel_case": [],
+        "get_set": ["get_value"],
+    }
+    assert domain["classes"] == {
+        "Base": {
+            "public": ["getFoo", "m_value", "value"],
+            "camel_case": ["getFoo", "m_value"],
+            "get_set": ["getFoo"],
+        },
+        "Derived": {
+            "public": ["set_value"],
+            "camel_case": [],
+            "get_set": ["set_value"],
+        },
+        "Mode": {"public": ["FIRST", "SECOND"], "camel_case": [], "get_set": []},
+        "Outer": {"public": ["Inner"], "camel_case": [], "get_set": []},
+        "Outer.Inner": {
+            "public": ["SetValue"],
+            "camel_case": ["SetValue"],
+            "get_set": ["SetValue"],
+        },
+    }
+    assert len(surface) == 2
+    assert surface == api_surface.budget_surface(api_surface.snapshot())
+
+
+def test_api_budget_update_ratchets_and_keeps_absent_owners(
+    api_surface, tmp_path, capsys
+):
+    path = tmp_path / "budget.json"
+    empty = {"public": [], "camel_case": [], "get_set": []}
+    members = {key: ["getFoo"] for key in empty}
+    surface = {
+        "dartpy": {
+            "functions": empty,
+            "classes": {"Example": members, "Optional": members},
+        },
+        "dartpy.gui": {"functions": members, "classes": {}},
+    }
+    with pytest.raises(ValueError, match="--allow-growth"):
+        api_surface.update_budget(path, surface)
+    assert not path.exists()
+    api_surface.update_budget(path, surface, allow_growth=True)
+    output = capsys.readouterr().out
+    for owner in ("dartpy.Example", "dartpy.Optional", "dartpy.gui (functions)"):
+        for counter in empty:
+            assert f"{owner}: {counter} budget 0 -> 1" in output
+    original = json.loads(path.read_text())
+    assert original["dartpy"]["classes"]["Example"] == {
+        "public": 1,
+        "camel_case": 1,
+        "get_set": 1,
+    }
+
+    smaller = {"dartpy": {"functions": empty, "classes": {"Example": empty}}}
+    api_surface.update_budget(path, smaller)
+    lowered = json.loads(path.read_text())
+    assert lowered["dartpy"]["classes"]["Example"] == {
+        "public": 0,
+        "camel_case": 0,
+        "get_set": 0,
+    }
+    assert lowered["dartpy.gui"] == original["dartpy.gui"]
+    assert lowered["dartpy"]["classes"]["Optional"] == (
+        original["dartpy"]["classes"]["Optional"]
+    )
+    assert not api_surface.budget_growth(smaller, lowered)
+    assert not api_surface.budget_growth(smaller, lowered, check_stale=True)
+    with pytest.raises(
+        ValueError, match="dartpy.Example: public budget 0 -> 1.*getFoo"
+    ):
+        api_surface.update_budget(path, surface)
+    assert json.loads(path.read_text()) == lowered
+
+    api_surface.update_budget(path, surface, allow_growth=True)
+    absent = {"dartpy": {"functions": empty, "classes": {}}}
+    api_surface.update_budget(path, absent)
+    assert json.loads(path.read_text()) == original
+    api_surface.update_budget(path, absent, prune=True)
+    assert json.loads(path.read_text()) == {
+        "dartpy": {"functions": dict.fromkeys(empty, 0), "classes": {}}
+    }
+    assert (
+        "dartpy.Example: public budget 0 -> 1"
+        in api_surface.budget_growth(surface, json.loads(path.read_text()))[0]
+    )
+
+
+def test_api_budget_rejects_stale_counters(api_surface, tmp_path):
+    path = tmp_path / "budget.json"
+    counters = {key: ["getFoo"] for key in ("public", "camel_case", "get_set")}
+    surface = {"dartpy": {"functions": counters, "classes": {"Example": counters}}}
+    stale = {
+        "dartpy": {
+            "functions": dict.fromkeys(counters, 2),
+            "classes": {"Example": dict.fromkeys(counters, 2)},
+        }
+    }
+    path.write_text(json.dumps(stale))
+    failures = api_surface.budget_growth(surface, stale, check_stale=True)
+    assert len(failures) == 6
+    for failure in failures:
+        assert "budget 2 exceeds current count 1" in failure
+        assert f"run {api_surface.BUDGET_UPDATE} to lower it" in failure
+        assert "no --allow-growth needed" in failure
+    api_surface.update_budget(path, surface)
+    assert not api_surface.budget_growth(
+        surface, json.loads(path.read_text()), check_stale=True
+    )
+
+
+def test_api_budget_counts_module_data_but_not_containers(api_surface):
+    rows = {
+        f"dartpy.{name}": {"kind": kind}
+        for name, kind in (
+            ("constant", "constant"),
+            ("FIRST", "enum_value"),
+            ("value", "property"),
+            ("descriptor", "descriptor"),
+            ("operation", "callable"),
+        )
+    }
+    rows["dartpy.Example"] = {
+        "kind": "class",
+        "runtime": {"module": "dartpy", "qualname": "Example"},
+    }
+    rows["dartpy.Mode"] = {
+        "kind": "enum",
+        "members": {"FIRST": 1},
+        "runtime": {"module": "dartpy", "qualname": "Mode"},
+    }
+    rows["dartpy.domain"] = {
+        "kind": "module",
+        "runtime": {"name": "dartpy.domain"},
+    }
+    assert api_surface.budget_surface(rows)["dartpy"]["functions"]["public"] == [
+        "FIRST",
+        "constant",
+        "descriptor",
+        "operation",
+        "value",
+    ]
+
+
+def test_api_budget_accessor_boundaries_and_single_word_pascal_case(api_surface):
+    names = ["settings", "setup", "setUpView", "getFoo", "GET_FOO", "SET", "Step"]
+    counters = api_surface.budget_surface(
+        {f"dartpy.{name}": {"kind": "callable"} for name in names}
+    )["dartpy"]["functions"]
+    assert counters == {
+        "public": sorted(names),
+        "camel_case": ["getFoo", "setUpView"],
+        "get_set": ["GET_FOO", "SET", "getFoo", "setUpView"],
+    }
+
+
+def test_api_budget_diagnostics_sort_and_truncate_names(api_surface):
+    names = [f"name{i:02}" for i in reversed(range(43))]
+    surface = {
+        "dartpy": {"functions": {"public": names}, "classes": {}}
+    }
+    assert api_surface.budget_growth(surface, {}) == [
+        "dartpy (functions): public budget 0 -> 43; "
+        "current names (including additions): "
+        + ", ".join(sorted(names)[:40])
+        + ", ... (3 more)"
+    ]
+
+
 @pytest.mark.parametrize("native", [False, True])
 def test_api_property_preserves_raw_overloads(api_surface, native):
     getters = [
@@ -212,7 +454,14 @@ def test_api_snapshot_attributes_inherited_members_to_defining_class(
     module = types.ModuleType("dartpy")
     module.__version__ = "test"
 
+    class Descriptor:
+        def __get__(self, instance, owner):
+            return self
+
     class Base:
+        CONSTANT = 1
+        descriptor = Descriptor()
+
         def method(self):
             """(self: Base) -> None"""
 
@@ -223,7 +472,13 @@ def test_api_snapshot_attributes_inherited_members_to_defining_class(
     class Derived(Base):
         pass
 
+    mode = enum.Enum("Mode", {"FIRST": 1})
+    mode.__module__ = "dartpy"
+    Base.Mode = mode
+    Base.FIRST = mode.FIRST
     Base.__module__ = Derived.__module__ = "dartpy"
+    Base.__qualname__ = "Base"
+    Derived.__qualname__ = "Derived"
     # Visit the subclass first, before its defining owner is walked.
     module.ADerived = Derived
     module.ZBase = Base
@@ -231,13 +486,18 @@ def test_api_snapshot_attributes_inherited_members_to_defining_class(
     monkeypatch.setitem(sys.modules, "dartpy", module)
 
     rows = api_surface.snapshot()
-    for name in ("method", "value"):
+    for name in ("method", "value", "CONSTANT", "descriptor", "FIRST"):
         identity = f"dartpy.ZBase.{name}"
         assert rows[identity]["runtime"]["identity_path"] == identity
         assert (
             rows[f"dartpy.ADerived.{name}"]["runtime"]["identity_path"] == identity
         )
     assert rows["dartpy.method"]["runtime"]["identity_path"] == "dartpy.ZBase.method"
+    classes = api_surface.budget_surface(rows)["dartpy"]["classes"]
+    assert classes["Derived"]["public"] == []
+    assert classes["Base"]["public"] == [
+        "CONSTANT", "FIRST", "Mode", "descriptor", "method", "value"
+    ]
     assert rows == api_surface.snapshot()
 
 

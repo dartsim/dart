@@ -17,6 +17,10 @@ from codemod import split
 ADDRESS_PATTERN = re.compile(
     r"""(?P<quoted>'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|(?<= at )0x[0-9a-fA-F]+(?=>)"""
 )
+BUDGET_PATH = (
+    Path(__file__).resolve().parents[2] / "python/tests/unit/bindings/api_budget.json"
+)
+BUDGET_UPDATE = "pixi run dartpy scripts/nanobind/api_surface.py --update-budget"
 
 
 def signatures(value):
@@ -151,6 +155,7 @@ def snapshot():
     seen = {}
     identities = {id(dartpy): ("dartpy", dartpy)}
     pending_runtime = []
+    pending_data = []
 
     def identity(value):
         if inspect.ismethod(value):
@@ -249,8 +254,18 @@ def snapshot():
                     }
                 except (TypeError, ValueError):
                     rows[child_path] = {"kind": type(child).__name__}
+            if "runtime" not in rows[child_path] and inspect.isclass(value):
+                owner = next(
+                    (cls for cls in value.__mro__ if name in cls.__dict__), type(value)
+                )
+                pending_data.append((rows[child_path], owner, name))
 
     walk(dartpy, "dartpy")
+    # Data identities follow defining names, not interned values or shared enums.
+    for row, owner, name in pending_data:
+        row["runtime"] = {
+            "identity_path": seen[id(owner)] + "." + name if id(owner) in seen else None
+        }
     # Defining owners take precedence over inherited rows and module re-exports.
     # Members stay under the first walked class path to preserve comparison keys;
     # a nested class reached through an alias may lack rows at <identity_path>.member.
@@ -284,6 +299,123 @@ def snapshot():
                 if argument["default"] in enum_values:
                     argument["default"] = enum_values[argument["default"]]
     return rows
+
+
+def budget_surface(rows):
+    """Group snapshot identities by canonical module and class, retaining names."""
+    owners = {"dartpy": ("dartpy", None)}
+    surface = {"dartpy": {"functions": set(), "classes": {}}}
+    for path, row in rows.items():
+        runtime = row.get("runtime", {})
+        if row["kind"] == "module":
+            module, cls = runtime["name"], None
+        elif row["kind"] in {"class", "enum"}:
+            module, cls = runtime["module"], runtime["qualname"]
+            if any(part.startswith("_") for part in cls.split(".")):
+                continue
+        else:
+            continue
+        owners[path] = (module, cls)
+        scope = surface.setdefault(module, {"functions": set(), "classes": {}})
+        if cls is not None:
+            names = scope["classes"].setdefault(cls, set())
+            # Enum machinery varies with Python; only snapshot enum names count.
+            names.update(row.get("members", {}))
+
+    seen = set()
+    for path, row in rows.items():
+        identity = row.get("runtime", {}).get("identity_path", path)
+        if identity is None or identity in seen:
+            continue
+        seen.add(identity)
+        parent, _, name = identity.rpartition(".")
+        if name.startswith("_") or parent not in owners:
+            continue
+        module, cls = owners[parent]
+        scope = surface[module]
+        if cls is not None:
+            scope["classes"][cls].add(name)
+        elif row["kind"] not in {"module", "class", "enum"}:
+            scope["functions"].add(name)
+
+    def counters(names):
+        names = sorted(name for name in names if not name.startswith("_"))
+        return {
+            "public": names,
+            "camel_case": [
+                name for name in names if re.search(r"[a-z0-9][A-Z]|^m_", name)
+            ],
+            "get_set": [
+                name for name in names if re.match(r"^(?i:get|set)([A-Z_]|$)", name)
+            ],
+        }
+
+    return {
+        module: {
+            "functions": counters(scope["functions"]),
+            "classes": {
+                cls: counters(names) for cls, names in sorted(scope["classes"].items())
+            },
+        }
+        for module, scope in sorted(surface.items())
+    }
+
+
+def budget_growth(surface, budget, *, check_stale=False):
+    """Describe growth and optionally stale ceilings for present owners."""
+    failures = []
+    for module, scope in surface.items():
+        previous = budget.get(module, {})
+        owners = [
+            (module + " (functions)", scope["functions"], previous.get("functions", {}))
+        ]
+        owners.extend(
+            (module + "." + cls, counters, previous.get("classes", {}).get(cls, {}))
+            for cls, counters in scope["classes"].items()
+        )
+        for owner, counters, limits in owners:
+            for counter, names in counters.items():
+                limit = limits.get(counter, 0)
+                if len(names) > limit:
+                    shown = ", ".join(sorted(names)[:40])
+                    if len(names) > 40:
+                        shown += f", ... ({len(names) - 40} more)"
+                    failures.append(
+                        f"{owner}: {counter} budget {limit} -> {len(names)}; "
+                        f"current names (including additions): {shown}"
+                    )
+                elif check_stale and len(names) < limit:
+                    failures.append(
+                        f"{owner}: {counter} budget {limit} exceeds current count "
+                        f"{len(names)}; run {BUDGET_UPDATE} to lower it "
+                        "(no --allow-growth needed)"
+                    )
+    return failures
+
+
+def update_budget(path, surface, allow_growth=False, *, prune=False):
+    previous = json.loads(path.read_text()) if path.exists() else {}
+    failures = budget_growth(surface, previous)
+    if failures and not allow_growth:
+        raise ValueError(
+            "\n".join(failures)
+            + f"\nTo deliberately raise budgets: {BUDGET_UPDATE} --allow-growth"
+        )
+    if failures:
+        print("\n".join(failures))
+    budget = {} if prune else previous
+    for module, scope in surface.items():
+        target = budget.setdefault(module, {"classes": {}})
+        target["functions"] = {
+            key: len(names) for key, names in scope["functions"].items()
+        }
+        target["classes"].update(
+            {
+                cls: {key: len(names) for key, names in counters.items()}
+                for cls, counters in scope["classes"].items()
+            }
+        )
+    path.write_text(json.dumps(budget, indent=2, sort_keys=True) + "\n")
 
 
 def compare(pb, nb):
@@ -409,15 +541,34 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", action="store_true")
     parser.add_argument("--self-check", action="store_true")
+    parser.add_argument("--update-budget", action="store_true")
+    parser.add_argument("--allow-growth", action="store_true")
+    parser.add_argument("--prune", action="store_true")
     parser.add_argument("--pb", type=Path)
     parser.add_argument("--nb", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    if args.allow_growth and not args.update_budget:
+        parser.error("--allow-growth requires --update-budget")
+    if args.prune and not args.update_budget:
+        parser.error("--prune requires --update-budget")
     self_check()
     if args.self_check:
         return
     if args.snapshot:
         print(json.dumps(snapshot(), indent=2))
+        return
+    if args.update_budget:
+        try:
+            update_budget(
+                BUDGET_PATH,
+                budget_surface(snapshot()),
+                args.allow_growth,
+                prune=args.prune,
+            )
+        except ValueError as error:
+            parser.exit(1, str(error) + "\n")
+        print(f"Updated {BUDGET_PATH.name} ({BUDGET_PATH.stat().st_size} bytes)")
         return
     if not (args.pb and args.nb and args.output):
         parser.error("--pb, --nb and --output are required")
