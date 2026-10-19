@@ -69,7 +69,31 @@
   - The SDF follow-up merged in #3782 as `79a87e6ed`, completing WP-7.0.3b.
     Scope/acceptance #3728 integrates that evidence with the reviewed freeze
     contract and records M1a and the baseline as already completed.
-- **2026-10-18**
+- **2026-10-14**
+  - M0 exited: the scope artifacts (#3728) and the gz API inventory (#3729)
+    merged.
+- **2026-10-16 to 2026-10-18**
+  - Main gained the capability matrix (#3788), sdformat-based SDF parsing
+    (#3789), delegation by default for AI agents (#3799, #3802), lower SDF
+    loading memory (#3803) and the inventory dependency fix (#3787). 6.20.1
+    was packaged (#3805, #3806).
   - Closed M6a: Nightly qualifies all eight Filament wheels, the cached SDK
     stage is unnecessary, quiet-host renderer performance and the final
     renderer reviews moved to C2, and the M6a task folder is retired.
+  - The first M1b, M1c and M1d packets, plus the fixes and tooling found while
+    re-qualifying them, were re-cut from current `main` and published one per
+    pull request (#3809 to #3820); the maintainer merged all of them except
+    #3819. The rest of the native chain (compile and edit, counted stepping,
+    M1e, M1i and the shared executor) is still unpublished. The fixes include
+    soft point-mass state on add and remove (#3813, found by the snapshot
+    tests) and lane Fuel cache keys that depended on the locale (#3814).
+  - A check of soft point-count changes found the articulated inertia already
+    invalidated through the point-mass notifier, so no fix was needed.
+  - The snapshot packet's reviews made restored commands follow the target's
+    actuator rules. Its follow-up (#3827) clears contact, solver and sleep
+    history on restore. Contact order can still follow earlier collision-shape
+    edits and, with FCL or Bullet, broadphase tree-node addresses, so the
+    follow-up documents those limits instead of promising equality with a new
+    World.
+  - Published the executor consolidation (#3825) and a fix for line segment
+    and point cloud bounds after edits (#3826).
