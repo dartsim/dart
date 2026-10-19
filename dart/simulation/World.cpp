@@ -912,9 +912,16 @@ void World::enterSimulationMode()
     return;
 
   // The first-frame dwell credit's speed limits belong to the skeletons and
-  // bodies that the first solve saw, so a change to this World's skeletons
-  // between the first two steps drops a pending confirmation. Edits elsewhere
-  // also re-prepare (see isInSimulationMode()) and keep it.
+  // bodies that the first solve saw, so a change to the membership, order or
+  // version of this World's skeletons between the first two steps drops a
+  // pending confirmation, as does a new thread count. Collision setup changes
+  // drop it in wakeRestingSkeletonsIfStepStateChanged(). Edits to other
+  // skeletons also re-prepare (see isInSimulationMode()) and keep it.
+  if (mConstraintSolver
+      && mConstraintSolver->getNumSimulationThreads()
+             != mSimulationModeConstraintSolverThreads) {
+    mInitialRestSpeedLimits.clear();
+  }
   auto& preparedSkeletons = mDeactivationState->mPreparedSkeletons;
   if (preparedSkeletons.size() != mSkeletons.size())
     mInitialRestSpeedLimits.clear();
