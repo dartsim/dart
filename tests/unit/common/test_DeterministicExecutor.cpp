@@ -114,6 +114,38 @@ TEST(DeterministicExecutor, JoinsAndRethrowsBeforeReusingBorrowedCallable)
   EXPECT_EQ(3u, count);
 }
 
+TEST(DeterministicExecutor, LowestThrowingParticipantWinsInEitherOrder)
+{
+  DeterministicExecutor executor;
+  executor.setWorkerCount(3u);
+  // Participants 1 and 3 own indices 4 and 12; the second waits for the
+  // first so both completion orders are exercised.
+  for (const bool lowerFirst : {true, false}) {
+    const std::size_t first = lowerFirst ? 4u : 12u;
+    const std::size_t second = lowerFirst ? 12u : 4u;
+    std::atomic<bool> firstThrew{false};
+    try {
+      executor.parallelFor(16u, 4u, [&](std::size_t index) {
+        if (index == first) {
+          firstThrew = true;
+          throw std::runtime_error(std::to_string(index));
+        }
+        if (index == second) {
+          const auto deadline
+              = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+          while (!firstThrew && std::chrono::steady_clock::now() < deadline)
+            std::this_thread::yield();
+          std::this_thread::sleep_for(std::chrono::milliseconds(20));
+          throw std::runtime_error(std::to_string(index));
+        }
+      });
+      FAIL() << "The task exception was lost";
+    } catch (const std::runtime_error& error) {
+      EXPECT_EQ("4", std::string(error.what())) << lowerFirst;
+    }
+  }
+}
+
 TEST(DeterministicExecutor, RejectsNestedSubmissionAndWorkerReconfiguration)
 {
   DeterministicExecutor executor;
@@ -180,4 +212,54 @@ TEST(DeterministicExecutor, IndependentOwnersCanExecuteConcurrently)
   condition.notify_all();
   EXPECT_EQ(12u, firstResult.get());
   EXPECT_EQ(12u, secondResult.get());
+}
+
+TEST(DeterministicExecutor, RejectsReentryThroughAnotherExecutor)
+{
+  DeterministicExecutor first;
+  DeterministicExecutor second;
+  EXPECT_THROW(
+      first.parallelFor(
+          1u,
+          1u,
+          [&](std::size_t) {
+            second.parallelFor(1u, 1u, [&](std::size_t) {
+              first.parallelFor(1u, 1u, [](std::size_t) {});
+            });
+          }),
+      std::logic_error);
+  unsigned count = 0u;
+  first.parallelFor(2u, 1u, [&](std::size_t) { ++count; });
+  second.parallelFor(2u, 1u, [&](std::size_t) { ++count; });
+  EXPECT_EQ(4u, count);
+}
+
+TEST(DeterministicExecutor, SerializesConcurrentSubmissionsToOneExecutor)
+{
+  DeterministicExecutor executor;
+  executor.setWorkerCount(2u);
+  std::array<std::atomic<int>, 2> active;
+  for (auto& count : active)
+    count.store(0);
+  std::atomic<bool> overlapped{false};
+  auto submit = [&](int self) {
+    unsigned total = 0u;
+    for (int round = 0; round < 200; ++round) {
+      std::atomic<unsigned> count{0u};
+      executor.parallelFor(9u, 3u, [&](std::size_t) {
+        ++active[self];
+        if (active[1 - self].load() != 0)
+          overlapped = true;
+        ++count;
+        --active[self];
+      });
+      total += count.load();
+    }
+    return total;
+  };
+  auto firstResult = std::async(std::launch::async, [&] { return submit(0); });
+  auto secondResult = std::async(std::launch::async, [&] { return submit(1); });
+  EXPECT_EQ(1800u, firstResult.get());
+  EXPECT_EQ(1800u, secondResult.get());
+  EXPECT_FALSE(overlapped.load());
 }

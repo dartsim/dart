@@ -20,8 +20,9 @@ consolidation under the program's hot-file rule:
 M1d's native executor prerequisite also defers this entry to the milestone
 consolidation under the program's hot-file rule:
 
-- **Dynamics:** Propagate exceptions from native parallel work after all
-  workers finish, keeping subsequent simulation work usable.
+- **Simulation:** Exceptions thrown during multithreaded collision detection,
+  constraint solving or World stepping now reach the caller instead of
+  terminating the process, and the World stays usable.
 
 These demo-consolidation entries move into `CHANGELOG.md` only in M6b's
 milestone consolidation PR, following the program's hot-file rule.

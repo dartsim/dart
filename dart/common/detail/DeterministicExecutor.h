@@ -49,6 +49,9 @@ namespace dart {
 namespace common {
 namespace detail {
 
+// Fixed-chunk parallel loop behind the native simulation pools. Submissions
+// to one executor run one at a time, serial ones included, and a task's
+// exception is rethrown after every participant finishes, lowest index first.
 class DeterministicExecutor
 {
 public:
@@ -56,7 +59,7 @@ public:
 
   ~DeterministicExecutor()
   {
-    setWorkerCount(0u);
+    stopWorkers();
   }
 
   void setWorkerCount(std::size_t workerCount)
@@ -159,11 +162,20 @@ public:
 private:
   using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
 
+  struct ActiveFrame
+  {
+    const DeterministicExecutor* executor;
+    const ActiveFrame* previous;
+  };
+
   void requireExternalSubmission() const
   {
-    // shortcut: direct re-entry only; extend for shared batch execution.
-    if (mActiveExecutor == this)
-      throw std::logic_error("Nested submission to the same executor");
+    // ponytail: sees only this thread's tasks; a cycle through another
+    // executor's worker thread still deadlocks. Extend for shared execution.
+    for (auto* frame = mActiveFrame; frame; frame = frame->previous) {
+      if (frame->executor == this)
+        throw std::logic_error("Nested submission to the same executor");
+    }
   }
 
   std::exception_ptr invokeRange(
@@ -172,15 +184,15 @@ private:
       std::size_t begin,
       std::size_t end) noexcept
   {
-    const auto* previous = mActiveExecutor;
-    mActiveExecutor = this;
+    const ActiveFrame frame{this, mActiveFrame};
+    mActiveFrame = &frame;
     std::exception_ptr exception;
     try {
       invoker(callable, begin, end);
     } catch (...) {
       exception = std::current_exception();
     }
-    mActiveExecutor = previous;
+    mActiveFrame = frame.previous;
     return exception;
   }
 
@@ -274,8 +286,7 @@ private:
   TaskInvoker mTaskInvoker{nullptr};
   std::exception_ptr mException;
   std::size_t mExceptionParticipant{0u};
-  inline static thread_local const DeterministicExecutor* mActiveExecutor
-      = nullptr;
+  inline static thread_local const ActiveFrame* mActiveFrame = nullptr;
 };
 
 } // namespace detail

@@ -1959,17 +1959,13 @@ TEST(ConstraintSolver, ExecutorPreservesIslandThresholdResults)
              ++index) {
           const auto& expected = serialContacts.getContact(index);
           const auto& actual = threadedContacts.getContact(index);
-          for (const auto& channels :
-               {std::make_pair(&expected.point, &actual.point),
-                std::make_pair(&expected.normal, &actual.normal),
-                std::make_pair(&expected.force, &actual.force)}) {
-            EXPECT_EQ(
-                0,
-                std::memcmp(
-                    channels.first->data(),
-                    channels.second->data(),
-                    3u * sizeof(double)));
-          }
+          const auto bitIdentical = [](const Eigen::Vector3d& a,
+                                       const Eigen::Vector3d& b) {
+            return std::memcmp(a.data(), b.data(), 3u * sizeof(double)) == 0;
+          };
+          EXPECT_TRUE(bitIdentical(expected.point, actual.point));
+          EXPECT_TRUE(bitIdentical(expected.normal, actual.normal));
+          EXPECT_TRUE(bitIdentical(expected.force, actual.force));
           EXPECT_EQ(
               0,
               std::memcmp(
