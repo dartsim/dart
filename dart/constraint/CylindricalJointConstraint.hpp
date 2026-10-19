@@ -40,6 +40,9 @@
 #include <Eigen/Dense>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
 namespace constraint {
 
 /// CylindricalJointConstraint represents a runtime cylindrical joint constraint
@@ -117,6 +120,11 @@ protected:
   void uniteSkeletons() override;
 
 private:
+  friend class simulation::World;
+
+  /// Discard the previous solve warm start while retaining target parameters.
+  void resetDynamicState();
+
   /// Build an orthonormal basis around the current cylinder axis.
   void updatePerpendicularBasis();
 
