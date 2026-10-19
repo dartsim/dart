@@ -20,7 +20,8 @@
     formatting preserves round trips but may differ in layout from fmt.
     Projects that used fmt through `find_package(DART)`
     must find it themselves, and `DART_SKIP_spdlog` no longer has any effect.
-    [#3853](https://github.com/dartsim/dart/pull/3853)
+    [#3853](https://github.com/dartsim/dart/pull/3853),
+    [#3854](https://github.com/dartsim/dart/pull/3854)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
@@ -293,6 +294,7 @@
     [#3836](https://github.com/dartsim/dart/pull/3836)
   * DART no longer uses fmt. `DART_USE_SYSTEM_FMT` is a deprecated no-op
     retained through DART 7.x.
+    [#3854](https://github.com/dartsim/dart/pull/3854)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
