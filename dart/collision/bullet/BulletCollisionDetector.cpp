@@ -131,6 +131,7 @@ std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 //==============================================================================
 BulletCollisionDetector::~BulletCollisionDetector()
 {
+  mGroupForFiltering.reset();
   DART_ASSERT(mShapeMap.empty());
 }
 
@@ -325,8 +326,11 @@ bool BulletCollisionDetector::collide(
   // be able to inspect them after collide() returns. Resetting the member frees
   // the previous group (and its objects, broadphase proxies, and overlapping
   // pairs) before building the new one, so no memory is leaked across calls.
-  mGroupForFiltering
-      = std::make_unique<BulletCollisionGroup>(shared_from_this());
+  // The detector owns this group, so its back-reference must be non-owning.
+  // The alias has no control block, so neither this group nor its detector
+  // pointer may escape this class.
+  mGroupForFiltering = std::make_unique<BulletCollisionGroup>(
+      CollisionDetectorPtr(CollisionDetectorPtr{}, this));
   auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   std::unique_ptr<detail::BulletOverlapFilterCallback> filterCallback(
