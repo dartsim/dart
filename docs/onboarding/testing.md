@@ -66,10 +66,11 @@ per-test selections remain explicit. Repository pytest gates use
 `scripts/run_pytest.py`; it removes every ambient `PYTEST_*` control, disables
 external plugin autoload, runs under Python isolation before adding only the
 task-owned import path, pins the root configuration, disables `conftest.py`,
-and fails if no test body executes. CMake derives the dartpy import location
-from `$<TARGET_FILE_DIR:dartpy>`, so Visual Studio, Xcode, and future
-multi-config generators use the selected configuration's extension module
-instead of a guessed build directory. The checker rejects explicit local
+and fails if no test body executes. CMake stages the `dartpy` package under a
+configuration-aware root (`DART_DARTPY_BUILD_DIR`, the parent of
+`$<TARGET_FILE_DIR:dartpy>`) and imports from that root, so Visual Studio,
+Xcode, and future multi-config generators use the selected configuration's
+extension module instead of a guessed build directory. The checker rejects explicit local
 `pytest_plugins` and resolves the installed package without importing a local
 shadow. Its semantic probes execute controlled passing and failing CTest/pytest
 cases, so source markers alone cannot claim that sanitization, test-body
@@ -164,6 +165,13 @@ how to refresh it. After building the tests, run these gates alone with:
 pixi run ctest --test-dir build/default/cpp/Release \
   -R '^(ContactSurfaceProbe|test_GazeboShim)$' --output-on-failure
 ```
+
+The downstream side of the same check is
+`scripts/check_gz_contact_surface.sh`: `pixi run -e gazebo test-gz` and the
+`gz-compat-<lane>` lanes run it after configuring gz-physics and fail unless
+gz-physics cached `DART_HAS_CONTACT_SURFACE_HEADER=1`, because a failed
+detection otherwise drops contact-surface customization without an error.
+`pixi run test-gz-compat-tools` tests the script against fake caches.
 
 These gates cover DART extension contracts. Continue to use the downstream
 Gazebo suites below for plugin and application compatibility.
@@ -279,5 +287,5 @@ collision-group changes run
 `pixi run gz-compat-jetty raycast-probe`. `tools/gazebo/README.md` covers the
 steps, the comparison, the expected-failure files, and the benchmark drivers;
 `pixi run test-gz-compat-tools` tests the comparison script, the benchmark
-world generator, the DART version override, and the DART C++ API inventory
-extractor.
+world generator, the DART version override, the DART C++ API inventory
+extractor, and the contact-surface gate.

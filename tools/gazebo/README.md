@@ -10,10 +10,16 @@ DART 6.20 checks Gazebo in two ways:
 `test-gz` is the forward lane that CI runs. Its patches change gz-physics
 source (the `ChangedWorldPoses` tolerance) and relax test expectations, so a
 green `test-gz` does not show that released Gazebo still works. It also
-configures gz-physics once, so the common tests compile without the dartsim
-plugin's `DART_HAS_CONTACT_SURFACE` and skip their contact-callback
-expectations (gz-physics `ContactPropertiesCallback`). The unpatched lanes
-configure twice and run them.
+configures gz-physics twice, like the unpatched lanes, so the common tests see
+the dartsim plugin's `DART_HAS_CONTACT_SURFACE` and run their contact-callback
+expectations (gz-physics `ContactPropertiesCallback`).
+
+Both lanes also run [`scripts/check_gz_contact_surface.sh`](../../scripts/check_gz_contact_surface.sh)
+after configuring gz-physics. It fails unless gz-physics cached
+`DART_HAS_CONTACT_SURFACE_HEADER=1` (its check for
+`dart/constraint/ContactSurface.hpp`), and prints an excerpt of the probe's log
+from `CMakeConfigureLog.yaml`. Without it, a failed check silently
+drops the plugin's contact-properties callback and gz-sim's `TrackController`.
 
 ## Unpatched compatibility lanes
 
@@ -47,7 +53,8 @@ feature instead of the default feature. The lane tasks require Linux.
    `.deps/gz-compat/<lane>/candidate/dart`, so no file an earlier build
    installed is left behind (the build directory is kept);
 2. builds the released gz-physics with its tests against that DART and runs
-   its CTest suite (`PERFORMANCE_` tests excluded);
+   its CTest suite (`PERFORMANCE_` tests excluded), after checking that
+   gz-physics detected `dart/constraint/ContactSurface.hpp`;
 3. builds gz-sim with its tests against that gz-physics and runs every
    `INTEGRATION_` test serially, with `GZ_SIM_SERVER_CONFIG_PATH` set (without
    it, worlds that declare no systems get no Physics system), a private
@@ -144,16 +151,40 @@ lane:
 | `STALE` | an accepted difference that now passes; drop the entry |
 | `FIXED` | an expected failure that ran and passed |
 
-gz-sim `INTEGRATION_reset_sensors` is a known test race, not a DART
-regression: right after `server.Run()`, `ResetFixture.HandleReset` reads the
-last asynchronous air-pressure message (`reset_sensors.cc` lines 259 and 352)
-and sometimes gets the previous 100 Hz sample, for example 100360.66 versus
-100362.99 Pa, while its altitude check passes. In 20 interleaved Harmonic-lane
-runs each, the 6.20.0 candidate and DART 6.19.5 both failed 4 times with
-identical values. The lane reports it `FLAKY` when the retry passes and `NEW`
-when both attempts fail (about 4% of lane runs). If `NEW` names only this
-failure, rerun the lane before investigating; any other case or value pattern
-in that test is a real failure. The fix belongs in gz-sim's test.
+gz-sim `INTEGRATION_reset_sensors` has two known test bugs. Neither is a DART
+regression, and the fixes for both belong in gz-sim's test.
+
+The first is a race: right after `server.Run()`,
+`ResetFixture.HandleReset` reads the last asynchronous air-pressure message
+(`reset_sensors.cc` lines 259 and 352) and sometimes gets the previous 100 Hz
+sample, for example 100360.66 versus 100362.99 Pa, while its altitude check
+passes. In 20 interleaved Harmonic-lane runs each, the 6.20.0 candidate and
+DART 6.19.5 both failed 4 times with identical values. The lane reports it
+`FLAKY` when the retry passes and `NEW` when both attempts fail (about 4% of
+lane runs). If `NEW` names only this failure, rerun the lane before
+investigating.
+
+The second is a use-after-free that hits the altitude checks. The box reads
+Z = 1 in place of 100 and 80.39 (Harmonic's `reset_sensors.cc` lines 301 and
+351; the other distributions number them differently). The test keeps the
+`Pose` component pointer it fetched before the reset. The reset replaces the
+entity-component manager's components, so those checks read freed memory.
+
+- AddressSanitizer reports a heap-use-after-free in a reproducer that uses
+  the entity-component manager alone, without DART.
+- DART 6.20.0, rebuilt in the same environment, fails the same way.
+- A DART-only replay of the calls gz-physics makes on reset passes.
+
+Whether the freed memory still holds the old pose depends on the allocator,
+so after an environment update this failure appeared at once in all three
+lanes, for every DART version tested. With a base variant the lane reports it `BASE`.
+Re-fetching the component after the reset makes the checks pass.
+
+A failure in any other case of that test is a real failure. A failure of the
+altitude checks with another value, or a crash, can still be this
+use-after-free, since what the freed memory holds depends on the allocator.
+Before treating one as a DART regression, rerun the test under
+AddressSanitizer or with the component re-fetched after the reset.
 
 `compare` requires an existing, readable expected-failure file; only
 `--write-baseline` may create a missing one. Timing multipliers
@@ -642,8 +673,6 @@ remains 10000.
 ## Not covered yet
 
 - The lanes are not in CI (see `docs/onboarding/ci-cd.md`).
-- `test-gz` should configure gz-physics twice once DART 6.20 passes gz-physics
-  `ContactPropertiesCallback` again; until then it would turn red.
 - Benchmark worlds beyond the generated ones: a box pile, a mesh ground, a
   heightmap (gz-sim's example downloads one from Fuel), a conveyor with a
   payload under a commanded belt, and 3k_shapes with a fixed-base arm under a

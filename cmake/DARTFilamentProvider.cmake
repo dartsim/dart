@@ -164,3 +164,16 @@ if(
     "Filament matc/runtime material versions disagree: ${_filament_matc_version}/${_filament_material_version}"
   )
 endif()
+# The SDK exposes no release version of its own: no version header, no CMake
+# version file, and no pkg-config module, while `matc --version` prints the
+# material format version. Upstream bumps that version with each minor release
+# (1.77.x ships 77), so enforce the 1.77.3 pin through it.
+if(NOT _filament_material_version STREQUAL "77")
+  message(
+    FATAL_ERROR
+    "Found Filament SDK with material version ${_filament_material_version}, "
+    "but DART requires Filament 1.77.3 (material version 77): install that "
+    "SDK, use DART_USE_SYSTEM_FILAMENT=OFF for DART's pinned SDK, or set "
+    "DART_BUILD_GUI=OFF for a headless build."
+  )
+endif()

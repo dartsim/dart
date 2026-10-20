@@ -2,6 +2,8 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include "detail/frame.hpp"
+
 #include "detail/secondary_methods.hpp"
 
 #include <nanobind/stl/set.h>
@@ -79,7 +81,7 @@ void defFrameMethods(Cls& cls)
           "getTransform",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* withRespectTo) -> Eigen::Isometry3d {
-            return self->getTransform(withRespectTo);
+            return self->getTransform(dartnb::frameOrWorld(withRespectTo));
           },
           nb::arg("withRespectTo").none())
       .def(
@@ -90,8 +92,8 @@ void defFrameMethods(Cls& cls)
               -> Eigen::Isometry3d {
             return self->getTransform(withRespectTo, inCoordinatesOf);
           },
-          nb::arg("withRespectTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("withRespectTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector6d {
@@ -104,8 +106,8 @@ void defFrameMethods(Cls& cls)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
             return self->getSpatialVelocity(relativeTo, inCoordinatesOf);
           },
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self, const Eigen::Vector3d& offset)
@@ -121,8 +123,8 @@ void defFrameMethods(Cls& cls)
                 offset, relativeTo, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector3d {
@@ -132,7 +134,7 @@ void defFrameMethods(Cls& cls)
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
-            return self->getLinearVelocity(relativeTo);
+            return self->getLinearVelocity(dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -140,7 +142,9 @@ void defFrameMethods(Cls& cls)
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
-            return self->getLinearVelocity(relativeTo, inCoordinatesOf);
+            return self->getLinearVelocity(
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -154,7 +158,8 @@ void defFrameMethods(Cls& cls)
           +[](const dart::dynamics::Frame* self,
               const Eigen::Vector3d& offset,
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
-            return self->getLinearVelocity(offset, relativeTo);
+            return self->getLinearVelocity(
+                offset, dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("offset"),
           nb::arg("relativeTo").none())
@@ -164,7 +169,10 @@ void defFrameMethods(Cls& cls)
               const Eigen::Vector3d& offset,
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
-            return self->getLinearVelocity(offset, relativeTo, inCoordinatesOf);
+            return self->getLinearVelocity(
+                offset,
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("relativeTo").none(),
@@ -178,7 +186,7 @@ void defFrameMethods(Cls& cls)
           "getAngularVelocity",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
-            return self->getAngularVelocity(relativeTo);
+            return self->getAngularVelocity(dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -186,7 +194,9 @@ void defFrameMethods(Cls& cls)
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
-            return self->getAngularVelocity(relativeTo, inCoordinatesOf);
+            return self->getAngularVelocity(
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -202,8 +212,8 @@ void defFrameMethods(Cls& cls)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
             return self->getSpatialAcceleration(relativeTo, inCoordinatesOf);
           },
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getSpatialAcceleration",
           +[](const dart::dynamics::Frame* self,
@@ -221,8 +231,8 @@ void defFrameMethods(Cls& cls)
                 offset, relativeTo, inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector3d {
@@ -232,7 +242,8 @@ void defFrameMethods(Cls& cls)
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
-            return self->getLinearAcceleration(relativeTo);
+            return self->getLinearAcceleration(
+                dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -240,7 +251,9 @@ void defFrameMethods(Cls& cls)
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
-            return self->getLinearAcceleration(relativeTo, inCoordinatesOf);
+            return self->getLinearAcceleration(
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -256,7 +269,8 @@ void defFrameMethods(Cls& cls)
           +[](const dart::dynamics::Frame* self,
               const Eigen::Vector3d& offset,
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
-            return self->getLinearAcceleration(offset, relativeTo);
+            return self->getLinearAcceleration(
+                offset, dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("offset"),
           nb::arg("relativeTo").none())
@@ -267,7 +281,9 @@ void defFrameMethods(Cls& cls)
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
             return self->getLinearAcceleration(
-                offset, relativeTo, inCoordinatesOf);
+                offset,
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("relativeTo").none(),
@@ -281,7 +297,8 @@ void defFrameMethods(Cls& cls)
           "getAngularAcceleration",
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
-            return self->getAngularAcceleration(relativeTo);
+            return self->getAngularAcceleration(
+                dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -289,7 +306,9 @@ void defFrameMethods(Cls& cls)
           +[](const dart::dynamics::Frame* self,
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
-            return self->getAngularAcceleration(relativeTo, inCoordinatesOf);
+            return self->getAngularAcceleration(
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
