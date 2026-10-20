@@ -493,7 +493,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "warned",
         ),
-        # The -float64 variant keeps FindBullet's dynamics and soft-body libraries.
+        # The -float64 variant links only the collision and math libraries.
         (
             325,
             "set(DART_BULLET_FLOAT64 ON)\n"
@@ -501,7 +501,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             '  file(TOUCH "${lib}/${prefix}${stem}${ext}")\n'
             "endforeach()",
             True,
-            "float64-full",
+            "float64",
         ),
         # Only library file names, not directories, mark the variant.
         (
@@ -805,9 +805,11 @@ def test_bullet_prefers_float64_libraries(
         "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
         f'set(BULLET_INCLUDE_DIRS "{include.as_posix()}")\n'
         'set(BULLET_COLLISION_LIBRARY "${collision}")\n'
+        'set(BULLET_MATH_LIBRARY "${math}")\n'
         'set(BULLET_LIBRARIES "${collision}" "${math}")\n'
         "if(DEFINED collision_debug)\n"
         '  set(BULLET_COLLISION_LIBRARY_DEBUG "${collision_debug}")\n'
+        '  set(BULLET_MATH_LIBRARY_DEBUG "${math_debug}")\n'
         "  set(BULLET_LIBRARIES optimized ${collision} debug ${collision_debug}\n"
         "    optimized ${math} debug ${math_debug})\n"
         "endif()\n"
@@ -873,14 +875,6 @@ def test_bullet_prefers_float64_libraries(
         check = "NOT BULLET_FOUND"
     elif expected == "unrecorded":
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL FALSE"
-    elif expected == "float64-full":
-        check = (
-            "NOT linked STREQUAL "
-            '"${lib}/${prefix}BulletDynamics-float64${ext};'
-            "${lib}/${prefix}BulletCollision-float64${ext};"
-            "${lib}/${prefix}LinearMath-float64${ext};"
-            '${lib}/${prefix}BulletSoftBody-float64${ext}"'
-        )
     else:
         # FindBullet's results stay single precision for consumers' targets.
         check = (

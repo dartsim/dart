@@ -231,23 +231,17 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
       "${BULLET_COLLISION_LIBRARY}"
       DIRECTORY
     )
-    # Keep FindBullet's libraries, link order and Debug variants; the collision
-    # and math libraries are required. Keep FindBullet's selection when it has
-    # Debug variants that the -float64 libraries lack. Search beside each
-    # library's Release and Debug files, which multi-config layouts separate.
+    # Replace the collision and math libraries, keeping their order and Debug
+    # variants; keep the selection when the -float64 libraries or their Debug
+    # variants are missing. Search beside each library's Release and Debug
+    # files, which multi-config layouts separate.
     set(_dart_bullet_needs_debug FALSE)
     if("${BULLET_LIBRARIES}" MATCHES "(^|;)debug;")
       set(_dart_bullet_needs_debug TRUE)
     endif()
     set(_dart_bullet_float64_libraries)
     set(_dart_bullet_complete TRUE)
-    foreach(
-      _dart_bullet_name
-      DYNAMICS:BulletDynamics
-      COLLISION:BulletCollision
-      MATH:LinearMath
-      SOFTBODY:BulletSoftBody
-    )
+    foreach(_dart_bullet_name COLLISION:BulletCollision MATH:LinearMath)
       string(REPLACE ":" ";" _dart_bullet_name "${_dart_bullet_name}")
       list(GET _dart_bullet_name 0 _dart_bullet_var)
       list(GET _dart_bullet_name 1 _dart_bullet_name)
@@ -286,9 +280,7 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
         NO_CACHE
       )
       if(NOT _dart_bullet_library)
-        if(_dart_bullet_name MATCHES "^(BulletCollision|LinearMath)$")
-          set(_dart_bullet_complete FALSE)
-        endif()
+        set(_dart_bullet_complete FALSE)
       elseif(_dart_bullet_debug)
         list(
           APPEND _dart_bullet_float64_libraries
