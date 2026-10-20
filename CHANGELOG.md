@@ -50,6 +50,7 @@
     already shipped, without textures and with small geometry differences.
     The Atlas v3 and WAM samples now carry their upstream licenses and
     attribution.
+    [#3882](https://github.com/dartsim/dart/pull/3882)
 
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
