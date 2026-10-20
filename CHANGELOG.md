@@ -12,6 +12,7 @@
     `dart::utils::DartLoader::parseWorld` or `parseWorldString` instead.
     Shared DART consumers no longer need urdfdom development packages;
     static consumers and DART builds still require urdfdom.
+    [#3888](https://github.com/dartsim/dart/pull/3888)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
