@@ -50,6 +50,7 @@
     were unknown. Examples, tutorials, and tests now use the DART-authored
     `dart://sample/urdf/six_axis_arm/six_axis_arm.urdf`; code that loaded KR5
     must supply its own copy.
+    [#3878](https://github.com/dartsim/dart/pull/3878)
 
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
