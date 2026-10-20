@@ -64,6 +64,119 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     (directory / f"{package}Config.cmake").write_text(contents + extra)
 
 
+@pytest.mark.parametrize(
+    "source_kind",
+    [
+        "missing",
+        "override",
+        "default",
+        "custom",
+        "invalid_override",
+        "empty_default",
+        "empty_override",
+        "file_override",
+        "connected",
+    ],
+)
+def test_fetchcontent_disconnected_sources(tmp_path, source_kind):
+    source = tmp_path / (
+        "build/_deps/fixture-src"
+        if source_kind in ("default", "invalid_override", "empty_default")
+        else "seed"
+    )
+    if source_kind == "file_override":
+        source.write_text("not a directory")
+    else:
+        source.mkdir(parents=True)
+        if not source_kind.startswith("empty_"):
+            (source / "CMakeLists.txt").write_text(
+                'message(STATUS "Pre-seeded fixture reached")\n'
+            )
+    settings = "set(FETCHCONTENT_FULLY_DISCONNECTED ON)\n"
+    custom = ""
+    if source_kind in ("override", "empty_override", "file_override"):
+        settings += f'set(FETCHCONTENT_SOURCE_DIR_FIXTURE "{source.as_posix()}")\n'
+    elif source_kind in ("default", "invalid_override"):
+        if source_kind == "invalid_override":
+            settings += f'set(FETCHCONTENT_SOURCE_DIR_FIXTURE "{(tmp_path / "missing").as_posix()}")\n'
+    elif source_kind == "custom":
+        custom = f' "{source.as_posix()}"'
+    elif source_kind == "connected":
+        settings = "set(FETCHCONTENT_FULLY_DISCONNECTED OFF)\n"
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\ninclude(FetchContent)\n"
+        + settings
+        + f"dart_check_fetchcontent(FiXtUrE DART_USE_SYSTEM_FIXTURE{custom})\n"
+        + (
+            f'FetchContent_Declare(fixture SOURCE_DIR "{source.as_posix()}")\nFetchContent_MakeAvailable(fixture)\n'
+            if source_kind in ("override", "default", "custom")
+            else ""
+        ),
+    )
+    output = result.stdout + result.stderr
+    if source_kind in (
+        "missing",
+        "invalid_override",
+        "empty_default",
+        "empty_override",
+        "file_override",
+    ):
+        assert result.returncode != 0
+        assert "Cannot fetch FiXtUrE" in output
+        assert "FETCHCONTENT_SOURCE_DIR_FIXTURE" in output
+        assert "DART_USE_SYSTEM_FIXTURE=ON" in output
+    else:
+        assert result.returncode == 0, output
+        if source_kind != "connected":
+            assert "Pre-seeded fixture reached" in output
+
+
+@pytest.mark.parametrize("umbrella", [None, "OFF", "ON"])
+@pytest.mark.parametrize("explicit", [None, "OFF", "ON"])
+def test_system_dependency_defaults_are_seeded_once(tmp_path, umbrella, explicit):
+    source = (ROOT / "CMakeLists.txt").read_text()
+    options = source[
+        source.index("dart_option(\n  DART_USE_SYSTEM_DEPENDENCIES") : source.index(
+            "dart_option(\n  DART_ALLOW_SINGLE_PRECISION_LIBCCD"
+        )
+    ]
+    content = "include(dart_defs)\n" + options
+    switches = ("GOOGLETEST", "GOOGLEBENCHMARK", "TRACY")
+    args = [] if umbrella is None else [f"-DDART_USE_SYSTEM_DEPENDENCIES={umbrella}"]
+    if explicit is not None:
+        args.extend(f"-DDART_USE_SYSTEM_{name}={explicit}" for name in switches)
+    expected = explicit or umbrella or "OFF"
+    for configure_args in (
+        args,
+        [f"-DDART_USE_SYSTEM_DEPENDENCIES={'OFF' if umbrella == 'ON' else 'ON'}"],
+    ):
+        result = configure(tmp_path, content, cmake_args=configure_args)
+        assert result.returncode == 0, result.stdout + result.stderr
+        cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+        for name in switches:
+            assert f"DART_USE_SYSTEM_{name}:BOOL={expected}" in cache
+
+
+def test_system_tracy_without_cmake_version_file(tmp_path):
+    # Installed Tracy packages ship TracyConfig.cmake without a version file.
+    config_package(tmp_path, "Tracy", None, "Tracy::TracyClient")
+    source = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+    tracy = source[
+        source.index("if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)") : source.index(
+            "if(DART_BUILD_DARTPY AND Python_EXECUTABLE)"
+        )
+    ]
+    result = configure(
+        tmp_path,
+        "set(DART_BUILD_PROFILE ON)\nset(DART_PROFILE_TRACY ON)\n"
+        "set(DART_USE_SYSTEM_TRACY ON)\n"
+        + tracy
+        + 'if(NOT TARGET Tracy::TracyClient)\nmessage(FATAL_ERROR "no TracyClient")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_component_exports_only_install_owned_dependency_finders(tmp_path):
     modules = tmp_path / "modules"
     modules.mkdir()

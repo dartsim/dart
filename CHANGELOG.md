@@ -290,6 +290,14 @@
 
 * Build
 
+  * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
+    GoogleBenchmark and Tracy default to installed packages, and explicit
+    per-dependency switches still win. Offline configures now report missing
+    fetched sources with the source override and system-package switch to use.
+
+  * Fix `DART_USE_SYSTEM_TRACY=ON`, which rejected installed Tracy packages
+    because they ship no CMake version file.
+
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests

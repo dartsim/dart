@@ -17,6 +17,7 @@ function(dart_filament_build_source_sdk output)
     SOURCE_SUBDIR
     dart-private-sdk
   )
+  dart_check_fetchcontent(dart_filament_sdk DART_USE_SYSTEM_FILAMENT)
   FetchContent_MakeAvailable(dart_filament_sdk)
   set(_source "${dart_filament_sdk_SOURCE_DIR}")
   set(_build "${dart_filament_sdk_BINARY_DIR}")

@@ -184,9 +184,7 @@ environment as the dependency prefix. Then configure and build:
        -DCMAKE_BUILD_TYPE=Release \
        -DDART_BUILD_DARTPY=ON \
        -DDART_BUILD_PROFILE=ON \
-       -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-       -DDART_USE_SYSTEM_GOOGLETEST=ON \
-       -DDART_USE_SYSTEM_TRACY=ON
+       -DDART_USE_SYSTEM_DEPENDENCIES=ON
    cmake --build build/default/cpp/Release -j
 
 Use ``-DCMAKE_PREFIX_PATH=<prefix>`` when dependencies are installed outside the

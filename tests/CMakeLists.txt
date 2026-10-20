@@ -44,6 +44,7 @@ else()
   set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
   set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  dart_check_fetchcontent(googletest DART_USE_SYSTEM_GOOGLETEST)
   FetchContent_MakeAvailable(googletest)
 endif()
 

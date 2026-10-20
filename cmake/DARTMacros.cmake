@@ -1,4 +1,30 @@
 #===============================================================================
+# Fail before a disconnected fetch silently leaves a missing or empty source tree.
+# Usage:
+#   dart_check_fetchcontent(name system_option [source_dir])
+#===============================================================================
+function(dart_check_fetchcontent name system_option)
+  string(TOUPPER "${name}" upper_name)
+  string(TOLOWER "${name}" lower_name)
+  set(source_dir "${FETCHCONTENT_BASE_DIR}/${lower_name}-src")
+  if(ARGC GREATER 2)
+    set(source_dir "${ARGV2}")
+  endif()
+  if(NOT "${FETCHCONTENT_SOURCE_DIR_${upper_name}}" STREQUAL "")
+    set(source_dir "${FETCHCONTENT_SOURCE_DIR_${upper_name}}")
+  endif()
+  if(FETCHCONTENT_FULLY_DISCONNECTED)
+    file(GLOB source_entries "${source_dir}/*")
+    if(NOT IS_DIRECTORY "${source_dir}" OR NOT source_entries)
+      message(
+        FATAL_ERROR
+        "Cannot fetch ${name} with FETCHCONTENT_FULLY_DISCONNECTED=ON: pre-seed FETCHCONTENT_SOURCE_DIR_${upper_name}, or set ${system_option}=ON to use an installed package."
+      )
+    endif()
+  endif()
+endfunction()
+
+#===============================================================================
 # Appends items to a cached list.
 # Usage:
 #   dart_append_to_cached_string(_string _cacheDesc [items...])

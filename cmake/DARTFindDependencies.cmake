@@ -10,6 +10,15 @@ if(DART_VERBOSE)
 endif()
 
 # fmt
+# Keep the installed fmt finder unchanged; only DART builds opt into fetching.
+if(
+  DEFINED DART_USE_SYSTEM_FMT
+  AND NOT DART_USE_SYSTEM_FMT
+  AND NOT TARGET fmt::fmt
+)
+  include(FetchContent)
+  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)
+endif()
 dart_find_package(fmt)
 dart_check_required_package(fmt "libfmt")
 
@@ -143,7 +152,8 @@ endif()
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)
-    find_package(Tracy 0.11.1 CONFIG REQUIRED)
+    # Installed Tracy packages ship no CMake version file; DART expects 0.11.
+    find_package(Tracy CONFIG REQUIRED)
   else()
     include(FetchContent)
     FetchContent_Declare(
@@ -153,6 +163,7 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
       GIT_SHALLOW TRUE
       GIT_PROGRESS TRUE
     )
+    dart_check_fetchcontent(tracy DART_USE_SYSTEM_TRACY)
     FetchContent_MakeAvailable(tracy)
     if(MSVC)
       target_compile_options(TracyClient PRIVATE /W0)
@@ -215,6 +226,7 @@ if(NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
     URL_HASH
       SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
   )
+  dart_check_fetchcontent(ode DART_USE_SYSTEM_ODE)
   FetchContent_MakeAvailable(ode)
   set(ODE_VERSION 0.16.6)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
@@ -248,6 +260,7 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
     URL_HASH
       SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
   )
+  dart_check_fetchcontent(bullet DART_USE_SYSTEM_BULLET)
   FetchContent_MakeAvailable(bullet)
   set(
     DART_BULLET_SOURCE_DIR

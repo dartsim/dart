@@ -53,6 +53,7 @@ else()
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ext/robin_map
   )
+  dart_check_fetchcontent(nanobind DART_USE_SYSTEM_NANOBIND)
   FetchContent_MakeAvailable(nanobind)
 endif()
 add_subdirectory(dartpy)

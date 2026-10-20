@@ -37,6 +37,63 @@ def test_repository_ai_infrastructure_is_valid():
     assert infra.run_checks(ROOT) == []
 
 
+def test_build_fetchcontent_calls_have_offline_guards():
+    paths = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split("\0")
+    fetches = []
+    for relative in paths:
+        path = Path(relative)
+        if path.name != "CMakeLists.txt" and not path.name.endswith(
+            (".cmake", ".cmake.in")
+        ):
+            continue
+        commands = infra.cmake_scoped_command_details((ROOT / path).read_text())
+        for index, (command, arguments, scope, line) in enumerate(commands):
+            if command not in ("fetchcontent_makeavailable", "fetchcontent_populate"):
+                continue
+            for name in infra.cmake_argument_tokens(arguments):
+                fetches.append((relative, name))
+                if relative == "cmake/DARTFindfmt.cmake" and name == "fmt":
+                    # The installed fmt finder stays unchanged; its build caller guards it.
+                    caller = infra.cmake_scoped_command_details(
+                        (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+                    )
+                    guard = next(
+                        (
+                            i
+                            for i, (cmd, args, _, _) in enumerate(caller)
+                            if cmd == "dart_check_fetchcontent"
+                            and infra.cmake_argument_tokens(args)
+                            == ["fmt", "DART_USE_SYSTEM_FMT"]
+                        ),
+                        None,
+                    )
+                    assert (
+                        guard is not None
+                    ), "cmake/DARTFindDependencies.cmake: fmt fetch has no offline guard"
+                    # The guard must run under the finder's fetch conditions.
+                    guard_scope = " ".join(str(part) for part in caller[guard][2])
+                    assert "NOT DART_USE_SYSTEM_FMT" in guard_scope, guard_scope
+                    assert "NOT TARGET fmt::fmt" in guard_scope, guard_scope
+                    assert any(
+                        cmd == "dart_find_package" and args == "fmt"
+                        for cmd, args, _, _ in caller[guard + 1 :]
+                    )
+                    continue
+                assert any(
+                    cmd == "dart_check_fetchcontent"
+                    and infra.cmake_argument_tokens(args)[0].lower() == name.lower()
+                    and scope[: len(guard_scope)] == guard_scope
+                    for cmd, args, guard_scope, _ in commands[:index]
+                ), f"{relative}:{line}: {name} has no offline guard on its path"
+    assert fetches
+
+
 def test_repository_rejects_missing_release_target_row(monkeypatch):
     owner = ROOT / "docs/onboarding/release-management.md"
     text = owner.read_text(encoding="utf-8")
@@ -2145,6 +2202,7 @@ def test_single_cmake_target_build_contract(command, target, expected):
             True,
         ),
         ("cmake -S . -B build/default -DDART_BUILD_GUI=ON", True),
+        ("cmake -S . -B build/default -DDART_USE_SYSTEM_DEPENDENCIES=ON", True),
         ("cmake -S . -B build/default -DUNKNOWN_OPTION=OFF", False),
         (
             "cmake -S . -B build/default -DDART_BUILD_UTILS_ASSETS=ON",
