@@ -705,6 +705,17 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "recorded-pc-debug-list",
         ),
+        # $<INSTALL_INTERFACE:...> and $<0:...> entries are empty in this build.
+        (
+            325,
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES\n"
+            '  INTERFACE_INCLUDE_DIRECTORIES "${lib}/include"\n'
+            '  INTERFACE_LINK_LIBRARIES "$<BUILD_INTERFACE:${lib}/${prefix}BulletCollision-float64${ext}>;'
+            '$<INSTALL_INTERFACE:${collision}>;$<0:${math}>")',
+            True,
+            "recorded-pc",
+        ),
         # Bullet libraries that this project builds cannot be linked by the
         # precision probe; their directories show the precision instead.
         (

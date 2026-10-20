@@ -413,7 +413,8 @@ elseif(TARGET Bullet)
     endwhile()
     # Unwrap $<LINK_ONLY:...>, $<$<CONFIG:Debug>:...> and similar entries,
     # and queue the elements of a list payload. Only shorter payloads are
-    # queued, so the walk ends.
+    # queued, so the walk ends. $<INSTALL_INTERFACE:...> and $<0:...> are
+    # empty in this build.
     set(_dart_bullet_part "${_dart_bullet_item}")
     set(_dart_bullet_other FALSE)
     while(
@@ -423,7 +424,10 @@ elseif(TARGET Bullet)
     )
       set(_dart_bullet_item "${CMAKE_MATCH_3}")
       string(TOUPPER "${CMAKE_MATCH_1}" _dart_bullet_value)
-      if(_dart_bullet_value MATCHES "^\\$<(NOT:\\$<)?CONFIG:([^<>]*)>")
+      if(_dart_bullet_value MATCHES "^(INSTALL_INTERFACE|0)$")
+        set(_dart_bullet_item "")
+        break()
+      elseif(_dart_bullet_value MATCHES "^\\$<(NOT:\\$<)?CONFIG:([^<>]*)>")
         string(REPLACE "," ";" _dart_bullet_configs "${CMAKE_MATCH_2}")
         if(_dart_bullet_build_type IN_LIST _dart_bullet_configs)
           if(_dart_bullet_value MATCHES "^\\$<NOT:")
@@ -434,7 +438,9 @@ elseif(TARGET Bullet)
         endif()
       endif()
     endwhile()
-    if(_dart_bullet_other AND _dart_bullet_pc)
+    if(_dart_bullet_item STREQUAL "")
+      continue()
+    elseif(_dart_bullet_other AND _dart_bullet_pc)
       list(APPEND _dart_bullet_other_queue ${_dart_bullet_part})
       continue()
     endif()

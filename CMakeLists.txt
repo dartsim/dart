@@ -643,13 +643,17 @@ if(HAVE_BULLET)
   set(bullet_pc bullet)
   if(BT_USE_DOUBLE_PRECISION)
     string(APPEND DART_PKG_CFLAGS " -DBT_USE_DOUBLE_PRECISION")
+  endif()
+  # Name the module of the libraries that DART links: bullet.pc describes the
+  # unsuffixed ones, which may also be double precision.
+  if(DART_BULLET_USES_FLOAT64)
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
       pkg_check_modules(BULLET_FLOAT64 QUIET bullet-float64)
     endif()
     if(BULLET_FLOAT64_FOUND)
       set(bullet_pc bullet-float64)
-    elseif(DART_BULLET_USES_FLOAT64)
+    else()
       # bullet.pc would add the single-precision libraries; name the -float64
       # ones directly.
       set(bullet_pc)
