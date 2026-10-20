@@ -29,6 +29,25 @@ Priority order is document order. Active implementation handoff remains in
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
 
+### PLAN-625: DART 7 Dependency Floor And Minimization
+
+- Owner doc: [DART 7 dependency project home](../dev_tasks/dart7_dependencies/README.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Dependency footprint, platform floor, packaging, and Gazebo
+  compatibility.
+- Scope: Ubuntu 24.04 becomes `main`'s oldest supported platform, with
+  toolchain, CMake, Python and library floors raised to match; dependencies
+  that the gz-facing C++ API does not bind are removed or owned in-tree; and
+  DART's own code may build as C++20 while the exported interface stays
+  C++17, subject to the maintainer decisions recorded in the project home.
+  FCL and the collision-backend lifecycle stay with PLAN-620.
+- Next step: Record the maintainer decision batch, then land the Gazebo
+  contact-surface probe assertion (DEP-0) and the decision-free packets.
+- Gate: Per-packet gates in the project home, two clean reviews, and the
+  Gazebo lanes against each packet's base for any change to installed
+  headers, exported targets or the package config.
+
 ### PLAN-623: Active Contact Performance Generalization
 
 - Owner doc: [performance methodology](../onboarding/profiling.md#performance-methodology)

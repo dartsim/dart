@@ -765,7 +765,7 @@ void InverseKinematics(nb::module_& m)
               -> dart::dynamics::InverseKinematicsPtr {
             return self->clone(_newNode);
           },
-          nb::arg("newNode").none())
+          nb::arg("newNode"))
       .def(
           "setActive",
           +[](dart::dynamics::InverseKinematics* self) { self->setActive(); })
