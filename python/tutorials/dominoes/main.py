@@ -305,8 +305,8 @@ def createFloor():
 
 
 def createManipulator():
-    # TODO Lesson 2a: load the KR5 URDF, position its base, and set its joint angles.
-    raise NotImplementedError("Lesson 2a: load and position the KR5 manipulator.")
+    # TODO Lesson 2a: load the six-axis arm URDF, position its base, and set its joint angles.
+    raise NotImplementedError("Lesson 2a: load and position the six-axis arm manipulator.")
 
 
 def build_scene():

@@ -165,7 +165,7 @@ def test_compile_rejects_unsupported_shape(world, robot):
     strict=True, reason="M5: dart.data, io.load_model and World.add are pending"
 )
 def test_load_model_and_add(world):
-    path = dart.data.path("urdf/KR5/KR5 sixx R650.urdf")
+    path = dart.data.path("urdf/six_axis_arm/six_axis_arm.urdf")
     robot = world.add(dart.io.load_model(path))
     assert world.multibodies[robot.name] is robot
     assert robot.num_dofs == 6

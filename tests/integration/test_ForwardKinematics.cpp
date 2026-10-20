@@ -186,8 +186,8 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   const double tolerance = 1e-8;
 
   dart::utils::DartLoader loader;
-  SkeletonPtr skeleton1
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  SkeletonPtr skeleton1 = loader.parseSkeleton(
+      "dart://sample/urdf/six_axis_arm/six_axis_arm.urdf");
 
   SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
 
@@ -235,8 +235,8 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   const double tolerance = 1e-8;
 
   dart::utils::DartLoader loader;
-  SkeletonPtr skeleton1
-      = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  SkeletonPtr skeleton1 = loader.parseSkeleton(
+      "dart://sample/urdf/six_axis_arm/six_axis_arm.urdf");
 
   BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1);
   EndEffector* ee1 = last_bn1->createEndEffector();
@@ -263,4 +263,43 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   J = standardJacobian(skeleton2, q, active_indices, ee2);
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
+}
+
+//==============================================================================
+TEST(FORWARD_KINEMATICS, SIX_AXIS_ARM)
+{
+  dart::utils::DartLoader loader;
+  auto arm = loader.parseSkeleton(
+      "dart://sample/urdf/six_axis_arm/six_axis_arm.urdf");
+  ASSERT_NE(arm, nullptr);
+  ASSERT_EQ(arm->getNumDofs(), 6u);
+
+  // Independent product of the authored joint translations and rotations.
+  const Eigen::Vector3d origins[]
+      = {{0, 0, 0.12},
+         {0, 0, 0.06},
+         {0, 0, 0.28},
+         {0.23, 0, 0},
+         {0.06, 0, 0},
+         {0.05, 0, 0}};
+  const Eigen::Vector3d axes[]
+      = {Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitX()};
+  for (const auto& positions : std::vector<Eigen::VectorXd>{
+           Eigen::VectorXd::Zero(6),
+           (Eigen::VectorXd(6) << 0.3, -0.5, 0.7, -0.2, 0.4, 0.6).finished()}) {
+    arm->setPositions(positions);
+    Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+    for (std::size_t i = 0; i < 6; ++i) {
+      expected = expected * Eigen::Translation3d(origins[i])
+                 * Eigen::AngleAxisd(positions[i], axes[i]);
+      EXPECT_TRUE(
+          arm->getBodyNode(i + 1)->getWorldTransform().matrix().isApprox(
+              expected.matrix(), 1e-12));
+    }
+  }
 }

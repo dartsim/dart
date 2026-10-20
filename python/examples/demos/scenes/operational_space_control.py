@@ -1,4 +1,4 @@
-"""The KR5 task-space controller with a draggable red-ball target."""
+"""The six-axis arm task-space controller with a draggable red-ball target."""
 
 from __future__ import annotations
 
@@ -10,23 +10,16 @@ from examples.demos.models.operational_space_control import OperationalSpaceCont
 def build() -> dart.viewer.SceneSetup:
     world = dart.simulation.World()
     loader = dart.utils.DartLoader()
-    robot = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    robot = loader.parseSkeleton("dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
     if robot is None:
-        raise RuntimeError("failed to load dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+        raise RuntimeError("failed to load dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
     world.addSkeleton(robot)
     robot.getJoint(0).setTransformFromParentBodyNode(dart.math.Isometry3())
 
-    ground = loader.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
+    ground = loader.parseSkeleton("dart://sample/urdf/six_axis_arm/ground.urdf")
     if ground is None:
-        raise RuntimeError("failed to load dart://sample/urdf/KR5/ground.urdf")
+        raise RuntimeError("failed to load dart://sample/urdf/six_axis_arm/ground.urdf")
     world.addSkeleton(ground)
-    ground_tf = ground.getJoint(0).getTransformFromParentBodyNode()
-    ground_tf.pretranslate([0, 0, 0.5])
-    ground_tf.set_rotation(
-        ground_tf.rotation() @ dart.math.AngleAxis(np.pi / 2, [1, 0, 0]).rotation()
-    )
-    ground.getJoint(0).setTransformFromParentBodyNode(ground_tf)
-
     for index in range(robot.getNumJoints()):
         joint = robot.getJoint(index)
         joint.setLimitEnforcement(False)
@@ -120,7 +113,7 @@ def scenes():
             "operational_space_control",
             title="Operational Space Control",
             category="Control & IK",
-            summary="KR5 arm chasing a draggable target with task-space control.",
+            summary="Six-axis arm chasing a draggable target with task-space control.",
             factory=build,
         )
     ]

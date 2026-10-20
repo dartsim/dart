@@ -45,6 +45,12 @@
     options and the pybind11 binder. Remove these options from configurations;
     a legacy `DART_DARTPY_BINDER=pybind11` value fails configure.
 
+  * Remove the installed `dart://sample/urdf/KR5/` sample resources, whose
+    license declaration was incomplete and whose CAD mesh redistribution terms
+    were unknown. Examples, tutorials, and tests now use the DART-authored
+    `dart://sample/urdf/six_axis_arm/six_axis_arm.urdf`; code that loaded KR5
+    must supply its own copy.
+
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
