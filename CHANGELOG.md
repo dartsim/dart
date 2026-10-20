@@ -81,6 +81,7 @@
     [#2668](https://github.com/dartsim/dart/issues/2668) and
     [#2671](https://github.com/dartsim/dart/issues/2671) are reverted.
     `ImFormatString` and `ImFormatStringV` are exported from `dart-gui` again.
+    [#3876](https://github.com/dartsim/dart/pull/3876)
 
 * API
 
