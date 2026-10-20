@@ -293,6 +293,7 @@
   * **Additive:** Linux wheels accept URDF 1.1 and 1.2 with urdfdom 6.0.1,
     which also stops parser error logging from treating URDF text as a printf
     format string. URDF 1.0 files load as before.
+    [#3887](https://github.com/dartsim/dart/pull/3887)
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
