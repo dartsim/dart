@@ -7411,6 +7411,13 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
             if configured.resolve() == build:
                 assert (build / ".cmake/api/v1/query/codemodel-v2").is_file()
                 assert not any("IPOPT" in option.upper() for option in command)
+                assert not any("rpath-link" in option for option in command)
+            else:
+                dependency = module.MEASUREMENT_ROOT / "arm/dependencies"
+                assert (
+                    f"-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,{dependency}/lib"
+                    in command
+                )
             configured.mkdir(exist_ok=True)
             configurations.append(configured.resolve())
         elif command[:2] == ["cmake", "--build"]:

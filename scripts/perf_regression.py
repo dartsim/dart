@@ -3950,6 +3950,7 @@ def _build_arm(
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
             "-DCMAKE_SKIP_RPATH=ON",
             f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
+            f"-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,{dependency}/lib",
             "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
         ],
         env,
