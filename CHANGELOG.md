@@ -290,6 +290,12 @@
 
 * Build
 
+  * Fix the ODE fetch fallback under CMake 4, pin its GitHub release archive,
+    and require double precision for both fetched and system ODE.
+
+  * Fix the `uninstall` target's script and manifest handling. Use
+    `dart-uninstall` when fetched ODE supplies its own `uninstall` target.
+
   * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
     GoogleBenchmark and Tracy default to installed packages, and explicit
     per-dependency switches still win. Offline configures now report missing

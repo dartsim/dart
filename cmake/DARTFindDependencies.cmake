@@ -215,6 +215,7 @@ if(NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
+  set(ODE_DOUBLE_PRECISION ON CACHE BOOL "" FORCE)
   set(ODE_WITH_LIBCCD ON CACHE BOOL "" FORCE)
   set(ODE_WITH_LIBCCD_SYSTEM ON CACHE BOOL "" FORCE)
   set(ODE_WITH_LIBCCD_BOX_CYL OFF CACHE BOOL "" FORCE)
@@ -222,12 +223,12 @@ if(NOT DART_USE_SYSTEM_ODE AND NOT DART_SKIP_ODE)
   set(ODE_WITH_TESTS OFF CACHE BOOL "" FORCE)
   FetchContent_Declare(
     ode
-    URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
+    URL https://github.com/odedevs/ode/archive/refs/tags/0.16.6.tar.gz
     URL_HASH
-      SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
+      SHA256=91fa10c811db757c113ba5ced02e578587f84331d51041b9fd4cadb1522fcef6
   )
   dart_check_fetchcontent(ode DART_USE_SYSTEM_ODE)
-  FetchContent_MakeAvailable(ode)
+  dart_fetchcontent_makeavailable_legacy(ode)
   set(ODE_VERSION 0.16.6)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
   set(DART_ODE_BINARY_DIR "${ode_BINARY_DIR}" CACHE INTERNAL "ODE binary dir.")

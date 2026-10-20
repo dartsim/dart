@@ -290,7 +290,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         versions["newer"] = f"{major + 1}.0.0"
     extra = ""
     if package == "ODE":
-        extra = "set_target_properties(ODE::ODE PROPERTIES INTERFACE_COMPILE_DEFINITIONS dLIBCCD_BOX_CYL)\n"
+        extra = 'set_target_properties(ODE::ODE PROPERTIES INTERFACE_COMPILE_DEFINITIONS "dLIBCCD_BOX_CYL;dDOUBLE")\n'
     config_package(tmp_path, package, versions[version_kind], target, extra)
     accepted = version_kind in ("minimum", "newer")
     result = configure(
@@ -526,7 +526,7 @@ def test_config_header_version_fallback(
     path.write_text(defines)
     extra = f'set_target_properties({target} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include.as_posix()}")\n'
     if package == "ODE":
-        extra += "set_target_properties(ODE::ODE PROPERTIES INTERFACE_COMPILE_DEFINITIONS dLIBCCD_BOX_CYL)\n"
+        extra += 'set_target_properties(ODE::ODE PROPERTIES INTERFACE_COMPILE_DEFINITIONS "dLIBCCD_BOX_CYL;dDOUBLE")\n'
     config_package(tmp_path, package, None, target, extra)
     result = configure(
         tmp_path,
@@ -1032,3 +1032,128 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("minimum", [None, "3.5", "3.22"])
+def test_legacy_fetch_policy_is_scoped(tmp_path, minimum):
+    source = tmp_path / "legacy"
+    source.mkdir()
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 2.8.12)\nproject(legacy NONE)\n"
+        "if(CMAKE_POLICY_VERSION_MINIMUM VERSION_LESS 3.5)\n"
+        'message(FATAL_ERROR "Missing legacy policy minimum")\nendif()\n'
+    )
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\ninclude(FetchContent)\n"
+        + (f"set(CMAKE_POLICY_VERSION_MINIMUM {minimum})\n" if minimum else "")
+        + f'FetchContent_Declare(legacy SOURCE_DIR "{source.as_posix()}")\n'
+        "dart_fetchcontent_makeavailable_legacy(legacy)\n"
+        + (
+            f'if(NOT CMAKE_POLICY_VERSION_MINIMUM STREQUAL "{minimum}")\n'
+            if minimum
+            else "if(DEFINED CMAKE_POLICY_VERSION_MINIMUM)\n"
+        )
+        + 'message(FATAL_ERROR "Policy minimum escaped dependency scope")\nendif()\n'
+        + f'if(NOT legacy_SOURCE_DIR STREQUAL "{source.as_posix()}")\n'
+        'message(FATAL_ERROR "Missing populated source directory")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("language", ["C", "CXX"])
+@pytest.mark.parametrize("precision", ["dSINGLE", "dDOUBLE"])
+@pytest.mark.parametrize("target_type", [None, "EXECUTABLE", "STATIC_LIBRARY"])
+def test_system_ode_precision(tmp_path, language, precision, target_type):
+    compiler = shutil.which("c++" if language == "CXX" else "cc")
+    if not compiler:
+        pytest.skip("No host compiler available for the ODE header probe")
+    include = tmp_path / "include"
+    (include / "ode").mkdir(parents=True)
+    (include / "ode/odeconfig.h").write_text(f"#define {precision}\n")
+    config_package(
+        tmp_path,
+        "ODE",
+        "0.16.6",
+        "ODE::ODE",
+        f'set_target_properties(ODE::ODE PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include.as_posix()}" '
+        "INTERFACE_COMPILE_DEFINITIONS dLIBCCD_BOX_CYL "
+        "INTERFACE_LINK_LIBRARIES missing_ode_link_dependency)\n",
+    )
+    result = configure(
+        tmp_path,
+        f"enable_language({language})\n"
+        + (f"set(CMAKE_TRY_COMPILE_TARGET_TYPE {target_type})\n" if target_type else "")
+        + "set(DART_USE_SYSTEM_ODE ON)\ninclude(DARTFindODE)\n"
+        + (
+            f'if(NOT CMAKE_TRY_COMPILE_TARGET_TYPE STREQUAL "{target_type}")\n'
+            if target_type
+            else "if(DEFINED CMAKE_TRY_COMPILE_TARGET_TYPE)\n"
+        )
+        + 'message(FATAL_ERROR "Probe target type escaped")\nendif()\n',
+        cmake_args=[f"-DCMAKE_{language}_COMPILER={compiler}"],
+    )
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (precision == "dDOUBLE"), output
+    if precision == "dSINGLE":
+        assert "DART requires double-precision ODE" in output
+        assert "DART_USE_SYSTEM_ODE=OFF" in output
+
+
+@pytest.mark.parametrize("staged", [False, True])
+@pytest.mark.parametrize("prefix_kind", ["spaces", "utf8", "latin1", "semicolon"])
+def test_uninstall_manifest_preserves_spaces(tmp_path, staged, prefix_kind):
+    if staged and os.name != "posix":
+        pytest.skip("CMake DESTDIR staging requires a UNIX platform")
+    outside = tmp_path / "outside"
+    if prefix_kind == "latin1" and os.name != "posix":
+        pytest.skip("Raw Latin-1 filenames require a UNIX platform")
+    prefix_name = {
+        "spaces": "install with spaces",
+        "utf8": "dé" + outside.as_posix(),
+        "latin1": os.fsdecode(b"d\xe9") + outside.as_posix(),
+        "semicolon": "install;with[bracket",
+    }[prefix_kind]
+    prefix = tmp_path / prefix_name
+    destdir = str(tmp_path / "stage") if staged else ""
+    decoy = Path(destdir + str(outside / "installed header.hpp"))
+    decoy.parent.mkdir(parents=True, exist_ok=True)
+    decoy.touch()
+    stage = Path(destdir + str(prefix))
+    stage.mkdir(parents=True)
+    installed = stage / "installed header.hpp"
+    installed.touch()
+    unlisted = stage / "unlisted"
+    unlisted.touch()
+    manifest = tmp_path / "install_manifest.txt"
+    dangling = stage / "dangling link"
+    if os.name == "posix":
+        dangling.symlink_to("missing-target")
+    manifest.write_bytes(
+        os.fsencode(f"{(prefix / installed.name).as_posix()}\n")
+        + os.fsencode(f"{(prefix / dangling.name).as_posix()}\n")
+        + b"\nrelative-entry\n"
+    )
+    relative = tmp_path / "relative-entry"
+    relative.touch()
+    script = tmp_path / "uninstall.cmake"
+    script.write_text(
+        (ROOT / "cmake/uninstall_target.cmake.in")
+        .read_text()
+        .replace("@CMAKE_CURRENT_BINARY_DIR@", tmp_path.as_posix())
+    )
+    result = subprocess.run(
+        [shutil.which("cmake"), "-P", str(script)],
+        capture_output=True,
+        text=True,
+        errors="surrogateescape",
+        check=False,
+        cwd=tmp_path,
+        env={**os.environ, "DESTDIR": destdir},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert decoy.exists()
+    assert not installed.exists()
+    assert unlisted.exists()
+    assert relative.exists()
+    assert not dangling.is_symlink()

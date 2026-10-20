@@ -67,6 +67,25 @@ separately when needed. Pixi configure tasks use the umbrella;
 `pixi run -e profile config-tracy` selects the profile environment's Tracy.
 To fetch Tracy instead, override the umbrella with `DART_USE_SYSTEM_TRACY=OFF`.
 
+`DART_USE_SYSTEM_ODE=OFF` fetches ODE 0.16.6 from its GitHub release tag,
+builds a shared, double-precision library with system libccd and without the
+libccd box-cylinder collider, and installs ODE's headers, library and CMake
+package alongside DART. Installed `collision-ode` consumers must include that
+prefix in `CMAKE_PREFIX_PATH`; libccd remains a system dependency. System ODE
+must also use double precision; configuration rejects single-precision packages.
+For a nonstandard prefix on Linux, include its library directory in
+`LD_LIBRARY_PATH` or configure an install RPATH.
+The compatibility policy minimum needed by ODE under CMake 4 is scoped to the
+dependency's configure, without changing DART's policy settings.
+
+`cmake --build <build-directory> --target dart-uninstall` removes files listed
+in DART's install manifest, including dependencies installed by that build.
+With system dependencies, `uninstall` forwards to `dart-uninstall`. Fetched
+ODE defines its own `uninstall` target, which retains ODE's upstream behavior;
+it expects an ODE sub-build install manifest and does not uninstall DART.
+Use `dart-uninstall` to remove the complete DART installation in that case.
+Uninstall uses the prefix recorded by the last installation and honors `DESTDIR`.
+
 ## Package Version Compatibility
 
 The installed `DARTConfigVersion.cmake` accepts plain version requests from

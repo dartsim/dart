@@ -70,6 +70,7 @@ if(NOT _dart_use_internal_ode)
         PROPERTIES
           INTERFACE_INCLUDE_DIRECTORIES "${ODE_INCLUDE_DIRS}"
           INTERFACE_LINK_LIBRARIES "${ODE_LIBRARIES}"
+          INTERFACE_COMPILE_OPTIONS "${ODE_DEFINITIONS}"
       )
     endif()
   endif()
@@ -84,6 +85,68 @@ if(ODE_FOUND OR ode_FOUND)
   endif()
   if(DEFINED ODE_DEFINITIONS)
     list(APPEND _dart_ode_defs ${ODE_DEFINITIONS})
+  endif()
+
+  if(NOT _dart_use_internal_ode)
+    set(_dart_ode_double FALSE)
+    foreach(_dart_ode_def IN LISTS _dart_ode_defs)
+      if(_dart_ode_def MATCHES "^(-D)?d(IDE)?DOUBLE(=1)?$")
+        set(_dart_ode_double TRUE)
+      endif()
+    endforeach()
+    if(NOT _dart_ode_double)
+      include(CMakePushCheckState)
+      cmake_push_check_state(RESET)
+      set(_dart_ode_try_compile_target_type "${CMAKE_TRY_COMPILE_TARGET_TYPE}")
+      set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+      set(CMAKE_REQUIRED_LIBRARIES ODE::ODE)
+      set(
+        _dart_ode_precision_source
+        "
+#include <ode/odeconfig.h>
+#if !defined(dDOUBLE) || defined(dSINGLE)
+#error DART requires double-precision ODE
+#endif
+int main(void) { return 0; }
+"
+      )
+      get_property(_dart_ode_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+      unset(_dart_ode_double CACHE)
+      unset(_dart_ode_double)
+      if("CXX" IN_LIST _dart_ode_languages)
+        include(CheckCXXSourceCompiles)
+        check_cxx_source_compiles(
+          "${_dart_ode_precision_source}"
+          _dart_ode_double
+        )
+      elseif("C" IN_LIST _dart_ode_languages)
+        include(CheckCSourceCompiles)
+        check_c_source_compiles(
+          "${_dart_ode_precision_source}"
+          _dart_ode_double
+        )
+      endif()
+      if(_dart_ode_try_compile_target_type)
+        set(
+          CMAKE_TRY_COMPILE_TARGET_TYPE
+          "${_dart_ode_try_compile_target_type}"
+        )
+      else()
+        unset(CMAKE_TRY_COMPILE_TARGET_TYPE)
+      endif()
+      unset(_dart_ode_try_compile_target_type)
+      cmake_pop_check_state()
+      unset(_dart_ode_precision_source)
+      unset(_dart_ode_languages)
+    endif()
+    if(NOT _dart_ode_double)
+      message(
+        FATAL_ERROR
+        "DART requires double-precision ODE (dDOUBLE). Install a double-precision ODE package or configure DART with DART_USE_SYSTEM_ODE=OFF. A C or CXX language is required to check ODE headers when the package provides no precision definition."
+      )
+    endif()
+    unset(_dart_ode_double CACHE)
+    unset(_dart_ode_double)
   endif()
 
   foreach(_dart_ode_def ${_dart_ode_defs})
