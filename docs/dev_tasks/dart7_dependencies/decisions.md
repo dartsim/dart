@@ -321,6 +321,19 @@ recommended option comes first.
   removes curl and OpenSSL together; the release-6.20 backport of DEP-17
   PR3's wheel bump; the labeled changes listed in the review's §4.
 
+## Open question (2026-10-20)
+
+- **Fetch-first for libraries that DART's own dependencies load.** The
+  tinyxml2 prototype ([verification](verification.md#tinyxml2-fetch-prototype-2026-10-20))
+  shows that a fetched tinyxml2 is either the ABI that urdfdom and sdformat
+  already load, so it is redundant, or a second ABI in one process, so it
+  must be rejected. Options: (1, recommended) tinyxml2, urdfdom and assimp
+  follow the libraries that load them (system in practice), sdformat keeps
+  DD-11, and fetch-first stays for ODE, Bullet, FCL/libccd and octomap, with
+  FCL/libccd as the next fetch prototype; (2) system first and fetch only
+  when missing, for every library; (3) keep literal fetch-first for
+  tinyxml2 and merge the prototype with platform skips and a CI lane.
+
 ## Original questions (2026-10-18)
 
 Asked as one batch; the answers are above.

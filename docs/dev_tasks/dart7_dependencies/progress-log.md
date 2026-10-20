@@ -81,4 +81,25 @@
     optional-dependency helper's version test never fired); DEP-17 PR3's
     acceptance table showed every URDF in `data/` loading the same with
     urdfdom 4.0.1 and 6.0.1.
-  - DEP-18 in review; DEP-7, DEP-9 and the DEP-5 remainder started.
+  - DEP-18 (#3889), DEP-7 (#3890), the DEP-5 remainder (#3891), DEP-9
+    (#3892), DEP-6 (#3893) and DEP-10 (#3894, stacked on #3892) published
+    after two clean reviews each. Reviews sent DEP-18's SDF-off test skips
+    back to per-test marks, DEP-7's unqualified tasks back to one
+    environment each, and DEP-16's first design back to an unchanged
+    default console (the sink changes nothing until a custom sink is set).
+  - An experiment settled `DOWNLOAD_EXTRACT_TIMESTAMP`: `FALSE` extracts at
+    the current time, which is what #3876 and #3893 use.
+  - DEP-4 (a) to (c), DEP-8(a), DEP-12(b) (tinyxml2) and the tinyxml2 fetch
+    prototype on DEP-25 started. Muse's quota ran out until 2026-10-26, so
+    its packets moved to Codex and Claude, and reviews come from those two
+    engines until then.
+  - DEP-4(c) (#3895), DEP-12(b) (#3896), the perf-harness link fix (#3897),
+    DEP-4(a) (#3898) and DEP-16 (#3899) published after two clean reviews
+    each; DEP-8(a) needed no PR (#3847 covered it). Windows-only test
+    failures on #3882 (CRLF license checkouts) and #3891 (file times sharing
+    a clock tick) were fixed. Reviews kept the octomap shim, caught a
+    DEP-4(b) uninstall bug that could delete files outside the manifest, and
+    sent DEP-16 through two more rounds on sink restoration order.
+  - The tinyxml2 fetch prototype showed fetch-first cannot work for a
+    library that DART's required dependencies already load; the maintainer
+    was asked how DD-10 applies.

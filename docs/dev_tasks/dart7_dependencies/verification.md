@@ -501,3 +501,65 @@ writer; the PR bodies carry the user-facing evidence.
   builds and runs with urdfdom package discovery disabled (the runtime
   library remains required); 450 installed headers carry no urdfdom include;
   the API inventory is unchanged.
+
+### Wave 5 (2026-10-20)
+
+- DEP-18 (#3889, Codex; Claude Opus and Muse, two rounds): an SDF-off build
+  runs 2,073 Python tests, skipping SDF tests one by one; SDF-on builds keep
+  the same 21 `SdfParser` exports; 442 installed headers compile
+  standalone; a shared `io` consumer configures without sdformat, a static
+  one requires it, and `COMPONENTS io-sdf` fails cleanly on an SDF-off
+  install; gz lanes.
+- DEP-7 (#3890, Muse; Codex and Claude Sonnet): the default environment
+  shrinks from 1.9 GB to 1.6 GB; every task resolves to one environment; the
+  AI infrastructure suite (5,085) and `test-all` pass, apart from #3872's
+  known failure.
+- DEP-5 remainder (#3891, Codex; Claude Sonnet and Muse): 186 of 186 tests
+  on Eigen 3.4.0 and on 5.0.1; the overalignment suite (175); a consumer
+  built against the other Eigen major fails at configure with the
+  installed finder's message; 253 requirement tests; gz lanes.
+- DEP-9 (#3892, Codex; Claude Sonnet and Muse): a Python 3.11 configure
+  fails clearly; the abi3 smoke test passes on Python 3.12, 3.13 and 3.14;
+  NumPy 1.26.4 passes on 3.12; 244 requirement tests.
+- DEP-6 (#3893, Codex; Claude Sonnet and Muse): fetched GoogleTest 1.17.0
+  and Benchmark 1.10.0 pass 176 of 176 tests, and so do Ubuntu 24.04's
+  GoogleTest 1.14 and Benchmark 1.8.3 in a container; a configure on a host
+  without Git works.
+- DEP-10 (#3894, Codex; Claude Sonnet and Muse): a system nanobind 3.2.0
+  fails at configure with the new message; fetched and conda-forge 3.1.0
+  builds both pass; 24 configure cases and 269 requirement tests.
+- DEP-4(c) (orchestrator): `GCC_VERSION` is never set, so the deleted
+  branch never ran; with `DART_ENABLE_SIMD=ON`, `build.ninja` and every
+  generated export file are byte-identical before and after.
+- DEP-12(b) tinyxml2 (#3896, Codex; two Claude Sonnet passes): both lookup
+  paths reject a tinyxml2 9.0.0 package with the minimum-version message
+  and accept 10.0.0; 186 of 186; 239 requirement tests.
+- Perf harness (#3897, Codex; two Claude Sonnet passes): the unmodified
+  harness reproduces #3889's driver link failure (`libsdformat.so.16 ...
+  not found`); with the driver linked through an `rpath-link` path, an A/B
+  from `main` to #3889's head builds both drivers and measures every row with
+  equal instruction counts, allocations and guards; compile commands and
+  workload hashes are unchanged.
+- DEP-4(a) (#3898, Claude Sonnet; two Codex passes plus two confirmations):
+  the first reviews showed the octomap target shim is reachable (octomap's
+  build-tree config imports no targets), so it stays; 186 of 186 with
+  octomap 1.10.1; the wheel builds, repairs and smoke-tests.
+- DEP-16 (#3899, Codex; Claude Opus and Sonnet, five rounds): default
+  console output is byte-identical to `main` in 12 terminal and 12 GUI-App
+  cases; a ThreadSanitizer build of the logging tests passes 55 of 55; both
+  teardown orders of the GUI panel and the Python bridge end on the default
+  sink; 186 of 186, 2,130 Python and 496 GUI Python tests; gz-physics 199
+  plus 4 and gz-sim 1 of 1.
+
+### tinyxml2 fetch prototype (2026-10-20)
+
+Codex fetched tinyxml2 11.0.0 as a shared library installed next to DART,
+with an ELF check that urdfdom's and sdformat's tinyxml2 has the same SONAME:
+176 of 176 tests in both fetched configurations and a working installed
+consumer, for 410 added lines (178 in two new CMake modules). Two reviews
+(Claude Opus and Sonnet) showed the fetch can only pass where a system
+tinyxml2 of the same ABI is already loaded, because `dart-io` requires
+urdfdom (and sdformat with SDF on), and both link a shared tinyxml2. As the
+standalone default it would fail on Ubuntu 24.04 (apt urdfdom 4 and OSRF
+sdformat 14 link tinyxml2 10) and on macOS, Windows, FreeBSD and cross
+builds. The branch stays local; the maintainer decides how DD-10 applies.
