@@ -411,10 +411,12 @@ elseif(TARGET Bullet)
       list(REMOVE_AT _dart_bullet_queue 0)
       string(APPEND _dart_bullet_item ";${_dart_bullet_part}")
     endwhile()
-    # Unwrap $<LINK_ONLY:...>, $<$<CONFIG:Debug>:...> and similar entries,
-    # and queue the elements of a list payload. Only shorter payloads are
-    # queued, so the walk ends. $<INSTALL_INTERFACE:...> and $<0:...> are
-    # empty in this build.
+    # Unwrap $<LINK_ONLY:...>, $<BUILD_INTERFACE:...>, true $<BOOL:...> and
+    # $<CONFIG:...> conditions, and queue the elements of a list payload.
+    # Only shorter payloads are queued, so the walk ends. Skip payloads that
+    # are empty in this build, such as $<INSTALL_INTERFACE:...> and $<0:...>,
+    # and those of conditions not evaluated here, which can leave the variant
+    # unknown but never mixed.
     set(_dart_bullet_part "${_dart_bullet_item}")
     set(_dart_bullet_other FALSE)
     while(
@@ -424,10 +426,7 @@ elseif(TARGET Bullet)
     )
       set(_dart_bullet_item "${CMAKE_MATCH_3}")
       string(TOUPPER "${CMAKE_MATCH_1}" _dart_bullet_value)
-      if(_dart_bullet_value MATCHES "^(INSTALL_INTERFACE|0)$")
-        set(_dart_bullet_item "")
-        break()
-      elseif(_dart_bullet_value MATCHES "^\\$<(NOT:\\$<)?CONFIG:([^<>]*)>")
+      if(_dart_bullet_value MATCHES "^\\$<(NOT:\\$<)?CONFIG:([^<>]*)>")
         string(REPLACE "," ";" _dart_bullet_configs "${CMAKE_MATCH_2}")
         if(_dart_bullet_build_type IN_LIST _dart_bullet_configs)
           if(_dart_bullet_value MATCHES "^\\$<NOT:")
@@ -436,6 +435,23 @@ elseif(TARGET Bullet)
         elseif(NOT _dart_bullet_value MATCHES "^\\$<NOT:")
           set(_dart_bullet_other TRUE)
         endif()
+      elseif(_dart_bullet_value MATCHES "^\\$<BOOL:([^<>]*)>$")
+        if(
+          CMAKE_MATCH_1
+            MATCHES
+            "^(|0|FALSE|OFF|N|NO|IGNORE|NOTFOUND|.*-NOTFOUND)$"
+        )
+          set(_dart_bullet_item "")
+          break()
+        endif()
+      elseif(
+        NOT
+          _dart_bullet_value
+            MATCHES
+            "^(LINK_ONLY|BUILD_INTERFACE|BUILD_LOCAL_INTERFACE|TARGET_NAME_IF_EXISTS|1)$"
+      )
+        set(_dart_bullet_item "")
+        break()
       endif()
     endwhile()
     if(_dart_bullet_item STREQUAL "")
@@ -568,9 +584,14 @@ elseif(TARGET Bullet)
         list(APPEND _dart_bullet_pc_files "${_dart_bullet_location}")
       endif()
     endif()
-    # CMake also uses IMPORTED_LOCATION_<CONFIG> without a listed <CONFIG>.
-    list(
-      APPEND _dart_bullet_configs
+    # Classify what CMake links for every configuration: the import library
+    # when there is one. CMake also uses IMPORTED_LOCATION_<CONFIG> without a
+    # listed <CONFIG>.
+    _dart_bullet_location(_dart_bullet_value "${_dart_bullet_item}" "")
+    list(APPEND _dart_bullet_files ${_dart_bullet_value})
+    foreach(
+      _dart_bullet_config
+      ${_dart_bullet_configs}
       ${CMAKE_BUILD_TYPE}
       ${CMAKE_CONFIGURATION_TYPES}
       Release
@@ -578,24 +599,13 @@ elseif(TARGET Bullet)
       RelWithDebInfo
       MinSizeRel
     )
-    set(_dart_bullet_properties IMPORTED_LOCATION IMPORTED_IMPLIB)
-    foreach(_dart_bullet_config IN LISTS _dart_bullet_configs)
-      string(TOUPPER "${_dart_bullet_config}" _dart_bullet_config)
-      list(
-        APPEND _dart_bullet_properties
-        IMPORTED_LOCATION_${_dart_bullet_config}
-        IMPORTED_IMPLIB_${_dart_bullet_config}
-      )
-    endforeach()
-    foreach(_dart_bullet_property IN LISTS _dart_bullet_properties)
-      get_target_property(
+      string(TOUPPER "_${_dart_bullet_config}" _dart_bullet_config)
+      _dart_bullet_location(
         _dart_bullet_value
         "${_dart_bullet_item}"
-        ${_dart_bullet_property}
+        "${_dart_bullet_config}"
       )
-      if(_dart_bullet_value)
-        list(APPEND _dart_bullet_files "${_dart_bullet_value}")
-      endif()
+      list(APPEND _dart_bullet_files ${_dart_bullet_value})
     endforeach()
   endwhile()
   _dart_bullet_variant(_dart_bullet_found ${_dart_bullet_files})
@@ -663,8 +673,6 @@ elseif(TARGET Bullet)
   unset(_dart_bullet_configs)
   unset(_dart_bullet_config)
   unset(_dart_bullet_location)
-  unset(_dart_bullet_properties)
-  unset(_dart_bullet_property)
   unset(_dart_bullet_found)
   unset(_dart_bullet_expected)
 endif()

@@ -705,16 +705,41 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "recorded-pc-debug-list",
         ),
-        # $<INSTALL_INTERFACE:...> and $<0:...> entries are empty in this build.
+        # Entries that are empty in this build, or under conditions that it
+        # does not evaluate, are skipped.
         (
             325,
             "add_library(Bullet INTERFACE IMPORTED)\n"
             "set_target_properties(Bullet PROPERTIES\n"
             '  INTERFACE_INCLUDE_DIRECTORIES "${lib}/include"\n'
             '  INTERFACE_LINK_LIBRARIES "$<BUILD_INTERFACE:${lib}/${prefix}BulletCollision-float64${ext}>;'
-            '$<INSTALL_INTERFACE:${collision}>;$<0:${math}>")',
+            "$<INSTALL_INTERFACE:${collision}>;$<0:${math}>;$<$<BOOL:OFF>:${math}>;"
+            '$<$<PLATFORM_ID:Nowhere>:${math}>")',
             True,
             "recorded-pc",
+        ),
+        # ... while a true $<BOOL:...> condition applies.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
+            '  "$<$<BOOL:ON>:${math}>")',
+            True,
+            "rejected",
+        ),
+        # CMake links the import library of a Windows shared library.
+        (
+            325,
+            "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
+            "add_library(collision64 SHARED IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES\n"
+            '  IMPORTED_IMPLIB "${lib}/BulletCollision-float64.lib"\n'
+            '  IMPORTED_LOCATION "${lib}/BulletCollision.dll")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
+            True,
+            "accepted",
         ),
         # Bullet libraries that this project builds cannot be linked by the
         # precision probe; their directories show the precision instead.
