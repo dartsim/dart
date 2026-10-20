@@ -57,6 +57,92 @@ When you run this script, it will perform a forward dynamic simulation of the 6-
 
 You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
 
+Python logging
+--------------
+
+DART prints diagnostics to its native console sink by default. To send them
+through Python's logging system, enable the bridge and drain its queue at a
+Python boundary, such as after each simulation step:
+
+.. code-block:: python
+
+   import logging
+   import dartpy as dart
+
+   logging.basicConfig(level=logging.INFO)
+   logger = logging.getLogger("dartpy")
+   logger.setLevel(logging.WARNING)  # Python-side filter
+   dart.common.enable_logging(level=logging.INFO)  # Native-side filter
+   try:
+       world = dart.simulation.World()
+       world.setNumSimulationThreads(4)
+       for _ in range(100):
+           world.step()
+           dart.common.flush_logs()
+   finally:
+       dart.common.disable_logging()
+
+``enable_logging`` replaces the process-wide native sink; repeated calls update
+its threshold without installing another bridge. Its keyword-only ``level``
+uses Python logging constants. Values up to 10 (including ``NOTSET`` and
+``DEBUG``) include native trace and debug; 11--20 select info, 21--30 warning,
+31--40 error and 41--50 fatal. Values above 50 disable formatted log records.
+Legacy C++ console streams bypass this native threshold. The
+``dartpy`` logger's own level, filters, handlers and propagation apply at drain
+time. Native trace and debug map to ``logging.DEBUG``, and fatal maps to
+``logging.CRITICAL``.
+
+Native threads only enqueue records. ``flush_logs()`` delivers one snapshot in
+sink arrival order under Python's GIL, with no native logging or queue mutex
+held while calling handlers. It returns the number dequeued, including records
+filtered by Python. Thread scheduling determines the order between concurrent
+producers; each producer's order is retained. The queue holds at most 100,000
+records, including during work outside ``world.step()``. Overflow drops the
+oldest records; the next flush emits one ``dartpy: N log records dropped``
+warning through Python logging, separate from the returned dequeue count.
+The dropped count resets before that warning is delivered, even if a handler
+raises while processing the warning.
+Drain regularly: no automatic flush occurs when a native call returns.
+
+Handlers may log back into DART. Those records wait for the next drain;
+calls made while another flush is running on the same thread return zero.
+Other threads wait for that flush to finish, releasing the GIL while waiting.
+Handlers must not join a thread that calls ``flush_logs()``: the handler and
+that thread would wait for each other.
+Handler exceptions propagate to the caller; the failed record is consumed and
+remaining records stay queued.
+``disable_logging()`` stops queueing, restores the previous sink if its wrapper
+is still installed, restores the runtime threshold, then drains pending
+records. If called from a handler, it returns zero and the outer flush drains the remaining queue, including handler-generated records.
+The first enable registers ``disable_logging`` with ``atexit`` to deliver
+records still queued at interpreter exit. The bridge and GUI App may shut down
+in either order; inactive wrappers forward records to their previous sink.
+When both shut down, retired wrappers are removed and the original sink is restored.
+Nested GUI log captures must still be destroyed in reverse construction order
+to restore stdout/stderr stream buffers correctly.
+
+Default C++ ``dtmsg``, ``dtdbg``, ``dtwarn`` and ``dterr`` console output is
+unchanged: text and legacy colors go immediately to stdout or stderr,
+regardless of the native threshold. While a custom sink is installed, including
+inside the GUI App, these streams assemble records, at info, debug, warning
+and error severity
+respectively. Their literal text, including percent signs, braces and legacy
+prefixes, is preserved without added colors. Newline terminates a record;
+``std::flush`` or ``std::endl``, the next ``dt*`` statement on that thread,
+and thread exit deliver an unfinished line separately. Unterminated lines
+inside the GUI App therefore also wait for one of those events, so their
+terminal ordering relative to direct stdout/stderr writes can differ. Partial
+lines produced before a sink swap use the sink installed when they are
+flushed; swapping sinks does not flush them. Prefix-only statements (``dtmsg;``
+or ``dtmsg << std::flush``) print the legacy prefix to the terminal under any
+sink. A ``dt*`` call evaluated inside another ``dt*`` statement splits the
+enclosing statement into separate records for custom sinks.
+Recursive ``dt*`` output from a console-record callback goes
+directly to stdout/stderr. The GUI log panel forwards native records to the
+previous sink as well as displaying them, preserving legacy terminal bytes for
+console records. On Windows, enabling virtual terminal processing for native
+log colors leaves it enabled in that console.
+
 Interactive demo catalog
 ------------------------
 

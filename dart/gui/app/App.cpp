@@ -559,9 +559,8 @@ App::App(
 
   // Captures dart::common's dtmsg/dtwarn/dterr output (and any other
   // std::cout/std::cerr writes) into the same log the host already uses for
-  // its own app-event messages, so the Diagnostics log console shows both
-  // through one severity-filtered, autoscrolling view. Restored (stream
-  // buffers un-redirected) when mLogCapture is destroyed alongside this host.
+  // its own app-event messages. Destruction restores the stream buffers and the
+  // previous sink if this capture's wrapper is still installed.
   mLogCapture = std::make_unique<LogCapture>(
       [this](CapturedLogLevel level, const std::string& message) {
         LogEntry::Level mapped = LogEntry::Level::Info;

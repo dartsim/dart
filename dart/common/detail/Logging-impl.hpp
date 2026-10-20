@@ -36,6 +36,7 @@
 #include <dart/common/Logging.hpp>
 
 #include <array>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -44,6 +45,38 @@
 namespace dart {
 namespace common {
 namespace detail {
+
+/// Forward a record to the console without reentering the installed sink.
+void defaultLogSink(LogLevel level, const std::string& message);
+
+// Capture the previous sink and publish its wrapper under the logging mutex.
+// The wrapper callback must be non-empty; an empty result resets to default.
+std::shared_ptr<LogSink> wrapLogSink(
+    const std::function<LogSink(std::shared_ptr<LogSink>)>& wrap);
+void restoreLogSinkIf(
+    std::shared_ptr<LogSink> installed, std::shared_ptr<LogSink> previous);
+
+// Legacy console streams bypass the formatter and runtime threshold.
+bool hasCustomLogSink();
+void logRecord(LogLevel level, const std::string& message) noexcept;
+void logConsoleRecord(
+    LogLevel level,
+    const std::string& message,
+    std::size_t prefixLength,
+    int color,
+    bool newline) noexcept;
+
+// The Windows console API is injected so the color decision is testable
+// without changing the process console or requiring a Windows host.
+template <typename GetMode, typename SetMode>
+bool enableVirtualTerminal(GetMode getMode, SetMode setMode)
+{
+  constexpr unsigned long virtualTerminalProcessing = 0x0004;
+  unsigned long mode = 0;
+  return getMode(mode)
+         && ((mode & virtualTerminalProcessing)
+             || setMode(mode | virtualTerminalProcessing));
+}
 
 // Keep formatter types out of installed headers and preserve scalar types until
 // formatting in the library. This boundary must also compile as C++14.

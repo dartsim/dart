@@ -110,16 +110,23 @@ using LogSink = std::function<void(LogLevel, const std::string&)>;
 /// ignored. The message reference is valid only for the duration of the
 /// callback. Captured resources must remain alive until the sink is replaced or
 /// reset.
+/// Pending dt* partial lines use the sink installed when they are flushed;
+/// replacing or resetting the sink does not flush them.
+/// With a custom sink (including the GUI App), an unterminated dt* line waits
+/// for an explicit flush, the next dt* statement on that thread, or thread
+/// exit.
 LogSink setLogSink(LogSink sink);
 
 /// Restore console output: warn and above to stderr, others to stdout. Color
 /// requires a terminal, NO_COLOR unset and TERM other than "dumb"; this is
-/// checked once per stream.
+/// checked once per stream. Windows also requires virtual terminal processing,
+/// which is enabled when supported and remains enabled in that console.
 void resetLogSink();
 
 /// Set the runtime threshold, initially the more restrictive of Info and the
 /// library's DART_ACTIVE_LOG_LEVEL. Lower it to enable debug or trace messages.
-/// Off disables all messages. Compile-time disabled DART_* macros cannot be
+/// Off disables formatted log messages; legacy dt* streams are unfiltered.
+/// Compile-time disabled DART_* macros cannot be
 /// enabled at runtime.
 void setLogLevel(LogLevel level);
 

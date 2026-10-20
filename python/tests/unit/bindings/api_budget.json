@@ -240,7 +240,7 @@
     "functions": {
       "camel_case": 8,
       "get_set": 0,
-      "public": 18
+      "public": 21
     }
   },
   "dartpy.constraint": {

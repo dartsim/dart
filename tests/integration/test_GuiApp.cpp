@@ -14,8 +14,11 @@
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 
+#include <dart/common/Console.hpp>
+
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <filesystem>
 #include <functional>
 #include <future>
@@ -27,6 +30,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -1393,6 +1397,306 @@ TEST(SceneContract, CommandLineRejectsInvalidNumbersAndNestedRuns)
       0);
   testing::internal::GetCapturedStdout();
   EXPECT_TRUE(nestedThrew);
+}
+
+//==============================================================================
+TEST(LogCapture, CapturesSinkRecordsAndRestoresPreviousSink)
+{
+  using common::LogLevel;
+  std::vector<std::string> restored;
+  std::vector<CapturedLogLevel> levels;
+  std::vector<std::string> messages;
+  const auto oldLevel = common::getLogLevel();
+  common::setLogLevel(LogLevel::Trace);
+  auto previous = common::setLogSink(
+      [&](LogLevel, const std::string& text) { restored.push_back(text); });
+  testing::internal::CaptureStdout();
+  testing::internal::CaptureStderr();
+  {
+    LogCapture capture([&](CapturedLogLevel level, const std::string& text) {
+      levels.push_back(level);
+      messages.push_back(text);
+    });
+    common::info("{}", "100% {} {broken}");
+    common::warn("{}", "warn {} %s");
+    common::fatal("{}", "fatal {} %s");
+    common::debug("{}", "debug {} %s");
+  }
+  common::info("restored");
+  common::setLogSink(std::move(previous));
+  common::setLogLevel(oldLevel);
+  testing::internal::GetCapturedStdout();
+  testing::internal::GetCapturedStderr();
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "100% {} {broken}",
+          "warn {} %s",
+          "fatal {} %s",
+          "debug {} %s",
+          "restored"}),
+      restored);
+  EXPECT_EQ(
+      (std::vector<CapturedLogLevel>{
+          CapturedLogLevel::Info,
+          CapturedLogLevel::Warning,
+          CapturedLogLevel::Error,
+          CapturedLogLevel::Info}),
+      levels);
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "100% {} {broken}", "warn {} %s", "fatal {} %s", "debug {} %s"}),
+      messages);
+}
+
+//==============================================================================
+TEST(LogCapture, RestoresDefaultSinkAndDoesNotRecaptureSinkLogging)
+{
+  const auto oldLevel = common::getLogLevel();
+  common::setLogLevel(common::LogLevel::Info);
+  auto previous = common::setLogSink({});
+  int calls = 0;
+  testing::internal::CaptureStdout();
+  {
+    LogCapture capture([&](CapturedLogLevel, const std::string&) {
+      if (++calls < 5)
+        common::info("nested");
+    });
+    common::info("outer");
+  }
+  EXPECT_FALSE(common::setLogSink(std::move(previous)));
+  common::setLogLevel(oldLevel);
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(1, calls);
+  EXPECT_NE(std::string::npos, output.find("nested"));
+}
+
+//==============================================================================
+TEST(LogCapture, InstallationDoesNotCopyPreviousSink)
+{
+  struct ThrowingCopy
+  {
+    bool& fail;
+    explicit ThrowingCopy(bool& value) : fail(value) {}
+    ThrowingCopy(const ThrowingCopy& other) : fail(other.fail)
+    {
+      if (fail)
+        throw std::runtime_error("sink copy");
+    }
+    void operator()(common::LogLevel, const std::string&) const {}
+  };
+  bool fail = false;
+  auto previous = common::setLogSink(ThrowingCopy(fail));
+  auto* out = std::cout.rdbuf();
+  auto* err = std::cerr.rdbuf();
+  fail = true;
+  EXPECT_NO_THROW({ LogCapture capture(LogCapture::LineSink{}); });
+  EXPECT_EQ(out, std::cout.rdbuf());
+  EXPECT_EQ(err, std::cerr.rdbuf());
+  fail = false;
+  common::setLogSink(std::move(previous));
+}
+
+//==============================================================================
+TEST(LogCapture, StaleSinkForwardsAfterOutOfOrderDestruction)
+{
+  std::vector<std::string> queued;
+  int panelCalls = 0;
+  auto previous = common::setLogSink({});
+  testing::internal::CaptureStdout();
+  std::shared_ptr<common::LogSink> savedCapture;
+  std::shared_ptr<common::LogSink> bridge;
+  {
+    LogCapture capture(
+        [&](CapturedLogLevel, const std::string&) { ++panelCalls; });
+    bridge = common::detail::wrapLogSink(
+        [&](std::shared_ptr<common::LogSink> old) {
+          savedCapture = std::move(old);
+          return [&](common::LogLevel, const std::string& text) {
+            queued.push_back(text);
+          };
+        });
+  }
+  EXPECT_TRUE(common::detail::hasCustomLogSink());
+  common::detail::logRecord(common::LogLevel::Info, "after App exit");
+  common::detail::restoreLogSinkIf(bridge, savedCapture);
+  EXPECT_FALSE(common::detail::hasCustomLogSink());
+  common::detail::logRecord(common::LogLevel::Info, "after disable");
+  const auto output = testing::internal::GetCapturedStdout();
+  std::weak_ptr<common::LogSink> retired = savedCapture;
+  savedCapture.reset();
+  bridge.reset();
+  EXPECT_TRUE(retired.expired());
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(0, panelCalls);
+  EXPECT_EQ((std::vector<std::string>{"after App exit"}), queued);
+  EXPECT_EQ("[info] after disable\n", output);
+}
+
+//==============================================================================
+TEST(LogCapture, DisabledWrappedSinkForwardsWhileCaptureRemainsInstalled)
+{
+  auto previous = common::setLogSink({});
+  std::vector<std::string> panel;
+  std::shared_ptr<common::LogSink> savedSink;
+  bool enabled = true;
+  int queued = 0;
+  auto bridge
+      = common::detail::wrapLogSink([&](std::shared_ptr<common::LogSink> old) {
+          savedSink = std::move(old);
+          return [&](common::LogLevel level, const std::string& text) {
+            if (enabled)
+              ++queued;
+            else if (savedSink)
+              (*savedSink)(level, text);
+            else
+              common::detail::defaultLogSink(level, text);
+          };
+        });
+  testing::internal::CaptureStdout();
+  {
+    LogCapture capture([&](CapturedLogLevel, const std::string& text) {
+      panel.push_back(text);
+    });
+    enabled = false;
+    common::detail::restoreLogSinkIf(bridge, savedSink);
+    EXPECT_TRUE(common::detail::hasCustomLogSink());
+    common::detail::logRecord(common::LogLevel::Info, "after disable in App");
+  }
+  EXPECT_FALSE(common::detail::hasCustomLogSink());
+  common::detail::logRecord(common::LogLevel::Info, "after App exit");
+  const auto output = testing::internal::GetCapturedStdout();
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(0, queued);
+  EXPECT_EQ((std::vector<std::string>{"after disable in App"}), panel);
+  EXPECT_NE(std::string::npos, output.find("after disable in App"));
+  EXPECT_NE(std::string::npos, output.find("after App exit"));
+}
+
+//==============================================================================
+TEST(LogCapture, NestedCapturesRestoreDefaultSinkInOrder)
+{
+  auto previous = common::setLogSink({});
+  {
+    LogCapture outer(LogCapture::LineSink{});
+    {
+      LogCapture inner(LogCapture::LineSink{});
+      EXPECT_TRUE(common::detail::hasCustomLogSink());
+    }
+    EXPECT_TRUE(common::detail::hasCustomLogSink());
+  }
+  EXPECT_FALSE(common::detail::hasCustomLogSink());
+  common::setLogSink(std::move(previous));
+}
+
+//==============================================================================
+TEST(LogCapture, DestructionDoesNotCopyPreviousSink)
+{
+  struct ThrowingCopy
+  {
+    bool& fail;
+    explicit ThrowingCopy(bool& value) : fail(value) {}
+    ThrowingCopy(const ThrowingCopy& other) : fail(other.fail)
+    {
+      if (fail)
+        throw std::runtime_error("sink copy");
+    }
+    void operator()(common::LogLevel, const std::string&) const {}
+  };
+  bool fail = false;
+  auto previous = common::setLogSink(ThrowingCopy(fail));
+  auto* out = std::cout.rdbuf();
+  auto* err = std::cerr.rdbuf();
+  {
+    LogCapture capture(LogCapture::LineSink{});
+    fail = true;
+  }
+  EXPECT_EQ(out, std::cout.rdbuf());
+  EXPECT_EQ(err, std::cerr.rdbuf());
+  EXPECT_TRUE(common::detail::hasCustomLogSink());
+  fail = false;
+  common::setLogSink(std::move(previous));
+}
+
+//==============================================================================
+TEST(LogCapture, RecursivePanelRecordsReachPreviousSink)
+{
+  std::vector<std::string> forwarded;
+  int panelCalls = 0;
+  auto previous
+      = common::setLogSink([&](common::LogLevel, const std::string& text) {
+          forwarded.push_back(text);
+          if (text == "throwing previous")
+            throw std::runtime_error("previous");
+        });
+  {
+    LogCapture capture([&](CapturedLogLevel, const std::string&) {
+      if (++panelCalls < 5)
+        common::detail::logRecord(common::LogLevel::Info, "nested");
+      throw std::runtime_error("panel");
+    });
+    common::detail::logRecord(common::LogLevel::Info, "throwing previous");
+    common::detail::logRecord(common::LogLevel::Info, "next");
+  }
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(2, panelCalls);
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "throwing previous", "nested", "next", "nested"}),
+      forwarded);
+}
+
+//==============================================================================
+TEST(LogCapture, ConsoleKeepsLegacyTerminalBytes)
+{
+  auto previous = common::setLogSink({});
+  testing::internal::CaptureStdout();
+  testing::internal::CaptureStderr();
+  std::vector<std::string> messages;
+  unsigned int warningLine;
+  unsigned int errorLine;
+  {
+    LogCapture capture([&](CapturedLogLevel, const std::string& text) {
+      messages.push_back(text);
+    });
+    dtmsg << "partial";
+    dtdbg << "debug\nsecond\n";
+    warningLine = __LINE__ + 1;
+    dtwarn << "warning";
+    errorLine = __LINE__ + 1;
+    dterr << "error\n";
+  }
+  const auto out = testing::internal::GetCapturedStdout();
+  const auto err = testing::internal::GetCapturedStderr();
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(
+      "\033[1;32mMsg\033[0m partial\033[1;36mDbg\033[0m debug\nsecond\n", out);
+  EXPECT_EQ(
+      "\033[1;33mWarning [test_GuiApp.cpp:" + std::to_string(warningLine)
+          + "]\033[0m warning\033[1;31mError [test_GuiApp.cpp:"
+          + std::to_string(errorLine) + "]\033[0m error\n",
+      err);
+  ASSERT_EQ(5u, messages.size());
+  EXPECT_EQ("Msg partial", messages[0]);
+  EXPECT_EQ("Dbg debug", messages[1]);
+  EXPECT_EQ("second", messages[2]);
+}
+
+//==============================================================================
+TEST(LogCapture, NativeLoggingCanRaceWithCaptureInstallationAndDestruction)
+{
+  std::atomic<int> forwarded{0};
+  auto previous = common::setLogSink(
+      [&](common::LogLevel, const std::string&) { ++forwarded; });
+  std::thread producer([] {
+    for (int i = 0; i < 2000; ++i)
+      common::detail::logRecord(common::LogLevel::Info, "worker");
+  });
+  for (int i = 0; i < 100; ++i) {
+    LogCapture capture([](CapturedLogLevel, const std::string&) {});
+  }
+  producer.join();
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(2000, forwarded);
 }
 
 //==============================================================================
