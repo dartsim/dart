@@ -25,6 +25,7 @@ pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
 pytest = ">=8.3.5,<9"
 sccache = ">=0.15.0,<0.16"
+scikit-build-core = ">=1.1.1,<2"
 setuptools = ">=80.1.0,<81"
 sphinx = "*"
 sphinx-copybutton = "*"
@@ -80,7 +81,7 @@ perf-compare = { cmd = "python scripts/perf_regression.py local" }
 perf-backfill = { cmd = "python scripts/perf_regression.py backfill" }
 perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
@@ -243,7 +244,8 @@ test-build-requirements = { cmd = [
   "tests/test_minimum_requirement_metadata.py",
   "tests/test_wheel_runtime_environment.py",
   "tests/test_wheel_filament_license.py",
-  "tests/test_setup_cmake_args.py",
+  "tests/test_dartpy_backend.py",
+  "tests/test_verify_wheel.py",
   "tests/test_wheel_linux.py",
   "-q",
 ] }
@@ -257,6 +259,7 @@ test-gz-compat-tools = { cmd = [
   "scripts/run_pytest.py",
   "tests/test_gz_compat_compare.py",
   "tests/test_gz_bench_worlds.py",
+  "tests/test_gz_contact_surface_gate.py",
   "tests/test_gz_dart_version.py",
   "tests/test_gz_dart_api_inventory.py",
   "-q",
@@ -342,15 +345,15 @@ build-py-dev = { cmd = """
 
 dartpy = { cmd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
 
 fetch-robot-assets = { cmd = "python -m examples.demos.fetch_robot_assets", cwd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 test-robot-assets = { cmd = "python scripts/verify_robot_assets.py", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 config-py = { cmd = """
     cmake \
@@ -375,7 +378,7 @@ py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = [
   "build-py-dev",
 ], args = [
   { arg = "example", default = "hello_world" },
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 py-ex-hello-world = { depends-on = [
   { task = "py-ex", args = [
@@ -560,7 +563,7 @@ capture = { cmd = """
   { arg = "out", default = "capture.png" },
   { arg = "width", default = "640" },
   { arg = "height", default = "480" },
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PIXI_PROJECT_ROOT/python" } }
 
 # Agent-time image verification for headless captures (pair with `capture`).
 # image-verdict emits a machine-readable JSON verdict (non-blank, optional
@@ -588,7 +591,7 @@ agent-capture = { cmd = [
   "scripts/agent_capture.py",
 ], depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts:$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PIXI_PROJECT_ROOT/scripts:$PIXI_PROJECT_ROOT/python" } }
 
 # Claim-tied text/geometry and engine-rendered DebugOverlay regressions. The
 # rendered cases exercise the same Filament capture path as the viewer.
@@ -597,7 +600,7 @@ test-agent-debug-overlay = { cmd = [
   "-I",
   "scripts/run_pytest.py",
   "--pythonpath",
-  "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy",
+  "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python",
   "--pythonpath",
   "$PIXI_PROJECT_ROOT/scripts",
   "python/tests/unit/gui/test_agent_debug_overlay.py::test_contacts_layer_marks_points_and_normals",
@@ -812,7 +815,7 @@ capture = { cmd = """
   { arg = "out", default = "capture.png" },
   { arg = "width", default = "640" },
   { arg = "height", default = "480" },
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE;$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE;$PIXI_PROJECT_ROOT/python" } }
 
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
@@ -863,19 +866,19 @@ build-py-dev = { cmd = """
 
 dartpy = { cmd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
 
 perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" } }
 
 fetch-robot-assets = { cmd = "python -m examples.demos.fetch_robot_assets", cwd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" } }
 
 test-robot-assets = { cmd = "python scripts/verify_robot_assets.py", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" } }
 
 config-py = { cmd = """
     cmake \
@@ -1048,8 +1051,12 @@ patch-gz-physics = { cmd = """
   "download-gz",
 ] }
 
+# Configures twice: the common tests see DART_HAS_CONTACT_SURFACE only once the
+# dartsim plugin's include check is cached. The first pass drops the cached
+# result so a reused build re-runs the check, and -e stops on a failed pass.
+# pixi's shell has no `for`.
 config-gz = { cmd = """
-    cmake \
+    bash -ec 'for pass in 1 2; do reset=; if [ "$pass" = 1 ]; then reset=-UDART_HAS_CONTACT_SURFACE_HEADER; fi; cmake $reset \
         -G Ninja \
         -S .deps/gz-physics \
         -B .deps/gz-physics/build \
@@ -1058,7 +1065,7 @@ config-gz = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-physics/test/gtest_vendor/include \
         -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_force_vendor_gtest.cmake \
-        -DBUILD_TESTING=ON
+        -DBUILD_TESTING=ON; done'
 """, depends-on = [
   "patch-gz-physics",
   "install-dart-gz",
@@ -1073,6 +1080,7 @@ config-gz-install = { cmd = """
         -G Ninja \
         -S .deps/gz-physics \
         -B .deps/gz-physics/build-install \
+        -UDART_HAS_CONTACT_SURFACE_HEADER \
         -DCMAKE_INSTALL_PREFIX=$PWD/.deps/gz-physics/install \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -1243,10 +1251,10 @@ libjpeg-turbo = ">=3.0,<4"
 # Keep CLI output paths relative to the repository root, as for capture.
 demos = { cmd = "cd .. && python -m examples.demos", cwd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PIXI_PROJECT_ROOT/python" } }
 cycle-demos = { cmd = "cd .. && python -m examples.demos --cycle-scenes --frames 2", cwd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PIXI_PROJECT_ROOT/python" } }
 # Display-free GUI gate, which `test` leaves out: headless Filament C++ tests
 # and the dartpy GUI, tutorial and example tests. Native-window tests need a
 # window system: `ctest --test-dir build/<env>/cpp/Release -L filament-native`.
@@ -1258,7 +1266,7 @@ test-gui = { cmd = """
     && ctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -L gui \
         -LE filament-native --output-on-failure \
     && python -I scripts/run_pytest.py \
-        --pythonpath $PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy \
+        --pythonpath $PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python \
         --pythonpath $PIXI_PROJECT_ROOT/scripts \
         python/tests/unit/gui python/tests/integration -q
 """, depends-on = [
@@ -1269,10 +1277,10 @@ test-gui = { cmd = """
 # Use the Windows multi-config dartpy layout, built by build-py-dev.
 demos = { cmd = "cd .. && python -m examples.demos", cwd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE;$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE;$PIXI_PROJECT_ROOT/python" } }
 cycle-demos = { cmd = "cd .. && python -m examples.demos --cycle-scenes --frames 2", cwd = "python", depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE;$PIXI_PROJECT_ROOT/python" } }
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE;$PIXI_PROJECT_ROOT/python" } }
 test-gui = { cmd = """
     cmake \
         --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
@@ -1282,7 +1290,7 @@ test-gui = { cmd = """
     && ctest --test-dir "build/$PIXI_ENVIRONMENT_NAME/cpp" -C "$BUILD_TYPE" -L gui \
         -LE filament-native --output-on-failure \
     && python -I scripts/run_pytest.py \
-        --pythonpath "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE" \
+        --pythonpath "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" \
         --pythonpath "$PIXI_PROJECT_ROOT/scripts" \
         python/tests/unit/gui python/tests/integration -q
 """, depends-on = [
@@ -1328,136 +1336,6 @@ python = "3.14.*"
 #======================
 # Feature: Wheel Building
 #======================
-
-[feature.py310-wheel]
-channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
-
-[feature.py310-wheel.dependencies]
-python = "3.10.*"
-
-[feature.py310-wheel.target.linux-64.dependencies]
-auditwheel = ">=6.5.0,<7"
-c-compiler = ">=1.11.0,<2"
-cxx-compiler = ">=1.11.0,<2"
-patchelf = ">=0.17.2,<0.18"
-sysroot_linux-64 = "2.28.*"
-
-[feature.py310-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-linux-core", args = [
-    "cp310",
-  ] },
-] }
-
-[feature.py310-wheel.target.osx-64.dependencies]
-delocate = ">=0.12.0,<0.14"
-
-[feature.py310-wheel.target.osx-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp310",
-    "x86_64",
-  ] },
-] }
-
-[feature.py310-wheel.target.osx-arm64.dependencies]
-delocate = ">=0.12.0,<0.14"
-
-[feature.py310-wheel.target.osx-arm64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp310",
-    "arm64",
-  ] },
-] }
-
-[feature.py310-wheel.target.win-64.dependencies]
-delvewheel = ">=1.10.0,<2"
-
-[feature.py310-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-windows-core", args = [
-    "cp310",
-  ] },
-] }
-
-[feature.py310-wheel.tasks]
-wheel-verify = { depends-on = [
-  { task = "wheel-verify-core", args = [
-    "cp310",
-  ] },
-] }
-wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp310"] }] }
-
-[feature.py311-wheel]
-channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
-
-[feature.py311-wheel.dependencies]
-python = "3.11.*"
-
-[feature.py311-wheel.target.linux-64.dependencies]
-auditwheel = ">=6.5.0,<7"
-c-compiler = ">=1.11.0,<2"
-cxx-compiler = ">=1.11.0,<2"
-patchelf = ">=0.17.2,<0.18"
-sysroot_linux-64 = "2.28.*"
-
-[feature.py311-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-linux-core", args = [
-    "cp311",
-  ] },
-] }
-
-[feature.py311-wheel.target.osx-64.dependencies]
-delocate = ">=0.12.0,<0.14"
-
-[feature.py311-wheel.target.osx-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp311",
-    "x86_64",
-  ] },
-] }
-
-[feature.py311-wheel.target.osx-arm64.dependencies]
-delocate = ">=0.12.0,<0.14"
-
-[feature.py311-wheel.target.osx-arm64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp311",
-    "arm64",
-  ] },
-] }
-
-[feature.py311-wheel.target.win-64.dependencies]
-delvewheel = ">=1.10.0,<2"
-
-[feature.py311-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-windows-core", args = [
-    "cp311",
-  ] },
-] }
-
-[feature.py311-wheel.tasks]
-wheel-verify = { depends-on = [
-  { task = "wheel-verify-core", args = [
-    "cp311",
-  ] },
-] }
-wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp311"] }] }
 
 [feature.py312-wheel]
 channels = ["conda-forge"]
@@ -1531,64 +1409,8 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 [feature.py313-wheel.dependencies]
 python = "3.13.*"
 
-[feature.py313-wheel.target.linux-64.dependencies]
-auditwheel = ">=6.5.0,<7"
-c-compiler = ">=1.11.0,<2"
-cxx-compiler = ">=1.11.0,<2"
-patchelf = ">=0.17.2,<0.18"
-sysroot_linux-64 = "2.28.*"
-
-[feature.py313-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-linux-core", args = [
-    "cp313",
-  ] },
-] }
-
-[feature.py313-wheel.target.osx-64.dependencies]
-delocate = ">=0.12.0,<0.14"
-
-[feature.py313-wheel.target.osx-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp313",
-    "x86_64",
-  ] },
-] }
-
-[feature.py313-wheel.target.osx-arm64.dependencies]
-delocate = ">=0.12.0,<0.14"
-
-[feature.py313-wheel.target.osx-arm64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp313",
-    "arm64",
-  ] },
-] }
-
-[feature.py313-wheel.target.win-64.dependencies]
-delvewheel = ">=1.10.0,<2"
-
-[feature.py313-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-windows-core", args = [
-    "cp313",
-  ] },
-] }
-
 [feature.py313-wheel.tasks]
-wheel-verify = { depends-on = [
-  { task = "wheel-verify-core", args = [
-    "cp313",
-  ] },
-] }
-wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
-# Release wheels for Python 3.12+ are cp312-abi3; test one on Python 3.13.
+# Release wheels are cp312-abi3; this environment tests one on Python 3.13.
 wheel-test-abi3 = { depends-on = [
   { task = "wheel-test-core", args = [
     "cp312",
@@ -1611,8 +1433,6 @@ gazebo-jetty = { features = [
   "gz-compat-base",
   "gazebo-jetty",
 ], no-default-feature = true }
-py310-wheel = ["assimp6", "py310-wheel", "filament-wheel"]
-py311-wheel = ["assimp6", "py311-wheel", "filament-wheel"]
 py312-wheel = ["assimp6", "py312-wheel", "filament-wheel"]
 py313-wheel = ["assimp6", "py313-wheel", "filament-wheel"]
 profile = ["profile", "assimp6", "default-python", "filament"]

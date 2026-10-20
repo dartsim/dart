@@ -47,6 +47,8 @@ struct ImageData
   // Tightly packed RGBA rows, beginning at the top-left pixel.
   std::vector<std::uint8_t> rgba;
 };
+std::optional<ImageData> loadPngImage(const std::filesystem::path& path);
+std::optional<ImageData> loadJpegImage(const std::filesystem::path& path);
 std::optional<ImageData> loadBmpImage(const std::filesystem::path& path);
 std::optional<ImageData> loadTgaImage(const std::filesystem::path& path);
 std::optional<ImageData> loadPpmImage(const std::filesystem::path& path);

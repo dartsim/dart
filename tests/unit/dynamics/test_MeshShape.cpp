@@ -190,8 +190,8 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
   const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
   ASSERT_NE(scene, nullptr);
 
-  auto original = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  auto original = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever));
   const Eigen::Vector3d originalExtents
       = original->getBoundingBox().computeFullExtents();
 
@@ -238,8 +238,8 @@ TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
   const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
   ASSERT_NE(scene, nullptr);
 
-  auto mesh = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  auto mesh = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever));
   EXPECT_EQ(mesh->getMeshUri(), fileUri);
 
   // Reuse the SAME aiScene* but supply a different uri. The mesh pointer must
@@ -296,16 +296,16 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
   const aiScene* sceneWithUnits
       = dynamics::MeshShape::loadMesh(fileUri, retriever);
   ASSERT_NE(sceneWithUnits, nullptr);
-  const auto shapeWithUnits = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), sceneWithUnits);
+  const auto shapeWithUnits = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(Eigen::Vector3d::Ones(), sceneWithUnits));
   const Eigen::Vector3d extentsWithUnits
       = shapeWithUnits->getBoundingBox().computeFullExtents();
 
   const aiScene* sceneIgnoringUnits
       = loadMeshWithOverrides(fileUri, retriever, true);
   ASSERT_NE(sceneIgnoringUnits, nullptr);
-  const auto shapeIgnoringUnits = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), sceneIgnoringUnits);
+  const auto shapeIgnoringUnits = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(Eigen::Vector3d::Ones(), sceneIgnoringUnits));
   const Eigen::Vector3d extentsIgnoringUnits
       = shapeIgnoringUnits->getBoundingBox().computeFullExtents();
 
@@ -328,8 +328,8 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   const aiScene* aliasScene
       = dynamics::MeshShape::loadMesh(aliasUri, aliasRetriever);
   ASSERT_NE(aliasScene, nullptr);
-  const auto aliasShape = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), aliasScene);
+  const auto aliasShape = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(Eigen::Vector3d::Ones(), aliasScene));
   const Eigen::Vector3d aliasExtents
       = aliasShape->getBoundingBox().computeFullExtents();
 
@@ -337,8 +337,8 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   const aiScene* canonicalScene = dynamics::MeshShape::loadMesh(
       common::Uri::createFromPath(filePath).toString(), canonicalRetriever);
   ASSERT_NE(canonicalScene, nullptr);
-  const auto canonicalShape = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), canonicalScene);
+  const auto canonicalShape = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(Eigen::Vector3d::Ones(), canonicalScene));
   const Eigen::Vector3d canonicalExtents
       = canonicalShape->getBoundingBox().computeFullExtents();
 
@@ -357,8 +357,8 @@ TEST(MeshShapeTest, PolygonMeshPreservesQuadFaces)
   const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
   ASSERT_NE(scene, nullptr);
 
-  auto shape = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  auto shape = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever));
 
   const auto triMesh = shape->getTriMesh();
   ASSERT_NE(triMesh, nullptr);

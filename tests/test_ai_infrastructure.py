@@ -3108,14 +3108,17 @@ enable_testing()
 set(BUILD_TESTING ON CACHE BOOL "")
 set(DART_BUILD_DARTPY ON CACHE BOOL "")
 add_library(dartpy MODULE python/dartpy.c)
-if(WIN32)
-  set(
-    DART_PYTHONPATH
-    "$<TARGET_FILE_DIR:dartpy>\\;${CMAKE_BINARY_DIR}/python"
-  )
+get_property(dartpy_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(dartpy_multi_config)
+  set(DART_DARTPY_BUILD_DIR "${CMAKE_BINARY_DIR}/python/$<CONFIG>")
 else()
-  set(DART_PYTHONPATH "$<TARGET_FILE_DIR:dartpy>:${CMAKE_BINARY_DIR}/python")
+  set(DART_DARTPY_BUILD_DIR "${CMAKE_BINARY_DIR}/python")
 endif()
+set_target_properties(
+  dartpy
+  PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${DART_DARTPY_BUILD_DIR}/dartpy"
+)
+set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")
 add_subdirectory(tests)
 add_subdirectory(python/tests)
 set(all_target_candidates dartpy)
@@ -5211,23 +5214,14 @@ def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
     ("old", "new", "expected"),
     (
         (
-            'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")',
+            'set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/$<CONFIG>")',
             'set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy")',
-            "`DART_DARTPY_BUILD_DIR` must derive from `$<TARGET_FILE_DIR:dartpy>`",
+            "`DART_DARTPY_BUILD_DIR` must select the configuration's package root",
         ),
         (
-            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}\\\\;'
-            '${DART_PYTHON_BUILD_DIR}")',
             'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")',
-            "`DART_PYTHONPATH` must combine the target output directory and "
-            "Python build root under `if(WIN32)`",
-        ),
-        (
-            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}:'
-            '${DART_PYTHON_BUILD_DIR}")',
-            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")',
-            "`DART_PYTHONPATH` must combine the target output directory and "
-            "Python build root under the non-Windows branch",
+            'set(DART_PYTHONPATH "${DART_PYTHON_BUILD_DIR}")',
+            "`DART_PYTHONPATH` must be the configuration-aware package root",
         ),
     ),
 )
@@ -5250,19 +5244,19 @@ def test_test_gate_contract_requires_dartpy_path_before_tests(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "python/CMakeLists.txt"
     text = cmake.read_text(encoding="utf-8")
-    output = 'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")'
+    runtime_path = 'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")'
     condition = "add_subdirectory(dartpy)"
-    assert output in text and condition in text
-    text = text.replace(output, "", 1)
+    assert runtime_path in text and condition in text
+    text = text.replace(runtime_path, "", 1)
     cmake.write_text(
-        text.replace(condition, f"{output}\n{condition}", 1), encoding="utf-8"
+        text.replace(condition, f"{runtime_path}\n{condition}", 1), encoding="utf-8"
     )
     errors = []
 
     infra.check_test_gate_contract(tmp_path, errors)
 
     assert any(
-        "define `dartpy`, derive its configuration-aware output path" in error
+        "derive the configuration-aware package root, define `dartpy`" in error
         for error in errors
     )
 
