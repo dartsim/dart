@@ -908,7 +908,9 @@ def test_logging_libcpp_availability_guard(
         if prefix is None:
             monkeypatch.delenv(variable, raising=False)
         else:
-            monkeypatch.setenv(variable, str(tmp_path / prefix) if prefix else "")
+            monkeypatch.setenv(
+                variable, (tmp_path / prefix).as_posix() if prefix else ""
+            )
     source = (ROOT / "dart/CMakeLists.txt").read_text()
     end = source.index("PROPERTY COMPILE_DEFINITIONS _LIBCPP_DISABLE_AVAILABILITY")
     start = source.index("# Logging libc++ availability guard.")
