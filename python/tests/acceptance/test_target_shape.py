@@ -1327,7 +1327,6 @@ def _native_contact_box(world):
 @pytest.mark.parametrize("solver", ["DANTZIG", "PGS"])
 def test_checkpoint_contact_scene(solver):
     world = dart.simulation.World()
-    contact_box = _native_contact_box(world)
     constraint_solver = world.getConstraintSolver()
     if solver == "PGS":
         # The legacy binding cannot construct a PGS solver, but the default
@@ -1335,6 +1334,7 @@ def test_checkpoint_contact_scene(solver):
         pgs = constraint_solver.getSecondaryBoxedLcpSolver()
         constraint_solver.setSecondaryBoxedLcpSolver(constraint_solver.getBoxedLcpSolver())
         constraint_solver.setBoxedLcpSolver(pgs)
+    contact_box = _native_contact_box(world)
     expected = {"DANTZIG": "DantzigBoxedLcpSolver", "PGS": "PgsBoxedLcpSolver"}[solver]
     assert type(constraint_solver.getBoxedLcpSolver()).__name__ == expected
     # This setup gate runs without xfail, so a broken scene cannot hide behind M1c.

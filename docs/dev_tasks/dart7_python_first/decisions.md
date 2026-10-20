@@ -334,4 +334,6 @@ these decisions, one at a time:
   candidate or tag, and on request. Release branches keep editing
   `CHANGELOG.md` directly. The rule takes effect when the pull request that
   adds the fragment tooling updates the changelog guidance; until then,
-  `docs/onboarding/changelog.md` applies.
+  `docs/onboarding/changelog.md` applies. Open pull requests convert their
+  `CHANGELOG.md` hunk into a fragment during the next base merge they need
+  anyway, so the switch costs no extra pushes (2026-10-20).

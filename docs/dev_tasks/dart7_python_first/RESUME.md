@@ -101,7 +101,11 @@ pass, 3 of 44.
 
 ## Next steps
 
-1. Land the Python packets still in review (#3842 to #3845).
+1. Land the Python packets still in review (#3842 to #3845). After the
+   changelog-fragment tooling ([#3874](https://github.com/dartsim/dart/pull/3874))
+   lands, each open PR moves its `CHANGELOG.md` hunk into a `changelog.d/`
+   fragment during its next base merge, and one follow-up turns
+   [the drafts](changelog-drafts.md) into fragments.
 2. Rename the private extension from `dartpy._dartpy`, which #3847 shipped, to
    `dartpy._core` (decided 2026-10-19) in one mechanical follow-up: `NB_MODULE`
    in `python/dartpy/module.cpp`, the CMake `OUTPUT_NAME`,
