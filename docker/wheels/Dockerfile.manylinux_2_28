@@ -20,7 +20,9 @@ RUN yum install -y \
     libpng-devel
 
 # fmt
-RUN git clone --depth 1 https://github.com/fmtlib/fmt.git -b '11.1.4' \
+RUN curl -fsSL https://github.com/fmtlib/fmt/archive/refs/tags/11.1.4.tar.gz -o fmt.tar.gz \
+    && echo "ac366b7b4c2e9f0dde63a59b3feb5ee59b67974b14ee5dc9ea8ad78aa2c1ee1e  fmt.tar.gz" | sha256sum -c - \
+    && mkdir fmt && tar -xf fmt.tar.gz -C fmt --strip-components=1 \
     && mkdir -p fmt/build \
     && cmake fmt -B fmt/build \
     -DCMAKE_BUILD_TYPE=Release \
@@ -29,107 +31,135 @@ RUN git clone --depth 1 https://github.com/fmtlib/fmt.git -b '11.1.4' \
     -DCMAKE_C_FLAGS="-fPIC" \
     -DCMAKE_CXX_FLAGS="-fPIC" \
     && cmake --build fmt/build --target install -j${NUM_CORES} \
-    && rm -rf fmt
+    && rm -rf fmt fmt.tar.gz
 
 # assimp
-RUN git clone --depth 1 https://github.com/assimp/assimp.git -b 'v6.0.5' \
+RUN curl -fsSL https://github.com/assimp/assimp/archive/refs/tags/v6.0.5.tar.gz -o assimp.tar.gz \
+    && echo "edf3749559c2b7d1f758ffb66fc5bec62186221e623b7f2e8969f17ee46ecb6f  assimp.tar.gz" | sha256sum -c - \
+    && mkdir assimp && tar -xf assimp.tar.gz -C assimp --strip-components=1 \
     && mkdir -p assimp/build \
     && cmake assimp -B assimp/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DASSIMP_BUILD_TESTS=OFF -DASSIMP_WARNINGS_AS_ERRORS=OFF \
     && cmake --build assimp/build --target install -j${NUM_CORES} \
-    && rm -rf assimp
+    && rm -rf assimp assimp.tar.gz
 
 # eigen
-RUN git clone --depth 1 https://gitlab.com/libeigen/eigen.git -b '3.4.0' \
+RUN curl -fsSL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen.tar.gz \
+    && echo "8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72  eigen.tar.gz" | sha256sum -c - \
+    && mkdir eigen && tar -xf eigen.tar.gz -C eigen --strip-components=1 \
     && mkdir -p eigen/build \
     && cmake eigen -B eigen/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DEIGEN_BUILD_TESTING=OFF -DEIGEN_BUILD_DOC=OFF \
     && cmake --build eigen/build --target install -j${NUM_CORES} \
-    && rm -rf eigen
+    && rm -rf eigen eigen.tar.gz
 
 # octomap
-RUN git clone --depth 1 https://github.com/OctoMap/octomap.git -b 'v1.10.0' \
+RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.0.tar.gz -o octomap.tar.gz \
+    && echo "8da2576ec6a0993e8900db7f91083be8682d8397a7be0752c85d1b7dd1b8e992  octomap.tar.gz" | sha256sum -c - \
+    && mkdir octomap && tar -xf octomap.tar.gz -C octomap --strip-components=1 \
     && mkdir -p octomap/build \
     && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF -DBUILD_TESTING=OFF \
     && cmake --build octomap/build --target install -j${NUM_CORES} \
-    && rm -rf octomap
+    && rm -rf octomap octomap.tar.gz
 
 # libccd
-RUN git clone --depth 1 https://github.com/danfis/libccd.git -b 'v2.1' \
+RUN curl -fsSL https://github.com/danfis/libccd/archive/refs/tags/v2.1.tar.gz -o libccd.tar.gz \
+    && echo "542b6c47f522d581fbf39e51df32c7d1256ac0c626e7c2b41f1040d4b9d50d1e  libccd.tar.gz" | sha256sum -c - \
+    && mkdir libccd && tar -xf libccd.tar.gz -C libccd --strip-components=1 \
     && mkdir -p libccd/build \
     && cmake libccd -B libccd/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF -DENABLE_DOUBLE_PRECISION=ON \
     && cmake --build libccd/build --target install -j${NUM_CORES} \
-    && rm -rf libccd
+    && rm -rf libccd libccd.tar.gz
 
 # fcl
-RUN git clone --depth 1 https://github.com/flexible-collision-library/fcl.git -b '0.7.0' \
+RUN curl -fsSL https://github.com/flexible-collision-library/fcl/archive/refs/tags/0.7.0.tar.gz -o fcl.tar.gz \
+    && echo "90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc  fcl.tar.gz" | sha256sum -c - \
+    && mkdir fcl && tar -xf fcl.tar.gz -C fcl --strip-components=1 \
     && mkdir -p fcl/build \
     && cmake fcl -B fcl/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build fcl/build --target install -j${NUM_CORES} \
-    && rm -rf fcl
+    && rm -rf fcl fcl.tar.gz
 
 # tinyxml2
-RUN git clone --depth 1 https://github.com/leethomason/tinyxml2.git -b '11.0.0' \
+RUN curl -fsSL https://github.com/leethomason/tinyxml2/archive/refs/tags/11.0.0.tar.gz -o tinyxml2.tar.gz \
+    && echo "5556deb5081fb246ee92afae73efd943c889cef0cafea92b0b82422d6a18f289  tinyxml2.tar.gz" | sha256sum -c - \
+    && mkdir tinyxml2 && tar -xf tinyxml2.tar.gz -C tinyxml2 --strip-components=1 \
     && mkdir -p tinyxml2/build \
     && cmake tinyxml2 -B tinyxml2/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dtinyxml2_BUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     && cmake --build tinyxml2/build --target install -j${NUM_CORES} \
-    && rm -rf tinyxml2
+    && rm -rf tinyxml2 tinyxml2.tar.gz
 
 # console_bridge
-RUN git clone --depth 1 https://github.com/ros/console_bridge.git -b '1.0.2' \
+RUN curl -fsSL https://github.com/ros/console_bridge/archive/refs/tags/1.0.2.tar.gz -o console_bridge.tar.gz \
+    && echo "303a619c01a9e14a3c82eb9762b8a428ef5311a6d46353872ab9a904358be4a4  console_bridge.tar.gz" | sha256sum -c - \
+    && mkdir console_bridge && tar -xf console_bridge.tar.gz -C console_bridge --strip-components=1 \
     && mkdir -p console_bridge/build \
     && cmake console_bridge -B console_bridge/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build console_bridge/build --target install -j${NUM_CORES} \
-    && rm -rf console_bridge
+    && rm -rf console_bridge console_bridge.tar.gz
 
 # urdfdom_headers
-RUN git clone --depth 1 https://github.com/ros/urdfdom_headers.git -b '1.1.1' \
+RUN curl -fsSL https://github.com/ros/urdfdom_headers/archive/refs/tags/1.1.1.tar.gz -o urdfdom_headers.tar.gz \
+    && echo "b2ee5bffa51eea4958f64479b4fa273881d82a3bfa1d98686a16f8d8ca6c2350  urdfdom_headers.tar.gz" | sha256sum -c - \
+    && mkdir urdfdom_headers && tar -xf urdfdom_headers.tar.gz -C urdfdom_headers --strip-components=1 \
     && mkdir -p urdfdom_headers/build \
     && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom_headers/build --target install -j${NUM_CORES} \
-    && rm -rf urdfdom_headers
+    && rm -rf urdfdom_headers urdfdom_headers.tar.gz
 
 # urdfdom
-RUN git clone --depth 1 https://github.com/ros/urdfdom.git -b '4.0.1' \
+RUN curl -fsSL https://github.com/ros/urdfdom/archive/refs/tags/4.0.1.tar.gz -o urdfdom.tar.gz \
+    && echo "46b122c922f44ec32674a56e16fd4b5d068b53265898cbea2c3e1939ecccc62a  urdfdom.tar.gz" | sha256sum -c - \
+    && mkdir urdfdom && tar -xf urdfdom.tar.gz -C urdfdom --strip-components=1 \
     && mkdir -p urdfdom/build \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build urdfdom/build --target install -j${NUM_CORES} \
-    && rm -rf urdfdom
+    && rm -rf urdfdom urdfdom.tar.gz
 
 # sdformat embeds its schemas and conversion recipes in the library.
 # gz-cmake
-RUN git clone --depth 1 https://github.com/gazebosim/gz-cmake.git -b 'gz-cmake4_4.2.0' \
+RUN curl -fsSL https://github.com/gazebosim/gz-cmake/archive/refs/tags/gz-cmake4_4.2.0.tar.gz -o gz-cmake.tar.gz \
+    && echo "62deb00527ea91a5467cfb352189d10303e6508b8d5e52cd6f999bf5a8166cc4  gz-cmake.tar.gz" | sha256sum -c - \
+    && mkdir gz-cmake && tar -xf gz-cmake.tar.gz -C gz-cmake --strip-components=1 \
     && cmake gz-cmake -B gz-cmake/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF \
     && cmake --build gz-cmake/build --target install -j${NUM_CORES} \
-    && rm -rf gz-cmake
+    && rm -rf gz-cmake gz-cmake.tar.gz
 
 # gz-utils
-RUN git clone --depth 1 https://github.com/gazebosim/gz-utils.git -b 'gz-utils3_3.1.1' \
+RUN curl -fsSL https://github.com/gazebosim/gz-utils/archive/refs/tags/gz-utils3_3.1.1.tar.gz -o gz-utils.tar.gz \
+    && echo "e3cf80c00454c964d61948d13e79a790cfa14b82fbb0c76fbd8170105fb28761  gz-utils.tar.gz" | sha256sum -c - \
+    && mkdir gz-utils && tar -xf gz-utils.tar.gz -C gz-utils --strip-components=1 \
     && cmake gz-utils -B gz-utils/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_log=ON \
     && cmake --build gz-utils/build --target install -j${NUM_CORES} \
-    && rm -rf gz-utils
+    && rm -rf gz-utils gz-utils.tar.gz
 
 # gz-math
-RUN git clone --depth 1 https://github.com/gazebosim/gz-math.git -b 'gz-math8_8.4.0' \
+RUN curl -fsSL https://github.com/gazebosim/gz-math/archive/refs/tags/gz-math8_8.4.0.tar.gz -o gz-math.tar.gz \
+    && echo "36002123cd6383bf70309f744571a1d70c699d2c0af16446d4f81f4e20623736  gz-math.tar.gz" | sha256sum -c - \
+    && mkdir gz-math && tar -xf gz-math.tar.gz -C gz-math --strip-components=1 \
     && cmake gz-math -B gz-math/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_SWIG=ON -DSKIP_PYBIND11=ON \
     && cmake --build gz-math/build --target install -j${NUM_CORES} \
-    && rm -rf gz-math
+    && rm -rf gz-math gz-math.tar.gz
 
 # sdformat
-RUN git clone --depth 1 https://github.com/gazebosim/sdformat.git -b 'sdformat15_15.3.0' \
+RUN curl -fsSL https://github.com/gazebosim/sdformat/archive/refs/tags/sdformat15_15.3.0.tar.gz -o sdformat.tar.gz \
+    && echo "b187da7a21a6e0f5e2a45f6b4026a1a69fd39e3f50de26f028313595a1c10cfd  sdformat.tar.gz" | sha256sum -c - \
+    && mkdir sdformat && tar -xf sdformat.tar.gz -C sdformat --strip-components=1 \
     && PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig \
     cmake sdformat -B sdformat/build -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DSKIP_PYBIND11=ON -DUSE_INTERNAL_URDF=OFF \
     && cmake --build sdformat/build --target install -j${NUM_CORES} \
-    && rm -rf sdformat
+    && rm -rf sdformat sdformat.tar.gz
 
 # Bullet
-RUN git clone --depth 1 https://github.com/bulletphysics/bullet3.git -b '3.25' \
+RUN curl -fsSL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz -o bullet3.tar.gz \
+    && echo "c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77  bullet3.tar.gz" | sha256sum -c - \
+    && mkdir bullet3 && tar -xf bullet3.tar.gz -C bullet3 --strip-components=1 \
     && mkdir -p bullet3/build \
     && cmake bullet3 \
     -B bullet3/build \
@@ -142,10 +172,12 @@ RUN git clone --depth 1 https://github.com/bulletphysics/bullet3.git -b '3.25' \
     -DCMAKE_C_FLAGS="-fPIC" \
     -DCMAKE_CXX_FLAGS="-fPIC" \
     && cmake --build bullet3/build --target install -j${NUM_CORES} \
-    && rm -rf bullet3
+    && rm -rf bullet3 bullet3.tar.gz
 
 # GLFW for the Filament GUI; keep only the X11 backend and PIC for dartpy.
-RUN git clone --depth 1 https://github.com/glfw/glfw.git -b '3.4' \
+RUN curl -fsSL https://github.com/glfw/glfw/archive/refs/tags/3.4.tar.gz -o glfw.tar.gz \
+    && echo "c038d34200234d071fae9345bc455e4a8f2f544ab60150765d7704e08f3dac01  glfw.tar.gz" | sha256sum -c - \
+    && mkdir glfw && tar -xf glfw.tar.gz -C glfw --strip-components=1 \
     && cmake glfw -B glfw/build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -155,14 +187,16 @@ RUN git clone --depth 1 https://github.com/glfw/glfw.git -b '3.4' \
     -DGLFW_BUILD_X11=ON -DGLFW_BUILD_WAYLAND=OFF \
     -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF \
     && cmake --build glfw/build --target install -j${NUM_CORES} \
-    && rm -rf glfw
+    && rm -rf glfw glfw.tar.gz
 
 # Match the existing external fmt configuration.
-RUN git clone --depth 1 https://github.com/gabime/spdlog.git -b v1.15.3 \
+RUN curl -fsSL https://github.com/gabime/spdlog/archive/refs/tags/v1.15.3.tar.gz -o spdlog.tar.gz \
+    && echo "15a04e69c222eb6c01094b5c7ff8a249b36bb22788d72519646fb85feb267e67  spdlog.tar.gz" | sha256sum -c - \
+    && mkdir spdlog && tar -xf spdlog.tar.gz -C spdlog --strip-components=1 \
     && cmake spdlog -B spdlog/build -DCMAKE_BUILD_TYPE=Release \
     -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_TESTS=OFF \
     && cmake --build spdlog/build --target install -j${NUM_CORES} \
-    && rm -rf spdlog
+    && rm -rf spdlog spdlog.tar.gz
 
 # Match DART's source-build ODE settings and retain the ODE collision bindings.
 RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o ode.tar.gz \
