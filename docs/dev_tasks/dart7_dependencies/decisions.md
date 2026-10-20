@@ -283,7 +283,13 @@ The maintainer answers these one question at a time.
   Still asked every time: marking a PR ready for review, merging,
   backports, anything outside this plan, and replies to review comments.
 
-## Second decision batch (2026-10-19, answered one by one in DD-10 to DD-33)
+- **DD-34. The standing approval covers ready PRs for merges and fixes.**
+  DD-33 extends to this plan's PRs that the maintainer marked ready, for
+  merging `main`, resolving conflicts and fixing CI only, with no other
+  content changes; each push follows lint, the local-path check and the
+  relevant tests.
+
+## Second decision batch (2026-10-19, answered one by one in DD-10 to DD-34)
 
 The balance review under DD-9 ([balance-review.md](balance-review.md)) asks
 five questions and lists the approvals its packet plan needs. The
