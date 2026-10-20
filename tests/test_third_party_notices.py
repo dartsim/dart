@@ -219,7 +219,9 @@ def test_notice_globs_match_tracked_paths(paths):
     ],
 )
 def test_sample_model_license_matches_upstream(path, sha256):
-    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == sha256
+    # Windows checkouts may convert the upstream LF line endings to CRLF.
+    text = (ROOT / path).read_bytes().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(text).hexdigest() == sha256
 
 
 def test_wam_distributes_only_bsd_meshes():
