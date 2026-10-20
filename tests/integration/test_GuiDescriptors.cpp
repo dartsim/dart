@@ -70,7 +70,11 @@
 #include <assimp/scene.h>
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
 #include <filesystem>
+#include <fstream>
+#include <string>
 
 namespace {
 using namespace dart;
@@ -740,6 +744,49 @@ TEST(GuiDescriptors, OverlayStylesWorldAndScreenLabelsAndGridPlanes)
   detail::collectDebugScene({overlay, grid}, scene);
   EXPECT_TRUE(scene.lines.empty());
   EXPECT_TRUE(scene.labels.empty());
+}
+
+struct EmptyFontFile
+{
+  std::filesystem::path path;
+  EmptyFontFile()
+  {
+    static std::atomic<unsigned> sequence{0};
+    const auto now
+        = std::chrono::steady_clock::now().time_since_epoch().count();
+    path = std::filesystem::temp_directory_path()
+           / ("dart-empty-overlay-font-" + std::to_string(now) + "-"
+              + std::to_string(sequence++) + ".ttf");
+    std::ofstream font(path, std::ios::binary | std::ios::trunc);
+  }
+  ~EmptyFontFile()
+  {
+    std::error_code error;
+    std::filesystem::remove(path, error);
+  }
+};
+
+TEST(GuiDescriptors, OverlayEmptyFontFileThrowsBeforeImGui)
+{
+  const EmptyFontFile fontFile;
+  const auto& fontPath = fontFile.path;
+  ASSERT_TRUE(std::filesystem::is_regular_file(fontPath));
+  ASSERT_EQ(std::filesystem::file_size(fontPath), 0u);
+  auto overlay = std::make_shared<DebugOverlay>();
+  overlay->setFont(fontPath.string());
+  overlay->addLabel(
+      Eigen::Vector3d::UnitZ(), "empty font", Eigen::Vector4d::Ones());
+  DebugScene scene;
+  detail::collectDebugScene({overlay}, scene);
+  detail::OverlayRenderer renderer;
+  try {
+    renderer.prepareFonts(scene);
+    FAIL() << "prepareFonts accepted a zero-byte font file";
+  } catch (const std::runtime_error& e) {
+    EXPECT_EQ(
+        std::string(e.what()),
+        "Cannot load overlay font: " + fontPath.string());
+  }
 }
 
 TEST(GuiDescriptors, DepthTestedPixelWidthLinesPreservePerspectiveWidth)

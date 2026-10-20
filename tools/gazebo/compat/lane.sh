@@ -231,9 +231,17 @@ step_gz_physics() {
   # The common tests only get the dartsim plugin's DART_HAS_CONTACT_SURFACE
   # definition once its include check is cached, so a single configure drops
   # their contact-callback expectations. Configure twice so they always run.
+  # The first pass drops the cached result, so a reused build directory
+  # re-runs the check against the DART that was just installed.
   local pass
+  local reset_probe
   for pass in 1 2; do
+    reset_probe=()
+    if [ "$pass" = 1 ]; then
+      reset_probe=(-UDART_HAS_CONTACT_SURFACE_HEADER)
+    fi
     gz_build_env configure "$gz_physics_build" -S "$src_dir/gz-physics" \
+      ${reset_probe[@]+"${reset_probe[@]}"} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX="$gz_physics_prefix" \
       -DCMAKE_PREFIX_PATH="$dart_prefix;$CONDA_PREFIX" \
@@ -242,6 +250,7 @@ step_gz_physics() {
       -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING="$gz_top_level_includes" \
       -DBUILD_TESTING=ON > /dev/null
   done
+  bash "$repo_root/scripts/check_gz_contact_surface.sh" "$gz_physics_build"
   gz_build_env cmake --build "$gz_physics_build" --parallel "$jobs"
   gz_build_env cmake --build "$gz_physics_build" --parallel "$jobs" --target install
 }
