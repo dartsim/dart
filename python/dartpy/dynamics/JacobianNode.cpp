@@ -2,6 +2,7 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include "detail/frame.hpp"
 #include "detail/secondary_methods.hpp"
 
 #include <nanobind/stl/vector.h>
@@ -125,7 +126,7 @@ void defJacobianNodeMethods(Cls& cls)
               -> dart::math::Jacobian {
             return self->getJacobian(_inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
@@ -142,7 +143,7 @@ void defJacobianNodeMethods(Cls& cls)
             return self->getJacobian(_offset, _inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::JacobianNode* self,
@@ -161,7 +162,8 @@ void defJacobianNodeMethods(Cls& cls)
           +[](const dart::dynamics::JacobianNode* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobian(_inCoordinatesOf);
+            return self->getLinearJacobian(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -177,7 +179,8 @@ void defJacobianNodeMethods(Cls& cls)
               const Eigen::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobian(_offset, _inCoordinatesOf);
+            return self->getLinearJacobian(
+                _offset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("inCoordinatesOf").none())
@@ -192,7 +195,8 @@ void defJacobianNodeMethods(Cls& cls)
           +[](const dart::dynamics::JacobianNode* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
-            return self->getAngularJacobian(_inCoordinatesOf);
+            return self->getAngularJacobian(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -202,7 +206,7 @@ void defJacobianNodeMethods(Cls& cls)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -219,7 +223,7 @@ void defJacobianNodeMethods(Cls& cls)
             return self->getJacobianSpatialDeriv(_offset, _inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -227,7 +231,7 @@ void defJacobianNodeMethods(Cls& cls)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -241,7 +245,8 @@ void defJacobianNodeMethods(Cls& cls)
               const Eigen::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
-            return self->getJacobianClassicDeriv(_offset, _inCoordinatesOf);
+            return self->getJacobianClassicDeriv(
+                _offset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("inCoordinatesOf").none())
@@ -256,7 +261,8 @@ void defJacobianNodeMethods(Cls& cls)
           +[](const dart::dynamics::JacobianNode* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobianDeriv(_inCoordinatesOf);
+            return self->getLinearJacobianDeriv(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -272,7 +278,8 @@ void defJacobianNodeMethods(Cls& cls)
               const Eigen::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobianDeriv(_offset, _inCoordinatesOf);
+            return self->getLinearJacobianDeriv(
+                _offset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("inCoordinatesOf").none())
@@ -287,7 +294,8 @@ void defJacobianNodeMethods(Cls& cls)
           +[](const dart::dynamics::JacobianNode* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
-            return self->getAngularJacobianDeriv(_inCoordinatesOf);
+            return self->getAngularJacobianDeriv(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(

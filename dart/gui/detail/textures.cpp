@@ -39,14 +39,6 @@
 #include <filament/MaterialInstance.h>
 #include <filament/Texture.h>
 #include <filament/TextureSampler.h>
-#include <jpeglib.h>
-#include <png.h>
-
-#if defined(DART_GUI_FILAMENT_JPEG_LIB_VERSION)
-static_assert(
-    JPEG_LIB_VERSION == DART_GUI_FILAMENT_JPEG_LIB_VERSION,
-    "Configured JPEG headers do not match the jpeglib.h include path");
-#endif
 
 #include <algorithm>
 #include <array>
@@ -59,10 +51,7 @@ static_assert(
 #include <vector>
 
 #include <cctype>
-#include <csetjmp>
 #include <cstdint>
-#include <cstdio>
-#include <cstring>
 
 namespace dart::gui::detail {
 namespace {
@@ -113,139 +102,6 @@ std::filesystem::path texturePathFromUriOrPath(std::string_view source)
     return std::filesystem::path(std::string(source.substr(filePrefix.size())));
   }
   return std::filesystem::path(std::string(source));
-}
-
-std::optional<ImageData> loadPngImage(const std::filesystem::path& path)
-{
-  png_image image;
-  std::memset(&image, 0, sizeof(image));
-  image.version = PNG_IMAGE_VERSION;
-
-  if (!png_image_begin_read_from_file(&image, path.string().c_str())) {
-    std::cerr << "Failed to read PNG texture header: " << path.string() << " ("
-              << image.message << ")\n";
-    return std::nullopt;
-  }
-
-  ImageData output;
-  output.hasAlpha = (image.format & PNG_FORMAT_FLAG_ALPHA) != 0;
-  image.format = PNG_FORMAT_RGBA;
-  output.width = image.width;
-  output.height = image.height;
-  output.rgba.resize(PNG_IMAGE_SIZE(image));
-
-  if (!png_image_finish_read(&image, nullptr, output.rgba.data(), 0, nullptr)) {
-    std::cerr << "Failed to read PNG texture: " << path.string() << " ("
-              << image.message << ")\n";
-    png_image_free(&image);
-    return std::nullopt;
-  }
-
-  return output;
-}
-
-struct JpegErrorManager
-{
-  jpeg_error_mgr base;
-  jmp_buf jumpBuffer;
-  char message[JMSG_LENGTH_MAX]{};
-};
-
-void handleJpegError(j_common_ptr cinfo)
-{
-  auto* error = reinterpret_cast<JpegErrorManager*>(cinfo->err);
-  (*cinfo->err->format_message)(cinfo, error->message);
-  longjmp(error->jumpBuffer, 1);
-}
-
-// Mutable decoder state and vectors stay in the caller's frame across longjmp.
-bool decodeJpegImage(
-    FILE* file,
-    jpeg_decompress_struct& info,
-    JpegErrorManager& error,
-    ImageData& output,
-    std::vector<std::uint8_t>& row)
-{
-  if (setjmp(error.jumpBuffer))
-    return false;
-
-  jpeg_create_decompress(&info);
-  jpeg_stdio_src(&info, file);
-  jpeg_read_header(&info, TRUE);
-  const bool cmyk
-      = info.jpeg_color_space == JCS_CMYK || info.jpeg_color_space == JCS_YCCK;
-  info.out_color_space = cmyk ? JCS_CMYK : JCS_RGB;
-  jpeg_start_decompress(&info);
-
-  output.width = info.output_width;
-  output.height = info.output_height;
-  output.rgba.resize(
-      static_cast<std::size_t>(output.width) * output.height * 4u);
-
-  const std::size_t rowStride
-      = static_cast<std::size_t>(info.output_width) * info.output_components;
-  row.resize(rowStride);
-  while (info.output_scanline < info.output_height) {
-    JSAMPROW rowPtr = row.data();
-    const std::uint32_t y = info.output_scanline;
-    jpeg_read_scanlines(&info, &rowPtr, 1);
-
-    for (std::uint32_t x = 0; x < output.width; ++x) {
-      const auto* source
-          = &row[static_cast<std::size_t>(x) * info.output_components];
-      auto* target
-          = &output.rgba[(static_cast<std::size_t>(y) * output.width + x) * 4u];
-      if (cmyk) {
-        for (int channel = 0; channel < 3; ++channel) {
-          target[channel]
-              = info.saw_Adobe_marker
-                    ? static_cast<std::uint8_t>(
-                        source[channel] * source[3] / 255)
-                    : static_cast<std::uint8_t>(
-                        (255 - source[channel]) * (255 - source[3]) / 255);
-        }
-        target[3] = 255;
-      } else if (info.output_components == 1) {
-        target[0] = source[0];
-        target[1] = source[0];
-        target[2] = source[0];
-        target[3] = 255;
-      } else {
-        target[0] = source[0];
-        target[1] = source[1];
-        target[2] = source[2];
-        target[3] = info.output_components >= 4 ? source[3] : 255;
-      }
-    }
-  }
-
-  jpeg_finish_decompress(&info);
-  return true;
-}
-
-std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
-{
-  FILE* file = std::fopen(path.string().c_str(), "rb");
-  if (file == nullptr) {
-    std::cerr << "Failed to open JPEG texture: " << path.string() << "\n";
-    return std::nullopt;
-  }
-
-  jpeg_decompress_struct info{};
-  JpegErrorManager error;
-  info.err = jpeg_std_error(&error.base);
-  error.base.error_exit = handleJpegError;
-  ImageData output;
-  std::vector<std::uint8_t> row;
-  const bool success = decodeJpegImage(file, info, error, output, row);
-  jpeg_destroy_decompress(&info);
-  std::fclose(file);
-  if (!success) {
-    std::cerr << "Failed to read JPEG texture: " << path.string() << " ("
-              << error.message << ")\n";
-    return std::nullopt;
-  }
-  return output;
 }
 
 std::optional<ImageData> loadTextureImage(const std::string& source)

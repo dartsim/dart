@@ -1,5 +1,6 @@
 """Exercise DART's installed dependency finders with isolated CMake packages."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -699,6 +700,59 @@ def test_filament_changed_root_invalidates_cached_package_directory(tmp_path):
         'if(Filament_FOUND)\nmessage(FATAL_ERROR "Kept the previous SDK")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.skipif(os.name != "posix", reason="fake matc is a POSIX shell script")
+@pytest.mark.parametrize(
+    "material_version,accepted", [("77", True), ("76", False), ("78", False)]
+)
+def test_filament_system_sdk_requires_pinned_material_version(
+    tmp_path, material_version, accepted
+):
+    # The SDK exposes no release version, so the provider enforces the 1.77.3
+    # pin through the material format version that upstream bumps each minor
+    # release. Stub the unrelated GUI dependencies to isolate that check.
+    sdk = tmp_path / "filament-sdk"
+    (sdk / "include" / "filament").mkdir(parents=True)
+    (sdk / "include" / "filament" / "Engine.h").touch()
+    (sdk / "include" / "filament" / "MaterialEnums.h").write_text(
+        f"static constexpr size_t MATERIAL_VERSION = {material_version};\n"
+    )
+    lib = sdk / "lib"
+    lib.mkdir()
+    for name in ("filament", "backend", "filabridge", "filaflat", "utils", "geometry"):
+        (lib / f"lib{name}.a").touch()
+    matc = sdk / "bin" / "matc"
+    matc.parent.mkdir()
+    matc.write_text(f"#!/bin/sh\necho {material_version}\n")
+    matc.chmod(0o755)
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindPNG.cmake").write_text("set(PNG_FOUND TRUE)\n")
+    (modules / "FindJPEG.cmake").write_text("set(JPEG_FOUND TRUE)\n")
+    (modules / "FindThreads.cmake").write_text(
+        "set(Threads_FOUND TRUE)\nadd_library(Threads::Threads INTERFACE IMPORTED)\n"
+    )
+    (modules / "DARTFilamentNotices.cmake").write_text(
+        "function(dart_filament_stage_notices prefix)\nendfunction()\n"
+    )
+    config_package(tmp_path, "glfw3", "3.4.0", "glfw")
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_FILAMENT ON)\n"
+        f'set(Filament_ROOT "{sdk.as_posix()}")\n'
+        "include(DARTFilamentProvider)\n",
+    )
+    output = result.stdout + result.stderr
+    if accepted:
+        assert result.returncode == 0, output
+    else:
+        # CMake wraps long diagnostics, so match against flattened output.
+        flat = " ".join(output.split())
+        assert result.returncode != 0
+        assert f"material version {material_version}" in flat
+        assert "Filament 1.77.3" in flat
+        assert "DART_USE_SYSTEM_FILAMENT=OFF" in flat
 
 
 @pytest.mark.parametrize(

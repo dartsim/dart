@@ -28,14 +28,13 @@ matching version tags.
    * - Platform
      - CPython wheels built by this branch
    * - Linux x86_64 and aarch64
-     - One ``cp312-abi3`` wheel for 3.12 and newer on every wheel run; 3.10
-       and 3.11 on release branch and tag builds
+     - One ``cp312-abi3`` wheel for 3.12 and newer
    * - macOS arm64
      - One ``cp312-abi3`` wheel for 3.12 and newer
    * - Windows x86_64
      - One ``cp312-abi3`` wheel for 3.12 and newer
    * - Other Python versions or platforms
-     - Build from source with Python 3.10 or newer, or use conda-forge/Pixi when
+     - Build from source with Python 3.12 or newer, or use conda-forge/Pixi when
        packages are available there
 
 The source-build platform requirements in the
@@ -49,13 +48,14 @@ Python 3.12, 3.13, and later releases.
 Building from source
 --------------------
 
-The DART 6.20 ``setup.py`` package requires Python 3.10 or newer and NumPy
-1.21.5 or newer. Building the bindings locally requires a matching C++
-toolchain, CMake, Ninja, and the DART dependencies described in the
+The package requires Python 3.12 or newer and NumPy 1.21.5 or newer.
+``pip install .`` builds it with scikit-build-core (``pyproject.toml``), which
+requires a matching C++ toolchain, CMake 3.26 or newer, Ninja, and the DART
+dependencies described in the
 :doc:`DART build guide </dart/developer_guide/build>`. Isolated ``pip`` builds
-use the newer tool requirements from ``pyproject.toml``.
+install the tool requirements from ``pyproject.toml``.
 
-dartpy always includes ``dartpy.gui``. ``setup.py`` builds it against DART's
+dartpy always includes ``dartpy.gui``. The wheel build uses DART's
 pinned private Filament SDK on Linux, macOS arm64, and 64-bit Windows.
 Configuring downloads that SDK; on Linux it is compiled from source, which also
 needs Clang 20 or newer. Other platforms need an installed Filament 1.77.3 SDK,

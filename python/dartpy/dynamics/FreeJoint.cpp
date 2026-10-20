@@ -2,6 +2,12 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include "detail/frame.hpp"
+
+#include <nanobind/stl/optional.h>
+
+#include <optional>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -93,21 +99,51 @@ void FreeJoint(nb::module_& m)
       .def(
           "setSpatialMotion",
           +[](dart::dynamics::FreeJoint* self,
-              const Eigen::Isometry3d* newTransform,
+              const std::optional<Eigen::Isometry3d>& newTransform,
               const dart::dynamics::Frame* withRespectTo,
-              const Eigen::Vector6d* newSpatialVelocity,
+              const std::optional<Eigen::Vector6d>& newSpatialVelocity,
               const dart::dynamics::Frame* velRelativeTo,
               const dart::dynamics::Frame* velInCoordinatesOf,
-              const Eigen::Vector6d* newSpatialAcceleration,
+              const std::optional<Eigen::Vector6d>& newSpatialAcceleration,
               const dart::dynamics::Frame* accRelativeTo,
               const dart::dynamics::Frame* accInCoordinatesOf) {
-            self->setSpatialMotion(
-                newTransform,
+            // C++ ignores the frames of a motion that is not set, so None is
+            // accepted for them; a motion that is set needs its frames.
+            const auto require = [](bool motionSet,
+                                    const dart::dynamics::Frame* frame,
+                                    const char* message) {
+              if (motionSet && !frame)
+                throw nb::type_error(message);
+            };
+            require(
+                newTransform.has_value(),
                 withRespectTo,
-                newSpatialVelocity,
+                "withRespectTo is required when newTransform is set");
+            require(
+                newSpatialVelocity.has_value(),
+                velRelativeTo,
+                "velRelativeTo is required when newSpatialVelocity is set");
+            require(
+                newSpatialVelocity.has_value(),
+                velInCoordinatesOf,
+                "velInCoordinatesOf is required when newSpatialVelocity is "
+                "set");
+            require(
+                newSpatialAcceleration.has_value(),
+                accRelativeTo,
+                "accRelativeTo is required when newSpatialAcceleration is set");
+            require(
+                newSpatialAcceleration.has_value(),
+                accInCoordinatesOf,
+                "accInCoordinatesOf is required when newSpatialAcceleration "
+                "is set");
+            self->setSpatialMotion(
+                newTransform ? &*newTransform : nullptr,
+                withRespectTo,
+                newSpatialVelocity ? &*newSpatialVelocity : nullptr,
                 velRelativeTo,
                 velInCoordinatesOf,
-                newSpatialAcceleration,
+                newSpatialAcceleration ? &*newSpatialAcceleration : nullptr,
                 accRelativeTo,
                 accInCoordinatesOf);
           },
@@ -138,7 +174,8 @@ void FreeJoint(nb::module_& m)
           +[](dart::dynamics::FreeJoint* self,
               const Eigen::Isometry3d& newTransform,
               const dart::dynamics::Frame* withRespectTo) {
-            self->setTransform(newTransform, withRespectTo);
+            self->setTransform(
+                newTransform, dartnb::frameOrWorld(withRespectTo));
           },
           nb::arg("newTransform"),
           nb::arg("withRespectTo").none())
@@ -158,7 +195,7 @@ void FreeJoint(nb::module_& m)
                 newSpatialVelocity, inCoordinatesOf);
           },
           nb::arg("newSpatialVelocity"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "setSpatialVelocity",
           +[](dart::dynamics::FreeJoint* self,
@@ -169,8 +206,8 @@ void FreeJoint(nb::module_& m)
                 newSpatialVelocity, relativeTo, inCoordinatesOf);
           },
           nb::arg("newSpatialVelocity"),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "setLinearVelocity",
           +[](dart::dynamics::FreeJoint* self,
@@ -183,7 +220,8 @@ void FreeJoint(nb::module_& m)
           +[](dart::dynamics::FreeJoint* self,
               const Eigen::Vector3d& newLinearVelocity,
               const dart::dynamics::Frame* relativeTo) {
-            self->setLinearVelocity(newLinearVelocity, relativeTo);
+            self->setLinearVelocity(
+                newLinearVelocity, dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("newLinearVelocity"),
           nb::arg("relativeTo").none())
@@ -194,7 +232,9 @@ void FreeJoint(nb::module_& m)
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) {
             self->setLinearVelocity(
-                newLinearVelocity, relativeTo, inCoordinatesOf);
+                newLinearVelocity,
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("newLinearVelocity"),
           nb::arg("relativeTo").none(),
@@ -211,7 +251,8 @@ void FreeJoint(nb::module_& m)
           +[](dart::dynamics::FreeJoint* self,
               const Eigen::Vector3d& newAngularVelocity,
               const dart::dynamics::Frame* relativeTo) {
-            self->setAngularVelocity(newAngularVelocity, relativeTo);
+            self->setAngularVelocity(
+                newAngularVelocity, dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("newAngularVelocity"),
           nb::arg("relativeTo").none())
@@ -222,7 +263,9 @@ void FreeJoint(nb::module_& m)
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) {
             self->setAngularVelocity(
-                newAngularVelocity, relativeTo, inCoordinatesOf);
+                newAngularVelocity,
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("newAngularVelocity"),
           nb::arg("relativeTo").none(),
@@ -243,7 +286,7 @@ void FreeJoint(nb::module_& m)
                 newSpatialAcceleration, inCoordinatesOf);
           },
           nb::arg("newSpatialAcceleration"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "setSpatialAcceleration",
           +[](dart::dynamics::FreeJoint* self,
@@ -254,8 +297,8 @@ void FreeJoint(nb::module_& m)
                 newSpatialAcceleration, relativeTo, inCoordinatesOf);
           },
           nb::arg("newSpatialAcceleration"),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "setLinearAcceleration",
           +[](dart::dynamics::FreeJoint* self,
@@ -268,7 +311,8 @@ void FreeJoint(nb::module_& m)
           +[](dart::dynamics::FreeJoint* self,
               const Eigen::Vector3d& newLinearAcceleration,
               const dart::dynamics::Frame* relativeTo) {
-            self->setLinearAcceleration(newLinearAcceleration, relativeTo);
+            self->setLinearAcceleration(
+                newLinearAcceleration, dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("newLinearAcceleration"),
           nb::arg("relativeTo").none())
@@ -279,7 +323,9 @@ void FreeJoint(nb::module_& m)
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) {
             self->setLinearAcceleration(
-                newLinearAcceleration, relativeTo, inCoordinatesOf);
+                newLinearAcceleration,
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("newLinearAcceleration"),
           nb::arg("relativeTo").none(),
@@ -296,7 +342,8 @@ void FreeJoint(nb::module_& m)
           +[](dart::dynamics::FreeJoint* self,
               const Eigen::Vector3d& newAngularAcceleration,
               const dart::dynamics::Frame* relativeTo) {
-            self->setAngularAcceleration(newAngularAcceleration, relativeTo);
+            self->setAngularAcceleration(
+                newAngularAcceleration, dartnb::frameOrWorld(relativeTo));
           },
           nb::arg("newAngularAcceleration"),
           nb::arg("relativeTo").none())
@@ -307,7 +354,9 @@ void FreeJoint(nb::module_& m)
               const dart::dynamics::Frame* relativeTo,
               const dart::dynamics::Frame* inCoordinatesOf) {
             self->setAngularAcceleration(
-                newAngularAcceleration, relativeTo, inCoordinatesOf);
+                newAngularAcceleration,
+                dartnb::frameOrWorld(relativeTo),
+                dartnb::frameOrWorld(inCoordinatesOf));
           },
           nb::arg("newAngularAcceleration"),
           nb::arg("relativeTo").none(),
@@ -358,7 +407,8 @@ void FreeJoint(nb::module_& m)
           +[](dart::dynamics::Joint* joint,
               const Eigen::Isometry3d& tf,
               const dart::dynamics::Frame* withRespectTo) {
-            dart::dynamics::FreeJoint::setTransformOf(joint, tf, withRespectTo);
+            dart::dynamics::FreeJoint::setTransformOf(
+                joint, tf, dartnb::frameOrWorld(withRespectTo));
           },
           nb::arg("joint").none(),
           nb::arg("tf"),
@@ -376,7 +426,7 @@ void FreeJoint(nb::module_& m)
               const Eigen::Isometry3d& tf,
               const dart::dynamics::Frame* withRespectTo) {
             dart::dynamics::FreeJoint::setTransformOf(
-                bodyNode, tf, withRespectTo);
+                bodyNode, tf, dartnb::frameOrWorld(withRespectTo));
           },
           nb::arg("bodyNode").none(),
           nb::arg("tf"),
@@ -394,7 +444,7 @@ void FreeJoint(nb::module_& m)
               const Eigen::Isometry3d& tf,
               const dart::dynamics::Frame* withRespectTo) {
             dart::dynamics::FreeJoint::setTransformOf(
-                skeleton, tf, withRespectTo);
+                skeleton, tf, dartnb::frameOrWorld(withRespectTo));
           },
           nb::arg("skeleton").none(),
           nb::arg("tf"),
@@ -406,7 +456,10 @@ void FreeJoint(nb::module_& m)
               const dart::dynamics::Frame* withRespectTo,
               bool applyToAllRootBodies) {
             dart::dynamics::FreeJoint::setTransformOf(
-                skeleton, tf, withRespectTo, applyToAllRootBodies);
+                skeleton,
+                tf,
+                dartnb::frameOrWorld(withRespectTo),
+                applyToAllRootBodies);
           },
           nb::arg("skeleton").none(),
           nb::arg("tf"),

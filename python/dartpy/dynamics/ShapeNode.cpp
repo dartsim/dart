@@ -75,7 +75,7 @@ void ShapeNode(nb::module_& m)
           "copy",
           +[](dart::dynamics::ShapeNode* self,
               const dart::dynamics::ShapeNode* other) { self->copy(other); },
-          nb::arg("other").none())
+          nb::arg("other"))
       .def(
           "setRelativeTransform",
           +[](dart::dynamics::ShapeNode* self,
