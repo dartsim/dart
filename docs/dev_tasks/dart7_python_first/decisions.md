@@ -1,8 +1,10 @@
 # Decisions
 
-All decisions below were taken by the maintainer on 2026-10-10 and 2026-10-11,
-one at a time, after read-only research and independent reviews; D13 was
-amended on 2026-10-12, and D2, D3, D6, D7, D14, D20 and D30 on 2026-10-19 (see [Re-prioritization](#re-prioritization-2026-10-19)). Durable API rules derived from them live in the
+The maintainer took the decisions below one at a time, starting on 2026-10-10,
+after read-only research and independent reviews; D13 was amended on
+2026-10-12, and D2, D3, D6, D7, D14, D20 and D30 on 2026-10-19 (see
+[Re-prioritization](#re-prioritization-2026-10-19)). Durable API rules derived
+from them live in the
 [DART 7 Python API design](../../design/dart7_python_api.md). Revisit a decision
 only with new evidence and maintainer approval.
 
@@ -323,3 +325,11 @@ these decisions, one at a time:
   22.04 users stay on DART 6.20.x.
 - **The generated Python API reference is a 7.0 must-have**, built in CI from
   the stubs and docstrings with a coverage floor.
+- **dartpy's private compiled extension is `dartpy._core`**, replacing the
+  `dartpy._dartpy` name that #3847 shipped, so the private name does not repeat
+  the package's.
+- **Changelog entries on `main` are fragments.** Each pull request adds its
+  entry as a file under `changelog.d/`, and a checkpoint pull request moves the
+  fragments into `CHANGELOG.md` at each milestone exit, before any release
+  candidate or tag, and on request. Release branches keep editing
+  `CHANGELOG.md` directly.

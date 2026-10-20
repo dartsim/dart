@@ -250,8 +250,8 @@ deciding M3.
 | M8 | C++ vocabulary rename | After 7.0 | Aliases and forwarders |
 
 Remaining critical path, in four chains that run in parallel (Python first):
-the M5a package, arrays, errors and `Transform` packets, then the naming
-rulebook, the facade slice and the rulebook-driven API areas, codemod, stubs
+the snapshot, arrays, errors and `Transform` packets still in review (the
+package layout merged in #3847), then the naming rulebook, the facade slice and the rulebook-driven API areas, codemod, stubs
 and reference; compile and edit
 (M1b), counted stepping (M1d), the remapping clone (M1i) and `WorldBatch`; the
 typed solver policy with its per-solver parameters (M1e), the written contract
@@ -287,11 +287,19 @@ the codemod, the stubs, the generated docstrings and the migration guide. An
 API-surface ratchet keeps the parity surface from growing meanwhile. In this
 order:
 
-1. Mechanism packets that add no names the rulebook decides, in review: the
-   package layout (private extension, pure-Python helpers, scikit-build-core,
-   one stable-ABI wheel for Python 3.12+, and the 7.0 changelog's
-   Python-support entries); read-only array copies; errors and logging; and
-   `Transform` and `Rotation`.
+1. Mechanism packets, in review or merged: world-state snapshots; the package
+   layout (private extension, pure-Python helpers, scikit-build-core, one
+   stable-ABI wheel for Python 3.12+, and the 7.0 changelog's Python-support
+   entries); read-only array copies; errors and logging; and `Transform` and
+   `Rotation`. They can precede the rulebook because approved decisions fix
+   their central public names: the `dartpy` package (D4, D6),
+   `dartpy.experimental` (D22), `capture_state` and `restore_state` (the design doc's `World` surface, under D11), the
+   `dartpy` logger and the error classes the design doc names (D22), and
+   `Transform` and `Rotation` (D28) with their named quaternion orders (D29).
+   The rulebook adopts those names. Every other public name these packets add,
+   including `WorldState`, the error base class and the transform constructors
+   that the design doc leaves to their packets, is provisional and follows the
+   rulebook once it is approved.
 2. The naming rulebook, which also decides the curated top level.
 3. A vertical slice of the facade: `World` keyword construction, `Multibody`,
    `Link`, `Joint` and `Dof` with named collections, the builders, `world.add`
@@ -302,7 +310,8 @@ order:
 Defects found on the way (missing `None` checks, dropped out-parameters,
 unregistered types) ship as separate PRs.
 
-M5b binds each M1 feature when it merges, directly in the 7.0 style. The
+M5b binds each M1 feature when it merges, directly in the 7.0 style; names that
+no decision fixes stay provisional until the rulebook is approved. The
 constraint module's 7.0 bindings start after M1e and the simulation module's
 after M1d; their renames are breaking, so both land before `F`. M5 does not
 rename bindings that later milestones replace: recording (M4), aspect state

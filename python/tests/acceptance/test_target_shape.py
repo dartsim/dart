@@ -962,13 +962,22 @@ def test_capture_restore_state(world, robot):
 @pytest.mark.xfail(
     strict=True, reason="M1c/M5b: exact checkpoints, bit-identical replay and mismatch rejection are pending"
 )
-def test_capture_restore_checkpoint(world, contact_box):
+@pytest.mark.parametrize("solver,other_solver", [("DANTZIG", "PGS"), ("PGS", "DANTZIG")])
+def test_capture_restore_checkpoint(world, contact_box, solver, other_solver):
     robot = contact_box
+
     # M1e/M1c/M5 settle typed solver mutation and sleep settings on subobjects.
-    world.solver.primary_solver = dart.constraint.SolverType.DANTZIG
-    assert isinstance(world.solver.primary_solver, dart.constraint.DantzigBoxedLcpSolver)
-    world.solver.sleep.enabled = True
-    world.solver.sleep.time_until_sleep = 5 * world.time_step
+    def use_solver(target, name):
+        target.solver.primary_solver = getattr(dart.constraint.SolverType, name)
+        solver_class = {"DANTZIG": "DantzigBoxedLcpSolver", "PGS": "PgsBoxedLcpSolver"}[name]
+        assert isinstance(target.solver.primary_solver, getattr(dart.constraint, solver_class))
+
+    def configure(target):
+        use_solver(target, solver)
+        target.solver.sleep.enabled = True
+        target.solver.sleep.time_until_sleep = 5 * target.time_step
+
+    configure(world)
     for _ in range(2):
         world.step()
     assert not robot.is_resting
@@ -1012,29 +1021,52 @@ def test_capture_restore_checkpoint(world, contact_box):
         world.step()
         assert frame() == expected_frame
 
-    # Equal state-array sizes cannot make incompatible topology or a different
-    # primary solver eligible for exact restoration. Resolve APIs before raises.
-    for change in ("topology", "solver"):
-        different = world.clone()
-        if change == "topology":
-            with different.edit():
-                different.add_rigid_body(name="checkpoint_extra_fixed", joint=dart.dynamics.WeldJointSpec())
-        else:
-            different.solver.primary_solver = dart.constraint.SolverType.PGS
-            assert isinstance(different.solver.primary_solver, dart.constraint.PgsBoxedLcpSolver)
-        restore = different.restore_state
-        before = pickle.dumps(different.capture_checkpoint(), protocol=5)
-        with pytest.raises(Exception) as mismatch:
+    # Exact checkpoints restore only into the World that captured them, so an
+    # otherwise identical clone, or a World rebuilt with the same history and
+    # settings, rejects one. The design specifies no error type for a
+    # different World. Resolve APIs before raises.
+    rebuilt = dart.World()
+    _make_contact_box(rebuilt)
+    configure(rebuilt)
+    for other in (world.clone(), rebuilt):
+        restore = other.restore_state
+        before = pickle.dumps(other.capture_checkpoint(), protocol=5)
+        with pytest.raises(Exception):
             restore(checkpoint)
-        assert type(mismatch.value).__name__ == "CheckpointMismatchError"
-        assert pickle.dumps(different.capture_checkpoint(), protocol=5) == before
+        assert pickle.dumps(other.capture_checkpoint(), protocol=5) == before
 
-    world.gravity = [0, 0, 0]
-    before_rejection = frame()
-    with pytest.raises(Exception) as mismatch:
-        world.restore_state(checkpoint)
-    assert type(mismatch.value).__name__ == "CheckpointMismatchError"
-    assert frame() == before_rejection
+    # Each mismatch is rejected on the capturing World, against a checkpoint
+    # taken one step before that one change: no earlier change can satisfy it,
+    # and a restore that writes state before raising changes the frame. The
+    # added fixed model keeps every state-array size equal.
+    for change in ("topology", "solver", "parameters"):
+        captured = world.capture_checkpoint()
+        world.step()
+        if change == "topology":
+            with world.edit():
+                world.add_rigid_body(name="checkpoint_extra_fixed", joint=dart.dynamics.WeldJointSpec())
+        elif change == "solver":
+            # Replacing the solver is a topology edit.
+            with world.edit():
+                use_solver(world, other_solver)
+        else:
+            world.gravity = [0, 0, 0]
+        before_rejection = frame()
+        with pytest.raises(Exception) as mismatch:
+            world.restore_state(captured)
+        assert type(mismatch.value).__name__ == "CheckpointMismatchError"
+        assert frame() == before_rejection
+
+    # A World that differs only in its detector, such as FCL, cannot capture
+    # one.
+    fcl = dart.World(collision_detector=dart.collision.FCLCollisionDetector())
+    _make_contact_box(fcl)
+    configure(fcl)
+    for _ in range(2):
+        fcl.step()
+    capture = fcl.capture_checkpoint
+    with pytest.raises(Exception):
+        capture()
 
 
 class _CheckpointControl:
@@ -1098,6 +1130,10 @@ def test_checkpoint_hook_state(world, robot):
 
 @pytest.fixture
 def contact_box(world):
+    return _make_contact_box(world)
+
+
+def _make_contact_box(world):
     # Sleep configuration and shared-node visual construction spelling are
     # provisional M1c/M5. Native setup proofs below remain separate.
     world.solver.sleep.enabled = False
@@ -1288,9 +1324,19 @@ def _native_contact_box(world):
     not hasattr(dart.dynamics, "Skeleton"),
     reason="Baseline native scene proof; M5 retires or migrates it after removing the legacy binding surface",
 )
-def test_checkpoint_contact_scene():
+@pytest.mark.parametrize("solver", ["DANTZIG", "PGS"])
+def test_checkpoint_contact_scene(solver):
     world = dart.simulation.World()
     contact_box = _native_contact_box(world)
+    constraint_solver = world.getConstraintSolver()
+    if solver == "PGS":
+        # The legacy binding cannot construct a PGS solver, but the default
+        # secondary solver is one.
+        pgs = constraint_solver.getSecondaryBoxedLcpSolver()
+        constraint_solver.setSecondaryBoxedLcpSolver(constraint_solver.getBoxedLcpSolver())
+        constraint_solver.setBoxedLcpSolver(pgs)
+    expected = {"DANTZIG": "DantzigBoxedLcpSolver", "PGS": "PgsBoxedLcpSolver"}[solver]
+    assert type(constraint_solver.getBoxedLcpSolver()).__name__ == expected
     # This setup gate runs without xfail, so a broken scene cannot hide behind M1c.
     result = world.getLastCollisionResult()
     assert result.getNumContacts() > 0

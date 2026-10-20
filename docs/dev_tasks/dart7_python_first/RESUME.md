@@ -21,9 +21,10 @@ against `812310ffb` instead (decided 2026-10-19).
 M1 is active. M1a merged in #3775. The first M1b, M1c and M1d packets,
 developed on unpublished branches, were re-cut from current `main` and
 published one per pull request; the rest of the native chain is still
-unpublished. No Python 7.0 API has landed yet: every merged M1 packet is C++
-with no Python binding, and none of the 44 target-shape tests has turned
-green.
+unpublished. Every merged M1 packet is C++ with no Python binding. The first
+Python 7.0 API on `main` is the package layout (#3847) with its empty
+`dartpy.experimental` namespace; none of the 44 target-shape tests has turned
+green yet.
 
 | Packet | Milestone | Pull request | State |
 | --- | --- | --- | --- |
@@ -42,6 +43,9 @@ green.
 | Generated headers in headers-only installs | Build fix | [#3811](https://github.com/dartsim/dart/pull/3811) | Merged |
 | Inventory identities and raw signatures | M5a tooling | [#3812](https://github.com/dartsim/dart/pull/3812) | Merged; feeds the API-surface ratchet and the old-to-new mapping |
 | Locale-independent Fuel cache key in the Gazebo lanes | Tooling fix | [#3814](https://github.com/dartsim/dart/pull/3814) | Merged |
+| `None` frame arguments no longer crash dartpy | M5 fix | [#3841](https://github.com/dartsim/dart/pull/3841) | Merged |
+| API-surface ratchet | M5a tooling | [#3846](https://github.com/dartsim/dart/pull/3846) | Merged |
+| Package layout and cp312-abi3 wheels | M5a | [#3847](https://github.com/dartsim/dart/pull/3847) | Merged |
 
 Codex wrote the original packet code; Claude re-cut, integrated and published
 it. Reviews came from engines other than the code's writer.
@@ -61,7 +65,14 @@ parallel tracks, Python first:
    arrays, errors and logging, `Transform` and `Rotation`, then the naming
    rulebook, a vertical slice of the facade and the remaining API areas, with
    the codemod, stubs, migration guide and API reference generated from the
-   old-to-new mapping.
+   old-to-new mapping. Approved decisions fix the central public names of the
+   snapshot, package, arrays, errors and transform packets: the `dartpy`
+   package (D4, D6), `dartpy.experimental` (D22), `capture_state` and
+   `restore_state` (the design doc's `World` surface, under D11), the `dartpy` logger and the error classes the design
+   doc names (D22), and `Transform` and `Rotation` (D28) with their named
+   quaternion orders (D29). The rulebook adopts those names. Every other public
+   name these packets add, including `WorldState`, is provisional and follows
+   the rulebook once it is approved.
    Every native feature ships its Python binding and acceptance test.
 2. Native core (M1): compile and edit, counted stepping, the remapping clone
    and `WorldBatch` with its own executor, then actuators and servos, sensors
@@ -80,28 +91,32 @@ Python packets in review:
 
 | Packet | Pull request |
 | --- | --- |
-| `None` frame arguments no longer crash dartpy | [#3841](https://github.com/dartsim/dart/pull/3841) |
 | `capture_state()` / `restore_state()` with `WorldState` | [#3842](https://github.com/dartsim/dart/pull/3842) |
 | Read-only array returns | [#3843](https://github.com/dartsim/dart/pull/3843) |
 | `dartpy.errors` and the logging bridge | [#3844](https://github.com/dartsim/dart/pull/3844) |
 | Immutable `Transform` and `Rotation` | [#3845](https://github.com/dartsim/dart/pull/3845) |
-| API-surface ratchet | [#3846](https://github.com/dartsim/dart/pull/3846) |
-| Package layout and cp312-abi3 wheels | [#3847](https://github.com/dartsim/dart/pull/3847) |
 
 Once they merge, the transform, rotation and logging-bridge target-shape tests
 pass, 3 of 44.
 
 ## Next steps
 
-1. Land the Python packets in review.
-2. Compile and edit (M1b): its fix round keeps never-compiled C++ Worlds on
+1. Land the Python packets still in review (#3842 to #3845).
+2. Rename the private extension from `dartpy._dartpy`, which #3847 shipped, to
+   `dartpy._core` (decided 2026-10-19) in one mechanical follow-up: `NB_MODULE`
+   in `python/dartpy/module.cpp`, the CMake `OUTPUT_NAME`,
+   `python/dartpy/package/__init__.py`, the wheel scripts and their tests, the
+   binding tests that locate the extension,
+   `docs/onboarding/python-bindings.md`, and the design doc's extension and
+   `PyInit_` lines.
+3. Compile and edit (M1b): its fix round keeps never-compiled C++ Worlds on
    6.20 behavior and starts ownership tracking at `compile()`; then counted
    stepping and the remapping clone. Each packet is re-qualified on current
    `main`.
-3. The naming rulebook, then the facade slice.
-4. The typed solver policy with its per-solver parameters (M1e), and the
+4. The naming rulebook, then the facade slice.
+5. The typed solver policy with its per-solver parameters (M1e), and the
    written `World` and solver contract.
-5. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
+6. Add the macOS and Windows Python 3.15 wheels to 6.20.x once conda-forge's
    `bullet-cpp` builds for Python 3.15.
 
 ## Risks and recovery

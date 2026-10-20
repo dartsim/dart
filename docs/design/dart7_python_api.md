@@ -333,8 +333,9 @@ Wheels export only `PyInit__dartpy`.
 
 ## Batching
 
-`dart.WorldBatch` steps independent compiled clones in parallel, on one
-deterministic executor shared across worlds.
+`dart.WorldBatch` steps independent compiled clones in parallel and in
+lockstep, on a deterministic executor that the batch owns; each clone steps
+single-threaded. An executor shared across independent Worlds is outside 7.0.
 
 Clones are produced by a remapping clone that copies the following by stable
 identifiers:
