@@ -9,6 +9,7 @@
   * **Behavior change:** MJCF bodies with `<freejoint/>` now have a six-DOF
     free joint instead of being welded to their parent. Joint defaults do not
     apply to this shorthand.
+    [#3881](https://github.com/dartsim/dart/pull/3881)
 
   * **Behavior change:** MJCF loading now enforces hinge and slide limits,
     including inherited defaults and MuJoCo 3.x automatic limits; applies
@@ -72,6 +73,7 @@
     Roboti-derived MuJoCo models, which carry no license grant, and the
     noncommercial Fetch assets. Use the Apache-2.0 DeepMind models under
     `dart://sample/mjcf/deepmind/` instead.
+    [#3881](https://github.com/dartsim/dart/pull/3881)
 
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
@@ -106,9 +108,11 @@
 * API
 
   * Fix a crash when loading MJCF files with worldbody-level sites.
+    [#3881](https://github.com/dartsim/dart/pull/3881)
 
   * MJCF loading returns `nullptr` instead of crashing when model construction
     fails and the file contains an equality weld constraint.
+    [#3881](https://github.com/dartsim/dart/pull/3881)
 
   * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
     256 MiB of decoded RGBA data, before allocating them.
@@ -314,6 +318,7 @@
   * Add pinned Apache-2.0 DeepMind Control Suite MJCF models under
     `data/mjcf/deepmind/`; MJCF parser coverage uses them and the DART-authored
     fixture at `data/mjcf/test/manipulation/scene.xml`.
+    [#3881](https://github.com/dartsim/dart/pull/3881)
 
   * Hide the ssik analytical IK demo's solved marker when no current
     forward-kinematics pose is available, including failed solves and arm
