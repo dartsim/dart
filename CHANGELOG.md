@@ -292,6 +292,7 @@
 
   * Support Eigen >= 3.4.0 and < 6, keeping the Pixi environments on 3.4.0. Installed CMake packages reject a different Eigen major; rebuild
     DART and its consumers together when changing Eigen majors.
+    [#3891](https://github.com/dartsim/dart/pull/3891)
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
