@@ -180,7 +180,8 @@ void OverlayRenderer::prepareFonts(const DebugScene& scene)
   for (const auto& label : scene.labels) {
     if (label.fontPath.empty() || fonts.count(label.fontPath))
       continue;
-    if (!std::filesystem::is_regular_file(label.fontPath))
+    if (!std::filesystem::is_regular_file(label.fontPath)
+        || std::filesystem::file_size(label.fontPath) == 0)
       throw std::runtime_error("Cannot load overlay font: " + label.fontPath);
     auto* font = ImGui::GetIO().Fonts->AddFontFromFileTTF(
         label.fontPath.c_str(), 16.0f);
