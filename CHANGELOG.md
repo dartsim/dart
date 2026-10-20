@@ -51,6 +51,7 @@
 
   * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
     meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
 
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
