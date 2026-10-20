@@ -845,6 +845,7 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 check-lint = { depends-on = [
   "check-lint-spell",
   "check-lint-py",
+  "check-changelog-fragments",
   "check-ai-infra",
 ] }
 

@@ -17,6 +17,8 @@ when the maintainer asks. One PR then runs `pixi run changelog-assemble`. It
 requires every fragment's PR link. It appends each entry to its category under
 the unreleased release heading in PR order and deletes the fragments. Review the
 assembled section as release notes in that PR.
+Commit all changes in `changelog.d/` before assembly; re-running after a failed
+fragment deletion is safe.
 
 `release-*` branches have no fragments: edit `CHANGELOG.md` directly there,
 including in backports, and turn a cherry-picked fragment into a direct entry.

@@ -30,3 +30,5 @@ Simulation, Dynamics, Parsers, Python, GUI, Examples, Math, Build.
 `pixi run check-lint` runs that check. At a checkpoint,
 `pixi run changelog-assemble` moves each entry to the end of its category,
 in PR order, and deletes the fragments.
+Commit all changes in `changelog.d/` before assembly; re-running after a failed
+fragment deletion is safe.

@@ -2,6 +2,7 @@
 
 import importlib.util
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -49,10 +50,11 @@ def link(number, comma=""):
 
 
 @pytest.fixture
-def repo(tmp_path):
+def repo(tmp_path, monkeypatch):
     (tmp_path / "CHANGELOG.md").write_text(CHANGELOG, encoding="utf-8")
     (tmp_path / "changelog.d").mkdir()
     shutil.copy(ROOT / "changelog.d" / "README.md", tmp_path / "changelog.d")
+    monkeypatch.setattr(fragments, "fragment_changes", lambda root: [])
     return tmp_path
 
 
@@ -91,7 +93,7 @@ def test_check_accepts_fragments_in_changelog_style(repo, capsys):
     assert run(repo, "check", capsys) == (0, "4 changelog fragment(s) OK\n")
 
 
-def test_check_reports_every_problem(repo, capsys):
+def test_check_reports_every_problem(repo, capsys, monkeypatch):
     bad = {
         "no-section.md": ("  * Entry.\n", ":1: start with `Section: <Category>`"),
         "no-blank.md": ("Section: Python\n  * Entry.\n", ":2: follow the Section"),
@@ -121,6 +123,14 @@ def test_check_reports_every_problem(repo, capsys):
             fragment("Python", "  * E.", link(1, ","), "", link(30)),
             ":4: keep the links together",
         ),
+        "indented-link.md": (
+            fragment("Python", "  * E.", " " + link(5)),
+            ":4: write each link as `    [#N](https://github.com/dartsim/dart/pull/N)`",
+        ),
+        "indented-split-links.md": (
+            fragment("Python", "  * E.", "  " + link(1, ","), "", link(30)),
+            ":4: keep the links together",
+        ),
         "spaces.md": (fragment("Python", "  * Entry. "), ":3: remove trailing"),
         "Bad_Name.md": (fragment("Python", "  * Entry."), ": use a lowercase kebab"),
         "notes.txt": ("Section: Python\n", ": fragments are `<topic>.md` files"),
@@ -133,9 +143,31 @@ def test_check_reports_every_problem(repo, capsys):
     code, output = run(repo, "check", capsys)
 
     assert code == 1
-    for name, (_, message) in bad.items():
-        assert f"changelog.d/{name}{message}" in output
+    missing = [
+        f"changelog.d/{name}{message}"
+        for name, (_, message) in bad.items()
+        if f"changelog.d/{name}{message}" not in output
+    ]
     assert "changelog.d/utf-16.md: save the fragment as UTF-8" in output
+
+    # Reserved names cannot be written on Windows; exercise the parser without I/O.
+    for name in (
+        "con",
+        "prn",
+        "aux",
+        "nul",
+        *(f"com{i}" for i in range(1, 10)),
+        *(f"lpt{i}" for i in range(1, 10)),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                Path, "read_text", lambda *a, **kw: fragment("Python", "  * E.")
+            )
+            _, errors = fragments.parse_fragment(repo / "changelog.d" / f"{name}.md")
+        message = f"changelog.d/{name}.md: choose another name; `{name}` is reserved on Windows"
+        if message not in errors:
+            missing.append(message)
+    assert not missing
 
 
 def test_assemble_moves_fragments_in_pr_order(repo, capsys):
@@ -228,7 +260,9 @@ def test_assemble_stays_above_a_released_heading(repo, capsys):
         "### [DART 7.1.0 (Unreleased)](https://github.com/dartsim/dart/milestone/107)"
         "\n\n* Python\n"
     )
-    released = CHANGELOG.replace("(Unreleased)", "(2026-12-01)")
+    released = CHANGELOG.replace("(Unreleased)", "(2026-12-01)").replace(
+        "  * Earlier Python entry.", f"  * New Python entry.\n{link(5)}"
+    )
     before = released.replace("### ", f"{pending}\n### ", 1)
     (repo / "CHANGELOG.md").write_text(before, encoding="utf-8")
     write(repo, "python.md", fragment("Python", "  * New Python entry.", link(5)))
@@ -256,6 +290,123 @@ def test_assemble_keeps_everything_when_the_write_fails(repo, capsys, monkeypatc
     assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
     assert (repo / "changelog.d" / "linked.md").is_file()
     assert not list(repo.glob(".CHANGELOG*"))
+
+
+def test_assemble_retry_after_a_failed_deletion_is_safe(repo, capsys, monkeypatch):
+    body = ["  * Linked.", link(5)]
+    write(repo, "linked.md", fragment("Python", *body))
+    path = repo / "changelog.d" / "linked.md"
+    unlink = Path.unlink
+
+    def fail_once(self, *args, **kwargs):
+        if self == path:
+            raise PermissionError("fragment is locked")
+        return unlink(self, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "unlink", fail_once)
+        code, output = run(repo, "assemble", capsys)
+    assert code == 1
+    assert "fragment is locked" in output
+    assert path.is_file()
+    assembled = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
+
+    code, output = run(repo, "assemble", capsys)
+
+    assert code == 0
+    after = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert after.count("\n".join(body)) == 1
+    assert after == assembled
+    assert not path.exists()
+    assert "entry already present" in output
+    assert "deleting fragment only" in output
+
+
+def test_assemble_requires_committed_fragments(tmp_path, capsys):
+    repo = tmp_path
+    (repo / "CHANGELOG.md").write_text(CHANGELOG, encoding="utf-8")
+    (repo / "changelog.d").mkdir()
+    hooks = repo / "empty-hooks"
+    hooks.mkdir()
+
+    def git(*args):
+        return subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "-c",
+                f"core.hooksPath={hooks}",
+                *args,
+            ],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    git("init")
+    git("add", "CHANGELOG.md")
+    git("commit", "-m", "Initial changelog")
+    text = fragment("Python", "  * Linked.", link(5))
+    write(repo, "linked.md", text)
+    other = fragment("GUI", "  * Other.", link(6))
+    write(repo, "other.md", other)
+
+    code, output = run(repo, "assemble", capsys)
+
+    assert code == 1
+    assert "changelog.d/linked.md" in output
+    assert "changelog.d/other.md" in output
+    assert "commit or remove" in output
+    assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
+    assert (repo / "changelog.d" / "linked.md").read_text(encoding="utf-8") == text
+    assert (repo / "changelog.d" / "other.md").read_text(encoding="utf-8") == other
+    assert not list(repo.glob(".CHANGELOG*"))
+
+    git("add", "changelog.d")
+    git("commit", "-m", "Add committed fragment")
+    write(repo, "linked.md", text.replace("Linked.", "Uncommitted edit."))
+    for staged in (False, True):
+        if staged:
+            git("add", "changelog.d")
+        code, output = run(repo, "assemble", capsys)
+        assert code == 1
+        assert "changelog.d/linked.md" in output
+        assert "commit or remove" in output
+        assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
+
+    write(repo, "linked.md", text)
+    git("add", "changelog.d")
+    assert run(repo, "assemble", capsys)[0] == 0
+    assert (repo / "CHANGELOG.md").read_text(encoding="utf-8").count("  * Linked.") == 1
+    assert not (repo / "changelog.d" / "linked.md").exists()
+    assert not (repo / "changelog.d" / "other.md").exists()
+
+
+@pytest.mark.parametrize(
+    "failure", (FileNotFoundError("git unavailable"), "not a git repository")
+)
+def test_assemble_reports_git_errors(tmp_path, capsys, monkeypatch, failure):
+    (tmp_path / "CHANGELOG.md").write_text(CHANGELOG, encoding="utf-8")
+    (tmp_path / "changelog.d").mkdir()
+    write(tmp_path, "linked.md", fragment("Python", "  * Linked.", link(5)))
+
+    def fail_git(*args, **kwargs):
+        if isinstance(failure, OSError):
+            raise failure
+        return subprocess.CompletedProcess(args, 128, stdout="", stderr=failure)
+
+    monkeypatch.setattr(subprocess, "run", fail_git)
+
+    code, output = run(tmp_path, "assemble", capsys)
+
+    assert code == 1
+    assert ("install Git" if isinstance(failure, OSError) else "Git checkout") in output
+    assert (tmp_path / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
+    assert (tmp_path / "changelog.d" / "linked.md").is_file()
 
 
 def test_assemble_refuses_a_released_first_heading(repo, capsys):
@@ -288,3 +439,20 @@ def test_assemble_uses_any_category_under_the_unreleased_heading(repo, capsys):
     assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == before.replace(
         "  * Test entry.\n", f"  * Test entry.\n\n  * New test entry.\n{link(5)}\n"
     )
+
+
+def test_check_accepts_prose_that_starts_a_line_with_a_link(repo, capsys):
+    issue = "[#3056](https://github.com/dartsim/dart/issues/3056)"
+    write(
+        repo,
+        "prose.md",
+        fragment(
+            "Python",
+            "  * Fix the case reported in",
+            f"    {issue}, which",
+            "    crashed.",
+            link(5),
+        ),
+    )
+
+    assert run(repo, "check", capsys) == (0, "1 changelog fragment(s) OK\n")

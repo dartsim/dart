@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import NamedTuple
@@ -43,6 +44,8 @@ SECTION_LINE = re.compile(r"Section: (.+)")
 LINK_LINE = re.compile(
     r"    \[#(\d+)\]\(https://github\.com/dartsim/dart/(pull|issues)/(\d+)\)(,?)"
 )
+# A line holding only a reference link, at any indentation.
+LINK_ONLY = re.compile(r"\s*\[#[^\]]*\]\([^)]*\),?")
 
 
 class Fragment(NamedTuple):
@@ -68,6 +71,10 @@ def parse_fragment(path: Path) -> tuple[Fragment | None, list[str]]:
     ]
     if not FRAGMENT_NAME.fullmatch(path.name):
         errors.append(f"{name}: use a lowercase kebab-case name, like `fix-x.md`")
+    if re.fullmatch(r"con|prn|aux|nul|com[1-9]|lpt[1-9]", path.stem, re.IGNORECASE):
+        errors.append(
+            f"{name}: choose another name; `{path.stem}` is reserved on Windows"
+        )
     section = SECTION_LINE.fullmatch(lines[0]) if lines else None
     if not section:
         return None, errors + [f"{name}:1: start with `Section: <Category>`"]
@@ -87,12 +94,12 @@ def parse_fragment(path: Path) -> tuple[Fragment | None, list[str]]:
 
     # The entry ends with its reference links, one per line, comma-separated.
     first_link = len(body)
-    while first_link > 1 and body[first_link - 1].startswith("    [#"):
+    while first_link > 1 and body[first_link - 1].lstrip().startswith("[#"):
         first_link -= 1
     errors += [
         f"{name}:{index + 3}: keep the links together as the entry's last lines"
         for index in range(1, first_link)
-        if LINK_LINE.fullmatch(body[index])
+        if LINK_ONLY.fullmatch(body[index])
     ]
     prs = []
     for index in range(first_link, len(body)):
@@ -204,7 +211,43 @@ def check(root: Path) -> int:
     return 0
 
 
+def fragment_changes(root: Path) -> list[str]:
+    """Return paths with staged, unstaged, or untracked changes in changelog.d/."""
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--untracked-files=all",
+                "--",
+                "changelog.d",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        raise ValueError(
+            f"changelog.d/: cannot run git; install Git and retry: {error}"
+        ) from error
+    if result.returncode:
+        raise ValueError(
+            "changelog.d/: cannot check Git status; use --root pointing to a Git checkout: "
+            f"{result.stderr.strip()}"
+        )
+    return [line[3:] for line in result.stdout.splitlines()]
+
+
 def assemble(root: Path) -> int:
+    changes = fragment_changes(root)
+    if changes:
+        return report(
+            [
+                f"{path}: commit or remove this change before assembling"
+                for path in changes
+            ]
+        )
     fragments, errors, lines = load(root)
     errors += [
         f"changelog.d/{name}: end the entry with its own PR link line, "
@@ -230,6 +273,14 @@ def assemble(root: Path) -> int:
         )
 
     for fragment in sorted(fragments, key=lambda f: (min(f.prs), f.path.name)):
+        start, end = release_section(lines)
+        entry = "\n".join(fragment.body)
+        if f"\n{entry}\n" in "\n".join(lines[start:end]) + "\n":
+            print(
+                f"changelog.d/{fragment.path.name}: entry already present under `{heading}`; "
+                "deleting fragment only"
+            )
+            continue
         if insert_entry(lines, fragment.category, fragment.body):
             print(f"Created category `{fragment.category}`")
         print(
