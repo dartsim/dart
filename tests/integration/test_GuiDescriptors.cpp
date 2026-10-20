@@ -134,8 +134,10 @@ std::shared_ptr<const aiScene> makeGuiMeshScene(bool secondHasColors = true)
 std::shared_ptr<dynamics::MeshShape> makeGuiMeshShape()
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
-  auto shape = std::make_shared<dynamics::MeshShape>(
-      Eigen::Vector3d(2, 3, 4), makeGuiMeshScene(), "/tmp/gui-model/model.obj");
+  auto shape = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+      Eigen::Vector3d(2, 3, 4),
+      makeGuiMeshScene(),
+      "/tmp/gui-model/model.obj"));
   DART_SUPPRESS_DEPRECATED_END
   return shape;
 }
@@ -372,8 +374,9 @@ TEST(GuiDescriptors, AssimpHierarchyUvMaterialsColorsAndAlphaModes)
 TEST(GuiDescriptors, MissingVertexColorChannelsUsePerPartFallback)
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
-  auto mesh = std::make_shared<dart::dynamics::MeshShape>(
-      Eigen::Vector3d::Ones(), makeGuiMeshScene(false));
+  auto mesh = std::shared_ptr<dart::dynamics::MeshShape>(
+      new dart::dynamics::MeshShape(
+          Eigen::Vector3d::Ones(), makeGuiMeshScene(false)));
   DART_SUPPRESS_DEPRECATED_END
   mesh->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
   const auto geometry = describeShape(*mesh);

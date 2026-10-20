@@ -535,8 +535,8 @@ void Shape(nb::module_& m)
           dartnb::factory(
               +[](const Eigen::Vector3d& scale, const aiScene* mesh) {
                 DART_SUPPRESS_DEPRECATED_BEGIN
-                auto shape
-                    = std::make_shared<dart::dynamics::MeshShape>(scale, mesh);
+                auto shape = std::shared_ptr<dart::dynamics::MeshShape>(
+                    new dart::dynamics::MeshShape(scale, mesh));
                 DART_SUPPRESS_DEPRECATED_END
                 return shape;
               }),
@@ -547,8 +547,8 @@ void Shape(nb::module_& m)
                               const aiScene* mesh,
                               const dart::common::Uri& uri) {
             DART_SUPPRESS_DEPRECATED_BEGIN
-            auto shape
-                = std::make_shared<dart::dynamics::MeshShape>(scale, mesh, uri);
+            auto shape = std::shared_ptr<dart::dynamics::MeshShape>(
+                new dart::dynamics::MeshShape(scale, mesh, uri));
             DART_SUPPRESS_DEPRECATED_END
             return shape;
           }),
@@ -563,8 +563,9 @@ void Shape(nb::module_& m)
                   dart::common::ResourceRetrieverPtr resourceRetriever) {
                 nb::gil_scoped_release release;
                 DART_SUPPRESS_DEPRECATED_BEGIN
-                auto shape = std::make_shared<dart::dynamics::MeshShape>(
-                    scale, mesh, uri, resourceRetriever);
+                auto shape = std::shared_ptr<dart::dynamics::MeshShape>(
+                    new dart::dynamics::MeshShape(
+                        scale, mesh, uri, resourceRetriever));
                 DART_SUPPRESS_DEPRECATED_END
                 return shape;
               }),
