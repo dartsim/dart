@@ -112,6 +112,7 @@
 
   * Fix a memory leak where a Bullet collision detector used for a collision
     check between two groups was never destroyed.
+    [#3875](https://github.com/dartsim/dart/pull/3875)
 
   * Fix undefined behavior when a custom deleter of a replaced collision
     detector or contact surface handler reads the constraint solver's
