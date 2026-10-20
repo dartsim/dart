@@ -297,6 +297,7 @@
     disables one. The unused `DART_SKIP_DOXYGEN` and `HAVE_DOXYGEN` cache
     entries are gone; the documentation targets still follow Doxygen's
     availability.
+    [#3886](https://github.com/dartsim/dart/pull/3886)
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
