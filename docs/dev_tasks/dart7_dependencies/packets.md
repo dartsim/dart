@@ -124,8 +124,7 @@ Independent PRs.
   unpacked).
 - (c) Move the Linux wheel from sdformat15 to sdformat16, as macOS and
   Windows already are.
-- (d) Build libpng ≥ 1.6.57 in the image unless AlmaLinux's package carries
-  the CVE-2025-65018 fix.
+- (d) Dropped: AlmaLinux 8's libpng already carries the relevant fixes (DD-29).
 - (e) After Q3: an assimp importer allowlist for Linux wheels (Collada, STL,
   OBJ at minimum; OBJ is needed for the TriMesh round trip) with exporters off
   by default but never `ASSIMP_NO_EXPORT`.
@@ -196,8 +195,8 @@ pattern. A mechanical PR can default their copy operations the same way.
   rows on 24.04; add the Tier 1 apt lane after triaging the distro FCL
   assertion; update `build.rst`, `building.md`, the requirement tests and
   `.readthedocs.yml`.
-- **(b) Library floors, one PR per library:** tinyxml2 10.0.0, libpng
-  1.6.43, and the remaining 24.04 floors for any dependency Q2 keeps.
+- **(b) Library floors, one PR per library:** tinyxml2 10.0.0 and the
+  remaining 24.04 floors; libpng keeps its API-minimum floor, 1.6.0 (DD-29).
 - **Gates:** base, test-build-requirements, pkg, apt, dis, Windows, macOS,
   BSD, gz.
 
@@ -258,32 +257,35 @@ pattern. A mechanical PR can default their copy operations the same way.
   world-file parser copy should defer to urdfdom's).
 - **Superseded:** the in-house URDF reader planned on 2026-10-18 is dropped.
 
-## DEP-18. SDF packaging with sdformat kept (DD-5; scope pending the follow-up study)
+## DEP-18. SDF as an optional part of `dart-io` (DD-11)
 
-- **Scope:** move `dart/utils/sdf/*.cpp` into a shared `dart-io-sdf` library
-  and `io-sdf` component; `dart-io` drops sdformat; option `DART_IO_SDF`
-  (default ON; a missing sdformat stays a hard error unless set OFF); legacy
-  `utils` forwards to `io` and `io-sdf`, `utils-urdf` to `io` only; export
-  sdformat as a dependency package only for static builds; accept sdformat 17
-  once a lane builds it; replace the `sdformat` rosdep key; gate SDF tests and
-  examples on the option.
-- **Gates:** base, py, gz (including a plugin that requests only
-  `utils-urdf`), pkg, a build with every sdformat lookup disabled, an
-  identical exported `SdfParser` symbol list, BSD.
+- **Scope:** keep SDF inside `dart-io`, made optional through the
+  optional-dependency mechanism Bullet and ODE use; add an `io-sdf`
+  forwarding component; export sdformat as a dependency package only for
+  static builds. Pixi, package managers, CI, wheels and the Gazebo lanes use
+  the environment's sdformat with the strict switch (DEP-4(e)), so a missing
+  sdformat fails there. A standalone build uses an installed sdformat if
+  present and otherwise fetches sdformat with gz-cmake, gz-math and gz-utils
+  once the DEP-25 fetch path supports them; until then it skips SDF with a
+  warning. Builds without SDF ship legacy `utils` without `SdfParser`
+  (approved).
+- **Gates:** base, py, gz, pkg (a shared `io` consumer configures without
+  sdformat, a static one requires it, `COMPONENTS io-sdf` fails cleanly on an
+  SDF-off install), a lane with IO on and every sdformat lookup off running
+  the URDF, SKEL and MJCF tests, an unchanged exported `SdfParser` symbol
+  list on SDF-on builds, BSD.
 
-## DEP-19. Asset networking (DD-6; option pending the follow-up study)
+## DEP-19. Asset retriever kept, exported privately, shipped in wheels (DD-12, DD-13)
 
-1. A Python stdlib fetcher (HTTPS-only redirects, limits, timeouts, a byte
-   cap, CA bundle overrides, atomic cache writes) used by the robot-asset
-   tasks.
-2. The C++ `ModelResourceRetriever` becomes an always-built offline verifier;
-   online requests get an actionable error; curl code removed.
-3. An in-house SHA-256 tested against NIST vectors and `std::random_device`
-   staging names; OpenSSL removed. `DART_BUILD_UTILS_ASSETS` becomes a no-op
-   and `utils-assets` stays a forwarding component.
-
-- **Gates:** base, every TLS, integrity and concurrency test ported, the C++
-  verifier accepts fetcher caches, test-robot-assets, wheel, ai, gz, pkg.
+- **Scope:** `ModelResourceRetriever` stays in C++ (`utils-assets`) with its
+  dartpy binding as the Pythonic surface; no separate Python fetcher, and
+  `dart.data` builds on the binding. libcurl and OpenSSL stay; DEP-2 exports
+  them only for static builds. Wheels enable `utils-assets`: the Linux image
+  builds current libcurl and OpenSSL 3 from hash-pinned archives (DEP-8(f)),
+  macOS and Windows wheels bundle conda-forge's; measure the wheel-size cost.
+  Standalone builds that enable it fetch libcurl and OpenSSL under DD-10.
+- **Gates:** base, py, wheel (the binding loads, `model://` resolves a pinned
+  bundle, size recorded), pkg, gz.
 
 ## DEP-20. GUI on stock 24.04
 
