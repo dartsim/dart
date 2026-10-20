@@ -50,10 +50,12 @@ pixi run test-gui        # Run dartpy.gui rendering and integration tests
 This development branch ships Pixi-managed wheel tasks. The core tasks are
 `wheel-build-core`, `wheel-repair-linux-core`, `wheel-repair-macos-core`,
 `wheel-repair-windows-core`, `wheel-verify-core`, and `wheel-test-core`;
-the per-Python environments `py310-wheel` through `py313-wheel` expose
-`wheel-build`, `wheel-repair`, `wheel-verify`, and `wheel-test` on top of
-them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
-`pixi run -e py313-wheel wheel-build`). See
+the `py312-wheel` environment exposes `wheel-build`, `wheel-repair`,
+`wheel-verify`, and `wheel-test` on top of them, and `py313-wheel` exposes
+`wheel-test-abi3`. Every wheel is `cp312-abi3`, built by scikit-build-core
+from `pyproject.toml`. CI runs them in
+`.github/workflows/publish_dartpy.yml` (for example
+`pixi run -e py312-wheel wheel-build`). See
 `docs/onboarding/python-bindings.md` for the wheel workflow overview.
 
 ## Key Patterns
@@ -71,6 +73,9 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 ## Key Files
 
-- Package config: `pyproject.toml`
+- Package config: `pyproject.toml` (scikit-build-core) and the PEP 517
+  wrapper `scripts/pep517/dartpy_backend.py`
+- Package files: `python/dartpy/package/` (`__init__.py`, `py.typed`,
+  `experimental/`)
 - Binding dependencies: `python/CMakeLists.txt`
 - Binding build system: `python/dartpy/CMakeLists.txt`

@@ -29,7 +29,31 @@ if(NOT DART_USE_SYSTEM_BULLET)
 endif()
 
 if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
-  find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+  # CMake's FindBullet ignores COMPONENTS and always returns all four
+  # libraries. DART's collision backend uses only Collision and LinearMath,
+  # so narrow BULLET_LIBRARIES to those two after discovery.
+  find_package(Bullet MODULE QUIET)
+  if(BULLET_FOUND OR Bullet_FOUND)
+    set(_bullet_narrowed_libraries "")
+    foreach(_bullet_lib_var BULLET_COLLISION_LIBRARY BULLET_MATH_LIBRARY)
+      if(${_bullet_lib_var}_DEBUG)
+        list(
+          APPEND _bullet_narrowed_libraries
+          optimized
+          ${${_bullet_lib_var}}
+          debug
+          ${${_bullet_lib_var}_DEBUG}
+        )
+      elseif(${_bullet_lib_var})
+        list(APPEND _bullet_narrowed_libraries ${${_bullet_lib_var}})
+      endif()
+    endforeach()
+    if(_bullet_narrowed_libraries)
+      set(BULLET_LIBRARIES "${_bullet_narrowed_libraries}")
+    endif()
+    unset(_bullet_narrowed_libraries)
+    unset(_bullet_lib_var)
+  endif()
 endif()
 
 if(BULLET_FOUND OR Bullet_FOUND)

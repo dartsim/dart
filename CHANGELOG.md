@@ -35,7 +35,7 @@
     on a host with a graphics device.
     [#3696](https://github.com/dartsim/dart/pull/3696)
 
-  * dartpy now uses nanobind 3.1 or newer and requires Python 3.10 or newer.
+  * dartpy now uses nanobind 3.1 or newer and requires Python 3.12 or newer.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
     Python `isinstance` checks and MRO; exception types and messages can differ;
     bool parameters accept only `True`/`False`; str parameters reject bytes;
@@ -86,6 +86,10 @@
     filename or model name, or an entity is missing its model, instead of
     constructing strings from null attributes.
     [#3863](https://github.com/dartsim/dart/pull/3863)
+
+  * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
+    256 MiB of decoded RGBA data, before allocating them.
+    [#3860](https://github.com/dartsim/dart/pull/3860)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
@@ -222,6 +226,16 @@
 
 * Python
 
+  * Passing `None` for a frame, body or shape-node argument no longer crashes
+    the interpreter. Where C++ defaults the argument to the world frame, `None`
+    now means the world frame. Arguments where C++ gives `None` a meaning, such
+    as `setParentFrame` to detach, keep that meaning. Everywhere else `None`
+    raises `TypeError`, including `World.addSkeleton`, `World.removeSkeleton`,
+    `CollisionGroup.addShapeFrame` and `BodyNode.createShapeNode`, which used
+    to ignore it. `FreeJoint.setSpatialMotion` now accepts arrays for its
+    transform, velocity and acceleration; `None` skips a motion and its frames.
+    [#3841](https://github.com/dartsim/dart/pull/3841)
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
@@ -252,14 +266,25 @@
   * Reject a null node when constructing inverse kinematics in dartpy,
     preventing an invalid-input crash.
 
-  * Build `dartpy` wheels with the nanobind binder. Python 3.12 and newer use
-    one `cp312-abi3` wheel per platform (new `DART_DARTPY_STABLE_ABI` CMake
-    option), and Linux keeps `cp310` and `cp311` wheels, so each release
-    publishes eight wheels instead of twelve.
+  * Build `dartpy` wheels with the nanobind binder for CPython's stable ABI
+    (new `DART_DARTPY_STABLE_ABI` CMake option): one `cp312-abi3` wheel per
+    platform serves Python 3.12 and newer, so each release publishes four
+    wheels (Linux x86_64 and aarch64, macOS arm64, Windows x64) instead of
+    twelve.
+
+  * `dartpy` is a Python package around a private native extension.
+    `import dartpy` and every public `dartpy.<module>` name are unchanged; the
+    package adds a `py.typed` marker and an empty `dartpy.experimental`
+    subpackage outside semantic versioning. Source builds use scikit-build-core
+    through `pyproject.toml`: `setup.py` is gone, sdist and editable installs
+    are refused, the wheel no longer ships a `tests` package, and the
+    `SKBUILD_BUILD_DIR` environment variable replaces `DARTPY_BUILD_TEMP`.
+    Development builds import the package from `build/<env>/cpp/<type>/python`
+    instead of its `dartpy` subdirectory.
+    [#3847](https://github.com/dartsim/dart/pull/3847)
 
   * Source builds of `dartpy` on Windows work with the Ninja and NMake
-    generators, and the `DARTPY_BUILD_TEMP` environment variable moves the
-    CMake build tree, for example to a larger disk.
+    generators.
 
 * Examples
 
@@ -281,6 +306,10 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+  * Link only BulletCollision and LinearMath instead of all four Bullet
+    libraries, so the exported link interface and wheels no longer carry
+    BulletDynamics and BulletSoftBody.
+    [#3864](https://github.com/dartsim/dart/pull/3864)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
@@ -351,8 +380,8 @@
     from source on Linux (Clang 20 or newer and Ninja) and downloaded prebuilt
     on macOS arm64 and 64-bit Windows.
 
-  * Raise the minimum `wheel` version for isolated Python package builds
-    from 0.45.1 to 0.48.0.
+  * Isolated Python package builds install scikit-build-core 1.1.1 or newer
+    instead of setuptools and wheel.
     [#3791](https://github.com/dartsim/dart/pull/3791)
 
   * Raise the minimum `ninja` version for isolated Python package builds
@@ -539,7 +568,7 @@ above lists every merged change.
 
   * Source builds need GCC 11.2, Clang 13, Apple Clang 14 (Xcode 14.1) or
     Visual Studio 2022, on Ubuntu 22.04, macOS 13 or newer, and dartpy needs
-    Python 3.10 and NumPy 1.21.5 or newer. The
+    Python 3.12 and NumPy 1.21.5 or newer. The
     [build requirements](https://dart.readthedocs.io/en/latest/dart/developer_guide/build.html)
     list the dependency versions:
     [#3643](https://github.com/dartsim/dart/pull/3643)
