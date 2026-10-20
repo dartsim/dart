@@ -290,6 +290,10 @@
 
 * Build
 
+  * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
+    of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
+    OpenSSL; only static installs require consumers to provide them.
+
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
