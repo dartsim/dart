@@ -334,9 +334,10 @@ def cmd_run(args):
     # Rows are written as cells finish, so an interrupted run keeps its data. A
     # failed cell's rows go to failed.csv for diagnosis, never to cells.csv, so
     # they stay out of every table and score; report lists it as failed.
-    with open(os.path.join(args.out, "cells.csv"), "w") as f, open(
-        os.path.join(args.out, "failed.csv"), "w"
-    ) as failed:
+    with (
+        open(os.path.join(args.out, "cells.csv"), "w") as f,
+        open(os.path.join(args.out, "failed.csv"), "w") as failed,
+    ):
         f.write(COLUMNS_LINE)
         failed.write(COLUMNS_LINE)
 
@@ -789,14 +790,12 @@ def self_test(binary=None):
         (0, ok + row.format("slip_dir_err_mean_deg", "nan"), 1),
     ):
         done = subprocess.CompletedProcess([], code, out, "")
-        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
-            subprocess, "run", return_value=done
-        ), mock.patch.object(
-            sys.modules[__name__], "preflight", return_value=""
-        ), contextlib.redirect_stdout(
-            io.StringIO()
-        ), contextlib.redirect_stderr(
-            io.StringIO()
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            mock.patch.object(subprocess, "run", return_value=done),
+            mock.patch.object(sys.modules[__name__], "preflight", return_value=""),
+            contextlib.redirect_stdout(io.StringIO()),
+            contextlib.redirect_stderr(io.StringIO()),
         ):
             run = argparse.Namespace(
                 bin=["B620=friction_eval"],
@@ -814,8 +813,9 @@ def self_test(binary=None):
         (["B62O=friction_eval"], ""),
         (["B620=/nonexistent/friction_eval"], "^A5 mu=0 B620 ode"),
     ):
-        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(
-            io.StringIO()
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            contextlib.redirect_stderr(io.StringIO()),
         ):
             run = argparse.Namespace(bin=bins, out=tmp, jobs=1, only=only)
             assert cmd_run(run) == 2 and not os.listdir(tmp)
@@ -832,11 +832,12 @@ def self_test(binary=None):
     assert plan(cells, have_valgrind=True)[0] == [cells[1], cells[3]]
     # A nonempty selection can still have no runnable cells after planning.
     for only, reasons in (("--ir", ("valgrind not found",)),):
-        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
-            shutil, "which", return_value=None
-        ), mock.patch.object(subprocess, "run") as process, contextlib.redirect_stderr(
-            io.StringIO()
-        ) as err:
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            mock.patch.object(shutil, "which", return_value=None),
+            mock.patch.object(subprocess, "run") as process,
+            contextlib.redirect_stderr(io.StringIO()) as err,
+        ):
             run = argparse.Namespace(
                 bin=["B620=friction_eval"], out=tmp, jobs=1, only=only
             )

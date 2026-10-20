@@ -116,15 +116,15 @@ void DynamicJointConstraint(nb::module_& m)
       dart::constraint::DynamicJointConstraint>(m, "BallJointConstraint")
       .def(
           dartnb::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
-          nb::arg("body").none(),
+          nb::arg("body"),
           nb::arg("jointPos"))
       .def(
           dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&>(),
-          nb::arg("body1").none(),
-          nb::arg("body2").none(),
+          nb::arg("body1"),
+          nb::arg("body2"),
           nb::arg("jointPos"))
       .def_static(
           "getStaticType", +[]() -> std::string {
@@ -139,7 +139,7 @@ void DynamicJointConstraint(nb::module_& m)
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          nb::arg("body").none(),
+          nb::arg("body"),
           nb::arg("jointPos"),
           nb::arg("axis"))
       .def(
@@ -149,8 +149,8 @@ void DynamicJointConstraint(nb::module_& m)
               const Eigen::Vector3d&,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          nb::arg("body1").none(),
-          nb::arg("body2").none(),
+          nb::arg("body1"),
+          nb::arg("body2"),
           nb::arg("jointPos"),
           nb::arg("axis1"),
           nb::arg("axis2"))
@@ -168,7 +168,7 @@ void DynamicJointConstraint(nb::module_& m)
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          nb::arg("body").none(),
+          nb::arg("body"),
           nb::arg("jointPos"),
           nb::arg("axis"))
       .def(
@@ -178,8 +178,8 @@ void DynamicJointConstraint(nb::module_& m)
               const Eigen::Vector3d&,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          nb::arg("body1").none(),
-          nb::arg("body2").none(),
+          nb::arg("body1"),
+          nb::arg("body2"),
           nb::arg("jointPos"),
           nb::arg("axis1"),
           nb::arg("axis2"))
@@ -191,11 +191,11 @@ void DynamicJointConstraint(nb::module_& m)
   dartnb::dart_class<
       dart::constraint::WeldJointConstraint,
       dart::constraint::DynamicJointConstraint>(m, "WeldJointConstraint")
-      .def(dartnb::init<dart::dynamics::BodyNode*>(), nb::arg("body").none())
+      .def(dartnb::init<dart::dynamics::BodyNode*>(), nb::arg("body"))
       .def(
           dartnb::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
-          nb::arg("body1").none(),
-          nb::arg("body2").none())
+          nb::arg("body1"),
+          nb::arg("body2"))
       .def_static(
           "getStaticType",
           +[]() -> std::string {

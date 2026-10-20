@@ -651,7 +651,7 @@ nb::tuple dart_gui_interactions(nb::module_& m)
               const Eigen::Isometry3d&,
               double,
               double>(),
-          nb::arg("referenceFrame").none(),
+          nb::arg("referenceFrame"),
           nb::arg("name") = "interactive_frame",
           nb::arg("relativeTransform") = Eigen::Isometry3d::Identity(),
           nb::arg("sizeScale") = 0.2,
