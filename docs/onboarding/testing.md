@@ -66,10 +66,11 @@ per-test selections remain explicit. Repository pytest gates use
 `scripts/run_pytest.py`; it removes every ambient `PYTEST_*` control, disables
 external plugin autoload, runs under Python isolation before adding only the
 task-owned import path, pins the root configuration, disables `conftest.py`,
-and fails if no test body executes. CMake derives the dartpy import location
-from `$<TARGET_FILE_DIR:dartpy>`, so Visual Studio, Xcode, and future
-multi-config generators use the selected configuration's extension module
-instead of a guessed build directory. The checker rejects explicit local
+and fails if no test body executes. CMake stages the `dartpy` package under a
+configuration-aware root (`DART_DARTPY_BUILD_DIR`, the parent of
+`$<TARGET_FILE_DIR:dartpy>`) and imports from that root, so Visual Studio,
+Xcode, and future multi-config generators use the selected configuration's
+extension module instead of a guessed build directory. The checker rejects explicit local
 `pytest_plugins` and resolves the installed package without importing a local
 shadow. Its semantic probes execute controlled passing and failing CTest/pytest
 cases, so source markers alone cannot claim that sanitization, test-body
