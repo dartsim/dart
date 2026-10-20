@@ -290,6 +290,13 @@
 
 * Build
 
+  * Add `DART_REQUIRE_OPTIONAL_DEPENDENCIES` (default `OFF`), which turns a
+    missing optional dependency such as ODE or Bullet from a warning that drops
+    its component into a configure error, for Gazebo-facing packagers whose
+    gz-physics needs those components. Explicit `DART_SKIP_<NAME>=ON` still
+    disables one. The unused `DART_SKIP_DOXYGEN` and `HAVE_DOXYGEN` cache
+    entries are gone; the documentation targets still follow Doxygen's
+    availability.
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests

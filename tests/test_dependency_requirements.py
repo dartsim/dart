@@ -919,3 +919,43 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "package,finder,component,dependency,version",
+    [
+        ("ODE", "ODE", "dart-collision-ode", "ode", "0.16.2"),
+        ("BULLET", "Bullet", "dart-collision-bullet", "Bullet", "3.05"),
+    ],
+)
+@pytest.mark.parametrize("require,skip", [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize("versioned", [True, False])
+def test_require_optional_dependencies(
+    tmp_path, package, finder, component, dependency, version, require, skip, versioned
+):
+    version_arg = f' "{version}"' if versioned else ""
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        f"set(DART_USE_SYSTEM_{package} ON)\n"
+        f"include(DARTFind{finder})\n"
+        f'dart_check_optional_package({package} "{component}" "{dependency}"{version_arg})\n',
+        cmake_args=(
+            f"-DDART_REQUIRE_OPTIONAL_DEPENDENCIES={'ON' if require else 'OFF'}",
+            f"-DDART_SKIP_{package}={'ON' if skip else 'OFF'}",
+        ),
+    )
+    output = " ".join((result.stdout + result.stderr).split())
+    assert "NOT found" in output
+    assert (f"(>= {version})" in output) == versioned
+    if require and not skip:
+        assert result.returncode != 0
+        for text in (
+            "DART_REQUIRE_OPTIONAL_DEPENDENCIES",
+            f"DART_SKIP_{package}=ON",
+            component,
+            dependency,
+        ):
+            assert text in output
+    else:
+        assert result.returncode == 0, output
