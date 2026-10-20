@@ -62,11 +62,11 @@ public:
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault()) noexcept;
 
   /// Copy constructor
-  StlAllocator(const StlAllocator& other) throw();
+  StlAllocator(const StlAllocator& other) noexcept;
 
   /// Copy constructor
   template <class U>
-  StlAllocator(const StlAllocator<U>& other) throw();
+  StlAllocator(const StlAllocator<U>& other) noexcept;
 
   /// Destructor
   ~StlAllocator() = default;
