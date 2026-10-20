@@ -50,8 +50,8 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/urdf/BackwardCompatibility.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
-#include "dart/utils/urdf/urdf_world_parser.hpp"
+#include "dart/utils/urdf/detail/IncludeUrdf.hpp"
+#include "dart/utils/urdf/detail/urdf_world_parser.hpp"
 
 #include <tinyxml2.h>
 

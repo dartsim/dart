@@ -34,10 +34,10 @@
 
 /* Author: A. Huaman */
 
-#include "dart/utils/urdf/urdf_world_parser.hpp"
+#include "dart/utils/urdf/detail/urdf_world_parser.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
+#include "dart/utils/urdf/detail/IncludeUrdf.hpp"
 
 #include <tinyxml2.h>
 

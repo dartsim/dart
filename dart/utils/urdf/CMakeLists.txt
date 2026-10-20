@@ -1,9 +1,11 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_srcs "detail/*.cpp")
 
-dart_add_utils_headers(${hdrs})
-dart_add_utils_sources(${srcs})
+dart_add_utils_headers(${hdrs} ${detail_hdrs})
+dart_add_utils_sources(${srcs} ${detail_srcs})
 
 set(
   DART_UTILS_BACKWARDCOMPATIBILITY_HPP_IN
@@ -51,4 +53,4 @@ install(
   COMPONENT headers
 )
 
-dart_format_add(${hdrs} ${srcs})
+dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

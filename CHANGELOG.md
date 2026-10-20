@@ -6,6 +6,13 @@
 
 * Breaking Changes
 
+  * Remove the installed `dart/utils/urdf/IncludeUrdf.hpp` and
+    `dart/utils/urdf/urdf_world_parser.hpp` headers, including
+    `dart::utils::urdf_parsing::parseWorldURDF`. Use
+    `dart::utils::DartLoader::parseWorld` or `parseWorldString` instead.
+    Shared DART consumers no longer need urdfdom development packages;
+    static consumers and DART builds still require urdfdom.
+
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
     scaling, and display-free Linux capture. The `gui-osg` component
