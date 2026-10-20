@@ -45,7 +45,7 @@ StlAllocator<T>::StlAllocator(MemoryAllocator& baseAllocator) noexcept
 
 //==============================================================================
 template <typename T>
-StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
+StlAllocator<T>::StlAllocator(const StlAllocator& other) noexcept
   : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
 {
   // Do nothing
@@ -54,7 +54,7 @@ StlAllocator<T>::StlAllocator(const StlAllocator& other) throw()
 //==============================================================================
 template <typename T>
 template <class U>
-StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) throw()
+StlAllocator<T>::StlAllocator(const StlAllocator<U>& other) noexcept
   : std::allocator<T>(other), mBaseAllocator(other.mBaseAllocator)
 {
   // Do nothing

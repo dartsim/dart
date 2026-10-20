@@ -117,7 +117,7 @@ void CollisionResult(nb::module_& m)
               const dart::dynamics::BodyNode* bn) -> bool {
             return self->inCollision(bn);
           },
-          nb::arg("bn").none(),
+          nb::arg("bn"),
           "Returns true if the given BodyNode is in collision.")
       .def(
           "inCollision",
@@ -125,7 +125,7 @@ void CollisionResult(nb::module_& m)
               const dart::dynamics::ShapeFrame* frame) -> bool {
             return self->inCollision(frame);
           },
-          nb::arg("frame").none(),
+          nb::arg("frame"),
           "Returns true if the given ShapeFrame is in collision.")
       .def(
           "isCollision",
