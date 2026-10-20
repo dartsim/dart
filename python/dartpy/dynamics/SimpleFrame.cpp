@@ -2,6 +2,8 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include "detail/frame.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -60,16 +62,27 @@ void SimpleFrame(nb::module_& m)
       dart::dynamics::ShapeFrame,
       dart::dynamics::Detachable>(m, "SimpleFrame")
       .def(dartnb::init<>())
-      .def(dartnb::init<dart::dynamics::Frame*>(), nb::arg("refFrame").none())
       .def(
-          dartnb::init<dart::dynamics::Frame*, const std::string&>(),
+          dartnb::factory(+[](dart::dynamics::Frame* refFrame) {
+            return std::make_shared<dart::dynamics::SimpleFrame>(
+                dartnb::frameOrWorld(refFrame));
+          }),
+          nb::arg("refFrame").none())
+      .def(
+          dartnb::factory(
+              +[](dart::dynamics::Frame* refFrame, const std::string& name) {
+                return std::make_shared<dart::dynamics::SimpleFrame>(
+                    dartnb::frameOrWorld(refFrame), name);
+              }),
           nb::arg("refFrame").none(),
           nb::arg("name"))
       .def(
-          dartnb::init<
-              dart::dynamics::Frame*,
-              const std::string&,
-              const Eigen::Isometry3d&>(),
+          dartnb::factory(+[](dart::dynamics::Frame* refFrame,
+                              const std::string& name,
+                              const Eigen::Isometry3d& relativeTransform) {
+            return std::make_shared<dart::dynamics::SimpleFrame>(
+                dartnb::frameOrWorld(refFrame), name, relativeTransform);
+          }),
           nb::arg("refFrame").none(),
           nb::arg("name"),
           nb::arg("relativeTransform"))
@@ -96,7 +109,7 @@ void SimpleFrame(nb::module_& m)
           +[](const dart::dynamics::SimpleFrame* self,
               dart::dynamics::Frame* _refFrame)
               -> std::shared_ptr<dart::dynamics::SimpleFrame> {
-            return self->clone(_refFrame);
+            return self->clone(dartnb::frameOrWorld(_refFrame));
           },
           nb::arg("refFrame").none())
       .def(
@@ -105,15 +118,15 @@ void SimpleFrame(nb::module_& m)
               const dart::dynamics::Frame* _otherFrame) {
             self->copy(_otherFrame);
           },
-          nb::arg("otherFrame").none())
+          nb::arg("otherFrame"))
       .def(
           "copy",
           +[](dart::dynamics::SimpleFrame* self,
               const dart::dynamics::Frame* _otherFrame,
               dart::dynamics::Frame* _refFrame) {
-            self->copy(_otherFrame, _refFrame);
+            self->copy(_otherFrame, dartnb::frameOrWorld(_refFrame));
           },
-          nb::arg("otherFrame").none(),
+          nb::arg("otherFrame"),
           nb::arg("refFrame").none())
       .def(
           "copy",
@@ -121,9 +134,10 @@ void SimpleFrame(nb::module_& m)
               const dart::dynamics::Frame* _otherFrame,
               dart::dynamics::Frame* _refFrame,
               bool _copyProperties) {
-            self->copy(_otherFrame, _refFrame, _copyProperties);
+            self->copy(
+                _otherFrame, dartnb::frameOrWorld(_refFrame), _copyProperties);
           },
-          nb::arg("otherFrame").none(),
+          nb::arg("otherFrame"),
           nb::arg("refFrame").none(),
           nb::arg("copyProperties"))
       .def(
@@ -182,7 +196,8 @@ void SimpleFrame(nb::module_& m)
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Isometry3d& _newTransform,
               const dart::dynamics::Frame* _withRespectTo) {
-            self->setTransform(_newTransform, _withRespectTo);
+            self->setTransform(
+                _newTransform, dartnb::frameOrWorld(_withRespectTo));
           },
           nb::arg("newTransform"),
           nb::arg("withRespectTo").none())
@@ -198,7 +213,8 @@ void SimpleFrame(nb::module_& m)
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Vector3d& _newTranslation,
               const dart::dynamics::Frame* _withRespectTo) {
-            self->setTranslation(_newTranslation, _withRespectTo);
+            self->setTranslation(
+                _newTranslation, dartnb::frameOrWorld(_withRespectTo));
           },
           nb::arg("newTranslation"),
           nb::arg("withRespectTo").none())
@@ -214,7 +230,8 @@ void SimpleFrame(nb::module_& m)
           +[](dart::dynamics::SimpleFrame* self,
               const Eigen::Matrix3d& _newRotation,
               const dart::dynamics::Frame* _withRespectTo) {
-            self->setRotation(_newRotation, _withRespectTo);
+            self->setRotation(
+                _newRotation, dartnb::frameOrWorld(_withRespectTo));
           },
           nb::arg("newRotation"),
           nb::arg("withRespectTo").none())
@@ -234,7 +251,7 @@ void SimpleFrame(nb::module_& m)
                 _newSpatialVelocity, _inCoordinatesOf);
           },
           nb::arg("newSpatialVelocity"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "setRelativeSpatialAcceleration",
           +[](dart::dynamics::SimpleFrame* self,
@@ -251,7 +268,7 @@ void SimpleFrame(nb::module_& m)
                 _newSpatialAcceleration, _inCoordinatesOf);
           },
           nb::arg("newSpatialAcceleration"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "setClassicDerivatives",
           +[](dart::dynamics::SimpleFrame* self) {

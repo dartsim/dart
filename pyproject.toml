@@ -2,18 +2,104 @@
 # All rights reserved.
 
 [build-system]
-# Fallback PyPA CMake for isolated source builds (`pip install .`). The Pixi
-# wheel tasks use the Pixi CMake package directly, so CI does not exercise it.
-# CMake 4.3.4 regressed GLUT/OpenGL detection while DART 6 wheels still linked
-# the GLUT-era dart-gui. The 4.4.3 pin is not yet validated in the wheel build
-# environment.
-requires = [
-  "setuptools>=84.0.0",
-  "wheel>=0.48.0",
-  "ninja>=1.13.2",
-  "cmake>=4.4.4,<4.4.5",
+# scikit-build-core drives the CMake build; scripts/pep517/dartpy_backend.py
+# wraps it only to move the Filament license that configure fetches into the
+# wheel's dist-info. Isolated source builds (`pip install .`) install this
+# requirement, and scikit-build-core adds CMake and Ninja wheels when the
+# host lacks the versions pinned below; the Pixi wheel tasks use the Pixi
+# packages directly.
+requires = ["scikit-build-core>=1.1.1"]
+build-backend = "dartpy_backend"
+backend-path = ["scripts/pep517"]
+
+[project]
+name = "dartpy"
+dynamic = ["version"]
+description = "Python API of Dynamic Animation and Robotics Toolkit."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "BSD-2-Clause"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Jeongseok Lee", email = "jslee02@gmail.com" }]
+keywords = ["dartsim", "robotics"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Framework :: Robot Framework",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
 ]
-build-backend = "setuptools.build_meta"
+dependencies = ["numpy>=1.21.5"]
+
+[project.optional-dependencies]
+test = ["pytest>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/dartsim/dart"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+# The stable-ABI build needs CMake 3.26 (python/CMakeLists.txt).
+cmake.version = ">=3.26"
+ninja.version = ">=1.13.2"
+cmake.build-type = "Release"
+# `build/{wheel_tag}` keeps wheel builds incremental; SKBUILD_BUILD_DIR moves
+# the tree, for example to a larger disk.
+build-dir = "build/{wheel_tag}"
+build.verbose = true
+# Only the dartpy target builds, and only the `python` install component
+# (the package and the staged Filament license) enters the wheel.
+build.targets = ["dartpy"]
+install.components = ["python"]
+# CMake installs the package; python/dartpy/ also holds the C++ sources.
+wheel.packages = []
+# One cp312-abi3 wheel per platform serves Python 3.12 and newer.
+wheel.py-api = "cp312"
+
+[[tool.dynamic-metadata]]
+field = "version"
+provider = "scikit_build_core.metadata.regex"
+input = "package.xml"
+regex = '<version>(?P<value>[^<]+)</version>'
+
+[tool.scikit-build.cmake.define]
+BUILD_SHARED_LIBS = "OFF"
+DART_BUILD_DARTPY = "ON"
+DART_BUILD_GUI = "ON"
+DART_BUILD_WHEELS = "ON"
+DART_DARTPY_STABLE_ABI = "ON"
+DART_ENABLE_SIMD = "OFF"
+DART_TREAT_WARNINGS_AS_ERRORS = "OFF"
+DART_USE_SYSTEM_IMGUI = "OFF"
+DART_VERBOSE = "ON"
+
+# DART pins a private Filament SDK for Linux, macOS arm64 and 64-bit Windows
+# (cmake/DARTFilamentProvider.cmake); other platforms, and macOS universal
+# builds, use an installed SDK. `inherit` keeps the defines above.
+[[tool.scikit-build.overrides]]
+if.platform-system = "^linux"
+inherit.cmake.define = "append"
+cmake.define.DART_USE_SYSTEM_FILAMENT = "OFF"
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "^darwin"
+if.platform-machine = "^arm64$"
+inherit.cmake.define = "append"
+cmake.define.DART_USE_SYSTEM_FILAMENT = "OFF"
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "^darwin"
+if.env.ARCHFLAGS = "x86_64"
+inherit.cmake.define = "append"
+cmake.define.DART_USE_SYSTEM_FILAMENT = "ON"
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "^win32"
+if.platform-machine = "64"
+inherit.cmake.define = "append"
+cmake.define.DART_USE_SYSTEM_FILAMENT = "OFF"
 
 [tool.black]
 exclude = '/(build|dist|docs|examples|external|python|\.pixi)/'
@@ -21,18 +107,6 @@ exclude = '/(build|dist|docs|examples|external|python|\.pixi)/'
 [tool.isort]
 profile = "black"
 skip = ['build', 'dist', 'docs', 'examples', 'external', 'python', '.pixi']
-
-[tool.mypy]
-files = "setup.py"
-python_version = "3.10"
-strict = true
-show_error_codes = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-warn_unreachable = true
-
-[[tool.mypy.overrides]]
-module = ["ninja"]
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"

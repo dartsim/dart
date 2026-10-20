@@ -1610,6 +1610,26 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
     requirements = (
         (
             (
+                "set",
+                'DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/$<CONFIG>"',
+                ("if:dartpy_multi_config",),
+            ),
+            "multi_config_root",
+            "`DART_DARTPY_BUILD_DIR` must select the configuration's package "
+            "root under `if(dartpy_multi_config)`",
+        ),
+        (
+            (
+                "set",
+                'DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}"',
+                ("else:dartpy_multi_config",),
+            ),
+            "single_config_root",
+            "`DART_DARTPY_BUILD_DIR` must be the Python build root under the "
+            "single-config branch",
+        ),
+        (
+            (
                 "add_subdirectory",
                 "dartpy",
                 (),
@@ -1618,35 +1638,10 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
             "`add_subdirectory(dartpy)` must define the nanobind target",
         ),
         (
-            (
-                "set",
-                'DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>"',
-                (),
-            ),
-            "dartpy_output",
-            "`DART_DARTPY_BUILD_DIR` must derive from `$<TARGET_FILE_DIR:dartpy>`",
-        ),
-        (
-            (
-                "set",
-                "DART_PYTHONPATH "
-                '"${DART_DARTPY_BUILD_DIR}\\\\;${DART_PYTHON_BUILD_DIR}"',
-                ("if:WIN32",),
-            ),
-            "windows_path",
-            "`DART_PYTHONPATH` must combine the target output directory and "
-            "Python build root under `if(WIN32)`",
-        ),
-        (
-            (
-                "set",
-                "DART_PYTHONPATH "
-                '"${DART_DARTPY_BUILD_DIR}:${DART_PYTHON_BUILD_DIR}"',
-                ("else:WIN32",),
-            ),
-            "posix_path",
-            "`DART_PYTHONPATH` must combine the target output directory and "
-            "Python build root under the non-Windows branch",
+            ("set", 'DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}"', ()),
+            "runtime_path",
+            "`DART_PYTHONPATH` must be the configuration-aware package root "
+            "`DART_DARTPY_BUILD_DIR`",
         ),
         (
             ("add_subdirectory", "tests", ()),
@@ -1663,14 +1658,16 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
 
     if len(positions) != len(requirements):
         return
-    path_positions = (positions["windows_path"], positions["posix_path"])
+    root_positions = (positions["multi_config_root"], positions["single_config_root"])
     if not (
-        positions["nanobind_target"] < positions["dartpy_output"] < min(path_positions)
-        and max(path_positions) < positions["pytest_target"]
+        max(root_positions)
+        < positions["nanobind_target"]
+        < positions["runtime_path"]
+        < positions["pytest_target"]
     ):
         errors.append(
-            f"{relative}: define `dartpy`, derive its configuration-aware "
-            "output path, compose both platform paths, and then define tests"
+            f"{relative}: derive the configuration-aware package root, define "
+            "`dartpy`, set its runtime path, and then define tests"
         )
 
 
@@ -1800,7 +1797,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "--pythonpath",
                 (
                     "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/"
-                    "$BUILD_TYPE/python/dartpy"
+                    "$BUILD_TYPE/python"
                 ),
                 "--pythonpath",
                 "$PIXI_PROJECT_ROOT/scripts",
@@ -3450,6 +3447,7 @@ def check_cmake_test_target_trace(
     root: Path,
     build_dir: Path,
     dartpy_output_dir: str,
+    configuration: str,
     cache: dict[str, str],
     records: list[dict[str, Any]],
     origins: dict[str, tuple[str, int]],
@@ -3572,25 +3570,22 @@ def check_cmake_test_target_trace(
             pythonpath_value = pytest_arguments[pytest_index + 5]
             path_separator = ";" if r"\;" in pythonpath_value else os.pathsep
             pythonpath_entries = split_cmake_path_list(pythonpath_value, path_separator)
+            # Multi-config generators stage the package under a per-configuration
+            # root; the pytest path must be exactly the parent of the configured
+            # dartpy package directory.
             resolved_pythonpath_entries = [
-                (dartpy_output_dir if entry == "$<TARGET_FILE_DIR:dartpy>" else entry)
+                entry.replace("$<CONFIG>", configuration)
                 for entry in pythonpath_entries
             ]
-            normalized_pythonpath = {
-                normalized_absolute_path(entry, root / "python" / "tests")
-                for entry in resolved_pythonpath_entries
-                if entry
-            }
-            allowed_pythonpath = {
-                normalized_absolute_path(dartpy_output_dir, build_dir),
-                normalized_absolute_path(str(build_dir / "python"), root),
-            }
+            package_dir = Path(dartpy_output_dir)
             valid = (
-                bool(pythonpath_entries)
-                and all(pythonpath_entries)
-                and pythonpath_entries[0] == "$<TARGET_FILE_DIR:dartpy>"
-                and len(pythonpath_entries) == len(normalized_pythonpath)
-                and normalized_pythonpath == allowed_pythonpath
+                len(pythonpath_entries) == 1
+                and bool(pythonpath_entries[0])
+                and package_dir.name == "dartpy"
+                and normalized_absolute_path(
+                    resolved_pythonpath_entries[0], root / "python" / "tests"
+                )
+                == normalized_absolute_path(str(package_dir.parent), build_dir)
             )
             pythonpath_value = os.pathsep.join(resolved_pythonpath_entries)
         if valid:
@@ -4145,6 +4140,7 @@ def check_cmake_test_graph(
             root,
             build_dir,
             dartpy_output_dir,
+            desired,
             cache,
             trace_records,
             configured_origins,

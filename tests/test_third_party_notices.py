@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -312,42 +313,49 @@ def test_tracked_paths_skips_without_git(tmp_path):
         tracked_paths(tmp_path)
 
 
-def test_setuptools_default_license_globs_include_notice(tmp_path):
+def test_wheel_metadata_and_license_files_include_notice(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
-    for name in (
-        "setup.py",
-        "pyproject.toml",
-        "README.md",
-        "package.xml",
-        "CMakeLists.txt",
-        "LICENSE",
-        "NOTICE",
-    ):
+    for name in ("pyproject.toml", "README.md", "package.xml", "LICENSE", "NOTICE"):
         shutil.copy2(ROOT / name, source / name)
-    (source / "python").mkdir()
+    backend = source / "scripts/pep517"
+    backend.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/pep517/dartpy_backend.py", backend)
+    # Exercise the real wheel configuration without compiling native code.
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.26)\n"
+        "project(NoticeFixture NONE)\n"
+        "add_custom_target(dartpy)\n",
+        encoding="utf-8",
+    )
     source_entries = set(ROOT.iterdir())
     python_entries = set((ROOT / "python").iterdir())
     subprocess.run(
         [
             sys.executable,
-            "setup.py",
-            "dist_info",
-            "--keep-egg-info",
-            "--output-dir",
-            str(tmp_path),
+            "-c",
+            "import sys; sys.path.insert(0, 'scripts/pep517'); "
+            "from dartpy_backend import build_wheel; "
+            "build_wheel('dist')",
         ],
         cwd=source,
         check=True,
         capture_output=True,
         text=True,
     )
-    dist_info = next(tmp_path.glob("dartpy-*.dist-info"))
-    metadata = (dist_info / "METADATA").read_text(encoding="utf-8")
-    assert "License-File: LICENSE\n" in metadata
-    assert "License-File: NOTICE\n" in metadata
-    # The same backend license-file list feeds sdist's source manifest.
-    sources = next(tmp_path.glob("*.egg-info/SOURCES.txt")).read_text(encoding="utf-8")
-    assert "NOTICE" in sources.splitlines()
+    wheel = next((source / "dist").glob("*.whl"))
+    assert "-cp312-abi3-" in wheel.name
+    with zipfile.ZipFile(wheel) as archive:
+        metadata_path = next(
+            name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+        )
+        dist_info = metadata_path.rpartition("/")[0]
+        metadata = archive.read(metadata_path).decode("utf-8").replace("\r\n", "\n")
+        for name in ("LICENSE", "NOTICE"):
+            assert f"License-File: {name}\n" in metadata
+            assert (
+                archive.read(f"{dist_info}/licenses/{name}")
+                == (ROOT / name).read_bytes()
+            )
     assert set(ROOT.iterdir()) == source_entries
     assert set((ROOT / "python").iterdir()) == python_entries

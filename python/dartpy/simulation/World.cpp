@@ -79,15 +79,6 @@ void World(nb::module_& m)
             return dart::simulation::World::create(name);
           }),
           nb::arg("name"))
-      .def(dartnb::factory(+[]() -> dart::simulation::WorldPtr {
-        return dart::simulation::World::create();
-      }))
-      .def(
-          dartnb::factory(
-              +[](const std::string& name) -> dart::simulation::WorldPtr {
-                return dart::simulation::World::create(name);
-              }),
-          nb::arg("name"))
       .def(
           "clone",
           +[](const dart::simulation::World* self)
@@ -171,14 +162,14 @@ void World(nb::module_& m)
               const dart::dynamics::SkeletonPtr& _skeleton) -> std::string {
             return self->addSkeleton(_skeleton);
           },
-          nb::arg("skeleton").none())
+          nb::arg("skeleton"))
       .def(
           "removeSkeleton",
           +[](dart::simulation::World* self,
               const dart::dynamics::SkeletonPtr& _skeleton) -> void {
             return self->removeSkeleton(_skeleton);
           },
-          nb::arg("skeleton").none())
+          nb::arg("skeleton"))
       .def(
           "removeAllSkeletons",
           +[](dart::simulation::World* self)
@@ -223,14 +214,14 @@ void World(nb::module_& m)
               const dart::dynamics::SimpleFramePtr& _frame) -> std::string {
             return self->addSimpleFrame(_frame);
           },
-          nb::arg("frame").none())
+          nb::arg("frame"))
       .def(
           "removeSimpleFrame",
           +[](dart::simulation::World* self,
               const dart::dynamics::SimpleFramePtr& _frame) -> void {
             return self->removeSimpleFrame(_frame);
           },
-          nb::arg("frame").none())
+          nb::arg("frame"))
       .def(
           "removeAllSimpleFrames",
           +[](dart::simulation::World* self)
