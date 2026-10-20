@@ -117,8 +117,8 @@ void CollisionFilter(nb::module_& m)
               const dart::dynamics::BodyNode* bodyNode2) {
             self->addBodyNodePairToBlackList(bodyNode1, bodyNode2);
           },
-          nb::arg("bodyNode1").none(),
-          nb::arg("bodyNode2").none(),
+          nb::arg("bodyNode1"),
+          nb::arg("bodyNode2"),
           "Add a BodyNode pair to the blacklist.")
       .def(
           "removeBodyNodePairFromBlackList",
@@ -127,8 +127,8 @@ void CollisionFilter(nb::module_& m)
               const dart::dynamics::BodyNode* bodyNode2) {
             self->removeBodyNodePairFromBlackList(bodyNode1, bodyNode2);
           },
-          nb::arg("bodyNode1").none(),
-          nb::arg("bodyNode2").none(),
+          nb::arg("bodyNode1"),
+          nb::arg("bodyNode2"),
           "Remove a BodyNode pair from the blacklist.")
       .def(
           "removeAllBodyNodePairsFromBlackList",
