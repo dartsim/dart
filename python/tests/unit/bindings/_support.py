@@ -23,7 +23,7 @@ def run_isolated(script, allow_leaks=False, assertion=None):
     source += '\nmain()\ngc.collect()\nprint("done")\n'
     environment = dict(os.environ)
     environment["PYTHONPATH"] = os.pathsep.join(
-        [str(Path(dart.__file__).resolve().parent), *filter(None, sys.path)]
+        [str(Path(dart.__file__).resolve().parents[1]), *filter(None, sys.path)]
     )
     result = subprocess.run(
         [sys.executable, "-c", source],

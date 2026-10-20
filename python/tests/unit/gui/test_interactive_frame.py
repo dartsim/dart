@@ -27,7 +27,7 @@ def test_interactive_frame_shape_frames_keep_owner_alive():
             "-I",
             "-c",
             "import sys; sys.path.insert(0, sys.argv[1]);\n" + script,
-            str(Path(dart.__file__).resolve().parent),
+            str(Path(dart.__file__).resolve().parents[1]),
         ],
         capture_output=True,
         text=True,

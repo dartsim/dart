@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import shlex
 import subprocess
@@ -23,12 +22,6 @@ def _cmake_prefix_path(conda_prefix: str) -> str:
     if sys.platform == "win32":
         entries.append(prefix / "Library")
     return ";".join(_cmake_path(entry) for entry in entries)
-
-
-def _cmake_args_env(cmake_args: list[str]) -> str:
-    if sys.platform == "win32":
-        return subprocess.list2cmdline(cmake_args)
-    return shlex.join(cmake_args)
 
 
 def main(argv: list[str]) -> int:
@@ -54,24 +47,15 @@ def main(argv: list[str]) -> int:
     if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
         os.environ["CMAKE_BUILD_PARALLEL_LEVEL"] = str(min(os.cpu_count() or 1, 8))
 
+    # pyproject.toml fixes the wheel configuration, including the cp312-abi3
+    # stable-ABI build; CMAKE_ARGS carries only the environment-specific options.
+    # scikit-build-core shell-splits CMAKE_ARGS on every platform.
     cmake_args = [
         f"-DCMAKE_PREFIX_PATH={_cmake_prefix_path(conda_prefix)}",
-        "-DDART_BUILD_DARTPY=ON",
-        "-DDART_ENABLE_SIMD=OFF",
-        "-DDART_BUILD_WHEELS=ON",
-        "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
-        "-DBUILD_SHARED_LIBS=OFF",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
+        *cmake_host_linker_flags(),
     ]
-    # The CPython 3.12 build is the stable-ABI (abi3) wheel that serves every
-    # newer interpreter; setup.py tags it to match. Other versions build
-    # regular wheels for their own tag.
-    if sys.version_info[:2] == (3, 12):
-        cmake_args.append("-DDART_DARTPY_STABLE_ABI=ON")
-    cmake_args.extend(cmake_host_linker_flags())
-
-    os.environ["DARTPY_CMAKE_ARGS_JSON"] = json.dumps(cmake_args)
-    os.environ["CMAKE_ARGS"] = _cmake_args_env(cmake_args)
+    os.environ["CMAKE_ARGS"] = shlex.join(cmake_args)
 
     Path("dist").mkdir(parents=True, exist_ok=True)
 

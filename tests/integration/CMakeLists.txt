@@ -427,6 +427,7 @@ if(TARGET dart-gui)
       )
     endif()
     if(gui_test STREQUAL "GuiImageDecoders")
+      target_link_libraries(test_${gui_test} PNG::PNG JPEG::JPEG)
       target_sources(
         test_${gui_test}
         PRIVATE ${DART_SOURCE_DIR}/dart/gui/detail/image_decoders.cpp

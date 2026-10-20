@@ -2,6 +2,8 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include "detail/frame.hpp"
+
 #include <nanobind/stl/unique_ptr.h>
 #include <nanobind/stl/vector.h>
 
@@ -134,14 +136,14 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::BodyNode* bodyNode) -> bool {
             return self->hasBodyNode(bodyNode);
           },
-          nb::arg("bodyNode").none())
+          nb::arg("bodyNode"))
       .def(
           "getIndexOf",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::BodyNode* _bn) -> std::size_t {
             return self->getIndexOf(_bn);
           },
-          nb::arg("bn").none())
+          nb::arg("bn"))
       .def(
           "getIndexOf",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -149,7 +151,7 @@ void MetaSkeleton(nb::module_& m)
               bool _warning) -> std::size_t {
             return self->getIndexOf(_bn, _warning);
           },
-          nb::arg("bn").none(),
+          nb::arg("bn"),
           nb::arg("warning"))
       .def(
           "getNumJoints",
@@ -834,7 +836,7 @@ void MetaSkeleton(nb::module_& m)
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::JacobianNode* _node)
               -> dart::math::Jacobian { return self->getJacobian(_node); },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -843,8 +845,8 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("node"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -854,9 +856,9 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _relativeTo, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("node"),
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -864,7 +866,7 @@ void MetaSkeleton(nb::module_& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"))
       .def(
           "getJacobian",
@@ -875,9 +877,9 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -889,16 +891,16 @@ void MetaSkeleton(nb::module_& m)
             return self->getJacobian(
                 _node, _localOffset, _relativeTo, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::JacobianNode* _node)
               -> dart::math::Jacobian { return self->getWorldJacobian(_node); },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -906,7 +908,7 @@ void MetaSkeleton(nb::module_& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_node, _localOffset);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"))
       .def(
           "getLinearJacobian",
@@ -915,16 +917,17 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node);
           },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobian(_node, _inCoordinatesOf);
+            return self->getLinearJacobian(
+                _node, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobian",
@@ -934,7 +937,7 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _localOffset);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"))
       .def(
           "getLinearJacobian",
@@ -944,9 +947,9 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(
-                _node, _localOffset, _inCoordinatesOf);
+                _node, _localOffset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -957,8 +960,8 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _relativeTo);
           },
-          nb::arg("node").none(),
-          nb::arg("relativeTo").none())
+          nb::arg("node"),
+          nb::arg("relativeTo"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -967,10 +970,10 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(
-                _node, _relativeTo, _inCoordinatesOf);
+                _node, _relativeTo, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
-          nb::arg("relativeTo").none(),
+          nb::arg("node"),
+          nb::arg("relativeTo"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobian",
@@ -981,9 +984,9 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _localOffset, _relativeTo);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
-          nb::arg("relativeTo").none())
+          nb::arg("relativeTo"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -993,11 +996,14 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(
-                _node, _localOffset, _relativeTo, _inCoordinatesOf);
+                _node,
+                _localOffset,
+                _relativeTo,
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
-          nb::arg("relativeTo").none(),
+          nb::arg("relativeTo"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularJacobian",
@@ -1006,16 +1012,17 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobian(_node);
           },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getAngularJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
-            return self->getAngularJacobian(_node, _inCoordinatesOf);
+            return self->getAngularJacobian(
+                _node, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularJacobian",
@@ -1025,8 +1032,8 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobian(_node, _relativeTo);
           },
-          nb::arg("node").none(),
-          nb::arg("relativeTo").none())
+          nb::arg("node"),
+          nb::arg("relativeTo"))
       .def(
           "getAngularJacobian",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1035,10 +1042,10 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobian(
-                _node, _relativeTo, _inCoordinatesOf);
+                _node, _relativeTo, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
-          nb::arg("relativeTo").none(),
+          nb::arg("node"),
+          nb::arg("relativeTo"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianSpatialDeriv",
@@ -1047,7 +1054,7 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node);
           },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1056,8 +1063,8 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("node"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1065,7 +1072,7 @@ void MetaSkeleton(nb::module_& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node, _localOffset);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"))
       .def(
           "getJacobianSpatialDeriv",
@@ -1077,9 +1084,9 @@ void MetaSkeleton(nb::module_& m)
             return self->getJacobianSpatialDeriv(
                 _node, _localOffset, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1090,9 +1097,9 @@ void MetaSkeleton(nb::module_& m)
             return self->getJacobianSpatialDeriv(
                 _node, _relativeTo, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("node"),
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1104,10 +1111,10 @@ void MetaSkeleton(nb::module_& m)
             return self->getJacobianSpatialDeriv(
                 _node, _localOffset, _relativeTo, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1115,7 +1122,7 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node);
           },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1124,8 +1131,8 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node, _inCoordinatesOf);
           },
-          nb::arg("node").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("node"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
@@ -1133,7 +1140,7 @@ void MetaSkeleton(nb::module_& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node, _localOffset);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"))
       .def(
           "getJacobianClassicDeriv",
@@ -1143,9 +1150,9 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(
-                _node, _localOffset, _inCoordinatesOf);
+                _node, _localOffset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -1155,16 +1162,17 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node);
           },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobianDeriv(_node, _inCoordinatesOf);
+            return self->getLinearJacobianDeriv(
+                _node, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobianDeriv",
@@ -1174,7 +1182,7 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node, _localOffset);
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"))
       .def(
           "getLinearJacobianDeriv",
@@ -1184,9 +1192,9 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(
-                _node, _localOffset, _inCoordinatesOf);
+                _node, _localOffset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("localOffset"),
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -1196,16 +1204,17 @@ void MetaSkeleton(nb::module_& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobianDeriv(_node);
           },
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "getAngularJacobianDeriv",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::JacobianNode* _node,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
-            return self->getAngularJacobianDeriv(_node, _inCoordinatesOf);
+            return self->getAngularJacobianDeriv(
+                _node, dartnb::frameOrWorld(_inCoordinatesOf));
           },
-          nb::arg("node").none(),
+          nb::arg("node"),
           nb::arg("inCoordinatesOf").none())
       .def(
           "getMass",
@@ -1280,7 +1289,7 @@ void MetaSkeleton(nb::module_& m)
           "getCOM",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _withRespectTo) -> Eigen::Vector3d {
-            return self->getCOM(_withRespectTo);
+            return self->getCOM(dartnb::frameOrWorld(_withRespectTo));
           },
           nb::arg("withRespectTo").none())
       .def(
@@ -1292,7 +1301,8 @@ void MetaSkeleton(nb::module_& m)
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
-            return self->getCOMSpatialVelocity(_relativeTo);
+            return self->getCOMSpatialVelocity(
+                dartnb::frameOrWorld(_relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -1301,7 +1311,9 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _relativeTo,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> Eigen::Vector6d {
-            return self->getCOMSpatialVelocity(_relativeTo, _inCoordinatesOf);
+            return self->getCOMSpatialVelocity(
+                dartnb::frameOrWorld(_relativeTo),
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -1314,7 +1326,8 @@ void MetaSkeleton(nb::module_& m)
           "getCOMLinearVelocity",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
-            return self->getCOMLinearVelocity(_relativeTo);
+            return self->getCOMLinearVelocity(
+                dartnb::frameOrWorld(_relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -1323,7 +1336,9 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _relativeTo,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> Eigen::Vector3d {
-            return self->getCOMLinearVelocity(_relativeTo, _inCoordinatesOf);
+            return self->getCOMLinearVelocity(
+                dartnb::frameOrWorld(_relativeTo),
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -1336,7 +1351,8 @@ void MetaSkeleton(nb::module_& m)
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
-            return self->getCOMSpatialAcceleration(_relativeTo);
+            return self->getCOMSpatialAcceleration(
+                dartnb::frameOrWorld(_relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -1346,7 +1362,8 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> Eigen::Vector6d {
             return self->getCOMSpatialAcceleration(
-                _relativeTo, _inCoordinatesOf);
+                dartnb::frameOrWorld(_relativeTo),
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -1359,7 +1376,8 @@ void MetaSkeleton(nb::module_& m)
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
-            return self->getCOMLinearAcceleration(_relativeTo);
+            return self->getCOMLinearAcceleration(
+                dartnb::frameOrWorld(_relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -1369,7 +1387,8 @@ void MetaSkeleton(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> Eigen::Vector3d {
             return self->getCOMLinearAcceleration(
-                _relativeTo, _inCoordinatesOf);
+                dartnb::frameOrWorld(_relativeTo),
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -1382,7 +1401,7 @@ void MetaSkeleton(nb::module_& m)
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
-            return self->getCOMJacobian(_inCoordinatesOf);
+            return self->getCOMJacobian(dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -1396,7 +1415,8 @@ void MetaSkeleton(nb::module_& m)
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getCOMLinearJacobian(_inCoordinatesOf);
+            return self->getCOMLinearJacobian(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -1410,7 +1430,8 @@ void MetaSkeleton(nb::module_& m)
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
-            return self->getCOMJacobianSpatialDeriv(_inCoordinatesOf);
+            return self->getCOMJacobianSpatialDeriv(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -1424,7 +1445,8 @@ void MetaSkeleton(nb::module_& m)
           +[](const dart::dynamics::MetaSkeleton* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getCOMLinearJacobianDeriv(_inCoordinatesOf);
+            return self->getCOMLinearJacobianDeriv(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(

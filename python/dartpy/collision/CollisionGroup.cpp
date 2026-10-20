@@ -82,7 +82,7 @@ void CollisionGroup(nb::module_& m)
               const dart::dynamics::ShapeFrame* shapeFrame) {
             self->addShapeFrame(shapeFrame);
           },
-          nb::arg("shapeFrame").none())
+          nb::arg("shapeFrame"))
       .def(
           "addShapeFrames",
           +[](dart::collision::CollisionGroup* self,
@@ -95,7 +95,7 @@ void CollisionGroup(nb::module_& m)
               const dynamics::ShapeFrame* shapeFrame) {
             self->addShapeFramesOf(shapeFrame);
           },
-          nb::arg("shapeFrame").none(),
+          nb::arg("shapeFrame"),
           "Adds a ShapeFrame")
       .def(
           "addShapeFramesOf",
@@ -118,7 +118,7 @@ void CollisionGroup(nb::module_& m)
               const dart::dynamics::BodyNode* body) {
             self->addShapeFramesOf(body);
           },
-          nb::arg("body").none(),
+          nb::arg("body"),
           "Adds ShapeFrames of BodyNode")
       .def(
           "addShapeFramesOf",
@@ -137,7 +137,7 @@ void CollisionGroup(nb::module_& m)
               const dart::dynamics::ShapeFrame* shapeFrame) {
             self->removeShapeFrame(shapeFrame);
           },
-          nb::arg("shapeFrame").none())
+          nb::arg("shapeFrame"))
       .def(
           "removeShapeFrames",
           +[](dart::collision::CollisionGroup* self,
@@ -150,7 +150,7 @@ void CollisionGroup(nb::module_& m)
               const dynamics::ShapeFrame* shapeFrame) {
             self->removeShapeFramesOf(shapeFrame);
           },
-          nb::arg("shapeFrame").none(),
+          nb::arg("shapeFrame"),
           "Removes a ShapeFrame")
       .def(
           "removeShapeFramesOf",
@@ -173,7 +173,7 @@ void CollisionGroup(nb::module_& m)
               const dart::dynamics::BodyNode* body) {
             self->removeShapeFramesOf(body);
           },
-          nb::arg("body").none(),
+          nb::arg("body"),
           "Removes ShapeFrames of BodyNode")
       .def(
           "removeShapeFramesOf",
@@ -194,7 +194,7 @@ void CollisionGroup(nb::module_& m)
               const dart::dynamics::ShapeFrame* shapeFrame) -> bool {
             return self->hasShapeFrame(shapeFrame);
           },
-          nb::arg("shapeFrame").none())
+          nb::arg("shapeFrame"))
       .def(
           "getNumShapeFrames",
           +[](const dart::collision::CollisionGroup* self) -> std::size_t {
