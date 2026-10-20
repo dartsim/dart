@@ -98,8 +98,8 @@ Optional components remain optional.
      - 5.2.0
      - Core mesh loading
    * - Eigen
-     - 3.4.0
-     - Core mathematics
+     - 3.4.0 (supported range: >= 3.4.0, < 6)
+     - Core mathematics; consumers must use the major DART was built with
    * - FCL
      - 0.7.0
      - Core collision detection
@@ -154,6 +154,10 @@ Optional components remain optional.
    * - Tracy
      - 0.11.1
      - Optional profiling backend
+
+The installed CMake package enforces the same Eigen major for DART and its
+consumers; pkg-config consumers must match majors themselves. Eigen 3.4.90
+development snapshots are treated as Eigen 3.
 
 FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the

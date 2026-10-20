@@ -290,6 +290,9 @@
 
 * Build
 
+  * Support Eigen >= 3.4.0 and < 6, keeping the Pixi environments on 3.4.0. Installed CMake packages reject a different Eigen major; rebuild
+    DART and its consumers together when changing Eigen majors.
+
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
