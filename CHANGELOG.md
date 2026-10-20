@@ -4,6 +4,14 @@
 
 ### [DART 6.20.4 (Unreleased)](https://github.com/dartsim/dart/milestone/109)
 
+* Dynamics
+
+  * `VoxelGridShape::updateOccupancy()` no longer corrupts memory on very
+    long rays or point clouds containing them. Rays that cross more than
+    about 100,000 voxels are skipped with a warning (their endpoints are not
+    marked occupied), and the other points of a cloud are still inserted.
+    [#3859](https://github.com/dartsim/dart/pull/3859)
+
 ### [DART 6.20.3 (2026-10-24)](https://github.com/dartsim/dart/milestone/108?closed=1)
 
 DART 6.20.3 is a patch release on the DART 6 line. It fixes contacts for small

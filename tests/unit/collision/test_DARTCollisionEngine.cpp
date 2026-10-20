@@ -1600,6 +1600,168 @@ TEST(DARTCollisionDetector, ConvertsSphereAndBoxShapes)
 
 //==============================================================================
 #if HAVE_OCTOMAP
+TEST(VoxelGridShape, SkipsRaysExceedingKeyBuffer)
+{
+  dynamics::VoxelGridShape voxelGrid(0.01);
+  voxelGrid.updateOccupancy(Eigen::Vector3d::Zero());
+  const octomap::OcTree expected(*voxelGrid.getOctree());
+
+  // Both endpoints fit the tree, but the diagonal crosses 120,000 keys.
+  for (const double direction : {-1.0, 1.0}) {
+    const Eigen::Vector3d from = Eigen::Vector3d::Constant(-200.0 * direction);
+    const Eigen::Vector3d to = -from;
+    voxelGrid.updateOccupancy(from, to);
+    EXPECT_TRUE(expected == *voxelGrid.getOctree());
+    EXPECT_EQ(0.0, voxelGrid.getOccupancy(to));
+  }
+}
+
+//==============================================================================
+TEST(VoxelGridShape, PreservesValidRayOccupancy)
+{
+  const std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> rays{
+      {Eigen::Vector3d(-0.245, 0.015, 0.025),
+       Eigen::Vector3d(0.605, 0.215, -0.115)},
+      {Eigen::Vector3d::Constant(0.015), Eigen::Vector3d::Constant(0.015)},
+      // An axis-aligned ray can be longer than a safe diagonal.
+      {Eigen::Vector3d(-300, 0, 0), Eigen::Vector3d(300, 0, 0)},
+      // Exercise the buffer boundary without entering its rounding margin.
+      {Eigen::Vector3d::Constant(166.625),
+       Eigen::Vector3d::Constant(-166.625)}};
+  for (const auto& ray : rays) {
+    dynamics::VoxelGridShape voxelGrid(0.01);
+    octomap::OcTree expected(0.01);
+    const octomap::point3d from(ray.first.x(), ray.first.y(), ray.first.z());
+    const octomap::point3d to(ray.second.x(), ray.second.y(), ray.second.z());
+    for (int measurement = 0; measurement < 2; ++measurement) {
+      ASSERT_TRUE(expected.insertRay(from, to));
+      voxelGrid.updateOccupancy(ray.first, ray.second);
+      // Compare every node's value and key, including free cells and hits.
+      EXPECT_TRUE(expected == *voxelGrid.getOctree());
+    }
+  }
+}
+
+//==============================================================================
+TEST(VoxelGridShape, EnforcesKeyBufferMarginBoundary)
+{
+  dynamics::VoxelGridShape voxelGrid(0.01);
+  octomap::OcTree expected(0.01);
+  const Eigen::Vector3d from = Eigen::Vector3d::Constant(-200);
+  const Eigen::Vector3d to(200, 200, -0.075);
+  const octomap::point3d origin(from.x(), from.y(), from.z());
+  const octomap::point3d end(to.x(), to.y(), to.z());
+  const auto originKey = expected.coordToKey(origin);
+  const auto endKey = expected.coordToKey(end);
+  const std::size_t cells = (endKey[0] - originKey[0])
+                            + (endKey[1] - originKey[1])
+                            + (endKey[2] - originKey[2]);
+  ASSERT_EQ(octomap::KeyRay().sizeMax() - 8, cells);
+  ASSERT_TRUE(expected.insertRay(origin, end));
+  voxelGrid.updateOccupancy(from, to);
+  EXPECT_TRUE(expected == *voxelGrid.getOctree());
+  EXPECT_GT(voxelGrid.getOccupancy(to), 0.5);
+
+  const Eigen::Vector3d beyond(200, 200, -0.065);
+  const octomap::point3d beyondEnd(beyond.x(), beyond.y(), beyond.z());
+  ASSERT_EQ(endKey[2] + 1, expected.coordToKey(beyondEnd)[2]);
+  voxelGrid.updateOccupancy(from, beyond);
+  EXPECT_TRUE(expected == *voxelGrid.getOctree());
+  EXPECT_EQ(0.0, voxelGrid.getOccupancy(beyond));
+}
+
+//==============================================================================
+TEST(VoxelGridShape, SkipsRaysWithUnrepresentableLength)
+{
+  for (const double resolution : {1e-30, 1e30}) {
+    dynamics::VoxelGridShape voxelGrid(resolution);
+    const Eigen::Vector3d from = Eigen::Vector3d::Constant(-resolution);
+    const Eigen::Vector3d to = -from;
+    voxelGrid.updateOccupancy(from, to);
+    EXPECT_EQ(0u, voxelGrid.getOctree()->size());
+
+    octomap::Pointcloud cloud;
+    cloud.push_back(to.x(), to.y(), to.z());
+    voxelGrid.updateOccupancy(cloud, from);
+    EXPECT_EQ(0u, voxelGrid.getOctree()->size());
+  }
+}
+
+//==============================================================================
+TEST(VoxelGridShape, SkipsPointCloudRaysExceedingKeyBuffer)
+{
+  dynamics::VoxelGridShape voxelGrid(0.01);
+  octomap::OcTree expected(0.01);
+  const Eigen::Vector3d origin = Eigen::Vector3d::Constant(-200);
+  const octomap::point3d sensorOrigin(-200, -200, -200);
+  octomap::Pointcloud valid;
+  valid.push_back(-199.5f, -199.5f, -199.5f);
+  valid.push_back(-199.0f, -199.0f, -199.0f);
+  valid.push_back(valid[0]);
+
+  for (const bool includeLongRay : {false, true}) {
+    octomap::Pointcloud cloud(valid);
+    if (includeLongRay) {
+      cloud.push_back(200, 200, 200);
+      cloud.push_back(199, 199, 199);
+    }
+    testing::internal::CaptureStderr();
+    voxelGrid.updateOccupancy(cloud, origin);
+    const auto warning = testing::internal::GetCapturedStderr();
+    if (includeLongRay) {
+      EXPECT_NE(std::string::npos, warning.find("Skipped 2 of 5 rays"));
+      EXPECT_EQ(
+          warning.find("[VoxelGridShape]"), warning.rfind("[VoxelGridShape]"));
+    } else {
+      EXPECT_TRUE(warning.empty());
+    }
+    expected.insertPointCloud(valid, sensorOrigin);
+    EXPECT_TRUE(expected == *voxelGrid.getOctree());
+    EXPECT_EQ(0.0, voxelGrid.getOccupancy(Eigen::Vector3d::Constant(200)));
+  }
+}
+
+//==============================================================================
+TEST(VoxelGridShape, ChecksPointCloudRaysAfterTransform)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.linear() = Eigen::Quaterniond::FromTwoVectors(
+                           Eigen::Vector3d::UnitX(), Eigen::Vector3d::Ones())
+                           .toRotationMatrix();
+  transform.translation() = Eigen::Vector3d(0.125, -0.25, 0.375);
+  dynamics::SimpleFrame frame(dynamics::Frame::World(), "sensor", transform);
+  const Eigen::Quaternionf rotation(transform.linear().cast<float>());
+  const octomap::pose6d pose(
+      octomap::point3d(0.125f, -0.25f, 0.375f),
+      octomath::Quaternion(
+          rotation.w(), rotation.x(), rotation.y(), rotation.z()));
+  const Eigen::Vector3d origin(-300, 0, 0);
+  const octomap::point3d sensorOrigin(-300, 0, 0);
+  octomap::Pointcloud valid;
+  valid.push_back(-299.5f, 0, 0);
+  valid.push_back(-299.0f, 0, 0);
+  valid.push_back(-298.75f, 0.125f, -0.25f);
+  valid.push_back(valid[0]);
+
+  // The long ray crosses 60,000 keys locally and over 103,000 after rotation.
+  for (const bool useFrame : {false, true}) {
+    dynamics::VoxelGridShape voxelGrid(0.01);
+    octomap::OcTree expected(0.01);
+    for (const bool includeLongRay : {false, true}) {
+      octomap::Pointcloud cloud(valid);
+      if (includeLongRay)
+        cloud.push_back(300, 0, 0);
+      if (useFrame)
+        voxelGrid.updateOccupancy(cloud, origin, &frame);
+      else
+        voxelGrid.updateOccupancy(cloud, origin, transform);
+      expected.insertPointCloud(valid, sensorOrigin, pose);
+      EXPECT_TRUE(expected == *voxelGrid.getOctree());
+    }
+  }
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, ConvertsVoxelGridToCompoundShape)
 {
   dynamics::VoxelGridShape voxelGrid(0.1);
