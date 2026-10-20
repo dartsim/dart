@@ -265,6 +265,25 @@ quieter host.
   `find_package(DART)`, and a `setLogSink` recipe for spdlog users). Muse's
   two cosmetic nits (an rvalue-string constructor, one `FMT_HEADER_ONLY`
   definition site) move to DEP-15, which reworks the same files.
+- CI on #3853 (2026-10-19): macOS arm64 failed in `test_FilamentBackend`
+  (`-std=gnu++20`) because libc++ builds the object inside `construct_at`,
+  so AppleClang reports the deprecated Assimp `MeshShape` constructor outside
+  the call site's suppression. The fix calls `new` directly at 17 test and
+  binding sites (writer Codex; reviews Muse and the orchestrator). Muse's
+  claim that four parser sites also fail was refuted by the same CI log: the
+  `dart-utils` parsers compiled as C++17 before the failure. After merging
+  `main`, eight affected test targets pass.
+- Perf A/B on #3853: every row is behaviour-change because removing spdlog
+  changes the benchmark compile commands. `pend/dart` rose 2.56% and `dyn`
+  0.95% Ir under GCC 13.3; a local reproduction attributes nearly all of it
+  to Eigen's `allFinite()` reduction, which GCC 13 no longer inlines into
+  `GenericJoint<R1>`'s articulated-inertia updates (208 instructions per
+  call; 9,152 of `pend/dart`'s 9,173 extra instructions per step). GCC 15.2
+  on the same revision pair (`d46dc795e` to `3819534246`) measures -0.06%
+  and -0.07%. All default-environment package resolutions match across the
+  CI revisions.
+  The PR body carries `Rebaseline-Rationale` lines; the fix
+  (`array().isFinite().all()`) touches `GenericJoint` and waits for M1d.
 
 ### Wave 1 Gazebo integration lanes (2026-10-19)
 

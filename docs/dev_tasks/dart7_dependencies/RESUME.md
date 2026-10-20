@@ -1,11 +1,12 @@
 # Resume
 
-## Current state (2026-10-20)
+## Current state (2026-10-19)
 
 - The plan is on `main` (#3848); this home is updated through follow-up PRs.
 - The maintainer answered the second decision batch one question at a time
-  (DD-10 to DD-33 in [decisions.md](decisions.md)); DD-33 is the standing
-  approval for this plan's publishing.
+  (DD-10 to DD-34 in [decisions.md](decisions.md)); DD-33 is the standing
+  approval for this plan's publishing, and DD-34 extends it to merging
+  `main`, resolving conflicts and fixing CI on the plan's ready PRs.
 - The published PRs and the merge order are below.
 - Two local spike branches hold experiment edits only and will not be
   published: `spike/cxx20-standard` and `spike/cxx20-private`. Their worktrees
@@ -13,35 +14,41 @@
   evidence replaces them.
 - gz-sim's `INTEGRATION_reset_sensors` is an external test defect (#3866).
 
-## Published (2026-10-20)
+## Published (2026-10-19)
 
 - Merged: #3848 (this plan), #3849 (DEP-0), #3852 (DEP-11 PR1), #3860
-  (DEP-20(d)), #3862 (DEP-20(e)), #3864 (DEP-3(a)).
+  (DEP-20(d)), #3861 (DEP-31), #3862 (DEP-20(e)), #3864 (DEP-3(a)).
 - Ready for review: #3856 (DEP-28), #3857 (DEP-27a, stacked on #3856),
-  #3859 (DEP-32), #3861 (DEP-31), #3863 (DEP-17 PR2), #3865 (DEP-13 PR1).
+  #3859 (DEP-32), #3863 (DEP-17 PR2), #3865 (DEP-13 PR1).
 - Drafts: #3850 (DEP-12(a)), #3851 (DEP-1), #3853 and #3854 (DEP-14 and
-  DEP-15, GitHub stack), #3870 (DEP-35).
+  DEP-15, GitHub stack), #3870 (DEP-35), #3875 (DEP-37), #3876 (DEP-30),
+  #3877 (DEP-36).
 - Merge order: #3857 after #3856; #3854 after #3853 and #3850; #3865 after
-  #3850. DD-33 covers pushes to drafts; pushes to ready PRs are asked.
+  #3850. DD-33 covers pushes to drafts and DD-34 the merge, conflict and CI
+  pushes to ready PRs; marking ready, merging and backports are asked.
 
 ## Next steps
 
-1. Fix the CI failures on #3850, #3851, #3853 and #3854, merging the latest
-   `main` into each (DD-33), and resolve the conflicts that ready PRs #3857
-   and #3863 now have with `main` (ask before pushing).
-2. Finish DEP-36 (MJCF limits and inertia) and DEP-37 (Bullet leak), then
-   DEP-34 (MuJoCo fixtures, Fetch removal) and DEP-33 (provenance actions and
-   the G1, UR5e and FR3 catalog).
-3. Start DEP-25 (umbrella switch and fail-fast), then the tinyxml2 fetch
-   prototype; DEP-18, DEP-19, DEP-30 and the urdfdom 6.0.1 wheel bump follow
-   the decisions; the backports (DD-27, DD-32) wait for their main PRs.
+1. Watch CI on the pushes of 2026-10-19: #3853 (macOS C++20 fix and the
+   perf rationale), #3854 (Windows guard-test fix, merged with #3853),
+   #3856 and #3857 (merged with `main`), #3865 (CHANGELOG conflict
+   resolved). #3850 and #3851 carry earlier fixes.
+2. Finish DEP-33 (a) to (c) and DEP-25; start DEP-34 on #3877 (DEP-36),
+   with the `readWorld` null-world check that review found; DEP-33(d)
+   needs DEP-19. DEP-36 follow-ups: geom-inferred moments and
+   `<compiler inertiafromgeom>`.
+3. After DEP-25 (umbrella switch and fail-fast), the tinyxml2 fetch
+   prototype; DEP-18, DEP-19 and the urdfdom 6.0.1 wheel bump follow the
+   decisions; the backports (DD-27, DD-32) wait for their main PRs.
 4. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
    the C++17 and C++20 builds, and the stock-noble Tier 2 build. The distro
    FCL abort is fixed in a DART-carried patch (DD-18, #3870); nothing is
    reported upstream.
 5. After M1d: DEP-21, ball-joint limits for MJCF, the libccd attribution in
-   the MPR sources, and any quiet-window hunk the PLAN-624 owner did not
-   clear earlier.
+   the MPR sources, the `GenericJoint` finite checks that GCC 13 stopped
+   inlining after DEP-14 (`array().isFinite().all()`; see #3853's perf
+   rationale), and any quiet-window hunk the PLAN-624 owner did not clear
+   earlier.
 
 ## Risks and recovery
 

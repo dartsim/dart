@@ -49,3 +49,18 @@
   - The distro FCL assertion is an FCL GJK bug at exact ellipsoid
     tangency (aborts with Ubuntu's asserting build, wrong nearest points
     otherwise); upstream reports await approval.
+  - The maintainer answered the second batch one question at a time
+    (DD-10 to DD-34); the 16 finished branches were published, and DEP-35
+    to DEP-37 were added (the FCL patch replaces the upstream reports).
+  - CI fixes: #3853 failed on macOS because libc++ in C++20 mode reports
+    the deprecated Assimp `MeshShape` constructor inside `construct_at`,
+    outside the call site's suppression; 17 test and binding sites now call
+    `new` directly. Its perf rows rose under GCC 13 only (an Eigen
+    `allFinite()` outlined in `GenericJoint`), recorded as a rationale with
+    the fix deferred past M1d. #3854's Windows failure was a test feeding
+    native paths to a macOS-only guard.
+  - DEP-33 split into four PRs; DEP-30, DEP-25 and DEP-33 (a) to (c)
+    started. DEP-37 (#3875), DEP-30 (#3876) and DEP-36 (#3877) published
+    after two clean reviews each.
+  - A full local `test-py` run fails `test_api_surface_budget` whenever an
+    earlier test imported `dartpy.experimental`; open PR #3872 fixes it.

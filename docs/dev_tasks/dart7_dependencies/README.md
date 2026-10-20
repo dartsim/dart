@@ -178,16 +178,17 @@ shorthand is defined under [Gates](#gates).
 | DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |
 | DEP-23 | Packaging section and downstream handoff notes | approval per upstream action | lint, local paths | Orchestrator | 7.0 / 7.x | Planned |
 | DEP-24 | 8.0 design record: optional assimp and FCL, backend facades, C++20 export | none | review | Orchestrator | 8.0 | Planned |
-| DEP-25 | Umbrella `DART_USE_SYSTEM_DEPENDENCIES` switch, offline fail-fast and CMP0170 (shared step), then fetch paths one dependency per PR starting with tinyxml2 (DD-10, DD-30) | none | base, pkg, dis | Codex high | 7.0 | Planned |
+| DEP-25 | Umbrella `DART_USE_SYSTEM_DEPENDENCIES` switch, offline fail-fast and CMP0170 (shared step), then fetch paths one dependency per PR starting with tinyxml2 (DD-10, DD-30) | none | base, pkg, dis | Codex high | 7.0 | In progress |
 | DEP-27a | Root NOTICE for derived code, installed and in wheels, with a coverage test | none | base, wheel | Codex high | 7.0 | Ready #3857 (stacked on #3856) |
 | DEP-28 | Delete dead `dart/utils/*_` files and `tests/.deprecated` | none | base | Muse | 7.0 | Ready #3856 |
-| DEP-31 | Reject empty overlay font files before ImGui | none | base, gui | Muse | 7.0 | Ready #3861 |
+| DEP-30 | Fetch Dear ImGui as a hash-pinned, TLS-verified tag archive and drop its compatibility patch (DD-14) | DEP-31 | base, gui, dis | Claude Sonnet | 7.0 | Draft #3876 |
+| DEP-31 | Reject empty overlay font files before ImGui | none | base, gui | Muse | 7.0 | Merged (#3861) |
 | DEP-32 | Skip voxel-grid rays longer than OctoMap can trace | none | base, py, gz | Codex | 7.0 | Ready #3859 |
-| DEP-33 | Sample-data provenance and modernization: attribute Atlas v3 (DD-23), WAM's BSD files only (DD-20), remove kima (DD-21), replace KR5 with an authored fixture and UR5e (DD-22), catalog G1, UR5e and FR3 (DD-24) | DD-16, DD-17 | base, py, gui | Codex high | 7.0 | Planned |
+| DEP-33 | Sample-data provenance and modernization: attribute Atlas v3 (DD-23), WAM's BSD files only (DD-20), remove kima (DD-21), replace KR5 with an authored fixture and UR5e (DD-22), catalog G1, UR5e and FR3 (DD-24) | DD-16, DD-17 | base, py, gui | Codex high, Claude Sonnet | 7.0 | Four PRs: (a) kima removal, (b) KR5 to an authored arm and (c) Atlas and WAM attribution (stacked on #3857) in progress; (d) the online catalog after DEP-19 |
 | DEP-34 | Replace the Roboti-derived MuJoCo models with DeepMind's (DD-15) and remove the Fetch assets (DD-19), with authored MJCF fixtures | DEP-36 first | base, py | Codex high | 7.0 | Planned |
 | DEP-35 | Carry an FCL 0.7.0 patch for GJK distance on touching shapes in Linux wheels (DD-18) | none | base, wheel | Codex ultra | 7.0 | Draft #3870 |
-| DEP-36 | Fix MJCF joint limits and declared inertia (DD-25) | none | base, py | Codex high | 7.0 | In progress |
-| DEP-37 | Fix the Bullet detector leak (DD-26) | none | base, ASan, gz | Codex high | 7.0 | In progress |
+| DEP-36 | Fix MJCF joint limits and declared inertia (DD-25) | none | base, py | Codex high | 7.0 | Draft #3877 |
+| DEP-37 | Fix the Bullet detector leak (DD-26) | none | base, ASan, gz | Codex high | 7.0 | Draft #3875 |
 
 Ordering: DEP-0 lands first, because no lane notices a lost contact-surface
 probe today and many later packets touch installed headers. DEP-1 to DEP-12
@@ -247,4 +248,4 @@ executor that finds the real scope materially different stops and reports.
 
 See [RESUME.md](RESUME.md) for the published PRs, their merge order and the
 next steps. The maintainer answered the second decision batch one question
-at a time ([decisions.md](decisions.md), DD-10 to DD-33).
+at a time ([decisions.md](decisions.md), DD-10 to DD-34).
