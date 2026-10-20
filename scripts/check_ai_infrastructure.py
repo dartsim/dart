@@ -3529,7 +3529,7 @@ def check_cmake_test_target_trace(
             )
 
     pytest_arguments = target_arguments("pytest")
-    python_executable = cache.get("_Python3_EXECUTABLE") or cache.get(
+    python_executable = cache.get("Python_EXECUTABLE") or cache.get(
         "Python3_EXECUTABLE"
     )
     if not isinstance(python_executable, str):

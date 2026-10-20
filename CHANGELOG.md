@@ -30,6 +30,8 @@
     [#3696](https://github.com/dartsim/dart/pull/3696)
 
   * dartpy now uses nanobind 3.1 or newer and requires Python 3.12 or newer.
+    NumPy 1.26.4 or newer is required; NumPy 2.x is supported. CMake discovers
+    Python once through FindPython; `Python_EXECUTABLE` selects the interpreter.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
     Python `isinstance` checks and MRO; exception types and messages can differ;
     bool parameters accept only `True`/`False`; str parameters reject bytes;

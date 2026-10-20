@@ -143,10 +143,10 @@ Optional components remain optional.
      - 1.92.8
      - GUI controls (bundled by default)
    * - Python
-     - 3.10
+     - 3.12
      - dartpy
    * - NumPy
-     - 1.21.5
+     - 1.26.4
      - dartpy
    * - nanobind
      - 3.1

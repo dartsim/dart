@@ -17,21 +17,43 @@ else()
 endif()
 if(NOT Python_EXECUTABLE AND Python3_EXECUTABLE)
   set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
+elseif(
+  Python_EXECUTABLE
+  AND Python3_EXECUTABLE
+  AND NOT "${Python_EXECUTABLE}" STREQUAL "${Python3_EXECUTABLE}"
+  AND NOT "${Python3_EXECUTABLE}" STREQUAL "${_DART_PYTHON3_EXECUTABLE}"
+)
+  message(
+    WARNING
+    "Python3_EXECUTABLE differs from Python_EXECUTABLE and will be ignored. "
+    "Set Python_EXECUTABLE to select the Python interpreter."
+  )
 endif()
+set(dartpy_python_components Interpreter Development.Module)
 if(DART_DARTPY_STABLE_ABI)
   if(CMAKE_VERSION VERSION_LESS 3.26)
     message(FATAL_ERROR "DART_DARTPY_STABLE_ABI requires CMake 3.26 or newer")
   endif()
-  # nanobind silently builds a regular module on older interpreters.
-  find_package(
-    Python
-    3.12
-    REQUIRED
-    COMPONENTS Interpreter Development.Module Development.SABIModule
-  )
-else()
-  find_package(Python 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
+  list(APPEND dartpy_python_components Development.SABIModule)
 endif()
+# All builds need extension headers, not libpython (unavailable on manylinux).
+find_package(Python 3.12 REQUIRED COMPONENTS ${dartpy_python_components})
+# Share nanobind's selected interpreter with tests, examples, and tutorials.
+set(
+  Python3_EXECUTABLE
+  "${Python_EXECUTABLE}"
+  CACHE FILEPATH
+  "Python interpreter shared with nanobind"
+  FORCE
+)
+set(Python3_EXECUTABLE "${Python_EXECUTABLE}")
+set(
+  _DART_PYTHON3_EXECUTABLE
+  "${Python_EXECUTABLE}"
+  CACHE INTERNAL
+  "Last Python3_EXECUTABLE forced by DART"
+  FORCE
+)
 if(DART_USE_SYSTEM_NANOBIND)
   # An explicit nanobind_DIR serves builds whose Python cannot import
   # nanobind, such as cross builds and isolated pip builds.

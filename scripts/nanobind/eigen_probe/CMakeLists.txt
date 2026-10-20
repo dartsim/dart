@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(nanobind_eigen_probe LANGUAGES CXX)
 
-find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+find_package(Python 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
 execute_process(
   COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
   OUTPUT_VARIABLE nanobind_cmake_dir

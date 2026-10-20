@@ -28,9 +28,16 @@ def test_package_metadata_support_boundaries():
         for value in metadata["dependencies"]
         if Requirement(value).name == "numpy"
     ).specifier
-    assert "1.21.4" not in numpy
-    assert "1.21.5" in numpy
+    assert "1.26.3" not in numpy
+    assert "1.26.4" in numpy
     assert "2.3.0" in numpy
+
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text())
+    pixi_numpy = SpecifierSet(pixi["dependencies"]["numpy"])
+    assert "1.26.3" not in pixi_numpy
+    assert "1.26.4" in pixi_numpy
+    assert "2.3.0" in pixi_numpy
+    assert not {"py310-wheel", "py311-wheel"} & pixi["environments"].keys()
 
     build_system = project["build-system"]
     assert build_system["build-backend"] == "dartpy_backend"

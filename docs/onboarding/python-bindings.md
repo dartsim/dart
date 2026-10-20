@@ -91,7 +91,16 @@ M6a landed the renderer in [#3696](https://github.com/dartsim/dart/pull/3696);
 M6b still replaces the interim GUI module with `dart.render` and `dart.viewer`
 before the first release candidate. `release-6.20` retains pybind11 and OSG.
 
-Python 3.12 or newer and nanobind 3.1 or newer are required.
+Python 3.12 or newer, NumPy 1.26.4 or newer (including NumPy 2.x), and
+nanobind 3.1 or newer are required. CMake discovers Python once in
+`python/CMakeLists.txt` and caches the selected interpreter as
+`Python3_EXECUTABLE` for tests, examples and tutorials. Select the interpreter
+with `Python_EXECUTABLE`; `Python3_EXECUTABLE` only seeds a fresh configure.
+If both are set and differ, CMake warns unless `Python3_EXECUTABLE` still holds
+the value DART last cached, and uses `Python_EXECUTABLE`.
+Use `Python_ROOT_DIR` and other `Python_*` hints; the `Python3_*` forms no longer
+apply. C++ builds with
+`DART_BUILD_DARTPY=OFF` do not discover Python.
 `DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
 `robin_map` submodule. With `ON`, CMake uses `nanobind_DIR` when it is set and
 otherwise locates nanobind's CMake directory using
@@ -361,3 +370,6 @@ The repaired-wheel smoke test requires all four parser APIs and constructs a
 display. It also parses an inline URDF model, so missing IO or GUI support fails
 acceptance. Linux release wheels run this check in the fresh manylinux
 container without a display.
+
+On Python 3.12, the smoke test pins NumPy 1.26.4 and round-trips vector and
+matrix arrays through dartpy. The Python 3.13 abi3 smoke test uses current NumPy.
