@@ -436,3 +436,43 @@ tests.
   upstream report. The opt-in `MESH` primitive mode gives correct results
   but changes approximation and speed, so it is not a default change.
   Filing upstream reports needs maintainer approval.
+
+### Wave 3 (2026-10-19)
+
+Each packet below passed two clean reviews from engines other than its
+writer; the PR bodies carry the user-facing evidence.
+
+- DEP-37 (#3875, Codex; Muse and orchestrator): the new
+  `ReleasesRetainedFilterGroup` test leaked 13,242,765 bytes under ASan
+  before the fix; after it, the randomized convex case is leak-free;
+  186/186, gz-physics 203 tests, gz-sim integration.
+- DEP-30 (#3876, Claude Sonnet; Codex and Muse, two rounds): round 1 found
+  that archive timestamps could keep objects compiled from the patched Git
+  checkout; the fix extracts with current timestamps and moves ImGui to
+  FetchContent's default source directory. Hash re-verified independently;
+  `nm` shows `ImFormatString` exported again; test-gui 496; 184/184.
+- DEP-36 (#3877, Codex; Claude and Muse, three rounds): semantics checked
+  against MuJoCo's `user_objects.cc`; 32 MJCF tests, 55 Python MJCF tests,
+  186/186, 2,078 Python tests.
+- DEP-33(b) (#3878, Codex; Claude and Muse): the orchestrator's capture
+  review sent the arm back for an upright zero pose and rounded meshes;
+  oracles: target error about 1e-17 m, four dominoes toppled, point-cloud
+  height 0.49 m.
+- DEP-25 (#3879, Codex; Claude and Muse, two rounds): installed Tracy
+  packages carry no version file or `TracyVersion.hpp`, so the system lookup
+  now takes no version (the profile environment configures and builds
+  against its own Tracy); default cache unchanged except the new option;
+  installed CMake files byte-identical.
+- DEP-33(a) (#3880, Claude Sonnet; Codex and Muse): the COLLADA fixture is
+  schema-valid and its absolute extents catch ignored units and unwanted
+  up-axis conversion.
+- DEP-34 (#3881, Codex; Claude and Muse): all 14 pinned DeepMind files
+  hash-checked against upstream at `437b7a6a`; expectations re-derived from
+  the XML by both reviewers; the weld regression test crashed (SIGSEGV)
+  without its fix.
+- DEP-33(c) (#3882, Codex; Claude, Muse and Claude Sonnet after a Muse run
+  hung): both licenses byte-identical to their pins; WAM's STLs are the
+  original visual meshes; captures before and after inspected.
+- CI after these pushes: the macOS and Windows Python jobs fail only on
+  `test_api_surface_budget` (`dartpy.experimental` imported earlier), on
+  every PR that merged current `main`; open PR #3872 fixes it.

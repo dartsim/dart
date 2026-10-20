@@ -22,29 +22,37 @@
   #3859 (DEP-32), #3863 (DEP-17 PR2), #3865 (DEP-13 PR1).
 - Drafts: #3850 (DEP-12(a)), #3851 (DEP-1), #3853 and #3854 (DEP-14 and
   DEP-15, GitHub stack), #3870 (DEP-35), #3875 (DEP-37), #3876 (DEP-30),
-  #3877 (DEP-36).
+  #3877 (DEP-36), #3878 (DEP-33(b)), #3879 (DEP-25), #3880 (DEP-33(a)),
+  #3881 (DEP-34, stacked on #3877), #3882 (DEP-33(c), stacked on #3857).
+- CI: every PR that merged current `main` fails `test_api_surface_budget` on
+  the Python jobs (`dartpy.experimental` imported earlier in the run); open
+  PR #3872, from another workstream, fixes it. Merge `main` into the plan's
+  PRs once it lands.
 - Merge order: #3857 after #3856; #3854 after #3853 and #3850; #3865 after
   #3850. DD-33 covers pushes to drafts and DD-34 the merge, conflict and CI
   pushes to ready PRs; marking ready, merging and backports are asked.
 
 ## Next steps
 
-1. Watch CI on the pushes of 2026-10-19: #3853 (macOS C++20 fix and the
-   perf rationale), #3854 (Windows guard-test fix, merged with #3853),
-   #3856 and #3857 (merged with `main`), #3865 (CHANGELOG conflict
-   resolved). #3850 and #3851 carry earlier fixes.
-2. Finish DEP-33 (a) to (c) and DEP-25; start DEP-34 on #3877 (DEP-36),
-   with the `readWorld` null-world check that review found; DEP-33(d)
-   needs DEP-19. DEP-36 follow-ups: geom-inferred moments and
-   `<compiler inertiafromgeom>`.
-3. After DEP-25 (umbrella switch and fail-fast), the tinyxml2 fetch
-   prototype; DEP-18, DEP-19 and the urdfdom 6.0.1 wheel bump follow the
-   decisions; the backports (DD-27, DD-32) wait for their main PRs.
-4. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
+1. Watch CI on the plan's PRs; after #3872 merges, merge `main` into them
+   (DD-33, DD-34). #3876 and #3879 both touch `dart/gui/imgui/CMakeLists.txt`:
+   whichever lands second drops the ImGui guard's source-directory argument.
+2. Finish DEP-2 (curl and OpenSSL exported only for static builds),
+   DEP-17 PR1 (urdfdom 4.0.0 floor) and DEP-8(f) (hash-checked wheel image
+   sources), then DEP-17 PR4 on PR1 and PR3 (urdfdom 6.0.1 wheels) on
+   DEP-8(f); DEP-10 and DEP-6 after #3879; DEP-12(b) after #3850.
+3. The tinyxml2 fetch prototype on DEP-25; DEP-18 and DEP-19 follow the
+   decisions; DEP-33(d) (the G1, UR5e and FR3 catalog) after DEP-19; the
+   backports (DD-27, DD-32) wait for their main PRs.
+4. Follow-ups found on the way: MJCF inertia from all geoms (the DeepMind
+   fixtures order their mass-bearing geoms first until then) and
+   `<compiler inertiafromgeom>`; MJCF heightfields; the root `NOTICE` entry
+   for the DeepMind models once #3857 merges.
+5. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
    the C++17 and C++20 builds, and the stock-noble Tier 2 build. The distro
    FCL abort is fixed in a DART-carried patch (DD-18, #3870); nothing is
    reported upstream.
-5. After M1d: DEP-21, ball-joint limits for MJCF, the libccd attribution in
+6. After M1d: DEP-21, ball-joint limits for MJCF, the libccd attribution in
    the MPR sources, the `GenericJoint` finite checks that GCC 13 stopped
    inlining after DEP-14 (`array().isFinite().all()`; see #3853's perf
    rationale), and any quiet-window hunk the PLAN-624 owner did not clear

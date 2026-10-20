@@ -64,3 +64,12 @@
     after two clean reviews each.
   - A full local `test-py` run fails `test_api_surface_budget` whenever an
     earlier test imported `dartpy.experimental`; open PR #3872 fixes it.
+  - DEP-33(b) (#3878), DEP-25 (#3879), DEP-33(a) (#3880), DEP-34 (#3881)
+    and DEP-33(c) (#3882) published after two clean reviews each. DEP-34
+    fixed three MJCF parser bugs the DeepMind models exposed instead of
+    editing the models around them: world-level sites crashed, `<freejoint>`
+    was ignored (bodies were welded), and a failed model with a weld
+    dereferenced a null world. The orchestrator's capture review sent
+    DEP-33(b)'s arm back for an upright zero pose and rounded meshes, and
+    gave the WAM's STL visuals colors that match the removed textures.
+  - DEP-2, DEP-17 PR1 and DEP-8(f) started.
