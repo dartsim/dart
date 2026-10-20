@@ -1088,9 +1088,13 @@ void addOwner(KeyCounts& counts, WorldDeactivationState& state, const void* key)
   indexAllocation();
   auto& count = counts[key];
   if (count == 0u) {
+    auto& owners = modelOwners().mOwners;
     try {
-      modelOwners().mOwners[key].push_back(&state);
+      owners[key].push_back(&state);
     } catch (...) {
+      const auto found = owners.find(key);
+      if (found != owners.end() && found->second.empty())
+        owners.erase(found);
       counts.erase(key);
       throw;
     }
