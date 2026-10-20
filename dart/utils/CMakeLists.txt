@@ -10,7 +10,7 @@ dart_find_package(urdfdom)
 if(NOT urdfdom_FOUND)
   message(
     FATAL_ERROR
-    "dart-io requires urdfdom >= 3.0.0; install it or set DART_BUILD_IO=OFF."
+    "dart-io requires urdfdom >= 4.0.0; install it or set DART_BUILD_IO=OFF."
   )
 endif()
 if(NOT DEFINED SDFORMAT_FOUND)

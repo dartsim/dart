@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import sys
 import tomllib
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,26 @@ from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_urdfdom_requirement_metadata():
+    package = ET.parse(ROOT / "package.xml").getroot()
+    dependency = next(
+        dep for dep in package.findall("depend") if dep.text == "liburdfdom-dev"
+    )
+    assert dependency.get("version_gte") == "4.0.0"
+
+    pixi = tomllib.loads((ROOT / "pixi.toml").read_text())
+    for dependencies in (
+        pixi["dependencies"],
+        pixi["feature"]["gz-compat-base"]["dependencies"],
+    ):
+        versions = SpecifierSet(dependencies["urdfdom"])
+        assert "3.1.1" not in versions
+        assert "6.0.0" in versions
+    assert "4.0.0" in SpecifierSet(
+        pixi["feature"]["gz-compat-base"]["dependencies"]["urdfdom"]
+    )
 
 
 def test_package_metadata_support_boundaries():

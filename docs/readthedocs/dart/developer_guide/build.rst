@@ -56,7 +56,8 @@ The development branch requires C++17 and the following source-build baselines:
      - OS baseline
      - Compiler minimum
    * - Ubuntu
-     - 22.04 LTS; also tested on 24.04 LTS
+     - 22.04 LTS (its apt urdfdom 3.0 is below the 4.0.0 floor; use Pixi or
+       ``DART_BUILD_IO=OFF``); also tested on 24.04 LTS
      - GCC 11.2 or upstream LLVM Clang 13
    * - macOS
      - 13 Ventura
@@ -122,7 +123,7 @@ Optional components remain optional.
      - 14.8 (supported majors: 14, 15, 16)
      - SDF parser
    * - urdfdom
-     - 3.0.0
+     - 4.0.0
      - URDF parser
    * - spdlog
      - 1.9.2

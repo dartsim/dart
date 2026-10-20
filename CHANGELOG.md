@@ -60,7 +60,10 @@
     must rebuild.
   * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
     legacy CMake names and public `dart::utils` headers for rebuilt consumers.
-    Enabling IO now requires tinyxml2, urdfdom, and sdformat 14.8 or newer.
+    Enabling IO now requires tinyxml2, urdfdom 4.0.0, and sdformat 14.8 or
+    newer. Ubuntu 22.04's apt urdfdom (3.0), vcpkg's (3.1) and FreeBSD's
+    ports (3.0) are below that floor: install urdfdom 4 or newer, use Pixi,
+    or set `DART_BUILD_IO=OFF`.
   * SDF loading uses canonical sdformat validation, version conversion and
     frame semantics, including authored world gravity and joint effort and
     velocity limits that the old parser ignored. Parse, resource and
@@ -329,11 +332,6 @@
   * Allow C++-only projects to find the installed CMake package with the
     `collision-ode` component without enabling C.
     [#3756](https://github.com/dartsim/dart/pull/3756)
-
-  * Restore URDF support and `dart-io` builds with urdfdom 3.x installations
-    that ship no CMake version file, such as Ubuntu 22.04 and FreeBSD packages.
-    The minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
-    3.0.0.
 
   * The installed CMake package accepts version requests from 6.0 up to the
     installed version, so `find_package(DART 6.10)` finds DART 7. `EXACT`

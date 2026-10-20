@@ -1163,7 +1163,7 @@ pkg-config = "*"
 python = ">=3.10"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = "*"
-urdfdom = "*"
+urdfdom = ">=4.0.0"
 
 [feature.gazebo-harmonic]
 channels = ["conda-forge"]
