@@ -23,6 +23,7 @@
     use `limited="false"` to disable limits explicitly. Ball-joint angular limits
     remain unsupported and warn once per model; support is deferred to a later
     release.
+    [#3877](https://github.com/dartsim/dart/pull/3877)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
