@@ -61,12 +61,12 @@ int main(int argc, char* argv[])
       dart::utils::SdfParser::readWorld(
           data + "/sdf/test/single_bodynode_skeleton.world"),
       dart::utils::MjcfParser::readWorld(
-          data + "/mjcf/openai/inverted_pendulum.xml")};
+          data + "/mjcf/deepmind/cartpole.xml")};
   if (!worlds[0] || worlds[0]->getNumSkeletons() != 1
       || worlds[0]->getSkeleton(0)->getNumBodyNodes() != 1 || !worlds[1]
       || worlds[1]->getNumSkeletons() != 1
       || worlds[1]->getSkeleton(0)->getNumBodyNodes() != 1 || !worlds[2]
-      || worlds[2]->getNumSkeletons() != 2 || !worlds[2]->getSkeleton("cart")
+      || worlds[2]->getNumSkeletons() != 4 || !worlds[2]->getSkeleton("cart")
       || worlds[2]->getSkeleton("cart")->getNumBodyNodes() != 2)
     return 1;
 

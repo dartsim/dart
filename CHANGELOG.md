@@ -6,6 +6,10 @@
 
 * Breaking Changes
 
+  * **Behavior change:** MJCF bodies with `<freejoint/>` now have a six-DOF
+    free joint instead of being welded to their parent. Joint defaults do not
+    apply to this shorthand.
+
   * **Behavior change:** MJCF loading now enforces hinge and slide limits,
     including inherited defaults and MuJoCo 3.x automatic limits; applies
     declared mass, center of mass, and rotated inertia even without geoms;
@@ -64,9 +68,15 @@
     options and the pybind11 binder. Remove these options from configurations;
     a legacy `DART_DARTPY_BINDER=pybind11` value fails configure.
 
+  * Remove the installed `dart://sample/mjcf/openai/` samples: Gym's
+    Roboti-derived MuJoCo models, which carry no license grant, and the
+    noncommercial Fetch assets. Use the Apache-2.0 DeepMind models under
+    `dart://sample/mjcf/deepmind/` instead.
+
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
-    retired; its model remains available for parser regression coverage.
+    retired along with its noncommercial model assets; parser regression
+    coverage uses a DART-authored MJCF fixture.
 
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
@@ -94,6 +104,11 @@
     and applications linked to the former ImGui shared library must rebuild.
 
 * API
+
+  * Fix a crash when loading MJCF files with worldbody-level sites.
+
+  * MJCF loading returns `nullptr` instead of crashing when model construction
+    fails and the file contains an equality weld constraint.
 
   * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
     256 MiB of decoded RGBA data, before allocating them.
@@ -295,6 +310,10 @@
     generators.
 
 * Examples
+
+  * Add pinned Apache-2.0 DeepMind Control Suite MJCF models under
+    `data/mjcf/deepmind/`; MJCF parser coverage uses them and the DART-authored
+    fixture at `data/mjcf/test/manipulation/scene.xml`.
 
   * Hide the ssik analytical IK demo's solved marker when no current
     forward-kinematics pose is available, including failed solves and arm

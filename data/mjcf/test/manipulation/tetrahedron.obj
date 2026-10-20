@@ -1,0 +1,9 @@
+# Copyright (c) 2026, The DART development contributors. BSD-2-Clause.
+v 0 0 0
+v 0.04 0 0
+v 0 0.04 0
+v 0 0 0.04
+f 1 3 2
+f 1 2 4
+f 1 4 3
+f 2 3 4

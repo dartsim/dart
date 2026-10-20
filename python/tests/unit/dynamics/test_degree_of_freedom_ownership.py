@@ -11,10 +11,11 @@ def test_getdofs_does_not_take_ownership():
     # bound without a return-value policy, so pybind11 took ownership of the
     # joint-owned DegreeOfFreedom pointers and deleted them with the Python
     # wrappers, corrupting the heap.
-    world = dart.utils.MjcfParser.readWorld("dart://sample/mjcf/openai/reacher.xml")
+    world = dart.utils.MjcfParser.readWorld("dart://sample/mjcf/deepmind/reacher.xml")
     assert world is not None
 
-    skel = world.getSkeleton(0)
+    skel = world.getSkeleton("arm")
+    assert skel.getNumDofs() == 2
     num_dofs = skel.getNumDofs()
     names_before = [skel.getDof(i).getName() for i in range(num_dofs)]
 
@@ -40,7 +41,7 @@ def test_getdofs_survives_simulation_and_interpreter_exit():
         import dartpy as dart
 
         world = dart.utils.MjcfParser.readWorld(
-            "dart://sample/mjcf/openai/reacher.xml")
+            "dart://sample/mjcf/deepmind/reacher.xml")
         dofs = {}
         for i in range(world.getNumSkeletons()):
             for dof in world.getSkeleton(i).getDofs():

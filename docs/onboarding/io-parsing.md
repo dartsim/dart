@@ -88,7 +88,13 @@ checks with inspected Filament captures. The default C++/Python retriever tests
 use deterministic local fixtures rather than online vendor availability.
 
 The Hubo puppet scene and installed `dart://sample/urdf/drchubo/` resources
-have been retired. The Fetch demo is retired, while its model remains a parser
-fixture. Atlas v3 control and soft-foot examples retain their tuned models.
-KR5, WAM, synthetic skeletons, and historical MJCF files remain useful teaching
-or regression fixtures; model age alone is not a removal criterion.
+have been retired. The Fetch demo and its noncommercial MJCF assets are
+retired. Include, mesh and multi-root parser coverage uses the DART-authored
+BSD fixture at
+`dart://sample/mjcf/test/manipulation/scene.xml`. The former Roboti-derived
+MJCF samples are replaced by pinned Apache-2.0
+[DeepMind Control Suite models](../../data/mjcf/deepmind/README.md), for example
+`dart://sample/mjcf/deepmind/cartpole.xml`. That README records source revisions,
+hashes, adaptations and test mappings. Atlas v3 control and soft-foot examples
+retain their tuned models. KR5, WAM and synthetic skeletons remain useful
+teaching or regression fixtures; model age alone is not a removal criterion.
