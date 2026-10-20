@@ -290,6 +290,10 @@
 
 * Build
 
+  * Fetch GoogleTest 1.17.0 and Google Benchmark 1.10.0 from SHA-256-verified
+    archives instead of Git. System GoogleTest 1.14 and Benchmark 1.8.3 remain
+    supported.
+
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests

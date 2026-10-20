@@ -78,6 +78,77 @@ jobs:
       - name: Test the performance regression harness
         run: pixi run test-perf-regression
 
+  fetched-test-tooling:
+    name: Fetched test tooling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      actions: write # Save compiler cache prunes superseded snapshots.
+      contents: read
+    env:
+      SCCACHE_CACHE_SIZE: "900M"
+      CTEST_PARALLEL_LEVEL: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.11.0
+        with:
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Restore compiler cache
+        uses: ./.github/actions/sccache
+        with:
+          phase: restore
+          os: linux
+          part: FetchedTestTooling
+
+      - name: Configure fetched test tooling
+        run: |
+          set -o pipefail
+          pixi run config -- -DCMAKE_UNITY_BUILD=ON \
+            -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF \
+            -DDART_USE_SYSTEM_GOOGLETEST=OFF \
+            -DDART_USE_SYSTEM_GOOGLEBENCHMARK=OFF 2>&1 \
+            | tee "$RUNNER_TEMP/fetched-config.log"
+          # Benchmark must report its archive's version, not DART's Git tag.
+          grep -F "Google Benchmark version: v1.10.0" "$RUNNER_TEMP/fetched-config.log"
+
+      - name: Build tests and benchmarks
+        id: build
+        run: |
+          pixi run cmake --build build/default/cpp/Release \
+            --target tests tests/benchmark/all -j 4
+
+      - name: Run tests
+        run: pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -LE gui-device
+
+      - name: Check installed files
+        run: |
+          prefix="$RUNNER_TEMP/fetched-test-tooling-install"
+          pixi run cmake --install build/default/cpp/Release --prefix "$prefix"
+          # DART's own examples and model data include benchmark filenames.
+          installed="$(find "$prefix" -path "$prefix/share/doc/dart" -prune -o \
+            \( -iname '*gtest*' -o -iname '*gmock*' -o -iname '*benchmark*' \) -print)"
+          if [ -n "$installed" ]; then echo "$installed"; exit 1; fi
+
+      - name: Compiler cache stats
+        if: always()
+        run: pixi run sccache --show-stats || true
+
+      - name: Save compiler cache
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        uses: ./.github/actions/sccache
+        with:
+          phase: save
+          os: linux
+          part: FetchedTestTooling
+
   coverage:
     # Nightly only; codecov tracks main from the nightly upload.
     if: inputs.nightly
