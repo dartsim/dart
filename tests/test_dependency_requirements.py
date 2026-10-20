@@ -543,6 +543,20 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "single-debug",
         ),
+        # Multi-config layouts keep Debug libraries in their own directory.
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 ON)\n"
+            'set(collision_debug "${lib}/debug/${prefix}BulletCollision_d${ext}")\n'
+            'set(math_debug "${lib}/debug/${prefix}LinearMath_d${ext}")\n'
+            'file(MAKE_DIRECTORY "${lib}/debug")\n'
+            "foreach(stem BulletCollision_d LinearMath_d BulletCollision-float64_d\n"
+            "    LinearMath-float64_d)\n"
+            '  file(TOUCH "${lib}/debug/${prefix}${stem}${ext}")\n'
+            "endforeach()",
+            True,
+            "float64-debug",
+        ),
         # pkg-config flags skip FindBullet's Debug libraries, whatever their
         # names.
         (
@@ -647,12 +661,81 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "add_library(collision64 UNKNOWN IMPORTED)\n"
             'set_target_properties(collision64 PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"\n'
             '  IMPORTED_LOCATION_RELEASE "${lib}/${prefix}BulletCollision-float64${ext}"\n'
-            '  IMPORTED_LOCATION_DEBUG "${lib}/${prefix}BulletCollision-float64_d${ext}")\n'
+            '  IMPORTED_LOCATION_DEBUG "${lib}/${prefix}BulletCollision-float64-dbg${ext}")\n'
             "add_library(Bullet INTERFACE IMPORTED)\n"
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64\n"
             '  INTERFACE_INCLUDE_DIRECTORIES "${lib}/include;$<BUILD_INTERFACE:${lib}/build>")',
             True,
             "recorded-pc",
+        ),
+        # ... and the build type's locations, Debug here.
+        (
+            325,
+            "set(CMAKE_BUILD_TYPE Debug)\n"
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            'set_target_properties(collision64 PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"\n'
+            '  IMPORTED_LOCATION_RELEASE "${lib}/${prefix}BulletCollision-float64${ext}"\n'
+            '  IMPORTED_LOCATION_DEBUG "${lib}/${prefix}BulletCollision-float64-dbg${ext}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
+            True,
+            "recorded-pc-debug",
+        ),
+        # ... skipping entries for other configurations.
+        (
+            325,
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES\n"
+            '  INTERFACE_INCLUDE_DIRECTORIES "${lib}/include"\n'
+            '  INTERFACE_LINK_LIBRARIES "$<$<CONFIG:Debug>:${lib}/${prefix}BulletCollision-float64-dbg${ext};'
+            "${lib}/${prefix}LinearMath-float64-dbg${ext}>;"
+            '$<$<NOT:$<CONFIG:Debug>>:${lib}/${prefix}BulletCollision-float64${ext}>")',
+            True,
+            "recorded-pc",
+        ),
+        (
+            325,
+            "set(CMAKE_BUILD_TYPE Debug)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES\n"
+            '  INTERFACE_LINK_LIBRARIES "$<$<CONFIG:Debug>:${lib}/${prefix}BulletCollision-float64-dbg${ext};'
+            "${lib}/${prefix}LinearMath-float64-dbg${ext}>;"
+            '$<$<NOT:$<CONFIG:Debug>>:${lib}/${prefix}BulletCollision-float64${ext}>")',
+            True,
+            "recorded-pc-debug-list",
+        ),
+        # Bullet libraries that this project builds cannot be linked by the
+        # precision probe; their directories show the precision instead.
+        (
+            325,
+            'file(WRITE "${CMAKE_BINARY_DIR}/bt/dummy.c" "int bt_dummy;\\n")\n'
+            'file(WRITE "${CMAKE_BINARY_DIR}/bt/CMakeLists.txt"\n'
+            '  "add_definitions(-DBT_USE_DOUBLE_PRECISION)\\n'
+            "add_library(BulletCollision STATIC dummy.c)\\n"
+            'add_library(helper STATIC dummy.c)\\n")\n'
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\n"
+            "enable_language(C)\n"
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
+            'add_subdirectory("${CMAKE_BINARY_DIR}/bt" bt-build)\n'
+            "add_library(Bullet INTERFACE)\n"
+            "target_link_libraries(Bullet INTERFACE helper BulletCollision)",
+            True,
+            "built-double",
+        ),
+        (
+            325,
+            'file(WRITE "${CMAKE_BINARY_DIR}/bt/dummy.c" "int bt_dummy;\\n")\n'
+            'file(WRITE "${CMAKE_BINARY_DIR}/bt/CMakeLists.txt"\n'
+            '  "add_library(helper STATIC dummy.c)\\n")\n'
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\n"
+            "enable_language(C)\n"
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
+            'add_subdirectory("${CMAKE_BINARY_DIR}/bt" bt-build)\n'
+            "add_library(Bullet INTERFACE)\n"
+            "target_link_libraries(Bullet INTERFACE helper\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")',
+            True,
+            "built-none",
         ),
         # Building DART also rejects a target that mixes the variants, which
         # the files of indirectly linked targets reveal; link cycles end.
@@ -765,6 +848,18 @@ def test_bullet_prefers_float64_libraries(
         )
     elif expected == "pc-release":
         check = 'NOT DART_BULLET_PC_LIBS STREQUAL " ${collision} ${math}"'
+    elif expected == "recorded-pc-debug":
+        check = 'NOT DART_BULLET_PC_LIBS STREQUAL " ${lib}/${prefix}BulletCollision-float64-dbg${ext}"'
+    elif expected == "recorded-pc-debug-list":
+        check = (
+            "NOT DART_BULLET_PC_LIBS STREQUAL"
+            ' " ${lib}/${prefix}BulletCollision-float64-dbg${ext}'
+            ' ${lib}/${prefix}LinearMath-float64-dbg${ext}"'
+        )
+    elif expected == "built-double":
+        check = 'NOT DART_BULLET_BUILT_PRECISION STREQUAL "double"'
+    elif expected == "built-none":
+        check = 'NOT DART_BULLET_BUILT_PRECISION STREQUAL "" OR NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE'
     elif expected == "recorded-pc":
         check = (
             "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"

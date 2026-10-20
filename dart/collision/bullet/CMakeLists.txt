@@ -5,7 +5,20 @@
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
 dart_check_optional_package(BULLET "dart" "Bullet" "3.05")
-if(DART_USE_SYSTEM_BULLET)
+if(DART_BULLET_BUILT_PRECISION)
+  # DARTFindBullet read the precision of Bullet libraries that this project
+  # builds, which try_compile cannot link.
+  if(DART_BULLET_BUILT_PRECISION STREQUAL "double")
+    set(BT_USE_DOUBLE_PRECISION 1 CACHE INTERNAL "Test BT_USE_DOUBLE_PRECISION")
+  else()
+    set(
+      BT_USE_DOUBLE_PRECISION
+      ""
+      CACHE INTERNAL
+      "Test BT_USE_DOUBLE_PRECISION"
+    )
+  endif()
+elseif(DART_USE_SYSTEM_BULLET)
   # Test whether Bullet was built with double precision. If so, we need to
   # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
   # any Bullet headers. This is a workaround for the fact that Bullet does not
