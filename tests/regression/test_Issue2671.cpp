@@ -34,33 +34,8 @@
 
 #include <gtest/gtest.h>
 
-#if defined(__linux__)
-  #include <dlfcn.h>
-#endif
-
 //==============================================================================
 TEST(Issue2671, LegacyImguiPublicApiRemainsAvailable)
 {
   ASSERT_NE(nullptr, ImGui::GetVersion());
 }
-
-#if defined(__linux__) && defined(DART_EXTERNAL_IMGUI_HAS_DART_PATCHES)
-//==============================================================================
-TEST(Issue2671, InternalFormattingHelpersAreNotExported)
-{
-  Dl_info info;
-  ASSERT_NE(
-      0, dladdr(reinterpret_cast<const void*>(&ImGui::GetVersion), &info));
-  ASSERT_NE(nullptr, info.dli_fname);
-
-  void* handle = dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
-  if (handle == nullptr) {
-    handle = dlopen(info.dli_fname, RTLD_LAZY);
-  }
-
-  ASSERT_NE(nullptr, handle) << dlerror();
-
-  dlerror();
-  EXPECT_EQ(nullptr, dlsym(handle, "_Z14ImFormatStringPcmPKcz"));
-}
-#endif

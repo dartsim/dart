@@ -44,15 +44,15 @@ pixi run test-gui     # GUI gate; see testing.md
 `demos`, `cycle-demos`, and `capture` run `python -m examples.demos`
 against the built dartpy and depend on `pixi run build-py-dev`.
 That build configures through `pixi run config-py`, whose bundled ImGui is the
-Dear ImGui docking release that configure fetches with Git. `capture` keeps
+Dear ImGui docking release that configure fetches as a pinned tag archive. `capture` keeps
 its output relative to the repository root (by default, `capture.png`).
 The catalog has no C++ executable target; `dart-gui-app` is a private library
 linked into dartpy and tests. Demo implementation lives entirely in Python,
 with model helpers in `python/examples/demos/models/`.
 With `-DDART_USE_SYSTEM_IMGUI=ON`, a vanilla ImGui retains `dart-gui` but
 compiles out the app host and `dartpy.viewer`. Set
-`FETCHCONTENT_SOURCE_DIR_DART_IMGUI` to a local docking source checkout for
-an offline bundled-ImGui build.
+`FETCHCONTENT_SOURCE_DIR_DART_IMGUI` to the folder that contains `imgui.h` in
+the extracted docking tag archive for an offline bundled-ImGui build.
 `pixi run ex <example>` builds and runs one C++ example; `py-ex` and
 `agent-capture` also depend on `pixi run build-py-dev`. For a build without
 graphics dependencies, `pixi run config-core` configures the headless core in

@@ -105,24 +105,6 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "scopes": ("if:TARGET dart-utils-assets",),
         "cache": {"DART_BUILD_UTILS_ASSETS": "OFF"},
     },
-    "tests/regression/test_Issue2516.cpp": {
-        "owner": "tests/regression/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-external-imgui",
-            "if:NOT DART_USE_SYSTEM_IMGUI",
-        ),
-        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
-    },
-    "tests/regression/test_Issue2668.cpp": {
-        "owner": "tests/regression/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-external-imgui",
-            "if:NOT DART_USE_SYSTEM_IMGUI",
-        ),
-        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
-    },
     "tests/integration/test_VskParser.cpp": {
         "owner": "tests/integration/CMakeLists.txt",
         "command": "dart_add_test",
