@@ -159,6 +159,16 @@ FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
 
+Touching convex pairs in FCL 0.7.0's libccd GJK distance can abort with
+assertions (as on Ubuntu 24.04), or return -1 and zero nearest points. DART's
+Linux wheels carry a fix, demonstrated for ellipsoid, ellipsoid-sphere and
+box pairs. Discrete collision queries are unaffected. Every other build,
+including the macOS and Windows wheels, pixi and conda-forge builds, and source
+builds using system FCL, remains affected.
+The patch is in
+``docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch`` and is intended for
+upstream submission (not yet reported).
+
 On Linux, an installed Filament SDK must use libstdc++, as the conda-forge
 ``filament`` package does. With ``DART_USE_SYSTEM_FILAMENT=OFF``, Linux builds
 download and compile the pinned Filament sources, which requires Clang 20 or
