@@ -85,7 +85,10 @@ void Composite::set(const T* aspect)
 template <class T>
 void Composite::set(std::unique_ptr<T>&& aspect)
 {
-  detail::checkTopologyMutation(this);
+  // Checked before the move, so a rejected aspect stays with the caller. A
+  // null aspect is checked only if it removes one.
+  if (aspect)
+    detail::checkTopologyMutation(this);
   _set(typeid(T), std::move(aspect));
 }
 

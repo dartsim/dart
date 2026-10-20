@@ -74,8 +74,10 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
@@ -84,6 +86,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -629,7 +632,7 @@ public:
   std::vector<const void*> mSolverKeys;
   std::vector<const void*> mHandlerKeys;
   // Hooks on other threads read these under the registry mutex; the World's
-  // own thread writes them.
+  // own thread writes them. mStepping is set while step() or compile() runs.
   std::atomic<bool> mCompiled{false};
   std::atomic<std::size_t> mEditDepth{0u};
   std::atomic<bool> mTopologyDirty{false};
@@ -809,6 +812,25 @@ void engageSameThreadMarker(WorldDeactivationState& state)
   *state.mSteppingSlot = &state;
   gGuardedWorlds.fetch_add(1u, std::memory_order_release);
 }
+
+// Ends a step() or compile() that set mStepping: releases the same-thread
+// marker if a callback stage engaged it, then the flag, also on exceptions.
+struct BusyScope
+{
+  WorldDeactivationState& mState;
+  ~BusyScope()
+  {
+    if (mState.mSteppingSlot) {
+      // Every callback stage engages first, so markers unwind in LIFO order.
+      DART_ASSERT(*mState.mSteppingSlot == &mState);
+      gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
+      *mState.mSteppingSlot = mState.mOuterSteppingWorld;
+      mState.mOuterSteppingWorld = nullptr;
+      mState.mSteppingSlot = nullptr;
+    }
+    mState.mStepping.store(false, std::memory_order_release);
+  }
+};
 
 inline bool noIndexedWorlds()
 {
@@ -1058,14 +1080,22 @@ void indexAllocation()
     throw std::bad_alloc();
 }
 
-// Requires the registry mutex.
+// Requires the registry mutex. A failed allocation leaves the index as it was.
 void addOwner(KeyCounts& counts, WorldDeactivationState& state, const void* key)
 {
   if (!key)
     return;
   indexAllocation();
-  if (++counts[key] == 1u)
-    modelOwners().mOwners[key].push_back(&state);
+  auto& count = counts[key];
+  if (count == 0u) {
+    try {
+      modelOwners().mOwners[key].push_back(&state);
+    } catch (...) {
+      counts.erase(key);
+      throw;
+    }
+  }
+  ++count;
 }
 
 // Requires the registry mutex. Purged keys may already be gone.
@@ -1091,19 +1121,27 @@ void removeOwner(
 using FrameChains
     = std::unordered_map<const dynamics::Frame*, std::vector<const void*>>;
 
-// Requires the registry mutex.
+// Requires the registry mutex. A failed allocation leaves the chain as it was.
 void registerChain(
     FrameChains& chains,
     WorldDeactivationState& state,
     const dynamics::Frame* member,
     const ModelKeys& keys)
 {
-  auto& chain = chains[member];
-  for (const void* key : chain)
-    removeOwner(state.mModelKeys, state, key);
-  chain = keys.toVector();
-  for (const void* key : chain)
-    addOwner(state.mModelKeys, state, key);
+  auto chain = keys.toVector();
+  std::size_t added = 0u;
+  try {
+    for (; added < chain.size(); ++added)
+      addOwner(state.mModelKeys, state, chain[added]);
+    auto& registered = chains[member];
+    for (const void* key : registered)
+      removeOwner(state.mModelKeys, state, key);
+    registered = std::move(chain);
+  } catch (...) {
+    while (added != 0u)
+      removeOwner(state.mModelKeys, state, chain[--added]);
+    throw;
+  }
 }
 
 // Requires the registry mutex.
@@ -1141,12 +1179,20 @@ void registerSource(
     const void* source,
     const std::vector<std::pair<const void*, const void*>>& entries)
 {
-  auto& chain = state.mGroupSourceChains[source];
-  for (const auto& entry : chain)
-    removeOwner(state.mModelKeys, state, entry.second);
-  chain = entries;
-  for (const auto& entry : chain)
-    addOwner(state.mModelKeys, state, entry.second);
+  auto chain = entries;
+  std::size_t added = 0u;
+  try {
+    for (; added < chain.size(); ++added)
+      addOwner(state.mModelKeys, state, chain[added].second);
+    auto& registered = state.mGroupSourceChains[source];
+    for (const auto& entry : registered)
+      removeOwner(state.mModelKeys, state, entry.second);
+    registered = std::move(chain);
+  } catch (...) {
+    while (added != 0u)
+      removeOwner(state.mModelKeys, state, chain[--added].second);
+    throw;
+  }
 }
 
 // Requires the registry mutex.
@@ -2182,7 +2228,9 @@ void World::validateCompiledModel() const
     if (changed)
       break;
     const auto source = subscription.mSource.lock();
-    if (source && typeid(*source) != typeid(dynamics::Skeleton)
+    // A raw pointer keeps typeid's operand free of side effects.
+    const auto* meta = source.get();
+    if (meta && typeid(*meta) != typeid(dynamics::Skeleton)
         && state.mStepping.load(std::memory_order_acquire))
       engageSameThreadMarker(*mDeactivationState);
     changed
@@ -2251,8 +2299,13 @@ void World::validateCompiledModel() const
 void World::compile()
 {
   auto& state = *mDeactivationState;
-  if (state.mStepping.load(std::memory_order_acquire))
-    throw std::runtime_error("WorldBusyError: compile during step");
+  // Compilation runs user extension points (collision filters and detectors,
+  // solver and dynamics overrides), so it is busy as a step is: its callbacks
+  // may not compile, edit or step this World or change its model's topology.
+  if (state.mStepping.exchange(true, std::memory_order_acq_rel))
+    throw std::runtime_error("WorldBusyError: compile during step or compile");
+  const BusyScope busy{state};
+  engageSameThreadMarker(state);
   if (state.mEditDepth)
     throw std::runtime_error("Cannot compile inside a World::edit() scope");
   if (state.mPendingRecompileError) {
@@ -2319,6 +2372,10 @@ void World::compile()
   }
 
   enterSimulationMode();
+  // The snapshots are rebuilt in place: if that throws, the World stays
+  // uncompiled, as after a failed scope-exit recompile.
+  const bool wasCompiled
+      = state.mCompiled.exchange(false, std::memory_order_relaxed);
   state.mCompiledCollisionOption = mConstraintSolver->getCollisionOption();
   state.mCompiledFilterRevision = getCollisionFilterSnapshotRevision(
       state.mCompiledCollisionOption.collisionFilter.get());
@@ -2424,7 +2481,7 @@ void World::compile()
     state.mCompiledConstraints.push_back(
         mConstraintSolver->getConstraint(i).get());
   state.mCompiledContactHandlers = std::move(contactHandlers);
-  if (!state.mCompiled && !state.mTopologyDirty)
+  if (!wasCompiled && !state.mTopologyDirty)
     ++state.mTopologyRevision;
   state.mTopologyDirty = false;
   state.mCompiledTopologyRevision = state.mTopologyRevision;
@@ -2444,7 +2501,7 @@ World::EditScope::EditScope(World& world)
 {
   auto& state = *mWorld.mDeactivationState;
   if (state.mStepping.load(std::memory_order_acquire))
-    throw std::runtime_error("WorldBusyError: edit during step");
+    throw std::runtime_error("WorldBusyError: edit during step or compile");
   // Lazy Worlds stay lazy. Compiled ones, and ones whose last recompile
   // failed, recompile at scope exit.
   mRecompile = state.mCompiled.load(std::memory_order_relaxed)
@@ -2735,6 +2792,53 @@ WorldPtr World::clone() const
     worldClone->addSkeleton(mSkeletons[i]->cloneSkeleton());
   }
 
+  // A compiled World's frames are frozen, so its SimpleFrame clones start at
+  // the World frame with their sources' poses, then move to the clones of
+  // parents this World holds: its SimpleFrames and its Skeletons' frames.
+  // Any other parent throws, inside edit() too: sharing it would put the
+  // clone's frame in this World's model at the next recompile, so dropping
+  // the clone would change that model.
+  if (mDeactivationState->mCompiled.load(std::memory_order_relaxed)) {
+    std::unordered_map<const dynamics::Frame*, dynamics::Frame*> clones;
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+      const dynamics::Skeleton& source = *mSkeletons[i];
+      const auto skeleton = worldClone->getSkeleton(i);
+      // cloneSkeleton() keeps the indices of BodyNodes and their Nodes.
+      for (std::size_t j = 0; j < source.getNumBodyNodes(); ++j)
+        clones[source.getBodyNode(j)] = skeleton->getBodyNode(j);
+      for (std::size_t j = 0; j < source.getNumShapeNodes(); ++j)
+        clones[source.getShapeNode(j)] = skeleton->getShapeNode(j);
+      for (std::size_t j = 0; j < source.getNumEndEffectors(); ++j)
+        clones[source.getEndEffector(j)] = skeleton->getEndEffector(j);
+      for (std::size_t j = 0; j < source.getNumMarkers(); ++j)
+        clones[source.getMarker(j)] = skeleton->getMarker(j);
+    }
+    for (const auto& frame : mSimpleFrames) {
+      auto clone = frame->clone(dynamics::Frame::World());
+      clones[frame.get()] = clone.get();
+      worldClone->addSimpleFrame(clone);
+    }
+    for (std::size_t i = 0; i < mSimpleFrames.size(); ++i) {
+      auto* parent = mSimpleFrames[i]->getParentFrame();
+      const auto it = clones.find(parent);
+      if (!parent->isWorld() && it == clones.end()) {
+        throw std::runtime_error(
+            "Cannot clone a compiled World: the parent '" + parent->getName()
+            + "' of SimpleFrame '" + mSimpleFrames[i]->getName()
+            + "' is not a frame this World holds");
+      }
+      const auto& clone = worldClone->getSimpleFrame(i);
+      clone->setParentFrame(
+          parent->isWorld() ? dynamics::Frame::World() : it->second);
+      clone->setRelativeTransform(mSimpleFrames[i]->getRelativeTransform());
+      clone->setRelativeSpatialVelocity(
+          mSimpleFrames[i]->getRelativeSpatialVelocity());
+      clone->setRelativeSpatialAcceleration(
+          mSimpleFrames[i]->getRelativeSpatialAcceleration());
+    }
+    return worldClone;
+  }
+
   // Clone and add each SimpleFrame
   for (std::size_t i = 0; i < mSimpleFrames.size(); ++i) {
     worldClone->addSimpleFrame(
@@ -2875,31 +2979,8 @@ void World::step(bool _resetCommand)
   auto& state = *mDeactivationState;
   if (state.mStepping.exchange(true, std::memory_order_acq_rel))
     throw std::runtime_error("WorldBusyError: reentrant World::step()");
-  struct ReleaseStep
-  {
-    std::atomic<bool>& flag;
-    ~ReleaseStep()
-    {
-      flag.store(false, std::memory_order_release);
-    }
-  } release{state.mStepping};
-  // Callback stages engage lazily; release once, including on exceptions.
-  struct SameThreadMarker
-  {
-    WorldDeactivationState& mState;
-    ~SameThreadMarker()
-    {
-      if (!mState.mSteppingSlot)
-        return;
-      // Every callback stage engages first, so markers unwind in LIFO order.
-      DART_ASSERT(*mState.mSteppingSlot == &mState);
-      gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
-      *mState.mSteppingSlot = mState.mOuterSteppingWorld;
-      mState.mOuterSteppingWorld = nullptr;
-      mState.mSteppingSlot = nullptr;
-    }
-  };
-  const SameThreadMarker marker{state};
+  // Callback stages engage the marker lazily.
+  const BusyScope busy{state};
   if (state.mEditDepth)
     throw std::runtime_error("Cannot step inside a World::edit() scope");
   if (state.mPendingRecompileError)
@@ -4661,8 +4742,14 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
           reason = Rejection::Shared;
       }
       if (reason == Rejection::None) {
-        mSkeletons.push_back(_skeleton);
+        // Index first, so a failed allocation leaves the World unchanged.
         addOwner(state.mModelKeys, state, _skeleton.get());
+        try {
+          mSkeletons.push_back(_skeleton);
+        } catch (...) {
+          removeOwner(state.mModelKeys, state, _skeleton.get());
+          throw;
+        }
       }
     }
     throwRejection(reason);
@@ -4856,13 +4943,16 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   } else {
     ModelKeys keys;
     collectFrameKeys(_frame.get(), keys, true);
+    auto& state = *mDeactivationState;
     const auto lock = lockRegistry();
-    mSimpleFrames.push_back(_frame);
-    registerChain(
-        mDeactivationState->mSimpleFrameChains,
-        *mDeactivationState,
-        _frame.get(),
-        keys);
+    // Index first, so a failed allocation leaves the World unchanged.
+    registerChain(state.mSimpleFrameChains, state, _frame.get(), keys);
+    try {
+      mSimpleFrames.push_back(_frame);
+    } catch (...) {
+      unregisterChain(state.mSimpleFrameChains, state, _frame.get());
+      throw;
+    }
   }
   mSimpleFrameToShared[_frame.get()] = _frame;
 
@@ -5521,6 +5611,27 @@ void notifyModelDestruction(const dynamics::Skeleton* skeleton)
 } // namespace common
 namespace collision {
 namespace detail {
+
+void checkWorldGroupMutation(const CollisionGroup* group)
+{
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(group));
+  if (simulation::noIndexedWorlds())
+    return;
+  // Only a stepping owner rejects: an idle compiled World reports raw group
+  // edits at its next step() or compile().
+  bool busy = false;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(
+        group, [&](const simulation::WorldDeactivationState& owner) {
+          busy = busy || owner.mStepping.load(std::memory_order_acquire);
+        });
+  }
+  if (busy)
+    simulation::throwRejection(simulation::Rejection::Busy);
+}
 
 void notifyWorldGroupMutation(const CollisionGroup* group)
 {

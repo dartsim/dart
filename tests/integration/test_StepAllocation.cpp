@@ -3347,3 +3347,70 @@ TEST(StepAllocation, GzLikeFilterAndHandlerSteadyState)
     }
   }
 }
+
+//==============================================================================
+TEST(CollisionSubscription, AllocationFailuresRollBackObjectsAndClaims)
+{
+  using namespace dart::collision;
+  using namespace dart::dynamics;
+  for (const bool bullet : {false, true}) {
+#if !HAVE_BULLET
+    if (bullet)
+      continue;
+#endif
+    for (const bool bodySubscription : {false, true}) {
+      bool completed = false;
+      for (std::size_t nth = 1u; nth < 512u; ++nth) {
+        SCOPED_TRACE(nth);
+        SCOPED_TRACE(bullet ? "Bullet" : "FCL");
+        SCOPED_TRACE(bodySubscription ? "BodyNode" : "Skeleton");
+        CollisionDetectorPtr detector = FCLCollisionDetector::create();
+#if HAVE_BULLET
+        if (bullet)
+          detector = BulletCollisionDetector::create();
+#endif
+        auto skeleton = Skeleton::create();
+        auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+        auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+        body->createShapeNodeWith<CollisionAspect>(shape);
+        body->createShapeNodeWith<CollisionAspect>(shape);
+        auto group = detector->createCollisionGroup();
+        auto existing = std::make_shared<SimpleFrame>();
+        existing->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+        group->addShapeFrame(existing.get());
+        const auto subscribe = [&] {
+          if (bodySubscription)
+            group->subscribeTo(ConstBodyNodePtr(body));
+          else
+            group->subscribeTo(skeleton);
+        };
+        bool failed = false;
+        dart::test::failHeapAllocation(nth);
+        try {
+          subscribe();
+        } catch (const std::bad_alloc&) {
+          failed = true;
+        }
+        dart::test::failHeapAllocation(0u);
+        if (!failed) {
+          completed = true;
+          break;
+        }
+        EXPECT_EQ(group->getNumShapeFrames(), 1u);
+        EXPECT_TRUE(group->hasShapeFrame(existing.get()));
+        EXPECT_FALSE(group->isSubscribedTo(body));
+        EXPECT_FALSE(group->isSubscribedTo(skeleton.get()));
+        // A retry must work with the same detector and group.
+        ASSERT_NO_THROW(subscribe());
+        EXPECT_EQ(group->getNumShapeFrames(), 3u);
+        EXPECT_NO_THROW(group->collide());
+        group->removeAllShapeFrames();
+        const std::weak_ptr<Shape> released = shape;
+        shape.reset();
+        skeleton.reset();
+        EXPECT_TRUE(released.expired());
+      }
+      EXPECT_TRUE(completed);
+    }
+  }
+}

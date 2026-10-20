@@ -202,7 +202,9 @@ template <class SpecAspect>
 void SpecializedForAspect<SpecAspect>::_set(
     type<SpecAspect>, const SpecAspect* aspect)
 {
-  detail::checkTopologyMutation(this);
+  // A null aspect is checked only if it removes one (in _replaceAspect()).
+  if (aspect)
+    detail::checkTopologyMutation(this);
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -225,7 +227,8 @@ template <class SpecAspect>
 void SpecializedForAspect<SpecAspect>::_set(
     type<SpecAspect>, std::unique_ptr<SpecAspect>&& aspect)
 {
-  detail::checkTopologyMutation(this);
+  if (aspect)
+    detail::checkTopologyMutation(this);
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS

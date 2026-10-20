@@ -1162,7 +1162,7 @@ void Joint::notifyAutomaticConstraintPropertiesUpdated()
 //==============================================================================
 void Joint::incrementParameterVersion()
 {
-  incrementVersion();
+  Joint::incrementVersion();
   common::detail::notifyParameterMutation(this);
 }
 

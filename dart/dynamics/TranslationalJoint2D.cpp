@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -132,6 +133,7 @@ void TranslationalJoint2D::setXYPlane(bool renameDofs)
   if (renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -142,6 +144,7 @@ void TranslationalJoint2D::setYZPlane(bool renameDofs)
   if (renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -152,6 +155,7 @@ void TranslationalJoint2D::setZXPlane(bool renameDofs)
   if (renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================
@@ -165,6 +169,7 @@ void TranslationalJoint2D::setArbitraryPlane(
   if (renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdated();
+  common::detail::notifyParameterMutation(this);
 }
 
 //==============================================================================

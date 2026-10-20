@@ -116,6 +116,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   if (mObjectInfoList.end() == search)
     return;
 
+  detail::checkWorldGroupMutation(this);
   removeCollisionObjectFromEngine((*search)->mObject.get());
 
   // Since the user is explicitly telling us to remove this ShapeFrame, we can
@@ -173,8 +174,11 @@ bool CollisionGroup::isSubscribedTo()
 //==============================================================================
 void CollisionGroup::removeAllShapeFrames()
 {
-  const bool hadObjects = !mObjectInfoList.empty() || !mSkeletonSources.empty()
-                          || !mBodyNodeSources.empty();
+  const bool hadObjects = !mObjectInfoList.empty();
+  const bool hadContents
+      = hadObjects || !mSkeletonSources.empty() || !mBodyNodeSources.empty();
+  if (hadContents)
+    detail::checkWorldGroupMutation(this);
 
   removeAllCollisionObjectsFromEngine();
 
@@ -190,6 +194,8 @@ void CollisionGroup::removeAllShapeFrames()
   detail::notifyWorldGroupCleared(this);
   if (hadObjects)
     incrementContentVersion();
+  else if (hadContents)
+    detail::notifyWorldGroupMutation(this);
 }
 
 //==============================================================================
@@ -491,10 +497,14 @@ auto CollisionGroup::addShapeFrameImpl(
         return info->mFrame == shapeFrame;
       });
 
+  // Only addShapeFrame() passes no source. subscribeTo() checks before its
+  // insertion, and update() only synchronizes existing subscriptions.
+  if (!source
+      && (it == mObjectInfoList.end() || (*it)->mSources.count(nullptr) == 0u))
+    detail::checkWorldGroupMutation(this);
+
   if (it == mObjectInfoList.end()) {
     auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame);
-
-    addCollisionObjectToEngine(collObj.get());
 
     const dynamics::ConstShapePtr& shape = shapeFrame->getShape();
 
@@ -503,17 +513,30 @@ auto CollisionGroup::addShapeFrameImpl(
     // PRIMITIVE_MAGIC_NUMBER (defined as 1000 in Shape.cpp). Version is not
     // likely to be 0 because the Shape class starts its version counter at 1,
     // and the version count should monotonically increase.
-    mObjectInfoList.emplace_back(new ObjectInfo{
+    auto info = std::unique_ptr<ObjectInfo>(new ObjectInfo{
         shapeFrame,
         collObj,
         shape ? shape->getID() : 0,
         shape ? shape->getVersion() : 0,
-        {}});
-    mObserver.addShapeFrame(shapeFrame);
-    detail::notifyWorldGroupShapeFrameAdded(this, shapeFrame);
+        {source}});
+    bool published = false;
+    try {
+      addCollisionObjectToEngine(collObj.get());
+      mObjectInfoList.emplace_back(std::move(info));
+      published = true;
+      mObserver.addShapeFrame(shapeFrame);
+      detail::notifyWorldGroupShapeFrameAdded(this, shapeFrame);
+    } catch (...) {
+      removeCollisionObjectFromEngine(collObj.get());
+      mObserver.removeShapeFrame(shapeFrame);
+      if (published) {
+        detail::notifyWorldGroupShapeFrameRemoved(this, shapeFrame);
+        mObjectInfoList.pop_back();
+      }
+      throw;
+    }
     incrementContentVersion();
-
-    it = --mObjectInfoList.end();
+    return mObjectInfoList.back().get();
   }
 
   (*it)->mSources.insert(source);

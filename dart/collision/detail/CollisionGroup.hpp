@@ -114,19 +114,27 @@ template <typename... Others>
 void CollisionGroup::subscribeTo(
     const dynamics::ConstBodyNodePtr& bodyNode, const Others&... others)
 {
+  if (mBodyNodeSources.count(bodyNode.get()) == 0u)
+    detail::checkWorldGroupMutation(this);
   const auto inserted = mBodyNodeSources.insert(BodyNodeSources::value_type(
       bodyNode.get(), BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
 
   if (inserted.second) {
-    detail::notifyWorldGroupMutation(this);
-    mSubscriptionOrder.push_back(bodyNode.get());
-    const BodyNodeSources::iterator& entry = inserted.first;
-    bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
-        [&](const dynamics::ShapeNode* shapeNode) {
-          entry->second.mObjects.insert(
-              {shapeNode, addShapeFrameImpl(shapeNode, bodyNode.get())});
-        });
-    detail::notifyWorldGroupSubscribed(this, bodyNode.get());
+    // A failed subscription releases the collision objects it created.
+    try {
+      detail::notifyWorldGroupMutation(this);
+      mSubscriptionOrder.push_back(bodyNode.get());
+      const BodyNodeSources::iterator& entry = inserted.first;
+      bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+          [&](const dynamics::ShapeNode* shapeNode) {
+            auto& object = entry->second.mObjects[shapeNode];
+            object = addShapeFrameImpl(shapeNode, bodyNode.get());
+          });
+      detail::notifyWorldGroupSubscribed(this, bodyNode.get());
+    } catch (...) {
+      unsubscribeFrom(bodyNode.get());
+      throw;
+    }
   }
 
   subscribeTo(others...);
@@ -137,33 +145,41 @@ template <typename... Others>
 void CollisionGroup::subscribeTo(
     const dynamics::ConstMetaSkeletonPtr& metaSkeleton, const Others&... others)
 {
+  if (mSkeletonSources.count(metaSkeleton.get()) == 0u)
+    detail::checkWorldGroupMutation(this);
   const auto inserted = mSkeletonSources.insert(SkeletonSources::value_type(
       metaSkeleton.get(),
       SkeletonSource(metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
 
   if (inserted.second) {
-    detail::notifyWorldGroupMutation(this);
-    mSubscriptionOrder.push_back(metaSkeleton.get());
-    SkeletonSource& entry = inserted.first->second;
+    // A failed subscription releases the collision objects it created.
+    try {
+      detail::notifyWorldGroupMutation(this);
+      mSubscriptionOrder.push_back(metaSkeleton.get());
+      SkeletonSource& entry = inserted.first->second;
 
-    const std::size_t numBodies = metaSkeleton->getNumBodyNodes();
-    for (std::size_t i = 0u; i < numBodies; ++i) {
-      const dynamics::BodyNode* bn = metaSkeleton->getBodyNode(i);
+      const std::size_t numBodies = metaSkeleton->getNumBodyNodes();
+      for (std::size_t i = 0u; i < numBodies; ++i) {
+        const dynamics::BodyNode* bn = metaSkeleton->getBodyNode(i);
 
-      auto& childInfo
-          = entry.mChildren
-                .insert(std::make_pair(
-                    bn, SkeletonSource::ChildInfo(bn->getVersion())))
-                .first->second;
+        auto& childInfo
+            = entry.mChildren
+                  .insert(std::make_pair(
+                      bn, SkeletonSource::ChildInfo(bn->getVersion())))
+                  .first->second;
 
-      bn->eachShapeNodeWith<dynamics::CollisionAspect>(
-          [&](const dynamics::ShapeNode* shapeNode) {
-            entry.mObjects.insert(
-                {shapeNode, addShapeFrameImpl(shapeNode, metaSkeleton.get())});
-            childInfo.mFrames.insert(shapeNode);
-          });
+        bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+            [&](const dynamics::ShapeNode* shapeNode) {
+              auto& object = entry.mObjects[shapeNode];
+              object = addShapeFrameImpl(shapeNode, metaSkeleton.get());
+              childInfo.mFrames.insert(shapeNode);
+            });
+      }
+      detail::notifyWorldGroupSubscribed(this, metaSkeleton.get());
+    } catch (...) {
+      unsubscribeFrom(metaSkeleton.get());
+      throw;
     }
-    detail::notifyWorldGroupSubscribed(this, metaSkeleton.get());
   }
 
   subscribeTo(others...);
@@ -246,6 +262,7 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mBodyNodeSources.find(bodyNode);
   if (it != mBodyNodeSources.end()) {
+    detail::checkWorldGroupMutation(this);
     detail::notifyWorldGroupMutation(this);
     for (const auto& entry : it->second.mObjects)
       removeShapeFrameInternal(entry.first, bodyNode);
@@ -265,6 +282,7 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mSkeletonSources.find(skeleton);
   if (it != mSkeletonSources.end()) {
+    detail::checkWorldGroupMutation(this);
     detail::notifyWorldGroupMutation(this);
     for (const auto& entry : it->second.mObjects) {
       removeShapeFrameInternal(entry.first, skeleton);

@@ -89,6 +89,11 @@ namespace collision {
 class CollisionGroup;
 class CollisionDetector;
 namespace detail {
+// Rejects an edit of a group that a stepping World uses: from that World's own
+// callbacks, or from any thread once it is compiled. Group edits call it
+// before changing anything; raw edits of an idle compiled World stay detected
+// at its next step() or compile().
+void checkWorldGroupMutation(const CollisionGroup* group);
 void notifyWorldGroupMutation(const CollisionGroup* group);
 // Membership changes of a World's collision group, keyed by the group.
 void notifyWorldGroupShapeFrameAdded(

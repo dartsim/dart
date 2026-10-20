@@ -280,7 +280,10 @@ void Composite::_replaceAspect(
 //==============================================================================
 void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
-  detail::checkTopologyMutation(this);
+  // Clearing an absent aspect replaces nothing; _replaceAspect() checks a
+  // clear that removes one.
+  if (aspect)
+    detail::checkTopologyMutation(this);
   auto insertion = mAspectMap.insert(AspectMap::value_type(type_idx, nullptr));
   auto& slot = insertion.first->second;
   _replaceAspect(slot, aspect ? aspect->cloneAspect() : nullptr);
@@ -289,7 +292,8 @@ void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 //==============================================================================
 void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 {
-  detail::checkTopologyMutation(this);
+  if (aspect)
+    detail::checkTopologyMutation(this);
   auto insertion = mAspectMap.insert(AspectMap::value_type(type_idx, nullptr));
   auto& slot = insertion.first->second;
   _replaceAspect(slot, std::move(aspect));

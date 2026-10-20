@@ -159,7 +159,13 @@ public:
   virtual ~World();
 
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
-  /// by this World will be copied over.
+  /// by this World will be copied over. A compiled World attaches the cloned
+  /// SimpleFrames to the clones of their parents (its SimpleFrames and its
+  /// Skeletons' frames), so its clone shares no frame with it. If a
+  /// SimpleFrame's parent is any other frame except the World frame, it
+  /// throws std::runtime_error, inside edit() too: sharing that parent would
+  /// attach the clone to this World's model at scope-exit compilation, so
+  /// destroying the clone afterward would invalidate this World's model.
   std::shared_ptr<World> clone() const;
 
   /// Capture owning dynamic channels and time, excluding parameters/history.
@@ -354,7 +360,9 @@ public:
   void enterSimulationMode();
 
   /// Prepare the model and opt into topology freezing. Legacy lazy Worlds
-  /// continue to permit runtime model edits until compile() is called.
+  /// continue to permit runtime model edits until compile() is called. As in
+  /// step(), callbacks that compile() runs may not compile, edit or step this
+  /// World or change its model's topology; those throw std::runtime_error.
   void compile();
 
   /// Whether explicit compilation is current and no edit scope is active.

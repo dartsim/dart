@@ -1089,8 +1089,17 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
     return fclCollGeom.lock();
   }
 
-  auto newfclCollGeom = createFCLCollisionGeometry(
-      shape, mPrimitiveShapeType, FCLCollisionGeometryDeleter(this, shape));
+  std::shared_ptr<fcl::CollisionGeometry> newfclCollGeom;
+  try {
+    newfclCollGeom = createFCLCollisionGeometry(
+        shape, mPrimitiveShapeType, FCLCollisionGeometryDeleter(this, shape));
+  } catch (...) {
+    // Only a geometry's deleter erases its entry, so drop the one inserted
+    // for a geometry that was never created (a throwing Shape override).
+    if (inserted)
+      mShapeMap.erase(shape);
+    throw;
+  }
   info.mShape = newfclCollGeom;
   info.mLastKnownVersion = currentVersion;
 

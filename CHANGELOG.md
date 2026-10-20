@@ -121,6 +121,18 @@
 
 * Collision
 
+  * A throwing Shape override or allocation failure during collision-group
+    subscription no longer leaves partial collision objects or a stale
+    FCL/Bullet detector shape entry; debug builds no longer assert when the
+    detector is destroyed.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Editing a `CompositeCollisionFilter` during its own query, from one of its
+    filters, now throws `std::runtime_error` instead of invalidating the query
+    when the edit removes the filter being queried, clears the composite or
+    adds a filter that rehashes its set; other edits still apply.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
   * Fix undefined behavior when a custom deleter of a replaced collision
     detector or contact surface handler reads the constraint solver's
     current one.
