@@ -316,6 +316,11 @@
     BulletDynamics and BulletSoftBody.
     [#3864](https://github.com/dartsim/dart/pull/3864)
 
+  * Fix the Bullet 3.25 fetch fallback under CMake 4 and build and install
+    only the double-precision collision and math libraries DART uses. Accept
+    these libraries in installed DART consumers without requiring
+    BulletDynamics or BulletSoftBody.
+
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
     [#3829](https://github.com/dartsim/dart/pull/3829)

@@ -127,6 +127,19 @@ collision shared-library filenames are no longer installed. `DART_SKIP_BULLET`
 and `DART_SKIP_ODE` disable the respective backends, including bundled downloads.
 The FCL default and public detector classes remain unchanged.
 
+`DART_USE_SYSTEM_BULLET=OFF` fetches Bullet 3.25 and builds and installs only
+the shared `BulletCollision` and `LinearMath` libraries and their headers,
+with double precision enabled. DART installs the headers directly under
+`<prefix>/include`, not upstream's `include/bullet`. Bullet 3, extras, demos, Python bindings and
+upstream unit tests are disabled. The CMake 4 policy minimum is scoped to
+Bullet's configure. This is a collision-only SDK; the installed pkg-config
+file lists only these two libraries, and upstream's full Bullet CMake package
+is not installed.
+
+The installed DART finder requires only Bullet's headers, `BulletCollision`
+and `LinearMath`, so this collision-only SDK also supports DART consumers
+without BulletDynamics or BulletSoftBody installed.
+
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the
 [package checks](../../tools/package/README.md) for static builds, legacy

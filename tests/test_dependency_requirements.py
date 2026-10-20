@@ -473,7 +473,9 @@ def test_bullet_header_floor(tmp_path, bundled, version):
     modules.mkdir()
     (modules / "FindBullet.cmake").write_text(
         "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
-        f'set(BULLET_INCLUDE_DIRS "{include.as_posix()}")\n'
+        f'set(BULLET_INCLUDE_DIR "{include.as_posix()}")\n'
+        "set(BULLET_COLLISION_LIBRARY BulletCollision)\n"
+        "set(BULLET_MATH_LIBRARY LinearMath)\n"
     )
     content = f"set(DART_USE_SYSTEM_BULLET {'OFF' if bundled else 'ON'})\n"
     if bundled:
@@ -488,6 +490,61 @@ def test_bullet_header_floor(tmp_path, bundled, version):
     else:
         content += 'if(BULLET_FOUND OR Bullet_FOUND OR TARGET Bullet)\nmessage(FATAL_ERROR "Accepted old Bullet")\nendif()\n'
     result = configure(tmp_path, content)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("debug", [False, True])
+@pytest.mark.parametrize(
+    "installation",
+    ["collision-only", "complete", "no-math", "no-collision", "no-headers"],
+)
+def test_bullet_collision_libraries(tmp_path, installation, debug):
+    prefix = tmp_path / "prefix"
+    include = prefix / "include/bullet"
+    if installation != "no-headers":
+        (include / "LinearMath").mkdir(parents=True)
+        (include / "btBulletCollisionCommon.h").touch()
+        (include / "LinearMath/btScalar.h").write_text(
+            "#define BT_BULLET_VERSION 305\n"
+        )
+    lib = prefix / "lib"
+    lib.mkdir(parents=True)
+    expected = []
+    for name, missing in (
+        ("BulletCollision", "no-collision"),
+        ("LinearMath", "no-math"),
+        ("BulletDynamics", "collision-only"),
+        ("BulletSoftBody", "collision-only"),
+    ):
+        if installation == missing:
+            continue
+        library = lib / f"lib{name}.a"
+        library.touch()
+        if debug:
+            debug_library = lib / f"lib{name}_Debug.a"
+            debug_library.touch()
+        if name in ("BulletCollision", "LinearMath"):
+            expected.extend(
+                ["optimized", library.as_posix(), "debug", debug_library.as_posix()]
+                if debug
+                else [library.as_posix()]
+            )
+    accepted = installation in ("collision-only", "complete")
+    result = configure(
+        tmp_path,
+        'set(BULLET_INCLUDE_DIRS "stale-parent-include")\n'
+        "set(DART_USE_SYSTEM_BULLET ON)\ninclude(DARTFindBullet)\n"
+        + (
+            "if(NOT BULLET_FOUND OR NOT Bullet_FOUND OR NOT TARGET Bullet)\n"
+            'message(FATAL_ERROR "Rejected collision libraries")\nendif()\n'
+            f'if(NOT BULLET_INCLUDE_DIRS STREQUAL "{include.as_posix()}"\n'
+            f'   OR NOT BULLET_LIBRARIES STREQUAL "{";".join(expected)}")\n'
+            'message(FATAL_ERROR "Incorrect Bullet usage requirements")\nendif()\n'
+            if accepted
+            else "if(BULLET_FOUND OR Bullet_FOUND OR TARGET Bullet)\n"
+            'message(FATAL_ERROR "Accepted incomplete Bullet")\nendif()\n'
+        ),
+    )
     assert result.returncode == 0, result.stdout + result.stderr
 
 

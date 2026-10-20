@@ -244,6 +244,8 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
 
   set(USE_DOUBLE_PRECISION ON CACHE BOOL "" FORCE)
   set(BULLET2_MULTITHREADING ON CACHE BOOL "" FORCE)
+  set(BUILD_BULLET3 OFF CACHE BOOL "" FORCE)
+  set(BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
   set(BUILD_BULLET_ROBOTICS_GUI_EXTRA OFF CACHE BOOL "" FORCE)
   set(BUILD_BULLET_ROBOTICS_EXTRA OFF CACHE BOOL "" FORCE)
   set(BUILD_GIMPACTUTILS_EXTRA OFF CACHE BOOL "" FORCE)
@@ -254,7 +256,8 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
   set(BUILD_PYBULLET OFF CACHE BOOL "" FORCE)
   set(BUILD_PYBULLET_NUMPY OFF CACHE BOOL "" FORCE)
   set(INSTALL_LIBS ON CACHE BOOL "" FORCE)
-  set(INSTALL_EXTRA_LIBS ON CACHE BOOL "" FORCE)
+  set(INSTALL_EXTRA_LIBS OFF CACHE BOOL "" FORCE)
+  set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
   FetchContent_Declare(
     bullet
     URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
@@ -262,7 +265,59 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
       SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
   )
   dart_check_fetchcontent(bullet DART_USE_SYSTEM_BULLET)
-  FetchContent_MakeAvailable(bullet)
+  dart_fetchcontent_makeavailable_legacy(bullet)
+  # Skip upstream's src install rules, including the unused dynamics headers.
+  set_property(
+    DIRECTORY "${bullet_SOURCE_DIR}/src"
+    PROPERTY EXCLUDE_FROM_ALL TRUE
+  )
+  install(
+    TARGETS BulletCollision LinearMath
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
+    ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR}
+  )
+  install(
+    DIRECTORY
+      "${bullet_SOURCE_DIR}/src/BulletCollision"
+      "${bullet_SOURCE_DIR}/src/LinearMath"
+    DESTINATION ${INCLUDE_INSTALL_DIR}
+    FILES_MATCHING
+    PATTERN "*.h"
+  )
+  install(
+    FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
+    DESTINATION ${INCLUDE_INSTALL_DIR}
+  )
+  install(
+    FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
+    DESTINATION ${INCLUDE_INSTALL_DIR}/BulletCollision
+  )
+  if(EXISTS "${bullet_BINARY_DIR}/bullet.pc")
+    file(READ "${bullet_BINARY_DIR}/bullet.pc" _dart_bullet_pc)
+    if(NOT _dart_bullet_pc MATCHES "-lBulletSoftBody -lBulletDynamics ")
+      message(
+        WARNING
+        "Cannot narrow bullet.pc to the fetched collision libraries"
+      )
+    endif()
+    string(
+      REPLACE
+      "-lBulletSoftBody -lBulletDynamics "
+      ""
+      _dart_bullet_pc
+      "${_dart_bullet_pc}"
+    )
+    string(
+      REPLACE
+      "libdir=\${exec_prefix}/${LIB_DESTINATION}"
+      "libdir=\${exec_prefix}/${LIBRARY_INSTALL_DIR}"
+      _dart_bullet_pc
+      "${_dart_bullet_pc}"
+    )
+    file(WRITE "${bullet_BINARY_DIR}/bullet.pc" "${_dart_bullet_pc}")
+    unset(_dart_bullet_pc)
+  endif()
   set(
     DART_BULLET_SOURCE_DIR
     "${bullet_SOURCE_DIR}"
