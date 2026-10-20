@@ -19,6 +19,11 @@
 # with DART_BULLET_REQUIRE_VERSION.
 include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 
+set(
+  _dart_bullet_name_regex
+  "^(lib)?(Bullet(Collision|Dynamics|Math|SoftBody)|LinearMath)"
+)
+
 # Sets <out> to float64, single or mixed for the Bullet library files among
 # the arguments, judged by file name, or to an empty string if there are none.
 # Targets, such as bundled Bullet's, are not files.
@@ -30,11 +35,7 @@ function(_dart_bullet_variant out)
       continue()
     endif()
     get_filename_component(name "${library}" NAME)
-    if(
-      name
-        MATCHES
-        "^(lib)?(Bullet(Collision|Dynamics|Math|SoftBody)|LinearMath)"
-    )
+    if(name MATCHES "${_dart_bullet_name_regex}")
       if(name MATCHES "-float64")
         set(float64 TRUE)
       else()
@@ -54,9 +55,10 @@ function(_dart_bullet_variant out)
 endfunction()
 
 # Records the variant that DART links while building it, and pkg-config
-# flags for the Bullet libraries among the remaining arguments, for dart.pc
-# to name when no bullet-float64 module describes them.
+# flags for the INCLUDES and the release Bullet files among LIBRARIES, which
+# dart.pc names when no bullet-float64 module describes them.
 function(_dart_bullet_record variant)
+  cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "INCLUDES;LIBRARIES")
   set(uses "")
   if(variant STREQUAL "float64")
     set(uses TRUE)
@@ -69,24 +71,29 @@ function(_dart_bullet_record variant)
     CACHE INTERNAL
     "Whether DART links Bullet's -float64 libraries; empty when unknown"
   )
-  set(cflags "")
-  set(libs "")
-  if(ARGN)
-    foreach(dir IN LISTS BULLET_INCLUDE_DIRS)
-      string(APPEND cflags " -I${dir}")
-    endforeach()
-  endif()
-  # Keep FindBullet's release libraries.
+  set(libraries)
   set(skip FALSE)
-  foreach(library IN LISTS ARGN)
+  foreach(library IN LISTS arg_LIBRARIES)
+    get_filename_component(name "${library}" NAME)
+    get_filename_component(stem "${library}" NAME_WE)
     if(skip)
       set(skip FALSE)
     elseif(library STREQUAL "debug")
       set(skip TRUE)
-    elseif(NOT library MATCHES "^(optimized|general)$")
-      string(APPEND libs " ${library}")
+    elseif(
+      name MATCHES "${_dart_bullet_name_regex}"
+      AND NOT stem MATCHES "_(d|Debug)$"
+    )
+      list(APPEND libraries "${library}")
     endif()
   endforeach()
+  set(includes ${arg_INCLUDES})
+  list(REMOVE_DUPLICATES includes)
+  list(REMOVE_DUPLICATES libraries)
+  list(TRANSFORM includes PREPEND " -I")
+  list(TRANSFORM libraries PREPEND " ")
+  string(JOIN "" cflags ${includes})
+  string(JOIN "" libs ${libraries})
   set(
     DART_BULLET_PC_CFLAGS
     "${cflags}"
@@ -284,7 +291,11 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   endif()
   if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
     if(_dart_bullet_files)
-      _dart_bullet_record("${_dart_bullet_found}" ${_dart_bullet_libraries})
+      _dart_bullet_record(
+        "${_dart_bullet_found}"
+        INCLUDES ${BULLET_INCLUDE_DIRS}
+        LIBRARIES ${_dart_bullet_libraries}
+      )
     else()
       _dart_bullet_record("${_dart_bullet_found}")
     endif()
@@ -304,6 +315,7 @@ elseif(TARGET Bullet)
   set(_dart_bullet_queue Bullet)
   set(_dart_bullet_seen)
   set(_dart_bullet_files)
+  set(_dart_bullet_includes)
   while(_dart_bullet_queue)
     list(GET _dart_bullet_queue 0 _dart_bullet_item)
     list(REMOVE_AT _dart_bullet_queue 0)
@@ -361,6 +373,16 @@ elseif(TARGET Bullet)
     if(_dart_bullet_value)
       list(APPEND _dart_bullet_queue ${_dart_bullet_value})
     endif()
+    get_target_property(
+      _dart_bullet_value
+      "${_dart_bullet_item}"
+      INTERFACE_INCLUDE_DIRECTORIES
+    )
+    foreach(_dart_bullet_dir IN LISTS _dart_bullet_value)
+      if(IS_ABSOLUTE "${_dart_bullet_dir}")
+        list(APPEND _dart_bullet_includes "${_dart_bullet_dir}")
+      endif()
+    endforeach()
     get_target_property(_dart_bullet_imported "${_dart_bullet_item}" IMPORTED)
     if(NOT _dart_bullet_imported)
       continue()
@@ -440,11 +462,17 @@ elseif(TARGET Bullet)
     )
   endif()
   if(NOT DEFINED DART_BULLET_REQUIRE_FLOAT64)
-    _dart_bullet_record("${_dart_bullet_found}")
+    _dart_bullet_record(
+      "${_dart_bullet_found}"
+      INCLUDES ${_dart_bullet_includes}
+      LIBRARIES ${_dart_bullet_files}
+    )
   endif()
   unset(_dart_bullet_queue)
   unset(_dart_bullet_seen)
   unset(_dart_bullet_files)
+  unset(_dart_bullet_includes)
+  unset(_dart_bullet_dir)
   unset(_dart_bullet_item)
   unset(_dart_bullet_part)
   unset(_dart_bullet_depth)
@@ -461,3 +489,4 @@ elseif(TARGET Bullet)
   unset(_dart_bullet_found)
   unset(_dart_bullet_expected)
 endif()
+unset(_dart_bullet_name_regex)

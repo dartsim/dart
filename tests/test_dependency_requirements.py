@@ -543,6 +543,16 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "single-debug",
         ),
+        # pkg-config flags skip FindBullet's Debug libraries, whatever their
+        # names.
+        (
+            325,
+            "set(DART_BULLET_FLOAT64 OFF)\n"
+            'set(collision_debug "${lib}/${prefix}BulletCollisionDbg${ext}")\n'
+            'set(math_debug "${lib}/${prefix}LinearMathDbg${ext}")',
+            True,
+            "pc-release",
+        ),
         # Explicit libraries that mix the variants are rejected, including
         # FindBullet's older BulletMath name for LinearMath.
         (
@@ -629,6 +639,20 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             '  "$<LINK_ONLY:Bullet::BulletCollision>")',
             True,
             "recorded",
+        ),
+        # dart.pc can name the release files and include directories of a
+        # parent's -float64 target.
+        (
+            325,
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            'set_target_properties(collision64 PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"\n'
+            '  IMPORTED_LOCATION_RELEASE "${lib}/${prefix}BulletCollision-float64${ext}"\n'
+            '  IMPORTED_LOCATION_DEBUG "${lib}/${prefix}BulletCollision-float64_d${ext}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64\n"
+            '  INTERFACE_INCLUDE_DIRECTORIES "${lib}/include;$<BUILD_INTERFACE:${lib}/build>")',
+            True,
+            "recorded-pc",
         ),
         # Building DART also rejects a target that mixes the variants, which
         # the files of indirectly linked targets reveal; link cycles end.
@@ -738,6 +762,14 @@ def test_bullet_prefers_float64_libraries(
             'NOT "${linked}" MATCHES "CONFIG:DEBUG>:[^>]*BulletCollision_d"'
             ' OR "${linked}" MATCHES "-float64"'
             " OR NOT DART_BULLET_USES_FLOAT64 STREQUAL FALSE"
+        )
+    elif expected == "pc-release":
+        check = 'NOT DART_BULLET_PC_LIBS STREQUAL " ${collision} ${math}"'
+    elif expected == "recorded-pc":
+        check = (
+            "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
+            ' OR NOT DART_BULLET_PC_LIBS STREQUAL " ${lib}/${prefix}BulletCollision-float64${ext}"'
+            ' OR NOT DART_BULLET_PC_CFLAGS STREQUAL " -I${lib}/include"'
         )
     elif expected == "recorded":
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
