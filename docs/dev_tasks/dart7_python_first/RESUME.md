@@ -107,8 +107,8 @@ pass, 3 of 44.
    in `python/dartpy/module.cpp`, the CMake `OUTPUT_NAME`,
    `python/dartpy/package/__init__.py`, the wheel scripts and their tests, the
    binding tests that locate the extension,
-   `docs/onboarding/python-bindings.md`, and the design doc's extension and
-   `PyInit_` lines.
+   and `docs/onboarding/python-bindings.md`. The design doc already names
+   `dartpy._core`.
 3. Compile and edit (M1b): its fix round keeps never-compiled C++ Worlds on
    6.20 behavior and starts ownership tracking at `compile()`; then counted
    stepping and the remapping clone. Each packet is re-qualified on current

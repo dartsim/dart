@@ -332,4 +332,6 @@ these decisions, one at a time:
   entry as a file under `changelog.d/`, and a checkpoint pull request moves the
   fragments into `CHANGELOG.md` at each milestone exit, before any release
   candidate or tag, and on request. Release branches keep editing
-  `CHANGELOG.md` directly.
+  `CHANGELOG.md` directly. The rule takes effect when the pull request that
+  adds the fragment tooling updates the changelog guidance; until then,
+  `docs/onboarding/changelog.md` applies.

@@ -251,7 +251,9 @@ simulation-loop behavior changes. It is the forward lane: it applies
 Gazebo still works.
 
 For collision, contact, constraint-solver, sleeping, `World::step`, or
-step-stage changes, and before a release, also run the unpatched lanes, which
+step-stage changes, for changes to the installed CMake package configuration or
+to the Gazebo versions the lanes pin (`tools/gazebo/compat/lane.sh`, the
+`gazebo` Pixi environment), and before a release, also run the unpatched lanes, which
 build released gz-physics and gz-sim against this checkout, run both full
 suites, and fail on any failure DART 6.19.4 did not have:
 
@@ -277,7 +279,7 @@ collision filter since [#3632](https://github.com/dartsim/dart/pull/3632).
 
 To distinguish inherited failures from new ones, build the change's base as
 a second variant and set `GZ_COMPAT_BASE_VARIANT`; explain inherited failures
-as well. Sleeping changes must also run
+as well. Every change that needs the unpatched lanes must also run
 `pixi run gz-compat-ionic sleep-oracle` without `--allow-unexercised` and
 explain every mismatch. Release verification matched 33 of 35 scenarios;
 the two differences concern a detector-private contact-cap edit without
