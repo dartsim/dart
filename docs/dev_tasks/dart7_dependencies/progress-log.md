@@ -73,3 +73,12 @@
     DEP-33(b)'s arm back for an upright zero pose and rounded meshes, and
     gave the WAM's STL visuals colors that match the removed textures.
   - DEP-2, DEP-17 PR1 and DEP-8(f) started.
+- **2026-10-20**
+  - DEP-2 (#3883), DEP-17 PR1 (#3884), DEP-8(f) (#3885), DEP-4(e) (#3886),
+    DEP-17 PR3 (#3887) and PR4 (#3888) published after two clean reviews
+    each. Reviews caught a DEP-4(e) bug (a deliberate `DART_SKIP_*` still
+    failed under the strict switch) and a pre-existing macro bug (the
+    optional-dependency helper's version test never fired); DEP-17 PR3's
+    acceptance table showed every URDF in `data/` loading the same with
+    urdfdom 4.0.1 and 6.0.1.
+  - DEP-18 in review; DEP-7, DEP-9 and the DEP-5 remainder started.

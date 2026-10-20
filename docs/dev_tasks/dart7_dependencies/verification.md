@@ -476,3 +476,28 @@ writer; the PR bodies carry the user-facing evidence.
 - CI after these pushes: the macOS and Windows Python jobs fail only on
   `test_api_surface_budget` (`dartpy.experimental` imported earlier), on
   every PR that merged current `main`; open PR #3872 fixes it.
+
+### Wave 4 (2026-10-20)
+
+- DEP-2 (#3883, Claude Sonnet; Codex and Muse): a shared assets-on
+  install's `io;utils;utils-urdf` consumer configures with curl and OpenSSL
+  discovery disabled; a static configure still exports both; gz-physics 199.
+- DEP-17 PR1 (#3884, Codex; Claude and Muse): Ubuntu 24.04's
+  `liburdfdom-dev` 4.0.0 ships `urdfdom-configVersion.cmake` (container
+  check), so the floor works with the distribution package;
+  `pixi install --locked` still passes.
+- DEP-8(f) (#3885, Claude Sonnet; Codex and Muse): 17 archive hashes
+  reproduced by the image build; 15 trees identical to their clones (assimp
+  and GLFW differ only by export-ignored dotfiles);
+  `scripts/wheel_linux.py cp312` builds, repairs and smoke-tests the wheel.
+- DEP-4(e) (#3886, Claude Sonnet; Codex and Muse, two rounds): a default
+  configure's cache differs from `main` only by the new option and the
+  removed Doxygen entries; gz-physics 199 with the switch on.
+- DEP-17 PR3 (#3887, Codex; Claude and Muse): all 14 URDFs under `data/`
+  give the same load results and skeleton, body and joint counts with
+  urdfdom 4.0.1 and 6.0.1; URDF 1.1 and 1.2 load only with 6.0.1; the wheel
+  builds, repairs and smoke-tests on Python 3.12 and 3.13.
+- DEP-17 PR4 (#3888, Codex; Claude and Muse): a shared consumer configures,
+  builds and runs with urdfdom package discovery disabled (the runtime
+  library remains required); 450 installed headers carry no urdfdom include;
+  the API inventory is unchanged.

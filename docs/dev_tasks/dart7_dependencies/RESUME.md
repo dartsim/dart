@@ -23,7 +23,10 @@
 - Drafts: #3850 (DEP-12(a)), #3851 (DEP-1), #3853 and #3854 (DEP-14 and
   DEP-15, GitHub stack), #3870 (DEP-35), #3875 (DEP-37), #3876 (DEP-30),
   #3877 (DEP-36), #3878 (DEP-33(b)), #3879 (DEP-25), #3880 (DEP-33(a)),
-  #3881 (DEP-34, stacked on #3877), #3882 (DEP-33(c), stacked on #3857).
+  #3881 (DEP-34, stacked on #3877), #3882 (DEP-33(c), stacked on #3857),
+  #3883 (DEP-2), #3884 (DEP-17 PR1), #3885 (DEP-8(f)), #3886 (DEP-4(e)),
+  #3887 (DEP-17 PR3, stacked on #3885), #3888 (DEP-17 PR4, stacked on
+  #3884).
 - CI: every PR that merged current `main` fails `test_api_surface_budget` on
   the Python jobs (`dartpy.experimental` imported earlier in the run); open
   PR #3872, from another workstream, fixes it. Merge `main` into the plan's
@@ -35,28 +38,33 @@
 ## Next steps
 
 1. Watch CI on the plan's PRs; after #3872 merges, merge `main` into them
-   (DD-33, DD-34). #3876 and #3879 both touch `dart/gui/imgui/CMakeLists.txt`:
-   whichever lands second drops the ImGui guard's source-directory argument.
-2. Finish DEP-2 (curl and OpenSSL exported only for static builds),
-   DEP-17 PR1 (urdfdom 4.0.0 floor) and DEP-8(f) (hash-checked wheel image
-   sources), then DEP-17 PR4 on PR1 and PR3 (urdfdom 6.0.1 wheels) on
-   DEP-8(f); DEP-10 and DEP-6 after #3879; DEP-12(b) after #3850.
-3. The tinyxml2 fetch prototype on DEP-25; DEP-18 and DEP-19 follow the
-   decisions; DEP-33(d) (the G1, UR5e and FR3 catalog) after DEP-19; the
-   backports (DD-27, DD-32) wait for their main PRs.
-4. Follow-ups found on the way: MJCF inertia from all geoms (the DeepMind
-   fixtures order their mass-bearing geoms first until then) and
+   (DD-33, DD-34). Overlaps to resolve at merge time: #3876 and #3879 in
+   `dart/gui/imgui/CMakeLists.txt` (drop the ImGui guard's source-directory
+   argument); #3886 and DEP-18 in the optional-dependency docs (add sdformat
+   to the strict switch's list); #3888 and DEP-18 in
+   `dart/utils/CMakeLists.txt`.
+2. Finish DEP-18 (fix round 1), DEP-7, DEP-9 and the DEP-5 remainder.
+   After #3887 merges, the release-6.20 backport of its urdfdom wheel bump
+   (DD-32) is asked for; after #3859 merges, its backport (DD-27).
+3. Then: DEP-4 (a) to (c), DEP-10 and DEP-6 (after #3879), DEP-12(b) (after
+   #3850), DEP-19's wheel half (curl and OpenSSL in the wheels, on #3885),
+   the tinyxml2 fetch prototype on DEP-25, DEP-16, and DEP-33(d) after
+   DEP-19.
+4. Follow-ups found on the way: MJCF inertia from all geoms and
    `<compiler inertiafromgeom>`; MJCF heightfields; the root `NOTICE` entry
-   for the DeepMind models once #3857 merges.
+   for the DeepMind models once #3857 merges; `data/sdf/atlas/atlas_v3.urdf`
+   fails to load (its `head` link is missing); urdfdom in `package.xml` could
+   become build and exec dependencies now that shared installs link it
+   privately.
 5. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
-   the C++17 and C++20 builds, and the stock-noble Tier 2 build. The distro
-   FCL abort is fixed in a DART-carried patch (DD-18, #3870); nothing is
-   reported upstream.
+   the C++17 and C++20 builds, and the stock-noble Tier 2 build.
 6. After M1d: DEP-21, ball-joint limits for MJCF, the libccd attribution in
    the MPR sources, the `GenericJoint` finite checks that GCC 13 stopped
    inlining after DEP-14 (`array().isFinite().all()`; see #3853's perf
    rationale), and any quiet-window hunk the PLAN-624 owner did not clear
    earlier.
+7. Routing: Claude's 7-day usage reached 58% on 2026-10-20, so new writer
+   packets go to Codex or Muse and Claude-side reviews use Sonnet.
 
 ## Risks and recovery
 
