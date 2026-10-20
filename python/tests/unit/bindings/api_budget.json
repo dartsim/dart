@@ -1,6 +1,19 @@
 {
   "dartpy": {
     "classes": {},
+    "container_owners": {
+      "collision": "dartpy.collision",
+      "common": "dartpy.common",
+      "constraint": "dartpy.constraint",
+      "dynamics": "dartpy.dynamics",
+      "experimental": "dartpy.experimental",
+      "gui": "dartpy.gui",
+      "math": "dartpy.math",
+      "optimizer": "dartpy.optimizer",
+      "simulation": "dartpy.simulation",
+      "utils": "dartpy.utils",
+      "viewer": "dartpy.viewer"
+    },
     "containers": [
       "collision",
       "common",
@@ -25,82 +38,82 @@
       "BodyNodeCollisionFilter": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "BulletCollisionDetector": {
         "camel_case": 4,
         "get_set": 2,
-        "public": 4
+        "public": 5
       },
       "BulletCollisionGroup": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "CollisionDetector": {
         "camel_case": 3,
         "get_set": 1,
-        "public": 3
+        "public": 4
       },
       "CollisionFilter": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "CollisionGroup": {
         "camel_case": 14,
         "get_set": 4,
-        "public": 18
+        "public": 19
       },
       "CollisionObject": {
         "camel_case": 4,
         "get_set": 4,
-        "public": 4
+        "public": 5
       },
       "CollisionOption": {
         "camel_case": 6,
         "get_set": 1,
-        "public": 6
+        "public": 7
       },
       "CollisionResult": {
         "camel_case": 8,
         "get_set": 5,
-        "public": 9
+        "public": 10
       },
       "CompositeCollisionFilter": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "Contact": {
         "camel_case": 10,
         "get_set": 2,
-        "public": 13
+        "public": 14
       },
       "DARTCollisionDetector": {
         "camel_case": 4,
         "get_set": 2,
-        "public": 4
+        "public": 5
       },
       "DARTCollisionGroup": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "DistanceOption": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "DistanceResult": {
         "camel_case": 7,
         "get_set": 0,
-        "public": 9
+        "public": 10
       },
       "FCLCollisionDetector": {
         "camel_case": 10,
         "get_set": 6,
-        "public": 14
+        "public": 15
       },
       "FCLCollisionDetector.ContactPointComputationMethod": {
         "camel_case": 0,
@@ -115,33 +128,57 @@
       "FCLCollisionGroup": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "OdeCollisionDetector": {
         "camel_case": 4,
         "get_set": 2,
-        "public": 4
+        "public": 5
       },
       "OdeCollisionGroup": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RayHit": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "RaycastOption": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "RaycastResult": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 3
+        "public": 4
       }
+    },
+    "container_owners": {
+      "BodyNodeCollisionFilter": "dartpy.collision.BodyNodeCollisionFilter",
+      "BulletCollisionDetector": "dartpy.collision.BulletCollisionDetector",
+      "BulletCollisionGroup": "dartpy.collision.BulletCollisionGroup",
+      "CollisionDetector": "dartpy.collision.CollisionDetector",
+      "CollisionFilter": "dartpy.collision.CollisionFilter",
+      "CollisionGroup": "dartpy.collision.CollisionGroup",
+      "CollisionObject": "dartpy.collision.CollisionObject",
+      "CollisionOption": "dartpy.collision.CollisionOption",
+      "CollisionResult": "dartpy.collision.CollisionResult",
+      "CompositeCollisionFilter": "dartpy.collision.CompositeCollisionFilter",
+      "Contact": "dartpy.collision.Contact",
+      "DARTCollisionDetector": "dartpy.collision.DARTCollisionDetector",
+      "DARTCollisionGroup": "dartpy.collision.DARTCollisionGroup",
+      "DistanceOption": "dartpy.collision.DistanceOption",
+      "DistanceResult": "dartpy.collision.DistanceResult",
+      "FCLCollisionDetector": "dartpy.collision.FCLCollisionDetector",
+      "FCLCollisionGroup": "dartpy.collision.FCLCollisionGroup",
+      "OdeCollisionDetector": "dartpy.collision.OdeCollisionDetector",
+      "OdeCollisionGroup": "dartpy.collision.OdeCollisionGroup",
+      "RayHit": "dartpy.collision.RayHit",
+      "RaycastOption": "dartpy.collision.RaycastOption",
+      "RaycastResult": "dartpy.collision.RaycastResult"
     },
     "containers": [
       "BodyNodeCollisionFilter",
@@ -178,53 +215,65 @@
       "Composite": {
         "camel_case": 8,
         "get_set": 4,
-        "public": 8
+        "public": 9
       },
       "CompositeState": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "LocalResource": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "LocalResourceRetriever": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "Observer": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "Resource": {
         "camel_case": 2,
         "get_set": 1,
-        "public": 5
+        "public": 6
       },
       "ResourceRetriever": {
         "camel_case": 2,
         "get_set": 1,
-        "public": 4
+        "public": 5
       },
       "Stopwatch": {
         "camel_case": 5,
         "get_set": 0,
-        "public": 9
+        "public": 10
       },
       "Subject": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "Uri": {
         "camel_case": 18,
         "get_set": 4,
-        "public": 19
+        "public": 20
       }
+    },
+    "container_owners": {
+      "Composite": "dartpy.common.Composite",
+      "CompositeState": "dartpy.common.CompositeState",
+      "LocalResource": "dartpy.common.LocalResource",
+      "LocalResourceRetriever": "dartpy.common.LocalResourceRetriever",
+      "Observer": "dartpy.common.Observer",
+      "Resource": "dartpy.common.Resource",
+      "ResourceRetriever": "dartpy.common.ResourceRetriever",
+      "Stopwatch": "dartpy.common.Stopwatch",
+      "Subject": "dartpy.common.Subject",
+      "Uri": "dartpy.common.Uri"
     },
     "containers": [
       "Composite",
@@ -249,7 +298,7 @@
       "BalanceConstraint": {
         "camel_case": 10,
         "get_set": 8,
-        "public": 11
+        "public": 12
       },
       "BalanceConstraint.BalanceMethod": {
         "camel_case": 0,
@@ -264,77 +313,77 @@
       "BallJointConstraint": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 1
+        "public": 2
       },
       "BoxedLcpConstraintSolver": {
         "camel_case": 6,
         "get_set": 6,
-        "public": 6
+        "public": 7
       },
       "BoxedLcpSolver": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 2
+        "public": 3
       },
       "ConstraintBase": {
         "camel_case": 11,
         "get_set": 6,
-        "public": 14
+        "public": 15
       },
       "ConstraintSolver": {
         "camel_case": 21,
         "get_set": 11,
-        "public": 22
+        "public": 23
       },
       "CylindricalJointConstraint": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 1
+        "public": 2
       },
       "DantzigBoxedLcpSolver": {
         "camel_case": 2,
         "get_set": 2,
-        "public": 3
+        "public": 4
       },
       "DynamicJointConstraint": {
         "camel_case": 8,
         "get_set": 8,
-        "public": 8
+        "public": 9
       },
       "FbfFrictionSolver": {
         "camel_case": 5,
         "get_set": 4,
-        "public": 7
+        "public": 8
       },
       "FbfFrictionSolver.Options": {
         "camel_case": 5,
         "get_set": 0,
-        "public": 6
+        "public": 7
       },
       "FrictionSolveStats": {
         "camel_case": 12,
         "get_set": 0,
-        "public": 12
+        "public": 13
       },
       "JointConstraint": {
         "camel_case": 8,
         "get_set": 8,
-        "public": 8
+        "public": 9
       },
       "JointCoulombFrictionConstraint": {
         "camel_case": 2,
         "get_set": 2,
-        "public": 2
+        "public": 3
       },
       "MatrixFreeContactSolverOptions": {
         "camel_case": 7,
         "get_set": 0,
-        "public": 7
+        "public": 8
       },
       "NsgsFrictionSolver": {
         "camel_case": 5,
         "get_set": 4,
-        "public": 8
+        "public": 9
       },
       "NsgsFrictionSolver.Law": {
         "camel_case": 0,
@@ -344,28 +393,49 @@
       "NsgsFrictionSolver.Options": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "PgsBoxedLcpSolver": {
         "camel_case": 3,
         "get_set": 3,
-        "public": 4
+        "public": 5
       },
       "PgsBoxedLcpSolverOption": {
         "camel_case": 5,
         "get_set": 0,
-        "public": 5
+        "public": 6
       },
       "RevoluteJointConstraint": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 1
+        "public": 2
       },
       "WeldJointConstraint": {
         "camel_case": 2,
         "get_set": 2,
-        "public": 2
+        "public": 3
       }
+    },
+    "container_owners": {
+      "BalanceConstraint": "dartpy.constraint.BalanceConstraint",
+      "BallJointConstraint": "dartpy.constraint.BallJointConstraint",
+      "BoxedLcpConstraintSolver": "dartpy.constraint.BoxedLcpConstraintSolver",
+      "BoxedLcpSolver": "dartpy.constraint.BoxedLcpSolver",
+      "ConstraintBase": "dartpy.constraint.ConstraintBase",
+      "ConstraintSolver": "dartpy.constraint.ConstraintSolver",
+      "CylindricalJointConstraint": "dartpy.constraint.CylindricalJointConstraint",
+      "DantzigBoxedLcpSolver": "dartpy.constraint.DantzigBoxedLcpSolver",
+      "DynamicJointConstraint": "dartpy.constraint.DynamicJointConstraint",
+      "FbfFrictionSolver": "dartpy.constraint.FbfFrictionSolver",
+      "FrictionSolveStats": "dartpy.constraint.FrictionSolveStats",
+      "JointConstraint": "dartpy.constraint.JointConstraint",
+      "JointCoulombFrictionConstraint": "dartpy.constraint.JointCoulombFrictionConstraint",
+      "MatrixFreeContactSolverOptions": "dartpy.constraint.MatrixFreeContactSolverOptions",
+      "NsgsFrictionSolver": "dartpy.constraint.NsgsFrictionSolver",
+      "PgsBoxedLcpSolver": "dartpy.constraint.PgsBoxedLcpSolver",
+      "PgsBoxedLcpSolverOption": "dartpy.constraint.PgsBoxedLcpSolverOption",
+      "RevoluteJointConstraint": "dartpy.constraint.RevoluteJointConstraint",
+      "WeldJointConstraint": "dartpy.constraint.WeldJointConstraint"
     },
     "containers": [
       "BalanceConstraint",
@@ -404,502 +474,502 @@
       "ArrowShape": {
         "camel_case": 7,
         "get_set": 5,
-        "public": 7
+        "public": 8
       },
       "ArrowShapeProperties": {
         "camel_case": 6,
         "get_set": 0,
-        "public": 6
+        "public": 7
       },
       "BallJoint": {
         "camel_case": 9,
         "get_set": 5,
-        "public": 9
+        "public": 10
       },
       "BallJointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "BodyNode": {
         "camel_case": 92,
         "get_set": 56,
-        "public": 98
+        "public": 99
       },
       "BodyNodeAspectProperties": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "BodyNodeProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "BoxShape": {
         "camel_case": 7,
         "get_set": 4,
-        "public": 7
+        "public": 8
       },
       "CapsuleShape": {
         "camel_case": 9,
         "get_set": 6,
-        "public": 9
+        "public": 10
       },
       "Chain": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "ChainCriteria": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 6
+        "public": 7
       },
       "CollisionAspect": {
         "camel_case": 3,
         "get_set": 2,
-        "public": 3
+        "public": 4
       },
       "CompositeJoiner_EmbedProperties_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space": {
         "camel_case": 151,
         "get_set": 119,
-        "public": 152
+        "public": 153
       },
       "CompositeJoiner_EmbedProperties_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 151,
+        "get_set": 119,
+        "public": 153
       },
       "CompositeJoiner_EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space": {
-        "camel_case": 110,
-        "get_set": 91,
-        "public": 111
+        "camel_case": 151,
+        "get_set": 119,
+        "public": 153
       },
       "CompositeJoiner_EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 151,
+        "get_set": 119,
+        "public": 153
       },
       "CompositeJoiner_EmbedProperties_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 151,
+        "get_set": 119,
+        "public": 153
       },
       "CompositeJoiner_EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space": {
-        "camel_case": 110,
-        "get_set": 91,
-        "public": 111
+        "camel_case": 151,
+        "get_set": 119,
+        "public": 153
       },
       "CompositeJoiner_EmbedProperties_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 151,
+        "get_set": 119,
+        "public": 153
       },
       "CompositeJoiner_EmbedStateAndProperties_GenericJoint_R1GenericJointStateGenericJointUniqueProperties_Joint": {
-        "camel_case": 98,
-        "get_set": 83,
-        "public": 99
+        "camel_case": 139,
+        "get_set": 111,
+        "public": 141
       },
       "CompositeJoiner_EmbedStateAndProperties_GenericJoint_R2GenericJointStateGenericJointUniqueProperties_Joint": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
+        "camel_case": 139,
+        "get_set": 111,
+        "public": 141
       },
       "CompositeJoiner_EmbedStateAndProperties_GenericJoint_R3GenericJointStateGenericJointUniqueProperties_Joint": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
+        "camel_case": 139,
+        "get_set": 111,
+        "public": 141
       },
       "CompositeJoiner_EmbedStateAndProperties_GenericJoint_SE3GenericJointStateGenericJointUniqueProperties_Joint": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
+        "camel_case": 139,
+        "get_set": 111,
+        "public": 141
       },
       "CompositeJoiner_EmbedStateAndProperties_GenericJoint_SO3GenericJointStateGenericJointUniqueProperties_Joint": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
+        "camel_case": 139,
+        "get_set": 111,
+        "public": 141
       },
       "ConeShape": {
         "camel_case": 9,
         "get_set": 6,
-        "public": 9
+        "public": 10
       },
       "ContactInverseDynamics": {
         "camel_case": 9,
         "get_set": 9,
-        "public": 12
+        "public": 13
       },
       "ContactInverseDynamics.Contact": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 5
+        "public": 6
       },
       "ContactInverseDynamics.Result": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "CylinderShape": {
         "camel_case": 9,
         "get_set": 6,
-        "public": 9
+        "public": 10
       },
       "DegreeOfFreedom": {
         "camel_case": 68,
         "get_set": 57,
-        "public": 68
+        "public": 69
       },
       "Detachable": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 1
+        "public": 2
       },
       "DynamicsAspect": {
         "camel_case": 4,
         "get_set": 4,
-        "public": 4
+        "public": 5
       },
       "EllipsoidShape": {
         "camel_case": 10,
         "get_set": 6,
-        "public": 10
+        "public": 11
       },
       "EmbedPropertiesOnTopOf_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedPropertiesOnTopOf_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedPropertiesOnTopOf_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedPropertiesOnTopOf_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedPropertiesOnTopOf_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedPropertiesOnTopOf_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedPropertiesOnTopOf_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_EulerJoint_EulerJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_Joint_JointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_PlanarJoint_PlanarJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_ScrewJoint_ScrewJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedProperties_UniversalJoint_UniversalJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndPropertiesOnTopOf_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties_Joint": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndPropertiesOnTopOf_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties_Joint": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndPropertiesOnTopOf_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties_Joint": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndPropertiesOnTopOf_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties_Joint": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndPropertiesOnTopOf_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties_Joint": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndProperties_GenericJoint_R1GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndProperties_GenericJoint_R2GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndProperties_GenericJoint_R3GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndProperties_GenericJoint_SE3GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EmbedStateAndProperties_GenericJoint_SO3GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "EndEffector": {
         "camel_case": 5,
         "get_set": 3,
-        "public": 5
+        "public": 6
       },
       "Entity": {
         "camel_case": 12,
         "get_set": 3,
-        "public": 12
+        "public": 13
       },
       "EulerJoint": {
         "camel_case": 17,
         "get_set": 9,
-        "public": 18
+        "public": 19
       },
       "EulerJointProperties": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "EulerJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "Frame": {
         "camel_case": 18,
         "get_set": 13,
-        "public": 19
+        "public": 20
       },
       "FreeJoint": {
         "camel_case": 20,
         "get_set": 17,
-        "public": 20
+        "public": 21
       },
       "FreeJointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "GenericJointProperties_R1": {
         "camel_case": 16,
         "get_set": 0,
-        "public": 16
+        "public": 17
       },
       "GenericJointProperties_R2": {
         "camel_case": 16,
         "get_set": 0,
-        "public": 16
+        "public": 17
       },
       "GenericJointProperties_R3": {
         "camel_case": 16,
         "get_set": 0,
-        "public": 16
+        "public": 17
       },
       "GenericJointProperties_SE3": {
         "camel_case": 16,
         "get_set": 0,
-        "public": 16
+        "public": 17
       },
       "GenericJointProperties_SO3": {
         "camel_case": 16,
         "get_set": 0,
-        "public": 16
+        "public": 17
       },
       "GenericJointUniqueProperties_R1": {
-        "camel_case": 0,
+        "camel_case": 16,
         "get_set": 0,
-        "public": 0
+        "public": 17
       },
       "GenericJointUniqueProperties_R2": {
-        "camel_case": 0,
+        "camel_case": 16,
         "get_set": 0,
-        "public": 0
+        "public": 17
       },
       "GenericJointUniqueProperties_R3": {
-        "camel_case": 0,
+        "camel_case": 16,
         "get_set": 0,
-        "public": 0
+        "public": 17
       },
       "GenericJointUniqueProperties_SE3": {
-        "camel_case": 0,
+        "camel_case": 16,
         "get_set": 0,
-        "public": 0
+        "public": 17
       },
       "GenericJointUniqueProperties_SO3": {
-        "camel_case": 0,
+        "camel_case": 16,
         "get_set": 0,
-        "public": 0
+        "public": 17
       },
       "GenericJoint_R1": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 110,
+        "get_set": 91,
+        "public": 112
       },
       "GenericJoint_R2": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 110,
+        "get_set": 91,
+        "public": 112
       },
       "GenericJoint_R3": {
-        "camel_case": 1,
-        "get_set": 0,
-        "public": 1
+        "camel_case": 110,
+        "get_set": 91,
+        "public": 112
       },
       "GenericJoint_SE3": {
         "camel_case": 110,
         "get_set": 91,
-        "public": 111
+        "public": 112
       },
       "GenericJoint_SO3": {
         "camel_case": 110,
         "get_set": 91,
-        "public": 111
+        "public": 112
       },
       "HeightmapShapef": {
         "camel_case": 7,
         "get_set": 7,
-        "public": 7
+        "public": 8
       },
       "HierarchicalIK": {
         "camel_case": 10,
         "get_set": 8,
-        "public": 11
+        "public": 12
       },
       "Inertia": {
         "camel_case": 10,
         "get_set": 8,
-        "public": 13
+        "public": 15
       },
       "InverseKinematics": {
         "camel_case": 32,
         "get_set": 23,
-        "public": 33
+        "public": 34
       },
       "InverseKinematicsAnalytical": {
         "camel_case": 8,
         "get_set": 8,
-        "public": 15
+        "public": 16
       },
       "InverseKinematicsAnalyticalSolution": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "InverseKinematicsErrorMethod": {
         "camel_case": 18,
         "get_set": 15,
-        "public": 19
+        "public": 20
       },
       "InverseKinematicsErrorMethodProperties": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "InverseKinematicsGradientMethod": {
         "camel_case": 8,
         "get_set": 7,
-        "public": 8
+        "public": 9
       },
       "InverseKinematicsGradientMethodProperties": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "InverseKinematicsTaskSpaceRegion": {
         "camel_case": 5,
         "get_set": 4,
-        "public": 5
+        "public": 6
       },
       "InverseKinematicsTaskSpaceRegionProperties": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "InverseKinematicsTaskSpaceRegionUniqueProperties": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "JacobianNode": {
         "camel_case": 26,
         "get_set": 21,
-        "public": 26
+        "public": 27
       },
       "Joint": {
-        "camel_case": 0,
-        "get_set": 0,
-        "public": 0
+        "camel_case": 147,
+        "get_set": 115,
+        "public": 149
       },
       "JointProperties": {
         "camel_case": 6,
         "get_set": 0,
-        "public": 6
+        "public": 7
       },
       "LineSegmentShape": {
         "camel_case": 11,
         "get_set": 6,
-        "public": 11
+        "public": 12
       },
       "Linkage": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 5
+        "public": 6
       },
       "LinkageCriteria": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 11
+        "public": 12
       },
       "LinkageCriteria.ExpansionPolicy": {
         "camel_case": 0,
@@ -909,17 +979,17 @@
       "LinkageCriteria.Target": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "LinkageCriteria.Terminal": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "MeshShape": {
         "camel_case": 18,
         "get_set": 15,
-        "public": 24
+        "public": 25
       },
       "MeshShape.ColorMode": {
         "camel_case": 0,
@@ -929,7 +999,7 @@
       "MetaSkeleton": {
         "camel_case": 109,
         "get_set": 96,
-        "public": 109
+        "public": 110
       },
       "MimicConstraintType": {
         "camel_case": 0,
@@ -939,42 +1009,42 @@
       "MimicDofProperties": {
         "camel_case": 5,
         "get_set": 0,
-        "public": 5
+        "public": 6
       },
       "MultiSphereConvexHullShape": {
         "camel_case": 7,
         "get_set": 3,
-        "public": 7
+        "public": 8
       },
       "Node": {
         "camel_case": 10,
         "get_set": 9,
-        "public": 10
+        "public": 11
       },
       "PlanarJoint": {
         "camel_case": 21,
         "get_set": 15,
-        "public": 22
+        "public": 23
       },
       "PlanarJointProperties": {
         "camel_case": 4,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "PlanarJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "PlaneShape": {
         "camel_case": 11,
         "get_set": 8,
-        "public": 11
+        "public": 12
       },
       "PointCloudShape": {
         "camel_case": 20,
         "get_set": 14,
-        "public": 28
+        "public": 29
       },
       "PointCloudShape.ColorMode": {
         "camel_case": 0,
@@ -989,127 +1059,127 @@
       "PointMass": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 13
+        "public": 14
       },
       "PrismaticJoint": {
         "camel_case": 13,
         "get_set": 9,
-        "public": 14
+        "public": 15
       },
       "PrismaticJointProperties": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "PrismaticJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "ReferentialSkeleton": {
         "camel_case": 36,
         "get_set": 29,
-        "public": 36
+        "public": 37
       },
       "RequiresAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "RevoluteJoint": {
         "camel_case": 13,
         "get_set": 9,
-        "public": 14
+        "public": 15
       },
       "RevoluteJointProperties": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "RevoluteJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "ScrewJoint": {
         "camel_case": 15,
         "get_set": 11,
-        "public": 16
+        "public": 17
       },
       "ScrewJointProperties": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "ScrewJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "Shape": {
         "camel_case": 19,
         "get_set": 6,
-        "public": 39
+        "public": 40
       },
       "Shape.DataVariance": {
         "camel_case": 0,
@@ -1124,203 +1194,380 @@
       "ShapeFrame": {
         "camel_case": 24,
         "get_set": 10,
-        "public": 24
+        "public": 25
       },
       "ShapeNode": {
         "camel_case": 34,
         "get_set": 18,
-        "public": 35
+        "public": 36
       },
       "SimpleFrame": {
-        "camel_case": 12,
-        "get_set": 11,
-        "public": 14
+        "camel_case": 13,
+        "get_set": 12,
+        "public": 16
       },
       "Skeleton": {
         "camel_case": 118,
         "get_set": 76,
-        "public": 124
+        "public": 125
       },
       "SkeletonConfiguration": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SoftBodyNode": {
         "camel_case": 5,
         "get_set": 7,
-        "public": 14
+        "public": 15
       },
       "SoftBodyNodeHelper": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "SoftBodyNodeProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SoftBodyNodeUniqueProperties": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 6
+        "public": 7
       },
       "SoftMeshShape": {
         "camel_case": 3,
         "get_set": 2,
-        "public": 4
+        "public": 5
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "SphereShape": {
         "camel_case": 7,
         "get_set": 4,
-        "public": 7
+        "public": 8
       },
       "Support": {
         "camel_case": 4,
         "get_set": 3,
-        "public": 4
+        "public": 5
       },
       "TemplatedJacobianBodyNode": {
         "camel_case": 8,
         "get_set": 8,
-        "public": 8
+        "public": 9
       },
       "TranslationalJoint": {
         "camel_case": 5,
         "get_set": 4,
-        "public": 5
+        "public": 6
       },
       "TranslationalJoint2D": {
         "camel_case": 18,
         "get_set": 14,
-        "public": 19
+        "public": 20
       },
       "TranslationalJoint2DProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "TranslationalJoint2DUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "TranslationalJointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "UniversalJoint": {
         "camel_case": 15,
         "get_set": 11,
-        "public": 16
+        "public": 17
       },
       "UniversalJointProperties": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "UniversalJointUniqueProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "VisualAspect": {
         "camel_case": 13,
         "get_set": 12,
-        "public": 15
+        "public": 16
       },
       "VoxelGridShape": {
         "camel_case": 3,
         "get_set": 2,
-        "public": 4
+        "public": 5
       },
       "WeldJoint": {
         "camel_case": 6,
         "get_set": 5,
-        "public": 6
+        "public": 7
       },
       "WholeBodyIK": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "ZeroDofJoint": {
         "camel_case": 95,
         "get_set": 80,
-        "public": 95
+        "public": 96
       },
       "ZeroDofJointProperties": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       }
+    },
+    "container_owners": {
+      "ActuatorType": "dartpy.dynamics.ActuatorType",
+      "ArrowShape": "dartpy.dynamics.ArrowShape",
+      "ArrowShapeProperties": "dartpy.dynamics.ArrowShapeProperties",
+      "BallJoint": "dartpy.dynamics.BallJoint",
+      "BallJointProperties": "dartpy.dynamics.BallJointProperties",
+      "BodyNode": "dartpy.dynamics.BodyNode",
+      "BodyNodeAspectProperties": "dartpy.dynamics.BodyNodeAspectProperties",
+      "BodyNodeProperties": "dartpy.dynamics.BodyNodeProperties",
+      "BoxShape": "dartpy.dynamics.BoxShape",
+      "CapsuleShape": "dartpy.dynamics.CapsuleShape",
+      "Chain": "dartpy.dynamics.Chain",
+      "ChainCriteria": "dartpy.dynamics.ChainCriteria",
+      "CollisionAspect": "dartpy.dynamics.CollisionAspect",
+      "CompositeJoiner_EmbedProperties_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space",
+      "CompositeJoiner_EmbedProperties_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space",
+      "CompositeJoiner_EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space",
+      "CompositeJoiner_EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space",
+      "CompositeJoiner_EmbedProperties_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space",
+      "CompositeJoiner_EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space",
+      "CompositeJoiner_EmbedProperties_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space": "dartpy.dynamics.CompositeJoiner_EmbedProperties_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space",
+      "CompositeJoiner_EmbedStateAndProperties_GenericJoint_R1GenericJointStateGenericJointUniqueProperties_Joint": "dartpy.dynamics.CompositeJoiner_EmbedStateAndProperties_GenericJoint_R1GenericJointStateGenericJointUniqueProperties_Joint",
+      "CompositeJoiner_EmbedStateAndProperties_GenericJoint_R2GenericJointStateGenericJointUniqueProperties_Joint": "dartpy.dynamics.CompositeJoiner_EmbedStateAndProperties_GenericJoint_R2GenericJointStateGenericJointUniqueProperties_Joint",
+      "CompositeJoiner_EmbedStateAndProperties_GenericJoint_R3GenericJointStateGenericJointUniqueProperties_Joint": "dartpy.dynamics.CompositeJoiner_EmbedStateAndProperties_GenericJoint_R3GenericJointStateGenericJointUniqueProperties_Joint",
+      "CompositeJoiner_EmbedStateAndProperties_GenericJoint_SE3GenericJointStateGenericJointUniqueProperties_Joint": "dartpy.dynamics.CompositeJoiner_EmbedStateAndProperties_GenericJoint_SE3GenericJointStateGenericJointUniqueProperties_Joint",
+      "CompositeJoiner_EmbedStateAndProperties_GenericJoint_SO3GenericJointStateGenericJointUniqueProperties_Joint": "dartpy.dynamics.CompositeJoiner_EmbedStateAndProperties_GenericJoint_SO3GenericJointStateGenericJointUniqueProperties_Joint",
+      "ConeShape": "dartpy.dynamics.ConeShape",
+      "ContactInverseDynamics": "dartpy.dynamics.ContactInverseDynamics",
+      "CylinderShape": "dartpy.dynamics.CylinderShape",
+      "DegreeOfFreedom": "dartpy.dynamics.DegreeOfFreedom",
+      "Detachable": "dartpy.dynamics.Detachable",
+      "DynamicsAspect": "dartpy.dynamics.DynamicsAspect",
+      "EllipsoidShape": "dartpy.dynamics.EllipsoidShape",
+      "EmbedPropertiesOnTopOf_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_EulerJoint_EulerJointUniqueProperties_GenericJoint_R3Space",
+      "EmbedPropertiesOnTopOf_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_PlanarJoint_PlanarJointUniqueProperties_GenericJoint_R3Space",
+      "EmbedPropertiesOnTopOf_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_PrismaticJoint_PrismaticJointUniqueProperties_GenericJoint_R1Space",
+      "EmbedPropertiesOnTopOf_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_RevoluteJoint_RevoluteJointUniqueProperties_GenericJoint_R1Space",
+      "EmbedPropertiesOnTopOf_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_ScrewJoint_ScrewJointUniqueProperties_GenericJoint_R1Space",
+      "EmbedPropertiesOnTopOf_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_TranslationalJoint2D_TranslationalJoint2DUniqueProperties_GenericJoint_R2Space",
+      "EmbedPropertiesOnTopOf_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space": "dartpy.dynamics.EmbedPropertiesOnTopOf_UniversalJoint_UniversalJointUniqueProperties_GenericJoint_R2Space",
+      "EmbedProperties_EulerJoint_EulerJointUniqueProperties": "dartpy.dynamics.EmbedProperties_EulerJoint_EulerJointUniqueProperties",
+      "EmbedProperties_Joint_JointProperties": "dartpy.dynamics.EmbedProperties_Joint_JointProperties",
+      "EmbedProperties_PlanarJoint_PlanarJointUniqueProperties": "dartpy.dynamics.EmbedProperties_PlanarJoint_PlanarJointUniqueProperties",
+      "EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties": "dartpy.dynamics.EmbedProperties_PrismaticJoint_PrismaticJointUniqueProperties",
+      "EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties": "dartpy.dynamics.EmbedProperties_RevoluteJoint_RevoluteJointUniqueProperties",
+      "EmbedProperties_ScrewJoint_ScrewJointUniqueProperties": "dartpy.dynamics.EmbedProperties_ScrewJoint_ScrewJointUniqueProperties",
+      "EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties": "dartpy.dynamics.EmbedProperties_TranslationalJoint2D_TranslationalJoint2DUniqueProperties",
+      "EmbedProperties_UniversalJoint_UniversalJointUniqueProperties": "dartpy.dynamics.EmbedProperties_UniversalJoint_UniversalJointUniqueProperties",
+      "EmbedStateAndPropertiesOnTopOf_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties_Joint": "dartpy.dynamics.EmbedStateAndPropertiesOnTopOf_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties_Joint",
+      "EmbedStateAndPropertiesOnTopOf_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties_Joint": "dartpy.dynamics.EmbedStateAndPropertiesOnTopOf_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties_Joint",
+      "EmbedStateAndPropertiesOnTopOf_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties_Joint": "dartpy.dynamics.EmbedStateAndPropertiesOnTopOf_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties_Joint",
+      "EmbedStateAndPropertiesOnTopOf_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties_Joint": "dartpy.dynamics.EmbedStateAndPropertiesOnTopOf_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties_Joint",
+      "EmbedStateAndPropertiesOnTopOf_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties_Joint": "dartpy.dynamics.EmbedStateAndPropertiesOnTopOf_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties_Joint",
+      "EmbedStateAndProperties_GenericJoint_R1GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.EmbedStateAndProperties_GenericJoint_R1GenericJointState_GenericJointUniqueProperties",
+      "EmbedStateAndProperties_GenericJoint_R2GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.EmbedStateAndProperties_GenericJoint_R2GenericJointState_GenericJointUniqueProperties",
+      "EmbedStateAndProperties_GenericJoint_R3GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.EmbedStateAndProperties_GenericJoint_R3GenericJointState_GenericJointUniqueProperties",
+      "EmbedStateAndProperties_GenericJoint_SE3GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.EmbedStateAndProperties_GenericJoint_SE3GenericJointState_GenericJointUniqueProperties",
+      "EmbedStateAndProperties_GenericJoint_SO3GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.EmbedStateAndProperties_GenericJoint_SO3GenericJointState_GenericJointUniqueProperties",
+      "EndEffector": "dartpy.dynamics.EndEffector",
+      "Entity": "dartpy.dynamics.Entity",
+      "EulerJoint": "dartpy.dynamics.EulerJoint",
+      "EulerJointProperties": "dartpy.dynamics.EulerJointProperties",
+      "EulerJointUniqueProperties": "dartpy.dynamics.EulerJointUniqueProperties",
+      "Frame": "dartpy.dynamics.Frame",
+      "FreeJoint": "dartpy.dynamics.FreeJoint",
+      "FreeJointProperties": "dartpy.dynamics.FreeJointProperties",
+      "GenericJointProperties_R1": "dartpy.dynamics.GenericJointProperties_R1",
+      "GenericJointProperties_R2": "dartpy.dynamics.GenericJointProperties_R2",
+      "GenericJointProperties_R3": "dartpy.dynamics.GenericJointProperties_R3",
+      "GenericJointProperties_SE3": "dartpy.dynamics.GenericJointProperties_SE3",
+      "GenericJointProperties_SO3": "dartpy.dynamics.GenericJointProperties_SO3",
+      "GenericJointUniqueProperties_R1": "dartpy.dynamics.GenericJointUniqueProperties_R1",
+      "GenericJointUniqueProperties_R2": "dartpy.dynamics.GenericJointUniqueProperties_R2",
+      "GenericJointUniqueProperties_R3": "dartpy.dynamics.GenericJointUniqueProperties_R3",
+      "GenericJointUniqueProperties_SE3": "dartpy.dynamics.GenericJointUniqueProperties_SE3",
+      "GenericJointUniqueProperties_SO3": "dartpy.dynamics.GenericJointUniqueProperties_SO3",
+      "GenericJoint_R1": "dartpy.dynamics.GenericJoint_R1",
+      "GenericJoint_R2": "dartpy.dynamics.GenericJoint_R2",
+      "GenericJoint_R3": "dartpy.dynamics.GenericJoint_R3",
+      "GenericJoint_SE3": "dartpy.dynamics.GenericJoint_SE3",
+      "GenericJoint_SO3": "dartpy.dynamics.GenericJoint_SO3",
+      "HeightmapShapef": "dartpy.dynamics.HeightmapShapef",
+      "HierarchicalIK": "dartpy.dynamics.HierarchicalIK",
+      "Inertia": "dartpy.dynamics.Inertia",
+      "InverseKinematics": "dartpy.dynamics.InverseKinematics",
+      "InverseKinematicsAnalytical": "dartpy.dynamics.InverseKinematicsAnalytical",
+      "InverseKinematicsAnalyticalSolution": "dartpy.dynamics.InverseKinematicsAnalyticalSolution",
+      "InverseKinematicsErrorMethod": "dartpy.dynamics.InverseKinematicsErrorMethod",
+      "InverseKinematicsErrorMethodProperties": "dartpy.dynamics.InverseKinematicsErrorMethodProperties",
+      "InverseKinematicsGradientMethod": "dartpy.dynamics.InverseKinematicsGradientMethod",
+      "InverseKinematicsGradientMethodProperties": "dartpy.dynamics.InverseKinematicsGradientMethodProperties",
+      "InverseKinematicsTaskSpaceRegion": "dartpy.dynamics.InverseKinematicsTaskSpaceRegion",
+      "InverseKinematicsTaskSpaceRegionProperties": "dartpy.dynamics.InverseKinematicsTaskSpaceRegionProperties",
+      "InverseKinematicsTaskSpaceRegionUniqueProperties": "dartpy.dynamics.InverseKinematicsTaskSpaceRegionUniqueProperties",
+      "JacobianNode": "dartpy.dynamics.JacobianNode",
+      "Joint": "dartpy.dynamics.Joint",
+      "JointProperties": "dartpy.dynamics.JointProperties",
+      "LineSegmentShape": "dartpy.dynamics.LineSegmentShape",
+      "Linkage": "dartpy.dynamics.Linkage",
+      "LinkageCriteria": "dartpy.dynamics.LinkageCriteria",
+      "MeshShape": "dartpy.dynamics.MeshShape",
+      "MetaSkeleton": "dartpy.dynamics.MetaSkeleton",
+      "MimicConstraintType": "dartpy.dynamics.MimicConstraintType",
+      "MimicDofProperties": "dartpy.dynamics.MimicDofProperties",
+      "MultiSphereConvexHullShape": "dartpy.dynamics.MultiSphereConvexHullShape",
+      "Node": "dartpy.dynamics.Node",
+      "PlanarJoint": "dartpy.dynamics.PlanarJoint",
+      "PlanarJointProperties": "dartpy.dynamics.PlanarJointProperties",
+      "PlanarJointUniqueProperties": "dartpy.dynamics.PlanarJointUniqueProperties",
+      "PlaneShape": "dartpy.dynamics.PlaneShape",
+      "PointCloudShape": "dartpy.dynamics.PointCloudShape",
+      "PointMass": "dartpy.dynamics.PointMass",
+      "PrismaticJoint": "dartpy.dynamics.PrismaticJoint",
+      "PrismaticJointProperties": "dartpy.dynamics.PrismaticJointProperties",
+      "PrismaticJointUniqueProperties": "dartpy.dynamics.PrismaticJointUniqueProperties",
+      "ReferentialSkeleton": "dartpy.dynamics.ReferentialSkeleton",
+      "RequiresAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_Joint_JointProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties",
+      "RequiresAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties",
+      "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties",
+      "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties",
+      "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties",
+      "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties",
+      "RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.RequiresAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties",
+      "RevoluteJoint": "dartpy.dynamics.RevoluteJoint",
+      "RevoluteJointProperties": "dartpy.dynamics.RevoluteJointProperties",
+      "RevoluteJointUniqueProperties": "dartpy.dynamics.RevoluteJointUniqueProperties",
+      "ScrewJoint": "dartpy.dynamics.ScrewJoint",
+      "ScrewJointProperties": "dartpy.dynamics.ScrewJointProperties",
+      "ScrewJointUniqueProperties": "dartpy.dynamics.ScrewJointUniqueProperties",
+      "Shape": "dartpy.dynamics.Shape",
+      "ShapeFrame": "dartpy.dynamics.ShapeFrame",
+      "ShapeNode": "dartpy.dynamics.ShapeNode",
+      "SimpleFrame": "dartpy.dynamics.SimpleFrame",
+      "Skeleton": "dartpy.dynamics.Skeleton",
+      "SkeletonConfiguration": "dartpy.dynamics.SkeletonConfiguration",
+      "SoftBodyNode": "dartpy.dynamics.SoftBodyNode",
+      "SoftBodyNodeHelper": "dartpy.dynamics.SoftBodyNodeHelper",
+      "SoftBodyNodeProperties": "dartpy.dynamics.SoftBodyNodeProperties",
+      "SoftBodyNodeUniqueProperties": "dartpy.dynamics.SoftBodyNodeUniqueProperties",
+      "SoftMeshShape": "dartpy.dynamics.SoftMeshShape",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_EulerJoint_EulerJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_Joint_JointProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_PlanarJoint_PlanarJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_PrismaticJoint_PrismaticJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_RevoluteJoint_RevoluteJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_ScrewJoint_ScrewJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_TranslationalJoint2D_TranslationalJoint2DUniqueProperties",
+      "SpecializedForAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedPropertiesAspect_UniversalJoint_UniversalJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R1_GenericJointState_GenericJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R2_GenericJointState_GenericJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_R3_GenericJointState_GenericJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SE3_GenericJointState_GenericJointUniqueProperties",
+      "SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties": "dartpy.dynamics.SpecializedForAspect_EmbeddedStateAndPropertiesAspect_GenericJoint_SO3_GenericJointState_GenericJointUniqueProperties",
+      "SphereShape": "dartpy.dynamics.SphereShape",
+      "Support": "dartpy.dynamics.Support",
+      "TemplatedJacobianBodyNode": "dartpy.dynamics.TemplatedJacobianBodyNode",
+      "TranslationalJoint": "dartpy.dynamics.TranslationalJoint",
+      "TranslationalJoint2D": "dartpy.dynamics.TranslationalJoint2D",
+      "TranslationalJoint2DProperties": "dartpy.dynamics.TranslationalJoint2DProperties",
+      "TranslationalJoint2DUniqueProperties": "dartpy.dynamics.TranslationalJoint2DUniqueProperties",
+      "TranslationalJointProperties": "dartpy.dynamics.TranslationalJointProperties",
+      "UniversalJoint": "dartpy.dynamics.UniversalJoint",
+      "UniversalJointProperties": "dartpy.dynamics.UniversalJointProperties",
+      "UniversalJointUniqueProperties": "dartpy.dynamics.UniversalJointUniqueProperties",
+      "VisualAspect": "dartpy.dynamics.VisualAspect",
+      "VoxelGridShape": "dartpy.dynamics.VoxelGridShape",
+      "WeldJoint": "dartpy.dynamics.WeldJoint",
+      "WholeBodyIK": "dartpy.dynamics.WholeBodyIK",
+      "ZeroDofJoint": "dartpy.dynamics.ZeroDofJoint",
+      "ZeroDofJointProperties": "dartpy.dynamics.ZeroDofJointProperties"
     },
     "containers": [
       "ActuatorType",
@@ -1507,6 +1754,7 @@
   },
   "dartpy.experimental": {
     "classes": {},
+    "container_owners": {},
     "containers": [],
     "functions": {
       "camel_case": 0,
@@ -1519,7 +1767,7 @@
       "BodyNodeDnD": {
         "camel_case": 10,
         "get_set": 5,
-        "public": 13
+        "public": 14
       },
       "CameraMode": {
         "camel_case": 0,
@@ -1534,17 +1782,17 @@
       "DebugOverlay": {
         "camel_case": 16,
         "get_set": 12,
-        "public": 18
+        "public": 19
       },
       "DefaultEventHandler": {
         "camel_case": 12,
         "get_set": 8,
-        "public": 14
+        "public": 15
       },
       "DragAndDrop": {
         "camel_case": 14,
         "get_set": 8,
-        "public": 21
+        "public": 22
       },
       "DragAndDrop.RotationOption": {
         "camel_case": 0,
@@ -1554,12 +1802,12 @@
       "GUIActionAdapter": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 1
+        "public": 2
       },
       "GUIEventAdapter": {
         "camel_case": 16,
         "get_set": 9,
-        "public": 76
+        "public": 77
       },
       "GUIEventAdapter.EventType": {
         "camel_case": 0,
@@ -1589,12 +1837,12 @@
       "GUIEventHandler": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "GridVisual": {
         "camel_case": 22,
         "get_set": 20,
-        "public": 24
+        "public": 25
       },
       "GridVisual.PlaneType": {
         "camel_case": 0,
@@ -1604,22 +1852,22 @@
       "ImGuiWidget": {
         "camel_case": 3,
         "get_set": 1,
-        "public": 6
+        "public": 7
       },
       "InteractiveFrame": {
         "camel_case": 5,
         "get_set": 2,
-        "public": 5
+        "public": 6
       },
       "InteractiveFrameDnD": {
         "camel_case": 2,
         "get_set": 1,
-        "public": 4
+        "public": 5
       },
       "InteractiveTool": {
         "camel_case": 10,
         "get_set": 7,
-        "public": 15
+        "public": 16
       },
       "InteractiveTool.Type": {
         "camel_case": 0,
@@ -1639,12 +1887,12 @@
       "PickInfo": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 4
+        "public": 5
       },
       "RealTimeWorldNode": {
         "camel_case": 8,
         "get_set": 8,
-        "public": 8
+        "public": 9
       },
       "RenderingUnavailableError": {
         "camel_case": 0,
@@ -1654,33 +1902,60 @@
       "SimpleFrameDnD": {
         "camel_case": 2,
         "get_set": 1,
-        "public": 3
+        "public": 4
       },
       "SimpleFrameShapeDnD": {
         "camel_case": 1,
         "get_set": 1,
-        "public": 2
+        "public": 3
       },
       "SupportPolygonVisual": {
         "camel_case": 22,
         "get_set": 14,
-        "public": 23
+        "public": 24
       },
       "Viewer": {
         "camel_case": 53,
         "get_set": 28,
-        "public": 59
+        "public": 60
       },
       "ViewerAttachment": {
         "camel_case": 2,
         "get_set": 1,
-        "public": 3
+        "public": 4
       },
       "WorldNode": {
         "camel_case": 13,
         "get_set": 6,
-        "public": 15
+        "public": 16
       }
+    },
+    "container_owners": {
+      "BodyNodeDnD": "dartpy.gui.BodyNodeDnD",
+      "CameraMode": "dartpy.gui.CameraMode",
+      "ConstraintType": "dartpy.gui.ConstraintType",
+      "DebugOverlay": "dartpy.gui.DebugOverlay",
+      "DefaultEventHandler": "dartpy.gui.DefaultEventHandler",
+      "DragAndDrop": "dartpy.gui.DragAndDrop",
+      "GUIActionAdapter": "dartpy.gui.GUIActionAdapter",
+      "GUIEventAdapter": "dartpy.gui.GUIEventAdapter",
+      "GUIEventHandler": "dartpy.gui.GUIEventHandler",
+      "GridVisual": "dartpy.gui.GridVisual",
+      "ImGuiWidget": "dartpy.gui.ImGuiWidget",
+      "InteractiveFrame": "dartpy.gui.InteractiveFrame",
+      "InteractiveFrameDnD": "dartpy.gui.InteractiveFrameDnD",
+      "InteractiveTool": "dartpy.gui.InteractiveTool",
+      "MouseButton": "dartpy.gui.MouseButton",
+      "MouseButtonEvent": "dartpy.gui.MouseButtonEvent",
+      "PickInfo": "dartpy.gui.PickInfo",
+      "RealTimeWorldNode": "dartpy.gui.RealTimeWorldNode",
+      "RenderingUnavailableError": "dartpy.gui.RenderingUnavailableError",
+      "SimpleFrameDnD": "dartpy.gui.SimpleFrameDnD",
+      "SimpleFrameShapeDnD": "dartpy.gui.SimpleFrameShapeDnD",
+      "SupportPolygonVisual": "dartpy.gui.SupportPolygonVisual",
+      "Viewer": "dartpy.gui.Viewer",
+      "ViewerAttachment": "dartpy.gui.ViewerAttachment",
+      "WorldNode": "dartpy.gui.WorldNode"
     },
     "containers": [
       "BodyNodeDnD",
@@ -1720,33 +1995,41 @@
       "AngleAxis": {
         "camel_case": 0,
         "get_set": 4,
-        "public": 12
+        "public": 14
       },
       "BoundingBox": {
         "camel_case": 7,
         "get_set": 4,
-        "public": 7
+        "public": 8
       },
       "Isometry3": {
         "camel_case": 0,
         "get_set": 5,
-        "public": 14
+        "public": 16
       },
       "Quaternion": {
         "camel_case": 0,
         "get_set": 2,
-        "public": 15
+        "public": 17
       },
       "Random": {
         "camel_case": 2,
         "get_set": 2,
-        "public": 5
+        "public": 6
       },
       "TriMesh": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 4
+        "public": 5
       }
+    },
+    "container_owners": {
+      "AngleAxis": "dartpy.math.AngleAxis",
+      "BoundingBox": "dartpy.math.BoundingBox",
+      "Isometry3": "dartpy.math.Isometry3",
+      "Quaternion": "dartpy.math.Quaternion",
+      "Random": "dartpy.math.Random",
+      "TriMesh": "dartpy.math.TriMesh"
     },
     "containers": [
       "AngleAxis",
@@ -1767,53 +2050,65 @@
       "Function": {
         "camel_case": 2,
         "get_set": 2,
-        "public": 2
+        "public": 3
       },
       "GradientDescentSolver": {
         "camel_case": 17,
         "get_set": 15,
-        "public": 20
+        "public": 21
       },
       "GradientDescentSolverProperties": {
         "camel_case": 8,
         "get_set": 0,
-        "public": 8
+        "public": 9
       },
       "GradientDescentSolverUniqueProperties": {
         "camel_case": 8,
         "get_set": 0,
-        "public": 8
+        "public": 9
       },
       "ModularFunction": {
         "camel_case": 6,
         "get_set": 3,
-        "public": 7
+        "public": 8
       },
       "MultiFunction": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "NullFunction": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "Problem": {
         "camel_case": 24,
         "get_set": 16,
-        "public": 24
+        "public": 25
       },
       "Solver": {
         "camel_case": 15,
         "get_set": 15,
-        "public": 17
+        "public": 18
       },
       "SolverProperties": {
         "camel_case": 7,
         "get_set": 0,
-        "public": 7
+        "public": 8
       }
+    },
+    "container_owners": {
+      "Function": "dartpy.optimizer.Function",
+      "GradientDescentSolver": "dartpy.optimizer.GradientDescentSolver",
+      "GradientDescentSolverProperties": "dartpy.optimizer.GradientDescentSolverProperties",
+      "GradientDescentSolverUniqueProperties": "dartpy.optimizer.GradientDescentSolverUniqueProperties",
+      "ModularFunction": "dartpy.optimizer.ModularFunction",
+      "MultiFunction": "dartpy.optimizer.MultiFunction",
+      "NullFunction": "dartpy.optimizer.NullFunction",
+      "Problem": "dartpy.optimizer.Problem",
+      "Solver": "dartpy.optimizer.Solver",
+      "SolverProperties": "dartpy.optimizer.SolverProperties"
     },
     "containers": [
       "Function",
@@ -1843,18 +2138,24 @@
       "DeactivationOptions": {
         "camel_case": 5,
         "get_set": 0,
-        "public": 5
+        "public": 6
       },
       "Recording": {
         "camel_case": 7,
         "get_set": 7,
-        "public": 8
+        "public": 9
       },
       "World": {
         "camel_case": 32,
         "get_set": 23,
-        "public": 36
+        "public": 37
       }
+    },
+    "container_owners": {
+      "CollisionDetectorType": "dartpy.simulation.CollisionDetectorType",
+      "DeactivationOptions": "dartpy.simulation.DeactivationOptions",
+      "Recording": "dartpy.simulation.Recording",
+      "World": "dartpy.simulation.World"
     },
     "containers": [
       "CollisionDetectorType",
@@ -1873,12 +2174,12 @@
       "CompositeResourceRetriever": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "DartLoader": {
         "camel_case": 8,
         "get_set": 2,
-        "public": 10
+        "public": 11
       },
       "DartLoaderFlags": {
         "camel_case": 0,
@@ -1888,7 +2189,7 @@
       "DartLoaderOptions": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "DartLoaderRootJointType": {
         "camel_case": 0,
@@ -1898,18 +2199,31 @@
       "DartResourceRetriever": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 0
+        "public": 1
       },
       "ModelResourceRetriever": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       },
       "PackageResourceRetriever": {
         "camel_case": 1,
         "get_set": 0,
-        "public": 1
+        "public": 2
       }
+    },
+    "container_owners": {
+      "CompositeResourceRetriever": "dartpy.utils.CompositeResourceRetriever",
+      "DartLoader": "dartpy.utils.DartLoader",
+      "DartLoaderFlags": "dartpy.utils.DartLoaderFlags",
+      "DartLoaderOptions": "dartpy.utils.DartLoaderOptions",
+      "DartLoaderRootJointType": "dartpy.utils.DartLoaderRootJointType",
+      "DartResourceRetriever": "dartpy.utils.DartResourceRetriever",
+      "MjcfParser": "dartpy.utils.MjcfParser",
+      "ModelResourceRetriever": "dartpy.utils.ModelResourceRetriever",
+      "PackageResourceRetriever": "dartpy.utils.PackageResourceRetriever",
+      "SdfParser": "dartpy.utils.SdfParser",
+      "SkelParser": "dartpy.utils.SkelParser"
     },
     "containers": [
       "CompositeResourceRetriever",
@@ -1935,8 +2249,11 @@
       "Options": {
         "camel_case": 3,
         "get_set": 0,
-        "public": 3
+        "public": 4
       }
+    },
+    "container_owners": {
+      "Options": "dartpy.utils.MjcfParser.Options"
     },
     "containers": [
       "Options"
@@ -1952,13 +2269,17 @@
       "Options": {
         "camel_case": 2,
         "get_set": 0,
-        "public": 2
+        "public": 3
       },
       "RootJointType": {
         "camel_case": 0,
         "get_set": 0,
         "public": 2
       }
+    },
+    "container_owners": {
+      "Options": "dartpy.utils.SdfParser.Options",
+      "RootJointType": "dartpy.utils.SdfParser.RootJointType"
     },
     "containers": [
       "Options",
@@ -1972,6 +2293,7 @@
   },
   "dartpy.utils.SkelParser": {
     "classes": {},
+    "container_owners": {},
     "containers": [],
     "functions": {
       "camel_case": 3,
@@ -1989,12 +2311,12 @@
       "CameraHome": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "Control": {
         "camel_case": 0,
         "get_set": 1,
-        "public": 30
+        "public": 31
       },
       "Control.Kind": {
         "camel_case": 0,
@@ -2004,23 +2326,32 @@
       "KeyAction": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 3
+        "public": 4
       },
       "Scene": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 5
+        "public": 6
       },
       "SceneContext": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 7
+        "public": 8
       },
       "SceneSetup": {
         "camel_case": 0,
         "get_set": 0,
-        "public": 10
+        "public": 11
       }
+    },
+    "container_owners": {
+      "AssetsNotPrefetchedError": "dartpy.viewer.AssetsNotPrefetchedError",
+      "CameraHome": "dartpy.viewer.CameraHome",
+      "Control": "dartpy.viewer.Control",
+      "KeyAction": "dartpy.viewer.KeyAction",
+      "Scene": "dartpy.viewer.Scene",
+      "SceneContext": "dartpy.viewer.SceneContext",
+      "SceneSetup": "dartpy.viewer.SceneSetup"
     },
     "containers": [
       "AssetsNotPrefetchedError",
