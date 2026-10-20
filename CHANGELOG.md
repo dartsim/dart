@@ -104,6 +104,7 @@
     With a custom sink or inside the GUI App, unterminated `dt*` lines wait for
     an explicit flush, the next `dt*` statement on that thread, or thread exit;
     their terminal ordering relative to direct stdout/stderr writes can differ.
+    [#3899](https://github.com/dartsim/dart/pull/3899)
 
   * Add `dart::common::setLogSink`, `resetLogSink`, `setLogLevel` and
     `getLogLevel` to route DART's log messages to an application and filter
