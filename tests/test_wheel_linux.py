@@ -145,7 +145,17 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
     (tmp_path / "FindPython3.cmake").write_text(
         'message(FATAL_ERROR "Duplicate Python3 discovery")\n'
     )
-    (tmp_path / "nanobindConfig.cmake").write_text("")
+    (tmp_path / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{tmp_path.as_posix()}")\n'
+    )
+    (tmp_path / "include/nanobind").mkdir(parents=True)
+    (tmp_path / "include/nanobind/nanobind.h").write_text(
+        "#define NB_VERSION_MAJOR 3\n"
+        "#define NB_VERSION_MINOR 1\n"
+        "#define NB_VERSION_PATCH 0\n"
+    )
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/nb_internals.h").write_text("#  define NB_INTERNALS_VERSION 22\n")
     (tmp_path / "nanobindConfigVersion.cmake").write_text(
         "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
     )

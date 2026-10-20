@@ -919,3 +919,84 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("system", [True, False])
+@pytest.mark.parametrize(
+    "version,internals,missing,accepted",
+    [
+        ("3.0.2", 21, None, False),
+        ("3.1.0", 22, None, True),
+        ("3.1.9", 22, None, True),
+        ("3.2.0", 22, None, False),
+        ("4.0.0", 23, None, False),
+        ("3.1.0", 23, None, False),
+        ("3.1.0", 220, None, False),
+        ("3.1.0", "22\r", None, True),
+        ("3.1.0", "22 // ABI version", None, True),
+        ("3.1.0", 22, "NB_DIR", False),
+        ("3.1.0", 22, "include/nanobind/nanobind.h", False),
+        ("3.1.0", 22, "src/nb_internals.h", False),
+    ],
+)
+def test_nanobind_version_and_internals(
+    tmp_path, system, version, internals, missing, accepted
+):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindPython.cmake").write_text("set(Python_FOUND TRUE)\n")
+    package = tmp_path / "nanobind"
+    (package / "include/nanobind").mkdir(parents=True)
+    (package / "src").mkdir()
+    (package / "include/nanobind/nanobind.h").write_text(
+        "".join(
+            f"#define NB_VERSION_{part} {value}\n"
+            for part, value in zip(("MAJOR", "MINOR", "PATCH"), version.split("."))
+        )
+    )
+    (package / "src/nb_internals.h").write_text(
+        f"#  define NB_INTERNALS_VERSION {internals}\n"
+    )
+    (package / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{package.as_posix()}")\n'
+    )
+    (package / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\n"
+        f'set(NB_DIR "{package.as_posix()}" PARENT_SCOPE)\n'
+    )
+    if missing == "NB_DIR":
+        (package / "nanobindConfig.cmake").write_text("")
+        (package / "CMakeLists.txt").write_text(
+            "cmake_minimum_required(VERSION 3.22.1)\n"
+        )
+    elif missing:
+        (package / missing).unlink()
+    for name in ("dartpy", "tests", "examples", "tutorials"):
+        directory = tmp_path / "source" / name
+        directory.mkdir(parents=True)
+        (directory / "CMakeLists.txt").write_text(
+            'file(WRITE "${CMAKE_BINARY_DIR}/dartpy-reached" "")\n'
+            if name == "dartpy"
+            else ""
+        )
+    result = configure(
+        tmp_path,
+        "set(DART_BUILD_DARTPY ON)\n"
+        f"set(DART_USE_SYSTEM_NANOBIND {'ON' if system else 'OFF'})\n"
+        f'set(nanobind_DIR "{package.as_posix()}")\n'
+        f'set(FETCHCONTENT_SOURCE_DIR_NANOBIND "{package.as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n',
+    )
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == accepted, output
+    assert (tmp_path / "build/dartpy-reached").exists() == accepted
+    if not accepted:
+        if missing:
+            assert "dartpy requires a complete nanobind 3.1.x package" in output
+            assert "NB_DIR must contain" in output
+            assert "file STRINGS" not in output
+        elif version == "3.1.0":
+            assert "NB_INTERNALS_VERSION=22" in output
+        else:
+            assert "dartpy requires nanobind 3.1.x" in output
+            assert f"found {version}" in output

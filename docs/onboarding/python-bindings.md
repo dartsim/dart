@@ -92,7 +92,7 @@ M6b still replaces the interim GUI module with `dart.render` and `dart.viewer`
 before the first release candidate. `release-6.20` retains pybind11 and OSG.
 
 Python 3.12 or newer, NumPy 1.26.4 or newer (including NumPy 2.x), and
-nanobind 3.1 or newer are required. CMake discovers Python once in
+nanobind 3.1.x are required. CMake discovers Python once in
 `python/CMakeLists.txt` and caches the selected interpreter as
 `Python3_EXECUTABLE` for tests, examples and tutorials. Select the interpreter
 with `Python_EXECUTABLE`; `Python3_EXECUTABLE` only seeds a fresh configure.
@@ -101,9 +101,10 @@ the value DART last cached, and uses `Python_EXECUTABLE`.
 Use `Python_ROOT_DIR` and other `Python_*` hints; the `Python3_*` forms no longer
 apply. C++ builds with
 `DART_BUILD_DARTPY=OFF` do not discover Python.
-`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
-`robin_map` submodule. With `ON`, CMake uses `nanobind_DIR` when it is set and
-otherwise locates nanobind's CMake directory using
+`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching the nanobind 3.1.0
+PyPI sdist by URL and SHA-256 with TLS verification. The sdist bundles
+`robin_map`. With `ON`, CMake uses `nanobind_DIR` when it is set and otherwise
+locates nanobind's CMake directory using
 `python -m nanobind --cmake_dir`. Set `nanobind_DIR` when the build's Python
 cannot import nanobind, as in cross builds and isolated pip builds. Source
 builds through `pip` use scikit-build-core (`pyproject.toml`) and keep the
@@ -113,6 +114,15 @@ examples import the staged package from `DART_PYTHONPATH`. The
 `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options are removed.
 Passing the legacy binder value `pybind11` fails configure; `nanobind` is
 accepted for compatibility and removed from the cache.
+
+`python/dartpy/detail/construction.cpp` checks nanobind's internal factory
+attachment ABI (`NB_INTERNALS_VERSION=22`), pinning system nanobind to 3.1.x.
+CMake checks both the selected headers' version and internals version at
+configure time for system and fetched builds. When bumping nanobind, audit
+that check and re-diff `python/dartpy/detail/dart_eigen_dense.h` against
+nanobind's stock `include/nanobind/eigen/dense.h` to preserve DART's NumPy
+compatibility changes. The Eigen 5 toolchain CI lane also builds and tests
+with `DART_USE_SYSTEM_NANOBIND=ON`.
 
 ### Changes from DART 6.20 (pybind11)
 

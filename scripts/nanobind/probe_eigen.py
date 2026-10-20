@@ -1,7 +1,7 @@
 """Build and check the production Eigen caster against the active NumPy version.
 
 For the NumPy 1.x fallback, run from the repository root:
-  pixi exec --spec python=3.12 --spec numpy=1.26 --spec nanobind=3.1 \
+  pixi exec --spec python=3.12 --spec numpy=1.26 --spec 'nanobind=3.1.*' \
     --spec eigen --spec cmake --spec ninja -- python scripts/nanobind/probe_eigen.py \
     --build-dir build/nanobind-eigen-numpy1
 Repeat with --spec numpy=2 and a separate build directory for the fast path.
