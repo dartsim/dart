@@ -129,12 +129,10 @@ def test_optional_package_with_undefined_found_flag(tmp_path, skip):
     assert "HAVE_Missing:BOOL=FALSE" in cache
 
 
-@pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom", "sdformat"])
-def test_io_requires_all_parser_dependencies(tmp_path, missing):
+@pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom"])
+def test_io_requires_xml_parser_dependencies(tmp_path, missing):
     if missing != "tinyxml2":
         config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
-    if missing == "sdformat":
-        config_package(tmp_path, "urdfdom", "3.0.0", "urdfdom")
     result = configure(
         tmp_path,
         "include(DARTMacros)\n"
@@ -144,6 +142,39 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
     assert result.returncode != 0
     assert f"dart-io requires {missing}" in result.stdout + result.stderr
     assert "DART_BUILD_IO=OFF" in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("found", [False, True])
+@pytest.mark.parametrize("skip", [False, True])
+def test_sdf_optional_dependency(tmp_path, found, skip):
+    discovery = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+    start = discovery.index("if(NOT DART_BUILD_IO)")
+    discovery = discovery[
+        start : discovery.index("\nendif()", start) + len("\nendif()")
+    ]
+    assert "dart_find_package(sdformat)" in discovery
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        "set(DART_BUILD_IO ON)\n"
+        f"set(DART_SKIP_SDFORMAT {'ON' if skip else 'OFF'})\n"
+        "function(dart_find_package)\n"
+        f"set(SDFORMAT_FOUND {'TRUE' if found else 'FALSE'} PARENT_SCOPE)\n"
+        "endfunction()\n" + discovery + "\n"
+        "function(dart_add_utils_headers)\nendfunction()\n"
+        "function(dart_add_utils_sources)\nendfunction()\n"
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
+        f'include("{(ROOT / "dart/utils/sdf/CMakeLists.txt").as_posix()}")\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+    enabled = found and not skip
+    assert f"HAVE_SDFORMAT:BOOL={'TRUE' if enabled else 'FALSE'}" in cache
+    if found and skip:
+        assert "please install sdformat" not in result.stdout + result.stderr
+    if not found:
+        assert "Looking for sdformat - NOT found" in result.stderr
 
 
 @pytest.mark.parametrize(
@@ -775,14 +806,17 @@ def test_sdformat_supported_packages(tmp_path, package, version, target, accepte
     config_package(tmp_path, package, version, target)
     result = configure(
         tmp_path,
+        "set(sdformat_VERSION stale)\n"
+        "set(SDFORMAT_VERSION stale)\n"
         "include(DARTFindsdformat)\n"
         f"if(NOT SDFORMAT_FOUND STREQUAL {'TRUE' if accepted else 'FALSE'})\n"
         'message(FATAL_ERROR "Incorrect sdformat acceptance")\nendif()\n'
         + (
-            f'if(NOT SDFORMAT_LIBRARIES STREQUAL "{target}" OR NOT DART_SDFORMAT_PACKAGE STREQUAL "{package}")\n'
+            f'if(NOT SDFORMAT_LIBRARIES STREQUAL "{target}" OR NOT DART_SDFORMAT_PACKAGE STREQUAL "{package}" OR NOT sdformat_VERSION STREQUAL "{version}" OR NOT SDFORMAT_VERSION STREQUAL "{version}")\n'
             'message(FATAL_ERROR "Incorrect sdformat selection")\nendif()\n'
             if accepted
-            else ""
+            else 'if(NOT sdformat_VERSION STREQUAL "" OR NOT SDFORMAT_VERSION STREQUAL "")\n'
+            'message(FATAL_ERROR "Rejected sdformat kept its version")\nendif()\n'
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -845,24 +879,36 @@ def test_io_disabled_does_not_discover_sdformat(tmp_path):
     source = (ROOT / "dart/CMakeLists.txt").read_text()
     start = source.index("if(DART_BUILD_IO)")
     io_addition = source[start : source.index("endif()", start) + len("endif()")]
+    discovery = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+    start = discovery.index("if(NOT DART_BUILD_IO)")
+    discovery = discovery[
+        start : discovery.index("\nendif()", start) + len("\nendif()")
+    ]
+    assert "dart_find_package(sdformat)" in discovery
     result = configure(
         tmp_path,
         "set(DART_BUILD_IO OFF)\n"
         "function(add_subdirectory)\n"
         'message(FATAL_ERROR "IO should not be configured")\nendfunction()\n'
-        + io_addition,
+        + io_addition
+        + '\nset(HAVE_SDFORMAT TRUE CACHE BOOL "previously enabled")\n'
+        + discovery
+        + '\nif(HAVE_SDFORMAT)\nmessage(FATAL_ERROR "Stale SDF support")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize("component", ["io", "utils", "utils-urdf"])
-@pytest.mark.parametrize("major", [15, 16])
-def test_installed_legacy_components_propagate_sdformat_failure(
-    tmp_path, component, major
+@pytest.mark.parametrize("component", ["io", "utils", "utils-urdf", "io-sdf"])
+@pytest.mark.parametrize("major", [None, 15, 16])
+@pytest.mark.parametrize("static", [False, True])
+@pytest.mark.parametrize("sdf_enabled", [False, True])
+def test_installed_io_components_only_require_sdformat_for_static_builds(
+    tmp_path, component, major, static, sdf_enabled
 ):
-    config_package(tmp_path, "sdformat", f"{major}.3.0", "sdformat::sdformat")
+    if major is not None:
+        config_package(tmp_path, "sdformat", f"{major}.3.0", "sdformat::sdformat")
     prefix = tmp_path / "prefix"
-    (prefix / "include").mkdir()
+    (prefix / "include").mkdir(parents=True)
     package_dir = prefix / "lib/cmake/DART"
     package_dir.mkdir(parents=True)
     substitutions = {
@@ -890,32 +936,45 @@ def test_installed_legacy_components_propagate_sdformat_failure(
     for name, dependencies, target in (
         ("dart", "", "dart"),
         ("io", "dart", "dart-io"),
+        ("io-sdf", "io", "dart-io-sdf"),
         ("utils", "io", "dart-utils"),
         ("utils-urdf", "utils", "dart-utils-urdf"),
     ):
+        if name == "io-sdf" and not sdf_enabled:
+            continue
         (package_dir / f"dart_{name}Component.cmake").write_text(
             render(
                 template,
                 component=name,
                 internal_dependencies=dependencies,
                 libraries=target,
-                external_dependencies="sdformat" if name == "io" else "",
+                external_dependencies=(
+                    "sdformat" if static and sdf_enabled and name == "io" else ""
+                ),
             )
         )
         (package_dir / f"dart_{name}Targets.cmake").write_text(
             f"add_library({target} INTERFACE IMPORTED)\n"
         )
     shutil.copy(ROOT / "cmake/DARTFindsdformat.cmake", package_dir)
+    expected_found = (component != "io-sdf" or sdf_enabled) and (
+        not static or not sdf_enabled or major == 15
+    )
+    required = not sdf_enabled and component == "io-sdf"
     result = configure(
         tmp_path,
-        f"find_package(DART QUIET CONFIG COMPONENTS {component})\n"
-        f"if({'NOT DART_FOUND' if major == 15 else 'DART_FOUND'})\n"
-        'message(FATAL_ERROR "Legacy component accepted incompatible sdformat")\nendif()\n'
+        f"find_package(DART {'REQUIRED' if required else 'QUIET'} CONFIG COMPONENTS {component})\n"
+        f"if({'NOT DART_FOUND' if expected_found else 'DART_FOUND'})\n"
+        'message(FATAL_ERROR "Incorrect installed IO component availability")\nendif()\n'
         + (
             'if(NOT SDFORMAT_LIBRARIES STREQUAL "sdformat::sdformat")\n'
             'message(FATAL_ERROR "Selected SDK target did not reach installed callers")\nendif()\n'
-            if major == 15
+            if static and sdf_enabled and major == 15 and expected_found
             else ""
         ),
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    if required:
+        assert result.returncode != 0
+        assert "missing: io-sdf" in result.stdout + result.stderr
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr

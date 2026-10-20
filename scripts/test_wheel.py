@@ -56,6 +56,7 @@ assert skeleton is not None
 assert skeleton.getNumBodyNodes() == 1
 
 # Exercise embedded sdformat schemas and conversion without installed data.
+assert hasattr(SdfParser, "Options"), "wheel built without SDF"
 with tempfile.TemporaryDirectory() as sdf_directory:
     os.environ["SDF_PATH"] = str(Path(sdf_directory) / "missing-schemas")
     sdf_file = Path(sdf_directory) / "smoke.sdf"

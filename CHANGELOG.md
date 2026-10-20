@@ -60,7 +60,12 @@
     must rebuild.
   * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
     legacy CMake names and public `dart::utils` headers for rebuilt consumers.
-    Enabling IO now requires tinyxml2, urdfdom, and sdformat 14.8 or newer.
+    Enabling IO requires tinyxml2 and urdfdom. SDF support is optional:
+    missing sdformat warns and builds IO without SDF, and
+    `DART_SKIP_SDFORMAT=ON` disables it deliberately. Request the `io-sdf`
+    CMake component to require SDF support. Shared IO consumers no longer
+    require sdformat development files; static consumers still do. Python
+    SDF loading raises `RuntimeError` when SDF support is disabled.
   * SDF loading uses canonical sdformat validation, version conversion and
     frame semantics, including authored world gravity and joint effort and
     velocity limits that the old parser ignored. Parse, resource and

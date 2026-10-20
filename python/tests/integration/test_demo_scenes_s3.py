@@ -331,6 +331,9 @@ def test_box_stacking_initial_geometry_and_transforms():
         )
 
 
+@pytest.mark.skipif(
+    not hasattr(dart.utils.SdfParser, "Options"), reason="SDF loading is disabled"
+)
 @pytest.mark.parametrize("kind", ["dantzig", "pgs"])
 def test_boxed_lcp_solver_switch_preserves_simbicon_harness(kind):
     from examples.demos.models import simbicon, soft_foot_simbicon

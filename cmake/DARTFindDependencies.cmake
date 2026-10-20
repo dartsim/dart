@@ -131,9 +131,11 @@ else()
   )
 endif()
 
-# Discover sdformat here so its imported dependency targets reach sibling
-# executables and tests that also use its API.
-if(DART_BUILD_IO)
+# Discover sdformat when IO is enabled, even if SDF is skipped, so the optional
+# check can report the skip and imported targets reach sibling tests and examples.
+if(NOT DART_BUILD_IO)
+  set(HAVE_SDFORMAT FALSE CACHE BOOL "Check if SDFORMAT found." FORCE)
+else()
   dart_find_package(sdformat)
 endif()
 

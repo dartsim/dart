@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // Public-API driver shared by both arms, including DART 6.19 releases.
-#include <dart/utils/sdf/SdfParser.hpp>
+// Older installs do not define HAVE_SDFORMAT; check for the header instead.
+#if defined(__has_include) && __has_include(<dart/utils/sdf/SdfParser.hpp>)
+  #include <dart/utils/sdf/SdfParser.hpp>
+#endif
 #include <dart/utils/urdf/DartLoader.hpp>
 
 #include <dart/simulation/World.hpp>
@@ -299,6 +302,7 @@ int main(int argc, char** argv)
       dart::simulation::WorldPtr world;
       if (!scene.empty()) {
         world = makeScene(scene);
+#if defined(__has_include) && __has_include(<dart/utils/sdf/SdfParser.hpp>)
       } else if (!robot.empty()) {
         world = dart::simulation::World::create();
         dart::utils::DartLoader loader;
@@ -351,6 +355,10 @@ int main(int argc, char** argv)
             }
           }
         }
+#else
+      } else {
+        throw std::runtime_error("SDF loading is disabled in this DART install");
+#endif
       }
       const auto solver = world->getConstraintSolver();
       if (detector == "ode")

@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "python"))
 
 viewer = getattr(dart, "viewer", None)
 HUMANOID_IDS = {"atlas_v5", "unitree_g1"}
+SDF_SCENE_IDS = {"atlas_simbicon", "soft_foot_simbicon"}
 
 
 requires_app_host = pytest.mark.skipif(
@@ -25,6 +26,14 @@ def _demo_scenes():
     from examples.demos.registry import make_demo_scenes
 
     return make_demo_scenes()
+
+
+def _cycle_scenes(scenes):
+    return [
+        scene
+        for scene in scenes
+        if scene.id not in SDF_SCENE_IDS or hasattr(dart.utils.SdfParser, "Options")
+    ]
 
 
 CATALOG_IDS = set(
@@ -65,7 +74,10 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
 @requires_app_host
 def test_demo_catalog_cycles_without_a_renderer(capfd):
     assert (
-        viewer.run(_demo_scenes(), ["examples.demos", "--cycle-scenes", "--frames", "2"])
+        viewer.run(
+            _cycle_scenes(_demo_scenes()),
+            ["examples.demos", "--cycle-scenes", "--frames", "2"],
+        )
         == 0
     )
     assert "OK" in capfd.readouterr().out
@@ -91,7 +103,9 @@ def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
             with pytest.raises(viewer.AssetsNotPrefetchedError, match="Prefetch with"):
                 scene.factory()
     assert (
-        viewer.run(scenes, ["examples.demos", "--cycle-scenes", "--frames", "2"]) == 0
+        viewer.run(
+            _cycle_scenes(scenes), ["examples.demos", "--cycle-scenes", "--frames", "2"]
+        ) == 0
     )
     output = capfd.readouterr().out
     for scene_id in HUMANOID_IDS:
@@ -130,7 +144,7 @@ def test_demo_catalog_failing_python_hook_fails_the_cycle(capfd):
     )
     assert (
         viewer.run(
-            [*_demo_scenes(), scene],
+            [*_cycle_scenes(_demo_scenes()), scene],
             ["examples.demos", "--cycle-scenes", "--frames", "2"],
         )
         != 0
@@ -162,6 +176,8 @@ def _world_state(world):
     ids=lambda scene: scene.id,
 )
 def test_neutral_demo_callbacks_and_deterministic_steps(scene):
+    if scene.id in SDF_SCENE_IDS and not hasattr(dart.utils.SdfParser, "Options"):
+        pytest.skip("SDF loading is disabled")
     runs = []
     for _ in range(2):
         dart.math.Random.setSeed(42)

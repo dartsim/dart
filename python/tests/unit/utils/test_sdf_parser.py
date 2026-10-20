@@ -10,6 +10,21 @@ import dartpy as dart
 import pytest
 
 
+@pytest.mark.skipif(
+    hasattr(dart.utils.SdfParser, "Options"), reason="SDF loading is enabled"
+)
+@pytest.mark.parametrize("loader", ["readWorld", "readSkeleton"])
+def test_sdf_disabled_raises(loader):
+    with pytest.raises(RuntimeError, match="built without sdformat support"):
+        getattr(dart.utils.SdfParser, loader)("missing.sdf")
+
+
+requires_sdf = pytest.mark.skipif(
+    not hasattr(dart.utils.SdfParser, "Options"), reason="SDF loading is disabled"
+)
+
+
+@requires_sdf
 def test_read_world():
     assert (
         dart.utils.SdfParser.readWorld("dart://sample/sdf/double_pendulum.world")
@@ -17,6 +32,7 @@ def test_read_world():
     )
 
 
+@requires_sdf
 def test_invalid_sdf_returns_none(tmp_path):
     document = tmp_path / "invalid.sdf"
     document.write_text(
@@ -27,6 +43,7 @@ def test_invalid_sdf_returns_none(tmp_path):
     assert dart.utils.SdfParser.readSkeleton(str(document)) is None
 
 
+@requires_sdf
 def test_named_frames_and_world_gravity(tmp_path):
     document = tmp_path / "frames.world"
     document.write_text(

@@ -362,7 +362,7 @@ def _reference_frame(owner, kind):
 def _parser_owner(kind, retriever):
     classes = {
         "dart_options": dart.utils.DartLoaderOptions,
-        "sdf_options": dart.utils.SdfParser.Options,
+        "sdf_options": getattr(dart.utils.SdfParser, "Options", None),
         "mjcf_options": dart.utils.MjcfParser.Options,
         "loader": dart.utils.DartLoaderOptions,
     }
@@ -490,6 +490,8 @@ def test_task_space_live_native_alias_preserves_reference_frame(kind):
     "kind", ["dart_options", "sdf_options", "mjcf_options", "loader"]
 )
 def test_parser_retriever_cycle_collects(kind):
+    if kind == "sdf_options" and not hasattr(dart.utils.SdfParser, "Options"):
+        pytest.skip("SDF loading is disabled")
     run_isolated(
         f"""
         import weakref
@@ -522,6 +524,8 @@ def test_parser_retriever_cycle_collects(kind):
     "kind", ["dart_options", "sdf_options", "mjcf_options", "loader"]
 )
 def test_parser_live_native_alias_preserves_retriever(kind):
+    if kind == "sdf_options" and not hasattr(dart.utils.SdfParser, "Options"):
+        pytest.skip("SDF loading is disabled")
     run_isolated(
         f"""
         import weakref

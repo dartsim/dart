@@ -27,6 +27,11 @@ PLAYBACK_IDS = SCENE_IDS[-3:]
 
 
 def _scene(scene_id):
+    if scene_id in {"atlas_simbicon", "soft_foot_simbicon"} and not hasattr(
+        dart.utils.SdfParser, "Options"
+    ):
+        pytest.skip("SDF loading is disabled")
+
     from examples.demos.registry import make_demo_scenes
 
     return next(scene for scene in make_demo_scenes() if scene.id == scene_id)

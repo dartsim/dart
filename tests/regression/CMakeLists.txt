@@ -8,7 +8,7 @@ dart_add_test("regression" test_FclPrimitiveContactMatrix)
 
 dart_add_test("regression" test_FclPrimitiveContactMatrixFcl)
 
-if(TARGET dart-utils)
+if(TARGET dart-io-sdf)
   dart_add_test("regression" test_Issue1583)
   target_link_libraries(test_Issue1583 dart-utils)
 
@@ -49,8 +49,10 @@ if(
     dart-utils
   )
 
-  dart_add_test("regression" test_Issue1624)
-  target_link_libraries(test_Issue1624 dart-collision-ode dart-utils)
+  if(TARGET dart-io-sdf)
+    dart_add_test("regression" test_Issue1624)
+    target_link_libraries(test_Issue1624 dart-collision-ode dart-utils)
+  endif()
 endif()
 
 if(TARGET dart-utils)
