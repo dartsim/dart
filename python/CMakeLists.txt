@@ -6,6 +6,15 @@ if(NOT DART_BUILD_DARTPY)
 endif()
 
 set(DART_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+# The dartpy package stages at <DART_DARTPY_BUILD_DIR>/dartpy, with the
+# extension beside the pure-Python files. Multi-config generators keep one
+# root per configuration, so tests import the selected configuration's build.
+get_property(dartpy_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(dartpy_multi_config)
+  set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/$<CONFIG>")
+else()
+  set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}")
+endif()
 if(NOT Python_EXECUTABLE AND Python3_EXECUTABLE)
   set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
 endif()
@@ -18,7 +27,7 @@ if(DART_DARTPY_STABLE_ABI)
     COMPONENTS Interpreter Development.Module Development.SABIModule
   )
 else()
-  find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+  find_package(Python 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 if(DART_USE_SYSTEM_NANOBIND)
   # An explicit nanobind_DIR serves builds whose Python cannot import
@@ -44,13 +53,7 @@ else()
   FetchContent_MakeAvailable(nanobind)
 endif()
 add_subdirectory(dartpy)
-set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")
-if(WIN32)
-  # Use an escaped separator so the full value is passed as a single argument
-  set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}\\;${DART_PYTHON_BUILD_DIR}")
-else()
-  set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}:${DART_PYTHON_BUILD_DIR}")
-endif()
+set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")
 
 add_subdirectory(tests)
 add_subdirectory(examples)

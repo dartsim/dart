@@ -1,6 +1,10 @@
 """Check package support boundaries and native baseline CI coverage."""
 
 import ast
+import os
+import shlex
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -12,49 +16,43 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_package_metadata_support_boundaries():
-    setup = next(
-        node
-        for node in ast.walk(
-            ast.parse((ROOT / "setup.py").read_text(encoding="utf-8-sig"))
-        )
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "setup"
-    )
-    metadata = {
-        keyword.arg: ast.literal_eval(keyword.value)
-        for keyword in setup.keywords
-        if keyword.arg in {"python_requires", "install_requires"}
-    }
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    metadata = project["project"]
 
-    python = SpecifierSet(metadata["python_requires"])
-    assert "3.9" not in python
-    assert "3.10" in python
+    python = SpecifierSet(metadata["requires-python"])
+    assert "3.11" not in python
+    assert "3.12" in python
     assert "3.14" in python
     numpy = next(
         Requirement(value)
-        for value in metadata["install_requires"]
+        for value in metadata["dependencies"]
         if Requirement(value).name == "numpy"
     ).specifier
     assert "1.21.4" not in numpy
     assert "1.21.5" in numpy
     assert "2.3.0" in numpy
 
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    assert project["tool"]["mypy"]["python_version"] == "3.10"
+    build_system = project["build-system"]
+    assert build_system["build-backend"] == "dartpy_backend"
+    assert build_system["backend-path"] == ["scripts/pep517"]
     build = {
         requirement.name: requirement.specifier
-        for requirement in map(Requirement, project["build-system"]["requires"])
+        for requirement in map(Requirement, build_system["requires"])
     }
-    for name, rejected, accepted in [
-        ("wheel", "0.47.0", "0.48.0"),
-        ("ninja", "1.13.1", "1.13.2"),
-        ("setuptools", "83.0.0", "84.0.0"),
-        ("cmake", "4.4.3", "4.4.4"),
-    ]:
-        assert rejected not in build[name]
-        assert accepted in build[name]
-    assert "4.4.5" not in build["cmake"]
+    # scikit-build-core injects CMake and Ninja wheels when the host lacks the
+    # pinned versions, so they stay out of build-system.requires.
+    assert set(build) == {"scikit-build-core"}
+    assert "1.1.0" not in build["scikit-build-core"]
+    assert "1.1.1" in build["scikit-build-core"]
+    skbuild = project["tool"]["scikit-build"]
+    assert "3.25.9" not in SpecifierSet(skbuild["cmake"]["version"])
+    assert "3.26.0" in SpecifierSet(skbuild["cmake"]["version"])
+    assert "1.13.1" not in SpecifierSet(skbuild["ninja"]["version"])
+    assert "1.13.2" in SpecifierSet(skbuild["ninja"]["version"])
+    assert skbuild["wheel"]["py-api"] == "cp312"
+    assert skbuild["cmake"]["define"]["DART_DARTPY_STABLE_ABI"] == "ON"
+    assert skbuild["wheel"]["packages"] == []
+    assert skbuild["install"]["components"] == ["python"]
 
 
 def workflow_job(filename, job):
@@ -70,7 +68,9 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     baseline = [
         row
         for row in rows
-        if row["runner"] == "ubuntu-24.04" and row["distribution"] == "true"
+        if row["runner"] == "ubuntu-24.04"
+        and row["distribution"] == "true"
+        and "eigen" not in row
     ]
     assert {(row["cc"], row["cxx"]) for row in baseline} == {
         ("gcc-13", "g++-13"),
@@ -80,7 +80,6 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     assert {row["name"] for row in rows if row["distribution"] == "false"} == {
         "gcc 16",
         "clang 19",
-        "Eigen 5 (gcc 13)",
     }
     # Packagers build against Eigen 5, which the lockfile does not cover.
     assert [row["eigen"] for row in rows if "eigen" in row] == ["5.*"]

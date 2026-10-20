@@ -1,0 +1,249 @@
+# DART 7 dependency floor and minimization
+
+This project home tracks the effort, directed by the maintainer on
+2026-10-18, to make DART 7 depend on as little as possible and to raise its
+platform floor to Ubuntu 24.04 LTS.
+[PLAN-625](../../plans/dashboard.md#plan-625-dart-7-dependency-floor-and-minimization)
+tracks its roadmap status. It runs inside the
+[DART 7.0 program](../dart7_python_first/README.md) (PLAN-624) and follows
+its gates; the FCL and collision-backend lifecycle stays with PLAN-620.
+
+- [Inventory](inventory.md): every dependency, its category, floors and
+  footprint.
+- [Packets](packets.md): scope, non-goals and gates per packet.
+- [Decisions](decisions.md): the maintainer direction, pending questions and
+  the defaults taken.
+- [Verification](verification.md): spikes, lanes and reviews per packet.
+- [Progress log](progress-log.md): completed chunks.
+- [Resume](RESUME.md): the next-session handoff.
+
+## North star
+
+DART 7 builds from a short, current and well-understood dependency list.
+Every remaining external dependency is one of:
+
+- essential to the math vocabulary (Eigen);
+- bound by the C++ API that gz-physics and gz-sim use (FCL, assimp, Bullet,
+  ODE, tinyxml2);
+- a specialized format library (urdfdom for URDF, sdformat for SDF);
+- a GUI or Python necessity (Filament, GLFW, the image codecs, nanobind,
+  NumPy).
+
+Third-party libraries that the C++ standard library can replace go (spdlog,
+fmt); unused ones go (Boost). A source build fetches what it needs, package
+managers opt into system packages, and in-tree bundled copies give way to
+either. Ubuntu 24.04 is the oldest supported platform, and DART's own code
+builds as C++20 behind a C++17 interface.
+
+This makes DART more complete and faster to evolve: a logging sink the Python
+bridge can use, smaller wheels and environments, builds that work without
+preinstalled dependencies, and fewer upstreams that set DART's pace.
+
+## Final deliverable and acceptance
+
+The effort is done when all of these hold on `main`:
+
+- **Ubuntu 24.04 floor.** The compiler, CMake, Python, NumPy and library
+  floors in [inventory.md](inventory.md#ubuntu-2404-floor) are enforced by
+  CMake, documented in the build docs and covered by the requirement tests.
+  A stock-noble lane (core and `dart-io` from apt plus OSRF sdformat) is
+  green. `release-6.20` keeps its Ubuntu 22.04 floor.
+- **Approved removals landed.** Every removal the maintainer approves in
+  [decisions.md](decisions.md) has merged, with breaking or default-behavior
+  parts merged before the PLAN-624 API freeze `F`.
+- **C++ standard.** The decided option is in place with its gates: on the
+  recommended option, DART's own targets build as C++20, exported targets
+  keep `cxx_std_17`, and installed headers pass C++17 and C++20 dialect gates.
+- **Gazebo.** Unmodified gz-physics and gz-sim pass the Harmonic, Ionic and
+  Jetty lanes with no new failures against each packet's base, and the lanes
+  assert that gz-physics detects `dart/constraint/ContactSurface.hpp`.
+- **Packaging.** Every fetched or vendored dependency keeps a
+  `DART_USE_SYSTEM_<X>` switch, a disconnected configure works when the
+  system packages are present, and the build docs carry a packaging section.
+- **Records.** Durable decisions move to `docs/design/` or
+  `docs/onboarding/`, the dashboard entry is updated, and this folder is
+  removed by the completing PR.
+
+## Scope
+
+- Platform and toolchain floors, CMake floor, Python floor, library floors.
+- Dependency removals: Boost (unused), spdlog and fmt (DD-4). libcurl and
+  OpenSSL, and SDF packaging with sdformat kept, follow the follow-up study
+  ([decisions](decisions.md)).
+- Dependency acquisition (DD-8): fetch-first source builds,
+  `DART_USE_SYSTEM_<X>` for packagers, and in-tree bundled code replaced by
+  fetched or system packages where possible.
+- Trimming the dependencies that stay: link interfaces, dead find modules and
+  compat code, wheel contents, the default pixi environment.
+- The C++20 build, dialect gates and the C++20 library rule.
+- Eigen 5 readiness, nanobind and test-tool pins, fetch-fallback repair.
+- Packaging guidance and downstream handoff notes.
+
+## Non-goals
+
+- Removing FCL, assimp, Bullet or ODE in 7.0. They are bound by the
+  gz-facing API; [DEP-24](#packets) records the 8.0 path.
+- Replacing urdfdom or sdformat (DD-5), or changing SDF semantics (#3789 stays).
+- Exporting C++20 to consumers in 7.0, and any use of C++23.
+- Splitting the GUI out of dartpy, or replacing Filament.
+- Fixing gz-sim or gz-physics themselves; upstream proposals are drafted
+  only, and each needs approval.
+
+## Constraints
+
+- The [compatibility rules](../../../AGENTS.md#compatibility-rules): the C++
+  API that gz-physics and gz-sim use, installed headers and package components
+  (including legacy forwarding components) stay compatible; other public-API,
+  ABI-layout or default-behavior changes need maintainer approval.
+- PLAN-624: the step-path quiet window (World stepping, the constraint
+  solver including `lcpsolver`, the native collision detector and
+  generic-joint dynamics go through that program until the M1d executor PR
+  merges), API freeze `F`, bit-identical refactors, and the Gazebo lanes for
+  core changes.
+- D5: no deprecated C++ API is removed during 7.x.
+- One dependency or one vendored tree per PR. Toolchain floors are the one
+  shared mechanical step.
+- Packagers build offline: debhelper and vcpkg force
+  `FETCHCONTENT_FULLY_DISCONNECTED`, and poudriere has no network.
+- Every empirical claim records its revision, command, date and scope;
+  numbers from the research workflow stay "reported" until a repository
+  script reproduces them.
+
+## Evidence so far
+
+Recorded in detail in [verification.md](verification.md); all on `main`
+`17ce7eefa`, 2026-10-18:
+
+- **Stock Ubuntu 24.04 builds core and `dart-io` today.** In an `ubuntu:24.04`
+  container with apt packages (GCC 13.3, CMake 3.28.3) and OSRF sdformat14,
+  the build has no warnings and 186 of 187 tests pass at both C++17 and
+  C++20. `test_Distance` aborts on an assertion inside Ubuntu's FCL 0.7.0,
+  which is built with assertions on. GUI and dartpy cannot configure there
+  (no Filament, GLFW 3.3.10, and dartpy requires the GUI).
+- **C++20 is close to free for DART itself.** Built and exported as C++20 with
+  the full default environment (GUI and dartpy), main has six new warnings,
+  all implicit `this` captures in `.cpp` files, and passes 197 of 197 C++
+  tests and the Python suite.
+- **Gazebo tolerates both C++20 options.** Exporting `cxx_std_20` silently
+  compiles part of the gz-physics plugin as C++20 and still shows no new
+  Harmonic or Jetty failures against the C++17 base. Building DART as C++20
+  while exporting `cxx_std_17` keeps every gz-physics command at C++17 with
+  the contact-surface probe passing.
+- **`INTEGRATION_reset_sensors` fails on the base too.** Codex traced it to a
+  gz-sim test that keeps a component pointer across a world reset
+  (heap-use-after-free under ASan, reproducible without DART); it fails the
+  same way with DART 6.20.0. It is a downstream test defect, not a DART
+  regression.
+- **Research workflow.** Eleven dependency dossiers and seven studies, each
+  checked by one or two adversarial verifiers, produced the inventory and the
+  packets below. The independent Codex audit of the C++ standard reached the
+  same recommendation.
+
+## Packets
+
+Owners follow the team-mode routing in `docs/ai/orchestration.md`: Codex for
+solver, ABI and design-heavy packets (DEP-14 at ultra effort, because the
+logging header sits in gz-physics' probe closure), Claude Sonnet for bounded
+build, CI and docs packets, Muse for long mechanical ones. Every packet gets
+two clean reviews from engines other than its writer. Gate
+shorthand is defined under [Gates](#gates).
+
+| ID | Packet | Needs | Gates | Owner | Target | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| DEP-0 | Assert the gz contact-surface probe in the Gazebo lanes | none | gz | Claude Sonnet | 7.0 | Committed locally |
+| DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Committed locally |
+| DEP-2 | Export CURL and OpenSSL only for static builds | none | base, gz, pkg | Claude Sonnet | 7.0 | Planned |
+| DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Muse (a) | 7.0 | (a) committed locally |
+| DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet | 7.0 | Planned |
+| DEP-5 | Eigen 5 readiness and the `[3.4.0, 6)` range | none (DD-7) | base on both Eigen majors, gz, py | Codex high | 7.0 | Planned |
+| DEP-6 | Current fetched GoogleTest and Benchmark plus a fetch lane | none | base, apt | Claude Sonnet | 7.0 | Planned |
+| DEP-7 | Slim the default pixi environment | none | base, ai | Muse | 7.0 | Planned |
+| DEP-8 | Wheel hygiene (one concern per PR) | none (DD-7) | wheel | Claude Sonnet | 7.0 | Planned |
+| DEP-9 | Python 3.12 and NumPy 1.26.4 floors; one wheel per platform | none (D20) | base, py, wheel | Claude Sonnet | 7.0 | Planned |
+| DEP-10 | nanobind 3.1.x checked at configure | none | base, py | Claude Sonnet | 7.0 | Planned |
+| DEP-11 | C++20-clean tree and installed-header dialect gates (4 PRs) | none | base, gz, C++20 Werror builds | Codex high + Claude Sonnet | 7.0 | PR1 committed locally; the captures are in #3804 |
+| DEP-12 | Ubuntu 24.04 floor: (a) toolchain, CMake 3.28, CI; (b) library floors | none (DD-1) | base, gz, pkg, apt, dis, BSD | Orchestrator + Claude Sonnet | 7.0 | (a) committed locally |
+| DEP-13 | assimp 5.3.1 floor and a narrower assimp role | none (DD-7) | base, gz, gui, apt | Codex high | 7.0 | PR1 committed locally |
+| DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Committed locally |
+| DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Committed locally on DEP-14 (Q1 default) |
+| DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Claude Sonnet + orchestrator | 7.0 | Planned |
+| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Codex high | 7.0 | PR2 committed locally; PR2b to PR4 need approval |
+| DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Waiting for Q3 |
+| DEP-19 | Asset networking (libcurl, OpenSSL) | follow-up study (DD-6) | base, gz, pkg, py, wheel, ai | Codex ultra + Claude Sonnet | 7.0, before F | Waiting for Q2 |
+| DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Codex high, Muse | 7.0 / 7.x | (d), (e) committed locally |
+| DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, after M1d | Planned |
+| DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |
+| DEP-23 | Packaging section and downstream handoff notes | approval per upstream action | lint, local paths | Orchestrator | 7.0 / 7.x | Planned |
+| DEP-24 | 8.0 design record: optional assimp and FCL, backend facades, C++20 export | none | review | Orchestrator | 8.0 | Planned |
+| DEP-27a | Root NOTICE for derived code, installed and in wheels, with a coverage test | none | base, wheel | Codex high | 7.0 | Committed locally |
+| DEP-28 | Delete dead `dart/utils/*_` files and `tests/.deprecated` | none | base | Muse | 7.0 | Committed locally |
+| DEP-31 | Reject empty overlay font files before ImGui | none | base, gui | Muse | 7.0 | Committed locally |
+| DEP-32 | Skip voxel-grid rays longer than OctoMap can trace | none | base, py, gz | Codex | 7.0 | Committed locally |
+
+Ordering: DEP-0 lands first, because no lane notices a lost contact-surface
+probe today and many later packets touch installed headers. DEP-1 to DEP-12
+can then run in parallel lanes. Hunks in `World.cpp` and `lcpsolver`, the
+whole-library C++20 switch (DEP-21) and the clang-format reformat (DEP-22)
+wait for M1d or go through the PLAN-624 owner.
+
+Packet scope, non-goals and gates are in [packets.md](packets.md); an
+executor that finds the real scope materially different stops and reports.
+
+## Gates
+
+- **base:** `pixi run lint`, `pixi run check-lint`, `pixi run build`,
+  `pixi run test`; add `pixi run test-py`, `pixi run test-gui` and
+  `pixi run test-build-requirements` when bindings, the GUI or floors change.
+- **gz:** `pixi run -e gazebo test-gz`, `pixi run -e gazebo gz-compat-ionic`,
+  `pixi run -e gazebo-harmonic gz-compat-harmonic`,
+  `pixi run -e gazebo-jetty gz-compat-jetty`, compared against a base
+  variant (`GZ_COMPAT_BASE_VARIANT`), plus the gz API inventory check and the
+  `ContactSurfaceProbe` CTest.
+- **pkg:** `pixi run test-package-core` plus installed-consumer configures,
+  including one that sets `cmake_minimum_required(VERSION 3.5.1)` as
+  gz-physics Harmonic does.
+- **wheel:** cp312-abi3 build, repair, verify and test on every platform,
+  `abi3audit --strict`, `scripts/check_headless_wheel.py`, and the size before
+  and after.
+- **apt:** the stock-noble lane (DEP-12).
+- **dis:** configure with `-DFETCHCONTENT_FULLY_DISCONNECTED=ON`, with and
+  without the system packages.
+- **BSD:** the FreeBSD lane. **ai:** the AI infrastructure checks.
+
+## Risks
+
+- **A silently lost contact-surface feature in Gazebo.** gz-physics drops
+  contact-surface customization if `ContactSurface.hpp` stops parsing under
+  its probe, and gz-sim's tracked vehicles and conveyors stop working with no
+  error. Mitigation: DEP-0 first, the existing `ContactSurfaceProbe`, and the
+  header dialect gates.
+- **Mixed-dialect ODR or ABI drift** under the recommended C++ option.
+  Mitigation: the C++20 library rule, `abidiff`, bit-identical outputs and an
+  external C++17 consumer; fall back to C++17.
+- **Review bandwidth against the M1 critical path.** Mitigation: small
+  decision-free packets routed to Sonnet, Muse or Codex; the orchestrator
+  keeps integration.
+- **Behavior changes that users see:** the log format (DEP-14) and the
+  fetch-first default for source builds (DD-8). Each is a labeled change with
+  a migration note.
+- **Fetch-first defaults versus ODR.** A fetched copy of a library whose types
+  appear in DART's installed headers (Eigen, assimp, tinyxml2, FCL) can
+  disagree with the copy a consumer links. Mitigation: the per-dependency
+  matrix keeps such libraries system-first where correctness needs it.
+- **Platforms the floor drops:** Ubuntu 22.04 (intended), Debian 12 and
+  EL9. Fedora 44 and EPEL10 cannot build the core at any floor, because they
+  retired FCL and urdfdom.
+
+## Blockers and next actions
+
+1. The maintainer's answers to the second decision batch (Q1 to Q5 and the
+   approvals in [balance-review.md](balance-review.md) §4), and approval to
+   publish Wave 1.
+2. Wave 1 is committed locally: DEP-0, DEP-1, DEP-11 PR1, DEP-12(a) and
+   DEP-14, each on its own branch with two clean reviews; the Gazebo lanes
+   pass on the combined tree. Next: the decision-free packets in
+   [balance-review.md](balance-review.md) §3, "Order", item 2.
+3. Spikes still owed: the Werror C++20 budget on every toolchain, `abidiff`
+   between the C++17 and C++20 builds, the stock-noble Tier 2 build (GUI
+   and dartpy with the private Filament SDK and clang-20), and the triage of
+   the distro FCL assertion in `test_Distance`.

@@ -44,7 +44,7 @@ For a manual source build, configure with `-DDART_BUILD_DARTPY=ON` and
 
     $ cmake --build build --target dartpy
     $ cd python
-    $ PYTHONPATH=../build/python/dartpy python -m examples.demos
+    $ PYTHONPATH=../build/python python -m examples.demos
 
 Useful flags (`pixi run demos -- --help` for the full list):
 

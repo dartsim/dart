@@ -29,7 +29,7 @@ def _run_gui_subprocess(code):
             "import gc, sys\n"
             "sys.path.insert(0, sys.argv[1])\n"
             "import dartpy as dart\n" + textwrap.dedent(code),
-            str(Path(dart.__file__).resolve().parent),
+            str(Path(dart.__file__).resolve().parents[1]),
         ],
         env=environment,
         capture_output=True,

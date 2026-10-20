@@ -18,15 +18,14 @@ def test_wheel_matrix_and_platform_routing():
     job = workflow["jobs"]["build_wheels"]
     rows = job["strategy"]["matrix"]["include"]
     linux = [row for row in rows if row["os"] == "linux"]
+    # One cp312-abi3 wheel per platform serves Python 3.12 and newer.
     assert {row["build"] for row in linux} == {
-        f"{tag}-manylinux_{arch}"
-        for tag in ("cp312-abi3", "cp311", "cp310")
-        for arch in ("x86_64", "aarch64")
+        f"cp312-abi3-manylinux_{arch}" for arch in ("x86_64", "aarch64")
     }
     for row in rows:
-        abi3 = "-abi3-" in row["build"]
-        assert row["abi3"] == ("true" if abi3 else "false")
-        assert row["release_only"] == ("false" if abi3 else "true")
+        assert "-cp312-abi3-" in f"-{row['build']}"
+        assert row["abi3"] == "true"
+        assert row["release_only"] == "false"
     for row in linux:
         assert row["runner"] == (
             "ubuntu-24.04-arm" if "aarch64" in row["build"] else "ubuntu-24.04"
@@ -49,10 +48,8 @@ def test_wheel_matrix_and_platform_routing():
         assert "matrix.os != 'linux'" in steps[name]["if"]
 
 
-@pytest.mark.parametrize("python_tag", ["cp312", "cp311"])
-def test_linux_driver_repairs_and_tests_in_clean_base(
-    monkeypatch, tmp_path, python_tag
-):
+def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
+    python_tag = "cp312"
     spec = importlib.util.spec_from_file_location(
         "wheel_linux", ROOT / "scripts/wheel_linux.py"
     )
@@ -66,15 +63,16 @@ def test_linux_driver_repairs_and_tests_in_clean_base(
         module.subprocess, "run", lambda cmd, **kwargs: calls.append((cmd, kwargs))
     )
     module.main()
-    abi3 = python_tag == "cp312"
     build, repair, *smokes = [cmd for cmd, _ in calls]
     assert "BASE_IMAGE=quay.io/pypa/manylinux_2_28_aarch64" in build
     assert "--plat manylinux_2_28_aarch64 --only-plat" in repair[-1]
     assert f"/opt/python/{python_tag}-{python_tag}/bin/python" in repair[-1]
     assert "--exclude=build" in repair[-1]
-    assert ("abi3audit --strict" in repair[-1]) == abi3
+    assert "abi3audit --strict" in repair[-1]
+    assert "scikit-build-core" in repair[-1]
+    assert "setuptools" not in repair[-1]
     # The abi3 wheel is also tested on a newer interpreter.
-    smoke_tags = [python_tag, "cp313"] if abi3 else [python_tag]
+    smoke_tags = [python_tag, "cp313"]
     assert len(smokes) == len(smoke_tags)
     for smoke, tag in zip(smokes, smoke_tags):
         assert "quay.io/pypa/manylinux_2_28_aarch64" in smoke
@@ -85,13 +83,14 @@ def test_linux_driver_repairs_and_tests_in_clean_base(
     assert all(kwargs == {"check": True} for _, kwargs in calls)
 
 
-def test_linux_driver_rejects_unsupported_python(monkeypatch):
+@pytest.mark.parametrize("python_tag", ["cp311", "cp313", "cp314"])
+def test_linux_driver_rejects_unsupported_python(monkeypatch, python_tag):
     spec = importlib.util.spec_from_file_location(
         "wheel_linux", ROOT / "scripts/wheel_linux.py"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    monkeypatch.setattr("sys.argv", ["wheel_linux.py", "cp314"])
+    monkeypatch.setattr("sys.argv", ["wheel_linux.py", python_tag])
     with pytest.raises(SystemExit, match="2"):
         module.main()
 
