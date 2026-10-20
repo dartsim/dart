@@ -322,6 +322,7 @@
     only the double-precision collision and math libraries DART uses. Accept
     these libraries in installed DART consumers without requiring
     BulletDynamics or BulletSoftBody.
+    [#3901](https://github.com/dartsim/dart/pull/3901)
 
   * `find_package(DART)` no longer requires pkg-config: without it, the
     installed package reads assimp's version from assimp's own CMake package.
