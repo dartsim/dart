@@ -1,5 +1,7 @@
 # DART Changelog
 
+<!-- On main, add entries as changelog.d/ fragments (see changelog.d/README.md); release-* branches edit this file directly. -->
+
 ## DART 7
 
 ### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)

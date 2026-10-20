@@ -121,7 +121,8 @@ project home is `docs/dev_tasks/<task>/`.
 - Run `pixi run lint`, even for docs-only changes.
 - Run `pixi run build` and focused tests when C++ or Python behavior changes;
   GUI changes also run `pixi run test-gui`.
-- Use `dart-changelog` to decide whether `CHANGELOG.md` needs an entry.
+- Use `dart-changelog` to decide whether the change needs a `changelog.d/`
+  fragment; on `main`, only checkpoint assembly adds entries to `CHANGELOG.md`.
 - Promote durable facts and remove a completing `docs/dev_tasks/<task>/` folder.
 - Run `pixi run install-hooks` once per clone. Its fast staged safety check is
   not a substitute for the full lint requirement. When it blocks a commit, fix
