@@ -166,6 +166,13 @@ pixi run ctest --test-dir build/default/cpp/Release \
   -R '^(ContactSurfaceProbe|test_GazeboShim)$' --output-on-failure
 ```
 
+The downstream side of the same check is
+`scripts/check_gz_contact_surface.sh`: `pixi run -e gazebo test-gz` and the
+`gz-compat-<lane>` lanes run it after configuring gz-physics and fail unless
+gz-physics cached `DART_HAS_CONTACT_SURFACE_HEADER=1`, because a failed
+detection otherwise drops contact-surface customization without an error.
+`pixi run test-gz-compat-tools` tests the script against fake caches.
+
 These gates cover DART extension contracts. Continue to use the downstream
 Gazebo suites below for plugin and application compatibility.
 
@@ -276,5 +283,5 @@ collision-group changes run
 `pixi run gz-compat-jetty raycast-probe`. `tools/gazebo/README.md` covers the
 steps, the comparison, the expected-failure files, and the benchmark drivers;
 `pixi run test-gz-compat-tools` tests the comparison script, the benchmark
-world generator, the DART version override, and the DART C++ API inventory
-extractor.
+world generator, the DART version override, the DART C++ API inventory
+extractor, and the contact-surface gate.
