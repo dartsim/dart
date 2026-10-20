@@ -31,7 +31,7 @@ introspection. Native renames in the binding sources avoid all three.
 
 - The distribution and import name stays `dartpy`; documentation uses
   `import dartpy as dart`.
-- `dartpy` is a Python package: a private native extension (`dartpy._dartpy`)
+- `dartpy` is a Python package: a private native extension (`dartpy._core`)
   plus pure-Python helper modules that return native objects. There are no
   Python wrapper classes, with one exception: the small native capability
   handles described under "Model vocabulary".
@@ -317,7 +317,9 @@ The wheels link DART statically, so a second native copy would duplicate its
 global state. Third-party native extensions that operate on dartpy-owned
 objects are therefore not supported with the wheels; they need a shared DART
 installation. Python is the extension point, and later the plain-C hook ABI.
-Wheels export only `PyInit__dartpy`.
+The wheel extension should export only `PyInit__core`. It does not yet: it also
+exports symbols from the libraries it links statically, and no wheel check
+covers its export list.
 
 ## Batching
 
