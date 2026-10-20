@@ -45,6 +45,12 @@
     options and the pybind11 binder. Remove these options from configurations;
     a legacy `DART_DARTPY_BINDER=pybind11` value fails configure.
 
+  * Remove the WAM sample's eight GPL-3.0-or-later COLLADA visual meshes and
+    six JPEG textures. Its visuals now use the BSD-3-Clause STL meshes it
+    already shipped, without textures and with small geometry differences.
+    The Atlas v3 and WAM samples now carry their upstream licenses and
+    attribution.
+
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
