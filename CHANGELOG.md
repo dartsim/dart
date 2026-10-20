@@ -14,6 +14,7 @@
     [#3850](https://github.com/dartsim/dart/pull/3850)
 
   * IO builds require tinyxml2 10.0.0 or newer, the Ubuntu 24.04 LTS version.
+    [#3896](https://github.com/dartsim/dart/pull/3896)
 
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
