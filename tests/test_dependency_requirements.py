@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -162,6 +163,11 @@ def test_component_eigen_finder_generation(tmp_path, build_version):
         return
     assert result.returncode == 0, output
     finder = modules / "DARTFindEigen3.cmake"
+    # Windows file times advance in clock ticks of about 16 ms, so an edit made
+    # right after the configure can share build.ninja's time.
+    configured = (tmp_path / "build/build.ninja").stat().st_mtime_ns
+    while time.time_ns() < configured + 100_000_000:
+        time.sleep(0.01)
     finder.write_text(finder.read_text() + "\n# Updated finder\n")
     result = subprocess.run(
         [shutil.which("cmake"), "--build", str(tmp_path / "build")],
