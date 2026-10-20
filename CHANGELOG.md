@@ -76,6 +76,10 @@
 
 * API
 
+  * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
+    256 MiB of decoded RGBA data, before allocating them.
+    [#3860](https://github.com/dartsim/dart/pull/3860)
+
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
