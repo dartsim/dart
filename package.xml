@@ -27,7 +27,7 @@
   <depend>eigen</depend>
   <depend>libfcl-dev</depend>
   <depend>liburdfdom-dev</depend>
-  <depend>tinyxml2</depend>
+  <depend version_gte="10.0.0">tinyxml2</depend>
   <depend>sdformat</depend>
 
   <!-- The following tags are recommended by REP-136 -->

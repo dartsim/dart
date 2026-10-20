@@ -43,11 +43,11 @@ if(tinyxml2_FOUND)
       set(tinyxml2_VERSION "${TINYXML2_VERSION}")
     endif()
   endif()
-  dart_check_package_version(tinyxml2 9.0.0)
+  dart_check_package_version(tinyxml2 10.0.0)
 endif()
 
 if(NOT _tinyxml2_config_found)
-  find_package(tinyxml2 9.0.0 QUIET MODULE)
+  find_package(tinyxml2 10.0.0 QUIET MODULE)
 endif()
 unset(_tinyxml2_config_found)
 
