@@ -4,7 +4,8 @@ This document owns the development branch's component map and change-routing
 boundaries. Architecture changes on `main` follow the compatibility rules in
 `AGENTS.md`: preserve C++17, installed APIs, package components, and the C++
 API and behavior that Gazebo/gz-physics and gz-sim use. ABI-sensitive
-interfaces and default behavior change only with maintainer approval.
+interfaces and default behavior change only with maintainer approval, apart
+from the exceptions `AGENTS.md` lists.
 
 ## Component Layers
 

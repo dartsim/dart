@@ -55,7 +55,7 @@ void bind_gui_probe(nb::module_& m);
 void dart_viewer(nb::module_& m);
 #endif
 
-NB_MODULE(_dartpy, m)
+NB_MODULE(_core, m)
 {
   m.doc() = "The private native extension of dartpy";
 
