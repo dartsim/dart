@@ -59,10 +59,9 @@ void bind_gui_probe(nb::module_& m);
 void dart_viewer(nb::module_& m);
 #endif
 
-NB_MODULE(dartpy, m)
+NB_MODULE(_dartpy, m)
 {
-  dartnb::bindConstructionGuard(m);
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  m.doc() = "The private native extension of dartpy";
 
 #ifdef DARTPY_VERSION_INFO
   m.attr("__version__") = DARTPY_VERSION_INFO;
@@ -70,26 +69,34 @@ NB_MODULE(dartpy, m)
   m.attr("__version__") = "dev";
 #endif
 
-  eigen_geometry(m);
+  // dartpy/__init__.py imports this extension while the package initializes,
+  // so the package module is already in sys.modules. Binding into it gives
+  // every public type its canonical module (dartpy.dynamics.Skeleton has
+  // __module__ "dartpy.dynamics") and registers each submodule in sys.modules
+  // under its public name; no dartpy._* module leaks into the public surface.
+  nb::module_ dartpy = nb::module_::import_("dartpy");
+  dartnb::bindConstructionGuard(dartpy);
+
+  eigen_geometry(dartpy);
 
   // First: later nanobind exception registrations derive from these types, and
   // their translators run before this module's catch-all translator.
-  dart_errors(m);
+  dart_errors(dartpy);
 #ifdef DARTPY_TESTING_HOOKS
-  dart_testing(m);
+  dart_testing(dartpy);
 #endif
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-  dart_gui(m);
-  bind_gui_probe(m);
+  dart_common(dartpy);
+  dart_math(dartpy);
+  dart_optimizer(dartpy);
+  dart_dynamics(dartpy);
+  dart_collision(dartpy);
+  dart_constraint(dartpy);
+  dart_simulation(dartpy);
+  dart_utils(dartpy);
+  dart_gui(dartpy);
+  bind_gui_probe(dartpy);
 #ifdef DARTPY_HAS_VIEWER
-  dart_viewer(m);
+  dart_viewer(dartpy);
 #endif
 }
 

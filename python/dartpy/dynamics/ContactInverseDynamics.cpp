@@ -70,7 +70,7 @@ void ContactInverseDynamics(nb::module_& m)
             self.bodyNode = bodyNode;
           },
           nb::for_setter(nb::keep_alive<1, 2>()),
-          nb::for_setter(nb::arg("value").none()))
+          nb::for_setter(nb::arg("value")))
       .def_rw(
           "localOffset",
           &CID::Contact::localOffset,

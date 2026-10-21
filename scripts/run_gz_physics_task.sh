@@ -14,15 +14,18 @@ fi
 export DART_PARALLEL_JOBS
 
 gz_physics_build_dir="${GZ_PHYSICS_BUILD_DIR:-.deps/gz-physics/build}"
+check_contact_surface="$(dirname "${BASH_SOURCE[0]}")/check_gz_contact_surface.sh"
 
 case "$task" in
   build)
+    bash "$check_contact_surface" "$gz_physics_build_dir"
     cmake \
       --build "$gz_physics_build_dir" \
       --parallel "$DART_PARALLEL_JOBS" \
       --target all
     ;;
   install)
+    bash "$check_contact_surface" "$gz_physics_build_dir"
     for plugin in \
       dartsim-plugin \
       tpe-plugin \

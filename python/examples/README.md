@@ -23,7 +23,7 @@ Run it:
 or manually, with dartpy (`pixi run build-py-dev` builds it):
 
     $ cd python
-    $ PYTHONPATH=../build/default/cpp/Release/python/dartpy pixi run python -m examples.demos
+    $ PYTHONPATH=../build/default/cpp/Release/python pixi run python -m examples.demos
 
 Useful flags (`python -m examples.demos --help` for the full list):
 
@@ -75,7 +75,7 @@ and skip device-dependent rendering tests:
 
 or directly:
 
-    $ PYTHONPATH=build/default/cpp/Release/python/dartpy python python/examples/hello_world/main.py
+    $ PYTHONPATH=build/default/cpp/Release/python python python/examples/hello_world/main.py
 
 Follow the instructions detailed in the console, or see each example's own
 docstring/README for details.

@@ -21,7 +21,7 @@ def _run_isolated(code, extra_environment=None):
             "-c",
             "import sys; sys.path.insert(0, sys.argv[1]); import dartpy as dart\n"
             + code,
-            str(Path(dart.__file__).resolve().parent),
+            str(Path(dart.__file__).resolve().parents[1]),
         ],
         env=environment,
         capture_output=True,
