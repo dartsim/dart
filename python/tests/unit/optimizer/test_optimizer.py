@@ -58,6 +58,27 @@ def test_function_gradient_override_is_called():
     assert calls == ["gradient"]
 
 
+def test_override_arguments_are_read_only_but_gradient_is_writable():
+    seen = {}
+
+    class CheckingFunction(dart.optimizer.Function):
+        def eval(self, x):
+            seen["x"] = x.flags.writeable
+            return float(x[0] ** 2)
+
+        def evalGradient(self, x, grad):
+            seen["grad"] = grad.flags.writeable
+            grad[:] = 2 * x
+
+    problem = dart.optimizer.Problem(1)
+    problem.setInitialGuess([1.0])
+    problem.setObjective(CheckingFunction())
+    solver = dart.optimizer.GradientDescentSolver(problem)
+    solver.setNumMaxIterations(1)
+    solver.solve()
+    assert seen == {"x": False, "grad": True}
+
+
 def test_gradient_callbacks_retain_independent_arrays_and_apply_updates():
     gradients = []
     snapshots = []
