@@ -198,10 +198,14 @@ def test_soft_generator_metadata_matches_native_point_and_face_order():
         with pytest.raises(IndexError, match="face index"):
             body.get_face(index)
     saved = (positions.copy(), masses.copy(), faces.copy())
+    for array in (positions, masses, faces, body.get_face(0)):
+        with pytest.raises(ValueError, match="assignment destination is read-only"):
+            array[:] = 0
+    positions, masses, faces = (array.copy() for array in (positions, masses, faces))
     positions[:] = 99
     masses[:] = 99
     faces[:] = 0
-    body.get_face(0)[:] = 0
+    body.get_face(0).copy()[:] = 0
     for actual, expected in zip(
         (properties.point_rest_positions, properties.point_masses, properties.faces),
         saved,
