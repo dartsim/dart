@@ -21,10 +21,16 @@ Priority order is document order. Active implementation handoff remains in
   temporary project home is retired. See the
   [host and model architecture](../onboarding/architecture.md#python-demo-catalog)
   and [remaining M6b scope](../dev_tasks/dart7_python_first/README.md#demo-consolidation-d31b).
-- Next step: M0 exited on 2026-10-14. Land the open M1 packets, then publish
-  the rest of the serial native chain; see the
-  [M1 packet table](../dev_tasks/dart7_python_first/RESUME.md). M5a's rename
-  table runs in parallel.
+- Next step: M0 exited on 2026-10-14. Four chains run in parallel, Python
+  first: M5a's snapshot, package, arrays, errors and `Transform` packets (in
+  review or merged; D4, D6, D11, D22, D28 and D29 fix their central public
+  names, and the rulebook governs the rest), then the naming rulebook, the facade slice and
+  the rulebook-driven API areas; compile and edit (M1b), counted stepping
+  (M1d), the remapping clone (M1i) and `WorldBatch`; the typed solver policy
+  (M1e), the written contract and the rigid domain boundary; and M6b through
+  checkpoint C2. Step-path PRs land in the program's order, each re-qualified
+  on current `main`; see the
+  [M1 packet table](../dev_tasks/dart7_python_first/RESUME.md).
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
@@ -78,8 +84,8 @@ Priority order is document order. Active implementation handoff remains in
   initial-point reset proxy have representative gates. Reduced demos do not
   establish full paper parity.
 - Next step: The unmet full-parity 6.20 goal now targets DART 7.0, since there is
-  no 6.21 release. Core changes outside the parity rows pause during PLAN-624's
-  step-path quiet window. Remaining rows are motor-noise push recovery,
+  no 6.21 release. Step-path changes outside the parity rows land in PLAN-624's
+  program-owned order. Remaining rows are motor-noise push recovery,
   noisy-floor biped, soft-contact walking, four-link flexible-foot comparison,
   and hand/arm scenes (finger flick, arm fold, pinch grasp). Push recovery remains partial:
   single-trajectory thresholds do not establish robust parity (see #3431).

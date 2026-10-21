@@ -172,7 +172,8 @@ set_tests_properties(
 # The NSGS and FBF thread-count determinism checks step 130-box scenes many
 # times. Under gcov they outlast test_ConstraintSolver's 3000-second budget
 # even at one and two threads (the NSGS check alone took 16 minutes), so the
-# coverage job (`--label-exclude no-coverage-value` in pixi's build-coverage)
+# coverage job (`--label-exclude no-coverage-value` in
+# `pixi run -e coverage build-coverage`)
 # skips this entry; every functional CI job still runs it.
 add_test(
   NAME test_ConstraintSolver_thread_determinism
