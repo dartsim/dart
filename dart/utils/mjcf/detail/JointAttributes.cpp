@@ -88,6 +88,21 @@ Errors appendJointAttributes(
     attributes.mAxis = getAttributeVector3d(element, "axis").normalized();
   }
 
+  // limited (unset means auto)
+  if (hasAttribute(element, "limited")) {
+    const std::string limited = getAttributeString(element, "limited");
+    if (limited == "auto") {
+      attributes.mLimited.reset();
+    } else if (limited == "true" || limited == "false") {
+      attributes.mLimited = limited == "true";
+    } else {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "Invalid attribute for 'limited': " + limited);
+      return errors;
+    }
+  }
+
   // range
   if (hasAttribute(element, "range")) {
     attributes.mRange = getAttributeVector2d(element, "range");
