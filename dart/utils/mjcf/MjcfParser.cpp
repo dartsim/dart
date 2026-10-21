@@ -49,6 +49,7 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include <cstddef>
@@ -72,12 +73,22 @@ dynamics::BodyNode::Properties createBodyProperties(
   }
 
   // Inertial
-  if (mjcfBody.getNumGeoms() > 0) {
+  if (mjcfBody.hasInertial() || mjcfBody.getNumGeoms() > 0) {
     const detail::Inertial& mjcfInertial = mjcfBody.getInertial();
 
     bodyProps.mInertia.setMass(mjcfInertial.getMass());
     bodyProps.mInertia.setLocalCOM(
         mjcfInertial.getRelativeTransform().translation());
+    if (mjcfBody.hasInertial()) {
+      const auto& diag = mjcfInertial.getDiagInertia();
+      const auto& offDiag = mjcfInertial.getOffDiagInertia();
+      Eigen::Matrix3d moment;
+      moment << diag[0], offDiag[0], offDiag[1], offDiag[0], diag[1],
+          offDiag[2], offDiag[1], offDiag[2], diag[2];
+      const Eigen::Matrix3d rotation
+          = mjcfInertial.getRelativeTransform().linear();
+      bodyProps.mInertia.setMoment(rotation * moment * rotation.transpose());
+    }
   }
 
   return bodyProps;
@@ -100,6 +111,21 @@ void createJointCommonProperties(
     // first joint of a root body's joint stack).
     props.mName = "World_Joint";
   }
+}
+
+//==============================================================================
+template <typename Properties>
+void setPositionLimits(
+    Properties& props, std::size_t index, const detail::Joint& mjcfJoint)
+{
+  props.mIsPositionLimitEnforced
+      = props.mIsPositionLimitEnforced || mjcfJoint.isLimited();
+  props.mPositionLowerLimits[index]
+      = mjcfJoint.isLimited() ? mjcfJoint.getRange()[0]
+                              : -std::numeric_limits<double>::infinity();
+  props.mPositionUpperLimits[index]
+      = mjcfJoint.isLimited() ? mjcfJoint.getRange()[1]
+                              : std::numeric_limits<double>::infinity();
 }
 
 //==============================================================================
@@ -205,9 +231,7 @@ dynamics::PrismaticJoint::Properties createPrismaticJointProperties(
       = parentBodyToChildBody * props.mT_ChildBodyToJoint;
 
   // Limits
-  props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
-  props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
-  props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+  setPositionLimits(props, 0, mjcfJoint);
 
   // Damping
   props.mDampingCoefficients[0] = mjcfJoint.getDamping();
@@ -246,9 +270,7 @@ dynamics::RevoluteJoint::Properties createRevoluteJointProperties(
       = parentBodyToChildBody * props.mT_ChildBodyToJoint;
 
   // Limits
-  props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
-  props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
-  props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+  setPositionLimits(props, 0, mjcfJoint);
 
   // Damping
   props.mDampingCoefficients[0] = mjcfJoint.getDamping();
@@ -348,9 +370,7 @@ createJointChainForStackedJoints(
       props.mT_ChildBodyToJoint = childBodyToJoint;
       props.mT_ParentBodyToJoint = parentBodyToJoint;
 
-      props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
-      props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
-      props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+      setPositionLimits(props, 0, mjcfJoint);
 
       props.mDampingCoefficients[0] = mjcfJoint.getDamping();
       props.mRestPositions[0] = mjcfJoint.getSpringRef();
@@ -371,9 +391,7 @@ createJointChainForStackedJoints(
       props.mT_ChildBodyToJoint = childBodyToJoint;
       props.mT_ParentBodyToJoint = parentBodyToJoint;
 
-      props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
-      props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
-      props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+      setPositionLimits(props, 0, mjcfJoint);
 
       props.mDampingCoefficients[0] = mjcfJoint.getDamping();
       props.mRestPositions[0] = mjcfJoint.getSpringRef();
@@ -433,12 +451,8 @@ createJointAndBodyNodePairForMultipleJoints(
           = parentBodyToChildBody * props.mT_ChildBodyToJoint;
 
       // Limits
-      props.mIsPositionLimitEnforced
-          = mjcfJoint0.isLimited() && mjcfJoint1.isLimited();
-      props.mPositionLowerLimits[0] = mjcfJoint0.getRange()[0];
-      props.mPositionLowerLimits[1] = mjcfJoint1.getRange()[0];
-      props.mPositionUpperLimits[0] = mjcfJoint0.getRange()[1];
-      props.mPositionUpperLimits[1] = mjcfJoint1.getRange()[1];
+      setPositionLimits(props, 0, mjcfJoint0);
+      setPositionLimits(props, 1, mjcfJoint1);
 
       // Damping
       props.mDampingCoefficients[0] = mjcfJoint0.getDamping();
@@ -489,14 +503,9 @@ createJointAndBodyNodePairForMultipleJoints(
           = parentBodyToChildBody * props.mT_ChildBodyToJoint;
 
       // Limits
-      props.mIsPositionLimitEnforced
-          = mjcfJoint0.isLimited() && mjcfJoint1.isLimited();
-      props.mPositionLowerLimits[0] = mjcfJoint0.getRange()[0];
-      props.mPositionLowerLimits[1] = mjcfJoint1.getRange()[0];
-      props.mPositionLowerLimits[2] = mjcfJoint2.getRange()[0];
-      props.mPositionUpperLimits[0] = mjcfJoint0.getRange()[1];
-      props.mPositionUpperLimits[1] = mjcfJoint1.getRange()[1];
-      props.mPositionUpperLimits[2] = mjcfJoint2.getRange()[1];
+      setPositionLimits(props, 0, mjcfJoint0);
+      setPositionLimits(props, 1, mjcfJoint1);
+      setPositionLimits(props, 2, mjcfJoint2);
 
       // Damping
       props.mDampingCoefficients[0] = mjcfJoint0.getDamping();
@@ -702,7 +711,9 @@ bool populateSkeletonRecurse(
     dynamics::BodyNode* parentBodyNode,
     const detail::Body& mjcfBody,
     const detail::Asset& mjcfAsset,
-    detail::GeomCollisionFilter& collisionFilter)
+    detail::GeomCollisionFilter& collisionFilter,
+    bool& hasIgnoredBallLimits,
+    std::string& firstIgnoredBallJoint)
 {
   dynamics::BodyNode* bodyNode = nullptr;
   dynamics::Joint* joint = nullptr;
@@ -733,6 +744,11 @@ bool populateSkeletonRecurse(
       std::tie(joint, bodyNode)
           = skel->createJointAndBodyNodePair<dynamics::BallJoint>(
               parentBodyNode, jointProps, bodyProps);
+      if (!hasIgnoredBallLimits && mjcfJoint.isLimited()) {
+        hasIgnoredBallLimits = true;
+        firstIgnoredBallJoint
+            = mjcfJoint.getName().empty() ? "(noname)" : mjcfJoint.getName();
+      }
     } else if (mjcfJoint.getType() == detail::JointType::SLIDE) {
       const auto jointProps = createPrismaticJointProperties(
           parentBodyNode, bodyProps, mjcfBody, mjcfJoint);
@@ -775,7 +791,9 @@ bool populateSkeletonRecurse(
             bodyNode,
             mjcfBody.getChildBody(i),
             mjcfAsset,
-            collisionFilter)) {
+            collisionFilter,
+            hasIgnoredBallLimits,
+            firstIgnoredBallJoint)) {
       return false;
     }
   }
@@ -787,12 +805,20 @@ bool populateSkeletonRecurse(
 dynamics::SkeletonPtr createSkeleton(
     const detail::Body& mjcfBody,
     const detail::Asset& mjcfAsset,
-    detail::GeomCollisionFilter& collisionFilter)
+    detail::GeomCollisionFilter& collisionFilter,
+    bool& hasIgnoredBallLimits,
+    std::string& firstIgnoredBallJoint)
 {
   dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
 
   const bool success = populateSkeletonRecurse(
-      skel, nullptr, mjcfBody, mjcfAsset, collisionFilter);
+      skel,
+      nullptr,
+      mjcfBody,
+      mjcfAsset,
+      collisionFilter,
+      hasIgnoredBallLimits,
+      firstIgnoredBallJoint);
   if (!success) {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
@@ -819,11 +845,18 @@ simulation::WorldPtr createWorld(
   // single World-wide CollisionFilter. See GeomCollisionFilter for details.
   auto collisionFilter = std::make_shared<detail::GeomCollisionFilter>();
 
+  bool hasIgnoredBallLimits = false;
+  std::string firstIgnoredBallJoint;
+
   // Parse root <body> elements
   for (std::size_t i = 0; i < mjcfWorldbody.getNumRootBodies(); ++i) {
     const detail::Body& mjcfRootBody = mjcfWorldbody.getRootBody(i);
-    const dynamics::SkeletonPtr& skel
-        = createSkeleton(mjcfRootBody, mjcfAsset, *collisionFilter);
+    const dynamics::SkeletonPtr& skel = createSkeleton(
+        mjcfRootBody,
+        mjcfAsset,
+        *collisionFilter,
+        hasIgnoredBallLimits,
+        firstIgnoredBallJoint);
 
     if (skel == nullptr) {
       dterr << "[MjcfParser] Failed to parse a Skeleton. Stop parsing the "
@@ -951,6 +984,11 @@ simulation::WorldPtr createWorld(
   // etc.), which GeomCollisionFilter inherits from BodyNodeCollisionFilter.
   world->getConstraintSolver()->getCollisionOption().collisionFilter
       = collisionFilter;
+
+  if (hasIgnoredBallLimits) {
+    dtwarn << "[MjcfParser] Ball joint limits are not supported yet, ignored. "
+           << "First limited ball joint: '" << firstIgnoredBallJoint << "'.\n";
+  }
 
   return world;
 }
