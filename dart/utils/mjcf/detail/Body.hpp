@@ -87,6 +87,9 @@ public:
   /// missing, then the parser must be failed to parse the file.
   const Inertial& getInertial() const;
 
+  /// Returns whether an explicit <inertial> element was declared.
+  bool hasInertial() const;
+
   /// Returns the number of <joint> elements.
   std::size_t getNumJoints() const;
 

@@ -8,13 +8,13 @@ From the project root, you can use pixi to build and serve the documentation:
 
 ```console
 # Build the documentation
-pixi run docs-build
+pixi run -e docs docs-build
 
 # Build and serve the documentation (accessible at http://localhost:8000)
-pixi run docs-serve
+pixi run -e docs docs-serve
 
 # Clean the build directory
-pixi run docs-clean
+pixi run -e docs docs-clean
 ```
 
 ### Using pip and Sphinx directly
