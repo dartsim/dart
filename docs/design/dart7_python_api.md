@@ -15,8 +15,9 @@ between those audiences are resolved by layering, not by dropping one of them.
 
 The C++ API stays source- and behavior-compatible for the subset that
 gz-physics and gz-sim use. Other C++ APIs are best effort: they may change,
-but each public-API or ABI-layout change needs maintainer approval. No
-deprecated C++ API is removed during 7.x.
+but each public-API or ABI-layout change needs maintainer approval, apart from
+the ABI window `AGENTS.md` records for classes Gazebo neither subclasses nor
+reads. No deprecated C++ API is removed during 7.x.
 
 DART 7.0 is a **clean break for Python**:
 - there are no runtime aliases or deprecation shims for the 6.x names;
@@ -31,7 +32,7 @@ introspection. Native renames in the binding sources avoid all three.
 
 - The distribution and import name stays `dartpy`; documentation uses
   `import dartpy as dart`.
-- `dartpy` is a Python package: a private native extension (`dartpy._dartpy`)
+- `dartpy` is a Python package: a private native extension (`dartpy._core`)
   plus pure-Python helper modules that return native objects. There are no
   Python wrapper classes, with one exception: the small native capability
   handles described under "Model vocabulary".
@@ -60,9 +61,12 @@ introspection. Native renames in the binding sources avoid all three.
 - Typed stubs (`.pyi` plus `py.typed`) ship in every wheel. CI fails on stub
   drift.
 
-A single reviewed rename table drives the binding-source rename, the stubs, the
-user codemod and the migration guide. Docstrings generated from the C++
-documentation pass through the same table.
+The API is designed first, area by area, under one naming rulebook the
+maintainer approves. The old-to-new mapping generated from those designs drives
+the user codemod, the stubs and the migration guide; old members with no place
+in 7.0 are dropped. Docstrings generated from the C++ documentation pass
+through the same mapping, and the generated API reference is built from the
+stubs and docstrings.
 
 ## Model vocabulary
 
@@ -158,13 +162,13 @@ Not bound in Python: internal preparation steps, the C++ recording accessor
 Worlds have two explicit modes on the same objects:
 
 - **Editing mode.** The object graph is freely mutable.
-- **Simulation mode.** `world.compile()` prepares dense internal data, may
-  restructure internal storage for locality while public order stays fixed,
-  and freezes topology. Steady-state stepping performs **zero dynamic
+- **Simulation mode.** `world.compile()` prepares the World's internal step
+  data, may restructure internal storage for locality while public order stays
+  fixed, and freezes topology. Steady-state stepping performs **zero dynamic
   allocation** on the DART and Bullet collision detectors.
 
 Worlds that were never compiled stay lazy, which is the C++ default. They
-prepare the same dense data on their first step and rebuild only the affected
+prepare the same data on their first step and rebuild only the affected
 parts after an edit, keeping object addresses stable, so downstream runtime
 edits keep working. Lazy and compiled worlds run the same kernels.
 
@@ -177,7 +181,7 @@ Every mutator belongs to exactly one class:
 
 | Class | Allowed while compiled | Examples | Effect |
 | --- | --- | --- | --- |
-| Topology | Only inside `edit()` | add/remove multibody, link, joint, node or aspect; joint type changes; re-parenting, splitting or merging; shape replacement; collision-group membership; detector or solver replacement; manual constraints; attaching or detaching actuator rows; sensors and hooks | New topology revision |
+| Topology | Only inside `edit()` | add/remove multibody, link, joint, node or aspect; joint type changes; re-parenting, splitting or merging; shape replacement; collision-group membership; detector or solver replacement; manual constraints; attaching or detaching actuator rows; sensors and hooks; replacing the mesh data or voxel occupancy of an attached shape | New topology revision |
 | Parameter | Yes | mass, inertia, center of mass; limits; spring, damping, rest position, friction; actuator gains and bounds; contact material; gravity; time step; actuator kind on lazy worlds | New parameter revision, no allocation |
 | State and control | Yes | positions, velocities, commands, external forces, actuator targets | No model revision; caches invalidate and sleeping bodies wake as today |
 | Cosmetic | Yes | appearance, material, visibility, shadows, segmentation id | None |
@@ -189,10 +193,15 @@ kind bumps a revision, because articulated-body dynamics branch on it.
 Strict enforcement has two tiers:
 
 1. DART-owned mutators check the owning World and raise before changing state.
-   Adding a Multibody that another World owns raises.
+   Adding a Multibody that another World owns raises. Worlds that were never
+   compiled keep DART 6 behavior instead: they track no ownership, so a
+   Multibody may join several of them, and only a re-entrant `step()` and
+   topology edits from the stepping World's own callbacks raise.
 2. Writes through raw references (such as collision-option fields or
-   collision-group contents) are detected at the next `step()` or `compile()`,
-   which raises. This tier is documented as detected late.
+   collision-group contents) to a compiled World are detected at the next
+   `step()` or `compile()`, which raises. This tier is documented as detected
+   late. Never-compiled Worlds do not track such writes; `compile()` validates
+   the model when it begins.
 
 Python exposes typed setters instead of raw references. Tests cover every
 mutation path downstream simulators use: re-parenting, adding and removing
@@ -215,9 +224,12 @@ models, shape poses, inertia, and detector and solver replacement.
   Revision numbers are per World and are never compared across Worlds. A
   mismatched digest raises. `WorldBatch.restore_state(state, indices=...)`
   broadcasts one snapshot to selected clones.
-- `world.capture_checkpoint()` returns an **exact checkpoint**. It covers
-  declared built-in configurations at completed-step boundaries on the same
-  build and platform. Restoring it re-steps bit-identically. A mismatched
+- `world.capture_checkpoint()` returns an **exact checkpoint**. It restores
+  only into the World that captured it, at completed-step boundaries on the
+  same build and platform, for declared built-in configurations: in 7.0, the
+  DART collision detector (and ODE if it qualifies) with the Dantzig or PGS
+  solver. Capturing one with any other detector, such as FCL or Bullet, raises.
+  Restoring it re-steps bit-identically. A mismatched
   topology, parameter set, build, solver or extension raises
   `CheckpointMismatchError`.
 - Restoring never goes through ordinary setters, which have side effects (waking
@@ -317,12 +329,15 @@ The wheels link DART statically, so a second native copy would duplicate its
 global state. Third-party native extensions that operate on dartpy-owned
 objects are therefore not supported with the wheels; they need a shared DART
 installation. Python is the extension point, and later the plain-C hook ABI.
-Wheels export only `PyInit__dartpy`.
+The wheel extension should export only `PyInit__core`. It does not yet: it also
+exports symbols from the libraries it links statically, and no wheel check
+covers its export list.
 
 ## Batching
 
-`dart.WorldBatch` steps independent compiled clones in parallel, on one
-deterministic executor shared across worlds.
+`dart.WorldBatch` steps independent compiled clones in parallel and in
+lockstep, on a deterministic executor that the batch owns; each clone steps
+single-threaded. An executor shared across independent Worlds is outside 7.0.
 
 Clones are produced by a remapping clone that copies the following by stable
 identifiers:
@@ -337,12 +352,14 @@ identifiers:
 
 Anything that cannot be cloned, such as a handler without a clone hook, makes
 construction raise. Nothing is silently dropped. Clone `i` derives its random
-seed from the base seed and `i`.
+seed from the base seed and `i`. Until each solver owns its random state, a
+World that uses randomized PGS also makes construction raise.
 
 The gate for remapping clones uses URDF, SDF, MJCF-with-weld and custom-filter
 scenes. Without randomness, clone `i` stepped `n` times matches the source
-stepped `n` times. With randomized solver passes or seeded sensor noise, clone
-`i` matches a serial reference World seeded like clone `i`.
+stepped `n` times. With seeded sensor noise, and with randomized solver passes
+once solvers own their random state, clone `i` matches a serial reference World
+seeded like clone `i`.
 
 Batch arrays use the World's degree-of-freedom order, shaped `(count, ...)`.
 
@@ -407,7 +424,10 @@ Binding rules:
 - roll-pitch-yaw construction does not reuse the existing XYZ Euler helper,
   whose convention differs;
 - every C++ function that takes a non-const rigid-transform reference is
-  audited before binding.
+  audited before binding;
+- `None` for a frame argument means the world frame where C++ defaults that
+  argument to `Frame::World()`, keeps the meaning C++ documents for a null
+  frame elsewhere, and otherwise raises `TypeError`.
 
 ## Loading and building models
 

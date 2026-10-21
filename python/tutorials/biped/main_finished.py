@@ -201,7 +201,7 @@ def solve_ik(biped):
     biped.getDof("j_shin_right").setPosition(-1.4)
     biped.getDof("j_bicep_left_x").setPosition(0.8)
     biped.getDof("j_bicep_right_x").setPosition(-0.8)
-    new_pose = biped.getPositions()
+    new_pose = biped.getPositions().copy()
     heel = biped.getBodyNode("h_heel_left")
     toe = biped.getBodyNode("h_toe_left")
     initial_height = -0.8
