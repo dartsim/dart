@@ -13,6 +13,25 @@
     Ubuntu 22.04 floor.
     [#3850](https://github.com/dartsim/dart/pull/3850)
 
+  * **Behavior change:** MJCF loading now enforces hinge and slide limits,
+    including inherited defaults and MuJoCo 3.x automatic limits; applies
+    declared mass, center of mass, and rotated inertia even without geoms;
+    places bodies without `pos` at the parent origin in local coordinates;
+    orthogonalizes `xyaxes`; and converts hinge `springref` from degrees.
+    Hinge and ball ranges are now read in degrees under
+    `<compiler angle="degree">` (MuJoCo's default), rather than as raw numbers.
+    Coordinates without limits now report infinite position limits instead of
+    the declared range (often zero).
+    Invalid declarations now fail to load: unknown `limited` or `autolimits`
+    values, nonzero ranges with automatic limits under `autolimits="false"`,
+    reversed or non-finite limited ranges, a nonzero lower limit on a limited
+    ball joint, or `fullinertia` combined with an orientation attribute.
+    Models that relied on ignored limits or inertia will simulate differently;
+    use `limited="false"` to disable limits explicitly. Ball-joint angular limits
+    remain unsupported and warn once per model; support is deferred to a later
+    release.
+    [#3877](https://github.com/dartsim/dart/pull/3877)
+
   * `dart/utils/urdf/urdf.hpp`, through `urdf_world_parser.hpp`, no longer
     includes `BackwardCompatibility.hpp`. Code using its
     `URDFDOM_HEADERS_VERSION_*` macros must include
