@@ -6,6 +6,7 @@
       "common",
       "constraint",
       "dynamics",
+      "experimental",
       "gui",
       "math",
       "optimizer",
@@ -1502,6 +1503,15 @@
       "camel_case": 1,
       "get_set": 0,
       "public": 10
+    }
+  },
+  "dartpy.experimental": {
+    "classes": {},
+    "containers": [],
+    "functions": {
+      "camel_case": 0,
+      "get_set": 0,
+      "public": 0
     }
   },
   "dartpy.gui": {
