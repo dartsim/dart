@@ -70,13 +70,15 @@ RUN curl -fsSL https://github.com/danfis/libccd/archive/refs/tags/v2.1.tar.gz -o
     && rm -rf libccd libccd.tar.gz
 
 # fcl
+COPY patches/fcl-0.7.0-gjk-zero-direction.patch /tmp/fcl-0.7.0-gjk-zero-direction.patch
 RUN curl -fsSL https://github.com/flexible-collision-library/fcl/archive/refs/tags/0.7.0.tar.gz -o fcl.tar.gz \
     && echo "90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc  fcl.tar.gz" | sha256sum -c - \
     && mkdir fcl && tar -xf fcl.tar.gz -C fcl --strip-components=1 \
+    && git -C fcl apply /tmp/fcl-0.7.0-gjk-zero-direction.patch \
     && mkdir -p fcl/build \
     && cmake fcl -B fcl/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build fcl/build --target install -j${NUM_CORES} \
-    && rm -rf fcl fcl.tar.gz
+    && rm -rf fcl fcl.tar.gz /tmp/fcl-0.7.0-gjk-zero-direction.patch
 
 # tinyxml2
 RUN curl -fsSL https://github.com/leethomason/tinyxml2/archive/refs/tags/11.0.0.tar.gz -o tinyxml2.tar.gz \
