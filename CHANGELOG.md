@@ -74,6 +74,10 @@
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
 
+  * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
+    meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
