@@ -121,6 +121,14 @@
 
 * Collision
 
+  * Fix distance queries and nearest points for touching convex pairs in FCL's
+    libccd GJK distance in Linux wheels, demonstrated for ellipsoid,
+    ellipsoid-sphere and box pairs. FCL 0.7.0 can abort with assertions (as on
+    Ubuntu 24.04), or return -1 and zero nearest points. Only Linux wheels carry
+    the fix; every other build, including the macOS and Windows wheels, pixi and
+    conda-forge builds, and source builds using system FCL, remains affected.
+    [#3870](https://github.com/dartsim/dart/pull/3870)
+
   * Fix undefined behavior when a custom deleter of a replaced collision
     detector or contact surface handler reads the constraint solver's
     current one.
