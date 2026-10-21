@@ -163,6 +163,10 @@
 
 * Collision
 
+  * Fix a memory leak where a Bullet collision detector used for a collision
+    check between two groups was never destroyed.
+    [#3875](https://github.com/dartsim/dart/pull/3875)
+
   * Fix distance queries and nearest points for touching convex pairs in FCL's
     libccd GJK distance in Linux wheels, demonstrated for ellipsoid,
     ellipsoid-sphere and box pairs. FCL 0.7.0 can abort with assertions (as on
