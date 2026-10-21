@@ -99,6 +99,14 @@ if(DART_VERBOSE)
 endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
 install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+# Also in the headers component; the rule above keeps the default component's
+# contents unchanged.
+install(
+  FILES ${DART_CONFIG_HPP_OUT}
+  DESTINATION include/dart
+  COMPONENT headers
+  EXCLUDE_FROM_ALL
+)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -211,9 +219,6 @@ if(DART_ENABLE_SIMD)
     # depending on the architectures.
   elseif(CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(dart PUBLIC -march=native)
-    if(GCC_VERSION VERSION_GREATER 7.0)
-      target_compile_options(dart PUBLIC -faligned-new)
-    endif()
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()

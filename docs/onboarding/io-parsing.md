@@ -12,6 +12,11 @@ package metadata used by IO components.
 `SdfParser` uses sdformat for schema validation, version conversion and frame
 resolution. IO requires sdformat 14.8 or newer; supported library majors are
 14, 15 and 16. The accepted document versions follow the selected library.
+Standard Pixi environments use sdformat 16.1 or newer within major 16 and
+urdfdom 6. SDFormat 16 [shares schema descriptions](https://github.com/gazebosim/sdformat/pull/1589),
+avoiding repeated schema copies when loading large worlds. The Ionic
+environment uses sdformat 16 for DART and 15 for Gazebo; the isolated Harmonic
+and Jetty lanes use 14 and 16 respectively.
 Public `dart::utils::SdfParser` entrypoints and options remain available.
 Authored world gravity, physics timestep and joint limits, including effort and
 velocity, are honored. Existing controllers that relied on ignored limits must
@@ -53,8 +58,11 @@ pixi run agent-capture -- --factory python.examples.sdf_pose.main:make_world \
 The optional `utils-assets` component supplies `ModelResourceRetriever` in C++
 and dartpy. Normal Pixi builds enable it; native CMake builds opt in with
 `-DDART_BUILD_UTILS_ASSETS=ON` and require libcurl 7.85 or newer and OpenSSL
-Crypto 1.1.1 or newer. Existing
-components and parser defaults do not acquire networking dependencies.
+Crypto 1.1.1 or newer at build time. Shared installs link them privately, so
+consumers do not need their development packages, only their runtime
+libraries; static installs also require the development packages from
+consumers.
+Existing components and parser defaults do not acquire networking dependencies.
 
 The catalog and source pins live in [`data/robot_models`](../../data/robot_models/).
 Manifests enumerate every model, mesh, texture, license, and metadata file with

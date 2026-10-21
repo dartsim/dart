@@ -42,6 +42,10 @@
 #include <vector>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
+
 namespace dynamics {
 
 class EllipsoidShape;
@@ -54,6 +58,7 @@ class PointMass : public common::Subject
 {
 public:
   friend class SoftBodyNode;
+  friend class simulation::World;
 
   /// State for each PointMass
   struct State

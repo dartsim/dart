@@ -62,6 +62,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstring>
 
 using namespace dart;
 
@@ -412,6 +413,12 @@ public:
     return mThreadIds.size();
   }
 
+  bool wasCalledFrom(std::thread::id thread) const
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mThreadIds.count(thread) != 0u;
+  }
+
   std::size_t getNumChecks() const
   {
     std::lock_guard<std::mutex> lock(mMutex);
@@ -639,60 +646,74 @@ TEST(
 //==============================================================================
 TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
 {
-  constexpr std::size_t kNumSpheres = 140u;
+  for (const std::size_t kNumSpheres : {255u, 256u, 257u}) {
+    SCOPED_TRACE(kNumSpheres);
 
-  auto detector = collision::DARTCollisionDetector::create();
+    auto detector = collision::DARTCollisionDetector::create();
 
-  auto planeFrame
-      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
-  planeFrame->setShape(
-      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
-
-  std::vector<dynamics::SimpleFramePtr> sphereFrames;
-  sphereFrames.reserve(kNumSpheres);
-  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
-    auto sphereFrame
+    auto planeFrame
         = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
-    sphereFrame->setShape(std::make_shared<dynamics::SphereShape>(0.5));
-    sphereFrame->setTranslation(Eigen::Vector3d(1.5 * i, 0.0, 0.49));
-    sphereFrames.push_back(sphereFrame);
-  }
+    planeFrame->setShape(
+        std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
 
-  auto group = detector->createCollisionGroup();
-  group->addShapeFrame(planeFrame.get());
-  for (const auto& sphereFrame : sphereFrames)
-    group->addShapeFrame(sphereFrame.get());
+    std::vector<dynamics::SimpleFramePtr> sphereFrames;
+    sphereFrames.reserve(kNumSpheres);
+    for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+      auto sphereFrame
+          = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+      sphereFrame->setShape(std::make_shared<dynamics::SphereShape>(0.5));
+      sphereFrame->setTranslation(Eigen::Vector3d(1.5 * i, 0.0, 0.49));
+      sphereFrames.push_back(sphereFrame);
+    }
 
-  collision::CollisionOption option;
-  option.enableContact = true;
-  option.maxNumContacts = kNumSpheres;
+    auto group = detector->createCollisionGroup();
+    group->addShapeFrame(planeFrame.get());
+    for (const auto& sphereFrame : sphereFrames)
+      group->addShapeFrame(sphereFrame.get());
 
-  detector->setNumCollisionThreads(1u);
-  collision::CollisionResult serialResult;
-  ASSERT_TRUE(group->collide(option, &serialResult));
-  ASSERT_EQ(kNumSpheres, serialResult.getNumContacts());
+    collision::CollisionOption option;
+    option.enableContact = true;
+    option.maxNumContacts = kNumSpheres;
 
-  detector->setNumCollisionThreads(4u);
-  collision::CollisionResult parallelResult;
-  ASSERT_TRUE(group->collide(option, &parallelResult));
-  ASSERT_EQ(serialResult.getNumContacts(), parallelResult.getNumContacts());
+    detector->setNumCollisionThreads(1u);
+    collision::CollisionResult serialResult;
+    ASSERT_TRUE(group->collide(option, &serialResult));
+    ASSERT_EQ(kNumSpheres, serialResult.getNumContacts());
 
-  for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
-    SCOPED_TRACE(i);
-    const auto& serialContact = serialResult.getContact(i);
-    const auto& parallelContact = parallelResult.getContact(i);
-    EXPECT_EQ(
-        serialContact.collisionObject1->getShapeFrame(),
-        parallelContact.collisionObject1->getShapeFrame());
-    EXPECT_EQ(
-        serialContact.collisionObject2->getShapeFrame(),
-        parallelContact.collisionObject2->getShapeFrame());
-    EXPECT_TRUE(serialContact.point.isApprox(parallelContact.point, 1e-12));
-    EXPECT_TRUE(serialContact.normal.isApprox(parallelContact.normal, 1e-12));
-    EXPECT_NEAR(
-        serialContact.penetrationDepth,
-        parallelContact.penetrationDepth,
-        1e-12);
+    detector->setNumCollisionThreads(4u);
+    collision::CollisionResult parallelResult;
+    ASSERT_TRUE(group->collide(option, &parallelResult));
+    ASSERT_EQ(serialResult.getNumContacts(), parallelResult.getNumContacts());
+
+    for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
+      SCOPED_TRACE(i);
+      const auto& serialContact = serialResult.getContact(i);
+      const auto& parallelContact = parallelResult.getContact(i);
+      EXPECT_EQ(
+          serialContact.collisionObject1->getShapeFrame(),
+          parallelContact.collisionObject1->getShapeFrame());
+      EXPECT_EQ(
+          serialContact.collisionObject2->getShapeFrame(),
+          parallelContact.collisionObject2->getShapeFrame());
+      EXPECT_EQ(
+          0,
+          std::memcmp(
+              serialContact.point.data(),
+              parallelContact.point.data(),
+              3u * sizeof(double)));
+      EXPECT_EQ(
+          0,
+          std::memcmp(
+              serialContact.normal.data(),
+              parallelContact.normal.data(),
+              3u * sizeof(double)));
+      EXPECT_EQ(
+          0,
+          std::memcmp(
+              &serialContact.penetrationDepth,
+              &parallelContact.penetrationDepth,
+              sizeof(double)));
+    }
   }
 }
 
@@ -721,6 +742,7 @@ TEST(DARTCollisionDetector, ParallelQueriesSerializeCollisionFilterCallbacks)
   EXPECT_GT(result.getNumContacts(), 0u);
   EXPECT_GT(filter->getNumChecks(), 0u);
   EXPECT_EQ(filter->getNumThreads(), 1u);
+  EXPECT_TRUE(filter->wasCalledFrom(std::this_thread::get_id()));
 }
 
 //==============================================================================
@@ -763,6 +785,7 @@ TEST(
   EXPECT_EQ(serialFilter->getNumChecks(), kGroupSize);
   EXPECT_EQ(parallelFilter->getNumChecks(), kGroupSize);
   EXPECT_EQ(parallelFilter->getNumThreads(), 1u);
+  EXPECT_TRUE(parallelFilter->wasCalledFrom(std::this_thread::get_id()));
 }
 
 //==============================================================================

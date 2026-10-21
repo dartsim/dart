@@ -42,6 +42,7 @@
 #include <dart/simulation/DeactivationOptions.hpp>
 #include <dart/simulation/Recording.hpp>
 #include <dart/simulation/SmartPointer.hpp>
+#include <dart/simulation/WorldState.hpp>
 
 #include <dart/constraint/SmartPointer.hpp>
 
@@ -160,6 +161,36 @@ public:
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
   /// by this World will be copied over.
   std::shared_ptr<World> clone() const;
+
+  /// Capture owning dynamic channels and time, excluding parameters/history.
+  /// Unsupported custom state throws std::invalid_argument.
+  WorldState captureState() const;
+
+  /// Fill a previously captured compatible value without allocating.
+  /// A default value is initialized on first capture. Invalid shapes or
+  /// incompatible structure throw std::invalid_argument before output changes.
+  void captureState(WorldState& output) const;
+
+  /// Restore channels directly after complete validation. Mobile Skeletons
+  /// wake and soft activation restarts; frame count and exact solver/contact
+  /// history are not restored. Contact and solver warm starts, detector
+  /// contact history and sleep smoothing are cleared; for custom collision
+  /// detectors, only the solver's. FCL and Bullet also rebuild their
+  /// broadphase, which allocates. Contacts can still arrive in a different
+  /// order than in a new World restoring the same snapshot after collision
+  /// shapes were added, removed or replaced, and with FCL or Bullet once a
+  /// group holds three or more objects, because their broadphase trees order
+  /// pairs by memory address. Parameters remain those of this World.
+  /// Commands follow this World's actuator types and limits, as setCommand()
+  /// would. EndEffector Support active flags remain those of this World.
+  /// Supported manual Ball/Revolute/Cylindrical/Weld constraint impulses reset;
+  /// their ordered types and body endpoints must match. clone() omits manual
+  /// constraints; re-add them in the same order with endpoints mapped to the
+  /// clone's bodies before restoring.
+  /// Mismatch, non-finite values or invalid shapes throw std::invalid_argument
+  /// before this World changes. Display names do not affect structural
+  /// compatibility.
+  void restoreState(const WorldState& state);
 
   //--------------------------------------------------------------------------
   // Properties
@@ -323,6 +354,8 @@ public:
   void enterSimulationMode();
 
   /// Returns true if simulation preparation is current for the world shape.
+  /// It may synchronize the constraint solver's collision group, so do not call
+  /// it concurrently with step() or other changes to this World.
   bool isInSimulationMode() const;
 
   /// Returns the World-owned memory manager.
@@ -492,12 +525,17 @@ protected:
   /// Clears the saved state used to detect between-step world/contact changes.
   void invalidateLastStepRestingWorldState();
 
+  void validateDynamicStateSupport() const;
+
   /// Invalidates the all-resting fast path cache.
   void invalidateAllRestingKinematicSnapshot();
 
   /// Wakes sleeping mobile skeletons after world-level or external kinematic
   /// changes that may invalidate filtered resting contacts.
   void wakeRestingSkeletonsForWorldChange();
+
+  /// Restarts the first-frame rest credit, as a new World would get it.
+  void restartFirstFrameRestCredit();
 
   /// Invalidates simulation preparation after a world-shape change.
   void invalidateSimulationMode();

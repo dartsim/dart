@@ -7,8 +7,9 @@ and what it taught about the per-step seam is in the
 [design doc](../../design/dart6_deformable_body.md#per-step-extension-seam).
 
 PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
-push-recovery row reproduces and is gate-asserted; its motor-noise clause
-stays open in §5. Goal: fully complete this plan, bundling the remaining rows
+push-recovery row's contact claim reproduces and is gate-asserted, but its push
+claim does not, and its motor-noise clause stays open in §5. Goal: fully complete
+this plan, bundling the remaining rows
 into as few PRs as review quality allows. The maintainer's 2026-08-01 goal
 targeted DART 6.20; the 2026-10-10 release closeout retargeted the unmet rows
 to DART 6.21, and the 2026-10-11 release-line decision moved them to DART 7.0. The competitive-envelope definition is settled (the 2026-07-23
@@ -76,11 +77,13 @@ Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 
 No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
 shipped through #3408/#3423 (`decisions.md` records the
-resolved decisions), completing the push/contact portion of the **biped push
-recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
-18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
-against the §1 Done rule until three more things have evidence: its
-motor-noise clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
+resolved decisions), completing the contact portion of the **biped push
+recovery** row: 51.2 soft vs 15.64 rigid contacts, gate-asserted. Its push
+claim does not reproduce: the soft biped falls from the 6000 and 8000 N pushes
+the rigid control recovers from, and the former 18000 N soft maximum was an
+isolated recovery (#3431, #3692). The row stays open against the §1 Done rule
+until the push claim and three more things have evidence: its motor-noise
+clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
 and 1-thread/host-capped multi-thread rows — PR-3a supplies neither, since
 its comparison deliberately pins FCL and one thread for validity (the two
 foot representations only share a narrow phase under FCL, and single-thread
@@ -91,7 +94,7 @@ keeps runs bit-identical), so that evidence needs its own configuration.
 ### Jain/Liu (controllers + hand scenes missing)
 | Row | Needs |
 | --- | --- |
-| Biped push recovery (soft vs rigid) | **Push/contact portion shipped** (#3408/#3423); still open: the motor-noise variant, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — PR-3a's comparison deliberately pins FCL and one thread) |
+| Biped push recovery (soft vs rigid) | **Contact portion shipped** (#3408/#3423); still open: the push claim, which asset tuning alone does not restore (#3431), the motor-noise variant, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — PR-3a's comparison deliberately pins FCL and one thread) |
 | Noisy-floor biped | seeded 5×5cm tile floor with 0–2cm offsets; rigid-vs-soft outcome |
 | Biped walk | SIMBICON walk, LCP every 8 controller steps |
 | Finger flick / arm fold / pinch grasp | hand/arm models + manipulation + adaptive-DOF/contact/LCP-time rows |
@@ -117,14 +120,15 @@ dynamics. It is the whole of the active DART 7.0 parity lane.
 shipped point-mass SoftBodyNode + adaptive activation is the Jain/Liu
 deformable substrate. What exists to reuse:
 
-- **A full SIMBICON controller** at `python/native/demo_models/atlas_simbicon/`
-  (`Controller`, `StateMachine`, `State`, `TerminalCondition`): torque PD + COM
-  feedback (`State::computeControlForce`), standing/walk-in-place/walk/run state
-  machines, harness helpers, push perturbation via `addExtForce`. Crucially its
-  `BodyContactCondition` already uses `BodyNode::isColliding()`, which works for
-  **rigid or SoftBodyNode** — so soft feet plug into the terminal logic with no
-  controller rewrite. Since #3408/#3423 it drives either foot geometry through
-  `soft_foot_simbicon`, and `State`'s COM feedback is point-mass aware.
+- **A full SIMBICON controller** in `python/examples/demos/models/simbicon.py`
+  (`Controller` with its state machines, states and terminal conditions): torque
+  PD + COM feedback (`compute_control_force`), standing/walk-in-place/walk/run
+  state machines, harness helpers, push perturbation via `addExtForce`.
+  Crucially its body-contact condition checks the body's and its point masses'
+  collision flags, which works for **rigid or SoftBodyNode** — so soft feet plug
+  into the terminal logic with no controller rewrite. Since #3408/#3423 it
+  drives either foot geometry through `soft_foot_simbicon`, and the COM
+  feedback is point-mass aware.
 - **A soft-feet Atlas asset** `atlas_v3_no_head_soft_feet.sdf` (SoftBodyNode
   feet, kv=50000, `<damp>` re-tuned 1000 -> 4000 by #3423) — exercised on ground
   under the SIMBICON controller with scheduled pushes by `soft_foot_simbicon`
@@ -133,14 +137,14 @@ deformable substrate. What exists to reuse:
   traveling-wave SERVO gait is the actuated-soft-character reference;
   `setForces`/`addExtForce`/`setCommand` all available. No muscle model (not
   needed — SERVO joints + SoftBodyNode kv/ke springs cover it).
-- **Scene/test pattern**: 3-part — GUI-free
-  `python/native/demo_models/XxxModel.{hpp,cpp}` (free functions:
-  createWorld/step/checksum/isFinite), bound through `dartpy._demos`,
-  + thin `python/examples/demos/scenes/xxx.py` factory returning
-  `dartpy.viewer.SceneSetup`, registered in `registry.py`, + GUI-free
-  `tests/integration/test_XxxModel.cpp` (locomotion + finite-state +
-  cross-run-determinism, compiled into the `test_ConstraintSolver` target with an
-  `add_test --gtest_filter`). Headless PNG capture via
+- **Scene/test pattern**: 3-part — a GUI-free Python model in
+  `python/examples/demos/models/xxx.py` (for example `soft_worm.py`'s
+  `create_world`/`apply_gait`/`position_checksum`/`is_finite`) over the
+  engine bindings, + thin `python/examples/demos/scenes/xxx.py` factory
+  returning `dartpy.viewer.SceneSetup`, registered in `registry.py`, + GUI-free
+  `python/tests/unit/demos/test_xxx.py` (locomotion + finite-state +
+  cross-run-determinism). Demo implementation no longer goes in C++; expose a
+  missing engine API through its regular binding. Headless PNG capture via
   `pixi run demos -- --scene <id> --headless --shot <output> --steps <n>`;
   follow the [scene rules](../../../examples/README.md#adding-catalog-scenes).
 

@@ -39,6 +39,10 @@
 #include <string>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
+
 namespace dynamics {
 
 class DegreeOfFreedom;
@@ -753,8 +757,21 @@ protected:
   Vector mInvMassMatrixSegment;
 
 private:
+  friend class simulation::World;
+
+  void restoreDynamicState(
+      const Vector& positions,
+      const Vector& velocities,
+      const Vector& accelerations,
+      const Vector& forces,
+      const Vector& commands);
+
   // Callers have already checked the index or are iterating over valid DoFs.
   Joint::ActuatorType getActuatorTypeForValidIndex(std::size_t index) const;
+
+  // setCommand()'s per-actuator rule without its warnings, for restoring
+  // state; keep the two in sync.
+  double clampCommandToActuatorLimits(std::size_t index, double command) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines

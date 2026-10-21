@@ -47,6 +47,7 @@ void remember_owner(
     void* complete, const std::shared_ptr<void>& owner, const void* token);
 void forget_owner(void* complete, const void* token) noexcept;
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper);
+bool point_mass_alive(nb::handle wrapper) noexcept;
 void* upcast(Key source, Key target, void* pointer);
 nb::handle wrap(
     Key source,
@@ -286,6 +287,9 @@ struct polymorphic_caster : nb::detail::type_caster_base<T>
     const auto& exact = nb::type_info(src.type());
     if (constructing && exact != typeid(T))
       return false;
+    if constexpr (std::is_same_v<T, dart::dynamics::PointMass>)
+      if (!constructing && !point_mass_alive(src))
+        return false;
     void* pointer = nb::inst_ptr<void>(src);
     value = static_cast<T*>(
         exact == typeid(T) ? pointer : upcast(exact, typeid(T), pointer));

@@ -1,8 +1,10 @@
 # Decisions
 
-All decisions below were taken by the maintainer on 2026-10-10 and 2026-10-11,
-one at a time, after read-only research and independent reviews; D13 was
-amended on 2026-10-12. Durable API rules derived from them live in the
+The maintainer took the decisions below one at a time, starting on 2026-10-10,
+after read-only research and independent reviews; D13 was amended on
+2026-10-12, and D2, D3, D6, D7, D14, D20 and D30 on 2026-10-19 (see
+[Re-prioritization](#re-prioritization-2026-10-19)). Durable API rules derived
+from them live in the
 [DART 7 Python API design](../../design/dart7_python_api.md). Revisit a decision
 only with new evidence and maintainer approval.
 
@@ -21,6 +23,8 @@ only with new evidence and maintainer approval.
 - **D3. One program, core first.** The Python API is designed in parallel and
   bound to the same objects. The C++ compatibility of the gz-used subset is a
   hard gate throughout.
+  - Amended 2026-10-19: Python API first; native work is ordered by the
+    acceptance tests it unblocks.
 - **D4. Keep `pip install dartpy` / `import dartpy`.** Version 7 signals the
   break.
 - **D5. C++ and Python both become 7.0.**
@@ -32,6 +36,8 @@ only with new evidence and maintainer approval.
     including the version macros.
 - **D20. Python 3.12 or newer**: one stable-ABI wheel per platform (Linux x86_64
   and aarch64, macOS arm64, Windows x64). Wheel-only.
+  - Amended 2026-10-19: DART 7's minimum platform is Ubuntu 24.04 LTS. DART 6
+    keeps supporting Ubuntu 22.04 LTS.
 - **D22. Conventions bundle**:
   - errors and the logging bridge;
   - stubs with CI gates;
@@ -53,6 +59,8 @@ only with new evidence and maintainer approval.
     versions.
   - The active performance work folds into M1d and M2. PLAN-622's core changes
     outside its parity rows pause during the step-path quiet window.
+  - Amended 2026-10-19: the quiet window is closed. PLAN-622, the point-mass
+    soft-body work, resumes in the program-owned step-path merge order.
 - **D32. DART 7.0 waits for the Filament renderer.** There is no render-less
   fallback.
 
@@ -61,11 +69,18 @@ only with new evidence and maintainer approval.
 - **D2. Physics scope for 7.0**: articulated rigid bodies plus point-mass soft
   bodies, behind explicit seams. No public plugin ABI until a second domain
   exists.
+  - Amended 2026-10-19: an experimental second domain may ship in
+    `dartpy.experimental` (see D7).
 - **D7. In-place stage extraction.**
   - `World::step` is split into internal stages; `getConstraintSolver()` is
     unchanged.
   - The contract for a second physics domain will be specified in a design
     doc; no code ships for it in 7.0.
+  - Amended 2026-10-19: 7.0 ships a typed per-World solver policy, the written
+    contract, and the rigid step code behind an internal domain boundary with
+    no behavior change. The coupling seam is built together with a first real
+    domain, rods, in `dartpy.experimental`: in 7.0 if ready before `F`,
+    otherwise in 7.1.
   - Point-mass soft bodies already share the articulated recursion, the
     constraint problem and the collision group. They are a body-type/material
     seam, not a separate solver.
@@ -117,6 +132,9 @@ only with new evidence and maintainer approval.
 - **D14. One deterministic executor**, a GIL-free `step(n)`, and `WorldBatch`
   built from remapping clones (the existing clone drops filters, handlers and
   manual constraints).
+  - Amended 2026-10-19: `WorldBatch` owns its executor and steps
+    single-threaded clones in lockstep; sharing one executor across
+    independent Worlds moves after 7.0.
 - **D15. No GPU code in 7.0.** New dense kernels follow review rules that keep a
   GPU path open.
 - **D21. Layered extension**:
@@ -135,12 +153,24 @@ only with new evidence and maintainer approval.
 - **D26. Built-in native sensors** under `world.sensors`: IMU, force-torque,
   contact and joint state, with seeded noise. Recording arrives with the
   recorder (M4) and batch support with `WorldBatch`.
+- **D33. DART 7 drops IKFast (maintainer, 2026-10-18).** The `IkFast` and
+  `SharedLibraryIkFast` analytical IK classes, `wrapCyclicSolution`, and the
+  installed `dart/dynamics/ikfast.h` header with its
+  `dart/external/ikfast/ikfast.h` forwarding header are removed without
+  replacement. C++ analytical solvers implement
+  `InverseKinematics::Analytical` directly, and Python solvers such as ssik
+  plug in through `InverseKinematics.setPythonAnalytical`.
+  - Evidence: Gazebo's API inventory uses none of these names. The WAM demo
+    was the last IKFast user, and it moves to ssik (D31b).
 
 ## Python API
 
 - **D6. Native rename in the binding sources**, driven by one reviewed table.
   dartpy becomes a package with a private extension and pure-Python helpers.
   There are no wrapper classes except the `Collider`/`Visual` handles.
+  - Amended 2026-10-19: the API is designed first under one naming rulebook,
+    and the old-to-new mapping is generated from the designed API instead of
+    being reviewed as one table.
 - **D16. Read-only array copies by default.** `out=` fills caller buffers
   without allocating; it copies and never aliases. Zero-copy live views arrive
   with authoritative contiguous state (M3) and are named separately.
@@ -181,9 +211,15 @@ only with new evidence and maintainer approval.
   list, cycle and capture.
   - Its bindings start in the 7.0 style as `dartpy.viewer`, the managed-loop
     core that M6b's `launch()` can reuse.
-  - Python declares scenes, key actions, light step hooks and declarative
-    panel controls. There is no Python ImGui API. Heavy controllers and
-    models stay native behind the private `dartpy._demos`.
+  - Python declares scenes, key actions, simulation hooks and declarative
+    panel controls. There is no Python ImGui API. On 2026-10-13 the maintainer
+    revised the implementation boundary: demo controllers and models move to
+    Python over the engine, IO, and GUI bindings. All demo implementation is
+    now Python, and `dartpy._demos` and `dart-demo-models` are removed.
+  - On 2026-10-18 the maintainer accepted a change of joint selection for the
+    WAM scene. ssik's closed-form `seven_r.srs` solver replaces the generated
+    IKFast solver, which held `/j3` as a free joint. The scene, now
+    `wam_analytical_ik`, needs the optional ssik package, like `ssik_ik_gui`.
   - The Python demo catalog is D22's example runner. All 37 retained scenes
     reached parity before WP-PD.18 removed the C++ app and its aliases.
     The TinyDNN-only `human_joint_limits` scene is retired: no supported
@@ -206,9 +242,8 @@ only with new evidence and maintainer approval.
     and count one callback; interrupts stop the loop and are re-raised only
     after teardown. Panels remain declarative C++ control trees, with
     numeric precision instead of printf formats.
-  - The WAM solver is linked into `dart-demo-models` without exported IKFast
-    symbols or a LAPACK dependency; ssik runs directly from Python instead
-    of an embedded-interpreter bridge. The memory-diagnostics option keeps
+  - Both ssik scenes call the solver directly from Python, without an
+    embedded-interpreter bridge. The memory-diagnostics option keeps
     its existing name and defaults to off. `DART_IMGUI_DOCKING` is removed;
     the ImGui provider determines host availability.
 
@@ -235,3 +270,70 @@ are removed; past dates on decisions and evidence stay.
 
 The [project home](README.md) owns the must-have list, checkpoint criteria and
 priority order.
+
+## Re-prioritization (2026-10-19)
+
+On 2026-10-18 the maintainer restated the program's goals: a Python-first DART
+7; a Pythonic dartpy rather than a parity binding of C++; best-effort C++ that
+keeps gz-physics and gz-sim compatible; and multi-physics and multi-solver
+support in `World` and the constraint solver. On 2026-10-19 the maintainer took
+these decisions, one at a time:
+
+- **Design-first Python API.** The maintainer approves a naming rulebook once.
+  Each API area lands as a normal pull request showing the designed API. The
+  old-to-new mapping is generated from those pull requests and used only for
+  the codemod, the stubs, the generated docstrings and the migration guide; old
+  members with no place in 7.0 are dropped. Work that renames nothing merges on normal review. This replaces
+  M5a's single rename-table approval.
+- **Curated naming everywhere**: PEP 8 names; the D18 vocabulary; cheap state as
+  properties that return read-only copies; computations as methods that accept
+  `out=`; parameterized queries as methods; keyword-only options beyond one or
+  two obvious arguments; named collections that raise `KeyError` listing the
+  valid names; generated C++ helper types kept private; a name budget per
+  class, about 20 for `World`.
+- **`None` for a frame argument** means the world frame where C++ defaults the
+  argument to `Frame::World()`, keeps the meanings C++ documents for null, and
+  raises `TypeError` elsewhere.
+- **Never-compiled C++ Worlds keep DART 6.20 behavior**, except the labeled
+  rejection of re-entrant `step()` and of edits during a step. Model-ownership
+  tracking and strict guards start at `compile()`.
+- **ABI window.** Until 7.0.0 is packaged, layout changes in classes Gazebo
+  neither subclasses nor reads are pre-approved, gated by the API inventory
+  check and the unpatched Gazebo lanes. Vtable changes in classes Gazebo
+  subclasses, removing or renaming members Gazebo uses, and default-behavior
+  changes still need approval.
+- **Multi-solver and multi-physics**: see the D2 and D7 amendments.
+- **`WorldBatch` executor**: see the D14 amendment. Randomized PGS is rejected
+  for batches until each solver owns its random state, and a scaling
+  measurement comes first.
+- **Exact checkpoints in 7.0** restore into the same World for the DART
+  detector, and for ODE if it qualifies, with the Dantzig or PGS solver; FCL
+  and Bullet raise. M2 is optional unless a milestone-exit run regresses.
+  Milestone performance compares against `dart7-base`, with the contact rows
+  compared against `812310ffb`, the first such baseline after #3789.
+- **Replacing mesh data or voxel occupancy is a topology edit** in a compiled
+  World, allowed only inside `edit()`.
+- **The step-path quiet window is closed.** Step-path pull requests land in a
+  program-owned order, each re-qualified on current `main`. The unpatched
+  Gazebo lanes and the sleep oracle run whenever a pull request changes step,
+  solver, collision, packaging or Gazebo-lock files. Labeled behavior changes
+  are marked in the pull request summary and the changelog. PLAN-622 resumes
+  in that order.
+- **Platforms and Gazebo.** DART 7 supports Ubuntu 24.04 LTS and newer, and
+  Gazebo Ionic (sdformat 15) and Jetty (sdformat 16); each Gazebo lane builds
+  `dart-io` against its distribution's sdformat. Gazebo Harmonic and Ubuntu
+  22.04 users stay on DART 6.20.x.
+- **The generated Python API reference is a 7.0 must-have**, built in CI from
+  the stubs and docstrings with a coverage floor.
+- **dartpy's private compiled extension is `dartpy._core`**, replacing the
+  `dartpy._dartpy` name that #3847 shipped, so the private name does not repeat
+  the package's.
+- **Changelog entries on `main` are fragments.** Each pull request adds its
+  entry as a file under `changelog.d/`, and a checkpoint pull request moves the
+  fragments into `CHANGELOG.md` at each milestone exit, before any release
+  candidate or tag, and on request. Release branches keep editing
+  `CHANGELOG.md` directly. The rule takes effect when the pull request that
+  adds the fragment tooling updates the changelog guidance; until then,
+  `docs/onboarding/changelog.md` applies. Open pull requests convert their
+  `CHANGELOG.md` hunk into a fragment during the next base merge they need
+  anyway, so the switch costs no extra pushes (2026-10-20).

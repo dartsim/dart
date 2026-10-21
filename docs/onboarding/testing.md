@@ -39,6 +39,9 @@ capture smoke test. To include it when reproducing `CI Filament`, configure
 with `pixi run config -- -DDART_ENABLE_GUI_SMOKE_TESTS=ON` before running
 `pixi run test-gui`.
 
+Pixel bounds in the GUI tests are tuned on a GPU and on Lavapipe. Widen a
+bound only with captures from the backend that fails it.
+
 `pixi run check-ai-infra` also reconfigures the current platform, queries
 CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
@@ -63,10 +66,11 @@ per-test selections remain explicit. Repository pytest gates use
 `scripts/run_pytest.py`; it removes every ambient `PYTEST_*` control, disables
 external plugin autoload, runs under Python isolation before adding only the
 task-owned import path, pins the root configuration, disables `conftest.py`,
-and fails if no test body executes. CMake derives the dartpy import location
-from `$<TARGET_FILE_DIR:dartpy>`, so Visual Studio, Xcode, and future
-multi-config generators use the selected configuration's extension module
-instead of a guessed build directory. The checker rejects explicit local
+and fails if no test body executes. CMake stages the `dartpy` package under a
+configuration-aware root (`DART_DARTPY_BUILD_DIR`, the parent of
+`$<TARGET_FILE_DIR:dartpy>`) and imports from that root, so Visual Studio,
+Xcode, and future multi-config generators use the selected configuration's
+extension module instead of a guessed build directory. The checker rejects explicit local
 `pytest_plugins` and resolves the installed package without importing a local
 shadow. Its semantic probes execute controlled passing and failing CTest/pytest
 cases, so source markers alone cannot claim that sanitization, test-body
@@ -88,9 +92,9 @@ The Python catalog is the only demo app. `pixi run cycle-demos` constructs,
 steps, and tears down every registered scene without a graphics context.
 Its strict cycle exits nonzero if a callback fails. Device-free `test_GuiApp`
 and Python viewer tests cover the host, CLI, lifecycle, controls, callback
-failures, garbage collection, and interrupts. The native model tests remain
-in the C++ suite; `test_GuiAppMemoryDiagnostics` covers the opt-in diagnostic
-model. Rendered catalog and viewer checks run through `pixi run test-gui`.
+failures, garbage collection, and interrupts. Tests for Python demo models live
+under `python/tests/unit/demos`. `test_GuiAppMemoryDiagnostics` covers the opt-in
+diagnostic model. Rendered catalog and viewer checks run through `pixi run test-gui`.
 
 Provision `ssik` and cached robot assets with `pixi run install-ssik` and
 `pixi run fetch-robot-assets` before claiming a full 37-scene cycle. Otherwise
@@ -119,12 +123,12 @@ changes:
    pick and drag and verify that the spring force moves the picked body.
    Add an interaction capture when the effect is visible.
 
-For changes to the private libraries, also configure a vanilla-ImGui build
+For changes to the private app host, also configure a vanilla-ImGui build
 with `-DDART_USE_SYSTEM_IMGUI=ON` and build `tests` and dartpy: the host is
 compiled out, dartpy still imports, and the catalog gives a rebuild hint.
 Configure a GUI-off build with
 `-DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF`, build `tests`, and run the
-affected model tests. These checks preserve the library boundaries described
+affected C++ tests. These checks preserve the library boundaries described
 in [the architecture owner](architecture.md#python-demo-catalog).
 
 For dependency minimization, run focused tests for the touched component and
@@ -161,6 +165,13 @@ how to refresh it. After building the tests, run these gates alone with:
 pixi run ctest --test-dir build/default/cpp/Release \
   -R '^(ContactSurfaceProbe|test_GazeboShim)$' --output-on-failure
 ```
+
+The downstream side of the same check is
+`scripts/check_gz_contact_surface.sh`: `pixi run -e gazebo test-gz` and the
+`gz-compat-<lane>` lanes run it after configuring gz-physics and fail unless
+gz-physics cached `DART_HAS_CONTACT_SURFACE_HEADER=1`, because a failed
+detection otherwise drops contact-surface customization without an error.
+`pixi run test-gz-compat-tools` tests the script against fake caches.
 
 These gates cover DART extension contracts. Continue to use the downstream
 Gazebo suites below for plugin and application compatibility.
@@ -240,7 +251,9 @@ simulation-loop behavior changes. It is the forward lane: it applies
 Gazebo still works.
 
 For collision, contact, constraint-solver, sleeping, `World::step`, or
-step-stage changes, and before a release, also run the unpatched lanes, which
+step-stage changes, for changes to the installed CMake package configuration or
+to the Gazebo versions the lanes pin (`tools/gazebo/compat/lane.sh`, the
+`gazebo` Pixi environment), and before a release, also run the unpatched lanes, which
 build released gz-physics and gz-sim against this checkout, run both full
 suites, and fail on any failure DART 6.19.4 did not have:
 
@@ -249,6 +262,10 @@ pixi run gz-compat-ionic       # gz-physics 8.4.0, gz-sim 9.5.0
 pixi run gz-compat-jetty       # gz-physics 9.5.2, gz-sim 10.5.0
 pixi run gz-compat-harmonic    # gz-physics 7.8.0, gz-sim 8.10.0
 ```
+
+The gate depends on the release line. DART 7 on `main` requires Ubuntu 24.04
+or newer, so its gate is the Ionic and Jetty lanes; the Harmonic lane gates
+the `release-6.20` maintenance line, which keeps Ubuntu 22.04 support.
 
 A first run of a lane builds DART, gz-physics, and gz-sim (about 15 minutes
 with 12 build jobs on a 32-core workstation) and then runs the gz-sim suite
@@ -262,7 +279,7 @@ collision filter since [#3632](https://github.com/dartsim/dart/pull/3632).
 
 To distinguish inherited failures from new ones, build the change's base as
 a second variant and set `GZ_COMPAT_BASE_VARIANT`; explain inherited failures
-as well. Sleeping changes must also run
+as well. Every change that needs the unpatched lanes must also run
 `pixi run gz-compat-ionic sleep-oracle` without `--allow-unexercised` and
 explain every mismatch. Release verification matched 33 of 35 scenarios;
 the two differences concern a detector-private contact-cap edit without
@@ -272,5 +289,5 @@ collision-group changes run
 `pixi run gz-compat-jetty raycast-probe`. `tools/gazebo/README.md` covers the
 steps, the comparison, the expected-failure files, and the benchmark drivers;
 `pixi run test-gz-compat-tools` tests the comparison script, the benchmark
-world generator, the DART version override, and the DART C++ API inventory
-extractor.
+world generator, the DART version override, the DART C++ API inventory
+extractor, and the contact-surface gate.

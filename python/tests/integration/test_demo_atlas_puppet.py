@@ -1,6 +1,5 @@
-"""Atlas puppet native objective, scene controls, and held-key integration."""
+"""Atlas puppet Python objective, scene controls, and held-key integration."""
 
-import gc
 import sys
 from pathlib import Path
 
@@ -9,6 +8,8 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+from examples.demos.models.relaxed_posture import RelaxedPosture
+
 viewer = getattr(dart, "viewer", None)
 pytestmark = pytest.mark.skipif(viewer is None, reason="demo app host unavailable")
 
@@ -81,7 +82,7 @@ def test_atlas_end_effectors_support_solver_and_activation():
             )
     whole_body = atlas.getIK(True)
     assert isinstance(whole_body, dart.dynamics.WholeBodyIK)
-    assert isinstance(whole_body.getObjective(), dart._demos.RelaxedPosture)
+    assert isinstance(whole_body.getObjective(), RelaxedPosture)
     assert whole_body.getSolver().getNumMaxIterations() == 10
     assert whole_body.getProblem().getNumEqConstraints() == 2
     state = setup.pre_refresh.__self__
@@ -267,59 +268,3 @@ def test_atlas_posture_hold_and_solver_failure_diagnostics(monkeypatch):
     setup.pre_refresh()
     assert state.consecutive_failures == 0
     assert not state.reported_failing
-
-
-def test_relaxed_posture_bound_values_and_objective_retention():
-    posture = dart._demos.RelaxedPosture(
-        [0.0, 0.5, -0.25], [-1.0, -1.0, -np.inf], [1.0, 1.0, np.inf], [2.0, 3.0, 4.0]
-    )
-    assert isinstance(posture, dart.optimizer.Function)
-    assert posture.eval([-2.0, 2.0, 0.0]) == 6.5
-    np.testing.assert_array_equal(
-        posture.eval_gradient([-2.0, 2.0, 0.0]), [-2.0, 3.0, 0.0]
-    )
-    posture.enforce_ideal_posture = True
-    assert posture.eval([-2.0, 2.0, 0.0]) == 18.625
-    np.testing.assert_array_equal(
-        posture.eval_gradient([-2.0, 2.0, 0.0]), [-4.0, 4.5, 1.0]
-    )
-    skeleton = dart.dynamics.Skeleton()
-    skeleton.createFreeJointAndBodyNodePair()
-    objective = dart._demos.RelaxedPosture([0.0] * 6, [-1.0] * 6, [1.0] * 6, [1.0] * 6)
-    objective.enforce_ideal_posture = True
-    ik = skeleton.getIK(True)
-    ik.setObjective(objective)
-    del objective
-    gc.collect()
-    assert isinstance(ik.getObjective(), dart._demos.RelaxedPosture)
-    assert ik.getObjective().enforce_ideal_posture
-    skeleton.setPosition(0, 0.25)
-    assert ik.getObjective().eval(skeleton.getPositions()) == 0.03125
-    ik.setObjective(None)
-    gc.collect()
-    assert ik.getObjective() is None
-
-
-@pytest.mark.parametrize(
-    "ideal,lower,upper,weights",
-    [
-        ([0.0], [], [1.0], [1.0]),
-        ([np.nan], [-1.0], [1.0], [1.0]),
-        ([0.0], [np.nan], [1.0], [1.0]),
-        ([0.0], [-1.0], [np.nan], [1.0]),
-        ([0.0], [2.0], [1.0], [1.0]),
-        ([0.0], [-1.0], [1.0], [-1.0]),
-        ([0.0], [-1.0], [1.0], [np.inf]),
-    ],
-)
-def test_relaxed_posture_constructor_validation(ideal, lower, upper, weights):
-    with pytest.raises(ValueError):
-        dart._demos.RelaxedPosture(ideal, lower, upper, weights)
-
-
-@pytest.mark.parametrize("positions", [[], [0.0, 0.0], [np.nan], [np.inf]])
-def test_relaxed_posture_evaluation_validation(positions):
-    posture = dart._demos.RelaxedPosture([0.0], [-np.inf], [np.inf], [0.01])
-    for evaluate in (posture.eval, posture.eval_gradient):
-        with pytest.raises(ValueError):
-            evaluate(positions)

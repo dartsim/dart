@@ -10,10 +10,16 @@ DART 6.20 checks Gazebo in two ways:
 `test-gz` is the forward lane that CI runs. Its patches change gz-physics
 source (the `ChangedWorldPoses` tolerance) and relax test expectations, so a
 green `test-gz` does not show that released Gazebo still works. It also
-configures gz-physics once, so the common tests compile without the dartsim
-plugin's `DART_HAS_CONTACT_SURFACE` and skip their contact-callback
-expectations (gz-physics `ContactPropertiesCallback`). The unpatched lanes
-configure twice and run them.
+configures gz-physics twice, like the unpatched lanes, so the common tests see
+the dartsim plugin's `DART_HAS_CONTACT_SURFACE` and run their contact-callback
+expectations (gz-physics `ContactPropertiesCallback`).
+
+Both lanes also run [`scripts/check_gz_contact_surface.sh`](../../scripts/check_gz_contact_surface.sh)
+after configuring gz-physics. It fails unless gz-physics cached
+`DART_HAS_CONTACT_SURFACE_HEADER=1` (its check for
+`dart/constraint/ContactSurface.hpp`), and prints an excerpt of the probe's log
+from `CMakeConfigureLog.yaml`. Without it, a failed check silently
+drops the plugin's contact-properties callback and gz-sim's `TrackController`.
 
 ## Unpatched compatibility lanes
 
@@ -22,6 +28,9 @@ configure twice and run them.
 | Harmonic | `gz-compat-harmonic` (`gazebo-harmonic`) | `gz-physics7_7.8.0` | `gz-sim8_8.10.0` | 14 |
 | Ionic | `gz-compat-ionic` (`gazebo`) | `gz-physics8_8.4.0` | `gz-sim9_9.5.0` | 15 |
 | Jetty | `gz-compat-jetty` (`gazebo-jetty`) | `gz-physics9_9.5.2` | `gz-sim10_10.5.0` | 16 |
+
+DART 7 on `main` gates on the Ionic and Jetty lanes. The Harmonic lane gates
+the `release-6.20` maintenance line.
 
 Release verification of DART 6.20 at `48eb618bb81` passed the unpatched
 Harmonic, Ionic and Jetty gz-physics and gz-sim compatibility gates, with
@@ -44,7 +53,8 @@ feature instead of the default feature. The lane tasks require Linux.
    `.deps/gz-compat/<lane>/candidate/dart`, so no file an earlier build
    installed is left behind (the build directory is kept);
 2. builds the released gz-physics with its tests against that DART and runs
-   its CTest suite (`PERFORMANCE_` tests excluded);
+   its CTest suite (`PERFORMANCE_` tests excluded), after checking that
+   gz-physics detected `dart/constraint/ContactSurface.hpp`;
 3. builds gz-sim with its tests against that gz-physics and runs every
    `INTEGRATION_` test serially, with `GZ_SIM_SERVER_CONFIG_PATH` set (without
    it, worlds that declare no systems get no Physics system), a private
@@ -141,16 +151,40 @@ lane:
 | `STALE` | an accepted difference that now passes; drop the entry |
 | `FIXED` | an expected failure that ran and passed |
 
-gz-sim `INTEGRATION_reset_sensors` is a known test race, not a DART
-regression: right after `server.Run()`, `ResetFixture.HandleReset` reads the
-last asynchronous air-pressure message (`reset_sensors.cc` lines 259 and 352)
-and sometimes gets the previous 100 Hz sample, for example 100360.66 versus
-100362.99 Pa, while its altitude check passes. In 20 interleaved Harmonic-lane
-runs each, the 6.20.0 candidate and DART 6.19.5 both failed 4 times with
-identical values. The lane reports it `FLAKY` when the retry passes and `NEW`
-when both attempts fail (about 4% of lane runs). If `NEW` names only this
-failure, rerun the lane before investigating; any other case or value pattern
-in that test is a real failure. The fix belongs in gz-sim's test.
+gz-sim `INTEGRATION_reset_sensors` has two known test bugs. Neither is a DART
+regression, and the fixes for both belong in gz-sim's test.
+
+The first is a race: right after `server.Run()`,
+`ResetFixture.HandleReset` reads the last asynchronous air-pressure message
+(`reset_sensors.cc` lines 259 and 352) and sometimes gets the previous 100 Hz
+sample, for example 100360.66 versus 100362.99 Pa, while its altitude check
+passes. In 20 interleaved Harmonic-lane runs each, the 6.20.0 candidate and
+DART 6.19.5 both failed 4 times with identical values. The lane reports it
+`FLAKY` when the retry passes and `NEW` when both attempts fail (about 4% of
+lane runs). If `NEW` names only this failure, rerun the lane before
+investigating.
+
+The second is a use-after-free that hits the altitude checks. The box reads
+Z = 1 in place of 100 and 80.39 (Harmonic's `reset_sensors.cc` lines 301 and
+351; the other distributions number them differently). The test keeps the
+`Pose` component pointer it fetched before the reset. The reset replaces the
+entity-component manager's components, so those checks read freed memory.
+
+- AddressSanitizer reports a heap-use-after-free in a reproducer that uses
+  the entity-component manager alone, without DART.
+- DART 6.20.0, rebuilt in the same environment, fails the same way.
+- A DART-only replay of the calls gz-physics makes on reset passes.
+
+Whether the freed memory still holds the old pose depends on the allocator,
+so after an environment update this failure appeared at once in all three
+lanes, for every DART version tested. With a base variant the lane reports it `BASE`.
+Re-fetching the component after the reset makes the checks pass.
+
+A failure in any other case of that test is a real failure. A failure of the
+altitude checks with another value, or a crash, can still be this
+use-after-free, since what the freed memory holds depends on the allocator.
+Before treating one as a DART regression, rerun the test under
+AddressSanitizer or with the component re-fetched after the reset.
 
 `compare` requires an existing, readable expected-failure file; only
 `--write-baseline` may create a missing one. Timing multipliers
@@ -226,16 +260,45 @@ retains conservative candidates for unresolved receivers. Known limitations:
 - Implicit and contextual conversion operators are not recorded.
 - Structured-binding element types are not inferred.
 - Preprocessor conditions are not generally evaluated.
-- C++ template instantiation and overload resolution are not performed.
+- C++ template instantiation and overload resolution are not performed. Alias
+  templates substitute direct pack-name template arguments (`Ts...`); compound
+  pack patterns remain uninstantiated.
 - Ignored in-tree build artifacts are scanned as Gazebo sources.
 - Virtual destructor overrides are not recorded.
 - Referenced macro parameters and replacement tokens are not recorded.
 - Source-only inheritance chains beyond three hops can be missed.
 - Used type-alias target definitions outside field layout dependencies are not recorded.
-- Qualified member-function references without calls are not recorded.
+- Qualified member-function references without calls are not recorded, so
+  `decltype(&Owner::method)` does not produce a member-pointer callable; an
+  explicitly declared indexed member-pointer type is tracked.
 - Dependent `receiver->template method<T>()` calls are not recognized.
+- Unique-map node-handle results (`.node`, `.mapped()`) and `std::invoke`
+  callback results and iterator adapters (`std::next`, `std::prev`) do not
+  propagate receivers; the compiled Gazebo gates remain authoritative for them.
 - Base relationships of referenced DART types are not recorded.
 - Trailing return types are not used to infer chained-call receivers.
+- Implicit mapped-value construction by `std::map` and `std::unordered_map`
+  subscripting is not recorded.
+- Explicitly selected `std::variant` alternatives (`std::in_place_type`,
+  `std::in_place_index`, or `emplace<T>`/`emplace<I>`) are not tracked for construction.
+- API-default same-type prvalue elision recognizes indexed direct calls;
+  casts and other default-expression forms may retain conservative extra
+  constructor evidence.
+- Constructor arguments of sequence modifier `emplace_back` are not recorded.
+- Associative insertion projects iterator, pair and mapped receivers but does
+  not record insertion-side constructor arguments (for example `try_emplace`).
+- Explicit operator-function calls are modeled only as `operator->()` and
+  `operator*()` on known iterators. Other explicit spellings, including
+  `x.operator()()` and `x.operator[](i)`, do not propagate receiver shapes.
+  Ordinary call and subscript forms remain as documented.
+- Named nested standard-container iterator return types (for example
+  `std::vector<T>::iterator` and `std::map<K,V>::iterator`), including aliases
+  in indexed API returns, do not propagate receivers. Iterators obtained from
+  known container operations are modeled.
+- Owner base-clause evidence is retained only for direct and aliased
+  member-function-pointer fields. Data-member pointers and member pointers
+  inside template arguments do not retain that owner-inheritance evidence;
+  their field declarations are still retained.
 
 Operator syntax is associated with declarations for `->`, `[]` and `()` when
 the receiver type is known. The Gazebo build and test lanes remain the
@@ -259,8 +322,14 @@ their access, including private and deleted declarations, of the type, its
 bases and owned non-static members, including class template specializations.
 These are conservative candidates without overload resolution.
 Construction helpers include `std::allocate_shared`, `std::make_optional` and
-`std::make_from_tuple`, engaged optional `std::in_place` initializers and placement
-`new`.
+`std::make_from_tuple`, engaged optional `std::in_place` initializers, known
+optional `emplace` calls, including explicit template arguments such as
+`emplace<int>(1)` on known receivers, value-producing `static_cast` targets and
+placement `new`. An optional callable element is a null callable and does not
+construct its return class; later declarators of a grouped optional declaration
+bind their own receivers.
+Elaborated `class`, `struct`, `union` and `typename` specifiers preserve value
+construction in cast targets, and `class`, `struct` and `union` in default parameters.
 A Gazebo class derived from a DART class counts as a construction of that base
 at its base clause and retains its dependencies' pure-virtual declarations.
 For brace constructions of classes without declared constructors,
@@ -270,12 +339,33 @@ Constructed `std::array` values also retain their value elements' constructor
 dependencies, including nested arrays; literal zero extents and pointer elements
 do not construct those elements. Unknown extent expressions remain conservative.
 Constructed `std::tuple` and `std::pair` values retain owned value elements;
-pointer and reference elements do not construct their pointees. Count initializers
+pointer and reference elements do not construct their pointees. Default-initialized
+`std::variant` values retain construction dependencies of their first alternative,
+with each value declarator checked independently in grouped declarations.
+Balanced declarator attributes preserve the following initializer or terminator.
+Function prototypes and function-type aliases, including `typedef` and `using`
+function types and `T (*callback)()` declarators, do not construct their return values.
+A variant array, or a `new` array, retains the first alternative's construction
+when it has no initializer, an empty `()` or `{}`, a brace list that is shorter than a
+literal bound, or an explicit `{}` element. This is constructor-viability evidence,
+not an element count: a rank above one, a named or runtime bound and an inferred
+`new` bound stay conservative, and only a fully supplied one-dimensional literal
+list, an inferred ordinary bound or an empty-braced literal-zero bound do not
+construct. A variant nested in a wrapper follows the wrapper's initializer: a
+sized sequence's count, `std::in_place` alone, an allocator-only
+`std::allocate_shared` or the enclosing tuple, pair or array's own default
+initialization. `volatile` qualifiers in either order do not hide the declarator.
+Count initializers
 on `std::vector`, `std::deque`, `std::list` and `std::forward_list` retain their
 value elements' constructor candidates, including count-plus-allocator arguments
 and count arguments forwarded by standard factories. This dependency applies at
-zero count too. Braced returns use their enclosing function's declared return
-type for construction evidence.
+zero count too. Explicit prvalues of the full sequence type are copies or moves.
+A sole explicitly typed element prvalue inside a braced initializer supplies an
+element list. Untyped single braced arguments such as `{1}` retain conservative
+count evidence without overload resolution. Source field constructor candidates
+are retained without proving the owner is instantiated.
+Braced returns use their enclosing named function's or explicit
+trailing-return lambda's declared return type for construction evidence.
 Constructed classes' default field initializer declarations and their named
 constant dependencies are retained in `default_member_initializer_declarations`.
 Quoted literals in indexed field and constant initializers are retained in
@@ -291,8 +381,19 @@ Union types retain `union_declarations`, and union fields retain their enclosing
 `union_declaration`, including anonymous union blocks.
 By-value declarations and `sizeof`/`alignof` operands retain non-static field
 declarations in `layout_declarations`, in base and field order, including
-value-owned subobjects and unnamed bit-field padding. Owned union fields also
-retain their types' `union_declarations`. Inline field types retain alias targets and enum headers
+value-owned subobjects and unnamed bit-field padding.
+Direct and aliased function-pointer fields, including qualified member pointers,
+retain their physical pointer declarators, array extents and alignment spellings
+in `storage_declarator`, using fragments from the field and its indexed aliases.
+Their return and parameter types do not describe inline storage. Alignment
+evidence includes `alignas` and GNU alignment attributes, standard `[[...]]`
+attribute lists inside the callback group, and attributes on a `using` alias name.
+Function types spelled inside template arguments, such as `std::array<int(*)(),2>`,
+are field storage, and a callable that returns a callable keeps its stored pointer
+and array shape. A parenthesized later declarator such as `(b)[2]` keeps its array. Function declarations
+through aliases have no inline storage.
+Owned union fields also retain their types' `union_declarations`.
+Inline field types retain alias targets and enum headers
 in `type_alias_declarations` and `enum_declarations`; quoted alias targets retain
 `declaration_literals`. Indexed constants in inline array extents appear in
 `type_constant_declarations`. Known callees in field `decltype` expressions retain
@@ -301,7 +402,12 @@ indirection; dereferenced layout operands retain the referenced object fields.
 Referenced types retain normalized alignment specifiers and their type/constant
 dependencies in `alignment_declarations`. Used declarations retain constants
 named in parameter defaults in `default_argument_declarations`, including their
-initializer dependencies. Class annotations, including export macro spellings,
+initializer dependencies and the constructors required by class-valued defaults.
+Function-type parameters are adjusted to pointers before default construction
+analysis, so they do not construct their return types. Parenthesized object
+parameter names preserve their value, pointer, reference or array semantics.
+Parameter attributes preserve those semantics too.
+Class annotations, including export macro spellings,
 are retained in `annotation_declarations` even when an export macro expands to
 nothing on the scanned platform. Constants in `noexcept(...)` conditions and
 named bit-field widths are retained in `exception_specification_declarations`
@@ -322,17 +428,21 @@ and its bases. Source helpers with `auto` or `decltype(auto)` returns infer
 receiver candidates from their return expressions, excluding nested functions
 and lambdas. Sequence returns retain their DART element types through
 begin/end iterators and their const and reverse variants. Iterator arrows and
-dereferences preserve pointer elements as pointers.
+dereferences, including explicit `operator->()` and `operator*()` calls on
+known iterators, preserve pointer elements as pointers.
 Set-family returns also preserve their value or pointer elements through
-iterators, aliases and range-for declarations. Returned `std::pair` and `std::tuple`
+iterators, aliases and range-for declarations. Map-family iterators obtained
+from known container operations preserve their key and mapped values as pair
+elements, including lookup iterators and both iterators returned by
+`equal_range`. Returned `std::pair` and `std::tuple`
 values retain each element's receiver shape for `first`, `second` and `std::get`
 projection by index or a known unique element type.
 Standard forwarding calls, `std::as_const` and `std::optional` accessors retain
 contained receiver shapes through value, pointer and array expressions. Returned
 standard smart pointers preserve their wrapper types through `get()` and `lock()`
 chains.
-Source class aliases retain DART bases, and member lookup respects source declarations and
-class using-declarations. Lambda parameters and initialized captures stay within
+Source class aliases retain DART bases, and member lookup respects source declarations,
+nested types, type aliases and class using-declarations. Lambda parameters and initialized captures stay within
 their lambda body; capture initializers use the enclosing scope.
 Automatic declarations, including `decltype(auto)`, retain inferred return types.
 Concrete `decltype` declarations infer receiver shapes from their unevaluated
@@ -348,7 +458,18 @@ expressions retain both operand candidates without resolving their common type. 
 casts use the target type, including pointer aliases and source-derived types.
 Chained DART data-member accesses use the member's declared type.
 Function and data declarations retain grouped names and each declarator's type;
-data declarations retain array dimensions.
+data declarations retain array dimensions. Callable variables and data members
+retain their declarations when invoked through qualified names, object receivers
+or inherited fields, respecting member-name hiding. Grouped function pointers
+retain each name, array shape and any trailing return type. Callback fields do
+not construct their return types.
+Calls through qualified member-function pointers retain their declared return types.
+Known indexed function-type aliases and nested `std::function` or raw callback
+returns preserve callable shapes through repeated invocations and product-element
+projections. Used callable aliases retain their target declarations, including
+parameter types, in `type_alias_declarations`, including aliases named inside products and
+containers or aliasing `std::function`; inline field layout alone does not retain them. Dependent and explicitly declared source callbacks retain their
+existing conservative receiver handling.
 Qualified free-function references count even when they are not calls.
 Macro entries also retain DART feature probes and mark whether the current
 DART headers declare them (`declared_in_dart`).
@@ -552,8 +673,6 @@ remains 10000.
 ## Not covered yet
 
 - The lanes are not in CI (see `docs/onboarding/ci-cd.md`).
-- `test-gz` should configure gz-physics twice once DART 6.20 passes gz-physics
-  `ContactPropertiesCallback` again; until then it would turn red.
 - Benchmark worlds beyond the generated ones: a box pile, a mesh ground, a
   heightmap (gz-sim's example downloads one from Fuel), a conveyor with a
   payload under a commanded belt, and 3k_shapes with a fixed-base arm under a

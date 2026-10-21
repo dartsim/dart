@@ -31,7 +31,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S7 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
-| `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title, body, messages, file names and added lines of every PR commit with only the base branch's local-path checker; fetches PR git objects without checking out or executing PR code; skips with a notice until the checker exists on the base |
+| `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title, body, messages, file names and added lines of every PR commit with only the base branch's local-path checker, skipping in PRs into `main` the changes of commits that a protected `release-*` branch already published; fetches PR git objects without checking out or executing PR code; skips with a notice until the checker exists on the base |
 
 To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <reason>` (or `Rebaseline-Rationale: <rows>: <reason>` for changed guards, including a signed Ir percentage when above +1%) to the PR body and run `gh run rerun <run-id> --failed`; editing the body alone does not trigger a run.
 
@@ -376,8 +376,9 @@ C++ demo app or scene-cycle CTest target.
 `ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
 testing and configures it once, so gz-physics' contact-callback test
 expectations are not compiled in. The unpatched Gazebo lanes
-(`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
-`tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
+(`pixi run gz-compat-ionic` and `gz-compat-jetty` on `main`, plus
+`gz-compat-harmonic` on `release-6.20`; see `tools/gazebo/README.md`) are not
+in CI yet: each builds DART, gz-physics, and
 gz-sim from source and runs a serial suite. Release verification of DART
 6.20 at `48eb618bb81` passed all three unpatched gz-physics and gz-sim
 compatibility gates, with results equal to or better than DART 6.19.5.

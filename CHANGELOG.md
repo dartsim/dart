@@ -6,6 +6,31 @@
 
 * Breaking Changes
 
+  * **Behavior change:** MJCF loading now enforces hinge and slide limits,
+    including inherited defaults and MuJoCo 3.x automatic limits; applies
+    declared mass, center of mass, and rotated inertia even without geoms;
+    places bodies without `pos` at the parent origin in local coordinates;
+    orthogonalizes `xyaxes`; and converts hinge `springref` from degrees.
+    Hinge and ball ranges are now read in degrees under
+    `<compiler angle="degree">` (MuJoCo's default), rather than as raw numbers.
+    Coordinates without limits now report infinite position limits instead of
+    the declared range (often zero).
+    Invalid declarations now fail to load: unknown `limited` or `autolimits`
+    values, nonzero ranges with automatic limits under `autolimits="false"`,
+    reversed or non-finite limited ranges, a nonzero lower limit on a limited
+    ball joint, or `fullinertia` combined with an orientation attribute.
+    Models that relied on ignored limits or inertia will simulate differently;
+    use `limited="false"` to disable limits explicitly. Ball-joint angular limits
+    remain unsupported and warn once per model; support is deferred to a later
+    release.
+    [#3877](https://github.com/dartsim/dart/pull/3877)
+
+  * `dart/utils/urdf/urdf.hpp`, through `urdf_world_parser.hpp`, no longer
+    includes `BackwardCompatibility.hpp`. Code using its
+    `URDFDOM_HEADERS_VERSION_*` macros must include
+    `dart/utils/urdf/BackwardCompatibility.hpp` directly.
+    [#3863](https://github.com/dartsim/dart/pull/3863)
+
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
     scaling, and display-free Linux capture. The `gui-osg` component
@@ -29,7 +54,7 @@
     on a host with a graphics device.
     [#3696](https://github.com/dartsim/dart/pull/3696)
 
-  * dartpy now uses nanobind 3.1 or newer and requires Python 3.10 or newer.
+  * dartpy now uses nanobind 3.1 or newer and requires Python 3.12 or newer.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
     Python `isinstance` checks and MRO; exception types and messages can differ;
     bool parameters accept only `True`/`False`; str parameters reject bytes;
@@ -48,6 +73,10 @@
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
+
+  * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
+    meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
 
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
@@ -75,6 +104,15 @@
     and applications linked to the former ImGui shared library must rebuild.
 
 * API
+
+  * URDF world loading returns `nullptr` when an include is missing its
+    filename or model name, or an entity is missing its model, instead of
+    constructing strings from null attributes.
+    [#3863](https://github.com/dartsim/dart/pull/3863)
+
+  * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
+    256 MiB of decoded RGBA data, before allocating them.
+    [#3860](https://github.com/dartsim/dart/pull/3860)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
@@ -106,6 +144,23 @@
 
 * Collision
 
+  * Fix a memory leak where a Bullet collision detector used for a collision
+    check between two groups was never destroyed.
+    [#3875](https://github.com/dartsim/dart/pull/3875)
+
+  * Fix distance queries and nearest points for touching convex pairs in FCL's
+    libccd GJK distance in Linux wheels, demonstrated for ellipsoid,
+    ellipsoid-sphere and box pairs. FCL 0.7.0 can abort with assertions (as on
+    Ubuntu 24.04), or return -1 and zero nearest points. Only Linux wheels carry
+    the fix; every other build, including the macOS and Windows wheels, pixi and
+    conda-forge builds, and source builds using system FCL, remains affected.
+    [#3870](https://github.com/dartsim/dart/pull/3870)
+
+  * Fix undefined behavior when a custom deleter of a replaced collision
+    detector or contact surface handler reads the constraint solver's
+    current one.
+    [#3820](https://github.com/dartsim/dart/pull/3820)
+
   * An exception thrown by a collision filter during an ODE collision check
     now reaches the caller after ODE finishes the check, instead of unwinding
     through ODE and leaving its collision space locked.
@@ -123,6 +178,51 @@
 
 * Dynamics
 
+  * `VoxelGridShape::updateOccupancy()` no longer corrupts memory on very
+    long rays or point clouds containing them. Rays that cross more than
+    about 100,000 voxels are skipped with a warning (their endpoints are not
+    marked occupied), and the other points of a cloud are still inserted.
+    [#3859](https://github.com/dartsim/dart/pull/3859)
+
+  * Release scenes assigned to the protected `MeshShape::mMesh` by legacy
+    subclasses when the shape is destroyed. These scenes must be heap-allocated
+    with `new` or by an assimp import; callers must not free or share them.
+    Callers retaining ownership use `setMesh(..., MeshOwnership::None)`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * Line segment and point cloud shapes now report bounding boxes that
+    include vertices and points edited after a query, and clearing a point
+    cloud now refreshes collision geometry.
+    [#3826](https://github.com/dartsim/dart/pull/3826)
+
+  * `Skeleton::getSupportIndices()` now names the end effector behind each
+    support polygon vertex instead of returning an empty list, so
+    `BalanceConstraint` no longer reads past its end.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * A `LineSegmentShape` built from two points now reports `LINE_SEGMENT`
+    from the deprecated `getShapeType()`, like one built from a thickness.
+    [#3823](https://github.com/dartsim/dart/pull/3823)
+
+  * Line segments built from two points, planes built from a normal and a
+    point, point clouds, and custom shapes built on the default `Shape`
+    constructor now always compute their bounding box on the first query,
+    instead of possibly returning a zero-size box at the shape's origin.
+    Custom shapes also compute their volume instead of possibly returning
+    zero.
+    [#3819](https://github.com/dartsim/dart/pull/3819)
+
+  * Keep prepared Worlds ready after topology edits in unrelated Worlds,
+    while still rebuilding after changes to their own skeletons, solver
+    membership, or collision-group dependencies.
+    [#3818](https://github.com/dartsim/dart/pull/3818)
+
+  * Point masses added with `SoftBodyNode::addPointMass()` no longer read or
+    write their state out of bounds, and they now appear in the soft mesh
+    and the skeleton version. `removeAllPointMasses()` no longer leaks the
+    removed point masses.
+    [#3813](https://github.com/dartsim/dart/pull/3813)
+
   * Keep a detached node's body and skeleton alive until the node finishes
     destruction, preventing crashes when releasing retained shape nodes,
     including GUI picks collected by Python.
@@ -137,8 +237,6 @@
     `JacobianDLS` with normal iterative error settings, preserving user bounds
     and task-space regions. Set up the analytical solver again for the copy;
     whole-skeleton clones keep their analytical solvers.
-    `IkFast::getDofs()` now returns an empty list when IkFast cannot configure,
-    as its warning says, instead of failing an assertion.
     [#3722](https://github.com/dartsim/dart/pull/3722)
 
   * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
@@ -175,6 +273,42 @@
 
 * Python
 
+  * Passing `None` for a frame, body or shape-node argument no longer crashes
+    the interpreter. Where C++ defaults the argument to the world frame, `None`
+    now means the world frame. Arguments where C++ gives `None` a meaning, such
+    as `setParentFrame` to detach, keep that meaning. Everywhere else `None`
+    raises `TypeError`, including `World.addSkeleton`, `World.removeSkeleton`,
+    `CollisionGroup.addShapeFrame` and `BodyNode.createShapeNode`, which used
+    to ignore it. `FreeJoint.setSpatialMotion` now accepts arrays for its
+    transform, velocity and acceleration; `None` skips a motion and its frames.
+    [#3841](https://github.com/dartsim/dart/pull/3841)
+
+  * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
+    `World.restore_state(state)` for dynamic snapshots; state arrays are
+    read-only NumPy copies and a structure mismatch raises `ValueError`.
+    [#3842](https://github.com/dartsim/dart/pull/3842)
+
+  * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
+    writes now raise `ValueError`; call `.copy()` before writing, then use the
+    appropriate setter to update DART state. Eigen arguments that dartpy passes
+    into Python overrides, such as `Function.eval(x)`, are read-only too.
+    Existing live views and output buffers, such as a gradient's `grad`, keep
+    their mutability.
+    [#3843](https://github.com/dartsim/dart/pull/3843)
+
+  * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
+    raycasts and releasing the stored Python callback.
+    [#3810](https://github.com/dartsim/dart/pull/3810)
+
+  * CMake development builds report the DART version in `dartpy.__version__`
+    instead of an empty string. Explicit packaging versions remain supported.
+    [#3809](https://github.com/dartsim/dart/pull/3809)
+
+  * Keep gradient arrays passed to Python `optimizer.Function.evalGradient`
+    overrides alive after the callback returns, while applying their updates
+    to the native solver.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
+
   * Avoid crashes when native code releases Python objects, or calls Python
     collision filters, analytical IK solvers, optimizer overrides or GUI event
     handlers, while Python 3.15 or newer shuts down. Builds against the full Python API were
@@ -192,16 +326,32 @@
   * Reject a null node when constructing inverse kinematics in dartpy,
     preventing an invalid-input crash.
 
-  * Build `dartpy` wheels with the nanobind binder. Python 3.12 and newer use
-    one `cp312-abi3` wheel per platform (new `DART_DARTPY_STABLE_ABI` CMake
-    option), and Linux keeps `cp310` and `cp311` wheels, so each release
-    publishes eight wheels instead of twelve.
+  * Build `dartpy` wheels with the nanobind binder for CPython's stable ABI
+    (new `DART_DARTPY_STABLE_ABI` CMake option): one `cp312-abi3` wheel per
+    platform serves Python 3.12 and newer, so each release publishes four
+    wheels (Linux x86_64 and aarch64, macOS arm64, Windows x64) instead of
+    twelve.
+
+  * `dartpy` is a Python package around a private native extension.
+    `import dartpy` and every public `dartpy.<module>` name are unchanged; the
+    package adds a `py.typed` marker and an empty `dartpy.experimental`
+    subpackage outside semantic versioning. Source builds use scikit-build-core
+    through `pyproject.toml`: `setup.py` is gone, sdist and editable installs
+    are refused, the wheel no longer ships a `tests` package, and the
+    `SKBUILD_BUILD_DIR` environment variable replaces `DARTPY_BUILD_TEMP`.
+    Development builds import the package from `build/<env>/cpp/<type>/python`
+    instead of its `dartpy` subdirectory.
+    [#3847](https://github.com/dartsim/dart/pull/3847)
 
   * Source builds of `dartpy` on Windows work with the Ninja and NMake
-    generators, and the `DARTPY_BUILD_TEMP` environment variable moves the
-    CMake build tree, for example to a larger disk.
+    generators.
 
 * Examples
+
+  * Hide the ssik analytical IK demo's solved marker when no current
+    forward-kinematics pose is available, including failed solves and arm
+    loads.
+    [#3824](https://github.com/dartsim/dart/pull/3824)
 
   * Replace the four C++ tutorials with Python exercises and solutions in
     `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
@@ -210,6 +360,60 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
+    of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
+    OpenSSL; only static installs require consumers to provide them.
+    [#3883](https://github.com/dartsim/dart/pull/3883)
+
+  * Release builds against Eigen 5 no longer fail under the default
+    warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
+    options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
+    pass against Eigen 5.
+    [#3836](https://github.com/dartsim/dart/pull/3836)
+
+  * Raise the minimum assimp version to 5.3 (Ubuntu 24.04's 5.3.1, which
+    reports 5.3.0).
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * Remove `ASSIMP_AISCENE_CTOR_DTOR_DEFINED` and
+    `ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED` from the installed `dart/config.hpp`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * The installed `BulletCollisionDetector.hpp` no longer includes
+    `<assimp/scene.h>`; code using assimp types through it must include that
+    header directly.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * Link only BulletCollision and LinearMath instead of all four Bullet
+    libraries, so the exported link interface and wheels no longer carry
+    BulletDynamics and BulletSoftBody.
+    [#3864](https://github.com/dartsim/dart/pull/3864)
+
+  * `find_package(DART)` no longer requires pkg-config: without it, the
+    installed package reads assimp's version from assimp's own CMake package.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Restore discovery of the `collision-bullet` component with Ubuntu 22.04's
+    Bullet package. The minimum Bullet is 3.05, because upstream Bullet 3.06
+    reports itself as 3.05.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * GCC builds append `-Wl,--no-undefined` to the shared-library linker flags
+    instead of replacing them, so flags from `LDFLAGS` reach DART's libraries.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Add `DART_BUILD_EXAMPLES` (default `ON`); `OFF` skips the C++ examples,
+    which MSVC builds by default.
+    [#3829](https://github.com/dartsim/dart/pull/3829)
+
+  * Include the generated `dart/config.hpp` and
+    `dart/utils/urdf/BackwardCompatibility.hpp` in headers-only installations.
+    [#3811](https://github.com/dartsim/dart/pull/3811)
+
+  * Standard Pixi environments use sdformat 16.1 and urdfdom 6, reducing memory
+    used to load large SDF worlds through shared schema descriptions.
+    [#3803](https://github.com/dartsim/dart/pull/3803)
 
   * Allow C++-only projects to find the installed CMake package with the
     `collision-ode` component without enabling C.
@@ -254,8 +458,8 @@
     from source on Linux (Clang 20 or newer and Ninja) and downloaded prebuilt
     on macOS arm64 and 64-bit Windows.
 
-  * Raise the minimum `wheel` version for isolated Python package builds
-    from 0.45.1 to 0.48.0.
+  * Isolated Python package builds install scikit-build-core 1.1.1 or newer
+    instead of setuptools and wheel.
     [#3791](https://github.com/dartsim/dart/pull/3791)
 
   * Raise the minimum `ninja` version for isolated Python package builds
@@ -263,6 +467,119 @@
     [#3792](https://github.com/dartsim/dart/pull/3792)
 
 ## DART 6
+
+### [DART 6.20.1 (2026-10-18)](https://github.com/dartsim/dart/milestone/106?closed=1)
+
+DART 6.20.1 is a patch release on the DART 6 line. It fixes mimic joints that
+use the coupler constraint gaining energy or crashing, simulations that blow up
+on contacts no joint motion can resolve, and crashes when copying analytical
+inverse kinematics, loading SKEL worlds or releasing removed nodes. An
+exception from a collision filter no longer leaves ODE's collision space
+locked, and SKEL, SDF and MJCF files with the wrong number of vector or pose
+values now fail to load instead of writing out of bounds. Builds work again
+with urdfdom 3.x packages that ship no CMake version file, and C++-only
+projects can find the `collision-ode` component. dartpy wheels now cover
+Python 3.12 to 3.14, plus Python 3.15 on Linux; on x86_64 and aarch64 Linux
+with glibc 2.28 or newer, pip on Python 3.10 and 3.11 keeps installing 6.20.0.
+There is no API or ABI change, so code built against 6.20.0 runs unchanged;
+rebuild it to pick up the `NodePtr` and `HeightmapShape` fixes, which are in
+header-only templates.
+
+* Collision
+
+  * An exception thrown by a collision filter during an ODE collision check
+    now reaches the caller after ODE finishes the check, instead of unwinding
+    through ODE and leaving its collision space locked.
+    [#3723](https://github.com/dartsim/dart/pull/3723)
+
+* Constraint
+
+  * Fix mimic joints enforced by the coupler constraint
+    (`Joint::setUseCouplerConstraint(true)`). Coupled joints no longer gain
+    energy, or diverge when the follower has more inertia than the leader,
+    and per-DoF couplers on multi-DoF joints no longer crash. With or without
+    the coupler, a joint that mimics only a later DoF, such as an SDF
+    universal joint with an `<axis2>` mimic, now gets its mimic constraint:
+    [#3702](https://github.com/dartsim/dart/pull/3702),
+    [#3700](https://github.com/dartsim/dart/pull/3700)
+
+  * Fix simulations blowing up when no joint motion can resolve a contact
+    along its normal, such as overlapping links of a self-colliding skeleton
+    on revolute joints whose shared axis is the contact normal. Such a contact
+    now gets no normal impulse, and with the Dantzig solver alone it no longer
+    zeroes the other contacts in its group:
+    [#3716](https://github.com/dartsim/dart/pull/3716),
+    [#3707](https://github.com/dartsim/dart/pull/3707),
+    [#3721](https://github.com/dartsim/dart/pull/3721)
+
+* Dynamics
+
+  * Fix crashes when cloning a skeleton, or copying a body node that has an
+    end effector, whose inverse kinematics uses an analytical solver. Inverse
+    kinematics copied by `BodyNode::copyTo()` or `BodyNode::copyAs()` now
+    selects the copies of the original degrees of freedom, keeps the selected
+    ones that were not copied when the copy stays in the same skeleton, and
+    warns when none remain. Copies with analytical solvers warn and use
+    `JacobianDLS` with normal iterative error settings, preserving user bounds
+    and task-space regions. Set up the analytical solver again for the copy;
+    whole-skeleton clones keep their analytical solvers. Inverse kinematics
+    on a body node of a cloned skeleton now moves the clone; before, it could
+    not move it. `IkFast::getDofs()` now returns an empty list when IkFast
+    cannot configure, as its warning says.
+    [#3722](https://github.com/dartsim/dart/pull/3722)
+
+  * Fix a crash when the last `NodePtr` to a removed node, such as a removed
+    shape node, is released: the body and skeleton that the pointer kept alive
+    now outlive the node's destruction. `NodePtr` is a header-only template,
+    so rebuild code that holds one to get this fix.
+    [#3784](https://github.com/dartsim/dart/pull/3784)
+
+  * Initialize `HeightmapShape` minimum and maximum heights to zero, so a
+    heightmap without a height field reports finite heights and bounds.
+    `HeightmapShape` is a header-only template, so rebuild code that creates
+    one to get this fix.
+    [#3744](https://github.com/dartsim/dart/pull/3744)
+
+* Parsers
+
+  * SKEL, SDF and MJCF loading, and the `dart::utils` XML conversions such as
+    `toVector3d()` and `toIsometry3d()`, throw `std::invalid_argument` when a
+    2-, 3-, 4- or 6-element vector or pose value has the wrong number of
+    elements, instead of writing out of bounds or leaving values unset in
+    release builds. An MJCF weld `solref` with one value keeps the default for
+    the other.
+    [#3698](https://github.com/dartsim/dart/pull/3698)
+
+  * Loading a SKEL world no longer crashes when the collision detector
+    factory cannot create `fcl`, for example after an application
+    unregisters the factory's creators. The parser creates the FCL detector
+    directly instead and warns once.
+    [#3750](https://github.com/dartsim/dart/pull/3750)
+
+* Python
+
+  * dartpy wheels now cover Python 3.12, 3.13 and 3.14 on Linux (x86_64,
+    aarch64), macOS (arm64) and Windows. Python 3.10 (end of life) and 3.11
+    no longer get wheels, so on x86_64 and aarch64 Linux with glibc 2.28 or
+    newer, pip with those versions keeps installing dartpy 6.20.0. Source
+    builds still support Python 3.10 and newer:
+    [#3704](https://github.com/dartsim/dart/pull/3704)
+
+  * dartpy publishes Python 3.15 wheels for Linux x86_64 and aarch64. macOS
+    arm64 and Windows x64 follow once conda-forge's bullet-cpp builds for
+    Python 3.15. [#3730](https://github.com/dartsim/dart/pull/3730)
+
+* Build
+
+  * Restore `dart-utils-urdf` builds with urdfdom 3.x installations that ship
+    no CMake version file, such as Ubuntu 22.04 and FreeBSD packages. The
+    minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
+    3.0.0.
+    [#3733](https://github.com/dartsim/dart/pull/3733)
+
+  * Allow C++-only projects to find the installed CMake package with the
+    `collision-ode` component without enabling C.
+    [#3756](https://github.com/dartsim/dart/pull/3756)
 
 ### [DART 6.20.0 (2026-10-11)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
@@ -329,7 +646,7 @@ above lists every merged change.
 
   * Source builds need GCC 11.2, Clang 13, Apple Clang 14 (Xcode 14.1) or
     Visual Studio 2022, on Ubuntu 22.04, macOS 13 or newer, and dartpy needs
-    Python 3.10 and NumPy 1.21.5 or newer. The
+    Python 3.12 and NumPy 1.21.5 or newer. The
     [build requirements](https://dart.readthedocs.io/en/latest/dart/developer_guide/build.html)
     list the dependency versions:
     [#3643](https://github.com/dartsim/dart/pull/3643)

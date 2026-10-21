@@ -410,13 +410,8 @@ protected:
   std::unique_ptr<Properties> mTemporaryProperties;
 };
 
-//==============================================================================
-//
-// These namespace-level definitions are required to enable ODR-use of static
-// constexpr member variables.
-//
-// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
-//
+#if __cplusplus < 201703L
+// Definitions are needed for ODR-use before C++17 inline variables.
 template <
     class BaseT,
     class DerivedT,
@@ -481,6 +476,7 @@ constexpr const PropertiesT& (*EmbeddedPropertiesAspect<
                               setEmbeddedProperties,
                               getEmbeddedProperties>::GetEmbeddedProperties)(
     const DerivedT*);
+#endif
 
 } // namespace detail
 } // namespace common

@@ -25,6 +25,14 @@ install(
   FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
   DESTINATION include/dart/utils/urdf
 )
+# Also in the headers component; the rule above keeps the default component's
+# contents unchanged.
+install(
+  FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
+  DESTINATION include/dart/utils/urdf
+  COMPONENT headers
+  EXCLUDE_FROM_ALL
+)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_urdf headers" ${hdrs})
@@ -43,4 +51,4 @@ install(
   COMPONENT headers
 )
 
-dart_format_add(${hdrs} ${srcs})
+dart_format_add(${hdrs} ${srcs} detail/JointXmlElementMetadata.hpp)

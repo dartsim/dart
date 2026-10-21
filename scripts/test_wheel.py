@@ -14,15 +14,24 @@ from pathlib import Path
 SMOKE_TEST = r"""
 import faulthandler
 import os
+import sys
 import tempfile
 from pathlib import Path
 
 faulthandler.dump_traceback_later(60, repeat=True)
 print("Native smoke: importing dartpy", flush=True)
 import dartpy as dart
+import dartpy.experimental
 from dartpy.gui import InteractiveFrame
 from dartpy.math import Random
 from dartpy.utils import DartLoader, MjcfParser, SdfParser, SkelParser
+
+print("Native smoke: package layout", flush=True)
+# A package with a private extension; public types keep their public module.
+assert dart.__file__.endswith("__init__.py"), dart.__file__
+assert os.path.dirname(dart._core.__file__) == os.path.dirname(dart.__file__)
+assert dart.dynamics.Skeleton.__module__ == "dartpy.dynamics"
+assert sys.modules["dartpy.dynamics"] is dart.dynamics
 
 print("Native smoke: physics and parsers", flush=True)
 assert dart.collision.BulletCollisionDetector() is not None

@@ -2,15 +2,44 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
-On `main`, before the DART 7.0 package-layout work (M5),
-`dartpy` is one all-in-one nanobind extension,
-containing core, collision backends enabled in the build, IO parsers and the
-Filament GUI bindings (`dartpy.gui`). It links `dart`, `dart-io` and
-`dart-gui`. Enabling `DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and
-`DART_BUILD_GUI=ON`; for a headless C++ installation, set
-`DART_BUILD_DARTPY=OFF`. See
+On `main`, `dartpy` is a Python package with one private nanobind extension,
+`dartpy._core`, containing core, collision backends enabled in the build, IO
+parsers and the Filament GUI bindings (`dartpy.gui`). It links `dart`,
+`dart-io` and `dart-gui`. Enabling `DART_BUILD_DARTPY` requires both
+`DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`; for a headless C++ installation,
+set `DART_BUILD_DARTPY=OFF`. See
 [build system notes](build-system.md) for the C++ package layout and legacy
 forwarding targets.
+
+The package layout (DART 7 design decisions D6, D19, D20 and D22):
+
+- `python/dartpy/package/` holds the pure-Python files: `__init__.py`,
+  `py.typed` and `experimental/__init__.py`; `dartpy.experimental` is empty
+  and outside SemVer. They sit in a subdirectory so that `python/dartpy/`,
+  the C++ binding directory, is never importable as the `dartpy` package:
+  tests and examples put `python/` on `sys.path` ahead of the build tree.
+- `python/dartpy/module.cpp` defines `NB_MODULE(_core)`. The package imports
+  the extension while it initializes, and the extension binds every public
+  submodule into the package module it finds in `sys.modules`. nanobind
+  therefore registers `dartpy.dynamics`, `dartpy.utils.SdfParser` and the
+  other submodules in `sys.modules` under their public names, and every class,
+  enum and function keeps its canonical public `__module__`
+  (`dartpy.dynamics.Skeleton.__module__ == "dartpy.dynamics"`). No
+  `dartpy._*` module leaks into a public `__module__`;
+  `python/tests/unit/bindings/test_metadata.py` walks the package to check
+  this, and `scripts/nanobind/api_surface.py --snapshot` records the public
+  surface with its module paths.
+- The CMake target is still `dartpy`; it builds `_core` into the staged
+  package at `${DART_DARTPY_BUILD_DIR}/dartpy`, and a build step it depends on
+  copies the pure-Python files there, so each configuration a multi-config
+  generator builds gets a complete package and an edited file re-stages
+  without a reconfigure. `DART_DARTPY_BUILD_DIR` is the Python build directory, or its
+  `$<CONFIG>` subdirectory for multi-config generators, and `DART_PYTHONPATH`
+  is exactly that root. `PYTHONPATH` entries in `pixi.toml` therefore end in
+  `python` (Linux and macOS) or `python/$BUILD_TYPE` (Windows).
+- Development builds use the version-specific CPython API
+  (`DART_DARTPY_STABLE_ABI=OFF`, the default), which is the faster call path
+  and the one the test suite exercises; wheels build for the stable ABI.
 
 With `DART_BUILD_UTILS_ASSETS=ON`, `dart-io` also includes the optional online
 robot model retriever, exposed as `dartpy.utils.ModelResourceRetriever`.
@@ -62,18 +91,19 @@ M6a landed the renderer in [#3696](https://github.com/dartsim/dart/pull/3696);
 M6b still replaces the interim GUI module with `dart.render` and `dart.viewer`
 before the first release candidate. `release-6.20` retains pybind11 and OSG.
 
-Python 3.10 or newer and nanobind 3.1 or newer are required.
+Python 3.12 or newer and nanobind 3.1 or newer are required.
 `DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
 `robin_map` submodule. With `ON`, CMake uses `nanobind_DIR` when it is set and
 otherwise locates nanobind's CMake directory using
 `python -m nanobind --cmake_dir`. Set `nanobind_DIR` when the build's Python
 cannot import nanobind, as in cross builds and isolated pip builds. Source
-builds through `setup.py` place the CMake build tree under `DARTPY_BUILD_TEMP`
-when that environment variable is set. The build output remains
-`${DART_PYTHON_BUILD_DIR}/dartpy`; tests and examples use the generated target
-runtime path. The `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options
-are removed. Passing the legacy binder value `pybind11` fails configure;
-`nanobind` is accepted for compatibility and removed from the cache.
+builds through `pip` use scikit-build-core (`pyproject.toml`) and keep the
+CMake build tree under `build/<wheel tag>`; the `SKBUILD_BUILD_DIR`
+environment variable moves it, for example to a larger disk. Tests and
+examples import the staged package from `DART_PYTHONPATH`. The
+`DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options are removed.
+Passing the legacy binder value `pybind11` fails configure; `nanobind` is
+accepted for compatibility and removed from the cache.
 
 ### Changes from DART 6.20 (pybind11)
 
@@ -90,8 +120,11 @@ are removed. Passing the legacy binder value `pybind11` fails configure;
 
 Python overrides and subclass state stay alive while C++ uses the object.
 Wrappers for graph objects, including joints and degrees of freedom, keep
-their skeleton alive. Views of const Eigen data are read-only; code that
-needs a writable independent array should make an explicit copy.
+their skeleton alive. Owned Eigen vector and matrix returns are read-only
+NumPy copies; call `.copy()` before writing and use a setter to update DART
+state. Existing live views preserve their mutability, including read-only
+views of const Eigen data. Inputs and caller-provided output buffers are
+unaffected.
 
 ### GUI ownership
 
@@ -155,7 +188,10 @@ bindings and `detail/array.hpp` to preserve pybind11's `FixedSize` array
 annotations using nanobind's array conversion. Use
 `detail/optimizer_properties.hpp` for optimizer property values and
 `detail/ik_properties.hpp` for inverse-kinematics property values. The property
-headers also assert their caster selection. CMake runs
+headers also assert their caster selection. Find an aspect's entry in a
+composite state with `detail/composite_state.hpp`, which matches type names:
+`state.get<T>()` misses on macOS arm64, where dartpy's hidden copy of an aspect
+template's typeinfo never equals libdart's. CMake runs
 `scripts/nanobind/check_guards.py` to enforce the first include and required
 headers and reject conflicting stock Eigen, `shared_ptr`, and `array.h`
 casters. Missing optional STL casters fail compilation. Keep DART headers and
@@ -171,9 +207,52 @@ the helper when nanobind changes its internals ABI.
 The Eigen caster preserves Eigen dimensions, strides, and ownership. By-value
 results move into a heap owner. At runtime, NumPy 2 uses its C API to export
 the array; NumPy 1 uses nanobind's `numpy.asarray` export with that same owner.
-Both paths keep returned storage alive. The NumPy export cache assumes the
-GIL and a single interpreter; isolated interpreters and free-threaded Python
-need a separate ownership and synchronization design.
+Both paths keep returned storage alive and read-only. Explicit copy-policy
+exports and empty owned arrays also clear NumPy's writeability flag after
+exporting. The NumPy export cache assumes the GIL and a single interpreter;
+isolated interpreters and free-threaded Python need a separate ownership and
+synchronization design.
+
+`optimizer.Function.evalGradient` overrides receive an owned NumPy output
+array initialized from the native gradient. In-place updates are copied back
+after the callback; changing the output size raises `ValueError`. Retaining the
+array keeps its storage alive independently of later solver calls.
+
+`SoftBodyNode.get_point_mass(index)` checks bounds and returns a borrowed
+`PointMass` that retains its body and Skeleton. Point positions, velocities,
+accelerations, world position and forces return independent read-only NumPy copies; positions
+and velocities can be assigned through their properties. These setters preserve
+the engine's nonfinite-value behavior, so diagnostic callers must check state
+before using it. Adaptive-contact settings are ordinary SoftBodyNode properties;
+the engine determines activation membership.
+If a soft-body copy replaces topology and deletes a point, its retained Python
+handle raises `TypeError` on native access, including point-impulse arguments.
+Destruction notifications prevent address reuse from reviving that handle.
+
+Point masses expose mass, rest position, world velocity and collision status;
+the four `reset_*` methods reset their position, velocity, acceleration and force
+state separately. `Skeleton.clear_colliding_bodies()` clears body and point
+collision flags. Soft-body generator properties expose independent arrays of
+point rest positions, masses and faces, and `SoftBodyNode.get_face()` returns a
+checked, copied face.
+
+`Skeleton.getConfiguration()` returns an owning `SkeletonConfiguration` value
+for `setConfiguration()`. `BodyNode.get_composite_state()` returns an owning
+`common.CompositeState` for `set_composite_state()`. These snapshots retain
+their copied state independently of the original graph. Restoring body or
+skeleton snapshots with different soft-point counts raises `ValueError` before
+mutation. `Skeleton.setState()` retains C++ joint restore semantics, including
+deriving FORCE-joint commands from restored forces.
+
+`MeshShape.mesh_vertex_groups` returns independent, read-only arrays of unscaled
+vertices in submesh order. `VoxelGridShape.validate_occupancy_update()` checks
+the same inputs as `updateOccupancy()` without changing occupancy, allowing
+callers to validate a cloud before changing other sensor state.
+
+`math.TriMesh(vertices, triangles)` owns double-precision geometry and checks
+finite vertices and valid integral triangle indices. Its array properties return
+independent copies. `MeshShape(scale, mesh)` accepts this ordinary mesh, and
+`MeshShape.tri_mesh` returns its owning native mesh.
 
 Registered owners expose native Python references to cyclic GC through
 traverse and clear slots. Coverage includes objective/solver and constraint
@@ -215,29 +294,49 @@ unity build.
 
 ## Wheels
 
+`pyproject.toml` builds wheels with scikit-build-core: it builds only the
+`dartpy` CMake target and installs only the `python` component, so a wheel
+holds the `dartpy` package (`__init__.py`, `py.typed`, `experimental/`, the
+`_core` extension) plus the licenses, and no test package. The version comes
+from `package.xml`. `scripts/pep517/dartpy_backend.py` is a thin PEP 517
+wrapper around scikit-build-core, which resolves license files before CMake
+runs: CMake stages the fetched Filament SDK license and notices inside the
+package, and the wrapper moves them to `dist-info/licenses/filament/` with
+matching `License-File` headers after the wheel is built. The wrapper exports
+only `build_wheel` and `get_requires_for_build_wheel`: it has no
+`prepare_metadata_for_build_wheel`, so frontends read METADATA from the built
+wheel, where the headers match. dartpy is wheel-only (D20): there is no
+`setup.py`, and `build_sdist` and `build_editable` raise
+`UnsupportedOperation`, so `pip install -e .` fails by design. Develop with
+`pixi run build-py-dev` and `DART_PYTHONPATH` instead.
+
 macOS and Windows wheel packaging is Pixi-managed. `wheel-build-core`,
 `wheel-repair-<platform>-core`, `wheel-verify-core`, and `wheel-test-core`
-implement the pipeline, and the `py310-wheel`..`py313-wheel` environments
-expose the corresponding tasks.
+implement the pipeline; the `py312-wheel` environment exposes `wheel-build`,
+`wheel-repair`, `wheel-verify` and `wheel-test`, and `py313-wheel` exposes
+`wheel-test-abi3`. `wheel-build-core` passes only the environment-specific
+CMake options (`CMAKE_PREFIX_PATH`, `DART_USE_SYSTEM_IMGUI` and host linker
+flags) through `CMAKE_ARGS`; the fixed wheel configuration lives in
+`pyproject.toml`.
 
-Wheels use the nanobind binder. A Python 3.12 build sets
-`DART_DARTPY_STABLE_ABI=ON`, which builds the module for CPython's stable ABI
-and tags the wheel `cp312-abi3`, so one wheel per platform serves Python 3.12
-and every later version; other Python versions build regular wheels. The
-release matrix therefore builds eight wheels: `cp312-abi3` for Linux x86_64
-and aarch64, macOS arm64, and Windows x64, plus Linux `cp310` and `cp311` for
-both architectures. Each abi3 row also checks the wheel with
+Wheels require Python 3.12 and use the nanobind binder for CPython's stable
+ABI (`DART_DARTPY_STABLE_ABI=ON`, which needs CMake 3.26), so every build is
+tagged `cp312-abi3` and one wheel per platform serves Python 3.12 and every
+later version. The release matrix builds four wheels: Linux x86_64 and
+aarch64, macOS arm64, and Windows x64. Each row checks the wheel with
 `abi3audit --strict` and tests it on Python 3.13: the Linux driver below does
 both in its containers, and macOS and Windows run
 `pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls cost up to about 5%
-more instructions on NumPy-heavy setters; CMake refuses
-`DART_DARTPY_STABLE_ABI` on Python older than 3.12 or CMake older than 3.26.
+more instructions on NumPy-heavy setters. `scripts/verify_wheel.py` rejects a
+wheel that is not `cp312-abi3`, lacks the package files or the Filament
+license, or ships files outside the package.
 
-Linux release wheels use `python3 scripts/wheel_linux.py cp312` (also
-`cp310` and `cp311`) on native x86_64 or aarch64 hosts with Docker.
-The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
-dependencies and dartpy with the manylinux toolchain, requires
-`auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
+Linux release wheels use `python3 scripts/wheel_linux.py cp312` on native
+x86_64 or aarch64 hosts with Docker.
+The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, which fetches each
+source-built native dependency as a release or tag archive checked with
+`sha256sum` (update the hash with the version). It compiles those dependencies and dartpy
+with the manylinux toolchain, requires `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
 test in a fresh manylinux 2.28 base container. Outputs are in `dist/`.
 The source checkout is mounted read-only; temporary container builds avoid
 reusing host CMake caches.
@@ -260,8 +359,7 @@ gh workflow run publish_dartpy.yml --ref <branch> \
 ```
 
 Use the candidate branch for the workflow definition and the exact candidate
-SHA for the checkout. `ref=main` enables the release-only Python rows without
-requesting publication. Inspect both architectures' repaired tags and fresh
+SHA for the checkout. Inspect both architectures' repaired tags and fresh
 container smoke tests before release.
 
 The repaired-wheel smoke test requires all four parser APIs and constructs a

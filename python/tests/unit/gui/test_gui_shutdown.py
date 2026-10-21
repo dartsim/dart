@@ -55,7 +55,7 @@ def test_gui_ownership_release_without_thread_state():
     sys.version_info < (3, 15)
     # Limited-API builds (".abi3.so", or a plain ".pyd" on Windows) cannot see
     # refused attachment; version-specific builds use the first suffix.
-    or not dart.__file__.endswith(importlib.machinery.EXTENSION_SUFFIXES[0]),
+    or not dart._core.__file__.endswith(importlib.machinery.EXTENSION_SUFFIXES[0]),
     reason="requires a Python 3.15+ build without the limited API",
 )
 def test_gui_ownership_release_without_thread_state_during_finalization():

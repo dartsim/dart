@@ -1,5 +1,6 @@
 """Exercise DART's installed dependency finders with isolated CMake packages."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -349,7 +350,7 @@ def test_examples_detect_selected_filament_gui(tmp_path, gui):
 
 
 @pytest.mark.parametrize("bundled", [False, True])
-@pytest.mark.parametrize("version", [305, 306, 325, None])
+@pytest.mark.parametrize("version", [304, 305, 325, None])
 def test_bullet_header_floor(tmp_path, bundled, version):
     include = tmp_path / "bullet" / "src"
     header = include / "LinearMath" / "btScalar.h"
@@ -368,7 +369,8 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             f'set(DART_BULLET_SOURCE_DIR "{include.parent.as_posix()}")\n'
         )
     content += "include(DARTFindBullet)\n"
-    if version and version >= 306:
+    # Bullet 3.06 and 3.07 report 305, so 305 is the checkable floor.
+    if version and version >= 305:
         content += 'if(NOT BULLET_FOUND OR NOT TARGET Bullet)\nmessage(FATAL_ERROR "Missing Bullet")\nendif()\n'
     else:
         content += 'if(BULLET_FOUND OR Bullet_FOUND OR TARGET Bullet)\nmessage(FATAL_ERROR "Accepted old Bullet")\nendif()\n'
@@ -431,7 +433,7 @@ def test_config_header_version_fallback(
 @pytest.mark.parametrize(
     "package,minimum,prefix,header,definition",
     [
-        ("assimp", "5.2.2", "ASSIMP", "assimp/scene.h", None),
+        ("assimp", "5.3.0", "ASSIMP", "assimp/scene.h", None),
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
         ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
@@ -476,6 +478,81 @@ def test_module_floors(
         + "else()\n"
         + ('message(FATAL_ERROR "Rejected supported version")\n' if accepted else "")
         + "endif()\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("preset", ["cache", "normal"])
+@pytest.mark.parametrize("msvc", [False, True])
+@pytest.mark.parametrize(
+    "version,accepted",
+    [("6.0.5", True), ("5.3.0", True), ("5.2.2", False), ("5.2.0", False)],
+)
+def test_assimp_version_from_config_without_pkg_config(
+    tmp_path, version, accepted, msvc, preset
+):
+    # Without pkg-config, assimp's CMake package supplies the version. Selected
+    # paths win over the variables that package sets, except that MSVC builds
+    # link the package's target, as Findassimp.cmake always did.
+    config_package(
+        tmp_path,
+        "assimp",
+        version,
+        "assimp::assimp",
+        'set(ASSIMP_INCLUDE_DIRS "config-include")\n'
+        "set(ASSIMP_LIBRARIES assimp::assimp)\n",
+    )
+    include = tmp_path / "include"
+    (include / "assimp").mkdir(parents=True)
+    (include / "assimp" / "scene.h").touch()
+    library = tmp_path / "library"
+    library.touch()
+    expected = "assimp::assimp" if msvc else library.as_posix()
+    path_cache = ' CACHE PATH ""' if preset == "cache" else ""
+    file_cache = ' CACHE FILEPATH ""' if preset == "cache" else ""
+    result = configure(
+        tmp_path,
+        f"set(MSVC {'TRUE' if msvc else 'FALSE'})\n"
+        f'set(ASSIMP_INCLUDE_DIRS "{include.as_posix()}"{path_cache})\n'
+        f'set(ASSIMP_LIBRARIES "{library.as_posix()}"{file_cache})\n'
+        "include(DARTFindassimp)\n"
+        "get_target_property(libraries assimp INTERFACE_LINK_LIBRARIES)\n"
+        f"if(NOT ASSIMP_VERSION VERSION_EQUAL {version}\n"
+        f'   OR NOT libraries STREQUAL "{expected}")\n'
+        '  message(FATAL_ERROR "Wrong assimp: ${ASSIMP_VERSION} ${libraries}")\n'
+        "endif()\n",
+    )
+    assert (result.returncode == 0) == accepted, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("module", ["dart", "foreign"])
+def test_assimp_module_lookup_skips_config(tmp_path, module):
+    # When the module lookup succeeds, DART must not load assimp's CMake
+    # package, so lookups that already work stay unchanged. A consumer's own
+    # Findassimp.cmake comes first and may set only assimp_FOUND.
+    config_package(
+        tmp_path, "assimp", "5.3.0", None, 'message(FATAL_ERROR "Loaded config")\n'
+    )
+    include = tmp_path / "include"
+    (include / "assimp").mkdir(parents=True)
+    (include / "assimp" / "scene.h").touch()
+    library = tmp_path / "library"
+    library.touch()
+    lookup = (
+        f'set(ASSIMP_INCLUDE_DIRS "{include.as_posix()}")\n'
+        f'set(ASSIMP_LIBRARIES "{library.as_posix()}")\n'
+    )
+    if module == "foreign":
+        (tmp_path / "modules").mkdir()
+        (tmp_path / "modules" / "Findassimp.cmake").write_text(
+            lookup + "set(assimp_FOUND TRUE)\n"
+        )
+        lookup = ""
+    result = configure(
+        tmp_path,
+        lookup + "set(assimp_VERSION 5.3.0)\n"
+        "include(DARTFindassimp)\n"
+        'if(NOT TARGET assimp)\n  message(FATAL_ERROR "No assimp target")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -624,6 +701,59 @@ def test_filament_changed_root_invalidates_cached_package_directory(tmp_path):
         'if(Filament_FOUND)\nmessage(FATAL_ERROR "Kept the previous SDK")\nendif()\n',
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.skipif(os.name != "posix", reason="fake matc is a POSIX shell script")
+@pytest.mark.parametrize(
+    "material_version,accepted", [("77", True), ("76", False), ("78", False)]
+)
+def test_filament_system_sdk_requires_pinned_material_version(
+    tmp_path, material_version, accepted
+):
+    # The SDK exposes no release version, so the provider enforces the 1.77.3
+    # pin through the material format version that upstream bumps each minor
+    # release. Stub the unrelated GUI dependencies to isolate that check.
+    sdk = tmp_path / "filament-sdk"
+    (sdk / "include" / "filament").mkdir(parents=True)
+    (sdk / "include" / "filament" / "Engine.h").touch()
+    (sdk / "include" / "filament" / "MaterialEnums.h").write_text(
+        f"static constexpr size_t MATERIAL_VERSION = {material_version};\n"
+    )
+    lib = sdk / "lib"
+    lib.mkdir()
+    for name in ("filament", "backend", "filabridge", "filaflat", "utils", "geometry"):
+        (lib / f"lib{name}.a").touch()
+    matc = sdk / "bin" / "matc"
+    matc.parent.mkdir()
+    matc.write_text(f"#!/bin/sh\necho {material_version}\n")
+    matc.chmod(0o755)
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindPNG.cmake").write_text("set(PNG_FOUND TRUE)\n")
+    (modules / "FindJPEG.cmake").write_text("set(JPEG_FOUND TRUE)\n")
+    (modules / "FindThreads.cmake").write_text(
+        "set(Threads_FOUND TRUE)\nadd_library(Threads::Threads INTERFACE IMPORTED)\n"
+    )
+    (modules / "DARTFilamentNotices.cmake").write_text(
+        "function(dart_filament_stage_notices prefix)\nendfunction()\n"
+    )
+    config_package(tmp_path, "glfw3", "3.4.0", "glfw")
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_FILAMENT ON)\n"
+        f'set(Filament_ROOT "{sdk.as_posix()}")\n'
+        "include(DARTFilamentProvider)\n",
+    )
+    output = result.stdout + result.stderr
+    if accepted:
+        assert result.returncode == 0, output
+    else:
+        # CMake wraps long diagnostics, so match against flattened output.
+        flat = " ".join(output.split())
+        assert result.returncode != 0
+        assert f"material version {material_version}" in flat
+        assert "Filament 1.77.3" in flat
+        assert "DART_USE_SYSTEM_FILAMENT=OFF" in flat
 
 
 @pytest.mark.parametrize(

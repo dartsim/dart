@@ -40,6 +40,9 @@
 #include <Eigen/Dense>
 
 namespace dart {
+namespace simulation {
+class World;
+} // namespace simulation
 namespace constraint {
 
 /// WeldJointConstraint represents weld joint constraint between a body and the
@@ -104,6 +107,11 @@ protected:
   void uniteSkeletons() override;
 
 private:
+  friend class simulation::World;
+
+  /// Discard the previous solve warm start while retaining target parameters.
+  void resetDynamicState();
+
   ///
   Eigen::Isometry3d mRelativeTransform;
 

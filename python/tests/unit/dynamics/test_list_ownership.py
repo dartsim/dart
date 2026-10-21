@@ -108,6 +108,159 @@ def test_soft_body_pair_keeps_native_owners_alive():
     )
 
 
+def test_point_mass_keeps_soft_body_alive_and_copies_outlive_native_owners():
+    run_isolated(
+        """
+        import gc
+        import weakref
+        import dartpy as dart
+        import numpy as np
+
+        skeleton = dart.dynamics.Skeleton("point_owner")
+        properties = dart.dynamics.SoftBodyNodeHelper.makeEllipsoidProperties(
+            [0.2, 0.2, 0.2], 3, 2, 0.5)
+        joint, body = skeleton.create_revolute_joint_and_soft_body_node_pair(
+            None, dart.dynamics.RevoluteJointProperties(),
+            dart.dynamics.SoftBodyNodeProperties(
+                dart.dynamics.BodyNodeProperties(), properties))
+        point = body.get_point_mass(0)
+        body_reference = weakref.ref(body)
+        del skeleton, joint, body
+        gc.collect()
+        assert body_reference() is not None
+        assert body_reference().getSkeleton().getName() == "point_owner"
+        point.positions = [0.01, 0.02, 0.03]
+        arrays = [point.positions, point.velocities, point.world_position,
+                  point.forces, point.rest_position, point.world_velocity]
+        del point
+        gc.collect()
+        assert body_reference() is None
+        assert all(array.shape == (3,) and np.isfinite(array).all() for array in arrays)
+        np.testing.assert_array_equal(arrays[0], [0.01, 0.02, 0.03])
+        print("done")
+        """
+    )
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        "point.positions",
+        "skeleton.updateBiasImpulse(body, point, [0, 0, 0])",
+    ],
+)
+def test_deleted_point_mass_rejects_native_access(operation):
+    run_isolated(
+        f"""
+        import dartpy as dart
+        import pytest
+
+        def make_body(slices, stacks):
+            skeleton = dart.dynamics.Skeleton()
+            properties = dart.dynamics.SoftBodyNodeHelper.makeEllipsoidProperties(
+                [0.2, 0.2, 0.2], slices, stacks, 0.5)
+            _, body = skeleton.createFreeJointAndSoftBodyNodePair(
+                None, dart.dynamics.FreeJointProperties(),
+                dart.dynamics.SoftBodyNodeProperties(
+                    dart.dynamics.BodyNodeProperties(), properties))
+            return skeleton, body
+
+        skeleton, body = make_body(12, 8)
+        _, small = make_body(3, 2)
+        point = body.get_point_mass(85)
+        body.copy(small)
+        assert body.getNumPointMasses() == 5
+        with pytest.raises(TypeError):
+            {operation}
+        for name in ('positions', 'velocities', 'world_position', 'forces'):
+            with pytest.raises(TypeError):
+                getattr(point, name)
+        for name in ('mass', 'rest_position', 'world_velocity', 'is_colliding'):
+            with pytest.raises(TypeError):
+                getattr(point, name)
+        for name in ('reset_positions', 'reset_velocities',
+                     'reset_accelerations', 'reset_forces'):
+            with pytest.raises(TypeError):
+                getattr(point, name)()
+        for name, value in (('mass', 1), ('is_colliding', True)):
+            with pytest.raises(TypeError):
+                setattr(point, name, value)
+        for name in ('positions', 'velocities'):
+            with pytest.raises(TypeError):
+                setattr(point, name, [0, 0, 0])
+        print('done')
+        """
+    )
+
+
+def test_point_mass_identity_survives_owner_changes_and_never_revives():
+    run_isolated(
+        """
+        import gc
+        import weakref
+        import dartpy as dart
+        import numpy as np
+        import pytest
+
+        def make_body(slices, stacks):
+            skeleton = dart.dynamics.Skeleton()
+            properties = dart.dynamics.SoftBodyNodeHelper.makeEllipsoidProperties(
+                [0.2, 0.2, 0.2], slices, stacks, 0.5)
+            _, body = skeleton.createFreeJointAndSoftBodyNodePair(
+                None, dart.dynamics.FreeJointProperties(),
+                dart.dynamics.SoftBodyNodeProperties(
+                    dart.dynamics.BodyNodeProperties(), properties))
+            return skeleton, body
+
+        source, body = make_body(12, 8)
+        large_owner, large = make_body(12, 8)
+        small_owner, small = make_body(3, 2)
+        point = body.get_point_mass(0)
+        expired = body.get_point_mass(85)
+        body.copy(large)
+        assert body.get_point_mass(0) is point
+        assert body.get_point_mass(85) is expired
+        np.testing.assert_array_equal(expired.positions, [0, 0, 0])
+        source.updateBiasImpulse(body, point, [0, 0, 0])
+        body.copy(small)
+        assert body.get_point_mass(0) is point
+        destination = dart.dynamics.Skeleton('destination')
+        assert body.moveTo(destination, None)
+        assert source.getNumBodyNodes() == 0
+        assert body.get_point_mass(0) is point
+        destination.updateBiasImpulse(body, point, [0, 0, 0])
+        for _ in range(16):
+            body.copy(large)
+            current = body.get_point_mass(85)
+            assert current is not expired
+            assert body.get_point_mass(85) is current
+            assert body.get_point_mass(0) is point
+            assert np.isfinite(current.positions).all()
+            with pytest.raises(TypeError):
+                expired.positions
+            body.copy(small)
+            with pytest.raises(TypeError):
+                current.positions
+        body.copy(large)
+        current = body.get_point_mass(85)
+        del expired
+        gc.collect()
+        assert body.get_point_mass(85) is current
+        point.positions = [0.01, 0.02, 0.03]
+        np.testing.assert_array_equal(point.positions, [0.01, 0.02, 0.03])
+        body_reference = weakref.ref(body)
+        del source, destination, body, large_owner, large, small_owner, small
+        gc.collect()
+        assert body_reference() is not None
+        assert body_reference().getSkeleton().getName() == 'destination'
+        del current, point
+        gc.collect()
+        assert body_reference() is None
+        print('done')
+        """
+    )
+
+
 def test_euler_move_joint_keeps_destination_alive():
     run_isolated(
         """

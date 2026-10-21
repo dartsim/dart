@@ -16,6 +16,7 @@ import tempfile
 import tomllib
 import xml.etree.ElementTree as ET
 from datetime import date
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
@@ -134,15 +135,6 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "scopes": ("if:TARGET dart-utils-urdf", "if:NOT MSVC"),
         "msvc": True,
     },
-    "tests/integration/test_IkFast.cpp": {
-        "owner": "tests/integration/CMakeLists.txt",
-        "command": "dart_add_test",
-        "scopes": (
-            "if:TARGET dart-utils-urdf",
-            "if:BUILD_SHARED_LIBS",
-        ),
-        "cache": {"BUILD_SHARED_LIBS": "OFF"},
-    },
     **{
         f"tests/integration/test_{name}.cpp": {
             "owner": "tests/integration/CMakeLists.txt",
@@ -183,28 +175,6 @@ APPROVED_CTEST_SELECTIONS = {
     },
     "test_FrictionAnalytic_iterative": {
         "arguments": ("--gtest_filter=*/Nsgs*:*/Fbf",),
-        "environment": (),
-    },
-    "test_AdaptiveSoftContactModel": {
-        "arguments": ("--gtest_filter=AdaptiveSoftContactModelTest.*",),
-        "environment": (),
-    },
-    "test_SoftWormModel": {
-        "arguments": ("--gtest_filter=SoftWormModelTest.*",),
-        "environment": (),
-    },
-    "test_SoftFootSimbiconModel": {
-        "arguments": (
-            "--gtest_filter=SoftFootSimbiconModelTest.*"
-            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
-        ),
-        "environment": (),
-    },
-    "test_SoftFootSimbiconPushSweep": {
-        "arguments": (
-            "--gtest_filter="
-            "SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
-        ),
         "environment": (),
     },
     "test_ContactArrowLayout": {
@@ -1640,6 +1610,26 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
     requirements = (
         (
             (
+                "set",
+                'DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/$<CONFIG>"',
+                ("if:dartpy_multi_config",),
+            ),
+            "multi_config_root",
+            "`DART_DARTPY_BUILD_DIR` must select the configuration's package "
+            "root under `if(dartpy_multi_config)`",
+        ),
+        (
+            (
+                "set",
+                'DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}"',
+                ("else:dartpy_multi_config",),
+            ),
+            "single_config_root",
+            "`DART_DARTPY_BUILD_DIR` must be the Python build root under the "
+            "single-config branch",
+        ),
+        (
+            (
                 "add_subdirectory",
                 "dartpy",
                 (),
@@ -1648,35 +1638,10 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
             "`add_subdirectory(dartpy)` must define the nanobind target",
         ),
         (
-            (
-                "set",
-                'DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>"',
-                (),
-            ),
-            "dartpy_output",
-            "`DART_DARTPY_BUILD_DIR` must derive from `$<TARGET_FILE_DIR:dartpy>`",
-        ),
-        (
-            (
-                "set",
-                "DART_PYTHONPATH "
-                '"${DART_DARTPY_BUILD_DIR}\\\\;${DART_PYTHON_BUILD_DIR}"',
-                ("if:WIN32",),
-            ),
-            "windows_path",
-            "`DART_PYTHONPATH` must combine the target output directory and "
-            "Python build root under `if(WIN32)`",
-        ),
-        (
-            (
-                "set",
-                "DART_PYTHONPATH "
-                '"${DART_DARTPY_BUILD_DIR}:${DART_PYTHON_BUILD_DIR}"',
-                ("else:WIN32",),
-            ),
-            "posix_path",
-            "`DART_PYTHONPATH` must combine the target output directory and "
-            "Python build root under the non-Windows branch",
+            ("set", 'DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}"', ()),
+            "runtime_path",
+            "`DART_PYTHONPATH` must be the configuration-aware package root "
+            "`DART_DARTPY_BUILD_DIR`",
         ),
         (
             ("add_subdirectory", "tests", ()),
@@ -1693,14 +1658,16 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
 
     if len(positions) != len(requirements):
         return
-    path_positions = (positions["windows_path"], positions["posix_path"])
+    root_positions = (positions["multi_config_root"], positions["single_config_root"])
     if not (
-        positions["nanobind_target"] < positions["dartpy_output"] < min(path_positions)
-        and max(path_positions) < positions["pytest_target"]
+        max(root_positions)
+        < positions["nanobind_target"]
+        < positions["runtime_path"]
+        < positions["pytest_target"]
     ):
         errors.append(
-            f"{relative}: define `dartpy`, derive its configuration-aware "
-            "output path, compose both platform paths, and then define tests"
+            f"{relative}: derive the configuration-aware package root, define "
+            "`dartpy`, set its runtime path, and then define tests"
         )
 
 
@@ -1829,7 +1796,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "--pythonpath",
                 (
                     "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/"
-                    "$BUILD_TYPE/python/dartpy"
+                    "$BUILD_TYPE/python"
                 ),
                 "--pythonpath",
                 "$PIXI_PROJECT_ROOT/scripts",
@@ -3247,6 +3214,20 @@ def check_cmake_ctest_inventory(
             "-P",
             ode_source.as_posix(),
         )
+    headers_source = root / "tests/cmake/test_HeadersComponent.cmake"
+    if headers_source.is_file():
+        headers_test = "test_HeadersComponent"
+        if headers_test not in generated_names:
+            errors.append(
+                f"{prefix}: required CMake script test `{headers_test}` is missing"
+            )
+        script_arguments[headers_test] = (
+            f"-DDART_BINARY_DIR={build_dir.as_posix()}",
+            f"-DTEST_BINARY_DIR={build_dir.as_posix()}/tests/cmake/HeadersComponent",
+            f"-DTEST_CONFIG={configuration}",
+            "-P",
+            headers_source.as_posix(),
+        )
 
     registered_tests: dict[str, tuple[list[str], Path]] = {}
     approved_probes: set[str] = set()
@@ -3465,6 +3446,7 @@ def check_cmake_test_target_trace(
     root: Path,
     build_dir: Path,
     dartpy_output_dir: str,
+    configuration: str,
     cache: dict[str, str],
     records: list[dict[str, Any]],
     origins: dict[str, tuple[str, int]],
@@ -3587,25 +3569,22 @@ def check_cmake_test_target_trace(
             pythonpath_value = pytest_arguments[pytest_index + 5]
             path_separator = ";" if r"\;" in pythonpath_value else os.pathsep
             pythonpath_entries = split_cmake_path_list(pythonpath_value, path_separator)
+            # Multi-config generators stage the package under a per-configuration
+            # root; the pytest path must be exactly the parent of the configured
+            # dartpy package directory.
             resolved_pythonpath_entries = [
-                (dartpy_output_dir if entry == "$<TARGET_FILE_DIR:dartpy>" else entry)
+                entry.replace("$<CONFIG>", configuration)
                 for entry in pythonpath_entries
             ]
-            normalized_pythonpath = {
-                normalized_absolute_path(entry, root / "python" / "tests")
-                for entry in resolved_pythonpath_entries
-                if entry
-            }
-            allowed_pythonpath = {
-                normalized_absolute_path(dartpy_output_dir, build_dir),
-                normalized_absolute_path(str(build_dir / "python"), root),
-            }
+            package_dir = Path(dartpy_output_dir)
             valid = (
-                bool(pythonpath_entries)
-                and all(pythonpath_entries)
-                and pythonpath_entries[0] == "$<TARGET_FILE_DIR:dartpy>"
-                and len(pythonpath_entries) == len(normalized_pythonpath)
-                and normalized_pythonpath == allowed_pythonpath
+                len(pythonpath_entries) == 1
+                and bool(pythonpath_entries[0])
+                and package_dir.name == "dartpy"
+                and normalized_absolute_path(
+                    resolved_pythonpath_entries[0], root / "python" / "tests"
+                )
+                == normalized_absolute_path(str(package_dir.parent), build_dir)
             )
             pythonpath_value = os.pathsep.join(resolved_pythonpath_entries)
         if valid:
@@ -4160,6 +4139,7 @@ def check_cmake_test_graph(
             root,
             build_dir,
             dartpy_output_dir,
+            desired,
             cache,
             trace_records,
             configured_origins,
@@ -5150,6 +5130,355 @@ def scenario_gate_error(root: Path, command: Any, pixi_tasks: set[str]) -> str |
     return None
 
 
+_DELEGATION_MODAL = r"(?:should|must|can|could|will|would|shall|may|might)"
+# Whole auxiliary/modal heads, so a fronted "By default, can't delegate" consumes "can't".
+_DELEGATION_NEGATED_AUX = (
+    rf"(?:(?:do|does|did|{_DELEGATION_MODAL})\s+(?:not|never|no\s+longer)"
+    r"|(?:do|does|did|should|must|ca|could|wo|would|sha|may|might)n't)"
+)
+# Finite policy subjects that may precede a negated action; not an NLP subject parser.
+_DELEGATION_POLICY_SUBJECT = (
+    r"(?:i|we|you|(?:the\s+)?(?:agents?|assistants?)|an\s+agent"
+    r"|the\s+(?:orchestrator|executor|parent))"
+)
+_DELEGATION_NEGATED_ACTION = (
+    rf"(?:\b{_DELEGATION_POLICY_SUBJECT}\s+)?"
+    rf"(?:\b{_DELEGATION_NEGATED_AUX}|\bcannot|\bnot|n't|\bnever|\bno longer)"
+    r"\s+delegate"
+)
+_DELEGATION_NEGATED_COPULA = (
+    r"(?:is\s+(?:not|never|no\s+longer)|isn't|cannot\s+be"
+    rf"|(?:{_DELEGATION_MODAL}\s+(?:not|never|no\s+longer)"
+    r"|(?:should|must|ca|could|wo|would|sha|may|might)n't)\s+be)"
+)
+_DELEGATION_POSITIVE_COPULA = rf"(?:is|{_DELEGATION_MODAL}\s+be)"
+_DELEGATION_BY_DEFAULT = r"\bby\s+default[,:]?\s+"
+# Trailing "... by default" takes an optional comma right before it, as in "..., by default".
+_DELEGATION_TRAILING_BY_DEFAULT = r",?\s+by\s+default\b"
+# Trailing "... by default" forms, then the same states fronted as "By default, ...".
+_DELEGATION_NEGATION_PATTERN = (
+    rf"{_DELEGATION_NEGATED_ACTION}{_DELEGATION_TRAILING_BY_DEFAULT}"
+    rf"|\bno\s+delegation{_DELEGATION_TRAILING_BY_DEFAULT}"
+    rf"|{_DELEGATION_BY_DEFAULT}no\s+delegation\b"
+    rf"|(?<![\w-])delegation\s+{_DELEGATION_NEGATED_COPULA}"
+    rf"(?:\s+(?:the\s+)?default\b|\s+(?:enabled|on|active|allowed){_DELEGATION_TRAILING_BY_DEFAULT})"
+    rf"|(?<![\w-])delegation\s+{_DELEGATION_POSITIVE_COPULA}\s+"
+    rf"(?:disabled|off){_DELEGATION_TRAILING_BY_DEFAULT}"
+    rf"|{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
+    rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_NEGATED_COPULA}"
+    r"\s+(?:enabled|on|active|allowed)\b"
+    rf"|{_DELEGATION_BY_DEFAULT}delegation\s+{_DELEGATION_POSITIVE_COPULA}"
+    r"\s+(?:disabled|off)\b"
+    r"|(?<![\w-])delegation\s+defaults\s+to\s+(?:disabled|off)\b"
+)
+_DELEGATION_NEGATION = re.compile(_DELEGATION_NEGATION_PATTERN)
+_DELEGATION_FRONTED_ACTION = re.compile(
+    rf"{_DELEGATION_BY_DEFAULT}{_DELEGATION_NEGATED_ACTION}\b"
+)
+_DELEGATION_OPT_OUT = (
+    r"(?:with|when|if) +(?:delegation=off|`delegation=off`)"
+    r"(?: +is +(?:set|enabled|active))?"
+)
+# A whole clause that is only the opt-out condition plus the negation, in either
+# order. A balanced parenthetical holding only this clause is exempted too.
+_DELEGATION_EXCEPTION_CLAUSE = (
+    rf"(?:{_DELEGATION_OPT_OUT}[:,]? +(?:{_DELEGATION_NEGATION_PATTERN})"
+    rf"|(?:{_DELEGATION_NEGATION_PATTERN}),? +{_DELEGATION_OPT_OUT})"
+)
+_DELEGATION_EXCEPTION = re.compile(_DELEGATION_EXCEPTION_CLAUSE)
+_DELEGATION_EXEMPT_CLAUSE = re.compile(
+    rf"(?:{_DELEGATION_EXCEPTION_CLAUSE}"
+    rf"|(?:(?:delegate by default|delegation is the default) *)?"
+    rf"\({_DELEGATION_EXCEPTION_CLAUSE}\))"
+)
+
+
+_MD_FULL_REFERENCE = re.compile(r"\[([^\[\]]*)\]\[[^\[\]]*\]")
+_MD_TASK = re.compile(r"^\[[ xX]\][ \t]+")
+# Containers whose bodies a browser does not render as text; matched by root tag.
+_HTML_HIDDEN_TAGS = frozenset(
+    {"script", "style", "title", "template", "iframe", "noembed", "noframes"}
+)
+_HTML_KEEP_SPACE_TAGS = frozenset({"pre", "textarea"})
+# Current HTML void elements: they have no end tag, so they never open a hidden root.
+_HTML_VOID_TAGS = frozenset(
+    "area base br col embed hr img input link meta source track wbr".split()
+)
+
+
+class MarkdownParserMissing(RuntimeError):
+    """The Pixi-supplied Markdown parser is unavailable to this interpreter."""
+
+
+def _html_block_tags() -> frozenset[str]:
+    """CommonMark's own block names (lazy: markdown-it is Pixi-supplied)."""
+    from markdown_it.common.html_blocks import block_names
+
+    return frozenset(block_names) | _HTML_KEEP_SPACE_TAGS
+
+
+class _VisibleHTML(HTMLParser):
+    """Keep text; drop comments, attributes and hidden containers; <br> is a space.
+
+    Hidden means the `hidden` attribute or a known non-rendered container:
+    script/style/title/template plus iframe/noembed/noframes, whose legacy
+    fallback bodies are not rendered as owner text.
+
+    Scope: a deterministic CommonMark text plus finite HTML filter under the
+    parser's default no-scripting interpretation. <noscript> fallback text is
+    kept, so required markers, stale gates and negative checks all see it.
+    Conditional scripting visibility, CSS computed visibility and browser
+    recovery are not modeled.
+
+    shortcut: HTMLParser has no browser recovery; revisit if owner markup needs it.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self.keep_space_depth = 0  # inside <pre>/<textarea>: whitespace is structural
+        self.block_tags = _html_block_tags()
+        self.hidden: str | None = None  # root tag of the hidden container
+        self.hidden_depth = 0
+        self.foreign_depth = 0  # preserve prior lexical handling within SVG/MathML
+
+    def handle_data(self, data: str) -> None:
+        if self.hidden:
+            return
+        # Lexical folding, except <pre> keeps its structural blank lines.
+        self.parts.append(data if self.keep_space_depth else re.sub(r"\s+", " ", data))
+
+    def handle_startendtag(self, tag: str, attrs: Any) -> None:
+        # Foreign self-close syntax keeps the existing lexical start/end pair.
+        foreign = self.foreign_depth or tag in {"svg", "math"}
+        self.handle_starttag(tag, attrs)
+        if foreign:
+            self.handle_endtag(tag)
+            return
+        # HTML nonvoid trailing slashes do not close the element.
+        # The stdlib skips raw/RCDATA mode on its startend callback.
+        # `scripting` marks stdlib builds whose start tags also enter plaintext mode.
+        if tag in self.CDATA_CONTENT_ELEMENTS or (
+            tag == "plaintext" and hasattr(self, "scripting")
+        ):
+            self.set_cdata_mode(tag)
+        elif tag in getattr(self, "RCDATA_CONTENT_ELEMENTS", ()):
+            self.set_cdata_mode(tag, escapable=True)
+
+    def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag in {"svg", "math"}:
+            self.foreign_depth += 1
+        if self.hidden:
+            if tag == self.hidden:
+                self.hidden_depth += 1
+            return
+        # The hidden attribute hides by presence, whatever its value.
+        is_hidden = any(name == "hidden" for name, _ in attrs)
+        if tag in _HTML_VOID_TAGS:
+            if is_hidden:
+                return
+        elif is_hidden or tag in _HTML_HIDDEN_TAGS:
+            self.hidden, self.hidden_depth = tag, 1
+            return
+        if tag in _HTML_KEEP_SPACE_TAGS:
+            self.keep_space_depth += 1
+        if tag == "br":
+            self.parts.append(" ")
+        elif tag in self.block_tags:
+            self.parts.append("\n\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"svg", "math"}:
+            self.foreign_depth = max(self.foreign_depth - 1, 0)
+        if self.hidden:
+            if tag == self.hidden:
+                self.hidden_depth -= 1
+                if not self.hidden_depth:
+                    self.hidden = None
+            return
+        if tag in _HTML_KEEP_SPACE_TAGS:
+            self.keep_space_depth = max(self.keep_space_depth - 1, 0)
+        if tag in self.block_tags:
+            self.parts.append("\n\n")
+
+
+def _html_text(raw: str) -> str:
+    parser = _VisibleHTML()
+    parser.feed(raw)
+    parser.close()
+    return "".join(parser.parts)
+
+
+def _legacy_full_reference(state: Any, silent: bool) -> bool:
+    """Keep the checker's tested contract that `[label][ref]` shows its label."""
+    match = _MD_FULL_REFERENCE.match(state.src, state.pos, state.posMax)
+    if not match:
+        return False
+    maximum = state.posMax
+    if not silent:
+        state.pos, state.posMax = match.span(1)
+        state.md.inline.tokenize(state)
+    state.pos, state.posMax = match.end(), maximum
+    return True
+
+
+def _markdown_parser() -> Any:
+    try:
+        from markdown_it import MarkdownIt
+    except ImportError as error:
+        raise MarkdownParserMissing(
+            "the delegation policy check needs the Pixi-supplied markdown-it-py; "
+            "run it with `pixi run check-ai-infra` or the Pixi interpreter"
+        ) from error
+    parser = MarkdownIt("commonmark", {"html": True})
+    parser.inline.ruler.after("link", "legacy_full_reference", _legacy_full_reference)
+    return parser
+
+
+def _image_label(children: Any) -> str:
+    """Plain image label: text and code kept, alt-embedded HTML ignored."""
+    parts: list[str] = []
+    for child in children or ():
+        if child.type in {"text", "text_special", "code_inline"}:
+            parts.append(child.content)
+        elif child.type == "image":
+            parts.append("!" + _image_label(child.children))
+        elif child.type in {"softbreak", "hardbreak"}:
+            parts.append(" ")
+    return "".join(parts)
+
+
+def _folded_paragraphs(text: str) -> list[str]:
+    """Fold whitespace inside blank-line separated paragraphs."""
+    return [
+        " ".join(part.split()) for part in re.split(r"\n[ \t]*\n", text) if part.strip()
+    ]
+
+
+def _delegation_owner_text(source: str) -> str:
+    """Visible owner text: the rendered CommonMark HTML, folded to paragraphs."""
+    markdown = _markdown_parser()
+    env: dict[str, Any] = {}  # fresh per owner so definitions never leak
+    tokens = markdown.parse(source, env)
+    for index, token in enumerate(tokens):
+        if token.type != "inline":
+            continue
+        task = _MD_TASK.match(token.content)
+        if (
+            task
+            and index >= 2
+            and tokens[index - 2].type == "list_item_open"
+            and tokens[index - 1].type == "paragraph_open"
+        ):
+            rest = markdown.parseInline(token.content[task.end() :], env)
+            token.children = rest[0].children
+        for child in token.children or ():
+            if child.type == "image":  # the renderer drops code labels
+                child.content = "!" + _image_label(child.children)
+                child.type, child.children = "text", None
+    html = markdown.renderer.render(tokens, markdown.options, env)
+    return "\n\n".join(_folded_paragraphs(_html_text(html)))
+
+
+def _delegation_negation_ends(
+    text: str, start: int, end: int, *, fronted_action: bool = False
+) -> bool:
+    """Whether a negative stands alone rather than taking an object or topic scope.
+
+    The decision needs the original owner text around the action: clause
+    splitting drops the punctuation that tells a closing quote from an opening
+    one, and a label prefix like ` .name` from a sentence end.
+    """
+    tail = text[end:]
+    if re.match(r"-\w", tail):
+        return False
+    spaced = bool(tail and tail[0] in " \t\r\f\v")
+    tail = tail.lstrip(" \t\r\f\v")
+    if re.match(r",[ \t\r\f\v]+(?=(?:for|about)(?=\s)|[\"'`‘“”])", tail):
+        tail = tail[1:].lstrip(" \t\r\f\v")
+    # Non-fronted negatives take explicit for/about scopes or quoted labels;
+    # other continuation text stays conservative (e.g. "not the default policy").
+    if not fronted_action and not re.match(r"(?:for|about)(?=\s)|[\"'`‘“”]", tail):
+        return True
+    if not tail or tail[0] == "\n":
+        return True
+    if tail[0] in "\"'`”":
+        # Scan this paragraph for quotes still open at the action; apostrophes inside
+        # words and word-final possessives do not delimit.
+        pairs = {'"': '"', "'": "'", "`": "`", "‘": "'", "“": "”"}
+        opened: list[str] = []
+        paragraph = text.rfind("\n", 0, start) + 1
+        for position in range(paragraph, start):
+            char = text[position]
+            if char not in pairs and char not in opened:
+                continue
+            before = text[position - 1 : position] if position > paragraph else ""
+            after = text[position + 1 : position + 2]
+            # An apostrophe within an identifier/word never delimits a quote.
+            word_before = bool(before and (before.isalnum() or before == "_"))
+            word_after = bool(after and (after.isalnum() or after == "_"))
+            if char == "'" and word_before and word_after:
+                continue
+            if char in opened:
+                # Closing an outer quote also ends its inner quote context.
+                match = len(opened) - 1 - opened[::-1].index(char)
+                del opened[match:]
+            elif char in pairs and (char in "‘“" or not word_before):
+                # A word-final apostrophe with no matching open quote is
+                # possessive, not the beginning of a quoted scope.
+                opened.append(pairs[char])
+        if tail[0] in opened:
+            return True
+        # An unpaired terminal quote is still closing punctuation, but a quoted
+        # object has nonterminal content, including whitespace or punctuation.
+        return all(char in " \t\r\f\v\n.!?;|,)\"'`”" for char in tail[1:])
+    if tail[0] in ".!?;|":
+        # A whitespace-separated literal/label prefix stays attached to its
+        # object. Sentence punctuation is immediate or followed by whitespace.
+        after = tail[1:2]
+        return not (spaced and after and not after.isspace() and after not in ",)\"'`”")
+    return tail[0] in ",)" or bool(
+        re.match(
+            r"(?:(?:with|when|if|and|or|otherwise)\b|(?:unless|because)(?=\s))", tail
+        )
+    )
+
+
+def _delegation_negation(owner_text: str) -> str | None:
+    """Return an unconditional negation of the delegation default, if any."""
+    lowered = owner_text.lower().replace("’", "'")
+    # A balanced parenthetical that is exactly an opt-out exception stays an atom
+    # (its terminal punctuation is dropped so it is not split); the whole
+    # containing clause must then be that exception, optionally parenthesized or
+    # led by a canonical positive marker. Other text keeps the negation visible.
+    lowered = re.sub(
+        r"\(([^()]*)\)",
+        lambda m: (
+            f"({m.group(1).strip().rstrip('.!?').strip()})"
+            if _DELEGATION_EXCEPTION.fullmatch(m.group(1).strip().rstrip(".!?").strip())
+            else m.group(0)
+        ),
+        lowered,
+    )
+    for span in re.finditer(r"[^.!?;|\n]+", lowered):  # spans keep source offsets
+        raw_clause = span.group(0)
+        clause = raw_clause.strip()
+        offset = span.start() + len(raw_clause) - len(raw_clause.lstrip())
+        if _DELEGATION_EXEMPT_CLAUSE.fullmatch(clause):
+            continue
+        for negated in _DELEGATION_NEGATION.finditer(clause):
+            fronted = _DELEGATION_FRONTED_ACTION.match(clause, negated.start())
+            if not _delegation_negation_ends(
+                lowered,
+                offset + negated.start(),
+                offset + negated.end(),
+                fronted_action=fronted is not None,
+            ):
+                continue  # object-qualified; a later real reversal may follow
+            return negated.group(0)
+    return None
+
+
 def exercise_scenarios(
     root: Path, data: dict[str, Any] | None = None, *, emit: bool = True
 ) -> list[str]:
@@ -5428,8 +5757,6 @@ def exercise_scenarios(
                 "one lower effort",
                 "structural",
                 "Deeper reasoning modes give one difficult task more time",
-                "Delegate by default",
-                "`delegation=off`",
                 '`docs/ai/README.md` § "Updating Models And Coding Agents"',
                 "Do not substitute a model",
                 "durable project context",
@@ -5473,27 +5800,38 @@ def exercise_scenarios(
                     ".claude/commands/dart-ultrawork.md",
                     ("Delegate by default", "`delegation=off`"),
                 ),
-                (".claude/commands/dart-model-upgrade.md", ()),
+                (
+                    ".claude/commands/dart-model-upgrade.md",
+                    ("Delegate by default", "`delegation=off`"),
+                ),
             ):
                 try:
-                    # Collapse wrapping so phrases split across lines still match.
-                    owner_text = " ".join(
-                        (root / relative).read_text(encoding="utf-8").split()
-                    )
+                    owner_source = (root / relative).read_text(encoding="utf-8")
+                    owner_text = _delegation_owner_text(owner_source)
                 except OSError:
                     owner_text = ""
+                except MarkdownParserMissing as error:
+                    local_errors.append(str(error))
+                    break
                 for marker in required:
-                    if marker not in owner_text:
+                    pattern = rf"(?<![\w-]){re.escape(_delegation_owner_text(marker))}(?![\w-])"
+                    if not re.search(pattern, owner_text):
                         local_errors.append(
                             f"{relative} is missing delegation marker {marker!r}"
                         )
+                # shortcut: match canonical clauses; extend for new owner wording.
+                negated = _delegation_negation(owner_text)
+                if negated:
+                    local_errors.append(
+                        f"{relative} negates the delegation default: {negated!r}"
+                    )
                 for stale in (
                     "Delegate only when the user",
                     "explicit user authorization for delegation",
                     "when the user authorized delegation",
                     "when delegation is authorized",
                 ):
-                    if stale in owner_text:
+                    if stale.casefold() in owner_text.casefold():
                         local_errors.append(
                             f"{relative} still gates delegation on request: {stale!r}"
                         )

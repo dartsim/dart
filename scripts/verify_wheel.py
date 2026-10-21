@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that dartpy wheels contain the compiled extension module."""
+"""Verify the layout of dartpy wheels: the package, its extension and licenses."""
 
 from __future__ import annotations
 
@@ -29,24 +29,57 @@ def verify_wheel(wheel_path: Path) -> bool:
 
     with zipfile.ZipFile(wheel_path, "r") as wheel:
         file_list = wheel.namelist()
-        extensions = [
-            name
-            for name in file_list
-            if "dartpy" in name.lower()
-            and (name.endswith(".so") or name.endswith(".pyd") or ".so." in name)
-        ]
-        non_metadata_files = [
-            name
-            for name in file_list
-            if ".dist-info/" not in name and not name.endswith(".dist-info")
-        ]
+    names = set(file_list)
+    extensions = [
+        name
+        for name in file_list
+        if name.startswith("dartpy/_core.") and name.endswith((".so", ".pyd"))
+    ]
+    non_metadata_files = [
+        name
+        for name in file_list
+        if ".dist-info/" not in name and not name.endswith(".dist-info")
+    ]
+    dist_info = next(
+        (name.partition("/")[0] for name in file_list if name.endswith("/METADATA")),
+        "",
+    )
 
+    ok = True
+    if "-cp312-abi3-" not in wheel_path.name:
+        print("ERROR: Expected a cp312-abi3 wheel (DART_DARTPY_STABLE_ABI).")
+        ok = False
     if not extensions:
-        print("ERROR: No dartpy extension module found in wheel.")
-        return False
-
+        print("ERROR: No dartpy._core extension module found in wheel.")
+        ok = False
+    for required in (
+        "dartpy/__init__.py",
+        "dartpy/py.typed",
+        "dartpy/experimental/__init__.py",
+        f"{dist_info}/licenses/LICENSE",
+        f"{dist_info}/licenses/filament/LICENSE",
+    ):
+        if required not in names:
+            print(f"ERROR: Wheel is missing {required}.")
+            ok = False
+    # auditwheel and delvewheel vendor shared libraries into dartpy.libs/;
+    # delocate uses dartpy/.dylibs/ inside the package.
+    stray = sorted(
+        name
+        for name in file_list
+        if not name.startswith(("dartpy/", "dartpy.libs/", f"{dist_info}/"))
+        or name.startswith("dartpy/_filament_licenses/")
+    )
+    if stray:
+        print(
+            "ERROR: Wheel contains files outside the dartpy package: "
+            + ", ".join(stray)
+        )
+        ok = False
     if not non_metadata_files:
         print("ERROR: Wheel contains only metadata files.")
+        ok = False
+    if not ok:
         return False
 
     for extension in extensions:

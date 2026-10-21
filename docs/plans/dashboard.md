@@ -21,14 +21,38 @@ Priority order is document order. Active implementation handoff remains in
   temporary project home is retired. See the
   [host and model architecture](../onboarding/architecture.md#python-demo-catalog)
   and [remaining M6b scope](../dev_tasks/dart7_python_first/README.md#demo-consolidation-d31b).
-- Next step: Exit M0 once the scope artifacts (#3728) and the gz API inventory
-  (#3729) land. #3741 replaced the closed #3731; #3722, #3749 and #3750 have
-  merged. The `dart7-base` pin and M1a (#3775) are complete; continue M1b
-  and the remaining core seams. M5a's rename table and the detector
-  capability matrix run in parallel.
+- Next step: M0 exited on 2026-10-14. Four chains run in parallel, Python
+  first: M5a's snapshot, package, arrays, errors and `Transform` packets (in
+  review or merged; D4, D6, D11, D22, D28 and D29 fix their central public
+  names, and the rulebook governs the rest), then the naming rulebook, the facade slice and
+  the rulebook-driven API areas; compile and edit (M1b), counted stepping
+  (M1d), the remapping clone (M1i) and `WorldBatch`; the typed solver policy
+  (M1e), the written contract and the rigid domain boundary; and M6b through
+  checkpoint C2. Step-path PRs land in the program's order, each re-qualified
+  on current `main`; see the
+  [M1 packet table](../dev_tasks/dart7_python_first/RESUME.md).
 - Gate: Per-packet gates and two clean reviews; bit-identical refactors per
   detector; zero new steady-state allocations; Gazebo lanes for every core
   change.
+
+### PLAN-625: DART 7 Dependency Floor And Minimization
+
+- Owner doc: [DART 7 dependency project home](../dev_tasks/dart7_dependencies/README.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Dependency footprint, platform floor, packaging, and Gazebo
+  compatibility.
+- Scope: Ubuntu 24.04 becomes `main`'s oldest supported platform, with
+  toolchain, CMake, Python and library floors raised to match; dependencies
+  that the gz-facing C++ API does not bind are removed or owned in-tree; and
+  DART's own code may build as C++20 while the exported interface stays
+  C++17, subject to the maintainer decisions recorded in the project home.
+  FCL and the collision-backend lifecycle stay with PLAN-620.
+- Next step: Record the maintainer decision batch, then land the Gazebo
+  contact-surface probe assertion (DEP-0) and the decision-free packets.
+- Gate: Per-packet gates in the project home, two clean reviews, and the
+  Gazebo lanes against each packet's base for any change to installed
+  headers, exported targets or the package config.
 
 ### PLAN-623: Active Contact Performance Generalization
 
@@ -60,8 +84,8 @@ Priority order is document order. Active implementation handoff remains in
   initial-point reset proxy have representative gates. Reduced demos do not
   establish full paper parity.
 - Next step: The unmet full-parity 6.20 goal now targets DART 7.0, since there is
-  no 6.21 release. Core changes outside the parity rows pause during PLAN-624's
-  step-path quiet window. Remaining rows are motor-noise push recovery,
+  no 6.21 release. Step-path changes outside the parity rows land in PLAN-624's
+  program-owned order. Remaining rows are motor-noise push recovery,
   noisy-floor biped, soft-contact walking, four-link flexible-foot comparison,
   and hand/arm scenes (finger flick, arm fold, pinch grasp). Push recovery remains partial:
   single-trajectory thresholds do not establish robust parity (see #3431).
@@ -69,7 +93,8 @@ Priority order is document order. Active implementation handoff remains in
   or an approved negative disposition, pre-default detector coverage gates,
   and a complete paired benchmark artifact or approved disposition. New GUI
   examples are Python scenes in the demo catalog (`python/examples/demos`),
-  with heavy controllers and models kept native (D31b).
+  with controllers and demo models written in Python over the engine, IO,
+  and GUI bindings. No demo implementation remains in C++.
 - Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
   one-thread and host-capped multi-thread determinism/scaling; allocation and
   Gazebo gates before any collision, constraint, or backend-default change.

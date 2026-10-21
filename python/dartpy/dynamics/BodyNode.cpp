@@ -1,6 +1,9 @@
 // clang-format off
 #include "detail/dart_nb.hpp"
+#include "detail/composite_state.hpp"
 // clang-format on
+
+#include "detail/frame.hpp"
 
 #include <nanobind/stl/map.h>
 #include <nanobind/stl/pair.h>
@@ -61,6 +64,7 @@
 #include <dart/dynamics/Shape.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/TemplatedJacobianNode.hpp>
 #include <dart/dynamics/TranslationalJoint.hpp>
 #include <dart/dynamics/TranslationalJoint2D.hpp>
@@ -197,7 +201,7 @@ void BodyNode(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
@@ -216,7 +220,7 @@ void BodyNode(nb::module_& m)
             return self->getJacobian(_offset, _inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::TemplatedJacobianNode<
@@ -237,7 +241,8 @@ void BodyNode(nb::module_& m)
                   dart::dynamics::BodyNode>* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobian(_inCoordinatesOf);
+            return self->getLinearJacobian(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -255,7 +260,8 @@ void BodyNode(nb::module_& m)
               const Eigen::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobian(_offset, _inCoordinatesOf);
+            return self->getLinearJacobian(
+                _offset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("inCoordinatesOf").none())
@@ -271,7 +277,8 @@ void BodyNode(nb::module_& m)
                   dart::dynamics::BodyNode>* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
-            return self->getAngularJacobian(_inCoordinatesOf);
+            return self->getAngularJacobian(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -282,7 +289,7 @@ void BodyNode(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
@@ -301,7 +308,7 @@ void BodyNode(nb::module_& m)
             return self->getJacobianSpatialDeriv(_offset, _inCoordinatesOf);
           },
           nb::arg("offset"),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
@@ -310,7 +317,7 @@ void BodyNode(nb::module_& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_inCoordinatesOf);
           },
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("inCoordinatesOf"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::TemplatedJacobianNode<
@@ -326,7 +333,8 @@ void BodyNode(nb::module_& m)
               const Eigen::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::Jacobian {
-            return self->getJacobianClassicDeriv(_offset, _inCoordinatesOf);
+            return self->getJacobianClassicDeriv(
+                _offset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("inCoordinatesOf").none())
@@ -342,7 +350,8 @@ void BodyNode(nb::module_& m)
                   dart::dynamics::BodyNode>* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobianDeriv(_inCoordinatesOf);
+            return self->getLinearJacobianDeriv(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none())
       .def(
@@ -360,7 +369,8 @@ void BodyNode(nb::module_& m)
               const Eigen::Vector3d& _offset,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::LinearJacobian {
-            return self->getLinearJacobianDeriv(_offset, _inCoordinatesOf);
+            return self->getLinearJacobianDeriv(
+                _offset, dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("offset"),
           nb::arg("inCoordinatesOf").none())
@@ -376,7 +386,8 @@ void BodyNode(nb::module_& m)
                   dart::dynamics::BodyNode>* self,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> dart::math::AngularJacobian {
-            return self->getAngularJacobianDeriv(_inCoordinatesOf);
+            return self->getAngularJacobianDeriv(
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("inCoordinatesOf").none());
 
@@ -384,6 +395,26 @@ void BodyNode(nb::module_& m)
       dart::dynamics::BodyNode,
       dart::dynamics::TemplatedJacobianNode<dart::dynamics::BodyNode>,
       dart::dynamics::Frame>(m, "BodyNode")
+      .def(
+          "get_composite_state",
+          [](const dart::dynamics::BodyNode& self) {
+            return self.getCompositeState();
+          })
+      .def(
+          "set_composite_state",
+          [](dart::dynamics::BodyNode& self,
+             const dart::common::Composite::State& state) {
+            if (const auto* soft = self.asSoftBodyNode()) {
+              const auto* saved
+                  = dartnb::find_state<dart::dynamics::SoftBodyNode>(state);
+              if (saved
+                  && saved->mPointStates.size() != soft->getNumPointMasses())
+                throw nb::value_error(
+                    "state point count must match the soft body");
+            }
+            self.setCompositeState(state);
+          },
+          nb::arg("state"))
       .def(
           "setAllNodeStates",
           +[](dart::dynamics::BodyNode* self,
@@ -542,21 +573,21 @@ void BodyNode(nb::module_& m)
               const dart::dynamics::BodyNode* otherBodyNode) {
             self->copy(otherBodyNode);
           },
-          nb::arg("otherBodyNode").none())
+          nb::arg("otherBodyNode"))
       .def(
           "duplicateNodes",
           +[](dart::dynamics::BodyNode* self,
               const dart::dynamics::BodyNode* otherBodyNode) {
             self->duplicateNodes(otherBodyNode);
           },
-          nb::arg("otherBodyNode").none())
+          nb::arg("otherBodyNode"))
       .def(
           "matchNodes",
           +[](dart::dynamics::BodyNode* self,
               const dart::dynamics::BodyNode* otherBodyNode) {
             self->matchNodes(otherBodyNode);
           },
-          nb::arg("otherBodyNode").none())
+          nb::arg("otherBodyNode"))
       .def(
           "setName",
           +[](dart::dynamics::BodyNode* self, const std::string& _name)
@@ -583,6 +614,12 @@ void BodyNode(nb::module_& m)
           "isCollidable",
           +[](const dart::dynamics::BodyNode* self)
               -> bool { return self->isCollidable(); })
+      .def_prop_ro("is_colliding", [](dart::dynamics::BodyNode& self) {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        const bool result = self.isColliding();
+        DART_SUPPRESS_DEPRECATED_END
+        return result;
+      })
       .def(
           "setCollidable",
           +[](dart::dynamics::BodyNode* self, bool _isCollidable) {
@@ -702,7 +739,7 @@ void BodyNode(nb::module_& m)
           "getCOM",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _withRespectTo) -> Eigen::Vector3d {
-            return self->getCOM(_withRespectTo);
+            return self->getCOM(dartnb::frameOrWorld(_withRespectTo));
           },
           nb::arg("withRespectTo").none())
       .def(
@@ -714,7 +751,8 @@ void BodyNode(nb::module_& m)
           "getCOMLinearVelocity",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
-            return self->getCOMLinearVelocity(_relativeTo);
+            return self->getCOMLinearVelocity(
+                dartnb::frameOrWorld(_relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -723,7 +761,9 @@ void BodyNode(nb::module_& m)
               const dart::dynamics::Frame* _relativeTo,
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> Eigen::Vector3d {
-            return self->getCOMLinearVelocity(_relativeTo, _inCoordinatesOf);
+            return self->getCOMLinearVelocity(
+                dartnb::frameOrWorld(_relativeTo),
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -740,8 +780,8 @@ void BodyNode(nb::module_& m)
               -> Eigen::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo, _inCoordinatesOf);
           },
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::BodyNode* self) -> Eigen::Vector3d {
@@ -751,7 +791,8 @@ void BodyNode(nb::module_& m)
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
-            return self->getCOMLinearAcceleration(_relativeTo);
+            return self->getCOMLinearAcceleration(
+                dartnb::frameOrWorld(_relativeTo));
           },
           nb::arg("relativeTo").none())
       .def(
@@ -761,7 +802,8 @@ void BodyNode(nb::module_& m)
               const dart::dynamics::Frame* _inCoordinatesOf)
               -> Eigen::Vector3d {
             return self->getCOMLinearAcceleration(
-                _relativeTo, _inCoordinatesOf);
+                dartnb::frameOrWorld(_relativeTo),
+                dartnb::frameOrWorld(_inCoordinatesOf));
           },
           nb::arg("relativeTo").none(),
           nb::arg("inCoordinatesOf").none())
@@ -779,8 +821,8 @@ void BodyNode(nb::module_& m)
             return self->getCOMSpatialAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },
-          nb::arg("relativeTo").none(),
-          nb::arg("inCoordinatesOf").none())
+          nb::arg("relativeTo"),
+          nb::arg("inCoordinatesOf"))
       .def(
           "getIndexInSkeleton",
           +[](const dart::dynamics::BodyNode* self) -> std::size_t {
@@ -981,7 +1023,7 @@ void BodyNode(nb::module_& m)
             return self->createShapeNode(shape);
           },
           nb::rv_policy::reference_internal,
-          nb::arg("shape").none())
+          nb::arg("shape"))
       .def(
           "createShapeNode",
           +[](dart::dynamics::BodyNode* self,
@@ -990,7 +1032,7 @@ void BodyNode(nb::module_& m)
             return self->createShapeNode(shape, name);
           },
           nb::rv_policy::reference_internal,
-          nb::arg("shape").none(),
+          nb::arg("shape"),
           nb::arg("name"))
       .def(
           "getShapeNodes",

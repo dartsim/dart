@@ -203,6 +203,29 @@ void GenericJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::restoreDynamicState(
+    const Vector& positions,
+    const Vector& velocities,
+    const Vector& accelerations,
+    const Vector& forces,
+    const Vector& commands)
+{
+  this->mAspectState.mPositions = positions;
+  this->mAspectState.mVelocities = velocities;
+  this->mAspectState.mAccelerations = accelerations;
+  this->mAspectState.mForces = forces;
+  for (std::size_t i = 0; i < NumDofs; ++i)
+    this->mAspectState.mCommands[i]
+        = clampCommandToActuatorLimits(i, commands[i]);
+
+  this->notifyPositionUpdated();
+  this->notifyVelocityUpdated();
+  this->notifyAccelerationUpdated();
+  this->notifyExternalDisturbanceUpdated();
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAspectProperties(
     const AspectProperties& properties)
 {
@@ -398,6 +421,39 @@ Joint::ActuatorType GenericJoint<ConfigSpaceT>::getActuatorTypeForValidIndex(
   return Joint::mAspectProperties.mActuatorTypes.empty()
              ? Joint::mAspectProperties.mActuatorType
              : Joint::getActuatorType(index);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+double GenericJoint<ConfigSpaceT>::clampCommandToActuatorLimits(
+    std::size_t index, double command) const
+{
+  switch (getActuatorTypeForValidIndex(index)) {
+    case Joint::FORCE:
+      return math::clip(
+          command,
+          Base::mAspectProperties.mForceLowerLimits[index],
+          Base::mAspectProperties.mForceUpperLimits[index]);
+    case Joint::SERVO:
+    case Joint::VELOCITY:
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      return math::clip(
+          command,
+          Base::mAspectProperties.mVelocityLowerLimits[index],
+          Base::mAspectProperties.mVelocityUpperLimits[index]);
+    case Joint::ACCELERATION:
+      return math::clip(
+          command,
+          Base::mAspectProperties.mAccelerationLowerLimits[index],
+          Base::mAspectProperties.mAccelerationUpperLimits[index]);
+    case Joint::PASSIVE:
+    case Joint::MIMIC:
+    case Joint::LOCKED:
+      return 0.0;
+    default:
+      DART_ASSERT(false);
+      return this->mAspectState.mCommands[index];
+  }
 }
 
 //==============================================================================

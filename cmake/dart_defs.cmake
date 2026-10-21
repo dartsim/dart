@@ -556,7 +556,8 @@ macro(dart_configure_compiler_options)
       "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}"
     )
     set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+    # Append so packagers' LDFLAGS, which seed this variable, still apply.
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined")
 
     # Enforce to colorize compilation output
     if(${DART_FORCE_COLORED_OUTPUT})

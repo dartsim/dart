@@ -49,6 +49,7 @@
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/String.hpp"
+#include "dart/common/detail/DeterministicExecutor.h"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -57,15 +58,16 @@
 #include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/detail/SkeletonMembershipVersion.h"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
 #include <atomic>
-#include <condition_variable>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -73,8 +75,8 @@
 #include <string>
 #include <string_view>
 #include <thread>
-#include <type_traits>
 #include <typeinfo>
+#include <utility>
 #include <vector>
 
 #include <cctype>
@@ -538,7 +540,33 @@ public:
   // Current step's custom-filter eligibility, refreshed by its wake check.
   bool mStepCustomBodyFilter = false;
 
+  struct PreparedSkeleton
+  {
+    std::weak_ptr<const dynamics::Skeleton> mSkeleton;
+    std::size_t mVersion;
+  };
+  std::weak_ptr<const collision::CollisionGroup> mPreparedCollisionGroup;
+  bool mPreparedGroupAutomaticUpdate = true;
+  std::vector<PreparedSkeleton> mPreparedSkeletons;
+  std::vector<std::pair<
+      const dynamics::Skeleton*,
+      std::weak_ptr<const dynamics::Skeleton>>>
+      mPreparedSolverSkeletons;
+  // Non-ShapeNode frames can change Skeleton ancestors without stamping the
+  // global structural version. Group identity/content guards their lifetime:
+  // destroying a frame removes it from its group and bumps the content version
+  // at once, which isInSimulationMode() checks before reading these pointers.
+  std::vector<std::pair<const dynamics::ShapeFrame*, const dynamics::Skeleton*>>
+      mPreparedFrameAncestors;
+  std::size_t mPreparedValidatedStructuralVersion = 0u;
+  std::size_t mPreparedValidatedSolverMembershipVersion = 0u;
+  bool mPreparedSolverUsesMembershipVersion = false;
+
   std::vector<char> mIslandJointDwellReady;
+
+  // Frames since construction, reset() or restoreState(). Rest detection
+  // credits bodies that start a run at rest on the first two of these frames.
+  int mFramesSinceStart = 0;
 
   // Contacts of resting pairs, as solved when the set of resting skeletons
   // last changed; the solver no longer computes or solves them. Their
@@ -931,8 +959,41 @@ void World::enterSimulationMode()
   reserveSimulationScratch();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
+  auto& state = *mDeactivationState;
+  state.mPreparedSkeletons.clear();
+  state.mPreparedSolverSkeletons.clear();
+  state.mPreparedFrameAncestors.clear();
+  state.mPreparedCollisionGroup.reset();
+  state.mPreparedGroupAutomaticUpdate = true;
+  const auto* solver = mConstraintSolver.get();
+  state.mPreparedSolverUsesMembershipVersion
+      = solver
+        && typeid(*solver) == typeid(constraint::BoxedLcpConstraintSolver);
+  const auto rememberSkeleton = [&](const dynamics::Skeleton* skeleton) {
+    if (skeleton)
+      state.mPreparedSkeletons.push_back(
+          {skeleton->getPtr(), skeleton->getVersion()});
+  };
+  for (const auto& skeleton : mSkeletons)
+    rememberSkeleton(skeleton.get());
   if (mConstraintSolver) {
+    for (const auto& skeleton : mConstraintSolver->getSkeletons()) {
+      state.mPreparedSolverSkeletons.emplace_back(skeleton.get(), skeleton);
+      rememberSkeleton(skeleton.get());
+    }
     const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+    state.mPreparedCollisionGroup = collisionGroup;
+    state.mPreparedGroupAutomaticUpdate
+        = collisionGroup && collisionGroup->getAutomaticUpdate();
+    for (std::size_t i = 0u;
+         collisionGroup && i < collisionGroup->getNumShapeFrames();
+         ++i) {
+      const auto* frame = collisionGroup->getShapeFrame(i);
+      const auto* skeleton = dynamics::Skeleton::getSkeletonOf(*frame);
+      rememberSkeleton(skeleton);
+      if (!frame->asShapeNode())
+        state.mPreparedFrameAncestors.emplace_back(frame, skeleton);
+    }
     mSimulationModeCollisionGroup = collisionGroup.get();
     mSimulationModeCollisionGroupVersion
         = collisionGroup ? collisionGroup->getContentVersion() : 0u;
@@ -965,6 +1026,10 @@ void World::enterSimulationMode()
     mSimulationModeCollisionFilterTrackable = true;
     mSimulationModeCollisionFilterRevision = 0;
   }
+  state.mPreparedValidatedStructuralVersion = mSimulationModeStructuralVersion;
+  state.mPreparedValidatedSolverMembershipVersion
+      = constraint::detail::gSkeletonMembershipVersion.load(
+          std::memory_order_relaxed);
   mSimulationMode = true;
 }
 
@@ -985,13 +1050,65 @@ bool World::isInSimulationMode() const
             || mSimulationModeCollisionFilterRevision
                    == getCollisionFilterSnapshotRevision(collisionFilter));
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  auto& state = *mDeactivationState;
+  if (state.mPreparedCollisionGroup.owner_before(collisionGroup)
+      || collisionGroup.owner_before(state.mPreparedCollisionGroup)
+      || collisionGroup.get() != mSimulationModeCollisionGroup
+      || mSimulationModeCollisionGroupVersion
+             != (collisionGroup ? collisionGroup->getContentVersion() : 0u)
+      || (collisionGroup
+          && collisionGroup->getAutomaticUpdate()
+                 != state.mPreparedGroupAutomaticUpdate)) {
+    return false;
+  }
+
+  const auto solverMembershipVersion
+      = constraint::detail::gSkeletonMembershipVersion.load(
+          std::memory_order_relaxed);
+  if (!state.mPreparedSolverUsesMembershipVersion
+      || state.mPreparedValidatedSolverMembershipVersion
+             != solverMembershipVersion) {
+    const auto& solverSkeletons = mConstraintSolver->getSkeletons();
+    if (solverSkeletons.size() != state.mPreparedSolverSkeletons.size())
+      return false;
+    for (std::size_t i = 0u; i < solverSkeletons.size(); ++i) {
+      const auto& prepared = state.mPreparedSolverSkeletons[i];
+      if (solverSkeletons[i].get() != prepared.first
+          || prepared.second.owner_before(solverSkeletons[i])
+          || solverSkeletons[i].owner_before(prepared.second)) {
+        return false;
+      }
+    }
+    state.mPreparedValidatedSolverMembershipVersion = solverMembershipVersion;
+  }
+  for (const auto& ancestor : state.mPreparedFrameAncestors) {
+    if (dynamics::Skeleton::getSkeletonOf(*ancestor.first) != ancestor.second)
+      return false;
+  }
+
+  const auto structuralVersion
+      = dynamics::Skeleton::getGlobalStructuralVersion();
+  if (state.mPreparedValidatedStructuralVersion != structuralVersion) {
+    // Synchronize subscriptions before trusting their contents, including an
+    // external subscription that had no collision shapes at preparation.
+    if (collisionGroup && collisionGroup->getAutomaticUpdate()) {
+      collisionGroup->update();
+      if (collisionGroup->getContentVersion()
+          != mSimulationModeCollisionGroupVersion) {
+        return false;
+      }
+    }
+    for (const auto& snapshot : state.mPreparedSkeletons) {
+      const auto skeleton = snapshot.mSkeleton.lock();
+      if (!skeleton || skeleton->getVersion() != snapshot.mVersion)
+        return false;
+    }
+    // Only unrelated edits catch up this hint; a stale dependency stays stale
+    // until enterSimulationMode() captures a new preparation snapshot.
+    state.mPreparedValidatedStructuralVersion = structuralVersion;
+  }
 
   return mSimulationMode
-         && mSimulationModeStructuralVersion
-                == dynamics::Skeleton::getGlobalStructuralVersion()
-         && collisionGroup.get() == mSimulationModeCollisionGroup
-         && mSimulationModeCollisionGroupVersion
-                == (collisionGroup ? collisionGroup->getContentVersion() : 0u)
          && mConstraintSolver->getNumSimulationThreads()
                 == mSimulationModeConstraintSolverThreads
          && mSimulationModeCollisionEnableContact
@@ -1020,175 +1137,8 @@ const common::MemoryManager& World::getMemoryManager() const
 }
 
 //==============================================================================
-class SimulationThreadPool
+class SimulationThreadPool : public common::detail::DeterministicExecutor
 {
-public:
-  SimulationThreadPool() = default;
-
-  ~SimulationThreadPool()
-  {
-    setWorkerCount(0u);
-  }
-
-  void setWorkerCount(std::size_t workerCount)
-  {
-    if (workerCount == mWorkers.size())
-      return;
-
-    stopWorkers();
-    if (workerCount == 0u)
-      return;
-
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      mStop = false;
-    }
-
-    mWorkers.reserve(workerCount);
-    for (std::size_t i = 0; i < workerCount; ++i) {
-      mWorkers.emplace_back([this] { workerLoop(); });
-    }
-  }
-
-  template <typename Func>
-  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
-  {
-    if (count == 0u)
-      return;
-
-    const std::size_t totalParticipants = std::min<std::size_t>(
-        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
-    if (totalParticipants <= 1u) {
-      for (std::size_t i = 0; i < count; ++i)
-        func(i);
-      return;
-    }
-
-    const std::size_t chunkSize
-        = (count + totalParticipants - 1u) / totalParticipants;
-    const std::size_t workerCount = totalParticipants - 1u;
-    using Function = typename std::remove_reference<Func>::type;
-
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      DART_ASSERT(!mTaskActive);
-      mTaskActive = true;
-      mTaskCallable = static_cast<void*>(std::addressof(func));
-      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
-        auto& task = *static_cast<Function*>(callable);
-        for (std::size_t i = begin; i < end; ++i)
-          task(i);
-      };
-      mTaskCount = count;
-      mTaskChunkSize = chunkSize;
-      mWorkerLimit = totalParticipants;
-      mNextWorkerIndex = 1u;
-      mActiveWorkerCount = workerCount;
-      ++mTaskGeneration;
-    }
-
-    mTaskCv.notify_all();
-
-    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
-    for (std::size_t i = 0; i < mainEnd; ++i)
-      func(i);
-
-    {
-      std::unique_lock<std::mutex> lock(mMutex);
-      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
-      mTaskActive = false;
-      mTaskCallable = nullptr;
-      mTaskInvoker = nullptr;
-      mWorkerLimit = 1u;
-    }
-  }
-
-private:
-  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
-
-  void stopWorkers()
-  {
-    {
-      std::lock_guard<std::mutex> lock(mMutex);
-      mStop = true;
-      ++mTaskGeneration;
-    }
-
-    mTaskCv.notify_all();
-
-    for (auto& worker : mWorkers) {
-      if (worker.joinable())
-        worker.join();
-    }
-    mWorkers.clear();
-
-    std::lock_guard<std::mutex> lock(mMutex);
-    mStop = false;
-    mTaskActive = false;
-    mTaskCallable = nullptr;
-    mTaskInvoker = nullptr;
-    mActiveWorkerCount = 0u;
-    mWorkerLimit = 1u;
-    mNextWorkerIndex = 1u;
-  }
-
-  void workerLoop()
-  {
-    std::size_t observedGeneration = 0u;
-
-    while (true) {
-      void* callable = nullptr;
-      TaskInvoker invoker = nullptr;
-      std::size_t begin = 0u;
-      std::size_t end = 0u;
-
-      {
-        std::unique_lock<std::mutex> lock(mMutex);
-        mTaskCv.wait(lock, [&] {
-          return mStop || observedGeneration != mTaskGeneration;
-        });
-
-        if (mStop)
-          return;
-
-        observedGeneration = mTaskGeneration;
-        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
-          continue;
-
-        const std::size_t workerIndex = mNextWorkerIndex++;
-        begin = workerIndex * mTaskChunkSize;
-        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
-        callable = mTaskCallable;
-        invoker = mTaskInvoker;
-      }
-
-      if (begin < end)
-        invoker(callable, begin, end);
-
-      {
-        std::lock_guard<std::mutex> lock(mMutex);
-        DART_ASSERT(mActiveWorkerCount > 0u);
-        --mActiveWorkerCount;
-        if (mActiveWorkerCount == 0u)
-          mDoneCv.notify_one();
-      }
-    }
-  }
-
-  std::vector<std::thread> mWorkers;
-  std::mutex mMutex;
-  std::condition_variable mTaskCv;
-  std::condition_variable mDoneCv;
-  bool mStop = false;
-  bool mTaskActive = false;
-  std::size_t mTaskGeneration = 0u;
-  std::size_t mTaskCount = 0u;
-  std::size_t mTaskChunkSize = 0u;
-  std::size_t mWorkerLimit = 1u;
-  std::size_t mNextWorkerIndex = 1u;
-  std::size_t mActiveWorkerCount = 0u;
-  void* mTaskCallable = nullptr;
-  TaskInvoker mTaskInvoker = nullptr;
 };
 
 //==============================================================================
@@ -1411,6 +1361,7 @@ void World::reset()
 {
   mTime = 0.0;
   mFrame = 0;
+  mDeactivationState->mFramesSinceStart = 0;
   mInitialRestSpeedLimits.clear();
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
@@ -1530,6 +1481,7 @@ inline void World::stepWithoutDeactivation(const StepContext& context)
 
   mTime += mTimeStep;
   mFrame++;
+  ++mDeactivationState->mFramesSinceStart;
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
 }
@@ -1561,6 +1513,7 @@ inline bool World::tryAllRestingFastPath(StepContext& context)
     }
     mTime += mTimeStep;
     mFrame++;
+    ++mDeactivationState->mFramesSinceStart;
     if (!mLastStepRestingWorldStateValid)
       updateLastStepRestingWorldState();
     return true;
@@ -1590,7 +1543,7 @@ inline void World::advanceVelocities(const StepContext& context)
 
   // The first-frame dwell credit is only for bodies that start at rest (see
   // updateRestStates()), so note which skeletons start the first step moving.
-  if (mFrame == 0) {
+  if (mDeactivationState->mFramesSinceStart == 0) {
     auto& initiallyMoving = mInitiallyMovingSkeletonScratch;
     initiallyMoving.assign(mSkeletons.size(), 0);
     for (std::size_t i = 0; i < mSkeletons.size(); ++i)
@@ -1678,7 +1631,8 @@ DART_FORCEINLINE void World::solveConstraints(StepContext& context)
   auto& deactivationState = *mDeactivationState;
   if (isReplayed(deactivationState, collisionFilter.get())
       && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
-      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
+      && (deactivationState.mFramesSinceStart < 2
+          || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
           || hasRestingOrCandidateMobileSkeleton(mSkeletons)
           || hasDwellingMobileSkeleton(mSkeletons))) {
     // Record before a body can freeze; moving bodies with no quiet dwell
@@ -1811,6 +1765,7 @@ inline void World::finishDeactivationStep(const StepContext& context)
 
   mTime += mTimeStep;
   mFrame++;
+  ++mDeactivationState->mFramesSinceStart;
 
   // A snapshot can only serve a next step on which a mobile body can freeze.
   if (mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
@@ -1934,10 +1889,12 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
   // The first-frame dwell credit (see islandInInitialEquilibrium below) is
   // checked on the first solve and confirmed on the second.
+  const int framesSinceStart = mDeactivationState->mFramesSinceStart;
   const bool confirmingInitialRest
-      = mFrame == 1
+      = framesSinceStart == 1
         && mInitialRestSpeedLimits.size() == countBodyNodes(mSkeletons);
-  const bool checkingInitialRest = mFrame == 0 || confirmingInitialRest;
+  const bool checkingInitialRest
+      = framesSinceStart == 0 || confirmingInitialRest;
 
   // Skeletons whose contacts on those frames cannot certify a settled body: a
   // deep contact, or a support tilted enough for gravity to drive motion along
@@ -2069,7 +2026,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       if (island < 0)
         continue;
 
-      const bool startedMoving = mFrame == 0
+      const bool startedMoving = framesSinceStart == 0
                                  && i < mInitiallyMovingSkeletonScratch.size()
                                  && mInitiallyMovingSkeletonScratch[i];
       bool inEquilibrium
@@ -2095,7 +2052,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // On the first solve, record the speeds that the second may leave on each
   // body of a member of an island in equilibrium; the bodies of a skeleton
   // outside such an island get limits that no speed meets.
-  if (mFrame == 0 && canSleep) {
+  if (framesSinceStart == 0 && canSleep) {
     const double initialRestMaxSpeedGrowth
         = kInitialRestMaxSpeedGrowthRatio * gravityNorm * mTimeStep;
     mInitialRestSpeedLimits.clear();
@@ -2684,6 +2641,11 @@ bool World::isCollisionFilterSnapshotTrackable(
 std::size_t World::getCollisionFilterSnapshotRevision(
     const collision::CollisionFilter* filter) const
 {
+  if (filter && typeid(*filter) == typeid(collision::BodyNodeCollisionFilter)) {
+    return static_cast<const collision::BodyNodeCollisionFilter*>(filter)
+        ->getBodyNodePairBlackListRevision();
+  }
+
   const auto* snapshotTracker
       = dynamic_cast<const collision::detail::CollisionFilterSnapshotTracker*>(
           filter);
@@ -2876,8 +2838,7 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     // step of the new motion, and the following solve freezes the body
     // (#3056). Candidacy set by hand between steps is kept. Another World's
     // sleep transitions and deactivation-state edits stamp none of the
-    // skeletons checked here, so they do not restart it. (A structural edit
-    // in any World still re-prepares every World; see isInSimulationMode().)
+    // skeletons checked here, so they do not restart it.
     if (!recordedStateUnchanged) {
       mInitialRestSpeedLimits.clear();
       for (auto& skel : mSkeletons) {
@@ -2990,6 +2951,12 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
   mAllRestingSnapshotVelocityVersion = 0u;
+}
+
+//==============================================================================
+void World::restartFirstFrameRestCredit()
+{
+  mDeactivationState->mFramesSinceStart = 0;
 }
 
 //==============================================================================

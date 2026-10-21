@@ -39,8 +39,14 @@
 namespace dart {
 namespace collision {
 
+namespace detail {
+struct CollisionHistory;
+} // namespace detail
+
 class BulletCollisionGroup : public CollisionGroup
 {
+  friend struct detail::CollisionHistory;
+
 public:
   friend class BulletCollisionDetector;
 

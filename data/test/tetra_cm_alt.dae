@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test fixture authored for DART (BSD-2-Clause). Tetrahedron in centimeters:
+     extents 10 x 20 x 30 cm. -->
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <created>2026-10-19T00:00:00Z</created>
+    <modified>2026-10-19T00:00:00Z</modified>
+    <unit name="centimeter" meter="0.01"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_geometries>
+    <geometry id="tetra" name="tetra">
+      <mesh>
+        <source id="tetra-positions">
+          <float_array id="tetra-positions-array" count="12">0 0 0 10 0 0 0 20 0 0 0 30</float_array>
+          <technique_common>
+            <accessor source="#tetra-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="tetra-vertices">
+          <input semantic="POSITION" source="#tetra-positions"/>
+        </vertices>
+        <triangles count="4">
+          <input semantic="VERTEX" source="#tetra-vertices" offset="0"/>
+          <p>0 2 1 0 1 3 0 3 2 1 2 3</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="scene">
+      <node id="tetra-node" name="tetra-node">
+        <instance_geometry url="#tetra"/>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#scene"/>
+  </scene>
+</COLLADA>

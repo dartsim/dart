@@ -11,7 +11,8 @@ from pathlib import Path
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("python_tag", choices=["cp310", "cp311", "cp312", "cp313"])
+    # Release wheels are cp312-abi3 (pyproject.toml); they serve 3.12 and newer.
+    parser.add_argument("python_tag", choices=["cp312"])
     args = parser.parse_args()
     arch = platform.machine()
     if arch not in {"x86_64", "aarch64"}:
@@ -37,8 +38,6 @@ def main() -> None:
         check=True,
     )
     python = f"/opt/python/{args.python_tag}-{args.python_tag}/bin/python"
-    # wheel_build.py builds the CPython 3.12 wheel for the stable ABI (abi3).
-    abi3 = args.python_tag == "cp312"
     # Keep builds out of the checkout, including stale host CMake caches.
     command = f"""
 set -euo pipefail
@@ -48,15 +47,13 @@ tar -C /io --exclude=.git --exclude=.pixi --exclude=build --exclude=dist \\
 cd /tmp/dart
 export PATH=/opt/python/{args.python_tag}-{args.python_tag}/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:${{LD_LIBRARY_PATH:-}}
-{python} -m pip install 'setuptools>=80.1.0,<81' 'wheel>=0.48.0,<0.49' ninja
+{python} -m pip install 'scikit-build-core>=1.1.1' ninja
 CONDA_PREFIX=/usr/local {python} scripts/wheel_build.py OFF
 auditwheel show dist/dartpy-*-linux_{arch}.whl
 auditwheel repair --plat manylinux_2_28_{arch} --only-plat \\
     dist/dartpy-*-linux_{arch}.whl -w /output
 {python} scripts/verify_wheel.py /output/dartpy-*-{args.python_tag}-*.whl
-"""
-    if abi3:
-        command += f"""{python} -m pip install abi3audit==0.0.26
+{python} -m pip install abi3audit==0.0.26
 abi3audit --strict --report /output/dartpy-*-cp312-abi3-*.whl
 """
     subprocess.run(
@@ -77,7 +74,7 @@ abi3audit --strict --report /output/dartpy-*-cp312-abi3-*.whl
     )
     # A fresh base image has none of our source-built dependencies installed.
     # The abi3 wheel also serves newer interpreters.
-    for tag in (args.python_tag, "cp313") if abi3 else (args.python_tag,):
+    for tag in (args.python_tag, "cp313"):
         subprocess.run(
             [
                 "docker",

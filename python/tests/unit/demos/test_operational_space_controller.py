@@ -1,12 +1,16 @@
-"""The private native task-space controller validates and owns its inputs."""
+"""Task-space control, input validation and Python owner lifetime."""
 
 import gc
+import sys
 import weakref
+from pathlib import Path
 
 import dartpy as dart
 import numpy as np
 import pytest
-from dartpy import _demos
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "python"))
+from examples.demos.models.operational_space_control import OperationalSpaceController
 
 
 def make_inputs(
@@ -28,9 +32,9 @@ def make_inputs(
     return robot, target
 
 
-def test_native_controller_properties_and_forces():
+def test_controller_properties_and_forces():
     robot, target = make_inputs()
-    controller = _demos.OperationalSpaceController(robot, target)
+    controller = OperationalSpaceController(robot, target)
     assert controller.robot is robot and controller.target is target
     np.testing.assert_array_equal(controller.offset, [0.05, 0, 0])
     np.testing.assert_array_equal(controller.kp, 50 * np.eye(3))
@@ -61,15 +65,21 @@ def test_native_controller_properties_and_forces():
 
 
 @pytest.mark.parametrize("which", ["robot", "target"])
-def test_native_controller_rejects_invalid_owners(which):
+def test_controller_rejects_invalid_owners(which):
     robot, target = make_inputs()
     args = {"robot": robot, "target": target}
     for invalid in (None, object()):
         args[which] = invalid
         with pytest.raises((TypeError, ValueError)):
-            _demos.OperationalSpaceController(**args)
+            OperationalSpaceController(**args)
     with pytest.raises(ValueError):
-        _demos.OperationalSpaceController(dart.dynamics.Skeleton(), target)
+        OperationalSpaceController(dart.dynamics.Skeleton(), target)
+    fixed = dart.dynamics.Skeleton()
+    fixed.createWeldJointAndBodyNodePair()
+    with pytest.raises(
+        ValueError, match="robot must have bodies and degrees of freedom"
+    ):
+        OperationalSpaceController(fixed, target)
 
 
 @pytest.mark.parametrize(
@@ -85,8 +95,8 @@ def test_native_controller_rejects_invalid_owners(which):
         ("offset", [0, np.nan, 0]),
     ],
 )
-def test_native_controller_rejects_invalid_settings_without_mutation(name, invalid):
-    controller = _demos.OperationalSpaceController(*make_inputs())
+def test_controller_rejects_invalid_settings_without_mutation(name, invalid):
+    controller = OperationalSpaceController(*make_inputs())
     previous = getattr(controller, name)
     with pytest.raises((TypeError, ValueError)):
         setattr(controller, name, invalid)
@@ -97,7 +107,20 @@ def test_native_controller_rejects_invalid_settings_without_mutation(name, inval
     assert np.isfinite(controller.compute_forces()).all()
 
 
-def test_native_controller_retains_subclasses_and_collects_owner_cycles():
+@pytest.mark.parametrize("name", ["offset", "kp", "kd"])
+def test_controller_settings_own_their_storage(name):
+    controller = OperationalSpaceController(*make_inputs())
+    value = getattr(controller, name)
+    setattr(controller, name, value)
+    saved = value.copy()
+    value[:] = 0
+    np.testing.assert_array_equal(getattr(controller, name), saved)
+    returned = getattr(controller, name)
+    returned[:] = 0
+    np.testing.assert_array_equal(getattr(controller, name), saved)
+
+
+def test_controller_retains_subclasses_and_collects_owner_cycles():
     class Robot(dart.dynamics.Skeleton):
         pass
 
@@ -105,7 +128,7 @@ def test_native_controller_retains_subclasses_and_collects_owner_cycles():
         pass
 
     robot, target = make_inputs(Robot, Target)
-    controller = _demos.OperationalSpaceController(robot, target)
+    controller = OperationalSpaceController(robot, target)
     robot_ref, target_ref = weakref.ref(robot), weakref.ref(target)
     robot.owner = controller
     target.owner = controller
@@ -118,9 +141,9 @@ def test_native_controller_retains_subclasses_and_collects_owner_cycles():
     assert robot_ref() is None and target_ref() is None
 
 
-def test_native_controller_rejects_removed_end_effector():
+def test_controller_rejects_removed_end_effector():
     robot, target = make_inputs()
-    controller = _demos.OperationalSpaceController(robot, target)
+    controller = OperationalSpaceController(robot, target)
     detached = robot.getBodyNode(robot.getNumBodyNodes() - 1).remove()
     del detached
     gc.collect()
@@ -130,13 +153,48 @@ def test_native_controller_rejects_removed_end_effector():
         controller.update()
 
 
-def test_native_controller_rejects_changed_dof_count():
+def test_controller_rejects_changed_dof_count():
     robot, target = make_inputs()
-    controller = _demos.OperationalSpaceController(robot, target)
+    controller = OperationalSpaceController(robot, target)
     robot.createRevoluteJointAndBodyNodePair()
     with pytest.raises(RuntimeError, match="robot structure changed"):
         controller.compute_forces()
 
 
-def test_native_keyboard_capture_query_without_gui_context():
-    assert _demos.keyboard_capture_active() is False
+def test_controller_rejects_branched_robot():
+    robot, target = make_inputs()
+    robot.createRevoluteJointAndBodyNodePair()
+    with pytest.raises(ValueError, match="end effector must depend on all robot DOFs"):
+        OperationalSpaceController(robot, target)
+
+
+@pytest.mark.parametrize("configured", [False, True])
+def test_controller_forces_match_native_baseline(configured):
+    robot, target = make_inputs()
+    controller = OperationalSpaceController(robot, target)
+    if configured:
+        robot.setVelocities([0.2, -0.3, 0.15])
+        controller.offset = [0.1, -0.07, 0.04]
+        controller.kp = [[40, 2, 3], [-1, 30, 0], [2, 1, 20]]
+        controller.kd = [[3, 0.2, 0], [0, 4, -0.1], [0.3, 0, 2]]
+        expected = [-3.923245539885375, 12.636438314716422, 5.521957714384366]
+    else:
+        expected = [21.140836648483113, -46.094791563371516, 0]
+    # Recorded from the native controller before moving the demo law to Python.
+    np.testing.assert_allclose(controller.compute_forces(), expected, rtol=1e-12)
+
+
+def test_controller_repeats_controlled_steps_deterministically():
+    states = []
+    for _ in range(2):
+        robot, target = make_inputs()
+        world = dart.simulation.World()
+        world.addSkeleton(robot)
+        world.addSimpleFrame(target)
+        controller = OperationalSpaceController(robot, target)
+        for _ in range(40):
+            controller.update()
+            world.step()
+            assert np.isfinite(robot.getPositions()).all()
+        states.append((robot.getPositions(), robot.getVelocities()))
+    np.testing.assert_array_equal(states[0], states[1])

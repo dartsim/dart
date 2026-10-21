@@ -24,87 +24,6 @@ dart_check_required_package(fcl "fcl")
 # ASSIMP
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
-if(ASSIMP_FOUND)
-  # Check for missing symbols in ASSIMP (see #451)
-  include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_DEFINITIONS "")
-  if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "-w")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-std=c++11 -w")
-  endif()
-  set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
-  set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
-
-  check_cxx_source_compiles(
-    "
-  #include <assimp/scene.h>
-  int main()
-  {
-    aiScene* scene = new aiScene;
-    delete scene;
-    return 1;
-  }
-  "
-    ASSIMP_AISCENE_CTOR_DTOR_DEFINED
-  )
-
-  if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-    if(DART_VERBOSE)
-      message(
-        WARNING
-        "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
-        "missing symbols for the constructor and/or destructor of "
-        "aiScene. DART will use its own implementations of these "
-        "functions. We recommend using a version of ASSIMP that "
-        "does not have this issue, once one becomes available."
-      )
-    endif()
-  endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-
-  check_cxx_source_compiles(
-    "
-  #include <assimp/scene.h>
-  int main()
-  {
-    (void)sizeof(((aiScene*)nullptr)->mNumSkeletons);
-    (void)sizeof(((aiScene*)nullptr)->mSkeletons);
-    return 0;
-  }
-  "
-    ASSIMP_AISCENE_HAS_SKELETONS
-  )
-
-  check_cxx_source_compiles(
-    "
-  #include <assimp/material.h>
-  int main()
-  {
-    aiMaterial* material = new aiMaterial;
-    delete material;
-    return 1;
-  }
-  "
-    ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
-  )
-
-  if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-    if(DART_VERBOSE)
-      message(
-        WARNING
-        "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
-        "missing symbols for the constructor and/or destructor of "
-        "aiMaterial. DART will use its own implementations of "
-        "these functions. We recommend using a version of ASSIMP "
-        "that does not have this issue, once one becomes available."
-      )
-    endif()
-  endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-
-  unset(CMAKE_REQUIRED_FLAGS)
-  unset(CMAKE_REQUIRED_INCLUDES)
-  unset(CMAKE_REQUIRED_LIBRARIES)
-endif()
 
 # octomap
 dart_find_package(octomap)
@@ -174,11 +93,11 @@ if(DART_BUILD_DARTPY AND Python_EXECUTABLE)
 endif()
 if(DART_BUILD_DARTPY AND DART_BUILD_WHEELS)
   # manylinux provides extension headers, but deliberately omits libpython.
-  find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+  find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
 elseif(DART_BUILD_DARTPY)
-  find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter Development)
+  find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development)
 else()
-  find_package(Python3 3.10 COMPONENTS Interpreter Development)
+  find_package(Python3 3.12 COMPONENTS Interpreter Development)
 endif()
 
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
