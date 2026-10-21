@@ -279,6 +279,7 @@ jobs:
           PREFIX: ${{ steps.sccache-config.outputs.prefix }}
         run: bash .github/actions/sccache/prune.sh "$PREFIX" "$SCCACHE_SNAPSHOT"
 
-      # Linux CI covers install. On Windows, pixi run install configures a
-      # separate install build tree after test-all has already passed, which
-      # duplicates work and can keep the protected-branch runner busy for hours.
+      # Linux CI covers install. On Windows, pixi run -e system-imgui install
+      # configures a separate install build tree after test-all has already
+      # passed, which duplicates work and can keep the protected-branch runner
+      # busy for hours.

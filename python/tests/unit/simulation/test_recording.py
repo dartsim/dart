@@ -16,6 +16,9 @@ def test_recorded_config_is_a_copy_and_layout_changes_clear_history():
     world.bake()
     recorded = recording.getConfig(0, 0)
     np.testing.assert_allclose(recorded, skeleton.getPositions())
+    with pytest.raises(ValueError, match="assignment destination is read-only"):
+        recorded[:] = 100
+    recorded = recorded.copy()
     recorded[:] = 100
     assert not np.any(recording.getConfig(0, 0) == 100)
     skeleton.createRevoluteJointAndBodyNodePair(skeleton.getRootBodyNode())
