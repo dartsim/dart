@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DIST_INFO = "dartpy-1.0.dist-info"
 PACKAGE = {
     "dartpy/__init__.py": b"# package\n",
-    "dartpy/_dartpy.abi3.so": b"native extension fixture",
+    "dartpy/_core.abi3.so": b"native extension fixture",
     "dartpy/py.typed": b"",
     "dartpy/experimental/__init__.py": b'"""Outside SemVer."""\n',
     f"{DIST_INFO}/METADATA": b"Metadata-Version: 2.4\nName: dartpy\nVersion: 1.0\n",
@@ -47,7 +47,7 @@ def test_accepts_package_with_vendored_libraries(tmp_path, capsys):
         },
     )
     assert _load().verify_wheel(wheel)
-    assert "Found extension: dartpy/_dartpy.abi3.so" in capsys.readouterr().out
+    assert "Found extension: dartpy/_core.abi3.so" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(
@@ -58,7 +58,7 @@ def test_accepts_package_with_vendored_libraries(tmp_path, capsys):
         ({"dartpy/py.typed": None}, "missing dartpy/py.typed"),
         ({"dartpy/experimental/__init__.py": None}, "missing dartpy/experimental/"),
         ({f"{DIST_INFO}/licenses/filament/LICENSE": None}, "licenses/filament/LICENSE"),
-        ({"dartpy/_dartpy.abi3.so": None}, "No dartpy._dartpy extension"),
+        ({"dartpy/_core.abi3.so": None}, "No dartpy._core extension"),
     ],
 )
 def test_rejects_layout_violations(tmp_path, capsys, change, message):

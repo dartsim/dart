@@ -54,16 +54,18 @@
    the C++17 and C++20 builds, and the stock-noble Tier 2 build. The distro
    FCL assertion is triaged ([verification.md](verification.md)); filing the
    upstream FCL and Debian/Ubuntu reports needs approval.
-4. After M1d: DEP-21, the `World.cpp` captures from DEP-11, and any
-   quiet-window hunk the PLAN-624 owner did not clear earlier.
+4. Sequence DEP-21, the `World.cpp` captures from DEP-11, and other step-path
+   hunks in the PLAN-624 program-owned merge order, each re-qualified on
+   current `main`.
 
 ## Risks and recovery
 
 - `main` moves quickly. Re-check file and line references in
   [packets.md](packets.md) and the review on current `main` before each
   packet.
-- The step-path quiet window is open until M1d merges: `World.cpp` and
-  `lcpsolver` hunks wait or go through the PLAN-624 owner.
+- The step-path quiet window is closed: `World.cpp` and `lcpsolver` hunks
+  follow the PLAN-624 program-owned merge order, each re-qualified on current
+  `main`.
 - The merging PR regenerates `pixi.lock`; never hand-merge it.
 - Gazebo lanes: compare against a base variant built from the packet's base
   (`GZ_COMPAT_BASE_VARIANT`); `reset_sensors` fails on every base today.
