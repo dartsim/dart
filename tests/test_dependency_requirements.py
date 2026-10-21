@@ -926,6 +926,8 @@ def test_installed_legacy_components_propagate_sdformat_failure(
 
 
 def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
+    tmp_path = tmp_path / "archive fixture"
+    tmp_path.mkdir()
     module = (
         Path(__file__).resolve().parents[1] / "dart/gui/imgui/CMakeLists.txt"
     ).read_text()
@@ -973,7 +975,7 @@ def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
             output.add(payload, arcname="imgui")
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         (source / "imgui.cmake").write_text(
-            module.replace(original_hash, digest).replace(url, archive.as_uri())
+            module.replace(original_hash, digest).replace(url, archive.as_posix())
         )
         # Let pytest report complete CMake output on failure.
         subprocess.run(
