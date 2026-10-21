@@ -66,8 +66,8 @@ struct JointAttributes final
 
   Eigen::Vector2d mSpringDamper{Eigen::Vector2d::Zero()};
 
-  /// This attribute specifies if the joint has limits.
-  bool mLimited{false};
+  /// If unset (auto), infer limits from the range when autolimits is enabled.
+  std::optional<bool> mLimited;
 
   double mStiffness{0};
 
