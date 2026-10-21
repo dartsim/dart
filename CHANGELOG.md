@@ -237,6 +237,14 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
+    writes now raise `ValueError`; call `.copy()` before writing, then use the
+    appropriate setter to update DART state. Eigen arguments that dartpy passes
+    into Python overrides, such as `Function.eval(x)`, are read-only too.
+    Existing live views and output buffers, such as a gradient's `grad`, keep
+    their mutability.
+    [#3843](https://github.com/dartsim/dart/pull/3843)
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
