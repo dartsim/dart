@@ -316,7 +316,7 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
 
 TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string filePath = DART_DATA_LOCAL_PATH "test/tetra_cm.dae";
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -331,9 +331,9 @@ TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
   // Reuse the SAME aiScene* but supply a different uri. The mesh pointer must
   // be kept (not freed/replaced), and the public metadata must still be
   // refreshed so a metadata-only update is not dropped.
-  const std::string otherUri
-      = common::Uri::createFromPath(DART_DATA_LOCAL_PATH "skel/kima/r-foot.dae")
-            .toString();
+  const std::string otherUri = common::Uri::createFromPath(
+                                   DART_DATA_LOCAL_PATH "test/tetra_cm_alt.dae")
+                                   .toString();
   ASSERT_FALSE(otherUri.empty());
   ASSERT_NE(otherUri, fileUri);
 
@@ -369,7 +369,7 @@ TEST(MeshShapeTest, ArrowShapeRefreshesTriMeshAfterPositionUpdates)
 
 TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string filePath = DART_DATA_LOCAL_PATH "test/tetra_cm.dae";
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -394,6 +394,11 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
   const double unitScale = readColladaUnitScale(filePath);
   ASSERT_GT(unitScale, 0.0);
 
+  // The fixture spans 10 x 20 x 30 cm; the file declares 0.01 m per unit.
+  EXPECT_NEAR(unitScale, 0.01, 1e-12);
+  EXPECT_TRUE(
+      extentsIgnoringUnits.isApprox(Eigen::Vector3d(10.0, 20.0, 30.0), 1e-6));
+  EXPECT_TRUE(extentsWithUnits.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-6));
   EXPECT_TRUE(extentsWithUnits.isApprox(extentsIgnoringUnits * unitScale, 1e-6))
       << "extentsWithUnits=" << extentsWithUnits.transpose()
       << ", extentsIgnoringUnits=" << extentsIgnoringUnits.transpose()
@@ -402,8 +407,8 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 
 TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
-  const std::string aliasUri = "collada-nodot://meshshape/lfoot";
+  const std::string filePath = DART_DATA_LOCAL_PATH "test/tetra_cm.dae";
+  const std::string aliasUri = "collada-nodot://meshshape/tetra";
 
   auto aliasRetriever
       = std::make_shared<AliasUriResourceRetriever>(aliasUri, filePath);
@@ -424,6 +429,7 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   const Eigen::Vector3d canonicalExtents
       = canonicalShape->getBoundingBox().computeFullExtents();
 
+  EXPECT_TRUE(aliasExtents.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-6));
   EXPECT_TRUE(aliasExtents.isApprox(canonicalExtents, 1e-6))
       << "aliasExtents=" << aliasExtents.transpose()
       << ", canonicalExtents=" << canonicalExtents.transpose();
