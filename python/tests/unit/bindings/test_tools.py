@@ -1,6 +1,7 @@
 """Check the reusable migration tools without modifying the bindings."""
 
 import enum
+import importlib
 import json
 import subprocess
 import sys
@@ -79,6 +80,31 @@ def test_api_surface_budget(api_surface):
         + f"{api_surface.BUDGET_UPDATE} --allow-growth. "
         + f"Lowering is automatic with {api_surface.BUDGET_UPDATE}."
     )
+
+
+def test_api_snapshot_imports_public_subpackages(api_surface, tmp_path, monkeypatch):
+    """The surface must not depend on which subpackages ran first."""
+    package = tmp_path / "dartpy_snapshot_fixture"
+    for name in ("sub", "sub/nested", "_private", "_private/inner"):
+        (package / name).mkdir(parents=True)
+        (package / name / "__init__.py").write_text("")
+    (package / "__init__.py").write_text("")
+    (package / "plain.py").write_text("")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for name in [m for m in sys.modules if m.startswith("dartpy_snapshot_fixture")]:
+        monkeypatch.delitem(sys.modules, name)
+    module = importlib.import_module("dartpy_snapshot_fixture")
+    try:
+        assert not hasattr(module, "sub")
+        api_surface.import_public_subpackages(module)
+        assert hasattr(module, "sub")
+        assert hasattr(module.sub, "nested")
+        assert not hasattr(module, "_private")
+        assert "dartpy_snapshot_fixture._private" not in sys.modules
+        assert not hasattr(module, "plain")
+    finally:
+        for name in [m for m in sys.modules if m.startswith("dartpy_snapshot_fixture")]:
+            del sys.modules[name]
 
 
 def test_api_budget_uses_canonical_snapshot_identities(api_surface, monkeypatch):
