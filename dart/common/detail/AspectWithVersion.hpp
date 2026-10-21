@@ -168,13 +168,8 @@ protected:
   Properties mProperties;
 };
 
-//==============================================================================
-//
-// These namespace-level definitions are required to enable ODR-use of static
-// constexpr member variables.
-//
-// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
-//
+#if __cplusplus < 201703L
+// Definitions are needed for ODR-use before C++17 inline variables.
 template <
     class BaseT,
     class DerivedT,
@@ -184,6 +179,7 @@ template <
 constexpr void (
     *AspectWithState<BaseT, DerivedT, StateDataT, CompositeT, updateState>::
         UpdateState)(DerivedT*);
+#endif
 
 //==============================================================================
 template <
@@ -267,13 +263,8 @@ AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
   return std::make_unique<Derived>(mState);
 }
 
-//==============================================================================
-//
-// These namespace-level definitions are required to enable ODR-use of static
-// constexpr member variables.
-//
-// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
-//
+#if __cplusplus < 201703L
+// Definitions are needed for ODR-use before C++17 inline variables.
 template <
     class BaseT,
     class DerivedT,
@@ -286,6 +277,7 @@ constexpr void (*AspectWithVersionedProperties<
                 PropertiesDataT,
                 CompositeT,
                 updateProperties>::UpdateProperties)(DerivedT*);
+#endif
 
 //==============================================================================
 template <
