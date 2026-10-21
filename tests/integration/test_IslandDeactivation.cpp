@@ -3506,18 +3506,19 @@ TEST(IslandDeactivation, WakeReadsFreshSavedNativeFilterAfterCallback)
     world->invalidateAllRestingKinematicSnapshot();
 
     bool called = false;
-    reader->onBodyCount = [&] {
-      called = true;
-      if (replaceFilter)
-        world->getConstraintSolver()->getCollisionOption().collisionFilter
-            = replacement;
-      if (editBlacklist) {
-        filter->addBodyNodePairToBlackList(
-            floor->getBodyNode(0), sleeper->getBodyNode(0));
-        filter->removeBodyNodePairFromBlackList(
-            floor->getBodyNode(0), sleeper->getBodyNode(0));
-      }
-    };
+    reader->onBodyCount
+        = [&, replaceFilter = replaceFilter, editBlacklist = editBlacklist] {
+            called = true;
+            if (replaceFilter)
+              world->getConstraintSolver()->getCollisionOption().collisionFilter
+                  = replacement;
+            if (editBlacklist) {
+              filter->addBodyNodePairToBlackList(
+                  floor->getBodyNode(0), sleeper->getBodyNode(0));
+              filter->removeBodyNodePairFromBlackList(
+                  floor->getBodyNode(0), sleeper->getBodyNode(0));
+            }
+          };
     world->wakeRestingSkeletonsIfStepStateChanged();
     ASSERT_TRUE(called);
     EXPECT_EQ(sleeper->isResting(), !editBlacklist);
