@@ -230,10 +230,10 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
     template <typename T2>
     static handle from_cpp(T2 &&v, rv_policy policy, cleanup_list *cleanup) noexcept {
         policy = infer_policy<T2>(policy);
-        // Preserve source constness before materializing Eigen expression types.
-        const bool readonly = std::is_const_v<
-            std::remove_pointer_t<std::remove_reference_t<T2>>> &&
-            (policy == rv_policy::reference || policy == rv_policy::reference_internal);
+        // Owned results are snapshots; preserve existing live-view constness.
+        const bool readonly = policy == rv_policy::move || policy == rv_policy::copy ||
+            (std::is_const_v<std::remove_pointer_t<std::remove_reference_t<T2>>> &&
+             (policy == rv_policy::reference || policy == rv_policy::reference_internal));
         if constexpr (std::is_pointer_v<T2>)
             return from_cpp_internal((const T &) *v, policy, cleanup, readonly);
         else
@@ -259,9 +259,8 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
 
         // Even small/fixed by-value results avoid the expensive numpy.copy path.
         object owner;
-#ifdef DART_EIGEN_NUMPY_CAPI
         const bool moved = policy == rv_policy::move;
-#endif
+        const bool empty = v.size() == 0;
         if (policy == rv_policy::move) {
             T *temp = new T((T&&) v);
             owner = capsule(temp, [](void *p) noexcept { delete (T *) p; });
@@ -283,7 +282,7 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
                     return handle();
                 if (fast_export)
                     return handle(dart_numpy_capi::from_data(
-                        ndim_v<T>, shape, strides, ptr, owner.ptr()));
+                        ndim_v<T>, shape, strides, ptr, owner.ptr(), !readonly));
                 // NumPy 1: the heap-moved owner backs nanobind's numpy.asarray view.
             }
         }
@@ -294,6 +293,13 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
                 NDArrayConst(ptr, ndim_v<T>, shape, owner, strides), policy, cleanup))
             : steal(NDArrayCaster::from_cpp(
                 NDArray(ptr, ndim_v<T>, shape, owner, strides), policy, cleanup));
+
+        // NumPy copies and empty arrays can reset a const buffer's writeability.
+        if (o.is_valid() && readonly && (policy == rv_policy::copy || (moved && empty))) {
+            object result = steal(PyObject_CallMethod(o.ptr(), "setflags", "O", Py_False));
+            if (!result.is_valid())
+                return handle();
+        }
 
         return o.release();
     }
