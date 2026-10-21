@@ -9,7 +9,7 @@ execute_process(
   COMMAND_ERROR_IS_FATAL ANY
 )
 list(APPEND CMAKE_PREFIX_PATH "${nanobind_cmake_dir}")
-find_package(nanobind CONFIG REQUIRED)
+find_package(nanobind 3.1 CONFIG REQUIRED)
 if(
   NOT NB_DIR
   OR NOT EXISTS "${NB_DIR}/include/nanobind/nanobind.h"

@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -922,6 +923,28 @@ def test_installed_legacy_components_propagate_sdformat_failure(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def write_nanobind_package(package, version, internals=22):
+    """Write a fake nanobind package whose header decides the manual checks."""
+    (package / "include/nanobind").mkdir(parents=True)
+    (package / "src").mkdir()
+    (package / "include/nanobind/nanobind.h").write_text(
+        "".join(
+            f"#define NB_VERSION_{part} {value}\n"
+            for part, value in zip(("MAJOR", "MINOR", "PATCH"), version.split("."))
+        )
+    )
+    (package / "src/nb_internals.h").write_text(
+        f"#  define NB_INTERNALS_VERSION {internals}\n"
+    )
+    (package / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{package.as_posix()}")\n'
+    )
+    # Always compatible, so CMake's 3.1 request never preempts a manual check.
+    (package / "nanobindConfigVersion.cmake").write_text(
+        f'set(PACKAGE_VERSION "{version}")\n' "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+    )
+
+
 @pytest.mark.parametrize("system", [True, False])
 @pytest.mark.parametrize(
     "version,internals,missing,accepted",
@@ -947,20 +970,7 @@ def test_nanobind_version_and_internals(
     modules.mkdir()
     (modules / "FindPython.cmake").write_text("set(Python_FOUND TRUE)\n")
     package = tmp_path / "nanobind"
-    (package / "include/nanobind").mkdir(parents=True)
-    (package / "src").mkdir()
-    (package / "include/nanobind/nanobind.h").write_text(
-        "".join(
-            f"#define NB_VERSION_{part} {value}\n"
-            for part, value in zip(("MAJOR", "MINOR", "PATCH"), version.split("."))
-        )
-    )
-    (package / "src/nb_internals.h").write_text(
-        f"#  define NB_INTERNALS_VERSION {internals}\n"
-    )
-    (package / "nanobindConfig.cmake").write_text(
-        f'set(NB_DIR "{package.as_posix()}")\n'
-    )
+    write_nanobind_package(package, version, internals)
     (package / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.22.1)\n"
         f'set(NB_DIR "{package.as_posix()}" PARENT_SCOPE)\n'
@@ -1001,3 +1011,57 @@ def test_nanobind_version_and_internals(
         else:
             assert "dartpy requires nanobind 3.1.x" in output
             assert f"found {version}" in output
+
+
+def test_nanobind_search_skips_old_package_before_running_its_config(
+    tmp_path, monkeypatch
+):
+    old = tmp_path / "prefix/lib/cmake/nanobind"
+    old.mkdir(parents=True)
+    (old / "nanobindConfig.cmake").write_text(
+        'message(FATAL_ERROR "old nanobind config executed")\n'
+    )
+    (old / "nanobindConfigVersion.cmake").write_text(
+        'set(PACKAGE_VERSION "3.0.2")\n'
+        "if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)\n"
+        "  set(PACKAGE_VERSION_COMPATIBLE FALSE)\n"
+        "else()\n"
+        "  set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+        "endif()\n"
+    )
+    hinted = tmp_path / "hinted"
+    write_nanobind_package(hinted, "3.1.4")
+    (hinted / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{hinted.as_posix()}")\nset(hinted_config_ran TRUE)\n'
+    )
+    # Stands in for the nanobind package whose `-m nanobind --cmake_dir` is the hint.
+    stub = tmp_path / "pythonpath/nanobind"
+    stub.mkdir(parents=True)
+    (stub / "__init__.py").write_text("")
+    (stub / "__main__.py").write_text(f"print({hinted.as_posix()!r})\n")
+    monkeypatch.setenv("PYTHONPATH", str(stub.parent))
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    (modules / "FindPython.cmake").write_text("set(Python_FOUND TRUE)\n")
+    for name in ("dartpy", "tests", "examples", "tutorials"):
+        directory = tmp_path / "source" / name
+        directory.mkdir(parents=True)
+        (directory / "CMakeLists.txt").write_text(
+            'file(WRITE "${CMAKE_BINARY_DIR}/dartpy-reached" "")\n'
+            if name == "dartpy"
+            else ""
+        )
+    result = configure(
+        tmp_path,
+        "set(DART_BUILD_DARTPY ON)\n"
+        "set(DART_USE_SYSTEM_NANOBIND ON)\n"
+        f'set(Python_EXECUTABLE "{Path(sys.executable).as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n'
+        "if(NOT hinted_config_ran)\n"
+        '  message(FATAL_ERROR "compatible hinted nanobind was not selected")\n'
+        "endif()\n",
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "old nanobind config executed" not in output
+    assert (tmp_path / "build/dartpy-reached").exists()
