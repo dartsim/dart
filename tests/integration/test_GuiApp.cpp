@@ -1670,10 +1670,14 @@ TEST(LogCapture, ConsoleKeepsLegacyTerminalBytes)
   common::setLogSink(std::move(previous));
   EXPECT_EQ(
       "\033[1;32mMsg\033[0m partial\033[1;36mDbg\033[0m debug\nsecond\n", out);
+  // Legacy Console strips forward slashes only, including on Windows.
+  const std::string filename = __FILE__;
+  const auto displayFilename = filename.substr(filename.find_last_of('/') + 1);
   EXPECT_EQ(
-      "\033[1;33mWarning [test_GuiApp.cpp:" + std::to_string(warningLine)
-          + "]\033[0m warning\033[1;31mError [test_GuiApp.cpp:"
-          + std::to_string(errorLine) + "]\033[0m error\n",
+      "\033[1;33mWarning [" + displayFilename + ":"
+          + std::to_string(warningLine) + "]\033[0m warning\033[1;31mError ["
+          + displayFilename + ":" + std::to_string(errorLine)
+          + "]\033[0m error\n",
       err);
   ASSERT_EQ(5u, messages.size());
   EXPECT_EQ("Msg partial", messages[0]);

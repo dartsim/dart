@@ -76,6 +76,18 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
     return errors;
   }
 
+  // autolimits
+  if (hasAttribute(element, "autolimits")) {
+    const std::string autolimits = getAttributeString(element, "autolimits");
+    if (autolimits != "true" && autolimits != "false") {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "Invalid attribute for 'autolimits': " + autolimits);
+      return errors;
+    }
+    mAutoLimits = autolimits == "true";
+  }
+
   // boundmass
   if (hasAttribute(element, "boundmass")) {
     mBoundMass = getAttributeDouble(element, "boundmass");
@@ -223,6 +235,12 @@ bool Compiler::getBalanceInertia() const
 bool Compiler::getStripPath() const
 {
   return mStripPath;
+}
+
+//==============================================================================
+bool Compiler::getAutoLimits() const
+{
+  return mAutoLimits;
 }
 
 //==============================================================================

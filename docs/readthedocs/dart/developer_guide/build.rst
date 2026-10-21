@@ -13,8 +13,9 @@ Recommended Pixi build
 ----------------------
 
 The reproducible developer path is the Pixi environment tracked in
-``pixi.toml``. It supplies the compiler tools, CMake, Ninja, Python, Doxygen,
-Sphinx, test tools, and the C++ dependencies used by the branch.
+``pixi.toml``. Its default environment supplies the compiler tools, CMake,
+Ninja, Python, test tools, and the C++ dependencies used by the branch; the
+``docs`` environment adds Doxygen and Sphinx for the documentation tasks.
 
 .. code-block:: bash
 
@@ -29,7 +30,7 @@ Run the relevant verification gates from the same environment:
    pixi run lint
    pixi run test
    pixi run test-py
-   pixi run docs-build
+   pixi run -e docs docs-build
 
 ``pixi run test-all`` builds the default aggregate CMake target. The default
 configuration enables testing, so that aggregate also runs CTest and the
@@ -56,7 +57,7 @@ The development branch requires C++17 and the following source-build baselines:
      - OS baseline
      - Compiler minimum
    * - Ubuntu
-     - 22.04 LTS; also tested on 24.04 LTS
+     - 24.04 LTS (the DART 6.20 maintenance line keeps 22.04 LTS)
      - GCC 11.2 or upstream LLVM Clang 13
    * - macOS
      - 13 Ventura
@@ -95,7 +96,7 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.0
+     - 5.3 (Ubuntu 24.04's 5.3.1 reports 5.3.0)
      - Core mesh loading
    * - Eigen
      - 3.4.0
@@ -152,6 +153,16 @@ Optional components remain optional.
 FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
+
+Touching convex pairs in FCL 0.7.0's libccd GJK distance can abort with
+assertions (as on Ubuntu 24.04), or return -1 and zero nearest points. DART's
+Linux wheels carry a fix, demonstrated for ellipsoid, ellipsoid-sphere and
+box pairs. Discrete collision queries are unaffected. Every other build,
+including the macOS and Windows wheels, pixi and conda-forge builds, and source
+builds using system FCL, remains affected.
+The patch is in
+``docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch`` and is intended for
+upstream submission (not yet reported).
 
 On Linux, an installed Filament SDK must use libstdc++, as the conda-forge
 ``filament`` package does. With ``DART_USE_SYSTEM_FILAMENT=OFF``, Linux builds
