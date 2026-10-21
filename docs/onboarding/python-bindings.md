@@ -320,8 +320,8 @@ flags) through `CMAKE_ARGS`; the fixed wheel configuration lives in
 `pyproject.toml`.
 
 Wheels require Python 3.12 and use the nanobind binder for CPython's stable
-ABI (`DART_DARTPY_STABLE_ABI=ON`, which needs CMake 3.26), so every build is
-tagged `cp312-abi3` and one wheel per platform serves Python 3.12 and every
+ABI (`DART_DARTPY_STABLE_ABI=ON`); source builds require CMake 3.28 or newer.
+Every build is tagged `cp312-abi3`, and one wheel per platform serves Python 3.12 and every
 later version. The release matrix builds four wheels: Linux x86_64 and
 aarch64, macOS arm64, and Windows x64. Each row checks the wheel with
 `abi3audit --strict` and tests it on Python 3.13: the Linux driver below does

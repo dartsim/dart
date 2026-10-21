@@ -41,8 +41,8 @@ Homepage = "https://github.com/dartsim/dart"
 
 [tool.scikit-build]
 minimum-version = "build-system.requires"
-# The stable-ABI build needs CMake 3.26 (python/CMakeLists.txt).
-cmake.version = ">=3.26"
+# Match the project CMake floor so source installs provision a valid tool.
+cmake.version = ">=3.28"
 ninja.version = ">=1.13.2"
 cmake.build-type = "Release"
 # `build/{wheel_tag}` keeps wheel builds incremental; SKBUILD_BUILD_DIR moves
