@@ -333,9 +333,10 @@ license, or ships files outside the package.
 
 Linux release wheels use `python3 scripts/wheel_linux.py cp312` on native
 x86_64 or aarch64 hosts with Docker.
-The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
-dependencies and dartpy with the manylinux toolchain, requires
-`auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
+The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, which fetches each
+source-built native dependency as a release or tag archive checked with
+`sha256sum` (update the hash with the version). It compiles those dependencies and dartpy
+with the manylinux toolchain, requires `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
 test in a fresh manylinux 2.28 base container. Outputs are in `dist/`.
 The source checkout is mounted read-only; temporary container builds avoid
 reusing host CMake caches.
