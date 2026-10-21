@@ -51,4 +51,4 @@ install(
   COMPONENT headers
 )
 
-dart_format_add(${hdrs} ${srcs})
+dart_format_add(${hdrs} ${srcs} detail/JointXmlElementMetadata.hpp)
