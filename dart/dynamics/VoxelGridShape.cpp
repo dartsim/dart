@@ -37,6 +37,8 @@
   #include "dart/common/Console.hpp"
   #include "dart/math/Helpers.hpp"
 
+  #include <cmath>
+
 namespace dart {
 namespace dynamics {
 
@@ -72,6 +74,73 @@ octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
 {
   return octomap::pose6d(
       toPoint3d(frame.translation()), toQuaterniond(frame.linear()));
+}
+
+//==============================================================================
+bool rayFitsKeyBuffer(
+    const octomap::OcTree& octree,
+    const octomap::point3d& from,
+    const octomap::point3d& to)
+{
+  const double factor = 1.0 / octree.getResolution();
+  double cells = 0.0;
+  for (unsigned int i = 0; i < 3; ++i) {
+    cells
+        += std::abs(std::floor(factor * to(i)) - std::floor(factor * from(i)));
+  }
+
+  // OctoMap 1.10.1 computeRayKeys advances one axis per key, includes the
+  // origin and excludes the endpoint. Leave eight keys for up to three extra
+  // keys from float rounding, its strict size() < sizeMax() - 1 assertion,
+  // and spare capacity (KeyRay holds 100,000 keys).
+  // https://github.com/OctoMap/octomap/blob/v1.10.1/octomap/include/octomap/OcTreeBaseImpl.hxx#L542-L646
+  // https://github.com/OctoMap/octomap/blob/v1.10.1/octomap/include/octomap/OcTreeKey.h#L139-L186
+  static const std::size_t maxKeys = octomap::KeyRay().sizeMax();
+  if (!(cells + 8.0 <= static_cast<double>(maxKeys)))
+    return false;
+  if (cells == 0.0)
+    return true;
+
+  // Float normalization must remain finite for the traversal bound to hold.
+  const float length = static_cast<float>((to - from).norm());
+  return std::isfinite(length) && length > 0.0f;
+}
+
+//==============================================================================
+void insertPointCloud(
+    octomap::OcTree& octree,
+    const octomap::Pointcloud& pointCloud,
+    const octomap::point3d& sensorOrigin,
+    const octomap::pose6d* frameOrigin = nullptr)
+{
+  const auto origin
+      = frameOrigin ? frameOrigin->transform(sensorOrigin) : sensorOrigin;
+  const auto fits = [&](const octomap::point3d& point) {
+    return rayFitsKeyBuffer(
+        octree, origin, frameOrigin ? frameOrigin->transform(point) : point);
+  };
+  std::size_t skipped = 0;
+  for (const auto& point : pointCloud) {
+    if (!fits(point))
+      ++skipped;
+  }
+
+  octomap::Pointcloud filtered;
+  if (skipped > 0) {
+    filtered.reserve(pointCloud.size() - skipped);
+    for (const auto& point : pointCloud) {
+      if (fits(point))
+        filtered.push_back(point);
+    }
+    dtwarn << "[VoxelGridShape] Skipped " << skipped << " of "
+           << pointCloud.size()
+           << " rays that cannot be traced safely in OctoMap's key buffer.\n";
+  }
+  const auto& scan = skipped > 0 ? filtered : pointCloud;
+  if (frameOrigin)
+    octree.insertPointCloud(scan, sensorOrigin, *frameOrigin);
+  else
+    octree.insertPointCloud(scan, sensorOrigin);
 }
 
 } // namespace
@@ -158,7 +227,13 @@ void VoxelGridShape::updateOccupancy(
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& from, const Eigen::Vector3d& to)
 {
-  mOctree->insertRay(toPoint3d(from), toPoint3d(to));
+  const auto origin = toPoint3d(from);
+  const auto end = toPoint3d(to);
+  if (rayFitsKeyBuffer(*mOctree, origin, end))
+    mOctree->insertRay(origin, end);
+  else
+    dtwarn << "[VoxelGridShape] Skipping a ray that cannot be traced safely "
+           << "in OctoMap's key buffer.\n";
 
   incrementVersion();
 }
@@ -170,7 +245,7 @@ void VoxelGridShape::updateOccupancy(
     const Frame* relativeTo)
 {
   if (relativeTo == Frame::World()) {
-    mOctree->insertPointCloud(pointCloud, toPoint3d(sensorOrigin));
+    insertPointCloud(*mOctree, pointCloud, toPoint3d(sensorOrigin));
     incrementVersion();
   } else {
     updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
@@ -183,8 +258,8 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& sensorOrigin,
     const Eigen::Isometry3d& relativeTo)
 {
-  mOctree->insertPointCloud(
-      pointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
+  const auto pose = toPose6d(relativeTo);
+  insertPointCloud(*mOctree, pointCloud, toPoint3d(sensorOrigin), &pose);
 
   incrementVersion();
 }
