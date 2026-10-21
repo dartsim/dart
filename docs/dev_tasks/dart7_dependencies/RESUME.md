@@ -93,11 +93,12 @@
    restore the log level before the bridge's restore).
 6. Owed spikes: the Werror C++20 budget on every toolchain, `abidiff` between
    the C++17 and C++20 builds, and the stock-noble Tier 2 build.
-7. After M1d: DEP-21, ball-joint limits for MJCF, the libccd attribution in
-   the MPR sources, the `GenericJoint` finite checks that GCC 13 stopped
-   inlining after DEP-14 (`array().isFinite().all()`; see #3853's perf
-   rationale), and any quiet-window hunk the PLAN-624 owner did not clear
-   earlier.
+7. Sequence DEP-21, the `World.cpp` captures from DEP-11, ball-joint limits
+   for MJCF, the libccd attribution in the MPR sources, the `GenericJoint`
+   finite checks that GCC 13 stopped inlining after DEP-14
+   (`array().isFinite().all()`; see #3853's perf rationale), and other
+   step-path hunks in the PLAN-624 program-owned merge order, each
+   re-qualified on current `main`.
 8. Routing: Claude's 7-day usage reached 58% on 2026-10-20, so new writer
    packets go to Codex first; Claude-side reviews use Sonnet, and Opus for
    the hardest.
@@ -107,8 +108,9 @@
 - `main` moves quickly. Re-check file and line references in
   [packets.md](packets.md) and the review on current `main` before each
   packet.
-- The step-path quiet window is open until M1d merges: `World.cpp` and
-  `lcpsolver` hunks wait or go through the PLAN-624 owner.
+- The step-path quiet window is closed: `World.cpp` and `lcpsolver` hunks
+  follow the PLAN-624 program-owned merge order, each re-qualified on current
+  `main`.
 - The merging PR regenerates `pixi.lock`; never hand-merge it.
 - Gazebo lanes: compare against a base variant built from the packet's base
   (`GZ_COMPAT_BASE_VARIANT`); `reset_sensors` fails on every base today.

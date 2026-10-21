@@ -394,8 +394,8 @@ Object to change any of these.
 - The default pixi environment stays on Eigen 3.4.0, with a separate Eigen 5
   lane.
 - Dependency packets run alongside the M1 critical path, decision-free ones
-  first; hunks inside the step-path quiet window wait for M1d or go through
-  the PLAN-624 owner.
+  first; step-path hunks follow the PLAN-624 program-owned merge order, each
+  re-qualified on current `main`.
 - gz-sim's `INTEGRATION_reset_sensors` failure is external (a use-after-free
   in the test); the DART 7 program session owns its record and the upstream
   report.

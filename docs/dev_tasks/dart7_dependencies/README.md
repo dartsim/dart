@@ -95,11 +95,11 @@ The effort is done when all of these hold on `main`:
   API that gz-physics and gz-sim use, installed headers and package components
   (including legacy forwarding components) stay compatible; other public-API,
   ABI-layout or default-behavior changes need maintainer approval.
-- PLAN-624: the step-path quiet window (World stepping, the constraint
-  solver including `lcpsolver`, the native collision detector and
-  generic-joint dynamics go through that program until the M1d executor PR
-  merges), API freeze `F`, bit-identical refactors, and the Gazebo lanes for
-  core changes.
+- PLAN-624: step-path hunks (World stepping, the constraint solver including
+  `lcpsolver`, the native collision detector and generic-joint dynamics)
+  follow that program's merge order, each re-qualified on current `main`;
+  API freeze `F`, bit-identical refactors, and the Gazebo lanes for core
+  changes still apply.
 - D5: no deprecated C++ API is removed during 7.x.
 - One dependency or one vendored tree per PR. Three shared mechanical steps
   may touch several dependencies in one PR: the toolchain floors, DEP-25
@@ -174,7 +174,7 @@ shorthand is defined under [Gates](#gates).
 | DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Draft #3889 |
 | DEP-19 | Asset networking (libcurl, OpenSSL) | follow-up study (DD-6) | base, gz, pkg, py, wheel, ai | Codex ultra | 7.0, before F | Wheel half in review (on #3885); the source-build fetch waits on the tinyxml2 decision |
 | DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Codex high, Muse | 7.0 / 7.x | (d), (e) merged (#3860, #3862) |
-| DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, after M1d | Planned |
+| DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, in PLAN-624 merge order | Planned |
 | DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |
 | DEP-23 | Packaging section and downstream handoff notes | approval per upstream action | lint, local paths | Orchestrator | 7.0 / 7.x | Planned |
 | DEP-24 | 8.0 design record: optional assimp and FCL, backend facades, C++20 export | none | review | Orchestrator | 8.0 | Planned |
@@ -194,7 +194,8 @@ Ordering: DEP-0 lands first, because no lane notices a lost contact-surface
 probe today and many later packets touch installed headers. DEP-1 to DEP-12
 can then run in parallel lanes. Hunks in `World.cpp` and `lcpsolver`, the
 whole-library C++20 switch (DEP-21) and the clang-format reformat (DEP-22)
-wait for M1d or go through the PLAN-624 owner.
+follow the PLAN-624 program-owned merge order, each re-qualified on current
+`main`.
 
 Packet scope, non-goals and gates are in [packets.md](packets.md); an
 executor that finds the real scope materially different stops and reports.
