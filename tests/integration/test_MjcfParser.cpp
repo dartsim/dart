@@ -49,10 +49,12 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/mjcf/MjcfParser.hpp"
 #include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
+#include "dart/utils/mjcf/detail/Inertial.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
@@ -63,10 +65,12 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 
 using namespace dart;
@@ -82,6 +86,15 @@ common::ResourceRetrieverPtr createRetriever()
       "dart", utils::DartResourceRetriever::create());
   return newRetriever;
 }
+
+struct XmlRetriever : common::LocalResourceRetriever
+{
+  std::string xml;
+  std::string readAll(const common::Uri&) override
+  {
+    return xml;
+  }
+};
 
 //==============================================================================
 TEST(MjcfParserTest, ParseDetailMujocoAnt)
@@ -983,4 +996,402 @@ TEST(MjcfParserTest, WeldSolrefAcceptsFewerValues)
       doc.Parse(R"(<weld body1="a" solref="1 2 3"/>)"), tinyxml2::XML_SUCCESS);
   WeldAttributes invalid;
   EXPECT_FALSE(appendWeldAttributes(invalid, doc.RootElement()).empty());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, JointLimitSemantics)
+{
+  testing::internal::CaptureStderr();
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/joint_limits.xml");
+  const auto warnings = testing::internal::GetCapturedStderr();
+  const std::string warning
+      = "Ball joint limits are not supported yet, ignored.";
+  const auto firstWarning = warnings.find(warning);
+  ASSERT_NE(firstWarning, std::string::npos);
+  EXPECT_NE(
+      warnings.find("First limited ball joint: 'ball_true'"),
+      std::string::npos);
+  EXPECT_EQ(
+      warnings.find(warning, firstWarning + warning.size()), std::string::npos);
+  ASSERT_NE(world, nullptr);
+  auto skeleton = world->getSkeleton("limits");
+  ASSERT_NE(skeleton, nullptr);
+
+  for (const auto& name :
+       {"hinge_true",
+        "auto_range",
+        "implicit_auto",
+        "inherited_true",
+        "inherited_child",
+        "inherited_auto",
+        "stacked_hinge"}) {
+    SCOPED_TRACE(name);
+    const auto* joint = skeleton->getJoint(name);
+    ASSERT_NE(joint, nullptr);
+    EXPECT_TRUE(joint->areLimitsEnforced());
+    EXPECT_NEAR(
+        joint->getPositionLowerLimit(0), -math::constantsd::pi() / 6, 1e-12);
+    EXPECT_NEAR(
+        joint->getPositionUpperLimit(0), math::constantsd::pi() / 3, 1e-12);
+  }
+  for (const auto& name :
+       {"false_range",
+        "false_no_range",
+        "auto_no_range",
+        "auto_zero",
+        "auto_reversed",
+        "inherited_zero",
+        "inherited_false",
+        "overridden_false",
+        "stacked_false_hinge",
+        "stacked_false_slide",
+        "ball_true",
+        "ball_no_range"}) {
+    SCOPED_TRACE(name);
+    const auto* joint = skeleton->getJoint(name);
+    ASSERT_NE(joint, nullptr);
+    EXPECT_FALSE(joint->areLimitsEnforced());
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      EXPECT_EQ(
+          joint->getPositionLowerLimit(i),
+          -std::numeric_limits<double>::infinity());
+      EXPECT_EQ(
+          joint->getPositionUpperLimit(i),
+          std::numeric_limits<double>::infinity());
+    }
+  }
+  EXPECT_FALSE(
+      world->getSkeleton("ball_auto")->getRootJoint()->areLimitsEnforced());
+  EXPECT_FALSE(world->getSkeleton("free")->getRootJoint()->areLimitsEnforced());
+  for (const auto& name :
+       {"slide_true", "stacked_slide", "stacked_limited_slide"}) {
+    const auto* joint = skeleton->getJoint(name);
+    ASSERT_NE(joint, nullptr);
+    EXPECT_TRUE(joint->areLimitsEnforced());
+    EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -0.1);
+    EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 0.2);
+  }
+  for (const auto& name : {"slides2", "slides3"}) {
+    SCOPED_TRACE(name);
+    const auto* joint = skeleton->getBodyNode(name)->getParentJoint();
+    ASSERT_NE(joint, nullptr);
+    EXPECT_TRUE(joint->areLimitsEnforced());
+    for (std::size_t i = 0; i + 1 < joint->getNumDofs(); ++i) {
+      EXPECT_EQ(
+          joint->getPositionLowerLimit(i),
+          -std::numeric_limits<double>::infinity());
+      EXPECT_EQ(
+          joint->getPositionUpperLimit(i),
+          std::numeric_limits<double>::infinity());
+    }
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionLowerLimit(joint->getNumDofs() - 1), -0.1);
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionUpperLimit(joint->getNumDofs() - 1), 0.2);
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, JointLimitsConstrainMotion)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/joint_limits.xml");
+  ASSERT_NE(world, nullptr);
+  auto skeleton = world->getSkeleton("limits");
+  ASSERT_NE(skeleton, nullptr);
+  for (const auto& name : {"hinge_true", "false_range", "slide_true"}) {
+    auto* joint = skeleton->getJoint(name);
+    const double upper
+        = std::string(name) == "slide_true" ? 0.2 : math::constantsd::pi() / 3;
+    joint->setPosition(0, upper - 0.01);
+    joint->setVelocity(0, 1);
+  }
+  for (const auto& name : {"slides2", "slides3"}) {
+    auto* joint = skeleton->getBodyNode(name)->getParentJoint();
+    joint->setVelocities(Eigen::VectorXd::Ones(joint->getNumDofs()));
+    joint->setPosition(joint->getNumDofs() - 1, 0.19);
+  }
+  for (int i = 0; i < 100; ++i)
+    world->step();
+  for (const auto& name :
+       {"hinge_true", "slide_true", "slides2_x", "slides3_x"}) {
+    const auto* joint = skeleton->getJoint(name);
+    ASSERT_NE(joint, nullptr);
+    const auto last = joint->getNumDofs() - 1;
+    EXPECT_LE(
+        joint->getPosition(last), joint->getPositionUpperLimit(last) + 1e-5);
+  }
+  EXPECT_GT(
+      skeleton->getJoint("false_range")->getPosition(0),
+      math::constantsd::pi() / 3 + 0.05);
+  for (const auto& name : {"slides2", "slides3"}) {
+    const auto* joint = skeleton->getBodyNode(name)->getParentJoint();
+    EXPECT_GT(joint->getPosition(0), 0.05);
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ExplicitLimitsWithAutolimitsDisabled)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/autolimits_false.xml");
+  ASSERT_NE(world, nullptr);
+  auto skeleton = world->getSkeleton("explicit_true");
+  ASSERT_NE(skeleton, nullptr);
+  const auto* joint = skeleton->getRootJoint();
+  EXPECT_TRUE(joint->areLimitsEnforced());
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -0.3);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 0.6);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.3);
+  EXPECT_FALSE(skeleton->getJoint("explicit_false")->areLimitsEnforced());
+  for (const auto& name : {"auto_zero", "inherited_zero"}) {
+    const auto* zero = skeleton->getJoint(name);
+    ASSERT_NE(zero, nullptr);
+    EXPECT_FALSE(zero->areLimitsEnforced());
+    EXPECT_EQ(
+        zero->getPositionLowerLimit(0),
+        -std::numeric_limits<double>::infinity());
+    EXPECT_EQ(
+        zero->getPositionUpperLimit(0),
+        std::numeric_limits<double>::infinity());
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, InvalidJointLimitDeclarations)
+{
+  const auto retriever = std::make_shared<XmlRetriever>();
+  struct InvalidLimit
+  {
+    const char* compiler;
+    const char* attributes;
+    const char* error;
+  };
+  for (const auto& invalid :
+       {InvalidLimit{
+            "",
+            "limited='invalid'",
+            "Invalid attribute for 'limited': invalid"},
+        InvalidLimit{
+            "", "limited='True'", "Invalid attribute for 'limited': True"},
+        InvalidLimit{
+            "",
+            "limited='true'",
+            "range[0] should be smaller than range[1] in joint '(noname)'"},
+        InvalidLimit{
+            "",
+            "name='hinge' limited='true' range='1 -1'",
+            "range[0] should be smaller than range[1] in joint 'hinge'"},
+        InvalidLimit{
+            "",
+            "limited='true' range='nan 1'",
+            "Non-finite range in joint '(noname)'"},
+        InvalidLimit{
+            "",
+            "limited='true' range='-1 inf'",
+            "Non-finite range in joint '(noname)'"},
+        InvalidLimit{
+            "",
+            "type='ball' limited='true' range='1 30'",
+            "range[0] should be 0 in ball joint '(noname)'"},
+        InvalidLimit{
+            "",
+            "type='ball' limited='auto' range='1 30'",
+            "range[0] should be 0 in ball joint '(noname)'"},
+        InvalidLimit{
+            "",
+            "limited='auto' range='-1 inf'",
+            "Non-finite range in joint '(noname)'"},
+        InvalidLimit{
+            "autolimits='false'",
+            "range='-1 1'",
+            "Joint '(noname)' has a range with limited='auto' but autolimits "
+            "is false"},
+        InvalidLimit{
+            "autolimits='false'",
+            "limited='auto' range='-1 1'",
+            "Joint '(noname)' has a range with limited='auto' but autolimits "
+            "is false"},
+        InvalidLimit{
+            "autolimits='false'",
+            "limited='auto' range='1 -1'",
+            "Joint '(noname)' has a range with limited='auto' but autolimits "
+            "is false"}}) {
+    SCOPED_TRACE(invalid.attributes);
+    retriever->xml = std::string("<mujoco><compiler ") + invalid.compiler
+        + "/><worldbody><body><joint " + invalid.attributes
+        + "/><inertial pos='0 0 0' mass='1' diaginertia='2 3 4'/></body></worldbody></mujoco>";
+    MujocoModel model;
+    const auto errors = model.read("memory.xml", retriever);
+    ASSERT_EQ(errors.size(), 1u);
+    EXPECT_EQ(errors[0].getCode(), ErrorCode::ATTRIBUTE_INVALID);
+    EXPECT_NE(errors[0].getMessage().find(invalid.error), std::string::npos)
+        << errors[0].getMessage();
+    EXPECT_EQ(utils::MjcfParser::readWorld("memory.xml", {retriever}), nullptr);
+  }
+  for (const auto& compiler : {"", "autolimits='true'", "autolimits='false'"}) {
+    SCOPED_TRACE(compiler);
+    retriever->xml = std::string("<mujoco><compiler ") + compiler
+        + "/><worldbody><body><joint limited='auto'/><inertial pos='0 0 0' mass='1' diaginertia='2 3 4'/></body></worldbody></mujoco>";
+    MujocoModel model;
+    ASSERT_TRUE(model.read("memory.xml", retriever).empty());
+    EXPECT_FALSE(model.getWorldbody().getRootBody(0).getJoint(0).isLimited());
+  }
+  for (const auto& value : {"invalid", "True", "False", "1"}) {
+    SCOPED_TRACE(value);
+    retriever->xml = std::string("<mujoco><compiler autolimits='") + value
+                     + "'/></mujoco>";
+    MujocoModel model;
+    EXPECT_FALSE(model.read("memory.xml", retriever).empty());
+    EXPECT_EQ(utils::MjcfParser::readWorld("memory.xml", {retriever}), nullptr);
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, FailedWorldDoesNotWarnAboutLimits)
+{
+  const auto retriever = std::make_shared<XmlRetriever>();
+  for (const auto& bodies : {
+           R"(<body><joint type="ball" limited="true" range="0 60"/><joint/>
+              <inertial pos="0 0 0" mass="1" diaginertia="2 3 4"/></body>)",
+           R"(<body><joint type="ball" limited="true" range="0 60"/>
+              <inertial pos="0 0 0" mass="1" diaginertia="2 3 4"/>
+              <body><joint type="ball"/><joint/>
+                <inertial pos="0 0 0" mass="1" diaginertia="2 3 4"/>
+              </body></body>)",
+           R"(<body><joint type="ball" limited="true" range="0 60"/>
+              <inertial pos="0 0 0" mass="1" diaginertia="2 3 4"/></body>
+              <body><joint type="ball"/><joint/>
+              <inertial pos="0 0 0" mass="1" diaginertia="2 3 4"/></body>)"}) {
+    SCOPED_TRACE(bodies);
+    retriever->xml
+        = std::string("<mujoco><worldbody>") + bodies + "</worldbody></mujoco>";
+    testing::internal::CaptureStderr();
+    const auto world = utils::MjcfParser::readWorld("memory.xml", {retriever});
+    const auto warnings = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(world, nullptr);
+    EXPECT_EQ(
+        warnings.find("Ball joint limits are not supported yet, ignored."),
+        std::string::npos);
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, SpringReferenceAngleUnits)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/joint_limits.xml");
+  ASSERT_NE(world, nullptr);
+  const auto skeleton = world->getSkeleton("limits");
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_NEAR(
+      skeleton->getJoint("hinge_true")->getRestPosition(0),
+      math::constantsd::pi() / 6,
+      1e-12);
+  EXPECT_DOUBLE_EQ(skeleton->getJoint("slide_true")->getRestPosition(0), 0.1);
+
+  const auto retriever = std::make_shared<XmlRetriever>();
+  retriever->xml = R"(<mujoco><worldbody><body>
+    <joint type="ball" springref="30"/>
+    <inertial pos="0 0 0" mass="1" diaginertia="2 3 4"/>
+    </body></worldbody></mujoco>)";
+  MujocoModel model;
+  ASSERT_TRUE(model.read("memory.xml", retriever).empty());
+  EXPECT_DOUBLE_EQ(
+      model.getWorldbody().getRootBody(0).getJoint(0).getSpringRef(), 30);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, DeclaredInertiaInBodyFrame)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/declared_inertia.xml");
+  ASSERT_NE(world, nullptr);
+  auto skeleton = world->getSkeleton("quat");
+  ASSERT_NE(skeleton, nullptr);
+  Eigen::Matrix3d rotated;
+  rotated << 2.5, -0.5, 0, -0.5, 2.5, 0, 0, 0, 4;
+  for (const auto& name :
+       {"quat", "axisangle", "euler", "xyaxes", "no_body_pos"}) {
+    SCOPED_TRACE(name);
+    const auto* body = skeleton->getBodyNode(name);
+    ASSERT_NE(body, nullptr);
+    EXPECT_DOUBLE_EQ(body->getMass(), 2);
+    EXPECT_TRUE(
+        body->getLocalCOM().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12));
+    EXPECT_TRUE(body->getInertia().getMoment().isApprox(rotated, 1e-12));
+  }
+  EXPECT_TRUE(skeleton->getBodyNode("no_body_pos")
+                  ->getRelativeTransform()
+                  .isApprox(Eigen::Isometry3d::Identity(), 1e-12));
+  EXPECT_TRUE(skeleton->getBodyNode("zaxis")->getInertia().getMoment().isApprox(
+      Eigen::Vector3d(4, 3, 2).asDiagonal().toDenseMatrix(), 1e-12));
+  Eigen::Matrix3d full;
+  full << 3, 0.2, -0.3, 0.2, 4, 0.4, -0.3, 0.4, 5;
+  const auto* body = skeleton->getBodyNode("full");
+  EXPECT_DOUBLE_EQ(body->getMass(), 3);
+  EXPECT_TRUE(
+      body->getLocalCOM().isApprox(Eigen::Vector3d(-0.1, 0.2, -0.3), 1e-12));
+  EXPECT_TRUE(body->getInertia().getMoment().isApprox(full, 1e-12));
+  EXPECT_DOUBLE_EQ(skeleton->getBodyNode("no_inertial")->getMass(), 7);
+  EXPECT_TRUE(skeleton->getBodyNode("no_inertial")
+                  ->getLocalCOM()
+                  .isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12));
+  EXPECT_DOUBLE_EQ(skeleton->getBodyNode("empty")->getMass(), 1);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, OmittedBodyPositionAndOrthogonalizedXYAxes)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/declared_inertia.xml");
+  ASSERT_NE(world, nullptr);
+  const auto skeleton = world->getSkeleton("quat");
+  ASSERT_NE(skeleton, nullptr);
+  const auto* body = skeleton->getBodyNode("no_inertial");
+  ASSERT_NE(body, nullptr);
+  EXPECT_TRUE(body->getRelativeTransform().translation().isZero(1e-12));
+  EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
+      body->getParentBodyNode()->getWorldTransform().translation(), 1e-12));
+  EXPECT_TRUE(
+      body->getLocalCOM().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12));
+  Eigen::Matrix3d expected;
+  const double c = std::sqrt(0.5);
+  expected << c, -c, 0, c, c, 0, 0, 0, 1;
+  EXPECT_TRUE(body->getRelativeTransform().linear().isApprox(expected, 1e-12));
+  ASSERT_EQ(body->getNumShapeNodes(), 2u);
+  for (std::size_t i = 0; i < body->getNumShapeNodes(); ++i) {
+    const Eigen::Matrix3d rotation
+        = body->getShapeNode(i)->getRelativeTransform().linear();
+    EXPECT_TRUE(rotation.isApprox(expected, 1e-12));
+    EXPECT_TRUE((rotation.transpose() * rotation)
+                    .isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, FullInertiaConflictsWithOrientation)
+{
+  const auto retriever = std::make_shared<XmlRetriever>();
+  for (const auto& orientation :
+       {"quat='1 0 0 0'",
+        "axisangle='0 0 1 0'",
+        "euler='0 0 0'",
+        "xyaxes='1 0 0 0 1 0'",
+        "zaxis='0 0 1'"}) {
+    SCOPED_TRACE(orientation);
+    const std::string inertial = std::string("<inertial pos='0 0 0' mass='1' ")
+                                 + "fullinertia='3 4 5 0.2 -0.3 0.4' "
+                                 + orientation + "/>";
+    tinyxml2::XMLDocument doc;
+    ASSERT_EQ(doc.Parse(inertial.c_str()), tinyxml2::XML_SUCCESS);
+    Inertial parsed;
+    const auto errors = parsed.read(doc.RootElement());
+    ASSERT_EQ(errors.size(), 1u);
+    EXPECT_EQ(errors[0].getCode(), ErrorCode::ATTRIBUTE_CONFLICT);
+    retriever->xml = "<mujoco><worldbody><body>" + inertial
+                     + "</body></worldbody></mujoco>";
+    EXPECT_EQ(utils::MjcfParser::readWorld("memory.xml", {retriever}), nullptr);
+  }
 }

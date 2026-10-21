@@ -1,0 +1,25 @@
+<mujoco model="autolimits_false">
+  <compiler autolimits="false" angle="radian"/>
+  <default>
+    <joint limited="true" range="-0.3 0.6" springref="0.3"/>
+    <default class="zero"><joint limited="auto" range="0 0"/></default>
+  </default>
+  <worldbody>
+    <body name="explicit_true" pos="0 0 0">
+      <joint name="explicit_true"/>
+      <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      <body name="explicit_false" pos="0 0 0">
+        <joint name="explicit_false" limited="false"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="auto_zero">
+        <joint name="auto_zero" limited="auto" range="0 0"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="inherited_zero">
+        <joint name="inherited_zero" class="zero"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
