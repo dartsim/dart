@@ -143,6 +143,12 @@
 
 * Dynamics
 
+  * `VoxelGridShape::updateOccupancy()` no longer corrupts memory on very
+    long rays or point clouds containing them. Rays that cross more than
+    about 100,000 voxels are skipped with a warning (their endpoints are not
+    marked occupied), and the other points of a cloud are still inserted.
+    [#3859](https://github.com/dartsim/dart/pull/3859)
+
   * Line segment and point cloud shapes now report bounding boxes that
     include vertices and points edited after a query, and clearing a point
     cloud now refreshes collision geometry.
