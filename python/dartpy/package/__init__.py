@@ -2,4 +2,4 @@
 
 # The private extension binds the public submodules (dartpy.dynamics, ...)
 # into this package while it initializes; see python/dartpy/module.cpp.
-from dartpy._dartpy import __version__
+from dartpy._core import __version__
