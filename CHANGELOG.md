@@ -86,6 +86,10 @@
     retired along with its noncommercial model assets; parser regression
     coverage uses a DART-authored MJCF fixture.
 
+  * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
+    meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -371,6 +375,11 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
+    of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
+    OpenSSL; only static installs require consumers to provide them.
+    [#3883](https://github.com/dartsim/dart/pull/3883)
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
