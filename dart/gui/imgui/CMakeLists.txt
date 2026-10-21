@@ -111,10 +111,14 @@ else()
   # installed dart/external/imgui headers use the docking layout. A vanilla
   # system ImGui (DART_USE_SYSTEM_IMGUI=ON) still builds dart-gui.
   set(IMGUI_TARGET_VERSION "v1.92.8-docking")
+  set(
+    IMGUI_ARCHIVE_SHA256
+    ca0653454ed371b7a87e9b0bc29a5d15c9be7f7c0fbe778042fc48c71df1d3d8
+  )
 
   # On CMake 3.24 and newer, extract with the current time so a changed
-  # archive rebuilds its objects. DART supports 3.22.1, where a tag change in an
-  # existing build tree needs a fresh build directory.
+  # archive rebuilds its objects. The hash-specific source path also rebuilds
+  # objects on CMake 3.22/3.23, which preserve archive timestamps.
   set(dart_imgui_timestamp)
   if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
     set(dart_imgui_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
@@ -122,15 +126,15 @@ else()
 
   message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
-  # Update URL_HASH from the new archive whenever IMGUI_TARGET_VERSION changes.
-  # The default source directory differs from the one DART's former patched Git
-  # checkout used, so existing build trees compile the unpatched sources anew.
+  # Update IMGUI_ARCHIVE_SHA256 whenever IMGUI_TARGET_VERSION changes.
+  # A changed archive gets new source paths even when its timestamps are old.
   FetchContent_Declare(
     dart_imgui
     URL
       "https://github.com/ocornut/imgui/archive/refs/tags/${IMGUI_TARGET_VERSION}.tar.gz"
-    URL_HASH
-      SHA256=ca0653454ed371b7a87e9b0bc29a5d15c9be7f7c0fbe778042fc48c71df1d3d8
+    URL_HASH SHA256=${IMGUI_ARCHIVE_SHA256}
+    SOURCE_DIR
+    "${DART_BINARY_DIR}/_deps/dart_imgui-${IMGUI_ARCHIVE_SHA256}-src"
     TLS_VERIFY ON
     ${dart_imgui_timestamp}
   )

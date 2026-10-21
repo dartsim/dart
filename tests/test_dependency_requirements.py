@@ -1,8 +1,11 @@
 """Exercise DART's installed dependency finders with isolated CMake packages."""
 
+import hashlib
 import os
+import re
 import shutil
 import subprocess
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -433,7 +436,7 @@ def test_config_header_version_fallback(
 @pytest.mark.parametrize(
     "package,minimum,prefix,header,definition",
     [
-        ("assimp", "5.2.0", "ASSIMP", "assimp/scene.h", None),
+        ("assimp", "5.3.0", "ASSIMP", "assimp/scene.h", None),
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
         ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
@@ -485,7 +488,8 @@ def test_module_floors(
 @pytest.mark.parametrize("preset", ["cache", "normal"])
 @pytest.mark.parametrize("msvc", [False, True])
 @pytest.mark.parametrize(
-    "version,accepted", [("6.0.5", True), ("5.2.0", True), ("5.1.0", False)]
+    "version,accepted",
+    [("6.0.5", True), ("5.3.0", True), ("5.2.2", False), ("5.2.0", False)],
 )
 def test_assimp_version_from_config_without_pkg_config(
     tmp_path, version, accepted, msvc, preset
@@ -530,7 +534,7 @@ def test_assimp_module_lookup_skips_config(tmp_path, module):
     # package, so lookups that already work stay unchanged. A consumer's own
     # Findassimp.cmake comes first and may set only assimp_FOUND.
     config_package(
-        tmp_path, "assimp", "5.2.0", None, 'message(FATAL_ERROR "Loaded config")\n'
+        tmp_path, "assimp", "5.3.0", None, 'message(FATAL_ERROR "Loaded config")\n'
     )
     include = tmp_path / "include"
     (include / "assimp").mkdir(parents=True)
@@ -549,7 +553,7 @@ def test_assimp_module_lookup_skips_config(tmp_path, module):
         lookup = ""
     result = configure(
         tmp_path,
-        lookup + "set(assimp_VERSION 5.2.0)\n"
+        lookup + "set(assimp_VERSION 5.3.0)\n"
         "include(DARTFindassimp)\n"
         'if(NOT TARGET assimp)\n  message(FATAL_ERROR "No assimp target")\nendif()\n',
     )
@@ -919,3 +923,76 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
+    module = (
+        Path(__file__).resolve().parents[1] / "dart/gui/imgui/CMakeLists.txt"
+    ).read_text()
+    original_hash = re.search(r"\b[0-9a-f]{64}\b", module).group()
+    url = "https://github.com/ocornut/imgui/archive/refs/tags/${IMGUI_TARGET_VERSION}.tar.gz"
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "stub.cpp").write_text("// Parent target source.\n")
+    (source / "main.cpp").write_text(
+        "int archive_version(); int main() { return archive_version(); }\n"
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(dart LANGUAGES CXX)\n"
+        'set(DART_BINARY_DIR "${CMAKE_BINARY_DIR}")\n'
+        "set(DART_USE_SYSTEM_IMGUI OFF)\n"
+        "function(add_component_dependency_packages)\nendfunction()\n"
+        "add_library(dart-gui STATIC stub.cpp)\n"
+        'include("${CMAKE_CURRENT_SOURCE_DIR}/imgui.cmake")\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/fetched-path.txt" "${dart_imgui_SOURCE_DIR}")\n'
+        "add_executable(archive-probe main.cpp)\n"
+        "target_link_libraries(archive-probe PRIVATE dart-gui)\n"
+    )
+    build = tmp_path / "build"
+    for version in (1, 2):
+        payload = tmp_path / f"payload-{version}"
+        payload.mkdir()
+        for name in (
+            "imconfig.h",
+            "imgui.h",
+            "imgui_internal.h",
+            "imstb_rectpack.h",
+            "imstb_textedit.h",
+            "imstb_truetype.h",
+            "imgui_draw.cpp",
+            "imgui_tables.cpp",
+            "imgui_widgets.cpp",
+        ):
+            (payload / name).write_text("// Fixture.\n")
+        (payload / "imgui.cpp").write_text(
+            f"int archive_version() {{ return {version}; }}\n"
+        )
+        archive = tmp_path / f"imgui-{version}.tar.gz"
+        with tarfile.open(archive, "w:gz") as output:
+            output.add(payload, arcname="imgui")
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (source / "imgui.cmake").write_text(
+            module.replace(original_hash, digest).replace(url, archive.as_uri())
+        )
+        subprocess.run(
+            ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        # Reproduce the extraction timestamps used by CMake 3.22/3.23 even
+        # when this regression runs with a newer CMake.
+        extracted = Path((build / "fetched-path.txt").read_text())
+        for path in extracted.iterdir():
+            os.utime(path, (1_000_000_000, 1_000_000_000))
+        subprocess.run(
+            ["cmake", "--build", str(build)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        executable = build / (
+            "archive-probe.exe" if os.name == "nt" else "archive-probe"
+        )
+        assert subprocess.run([str(executable)]).returncode == version
