@@ -52,8 +52,8 @@ RUN curl -fsSL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar
     && rm -rf eigen eigen.tar.gz
 
 # octomap
-RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.0.tar.gz -o octomap.tar.gz \
-    && echo "8da2576ec6a0993e8900db7f91083be8682d8397a7be0752c85d1b7dd1b8e992  octomap.tar.gz" | sha256sum -c - \
+RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.1.tar.gz -o octomap.tar.gz \
+    && echo "b6b6c10c99ab15701dd105840e7d4cf18e226eb68714dd4bdfe049dede5cd489  octomap.tar.gz" | sha256sum -c - \
     && mkdir octomap && tar -xf octomap.tar.gz -C octomap --strip-components=1 \
     && mkdir -p octomap/build \
     && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF -DBUILD_TESTING=OFF \
