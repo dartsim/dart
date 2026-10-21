@@ -29,6 +29,9 @@ drops the plugin's contact-properties callback and gz-sim's `TrackController`.
 | Ionic | `gz-compat-ionic` (`gazebo`) | `gz-physics8_8.4.0` | `gz-sim9_9.5.0` | 15 |
 | Jetty | `gz-compat-jetty` (`gazebo-jetty`) | `gz-physics9_9.5.2` | `gz-sim10_10.5.0` | 16 |
 
+DART 7 on `main` gates on the Ionic and Jetty lanes. The Harmonic lane gates
+the `release-6.20` maintenance line.
+
 Release verification of DART 6.20 at `48eb618bb81` passed the unpatched
 Harmonic, Ionic and Jetty gz-physics and gz-sim compatibility gates, with
 results equal to or better than DART 6.19.5. The only gz-physics failure is

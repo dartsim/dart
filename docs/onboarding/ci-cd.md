@@ -376,8 +376,9 @@ C++ demo app or scene-cycle CTest target.
 `ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
 testing and configures it once, so gz-physics' contact-callback test
 expectations are not compiled in. The unpatched Gazebo lanes
-(`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
-`tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
+(`pixi run gz-compat-ionic` and `gz-compat-jetty` on `main`, plus
+`gz-compat-harmonic` on `release-6.20`; see `tools/gazebo/README.md`) are not
+in CI yet: each builds DART, gz-physics, and
 gz-sim from source and runs a serial suite. Release verification of DART
 6.20 at `48eb618bb81` passed all three unpatched gz-physics and gz-sim
 compatibility gates, with results equal to or better than DART 6.19.5.
