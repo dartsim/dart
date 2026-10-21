@@ -365,6 +365,15 @@
     DART and its consumers together when changing Eigen majors.
     [#3891](https://github.com/dartsim/dart/pull/3891)
 
+  * Add `DART_REQUIRE_OPTIONAL_DEPENDENCIES` (default `OFF`), which turns a
+    missing optional dependency such as ODE or Bullet from a warning that drops
+    its component into a configure error, for Gazebo-facing packagers whose
+    gz-physics needs those components. Explicit `DART_SKIP_<NAME>=ON` still
+    disables one. The unused `DART_SKIP_DOXYGEN` and `HAVE_DOXYGEN` cache
+    entries are gone; the documentation targets still follow Doxygen's
+    availability.
+    [#3886](https://github.com/dartsim/dart/pull/3886)
+
   * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
     GoogleBenchmark and Tracy default to installed packages, and explicit
     per-dependency switches still win. Offline configures now report missing

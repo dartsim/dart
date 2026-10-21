@@ -125,6 +125,12 @@ components and targets forward to `dart` for rebuilt consumers; the former
 collision shared-library filenames are no longer installed. `DART_SKIP_BULLET`
 and `DART_SKIP_ODE` disable the respective backends, including bundled downloads.
 The FCL default and public detector classes remain unchanged.
+By default a missing optional dependency (Bullet, ODE) only warns and drops its
+backend. Gazebo-facing packagers, whose gz-physics needs both, should pass
+`-DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON` so configure fails instead; the error
+names the dependency and the component, and an explicit `DART_SKIP_<NAME>=ON`
+still disables one on purpose. The Gazebo pixi task (`config-dart-gz`) and
+the compat lanes set it.
 
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the

@@ -807,7 +807,9 @@ config-dart-gz = { cmd = """
         -DDART_BUILD_GUI=OFF \
         -DDART_BUILD_DARTPY=OFF -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_DEPENDENCIES=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON
+        -DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON
 """ }
 install-dart-gz = { cmd = "cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp --parallel 4 --target install", depends-on = [
   "config-dart-gz",
