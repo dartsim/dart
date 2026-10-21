@@ -1,7 +1,10 @@
 # Deferred CHANGELOG drafts
 
-M1c's native state packets defer these entries to the milestone
-consolidation under the program's hot-file rule:
+These entries were deferred under the program's former hot-file rule. Once
+[#3874](https://github.com/dartsim/dart/pull/3874) lands, one follow-up turns
+each into a `changelog.d/` fragment linked to the pull request it describes.
+
+M1c's native state packets:
 
 - **Simulation:** Add C++ `World::captureState()` and `World::restoreState()`
   for dynamic World snapshots: positions, velocities, accelerations, forces,
@@ -19,15 +22,13 @@ consolidation under the program's hot-file rule:
   joints, stateful aspects and other manual constraints are rejected before
   any state changes.
 
-M1d's native executor prerequisite also defers this entry to the milestone
-consolidation under the program's hot-file rule:
+M1d's native executor prerequisite:
 
 - **Simulation:** Exceptions thrown during multithreaded collision detection,
   constraint solving or World stepping now reach the caller instead of
   terminating the process, and the World stays usable.
 
-These demo-consolidation entries move into `CHANGELOG.md` only in M6b's
-milestone consolidation PR, following the program's hot-file rule.
+The demo consolidation:
 
 - **Examples:** Replace the C++ `dart-demos` application with the Python demo
   catalog (`python -m examples.demos`). It runs on the same native workspace:
