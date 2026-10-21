@@ -291,6 +291,27 @@ TEST_F(LoggingTest, FormatsScalarAndStringArguments)
   int value = 0;
   info("{}", static_cast<void*>(&value));
   EXPECT_EQ(0u, messages.back().find("0x"));
+  volatile int volatileValue = 0;
+  const volatile int constVolatileValue = 0;
+  info(
+      "{} {} {} {}",
+      &volatileValue,
+      &constVolatileValue,
+      static_cast<volatile void*>(&volatileValue),
+      static_cast<const volatile void*>(&constVolatileValue));
+  const auto volatileMessage = messages.back();
+  info(
+      "{} {} {} {}",
+      const_cast<int*>(&volatileValue),
+      const_cast<int*>(&constVolatileValue),
+      static_cast<void*>(const_cast<int*>(&volatileValue)),
+      static_cast<const void*>(const_cast<int*>(&constVolatileValue)));
+  EXPECT_EQ(messages.back(), volatileMessage);
+  EXPECT_EQ(std::string::npos, volatileMessage.find("true"));
+  volatile int* nullVolatile = nullptr;
+  const volatile void* nullConstVolatile = nullptr;
+  info("{} {}", nullVolatile, nullConstVolatile);
+  EXPECT_EQ("0x0 0x0", messages.back());
   info(
       "{} {}",
       std::numeric_limits<double>::infinity(),
@@ -463,6 +484,57 @@ TEST_F(LoggingTest, CallbacksCanReplaceThemselvesAndExceptionsAreContained)
   EXPECT_NO_THROW(info("ignored exception"));
   EXPECT_NO_THROW(
       detail::logMessage(LogLevel::Info, "direct call", nullptr, 0));
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ReentrantSinkMessagesUseDefaultOutput)
+{
+  int calls = 0;
+  setLogSink([&](LogLevel, const std::string&) {
+    // Bounded so an unpatched build fails the assertion instead of recursing.
+    if (++calls > 5)
+      return;
+    info("nested");
+  });
+  testing::internal::CaptureStdout();
+  info("outer");
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(1, calls);
+  EXPECT_NE(std::string::npos, output.find("nested"));
+  EXPECT_EQ(std::string::npos, output.find("outer"));
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ReplacementSinkStillReceivesNestedMessagesAfterReentry)
+{
+  int calls = 0;
+  int bCalls = 0;
+  setLogSink([&](LogLevel, const std::string&) {
+    if (++calls > 5)
+      return;
+    setLogSink([&](LogLevel, const std::string& message) {
+      if (++bCalls > 5)
+        return;
+      messages.push_back(message);
+      info("from B");
+    });
+    info("to B");
+  });
+  testing::internal::CaptureStdout();
+  info("outer");
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(1, calls);
+  EXPECT_EQ(1, bCalls);
+  EXPECT_EQ((std::vector<std::string>{"to B"}), messages);
+  EXPECT_NE(std::string::npos, output.find("from B"));
+  // A throwing callback leaves no stale active state.
+  setLogSink(
+      [](LogLevel, const std::string&) { throw std::runtime_error("x"); });
+  info("throws");
+  int again = 0;
+  setLogSink([&](LogLevel, const std::string&) { ++again; });
+  info("after");
+  EXPECT_EQ(1, again);
 }
 
 //==============================================================================

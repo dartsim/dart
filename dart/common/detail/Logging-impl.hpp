@@ -121,6 +121,20 @@ struct LogArgument
   template <typename T, typename C>
   LogArgument(T C::*) = delete;
 
+  // volatile pointers would otherwise convert to bool. The address is only
+  // stored, never dereferenced.
+  template <
+      typename T,
+      typename std::enable_if<
+          !std::is_function<T>::value && std::is_volatile<T>::value,
+          int>::type
+      = 0>
+  LogArgument(T* value)
+    : LogArgument(static_cast<const void*>(
+        const_cast<typename std::remove_cv<T>::type*>(value)))
+  {
+  }
+
   // Only scalar, string-like and enum arguments cross this lean boundary.
   template <
       typename UnsupportedLogArgument,

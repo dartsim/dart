@@ -12,7 +12,8 @@
 # To add a toolchain (e.g. an oldest-supported gcc, or a pinned compiler), add a
 # row to the matrix below: { name, runner, family (gcc|clang), version, cc, cxx,
 # distribution (true for Ubuntu-packaged compilers) }. An optional `eigen` spec
-# replaces the default environment's Eigen pin and re-solves it.
+# replaces the Eigen pin every Pixi environment takes from the eigen34 feature
+# and re-solves the default environment.
 
 name: CI Toolchain (Linux)
 
@@ -97,8 +98,8 @@ jobs:
           EIGEN: ${{ matrix.eigen }}
         run: |
           set -euo pipefail
-          # Only the default feature's pin; the pixi setup below re-solves it.
-          sed -i "0,/^eigen = \">=3.4.0,<4\"\$/s//eigen = \"${EIGEN}\"/" pixi.toml
+          # Replace the default baseline pin; the pixi setup below re-solves it.
+          sed -i "0,/^eigen = \"==3.4.0\"\$/s//eigen = \"${EIGEN}\"/" pixi.toml
           grep -qxF "eigen = \"${EIGEN}\"" pixi.toml
 
       - name: Install ${{ matrix.cc }}

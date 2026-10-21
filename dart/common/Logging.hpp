@@ -106,10 +106,11 @@ using LogSink = std::function<void(LogLevel, const std::string&)>;
 /// Replace the process-wide sink. An empty sink restores the default sink.
 /// Return a copy of the previous sink for restoration, or empty for the
 /// default. Callbacks run synchronously and are serialized, including across
-/// threads. They may log or replace the sink; exceptions from callbacks are
-/// ignored. The message reference is valid only for the duration of the
-/// callback. Captured resources must remain alive until the sink is replaced or
-/// reset.
+/// threads. They may log or replace the sink; a message logged from inside a
+/// callback that reaches the same running sink uses default output instead.
+/// Exceptions from callbacks are ignored. The message reference is valid only
+/// for the duration of the callback. Captured resources must remain alive until
+/// the sink is replaced or reset.
 LogSink setLogSink(LogSink sink);
 
 /// Restore console output: warn and above to stderr, others to stdout. Color

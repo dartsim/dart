@@ -75,6 +75,37 @@ LoggingState& loggingState()
   return *state;
 }
 
+// Sinks currently executing on this thread, innermost first.
+struct ActiveSink
+{
+  const LogSink* sink;
+  const ActiveSink* outer;
+};
+
+thread_local const ActiveSink* activeSinks = nullptr;
+
+struct ActiveSinkScope : ActiveSink
+{
+  explicit ActiveSinkScope(const LogSink* s) : ActiveSink{s, activeSinks}
+  {
+    activeSinks = this;
+  }
+
+  ~ActiveSinkScope()
+  {
+    activeSinks = outer;
+  }
+};
+
+bool isSinkActive(const LogSink* sink)
+{
+  for (auto* active = activeSinks; active; active = active->outer) {
+    if (active->sink == sink)
+      return true;
+  }
+  return false;
+}
+
 //==============================================================================
 bool useLogColor(std::FILE* stream)
 {
@@ -248,9 +279,11 @@ void logMessage(
   // A callback may replace itself. Keep it alive until this invocation returns.
   auto sink = state.sink;
   try {
-    if (sink)
+    // Re-entry into an already running sink goes to the default output.
+    if (sink && !isSinkActive(sink.get())) {
+      ActiveSinkScope scope(sink.get());
       (*sink)(level, message);
-    else
+    } else
       defaultLogSink(level, message);
   } catch (...) {
     // Logging must not interrupt application error handling.
