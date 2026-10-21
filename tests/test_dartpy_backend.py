@@ -108,7 +108,7 @@ def test_staged_licenses_move_into_dist_info_with_headers_and_record(tmp_path, c
         tmp_path,
         {
             "dartpy/__init__.py": b"# package\n",
-            "dartpy/_dartpy.abi3.so": b"native extension fixture",
+            "dartpy/_core.abi3.so": b"native extension fixture",
             "dartpy/_filament_licenses/LICENSE": license_text,
             "dartpy/_filament_licenses/notices/third_party/zstd/LICENSE": notice,
             "dartpy-1.0.dist-info/licenses/LICENSE": b"DART BSD license\n",
@@ -129,7 +129,7 @@ def test_staged_licenses_move_into_dist_info_with_headers_and_record(tmp_path, c
         assert not any(name.startswith("dartpy/_filament_licenses/") for name in names)
         assert archive.read(moved[0]) == license_text
         assert archive.read(moved[1]) == notice
-        assert archive.read("dartpy/_dartpy.abi3.so") == b"native extension fixture"
+        assert archive.read("dartpy/_core.abi3.so") == b"native extension fixture"
         assert archive.read("dartpy-1.0.dist-info/licenses/LICENSE") == (
             b"DART BSD license\n"
         )

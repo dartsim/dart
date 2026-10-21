@@ -119,7 +119,7 @@ list(GET DART_VERSION_PARTS 2 DART_PATCH_VERSION)
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.2.0, ccd, eigen3 >= 3.4.0, eigen3 < 6, fcl >= 0.7.0, fmt >= 8.1.1"
+  "assimp >= 5.3.0, ccd, eigen3 >= 3.4.0, eigen3 < 6, fcl >= 0.7.0, fmt >= 8.1.1"
 )
 
 #===============================================================================
