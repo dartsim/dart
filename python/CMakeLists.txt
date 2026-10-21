@@ -38,6 +38,15 @@ if(DART_DARTPY_STABLE_ABI)
 endif()
 # All builds need extension headers, not libpython (unavailable on manylinux).
 find_package(Python 3.12 REQUIRED COMPONENTS ${dartpy_python_components})
+# FindPython leaves Python_EXECUTABLE a normal variable; cache it so a later
+# configure keeps the selection instead of re-seeding from Python3_EXECUTABLE.
+set(
+  Python_EXECUTABLE
+  "${Python_EXECUTABLE}"
+  CACHE FILEPATH
+  "Python interpreter selected for dartpy"
+  FORCE
+)
 # Share nanobind's selected interpreter with tests, examples, and tutorials.
 set(
   Python3_EXECUTABLE

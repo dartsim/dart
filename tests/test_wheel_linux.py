@@ -145,7 +145,6 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
         'if(NOT Python_EXECUTABLE OR Python_EXECUTABLE STREQUAL "legacy-python")\n'
         f'  set(Python_EXECUTABLE "{selected_python}")\n'
         "endif()\n"
-        'set(Python_EXECUTABLE "${Python_EXECUTABLE}" CACHE FILEPATH "" FORCE)\n'
     )
     (tmp_path / "FindPython3.cmake").write_text(
         'message(FATAL_ERROR "Duplicate Python3 discovery")\n'
@@ -237,6 +236,54 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "will be ignored" not in result.stderr
+
+
+def test_builtin_findpython_primary_persists_across_configures(tmp_path):
+    (tmp_path / "nanobindConfig.cmake").write_text("")
+    (tmp_path / "nanobindConfigVersion.cmake").write_text(
+        "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+    )
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.26)\n"
+        "project(BuiltinFindPython NONE)\n"
+        "function(add_subdirectory)\nendfunction()\n"
+        "set(DART_BUILD_DARTPY ON)\n"
+        "set(DART_DARTPY_STABLE_ABI OFF)\n"
+        "set(DART_USE_SYSTEM_NANOBIND ON)\n"
+        f'set(nanobind_DIR "{tmp_path.as_posix()}")\n'
+        f'include("{ROOT.as_posix()}/python/CMakeLists.txt")\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/selected.txt" "${Python_EXECUTABLE}")\n'
+    )
+    build = tmp_path / "build"
+
+    def configure(*args):
+        return subprocess.run(
+            ["cmake", "-S", str(tmp_path), "-B", str(build), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+
+    def cached(name):
+        for line in (build / "CMakeCache.txt").read_text().splitlines():
+            if line.startswith(f"{name}:"):
+                return line.split("=", 1)[1]
+
+    result = configure()
+    assert result.returncode == 0, result.stdout + result.stderr
+    selected = (build / "selected.txt").read_text()
+    assert Path(selected).is_file()
+    for name in ("Python_EXECUTABLE", "Python3_EXECUTABLE", "_DART_PYTHON3_EXECUTABLE"):
+        assert cached(name) == selected
+
+    # A later alias must not seed an empty primary: the selection persists.
+    result = configure("-DPython3_EXECUTABLE=/nonexistent/python")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Python3_EXECUTABLE differs from Python_EXECUTABLE" in result.stderr
+    assert (build / "selected.txt").read_text() == selected
+    for name in ("Python_EXECUTABLE", "Python3_EXECUTABLE", "_DART_PYTHON3_EXECUTABLE"):
+        assert cached(name) == selected
 
 
 def test_dartpy_disabled_does_not_discover_python(tmp_path):
