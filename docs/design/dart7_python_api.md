@@ -374,15 +374,17 @@ Batch arrays use the World's degree-of-freedom order, shaped `(count, ...)`.
 batched, backed by the same rigid-transform storage the C++ API uses, with a
 scalar fast path.
 
-- `@` composes transforms and applies them to `(..., 3)` points. `*` is not
-  defined.
+- `@` composes transforms. Scalar values apply to `(..., 3)` point arrays
+  of any rank; batched values accept a broadcast `(3,)` point or pairwise
+  `(N, 3)` points. `*` is not defined.
 - Constructors are keyword-only and accept at most one rotation form (none
   means identity), such as
   `rotation=` or `wxyz=`/`xyzw=`. Roll-pitch-yaw construction is extrinsic
   X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The
   constructor set is `rotation=` (a 3x3 or a `Rotation`), `wxyz=`, `xyzw=`,
-  `rpy=` and, for `Transform`, `matrix=` and `translation=`; arrays with a
-  leading axis build batches.
+  `rpy=` and, for `Transform`, `translation=`. Alternatively,
+  `Transform(matrix=...)` includes translation and excludes other constructor
+  forms; arrays with a leading axis build batches.
 - Inputs are validated (finite values, `‖RᵀR − I‖_F`, `|det R − 1|`, the
   homogeneous row) and raise `ValueError`. The default tolerance is `1e-5`,
   calibrated as `docs/onboarding/python-bindings.md` records, and the error

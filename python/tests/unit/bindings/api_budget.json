@@ -2,6 +2,8 @@
   "dartpy": {
     "classes": {},
     "containers": [
+      "Rotation",
+      "Transform",
       "collision",
       "common",
       "constraint",
@@ -1742,6 +1744,16 @@
         "get_set": 2,
         "public": 5
       },
+      "Rotation": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 7
+      },
+      "Transform": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 9
+      },
       "TriMesh": {
         "camel_case": 0,
         "get_set": 0,
@@ -1754,6 +1766,8 @@
       "Isometry3",
       "Quaternion",
       "Random",
+      "Rotation",
+      "Transform",
       "TriMesh"
     ],
     "functions": {

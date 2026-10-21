@@ -330,6 +330,17 @@ def test_equality_and_hash_are_bit_exact():
     assert hash(dart.Rotation()) == hash(dart.Rotation.identity())
 
 
+@pytest.mark.parametrize("batched", [False, True])
+def test_rotation_inverse_canonical_hidden_translation(batched):
+    matrix = np.stack([np.eye(3), np.eye(3)]) if batched else np.eye(3)
+    value = dart.Rotation(rotation=matrix)
+    inverted = value.inverse()
+    assert inverted == value
+    assert inverted == dart.Rotation(rotation=inverted.matrix)
+    if not batched:
+        assert hash(inverted) == hash(value)
+
+
 def test_pickle_keeps_bits():
     values = [
         dart.Transform(rpy=(0.1, 0.2, 0.3), translation=(1 / 3, -2 / 7, 1e-300)),

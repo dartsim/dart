@@ -885,6 +885,8 @@ T inverse(const T& self)
     // A general inverse of the stored rotation block: values may carry drift
     // within the tolerance, which the transpose would double.
     out.push_back(item.inverse(Eigen::Affine));
+    if constexpr (std::is_same_v<T, RotationValue>)
+      out.back().translation().setZero();
     requireResultEnvelope(
         out.back(), "inverse()", self.batched, out.size() - 1);
   }

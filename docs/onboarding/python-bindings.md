@@ -312,9 +312,11 @@ use `dart::math::eulerXYZToMatrix`, whose convention differs. Read-only array
 properties are `matrix` (3x3 for a `Rotation`, 4x4 for a `Transform`),
 `translation`, `wxyz` and `xyzw`, each with a leading `N` for a batch, and
 `Transform.rotation` returns the rotation part as a `Rotation`. Only `@` is
-defined: it composes values and applies them to `(..., 3)` points of any rank
-(rows are points), a scalar broadcasts against a batch, and batches must have
-equal length. `__array_ufunc__ = None`, so `points @ value` raises `TypeError`
+defined: it composes values, with a scalar broadcasting against a batch
+and batches requiring equal length. Scalar values apply to `(..., 3)` point
+arrays of any rank (rows are points). Batched values accept a single `(3,)`
+point broadcast to every value or a pairwise `(N, 3)` point array.
+`__array_ufunc__ = None`, so `points @ value` raises `TypeError`
 instead of letting NumPy broadcast.
 
 Validation raises `ValueError` and checks finite values,
