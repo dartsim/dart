@@ -43,6 +43,17 @@ Gazebo compatibility covers rebuilding released `gz-physics` and `gz-sim`
 without source changes. Existing binary plugins must be rebuilt against the
 new library layout.
 
+## Eigen Compatibility
+
+DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0
+through the `eigen34` feature; the toolchain CI lane rewrites that pin to build
+and test Eigen 5 with warnings as errors.
+The installed CMake package records the major used to build DART and rejects
+a consumer using a different major; pkg-config consumers must match majors
+themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
+Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
+same major or rebuild DART and its consumers.
+
 ## Package Version Compatibility
 
 The installed `DARTConfigVersion.cmake` accepts plain version requests from

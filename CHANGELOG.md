@@ -361,6 +361,10 @@
 
 * Build
 
+  * Support Eigen >= 3.4.0 and < 6, keeping the Pixi environments on 3.4.0. Installed CMake packages reject a different Eigen major; rebuild
+    DART and its consumers together when changing Eigen majors.
+    [#3891](https://github.com/dartsim/dart/pull/3891)
+
   * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
     of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
     OpenSSL; only static installs require consumers to provide them.
