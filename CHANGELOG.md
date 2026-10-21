@@ -283,6 +283,11 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
+    `World.restore_state(state)` for dynamic snapshots; state arrays are
+    read-only NumPy copies and a structure mismatch raises `ValueError`.
+    [#3842](https://github.com/dartsim/dart/pull/3842)
+
   * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
     writes now raise `ValueError`; call `.copy()` before writing, then use the
     appropriate setter to update DART state. Eigen arguments that dartpy passes
