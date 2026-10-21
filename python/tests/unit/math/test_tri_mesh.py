@@ -28,8 +28,12 @@ def test_tri_mesh_owns_double_geometry_and_mesh_shape_retains_it(layout):
     np.testing.assert_array_equal(shape.getScale(), [2, 3, 4])
     vertices[:] = 99
     triangles[:] = 3
-    mesh.vertices[:] = 42
-    mesh.triangles[:] = 2
+    with pytest.raises(ValueError, match="assignment destination is read-only"):
+        mesh.vertices[:] = 42
+    with pytest.raises(ValueError, match="assignment destination is read-only"):
+        mesh.triangles[:] = 2
+    mesh.vertices.copy()[:] = 42
+    mesh.triangles.copy()[:] = 2
     np.testing.assert_array_equal(mesh.vertices, expected_vertices)
     np.testing.assert_array_equal(mesh.triangles, [[0, 1, 2], [0, 3, 1]])
     with pytest.raises(AttributeError):
