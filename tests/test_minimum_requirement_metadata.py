@@ -1,10 +1,5 @@
 """Check package support boundaries and native baseline CI coverage."""
 
-import ast
-import os
-import shlex
-import subprocess
-import sys
 import tomllib
 from pathlib import Path
 
@@ -45,8 +40,10 @@ def test_package_metadata_support_boundaries():
     assert "1.1.0" not in build["scikit-build-core"]
     assert "1.1.1" in build["scikit-build-core"]
     skbuild = project["tool"]["scikit-build"]
-    assert "3.25.9" not in SpecifierSet(skbuild["cmake"]["version"])
-    assert "3.26.0" in SpecifierSet(skbuild["cmake"]["version"])
+    cmake = SpecifierSet(skbuild["cmake"]["version"])
+    assert "3.26.0" not in cmake
+    assert "3.27.9" not in cmake
+    assert "3.28.0" in cmake
     assert "1.13.1" not in SpecifierSet(skbuild["ninja"]["version"])
     assert "1.13.2" in SpecifierSet(skbuild["ninja"]["version"])
     assert skbuild["wheel"]["py-api"] == "cp312"
