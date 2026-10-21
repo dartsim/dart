@@ -28,6 +28,7 @@ NATIVE_HOLDERS = (
 )
 DECLARATION = re.compile(
     r"(?:(?i:\bSPDX-FileCopyrightText:)\s*"
+    r"|©\s*"
     r"|(?i:\bcopyright\b)\s*(?::\s*|\([cC]\)\s*|©\s*|(?=\d|[A-Z]|the\b)))"
     r"(?P<holders>.+)"
 )
@@ -255,6 +256,7 @@ def test_removing_any_notice_entry_fails(section, declarations):
     "declaration",
     [
         f"{COPYRIGHT} (c) 2026 Example Corporation",
+        "\N{COPYRIGHT SIGN} 2026 Example Corporation",
         f"SPDX-File{COPYRIGHT}Text: 2026 Example Corporation",
         f"{COPYRIGHT}: Example Corporation",
         f"{COPYRIGHT} Example Corporation",
@@ -400,3 +402,37 @@ def test_wheel_metadata_and_license_files_include_notice(tmp_path):
             )
     assert set(ROOT.iterdir()) == source_entries
     assert set((ROOT / "python").iterdir()) == python_entries
+
+
+@pytest.mark.parametrize("component", [None, "headers"])
+def test_notice_is_installed_with_libraries_and_headers(tmp_path, component):
+    source = tmp_path / "source"
+    source.mkdir()
+    for name in ("LICENSE", "NOTICE"):
+        shutil.copy2(ROOT / name, source / name)
+    rules = (
+        (ROOT / "CMakeLists.txt")
+        .read_text()
+        .split("# Use the same default install component as libdart.", 1)[1]
+        .split("# Variables used in Components.cmake", 1)[0]
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "project(NoticeInstall NONE)\n"
+        "include(GNUInstallDirs)\n" + rules
+    )
+    build, prefix = tmp_path / "build", tmp_path / "prefix"
+    subprocess.run(
+        ["cmake", "-S", str(source), "-B", str(build)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    command = ["cmake", "--install", str(build), "--prefix", str(prefix)]
+    if component:
+        command += ["--component", component]
+    subprocess.run(command, check=True, capture_output=True, text=True)
+    for name in ("LICENSE", "NOTICE"):
+        assert (prefix / "share/licenses/dart" / name).read_bytes() == (
+            ROOT / name
+        ).read_bytes()

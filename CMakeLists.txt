@@ -43,6 +43,12 @@ install(
   FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
 )
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
+  COMPONENT headers
+  EXCLUDE_FROM_ALL
+)
 
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
@@ -125,7 +131,7 @@ list(GET DART_VERSION_PARTS 2 DART_PATCH_VERSION)
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.2.0, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, fmt >= 8.1.1"
+  "assimp >= 5.3.0, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, fmt >= 8.1.1"
 )
 
 #===============================================================================

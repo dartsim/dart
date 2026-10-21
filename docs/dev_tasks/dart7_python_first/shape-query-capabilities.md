@@ -34,8 +34,8 @@ Names are current `dart::dynamics` names. Bound shapes retain their current
 `HeightmapShaped` are aliases, and only `HeightmapShapef` is bound.
 `MultiSphereShape` is the deprecated C++ alias of
 `MultiSphereConvexHullShape`, not another geometry. This inventory does not
-adopt the planned Python vocabulary: rename table v0 still needs maintainer
-approval. See [shape bindings](../../../python/dartpy/dynamics/Shape.cpp) and
+adopt the planned Python vocabulary, which the curated API areas define under
+the approved naming rulebook. See [shape bindings](../../../python/dartpy/dynamics/Shape.cpp) and
 [public shape headers](../../../dart/dynamics/Shape.hpp).
 
 ## Native detector: public shapes

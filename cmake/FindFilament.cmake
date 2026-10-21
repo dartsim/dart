@@ -277,8 +277,8 @@ if(APPLE)
   # IOKit/CoreGraphics/OpenGL. The conda-forge `Filament::filament` CONFIG
   # target does not always carry these in its link interface, so a missing
   # framework surfaces as undefined Metal/CoreVideo/QuartzCore/AppKit symbols
-  # when linking GUI consumers such as `_dartpy.so`. Collect them so they reach
-  # every Filament consumer.
+  # when linking GUI consumers such as dartpy's `_core.so`. Collect them so
+  # they reach every Filament consumer.
   set(_dart_filament_apple_frameworks)
   foreach(
     _dart_fw

@@ -12,26 +12,19 @@ black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
 cmake = ">=4.0.2,<4.3.4"
 codespell = ">=2.4.1,<3"
-doxygen = ">=1.13.2,<2"
 gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
 isort = ">=6.0.1,<7"
-jinja2 = ">=3.1.2"
 markdown-it-py = ">=3,<5"
-myst-parser = "*"
 ninja = ">=1.13.2,<2"
+packaging = ">=24,<27"
 pip = ">=25.1.1,<26"
-pipx = ">=1.7.1,<2"
 pkg-config = ">=0.29.2,<0.30"
 pytest = ">=8.3.5,<9"
+pyyaml = ">=6,<7"
 sccache = ">=0.15.0,<0.16"
 scikit-build-core = ">=1.1.1,<2"
 setuptools = ">=80.1.0,<81"
-sphinx = "*"
-sphinx-copybutton = "*"
-sphinx-intl = "*"
-sphinx_rtd_theme = "*"
-sphinx-tabs = "*"
 taplo = ">=0.9.0,<1"
 wheel = ">=0.48.0,<0.49"
 assimp = ">=5.4.3,<7"
@@ -40,7 +33,6 @@ console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
-imgui = ">=1.92.8,<2"
 libboost-devel = ">=1.86.0,<2"
 libcurl = ">=7.85.0,<9"
 libode = ">=0.16.5,<0.17"
@@ -51,7 +43,6 @@ openssl = ">=1.1.1,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=6.0.0,<7"
-pyperf = ">=2.10.0,<3"
 
 [tasks]
 config-core = { cmd = """
@@ -81,9 +72,6 @@ test-package-core = { cmd = """
 ] }
 perf-compare = { cmd = "python scripts/perf_regression.py local" }
 perf-backfill = { cmd = "python scripts/perf_regression.py backfill" }
-perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
-  "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
@@ -418,99 +406,6 @@ test-all = { cmd = """
     cmake --build "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-config-asan = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
-        -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
-        -DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
-        -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
-        -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
-        -DDART_BUILD_DARTPY=OFF \
-        -DDART_BUILD_GUI=OFF \
-        -DDART_BUILD_UTILS_ASSETS=ON \
-        -DDART_BUILD_PROFILE=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "asan" } }
-
-build-asan = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target tests
-""", depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
-
-test-asan = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure
-""", depends-on = [
-  "build-asan",
-], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=0" } }
-
-config-coverage = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
-        -DDART_BUILD_UTILS_ASSETS=ON \
-        -DDART_BUILD_PROFILE=OFF \
-        -DDART_BUILD_GUI=OFF \
-        -DDART_CODECOV=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
-
-# Coverage instrumentation (Debug + DART_CODECOV) makes tests run several times
-# slower, so raise the per-test timeout above CTest's 1500s default to keep slow
-# regression tests (e.g. test_Issue1193, ~1350s here) from flaking on timeout.
-build-coverage = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
-    && ctest \
-        --output-on-failure \
-        --parallel 4 \
-        --timeout 3000 \
-        --label-exclude no-coverage-value \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
-""", depends-on = [
-  "config-coverage",
-], env = { BUILD_TYPE = "Debug" } }
-
-# Captures coverage from the .gcda data produced by a prior `build-coverage`
-# run (the CI coverage job runs `build-coverage` then `coverage-report` as
-# separate steps). It intentionally does NOT depend on `build-coverage` so the
-# test suite is not re-run a second time just to regenerate the report; run
-# `pixi run build-coverage` first when invoking this standalone.
-# Note: --rc flag is needed for lcov compatibility with gcc 13+
-coverage-report = { cmd = """
-    lcov \
-        --capture \
-        --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-file coverage.info \
-        --rc geninfo_unexecuted_blocks=1 \
-    && lcov \
-        --remove coverage.info \
-        '/usr/*' \
-        '*/.deps/*' \
-        '*/tests/*' \
-        '*/examples/*' \
-        '*/tutorials/*' \
-        --output-file coverage.info \
-    && lcov --list coverage.info
-""", env = { BUILD_TYPE = "Debug" } }
-
 ex = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -716,59 +611,11 @@ tu-multi-pendulum-fi = { depends-on = [
   ] },
 ] }
 
-install = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        -j \
-        --target install
-""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
-
-config-install = { cmd = """
-    cmake \
-        -G Ninja \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
-        -DDART_BUILD_UTILS_ASSETS=ON \
-        -DDART_BUILD_PROFILE=OFF \
-        -DDART_BUILD_GUI=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
-
-docs-build = { cmd = """
-    cd docs/readthedocs && sphinx-build -b html . _build/html
-""" }
-
-docs-build-ko = { cmd = """
-    cd docs/readthedocs && sphinx-build -b html -D language=ko . _build/html/ko
-""" }
-
-docs-serve = { cmd = """
-    cd docs/readthedocs && python -m http.server --directory _build/html 8000
-""", depends-on = ["docs-build"] }
-
-docs-serve-ko = { cmd = """
-    cd docs/readthedocs && python -m http.server --directory _build/html/ko 8001
-""", depends-on = ["docs-build-ko"] }
-
-docs-clean = { cmd = """
-    rm -rf docs/readthedocs/_build
-""" }
-
 ################################################################################
 # linux-64
 ################################################################################
 
 [target.linux-64.dependencies]
-lcov = ">=1.16,<2"
 libgl-devel = ">=1.7.0,<2"
 
 ################################################################################
@@ -880,10 +727,6 @@ dartpy = { cmd = "python", depends-on = [
   "build-py-dev",
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
 
-perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
-  "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" } }
-
 fetch-robot-assets = { cmd = "python -m examples.demos.fetch_robot_assets", cwd = "python", depends-on = [
   "build-py-dev",
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" } }
@@ -941,31 +784,6 @@ py-tu = { cmd = """
 ], args = [
   { arg = "tutorial" },
 ], env = { BUILD_TYPE = "Release" } }
-
-install = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        -j \
-        --target install
-""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
-
-config-install = { cmd = """
-    cmake \
-        -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_BUILD_UTILS_ASSETS=ON \
-        -DDART_BUILD_PROFILE=OFF \
-        -DDART_BUILD_GUI=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 #=================
 # Feature: Gazebo
@@ -1225,6 +1043,7 @@ gz-compat-jetty = { cmd = "bash tools/gazebo/compat/lane.sh jetty" }
 assimp = ">=6.0.4,<7"
 
 [feature.profile.dependencies]
+pyperf = ">=2.10.0,<3"
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 
@@ -1250,9 +1069,262 @@ config-tracy = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 tracy = { cmd = "tracy-profiler" }
+# Profile-pinned copies of config-py/build-py-dev: pixi resolves each
+# depends-on entry to the environment it would select unqualified (default
+# here), so perf-dartpy-loop needs its own chain to build into
+# build/profile instead of build/default. Keep these in sync with the default
+# config-py/build-py-dev tasks and the win-64 overrides below.
+config-py-profile = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_UTILS_ASSETS=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+build-py-dev-profile = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -j \
+        --target dartpy
+""", depends-on = ["config-py-profile"], env = { BUILD_TYPE = "Release" } }
+perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
+  "build-py-dev-profile",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python" } }
 
 [feature.profile.target.win-64.tasks]
 tracy = { cmd = "tracy-profiler.exe" }
+config-py-profile = { cmd = """
+    cmake \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_UTILS_ASSETS=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF" } }
+build-py-dev-profile = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
+        -j \
+        --target dartpy
+""", depends-on = ["config-py-profile"], env = { BUILD_TYPE = "Release" } }
+perf-dartpy-loop = { cmd = "python tools/perf/dartpy_loop_bench.py", depends-on = [
+  "build-py-dev-profile",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/$BUILD_TYPE" } }
+
+# The Sphinx stack and Doxygen; the docs tasks and api_doc.yml run in the docs
+# environment instead of the default one.
+[feature.docs.dependencies]
+doxygen = ">=1.13.2,<2"
+jinja2 = ">=3.1.2"
+myst-parser = "*"
+sphinx = "*"
+sphinx-copybutton = "*"
+sphinx-intl = "*"
+sphinx_rtd_theme = "*"
+sphinx-tabs = "*"
+
+[feature.docs.tasks]
+docs-build = { cmd = """
+    cd docs/readthedocs && sphinx-build -b html . _build/html
+""" }
+
+docs-build-ko = { cmd = """
+    cd docs/readthedocs && sphinx-build -b html -D language=ko . _build/html/ko
+""" }
+
+docs-serve = { cmd = """
+    cd docs/readthedocs && python -m http.server --directory _build/html 8000
+""", depends-on = ["docs-build"] }
+
+docs-serve-ko = { cmd = """
+    cd docs/readthedocs && python -m http.server --directory _build/html/ko 8001
+""", depends-on = ["docs-build-ko"] }
+
+docs-clean = { cmd = """
+    rm -rf docs/readthedocs/_build
+""" }
+
+# lcov and the coverage configure/build/report tasks.
+[feature.coverage.target.linux-64.dependencies]
+lcov = ">=1.16,<2"
+
+[feature.coverage.tasks]
+config-coverage = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
+        -DDART_BUILD_UTILS_ASSETS=ON \
+        -DDART_BUILD_PROFILE=OFF \
+        -DDART_BUILD_GUI=OFF \
+        -DDART_CODECOV=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
+
+# Coverage instrumentation (Debug + DART_CODECOV) makes tests run several times
+# slower, so raise the per-test timeout above CTest's 1500s default to keep slow
+# regression tests (e.g. test_Issue1193, ~1350s here) from flaking on timeout.
+build-coverage = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
+    && ctest \
+        --output-on-failure \
+        --parallel 4 \
+        --timeout 3000 \
+        --label-exclude no-coverage-value \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+""", depends-on = [
+  "config-coverage",
+], env = { BUILD_TYPE = "Debug" } }
+
+# Captures coverage from the .gcda data produced by a prior `build-coverage`
+# run (the CI coverage job runs `build-coverage` then `coverage-report` as
+# separate steps). It intentionally does NOT depend on `build-coverage` so the
+# test suite is not re-run a second time just to regenerate the report; run
+# `pixi run -e coverage build-coverage` first when invoking this standalone.
+# Note: --rc flag is needed for lcov compatibility with gcc 13+
+coverage-report = { cmd = """
+    lcov \
+        --capture \
+        --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-file coverage.info \
+        --rc geninfo_unexecuted_blocks=1 \
+    && lcov \
+        --remove coverage.info \
+        '/usr/*' \
+        '*/.deps/*' \
+        '*/tests/*' \
+        '*/examples/*' \
+        '*/tutorials/*' \
+        --output-file coverage.info \
+    && lcov --list coverage.info
+""", env = { BUILD_TYPE = "Debug" } }
+
+# The conda ImGui used by the DART_USE_SYSTEM_IMGUI=ON lanes (asan, coverage,
+# install, dart-gz and the unity-clashes job). The default build uses the
+# bundled ImGui instead. This feature carries only the dependency; the asan
+# and install tasks live in `system-imgui-tasks` so unqualified `pixi run`
+# resolves each of them to the system-imgui environment alone.
+[feature.system-imgui.dependencies]
+imgui = ">=1.92.8,<2"
+
+# Only the system-imgui environment includes this feature, so each task below
+# resolves to exactly one environment.
+[feature.system-imgui-tasks.tasks]
+config-asan = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
+        -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
+        -DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
+        -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
+        -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
+        -DDART_BUILD_DARTPY=OFF \
+        -DDART_BUILD_GUI=OFF \
+        -DDART_BUILD_UTILS_ASSETS=ON \
+        -DDART_BUILD_PROFILE=OFF \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "asan" } }
+
+build-asan = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target tests
+""", depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
+
+test-asan = { cmd = """
+    ctest \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --output-on-failure
+""", depends-on = [
+  "build-asan",
+], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=0" } }
+
+install = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
+        -j \
+        --target install
+""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
+
+config-install = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
+        -DDART_BUILD_UTILS_ASSETS=ON \
+        -DDART_BUILD_PROFILE=OFF \
+        -DDART_BUILD_GUI=OFF \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+
+[feature.system-imgui-tasks.target.win-64.tasks]
+install = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE \
+        -j \
+        --target install
+""", depends-on = ["config-install"], env = { BUILD_TYPE = "Release" } }
+
+config-install = { cmd = """
+    cmake \
+        -S . \
+        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DDART_BUILD_UTILS_ASSETS=ON \
+        -DDART_BUILD_PROFILE=OFF \
+        -DDART_BUILD_GUI=OFF \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE=$DART_VERBOSE
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 # Filament is isolated from Gazebo and wheel build environments. Exact SDK
 # builds keep the runtime and material compiler in agreement.
@@ -1438,7 +1510,7 @@ wheel-test-abi3 = { depends-on = [
 [environments]
 default = ["assimp6", "default-python", "filament"]
 gui-ci = ["assimp6", "default-python", "filament", "filament-ci"]
-gazebo = ["gazebo"]
+gazebo = ["gazebo", "system-imgui"]
 gazebo-harmonic = { features = [
   "gz-compat-base",
   "gazebo-harmonic",
@@ -1450,3 +1522,12 @@ gazebo-jetty = { features = [
 py312-wheel = ["assimp6", "py312-wheel", "filament-wheel"]
 py313-wheel = ["assimp6", "py313-wheel", "filament-wheel"]
 profile = ["profile", "assimp6", "default-python", "filament"]
+coverage = ["assimp6", "default-python", "filament", "coverage", "system-imgui"]
+docs = ["assimp6", "default-python", "filament", "docs"]
+system-imgui = [
+  "assimp6",
+  "default-python",
+  "filament",
+  "system-imgui",
+  "system-imgui-tasks",
+]

@@ -22,7 +22,10 @@ set_source_files_properties(
   PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON
 )
 target_link_libraries(dart-io PRIVATE CURL::libcurl OpenSSL::Crypto)
-add_component_dependency_packages(${PROJECT_NAME} io CURL OpenSSL)
+# Shared dart-io links them privately; only static consumers need them.
+if(NOT BUILD_SHARED_LIBS)
+  add_component_dependency_packages(${PROJECT_NAME} io CURL OpenSSL)
+endif()
 
 add_library(${target_name} INTERFACE ${hdrs})
 target_link_libraries(${target_name} INTERFACE dart-io)
