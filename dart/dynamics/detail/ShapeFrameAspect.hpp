@@ -68,6 +68,12 @@ struct VisualAspectProperties
       const bool hidden = false,
       const bool shadowed = true);
 
+  /// Copy constructor
+  VisualAspectProperties(const VisualAspectProperties&) = default;
+
+  /// Copy assignment operator
+  VisualAspectProperties& operator=(const VisualAspectProperties&) = default;
+
   /// Destructor
   virtual ~VisualAspectProperties() = default;
 
@@ -82,6 +88,13 @@ struct CollisionAspectProperties
 
   /// Constructor
   CollisionAspectProperties(const bool collidable = true);
+
+  /// Copy constructor
+  CollisionAspectProperties(const CollisionAspectProperties&) = default;
+
+  /// Copy assignment operator
+  CollisionAspectProperties& operator=(const CollisionAspectProperties&)
+      = default;
 
   /// Destructor
   virtual ~CollisionAspectProperties() = default;
@@ -140,6 +153,13 @@ struct DynamicsAspectProperties
       const Eigen::Vector3d& firstFrictionDirection = Eigen::Vector3d::Zero(),
       const Frame* firstFrictionDirectionFrame = nullptr);
 
+  /// Copy constructor
+  DynamicsAspectProperties(const DynamicsAspectProperties&) = default;
+
+  /// Copy assignment operator
+  DynamicsAspectProperties& operator=(const DynamicsAspectProperties&)
+      = default;
+
   /// Destructor
   virtual ~DynamicsAspectProperties() = default;
 };
@@ -151,6 +171,12 @@ struct ShapeFrameProperties
 
   /// Constructor
   ShapeFrameProperties(const ShapePtr& shape = nullptr);
+
+  /// Copy constructor
+  ShapeFrameProperties(const ShapeFrameProperties&) = default;
+
+  /// Copy assignment operator
+  ShapeFrameProperties& operator=(const ShapeFrameProperties&) = default;
 
   /// Virtual destructor
   virtual ~ShapeFrameProperties() = default;
