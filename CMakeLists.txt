@@ -297,6 +297,15 @@ dart_option(
 )
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
 dart_option(
+  DART_REQUIRE_OPTIONAL_DEPENDENCIES
+  "Fail configure when an optional component's dependency is missing"
+  OFF
+)
+# Doxygen no longer goes through the optional-component check; drop its
+# leftover cache entries.
+unset(DART_SKIP_DOXYGEN CACHE)
+unset(HAVE_DOXYGEN CACHE)
+dart_option(
   DART_ALLOW_SINGLE_PRECISION_LIBCCD
   "Build even if FCL's libccd uses single precision"
   OFF
