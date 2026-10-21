@@ -126,6 +126,16 @@ Errors Inertial::read(tinyxml2::XMLElement* element)
       return errors;
     }
 
+    for (const auto* orientation :
+         {"quat", "axisangle", "euler", "xyaxes", "zaxis"}) {
+      if (hasAttribute(element, orientation)) {
+        errors.emplace_back(
+            ErrorCode::ATTRIBUTE_CONFLICT,
+            "Not allowed to set both 'fullinertia' and an orientation in "
+            "<inertial>");
+        return errors;
+      }
+    }
     mData.mFullInertia = getAttributeVector6d(element, "fullinertia");
   }
 

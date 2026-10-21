@@ -1853,14 +1853,20 @@
       "World": {
         "camel_case": 32,
         "get_set": 23,
-        "public": 36
+        "public": 38
+      },
+      "WorldState": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 7
       }
     },
     "containers": [
       "CollisionDetectorType",
       "DeactivationOptions",
       "Recording",
-      "World"
+      "World",
+      "WorldState"
     ],
     "functions": {
       "camel_case": 0,

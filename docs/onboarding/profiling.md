@@ -530,16 +530,15 @@ codemod can later convert this runnable workload. The detector is pinned to
 DART, and world setup and warm-up stay outside the timed loop.
 
 ```bash
-pixi run build-py-dev
-pixi run perf-dartpy-loop -- --fast -o build/dartpy-loop.json
+pixi run -e profile perf-dartpy-loop -- --fast -o build/dartpy-loop.json
 ```
 
 Use pyperf's normal repeated-process mode for wall-time evidence. `--fast` is
-a smoke check. Compare JSON results with `pixi run python -m pyperf compare_to
-<base.json> <head.json>`, using the same host, detector, workload, interpreter
-and dependencies. This benchmark includes Python binding and array-read costs;
-it is separate from the C++ instruction-count gate. Keep generated JSON outside
-Git.
+a smoke check. Compare JSON results with `pixi run -e profile python -m pyperf
+compare_to <base.json> <head.json>`, using the same host, detector, workload,
+interpreter and dependencies. This benchmark includes Python binding and
+array-read costs; it is separate from the C++ instruction-count gate. Keep
+generated JSON outside Git.
 
 ## Tracy
 
