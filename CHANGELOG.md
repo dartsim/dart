@@ -132,6 +132,12 @@
 
 * Dynamics
 
+  * `VoxelGridShape::updateOccupancy()` no longer corrupts memory on very
+    long rays or point clouds containing them. Rays that cross more than
+    about 100,000 voxels are skipped with a warning (their endpoints are not
+    marked occupied), and the other points of a cloud are still inserted.
+    [#3859](https://github.com/dartsim/dart/pull/3859)
+
   * Release scenes assigned to the protected `MeshShape::mMesh` by legacy
     subclasses when the shape is destroyed. These scenes must be heap-allocated
     with `new` or by an assimp import; callers must not free or share them.
