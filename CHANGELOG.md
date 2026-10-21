@@ -6,6 +6,25 @@
 
 * Breaking Changes
 
+  * **Behavior change:** MJCF loading now enforces hinge and slide limits,
+    including inherited defaults and MuJoCo 3.x automatic limits; applies
+    declared mass, center of mass, and rotated inertia even without geoms;
+    places bodies without `pos` at the parent origin in local coordinates;
+    orthogonalizes `xyaxes`; and converts hinge `springref` from degrees.
+    Hinge and ball ranges are now read in degrees under
+    `<compiler angle="degree">` (MuJoCo's default), rather than as raw numbers.
+    Coordinates without limits now report infinite position limits instead of
+    the declared range (often zero).
+    Invalid declarations now fail to load: unknown `limited` or `autolimits`
+    values, nonzero ranges with automatic limits under `autolimits="false"`,
+    reversed or non-finite limited ranges, a nonzero lower limit on a limited
+    ball joint, or `fullinertia` combined with an orientation attribute.
+    Models that relied on ignored limits or inertia will simulate differently;
+    use `limited="false"` to disable limits explicitly. Ball-joint angular limits
+    remain unsupported and warn once per model; support is deferred to a later
+    release.
+    [#3877](https://github.com/dartsim/dart/pull/3877)
+
   * `dart/utils/urdf/urdf.hpp`, through `urdf_world_parser.hpp`, no longer
     includes `BackwardCompatibility.hpp`. Code using its
     `URDFDOM_HEADERS_VERSION_*` macros must include
@@ -54,6 +73,10 @@
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
+
+  * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
+    meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
 
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
@@ -120,6 +143,10 @@
     [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Collision
+
+  * Fix a memory leak where a Bullet collision detector used for a collision
+    check between two groups was never destroyed.
+    [#3875](https://github.com/dartsim/dart/pull/3875)
 
   * Fix distance queries and nearest points for touching convex pairs in FCL's
     libccd GJK distance in Linux wheels, demonstrated for ellipsoid,
@@ -268,6 +295,11 @@
     `dartpy.math.Isometry3`.
     [#3845](https://github.com/dartsim/dart/pull/3845)
 
+  * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
+    `World.restore_state(state)` for dynamic snapshots; state arrays are
+    read-only NumPy copies and a structure mismatch raises `ValueError`.
+    [#3842](https://github.com/dartsim/dart/pull/3842)
+
   * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
     writes now raise `ValueError`; call `.copy()` before writing, then use the
     appropriate setter to update DART state. Eigen arguments that dartpy passes
@@ -340,6 +372,11 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
+    of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
+    OpenSSL; only static installs require consumers to provide them.
+    [#3883](https://github.com/dartsim/dart/pull/3883)
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
