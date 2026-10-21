@@ -3,11 +3,16 @@
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+# DART_TEST_CMAKE pins an exact CMake build (pixi's own bin dir wins on PATH).
+CMAKE = os.environ.get("DART_TEST_CMAKE") or shutil.which("cmake")
 
 
 def configure(tmp_path, content, *, cmake_args=()):
@@ -27,7 +32,7 @@ def configure(tmp_path, content, *, cmake_args=()):
     )
     return subprocess.run(
         [
-            shutil.which("cmake"),
+            CMAKE,
             "-G",
             "Ninja",
             f"-DCMAKE_MAKE_PROGRAM={shutil.which('ninja')}",
@@ -103,16 +108,17 @@ def test_fetchcontent_disconnected_sources(tmp_path, source_kind):
         custom = f' "{source.as_posix()}"'
     elif source_kind == "connected":
         settings = "set(FETCHCONTENT_FULLY_DISCONNECTED OFF)\n"
+    declare = (
+        f'SOURCE_DIR "{source.as_posix()}"'
+        if source_kind in ("override", "default", "custom", "connected")
+        else "URL https://invalid.example/fixture.tar.gz"
+    )
     result = configure(
         tmp_path,
         "include(DARTMacros)\ninclude(FetchContent)\n"
         + settings
-        + f"dart_check_fetchcontent(FiXtUrE DART_USE_SYSTEM_FIXTURE{custom})\n"
-        + (
-            f'FetchContent_Declare(fixture SOURCE_DIR "{source.as_posix()}")\nFetchContent_MakeAvailable(fixture)\n'
-            if source_kind in ("override", "default", "custom")
-            else ""
-        ),
+        + f"FetchContent_Declare(fixture {declare})\nFetchContent_MakeAvailable(fixture)\n"
+        + f"dart_check_fetchcontent(FiXtUrE DART_USE_SYSTEM_FIXTURE{custom})\n",
     )
     output = result.stdout + result.stderr
     if source_kind in (
@@ -123,9 +129,11 @@ def test_fetchcontent_disconnected_sources(tmp_path, source_kind):
         "file_override",
     ):
         assert result.returncode != 0
-        assert "Cannot fetch FiXtUrE" in output
         assert "FETCHCONTENT_SOURCE_DIR_FIXTURE" in output
-        assert "DART_USE_SYSTEM_FIXTURE=ON" in output
+        # CMake itself rejects a missing override before the postcheck runs.
+        if source_kind != "invalid_override":
+            assert "Cannot fetch FiXtUrE" in output
+            assert "DART_USE_SYSTEM_FIXTURE=ON" in output
     else:
         assert result.returncode == 0, output
         if source_kind != "connected":
@@ -158,26 +166,173 @@ def test_system_dependency_defaults_are_seeded_once(tmp_path, umbrella, explicit
             assert f"DART_USE_SYSTEM_{name}:BOOL={expected}" in cache
 
 
-def test_system_tracy_without_cmake_version_file(tmp_path):
-    # Installed Tracy packages ship TracyConfig.cmake without a version file.
-    config_package(tmp_path, "Tracy", None, "Tracy::TracyClient")
-    source = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
-    tracy = source[
-        source.index("if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)") : source.index(
-            "if(DART_BUILD_DARTPY AND Python_EXECUTABLE)"
-        )
+_DEPENDENCIES = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+TRACY_FIXTURE = (
+    "set(DART_BUILD_PROFILE ON)\nset(DART_PROFILE_TRACY ON)\n"
+    "set(DART_USE_SYSTEM_TRACY ON)\n"
+    + _DEPENDENCIES[
+        _DEPENDENCIES.index(
+            "if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)"
+        ) : _DEPENDENCIES.index("if(DART_BUILD_DARTPY AND Python_EXECUTABLE)")
     ]
+    + 'if(NOT TARGET Tracy::TracyClient)\nmessage(FATAL_ERROR "no TracyClient")\nendif()\n'
+)
+
+
+def cmake_version():
+    out = subprocess.run([CMAKE, "--version"], capture_output=True, text=True).stdout
+    return tuple(int(part) for part in out.split()[2].split("-")[0].split("."))
+
+
+PROVIDER = """\
+macro(fixture_provider method name)
+  file(APPEND "{log}" "${{name}}\\n")
+  if(NOT "${{name}}" STREQUAL "{fulfills}")
+    return()
+  endif()
+  if(NOT TARGET fixture::fixture)
+    add_library(fixture::fixture INTERFACE IMPORTED GLOBAL)
+  endif()
+  FetchContent_SetPopulated(${{name}})
+endmacro()
+cmake_language(
+  SET_DEPENDENCY_PROVIDER fixture_provider
+  SUPPORTED_METHODS FETCHCONTENT_MAKEAVAILABLE_SERIAL
+)
+"""
+
+
+@pytest.mark.skipif(cmake_version() < (3, 24), reason="dependency providers need 3.24")
+@pytest.mark.parametrize(
+    "state",
+    [
+        "fulfilled",
+        "declined",
+        "none",
+        "unrelated",
+        "fulfilled_other_missing",
+        "fulfilled_invalid_override",
+    ],
+)
+def test_fetchcontent_dependency_provider_fulfillment(tmp_path, state):
+    log = tmp_path / "provider.log"
+    fulfills = {"declined": "", "unrelated": "other"}.get(state, "fixture")
+    args = []
+    if state != "none":
+        (tmp_path / "provider.cmake").write_text(
+            PROVIDER.format(log=log.as_posix(), fulfills=fulfills)
+        )
+        args.append(
+            f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={(tmp_path / 'provider.cmake').as_posix()}"
+        )
+    content = "include(DARTMacros)\ninclude(FetchContent)\n"
+    content += "set(FETCHCONTENT_FULLY_DISCONNECTED ON)\n"
+    if state == "fulfilled_invalid_override":
+        content += f'set(FETCHCONTENT_SOURCE_DIR_FIXTURE "{(tmp_path / "missing").as_posix()}")\n'
+    for name in (
+        ("fixture", "second") if state == "fulfilled_other_missing" else ("fixture",)
+    ):
+        content += (
+            f"FetchContent_Declare({name} URL https://invalid.example/{name}.tar.gz)\n"
+            f"FetchContent_MakeAvailable({name})\n"
+            f"dart_check_fetchcontent({name} DART_USE_SYSTEM_FIXTURE)\n"
+        )
+    content += 'if(NOT TARGET fixture::fixture)\nmessage(FATAL_ERROR "target missing")\nendif()\n'
+    result = configure(tmp_path, content, cmake_args=args)
+    output = result.stdout + result.stderr
+    calls = log.read_text().split() if log.exists() else []
+    assert not (tmp_path / "build/_deps/fixture-src").exists()
+    if state in ("fulfilled", "fulfilled_other_missing", "fulfilled_invalid_override"):
+        assert calls.count("fixture") == (0 if state.endswith("override") else 1), calls
+    if state == "fulfilled":
+        assert result.returncode == 0, output
+        assert calls == ["fixture"]
+    else:
+        assert result.returncode != 0
+        assert "Cannot fetch" in output or "FETCHCONTENT_SOURCE_DIR" in output, output
+        if state == "fulfilled_other_missing":
+            assert "Cannot fetch second" in output
+
+
+@pytest.mark.parametrize(
+    "version,accepted",
+    [
+        ("0.10.0", False),
+        ("0.11.0", False),
+        ("0.11.1", True),
+        ("0.12.0", True),
+        (None, True),
+    ],
+)
+def test_system_tracy_minimum_version(tmp_path, version, accepted):
+    # Installed Tracy packages ship TracyConfig.cmake without a version file.
+    config_package(tmp_path, "Tracy", version, "Tracy::TracyClient")
+    result = configure(tmp_path, TRACY_FIXTURE)
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == accepted, output
+    if not accepted:
+        assert "Tracy >= 0.11.1" in output
+
+
+TRACY_ENUM = "namespace tracy {{ namespace Version {{ enum {{ {parts} }}; }} }}\n"
+
+
+@pytest.mark.parametrize(
+    "header,accepted",
+    [
+        ("Major = 0, Minor = 10, Patch = 0", False),
+        ("Major = 0, Minor = 11, Patch = 0", False),
+        ("Major = 0, Minor = 11, Patch = 1", True),
+        ("Major = 0,\n Minor = 12,\n Patch = 0", True),
+        ("Major = 0, Minor = 11", False),
+        (None, True),
+    ],
+)
+def test_system_tracy_target_header_version(tmp_path, header, accepted):
+    include = tmp_path / "prefix/include/tracy"
+    (include / "common").mkdir(parents=True)
+    if header is not None:
+        (include / "common/TracyVersion.hpp").write_text(
+            TRACY_ENUM.format(parts=header)
+        )
+    config_package(
+        tmp_path,
+        "Tracy",
+        None,
+        "Tracy::TracyClient",
+        extra=(
+            "set_target_properties(Tracy::TracyClient PROPERTIES "
+            f'INTERFACE_INCLUDE_DIRECTORIES "$<BUILD_INTERFACE:{include.as_posix()}>")\n'
+        ),
+    )
+    result = configure(tmp_path, TRACY_FIXTURE)
+    output = result.stdout + result.stderr
+    # A header with a missing component is malformed, not versionless.
+    assert (result.returncode == 0) == accepted, output
+    if not accepted:
+        assert "Tracy" in output and "0.11.1" in output
+
+
+def test_system_tracy_ignores_host_header_decoy(tmp_path):
+    decoy = tmp_path / "host/common"
+    decoy.mkdir(parents=True)
+    (decoy / "TracyVersion.hpp").write_text(
+        TRACY_ENUM.format(parts="Major = 0, Minor = 1, Patch = 0")
+    )
+    config_package(tmp_path, "Tracy", None, "Tracy::TracyClient")
     result = configure(
         tmp_path,
-        "set(DART_BUILD_PROFILE ON)\nset(DART_PROFILE_TRACY ON)\n"
-        "set(DART_USE_SYSTEM_TRACY ON)\n"
-        + tracy
-        + 'if(NOT TARGET Tracy::TracyClient)\nmessage(FATAL_ERROR "no TracyClient")\nendif()\n',
+        f'set(CMAKE_INCLUDE_PATH "{(tmp_path / "host").as_posix()}")\n' + TRACY_FIXTURE,
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_component_exports_only_install_owned_dependency_finders(tmp_path):
+@pytest.mark.parametrize("build_version", ["3.4.0", "5.0.1"])
+@pytest.mark.parametrize("consumer_version", ["3.4.1", "3.4.90", "5.0.2", "6.0.0"])
+def test_component_exports_only_install_owned_dependency_finders(
+    tmp_path, build_version, consumer_version
+):
+    config_package(tmp_path, "Eigen3", build_version)
     modules = tmp_path / "modules"
     modules.mkdir()
     # Gazebo's FindEIGEN3 matches FindEigen3 on case-insensitive filesystems.
@@ -191,6 +346,7 @@ def test_component_exports_only_install_owned_dependency_finders(tmp_path):
         "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
         "set(LIBRARY_INSTALL_DIR lib)\n"
         "include(Components)\n"
+        "include(DARTFindEigen3)\n"
         "initialize_component_helpers(dart)\n"
         "add_component(dart fixture)\n"
         "add_library(fixture INTERFACE)\n"
@@ -216,17 +372,76 @@ def test_component_exports_only_install_owned_dependency_finders(tmp_path):
     installed = stage / "lib/cmake/DART"
     consumer = tmp_path / "consumer"
     consumer.mkdir()
-    config_package(consumer, "Eigen3", "3.4.0")
+    config_package(consumer, "Eigen3", consumer_version)
     result = configure(
         consumer,
         f'set(CMAKE_MODULE_PATH "{installed.as_posix()}")\n'
         "find_package(Eigen3 REQUIRED)\n"
         "include(DARTFindEigen3)\n",
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    build_major = build_version.split(".")[0]
+    same_major = build_major == consumer_version.split(".")[0]
+    assert (result.returncode == 0) == same_major, output
+    if consumer_version.startswith("6."):
+        assert "Eigen3 >= 3.4.0, < 6 is required" in output
+    elif not same_major:
+        assert f"DART was built with Eigen major {build_major}" in output
+        assert f"found Eigen {consumer_version}" in output
+        assert "rebuild DART" in output
+        assert "clear the cached Eigen3_DIR" in output
     assert not (installed / "FindEigen3.cmake").exists()
-    for name in ("DARTFindEigen3.cmake", "DARTFindODE.cmake", "FindODE.cmake"):
+    assert (installed / "DARTFindEigen3.cmake").read_text() == (
+        f"set(DART_BUILD_EIGEN_MAJOR {build_major})\n"
+        + (ROOT / "cmake/DARTFindEigen3.cmake").read_text()
+    )
+    for name in ("DARTFindODE.cmake", "FindODE.cmake"):
         assert (installed / name).read_text() == (ROOT / "cmake" / name).read_text()
+
+
+@pytest.mark.parametrize("build_version", ["", "unknown", "3.4.90"])
+def test_component_eigen_finder_generation(tmp_path, build_version):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    for name in ("Components.cmake", "DARTFindEigen3.cmake"):
+        shutil.copy2(ROOT / "cmake" / name, modules / name)
+    result = configure(
+        tmp_path,
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
+        f'set(Eigen3_VERSION "{build_version}")\n'
+        "include(Components)\n"
+        "initialize_component_helpers(dart)\n"
+        "add_component(dart fixture)\n"
+        "add_library(fixture INTERFACE)\n"
+        "add_component_targets(dart fixture fixture)\n"
+        "add_component_dependency_packages(dart fixture Eigen3)\n"
+        "install_component_exports(dart)\n",
+    )
+    output = result.stdout + result.stderr
+    if build_version != "3.4.90":
+        assert result.returncode != 0, output
+        assert "Cannot determine Eigen major" in output
+        return
+    assert result.returncode == 0, output
+    finder = modules / "DARTFindEigen3.cmake"
+    # Windows file times advance in clock ticks of about 16 ms, so an edit made
+    # right after the configure can share build.ninja's time.
+    configured = (tmp_path / "build/build.ninja").stat().st_mtime_ns
+    while time.time_ns() < configured + 100_000_000:
+        time.sleep(0.01)
+    finder.write_text(finder.read_text() + "\n# Updated finder\n")
+    result = subprocess.run(
+        [shutil.which("cmake"), "--build", str(tmp_path / "build")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    generated = tmp_path / "build/lib/cmake/DART/DARTFindEigen3.cmake"
+    assert (
+        generated.read_text() == "set(DART_BUILD_EIGEN_MAJOR 3)\n" + finder.read_text()
+    )
 
 
 @pytest.mark.parametrize("skip", ["ON", "OFF"])
@@ -359,8 +574,8 @@ def test_urdfdom_without_cmake_version(tmp_path, monkeypatch, libdir, pcdir, met
         assert "urdfdom >= 3.0.0 is required" in output
 
 
-@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1"])
-def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
+@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1", "6.0.0"])
+def test_eigen_supported_range_with_minor_scoped_version_files(tmp_path, version):
     # Eigen 5's version file accepts a requested single version only within
     # that minor release, so a 3.4.0 request rejects Eigen 5.
     config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
@@ -379,7 +594,24 @@ def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
         "include(DARTFindEigen3)\n"
         'if(NOT Eigen3_FOUND)\n  message(FATAL_ERROR "Rejected Eigen3")\nendif()\n',
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (major != "6"), output
+    if major == "6":
+        assert "Eigen3 >= 3.4.0, < 6 is required" in output
+
+
+@pytest.mark.parametrize("version", [None, "3.2.10", "3.3.0", "3.4.0", "5.0.1"])
+def test_nanobind_eigen_probe_version_floor(tmp_path, version):
+    config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
+    source = (ROOT / "scripts/nanobind/eigen_probe/CMakeLists.txt").read_text()
+    discovery = source[
+        source.index("find_package(Eigen3") : source.index("get_filename_component(")
+    ]
+    result = configure(tmp_path, discovery)
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (version not in {None, "3.2.10"}), output
+    if result.returncode:
+        assert "Eigen3 >= 3.3 is required" in output
 
 
 @pytest.mark.parametrize(

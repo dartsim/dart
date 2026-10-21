@@ -361,6 +361,10 @@
 
 * Build
 
+  * Support Eigen >= 3.4.0 and < 6, keeping the Pixi environments on 3.4.0. Installed CMake packages reject a different Eigen major; rebuild
+    DART and its consumers together when changing Eigen majors.
+    [#3891](https://github.com/dartsim/dart/pull/3891)
+
   * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
     GoogleBenchmark and Tracy default to installed packages, and explicit
     per-dependency switches still win. Offline configures now report missing

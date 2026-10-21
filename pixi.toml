@@ -30,7 +30,7 @@ wheel = ">=0.48.0,<0.49"
 assimp = ">=5.4.3,<7"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
-eigen = ">=3.4.0,<4"
+eigen = ">=3.4.0,<6"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 libboost-devel = ">=1.86.0,<2"
@@ -38,7 +38,7 @@ libcurl = ">=7.85.0,<9"
 libode = ">=0.16.5,<0.17"
 libsdformat = ">=16.1.0,<17"
 numpy = ">=2.2.5,<3"
-octomap = ">=1.10.0,<2"
+octomap = ">=1.10.1,<2"
 openssl = ">=1.1.1,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
@@ -790,7 +790,7 @@ libgz-gui9 = ">=9.0.0"
 libgz-sensors9 = ">=9.0.0"
 libgz-rendering9 = ">=9.0.0"
 libsdformat15 = ">=15.3.0,<16"
-eigen = ">=3.4.0"
+eigen = ">=3.4.0,<6"
 assimp = ">=5.4.3,<6"
 libode = ">=0.16.2"
 bullet-cpp = ">=3.25"
@@ -962,7 +962,7 @@ c-compiler = "*"
 cmake = ">=4.0.2,<4.3.4"
 console_bridge = "*"
 cxx-compiler = "*"
-eigen = ">=3.4.0,<4"
+eigen = ">=3.4.0,<6"
 fcl = ">=0.7.0,<0.8"
 fmt = "*"
 git = ">=1"
@@ -1021,6 +1021,10 @@ gz-compat-jetty = { cmd = "bash tools/gazebo/compat/lane.sh jetty" }
 #==============
 # Features
 #==============
+
+# Keep all environments on Eigen 3.4 except the Eigen 5 toolchain check.
+[feature.eigen34.dependencies]
+eigen = "==3.4.0"
 
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
@@ -1478,26 +1482,36 @@ wheel-test-abi3 = { depends-on = [
 #==============
 
 [environments]
-default = ["assimp6", "default-python", "filament"]
-gui-ci = ["assimp6", "default-python", "filament", "filament-ci"]
-gazebo = ["gazebo", "system-imgui"]
+default = ["assimp6", "default-python", "filament", "eigen34"]
+gui-ci = ["assimp6", "default-python", "filament", "filament-ci", "eigen34"]
+gazebo = ["gazebo", "system-imgui", "eigen34"]
 gazebo-harmonic = { features = [
   "gz-compat-base",
   "gazebo-harmonic",
+  "eigen34",
 ], no-default-feature = true }
 gazebo-jetty = { features = [
   "gz-compat-base",
   "gazebo-jetty",
+  "eigen34",
 ], no-default-feature = true }
-py312-wheel = ["assimp6", "py312-wheel", "filament-wheel"]
-py313-wheel = ["assimp6", "py313-wheel", "filament-wheel"]
-profile = ["profile", "assimp6", "default-python", "filament"]
-coverage = ["assimp6", "default-python", "filament", "coverage", "system-imgui"]
-docs = ["assimp6", "default-python", "filament", "docs"]
+py312-wheel = ["assimp6", "py312-wheel", "filament-wheel", "eigen34"]
+py313-wheel = ["assimp6", "py313-wheel", "filament-wheel", "eigen34"]
+profile = ["profile", "assimp6", "default-python", "filament", "eigen34"]
+coverage = [
+  "assimp6",
+  "default-python",
+  "filament",
+  "coverage",
+  "system-imgui",
+  "eigen34",
+]
+docs = ["assimp6", "default-python", "filament", "docs", "eigen34"]
 system-imgui = [
   "assimp6",
   "default-python",
   "filament",
   "system-imgui",
   "system-imgui-tasks",
+  "eigen34",
 ]

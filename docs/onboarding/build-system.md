@@ -58,7 +58,11 @@ For offline builds, set `FETCHCONTENT_FULLY_DISCONNECTED=ON` and either use
 installed dependencies through their system switches or pre-seed source
 trees with `FETCHCONTENT_SOURCE_DIR_<NAME>` (uppercase name). DART stops with
 an actionable error if a fetch needs a missing source tree, including with
-CMake older than 3.30; on 3.30 and newer it also enables CMP0170. Existing
+CMake older than 3.30; on 3.30 and newer it also enables CMP0170. The check
+runs right after each `FetchContent_MakeAvailable`, so a registered
+dependency provider (CMake 3.24+) can still fulfill a request without a source
+tree; source-consuming dependencies such as the Filament SDK keep enforcing
+their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
 `dart_imgui`, `dart_filament_sdk`, `fmt`, `ode`, and `bullet`. The umbrella
@@ -66,6 +70,20 @@ does not select system nanobind, ImGui, Filament, or fmt; set those switches
 separately when needed. Pixi configure tasks use the umbrella;
 `pixi run -e profile config-tracy` selects the profile environment's Tracy.
 To fetch Tracy instead, override the umbrella with `DART_USE_SYSTEM_TRACY=OFF`.
+System Tracy must be 0.11.1 or newer when it reports a version (CMake
+variables, or the selected `Tracy::TracyClient` target's `common/TracyVersion.hpp`);
+upstream installs no version file, so a versionless package is accepted.
+
+## Eigen Compatibility
+
+DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0
+through the `eigen34` feature; the toolchain CI lane rewrites that pin to build
+and test Eigen 5 with warnings as errors.
+The installed CMake package records the major used to build DART and rejects
+a consumer using a different major; pkg-config consumers must match majors
+themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
+Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
+same major or rebuild DART and its consumers.
 
 ## Package Version Compatibility
 
