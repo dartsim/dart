@@ -91,6 +91,10 @@
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
 
+  * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
+    meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -161,6 +165,10 @@
     [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Collision
+
+  * Fix a memory leak where a Bullet collision detector used for a collision
+    check between two groups was never destroyed.
+    [#3875](https://github.com/dartsim/dart/pull/3875)
 
   * Fix distance queries and nearest points for touching convex pairs in FCL's
     libccd GJK distance in Linux wheels, demonstrated for ellipsoid,
@@ -297,6 +305,11 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
+    `World.restore_state(state)` for dynamic snapshots; state arrays are
+    read-only NumPy copies and a structure mismatch raises `ValueError`.
+    [#3842](https://github.com/dartsim/dart/pull/3842)
+
   * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
     writes now raise `ValueError`; call `.copy()` before writing, then use the
     appropriate setter to update DART state. Eigen arguments that dartpy passes
@@ -369,6 +382,11 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
+    of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
+    OpenSSL; only static installs require consumers to provide them.
+    [#3883](https://github.com/dartsim/dart/pull/3883)
 
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
