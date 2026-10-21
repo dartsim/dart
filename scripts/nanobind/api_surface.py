@@ -3,9 +3,11 @@
 import argparse
 import copy
 import enum
+import importlib
 import inspect
 import json
 import os
+import pkgutil
 import re
 import subprocess
 import sys
@@ -172,9 +174,25 @@ def property_types(value):
     }
 
 
+def import_public_subpackages(package):
+    """Import every public pure-Python subpackage of ``package``.
+
+    A subpackage is an attribute of its parent only once something imports it,
+    so without this the snapshot would depend on what ran before it. Plain
+    modules are skipped, which also skips stale extension files in a build tree.
+    """
+    # iter_modules imports nothing, unlike walk_packages, so private packages
+    # stay unimported.
+    for info in pkgutil.iter_modules(getattr(package, "__path__", ())):
+        if info.ispkg and not info.name.startswith("_"):
+            module = importlib.import_module(f"{package.__name__}.{info.name}")
+            import_public_subpackages(module)
+
+
 def snapshot():
     import dartpy
 
+    import_public_subpackages(dartpy)
     rows = {
         "dartpy.__version__": {"kind": "constant", "value": dartpy.__version__},
         "dartpy.__doc__": {"kind": "constant", "value": dartpy.__doc__},
