@@ -1,6 +1,8 @@
 # nanobind migration tools
 
-Select a built `dartpy` with `PYTHONPATH` before running runtime probes.
+Select a built `dartpy` with `PYTHONPATH` before running runtime probes. The
+surface snapshot imports every public pure-Python subpackage first, so its
+result does not depend on what was imported before it.
 Snapshot runtime identities attribute inherited members to their walked defining class, use `identity_path: null` for members with unwalked owners, and match bound classmethod aliases by function and receiver; members of a class are recorded under the first path the walk reaches it by, so a nested class reached first through an alias may have no rows at `<identity_path>.member`, and a class reached first at module level keeps its member rows there even when a defining class's path becomes its `identity_path`.
 
 - `api_surface.py --pb <pybind11-module-dir> --nb <nanobind-module-dir>
