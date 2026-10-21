@@ -3,8 +3,10 @@
 Each packet is one branch and one verification story. File references are
 as of `main` `17ce7eefa`; re-check them before starting. An executor that
 finds the real scope materially different stops and reports. Gate shorthand
-is defined in the [README](README.md#gates). Decisions DD-0 to DD-8
+is defined in the [README](README.md#gates). Decisions DD-0 to DD-34
 are in [decisions.md](decisions.md); "after Q3" items are approved by DD-7.
+Packets whose README status is merged are completed specifications: they
+record what shipped and schedule no duplicate implementation.
 
 ## DEP-0. Assert the gz contact-surface probe
 
@@ -125,11 +127,27 @@ Independent PRs.
 - (c) Move the Linux wheel from sdformat15 to sdformat16, as macOS and
   Windows already are.
 - (d) Dropped: AlmaLinux 8's libpng already carries the relevant fixes (DD-29).
+- (f) Build the Linux wheel image's sources from SHA-256-checked release
+  archives instead of Git clones, with no version changes (DD-30). See
+  [DEP-8(f)](#dep-8f-hash-checked-wheel-image-sources).
 - (e) After Q3: an assimp importer allowlist for Linux wheels (Collada, STL,
   OBJ at minimum; OBJ is needed for the TriMesh round trip) with exporters off
   by default but never `ASSIMP_NO_EXPORT`.
 - **Gates:** wheel, including loading `.dae`, `.stl` and `.obj` from `data/`,
   a clone test and a TriMesh-built mesh rendered in the GUI.
+
+### DEP-8(f). Hash-checked wheel-image sources
+
+- **Status:** completed specification; merged (#3885).
+- **Scope:** `docker/wheels/Dockerfile.manylinux_2_28` fetches each source as
+  a release archive checked against a pinned SHA-256, with no version or
+  default changes; the shared mechanical step DD-30 allows across many
+  dependencies.
+- **Non-goals:** version bumps, new dependencies, and the libcurl, OpenSSL and
+  urdfdom builds that other packets add on top (DEP-19, DEP-17 PR3).
+- **Needs:** none (DD-7). **Gates:** wheel (the image build reproduces every
+  archive hash; the sources match their clones; the wheel builds, repairs and
+  smoke-tests).
 
 ## DEP-9. Python 3.12 and NumPy 1.26.4
 
@@ -251,10 +269,12 @@ pattern. A mechanical PR can default their copy operations the same way.
 
 - **Objective:** keep urdfdom as DART's URDF parser (DD-5) on a floor that
   matches the Ubuntu 24.04 baseline, and clean up DART's own URDF glue.
-- **Scope:** set by the follow-up study (floor choice, the TinyXML v1 compat
-  code a higher floor removes, the duplicated joint-metadata parser, the
-  null-attribute handling in `urdf_world_parser.cpp`, and whether DART's
-  world-file parser copy should defer to urdfdom's).
+- **Scope:** four PRs. PR1 sets the floor and removes the TinyXML v1 compat
+  code it obsoletes; PR2 cleans the glue (the duplicated joint-metadata
+  parser, null-attribute handling in `urdf_world_parser.cpp`); PR3 moves Linux
+  wheels to urdfdom 6.0.1 (DD-31); PR4 retires the urdfdom-typed installed
+  headers before F (DD-28).
+- **Needs:** DD-5, DD-28, DD-31. **Gates:** base, gz, pkg, apt, py.
 - **Superseded:** the in-house URDF reader planned on 2026-10-18 is dropped.
 
 ## DEP-18. SDF as an optional part of `dart-io` (DD-11)
@@ -266,7 +286,8 @@ pattern. A mechanical PR can default their copy operations the same way.
   the environment's sdformat with the strict switch (DEP-4(e)), so a missing
   sdformat fails there. A standalone build uses an installed sdformat if
   present and otherwise fetches sdformat with gz-cmake, gz-math and gz-utils
-  once the DEP-25 fetch path supports them; until then it skips SDF with a
+  (the DD-11 exception to DD-10's literal fetch-first rule: installed first,
+  fetch only when absent) once the DEP-25 fetch path supports them; until then it skips SDF with a
   warning. Builds without SDF ship legacy `utils` without `SdfParser`
   (approved).
 - **Gates:** base, py, gz, pkg (a shared `io` consumer configures without
@@ -334,3 +355,118 @@ pattern. A mechanical PR can default their copy operations the same way.
   raycast API; tinyxml2 out of installed headers; the 7.0 deprecations
   removed; a C++20 export once gz-physics updates its probes and the GCC floor
   is 16; a DART-native voxel grid to retire octomap.
+
+## DEP-25. Umbrella system-dependency switch and fetch paths (DD-10, DD-30)
+
+- **Scope:** the shared mechanical step: an umbrella
+  `DART_USE_SYSTEM_DEPENDENCIES` switch (OFF for standalone builds, ON in
+  pixi and package managers; DD-30) wired at every existing fetch site; an offline
+  fail-fast that names the switch; CMP0170 at every existing fetch site; no
+  version or default changes otherwise. New fetch paths follow one dependency
+  per PR, starting with the tinyxml2 prototype.
+- **Non-goals:** publishing the tinyxml2 prototype or resolving its dependency
+  ABI question (the open question in
+  [decisions.md](decisions.md#open-question-2026-10-20); the prototype stays
+  local and unpublished until the maintainer decides). The approved DD-10
+  fetch-first acquisition of Gazebo-shared libraries is unchanged, and so is
+  the installed-first sdformat exception (DD-11, DEP-18).
+- **Needs:** none. **Gates:** base, pkg, dis (installed CMake files
+  unchanged except the new option).
+
+## DEP-27a. Root NOTICE for derived code
+
+- **Status:** completed specification; ready as #3857, stacked on #3856.
+- **Scope:** a root `NOTICE` for code and data derived from third parties,
+  installed and shipped in wheels, with a coverage test.
+- **Non-goals:** deciding the provenance of assets without copyright
+  declarations (DEP-33) and libccd attribution in the MPR sources (after M1d).
+- **Needs:** DEP-28 for the stack. **Gates:** base, wheel.
+
+## DEP-28. Delete dead files
+
+- **Status:** completed specification; ready as #3856.
+- **Scope:** the dead `dart/utils/*_` files and `tests/.deprecated`.
+- **Non-goals:** any behavior change. **Needs:** none. **Gates:** base (the
+  build is a no-op and the installed file set is identical).
+
+## DEP-30. Fetched Dear ImGui archive (DD-14)
+
+- **Scope:** fetch Dear ImGui as a hash-pinned, TLS-verified tag archive with
+  no patch; delete `dart-compat.patch`, its apply and stamp CMake and its three
+  regression tests; add the labeled changelog entry for the reverted 6.16.x
+  guards and the exported `ImFormatString`. Package-manager and pixi builds
+  fetch it where the environment lacks the docking release (DD-10).
+- **Non-goals:** vendoring ImGui in-tree and any ImGui version change.
+- **Needs:** DEP-31. **Gates:** base, gui, dis (archive hash re-verified).
+- **Status:** README row records the live PR.
+
+## DEP-31. Reject empty overlay font files
+
+- **Status:** completed specification; merged (#3861).
+- **Scope:** reject an empty overlay font file before ImGui sees it, with a
+  regression test. **Needs:** none. **Gates:** base, gui.
+
+## DEP-32. Skip over-long voxel-grid rays
+
+- **Status:** completed specification; merged (#3859).
+- **Scope:** skip rays longer than OctoMap can trace, with tests under ASan.
+  The release-6.20 backport is DD-27 and needs approval.
+- **Needs:** none. **Gates:** base, py, gz.
+
+## DEP-33. Sample-data provenance and modernization (DD-16 to DD-24)
+
+Four PRs; each keeps its test coverage on authored fixtures.
+
+- **(a)** Remove `data/skel/kima/` and move the three `MeshShape` tests to a
+  DART-authored COLLADA fixture (DD-21). Merged (#3880).
+- **(b)** Replace the KR5 with a DART-authored six-axis URDF fixture that keeps
+  `KR5MeshColor` coverage (DD-22, first step). Ready (#3878).
+- **(c)** Keep only the WAM's BSD files and ship `LICENSE.bsd` and the Atlas
+  v3 Apache-2.0 license with NOTICE entries (DD-20, DD-23); needs DEP-27a
+  (#3857), which supplies the root NOTICE and its coverage test. Draft (#3882).
+- **(d)** The pinned online catalog (G1, UR5e, FR3; DD-22, DD-23, DD-24)
+  through `ModelResourceRetriever`; starts after DEP-19's wheel half.
+- **Non-goals:** porting the Atlas controllers or the robot benchmark to G1
+  (DD-23), the Go2, TIAGo and hands, and any set DD-16 sends back to the
+  maintainer.
+- **Needs:** DD-16, DD-17. **Gates:** base, py, gui; per-model qualification
+  for catalog bundles (DD-24).
+
+## DEP-34. Replace Roboti-derived MuJoCo models; remove Fetch assets (DD-15, DD-19)
+
+- **Scope:** replace the 14 top-level models under `data/mjcf/openai/` with
+  Apache-2.0 DeepMind models and rewrite the MJCF parser tests' expected
+  values; remove the Fetch assets under `data/mjcf/openai/robotics/` (DD-19)
+  and move `MjcfParserTest.RoboticsFetch` and `test_parse_fetch` to a small
+  DART-authored BSD MJCF fixture that keeps their coverage. A TIAGo demo
+  bundle is a possible later addition.
+- **Non-goals:** inertia inferred from all geoms, MJCF heightfields and the
+  wider Menagerie features (DD-25).
+- **Needs:** DEP-36 first, so the fixtures are baselined once on correct
+  dynamics. **Gates:** base, py.
+
+## DEP-35. FCL GJK tangency patch (DD-18)
+
+- **Status:** completed specification; merged (#3870).
+- **Scope:** a DART-carried patch and note for FCL 0.7.0's GJK initial-origin
+  case, applied wherever DART builds FCL itself (the Linux wheel image now;
+  the standalone fetch path under DD-10 later). System FCL stays unpatched;
+  the Ubuntu 24.04 apt lane lists `test_Distance` as an expected external
+  failure pointing at the note.
+- **Non-goals:** any report or message to FCL, Debian or Ubuntu (DD-18).
+- **Needs:** none. **Gates:** base, wheel.
+
+## DEP-36. MJCF joint limits and declared inertia (DD-25)
+
+- **Status:** completed specification; merged (#3877).
+- **Scope:** read a joint's `limited` attribute and the declared
+  `diaginertia` and `fullinertia` from `<inertial>`, as a labeled bug fix.
+- **Non-goals:** inertia from geoms and ball-joint limits. **Needs:** none.
+  **Gates:** base, py.
+
+## DEP-37. Bullet detector leak (DD-26)
+
+- **Status:** completed specification; merged (#3875).
+- **Scope:** break the ownership cycle between the Bullet collision detector
+  and its filter group at its owner, with a LeakSanitizer regression test.
+- **Non-goals:** other leaks. **Needs:** none. **Gates:** base, ASan, gz.

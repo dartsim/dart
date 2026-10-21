@@ -68,8 +68,8 @@ The effort is done when all of these hold on `main`:
 
 - Platform and toolchain floors, CMake floor, Python floor, library floors.
 - Dependency removals: Boost (unused), spdlog and fmt (DD-4). libcurl and
-  OpenSSL, and SDF packaging with sdformat kept, follow the follow-up study
-  ([decisions](decisions.md)).
+  OpenSSL stay for the asset retriever (DD-12), and SDF stays in `dart-io`
+  with sdformat kept (DD-11) ([decisions](decisions.md)).
 - Dependency acquisition (DD-8): fetch-first source builds,
   `DART_USE_SYSTEM_<X>` for packagers, and in-tree bundled code replaced by
   fetched or system packages where possible.
@@ -157,8 +157,8 @@ shorthand is defined under [Gates](#gates).
 | DEP-1 | Remove Boost from environments, the wheel image and FreeBSD CI | none (DD-7) | base, gz, pkg, wheel image | Claude Sonnet | 7.0 | Draft #3851 |
 | DEP-2 | Export CURL and OpenSSL only for static builds | none | base, gz, pkg | Claude Sonnet | 7.0 | Merged (#3883) |
 | DEP-3 | Link only BulletCollision and LinearMath; move Bullet/ODE usage requirements to their components | none (DD-7) | base, gz, pkg, wheel | Muse (a) | 7.0 | (a) merged (#3864) |
-| DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet ((a), (e)), Codex high ((b)), orchestrator ((c)) | 7.0 | (e) ready #3886, (c) merged (#3895), (a) draft #3898; (b) in review |
-| DEP-5 | Eigen 5 readiness and the `[3.4.0, 6)` range | none (DD-7) | base on both Eigen majors, gz, py | Codex high | 7.0 | Ready #3891; #3836 fixed the deprecated calls |
+| DEP-4 | Find-module hygiene; repair the ODE and Bullet fetch fallbacks under CMake 4 | none (DD-7) | base, gz, pkg, dis, BSD | Claude Sonnet ((a), (e)), Codex high ((b)), orchestrator ((c)) | 7.0 | (e) merged (#3886), (c) merged (#3895), (a) merged (#3898); (b) in review |
+| DEP-5 | Eigen 5 readiness and the `[3.4.0, 6)` range | none (DD-7) | base on both Eigen majors, gz, py | Codex high | 7.0 | Merged (#3891); #3836 fixed the deprecated calls |
 | DEP-6 | Current fetched GoogleTest and Benchmark plus a fetch lane | none | base, apt | Codex high | 7.0 | Ready #3893 |
 | DEP-7 | Slim the default pixi environment | none | base, ai | Muse | 7.0 | Merged (#3890) |
 | DEP-8 | Wheel hygiene (one concern per PR) | none (DD-7) | wheel | Claude Sonnet ((f)) | 7.0 | (f) merged (#3885); (a) already done by #3847 |
@@ -170,9 +170,9 @@ shorthand is defined under [Gates](#gates).
 | DEP-14 | Compiled logging boundary and DART log sink; drop spdlog | DD-4 | base, gz, pkg, TSan | Codex ultra + orchestrator | 7.0, before F | Draft #3853 |
 | DEP-15 | Standard-library formatter; drop fmt | DD-4 | base, gz, pkg, wheel, BSD | Codex high | 7.0 | Draft #3854 (stacked on #3853; Q1 default) |
 | DEP-16 | Native diagnostics and the dartpy logging bridge through the sink | DD-4 | base, py, gui, gz | Codex ultra + orchestrator | 7.0 | Draft #3899 (stacked on #3854) |
-| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | follow-up study | base, gz, pkg, apt, py | Codex high | 7.0 | PR1 ready #3884; PR2 merged (#3863); PR3 draft #3887; PR4 merged into #3884 (#3888) |
-| DEP-18 | SDF packaging with sdformat kept (DD-5) | follow-up study | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Ready #3889 |
-| DEP-19 | Asset networking (libcurl, OpenSSL) | follow-up study (DD-6) | base, gz, pkg, py, wheel, ai | Codex ultra | 7.0, before F | Wheel half in review; base #3885 merged; the source-build fetch waits on the tinyxml2 decision |
+| DEP-17 | urdfdom kept (DD-5): floor and cleanup; in-house URDF reader dropped | DD-5, DD-28, DD-31 | base, gz, pkg, apt, py | Codex high | 7.0 | PR1 in review #3884; PR2 merged (#3863); PR3 in review #3887; PR4 merged into #3884 (#3888) |
+| DEP-18 | SDF as an optional part of `dart-io`, sdformat kept (DD-5, DD-11) | DD-11 | base, gz, pkg, BSD, py | Orchestrator + Codex high | 7.0, before F | Ready #3889 |
+| DEP-19 | Asset retriever kept, libcurl and OpenSSL kept (DD-12, DD-13) | DD-12, DD-13, DEP-2, DEP-8(f) | base, gz, pkg, py, wheel, ai | Codex ultra | 7.0, before F | Wheel half in review; base #3885 merged; the source-build fetch waits on the tinyxml2 decision |
 | DEP-20 | GUI on stock 24.04 (GLFW fallback, Filament pin enforcement, texture-decode caps) | spike first | base, gui, wheel | Codex high, Muse | 7.0 / 7.x | (d), (e) merged (#3860, #3862) |
 | DEP-21 | DART-owned targets build as C++20 | DD-3 | C++20 gates in [verification.md](verification.md#c-standard-gates) | Orchestrator + Codex ultra | 7.0 or 7.1, in PLAN-624 merge order | Planned |
 | DEP-22 | Developer-tooling refresh (CMake cap, Tracy, clang-format, formatters) | none | check-lint parity, gz | Muse / Codex high | 7.x | Planned |

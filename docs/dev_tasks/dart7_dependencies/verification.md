@@ -429,15 +429,29 @@ tests.
   report matches.
 - Exposure: FCL-backed distance queries between ellipsoids or spheres at
   exact tangency, from C++ and from dartpy, on stock Ubuntu 24.04.
-- Recommendation: fix upstream in FCL with a regression test, link Debian
-  and Ubuntu reports, and document the stock-noble limitation; keep DART's
-  ellipsoid coverage (no jitter or skip). The noble apt lane (DEP-12(b))
-  records `test_Distance` as an expected external failure tied to the
-  upstream report. The opt-in `MESH` primitive mode gives correct results
-  but changes approximation and speed, so it is not a default change.
-  Filing upstream reports needs maintainer approval.
+- Superseded recommendation (historical, kept with its reproducer): fix
+  upstream in FCL with a regression test, link Debian and Ubuntu reports, and
+  document the stock-noble limitation; keep DART's ellipsoid coverage (no
+  jitter or skip). **DD-18 supersedes the reporting part:** the maintainer
+  said not to report, but to fix it internally with a clear note and patch
+  file (DEP-35). The exact internal patch policy is unchanged: DART carries
+  the patch where it builds FCL itself, system FCL stays unpatched, and the
+  noble apt lane (DEP-12(b)) records `test_Distance` as an expected external
+  failure pointing at the note. No upstream report or external message is
+  authorized. The opt-in `MESH` primitive mode gives correct results but
+  changes approximation and speed, so it is not a default change.
 
 ### Wave 3 (2026-10-19)
+
+> **Unverified historical notes (Waves 3 to 5 and the tinyxml2 prototype
+> below).** The quantitative assertions in these sections (test counts,
+> byte counts, hashes, "N of N" results) were summarized from PR bodies and
+> reviewer reports. This file does not record the tested revision or exact
+> command for them, and the PR heads they cite moved. They are not accepted
+> evidence and no acceptance decision rests on them. A PR's acceptance
+> evidence is its own CI and review state at its merged head, recorded by
+> the PR itself. A claim returns to accepted evidence only after it is
+> re-run and recorded with its revision, command, date and scope.
 
 Each packet below passed two clean reviews from engines other than its
 writer; the PR bodies carry the user-facing evidence.
@@ -466,7 +480,9 @@ writer; the PR bodies carry the user-facing evidence.
 - DEP-33(a) (#3880, Claude Sonnet; Codex and Muse): the COLLADA fixture is
   schema-valid and its absolute extents catch ignored units and unwanted
   up-axis conversion.
-- DEP-34 (#3881, Codex; Claude and Muse): all 14 pinned DeepMind files
+- DEP-34 (#3881, Codex; Claude and Muse): replaces the 14 top-level OpenAI
+  models (the six Fetch scenes are DD-19's separate removal scope); all 14
+  pinned DeepMind files
   hash-checked against upstream at `437b7a6a`; expectations re-derived from
   the XML by both reviewers; the weld regression test crashed (SIGSEGV)
   without its fix.
@@ -493,10 +509,18 @@ writer; the PR bodies carry the user-facing evidence.
 - DEP-4(e) (#3886, Claude Sonnet; Codex and Muse, two rounds): a default
   configure's cache differs from `main` only by the new option and the
   removed Doxygen entries; gz-physics 199 with the switch on.
-- DEP-17 PR3 (#3887, Codex; Claude and Muse): all 14 URDFs under `data/`
-  give the same load results and skeleton, body and joint counts with
-  urdfdom 4.0.1 and 6.0.1; URDF 1.1 and 1.2 load only with 6.0.1; the wheel
-  builds, repairs and smoke-tests on Python 3.12 and 3.13.
+- DEP-17 PR3 (#3887, Codex; Claude and Muse): the PR body's 14-row table
+  (11 files under `data/urdf/` plus the 3 Atlas files under `data/sdf/atlas/`)
+  reports the same load results and skeleton, body and joint counts with
+  urdfdom 4.0.1 and 6.0.1: `atlas_v3.urdf` is rejected by both (its `head`
+  link is missing; see [RESUME.md](RESUME.md)), while `atlas_v3_no_head.urdf`
+  and `ground.urdf` load with both; URDF 1.1 and 1.2 load only with 6.0.1; the
+  wheel builds, repairs and smoke-tests on Python 3.12 and 3.13. This is
+  quarantined historical reported evidence: the mutable PR body records no
+  tested commit, command or date. The current tree holds 14 files under
+  `data/urdf/` plus the 3 Atlas files (17 paths), which is a different set from
+  the 14 table rows (the missing-entity and missing-include fixtures are not in
+  the table), and no new run is claimed.
 - DEP-17 PR4 (#3888, Codex; Claude and Muse): a shared consumer configures,
   builds and runs with urdfdom package discovery disabled (the runtime
   library remains required); 450 installed headers carry no urdfdom include;
@@ -552,6 +576,9 @@ writer; the PR bodies carry the user-facing evidence.
   plus 4 and gz-sim 1 of 1.
 
 ### tinyxml2 fetch prototype (2026-10-20)
+
+The same unverified-historical-notes caveat applies; the prototype branch is
+local and unpublished, and this section records no revision for it.
 
 Codex fetched tinyxml2 11.0.0 as a shared library installed next to DART,
 with an ELF check that urdfdom's and sdformat's tinyxml2 has the same SONAME:

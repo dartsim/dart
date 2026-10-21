@@ -7,6 +7,11 @@ workflow (readelf closures of a shared Release build with GUI, dartpy and
 assets on, and the published 6.20.1 and nightly wheels); they stay
 "reported" until a repository script reproduces them.
 
+Rows for urdfdom, sdformat, libcurl, OpenSSL and Dear ImGui follow the
+maintainer's later decisions (DD-5, DD-11 to DD-14, DD-28, DD-31) and no
+longer match the 2026-10-18 research; closure sizes and environment savings
+the old plan predicted for them are superseded and unmeasured.
+
 ## Categories
 
 - **A** essential, keep
@@ -43,10 +48,10 @@ assets on, and the published 6.20.1 and nightly wheels); they stay
 | Dependency | Cat | Floor today → DART 7 | 22.04 / 24.04 / 26.04 | Why it stays or goes |
 | --- | --- | --- | --- | --- |
 | tinyxml2 | B | 9.0.0 → 10.0.0 | 9.0.0 / 10.0.0 / 11.0.0 | Public through `XmlHelpers.hpp`; sdformat needs the same system library, so vendoring removes nothing. |
-| urdfdom | E | 3.0.0 → removed | 3.0.1 / 4.0.0 / 5.1.0 | DART calls only `urdf::parseURDF` and already re-parses every URDF with tinyxml2. URDF acceptance differs by version (4.0 accepts URDF 1.0 only, 6.x up to 1.2). `DartLoader` uses urdf types only in private static helpers (DEP-17). |
-| urdfdom_headers | E | transitive → removed | 1.0.5 / 1.0.5 / 2.1.0 | Leaks through `IncludeUrdf.hpp` and `urdf_world_parser.hpp`. |
-| console_bridge | H | transitive → removed | 1.0.1 everywhere | DART never includes it. |
-| sdformat (+ gz-math, gz-utils) | C | 14.8 (majors 14 to 16) → 14.8, accept 17 once a lane builds it | archive 12.3 / none / none; OSRF ships 14.9, 15.4, 16.1 for noble | Added by #3789 (unreleased). gz-physics never calls `SdfParser`, yet it requests `utils`, so every gz configure needs DART's sdformat major, and its Harmonic and Jetty plugins load DART's sdformat at runtime. DEP-18 moves SDF into its own library. |
+| urdfdom | B | 3.0.0 → 4.0.0 on source builds; Linux wheels 6.0.1 (DD-31) | 3.0.1 / 4.0.0 / 5.1.0 | Kept as the URDF parser (DD-5); the in-house reader is dropped. DART calls only `urdf::parseURDF` and already re-parses every URDF with tinyxml2. URDF acceptance differs by version (4.0 accepts URDF 1.0 only, 6.x up to 1.2); below 5.1 load only trusted URDF. `DartLoader` uses urdf types only in private static helpers (DEP-17). |
+| urdfdom_headers | B | transitive (3.0.x in wheels) | 1.0.5 / 1.0.5 / 2.1.0 | Kept with urdfdom. The urdfdom-typed headers `IncludeUrdf.hpp` and `urdf_world_parser.hpp` leave the installed set (DD-28). |
+| console_bridge | B | transitive of urdfdom | 1.0.1 everywhere | DART never includes it; it stays because urdfdom needs it. |
+| sdformat (+ gz-math, gz-utils) | C | 14.8 (majors 14 to 16) → 14.8, accept 17 once a lane builds it | archive 12.3 / none / none; OSRF ships 14.9, 15.4, 16.1 for noble | Added by #3789 (unreleased). Kept (DD-5) as an optional part of `dart-io`, not a separate library (DD-11). Installed first: a standalone build fetches it only when absent (an explicit exception to DD-10's fetch-first rule, once the DEP-25 fetch path supports it), and pixi, packagers, CI and wheels use the environment's with the strict switch. gz-physics never calls `SdfParser`, yet it requests `utils`, so every gz configure needs DART's sdformat major, and its Harmonic and Jetty plugins load DART's sdformat at runtime. |
 
 ## GUI (`dart-gui`; dartpy links it)
 
@@ -56,7 +61,7 @@ assets on, and the published 6.20.1 and nightly wheels); they stay
 | GLFW | F | 3.4 → 3.4 plus a fetch fallback | 3.3.6 / 3.3.10 / 3.4 | Only 3.4 dlopens libX11, which the headless-import gate relies on; the one 3.4-only call is `glfwInitHint(GLFW_PLATFORM, ...)`. |
 | libpng | B | none (needs ≥ 1.6.0) → 1.6.43 | 1.6.37 / 1.6.43 / 1.6.57 | Texture decode and screenshots; add decode caps (DEP-20). |
 | libjpeg-turbo | A | none | 2.1.2 / 2.1.5 / 2.1.5 | Texture decode; add decode caps. |
-| Dear ImGui | F | 1.92.8 docking, bundled | 1.86 / 1.90.1 / 1.92.2b | No Ubuntu LTS has the docking release; stays bundled, vendored in-tree in 7.x. |
+| Dear ImGui | F | 1.92.8 docking, fetched as a hash-pinned tag archive without a patch (DD-14, DEP-30) | 1.86 / 1.90.1 / 1.92.2b | No Ubuntu LTS has the docking release, so builds whose environment lacks it fetch the archive; a compatible supplied system package and its switch remain possible. The in-tree bundled copy and the compatibility patch go. |
 
 ## Python (dartpy)
 
@@ -71,8 +76,8 @@ assets on, and the published 6.20.1 and nightly wheels); they stay
 
 | Dependency | Cat | Floor today → DART 7 | 22.04 / 24.04 / 26.04 | Notes |
 | --- | --- | --- | --- | --- |
-| libcurl | G | 7.85.0 → removed | 7.81.0 / 8.5.0 / 8.18.0 | One HTTPS download path. In assets-ON builds curl's closure is reported at 40.5 MB and 13 libraries, mostly ICU through libpsl. |
-| OpenSSL | E + D | 1.1.1 → removed | 3.0.2 / 3.0.13 / 3.5.5 | Used for one SHA-256 digest (EVP) and `RAND_bytes` only. |
+| libcurl | B | 7.85.0 → 8.5.0 with DEP-19; kept (DD-12) | 7.81.0 / 8.5.0 / 8.18.0 | One HTTPS download path for `ModelResourceRetriever`, which stays in C++ with its dartpy binding. Exported only for static builds (DEP-2); wheels ship it (DD-13). In assets-ON builds curl's closure is reported at 40.5 MB and 13 libraries, mostly ICU through libpsl. |
+| OpenSSL | B | 1.1.1 → 3.0.13 with DEP-19; kept (DD-12) | 3.0.2 / 3.0.13 / 3.5.5 | One SHA-256 digest (EVP) and `RAND_bytes` only, which is why the retriever keeps it. Wheels ship OpenSSL 3 (DD-13). |
 
 ## Build and developer tooling
 
@@ -98,7 +103,8 @@ assets on, and the published 6.20.1 and nightly wheels); they stay
 | Eigen, FCL, libccd, octomap, ODE | 3.4.0, 0.7.0, —, 1.9.7, 0.16.2 | same | unchanged |
 | assimp, tinyxml2, libpng | 5.2.2, 9.0.0, — | 5.3.1, 10.0.0, 1.6.43 | 5.3.1, 10.0.0, 1.6.43 |
 | Bullet | 3.06 | 3.24 | 3.05 detection floor |
-| fmt, spdlog, urdfdom, libcurl, OpenSSL | 8.1.1, 1.9.2, 3.0.0, 7.85.0, 1.1.1 | 9.1.0, 1.12.0, 4.0.0, 8.5.0, 3.0.13 | removed if approved; otherwise the 24.04 versions (urdfdom stays at 3.0.0 for vcpkg and FreeBSD) |
+| fmt, spdlog | 8.1.1, 1.9.2 | 9.1.0, 1.12.0 | removed (DD-4) |
+| urdfdom, libcurl, OpenSSL | 3.0.0, 7.85.0, 1.1.1 | 4.0.0, 8.5.0, 3.0.13 | kept (DD-5, DD-12): the 24.04 versions (urdfdom 4.0.0 on source builds, 6.0.1 in Linux wheels) |
 | GoogleTest / Benchmark (system) | any | 1.14.0 / 1.8.3 | 1.14 / 1.8.3 |
 
 ### Gaps where DART needs more than noble ships
@@ -107,9 +113,9 @@ assets on, and the published 6.20.1 and nightly wheels); they stay
 | --- | --- | --- | --- |
 | GLFW | 3.3.10 | 3.4 | A static X11 fetch fallback behind `DART_USE_SYSTEM_GLFW` (DEP-20) |
 | Filament | none | ==1.77.3 | The private SDK built with clang-20 from noble-updates (DEP-20 spike first) |
-| Dear ImGui | 1.90.1 | 1.92.8 docking | Already bundled |
+| Dear ImGui | 1.90.1 | 1.92.8 docking | A fetched, hash-pinned tag archive (DD-14, DEP-30) |
 | nanobind | 1.9.2 | 3.1.x | FetchContent, or pip nanobind 3.1 |
-| sdformat | none in the archive | 14.8 to 16 | The OSRF apt repository, or building without SDF (DEP-18) |
+| sdformat | none in the archive | 14.8 to 16 | The OSRF apt repository, a fetch when absent once DEP-25 supports it (DD-11), or building without SDF (DEP-18) |
 | scikit-build-core | 0.7.0 | ≥ 1.0 | pip build isolation (M5a) |
 
 ### Support tiers
@@ -122,14 +128,19 @@ assets on, and the published 6.20.1 and nightly wheels); they stay
 
 ## Footprint (reported)
 
-| Item | Today | After the recommended removals |
+The "after" column is the 2026-10-18 research's prediction for the old plan,
+which also removed urdfdom, libcurl and OpenSSL. DD-5 and DD-12 keep them, so
+the predicted closure sizes and environment savings below are superseded and
+unmeasured; a new measurement needs a repository script.
+
+| Item | Today | After the 2026-10-18 plan (superseded) |
 | --- | --- | --- |
 | dartpy shared-import closure, assets-ON builds | 43 third-party libraries, 89.9 MB | about 29 libraries, 42.1 MB |
 | `dart-io` closure, assets ON | 30 libraries, 82.1 MB | about 15 libraries, 33.1 MB |
 | Core `libdart` closure | 9 libraries, 27.9 MB (assimp and zlib 51%, FCL 37%) | unchanged in 7.0 |
 | Third-party symbols exported by `libdart` | 372 spdlog, 61 fmt | 0 |
-| Packages in DART's build lists | — | 8 fewer: Boost, spdlog, fmt, urdfdom, urdfdom_headers, console_bridge, libcurl, OpenSSL |
-| Default pixi environment (Linux) | 1.9 GB | about 0.45 to 0.5 GB less |
+| Packages in DART's build lists | — | 3 fewer after DD-4 and DEP-1: Boost, spdlog, fmt (the other five of the old plan stay) |
+| Default pixi environment (Linux) | 1.9 GB | superseded; DEP-7 reports 1.6 GB (#3890; reported, unverified, no provenance recorded here) |
 
 ## In-tree code worth a separate decision
 

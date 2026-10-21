@@ -28,9 +28,9 @@ Revisit a decision only with new evidence and maintainer approval.
 - **DD-5. Specialized libraries for robot description formats.** The
   maintainer's words: "urdf and sdf would be better to use the specialized
   libraries." urdfdom stays as the URDF parser and sdformat as the SDF
-  parser; the in-house URDF reader (former DEP-17) is dropped. Whether SDF
-  moves into its own library while still using sdformat (DEP-18) is part of
-  the follow-up study below.
+  parser; the in-house URDF reader (former DEP-17) is dropped. The follow-up
+  study answered whether SDF moves into its own library: no, it stays an
+  optional part of `dart-io` (DD-11).
 - **DD-6. Asset networking needs a tradeoff study.** The maintainer's words:
   "Not sure about assets. Need more tradoff study for me." DEP-19 waits for it.
 - **DD-7. Clean, long-term public surface.** The maintainer's words: "Prefer
@@ -63,7 +63,8 @@ Revisit a decision only with new evidence and maintainer approval.
 
 - Asset networking: keep, isolate or move to Python, with security,
   footprint, packaging and maintenance tradeoffs (DD-6).
-- SDF packaging with sdformat kept: its own library or not (DD-5).
+- SDF packaging with sdformat kept: its own library or not (DD-5; answered by
+  DD-11).
 - The per-dependency acquisition matrix under DD-8, and an inventory of
   in-tree bundled third-party code.
 
@@ -79,7 +80,10 @@ The maintainer answers these one question at a time.
   Package-manager builds and pixi use the environment's libraries first,
   consistent with everything else built there, selected through the
   umbrella switch (DEP-25) or the per-dependency `DART_USE_SYSTEM_<X>`
-  switches; where the environment cannot provide what DART needs (Dear
+  switches. sdformat is an explicit exception to the literal fetch-first
+  rule: DD-11 applies, so a standalone build uses an installed sdformat (a
+  supported major, 14 to 16) and fetches only when none is found, once the
+  DEP-25 fetch path supports it; where the environment cannot provide what DART needs (Dear
   ImGui's docking release), they fetch. The balance review's system-only
   proposal for the Gazebo-shared libraries is not adopted. Its findings
   become constraints on the fetch path: FCL, urdfdom and ODE define
@@ -128,8 +132,10 @@ The maintainer answers these one question at a time.
   gets upstream's behavior (the 6.16.x guards for #2516, #2668 and #2671 are
   reverted), and `ImFormatString` is exported again.
 
-- **DD-15. Replace the Roboti-derived MuJoCo models.** The 15 MJCF models
-  under `data/mjcf/openai/` that Gym derived from Roboti's MuJoCo models
+- **DD-15. Replace the Roboti-derived MuJoCo models.** The 14 top-level MJCF
+  models under `data/mjcf/openai/` (15 in the first count, which was wrong;
+  the six Fetch robotics scenes under `robotics/` belong to DD-19's removal
+  scope) that Gym derived from Roboti's MuJoCo models
   (attribution, no license grant) are replaced with Apache-2.0 models from
   DeepMind's MuJoCo and dm_control (hopper, cheetah, walker, swimmer,
   reacher, humanoid, pendulums, quadruped), and the MJCF parser tests'
@@ -281,7 +287,12 @@ The maintainer answers these one question at a time.
   project-home updates to this plan's draft PRs, each after merging the
   latest `main` and passing the local-path check, lint and the reviews.
   Still asked every time: marking a PR ready for review, merging,
-  backports, anything outside this plan, and replies to review comments.
+  backports, anything outside this plan, and replies to human reviewers'
+  comments. Replies to AI-generated review comments (bot users) are never
+  sent, with or without approval, as the root `AGENTS.md` requires; approved
+  local fixes for them are made silently and re-review is requested only
+  after an approved push. DD-33's authorization is the 2026-10-19 plan
+  approval; it adds no reply permission.
 
 - **DD-34. The standing approval covers ready PRs for merges and fixes.**
   DD-33 extends to this plan's PRs that the maintainer marked ready, for
@@ -387,7 +398,8 @@ Object to change any of these.
   first, DEP-12 raises the floors on top of it.
 - libpng and libjpeg-turbo stay system libraries with decode caps; swapping
   them for vendored codecs is deferred.
-- Dear ImGui stays bundled and is vendored in-tree in 7.x; Filament stays
+- Dear ImGui was to stay bundled; DD-14 superseded that with a fetched,
+  hash-pinned archive (DEP-30). Filament stays
   exactly pinned at 1.77.3, now enforced in CMake, and moves to 1.78.x in 7.x.
 - dartpy stays one all-in-one module that requires the GUI and IO (the
   recorded 7.0 decision).
