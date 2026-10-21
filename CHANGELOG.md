@@ -138,6 +138,12 @@
     marked occupied), and the other points of a cloud are still inserted.
     [#3859](https://github.com/dartsim/dart/pull/3859)
 
+  * Release scenes assigned to the protected `MeshShape::mMesh` by legacy
+    subclasses when the shape is destroyed. These scenes must be heap-allocated
+    with `new` or by an assimp import; callers must not free or share them.
+    Callers retaining ownership use `setMesh(..., MeshOwnership::None)`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
   * Line segment and point cloud shapes now report bounding boxes that
     include vertices and points edited after a query, and clearing a point
     cloud now refreshes collision geometry.
@@ -257,6 +263,14 @@
     thread if the caller wants.
     [#3844](https://github.com/dartsim/dart/pull/3844)
 
+  * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
+    writes now raise `ValueError`; call `.copy()` before writing, then use the
+    appropriate setter to update DART state. Eigen arguments that dartpy passes
+    into Python overrides, such as `Function.eval(x)`, are read-only too.
+    Existing live views and output buffers, such as a gradient's `grad`, keep
+    their mutability.
+    [#3843](https://github.com/dartsim/dart/pull/3843)
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
@@ -327,6 +341,20 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+
+  * Raise the minimum assimp version to 5.3 (Ubuntu 24.04's 5.3.1, which
+    reports 5.3.0).
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * Remove `ASSIMP_AISCENE_CTOR_DTOR_DEFINED` and
+    `ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED` from the installed `dart/config.hpp`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * The installed `BulletCollisionDetector.hpp` no longer includes
+    `<assimp/scene.h>`; code using assimp types through it must include that
+    header directly.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
   * Link only BulletCollision and LinearMath instead of all four Bullet
     libraries, so the exported link interface and wheels no longer carry
     BulletDynamics and BulletSoftBody.
@@ -336,10 +364,9 @@
     installed package reads assimp's version from assimp's own CMake package.
     [#3829](https://github.com/dartsim/dart/pull/3829)
 
-  * Restore builds with Ubuntu 22.04's assimp and Bullet packages, which
-    failed to configure on assimp and skipped the `collision-bullet` component.
-    The minimum assimp is now 5.2.0 and the minimum Bullet 3.05, because
-    upstream assimp 5.2.2 reports itself as 5.2.0 and Bullet 3.06 as 3.05.
+  * Restore discovery of the `collision-bullet` component with Ubuntu 22.04's
+    Bullet package. The minimum Bullet is 3.05, because upstream Bullet 3.06
+    reports itself as 3.05.
     [#3829](https://github.com/dartsim/dart/pull/3829)
 
   * GCC builds append `-Wl,--no-undefined` to the shared-library linker flags

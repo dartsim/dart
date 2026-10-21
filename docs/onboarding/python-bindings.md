@@ -120,8 +120,11 @@ accepted for compatibility and removed from the cache.
 
 Python overrides and subclass state stay alive while C++ uses the object.
 Wrappers for graph objects, including joints and degrees of freedom, keep
-their skeleton alive. Views of const Eigen data are read-only; code that
-needs a writable independent array should make an explicit copy.
+their skeleton alive. Owned Eigen vector and matrix returns are read-only
+NumPy copies; call `.copy()` before writing and use a setter to update DART
+state. Existing live views preserve their mutability, including read-only
+views of const Eigen data. Inputs and caller-provided output buffers are
+unaffected.
 
 ### Errors and logging
 
@@ -289,9 +292,11 @@ the helper when nanobind changes its internals ABI.
 The Eigen caster preserves Eigen dimensions, strides, and ownership. By-value
 results move into a heap owner. At runtime, NumPy 2 uses its C API to export
 the array; NumPy 1 uses nanobind's `numpy.asarray` export with that same owner.
-Both paths keep returned storage alive. The NumPy export cache assumes the
-GIL and a single interpreter; isolated interpreters and free-threaded Python
-need a separate ownership and synchronization design.
+Both paths keep returned storage alive and read-only. Explicit copy-policy
+exports and empty owned arrays also clear NumPy's writeability flag after
+exporting. The NumPy export cache assumes the GIL and a single interpreter;
+isolated interpreters and free-threaded Python need a separate ownership and
+synchronization design.
 
 `optimizer.Function.evalGradient` overrides receive an owned NumPy output
 array initialized from the native gradient. In-place updates are copied back
@@ -324,7 +329,7 @@ skeleton snapshots with different soft-point counts raises `ValueError` before
 mutation. `Skeleton.setState()` retains C++ joint restore semantics, including
 deriving FORCE-joint commands from restored forces.
 
-`MeshShape.mesh_vertex_groups` returns independent, writable arrays of unscaled
+`MeshShape.mesh_vertex_groups` returns independent, read-only arrays of unscaled
 vertices in submesh order. `VoxelGridShape.validate_occupancy_update()` checks
 the same inputs as `updateOccupancy()` without changing occupancy, allowing
 callers to validate a cloud before changing other sensor state.

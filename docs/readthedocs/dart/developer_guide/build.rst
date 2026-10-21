@@ -56,7 +56,7 @@ The development branch requires C++17 and the following source-build baselines:
      - OS baseline
      - Compiler minimum
    * - Ubuntu
-     - 22.04 LTS; also tested on 24.04 LTS
+     - 24.04 LTS (the DART 6.20 maintenance line keeps 22.04 LTS)
      - GCC 11.2 or upstream LLVM Clang 13
    * - macOS
      - 13 Ventura
@@ -95,7 +95,7 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.0
+     - 5.3 (Ubuntu 24.04's 5.3.1 reports 5.3.0)
      - Core mesh loading
    * - Eigen
      - 3.4.0
