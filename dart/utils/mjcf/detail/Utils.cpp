@@ -152,8 +152,9 @@ Eigen::Matrix3d compileRotation(
       rot.setIdentity();
     }
   } else if (xyAxes) {
-    rot.col(0) = (*xyAxes).head<3>().normalized();                    // X axis
-    rot.col(1) = (*xyAxes).tail<3>().normalized();                    // Y axis
+    rot.col(0) = (*xyAxes).head<3>().normalized(); // X axis
+    const Eigen::Vector3d y = (*xyAxes).tail<3>();
+    rot.col(1) = (y - rot.col(0) * rot.col(0).dot(y)).normalized();   // Y axis
     rot.col(2).noalias() = rot.col(0).cross(rot.col(1)).normalized(); // Z axis
     if (!math::verifyRotation(rot)) {
       DART_WARN(

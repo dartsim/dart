@@ -60,11 +60,11 @@ nanobind_add_module(
   ${dartpy_build_sources}
 )
 # The target keeps the public name; the module it builds is the private
-# dartpy._dartpy extension inside the staged package.
+# dartpy._core extension inside the staged package.
 set_target_properties(
   dartpy
   PROPERTIES
-    OUTPUT_NAME _dartpy
+    OUTPUT_NAME _core
     DEBUG_POSTFIX ""
     EXCLUDE_FROM_ALL TRUE
     LIBRARY_OUTPUT_DIRECTORY "${DART_DARTPY_BUILD_DIR}/dartpy"
