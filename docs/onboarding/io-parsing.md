@@ -7,6 +7,18 @@ headers as compatibility surfaces.
 Run focused IO tests when touching parser code, model-loading dependencies, or
 package metadata used by IO components.
 
+## URDF Loading
+
+Use `dart/utils/urdf/DartLoader.hpp` and `dart::utils::DartLoader` to load
+URDF skeletons and worlds. `DartLoader::parseWorld` loads a world file;
+`DartLoader::parseWorldString` loads world XML from a string.
+
+`IncludeUrdf.hpp` and `urdf_world_parser.hpp`, including
+`dart::utils::urdf_parsing::parseWorldURDF`, are private implementation
+headers under `dart/utils/urdf/detail/` and are no longer installed. Shared
+DART consumers do not need urdfdom development packages; building DART or
+consuming a static installation still requires urdfdom.
+
 ## SDF Loading
 
 `SdfParser` uses sdformat for schema validation, version conversion and frame

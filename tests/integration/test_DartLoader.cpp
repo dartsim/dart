@@ -45,7 +45,7 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
-#include "dart/utils/urdf/urdf_world_parser.hpp"
+#include "dart/utils/urdf/detail/urdf_world_parser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
