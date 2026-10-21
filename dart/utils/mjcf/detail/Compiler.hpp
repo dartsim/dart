@@ -58,6 +58,7 @@ public:
   void setResourceRetriever(const common::ResourceRetrieverPtr& retriever);
   common::ResourceRetrieverPtr getResourceRetriever() const;
 
+  bool getAutoLimits() const;
   double getBoundMass() const;
   double getBoundInertia() const;
   double getSetTotalMass() const;
@@ -85,6 +86,7 @@ private:
   common::Uri mBaseUri;
   common::ResourceRetrieverPtr mRetriever;
 
+  bool mAutoLimits{true};
   double mBoundMass{0};
   double mBoundInertia{0};
   double mSetTotalMass{-1};
