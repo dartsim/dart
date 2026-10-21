@@ -1,5 +1,8 @@
 # Deformable-body decisions
 
+- **2026-10-19 merge order:** The DART 7.0 program closed its step-path quiet
+  window. Core changes outside the parity rows land in the program-owned
+  step-path merge order, each re-qualified on current `main`.
 - **2026-10-11 release line:** There is no 6.21 release; the unmet full-parity
   goal targets DART 7.0. Core changes outside the parity rows pause during the
   DART 7.0 program's step-path quiet window.
