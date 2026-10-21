@@ -22,6 +22,9 @@ def test_heightmap_shape_owns_data_and_repeats_seeded_randomness():
         assert np.float32(-0.2) <= field.min() <= field.max() <= np.float32(0.1)
         np.testing.assert_array_equal(shape.getScale(), [0.25, 0.5, 1])
         fields.append(field.copy())
+        with pytest.raises(ValueError, match="assignment destination is read-only"):
+            field[:] = 99
+        field = field.copy()
         field[:] = 99
         np.testing.assert_array_equal(shape.getHeightField(), fields[-1])
     np.testing.assert_array_equal(*fields)

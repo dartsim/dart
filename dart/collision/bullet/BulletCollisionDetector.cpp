@@ -59,6 +59,8 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/TriMesh.hpp"
 
+#include <assimp/scene.h>
+
 #include <algorithm>
 #include <limits>
 #include <typeinfo>
@@ -91,10 +93,6 @@ void reportRayHits(
 
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
-
-[[maybe_unused]] std::unique_ptr<btCollisionShape>
-createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene);
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
     const Eigen::Vector3d& scale,
@@ -1022,41 +1020,6 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
   gimpactMeshShape->updateBound();
 
   return gimpactMeshShape;
-}
-
-//==============================================================================
-[[maybe_unused]] std::unique_ptr<btCollisionShape>
-createBulletCollisionShapeFromAssimpScene(
-    const Eigen::Vector3d& scale, const aiScene* scene)
-{
-  auto triMesh = new btTriangleMesh();
-
-  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
-    for (auto j = 0u; j < scene->mMeshes[i]->mNumFaces; ++j) {
-      btVector3 vertices[3];
-      for (auto k = 0u; k < 3; ++k) {
-        const aiVector3D& vertex
-            = scene->mMeshes[i]
-                  ->mVertices[scene->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = btVector3(
-            vertex.x * scale[0], vertex.y * scale[1], vertex.z * scale[2]);
-      }
-      triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
-    }
-  }
-  const bool makeConvexMesh
-      = scene->mNumMeshes == 1 && isConvex(scene->mMeshes[0]);
-  if (makeConvexMesh) {
-    auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
-    convexMeshShape->setMargin(0.0f);
-    convexMeshShape->setUserPointer(triMesh);
-    return convexMeshShape;
-  } else {
-    auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
-    gimpactMeshShape->updateBound();
-    gimpactMeshShape->setUserPointer(triMesh);
-    return gimpactMeshShape;
-  }
 }
 
 //==============================================================================

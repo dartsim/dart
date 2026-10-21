@@ -1013,7 +1013,7 @@ def test_config_header_version_fallback(
 @pytest.mark.parametrize(
     "package,minimum,prefix,header,definition",
     [
-        ("assimp", "5.2.0", "ASSIMP", "assimp/scene.h", None),
+        ("assimp", "5.3.0", "ASSIMP", "assimp/scene.h", None),
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
         ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
@@ -1065,7 +1065,8 @@ def test_module_floors(
 @pytest.mark.parametrize("preset", ["cache", "normal"])
 @pytest.mark.parametrize("msvc", [False, True])
 @pytest.mark.parametrize(
-    "version,accepted", [("6.0.5", True), ("5.2.0", True), ("5.1.0", False)]
+    "version,accepted",
+    [("6.0.5", True), ("5.3.0", True), ("5.2.2", False), ("5.2.0", False)],
 )
 def test_assimp_version_from_config_without_pkg_config(
     tmp_path, version, accepted, msvc, preset
@@ -1110,7 +1111,7 @@ def test_assimp_module_lookup_skips_config(tmp_path, module):
     # package, so lookups that already work stay unchanged. A consumer's own
     # Findassimp.cmake comes first and may set only assimp_FOUND.
     config_package(
-        tmp_path, "assimp", "5.2.0", None, 'message(FATAL_ERROR "Loaded config")\n'
+        tmp_path, "assimp", "5.3.0", None, 'message(FATAL_ERROR "Loaded config")\n'
     )
     include = tmp_path / "include"
     (include / "assimp").mkdir(parents=True)
@@ -1129,7 +1130,7 @@ def test_assimp_module_lookup_skips_config(tmp_path, module):
         lookup = ""
     result = configure(
         tmp_path,
-        lookup + "set(assimp_VERSION 5.2.0)\n"
+        lookup + "set(assimp_VERSION 5.3.0)\n"
         "include(DARTFindassimp)\n"
         'if(NOT TARGET assimp)\n  message(FATAL_ERROR "No assimp target")\nendif()\n',
     )

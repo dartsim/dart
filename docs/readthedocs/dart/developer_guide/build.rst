@@ -56,7 +56,7 @@ The development branch requires C++17 and the following source-build baselines:
      - OS baseline
      - Compiler minimum
    * - Ubuntu
-     - 22.04 LTS; also tested on 24.04 LTS
+     - 24.04 LTS (the DART 6.20 maintenance line keeps 22.04 LTS)
      - GCC 11.2 or upstream LLVM Clang 13
    * - macOS
      - 13 Ventura
@@ -95,7 +95,7 @@ Optional components remain optional.
      - Minimum version
      - Used by
    * - Assimp
-     - 5.2.0
+     - 5.3 (Ubuntu 24.04's 5.3.1 reports 5.3.0)
      - Core mesh loading
    * - Eigen
      - 3.4.0
@@ -163,6 +163,16 @@ Single-precision Bullet loses contacts of centimeter-scale shapes, so with
 Bullet 3.17 or newer DART links the double-precision ``-float64`` libraries
 that Ubuntu and conda-forge install beside the single-precision ones.
 ``-DDART_BULLET_FLOAT64=OFF`` keeps single precision.
+
+Touching convex pairs in FCL 0.7.0's libccd GJK distance can abort with
+assertions (as on Ubuntu 24.04), or return -1 and zero nearest points. DART's
+Linux wheels carry a fix, demonstrated for ellipsoid, ellipsoid-sphere and
+box pairs. Discrete collision queries are unaffected. Every other build,
+including the macOS and Windows wheels, pixi and conda-forge builds, and source
+builds using system FCL, remains affected.
+The patch is in
+``docker/wheels/patches/fcl-0.7.0-gjk-zero-direction.patch`` and is intended for
+upstream submission (not yet reported).
 
 On Linux, an installed Filament SDK must use libstdc++, as the conda-forge
 ``filament`` package does. With ``DART_USE_SYSTEM_FILAMENT=OFF``, Linux builds
