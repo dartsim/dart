@@ -1,0 +1,112 @@
+<mujoco model="joint_limits">
+  <option gravity="0 0 0" timestep="0.001"/>
+  <default>
+    <default class="bounded">
+      <joint limited="true" range="-30 60"/>
+      <default class="unbounded"><joint limited="false"/></default>
+      <default class="automatic"><joint limited="auto"/></default>
+    </default>
+  </default>
+  <worldbody>
+    <body name="limits" pos="0 0 0">
+      <body name="hinge_true" pos="0 0 0">
+        <joint name="hinge_true" limited="true" range="-30 60" springref="30"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="slide_true" pos="0 0 0">
+        <joint name="slide_true" type="slide" limited="true" range="-0.1 0.2" springref="0.1"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="false_range" pos="0 0 0">
+        <joint name="false_range" limited="false" range="-30 60"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="false_no_range" pos="0 0 0">
+        <joint name="false_no_range" limited="false"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="auto_range" pos="0 0 0">
+        <joint name="auto_range" limited="auto" range="-30 60"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="auto_no_range" pos="0 0 0">
+        <joint name="auto_no_range" limited="auto"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="auto_zero">
+        <joint name="auto_zero" limited="auto" range="0 0"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="auto_reversed">
+        <joint name="auto_reversed" limited="auto" range="1 -1"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="implicit_auto" pos="0 0 0">
+        <joint name="implicit_auto" range="-30 60"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="inherited_true" childclass="bounded" pos="0 0 0">
+        <joint name="inherited_true"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+        <body name="inherited_child" pos="0 0 0">
+          <joint name="inherited_child"/>
+          <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+        </body>
+      </body>
+      <body name="inherited_false" pos="0 0 0">
+        <joint name="inherited_false" class="unbounded"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="inherited_auto" pos="0 0 0">
+        <joint name="inherited_auto" class="automatic"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="overridden_false" pos="0 0 0">
+        <joint name="overridden_false" class="bounded" limited="false"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="inherited_zero">
+        <joint name="inherited_zero" class="automatic" range="0 0"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="stacked" pos="0 0 0">
+        <joint name="stacked_hinge" limited="true" range="-30 60"/>
+        <joint name="stacked_slide" type="slide" limited="true" range="-0.1 0.2"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="stacked_unlimited">
+        <joint name="stacked_false_hinge" limited="false" range="-30 60"/>
+        <joint name="stacked_false_slide" type="slide" axis="1 0 0" limited="false" range="-0.1 0.2"/>
+        <joint name="stacked_limited_slide" type="slide" range="-0.1 0.2"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="slides2" pos="0 0 0">
+        <joint name="slides2_x" type="slide" axis="1 0 0" limited="false"/>
+        <joint name="slides2_y" type="slide" axis="0 1 0" range="-0.1 0.2"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="slides3" pos="0 0 0">
+        <joint name="slides3_x" type="slide" axis="1 0 0" limited="false"/>
+        <joint name="slides3_y" type="slide" axis="0 1 0" limited="false"/>
+        <joint name="slides3_z" type="slide" axis="0 0 1" range="-0.1 0.2"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="ball_true" pos="0 0 0">
+        <joint name="ball_true" type="ball" limited="true" range="0 60"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+      <body name="ball_no_range">
+        <joint name="ball_no_range" type="ball" limited="true"/>
+        <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+      </body>
+    </body>
+    <body name="ball_auto" pos="0 0 0">
+      <joint name="ball_auto" type="ball" range="0 60"/>
+      <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+    </body>
+    <body name="free" pos="0 0 0">
+      <joint name="free" type="free" limited="true" range="1 -1"/>
+      <inertial pos="0 0 0" mass="1" diaginertia="0.02 0.03 0.04"/>
+    </body>
+  </worldbody>
+</mujoco>

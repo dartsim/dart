@@ -90,6 +90,7 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.11.0
         with:
+          environments: coverage
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
@@ -104,13 +105,13 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
-          pixi run build-coverage
+          pixi run -e coverage build-coverage
 
       - name: Generate coverage report
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
-          pixi run --skip-deps coverage-report
+          pixi run -e coverage --skip-deps coverage-report
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
@@ -139,6 +140,7 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.11.0
         with:
+          environments: system-imgui
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
@@ -156,7 +158,7 @@ jobs:
         # front-end errors, so -O0 is enough. -j1: the dart and dartpy files
         # each need several GB. Single-source targets cannot clash.
         run: |
-          pixi run -- bash -c 'cmake -G Ninja -S . -B build/unity-clashes \
+          pixi run -e system-imgui -- bash -c 'cmake -G Ninja -S . -B build/unity-clashes \
             -DCMAKE_BUILD_TYPE=None -DCMAKE_CXX_FLAGS=-O0 \
             -DCMAKE_UNITY_BUILD=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=0 \
             -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" -DBUILD_TESTING=ON \
@@ -168,7 +170,7 @@ jobs:
           find . -path '*/Unity/unity_*_cxx.cxx' -exec grep -c -H '^#include' {} + |
             awk -F: '$2 > 1 { sub(/^\.\//, "", $1); print $1 ".o" }' > unity-objects.txt
           test -s unity-objects.txt
-          xargs -a unity-objects.txt pixi run ninja -j1 -k 0
+          xargs -a unity-objects.txt pixi run -e system-imgui ninja -j1 -k 0
 
   # pixi tasks pin BUILD_TYPE=Release, so a BUILD_TYPE=Debug leg would only
   # rebuild Release; the nightly coverage job is the Debug build.
@@ -190,6 +192,7 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.11.0
         with:
+          environments: default system-imgui
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
@@ -258,7 +261,7 @@ jobs:
         if: inputs.nightly
         run: |
           DART_VERBOSE=ON \
-          pixi run test-asan
+          pixi run -e system-imgui test-asan
 
       - name: Install
         # Nightly only: install builds a second library tree, and CI
@@ -266,7 +269,7 @@ jobs:
         if: inputs.nightly
         run: |
           DART_VERBOSE=ON \
-          pixi run install
+          pixi run -e system-imgui install
 
       - name: Compiler cache stats
         if: always()

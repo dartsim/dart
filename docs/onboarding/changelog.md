@@ -14,14 +14,18 @@ Run `pixi run check-changelog-fragments` after editing a fragment;
 Fragments move into `CHANGELOG.md` at checkpoints: each milestone exit, before
 any release candidate or tag, before a release branch is cut from `main`, and
 when the maintainer asks. One PR then runs `pixi run changelog-assemble`. It
-requires every fragment's PR link. It appends each entry to its category under
-the unreleased release heading in PR order and deletes the fragments. Review the
-assembled section as release notes in that PR.
-Commit all changes in `changelog.d/` before assembly; re-running after a failed
-fragment deletion is safe.
+requires each fragment to link the PR that introduced it, taken offline from the
+full Git history (the terminal `(#N)` of the adding commit's subject, so it needs
+a complete clone and squash-merged fragments). It appends each entry to its
+category under the unreleased release heading in that PR's order and deletes the
+fragments. Review the assembled section as release notes in that PR.
+Commit all changes in `CHANGELOG.md` and `changelog.d/` before assembly. If a
+fragment deletion fails, review and commit the partial changes, then re-run to
+delete the rest without duplicating entries.
 
-`release-*` branches have no fragments: edit `CHANGELOG.md` directly there,
-including in backports, and turn a cherry-picked fragment into a direct entry.
+`release-*` branches have no fragments, and `check-changelog-fragments` and
+assembly reject them there: edit `CHANGELOG.md` directly, including in
+backports, and turn a cherry-picked fragment into a direct entry.
 
 `CHANGELOG.md` is written for users of the released library and packages.
 CI, tooling, AI-harness, docs-workflow, and other internal changes do not need

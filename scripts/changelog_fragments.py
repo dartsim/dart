@@ -5,13 +5,15 @@ Pull requests on main add one fragment per changelog entry instead of editing
 CHANGELOG.md, so open pull requests never conflict over that file; the format
 is in changelog.d/README.md. ``check`` validates every fragment. ``assemble``
 moves each fragment's entry to the end of its category under the first
-(unreleased) release heading of CHANGELOG.md, ordered by PR number, and deletes
-the fragments.
+(unreleased) release heading of CHANGELOG.md, ordered by the number of the PR
+that introduced the fragment, and deletes the fragments. Release branches have
+no fragments.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -44,6 +46,10 @@ SECTION_LINE = re.compile(r"Section: (.+)")
 LINK_LINE = re.compile(
     r"    \[#(\d+)\]\(https://github\.com/dartsim/dart/(pull|issues)/(\d+)\)(,?)"
 )
+# The PR number that ends a squash-merge subject, as in "Add x (#123)".
+SUBJECT_PR = re.compile(r".*\(#([1-9]\d*)\)")
+# Editor swap files, like `.draft.md.swp`; any other hidden file is validated.
+EDITOR_ARTIFACT = re.compile(r"\..+\.sw[a-p]")
 # A line holding only a reference link, at any indentation.
 LINK_ONLY = re.compile(r"\s*\[#[^\]]*\]\([^)]*\),?")
 
@@ -179,7 +185,7 @@ def load(root: Path) -> tuple[list[Fragment], list[str], list[str]]:
     directory = root / "changelog.d"
     fragments, errors = [], []
     for path in sorted(directory.iterdir()) if directory.is_dir() else []:
-        if path.name == "README.md" or path.name.startswith("."):
+        if path.name == "README.md" or EDITOR_ARTIFACT.fullmatch(path.name):
             continue
         if path.suffix != ".md" or not path.is_file():
             errors.append(f"changelog.d/{path.name}: fragments are `<topic>.md` files")
@@ -203,8 +209,49 @@ def report(errors: list[str]) -> int:
     return 1
 
 
+def git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
+    except OSError as error:
+        raise ValueError(
+            f"changelog.d/: cannot run git; install Git and retry: {error}"
+        ) from error
+
+
+def target_branch(root: Path) -> str:
+    """Return the branch this checkout lands on, or "" if unknown.
+
+    Follows check_ai_infrastructure.check_release_target: an explicit
+    GITHUB_BASE_REF wins, even a stacked topic base; otherwise a checked-out
+    or CI-reported main/release branch counts.
+    """
+    base = os.environ.get("GITHUB_BASE_REF")
+    if base:
+        return base
+    try:
+        checkout = git(root, "branch", "--show-current").stdout.strip()
+    except ValueError:
+        checkout = ""
+    for candidate in (checkout, os.environ.get("GITHUB_REF_NAME", "")):
+        if re.fullmatch(r"main|release-.+", candidate):
+            return candidate
+    return ""
+
+
+def release_branch_errors(root: Path, fragments: list[Fragment]) -> list[str]:
+    branch = target_branch(root)
+    if not (fragments and branch.startswith("release-")):
+        return []
+    return [
+        f"changelog.d/{fragment.path.name}: `{branch}` has no fragments; "
+        "write the entry directly in CHANGELOG.md"
+        for fragment in fragments
+    ]
+
+
 def check(root: Path) -> int:
     fragments, errors, _ = load(root)
+    errors += release_branch_errors(root, fragments)
     if errors:
         return report(errors)
     print(f"{len(fragments)} changelog fragment(s) OK")
@@ -212,25 +259,18 @@ def check(root: Path) -> int:
 
 
 def fragment_changes(root: Path) -> list[str]:
-    """Return paths with staged, unstaged, or untracked changes in changelog.d/."""
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "status",
-                "--porcelain",
-                "--untracked-files=all",
-                "--",
-                "changelog.d",
-            ],
-            cwd=root,
-            capture_output=True,
-            text=True,
-        )
-    except OSError as error:
-        raise ValueError(
-            f"changelog.d/: cannot run git; install Git and retry: {error}"
-        ) from error
+    """Return paths with staged, unstaged, untracked, or ignored changes in
+    CHANGELOG.md or changelog.d/, which assembly must not mix with its own output."""
+    result = git(
+        root,
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
+        "--ignored=matching",
+        "--",
+        "CHANGELOG.md",
+        "changelog.d",
+    )
     if result.returncode:
         raise ValueError(
             "changelog.d/: cannot check Git status; use --root pointing to a Git checkout: "
@@ -239,22 +279,72 @@ def fragment_changes(root: Path) -> list[str]:
     return [line[3:] for line in result.stdout.splitlines()]
 
 
+def fragment_origins(
+    root: Path, fragments: list[Fragment]
+) -> tuple[dict[str, int], list[str]]:
+    """Map each fragment name to the PR that introduced it, from Git history.
+
+    The PR is the terminal (#N) of the subject of the commit that added the
+    file, following renames. Link lines are user input, not provenance, so
+    missing, shallow, or ambiguous history is an error, never a guess.
+    """
+    shallow = git(root, "rev-parse", "--is-shallow-repository")
+    if shallow.returncode or shallow.stdout.strip() != "false":
+        return {}, [
+            "changelog.d/: cannot tell which PR introduced each fragment from a "
+            "shallow or unreadable Git history; fetch the full history "
+            f"(`git fetch --unshallow`) and retry: {shallow.stderr.strip()}"
+        ]
+    origins, errors = {}, []
+    for fragment in fragments:
+        relative = f"changelog.d/{fragment.path.name}"
+        log = git(
+            root,
+            "log",
+            "--follow",
+            "--diff-filter=A",
+            "-1",
+            "--format=%s",
+            "--",
+            relative,
+        )
+        subject = log.stdout.strip()
+        match = None if log.returncode else SUBJECT_PR.fullmatch(subject)
+        if match:
+            origins[fragment.path.name] = int(match[1])
+        else:
+            errors.append(
+                f"{relative}: the commit that added it must have a subject ending "
+                "with its PR as (#N), as a squash merge makes; found "
+                f"`{subject or log.stderr.strip() or 'no commit'}`"
+            )
+    return origins, errors
+
+
 def assemble(root: Path) -> int:
     changes = fragment_changes(root)
     if changes:
         return report(
             [
-                f"{path}: commit or remove this change before assembling"
+                f"{path}: commit or remove this change before assembling; after a "
+                "failed assembly, review and commit its CHANGELOG.md changes, "
+                "then re-run to delete the remaining fragments"
                 for path in changes
             ]
         )
     fragments, errors, lines = load(root)
+    errors += release_branch_errors(root, fragments)
+    origins, problems = fragment_origins(root, fragments) if fragments else ({}, [])
+    errors += problems
     errors += [
-        f"changelog.d/{name}: end the entry with its own PR link line, "
-        "`    [#N](https://github.com/dartsim/dart/pull/N)`; the subject from "
-        f"`git log --diff-filter=A --format=%s -- changelog.d/{name}` ends "
-        "with the PR as (#N)"
-        for name in (fragment.path.name for fragment in fragments if not fragment.prs)
+        f"changelog.d/{fragment.path.name}: end the entry with its own PR link "
+        f"line, `    [#{origins[fragment.path.name]}]"
+        f"(https://github.com/dartsim/dart/pull/{origins[fragment.path.name]})`; "
+        "the subject from `git log --follow --diff-filter=A -1 --format=%s -- "
+        f"changelog.d/{fragment.path.name}` ends with the PR as (#N)"
+        for fragment in fragments
+        if fragment.path.name in origins
+        and origins[fragment.path.name] not in fragment.prs
     ]
     if errors:
         return report(errors)
@@ -272,7 +362,9 @@ def assemble(root: Path) -> int:
             ]
         )
 
-    for fragment in sorted(fragments, key=lambda f: (min(f.prs), f.path.name)):
+    for fragment in sorted(
+        fragments, key=lambda f: (origins[f.path.name], f.path.name)
+    ):
         start, end = release_section(lines)
         entry = "\n".join(fragment.body)
         if f"\n{entry}\n" in "\n".join(lines[start:end]) + "\n":
@@ -285,7 +377,7 @@ def assemble(root: Path) -> int:
             print(f"Created category `{fragment.category}`")
         print(
             f"changelog.d/{fragment.path.name} -> {fragment.category} "
-            f"(#{min(fragment.prs)})"
+            f"(#{origins[fragment.path.name]})"
         )
     # Write a sibling file and swap it in, so a failed write never truncates
     # CHANGELOG.md.
@@ -296,7 +388,14 @@ def assemble(root: Path) -> int:
     finally:
         staged.unlink(missing_ok=True)
     for fragment in fragments:
-        fragment.path.unlink()
+        try:
+            fragment.path.unlink()
+        except OSError as error:
+            raise ValueError(
+                f"changelog.d/{fragment.path.name}: {error}; CHANGELOG.md is already "
+                "updated, so review and commit the changes, then re-run to delete "
+                "the remaining fragments"
+            ) from error
     print(f"Assembled {len(fragments)} fragment(s) under `{heading}`")
     return 0
 

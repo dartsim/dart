@@ -65,9 +65,11 @@ the repository root to the working directory.
   installed headers, package components (including legacy forwarding components),
   and source and behavior compatibility of the C++ API used by Gazebo/gz-physics
   and gz-sim. PLAN-624 approves the dartpy clean break, the OSG-to-Filament
-  renderer replacement merged in #3696, and labeled default-behavior changes
-  behind its gates; any other public-API, ABI-layout, or default-behavior change
-  needs maintainer approval.
+  renderer replacement merged in #3696, labeled default-behavior changes
+  behind its gates, and, until 7.0.0 is packaged, ABI-layout changes in classes
+  Gazebo neither subclasses nor reads, gated by the API inventory check and the
+  unpatched Gazebo lanes; any other public-API, ABI-layout, or default-behavior
+  change needs maintainer approval.
 - dartpy uses nanobind as its only binder, under `python/dartpy/`; follow
   `docs/onboarding/python-bindings.md`.
 - New fixes land on `main`; backports to a `release-*` branch use

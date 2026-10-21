@@ -27,8 +27,20 @@ Breaking Changes, Behavior Changes, API, Performance, Collision, Constraint,
 Simulation, Dynamics, Parsers, Python, GUI, Examples, Math, Build.
 
 `pixi run check-changelog-fragments` validates the fragments, and
-`pixi run check-lint` runs that check. At a checkpoint,
-`pixi run changelog-assemble` moves each entry to the end of its category,
-in PR order, and deletes the fragments.
-Commit all changes in `changelog.d/` before assembly; re-running after a failed
-fragment deletion is safe.
+`pixi run check-lint` runs that check. Every file in `changelog.d/` must be a
+valid fragment, hidden ones included; only editor swap files are ignored.
+`release-*` branches have no fragments, so the check and assembly reject any
+there (the PR's base branch counts when CI reports one).
+
+At a checkpoint, `pixi run changelog-assemble` moves each entry to the end of
+its category and deletes the fragments. Each fragment must link the PR that
+introduced it, which is the PR number ending the subject of the commit that
+added the file, as in `Add x (#123)`; related PRs and issues may be linked too.
+Entries are ordered by that PR. Assembly reads the full Git history offline and
+fails on a shallow clone or a subject without a terminal `(#N)`, such as a
+rebase-merged commit; fetch the history, or write the entry in `CHANGELOG.md`.
+
+Commit all changes in `CHANGELOG.md` and `changelog.d/` before assembly. If
+deleting a fragment fails, `CHANGELOG.md` is already updated: review and commit
+the changes, then re-run to delete the remaining fragments without duplicating
+entries.
