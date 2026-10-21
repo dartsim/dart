@@ -6,6 +6,31 @@
 
 * Breaking Changes
 
+  * **Behavior change:** MJCF loading now enforces hinge and slide limits,
+    including inherited defaults and MuJoCo 3.x automatic limits; applies
+    declared mass, center of mass, and rotated inertia even without geoms;
+    places bodies without `pos` at the parent origin in local coordinates;
+    orthogonalizes `xyaxes`; and converts hinge `springref` from degrees.
+    Hinge and ball ranges are now read in degrees under
+    `<compiler angle="degree">` (MuJoCo's default), rather than as raw numbers.
+    Coordinates without limits now report infinite position limits instead of
+    the declared range (often zero).
+    Invalid declarations now fail to load: unknown `limited` or `autolimits`
+    values, nonzero ranges with automatic limits under `autolimits="false"`,
+    reversed or non-finite limited ranges, a nonzero lower limit on a limited
+    ball joint, or `fullinertia` combined with an orientation attribute.
+    Models that relied on ignored limits or inertia will simulate differently;
+    use `limited="false"` to disable limits explicitly. Ball-joint angular limits
+    remain unsupported and warn once per model; support is deferred to a later
+    release.
+    [#3877](https://github.com/dartsim/dart/pull/3877)
+
+  * `dart/utils/urdf/urdf.hpp`, through `urdf_world_parser.hpp`, no longer
+    includes `BackwardCompatibility.hpp`. Code using its
+    `URDFDOM_HEADERS_VERSION_*` macros must include
+    `dart/utils/urdf/BackwardCompatibility.hpp` directly.
+    [#3863](https://github.com/dartsim/dart/pull/3863)
+
   * DART 7 replaces the OSG renderer with the Filament-backed `dart::gui`
     viewer, including world-node callbacks, widgets, manipulation, DPI
     scaling, and display-free Linux capture. The `gui-osg` component
@@ -49,6 +74,10 @@
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
 
+  * Remove the unlicensed `data/skel/kima/` sample SKEL files and COLLADA
+    meshes from the installed sample data.
+    [#3880](https://github.com/dartsim/dart/pull/3880)
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -75,6 +104,11 @@
     and applications linked to the former ImGui shared library must rebuild.
 
 * API
+
+  * URDF world loading returns `nullptr` when an include is missing its
+    filename or model name, or an entity is missing its model, instead of
+    constructing strings from null attributes.
+    [#3863](https://github.com/dartsim/dart/pull/3863)
 
   * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
     256 MiB of decoded RGBA data, before allocating them.
@@ -110,6 +144,18 @@
 
 * Collision
 
+  * Fix a memory leak where a Bullet collision detector used for a collision
+    check between two groups was never destroyed.
+    [#3875](https://github.com/dartsim/dart/pull/3875)
+
+  * Fix distance queries and nearest points for touching convex pairs in FCL's
+    libccd GJK distance in Linux wheels, demonstrated for ellipsoid,
+    ellipsoid-sphere and box pairs. FCL 0.7.0 can abort with assertions (as on
+    Ubuntu 24.04), or return -1 and zero nearest points. Only Linux wheels carry
+    the fix; every other build, including the macOS and Windows wheels, pixi and
+    conda-forge builds, and source builds using system FCL, remains affected.
+    [#3870](https://github.com/dartsim/dart/pull/3870)
+
   * Fix undefined behavior when a custom deleter of a replaced collision
     detector or contact surface handler reads the constraint solver's
     current one.
@@ -137,6 +183,12 @@
     about 100,000 voxels are skipped with a warning (their endpoints are not
     marked occupied), and the other points of a cloud are still inserted.
     [#3859](https://github.com/dartsim/dart/pull/3859)
+
+  * Release scenes assigned to the protected `MeshShape::mMesh` by legacy
+    subclasses when the shape is destroyed. These scenes must be heap-allocated
+    with `new` or by an assimp import; callers must not free or share them.
+    Callers retaining ownership use `setMesh(..., MeshOwnership::None)`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
 
   * Line segment and point cloud shapes now report bounding boxes that
     include vertices and points edited after a query, and clearing a point
@@ -231,6 +283,14 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Returned Eigen vectors and matrices are read-only NumPy copies. In-place
+    writes now raise `ValueError`; call `.copy()` before writing, then use the
+    appropriate setter to update DART state. Eigen arguments that dartpy passes
+    into Python overrides, such as `Function.eval(x)`, are read-only too.
+    Existing live views and output buffers, such as a gradient's `grad`, keep
+    their mutability.
+    [#3843](https://github.com/dartsim/dart/pull/3843)
+
   * Allow clearing `RaycastOption.mFilter` with `None`, restoring unfiltered
     raycasts and releasing the stored Python callback.
     [#3810](https://github.com/dartsim/dart/pull/3810)
@@ -301,11 +361,30 @@
     supported.
     [#3893](https://github.com/dartsim/dart/pull/3893)
 
+  * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
+    of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
+    OpenSSL; only static installs require consumers to provide them.
+    [#3883](https://github.com/dartsim/dart/pull/3883)
+
   * Release builds against Eigen 5 no longer fail under the default
     warnings-as-errors setting, which stopped at the runtime `JacobiSVD`
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+
+  * Raise the minimum assimp version to 5.3 (Ubuntu 24.04's 5.3.1, which
+    reports 5.3.0).
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * Remove `ASSIMP_AISCENE_CTOR_DTOR_DEFINED` and
+    `ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED` from the installed `dart/config.hpp`.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
+  * The installed `BulletCollisionDetector.hpp` no longer includes
+    `<assimp/scene.h>`; code using assimp types through it must include that
+    header directly.
+    [#3865](https://github.com/dartsim/dart/pull/3865)
+
   * Link only BulletCollision and LinearMath instead of all four Bullet
     libraries, so the exported link interface and wheels no longer carry
     BulletDynamics and BulletSoftBody.
@@ -315,10 +394,9 @@
     installed package reads assimp's version from assimp's own CMake package.
     [#3829](https://github.com/dartsim/dart/pull/3829)
 
-  * Restore builds with Ubuntu 22.04's assimp and Bullet packages, which
-    failed to configure on assimp and skipped the `collision-bullet` component.
-    The minimum assimp is now 5.2.0 and the minimum Bullet 3.05, because
-    upstream assimp 5.2.2 reports itself as 5.2.0 and Bullet 3.06 as 3.05.
+  * Restore discovery of the `collision-bullet` component with Ubuntu 22.04's
+    Bullet package. The minimum Bullet is 3.05, because upstream Bullet 3.06
+    reports itself as 3.05.
     [#3829](https://github.com/dartsim/dart/pull/3829)
 
   * GCC builds append `-Wl,--no-undefined` to the shared-library linker flags

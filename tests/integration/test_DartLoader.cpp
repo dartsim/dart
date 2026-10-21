@@ -45,6 +45,7 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/utils/urdf/urdf_world_parser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -156,6 +157,27 @@ TEST(DartLoader, parseWorld)
   DartLoader loader;
   EXPECT_TRUE(
       nullptr != loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
+}
+
+//==============================================================================
+TEST(DartLoader, parseWorldURDF_EmptyStringReturnsNull)
+{
+  EXPECT_EQ(nullptr, utils::urdf_parsing::parseWorldURDF("", Uri(), nullptr));
+}
+
+//==============================================================================
+TEST(DartLoader, parseWorld_MissingRequiredAttributesReturnsNull)
+{
+  DartLoader loader;
+  for (const auto* file :
+       {"missing_include_filename.urdf",
+        "missing_include_model_name.urdf",
+        "missing_entity_model.urdf"}) {
+    SCOPED_TRACE(file);
+    EXPECT_EQ(
+        nullptr,
+        loader.parseWorld(std::string("dart://sample/urdf/test/") + file));
+  }
 }
 
 //==============================================================================
