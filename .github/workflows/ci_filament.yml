@@ -98,7 +98,7 @@ jobs:
       - name: Python GUI and real capture
         run: >-
           pixi run -e gui-ci python -I scripts/run_pytest.py
-          --pythonpath ${{ env.BUILD_DIR }}/python/dartpy
+          --pythonpath ${{ env.BUILD_DIR }}/python
           python/tests/unit/gui python/tests/integration -q
       - name: Relocated C++17 GUI consumer
         run: pixi run -e gui-ci python scripts/test_gui_install.py ${{ env.BUILD_DIR }}
