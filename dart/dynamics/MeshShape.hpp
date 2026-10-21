@@ -283,6 +283,10 @@ protected:
   public:
     MeshHandle() = default;
 
+    /// Takes ownership of a scene heap-allocated with new or by an assimp
+    /// import. The shape releases it with aiReleaseImport(); the caller must
+    /// not free or share it. Callers retaining ownership use setMesh(...,
+    /// MeshOwnership::None).
     MeshHandle& operator=(const aiScene* mesh);
     MeshHandle& operator=(std::shared_ptr<const aiScene> mesh);
 
