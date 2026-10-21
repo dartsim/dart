@@ -975,10 +975,10 @@ def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
         (source / "imgui.cmake").write_text(
             module.replace(original_hash, digest).replace(url, archive.as_uri())
         )
+        # Let pytest report complete CMake output on failure.
         subprocess.run(
             ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build)],
             check=True,
-            capture_output=True,
             text=True,
         )
         # Reproduce the extraction timestamps used by CMake 3.22/3.23 even
@@ -989,7 +989,6 @@ def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
         subprocess.run(
             ["cmake", "--build", str(build)],
             check=True,
-            capture_output=True,
             text=True,
         )
         executable = build / (
