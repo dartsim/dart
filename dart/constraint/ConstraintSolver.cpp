@@ -890,7 +890,10 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
            << "', which doesn't exist in the ConstraintSolver.\n";
   }
 
-  detail::checkWorldTopologyMutation(this);
+  // An absent skeleton is a warning-only no-op for the solver; the collision
+  // group still guards an independent subscription itself.
+  if (contained)
+    detail::checkWorldTopologyMutation(this);
   mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());

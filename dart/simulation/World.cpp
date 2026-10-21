@@ -2529,6 +2529,9 @@ World::EditScope::~EditScope()
   // unwinding.
   if (std::uncaught_exceptions() != mUncaughtExceptions)
     return;
+  // This edit may have repaired the failure: compile afresh instead of
+  // rethrowing it.
+  state.mPendingRecompileError = nullptr;
   try {
     mWorld.compile();
   } catch (...) {
@@ -2807,15 +2810,47 @@ WorldPtr World::clone() const
     for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
       const dynamics::Skeleton& source = *mSkeletons[i];
       const auto skeleton = worldClone->getSkeleton(i);
-      // cloneSkeleton() keeps the indices of BodyNodes and their Nodes.
-      for (std::size_t j = 0; j < source.getNumBodyNodes(); ++j)
-        clones[source.getBodyNode(j)] = skeleton->getBodyNode(j);
-      for (std::size_t j = 0; j < source.getNumShapeNodes(); ++j)
-        clones[source.getShapeNode(j)] = skeleton->getShapeNode(j);
-      for (std::size_t j = 0; j < source.getNumEndEffectors(); ++j)
-        clones[source.getEndEffector(j)] = skeleton->getEndEffector(j);
-      for (std::size_t j = 0; j < source.getNumMarkers(); ++j)
-        clones[source.getMarker(j)] = skeleton->getMarker(j);
+      // cloneSkeleton() keeps the indices of BodyNodes and, per node type, of
+      // their Nodes, so each BodyNode's Node lists pair up by position.
+      for (std::size_t j = 0; j < source.getNumBodyNodes(); ++j) {
+        auto* sourceBody = source.getBodyNode(j);
+        auto* cloneBody = skeleton->getBodyNode(j);
+        clones[sourceBody] = cloneBody;
+        const auto sourceNodes = sourceBody->getNodes();
+        const auto cloneNodes = cloneBody->getNodes();
+        if (sourceNodes.size() != cloneNodes.size()) {
+          throw std::runtime_error(
+              "Cannot clone a compiled World: the clone of BodyNode '"
+              + sourceBody->getName() + "' has a different set of Nodes");
+        }
+        for (std::size_t k = 0; k < sourceNodes.size(); ++k) {
+          const auto* sourceFrame
+              = dynamic_cast<const dynamics::Frame*>(sourceNodes[k]);
+          auto* cloneFrame = dynamic_cast<dynamics::Frame*>(cloneNodes[k]);
+          if (sourceFrame && cloneFrame)
+            clones[sourceFrame] = cloneFrame;
+        }
+      }
+    }
+    // Check every parent before cloning: clone() reads the source's World
+    // pose, which walks the whole ancestor chain and crashes on a detached one.
+    // A detached frame has no World pose to clone from, and an external parent
+    // (held by neither this World nor its Skeletons) is not supported.
+    for (const auto& frame : mSimpleFrames)
+      clones[frame.get()] = nullptr;
+    for (const auto& frame : mSimpleFrames) {
+      const auto* parent = frame->getParentFrame();
+      if (parent == nullptr) {
+        throw std::runtime_error(
+            "Cannot clone a compiled World: SimpleFrame '" + frame->getName()
+            + "' has no parent frame");
+      }
+      if (!parent->isWorld() && clones.find(parent) == clones.end()) {
+        throw std::runtime_error(
+            "Cannot clone a compiled World: the parent '" + parent->getName()
+            + "' of SimpleFrame '" + frame->getName()
+            + "' is not a frame this World holds");
+      }
     }
     for (const auto& frame : mSimpleFrames) {
       auto clone = frame->clone(dynamics::Frame::World());
@@ -2825,12 +2860,6 @@ WorldPtr World::clone() const
     for (std::size_t i = 0; i < mSimpleFrames.size(); ++i) {
       auto* parent = mSimpleFrames[i]->getParentFrame();
       const auto it = clones.find(parent);
-      if (!parent->isWorld() && it == clones.end()) {
-        throw std::runtime_error(
-            "Cannot clone a compiled World: the parent '" + parent->getName()
-            + "' of SimpleFrame '" + mSimpleFrames[i]->getName()
-            + "' is not a frame this World holds");
-      }
       const auto& clone = worldClone->getSimpleFrame(i);
       clone->setParentFrame(
           parent->isWorld() ? dynamics::Frame::World() : it->second);
@@ -6012,3 +6041,5 @@ std::size_t getRegistryLockCount()
 } // namespace detail
 } // namespace simulation
 } // namespace dart
+
+#undef DART_REGISTRY_NOINLINE

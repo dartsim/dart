@@ -33,6 +33,7 @@
 #include "dart/common/Composite.hpp"
 #include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -57,6 +58,10 @@ std::size_t incrementAspectVersion(VersionCounter* object, const Aspect* aspect)
         || dynamic_cast<const dynamics::DynamicsAspect*>(aspect)) {
       notifyParameterMutation(shape);
     }
+  } else if (dynamic_cast<const dynamics::Support*>(aspect)) {
+    // Support geometry is a versioned property; activity is state-only.
+    if (const auto* effector = dynamic_cast<dynamics::EndEffector*>(object))
+      notifyParameterMutation(static_cast<const Composite*>(effector));
   }
   return version;
 }

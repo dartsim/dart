@@ -1618,6 +1618,30 @@ public:
 } // namespace
 
 //==============================================================================
+TEST(World, CompiledSolverAbsentRemovalRemainsNoOp)
+{
+  auto world = World::create();
+  auto resident = createBox(Eigen::Vector3d::Ones());
+  auto absent = createBox(Eigen::Vector3d::Ones());
+  absent->setName("absent");
+  world->addSkeleton(resident);
+  world->compile();
+  auto* solver = world->getConstraintSolver();
+  const auto topology = world->getTopologyRevision();
+  const auto parameter = world->getParameterRevision();
+  EXPECT_NO_THROW(solver->removeSkeleton(absent));
+  EXPECT_NO_THROW(solver->removeSkeletons({absent}));
+  ASSERT_EQ(solver->getSkeletons().size(), 1u);
+  EXPECT_EQ(solver->getSkeletons()[0], resident);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+  EXPECT_TRUE(world->isCompiled());
+  // A resident skeleton is still protected.
+  EXPECT_THROW(solver->removeSkeleton(resident), std::runtime_error);
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
 TEST(World, FrozenModelAcceptsClearingAbsentAspects)
 {
   auto world = World::create();
@@ -1702,6 +1726,154 @@ TEST(World, FrozenMoveAndCopyPreserveSourceAndDestination)
   EXPECT_EQ(frozen->getNumBodyNodes(), 1u);
   EXPECT_NO_THROW(frozenBody->copyTo(loose, looseBody));
   EXPECT_EQ(loose->getNumBodyNodes(), 2u);
+}
+
+namespace {
+
+// A Frame-bearing Node type that World knows nothing about.
+struct EmptyNodeData
+{
+};
+
+class CustomJacobianNode final : public FixedJacobianNode
+{
+  using Empty = EmptyNodeData;
+
+public:
+  CustomJacobianNode(BodyNode* parent, const Eigen::Isometry3d& transform)
+    : Entity(ConstructFrame),
+      Frame(parent),
+      FixedFrame(parent, transform),
+      FixedJacobianNode(parent, transform)
+  {
+  }
+
+  // Skeleton cloning requires every Node to hold a (here empty) State and
+  // Properties.
+  std::unique_ptr<Node::State> getNodeState() const override
+  {
+    return std::make_unique<Node::MakeState<Empty>>();
+  }
+
+  std::unique_ptr<Node::Properties> getNodeProperties() const override
+  {
+    return std::make_unique<Node::MakeProperties<Empty>>();
+  }
+
+protected:
+  Node* cloneNode(BodyNode* parent) const override
+  {
+    return new CustomJacobianNode(parent, getRelativeTransform());
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(World, CompiledCloneRemapsCustomJacobianFrames)
+{
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.1, -0.2, 0.3);
+  auto world = World::create();
+  auto robot = Skeleton::create("robot");
+  auto* first = robot->createJointAndBodyNodePair<FreeJoint>().second;
+  first->setName("first_body");
+  auto* second = robot->createJointAndBodyNodePair<FreeJoint>().second;
+  second->setName("second_body");
+  // Mixed node types in a creation order that differs from the body order.
+  auto* secondCustom = second->createNode<CustomJacobianNode>(offset);
+  second->createEndEffector("second_tip");
+  auto* firstCustom = first->createNode<CustomJacobianNode>(offset);
+  auto* firstOther = first->createNode<CustomJacobianNode>(offset);
+  first->createEndEffector("first_tip");
+  world->addSkeleton(robot);
+  std::vector<SimpleFramePtr> frames;
+  for (auto* parent :
+       std::vector<Frame*>{secondCustom, firstCustom, firstOther})
+    frames.push_back(std::make_shared<SimpleFrame>(
+        parent, "on_" + std::to_string(frames.size()), offset));
+  for (const auto& frame : frames) {
+    frame->setRelativeSpatialVelocity(Eigen::Vector6d::LinSpaced(0.1, 0.6));
+    frame->setRelativeSpatialAcceleration(Eigen::Vector6d::LinSpaced(0.7, 1.2));
+    world->addSimpleFrame(frame);
+  }
+  world->compile();
+  const auto sourceChildren = firstCustom->getChildFrames();
+
+  WorldPtr clone;
+  ASSERT_NO_THROW(clone = world->clone());
+  const auto clonedRobot = clone->getSkeleton(0);
+  const std::vector<const Node*> expected{
+      clonedRobot->getBodyNode("second_body")->getNodes().front(),
+      clonedRobot->getBodyNode("first_body")->getNodes().front(),
+      clonedRobot->getBodyNode("first_body")->getNodes()[1]};
+  for (std::size_t i = 0; i < frames.size(); ++i) {
+    SCOPED_TRACE(i);
+    const auto copy = clone->getSimpleFrame(frames[i]->getName());
+    ASSERT_NE(copy, nullptr);
+    EXPECT_EQ(copy->getParentFrame(), dynamic_cast<const Frame*>(expected[i]));
+    EXPECT_NE(copy->getParentFrame(), frames[i]->getParentFrame());
+    EXPECT_TRUE(
+        copy->getWorldTransform().isApprox(frames[i]->getWorldTransform()));
+    EXPECT_TRUE(copy->getRelativeSpatialVelocity().isApprox(
+        frames[i]->getRelativeSpatialVelocity()));
+    EXPECT_TRUE(copy->getRelativeSpatialAcceleration().isApprox(
+        frames[i]->getRelativeSpatialAcceleration()));
+  }
+  EXPECT_EQ(firstCustom->getChildFrames(), sourceChildren);
+  clone.reset();
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, CompiledCloneRejectsDetachedFrameBeforeKinematicRead)
+{
+  for (const bool shapeless : {true, false}) {
+    SCOPED_TRACE(shapeless);
+    auto world = World::create();
+    auto robot = createBox(Eigen::Vector3d::Ones());
+    world->addSkeleton(robot);
+    auto detached = std::make_shared<SimpleFrame>(nullptr, "detached");
+    if (!shapeless) {
+      auto frame = std::make_shared<SimpleFrame>(Frame::World(), "detached");
+      frame->setParentFrame(nullptr);
+      detached = frame;
+    }
+    world->addSimpleFrame(detached);
+    world->compile();
+    const auto topology = world->getTopologyRevision();
+    const auto parameter = world->getParameterRevision();
+    EXPECT_THROW(world->clone(), std::runtime_error);
+    {
+      auto edit = world->edit();
+      EXPECT_THROW(world->clone(), std::runtime_error);
+    }
+    EXPECT_EQ(detached->getParentFrame(), nullptr);
+    EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+    EXPECT_GE(world->getTopologyRevision(), topology);
+    EXPECT_GE(world->getParameterRevision(), parameter);
+    EXPECT_NO_THROW(world->step());
+  }
+}
+
+//==============================================================================
+TEST(World, CompiledCloneRejectsDetachedExternalAncestorBeforeKinematicRead)
+{
+  // The owned frame's parent is non-null but is itself detached, so reading
+  // the owned frame's World pose would walk into a null ancestor.
+  auto ancestor = std::make_shared<SimpleFrame>(nullptr, "external_detached");
+  auto owned = std::make_shared<SimpleFrame>(ancestor.get(), "owned_child");
+  auto world = World::create();
+  world->addSimpleFrame(owned);
+  world->compile();
+  EXPECT_THROW(world->clone(), std::runtime_error);
+  {
+    auto edit = world->edit();
+    EXPECT_THROW(world->clone(), std::runtime_error);
+  }
+  EXPECT_EQ(owned->getParentFrame(), ancestor.get());
+  EXPECT_EQ(ancestor->getParentFrame(), nullptr);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
 }
 
 //==============================================================================
@@ -2202,6 +2374,32 @@ TEST(World, CompiledRevisionsSeparateParametersStateAndAppearance)
   EXPECT_EQ(world->getParameterRevision(), changedParameters);
   EXPECT_EQ(world->getTopologyRevision(), topology);
   EXPECT_NO_THROW(world->step());
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, SupportGeometryStampsParameterButActivityIsState)
+{
+  auto world = World::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto* tip = robot->getBodyNode(0)->createEndEffector("tip");
+  auto* support = tip->createSupport();
+  support->setActive(true);
+  support->setGeometry(math::SupportGeometry{Eigen::Vector3d::Zero()});
+  world->addSkeleton(robot);
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  const auto parameter = world->getParameterRevision();
+
+  support->setActive(false);
+  support->setActive(true);
+  EXPECT_EQ(world->getParameterRevision(), parameter);
+
+  support->setGeometry(math::SupportGeometry{Eigen::Vector3d(0.5, 0.0, 0.0)});
+  EXPECT_GT(world->getParameterRevision(), parameter);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  ASSERT_EQ(support->getGeometry().size(), 1u);
+  EXPECT_DOUBLE_EQ(support->getGeometry()[0].x(), 0.5);
   EXPECT_NO_THROW(world->step());
 }
 
@@ -4127,6 +4325,35 @@ TEST(World, FailedRecompileAtScopeExitSurfacesAtNextStep)
   EXPECT_NO_THROW(shape->setShape(box));
   EXPECT_THROW(world->compile(), std::runtime_error);
   EXPECT_NO_THROW(world->compile());
+  EXPECT_TRUE(world->isCompiled());
+  EXPECT_NO_THROW(world->step());
+}
+
+//==============================================================================
+TEST(World, RepairEditConsumesDeferredRecompileError)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto* shape = robot->getBodyNode(0)->getShapeNodeWith<CollisionAspect>(0);
+  const auto box = shape->getShape();
+  world->addSkeleton(robot);
+  world->compile();
+  {
+    auto edit = world->edit();
+    shape->setShape(std::make_shared<LineSegmentShape>());
+  }
+  ASSERT_FALSE(world->isCompiled());
+  {
+    // Still invalid: the scope exit stores a fresh failure.
+    auto edit = world->edit();
+  }
+  EXPECT_FALSE(world->isCompiled());
+  EXPECT_THROW(world->step(), std::runtime_error);
+  {
+    auto edit = world->edit();
+    shape->setShape(box);
+  }
   EXPECT_TRUE(world->isCompiled());
   EXPECT_NO_THROW(world->step());
 }
