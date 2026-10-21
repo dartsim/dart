@@ -35,6 +35,8 @@ def test_mesh_vertex_groups_preserve_order_scale_and_own_their_arrays(tmp_path):
     for actual, vertices in zip(groups, expected):
         assert actual.dtype == np.float64
         np.testing.assert_array_equal(actual, vertices)
+        assert not actual.flags.writeable
+        actual = actual.copy()
         actual[:] = 99
     for actual, vertices in zip(shape.mesh_vertex_groups, expected):
         np.testing.assert_array_equal(actual, vertices)
@@ -87,7 +89,9 @@ def test_heightmap_round_trip(layout):
 
     heights[:] = 0
     assert shape.getHeightField()[1, 2] == 6
-    actual[1, 2] = 99
+    with pytest.raises(ValueError, match="assignment destination is read-only"):
+        actual[1, 2] = 99
+    actual.copy()[1, 2] = 99
     assert shape.getHeightField()[1, 2] == 6
     shape.setHeightField(np.zeros((3, 2), dtype=np.float32))
     assert actual[0, 1] == -2

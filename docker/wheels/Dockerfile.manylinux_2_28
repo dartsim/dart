@@ -48,11 +48,13 @@ RUN git clone --depth 1 https://github.com/danfis/libccd.git -b 'v2.1' \
     && rm -rf libccd
 
 # fcl
+COPY patches/fcl-0.7.0-gjk-zero-direction.patch /tmp/fcl-0.7.0-gjk-zero-direction.patch
 RUN git clone --depth 1 https://github.com/flexible-collision-library/fcl.git -b '0.7.0' \
+    && git -C fcl apply /tmp/fcl-0.7.0-gjk-zero-direction.patch \
     && mkdir -p fcl/build \
     && cmake fcl -B fcl/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
     && cmake --build fcl/build --target install -j${NUM_CORES} \
-    && rm -rf fcl
+    && rm -rf fcl /tmp/fcl-0.7.0-gjk-zero-direction.patch
 
 # tinyxml2
 RUN git clone --depth 1 https://github.com/leethomason/tinyxml2.git -b '11.0.0' \
