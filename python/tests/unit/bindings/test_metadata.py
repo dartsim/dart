@@ -17,7 +17,7 @@ def test_module_version_is_nonempty():
 def test_package_wraps_a_private_extension():
     package_dir = Path(dart.__file__).resolve().parent
     assert Path(dart.__file__).name == "__init__.py"
-    assert Path(dart._dartpy.__file__).resolve().parent == package_dir
+    assert Path(dart._core.__file__).resolve().parent == package_dir
     assert (package_dir / "py.typed").is_file()
     experimental = importlib.import_module("dartpy.experimental")
     assert "outside DART's semantic versioning" in experimental.__doc__

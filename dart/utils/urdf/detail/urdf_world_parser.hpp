@@ -37,7 +37,6 @@
 
 #pragma once
 
-#include <dart/utils/urdf/BackwardCompatibility.hpp>
 #include <dart/utils/urdf/DartLoader.hpp>
 #include <dart/utils/urdf/detail/IncludeUrdf.hpp>
 

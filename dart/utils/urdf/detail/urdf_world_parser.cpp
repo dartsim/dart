@@ -38,6 +38,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/utils/urdf/detail/IncludeUrdf.hpp"
+#include "dart/utils/urdf/detail/JointXmlElementMetadata.hpp"
 
 #include <tinyxml2.h>
 
@@ -81,41 +82,6 @@ bool parsePose(urdf::Pose& pose, tinyxml2::XMLElement* xml)
   return true;
 }
 
-JointXmlElementMetadata collectJointXmlElementMetadata(
-    const std::string& urdfString)
-{
-  JointXmlElementMetadata metadata;
-
-  tinyxml2::XMLDocument xmlDoc;
-  if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
-    return metadata;
-
-  auto* robotXml = xmlDoc.FirstChildElement("robot");
-  if (!robotXml)
-    return metadata;
-
-  for (auto* jointXml = robotXml->FirstChildElement("joint");
-       jointXml != nullptr;
-       jointXml = jointXml->NextSiblingElement("joint")) {
-    const char* name = jointXml->Attribute("name");
-    if (!name)
-      continue;
-
-    if (jointXml->FirstChildElement("axis"))
-      metadata.jointsWithAxisElement.emplace(name);
-
-    auto* limitXml = jointXml->FirstChildElement("limit");
-    if (limitXml) {
-      if (limitXml->Attribute("lower"))
-        metadata.jointsWithLimitLowerAttribute.emplace(name);
-      if (limitXml->Attribute("upper"))
-        metadata.jointsWithLimitUpperAttribute.emplace(name);
-    }
-  }
-
-  return metadata;
-}
-
 } // namespace
 
 Entity::Entity(const urdf::Entity& urdfEntity)
@@ -133,7 +99,7 @@ std::shared_ptr<World> parseWorldURDF(
     const common::ResourceRetrieverPtr& retriever)
 {
   tinyxml2::XMLDocument xml_doc;
-  const auto result = xml_doc.Parse(&_xml_string.front());
+  const auto result = xml_doc.Parse(_xml_string.c_str());
   if (result != tinyxml2::XML_SUCCESS) {
     dtwarn << "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error"
               " code "
@@ -171,6 +137,11 @@ std::shared_ptr<World> parseWorldURDF(
     ++count;
     const char* filename = include_xml->Attribute("filename");
     const char* model_name = include_xml->Attribute("model_name");
+    if (!filename || !model_name) {
+      dtwarn << "[parseWorldURDF] An <include> element is missing its filename "
+                "or model_name attribute. We will return a nullptr.\n";
+      return nullptr;
+    }
     std::string string_filename(filename);
     std::string string_model_name(model_name);
     includedFiles[string_model_name] = string_filename;
@@ -190,6 +161,11 @@ std::shared_ptr<World> parseWorldURDF(
     dart::utils::urdf_parsing::Entity entity;
     try {
       const char* entity_model = entity_xml->Attribute("model");
+      if (!entity_model) {
+        dtwarn << "[parseWorldURDF] An <entity> element is missing its model "
+                  "attribute. We will return a nullptr.\n";
+        return nullptr;
+      }
       std::string string_entity_model(entity_model);
 
       // Find the model
@@ -215,7 +191,7 @@ std::shared_ptr<World> parseWorldURDF(
         // Parse model
         const auto xml_model_string = retriever->readAll(absoluteUri);
         entity.jointXmlElementMetadata
-            = collectJointXmlElementMetadata(xml_model_string);
+            = detail::collectJointXmlElementMetadata(xml_model_string);
         entity.model = urdf::parseURDF(xml_model_string);
 
         if (!entity.model) {
