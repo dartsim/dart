@@ -1,0 +1,34 @@
+<mujoco model="declared_inertia">
+  <worldbody>
+    <body name="quat" pos="0 0 0" euler="20 30 40">
+      <inertial pos="0.1 0.2 0.3" mass="2" diaginertia="2 3 4"
+                quat="0.9238795325112867 0 0 0.3826834323650898"/>
+      <geom type="sphere" size="0.1" mass="9"/>
+      <body name="axisangle" pos="0 0 0">
+        <inertial pos="0.1 0.2 0.3" mass="2" diaginertia="2 3 4" axisangle="0 0 1 45"/>
+      </body>
+      <body name="euler" pos="0 0 0">
+        <inertial pos="0.1 0.2 0.3" mass="2" diaginertia="2 3 4" euler="0 0 45"/>
+      </body>
+      <body name="xyaxes" pos="0 0 0">
+        <inertial pos="0.1 0.2 0.3" mass="2" diaginertia="2 3 4"
+                  xyaxes="1 1 0 0 1 0"/>
+      </body>
+      <body name="zaxis" pos="0 0 0">
+        <inertial pos="0.1 0.2 0.3" mass="2" diaginertia="2 3 4" zaxis="1 0 0"/>
+      </body>
+      <body name="full" pos="0 0 0">
+        <inertial pos="-0.1 0.2 -0.3" mass="3" fullinertia="3 4 5 0.2 -0.3 0.4"/>
+      </body>
+      <body name="no_body_pos">
+        <inertial pos="0.1 0.2 0.3" mass="2" diaginertia="2 3 4" euler="0 0 45"/>
+      </body>
+      <body name="no_inertial" xyaxes="1 1 0 0 1 0">
+        <geom type="sphere" size="0.1" mass="7" pos="0.1 0.2 0.3"
+              xyaxes="1 1 0 0 1 0"/>
+        <site name="axes" size="0.05" xyaxes="1 1 0 0 1 0"/>
+      </body>
+      <body name="empty" pos="0 0 0"/>
+    </body>
+  </worldbody>
+</mujoco>
