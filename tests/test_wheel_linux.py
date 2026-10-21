@@ -113,6 +113,11 @@ def test_native_dependency_image_preserves_collision_backends():
     assert "pybind11" not in dockerfile
 
 
+def test_dependency_image_fetches_archives_without_git_clones():
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    assert "git clone" not in dockerfile
+
+
 @pytest.mark.parametrize("wheels", [True, False])
 @pytest.mark.parametrize("stable_abi", [True, False])
 def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_abi):
