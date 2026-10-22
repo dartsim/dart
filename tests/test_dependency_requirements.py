@@ -3620,3 +3620,76 @@ def test_bullet_c_only_toolchain_and_stale_probe(tmp_path, selected_compiler):
     if selected_compiler:
         assert "CMAKE_SYSROOT:STRING=\n" in cache
         assert "CMAKE_CXX_COMPILER_TARGET:STRING=\n" in cache
+
+
+@pytest.mark.parametrize("language", ["C", "CXX"])
+def test_bullet_system_include_precedence(tmp_path, language):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", "STATIC")
+    wrong = tmp_path / "wrong headers"
+    shutil.copytree(prefix / "include", wrong)
+    (wrong / "btBulletCollisionCommon.h").write_text(
+        "#error SYSTEM classification changed header lookup\n"
+    )
+    bullet_module(tmp_path)
+    graph = bullet_imports(prefix).replace(
+        f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")',
+        f'target_include_directories(Bullet INTERFACE "{wrong.as_posix()}")',
+    )
+    graph += f'set_target_properties(collision PROPERTIES SYSTEM FALSE INTERFACE_INCLUDE_DIRECTORIES "{prefix.as_posix()}/include")\n'
+    cpp_source = tmp_path / "consumer.cpp"
+    cpp_source.write_text(BULLET_CONSUMER)
+    cpp_consumer = (
+        f'add_executable(consumer "{cpp_source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    # Ordinary CMake proves that the successful header selection depends on SYSTEM.
+    for system in (False, True):
+        control = tmp_path / f"control-{system}"
+        control.mkdir()
+        result = configure(
+            control,
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+            + graph
+            + f"set_property(TARGET collision PROPERTY SYSTEM {str(system).upper()})\n"
+            + cpp_consumer,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        built = subprocess.run(
+            [shutil.which("cmake"), "--build", str(control / "build")],
+            capture_output=True,
+            text=True,
+        )
+        assert (built.returncode == 0) == (not system), built.stdout + built.stderr
+        if system:
+            assert (
+                "SYSTEM classification changed header lookup"
+                in built.stdout + built.stderr
+            )
+        else:
+            cmake_fixture_run(
+                control
+                / ("build/consumer.exe" if os.name == "nt" else "build/consumer")
+            )
+    c_source = tmp_path / "consumer.c"
+    c_source.write_text("int main(void) { return 0; }\n")
+    result = configure(
+        tmp_path,
+        f"set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language({language})\n"
+        + graph
+        + "get_property(before_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        "get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        "if(NOT BULLET_FOUND OR NOT languages STREQUAL before_languages)\n"
+        'message(FATAL_ERROR "Lost SYSTEM include precedence or caller language")\nendif()\n'
+        + (
+            cpp_consumer
+            if language == "CXX"
+            else f'add_executable(consumer "{c_source.as_posix()}")\n'
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+    cmake_fixture_run(
+        tmp_path / ("build/consumer.exe" if os.name == "nt" else "build/consumer")
+    )
