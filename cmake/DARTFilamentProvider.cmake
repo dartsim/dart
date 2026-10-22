@@ -48,8 +48,8 @@ if(NOT DART_USE_SYSTEM_FILAMENT)
       URL_HASH "SHA256=${_filament_sha256}"
       ${_dart_filament_timestamp}
     )
-    dart_check_fetchcontent(dart_filament_sdk DART_USE_SYSTEM_FILAMENT)
     FetchContent_MakeAvailable(dart_filament_sdk)
+    dart_check_fetchcontent(dart_filament_sdk DART_USE_SYSTEM_FILAMENT)
     set(Filament_ROOT "${dart_filament_sdk_SOURCE_DIR}")
     if(EXISTS "${Filament_ROOT}/filament/include")
       string(APPEND Filament_ROOT "/filament")

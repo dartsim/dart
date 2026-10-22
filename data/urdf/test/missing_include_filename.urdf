@@ -1,0 +1,3 @@
+<world name="testWorld">
+  <include model_name="testRobot"/>
+</world>

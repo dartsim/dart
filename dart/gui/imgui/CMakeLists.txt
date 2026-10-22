@@ -154,8 +154,8 @@ else()
 
   FetchContent_GetProperties(dart_imgui)
   if(NOT dart_imgui_POPULATED)
-    dart_check_fetchcontent(dart_imgui DART_USE_SYSTEM_IMGUI "${dart_imgui_src_dir}")
     FetchContent_MakeAvailable(dart_imgui)
+    dart_check_fetchcontent(dart_imgui DART_USE_SYSTEM_IMGUI "${dart_imgui_src_dir}")
   endif()
 
   find_package(Git REQUIRED)

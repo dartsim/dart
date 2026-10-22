@@ -251,7 +251,9 @@ simulation-loop behavior changes. It is the forward lane: it applies
 Gazebo still works.
 
 For collision, contact, constraint-solver, sleeping, `World::step`, or
-step-stage changes, and before a release, also run the unpatched lanes, which
+step-stage changes, for changes to the installed CMake package configuration or
+to the Gazebo versions the lanes pin (`tools/gazebo/compat/lane.sh`, the
+`gazebo` Pixi environment), and before a release, also run the unpatched lanes, which
 build released gz-physics and gz-sim against this checkout, run both full
 suites, and fail on any failure DART 6.19.4 did not have:
 
@@ -260,6 +262,10 @@ pixi run gz-compat-ionic       # gz-physics 8.4.0, gz-sim 9.5.0
 pixi run gz-compat-jetty       # gz-physics 9.5.2, gz-sim 10.5.0
 pixi run gz-compat-harmonic    # gz-physics 7.8.0, gz-sim 8.10.0
 ```
+
+The gate depends on the release line. DART 7 on `main` requires Ubuntu 24.04
+or newer, so its gate is the Ionic and Jetty lanes; the Harmonic lane gates
+the `release-6.20` maintenance line, which keeps Ubuntu 22.04 support.
 
 A first run of a lane builds DART, gz-physics, and gz-sim (about 15 minutes
 with 12 build jobs on a 32-core workstation) and then runs the gz-sim suite
@@ -273,7 +279,7 @@ collision filter since [#3632](https://github.com/dartsim/dart/pull/3632).
 
 To distinguish inherited failures from new ones, build the change's base as
 a second variant and set `GZ_COMPAT_BASE_VARIANT`; explain inherited failures
-as well. Sleeping changes must also run
+as well. Every change that needs the unpatched lanes must also run
 `pixi run gz-compat-ionic sleep-oracle` without `--allow-unexercised` and
 explain every mismatch. Release verification matched 33 of 35 scenarios;
 the two differences concern a detector-private contact-cap edit without
