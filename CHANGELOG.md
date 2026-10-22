@@ -4,6 +4,14 @@
 
 ### [DART 6.20.4 (Unreleased)](https://github.com/dartsim/dart/milestone/109)
 
+* Python
+
+  * dartpy's Linux wheels now build urdfdom 6.0.1. URDF parser errors no
+    longer treat URDF text as a printf format string, and files that declare
+    URDF 1.1 or 1.2 load; geometry DART does not support, such as capsules,
+    still fails to load. URDF 1.0 files load as before.
+    [#3887](https://github.com/dartsim/dart/pull/3887)
+
 ### [DART 6.20.3 (2026-10-24)](https://github.com/dartsim/dart/milestone/108?closed=1)
 
 DART 6.20.3 is a patch release on the DART 6 line. It fixes contacts for small
