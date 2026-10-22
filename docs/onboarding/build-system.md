@@ -65,6 +65,17 @@ with local source trees, or use the system switches. The Linux CI
 fetched-test-tooling job configures both switches `OFF`, builds the C++ tests
 and benchmarks, runs CTest, and checks that installation excludes test tooling.
 
+## Eigen Compatibility
+
+DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0
+through the `eigen34` feature; the toolchain CI lane rewrites that pin to build
+and test Eigen 5 with warnings as errors.
+The installed CMake package records the major used to build DART and rejects
+a consumer using a different major; pkg-config consumers must match majors
+themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
+Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
+same major or rebuild DART and its consumers.
+
 ## Package Version Compatibility
 
 The installed `DARTConfigVersion.cmake` accepts plain version requests from
@@ -105,6 +116,12 @@ components and targets forward to `dart` for rebuilt consumers; the former
 collision shared-library filenames are no longer installed. `DART_SKIP_BULLET`
 and `DART_SKIP_ODE` disable the respective backends, including bundled downloads.
 The FCL default and public detector classes remain unchanged.
+By default a missing optional dependency (Bullet, ODE) only warns and drops its
+backend. Gazebo-facing packagers, whose gz-physics needs both, should pass
+`-DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON` so configure fails instead; the error
+names the dependency and the component, and an explicit `DART_SKIP_<NAME>=ON`
+still disables one on purpose. The Gazebo pixi task (`config-dart-gz`) and
+the compat lanes set it.
 
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the
@@ -123,6 +140,12 @@ using versioned or unversioned package names. Installed IO components record
 the selected package and major and require that same major, so a consumer
 cannot silently link a different sdformat ABI. Core builds with IO disabled
 do not discover sdformat.
+
+Source builds using urdfdom below 5.1 should load only trusted URDF: those
+versions can interpret URDF text as a printf format string in parser error
+logging (fixed upstream in urdfdom 5.1.0, ros/urdfdom#243 and #244). Pixi
+builds use urdfdom 6 and are unaffected. Linux wheels bundle urdfdom 6.0.1
+and urdfdom_headers 3.0.1, with sdformat rebuilt against them.
 
 Set
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` for a headless core plus IO
@@ -153,9 +176,10 @@ default) requires Filament 1.77.3, GLFW 3.4, libpng, libjpeg, and Dear ImGui
 Filament SDK; `OFF` uses DART's pinned private SDK, which Linux builds from
 source with Clang 20 or newer and Ninja, and macOS arm64 and 64-bit Windows
 download as prebuilt archives. The bundled ImGui, the default, is the Dear
-ImGui v1.92.8 docking release, which configure fetches with Git; its installed
-`dart/external/imgui/` headers use the docking layout. For offline configures,
-pass a local checkout of that tag with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
+ImGui v1.92.8 docking release, which configure fetches as a SHA256-pinned
+tag archive, unpatched; its installed `dart/external/imgui/` headers use the
+docking layout. For offline configures, extract that archive and pass the
+folder that contains `imgui.h` with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
 `DART_USE_SYSTEM_IMGUI=ON` uses an installed ImGui instead; a vanilla system
 ImGui builds `dart-gui` without docking.
 
