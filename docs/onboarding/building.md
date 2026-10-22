@@ -12,6 +12,12 @@ pixi run build-py-dev
 `pixi run build` builds the C++ libraries. `pixi run build-py-dev` builds the
 Python bindings, including `dartpy.gui`, in the development tree.
 
+Source builds on `main` require the Ubuntu 24.04 LTS toolchain floor: GCC 13.2,
+LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
+17.2), and CMake 3.28. Installed consumers (`find_package(DART)`) still only
+need CMake 3.22.1. `release-6.20` keeps Ubuntu 22.04. The platform table is in
+`docs/readthedocs/dart/developer_guide/build.rst`.
+
 Pixi installs `sccache` and DART automatically falls back to `ccache` when that
 is the available launcher. Configure tasks leave compiler caching enabled by
 default so repeated CMake builds can reuse cached C and C++ translation units.

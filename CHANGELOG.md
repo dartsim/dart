@@ -6,6 +6,13 @@
 
 * Breaking Changes
 
+  * Source builds require the Ubuntu 24.04 LTS toolchain or newer: GCC 13.2,
+    LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
+    17.2) and CMake 3.28. Projects that use an installed DART through
+    `find_package(DART)` still need only CMake 3.22.1. `release-6.20` keeps the
+    Ubuntu 22.04 floor.
+    [#3850](https://github.com/dartsim/dart/pull/3850)
+
   * **Behavior change:** MJCF loading now enforces hinge and slide limits,
     including inherited defaults and MuJoCo 3.x automatic limits; applies
     declared mass, center of mass, and rotated inertia even without geoms;
