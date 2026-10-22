@@ -14,7 +14,7 @@ def configure(
     source = tmp_path / "source"
     source.mkdir()
     (source / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(compiler_requirements NONE)\n"
         f'include("{ROOT.as_posix()}/cmake/dart_defs.cmake")\n'
         f'set(CMAKE_CXX_COMPILER_ID "{compiler}")\n'
@@ -25,8 +25,8 @@ def configure(
         + (
             "set(MSVC TRUE)\n"
             f"set(MSVC_VERSION {version if compiler == 'MSVC' else '1920'})\n"
-            "dart_configure_msvc_toolchain(REQUIRED_VERSION 1930 "
-            'REQUIRED_LABEL "Visual Studio 2022 v143")\n'
+            "dart_configure_msvc_toolchain(REQUIRED_VERSION 1932 "
+            'REQUIRED_LABEL "Visual Studio 2022 17.2")\n'
             if msvc
             else ""
         )
@@ -45,17 +45,17 @@ def configure(
 @pytest.mark.parametrize(
     "compiler,version,accepted",
     [
-        ("GNU", "11.1.0", False),
-        ("GNU", "11.2.0", True),
+        ("GNU", "13.1.0", False),
+        ("GNU", "13.2.0", True),
         ("GNU", "16.0.0", True),
-        ("Clang", "12.0.1", False),
-        ("Clang", "13.0.0", True),
+        ("Clang", "17.0.6", False),
+        ("Clang", "18.0.0", True),
         ("Clang", "19.0.0", True),
-        ("AppleClang", "13.1.6", False),
-        ("AppleClang", "14.0.0", True),
+        ("AppleClang", "16.0.0", False),
         ("AppleClang", "17.0.0", True),
-        ("MSVC", "1929", False),
-        ("MSVC", "1930", True),
+        ("AppleClang", "18.0.0", True),
+        ("MSVC", "1931", False),
+        ("MSVC", "1932", True),
         ("MSVC", "1944", True),
     ],
 )
@@ -74,20 +74,20 @@ def test_missing_compiler_version_is_rejected(tmp_path, compiler):
 
 
 def test_wheel_build_requires_same_gcc_floor(tmp_path):
-    result = configure(tmp_path, "GNU", "10.2.1", wheels=True)
+    result = configure(tmp_path, "GNU", "12.3.0", wheels=True)
     assert result.returncode != 0
-    assert "GCC 11.2.0" in result.stderr
+    assert "GCC 13.2.0" in result.stderr
 
 
-@pytest.mark.parametrize("version,accepted", [("14.0", False), ("14.1", True)])
+@pytest.mark.parametrize("version,accepted", [("16.2", False), ("16.3", True)])
 def test_xcode_version_boundary_when_reported_by_generator(tmp_path, version, accepted):
-    result = configure(tmp_path, "AppleClang", "14.0.0", xcode=version)
+    result = configure(tmp_path, "AppleClang", "17.0.0", xcode=version)
     assert (result.returncode == 0) == accepted, result.stdout + result.stderr
     if not accepted:
-        assert "Xcode 14.1" in result.stderr
+        assert "Xcode 16.3" in result.stderr
 
 
-@pytest.mark.parametrize("version,accepted", [("12.0.0", False), ("13.0.0", True)])
+@pytest.mark.parametrize("version,accepted", [("17.0.0", False), ("18.0.0", True)])
 def test_clang_cl_uses_clang_floor_not_msvc_emulation_version(
     tmp_path, version, accepted
 ):
@@ -98,12 +98,11 @@ def test_clang_cl_uses_clang_floor_not_msvc_emulation_version(
 @pytest.mark.parametrize(
     ("compiler", "version", "msvc", "system"),
     (
-        ("GNU", "11.2.0", False, "Linux"),
         ("GNU", "13.2.0", False, "Linux"),
-        ("Clang", "13.0.0", False, "Linux"),
-        ("AppleClang", "14.0.0", False, "Darwin"),
-        ("MSVC", "1930", True, "Windows"),
-        ("Clang", "13.0.0", True, "Windows"),
+        ("Clang", "18.0.0", False, "Linux"),
+        ("AppleClang", "17.0.0", False, "Darwin"),
+        ("MSVC", "1932", True, "Windows"),
+        ("Clang", "18.0.0", True, "Windows"),
     ),
 )
 @pytest.mark.parametrize("tuning", (False, True))

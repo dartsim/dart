@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 
 #include <fmt/args.h>
@@ -52,6 +53,47 @@
 
 namespace dart::common {
 namespace {
+
+// One immutable {callback, userData} pair per setLogCallback() call, published
+// through a single lock-free pointer, so a reader never pairs one call's
+// callback with another call's user data. Every slot stays reachable through
+// \c previous: an in-flight forwardToLogCallback() may still be reading an old
+// one, so none is freed, and the chain keeps leak checkers quiet. The cost is
+// one small allocation per setLogCallback() call.
+struct Slot
+{
+  LogCallback callback;
+  void* userData;
+  const Slot* previous;
+};
+
+std::atomic<const Slot*> sSlot{nullptr};
+static_assert(
+    std::atomic<const Slot*>::is_always_lock_free,
+    "the logging path must not take a lock, so that fork() cannot inherit it "
+    "held");
+
+// Set while this thread runs the callback: a log call from inside it goes to
+// the default output rather than back into the callback. The child of a
+// fork() inherits the forking thread's copy, so do not fork from inside the
+// callback.
+thread_local bool tInsideCallback = false;
+
+// Set by the first callback that throws, so that the throw is reported once.
+// Namespace scope, so no guard lock sits on the throw-report path.
+std::atomic<bool> sThrowReported{false};
+
+struct InsideCallback
+{
+  InsideCallback()
+  {
+    tInsideCallback = true;
+  }
+  ~InsideCallback()
+  {
+    tInsideCallback = false;
+  }
+};
 
 std::atomic<LogLevel> loggingLevel{
     DART_ACTIVE_LOG_LEVEL < DART_LOG_LEVEL_INFO
@@ -132,7 +174,7 @@ void defaultLogSink(LogLevel level, const std::string& message)
   static const bool colorStdout = useLogColor(stdout);
   static const bool colorStderr = useLogColor(stderr);
   const auto index = static_cast<unsigned>(level);
-  auto& stream = level >= LogLevel::Warn ? std::cerr : std::cout;
+  auto& stream = level >= LogLevel::Warn ? consoleErr() : consoleOut();
   const bool color = level >= LogLevel::Warn ? colorStderr : colorStdout;
   if (color)
     stream << "\033[1;" << colors[index] << 'm';
@@ -143,6 +185,14 @@ void defaultLogSink(LogLevel level, const std::string& message)
 }
 
 } // namespace
+
+void setLogCallback(LogCallback callback, void* userData)
+{
+  const Slot* previous = sSlot.load(std::memory_order_acquire);
+  sSlot.store(
+      new Slot{callback, callback ? userData : nullptr, previous},
+      std::memory_order_release);
+}
 
 //==============================================================================
 LogSink setLogSink(LogSink sink)
@@ -175,6 +225,39 @@ LogLevel getLogLevel()
 }
 
 namespace detail {
+
+bool hasLogCallback()
+{
+  const Slot* slot = sSlot.load(std::memory_order_acquire);
+  return slot && slot->callback;
+}
+
+bool forwardToLogCallback(
+    LogLevel level, const char* message, std::size_t length)
+{
+  const Slot* slot = sSlot.load(std::memory_order_acquire);
+  if (!slot || !slot->callback || tInsideCallback)
+    return false;
+  InsideCallback guard;
+  try {
+    slot->callback(level, message, length, slot->userData);
+    return true;
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
+  } catch (...) {
+    if (!sThrowReported.exchange(true)) {
+      // DART's console header marks it as an error for consoles and for
+      // bridges that read the header, such as dartpy's.
+      colorErr("Error", __FILE__, __LINE__, 31)
+          << "A log callback threw. DART ignores the exception and sends the "
+             "message to the default output; later throws are not reported."
+          << std::endl;
+    }
+    return false;
+  }
+}
 
 //==============================================================================
 LogArgument::LogArgument(const std::string& value)
@@ -230,7 +313,7 @@ void logMessage(
     std::size_t count)
 {
   if (level < LogLevel::Trace || level >= LogLevel::Off
-      || level < getLogLevel())
+      || (level < getLogLevel() && !hasLogCallback()))
     return;
 
   fmt::dynamic_format_arg_store<fmt::format_context> store;
@@ -274,6 +357,11 @@ void logMessage(
     message = "[log format error: " + std::string(error.what()) + "] " + format;
   }
 
+  if (forwardToLogCallback(level, message.data(), message.size()))
+    return;
+  if (level < getLogLevel())
+    return;
+
   auto& state = loggingState();
   std::lock_guard<std::recursive_mutex> lock(state.mutex);
   // A callback may replace itself. Keep it alive until this invocation returns.
@@ -285,6 +373,10 @@ void logMessage(
       (*sink)(level, message);
     } else
       defaultLogSink(level, message);
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     // Logging must not interrupt application error handling.
   }

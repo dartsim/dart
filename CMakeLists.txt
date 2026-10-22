@@ -1,13 +1,13 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.28)
 
 project(dart)
 
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
-# DART 6 is a C++17 code base. Newer compilers default to C++20 or later, where
+# DART 7 defaults to C++17. Newer compilers default to C++20 or later, where
 # some of this code is deprecated (for example the implicit `this` capture of
 # `[=]` lambdas), so build DART itself as C++17 regardless of the compiler
 # default. Consumers still get the `cxx_std_17` minimum from the exported
@@ -17,19 +17,9 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
-# became default in CMake 3.0. Explicitly setting this policy is necessary to
-# suppress a warning in CMake 3.0 and above.
-if(POLICY CMP0042)
-  cmake_policy(SET CMP0042 NEW)
-endif()
-
-# Simplify variable reference and escape sequence evaluation. This was added in
-# CMake 3.1. Explicitly setting this policy is necessary to suppress a warning
-# in CMake 3.1 and above.
-if(POLICY CMP0053)
-  cmake_policy(SET CMP0053 NEW)
-endif()
+# The Filament backend is C++20; do not scan other C++ sources for modules
+# (CMP0155 is NEW at CMake 3.28).
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 # Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
 # case that DART is built as a sub-project in another project.
@@ -37,6 +27,18 @@ set(DART_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(DART_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 include(GNUInstallDirs)
+
+# Use the same default install component as libdart.
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
+)
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE" "${PROJECT_SOURCE_DIR}/NOTICE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/dart"
+  COMPONENT headers
+  EXCLUDE_FROM_ALL
+)
 
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
@@ -465,8 +467,8 @@ dart_check_compiler_version()
 # targets created during configure inherit the same directory options.
 if(MSVC)
   dart_configure_msvc_toolchain(
-    REQUIRED_VERSION 1930
-    REQUIRED_LABEL "Visual Studio 2022 v143"
+    REQUIRED_VERSION 1932
+    REQUIRED_LABEL "Visual Studio 2022 17.2"
   )
 endif()
 

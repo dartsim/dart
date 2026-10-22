@@ -41,6 +41,10 @@
 
 #include <cstddef>
 
+#if defined(__GLIBCXX__)
+  #include <cxxabi.h>
+#endif
+
 namespace dart {
 namespace common {
 namespace detail {
@@ -170,11 +174,15 @@ void logMessage(
 template <typename S>
 void log(LogLevel level, const S& format)
 {
-  if (level < getLogLevel())
+  if (level < getLogLevel() && !hasLogCallback())
     return;
 
   try {
     logMessage(level, std::string(format), nullptr, 0);
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     // Logging must not interrupt application error handling.
   }
@@ -185,13 +193,17 @@ template <typename S, typename... Args>
 void log(LogLevel level, const S& format, Args&&... args)
 {
   // In particular, disabled logging must not allocate or initialize the sink.
-  if (level < getLogLevel())
+  if (level < getLogLevel() && !hasLogCallback())
     return;
 
   try {
     const std::array<LogArgument, sizeof...(Args)> arguments{
         {LogArgument(std::forward<Args>(args))...}};
     logMessage(level, std::string(format), arguments.data(), arguments.size());
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     // Logging must not interrupt application error handling.
   }

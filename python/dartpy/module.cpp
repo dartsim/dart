@@ -41,6 +41,10 @@ namespace python {
 
 void eigen_geometry(nb::module_& m);
 
+void dart_errors(nb::module_& m);
+#ifdef DARTPY_TESTING_HOOKS
+void dart_testing(nb::module_& m);
+#endif
 void dart_common(nb::module_& m);
 void dart_math(nb::module_& m);
 void dart_optimizer(nb::module_& m);
@@ -75,6 +79,12 @@ NB_MODULE(_core, m)
 
   eigen_geometry(dartpy);
 
+  // First: later nanobind exception registrations derive from these types, and
+  // their translators run before this module's catch-all translator.
+  dart_errors(dartpy);
+#ifdef DARTPY_TESTING_HOOKS
+  dart_testing(dartpy);
+#endif
   dart_common(dartpy);
   dart_math(dartpy);
   dart_optimizer(dartpy);

@@ -34,6 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "detail/logging.hpp"
+
+#include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 
 #include <string>
@@ -42,12 +45,21 @@ namespace dart::python {
 
 void Logging(nb::module_& m)
 {
+  dartnb::installLogBridge();
+
   m.def("trace", [](const std::string& log) { common::trace("{}", log); });
   m.def("debug", [](const std::string& log) { common::debug("{}", log); });
   m.def("info", [](const std::string& log) { common::info("{}", log); });
   m.def("warn", [](const std::string& log) { common::warn("{}", log); });
   m.def("error", [](const std::string& log) { common::error("{}", log); });
   m.def("fatal", [](const std::string& log) { common::fatal("{}", log); });
+  m.def(
+      "flush_logs",
+      [] { return dartnb::flushLogs(); },
+      "Deliver queued DART diagnostics to logging.getLogger(\"dartpy\") on "
+      "the calling thread and return how many records were drained, counting "
+      "the notice about dropped records if one was due. Records normally "
+      "arrive on their own on the main thread once it runs Python again.");
 }
 
 } // namespace dart::python
