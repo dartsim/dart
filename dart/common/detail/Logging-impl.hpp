@@ -41,6 +41,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <cerrno>
 #include <cstddef>
 
 #if defined(__GLIBCXX__)
@@ -50,6 +51,26 @@
 namespace dart {
 namespace common {
 namespace detail {
+
+// Keep errno intact through argument construction, delivery and cleanup.
+class LogErrnoScope
+{
+public:
+  LogErrnoScope() : mErrno(errno) {}
+
+  ~LogErrnoScope()
+  {
+    restore();
+  }
+
+  void restore() const
+  {
+    errno = mErrno;
+  }
+
+private:
+  const int mErrno;
+};
 
 /// Forward a record to the console without reentering the installed sink.
 void defaultLogSink(LogLevel level, const std::string& message);
@@ -222,8 +243,11 @@ void log(LogLevel level, const S& format)
   if (level < getLogLevel() && !hasLogCallback())
     return;
 
+  LogErrnoScope errnoScope;
   try {
-    logMessage(level, std::string(format), nullptr, 0);
+    const std::string formatString(format);
+    errnoScope.restore();
+    logMessage(level, formatString, nullptr, 0);
 #if defined(__GLIBCXX__)
   } catch (const abi::__forced_unwind&) {
     throw;
@@ -241,10 +265,13 @@ void log(LogLevel level, const S& format, Args&&... args)
   if (level < getLogLevel() && !hasLogCallback())
     return;
 
+  LogErrnoScope errnoScope;
   try {
     const std::array<LogArgument, sizeof...(Args)> arguments{
         {LogArgument(std::forward<Args>(args))...}};
-    logMessage(level, std::string(format), arguments.data(), arguments.size());
+    const std::string formatString(format);
+    errnoScope.restore();
+    logMessage(level, formatString, arguments.data(), arguments.size());
 #if defined(__GLIBCXX__)
   } catch (const abi::__forced_unwind&) {
     throw;

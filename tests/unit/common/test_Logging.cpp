@@ -580,6 +580,48 @@ TEST_F(LoggingTest, FloatingFormattingIgnoresRoundingModeAndRestoresIt)
 }
 
 //==============================================================================
+TEST_F(LoggingTest, StringConversionPreservesErrnoOnSuccessAndFailure)
+{
+  struct StringConversion
+  {
+    bool fail;
+    operator std::string() const
+    {
+      errno = ERANGE;
+      if (fail)
+        throw std::bad_alloc();
+      return "converted";
+    }
+  };
+  int calls = 0;
+  int sinkErrno = 0;
+  setLogSink([&](LogLevel, const std::string&) {
+    ++calls;
+    sinkErrno = errno;
+    errno = EINVAL;
+  });
+  for (const bool fail : {false, true}) {
+    calls = 0;
+    errno = EDOM;
+    info(StringConversion{fail});
+    const int formatErrno = errno;
+    EXPECT_EQ(EDOM, formatErrno);
+    EXPECT_EQ(fail ? 0 : 1, calls);
+    if (!fail)
+      EXPECT_EQ(EDOM, sinkErrno);
+
+    calls = 0;
+    errno = EDOM;
+    info("{}", StringConversion{fail});
+    const int argumentErrno = errno;
+    EXPECT_EQ(EDOM, argumentErrno);
+    EXPECT_EQ(fail ? 0 : 1, calls);
+    if (!fail)
+      EXPECT_EQ(EDOM, sinkErrno);
+  }
+}
+
+//==============================================================================
 TEST_F(LoggingTest, DefaultLongDoublePreservesRoundTrips)
 {
   for (const long double value :
@@ -1869,6 +1911,76 @@ TEST_F(CallbackLoggingTest, ObserverFailureDoesNotUndoCallbackConsumption)
   detail::unregisterLogObserver(token);
   EXPECT_EQ(1u, records.size());
   EXPECT_EQ(0, fallback);
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, DeliveryPreservesErrnoAcrossCallbacksAndObservers)
+{
+  const auto oldLevel = getLogLevel();
+  setLogLevel(LogLevel::Trace);
+  struct CallbackState
+  {
+    int calls = 0;
+    int observedErrno = 0;
+    bool fail = false;
+  } callback;
+  setLogCallback(
+      [](LogLevel, const char*, std::size_t, void* data) {
+        auto& state = *static_cast<CallbackState*>(data);
+        ++state.calls;
+        state.observedErrno = errno;
+        errno = ERANGE;
+        if (state.fail)
+          throw std::runtime_error("callback");
+      },
+      &callback);
+  for (const bool callbackFails : {false, true}) {
+    callback.fail = callbackFails;
+    for (const bool observerFails : {false, true}) {
+      int observed = 0;
+      int observerErrno = 0;
+      int fallback = 0;
+      int fallbackErrno = 0;
+      auto observer
+          = std::make_shared<LogSink>([&](LogLevel, const std::string&) {
+              ++observed;
+              observerErrno = errno;
+              errno = EINVAL;
+              if (observerFails)
+                throw std::runtime_error("observer");
+            });
+      auto* token = detail::registerLogObserver(observer);
+      for (const char* format : {"record", "{"}) {
+        const std::string expected = std::strcmp(format, "{") == 0
+                                         ? "[log format error: unmatched '{'] {"
+                                         : "record";
+        setLogSink([&](LogLevel, const std::string& message) {
+          if (message == expected) {
+            ++fallback;
+            fallbackErrno = errno;
+          }
+          errno = E2BIG;
+        });
+        callback.calls = 0;
+        observed = 0;
+        fallback = 0;
+        errno = EDOM;
+        warn(format);
+        const int returnedErrno = errno;
+        EXPECT_EQ(EDOM, returnedErrno);
+        EXPECT_EQ(1, callback.calls);
+        EXPECT_EQ(EDOM, callback.observedErrno);
+        EXPECT_EQ(callbackFails ? 0 : 1, observed);
+        EXPECT_EQ(callbackFails ? 1 : 0, fallback);
+        if (callbackFails)
+          EXPECT_EQ(EDOM, fallbackErrno);
+        else
+          EXPECT_EQ(EDOM, observerErrno);
+      }
+      detail::unregisterLogObserver(token);
+    }
+  }
+  setLogLevel(oldLevel);
 }
 
 #if defined(__GLIBCXX__) && !defined(_WIN32)

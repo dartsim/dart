@@ -276,6 +276,7 @@ void writeDefaultLog(LogLevel level, const std::string& message)
 void dispatchLog(
     LogLevel level, const std::string& message, const ConsoleOrigin* origin)
 {
+  detail::LogErrnoScope errnoScope;
   struct OriginScope
   {
     const ConsoleOrigin* previous = consoleOrigin;
@@ -295,6 +296,7 @@ void dispatchLog(
                             && message.size() == origin->prefixLength + 1;
     if (sink && !prefixOnly && !isSinkActive(sink.get())) {
       ActiveSinkScope active(sink.get());
+      errnoScope.restore();
       (*sink)(level, message);
     } else
       writeDefaultLog(level, message);
@@ -942,6 +944,7 @@ void logMessage(
       || (level < getLogLevel() && !hasLogCallback()))
     return;
 
+  LogErrnoScope errnoScope;
   std::string message;
   try {
     message = formatMessage(format, arguments, count);
@@ -949,14 +952,17 @@ void logMessage(
     message = "[log format error: " + std::string(error.what()) + "] " + format;
   }
 
+  errnoScope.restore();
   if (forwardToLogCallback(level, message.data(), message.size())) {
     // With no GUI capture this path never initializes or locks sink state.
     auto* observer = logObserver.load(std::memory_order_acquire);
     if (observer && level >= getLogLevel()
         && observer->active.load(std::memory_order_acquire)) {
       try {
-        if (auto sink = observer->sink.lock())
+        if (auto sink = observer->sink.lock()) {
+          errnoScope.restore();
           (*sink)(level, message);
+        }
 #if defined(__GLIBCXX__)
       } catch (const abi::__forced_unwind&) {
         throw;
@@ -970,6 +976,7 @@ void logMessage(
   if (level < getLogLevel())
     return;
 
+  errnoScope.restore();
   dispatchLog(level, message, nullptr);
 }
 

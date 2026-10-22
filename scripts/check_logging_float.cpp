@@ -51,10 +51,15 @@ void* operator new(std::size_t size)
 {
   if (allocationProbe && allocationIndex++ == allocationFailAt) {
     allocationInjected = true;
+    errno = ENOMEM;
     throw std::bad_alloc();
   }
-  if (void* result = std::malloc(size ? size : 1))
+  if (void* result = std::malloc(size ? size : 1)) {
+    // Recovery allocations may also change errno after the conversion guard.
+    if (allocationProbe && allocationInjected)
+      errno = ENOMEM;
     return result;
+  }
   throw std::bad_alloc();
 }
 
@@ -305,6 +310,29 @@ void environmentCases()
 
 //==============================================================================
 #ifdef DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES
+void entryAllocationCases()
+{
+  for (const bool withArgument : {false, true}) {
+    captured.clear();
+    allocationIndex = 0;
+    allocationFailAt = 0;
+    allocationInjected = false;
+    errno = EDOM;
+    allocationProbe = true;
+    if (withArgument)
+      dart::common::info(
+          "format-copy-longer-than-small-string-buffer {}", 1.25);
+    else
+      dart::common::info("format-copy-longer-than-small-string-buffer");
+    allocationProbe = false;
+    const int returnedErrno = errno;
+    expectTrue(allocationInjected, "entry allocation fault occurred");
+    expectTrue(returnedErrno == EDOM, "entry allocation fault restores errno");
+    expectTrue(
+        captured.empty(), "failed format copy never dispatches partial output");
+  }
+}
+
 void allocationFailureCases()
 {
   std::fenv_t original;
@@ -573,6 +601,7 @@ int main(int argc, char** argv)
   environmentCases();
 #ifdef DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES
   allocationFailureCases();
+  entryAllocationCases();
 #endif
 #ifdef DART_CHECK_LOGGING_FLOAT_ORACLE
   differential<float>(randomCount);
