@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,7 @@ def configure(tmp_path, content, *, cmake_args=()):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(DependencyRequirements NONE)\n"
         f'set(CMAKE_MODULE_PATH "{(tmp_path / "modules").as_posix()}" "{(ROOT / "cmake").as_posix()}")\n'
         f'set(CMAKE_PREFIX_PATH "{(tmp_path / "prefix").as_posix()}")\n'
@@ -64,7 +65,12 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     (directory / f"{package}Config.cmake").write_text(contents + extra)
 
 
-def test_component_exports_only_install_owned_dependency_finders(tmp_path):
+@pytest.mark.parametrize("build_version", ["3.4.0", "5.0.1"])
+@pytest.mark.parametrize("consumer_version", ["3.4.1", "3.4.90", "5.0.2", "6.0.0"])
+def test_component_exports_only_install_owned_dependency_finders(
+    tmp_path, build_version, consumer_version
+):
+    config_package(tmp_path, "Eigen3", build_version)
     modules = tmp_path / "modules"
     modules.mkdir()
     # Gazebo's FindEIGEN3 matches FindEigen3 on case-insensitive filesystems.
@@ -78,6 +84,7 @@ def test_component_exports_only_install_owned_dependency_finders(tmp_path):
         "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
         "set(LIBRARY_INSTALL_DIR lib)\n"
         "include(Components)\n"
+        "include(DARTFindEigen3)\n"
         "initialize_component_helpers(dart)\n"
         "add_component(dart fixture)\n"
         "add_library(fixture INTERFACE)\n"
@@ -103,17 +110,76 @@ def test_component_exports_only_install_owned_dependency_finders(tmp_path):
     installed = stage / "lib/cmake/DART"
     consumer = tmp_path / "consumer"
     consumer.mkdir()
-    config_package(consumer, "Eigen3", "3.4.0")
+    config_package(consumer, "Eigen3", consumer_version)
     result = configure(
         consumer,
         f'set(CMAKE_MODULE_PATH "{installed.as_posix()}")\n'
         "find_package(Eigen3 REQUIRED)\n"
         "include(DARTFindEigen3)\n",
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    build_major = build_version.split(".")[0]
+    same_major = build_major == consumer_version.split(".")[0]
+    assert (result.returncode == 0) == same_major, output
+    if consumer_version.startswith("6."):
+        assert "Eigen3 >= 3.4.0, < 6 is required" in output
+    elif not same_major:
+        assert f"DART was built with Eigen major {build_major}" in output
+        assert f"found Eigen {consumer_version}" in output
+        assert "rebuild DART" in output
+        assert "clear the cached Eigen3_DIR" in output
     assert not (installed / "FindEigen3.cmake").exists()
-    for name in ("DARTFindEigen3.cmake", "DARTFindODE.cmake", "FindODE.cmake"):
+    assert (installed / "DARTFindEigen3.cmake").read_text() == (
+        f"set(DART_BUILD_EIGEN_MAJOR {build_major})\n"
+        + (ROOT / "cmake/DARTFindEigen3.cmake").read_text()
+    )
+    for name in ("DARTFindODE.cmake", "FindODE.cmake"):
         assert (installed / name).read_text() == (ROOT / "cmake" / name).read_text()
+
+
+@pytest.mark.parametrize("build_version", ["", "unknown", "3.4.90"])
+def test_component_eigen_finder_generation(tmp_path, build_version):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    for name in ("Components.cmake", "DARTFindEigen3.cmake"):
+        shutil.copy2(ROOT / "cmake" / name, modules / name)
+    result = configure(
+        tmp_path,
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
+        f'set(Eigen3_VERSION "{build_version}")\n'
+        "include(Components)\n"
+        "initialize_component_helpers(dart)\n"
+        "add_component(dart fixture)\n"
+        "add_library(fixture INTERFACE)\n"
+        "add_component_targets(dart fixture fixture)\n"
+        "add_component_dependency_packages(dart fixture Eigen3)\n"
+        "install_component_exports(dart)\n",
+    )
+    output = result.stdout + result.stderr
+    if build_version != "3.4.90":
+        assert result.returncode != 0, output
+        assert "Cannot determine Eigen major" in output
+        return
+    assert result.returncode == 0, output
+    finder = modules / "DARTFindEigen3.cmake"
+    # Windows file times advance in clock ticks of about 16 ms, so an edit made
+    # right after the configure can share build.ninja's time.
+    configured = (tmp_path / "build/build.ninja").stat().st_mtime_ns
+    while time.time_ns() < configured + 100_000_000:
+        time.sleep(0.01)
+    finder.write_text(finder.read_text() + "\n# Updated finder\n")
+    result = subprocess.run(
+        [shutil.which("cmake"), "--build", str(tmp_path / "build")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    generated = tmp_path / "build/lib/cmake/DART/DARTFindEigen3.cmake"
+    assert (
+        generated.read_text() == "set(DART_BUILD_EIGEN_MAJOR 3)\n" + finder.read_text()
+    )
 
 
 @pytest.mark.parametrize("skip", ["ON", "OFF"])
@@ -246,8 +312,8 @@ def test_urdfdom_without_cmake_version(tmp_path, monkeypatch, libdir, pcdir, met
         assert "urdfdom >= 3.0.0 is required" in output
 
 
-@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1"])
-def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
+@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1", "6.0.0"])
+def test_eigen_supported_range_with_minor_scoped_version_files(tmp_path, version):
     # Eigen 5's version file accepts a requested single version only within
     # that minor release, so a 3.4.0 request rejects Eigen 5.
     config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
@@ -266,7 +332,24 @@ def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
         "include(DARTFindEigen3)\n"
         'if(NOT Eigen3_FOUND)\n  message(FATAL_ERROR "Rejected Eigen3")\nendif()\n',
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (major != "6"), output
+    if major == "6":
+        assert "Eigen3 >= 3.4.0, < 6 is required" in output
+
+
+@pytest.mark.parametrize("version", [None, "3.2.10", "3.3.0", "3.4.0", "5.0.1"])
+def test_nanobind_eigen_probe_version_floor(tmp_path, version):
+    config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
+    source = (ROOT / "scripts/nanobind/eigen_probe/CMakeLists.txt").read_text()
+    discovery = source[
+        source.index("find_package(Eigen3") : source.index("get_filename_component(")
+    ]
+    result = configure(tmp_path, discovery)
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (version not in {None, "3.2.10"}), output
+    if result.returncode:
+        assert "Eigen3 >= 3.3 is required" in output
 
 
 @pytest.mark.parametrize(
@@ -920,3 +1003,43 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "package,finder,component,dependency,version",
+    [
+        ("ODE", "ODE", "dart-collision-ode", "ode", "0.16.2"),
+        ("BULLET", "Bullet", "dart-collision-bullet", "Bullet", "3.05"),
+    ],
+)
+@pytest.mark.parametrize("require,skip", [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize("versioned", [True, False])
+def test_require_optional_dependencies(
+    tmp_path, package, finder, component, dependency, version, require, skip, versioned
+):
+    version_arg = f' "{version}"' if versioned else ""
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        f"set(DART_USE_SYSTEM_{package} ON)\n"
+        f"include(DARTFind{finder})\n"
+        f'dart_check_optional_package({package} "{component}" "{dependency}"{version_arg})\n',
+        cmake_args=(
+            f"-DDART_REQUIRE_OPTIONAL_DEPENDENCIES={'ON' if require else 'OFF'}",
+            f"-DDART_SKIP_{package}={'ON' if skip else 'OFF'}",
+        ),
+    )
+    output = " ".join((result.stdout + result.stderr).split())
+    assert "NOT found" in output
+    assert (f"(>= {version})" in output) == versioned
+    if require and not skip:
+        assert result.returncode != 0
+        for text in (
+            "DART_REQUIRE_OPTIONAL_DEPENDENCIES",
+            f"DART_SKIP_{package}=ON",
+            component,
+            dependency,
+        ):
+            assert text in output
+    else:
+        assert result.returncode == 0, output

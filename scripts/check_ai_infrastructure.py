@@ -1783,6 +1783,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "tests/test_install_git_hooks.py",
                 "tests/test_check_local_paths.py",
                 "tests/test_lint_cmake.py",
+                "tests/test_third_party_notices.py",
                 "-q",
             ],
             "depends-on": [],
