@@ -725,8 +725,8 @@ def test_merge_scope_uses_push_range_and_validates_ancestry(
         assert selected["PERF_MODE"] == ("ab" if expected == "start" else "skip")
 
 
-@pytest.mark.parametrize("ambiguity", [False, True])
-def test_merge_pr_lookup_matches_merged_main_commit(tmp_path, ambiguity):
+@pytest.mark.parametrize("outcome", ["success", "ambiguous", "api-error"])
+def test_merge_pr_lookup_matches_merged_main_commit(tmp_path, outcome):
     pr = {
         "number": 3570,
         "merged_at": "date",
@@ -739,25 +739,53 @@ def test_merge_pr_lookup_matches_merged_main_commit(tmp_path, ambiguity):
         {**pr, "number": 21, "base": {"ref": "release-6.19"}},
         {**pr, "number": 22, "merge_commit_sha": "another"},
     ]
-    if ambiguity:
+    if outcome == "ambiguous":
         others.append({**pr, "number": 23})
-    (tmp_path / "perf-pulls.json").write_text(json.dumps([[pr], others]))
-    result = _run_perf_snippet(
-        "record-measure",
-        "Find the merged PR and its current rationale",
-        tmp_path,
-        {
+    pages = tmp_path / "pages.json"
+    pages.write_text(json.dumps([others, [pr]]))
+    gh = tmp_path / "gh"
+    gh.write_text(
+        f"#!{sys.executable}\n"
+        "import os, sys\n"
+        "from pathlib import Path\n"
+        "assert sys.argv[1:4] == ['api', '--paginate', '--slurp']\n"
+        "if sys.argv[4:] != ['repos/dartsim/dart/commits/head/pulls?per_page=100']:\n"
+        "    sys.stderr.write('unexpected end of JSON input\\n')\n"
+        "    raise SystemExit(1)\n"
+        "if os.environ['GH_STATUS'] != '0':\n"
+        "    raise SystemExit(int(os.environ['GH_STATUS']))\n"
+        "print(Path(os.environ['GH_PAGES']).read_text())\n"
+    )
+    gh.chmod(0o755)
+    step = _perf_step("record-measure", "Find the merged PR and its current rationale")
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}",
+            "GH_TOKEN": "",
+            "GH_REPO": "dartsim/dart",
+            "GH_PAGES": str(pages),
+            "GH_STATUS": "42" if outcome == "api-error" else "0",
             "RUNNER_TEMP": str(tmp_path),
             "PERF_HEAD": "head",
             "GITHUB_OUTPUT": str(tmp_path / "output"),
         },
+        text=True,
+        capture_output=True,
     )
-    if ambiguity:
+    if outcome == "ambiguous":
         assert result.returncode != 0 and "ambiguous merged PR" in result.stderr
+    elif outcome == "api-error":
+        assert result.returncode == 42
     else:
         assert result.returncode == 0, result.stderr
         assert (tmp_path / "perf-pr-body.txt").read_text() == pr["body"]
         assert (tmp_path / "output").read_text() == "number=3570\n"
+    if outcome != "success":
+        assert not (tmp_path / "perf-pr-body.txt").exists()
+        assert not (tmp_path / "output").exists()
 
 
 def test_publication_permissions_keep_all_measurement_read_only():

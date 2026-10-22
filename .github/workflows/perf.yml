@@ -431,7 +431,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --paginate --slurp "repos/$GH_REPO/commits/$PERF_HEAD/pulls" > "$RUNNER_TEMP/perf-pulls.json"
+          gh api --paginate --slurp "repos/$GH_REPO/commits/$PERF_HEAD/pulls?per_page=100" > "$RUNNER_TEMP/perf-pulls.json"
           python3 - <<'PY'
           import json
           import os
