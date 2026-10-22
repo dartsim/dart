@@ -46,7 +46,7 @@ MACROS = "cmake/DARTMacros.cmake"
 
 def _is_wrapper(arguments):
     tokens = infra.cmake_argument_tokens(arguments)
-    return [infra.cmake_unquote_bracket(t).lower() for t in tokens[:1]] == [
+    return [infra.cmake_unquote_bracket(t).strip().lower() for t in tokens[:1]] == [
         LEGACY_WRAPPER
     ]
 
@@ -469,10 +469,11 @@ def test_offline_scan_rejects_malformed_legacy_wrapper(wrapper):
 @pytest.mark.parametrize("kind", ["function", "macro"])
 @pytest.mark.parametrize("delimiter", ["", "="])
 @pytest.mark.parametrize("same_file", [False, True])
+@pytest.mark.parametrize("initial_newline", ["", "\n"])
 def test_offline_scan_rejects_bracket_quoted_wrapper_redefinition(
-    kind, delimiter, same_file
+    kind, delimiter, same_file, initial_newline
 ):
-    name = f"[{delimiter}[{LEGACY_WRAPPER.upper()}]{delimiter}]"
+    name = f"[{delimiter}[{initial_newline}{LEGACY_WRAPPER.upper()}]{delimiter}]"
     replacement = (
         f"{kind}({name} other)\n"
         "  cmake_language(CALL FetchContent_MakeAvailable unguarded_extra)\n"
