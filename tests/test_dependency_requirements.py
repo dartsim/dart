@@ -18,12 +18,12 @@ ROOT = Path(__file__).resolve().parents[1]
 CMAKE = os.environ.get("DART_TEST_CMAKE") or shutil.which("cmake")
 
 
-def configure(tmp_path, content, *, cmake_args=()):
+def configure(tmp_path, content, *, cmake_args=(), language="NONE"):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.28)\n"
-        "project(DependencyRequirements NONE)\n"
+        f"project(DependencyRequirements {language})\n"
         f'set(CMAKE_MODULE_PATH "{(tmp_path / "modules").as_posix()}" "{(ROOT / "cmake").as_posix()}")\n'
         f'set(CMAKE_PREFIX_PATH "{(tmp_path / "prefix").as_posix()}")\n'
         "set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)\n"
@@ -1380,6 +1380,61 @@ def test_ode_compiler_args_honor_environment(language):
     assert ode_compiler_args(language, {other: "cl"}, which) != []
 
 
+@pytest.mark.parametrize("language", [None, "C", "CXX"])
+def test_configure_initializes_language_before_isolation(
+    tmp_path, monkeypatch, language
+):
+    tools = tmp_path / "sdk-tools"
+    tools.mkdir()
+    tool = tools / (
+        "dart-fixture-sdk-tool.exe" if os.name == "nt" else "dart-fixture-sdk-tool"
+    )
+    tool.write_text("fixture tool; discovery only\n")
+    tool.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tools) + os.pathsep + os.environ.get("PATH", ""))
+    marker = tmp_path / "toolchain-initialized.txt"
+    override = tmp_path / "toolchain-rules.cmake"
+    override.write_text(
+        f'find_program(fixture_sdk_tool NAMES "{tool.name}" NO_CACHE)\n'
+        "if(NOT fixture_sdk_tool)\n"
+        'message(FATAL_ERROR "Fixture SDK tool hidden during language initialization")\n'
+        "endif()\n"
+        f'file(WRITE "{marker.as_posix()}" "${{fixture_sdk_tool}}")\n'
+    )
+    args = [f"-DCMAKE_USER_MAKE_RULES_OVERRIDE={override.as_posix()}"]
+    if language:
+        compiler_args = ode_compiler_args(language)
+        assert compiler_args is not None, "Fixture initialization needs a host compiler"
+        args += compiler_args
+        late = tmp_path / "late"
+        late.mkdir()
+        result = configure(late, f"enable_language({language})\n", cmake_args=args)
+        assert result.returncode != 0
+        assert "Fixture SDK tool hidden during language initialization" in result.stderr
+        assert not marker.exists()
+    body = (
+        f'find_program(isolated_sdk_tool NAMES "{tool.name}" NO_CACHE)\n'
+        "if(isolated_sdk_tool)\n"
+        'message(FATAL_ERROR "Fixture SDK tool escaped dependency isolation")\n'
+        "endif()\n"
+    )
+    if not language:
+        body += (
+            "if(CMAKE_C_COMPILER_LOADED OR CMAKE_CXX_COMPILER_LOADED)\n"
+            'message(FATAL_ERROR "Default fixture enabled a language")\n'
+            "endif()\n"
+        )
+    early = tmp_path / "early"
+    early.mkdir()
+    result = configure(
+        early, body, cmake_args=args, **({"language": language} if language else {})
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert marker.exists() == bool(language)
+    if language:
+        assert marker.read_text() == tool.as_posix()
+
+
 @pytest.mark.parametrize("language", ["C", "CXX"])
 @pytest.mark.parametrize("precision", ["dSINGLE", "dDOUBLE"])
 @pytest.mark.parametrize("target_type", [None, "EXECUTABLE", "STATIC_LIBRARY"])
@@ -1401,8 +1456,7 @@ def test_system_ode_precision(tmp_path, language, precision, target_type):
     )
     result = configure(
         tmp_path,
-        f"enable_language({language})\n"
-        + (f"set(CMAKE_TRY_COMPILE_TARGET_TYPE {target_type})\n" if target_type else "")
+        (f"set(CMAKE_TRY_COMPILE_TARGET_TYPE {target_type})\n" if target_type else "")
         + "set(DART_USE_SYSTEM_ODE ON)\ninclude(DARTFindODE)\n"
         + (
             f'if(NOT CMAKE_TRY_COMPILE_TARGET_TYPE STREQUAL "{target_type}")\n'
@@ -1411,6 +1465,7 @@ def test_system_ode_precision(tmp_path, language, precision, target_type):
         )
         + 'message(FATAL_ERROR "Probe target type escaped")\nendif()\n',
         cmake_args=compiler_args,
+        language=language,
     )
     output = result.stdout + result.stderr
     assert (result.returncode == 0) == (precision == "dDOUBLE"), output
