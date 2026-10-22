@@ -41,6 +41,7 @@ bool allocationProbe = false;
 std::size_t allocationIndex = 0;
 std::size_t allocationFailAt = 0;
 bool allocationInjected = false;
+bool allocationsChangeErrno = false;
 const char* allocationFormat = nullptr;
 std::size_t allocationFault = 0;
 int allocationMode = 0;
@@ -56,7 +57,7 @@ void* operator new(std::size_t size)
   }
   if (void* result = std::malloc(size ? size : 1)) {
     // Recovery allocations may also change errno after the conversion guard.
-    if (allocationProbe && allocationInjected)
+    if (allocationsChangeErrno || (allocationProbe && allocationInjected))
       errno = ENOMEM;
     return result;
   }
@@ -310,6 +311,46 @@ void environmentCases()
 
 //==============================================================================
 #ifdef DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES
+void callbackDiagnosticCase()
+{
+  int deliveries = 0;
+  int diagnostics = 0;
+  int records = 0;
+  bool preserved = true;
+  bool callbackSawCaller = false;
+  auto previous
+      = dart::common::setLogSink([&](LogLevel, const std::string& message) {
+          preserved &= errno == EDOM;
+          ++deliveries;
+          diagnostics
+              += message.find("A log callback threw") != std::string::npos;
+          records += message == "callback record";
+          errno = E2BIG;
+        });
+  dart::common::setLogCallback(
+      [](LogLevel, const char*, std::size_t, void* data) {
+        *static_cast<bool*>(data) = errno == EDOM;
+        allocationsChangeErrno = true;
+        errno = ERANGE;
+        throw std::bad_alloc();
+      },
+      &callbackSawCaller);
+  errno = EDOM;
+  dart::common::info("callback record");
+  const int returnedErrno = errno;
+  allocationsChangeErrno = false;
+  dart::common::setLogCallback(nullptr);
+  dart::common::setLogSink(std::move(previous));
+  expectTrue(callbackSawCaller, "callback sees caller errno");
+  expectTrue(
+      deliveries == 2, "callback failure delivers diagnostic and record");
+  expectTrue(diagnostics == 1, "callback failure reports once");
+  expectTrue(records == 1, "callback failure retains original record");
+  expectTrue(
+      preserved, "all callback-failure sink deliveries see caller errno");
+  expectTrue(returnedErrno == EDOM, "callback failure restores errno");
+}
+
 void entryAllocationCases()
 {
   for (const bool withArgument : {false, true}) {
@@ -602,6 +643,7 @@ int main(int argc, char** argv)
 #ifdef DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES
   allocationFailureCases();
   entryAllocationCases();
+  callbackDiagnosticCase();
 #endif
 #ifdef DART_CHECK_LOGGING_FLOAT_ORACLE
   differential<float>(randomCount);

@@ -783,6 +783,7 @@ bool forwardToLogCallback(
   const Slot* slot = sSlot.load(std::memory_order_acquire);
   if (!slot || !slot->callback || tInsideCallback)
     return false;
+  LogErrnoScope errnoScope;
   InsideCallback guard;
   try {
     slot->callback(level, message, length, slot->userData);
@@ -793,12 +794,15 @@ bool forwardToLogCallback(
 #endif
   } catch (...) {
     if (!sThrowReported.exchange(true)) {
+      errnoScope.restore();
       // DART's console header marks it as an error for consoles and for
       // bridges that read the header, such as dartpy's.
-      colorErr("Error", __FILE__, __LINE__, 31)
-          << "A log callback threw. DART ignores the exception and sends the "
-             "message to the default output; later throws are not reported."
-          << std::endl;
+      auto& diagnostic
+          = colorErr("Error", __FILE__, __LINE__, 31)
+            << "A log callback threw. DART ignores the exception and sends the "
+               "message to the default output; later throws are not reported.";
+      errnoScope.restore();
+      diagnostic << std::endl;
     }
     return false;
   }

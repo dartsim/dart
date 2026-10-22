@@ -607,8 +607,9 @@ TEST_F(LoggingTest, StringConversionPreservesErrnoOnSuccessAndFailure)
     const int formatErrno = errno;
     EXPECT_EQ(EDOM, formatErrno);
     EXPECT_EQ(fail ? 0 : 1, calls);
-    if (!fail)
+    if (!fail) {
       EXPECT_EQ(EDOM, sinkErrno);
+    }
 
     calls = 0;
     errno = EDOM;
@@ -616,8 +617,9 @@ TEST_F(LoggingTest, StringConversionPreservesErrnoOnSuccessAndFailure)
     const int argumentErrno = errno;
     EXPECT_EQ(EDOM, argumentErrno);
     EXPECT_EQ(fail ? 0 : 1, calls);
-    if (!fail)
+    if (!fail) {
       EXPECT_EQ(EDOM, sinkErrno);
+    }
   }
 }
 
@@ -1941,6 +1943,7 @@ TEST_F(CallbackLoggingTest, DeliveryPreservesErrnoAcrossCallbacksAndObservers)
       int observerErrno = 0;
       int fallback = 0;
       int fallbackErrno = 0;
+      bool allDeliveriesPreserveErrno = true;
       auto observer
           = std::make_shared<LogSink>([&](LogLevel, const std::string&) {
               ++observed;
@@ -1955,6 +1958,7 @@ TEST_F(CallbackLoggingTest, DeliveryPreservesErrnoAcrossCallbacksAndObservers)
                                          ? "[log format error: unmatched '{'] {"
                                          : "record";
         setLogSink([&](LogLevel, const std::string& message) {
+          allDeliveriesPreserveErrno &= errno == EDOM;
           if (message == expected) {
             ++fallback;
             fallbackErrno = errno;
@@ -1964,6 +1968,7 @@ TEST_F(CallbackLoggingTest, DeliveryPreservesErrnoAcrossCallbacksAndObservers)
         callback.calls = 0;
         observed = 0;
         fallback = 0;
+        allDeliveriesPreserveErrno = true;
         errno = EDOM;
         warn(format);
         const int returnedErrno = errno;
@@ -1972,15 +1977,54 @@ TEST_F(CallbackLoggingTest, DeliveryPreservesErrnoAcrossCallbacksAndObservers)
         EXPECT_EQ(EDOM, callback.observedErrno);
         EXPECT_EQ(callbackFails ? 0 : 1, observed);
         EXPECT_EQ(callbackFails ? 1 : 0, fallback);
-        if (callbackFails)
+        EXPECT_TRUE(allDeliveriesPreserveErrno);
+        if (callbackFails) {
           EXPECT_EQ(EDOM, fallbackErrno);
-        else
+        } else {
           EXPECT_EQ(EDOM, observerErrno);
+        }
       }
       detail::unregisterLogObserver(token);
     }
   }
   setLogLevel(oldLevel);
+}
+
+//==============================================================================
+TEST_F(LoggingDeathTest, CallbackExceptionDiagnosticPreservesErrno)
+{
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        int diagnostics = 0;
+        int records = 0;
+        bool preserved = true;
+        setLogLevel(LogLevel::Trace);
+        setLogSink([&](LogLevel, const std::string& message) {
+          preserved &= errno == EDOM;
+          diagnostics
+              += message.find("A log callback threw") != std::string::npos;
+          records += message == "record";
+          errno = E2BIG;
+        });
+        setLogCallback(
+            [](LogLevel, const char*, std::size_t, void* data) {
+              *static_cast<bool*>(data) &= errno == EDOM;
+              errno = ERANGE;
+              throw std::runtime_error("callback");
+            },
+            &preserved);
+        errno = EDOM;
+        warn("record");
+        const int returnedErrno = errno;
+        std::_Exit(
+            preserved && returnedErrno == EDOM && diagnostics == 1
+                    && records == 1
+                ? 0
+                : 1);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
 }
 
 #if defined(__GLIBCXX__) && !defined(_WIN32)
