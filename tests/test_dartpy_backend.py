@@ -17,7 +17,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 METADATA = (
     b"Metadata-Version: 2.4\nName: dartpy\nVersion: 1.0\n"
-    b"License-File: LICENSE\n\nDescription body\n"
+    b"License-File: LICENSE\nLicense-File: NOTICE\n\nDescription body\n"
 )
 
 
@@ -104,14 +104,16 @@ def test_staged_licenses_move_into_dist_info_with_headers_and_record(tmp_path, c
     metadata = METADATA.replace(b"\n", newline)
     license_text = b"Filament Apache license" + newline
     notice = b"Upstream bundled Zstandard notice\r\n"
+    dart_notice = (ROOT / "NOTICE").read_bytes()
     wheel = _wheel(
         tmp_path,
         {
             "dartpy/__init__.py": b"# package\n",
-            "dartpy/_dartpy.abi3.so": b"native extension fixture",
+            "dartpy/_core.abi3.so": b"native extension fixture",
             "dartpy/_filament_licenses/LICENSE": license_text,
             "dartpy/_filament_licenses/notices/third_party/zstd/LICENSE": notice,
             "dartpy-1.0.dist-info/licenses/LICENSE": b"DART BSD license\n",
+            "dartpy-1.0.dist-info/licenses/NOTICE": dart_notice,
             "dartpy-1.0.dist-info/METADATA": metadata,
             "dartpy-1.0.dist-info/WHEEL": b"Wheel-Version: 1.0\n",
             "dartpy-1.0.dist-info/RECORD": b"stale\n",
@@ -129,10 +131,11 @@ def test_staged_licenses_move_into_dist_info_with_headers_and_record(tmp_path, c
         assert not any(name.startswith("dartpy/_filament_licenses/") for name in names)
         assert archive.read(moved[0]) == license_text
         assert archive.read(moved[1]) == notice
-        assert archive.read("dartpy/_dartpy.abi3.so") == b"native extension fixture"
+        assert archive.read("dartpy/_core.abi3.so") == b"native extension fixture"
         assert archive.read("dartpy-1.0.dist-info/licenses/LICENSE") == (
             b"DART BSD license\n"
         )
+        assert archive.read("dartpy-1.0.dist-info/licenses/NOTICE") == dart_notice
         head, _, body = archive.read("dartpy-1.0.dist-info/METADATA").partition(
             newline * 2
         )
@@ -140,6 +143,7 @@ def test_staged_licenses_move_into_dist_info_with_headers_and_record(tmp_path, c
         assert head.split(newline)[2:] == [
             b"Version: 1.0",
             b"License-File: LICENSE",
+            b"License-File: NOTICE",
             b"License-File: filament/LICENSE",
             b"License-File: filament/notices/third_party/zstd/LICENSE",
         ]
@@ -164,6 +168,7 @@ def test_wheel_without_staged_licenses_is_left_alone(tmp_path):
         tmp_path,
         {
             "dartpy/__init__.py": b"# package\n",
+            "dartpy-1.0.dist-info/licenses/NOTICE": (ROOT / "NOTICE").read_bytes(),
             "dartpy-1.0.dist-info/METADATA": METADATA,
             "dartpy-1.0.dist-info/RECORD": b"kept\n",
         },

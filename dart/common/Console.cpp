@@ -32,15 +32,46 @@
 
 #include "dart/common/Console.hpp"
 
+#include <atomic>
 #include <iostream>
 
 namespace dart {
 namespace common {
 
+namespace {
+std::ostream& defaultOut()
+{
+  return std::cout;
+}
+std::ostream& defaultErr()
+{
+  return std::cerr;
+}
+std::atomic<ConsoleStream> sConsoleOut{&defaultOut};
+std::atomic<ConsoleStream> sConsoleErr{&defaultErr};
+} // namespace
+
+void setConsoleStreams(ConsoleStream out, ConsoleStream err)
+{
+  sConsoleOut = out ? out : &defaultOut;
+  sConsoleErr = err ? err : &defaultErr;
+}
+
+std::ostream& consoleOut()
+{
+  return sConsoleOut.load()();
+}
+
+std::ostream& consoleErr()
+{
+  return sConsoleErr.load()();
+}
+
 std::ostream& colorMsg(const std::string& _msg, int _color)
 {
-  std::cout << "\033[1;" << _color << "m" << _msg << "\033[0m ";
-  return std::cout;
+  std::ostream& out = consoleOut();
+  out << "\033[1;" << _color << "m" << _msg << "\033[0m ";
+  return out;
 }
 
 std::ostream& colorErr(
@@ -51,11 +82,12 @@ std::ostream& colorErr(
 {
   int index = _file.find_last_of("/") + 1;
 
-  std::cerr << "\033[1;" << _color << "m" << _msg << " ["
-            << _file.substr(index, _file.size() - index) << ":" << _line
-            << "]\033[0m ";
+  std::ostream& err = consoleErr();
+  err << "\033[1;" << _color << "m" << _msg << " ["
+      << _file.substr(index, _file.size() - index) << ":" << _line
+      << "]\033[0m ";
 
-  return std::cerr;
+  return err;
 }
 
 } // namespace common

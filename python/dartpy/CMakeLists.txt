@@ -42,6 +42,15 @@ if(NOT TARGET dart-gui-app)
   list(FILTER dartpy_build_sources EXCLUDE REGEX "/viewer/[^/]+\\.cpp$")
   message(STATUS "dartpy.viewer is compiled out with the demo app host")
 endif()
+# dartpy._testing holds hooks for dartpy's own tests, which skip without it.
+# include(CTest) defaults BUILD_TESTING to ON, so wheels opt out explicitly.
+set(dartpy_testing_hooks OFF)
+if(BUILD_TESTING AND NOT DART_BUILD_WHEELS)
+  set(dartpy_testing_hooks ON)
+else()
+  list(FILTER dartpy_build_sources EXCLUDE REGEX "/testing/[^/]+\\.cpp$")
+  message(STATUS "dartpy._testing is compiled out")
+endif()
 nanobind_add_module(
   dartpy
   NB_STATIC
@@ -51,11 +60,11 @@ nanobind_add_module(
   ${dartpy_build_sources}
 )
 # The target keeps the public name; the module it builds is the private
-# dartpy._dartpy extension inside the staged package.
+# dartpy._core extension inside the staged package.
 set_target_properties(
   dartpy
   PROPERTIES
-    OUTPUT_NAME _dartpy
+    OUTPUT_NAME _core
     DEBUG_POSTFIX ""
     EXCLUDE_FROM_ALL TRUE
     LIBRARY_OUTPUT_DIRECTORY "${DART_DARTPY_BUILD_DIR}/dartpy"
@@ -96,6 +105,9 @@ if(NB_HAS_MTLS_GNU2)
 endif()
 
 target_compile_features(dartpy PRIVATE cxx_std_17)
+if(dartpy_testing_hooks)
+  target_compile_definitions(dartpy PRIVATE DARTPY_TESTING_HOOKS)
+endif()
 target_include_directories(dartpy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(dartpy SYSTEM PRIVATE "${NB_DIR}/src")
 set(dartpy_libraries dart dart-io dart-gui)

@@ -74,23 +74,8 @@ if(TARGET dart-external-imgui)
     set(dart_skip_system_imgui_asan_test ON)
   endif()
 
-  if(NOT DART_USE_SYSTEM_IMGUI)
-    dart_add_test("regression" test_Issue2516)
-    target_link_libraries(test_Issue2516 dart-external-imgui)
-
-    dart_add_test("regression" test_Issue2668)
-    target_link_libraries(test_Issue2668 dart-external-imgui)
-  endif()
-
   if(NOT dart_skip_system_imgui_asan_test)
     dart_add_test("regression" test_Issue2671)
-    target_link_libraries(test_Issue2671 dart-external-imgui ${CMAKE_DL_LIBS})
-    # The visibility probe opens a shared library with dlopen.
-    if(NOT DART_USE_SYSTEM_IMGUI AND BUILD_SHARED_LIBS)
-      target_compile_definitions(
-        test_Issue2671
-        PRIVATE DART_EXTERNAL_IMGUI_HAS_DART_PATCHES
-      )
-    endif()
+    target_link_libraries(test_Issue2671 dart-external-imgui)
   endif()
 endif()

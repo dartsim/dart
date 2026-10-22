@@ -135,12 +135,19 @@ def test_s5_registry_order():
     from examples.demos.registry import make_demo_scenes
 
     ids = [scene.id for scene in make_demo_scenes()]
-    assert [scene_id for scene_id in ids if scene_id in SCENE_IDS] == list(SCENE_IDS)
-    assert (
-        ids.index("atlas_puppet")
-        < ids.index("atlas_simbicon")
-        < ids.index("mixed_chain")
-    )
+    sdf_enabled = hasattr(dart.utils.SdfParser, "Options")
+    expected = [
+        scene_id
+        for scene_id in SCENE_IDS
+        if sdf_enabled or scene_id not in {"atlas_simbicon", "soft_foot_simbicon"}
+    ]
+    assert [scene_id for scene_id in ids if scene_id in SCENE_IDS] == expected
+    if sdf_enabled:
+        assert (
+            ids.index("atlas_puppet")
+            < ids.index("atlas_simbicon")
+            < ids.index("mixed_chain")
+        )
     assert ids.index("soft_open_chain") < ids.index("vehicle")
 
 

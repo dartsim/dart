@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2025, The DART development contributors
+ * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,36 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAYAEXPORTS_MAYAEXPORTMOTION_H
-#define MAYAEXPORTS_MAYAEXPORTMOTION_H
+#pragma once
 
-#include <fstream>
+// This header is private and not installed.
 
-namespace kinematics{
-    class BodyNode;
-    class Skeleton;
-    class FileInfoDof;
+#include "dart/utils/urdf/DartLoader.hpp"
+
+#include <tinyxml2.h>
+
+#include <string>
+
+namespace dart {
+namespace utils {
+namespace detail {
+
+inline JointXmlElementMetadata collectJointXmlElementMetadata(
+    const std::string& urdfString)
+{
+  JointXmlElementMetadata metadata;
+
+  tinyxml2::XMLDocument xmlDoc;
+  if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
+    return metadata;
+
+  auto* robotXml = xmlDoc.FirstChildElement("robot");
+  if (!robotXml)
+    return metadata;
+
+  for (auto* jointXml = robotXml->FirstChildElement("joint");
+       jointXml != nullptr;
+       jointXml = jointXml->NextSiblingElement("joint")) {
+    const char* name = jointXml->Attribute("name");
+    if (!name)
+      continue;
+
+    if (jointXml->FirstChildElement("axis"))
+      metadata.jointsWithAxisElement.emplace(name);
+
+    auto* limitXml = jointXml->FirstChildElement("limit");
+    if (limitXml) {
+      if (limitXml->Attribute("lower"))
+        metadata.jointsWithLimitLowerAttribute.emplace(name);
+      if (limitXml->Attribute("upper"))
+        metadata.jointsWithLimitUpperAttribute.emplace(name);
+    }
+  }
+
+  return metadata;
 }
 
-namespace utils {
-    namespace mayaexports {
-
-        class MayaExportMotion{
-        public:
-            MayaExportMotion(kinematics::Skeleton *_skel, kinematics::FileInfoDof *_dofData){
-                mSkel = _skel;
-                mDofData = _dofData;
-            }
-            bool exportMayaAnim( const char* _fName, int _start, int _end, const std::string &_nodesPrefix, int _writeNumNodes );
-    
-        private:
-            kinematics::FileInfoDof *mDofData;;
-            kinematics::Skeleton *mSkel;
-            bool exportMayaAnimSegment(std::ofstream &outFile0, int _first, int _last, kinematics::BodyNode *b, const std::string &_nodesPrefix, int _writeNumNodes, int level);
-            // just write everything in common framework
-            bool exportMayaAnimSegment2(std::ofstream &outFile0, int _first, int _last, kinematics::BodyNode *_b, const std::string &_nodesPrefix, int _writeNumNodes, int level);
-        };
-    }   // namespace mayaexports
+} // namespace detail
 } // namespace utils
-
-#endif //MAYAEXPORTS_MAYAEXPORTMOTION_H
+} // namespace dart

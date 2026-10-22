@@ -28,14 +28,6 @@ def _demo_scenes():
     return make_demo_scenes()
 
 
-def _cycle_scenes(scenes):
-    return [
-        scene
-        for scene in scenes
-        if scene.id not in SDF_SCENE_IDS or hasattr(dart.utils.SdfParser, "Options")
-    ]
-
-
 CATALOG_IDS = set(
     "empty hello_world simple_frames boxes rigid_cubes rigid_chain "
     "add_delete_skels simulation_event_handler rigid_shapes sleeping "
@@ -55,6 +47,8 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
     ids = [scene.id for scene in scenes]
     assert ids and len(ids) == len(set(ids))
     expected = CATALOG_IDS.copy()
+    if not hasattr(dart.utils.SdfParser, "Options"):
+        expected.difference_update(SDF_SCENE_IDS)
     if not hasattr(dart.utils, "ModelResourceRetriever"):
         expected.difference_update(HUMANOID_IDS)
     if not hasattr(dart.dynamics, "VoxelGridShape"):
@@ -72,10 +66,25 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
 
 
 @requires_app_host
+@pytest.mark.parametrize("sdf_enabled", [False, True])
+def test_demo_catalog_omits_only_unavailable_sdf_scenes(sdf_enabled, monkeypatch):
+    monkeypatch.setattr(dart.utils.SdfParser, "Options", object(), raising=False)
+    enabled_ids = [scene.id for scene in _demo_scenes()]
+    assert SDF_SCENE_IDS <= set(enabled_ids)
+    if not sdf_enabled:
+        monkeypatch.delattr(dart.utils.SdfParser, "Options")
+    assert [scene.id for scene in _demo_scenes()] == [
+        scene_id
+        for scene_id in enabled_ids
+        if sdf_enabled or scene_id not in SDF_SCENE_IDS
+    ]
+
+
+@requires_app_host
 def test_demo_catalog_cycles_without_a_renderer(capfd):
     assert (
         viewer.run(
-            _cycle_scenes(_demo_scenes()),
+            _demo_scenes(),
             ["examples.demos", "--cycle-scenes", "--frames", "2"],
         )
         == 0
@@ -104,7 +113,7 @@ def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
                 scene.factory()
     assert (
         viewer.run(
-            _cycle_scenes(scenes), ["examples.demos", "--cycle-scenes", "--frames", "2"]
+            scenes, ["examples.demos", "--cycle-scenes", "--frames", "2"]
         ) == 0
     )
     output = capfd.readouterr().out
@@ -144,7 +153,7 @@ def test_demo_catalog_failing_python_hook_fails_the_cycle(capfd):
     )
     assert (
         viewer.run(
-            [*_cycle_scenes(_demo_scenes()), scene],
+            [*_demo_scenes(), scene],
             ["examples.demos", "--cycle-scenes", "--frames", "2"],
         )
         != 0
@@ -176,8 +185,6 @@ def _world_state(world):
     ids=lambda scene: scene.id,
 )
 def test_neutral_demo_callbacks_and_deterministic_steps(scene):
-    if scene.id in SDF_SCENE_IDS and not hasattr(dart.utils.SdfParser, "Options"):
-        pytest.skip("SDF loading is disabled")
     runs = []
     for _ in range(2):
         dart.math.Random.setSeed(42)

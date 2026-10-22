@@ -207,7 +207,8 @@ step_dart() {
     -DDART_TREAT_WARNINGS_AS_ERRORS=OFF \
     -DDART_SKIP_IPOPT=ON \
     -DDART_SKIP_NLOPT=ON \
-    -DDART_SKIP_pagmo=ON
+    -DDART_SKIP_pagmo=ON \
+    -DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON
   # Install into an empty prefix: a reused one keeps the headers, libraries
   # and CMake files an earlier candidate installed and this one does not,
   # which gz-physics would find. Only DART installs there; the build

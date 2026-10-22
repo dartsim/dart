@@ -23,7 +23,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
 | `ci_freebsd.yml`                  | CI FreeBSD (VM)              | nightly, dispatch               | FreeBSD build + test in a VM |
-| `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Newest gcc/clang build + test |
+| `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Ubuntu 24.04 floor (gcc 13, clang 18) and newest (gcc 16, clang 19) build + test |
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above except CI Filament, on `main`; files `nightly-failure` issues |
@@ -376,8 +376,9 @@ C++ demo app or scene-cycle CTest target.
 `ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
 testing and configures it once, so gz-physics' contact-callback test
 expectations are not compiled in. The unpatched Gazebo lanes
-(`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
-`tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
+(`pixi run gz-compat-ionic` and `gz-compat-jetty` on `main`, plus
+`gz-compat-harmonic` on `release-6.20`; see `tools/gazebo/README.md`) are not
+in CI yet: each builds DART, gz-physics, and
 gz-sim from source and runs a serial suite. Release verification of DART
 6.20 at `48eb618bb81` passed all three unpatched gz-physics and gz-sim
 compatibility gates, with results equal to or better than DART 6.19.5.
