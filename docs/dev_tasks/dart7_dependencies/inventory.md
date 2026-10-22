@@ -59,7 +59,7 @@ the old plan predicted for them are superseded and unmeasured.
 | --- | --- | --- | --- | --- |
 | Filament | A | ==1.77.3 → ==1.77.3, enforced in CMake | unusable 1.9.x / none / unusable 1.9.x | The renderer (#3696). The pin is not enforced by CMake today. Source builds need Clang ≥ 20 (noble-updates has clang-20). |
 | GLFW | F | 3.4 → 3.4 plus a fetch fallback | 3.3.6 / 3.3.10 / 3.4 | Only 3.4 dlopens libX11, which the headless-import gate relies on; the one 3.4-only call is `glfwInitHint(GLFW_PLATFORM, ...)`. |
-| libpng | B | none (needs ≥ 1.6.0) → 1.6.43 | 1.6.37 / 1.6.43 / 1.6.57 | Texture decode and screenshots; add decode caps (DEP-20). |
+| libpng | B | none (needs ≥ 1.6.0) → 1.6.0 (DD-29) | 1.6.37 / 1.6.43 / 1.6.57 | Texture decode and screenshots; add decode caps (DEP-20). |
 | libjpeg-turbo | A | none | 2.1.2 / 2.1.5 / 2.1.5 | Texture decode; add decode caps. |
 | Dear ImGui | F | 1.92.8 docking, fetched as a hash-pinned tag archive without a patch (DD-14, DEP-30) | 1.86 / 1.90.1 / 1.92.2b | No Ubuntu LTS has the docking release, so builds whose environment lacks it fetch the archive; a compatible supplied system package and its switch remain possible. The in-tree bundled copy and the compatibility patch go. |
 
@@ -101,7 +101,7 @@ the old plan predicted for them are superseded and unmeasured.
 | GCC / Clang / CMake | 11.2 / 13 / 3.22.1 | 13.2 / 18 / 3.28.3 | 13.2 / 18 / 3.28 |
 | Python / NumPy | 3.10 / 1.21.5 | 3.12.3 / 1.26.4 | 3.12 / 1.26.4 |
 | Eigen, FCL, libccd, octomap, ODE | 3.4.0, 0.7.0, —, 1.9.7, 0.16.2 | same | unchanged |
-| assimp, tinyxml2, libpng | 5.2.2, 9.0.0, — | 5.3.1, 10.0.0, 1.6.43 | 5.3.1, 10.0.0, 1.6.43 |
+| assimp, tinyxml2, libpng | 5.2.2, 9.0.0, — | 5.3.1, 10.0.0, 1.6.43 | 5.3.1, 10.0.0, 1.6.0 (DD-29) |
 | Bullet | 3.06 | 3.24 | 3.05 detection floor |
 | fmt, spdlog | 8.1.1, 1.9.2 | 9.1.0, 1.12.0 | removed (DD-4) |
 | urdfdom, libcurl, OpenSSL | 3.0.0, 7.85.0, 1.1.1 | 4.0.0, 8.5.0, 3.0.13 | kept (DD-5, DD-12): the 24.04 versions (urdfdom 4.0.0 on source builds, 6.0.1 in Linux wheels) |
