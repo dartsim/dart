@@ -2948,3 +2948,341 @@ def test_require_optional_dependencies(
             assert text in output
     else:
         assert result.returncode == 0, output
+
+
+@pytest.mark.parametrize("configuration", ["Release", "Debug"])
+@pytest.mark.parametrize("layout", ["plain", "spaces"])
+def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layout):
+    folder = "bullet with spaces" if layout == "spaces" else "bullet"
+    prefix = build_bullet_abi_fixture(tmp_path / folder, "double", "STATIC", "-float64")
+    bullet_module(tmp_path)
+    source = tmp_path / "consumer.cpp"
+    source.write_text(BULLET_CONSUMER)
+    graph = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")\n'
+        f'target_link_directories(Bullet INTERFACE "$<$<CONFIG:{configuration}>:{prefix.as_posix()}/lib>" '
+        '"$<$<CONFIG:Unused>:/missing/bullet>")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision-float64 LinearMath-float64)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    result = configure(
+        tmp_path,
+        graph + "include(DARTFindBullet)\n_dart_bullet_probe_precision(precision)\n"
+        'if(NOT BULLET_FOUND OR NOT precision STREQUAL "double")\n'
+        'message(FATAL_ERROR "Named libraries failed ABI validation")\nendif()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/bullet.pc" "Name: bullet-fixture\\nDescription: Bullet fixture\\nVersion: 1\\nCflags: -DBT_USE_DOUBLE_PRECISION${DART_BULLET_PC_CFLAGS}\\nLibs:${DART_BULLET_PC_LIBS}\\n")\n',
+        cmake_args=(f"-DCMAKE_BUILD_TYPE={configuration}",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+    cmake_fixture_run(tmp_path / "build/consumer")
+    env = {
+        **os.environ,
+        "PKG_CONFIG_PATH": str(tmp_path / "build"),
+        "PKG_CONFIG_LIBDIR": str(tmp_path / "build"),
+    }
+    env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+    options, flags = pkgconfig_consumer_options("bullet", env=env)
+    assert "-lBulletCollision-float64" in flags
+    assert "-lLinearMath-float64" in flags
+    assert "-L" + str(prefix / "lib") in flags
+    assert all("/missing/bullet" not in flag for flag in flags)
+    consumer = tmp_path / "pc-consumer"
+    consumer.mkdir()
+    result = configure(
+        consumer,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n' + options,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", consumer / "build")
+    cmake_fixture_run(consumer / "build/consumer")
+
+
+def test_bullet_pkgconfig_preserves_link_tokens(tmp_path):
+    include = bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        "include(DARTFindBullet)\n"
+        "_dart_bullet_record(float64 LIBRARIES BulletCollision-float64 -pthread "
+        '"/sdk with spaces/libLinearMath-float64.a" -framework Cocoa -framework Foundation)\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/flags.txt" "${DART_BULLET_PC_LIBS}")\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert shlex.split((tmp_path / "build/flags.txt").read_text()) == [
+        "-lBulletCollision-float64",
+        "-pthread",
+        "/sdk with spaces/libLinearMath-float64.a",
+        "-framework",
+        "Cocoa",
+        "-framework",
+        "Foundation",
+    ]
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "global",
+        "mapped",
+        "default",
+        "modern",
+        "modern-empty",
+        "interface",
+        "interface-mapped",
+        "inactive",
+        "mismatch",
+    ],
+)
+def test_bullet_legacy_imported_interface_consumer(tmp_path, mode):
+    prefix = build_bullet_abi_fixture(
+        tmp_path / "bullet", "double", "STATIC", "-float64"
+    )
+    math_prefix = prefix
+    if mode == "mismatch":
+        math_prefix = build_bullet_abi_fixture(
+            tmp_path / "wrong", "single", "STATIC", "-float64"
+        )
+    bullet_module(tmp_path)
+    graph = bullet_imports(prefix, math_prefix=math_prefix)
+    graph += "set_property(TARGET Bullet PROPERTY INTERFACE_LINK_LIBRARIES collision)\n"
+    if mode.startswith("interface"):
+        graph += (
+            "add_library(legacy_wrapper INTERFACE IMPORTED)\n"
+            "target_link_libraries(Bullet INTERFACE legacy_wrapper)\n"
+            "set_target_properties(legacy_wrapper PROPERTIES "
+            + (
+                "IMPORTED_CONFIGURATIONS DEBUG MAP_IMPORTED_CONFIG_RELEASE DEBUG "
+                "IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG missing_legacy)\n"
+                if mode == "interface-mapped"
+                else "IMPORTED_LINK_INTERFACE_LIBRARIES missing_legacy)\n"
+            )
+        )
+    if mode == "mapped":
+        graph += (
+            'set_target_properties(collision PROPERTIES IMPORTED_LOCATION "" '
+            'IMPORTED_LOCATION_DEBUG "${collision_file}" IMPORTED_CONFIGURATIONS DEBUG '
+            "MAP_IMPORTED_CONFIG_RELEASE DEBUG IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG math "
+            "IMPORTED_LINK_INTERFACE_LIBRARIES missing_legacy)\n"
+        )
+    elif mode == "default":
+        graph += (
+            'set_target_properties(collision PROPERTIES MAP_IMPORTED_CONFIG_RELEASE "" '
+            "IMPORTED_LINK_INTERFACE_LIBRARIES math IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE missing_legacy)\n"
+        )
+    elif mode in ("modern", "modern-empty"):
+        graph += (
+            "set_target_properties(collision PROPERTIES IMPORTED_LINK_INTERFACE_LIBRARIES missing_legacy "
+            f'INTERFACE_LINK_LIBRARIES "{"math" if mode == "modern" else ""}")\n'
+        )
+    else:
+        edge = (
+            '"$<$<CONFIG:Release>:math>;$<$<CONFIG:Debug>:missing_legacy>"'
+            if mode == "inactive"
+            else "math"
+        )
+        graph += f"set_property(TARGET collision PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES {edge})\n"
+    source = tmp_path / "consumer.cpp"
+    source.write_text(
+        "int main() { return 0; }\n" if mode == "modern-empty" else BULLET_CONSUMER
+    )
+    common = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + graph
+        + f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(control, common, cmake_args=("-DCMAKE_BUILD_TYPE=Release",))
+    assert result.returncode == 0, result.stdout + result.stderr
+    built = subprocess.run(
+        [shutil.which("cmake"), "--build", str(control / "build")],
+        capture_output=True,
+        text=True,
+    )
+    assert (built.returncode == 0) == (mode != "mismatch"), built.stdout + built.stderr
+    if mode != "mismatch":
+        cmake_fixture_run(control / "build/consumer")
+    result = configure(
+        tmp_path,
+        common + "include(DARTFindBullet)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/flags.txt" "${DART_BULLET_PC_LIBS}")\n'
+        + (
+            "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+            if mode != "modern-empty"
+            else ""
+        )
+        + f'if({"" if mode == "mismatch" else "NOT "}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong legacy graph acceptance")\nendif()\n',
+        cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    flags = shlex.split((tmp_path / "build/flags.txt").read_text())
+    assert all("missing_legacy" not in flag for flag in flags)
+    assert any("LinearMath" in flag for flag in flags) == (mode != "modern-empty")
+    if mode == "mismatch":
+        return
+    pc_consumer = tmp_path / "pc-consumer"
+    pc_consumer.mkdir()
+    links = " ".join(f'"{flag}"' for flag in flags)
+    result = configure(
+        pc_consumer,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n'
+        f'target_include_directories(consumer PRIVATE "{prefix.as_posix()}/include")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        f"target_link_libraries(consumer PRIVATE {links})\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", pc_consumer / "build")
+    cmake_fixture_run(pc_consumer / "build/consumer")
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "public",
+        "private",
+        "nested",
+        "config-active",
+        "config-inactive",
+        "mapped",
+        "mapped-empty",
+        "link-only",
+        "mixed",
+        "definition-active",
+        "definition-inactive",
+    ],
+)
+def test_bullet_transitive_built_precision(tmp_path, mode):
+    configuration = (
+        "Debug" if mode in ("config-active", "definition-active") else "Release"
+    )
+    double = mode not in (
+        "config-inactive",
+        "definition-inactive",
+        "mapped-empty",
+        "link-only",
+    )
+    expected = "double" if double else "single"
+    prefix = build_bullet_abi_fixture(tmp_path / "fixture", expected, "STATIC")
+    bullet_module(tmp_path)
+    source = tmp_path / "source"
+    source.mkdir(exist_ok=True)
+    for name in ("collision", "math"):
+        scalar = (
+            "float"
+            if mode == "mixed" and name == "math"
+            else ("double" if double else "float")
+        )
+        (source / f"{name}.cpp").write_text(
+            (tmp_path / f"fixture/source/{name}.cpp").read_text()
+            + f"static_assert(sizeof(btScalar) == sizeof({scalar}));\n"
+        )
+    imported = " IMPORTED" if mode in ("mapped", "mapped-empty") else ""
+    definition = "BT_USE_DOUBLE_PRECISION"
+    if mode.startswith("definition-"):
+        definition = "$<$<CONFIG:Debug>:BT_USE_DOUBLE_PRECISION>"
+    elif mode == "mapped":
+        definition = "$<$<CONFIG:Debug>:BT_USE_DOUBLE_PRECISION>"
+    elif mode == "mapped-empty":
+        definition = "$<$<CONFIG:>:BT_USE_DOUBLE_PRECISION>"
+    graph = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        f"add_library(precision_options INTERFACE{imported})\n"
+        f'target_compile_definitions(precision_options INTERFACE "{definition}")\n'
+    )
+    if imported:
+        graph += f'set_property(TARGET precision_options PROPERTY MAP_IMPORTED_CONFIG_RELEASE "{"DEBUG" if mode == "mapped" else ""}")\n'
+    edge = "precision_options"
+    if mode == "nested":
+        graph += "add_library(nested_options INTERFACE)\ntarget_link_libraries(nested_options INTERFACE precision_options)\n"
+        edge = "nested_options"
+    elif mode.startswith("config-"):
+        edge = "$<$<CONFIG:Debug>:precision_options>"
+    elif mode == "link-only":
+        edge = "$<LINK_ONLY:precision_options>"
+    for name, filename in (("BulletCollision", "collision"), ("LinearMath", "math")):
+        graph += (
+            f"add_library({name} STATIC {filename}.cpp)\n"
+            f'target_include_directories({name} PRIVATE "{prefix.as_posix()}/include")\n'
+        )
+        if mode != "mixed" or name == "BulletCollision":
+            graph += f'target_link_libraries({name} {"PRIVATE" if mode == "private" else "PUBLIC"} "{edge}")\n'
+    graph += (
+        "target_link_libraries(BulletCollision PRIVATE LinearMath)\n"
+        "add_library(Bullet INTERFACE)\n"
+        f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision LinearMath)\n"
+    )
+    # Compile real symbols with static assertions, independent of finder classification.
+    control = tmp_path / "control"
+    control.mkdir()
+    (control / "source").mkdir()
+    for filename in ("collision.cpp", "math.cpp"):
+        shutil.copy(source / filename, control / "source" / filename)
+    result = configure(
+        control, graph, cmake_args=(f"-DCMAKE_BUILD_TYPE={configuration}",)
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+    (source / "backend.cmake").write_text(
+        (ROOT / "dart/collision/bullet/CMakeLists.txt")
+        .read_text()
+        .split("# Search all header and source files")[0]
+    )
+    tail = "include(DARTFindBullet)\n_dart_bullet_probe_precision(precision)\n"
+    if mode == "mixed":
+        tail += 'if(BULLET_FOUND OR precision)\nmessage(FATAL_ERROR "Accepted a real transitive ABI mismatch")\nendif()\n'
+    else:
+        (source / "consumer.cpp").write_text(BULLET_CONSUMER)
+        tail += (
+            "include(DARTMacros)\ninclude(backend.cmake)\n"
+            "add_executable(consumer consumer.cpp)\n"
+            "target_link_libraries(consumer PRIVATE Bullet)\n"
+            "if(BT_USE_DOUBLE_PRECISION)\n"
+            "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\nendif()\n"
+            f'if(NOT BULLET_FOUND OR NOT precision STREQUAL "{expected}" OR NOT DART_BULLET_BUILT_PRECISION STREQUAL "{expected}")\n'
+            'message(FATAL_ERROR "Lost effective built precision: ${precision}/${DART_BULLET_BUILT_PRECISION}")\nendif()\n'
+            "set(external_dependencies Bullet)\n"
+            f'configure_file("{ROOT.as_posix()}/cmake/dart_Component.cmake.in" "${{CMAKE_BINARY_DIR}}/component.cmake" @ONLY)\n'
+        )
+    result = configure(
+        tmp_path, graph + tail, cmake_args=(f"-DCMAKE_BUILD_TYPE={configuration}",)
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    if mode != "mixed":
+        cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+        cmake_fixture_run(tmp_path / "build/consumer")
+        component = (tmp_path / "build/component.cmake").read_text()
+        assert f'set(DART_BULLET_REQUIRE_PRECISION "{expected}")' in component
+        if mode == "public":
+            # The recorded installed requirement must accept the matching ABI
+            # and reject a different scalar ABI, independent of library names.
+            requirement = re.search(
+                r'set\(DART_BULLET_REQUIRE_PRECISION "[^"\n]+"\)', component
+            ).group()
+            wrong = build_bullet_abi_fixture(tmp_path / "wrong", "single", "STATIC")
+            for name, dependency in (("matching", prefix), ("wrong", wrong)):
+                installed = tmp_path / f"installed-{name}"
+                installed.mkdir()
+                bullet_module(installed)
+                result = configure(
+                    installed,
+                    "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+                    + bullet_imports(dependency)
+                    + requirement
+                    + "\ninclude(DARTFindBullet)\n"
+                    + f'if({"NOT " if name == "matching" else ""}BULLET_FOUND)\n'
+                    'message(FATAL_ERROR "Wrong installed transitive precision")\nendif()\n',
+                )
+                assert result.returncode == 0, result.stdout + result.stderr

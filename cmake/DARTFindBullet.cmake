@@ -91,11 +91,18 @@ function(_dart_bullet_pc_escape out token)
 endfunction()
 
 # Records the variant that DART links while building it, and pkg-config
-# flags for the INCLUDES and the Bullet files among LIBRARIES, without
+# flags for the selected includes, link directories, and libraries, without
 # FindBullet's Debug entries, which dart.pc names when no bullet-float64
 # module describes them.
 function(_dart_bullet_record variant)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "INCLUDES;LIBRARIES")
+  cmake_parse_arguments(
+    PARSE_ARGV
+    1
+    arg
+    ""
+    ""
+    "INCLUDES;LIBRARIES;LINK_DIRECTORIES"
+  )
   set(uses "")
   if(variant STREQUAL "float64")
     set(uses TRUE)
@@ -111,18 +118,19 @@ function(_dart_bullet_record variant)
   set(libraries)
   set(skip FALSE)
   foreach(library IN LISTS arg_LIBRARIES)
-    get_filename_component(name "${library}" NAME)
     if(skip)
       set(skip FALSE)
     elseif(library STREQUAL "debug")
       set(skip TRUE)
-    elseif(name MATCHES "${_dart_bullet_name_regex}")
+    elseif(
+      NOT library MATCHES "^(optimized|general)$"
+      AND NOT TARGET "${library}"
+    )
       list(APPEND libraries "${library}")
     endif()
   endforeach()
   set(includes ${arg_INCLUDES})
   list(REMOVE_DUPLICATES includes)
-  list(REMOVE_DUPLICATES libraries)
   set(cflags "")
   foreach(include_dir IN LISTS includes)
     _dart_bullet_pc_path(path "${include_dir}" COMPILE)
@@ -130,7 +138,15 @@ function(_dart_bullet_record variant)
     string(APPEND cflags " -I${path}")
   endforeach()
   set(libs "")
+  set(directories ${arg_LINK_DIRECTORIES})
+  list(REMOVE_DUPLICATES directories)
+  foreach(directory IN LISTS directories)
+    _dart_bullet_pc_path(path "${directory}" LINK)
+    _dart_bullet_pc_escape(path "${path}")
+    string(APPEND libs " -L${path}")
+  endforeach()
   set(error "")
+  set(framework FALSE)
   foreach(library IN LISTS libraries)
     _dart_bullet_pc_path(path "${library}" LINK)
     if(NOT path STREQUAL library)
@@ -149,8 +165,21 @@ function(_dart_bullet_record variant)
       _dart_bullet_pc_escape(name "${name}")
       string(APPEND libs " -L${directory} -l:${name}")
     else()
+      # CMake turns a bare library name into a search flag. Keep flags, framework
+      # arguments and paths literal, including repeated framework flag pairs.
+      if(
+        NOT framework
+        AND NOT IS_ABSOLUTE "${path}"
+        AND NOT path MATCHES "^[-/]|[/\\\\]"
+      )
+        set(path "-l${path}")
+      endif()
       _dart_bullet_pc_escape(path "${path}")
       string(APPEND libs " ${path}")
+    endif()
+    set(framework FALSE)
+    if(library STREQUAL "-framework" OR library STREQUAL "-weak_framework")
+      set(framework TRUE)
     endif()
   endforeach()
   set(
@@ -207,6 +236,7 @@ function(_dart_bullet_config_location out target config)
   # Preserve empty mapping entries: CMake uses the configuration-less file.
   string(REPLACE ";" ";_" configs "_${configs}")
   set(location "")
+  set(selected_suffix "")
   foreach(suffix IN LISTS configs)
     if(suffix STREQUAL "_")
       set(suffix "")
@@ -214,10 +244,39 @@ function(_dart_bullet_config_location out target config)
     string(TOUPPER "${suffix}" suffix)
     _dart_bullet_location(location "${target}" "${suffix}")
     if(location)
+      set(selected_suffix "${suffix}")
       break()
     endif()
   endforeach()
   set(${out} "${location}" PARENT_SCOPE)
+  if(ARGC GREATER 3)
+    set(${ARGV3} "${selected_suffix}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+# An explicitly set modern interface, even an empty one, overrides the legacy
+# imported interface of concrete libraries. Interface-only targets ignore the
+# legacy property. Legacy configuration selection follows the imported file.
+function(_dart_bullet_link_interface out target config)
+  get_property(modern TARGET "${target}" PROPERTY INTERFACE_LINK_LIBRARIES SET)
+  set(property INTERFACE_LINK_LIBRARIES)
+  if(NOT modern)
+    get_target_property(imported "${target}" IMPORTED)
+    get_target_property(type "${target}" TYPE)
+    if(imported AND NOT type STREQUAL "INTERFACE_LIBRARY")
+      _dart_bullet_config_location(location "${target}" "${config}" suffix)
+      set(property IMPORTED_LINK_INTERFACE_LIBRARIES${suffix})
+      get_property(configured TARGET "${target}" PROPERTY "${property}" SET)
+      if(NOT configured)
+        set(property IMPORTED_LINK_INTERFACE_LIBRARIES)
+      endif()
+    endif()
+  endif()
+  get_target_property(value "${target}" "${property}")
+  if(NOT value)
+    set(value "")
+  endif()
+  set(${out} "${value}" PARENT_SCOPE)
 endfunction()
 
 if(NOT DART_USE_SYSTEM_BULLET)
@@ -468,64 +527,24 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   unset(_dart_bullet_found)
 endif()
 
-# CONFIG expressions inherit mappings from the target that owns their property.
-macro(_dart_bullet_enqueue queue position entries owner)
-  set(_dart_bullet_entries ${${entries}})
-  foreach(_dart_bullet_entry IN LISTS _dart_bullet_entries)
-    list(${position} ${queue}_owners "${owner}")
-  endforeach()
-  list(${position} ${queue} ${_dart_bullet_entries})
-endmacro()
-
-# Use the same traversal for package metadata and each configuration's ABI probe.
-# Classification and probes use the same active configuration walks.
-function(_dart_bullet_collect_graph config all_configs)
-  if(all_configs)
-    get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-    set(configs "${CMAKE_BUILD_TYPE}")
-    if(multi_config)
-      set(configs "${CMAKE_CONFIGURATION_TYPES}")
-    endif()
-    # Prefix each list entry to preserve an empty configuration during transport.
-    string(REPLACE ";" ";_" configs "_${configs}")
-    set(files)
-    set(built_precisions)
-    set(unknown FALSE)
-    foreach(active_config IN LISTS configs)
-      string(SUBSTRING "${active_config}" 1 -1 active_config)
-      _dart_bullet_collect_graph("${active_config}" FALSE)
-      list(APPEND files ${_dart_bullet_files})
-      list(APPEND built_precisions ${_dart_bullet_built_precisions})
-      if(_dart_bullet_unknown)
-        set(unknown TRUE)
-      endif()
-    endforeach()
-    # Keep the packaging selection independent of the last configuration walked.
-    _dart_bullet_collect_graph("${config}" FALSE)
-    set(_dart_bullet_probe_configs "${configs}" PARENT_SCOPE)
-    foreach(output files built_precisions unknown)
-      set(_dart_bullet_${output} "${${output}}" PARENT_SCOPE)
-    endforeach()
-    foreach(output pc_files includes)
-      set(_dart_bullet_${output} "${_dart_bullet_${output}}" PARENT_SCOPE)
-    endforeach()
-    return()
-  endif()
+# Resolve only the supported active expressions. Compile usage excludes LINK_ONLY;
+# link usage includes it. Both use the property's owning target for CONFIG maps.
+function(
+  _dart_bullet_evaluate_items
+  out
+  unknown
+  config
+  owner
+  link_only
+)
   string(TOUPPER "${config}" _dart_bullet_build_type)
-  set(_dart_bullet_queue Bullet)
-  set(_dart_bullet_queue_owners Bullet)
-  set(_dart_bullet_seen)
-  set(_dart_bullet_files)
-  set(_dart_bullet_pc_files)
-  set(_dart_bullet_includes)
+  set(_dart_bullet_owner "${owner}")
+  set(_dart_bullet_queue ${ARGN})
   set(_dart_bullet_unknown FALSE)
-  set(_dart_bullet_built_precisions)
-  set(_dart_bullet_has_build_targets FALSE)
+  set(result)
   while(_dart_bullet_queue)
     list(GET _dart_bullet_queue 0 _dart_bullet_item)
     list(REMOVE_AT _dart_bullet_queue 0)
-    list(GET _dart_bullet_queue_owners 0 _dart_bullet_owner)
-    list(REMOVE_AT _dart_bullet_queue_owners 0)
     set(_dart_bullet_active_configs "_${_dart_bullet_build_type}")
     get_target_property(_dart_bullet_imported "${_dart_bullet_owner}" IMPORTED)
     if(_dart_bullet_imported)
@@ -566,7 +585,6 @@ function(_dart_bullet_collect_graph config all_configs)
       endif()
       list(GET _dart_bullet_queue 0 _dart_bullet_part)
       list(REMOVE_AT _dart_bullet_queue 0)
-      list(REMOVE_AT _dart_bullet_queue_owners 0)
       string(APPEND _dart_bullet_item ";${_dart_bullet_part}")
     endwhile()
     # Unwrap $<LINK_ONLY:...>, $<BUILD_INTERFACE:...>, true $<BOOL:...> and
@@ -632,6 +650,9 @@ function(_dart_bullet_collect_graph config all_configs)
           set(_dart_bullet_item "")
           break()
         endif()
+      elseif(_dart_bullet_value STREQUAL "LINK_ONLY" AND NOT link_only)
+        set(_dart_bullet_item "")
+        break()
       elseif(_dart_bullet_value MATCHES "^(INSTALL_INTERFACE|0)$")
         set(_dart_bullet_item "")
         break()
@@ -657,9 +678,125 @@ function(_dart_bullet_collect_graph config all_configs)
       _dart_bullet_item MATCHES ";"
       AND NOT _dart_bullet_item STREQUAL _dart_bullet_part
     )
-      _dart_bullet_enqueue(_dart_bullet_queue PREPEND _dart_bullet_item "${_dart_bullet_owner}")
+      list(PREPEND _dart_bullet_queue ${_dart_bullet_item})
       continue()
     endif()
+    list(APPEND result "${_dart_bullet_item}")
+  endwhile()
+  set(${out} "${result}" PARENT_SCOPE)
+  set(${unknown} "${_dart_bullet_unknown}" PARENT_SCOPE)
+endfunction()
+
+# Project-built libraries cannot be linked by try_compile. Inspect their actual
+# compile definitions, including usage inherited from private/public dependencies.
+function(_dart_bullet_built_precision out unknown target config)
+  set(queue "${target}")
+  set(seen)
+  set(definitions)
+  set(unverified FALSE)
+  while(queue)
+    list(POP_FRONT queue item)
+    if(NOT TARGET "${item}" OR item IN_LIST seen)
+      continue()
+    endif()
+    list(APPEND seen "${item}")
+    set(value)
+    if(item STREQUAL target)
+      get_target_property(directory "${item}" SOURCE_DIR)
+      get_directory_property(value DIRECTORY "${directory}" COMPILE_DEFINITIONS)
+      get_target_property(local "${item}" COMPILE_DEFINITIONS)
+      if(local)
+        list(APPEND value ${local})
+      endif()
+      get_target_property(links "${item}" LINK_LIBRARIES)
+      if(NOT links)
+        set(links)
+      endif()
+    else()
+      get_target_property(value "${item}" INTERFACE_COMPILE_DEFINITIONS)
+      if(NOT value)
+        set(value)
+      endif()
+      _dart_bullet_link_interface(links "${item}" "${config}")
+    endif()
+    _dart_bullet_evaluate_items(active unresolved "${config}" "${item}" FALSE ${value})
+    list(APPEND definitions ${active})
+    if(unresolved)
+      set(unverified TRUE)
+    endif()
+    _dart_bullet_evaluate_items(active unresolved "${config}" "${item}" FALSE ${links})
+    list(APPEND queue ${active})
+    if(unresolved)
+      set(unverified TRUE)
+    endif()
+  endwhile()
+  set(precision single)
+  if(definitions MATCHES "(^|;)BT_USE_DOUBLE_PRECISION(=[^;]*)?(;|$)")
+    set(precision double)
+  else()
+    # A public-only scalar definition disagrees with this library's own build.
+    get_target_property(value "${target}" INTERFACE_COMPILE_DEFINITIONS)
+    if(value)
+      _dart_bullet_evaluate_items(active unresolved "${config}" "${target}" FALSE ${value})
+      if(
+        unresolved
+        OR active MATCHES "(^|;)BT_USE_DOUBLE_PRECISION(=[^;]*)?(;|$)"
+      )
+        set(unverified TRUE)
+      endif()
+    endif()
+  endif()
+  set(${out} "${precision}" PARENT_SCOPE)
+  set(${unknown} "${unverified}" PARENT_SCOPE)
+endfunction()
+
+# Use the same traversal for package metadata and each configuration's ABI probe.
+# Classification and probes use the same active configuration walks.
+function(_dart_bullet_collect_graph config all_configs)
+  if(all_configs)
+    get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    set(configs "${CMAKE_BUILD_TYPE}")
+    if(multi_config)
+      set(configs "${CMAKE_CONFIGURATION_TYPES}")
+    endif()
+    # Prefix each list entry to preserve an empty configuration during transport.
+    string(REPLACE ";" ";_" configs "_${configs}")
+    set(files)
+    set(built_precisions)
+    set(unknown FALSE)
+    foreach(active_config IN LISTS configs)
+      string(SUBSTRING "${active_config}" 1 -1 active_config)
+      _dart_bullet_collect_graph("${active_config}" FALSE)
+      list(APPEND files ${_dart_bullet_files})
+      list(APPEND built_precisions ${_dart_bullet_built_precisions})
+      if(_dart_bullet_unknown)
+        set(unknown TRUE)
+      endif()
+    endforeach()
+    # Keep the packaging selection independent of the last configuration walked.
+    _dart_bullet_collect_graph("${config}" FALSE)
+    set(_dart_bullet_probe_configs "${configs}" PARENT_SCOPE)
+    foreach(output files built_precisions unknown)
+      set(_dart_bullet_${output} "${${output}}" PARENT_SCOPE)
+    endforeach()
+    foreach(output pc_files includes link_directories)
+      set(_dart_bullet_${output} "${_dart_bullet_${output}}" PARENT_SCOPE)
+    endforeach()
+    return()
+  endif()
+  string(TOUPPER "${config}" _dart_bullet_build_type)
+  set(_dart_bullet_queue Bullet)
+  set(_dart_bullet_seen)
+  set(_dart_bullet_files)
+  set(_dart_bullet_pc_files)
+  set(_dart_bullet_includes)
+  set(_dart_bullet_link_directories)
+  set(_dart_bullet_unknown FALSE)
+  set(_dart_bullet_built_precisions)
+  set(_dart_bullet_has_build_targets FALSE)
+  while(_dart_bullet_queue)
+    list(GET _dart_bullet_queue 0 _dart_bullet_item)
+    list(REMOVE_AT _dart_bullet_queue 0)
     if(NOT TARGET "${_dart_bullet_item}")
       list(APPEND _dart_bullet_files "${_dart_bullet_item}")
       list(APPEND _dart_bullet_pc_files "${_dart_bullet_item}")
@@ -669,34 +806,36 @@ function(_dart_bullet_collect_graph config all_configs)
       continue()
     endif()
     list(APPEND _dart_bullet_seen "${_dart_bullet_item}")
-    get_target_property(
-      _dart_bullet_value
-      "${_dart_bullet_item}"
-      INTERFACE_LINK_LIBRARIES
+    _dart_bullet_link_interface(_dart_bullet_value "${_dart_bullet_item}" "${config}")
+    _dart_bullet_evaluate_items(_dart_bullet_value _dart_bullet_unresolved
+      "${config}" "${_dart_bullet_item}" TRUE ${_dart_bullet_value}
     )
-    if(_dart_bullet_value)
-      _dart_bullet_enqueue(_dart_bullet_queue PREPEND _dart_bullet_value "${_dart_bullet_item}")
+    list(PREPEND _dart_bullet_queue ${_dart_bullet_value})
+    if(_dart_bullet_unresolved)
+      set(_dart_bullet_unknown TRUE)
     endif()
-    get_target_property(
-      _dart_bullet_value
-      "${_dart_bullet_item}"
-      INTERFACE_INCLUDE_DIRECTORIES
-    )
-    foreach(_dart_bullet_dir IN LISTS _dart_bullet_value)
-      while(
-        _dart_bullet_dir
-          MATCHES
-          "^\\$<(BUILD_INTERFACE|BUILD_LOCAL_INTERFACE):(.+)>$"
+    foreach(property INCLUDE_DIRECTORIES LINK_DIRECTORIES)
+      get_target_property(
+        _dart_bullet_value
+        "${_dart_bullet_item}"
+        INTERFACE_${property}
       )
-        set(_dart_bullet_dir "${CMAKE_MATCH_2}")
-      endwhile()
-      if(_dart_bullet_dir MATCHES "^\\$<INSTALL_INTERFACE:")
-        continue()
-      elseif(_dart_bullet_dir MATCHES "\\$<")
-        set(_dart_bullet_unknown TRUE)
-      endif()
-      if(IS_ABSOLUTE "${_dart_bullet_dir}")
-        list(APPEND _dart_bullet_includes "${_dart_bullet_dir}")
+      if(_dart_bullet_value)
+        _dart_bullet_evaluate_items(_dart_bullet_value _dart_bullet_unresolved
+          "${config}" "${_dart_bullet_item}" TRUE ${_dart_bullet_value}
+        )
+        if(_dart_bullet_unresolved)
+          set(_dart_bullet_unknown TRUE)
+        endif()
+        foreach(_dart_bullet_dir IN LISTS _dart_bullet_value)
+          if(IS_ABSOLUTE "${_dart_bullet_dir}")
+            if(property STREQUAL "INCLUDE_DIRECTORIES")
+              list(APPEND _dart_bullet_includes "${_dart_bullet_dir}")
+            else()
+              list(APPEND _dart_bullet_link_directories "${_dart_bullet_dir}")
+            endif()
+          endif()
+        endforeach()
       endif()
     endforeach()
     get_target_property(_dart_bullet_imported "${_dart_bullet_item}" IMPORTED)
@@ -705,45 +844,20 @@ function(_dart_bullet_collect_graph config all_configs)
       if(NOT _dart_bullet_type STREQUAL "INTERFACE_LIBRARY")
         set(_dart_bullet_has_build_targets TRUE)
       endif()
-      # try_compile cannot link Bullet libraries that this project builds;
-      # Bullet's USE_DOUBLE_PRECISION option defines BT_USE_DOUBLE_PRECISION
-      # for their directories instead.
+      # try_compile cannot link project-built Bullet libraries; inspect their
+      # own definitions and inherited compile usage for the same configuration.
       get_target_property(_dart_bullet_value "${_dart_bullet_item}" TYPE)
       get_target_property(_dart_bullet_dir "${_dart_bullet_item}" NAME)
       if(
         NOT _dart_bullet_value STREQUAL "INTERFACE_LIBRARY"
         AND _dart_bullet_dir MATCHES "${_dart_bullet_name_regex}"
       )
-        get_target_property(_dart_bullet_dir "${_dart_bullet_item}" SOURCE_DIR)
-        get_directory_property(
-          _dart_bullet_value
-          DIRECTORY "${_dart_bullet_dir}"
-          COMPILE_DEFINITIONS
+        _dart_bullet_built_precision(_dart_bullet_precision _dart_bullet_unresolved
+          "${_dart_bullet_item}" "${config}"
         )
-        get_target_property(
-          _dart_bullet_dir
-          "${_dart_bullet_item}"
-          COMPILE_DEFINITIONS
-        )
-        list(APPEND _dart_bullet_value "${_dart_bullet_dir}")
-        if(
-          _dart_bullet_value
-            MATCHES
-            "(^|;)BT_USE_DOUBLE_PRECISION(=[^;]*)?(;|$)"
-        )
-          list(APPEND _dart_bullet_built_precisions double)
-        elseif(_dart_bullet_value MATCHES "\\$<")
+        list(APPEND _dart_bullet_built_precisions "${_dart_bullet_precision}")
+        if(_dart_bullet_unresolved)
           set(_dart_bullet_unknown TRUE)
-        else()
-          list(APPEND _dart_bullet_built_precisions single)
-          get_target_property(
-            _dart_bullet_dir
-            "${_dart_bullet_item}"
-            INTERFACE_COMPILE_DEFINITIONS
-          )
-          if(_dart_bullet_dir MATCHES "BT_USE_DOUBLE_PRECISION|\\$<")
-            set(_dart_bullet_unknown TRUE)
-          endif()
         endif()
       endif()
       continue()
@@ -766,6 +880,7 @@ function(_dart_bullet_collect_graph config all_configs)
     files
     pc_files
     includes
+    link_directories
     unknown
     built_precisions
     has_build_targets
@@ -833,6 +948,7 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
       "${_dart_bullet_found}"
       INCLUDES ${_dart_bullet_includes}
       LIBRARIES ${_dart_bullet_pc_files}
+      LINK_DIRECTORIES ${_dart_bullet_link_directories}
     )
   endif()
   set(_DART_BULLET_GRAPH_UNKNOWN "${_dart_bullet_unknown}")
