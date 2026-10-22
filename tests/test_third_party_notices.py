@@ -62,7 +62,7 @@ KNOWN_SOURCES = {
     ),
     "computational-geometry-toolbox": "dart/math/detail/ConvexHull.hpp",
     # ConvexHull-impl.hpp is covered only by the ConvexHull glob.
-    "Dear ImGui": "dart/gui/imgui/dart-compat.patch",
+    "Dear ImGui": None,
     "tsl::robin_map": None,
     "Eigen": None,
 }

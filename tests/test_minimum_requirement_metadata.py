@@ -1,9 +1,13 @@
 """Check package support boundaries and native baseline CI coverage."""
 
+import os
+import subprocess
+import sys
 import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
 import yaml
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
