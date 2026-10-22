@@ -43,6 +43,8 @@
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <dart/external/imgui/imgui.h>
+
+#include <mutex>
 #ifndef IMGUI_HAS_DOCK
   #error "dart-gui-app requires the Dear ImGui docking release"
 #endif
@@ -73,6 +75,8 @@
 namespace dart::gui::app {
 
 namespace {
+
+std::mutex appLogMutex;
 
 constexpr int kDefaultWindowWidth = 1600;
 constexpr int kDefaultWindowHeight = 1000;
@@ -761,6 +765,7 @@ void App::reportCallbackFailure(
 //==============================================================================
 void App::log(LogEntry::Level level, const std::string& message)
 {
+  std::lock_guard<std::mutex> lock(appLogMutex);
   mLog.push_back(LogEntry{level, message});
 
   // A ring buffer of ~2000 entries: generous enough to survive a captured
@@ -2252,6 +2257,12 @@ void App::renderDiagnostics()
 //==============================================================================
 void App::renderLogSection(float height)
 {
+  mLogCapture->drain();
+  std::deque<LogEntry> log;
+  {
+    std::lock_guard<std::mutex> lock(appLogMutex);
+    log = mLog;
+  }
   ImGui::Checkbox("Info", &mLogShowInfo);
   sameLineIfEnoughRoom(95.0f * static_cast<float>(guiLayoutScale(mGuiScale)));
   ImGui::Checkbox("Warning", &mLogShowWarning);
@@ -2262,7 +2273,7 @@ void App::renderLogSection(float height)
   sameLineIfEnoughRoom(calcButtonWidth("Copy"));
   if (ImGui::Button("Copy")) {
     std::string joined;
-    for (const auto& entry : mLog) {
+    for (const auto& entry : log) {
       if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
           || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
           || (entry.level == LogEntry::Level::Error && !mLogShowError))
@@ -2274,7 +2285,7 @@ void App::renderLogSection(float height)
   }
 
   ImGui::BeginChild("##log_scroll", ImVec2(0.0f, height), true);
-  for (const auto& entry : mLog) {
+  for (const auto& entry : log) {
     if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
         || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
         || (entry.level == LogEntry::Level::Error && !mLogShowError))

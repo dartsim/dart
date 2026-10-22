@@ -42,6 +42,10 @@
 
 #include <cstddef>
 
+#if defined(__GLIBCXX__)
+  #include <cxxabi.h>
+#endif
+
 namespace dart {
 namespace common {
 namespace detail {
@@ -56,9 +60,16 @@ std::shared_ptr<LogSink> wrapLogSink(
 void restoreLogSinkIf(
     std::shared_ptr<LogSink> installed, std::shared_ptr<LogSink> previous);
 
+// Scoped GUI observation after callback consumption; registration is
+// owner-thread only. Weak payloads never retain captures or their previous
+// output sinks.
+struct LogObserver;
+LogObserver* registerLogObserver(const std::shared_ptr<LogSink>& observer);
+void unregisterLogObserver(LogObserver* observer);
+
 // Legacy console streams bypass the formatter and runtime threshold.
 bool hasCustomLogSink();
-void logRecord(LogLevel level, const std::string& message) noexcept;
+void logRecord(LogLevel level, const std::string& message);
 void logConsoleRecord(
     LogLevel level,
     const std::string& message,
@@ -155,6 +166,20 @@ struct LogArgument
   template <typename T, typename C>
   LogArgument(T C::*) = delete;
 
+  // volatile pointers would otherwise convert to bool. The address is only
+  // stored, never dereferenced.
+  template <
+      typename T,
+      typename std::enable_if<
+          !std::is_function<T>::value && std::is_volatile<T>::value,
+          int>::type
+      = 0>
+  LogArgument(T* value)
+    : LogArgument(static_cast<const void*>(
+        const_cast<typename std::remove_cv<T>::type*>(value)))
+  {
+  }
+
   // Only scalar, string-like and enum arguments cross this lean boundary.
   template <
       typename UnsupportedLogArgument,
@@ -190,11 +215,15 @@ void logMessage(
 template <typename S>
 void log(LogLevel level, const S& format)
 {
-  if (level < getLogLevel())
+  if (level < getLogLevel() && !hasLogCallback())
     return;
 
   try {
     logMessage(level, std::string(format), nullptr, 0);
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     // Logging must not interrupt application error handling.
   }
@@ -205,13 +234,17 @@ template <typename S, typename... Args>
 void log(LogLevel level, const S& format, Args&&... args)
 {
   // In particular, disabled logging must not allocate or initialize the sink.
-  if (level < getLogLevel())
+  if (level < getLogLevel() && !hasLogCallback())
     return;
 
   try {
     const std::array<LogArgument, sizeof...(Args)> arguments{
         {LogArgument(std::forward<Args>(args))...}};
     logMessage(level, std::string(format), arguments.data(), arguments.size());
+#if defined(__GLIBCXX__)
+  } catch (const abi::__forced_unwind&) {
+    throw;
+#endif
   } catch (...) {
     // Logging must not interrupt application error handling.
   }

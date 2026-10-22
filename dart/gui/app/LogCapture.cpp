@@ -32,9 +32,13 @@
 
 #include "LogCapture.hpp"
 
-#include <atomic>
+#include <deque>
 #include <iostream>
+#include <mutex>
+#include <thread>
 #include <utility>
+
+#include <cassert>
 
 namespace dart::gui::app {
 
@@ -42,6 +46,19 @@ namespace {
 
 // Both stream buffers share recursion state only within the current thread.
 thread_local bool inLogCaptureSink = false;
+
+struct CaptureScope
+{
+  bool previous = inLogCaptureSink;
+  CaptureScope()
+  {
+    inLogCaptureSink = true;
+  }
+  ~CaptureScope()
+  {
+    inLogCaptureSink = previous;
+  }
+};
 
 //==============================================================================
 /// Strips ANSI SGR escape sequences ("\033[...m") from `text`.
@@ -95,8 +112,25 @@ CapturedLogLevel sniffSeverity(
 struct LogCapture::SinkState
 {
   std::shared_ptr<common::LogSink> previous;
-  LineSink panel;
-  std::atomic<bool> alive{true};
+  std::shared_ptr<LineSink> panel;
+  std::mutex mutex;
+  std::deque<std::pair<CapturedLogLevel, std::string>> records;
+  bool alive = true;
+  const std::thread::id owner = std::this_thread::get_id();
+  std::shared_ptr<common::LogSink> observer;
+  common::detail::LogObserver* token = nullptr;
+
+  void enqueue(CapturedLogLevel level, const std::string& message)
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (!alive)
+      return;
+    // Match the App log's bound while the GUI owner is between frames.
+    constexpr std::size_t capacity = 2000;
+    if (records.size() == capacity)
+      records.pop_front();
+    records.emplace_back(level, stripAnsi(message));
+  }
 };
 
 //==============================================================================
@@ -116,6 +150,7 @@ public:
 protected:
   int_type overflow(int_type c) override
   {
+    std::lock_guard<std::recursive_mutex> lock(mMutex);
     if (traits_type::eq_int_type(c, traits_type::eof()))
       return traits_type::not_eof(c);
     if (mOriginal)
@@ -135,6 +170,7 @@ protected:
 
   std::streamsize xsputn(const char* s, std::streamsize n) override
   {
+    std::lock_guard<std::recursive_mutex> lock(mMutex);
     if (mOriginal)
       mOriginal->sputn(s, n);
     if (inLogCaptureSink)
@@ -154,7 +190,7 @@ private:
     if (mLineBuf.empty())
       return;
 
-    inLogCaptureSink = true;
+    CaptureScope scope;
     try {
       if (mSink) {
         const auto text = stripAnsi(mLineBuf);
@@ -162,13 +198,17 @@ private:
             = sniffSeverity(mLineBuf, text, mFallbackLevel);
         mSink(level, text);
       }
+#if defined(__GLIBCXX__)
+    } catch (const abi::__forced_unwind&) {
+      throw;
+#endif
     } catch (...) {
       // The log console must never crash the app, even if the sink throws.
     }
-    inLogCaptureSink = false;
     mLineBuf.clear();
   }
 
+  std::recursive_mutex mMutex;
   std::streambuf* mOriginal;
   CapturedLogLevel mFallbackLevel;
   LineSink mSink;
@@ -179,11 +219,28 @@ private:
 LogCapture::LogCapture(LineSink sink)
 {
   mSinkState = std::make_shared<SinkState>();
-  mSinkState->panel = sink;
+  mSinkState->panel = std::make_shared<LineSink>(std::move(sink));
+  auto enqueue
+      = [state = mSinkState](CapturedLogLevel level, const std::string& text) {
+          state->enqueue(level, text);
+        };
+  mSinkState->observer = std::make_shared<common::LogSink>(
+      [state = std::weak_ptr<SinkState>(mSinkState)](
+          common::LogLevel level, const std::string& message) {
+        if (inLogCaptureSink)
+          return;
+        if (auto current = state.lock()) {
+          const auto captured
+              = level >= common::LogLevel::Error  ? CapturedLogLevel::Error
+                : level == common::LogLevel::Warn ? CapturedLogLevel::Warning
+                                                  : CapturedLogLevel::Info;
+          current->enqueue(captured, message);
+        }
+      });
   mCoutBuf = std::make_unique<TeeBuf>(
-      std::cout.rdbuf(), CapturedLogLevel::Info, sink);
+      std::cout.rdbuf(), CapturedLogLevel::Info, enqueue);
   mCerrBuf = std::make_unique<TeeBuf>(
-      std::cerr.rdbuf(), CapturedLogLevel::Warning, sink);
+      std::cerr.rdbuf(), CapturedLogLevel::Warning, enqueue);
   mOldCoutBuf = std::cout.rdbuf(mCoutBuf.get());
   mOldCerrBuf = std::cerr.rdbuf(mCerrBuf.get());
   try {
@@ -192,33 +249,29 @@ LogCapture::LogCapture(LineSink sink)
           state->previous = std::move(previous);
           return [state](common::LogLevel level, const std::string& message) {
             const bool wasCapturing = inLogCaptureSink;
-            inLogCaptureSink = true;
-            try {
-              if (state->previous)
-                (*state->previous)(level, message);
-              else
-                common::detail::defaultLogSink(level, message);
-            } catch (...) {
-              // A failing chained sink must not hide the record from the panel.
-            }
-            if (!wasCapturing && state->alive) {
+            {
+              CaptureScope scope;
               try {
-                if (state->panel) {
-                  const auto captured = level >= common::LogLevel::Error
-                                            ? CapturedLogLevel::Error
-                                        : level == common::LogLevel::Warn
-                                            ? CapturedLogLevel::Warning
-                                            : CapturedLogLevel::Info;
-                  state->panel(captured, stripAnsi(message));
-                }
+                if (state->previous)
+                  (*state->previous)(level, message);
+                else
+                  common::detail::defaultLogSink(level, message);
+#if defined(__GLIBCXX__)
+              } catch (const abi::__forced_unwind&) {
+                throw;
+#endif
               } catch (...) {
-                // Restore recursion state even when the panel callback throws.
+                // A failing chained sink must not hide the panel record.
               }
             }
-            inLogCaptureSink = wasCapturing;
+            if (!wasCapturing)
+              (*state->observer)(level, message);
           };
         });
+    mSinkState->token
+        = common::detail::registerLogObserver(mSinkState->observer);
   } catch (...) {
+    common::detail::restoreLogSinkIf(mInstalledSink, mSinkState->previous);
     std::cout.rdbuf(mOldCoutBuf);
     std::cerr.rdbuf(mOldCerrBuf);
     throw;
@@ -226,9 +279,52 @@ LogCapture::LogCapture(LineSink sink)
 }
 
 //==============================================================================
+void LogCapture::drain()
+{
+  // Local ownership also permits a panel callback to destroy this capture.
+  auto state = mSinkState;
+  assert(state->owner == std::this_thread::get_id());
+  if (inLogCaptureSink)
+    return;
+  std::deque<std::pair<CapturedLogLevel, std::string>> records;
+  {
+    std::lock_guard<std::mutex> lock(state->mutex);
+    records.swap(state->records);
+  }
+  CaptureScope scope;
+  for (const auto& record : records) {
+    std::shared_ptr<LineSink> panel;
+    {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      if (!state->alive)
+        break;
+      panel = state->panel;
+    }
+    try {
+      if (panel && *panel)
+        (*panel)(record.first, record.second);
+#if defined(__GLIBCXX__)
+    } catch (const abi::__forced_unwind&) {
+      throw;
+#endif
+    } catch (...) {
+      // One failed panel notification must not lose the following records.
+    }
+  }
+}
+
+//==============================================================================
 LogCapture::~LogCapture()
 {
-  mSinkState->alive = false;
+  assert(mSinkState->owner == std::this_thread::get_id());
+  std::shared_ptr<LineSink> panel;
+  {
+    std::lock_guard<std::mutex> lock(mSinkState->mutex);
+    mSinkState->alive = false;
+    panel = std::move(mSinkState->panel);
+    mSinkState->records.clear();
+  }
+  common::detail::unregisterLogObserver(mSinkState->token);
   try {
     common::detail::restoreLogSinkIf(mInstalledSink, mSinkState->previous);
   } catch (...) {

@@ -51,11 +51,15 @@ enum class CapturedLogLevel
 };
 
 //==============================================================================
-/// Captures DART records through the process-wide log sink and tees other
+/// Observes callback-consumed DART records, wraps sink output and tees other
 /// stdout/stderr lines. Restores stream buffers on destruction and the previous
 /// sink only if this capture's wrapper is still installed. Stream buffers
 /// require reverse construction order among captures; other sink wrappers may
-/// be disabled in either order.
+/// be disabled in either order. Construction, drain and destruction belong to
+/// one owner thread; direct stdout/stderr writers must be quiescent during
+/// stream-buffer installation/removal. Native record producers may keep
+/// running. The newest 2000 records wait for drain; output forwarding is
+/// immediate.
 class LogCapture
 {
 public:
@@ -63,6 +67,11 @@ public:
 
   explicit LogCapture(LineSink sink);
   ~LogCapture();
+
+  /// Deliver the queued snapshot on the owner thread. Panel callbacks may log,
+  /// throw, or destroy this capture; queued records are discarded on
+  /// destruction.
+  void drain();
 
   LogCapture(const LogCapture&) = delete;
   LogCapture& operator=(const LogCapture&) = delete;

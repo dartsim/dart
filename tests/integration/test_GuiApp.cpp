@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <functional>
 #include <future>
@@ -1400,6 +1401,169 @@ TEST(SceneContract, CommandLineRejectsInvalidNumbersAndNestedRuns)
 }
 
 //==============================================================================
+TEST(LogCapture, CallbackAndPanelReceiveOnceWithoutWaitingForSinkMutex)
+{
+  using common::LogLevel;
+  std::promise<void> entered;
+  std::promise<void> release;
+  auto released = release.get_future();
+  std::atomic<int> callbacks{0};
+  std::vector<std::string> panel;
+  auto previous = common::setLogSink([&](LogLevel, const std::string& text) {
+    EXPECT_EQ("blocked sink", text);
+    entered.set_value();
+    released.wait();
+  });
+  {
+    LogCapture capture([&](CapturedLogLevel level, const std::string& text) {
+      EXPECT_EQ(CapturedLogLevel::Warning, level);
+      panel.push_back(text);
+    });
+    std::thread blocked(
+        [] { common::detail::logRecord(LogLevel::Warn, "blocked sink"); });
+    entered.get_future().wait();
+    common::setLogCallback(
+        [](LogLevel, const char*, std::size_t, void* data) {
+          ++*static_cast<std::atomic<int>*>(data);
+        },
+        &callbacks);
+    auto delivered = std::async(std::launch::async, [] {
+      common::warn("callback literal {} %s", "{}");
+    });
+    const auto status = delivered.wait_for(std::chrono::seconds(2));
+    release.set_value();
+    blocked.join();
+    delivered.get();
+    common::setLogCallback(nullptr);
+    EXPECT_EQ(std::future_status::ready, status);
+    capture.drain();
+  }
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(1, callbacks);
+  EXPECT_EQ(
+      (std::vector<std::string>{"callback literal {} %s", "blocked sink"}),
+      panel);
+}
+
+//==============================================================================
+TEST(LogCapture, CallbackFailureUsesWrapperOnce)
+{
+  int forwarded = 0;
+  auto previous = common::setLogSink(
+      [&](common::LogLevel, const std::string&) { ++forwarded; });
+  std::vector<std::string> panel;
+  {
+    LogCapture capture([&](CapturedLogLevel, const std::string& text) {
+      if (text == "failed callback")
+        panel.push_back(text);
+    });
+    common::setLogCallback(
+        [](common::LogLevel, const char*, std::size_t, void*) {
+          throw std::runtime_error("callback");
+        });
+    common::warn("failed callback");
+    common::setLogCallback(nullptr);
+    capture.drain();
+  }
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ(1u, panel.size());
+  // The callback's once-per-process error diagnostic may also be forwarded.
+  EXPECT_GE(forwarded, 1);
+}
+
+//==============================================================================
+TEST(LogCapture, PanelCanDestroyCaptureAndDiscardRemainingSnapshot)
+{
+  auto previous
+      = common::setLogSink([](common::LogLevel, const std::string&) {});
+  int calls = 0;
+  std::unique_ptr<LogCapture> capture;
+  capture
+      = std::make_unique<LogCapture>([&](CapturedLogLevel, const std::string&) {
+          ++calls;
+          capture.reset();
+        });
+  common::info("first");
+  common::info("discarded");
+  capture->drain();
+  common::info("after destruction");
+  EXPECT_EQ(1, calls);
+  common::setLogSink(std::move(previous));
+}
+
+//==============================================================================
+TEST(LogCapture, PanelCallableStateSurvivesDrainAndThrow)
+{
+  auto previous
+      = common::setLogSink([](common::LogLevel, const std::string&) {});
+  std::vector<int> counts;
+  {
+    LogCapture capture(
+        [count = 0, &counts](CapturedLogLevel, const std::string&) mutable {
+          counts.push_back(++count);
+          throw std::runtime_error("panel");
+        });
+    common::info("first");
+    common::info("second");
+    capture.drain();
+    common::info("third");
+    capture.drain();
+  }
+  common::setLogSink(std::move(previous));
+  EXPECT_EQ((std::vector<int>{1, 2, 3}), counts);
+}
+
+//==============================================================================
+TEST(LogCapture, CallbackProducersCanRaceWithDestructionAndDrain)
+{
+  std::atomic<int> callbacks{0};
+  common::setLogCallback(
+      [](common::LogLevel, const char*, std::size_t, void* data) {
+        ++*static_cast<std::atomic<int>*>(data);
+      },
+      &callbacks);
+  const auto owner = std::this_thread::get_id();
+  std::thread producer([] {
+    for (int i = 0; i < 4000; ++i)
+      common::warn("worker {}", i);
+  });
+  for (int i = 0; i < 100; ++i) {
+    LogCapture capture([&](CapturedLogLevel, const std::string&) {
+      EXPECT_EQ(owner, std::this_thread::get_id());
+    });
+    capture.drain();
+  }
+  producer.join();
+  common::setLogCallback(nullptr);
+  EXPECT_EQ(4000, callbacks);
+}
+
+//==============================================================================
+TEST(LogCapture, CallbackPanelUsesThresholdAndKeepsNewestBoundedRecords)
+{
+  auto oldLevel = common::getLogLevel();
+  common::setLogLevel(common::LogLevel::Warn);
+  common::setLogCallback(
+      [](common::LogLevel, const char*, std::size_t, void*) {});
+  std::vector<std::string> panel;
+  {
+    LogCapture capture([&](CapturedLogLevel level, const std::string& text) {
+      EXPECT_EQ(CapturedLogLevel::Warning, level);
+      panel.push_back(text);
+    });
+    common::info("filtered panel record");
+    for (int i = 0; i < 2003; ++i)
+      common::warn("{}", i);
+    capture.drain();
+  }
+  common::setLogCallback(nullptr);
+  common::setLogLevel(oldLevel);
+  ASSERT_EQ(2000u, panel.size());
+  EXPECT_EQ("3", panel.front());
+  EXPECT_EQ("2002", panel.back());
+}
+
+//==============================================================================
 TEST(LogCapture, CapturesSinkRecordsAndRestoresPreviousSink)
 {
   using common::LogLevel;
@@ -1421,6 +1585,7 @@ TEST(LogCapture, CapturesSinkRecordsAndRestoresPreviousSink)
     common::warn("{}", "warn {} %s");
     common::fatal("{}", "fatal {} %s");
     common::debug("{}", "debug {} %s");
+    capture.drain();
   }
   common::info("restored");
   common::setLogSink(std::move(previous));
@@ -1462,6 +1627,7 @@ TEST(LogCapture, RestoresDefaultSinkAndDoesNotRecaptureSinkLogging)
         common::info("nested");
     });
     common::info("outer");
+    capture.drain();
   }
   EXPECT_FALSE(common::setLogSink(std::move(previous)));
   common::setLogLevel(oldLevel);
@@ -1561,6 +1727,7 @@ TEST(LogCapture, DisabledWrappedSinkForwardsWhileCaptureRemainsInstalled)
     common::detail::restoreLogSinkIf(bridge, savedSink);
     EXPECT_TRUE(common::detail::hasCustomLogSink());
     common::detail::logRecord(common::LogLevel::Info, "after disable in App");
+    capture.drain();
   }
   EXPECT_FALSE(common::detail::hasCustomLogSink());
   common::detail::logRecord(common::LogLevel::Info, "after App exit");
@@ -1635,7 +1802,9 @@ TEST(LogCapture, RecursivePanelRecordsReachPreviousSink)
       throw std::runtime_error("panel");
     });
     common::detail::logRecord(common::LogLevel::Info, "throwing previous");
+    capture.drain();
     common::detail::logRecord(common::LogLevel::Info, "next");
+    capture.drain();
   }
   common::setLogSink(std::move(previous));
   EXPECT_EQ(2, panelCalls);
@@ -1664,6 +1833,7 @@ TEST(LogCapture, ConsoleKeepsLegacyTerminalBytes)
     dtwarn << "warning";
     errorLine = __LINE__ + 1;
     dterr << "error\n";
+    capture.drain();
   }
   const auto out = testing::internal::GetCapturedStdout();
   const auto err = testing::internal::GetCapturedStderr();
@@ -1715,6 +1885,7 @@ TEST(LogCapture, RecognizesLoggingSinkColors)
     });
     for (const int code : {31, 32, 33, 35, 36, 37})
       std::cerr << "\033[1;" << code << "mmessage\033[0m\n";
+    capture.drain();
   }
   testing::internal::GetCapturedStderr();
   EXPECT_EQ(
@@ -1754,6 +1925,7 @@ TEST(LogCapture, RecognizesLoggingSinkTextPrefixes)
           stream << " message\n";
         }
         stream << "ordinary output\n";
+        capture.drain();
       }
       testing::internal::GetCapturedStdout();
       testing::internal::GetCapturedStderr();
@@ -1793,6 +1965,7 @@ TEST(LogCapture, SinkWritesAreForwardedButNotCapturedAgain)
         std::cerr << "echo: " << line << std::endl;
     });
     std::cerr << "\033[1;31mError\033[0m first" << std::endl;
+    capture.drain();
   }
   const std::string output = testing::internal::GetCapturedStderr();
   EXPECT_EQ(lines, 1);
@@ -1814,7 +1987,9 @@ TEST(LogCapture, SinkWritesToTheOtherStreamAreNotCapturedAgain)
           (fromCout ? std::cerr : std::cout) << "echo: " << line << '\n';
       });
       (fromCout ? std::cout : std::cerr) << "first\n";
+      capture.drain();
       (fromCout ? std::cerr : std::cout) << "second\n";
+      capture.drain();
     }
     const auto err = testing::internal::GetCapturedStderr();
     const auto out = testing::internal::GetCapturedStdout();
@@ -1828,35 +2003,32 @@ TEST(LogCapture, SinkWritesToTheOtherStreamAreNotCapturedAgain)
 TEST(LogCapture, OtherThreadsAreCapturedWhileASinkIsActive)
 {
   for (const bool fromCout : {false, true}) {
-    std::promise<void> sinkEntered;
-    std::promise<void> releaseSink;
-    auto released = releaseSink.get_future();
-    bool otherCaptured = false;
-    bool capturedWhileBlocked = false;
+    std::vector<std::string> captured;
+    const auto owner = std::this_thread::get_id();
     testing::internal::CaptureStdout();
     testing::internal::CaptureStderr();
     {
       LogCapture capture([&](CapturedLogLevel, const std::string& line) {
+        EXPECT_EQ(owner, std::this_thread::get_id());
+        captured.push_back(line);
         if (line == "blocked") {
-          sinkEntered.set_value();
-          released.wait();
-        } else if (line == "other") {
-          otherCaptured = true;
+          // Producers can enqueue while a panel callback is still running.
+          std::thread other(
+              [&] { (fromCout ? std::cerr : std::cout) << "other\n"; });
+          other.join();
         }
       });
       std::thread blocked(
           [&] { (fromCout ? std::cout : std::cerr) << "blocked\n"; });
-      sinkEntered.get_future().wait();
-      std::thread other(
-          [&] { (fromCout ? std::cerr : std::cout) << "other\n"; });
-      other.join();
-      capturedWhileBlocked = otherCaptured;
-      releaseSink.set_value();
       blocked.join();
+      EXPECT_TRUE(captured.empty());
+      capture.drain();
+      EXPECT_EQ((std::vector<std::string>{"blocked"}), captured);
+      capture.drain();
+      EXPECT_EQ((std::vector<std::string>{"blocked", "other"}), captured);
     }
     testing::internal::GetCapturedStderr();
     testing::internal::GetCapturedStdout();
-    EXPECT_TRUE(capturedWhileBlocked) << "fromCout=" << fromCout;
   }
 }
 

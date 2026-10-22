@@ -32,6 +32,8 @@
 
 #include <dart/config.hpp>
 
+#include <dart/dynamics/SphereShape.hpp>
+
 #include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/detail/DeterministicExecutor.h>
@@ -41,10 +43,13 @@
 #include <atomic>
 #include <chrono>
 #include <future>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <locale>
+#include <memory>
 #include <new>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -58,8 +63,16 @@
   #include <string_view>
 #endif
 
+#include <cerrno>
+#include <cfenv>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
+
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+  #include <pthread.h>
+#endif
 
 using namespace dart::common;
 
@@ -110,6 +123,7 @@ class LoggingTest : public ::testing::Test
 protected:
   void SetUp() override
   {
+    setLogCallback(nullptr);
     oldLevel = getLogLevel();
     setLogLevel(LogLevel::Trace);
     setLogSink([this](LogLevel level, const std::string& message) {
@@ -120,6 +134,8 @@ protected:
 
   void TearDown() override
   {
+    setLogCallback(nullptr);
+    setConsoleStreams(nullptr, nullptr);
     resetLogSink();
     setLogLevel(oldLevel);
   }
@@ -302,6 +318,27 @@ TEST_F(LoggingTest, FormatsScalarAndStringArguments)
   int value = 0;
   info("{}", static_cast<void*>(&value));
   EXPECT_EQ(0u, messages.back().find("0x"));
+  volatile int volatileValue = 0;
+  const volatile int constVolatileValue = 0;
+  info(
+      "{} {} {} {}",
+      &volatileValue,
+      &constVolatileValue,
+      static_cast<volatile void*>(&volatileValue),
+      static_cast<const volatile void*>(&constVolatileValue));
+  const auto volatileMessage = messages.back();
+  info(
+      "{} {} {} {}",
+      const_cast<int*>(&volatileValue),
+      const_cast<int*>(&constVolatileValue),
+      static_cast<void*>(const_cast<int*>(&volatileValue)),
+      static_cast<const void*>(const_cast<int*>(&constVolatileValue)));
+  EXPECT_EQ(messages.back(), volatileMessage);
+  EXPECT_EQ(std::string::npos, volatileMessage.find("true"));
+  volatile int* nullVolatile = nullptr;
+  const volatile void* nullConstVolatile = nullptr;
+  info("{} {}", nullVolatile, nullConstVolatile);
+  EXPECT_EQ("0x0 0x0", messages.back());
   info(
       "{} {}",
       std::numeric_limits<double>::infinity(),
@@ -465,6 +502,81 @@ TEST_F(LoggingTest, FormatsNonFiniteValues)
   check(0.0f);
   check(0.0);
   check(0.0L);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FloatingShortestDigitsAtBinaryPowersAndLimits)
+{
+  const auto floatFromBits = [](std::uint32_t bits) {
+    float value;
+    std::memcpy(&value, &bits, sizeof value);
+    return value;
+  };
+  const auto doubleFromBits = [](std::uint64_t bits) {
+    double value;
+    std::memcpy(&value, &bits, sizeof value);
+    return value;
+  };
+  // 2^-96 and 2^-1017: the nearest N-digit decimal does not round-trip, so a
+  // plain precision search prints 1.26217745e-29 / 7.1202363472230444e-307.
+  info("{} {}", floatFromBits(0x0f800000u), floatFromBits(0x8f800000u));
+  EXPECT_EQ("1.2621775e-29 -1.2621775e-29", messages.back());
+  info(
+      "{} {}",
+      doubleFromBits(0x0060000000000000ull),
+      doubleFromBits(0x8060000000000000ull));
+  EXPECT_EQ("7.120236347223045e-307 -7.120236347223045e-307", messages.back());
+  info("{} {}", std::ldexp(1.0f, 87), std::ldexp(1.0f, 90));
+  EXPECT_EQ("1.5474251e+26 1.2379401e+27", messages.back());
+  info("{} {}", std::ldexp(-1.0f, 87), std::ldexp(-1.0f, 90));
+  EXPECT_EQ("-1.5474251e+26 -1.2379401e+27", messages.back());
+  info("{} {}", 0.0f, -0.0);
+  EXPECT_EQ("0 -0", messages.back());
+  info(
+      "{} {}",
+      std::numeric_limits<float>::min(),
+      std::numeric_limits<double>::min());
+  EXPECT_EQ("1.1754944e-38 2.2250738585072014e-308", messages.back());
+  info("{} {}", 9999999.0f, 0.00001f);
+  EXPECT_EQ("9999999 1e-05", messages.back());
+  info("{} {}", 1e16, 999999999999999.9);
+  EXPECT_EQ("1e+16 999999999999999.9", messages.back());
+  info("{:.1000f}", 0.0f);
+  EXPECT_EQ(1002u, messages.back().size());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, FloatingFormattingIgnoresRoundingModeAndRestoresIt)
+{
+  struct Restore
+  {
+    int mode = std::fegetround();
+    ~Restore()
+    {
+      std::fesetround(mode);
+    }
+  } restore;
+  std::vector<int> sinkModes;
+  setLogSink([&](LogLevel, const std::string& message) {
+    sinkModes.push_back(std::fegetround());
+    messages.push_back(message);
+  });
+  for (const int mode : {FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO}) {
+    if (std::fesetround(mode) != 0)
+      continue;
+    sinkModes.clear();
+    messages.clear();
+    errno = EDOM;
+    info("{} {} {:.2f} {:.2e} {:.3g}", 0.1, 0.1f, 0.125, 0.125f, 0.125);
+    EXPECT_EQ("0.1 0.1 0.12 1.25e-01 0.125", messages.back());
+    info("{} {}", std::ldexp(1.0f, -96), std::ldexp(1.0, -1017));
+    EXPECT_EQ("1.2621775e-29 7.120236347223045e-307", messages.back());
+    EXPECT_EQ(EDOM, errno);
+    ASSERT_EQ(2u, sinkModes.size());
+    EXPECT_EQ(mode, sinkModes[0]);
+    EXPECT_EQ(mode, sinkModes[1]);
+    EXPECT_EQ(mode, std::fegetround());
+  }
 }
 
 //==============================================================================
@@ -992,6 +1104,57 @@ TEST_F(LoggingTest, CallbacksCanReplaceThemselvesAndExceptionsAreContained)
 }
 
 //==============================================================================
+TEST_F(LoggingTest, ReentrantSinkMessagesUseDefaultOutput)
+{
+  int calls = 0;
+  setLogSink([&](LogLevel, const std::string&) {
+    // Bounded so an unpatched build fails the assertion instead of recursing.
+    if (++calls > 5)
+      return;
+    info("nested");
+  });
+  testing::internal::CaptureStdout();
+  info("outer");
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(1, calls);
+  EXPECT_NE(std::string::npos, output.find("nested"));
+  EXPECT_EQ(std::string::npos, output.find("outer"));
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ReplacementSinkStillReceivesNestedMessagesAfterReentry)
+{
+  int calls = 0;
+  int bCalls = 0;
+  setLogSink([&](LogLevel, const std::string&) {
+    if (++calls > 5)
+      return;
+    setLogSink([&](LogLevel, const std::string& message) {
+      if (++bCalls > 5)
+        return;
+      messages.push_back(message);
+      info("from B");
+    });
+    info("to B");
+  });
+  testing::internal::CaptureStdout();
+  info("outer");
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(1, calls);
+  EXPECT_EQ(1, bCalls);
+  EXPECT_EQ((std::vector<std::string>{"to B"}), messages);
+  EXPECT_NE(std::string::npos, output.find("from B"));
+  // A throwing callback leaves no stale active state.
+  setLogSink(
+      [](LogLevel, const std::string&) { throw std::runtime_error("x"); });
+  info("throws");
+  int again = 0;
+  setLogSink([&](LogLevel, const std::string&) { ++again; });
+  info("after");
+  EXPECT_EQ(1, again);
+}
+
+//==============================================================================
 TEST(LoggingLifetime, StaticDestruction)
 {
   GTEST_FLAG_SET(death_test_style, "threadsafe");
@@ -1040,4 +1203,668 @@ TEST(LoggingLifetime, StreamsFlushAtExit)
       },
       ::testing::ExitedWithCode(0),
       "buffered output at exit");
+}
+
+namespace {
+
+class CallbackLoggingTest : public ::testing::Test
+{
+protected:
+  void SetUp() override
+  {
+    oldLevel = getLogLevel();
+    setLogCallback(nullptr);
+    resetLogSink();
+    setLogLevel(LogLevel::Trace);
+  }
+
+  void TearDown() override
+  {
+    setLogCallback(nullptr);
+    setConsoleStreams(nullptr, nullptr);
+    resetLogSink();
+    setLogLevel(oldLevel);
+  }
+
+  LogLevel oldLevel;
+};
+
+class LoggingDeathTest : public CallbackLoggingTest
+{
+};
+
+} // namespace
+
+namespace {
+
+std::ostringstream& sharedOut()
+{
+  static std::ostringstream stream;
+  return stream;
+}
+
+std::ostringstream& sharedErr()
+{
+  static std::ostringstream stream;
+  return stream;
+}
+
+std::ostream& sharedOutStream()
+{
+  return sharedOut();
+}
+
+std::ostream& sharedErrStream()
+{
+  return sharedErr();
+}
+
+// Each thread gets its own stream, like the dartpy bridge.
+std::ostringstream& threadErr()
+{
+  thread_local std::ostringstream stream;
+  return stream;
+}
+
+std::ostream& threadErrStream()
+{
+  return threadErr();
+}
+
+} // namespace
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ConsoleStreamsRedirect)
+{
+  dart::common::setConsoleStreams(&sharedOutStream, &sharedErrStream);
+  dtmsg << "message\n";
+  dtwarn << "warning\n";
+  dterr << "error\n";
+  dart::common::setConsoleStreams(nullptr, nullptr);
+  dtwarn << "back on std::cerr\n";
+
+  const std::string out = sharedOut().str();
+  const std::string err = sharedErr().str();
+  EXPECT_NE(out.find("Msg"), std::string::npos);
+  EXPECT_NE(out.find("message\n"), std::string::npos);
+  EXPECT_NE(err.find("Warning [test_Logging.cpp:"), std::string::npos);
+  EXPECT_NE(err.find("warning\n"), std::string::npos);
+  EXPECT_NE(err.find("Error [test_Logging.cpp:"), std::string::npos);
+  EXPECT_EQ(err.find("back on std::cerr"), std::string::npos);
+  EXPECT_EQ(&dart::common::consoleOut(), &std::cout);
+  EXPECT_EQ(&dart::common::consoleErr(), &std::cerr);
+}
+
+//==============================================================================
+// Concurrent dtwarn with per-thread streams: widths, fills and bases are
+// stream state, so no thread may see another thread's manipulators.
+TEST_F(CallbackLoggingTest, ConsoleStreamsPerThread)
+{
+  constexpr int kThreads = 8;
+  constexpr int kLines = 200;
+  dart::common::setConsoleStreams(nullptr, &threadErrStream);
+
+  std::vector<std::string> outputs(kThreads);
+  std::vector<std::thread> threads;
+  for (int t = 0; t < kThreads; ++t) {
+    threads.emplace_back([t, &outputs] {
+      for (int i = 0; i < kLines; ++i) {
+        dtwarn << "t" << std::setw(2 + t) << std::setfill('0') << t
+               << std::setfill(' ') << " i" << std::hex << i << std::dec
+               << std::endl;
+      }
+      outputs[t] = threadErr().str();
+    });
+  }
+  for (auto& thread : threads)
+    thread.join();
+  dart::common::setConsoleStreams(nullptr, nullptr);
+
+  for (int t = 0; t < kThreads; ++t) {
+    std::istringstream lines(outputs[t]);
+    std::string line;
+    int count = 0;
+    for (; std::getline(lines, line); ++count) {
+      std::ostringstream expected;
+      expected << "t" << std::setw(2 + t) << std::setfill('0') << t << " i"
+               << std::hex << count;
+      ASSERT_NE(line.find("Warning [test_Logging.cpp:"), std::string::npos)
+          << line;
+      ASSERT_EQ(
+          line.substr(line.size() - expected.str().size()), expected.str())
+          << "thread " << t << " line " << count << ": " << line;
+    }
+    EXPECT_EQ(count, kLines) << "thread " << t;
+  }
+}
+
+namespace {
+
+using LogRecord = std::pair<dart::common::LogLevel, std::string>;
+
+void capture(
+    dart::common::LogLevel level,
+    const char* message,
+    std::size_t length,
+    void* userData)
+{
+  static_cast<std::vector<LogRecord>*>(userData)->emplace_back(
+      level, std::string(message, length));
+}
+
+} // namespace
+
+//==============================================================================
+// A callback replaces the selected sink for the DART_WARN family, from
+// this test binary and from inside libdart alike, until it is reset.
+TEST_F(CallbackLoggingTest, LogCallback)
+{
+  using dart::common::LogLevel;
+  std::vector<LogRecord> records;
+  dart::common::setLogCallback(&capture, &records);
+  DART_INFO("info {}", 1);
+  DART_WARN("warn {} {}", 2, "x");
+  dart::common::error(std::string("error"));
+  dart::common::fatal("fatal");
+  dart::dynamics::SphereShape(1.0).setRadius(-1.0); // warns inside libdart
+  dart::common::setLogCallback(nullptr);
+  DART_WARN("back on the default output");
+
+  ASSERT_EQ(records.size(), 5u);
+  EXPECT_EQ(records[0].first, LogLevel::Info);
+  EXPECT_EQ(records[1].first, LogLevel::Warn);
+  EXPECT_EQ(records[2].first, LogLevel::Error);
+  EXPECT_EQ(records[3].first, LogLevel::Fatal);
+  EXPECT_EQ(records[4].first, LogLevel::Warn);
+  EXPECT_EQ(records[0].second, "info 1");
+  EXPECT_EQ(records[1].second, "warn 2 x");
+  EXPECT_EQ(
+      records[4].second.find("SphereShape::setRadius: Invalid radius '-1'."),
+      0u);
+  EXPECT_EQ(records[2].second, "error");
+  EXPECT_EQ(records[3].second, "fatal");
+}
+
+namespace {
+
+// Counts lines written through the default Console stream providers.
+class DefaultOutputCounter
+{
+public:
+  DefaultOutputCounter()
+  {
+    sCount = &mCount;
+    dart::common::setConsoleStreams(&countingStream, &countingStream);
+  }
+
+  ~DefaultOutputCounter()
+  {
+    dart::common::setConsoleStreams(nullptr, nullptr);
+    sCount = nullptr;
+  }
+
+  int count() const
+  {
+    return mCount.load();
+  }
+
+private:
+  // Every default log line ends in one std::endl.
+  class CountingBuffer : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type ch) override
+    {
+      if (ch == '\n')
+        ++*sCount;
+      return ch;
+    }
+  };
+  static std::ostream& countingStream()
+  {
+    thread_local CountingBuffer buffer;
+    thread_local std::ostream stream(&buffer);
+    return stream;
+  }
+  static inline std::atomic<int>* sCount = nullptr;
+  std::atomic<int> mCount{0};
+};
+
+struct Counter
+{
+  std::atomic<int> calls{0};
+  std::atomic<int> wrongUserData{0};
+};
+
+Counter sCounterA;
+Counter sCounterB;
+
+void countA(dart::common::LogLevel, const char*, std::size_t, void* userData)
+{
+  ++sCounterA.calls;
+  if (userData != &sCounterA)
+    ++sCounterA.wrongUserData;
+}
+
+void countB(dart::common::LogLevel, const char*, std::size_t, void* userData)
+{
+  ++sCounterB.calls;
+  if (userData != &sCounterB)
+    ++sCounterB.wrongUserData;
+}
+
+} // namespace
+
+//==============================================================================
+// Installing, replacing and removing the callback while other threads log:
+// every message reaches one of the callbacks or the default output, and each
+// callback only ever sees the user data it was installed with.
+TEST_F(CallbackLoggingTest, LogCallbackConcurrentSetAndUnset)
+{
+  constexpr int kThreads = 4;
+  constexpr int kMessages = 5000;
+  constexpr int kToggles = 2000;
+  for (Counter* counter : {&sCounterA, &sCounterB}) {
+    counter->calls = 0;
+    counter->wrongUserData = 0;
+  }
+  DefaultOutputCounter output;
+
+  std::vector<std::thread> loggers;
+  for (int t = 0; t < kThreads; ++t) {
+    loggers.emplace_back([t] {
+      for (int i = 0; i < kMessages; ++i)
+        DART_WARN("thread {} message {}", t, i);
+    });
+  }
+  for (int i = 0; i < kToggles; ++i) {
+    dart::common::setLogCallback(&countA, &sCounterA);
+    std::this_thread::yield();
+    dart::common::setLogCallback(nullptr);
+    std::this_thread::yield();
+    dart::common::setLogCallback(&countB, &sCounterB);
+    std::this_thread::yield();
+    dart::common::setLogCallback(nullptr);
+    std::this_thread::yield();
+  }
+  for (auto& logger : loggers)
+    logger.join();
+  dart::common::setLogCallback(nullptr);
+
+  EXPECT_EQ(sCounterA.wrongUserData.load(), 0);
+  EXPECT_EQ(sCounterB.wrongUserData.load(), 0);
+  EXPECT_EQ(
+      sCounterA.calls.load() + sCounterB.calls.load() + output.count(),
+      kThreads * kMessages);
+  // Scheduling may let the loggers finish before either callback is installed.
+}
+
+namespace {
+
+std::vector<LogRecord> sReentrantRecords;
+
+void logFromInside(
+    dart::common::LogLevel level,
+    const char* message,
+    std::size_t length,
+    void* /*userData*/)
+{
+  sReentrantRecords.emplace_back(level, std::string(message, length));
+  // Must not re-enter this callback.
+  DART_WARN("from inside the callback");
+}
+
+void throwFromInside(
+    dart::common::LogLevel, const char*, std::size_t, void* userData)
+{
+  ++static_cast<Counter*>(userData)->calls;
+  throw std::runtime_error("callback failed");
+}
+
+// String-like conversion may itself log before the private formatter runs.
+struct LogsWhileFormatted
+{
+  explicit operator std::string() const
+  {
+    DART_WARN("inner");
+    return "formatted";
+  }
+};
+
+} // namespace
+
+//==============================================================================
+// A message logged from inside the callback goes to the default output rather
+// than recursing into the callback.
+TEST_F(CallbackLoggingTest, LogCallbackReentry)
+{
+  sReentrantRecords.clear();
+  DefaultOutputCounter output;
+  dart::common::setLogCallback(&logFromInside);
+  DART_WARN("outer");
+  dart::common::setLogCallback(nullptr);
+
+  ASSERT_EQ(sReentrantRecords.size(), 1u);
+  EXPECT_EQ(sReentrantRecords[0].second, "outer");
+  EXPECT_EQ(output.count(), 1);
+}
+
+//==============================================================================
+// A throwing callback neither propagates through the logging call nor loses
+// the message: it goes to the default output, with a one-time report.
+TEST_F(CallbackLoggingTest, LogCallbackThrows)
+{
+  Counter calls;
+  DefaultOutputCounter output;
+  dart::common::setLogCallback(&throwFromInside, &calls);
+  EXPECT_NO_THROW(DART_WARN("first"));
+  EXPECT_NO_THROW(DART_WARN("second"));
+  dart::common::setLogCallback(nullptr);
+
+  EXPECT_EQ(calls.calls.load(), 2);
+  // The first throw adds one report unless an earlier test already made it.
+  EXPECT_GE(output.count(), 2);
+  EXPECT_LE(output.count(), 3);
+}
+
+//==============================================================================
+TEST_F(LoggingDeathTest, LogCallbackThrowsWithQuietDefaultOutput)
+{
+  // A fresh process keeps the one-time report independent of other tests and
+  // of --gtest_repeat: the threadsafe style re-executes the binary instead of
+  // forking this process, whose report may already have been made.
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        Counter calls;
+        DefaultOutputCounter output;
+        dart::common::setLogLevel(dart::common::LogLevel::Off);
+        sharedErr().str("");
+        dart::common::setConsoleStreams(nullptr, &sharedErrStream);
+        dart::common::setLogCallback(&throwFromInside, &calls);
+        DART_WARN("first");
+        DART_WARN("second");
+        dart::common::setLogCallback(nullptr);
+        dart::common::setConsoleStreams(nullptr, nullptr);
+        const std::string report = sharedErr().str();
+        std::_Exit(
+            calls.calls == 2 && output.count() == 0
+                    && report.find("Error [Logging.cpp:") != std::string::npos
+                    && report.find("A log callback threw") != std::string::npos
+                    && report.find('\n') == report.size() - 1
+                ? 0
+                : 1);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+//==============================================================================
+TEST_F(LoggingDeathTest, LogCallbackCanExitItsThread)
+{
+  EXPECT_EXIT(
+      {
+        dart::common::setLogCallback(
+            [](dart::common::LogLevel, const char*, std::size_t, void*) {
+              pthread_exit(nullptr);
+            });
+        std::thread([] { DART_WARN("thread exits from callback"); }).join();
+        dart::common::setLogCallback(nullptr);
+        std::_Exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+#endif
+
+//==============================================================================
+// A message logged while another one is being formatted reaches the callback
+// first and leaves the outer message intact.
+TEST_F(CallbackLoggingTest, LogCallbackReentrantFormatting)
+{
+  std::vector<LogRecord> records;
+  dart::common::setLogCallback(&capture, &records);
+  DART_WARN("outer {}", LogsWhileFormatted{});
+  dart::common::setLogCallback(nullptr);
+
+  ASSERT_EQ(records.size(), 2u);
+  EXPECT_EQ(records[0].second, "inner");
+  EXPECT_EQ(records[1].second, "outer formatted");
+}
+
+//==============================================================================
+// The bridge receives messages even with the independent sink disabled.
+TEST_F(CallbackLoggingTest, LogCallbackWithSinkDisabled)
+{
+  std::vector<LogRecord> records;
+  dart::common::setLogLevel(LogLevel::Off);
+  dart::common::setLogCallback(&capture, &records);
+  dart::common::trace("trace despite Off");
+  DART_WARN("sink off");
+  dart::dynamics::SphereShape(1.0).setRadius(-1.0);
+  dart::common::setLogCallback(nullptr);
+  sharedErr().str("");
+  dart::common::setConsoleStreams(&sharedOutStream, &sharedErrStream);
+  DART_WARN("filtered without callback");
+  EXPECT_TRUE(sharedErr().str().empty());
+  dart::common::setLogLevel(LogLevel::Info);
+  DART_WARN("no callback");
+
+  ASSERT_EQ(records.size(), 3u);
+  EXPECT_EQ(records[0].second, "trace despite Off");
+  EXPECT_EQ(records[1].second, "sink off");
+  EXPECT_EQ(
+      records[2].second.find("SphereShape::setRadius: Invalid radius '-1'."),
+      0u);
+  EXPECT_EQ(sharedErr().str(), "[warn] no callback\n");
+}
+
+//==============================================================================
+// Format specifiers affect their own message only; manipulators are not
+// arguments.
+TEST_F(CallbackLoggingTest, FallbackFormattingStateDoesNotPersist)
+{
+  std::vector<LogRecord> records;
+  dart::common::setLogCallback(&capture, &records);
+  dart::common::warn("fixed {:.2f}", 1.25);
+  dart::common::warn("general {}", 1.23456);
+  dart::common::warn("unsupported {:x}", 255);
+  dart::common::warn("dec {}", 255);
+  dart::common::setLogCallback(nullptr);
+
+  ASSERT_EQ(records.size(), 4u);
+  EXPECT_EQ(records[0].second, "fixed 1.25");
+  EXPECT_EQ(records[1].second, "general 1.23456");
+  EXPECT_EQ(0u, records[2].second.find("[log format error:"));
+  EXPECT_EQ(records[3].second, "dec 255");
+}
+
+//==============================================================================
+// The DART_WARN family prints through the Console stream providers.
+TEST_F(CallbackLoggingTest, FallbackUsesConsoleStreams)
+{
+  sharedOut().str("");
+  sharedErr().str("");
+  dart::common::setConsoleStreams(&sharedOutStream, &sharedErrStream);
+  dart::common::info("info {}", 1);
+  dart::common::warn("warn {} {}", 2, "x");
+  dart::common::error("error");
+  dart::common::setConsoleStreams(nullptr, nullptr);
+
+  EXPECT_NE(sharedOut().str().find("[info]"), std::string::npos);
+  EXPECT_NE(sharedOut().str().find("info 1\n"), std::string::npos);
+  EXPECT_NE(sharedErr().str().find("[warn]"), std::string::npos);
+  EXPECT_NE(sharedErr().str().find("warn 2 x\n"), std::string::npos);
+  EXPECT_NE(sharedErr().str().find("[error]"), std::string::npos);
+  EXPECT_NE(sharedErr().str().find("error\n"), std::string::npos);
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, LogCallbackBypassesSinkMutex)
+{
+  std::atomic<bool> entered{false};
+  std::atomic<bool> release{false};
+  std::atomic<bool> delivered{false};
+  setLogSink([&](LogLevel, const std::string&) {
+    entered = true;
+    while (!release.load())
+      std::this_thread::yield();
+  });
+  std::thread blocked([] { warn("holds the sink lock"); });
+  while (!entered.load())
+    std::this_thread::yield();
+  setLogCallback(
+      [](LogLevel, const char*, std::size_t, void* data) {
+        *static_cast<std::atomic<bool>*>(data) = true;
+      },
+      &delivered);
+  std::thread callback([] { warn("callback bypasses the sink lock"); });
+  const auto deadline
+      = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+  while (!delivered.load() && std::chrono::steady_clock::now() < deadline)
+    std::this_thread::yield();
+  const bool bypassed = delivered.load();
+  release = true;
+  callback.join();
+  blocked.join();
+  EXPECT_TRUE(bypassed);
+}
+
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+//==============================================================================
+TEST_F(LoggingDeathTest, NestedSinkCallbackCanExitItsThread)
+{
+  EXPECT_EXIT(
+      {
+        setLogSink([](LogLevel, const std::string&) {
+          setLogCallback([](LogLevel, const char*, std::size_t, void*) {
+            pthread_exit(nullptr);
+          });
+          warn("exit through the sink catch barrier {}", 42);
+        });
+        std::thread([] { warn("outer sink {}", 42); }).join();
+        setLogCallback(nullptr);
+        resetLogSink();
+        std::_Exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+#endif
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ConsoleProvidersRemainValidWithCustomSink)
+{
+  sharedOut().str("");
+  sharedErr().str("");
+  setConsoleStreams(&sharedOutStream, &sharedErrStream);
+  std::vector<std::string> records;
+  setLogSink([&](LogLevel level, const std::string& message) {
+    records.push_back(message);
+    detail::defaultLogSink(level, message);
+  });
+  dtmsg << "literal {} %s" << std::flush;
+  dtwarn << "warning" << std::endl;
+  ASSERT_EQ(2u, records.size());
+  EXPECT_EQ("Msg literal {} %s", records[0]);
+  EXPECT_EQ("\033[1;32mMsg\033[0m literal {} %s", sharedOut().str());
+  EXPECT_NE(std::string::npos, sharedErr().str().find("warning\n"));
+  resetLogSink();
+  dtmsg << "arbitrary provider" << std::endl;
+  EXPECT_NE(std::string::npos, sharedOut().str().find("arbitrary provider\n"));
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ObserverRestorationDoesNotReviveRetiredOwners)
+{
+  std::vector<LogRecord> records;
+  setLogCallback(&capture, &records);
+  int first = 0;
+  int second = 0;
+  auto a = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++first; });
+  auto b = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++second; });
+  auto* outer = detail::registerLogObserver(a);
+  warn("outer");
+  auto* inner = detail::registerLogObserver(b);
+  warn("inner");
+  detail::unregisterLogObserver(outer);
+  std::weak_ptr<LogSink> retired = a;
+  a.reset();
+  EXPECT_TRUE(retired.expired());
+  warn("inner after outer retired");
+  detail::unregisterLogObserver(inner);
+  warn("after both retired");
+  EXPECT_EQ(1, first);
+  EXPECT_EQ(2, second);
+  EXPECT_EQ(4u, records.size());
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, NestedObserversRestoreWithoutRetainingSinks)
+{
+  setLogCallback([](LogLevel, const char*, std::size_t, void*) {});
+  int first = 0;
+  int second = 0;
+  auto a = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++first; });
+  auto b = std::make_shared<LogSink>(
+      [&](LogLevel, const std::string&) { ++second; });
+  auto* outer = detail::registerLogObserver(a);
+  auto* inner = detail::registerLogObserver(b);
+  warn("inner");
+  detail::unregisterLogObserver(inner);
+  warn("outer restored");
+  detail::unregisterLogObserver(outer);
+  EXPECT_EQ(1, first);
+  EXPECT_EQ(1, second);
+}
+
+//==============================================================================
+TEST_F(CallbackLoggingTest, ObserverFailureDoesNotUndoCallbackConsumption)
+{
+  std::vector<LogRecord> records;
+  setLogCallback(&capture, &records);
+  int fallback = 0;
+  setLogSink([&](LogLevel, const std::string&) { ++fallback; });
+  auto observer = std::make_shared<LogSink>([](LogLevel, const std::string&) {
+    throw std::runtime_error("observer");
+  });
+  auto* token = detail::registerLogObserver(observer);
+  warn("consumed");
+  detail::unregisterLogObserver(token);
+  EXPECT_EQ(1u, records.size());
+  EXPECT_EQ(0, fallback);
+}
+
+#if defined(__GLIBCXX__) && !defined(_WIN32)
+//==============================================================================
+TEST_F(LoggingDeathTest, ObserverCanExitItsThread)
+{
+  EXPECT_EXIT(
+      {
+        setLogCallback([](LogLevel, const char*, std::size_t, void*) {});
+        auto observer = std::make_shared<LogSink>(
+            [](LogLevel, const std::string&) { pthread_exit(nullptr); });
+        auto* token = detail::registerLogObserver(observer);
+        std::thread([] { warn("exit through observation {}", 42); }).join();
+        detail::unregisterLogObserver(token);
+        setLogCallback(nullptr);
+        std::_Exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "");
+}
+#endif
+
+//==============================================================================
+TEST_F(LoggingTest, FormattedRecursionDoesNotInheritConsolePrefix)
+{
+  setLogSink([](LogLevel, const std::string&) { info("x"); });
+  testing::internal::CaptureStdout();
+  dtwarn << "outer console record" << std::endl;
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ("[info] x\n", output);
 }

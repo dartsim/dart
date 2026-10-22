@@ -126,6 +126,92 @@ state. Existing live views preserve their mutability, including read-only
 views of const Eigen data. Inputs and caller-provided output buffers are
 unaffected.
 
+### Errors and logging
+
+`dartpy.errors` holds the exception hierarchy. The errors dartpy defines
+derive from `DartError`, which has three branches named after their builtin
+parent: `ValidationError` (`ValueError`) for invalid arguments and inputs,
+`NotFoundError` (`KeyError`) for failed name lookups, whose message lists the
+valid names, and `OperationError` (`RuntimeError`) for operations that fail
+or run in the wrong state. `WorldBusyError` and `ModelFrozenError` derive
+from `OperationError`; `CheckpointMismatchError` and `NameConflictError`
+derive from `ValidationError`. The design doc's top-level allowlist excludes
+errors, so they live in their own submodule and their `__module__` is
+`dartpy.errors`.
+
+Not every exception dartpy raises is a `DartError`. A translator registered
+before every submodule maps the C++ exceptions DART throws:
+`std::invalid_argument` and `std::length_error` to `ValidationError`, and
+`std::runtime_error`, `std::logic_error` and every other `std::exception`
+subclass not listed next to `OperationError`. `std::out_of_range`
+(`IndexError`), `std::domain_error` and `std::range_error` (`ValueError`),
+`std::overflow_error` (`OverflowError`) and `std::bad_alloc` (`MemoryError`)
+keep nanobind's builtin mapping on purpose, and nanobind's own argument
+conversion failures raise plain `TypeError`. Register more specific nanobind
+exceptions in their submodule with `dartnb::operationError()` as the base, as
+`dartpy.gui` and `dartpy.viewer` do; nanobind runs later registrations first.
+Binding-side `nb::value_error` and `nb::type_error` checks are still plain
+builtins; bad input raises, it is never logged and ignored.
+
+DART's C++ diagnostics reach `logging.getLogger("dartpy")`. The bridge in
+`detail/logging.cpp` registers a `dart::common::setLogCallback()` callback
+for the `DART_WARN` family and redirects the `dtwarn`/`dterr`/`dtmsg`/`dtdbg`
+console streams through `dart::common::setConsoleStreams()`. The callback
+hook lives in libdart, so it receives diagnostics emitted inside libdart and
+from the extension. The logging implementation formats each message once
+and offers it to the callback before acquiring or initializing sink state.
+A message the callback declines goes to the selected sink or console streams,
+subject to the runtime threshold. The callback receives every message that
+`DART_ACTIVE_LOG_LEVEL` compiles in, regardless of `setLogLevel()`, including
+`Off`; `logging.getLogger("dartpy")` filters by its own level. The
+bridge does not apply that level before queueing a record. Python's
+`logging` has no hook that fires when a level changes, so a cached
+threshold could go stale and silently drop messages a user just enabled,
+and DART formats the message before the callback runs, so the check would
+save only a string copy and a queue push. The console
+hook takes stream providers, and the bridge hands every thread its own
+`std::ostream` over a per-thread line buffer, so concurrent writers share
+neither manipulator state nor a partial line; a thread-local or static
+destructor that logs after that stream is destroyed gets a leaked fallback
+stream instead. Logging threads never touch Python: each completed line or
+`DART_WARN` message goes into a bounded queue (1024 records, oldest dropped
+and the count reported), under one mutex that also guards the pass-through
+flag and the pending-call bookkeeping. `Py_AddPendingCall` drains the queue on the main
+thread at its next safe point, which is right after the binding call that
+logged returns. Records from C++ worker threads wait until the main thread
+runs Python again or `dartpy.common.flush_logs()` is called;
+`flush_logs()` delivers on the thread that calls it and returns the number
+of records it drained, counting the drop notice. Delivery catches Python
+and C++ exceptions per record and reports them as unraisable or on stderr,
+so one failing handler loses only its record. Levels map one to one;
+trace maps to level 5. On POSIX, `pthread_atfork` handlers hold the queue
+mutex, the only lock on the bridged path, across `fork()` and give the
+child an unlocked, empty queue, so a child forked from a single-threaded
+process can log and flush. Forking a process that has other running threads
+is unsupported: a thread the child does not have may hold a lock below the
+bridge, such as libstdc++'s locale mutex that any stream construction takes
+under a non-classic global locale, or a selected log sink mutex, and the child then
+blocks on its first log. CPython warns about forking a multi-threaded process
+for the same reason; use the `spawn` or `forkserver` start method there.
+Python's `atexit` drains the queue and switches the bridge to pass-through,
+so diagnostics logged while the interpreter shuts down print to stderr
+without touching Python. There is no default handler: with no logging
+configuration, Python's last-resort handler prints warnings and errors to
+stderr, and info messages stay quiet; set the logger's level or handlers to
+silence or route DART output.
+The GUI App separately observes callback-consumed records at the native sink
+threshold and queues its panel notifications until the GUI owner drains them.
+It neither installs another Python bridge nor invokes Python from producers.
+Closing a capture discards pending panel notifications without changing the
+automatic Python bridge. The superseded manual enable/disable API is removed;
+configure the Python logger and use `flush_logs()` for explicit delivery.
+
+`dartpy._testing` holds hooks for dartpy's own tests (worker-thread logging,
+destructor-time logging, throwing a named C++ exception). It is not part of
+the API: `python/dartpy/CMakeLists.txt` compiles it in only when
+`BUILD_TESTING` is on and `DART_BUILD_WHEELS` is off, and the tests that
+use it skip when it is absent.
+
 ### GUI ownership
 
 GUI Python ancestry follows the primary base: `Viewer`, plus `DragAndDrop`,
@@ -320,8 +406,8 @@ flags) through `CMAKE_ARGS`; the fixed wheel configuration lives in
 `pyproject.toml`.
 
 Wheels require Python 3.12 and use the nanobind binder for CPython's stable
-ABI (`DART_DARTPY_STABLE_ABI=ON`, which needs CMake 3.26), so every build is
-tagged `cp312-abi3` and one wheel per platform serves Python 3.12 and every
+ABI (`DART_DARTPY_STABLE_ABI=ON`); source builds require CMake 3.28 or newer.
+Every build is tagged `cp312-abi3`, and one wheel per platform serves Python 3.12 and every
 later version. The release matrix builds four wheels: Linux x86_64 and
 aarch64, macOS arm64, and Windows x64. Each row checks the wheel with
 `abi3audit --strict` and tests it on Python 3.13: the Linux driver below does

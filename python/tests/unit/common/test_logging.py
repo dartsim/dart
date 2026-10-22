@@ -1,11 +1,41 @@
 import logging
+import os
+import re
+import signal
+import subprocess
+import sys
 import threading
+import time
 
 import dartpy as dart
-
 import pytest
 
 from ..bindings._support import run_isolated
+
+QUEUE_CAPACITY = 1024  # dartnb::Queue::kCapacity
+RECORDS_PER_MESSAGE = 3  # _testing.log_from_threads: spdlog, native, console
+CONSOLE_PREFIX = re.compile(r"^\[module\.cpp:\d+\] ")
+NATIVE_WARNING = re.compile(r"^SphereShape::setRadius: Invalid radius '-\d+'\.")
+
+# dartpy._testing is compiled in with BUILD_TESTING and left out of wheels.
+_testing = getattr(dart, "_testing", None)
+needs_testing_hooks = pytest.mark.skipif(
+    _testing is None, reason="dartpy was built without its testing hooks"
+)
+
+
+def _records(caplog):
+    return [record for record in caplog.records if record.name == "dartpy"]
+
+
+def _console_messages(threads, messages):
+    # dartpy._testing.log_from_threads formats each console line with
+    # per-thread setw/setfill and hex manipulators.
+    return sorted(
+        f"worker {t:0{2 + t}d} console {i:x}"
+        for t in range(threads)
+        for i in range(messages)
+    )
 
 
 def test_basics():
@@ -23,191 +53,475 @@ def test_arguments():
 
 
 @pytest.mark.parametrize("level", ["info", "warn", "error", "fatal"])
-def test_user_text_is_literal(level, capfd):
-    text = "literal {} {broken} {{braces}}"
-    getattr(dart.common, level)(text)
-    out, err = capfd.readouterr()
-    assert text in (out if level == "info" else err)
-    assert "log format error" not in out + err
+def test_user_text_is_literal(level, caplog):
+    text = "literal 100% %s {} {broken} {{braces}}"
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        getattr(dart.common, level)(text)
+        dart.common.flush_logs()
+    assert [r.getMessage() for r in _records(caplog)] == [text]
+    assert "log format error" not in caplog.text
 
 
-@pytest.fixture
-def bridge():
-    dart.common.enable_logging(level=logging.DEBUG)
-    try:
-        yield
-    finally:
-        dart.common.disable_logging()
-
-
-def test_bridge_levels_and_logger_name(bridge, caplog):
-    caplog.set_level(logging.DEBUG, logger="dartpy")
-    names = ["trace", "debug", "info", "warn", "error", "fatal"]
-    for name in names:
-        getattr(dart.common, name)(f"{name} 100% %s {{}} {{broken}}")
-    assert not caplog.records
-    assert dart.common.flush_logs() == 6
-    assert [r.name for r in caplog.records] == ["dartpy"] * 6
-    assert [r.levelno for r in caplog.records] == [10, 10, 20, 30, 40, 50]
-    assert [r.message for r in caplog.records] == [
-        f"{name} 100% %s {{}} {{broken}}" for name in names
+def test_records_reach_python_logging(caplog):
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        dart.common.info("info log")
+        dart.common.warn("warn log")
+        dart.common.error("error log")
+        dart.common.fatal("fatal log")
+        dart.common.flush_logs()
+    assert [(r.levelname, r.getMessage()) for r in _records(caplog)] == [
+        ("INFO", "info log"),
+        ("WARNING", "warn log"),
+        ("ERROR", "error log"),
+        ("CRITICAL", "fatal log"),
     ]
-    assert dart.common.flush_logs() == 0
 
 
-def test_bridge_filters_at_native_and_python_thresholds(bridge, caplog):
-    dart.common.enable_logging(level=logging.WARNING)
-    caplog.set_level(logging.ERROR, logger="dartpy")
-    dart.common.info("native filtered")
-    dart.common.warn("python filtered")
-    dart.common.error("delivered")
-    assert dart.common.flush_logs() == 2
-    assert [r.message for r in caplog.records] == ["delivered"]
+def test_records_arrive_without_an_explicit_flush(caplog):
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        dart.common.warn("auto")
+        for _ in range(100):
+            if _records(caplog):
+                break
+            time.sleep(0.01)
+    assert [r.getMessage() for r in _records(caplog)] == ["auto"]
 
 
-def test_bridge_drops_oldest_records_and_reports_overflow_once(bridge, caplog):
-    caplog.set_level(logging.INFO, logger="dartpy")
-    for i in range(100007):
-        dart.common.info(str(i))
-    assert dart.common.flush_logs() == 100000
-    assert caplog.records[0].levelno == logging.WARNING
-    assert caplog.records[0].message == "dartpy: 7 log records dropped"
-    assert [r.message for r in caplog.records[1:]] == [
-        str(i) for i in range(7, 100007)
+def test_logging_configuration_silences_dart(caplog):
+    with caplog.at_level(logging.ERROR, logger="dartpy"):
+        dart.common.warn("silenced")
+        dart.common.flush_logs()
+    assert _records(caplog) == []
+
+
+def test_native_diagnostics_reach_python_logging(caplog, capfd):
+    # A diagnostic emitted inside libdart, not by code compiled into the
+    # extension: with a header-only spdlog each library has its own registry.
+    shape = dart.dynamics.SphereShape(1.0)
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        shape.setRadius(-1.0)
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelname for r in records] == ["WARNING"]
+    assert records[0].getMessage().startswith(
+        "SphereShape::setRadius: Invalid radius '-1'."
+    )
+    assert "Invalid radius" not in capfd.readouterr().err
+
+
+@needs_testing_hooks
+@pytest.mark.parametrize("level", ["warning", "error", "info", "debug"])
+def test_console_headers_select_the_level(caplog, level):
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        _testing.log_console(level, "payload")
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelname for r in records] == [level.upper()]
+    assert CONSOLE_PREFIX.sub("", records[0].getMessage()) == "payload"
+
+
+@needs_testing_hooks
+@pytest.mark.parametrize("level", ["warning", "error", "info", "debug"])
+def test_console_continuations_keep_their_level_and_payload(caplog, level):
+    lines = [
+        "first",
+        "Error [payload]",
+        "Warning [payload]",
+        "Msg payload",
+        "Dbg payload",
+        "[trace] payload",
+        "[debug] payload",
+        "[info] payload",
+        "[warn] payload",
+        "[error] payload",
+        "[fatal] payload",
     ]
-    assert dart.common.flush_logs() == 0
-    dart.common.info("after overflow")
-    assert dart.common.flush_logs() == 1
-    assert len(caplog.records) == 100002
-    assert caplog.records[-1].message == "after overflow"
+    with caplog.at_level(logging.DEBUG, logger="dartpy"):
+        _testing.log_console(level, "\n".join(lines))
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelname for r in records] == [level.upper()] * len(lines)
+    assert [CONSOLE_PREFIX.sub("", r.getMessage()) for r in records] == lines
 
 
+@needs_testing_hooks
 @pytest.mark.parametrize(
-    "level, minimum",
+    "level, color, expected_level",
     [
-        (-1, 10), (0, 10), (9, 10), (10, 10),
-        (11, 20), (19, 20), (20, 20),
-        (21, 30), (29, 30), (30, 30),
-        (31, 40), (39, 40), (40, 40),
-        (41, 50), (49, 50), (50, 50), (51, 60),
+        ("trace", 38, 5),
+        ("debug", 36, logging.DEBUG),
+        ("info", 32, logging.INFO),
+        ("warn", 33, logging.WARNING),
+        ("error", 31, logging.ERROR),
+        ("fatal", 35, logging.CRITICAL),
     ],
 )
-def test_native_level_bucket_edges(bridge, caplog, level, minimum):
-    dart.common.enable_logging(level=level)
-    caplog.set_level(logging.DEBUG, logger="dartpy")
-    for name in ["trace", "debug", "info", "warn", "error", "fatal"]:
-        getattr(dart.common, name)(name)
-    expected = [severity for severity in [10, 10, 20, 30, 40, 50]
-                if severity >= minimum]
-    assert dart.common.flush_logs() == len(expected)
-    assert [record.levelno for record in caplog.records] == expected
+def test_colored_fallback_headers_select_the_level(
+    caplog, level, color, expected_level
+):
+    with caplog.at_level(5, logger="dartpy"):
+        _testing.log_console(
+            "warning", f"first\n\x1b[1;{color}m[{level}]\x1b[0m payload"
+        )
+        dart.common.flush_logs()
+    assert [
+        (r.levelno, CONSOLE_PREFIX.sub("", r.getMessage())) for r in _records(caplog)
+    ] == [
+        (logging.WARNING, "first"),
+        (expected_level, "payload"),
+    ]
 
 
-def test_disable_drains_pending_and_restores_console(bridge, caplog, capfd):
-    caplog.set_level(logging.DEBUG, logger="dartpy")
-    dart.common.info("pending")
-    assert dart.common.disable_logging() == 1
-    dart.common.info("console restored")
-    dart.common.debug("default threshold restored")
-    assert [r.message for r in caplog.records] == ["pending"]
-    out, err = capfd.readouterr()
-    assert "console restored" in out
-    assert "default threshold restored" not in out + err
-    assert dart.common.disable_logging() == 0
+@needs_testing_hooks
+@pytest.mark.parametrize(
+    "message, expected",
+    [
+        ("\x1b[2Kkeep my message", "keep my message"),
+        ("\x1b[31mred\x1b[0m text", "red text"),
+        ("keep \x1b[12;", "keep \x1b[12;"),
+        ("keep \x1b[12;\tmy message", "keep \x1b[12;\tmy message"),
+        ("\x1b[?25lkeep my message", "keep my message"),
+        ("\x1b[1 qkeep my message", "keep my message"),
+    ],
+)
+def test_console_csi_sequences_preserve_the_payload(caplog, message, expected):
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        _testing.log_console("warning", message)
+        dart.common.flush_logs()
+    assert [CONSOLE_PREFIX.sub("", r.getMessage()) for r in _records(caplog)] == [
+        expected
+    ]
 
 
-@pytest.mark.skipif(not hasattr(dart, "viewer"), reason="GUI app host is unavailable")
-def test_bridge_can_outlive_the_gui_app_capture():
-    result = run_isolated(
-        """
-        import logging
+@needs_testing_hooks
+def test_console_rejects_an_unknown_level():
+    with pytest.raises(ValueError, match="unknown console level"):
+        _testing.log_console("unknown", "payload")
 
-        messages = []
-        class Handler(logging.Handler):
-            def emit(self, record):
-                messages.append(record.getMessage())
 
-        logger = logging.getLogger("dartpy")
-        logger.setLevel(logging.INFO)
-        logger.addHandler(Handler())
+@needs_testing_hooks
+@pytest.mark.parametrize("hold_gil", [True, False])
+def test_worker_threads_log_while_python_holds_the_gil(caplog, hold_gil):
+    threads, messages = 4, 25
+    stop = threading.Event()
 
-        def build():
-            dart.common.enable_logging()
-            dart.common.info("queued in App")
-            return dart.viewer.SceneSetup(dart.simulation.World())
+    def spin():
+        # Keeps taking the GIL on a Python thread while the C++ workers log.
+        while not stop.is_set():
+            pass
 
-        scene = dart.viewer.Scene("logs", title="Logs", category="Tests", factory=build)
-        assert dart.viewer.run([scene], ["test", "--cycle-scenes", "--frames", "1"]) == 0
-        assert dart._probe.has_custom_log_sink()
-        dart.common.info("between App exit and disable")
-        assert dart.common.disable_logging() >= 2
-        assert not dart._probe.has_custom_log_sink()
-        assert "queued in App" in messages
-        assert "between App exit and disable" in messages
-        dart.common.info("after App and bridge shutdown")
-        assert dart.common.flush_logs() == 0
-        """
+    spinner = threading.Thread(target=spin)
+    spinner.start()
+    try:
+        with caplog.at_level(logging.WARNING, logger="dartpy"):
+            # hold_gil=True joins the workers with the GIL held on this thread.
+            _testing.log_from_threads(
+                threads=threads, messages=messages, hold_gil=hold_gil
+            )
+            dart.common.flush_logs()
+    finally:
+        stop.set()
+        spinner.join()
+    records = _records(caplog)
+    assert len(records) == threads * messages * RECORDS_PER_MESSAGE
+    assert {r.levelname for r in records} == {"WARNING"}
+    spdlog = sorted(r.getMessage() for r in records if "spdlog" in r.getMessage())
+    native = [r.getMessage() for r in records if NATIVE_WARNING.match(r.getMessage())]
+    console = [r.getMessage() for r in records if "console" in r.getMessage()]
+    assert spdlog == sorted(
+        f"worker {t} spdlog {i}" for t in range(threads) for i in range(messages)
     )
-    assert "between App exit and disable" not in result.stdout
-    assert "after App and bridge shutdown" in result.stdout
-
-
-@pytest.mark.skipif(not hasattr(dart, "viewer"), reason="GUI app host is unavailable")
-def test_bridge_disabled_inside_app_keeps_forwarding_after_app_exit():
-    result = run_isolated(
-        """
-        dart.common.enable_logging()
-
-        def build():
-            dart.common.disable_logging()
-            assert dart._probe.has_custom_log_sink()
-            dart.common.info("between disable and App exit")
-            assert dart.common.flush_logs() == 0
-            return dart.viewer.SceneSetup(dart.simulation.World())
-
-        scene = dart.viewer.Scene("logs", title="Logs", category="Tests", factory=build)
-        assert dart.viewer.run([scene], ["test", "--cycle-scenes", "--frames", "1"]) == 0
-        assert not dart._probe.has_custom_log_sink()
-        dart.common.info("after App exit with disabled bridge")
-        assert dart.common.flush_logs() == 0
-        # Re-enabling must not reactivate a stale wrapper in the previous chain.
-        dart.common.enable_logging()
-        dart.common.info("one new record")
-        assert dart.common.disable_logging() == 1
-        assert not dart._probe.has_custom_log_sink()
-        dart.common.info("after re-enable and disable")
-        assert dart.common.flush_logs() == 0
-        """
+    assert len(native) == threads * messages
+    assert all(CONSOLE_PREFIX.match(message) for message in console)
+    assert sorted(CONSOLE_PREFIX.sub("", m) for m in console) == _console_messages(
+        threads, messages
     )
-    assert "between disable and App exit" in result.stdout
-    assert "after App exit with disabled bridge" in result.stdout
-    assert "after re-enable and disable" in result.stdout
 
 
-def test_concurrent_producers_preserve_per_thread_order(bridge, caplog):
-    caplog.set_level(logging.INFO, logger="dartpy")
+def test_flush_logs_delivers_on_the_calling_thread(caplog):
+    flushed = {}
 
-    def produce(worker):
-        for i in range(100):
-            dart.common.info(f"worker {worker}:{i}")
+    def worker():
+        dart.common.warn("from worker")
+        flushed["count"] = dart.common.flush_logs()
 
-    threads = [threading.Thread(target=produce, args=(i,)) for i in range(4)]
-    for thread in threads:
+    thread = threading.Thread(target=worker)
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
         thread.start()
-    for thread in threads:
-        thread.join(timeout=10)
-        assert not thread.is_alive()
-    assert dart.common.flush_logs() == 400
-    messages = [r.message for r in caplog.records]
-    assert len(set(messages)) == 400
-    for worker in range(4):
-        assert [m for m in messages if m.startswith(f"worker {worker}:")] == [
-            f"worker {worker}:{i}" for i in range(100)
-        ]
+        thread.join()
+    records = _records(caplog)
+    assert flushed == {"count": 1}
+    assert [(r.getMessage(), r.thread) for r in records] == [
+        ("from worker", thread.ident)
+    ]
+
+
+def test_a_raising_filter_is_unraisable_and_does_not_stop_delivery(
+    caplog, monkeypatch
+):
+    # Keep the exception, not the UnraisableHookArgs: CPython never GC-tracks
+    # that object, and the traceback pins this frame through f_back, so a
+    # cycle through it is uncollectable and nanobind reports the frame's
+    # dartpy objects as leaked at exit.
+    unraisable = []
+    monkeypatch.setattr(sys, "unraisablehook", lambda u: unraisable.append(u.exc_value))
+
+    def explode(record):
+        if record.getMessage() == "boom":
+            raise RuntimeError("filter failed")
+        return True
+
+    logger = logging.getLogger("dartpy")
+    logger.addFilter(explode)
+    try:
+        with caplog.at_level(logging.WARNING, logger="dartpy"):
+            # The pending call delivers each record as soon as the call returns.
+            dart.common.warn("boom")
+            dart.common.warn("after")
+            dart.common.flush_logs()
+    finally:
+        logger.removeFilter(explode)
+    assert [r.getMessage() for r in _records(caplog)] == ["after"]
+    assert len(unraisable) == 1
+    assert isinstance(unraisable[0], RuntimeError)
+    assert str(unraisable[0]) == "filter failed"
+
+
+@needs_testing_hooks
+def test_queue_overflow_drops_the_oldest_and_reports_the_count(caplog):
+    messages = QUEUE_CAPACITY // RECORDS_PER_MESSAGE + 88
+    dropped = RECORDS_PER_MESSAGE * messages - QUEUE_CAPACITY
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        # The GIL stays held, so nothing drains until the call returns.
+        _testing.log_from_threads(threads=1, messages=messages, hold_gil=True)
+        assert dart.common.flush_logs() == QUEUE_CAPACITY + 1
+    records = _records(caplog)
+    assert len(records) == QUEUE_CAPACITY + 1  # flush_logs counts the notice
+    # One thread pushes spdlog, native, console per message, so the oldest
+    # surviving record is item `dropped` of that sequence.
+    first = [
+        f"worker 0 spdlog {dropped // RECORDS_PER_MESSAGE}",
+        f"SphereShape::setRadius: Invalid radius '-{dropped // RECORDS_PER_MESSAGE + 1}'.",
+        f"worker 00 console {dropped // RECORDS_PER_MESSAGE:x}",
+    ][dropped % RECORDS_PER_MESSAGE]
+    assert CONSOLE_PREFIX.sub("", records[0].getMessage()).startswith(first)
+    assert records[-1].getMessage().startswith(
+        f"dartpy dropped {dropped} log records"
+    )
+
+
+@needs_testing_hooks
+def test_a_thread_local_destroyed_after_the_console_stream_still_logs(caplog):
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        _testing.log_from_late_thread_local_destructor()
+        dart.common.flush_logs()
+    assert [CONSOLE_PREFIX.sub("", r.getMessage()) for r in _records(caplog)] == [
+        "early thread_local console",
+        "late thread_local console",
+        "late thread_local spdlog",
+    ]
+
+
+@needs_testing_hooks
+def test_a_static_destructor_logs_to_stderr_after_python_shuts_down():
+    code = (
+        "import dartpy as dart\n"
+        "from dartpy import _testing\n"
+        "_testing.log_from_static_destructor()\n"
+        "dart.common.flush_logs()\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ),
+    )
+    # The main thread's thread-local console is gone by then, and so is Python:
+    # both paths fall through to the pass-through console.
+    assert re.search(
+        r"\[dartpy warning\] \[module\.cpp:\d+\] static destructor console",
+        result.stderr,
+    )
+    assert "[dartpy warning] static destructor spdlog" in result.stderr
+
+
+@needs_testing_hooks
+def test_warnings_reach_stderr_without_logging_configuration():
+    code = (
+        "import atexit\n"
+        # atexit runs handlers last-in first-out: registering before the
+        # import runs this after dartpy has switched to pass-through.
+        "atexit.register(lambda: dart.common.warn('after-atexit'))\n"
+        "import dartpy as dart\n"
+        "from dartpy import _testing\n"
+        "dart.common.info('info-line')\n"
+        "dart.common.warn('warn-line')\n"
+        "_testing.log_from_threads(threads=1, messages=1, hold_gil=True)\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ),
+    )
+    # logging's last-resort handler prints WARNING and above; the exit flush
+    # delivers the worker-thread records.
+    assert "warn-line" in result.stderr
+    assert "worker 0 spdlog 0" in result.stderr
+    assert "[module.cpp:" in result.stderr
+    assert "[dartpy warning] after-atexit" in result.stderr
+    assert "info-line" not in result.stderr + result.stdout
+
+
+def test_bridge_state_is_released_at_exit():
+    # nanobind reports every dartpy type, function and instance still alive
+    # when the interpreter shuts down; a reference the bridge keeps through
+    # finalization would show up here.
+    code = (
+        "import logging\n"
+        "import dartpy as dart\n"
+        "world = dart.simulation.World()\n"
+        "logger = logging.getLogger('dartpy')\n"
+        "def explode(record):\n"
+        "    raise RuntimeError('filter failed')\n"
+        "logger.addFilter(explode)\n"
+        "dart.common.warn('boom')\n"
+        "dart.common.flush_logs()\n"
+        "logger.removeFilter(explode)\n"
+        "dart.dynamics.SphereShape(1.0).setRadius(-1.0)\n"
+        "dart.common.warn('still queued at exit')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ),
+    )
+    assert "filter failed" in result.stderr
+    assert "still queued at exit" in result.stderr
+    assert "nanobind: leaked" not in result.stderr
+
+
+def test_import_survives_a_failing_logging_import():
+    # A broken or shadowed logging module must not break `import dartpy`.
+    code = """
+import sys
+class Refuse:
+    def find_spec(self, name, path=None, target=None):
+        if name == 'logging':
+            raise ImportError('logging is unavailable')
+        return None
+sys.modules.pop('logging', None)
+sys.meta_path.insert(0, Refuse())
+import dartpy
+print('imported')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ),
+    )
+    assert result.returncode == 0, result.stderr
+    assert "imported" in result.stdout
+
+
+@needs_testing_hooks
+def test_exit_drain_precedes_logging_shutdown_when_dartpy_is_imported_first(tmp_path):
+    log_file = tmp_path / "exit.log"
+    code = f"""
+import atexit
+register = atexit.register
+def register_exit(callback, *args, **kwargs):
+    if getattr(callback, '__module__', None) == 'logging':
+        return register(callback, *args, **kwargs)
+    def queue_then_drain():
+        # Queue native records immediately before the bridge's exit drain.
+        dart._testing.log_from_threads(threads=1, messages=1, hold_gil=True)
+        callback(*args, **kwargs)
+    register(queue_then_drain)
+    return callback
+atexit.register = register_exit
+import dartpy as dart
+atexit.register = register
+import logging
+logger = logging.getLogger('dartpy')
+logger.setLevel(logging.WARNING)
+logger.addHandler(logging.FileHandler({str(log_file)!r}, mode='w'))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=dict(os.environ),
+    )
+    text = log_file.read_text()
+    assert "worker 0 spdlog 0" in text
+    assert "SphereShape::setRadius: Invalid radius '-1'." in text
+    assert "worker 00 console 0" in text
+    assert "nanobind: leaked" not in result.stderr
+
+
+def _wait_for_child(pid, timeout):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        done, status = os.waitpid(pid, os.WNOHANG)
+        if done:
+            return os.waitstatus_to_exitcode(status)
+        time.sleep(0.005)
+    os.kill(pid, signal.SIGKILL)
+    os.waitpid(pid, 0)
+    raise AssertionError(f"forked child hung for {timeout}s")
+
+
+@pytest.mark.skipif(not hasattr(os, "fork"), reason="needs os.fork")
+# Other test modules may leave native threads behind; none of them logs.
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_child_of_a_fork_can_log_and_flush(caplog):
+    # The supported case is a fork from a single-threaded process; forking a
+    # process with other running threads is documented as unsupported. Native
+    # threads other tests leave behind are idle and take no logging locks.
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        dart.common.warn("parent")  # may still be queued at the fork
+        pid = os.fork()
+        if pid == 0:  # child
+            # The child must never return into pytest: any exception, including
+            # KeyboardInterrupt, still ends it through os._exit.
+            status = 2
+            try:
+                delivered = []
+                handler = logging.Handler()
+                handler.emit = lambda record: delivered.append(record.getMessage())
+                logging.getLogger("dartpy").addHandler(handler)
+                dart.dynamics.SphereShape(1.0).setRadius(-1.0)
+                dart.common.warn("child")
+                dart.common.flush_logs()
+                # The child starts with an empty queue: its own records
+                # arrive, and none the parent had queued.
+                status = (
+                    0
+                    if len(delivered) == 2
+                    and NATIVE_WARNING.match(delivered[0])
+                    and delivered[1] == "child"
+                    else 3
+                )
+            finally:
+                os._exit(status)
+        assert _wait_for_child(pid, timeout=10) == 0
+        dart.common.flush_logs()
+    assert [r.getMessage() for r in _records(caplog)] == ["parent"]
+
+
+if __name__ == "__main__":
+    pytest.main()
 
 
 @pytest.mark.parametrize("threads", [1, 4])
-def test_native_step_workers_queue_in_order_until_drained(threads):
+def test_native_step_workers_deliver_once_in_per_worker_order(threads):
     # A subprocess bounds deadlocks if a sink incorrectly tries to acquire the GIL.
     run_isolated(
         f"""
@@ -234,13 +548,12 @@ def test_native_step_workers_queue_in_order_until_drained(threads):
             # non-finite acceleration diagnostic during forward dynamics.
             joint.setSpringStiffness(0, float("inf"))
             world.addSkeleton(skel)
-        dart.common.enable_logging()
         for step in range(3):
             dart.common.info(f"begin {{step}}")
             world.step()
             dart.common.info(f"end {{step}}")
-        assert not records
-        assert dart.common.flush_logs() == 3 * (128 + 2)
+        dart.common.flush_logs()
+        assert len(records) == 3 * (128 + 2)
         messages = [record.getMessage() for record in records]
         for step in range(3):
             block = messages[step * 130:(step + 1) * 130]
@@ -261,160 +574,123 @@ def test_native_step_workers_queue_in_order_until_drained(threads):
             assert all(record.levelno == logging.WARNING
                        for record in records[step * 130 + 1:(step + 1) * 130 - 1])
         assert dart.common.flush_logs() == 0
-        dart.common.disable_logging()
         """
     )
 
 
-def test_handler_exception_leaves_remaining_records_queued(bridge, caplog):
-    class FailingHandler(logging.Handler):
-        def emit(self, record):
-            raise RuntimeError("handler failed")
 
-    logger = logging.getLogger("dartpy")
-    handler = FailingHandler()
-    logger.addHandler(handler)
-    caplog.set_level(logging.INFO, logger="dartpy")
-    try:
-        dart.common.info("failed record")
-        dart.common.info("remaining record")
-        with pytest.raises(RuntimeError, match="handler failed"):
-            dart.common.flush_logs()
-    finally:
-        logger.removeHandler(handler)
-    assert dart.common.flush_logs() == 1
+def test_automatic_bridge_has_no_manual_controls():
+    assert not hasattr(dart.common, "enable_logging")
+    assert not hasattr(dart.common, "disable_logging")
 
 
-def test_handler_can_log_and_flush_without_deadlock():
+def test_automatic_levels_and_literal_text(caplog):
+    names = ["trace", "debug", "info", "warn", "error", "fatal"]
+    with caplog.at_level(5, logger="dartpy"):
+        for name in names:
+            getattr(dart.common, name)(f"{name} 100% %s {{}} {{broken}}")
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelno for r in records] == [5, 10, 20, 30, 40, 50]
+    assert [r.getMessage() for r in records] == [
+        f"{name} 100% %s {{}} {{broken}}" for name in names
+    ]
+
+
+def test_concurrent_python_producers_preserve_per_thread_order(caplog):
+    with caplog.at_level(logging.INFO, logger="dartpy"):
+        def produce(worker):
+            for i in range(100):
+                dart.common.info(f"worker {worker}:{i}")
+        threads = [threading.Thread(target=produce, args=(i,)) for i in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10)
+            assert not thread.is_alive()
+        dart.common.flush_logs()
+    messages = [r.getMessage() for r in _records(caplog)]
+    assert len(messages) == len(set(messages)) == 400
+    for worker in range(4):
+        assert [m for m in messages if m.startswith(f"worker {worker}:")] == [
+            f"worker {worker}:{i}" for i in range(100)
+        ]
+
+
+@needs_testing_hooks
+@pytest.mark.skipif(not hasattr(dart, "viewer"), reason="GUI app host is unavailable")
+def test_native_and_console_records_reach_python_and_gui_once(caplog, capfd):
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        panel = _testing.capture_logs(
+            lambda: _testing.log_from_threads(threads=2, messages=3, hold_gil=True)
+        )
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert len(records) == len(panel) == 18
+    assert all(level == 1 for level, text in panel)  # GUI Warning
+    python_text = [CONSOLE_PREFIX.sub("", r.getMessage()) for r in records]
+    panel_text = [re.sub(r"^Warning \[module\.cpp:\d+\] ", "", text)
+                  for level, text in panel]
+    assert sorted(python_text) == sorted(panel_text)
+    assert capfd.readouterr() == ("", "")
+    # The scoped capture has gone; the same automatic bridge keeps working.
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        dart.common.warn("after capture")
+        dart.common.flush_logs()
+    assert [r.getMessage() for r in _records(caplog)] == ["after capture"]
+
+
+@pytest.mark.skipif(not hasattr(dart, "viewer"), reason="GUI app host is unavailable")
+def test_automatic_bridge_outlives_app_capture():
+    run_isolated(
+        """
+        import logging
+        messages = []
+        handler = logging.Handler()
+        handler.emit = lambda record: messages.append(record.getMessage())
+        logger = logging.getLogger("dartpy")
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        created = []
+        def build():
+            token = f"inside App {len(created)}"
+            created.append(token)
+            dart.common.info(token)
+            return dart.viewer.SceneSetup(dart.simulation.World())
+        scene = dart.viewer.Scene("logs", title="Logs", category="Tests", factory=build)
+        assert dart.viewer.run([scene], ["test", "--cycle-scenes", "--frames", "1"]) == 0
+        assert not dart._probe.has_custom_log_sink()
+        dart.common.info("after App")
+        dart.common.flush_logs()
+        assert len(created) == 2  # The catalog cycles every scene twice.
+        assert all(messages.count(token) == 1 for token in created)
+        assert messages.count("after App") == 1
+        """
+    )
+
+
+def test_handler_can_log_flush_and_join_producer():
     run_isolated(
         """
         import logging
         import threading
-
         messages = []
         class Handler(logging.Handler):
             def emit(self, record):
-                assert threading.current_thread() is threading.main_thread()
                 messages.append(record.getMessage())
                 if record.getMessage() == "outer":
                     dart.common.info("nested")
-                    assert dart.common.flush_logs() == 0
-                    worker = threading.Thread(
-                        target=lambda: dart.common.info("handler worker")
-                    )
+                    dart.common.flush_logs()
+                    worker = threading.Thread(target=lambda: dart.common.info("handler worker"))
                     worker.start()
                     worker.join(timeout=5)
                     assert not worker.is_alive()
-
         logger = logging.getLogger("dartpy")
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
         logger.addHandler(Handler())
-        dart.common.enable_logging()
         dart.common.info("outer")
-        assert dart.common.flush_logs() == 1
-        assert messages == ["outer"]
-        assert dart.common.flush_logs() == 2
-        assert messages == ["outer", "nested", "handler worker"]
-        dart.common.disable_logging()
+        dart.common.flush_logs()
+        assert sorted(messages) == ["handler worker", "nested", "outer"], messages
         """
     )
-
-
-def test_concurrent_flushes_wait_and_deliver_each_record_once():
-    run_isolated(
-        """
-        import logging
-        import threading
-
-        entered = threading.Event()
-        release = threading.Event()
-        waiting = threading.Event()
-        returned = threading.Event()
-        messages = []
-        counts = []
-        class Handler(logging.Handler):
-            def emit(self, record):
-                messages.append(record.getMessage())
-                if record.getMessage() == "first":
-                    entered.set()
-                    assert release.wait(5)  # Releases the GIL inside a handler.
-
-        logger = logging.getLogger("dartpy")
-        logger.setLevel(logging.INFO)
-        logger.addHandler(Handler())
-        dart.common.enable_logging()
-        dart.common.info("first")
-        dart.common.info("second")
-        first = threading.Thread(target=lambda: counts.append(dart.common.flush_logs()))
-        def flush_again():
-            waiting.set()
-            counts.append(dart.common.flush_logs())
-            returned.set()
-        second = threading.Thread(target=flush_again)
-        first.start()
-        assert entered.wait(5)
-        second.start()
-        assert waiting.wait(5)
-        try:
-            assert not returned.wait(0.1)
-            dart.common.info("late")
-        finally:
-            release.set()
-        for thread in (first, second):
-            thread.join(timeout=5)
-            assert not thread.is_alive()
-        assert counts == [2, 1], counts
-        assert messages == ["first", "second", "late"], messages
-        assert dart.common.disable_logging() == 0
-        """
-    )
-
-
-def test_handler_disable_restores_sink_and_outer_flush_drains_remainder():
-    result = run_isolated(
-        """
-        import logging
-
-        messages = []
-        class Handler(logging.Handler):
-            def emit(self, record):
-                messages.append(record.getMessage())
-                if record.getMessage() == "outer":
-                    dart.common.info("nested")
-                    assert dart.common.disable_logging() == 0
-                    dart.common.info("restored console")
-
-        logger = logging.getLogger("dartpy")
-        logger.setLevel(logging.INFO)
-        logger.addHandler(Handler())
-        dart.common.enable_logging()
-        dart.common.info("outer")
-        dart.common.info("pending")
-        assert dart.common.flush_logs() == 3
-        assert messages == ["outer", "pending", "nested"], messages
-        assert dart.common.flush_logs() == 0
-        assert dart.common.disable_logging() == 0
-        """
-    )
-    assert "restored console" in result.stdout
-
-
-def test_interpreter_exit_drains_pending_records():
-    result = run_isolated(
-        """
-        dart.common.enable_logging()
-        import logging
-        import sys
-
-        logger = logging.getLogger("dartpy")
-        logger.setLevel(logging.INFO)
-        logger.addHandler(logging.StreamHandler(sys.stdout))
-        dart.common.enable_logging()
-        dart.common.info("queued until interpreter exit")
-        """
-    )
-    assert result.stdout.count("queued until interpreter exit") == 1
-
-
-if __name__ == "__main__":
-    pytest.main()

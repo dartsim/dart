@@ -38,6 +38,8 @@
 #include <functional>
 #include <string>
 
+#include <cstddef>
+
 // clang-format off
 #define DART_LOG_LEVEL_TRACE 0
 #define DART_LOG_LEVEL_DEBUG 1
@@ -106,10 +108,12 @@ using LogSink = std::function<void(LogLevel, const std::string&)>;
 /// Replace the process-wide sink. An empty sink restores the default sink.
 /// Return a copy of the previous sink for restoration, or empty for the
 /// default. Callbacks run synchronously and are serialized, including across
-/// threads. They may log or replace the sink; exceptions from callbacks are
-/// ignored. The message reference is valid only for the duration of the
-/// callback. Captured resources must remain alive until the sink is replaced or
-/// reset.
+/// threads. They may log or replace the sink; a message logged from inside a
+/// callback that reaches the same running sink uses default output instead.
+/// Ordinary exceptions are ignored; forced thread unwinding propagates.
+/// The message reference is valid only
+/// for the duration of the callback. Captured resources must remain alive until
+/// the sink is replaced or reset.
 /// Pending dt* partial lines use the sink installed when they are flushed;
 /// replacing or resetting the sink does not flush them.
 /// With a custom sink (including the GUI App), an unterminated dt* line waits
@@ -125,14 +129,62 @@ void resetLogSink();
 
 /// Set the runtime threshold, initially the more restrictive of Info and the
 /// library's DART_ACTIVE_LOG_LEVEL. Lower it to enable debug or trace messages.
-/// Off disables formatted log messages; legacy dt* streams are unfiltered.
-/// Compile-time disabled DART_* macros cannot be
-/// enabled at runtime.
+/// Off disables sink output; an installed LogCallback still receives messages.
+/// Compile-time disabled DART_* macros cannot be enabled at runtime.
+/// Legacy dt* streams are unfiltered.
 void setLogLevel(LogLevel level);
 
 /// Return the runtime threshold without allocating; lock-free on typical
 /// platforms.
 LogLevel getLogLevel();
+
+/// Receives one formatted message from trace() through fatal(). It runs on the
+/// logging thread, so it must be thread-safe. \p message holds \p length
+/// bytes, has no terminating newline and is valid only during the call. A
+/// message logged from inside the callback goes to the default output instead
+/// of re-entering it. An ordinary exception thrown by the callback is
+/// swallowed: DART reports the first one through the error console stream,
+/// unfiltered by the sink's runtime level. The failed message goes to the
+/// selected sink or default output, which still applies its own runtime level.
+/// Forced thread unwinding propagates. Do not fork() from inside the callback:
+/// the child would inherit the forking thread's re-entry state.
+using LogCallback = void (*)(
+    LogLevel level, const char* message, std::size_t length, void* userData);
+
+/// Routes every message from trace() through fatal() to \p callback before the
+/// selected sink. Compile-time disabled DART_* macros remain disabled. The
+/// callback receives messages regardless of setLogLevel(), including Off, so
+/// the receiver filters by level itself.
+///
+/// Each message is formatted once and offered first to the callback, before
+/// acquiring or initializing sink state, so the successful callback path works
+/// in the child of a fork() taken from a single-threaded process. A message
+/// the callback declines goes to the selected sink or console streams, subject
+/// to the runtime threshold. Each call publishes an immutable
+/// {callback, userData} pair through one atomic pointer; a logging thread
+/// loads that pointer once per delivery attempt. Old pairs are never freed, so
+/// \p userData must outlive every in-flight call: unset the callback only while
+/// no thread logs, or keep \p userData alive for the rest of the process. A
+/// null callback restores the default output. Call setLogCallback() from one
+/// thread at a time.
+void setLogCallback(LogCallback callback, void* userData = nullptr);
+
+namespace detail {
+
+/// Whether setLogCallback() installed a callback. The answer can be stale by
+/// the time the caller acts on it, so a caller must not drop a message on its
+/// account; it only decides whether to format a message that the sink's runtime
+/// level would otherwise discard.
+bool hasLogCallback();
+
+/// Hands \p message to the installed callback. Returns false, without
+/// touching the message, when no callback is installed, when this thread is
+/// already inside the callback, or when the callback threw; the caller then
+/// sends the message to the default output, whose runtime level still applies.
+bool forwardToLogCallback(
+    LogLevel level, const char* message, std::size_t length);
+
+} // namespace detail
 
 /// \brief Logs for a trace message
 ///

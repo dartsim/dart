@@ -166,44 +166,6 @@ if(ASSIMP_VERSION_MAJOR)
   )
 endif()
 
-# Logging libc++ availability guard.
-# libc++ marks floating-point to_chars as macOS 13.3+. Conda and Pixi ship their
-# own libc++; suppress availability only in this TU for older explicit targets.
-# System libc++ lacks the runtime symbols there, so keep its availability error.
-string(
-  FIND "${CMAKE_CXX_COMPILER}"
-  "$ENV{CONDA_PREFIX}/"
-  dart_conda_compiler_prefix
-)
-string(
-  FIND "${CMAKE_CXX_COMPILER}"
-  "$ENV{BUILD_PREFIX}/"
-  dart_build_compiler_prefix
-)
-if(
-  APPLE
-  AND
-    (
-      (
-        NOT "$ENV{CONDA_PREFIX}" STREQUAL ""
-        AND dart_conda_compiler_prefix EQUAL 0
-      )
-      OR
-        (
-          NOT "$ENV{BUILD_PREFIX}" STREQUAL ""
-          AND dart_build_compiler_prefix EQUAL 0
-        )
-    )
-  AND CMAKE_OSX_DEPLOYMENT_TARGET
-  AND CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS "13.3"
-)
-  set_property(
-    SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/common/Logging.cpp"
-    APPEND
-    PROPERTY COMPILE_DEFINITIONS _LIBCPP_DISABLE_AVAILABILITY
-  )
-endif()
-
 # Boost gdb helper scripts embed inline asm that breaks GCC with our flags.
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
@@ -289,4 +251,8 @@ endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
-dart_format_add(${dart_core_headers} ${dart_core_sources})
+dart_format_add(
+  ${dart_core_headers}
+  ${dart_core_sources}
+  ${PROJECT_SOURCE_DIR}/scripts/check_logging_float.cpp
+)

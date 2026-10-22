@@ -34,6 +34,7 @@
 
 #include <dart/common/Logging.hpp>
 
+#include <atomic>
 #include <exception>
 #include <iostream>
 #include <streambuf>
@@ -43,6 +44,17 @@ namespace dart {
 namespace common {
 
 namespace {
+
+std::ostream& defaultOut()
+{
+  return std::cout;
+}
+std::ostream& defaultErr()
+{
+  return std::cerr;
+}
+std::atomic<ConsoleStream> sConsoleOut{&defaultOut};
+std::atomic<ConsoleStream> sConsoleErr{&defaultErr};
 
 thread_local bool insideConsoleEmit = false;
 
@@ -110,12 +122,18 @@ private:
 };
 
 //==============================================================================
-std::ostream& consoleStream(LogLevel level)
+struct ConsoleTarget
 {
-  auto& fallback = level >= LogLevel::Warn ? std::cerr : std::cout;
+  std::ostream& stream;
+  ConsoleBuffer* buffer;
+};
+
+ConsoleTarget consoleStream(LogLevel level)
+{
+  auto& fallback = level >= LogLevel::Warn ? consoleErr() : consoleOut();
   thread_local bool cleaned = false;
   if (insideConsoleEmit || cleaned)
-    return fallback;
+    return {fallback, nullptr};
   struct Stream
   {
     ConsoleBuffer buffer;
@@ -149,7 +167,7 @@ std::ostream& consoleStream(LogLevel level)
   thread_local Stream* streams[4]{};
   thread_local bool hasStreams = false;
   if (!hasStreams && !detail::hasCustomLogSink())
-    return fallback;
+    return {fallback, nullptr};
   for (auto* stream : streams) {
     if (stream) {
       try {
@@ -160,7 +178,7 @@ std::ostream& consoleStream(LogLevel level)
     }
   }
   if (!detail::hasCustomLogSink())
-    return fallback;
+    return {fallback, nullptr};
 
   const auto index = level == LogLevel::Debug   ? 0
                      : level == LogLevel::Warn  ? 2
@@ -173,24 +191,40 @@ std::ostream& consoleStream(LogLevel level)
       thread_local Cleanup cleanup{streams, cleaned};
       hasStreams = true;
     } catch (const std::exception&) {
-      return fallback;
+      return {fallback, nullptr};
     }
   }
   stream->stream.clear();
-  return stream->stream;
+  return {stream->stream, &stream->buffer};
 }
 
 } // namespace
 
+void setConsoleStreams(ConsoleStream out, ConsoleStream err)
+{
+  sConsoleOut = out ? out : &defaultOut;
+  sConsoleErr = err ? err : &defaultErr;
+}
+
+std::ostream& consoleOut()
+{
+  return sConsoleOut.load()();
+}
+std::ostream& consoleErr()
+{
+  return sConsoleErr.load()();
+}
+
 //==============================================================================
 std::ostream& colorMsg(const std::string& _msg, int _color)
 {
-  auto& stream = consoleStream(_color == 36 ? LogLevel::Debug : LogLevel::Info);
-  if (&stream == &std::cout)
+  auto target = consoleStream(_color == 36 ? LogLevel::Debug : LogLevel::Info);
+  auto& stream = target.stream;
+  if (!target.buffer)
     stream << "\033[1;" << _color << "m" << _msg << "\033[0m ";
   else {
     stream << _msg;
-    static_cast<ConsoleBuffer*>(stream.rdbuf())->markPrefix(_color);
+    target.buffer->markPrefix(_color);
     stream << ' ';
   }
   return stream;
@@ -204,14 +238,15 @@ std::ostream& colorErr(
     int _color)
 {
   const auto index = _file.find_last_of("/") + 1;
-  auto& stream = consoleStream(_color == 31 ? LogLevel::Error : LogLevel::Warn);
-  if (&stream == &std::cerr)
+  auto target = consoleStream(_color == 31 ? LogLevel::Error : LogLevel::Warn);
+  auto& stream = target.stream;
+  if (!target.buffer)
     stream << "\033[1;" << _color << "m";
   stream << _msg << " [" << _file.substr(index) << ":" << _line << "]";
-  if (&stream == &std::cerr)
+  if (!target.buffer)
     stream << "\033[0m";
   else
-    static_cast<ConsoleBuffer*>(stream.rdbuf())->markPrefix(_color);
+    target.buffer->markPrefix(_color);
   stream << ' ';
   return stream;
 }
