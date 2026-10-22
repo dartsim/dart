@@ -3286,3 +3286,315 @@ def test_bullet_transitive_built_precision(tmp_path, mode):
                     'message(FATAL_ERROR "Wrong installed transitive precision")\nendif()\n',
                 )
                 assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("scope", ["direct", "function"])
+@pytest.mark.parametrize("abi", ["same", "opposite", "mixed"])
+def test_bullet_c_only_installed_discovery(tmp_path, scope, abi):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", "STATIC")
+    other = build_bullet_abi_fixture(tmp_path / "other", "single", "STATIC")
+    stage = install_bullet_dart_fixture(tmp_path / "dart", prefix, "STATIC")
+    (stage / "include").mkdir()
+    with (tmp_path / "dart/source/CMakeLists.txt").open("a") as f:
+        f.write(
+            "set(DART_USE_SYSTEM_IMGUI ON)\nset(INCLUDE_INSTALL_DIR include)\nset(DART_MAJOR_VERSION 7)\n"
+            "include(CMakePackageConfigHelpers)\n"
+            f'configure_package_config_file("{ROOT.as_posix()}/cmake/DARTConfig.cmake.in" '
+            '"${CMAKE_BINARY_DIR}/DARTConfig.cmake" INSTALL_DESTINATION lib/cmake/DART '
+            "PATH_VARS INCLUDE_INSTALL_DIR)\n"
+            'install(FILES "${CMAKE_BINARY_DIR}/DARTConfig.cmake" DESTINATION lib/cmake/DART)\n'
+        )
+    cmake_fixture_run(
+        shutil.which("cmake"),
+        "-S",
+        tmp_path / "dart/source",
+        "-B",
+        tmp_path / "dart/build",
+    )
+    cmake_fixture_run(shutil.which("cmake"), "--install", tmp_path / "dart/build")
+    selected = other if abi == "opposite" else prefix
+    math = other if abi != "same" else prefix
+    source = tmp_path / "consumer"
+    source.mkdir()
+    (source / "main.c").write_text("int main(void) { return 0; }\n")
+    (source / "FindBullet.cmake").write_text(
+        "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
+        f'set(BULLET_INCLUDE_DIRS "{selected.as_posix()}/include")\n'
+    )
+    discovery = (
+        f'find_package(DART CONFIG {"REQUIRED" if abi == "same" else "QUIET"} PATHS "{stage.as_posix()}/lib/cmake/DART" NO_DEFAULT_PATH)\n'
+        + f'if({"NOT " if abi == "same" else ""}DART_FOUND)\n'
+        'message(FATAL_ERROR "Wrong C-only installed ABI acceptance")\nendif()\n'
+    )
+    if scope == "function":
+        discovery = "function(discover)\n" + discovery + "endfunction()\ndiscover()\n"
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Consumer LANGUAGES C)\n"
+        f'set(CMAKE_MODULE_PATH "{source.as_posix()}")\n'
+        + bullet_imports(selected, math_prefix=math)
+        + "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)\n"
+        "set(CMAKE_REQUIRED_FLAGS caller-flags)\n"
+        "set(CMAKE_REQUIRED_LIBRARIES caller-library)\n"
+        'set(before_c "${CMAKE_C_COMPILER}")\n'
+        'set(before_cxx "${CMAKE_CXX_COMPILER}")\n'
+        'set(before_cxx_loaded "${CMAKE_CXX_COMPILER_LOADED}")\n'
+        "get_property(before_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        + discovery
+        + "get_property(after_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        'if(NOT after_languages STREQUAL before_languages OR NOT after_languages STREQUAL "C"\n'
+        ' OR NOT CMAKE_C_COMPILER STREQUAL before_c OR NOT "${CMAKE_CXX_COMPILER}" STREQUAL before_cxx\n'
+        ' OR NOT "${CMAKE_CXX_COMPILER_LOADED}" STREQUAL before_cxx_loaded\n'
+        ' OR NOT CMAKE_TRY_COMPILE_TARGET_TYPE STREQUAL "STATIC_LIBRARY"\n'
+        ' OR NOT CMAKE_REQUIRED_FLAGS STREQUAL "caller-flags"\n'
+        ' OR NOT CMAKE_REQUIRED_LIBRARIES STREQUAL "caller-library")\n'
+        'message(FATAL_ERROR "C-only discovery leaked caller state")\nendif()\n'
+        "add_executable(consumer main.c)\n",
+    )
+    cmake_fixture_run(
+        shutil.which("cmake"), "-G", "Ninja", "-S", source, "-B", source / "build"
+    )
+    cmake_fixture_run(shutil.which("cmake"), "--build", source / "build")
+    cmake_fixture_run(
+        source / ("build/consumer.exe" if os.name == "nt" else "build/consumer")
+    )
+
+
+@pytest.mark.parametrize("configuration", ["Release", "Debug", "", "multi"])
+@pytest.mark.parametrize("mapping", ["direct", "different", "empty", "mixed"])
+def test_bullet_c_only_configuration_snapshot(tmp_path, configuration, mapping):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", "STATIC")
+    wrong = build_bullet_abi_fixture(tmp_path / "wrong", "single", "STATIC")
+    bullet_module(tmp_path)
+    graph = bullet_imports(prefix)
+    wrong_collision = (
+        wrong / "lib" / (wrong / "link-files.txt").read_text().splitlines()[0]
+    ).as_posix()
+    if mapping != "direct":
+        graph += (
+            'set_target_properties(collision PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG" '
+            'IMPORTED_LOCATION_RELEASE "${collision_file}" '
+            f'IMPORTED_LOCATION_DEBUG "{wrong_collision}")\n'
+            "set_target_properties(math PROPERTIES IMPORTED_CONFIGURATIONS DEBUG "
+            'IMPORTED_LOCATION_DEBUG "${math_file}")\n'
+        )
+        for config in ("RELEASE", "DEBUG", ""):
+            collision_mapping = "" if mapping == "empty" else "RELEASE"
+            if mapping == "mixed" and config == "DEBUG":
+                collision_mapping = "DEBUG"
+            graph += (
+                f'set_property(TARGET collision PROPERTY MAP_IMPORTED_CONFIG_{config} "{collision_mapping}")\n'
+                f"set_property(TARGET math PROPERTY MAP_IMPORTED_CONFIG_{config} DEBUG)\n"
+            )
+    (tmp_path / "main.c").write_text("int main(void) { return 0; }\n")
+    args = (
+        ("-G", "Ninja Multi-Config", "-DCMAKE_CONFIGURATION_TYPES=Release;Debug")
+        if configuration == "multi"
+        else (f"-DCMAKE_BUILD_TYPE={configuration}",)
+    )
+    accepted = mapping != "mixed" or configuration not in ("Debug", "multi")
+    result = configure(
+        tmp_path,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C)\n"
+        + graph
+        + "set(CMAKE_TRY_COMPILE_CONFIGURATION caller-config)\n"
+        "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        f'if({"NOT " if accepted else ""}BULLET_FOUND OR NOT CMAKE_TRY_COMPILE_CONFIGURATION STREQUAL "caller-config" OR CMAKE_CXX_COMPILER_LOADED)\n'
+        'message(FATAL_ERROR "C-only configuration snapshot failed")\nendif()\n'
+        f'add_executable(consumer "{(tmp_path / "main.c").as_posix()}")\n',
+        cmake_args=args,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(
+        shutil.which("cmake"),
+        "--build",
+        tmp_path / "build",
+        "--config",
+        "Release" if configuration == "multi" else configuration,
+    )
+    children = list((tmp_path / "build/CMakeFiles").glob("DARTBulletABI-*"))
+    assert len(children) == (2 if configuration == "multi" else 1)
+    for child in children:
+        assert (
+            "project(DARTBulletABI LANGUAGES CXX)"
+            in (child / "CMakeLists.txt").read_text()
+        )
+        assert (child / "single.log").is_file() and (child / "double.log").is_file()
+
+
+@pytest.mark.parametrize("identity", ["imported", "built", "missing", "dynamic"])
+def test_bullet_c_only_transitive_usage_and_identity(tmp_path, identity):
+    fixture = tmp_path / "bullet with spaces"
+    prefix = build_bullet_abi_fixture(fixture, "double", "STATIC")
+    source = fixture / "source"
+    collision = source / "collision.cpp"
+    collision.write_text(
+        'extern "C" int dart_first();\n'
+        + collision.read_text().replace("{\n", "{ dart_first();\n", 1)
+    )
+    (source / "first.cpp").write_text(
+        'extern "C" int dart_second();\nextern "C" int dart_first() { return dart_second(); }\n'
+    )
+    (source / "second.cpp").write_text(
+        'extern "C" int dart_last();\nextern "C" int dart_second() { return dart_last(); }\n'
+    )
+    (source / "last.cpp").write_text(
+        '#ifdef __linux__\nextern "C" int dart_link_required;\n'
+        'extern "C" int dart_last() { return dart_link_required; }\n'
+        '#else\nextern "C" int dart_last() { return 0; }\n#endif\n'
+    )
+    with (source / "CMakeLists.txt").open("a") as f:
+        f.write(
+            "add_library(DARTProbeAuxA STATIC first.cpp last.cpp)\nadd_library(DARTProbeAuxB STATIC second.cpp)\ninstall(TARGETS DARTProbeAuxA DARTProbeAuxB DESTINATION lib)\n"
+        )
+    cmake_fixture_run(shutil.which("cmake"), "--build", fixture / "build")
+    cmake_fixture_run(shutil.which("cmake"), "--install", fixture / "build")
+    header = prefix / "include/btBulletCollisionCommon.h"
+    header.write_text(
+        header.read_text()
+        + (
+            "#ifndef REQUIRED_CHILD_DEFINITION\n#error missing transitive compile definition\n#endif\n"
+            "#if IDENTITY_PRESENT != EXPECTED_IDENTITY\n#error changed target identity\n#endif\n"
+            "#ifdef WRONG_NORMAL_MAPPING\n#error changed normal wrapper mapping\n#endif\n"
+        )
+    )
+    bullet_module(tmp_path)
+    (tmp_path / "main.c").write_text("int main(void) { return 0; }\n")
+    (tmp_path / "main.cpp").write_text(BULLET_CONSUMER)
+    graph = (
+        bullet_imports(prefix)
+        .replace(
+            "add_library(Bullet INTERFACE IMPORTED)",
+            "add_library(actual_bullet INTERFACE)",
+        )
+        .replace(
+            "target_link_libraries(Bullet ", "target_link_libraries(actual_bullet "
+        )
+        .replace(
+            "target_include_directories(Bullet ",
+            "target_include_directories(actual_bullet ",
+        )
+    )
+    graph += "add_library(Bullet ALIAS actual_bullet)\nadd_library(usage INTERFACE IMPORTED)\n"
+    if identity in ("imported", "dynamic"):
+        graph += "add_library(identity_marker INTERFACE IMPORTED)\n"
+    elif identity == "built":
+        graph += f'add_library(identity_marker STATIC "{(tmp_path / "main.c").as_posix()}")\n'
+    predicate = "$<TARGET_EXISTS:identity_marker>"
+    if identity == "dynamic":
+        predicate = "$<TARGET_EXISTS:$<IF:$<BOOL:1>,identity_marker,missing_marker>>"
+    option_predicate = f"$<NOT:{predicate}>" if identity == "missing" else predicate
+    graph += (
+        'target_link_libraries(actual_bullet INTERFACE "$<TARGET_NAME_IF_EXISTS:usage>" "$<TARGET_NAME_IF_EXISTS:missing_usage>")\n'
+        "target_link_libraries(usage INTERFACE DARTProbeAuxA DARTProbeAuxB DARTProbeAuxA)\n"
+        f'target_link_directories(usage INTERFACE "{prefix.as_posix()}/lib")\n'
+        f'target_compile_definitions(usage INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:REQUIRED_CHILD_DEFINITION>" "IDENTITY_PRESENT={predicate}" EXPECTED_IDENTITY={0 if identity == "missing" else 1})\n'
+        f'target_link_options(usage INTERFACE "$<$<AND:$<PLATFORM_ID:Linux>,{option_predicate}>:LINKER:--defsym,dart_link_required=0>")\n'
+        "set_property(TARGET actual_bullet PROPERTY MAP_IMPORTED_CONFIG_RELEASE Debug)\n"
+        'target_compile_definitions(actual_bullet INTERFACE "$<$<CONFIG:Debug>:WRONG_NORMAL_MAPPING>")\n'
+    )
+    # Ordinary CMake consumers establish the graph's actual usage and link order.
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(
+        control,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C CXX)\n"
+        + graph
+        + f'add_executable(consumer "{(tmp_path / "main.cpp").as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n",
+        cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+    result = configure(
+        tmp_path,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C)\n"
+        + graph
+        + "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        + f'if({"" if identity == "dynamic" else "NOT "}BULLET_FOUND OR CMAKE_CXX_COMPILER_LOADED)\n'
+        'message(FATAL_ERROR "Wrong C-only usage acceptance")\nendif()\n',
+        cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    if identity == "dynamic":
+        assert "cannot snapshot target context" in result.stdout
+    else:
+        child = next((tmp_path / "build/CMakeFiles").glob("DARTBulletABI-*"))
+        snapshot = (child / "CMakeLists.txt").read_text()
+        assert "DARTProbeAuxA;DARTProbeAuxB;DARTProbeAuxA" in snapshot
+        assert 'add_library("actual_bullet" INTERFACE)' in snapshot
+        assert 'add_library("Bullet" ALIAS "actual_bullet")' in snapshot
+
+
+@pytest.mark.parametrize("selected_compiler", [False, True])
+def test_bullet_c_only_toolchain_and_stale_probe(tmp_path, selected_compiler):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", "STATIC")
+    bullet_module(tmp_path)
+    header = prefix / "include/btBulletCollisionCommon.h"
+    header.write_text(
+        header.read_text()
+        + "#if !defined(BULLET_TOOLCHAIN_FLAG) || !defined(BULLET_CONFIG_FLAG)\n#error lost toolchain flags\n#endif\n"
+    )
+    token = 'alpha;${DO_NOT_EXPAND};]=];"quoted";\\slash;\nlast'
+    digest = hashlib.sha256(token.encode()).hexdigest()
+    toolchain = tmp_path / "tool chain.cmake"
+    toolchain.write_text(
+        "set(CMAKE_TRY_COMPILE_PLATFORM_VARIABLES BULLET_PLATFORM_TOKEN)\n"
+        'if(CMAKE_PROJECT_NAME STREQUAL "DARTBulletABI")\n'
+        "cmake_policy(GET CMP0141 debug_policy)\n"
+        'if(NOT debug_policy STREQUAL "OLD")\nmessage(FATAL_ERROR "Changed unset parent debug policy")\nendif()\nendif()\n'
+        'string(SHA256 actual "${BULLET_PLATFORM_TOKEN}")\n'
+        f'if(NOT actual STREQUAL "{digest}")\n'
+        'message(FATAL_ERROR "Lost literal toolchain value")\nendif()\n'
+    )
+    compiler = re.search(
+        r"^CMAKE_CXX_COMPILER:FILEPATH=(.+)$",
+        (tmp_path / "bullet/build/CMakeCache.txt").read_text(),
+        re.MULTILINE,
+    ).group(1)
+    compiler_args = (
+        (
+            f"-DCMAKE_CXX_COMPILER={compiler}",
+            "-DCMAKE_CXX_COMPILER_TARGET=",
+            "-DCMAKE_SYSROOT=",
+        )
+        if selected_compiler
+        else ()
+    )
+    result = configure(
+        tmp_path,
+        "cmake_policy(VERSION 3.22)\n"
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C)\n"
+        + bullet_imports(prefix)
+        + "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        'if(NOT BULLET_FOUND OR CMAKE_CROSSCOMPILING)\nmessage(FATAL_ERROR "Lost native toolchain context")\nendif()\n'
+        f'set(CMAKE_CXX_COMPILER "{(tmp_path / "missing-cxx").as_posix()}")\n'
+        "include(DARTFindBullet)\n"
+        'if(BULLET_FOUND OR CMAKE_CXX_COMPILER_LOADED)\nmessage(FATAL_ERROR "Reused stale ABI or changed caller language")\nendif()\n'
+        "set(CMAKE_CXX_COMPILER CMAKE_CXX_COMPILER-NOTFOUND)\ninclude(DARTFindBullet)\n"
+        'if(BULLET_FOUND)\nmessage(FATAL_ERROR "Replaced an explicitly unavailable compiler")\nendif()\n',
+        cmake_args=(
+            f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
+            f"-DBULLET_PLATFORM_TOKEN={token}",
+            "-DCMAKE_BUILD_TYPE=Debug",
+            "-DCMAKE_CXX_FLAGS=-DBULLET_TOOLCHAIN_FLAG",
+            "-DCMAKE_CXX_FLAGS_DEBUG=-DBULLET_CONFIG_FLAG",
+            *compiler_args,
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    children = list((tmp_path / "build/CMakeFiles").glob("DARTBulletABI-*"))
+    assert len(children) == 2
+    assert sum((child / "double.log").exists() for child in children) == 1
+    for child in children:
+        systems = list((child / "build/CMakeFiles").glob("*/CMakeSystem.cmake"))
+        assert systems and 'set(CMAKE_CROSSCOMPILING "FALSE")' in systems[0].read_text()
+    success = next(child for child in children if (child / "double.log").exists())
+    cache = (success / "build/CMakeCache.txt").read_text()
+    assert (
+        f"CMAKE_CXX_COMPILER:FILEPATH={compiler}" in cache
+        or f"CMAKE_CXX_COMPILER:STRING={compiler}" in cache
+    )
+    if selected_compiler:
+        assert "CMAKE_SYSROOT:STRING=\n" in cache
+        assert "CMAKE_CXX_COMPILER_TARGET:STRING=\n" in cache

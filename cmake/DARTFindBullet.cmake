@@ -785,7 +785,10 @@ function(_dart_bullet_collect_graph config all_configs)
     return()
   endif()
   string(TOUPPER "${config}" _dart_bullet_build_type)
-  set(_dart_bullet_queue Bullet)
+  set(_dart_bullet_queue ${ARGN})
+  if(NOT _dart_bullet_queue)
+    set(_dart_bullet_queue Bullet)
+  endif()
   set(_dart_bullet_seen)
   set(_dart_bullet_files)
   set(_dart_bullet_pc_files)
@@ -875,8 +878,10 @@ function(_dart_bullet_collect_graph config all_configs)
       endif()
     endif()
   endwhile()
+  set(_dart_bullet_targets "${_dart_bullet_seen}")
   foreach(
     output
+    targets
     files
     pc_files
     includes
@@ -964,6 +969,451 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
   unset(_dart_bullet_expected)
 endif()
 
+# Quote a literal CMake argument without expanding caller variables or list items.
+function(_dart_bullet_literal out value)
+  string(REPLACE "\\" "\\\\" value "${value}")
+  string(REPLACE "\"" "\\\"" value "${value}")
+  string(REPLACE "$" "\\$" value "${value}")
+  string(REPLACE "\r" "\\r" value "${value}")
+  string(REPLACE "\n" "\\n" value "${value}")
+  set(${out} "\"${value}\"" PARENT_SCOPE)
+endfunction()
+
+# Identity conditions must observe the original scope, including inactive targets.
+function(_dart_bullet_snapshot_value out targets supported value)
+  set(extra)
+  foreach(expression TARGET_EXISTS TARGET_NAME_IF_EXISTS)
+    string(
+      REGEX MATCHALL
+      "\\$<${expression}:[A-Za-z0-9_.:+-]+>"
+      matches
+      "${value}"
+    )
+    foreach(match IN LISTS matches)
+      string(REGEX REPLACE "^\\$<${expression}:(.*)>$" "\\1" name "${match}")
+      set(replacement "")
+      if(expression STREQUAL "TARGET_EXISTS")
+        set(replacement 0)
+        if(TARGET "${name}")
+          set(replacement 1)
+        endif()
+      elseif(TARGET "${name}")
+        set(replacement "${name}")
+        list(APPEND extra "${name}")
+      endif()
+      string(REPLACE "${match}" "${replacement}" value "${value}")
+    endforeach()
+  endforeach()
+  set(valid TRUE)
+  # shortcut: context-dependent target/property expressions need a fuller snapshot;
+  # reject them until a concrete supported consumer requires that metadata.
+  if(value MATCHES "\\$<(TARGET_|GENEX_EVAL:)|::@")
+    set(valid FALSE)
+  endif()
+  set(${out} "${value}" PARENT_SCOPE)
+  set(${targets} "${extra}" PARENT_SCOPE)
+  set(${supported} "${valid}" PARENT_SCOPE)
+endfunction()
+
+# C-only consumers need a synchronous link check without enabling CXX in their
+# scope. Ordinary child executables retain target identities that try_compile's
+# further target export can omit. The child never runs a target program.
+function(_dart_bullet_probe_child single_out double_out config source)
+  set(${single_out} FALSE PARENT_SCOPE)
+  set(${double_out} FALSE PARENT_SCOPE)
+  if(
+    DEFINED CMAKE_CXX_COMPILER
+    AND CMAKE_CXX_COMPILER MATCHES "(^|-)NOTFOUND($|;)"
+  )
+    message(
+      STATUS
+      "C-only Bullet ABI validation has no usable selected CXX compiler"
+    )
+    return()
+  endif()
+  if(_dart_bullet_has_build_targets)
+    message(
+      STATUS
+      "C-only Bullet ABI validation cannot snapshot project-built link dependencies"
+    )
+    return()
+  endif()
+  get_cmake_property(variables VARIABLES)
+  foreach(variable IN LISTS variables)
+    if(
+      variable MATCHES "^CMAKE_PROJECT_.*INCLUDE"
+      AND NOT "${${variable}}" STREQUAL ""
+    )
+      message(
+        STATUS
+        "C-only Bullet ABI validation cannot replay project include hooks"
+      )
+      return()
+    endif()
+  endforeach()
+
+  set(queue ${_dart_bullet_targets})
+  set(seen)
+  set(declarations "")
+  set(properties "")
+  set(aliases "")
+  string(TOUPPER "${config}" upper_config)
+  while(queue)
+    list(POP_FRONT queue target)
+    if(target IN_LIST seen)
+      continue()
+    endif()
+    list(APPEND seen "${target}")
+    _dart_bullet_literal(quoted_target "${target}")
+    get_target_property(alias "${target}" ALIASED_TARGET)
+    if(alias)
+      _dart_bullet_literal(quoted_alias "${alias}")
+      string(
+        APPEND aliases
+        "add_library(${quoted_target} ALIAS ${quoted_alias})\n"
+      )
+      list(APPEND queue "${alias}")
+      continue()
+    endif()
+    get_target_property(type "${target}" TYPE)
+    get_target_property(imported "${target}" IMPORTED)
+    if(
+      NOT type MATCHES "^(INTERFACE|STATIC|SHARED|UNKNOWN)_LIBRARY$"
+      OR (NOT imported AND NOT type STREQUAL "INTERFACE_LIBRARY")
+    )
+      message(
+        STATUS
+        "C-only Bullet ABI validation cannot snapshot target '${target}' of type '${type}'"
+      )
+      return()
+    endif()
+    string(REPLACE "_LIBRARY" "" type "${type}")
+    set(kind "${type}")
+    if(imported)
+      string(APPEND kind " IMPORTED GLOBAL")
+    endif()
+    string(APPEND declarations "add_library(${quoted_target} ${kind})\n")
+    foreach(
+      property
+      INTERFACE_SOURCES
+      INTERFACE_PRECOMPILE_HEADERS
+      INTERFACE_LINK_LIBRARIES_DIRECT
+      INTERFACE_LINK_LIBRARIES_DIRECT_EXCLUDE
+      COMPATIBLE_INTERFACE_BOOL
+      COMPATIBLE_INTERFACE_STRING
+      COMPATIBLE_INTERFACE_NUMBER_MIN
+      COMPATIBLE_INTERFACE_NUMBER_MAX
+      FRAMEWORK
+      MACOSX_BUNDLE
+    )
+      get_target_property(value "${target}" "${property}")
+      if(value)
+        message(
+          STATUS
+          "C-only Bullet ABI validation cannot snapshot '${target}' property '${property}'"
+        )
+        return()
+      endif()
+    endforeach()
+    set(
+      names
+      INTERFACE_LINK_LIBRARIES
+      INTERFACE_LINK_OPTIONS
+      INTERFACE_LINK_DIRECTORIES
+      INTERFACE_LINK_DEPENDS
+      INTERFACE_INCLUDE_DIRECTORIES
+      INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+      INTERFACE_COMPILE_DEFINITIONS
+      INTERFACE_COMPILE_OPTIONS
+      INTERFACE_COMPILE_FEATURES
+      INTERFACE_POSITION_INDEPENDENT_CODE
+    )
+    if(imported)
+      get_target_property(configs "${target}" IMPORTED_CONFIGURATIONS)
+      if(NOT configs)
+        set(configs)
+      endif()
+      get_target_property(
+        mapped
+        "${target}"
+        MAP_IMPORTED_CONFIG_${upper_config}
+      )
+      if(NOT mapped)
+        set(mapped)
+      endif()
+      list(APPEND configs "${upper_config}" ${mapped})
+      list(REMOVE_DUPLICATES configs)
+      list(
+        APPEND names
+        IMPORTED_CONFIGURATIONS
+        MAP_IMPORTED_CONFIG_${upper_config}
+      )
+      foreach(
+        property
+        IMPORTED_LOCATION
+        IMPORTED_IMPLIB
+        IMPORTED_SONAME
+        IMPORTED_NO_SONAME
+        IMPORTED_LINK_INTERFACE_LANGUAGES
+        IMPORTED_LINK_INTERFACE_LIBRARIES
+        IMPORTED_LINK_DEPENDENT_LIBRARIES
+        IMPORTED_LINK_INTERFACE_MULTIPLICITY
+      )
+        list(APPEND names "${property}")
+        foreach(import_config IN LISTS configs)
+          if(NOT import_config STREQUAL "")
+            string(TOUPPER "${import_config}" import_config)
+            list(APPEND names "${property}_${import_config}")
+          endif()
+        endforeach()
+      endforeach()
+    endif()
+    foreach(property IN LISTS names)
+      get_property(present TARGET "${target}" PROPERTY "${property}" SET)
+      if(NOT present)
+        continue()
+      endif()
+      get_target_property(value "${target}" "${property}")
+      if(property MATCHES "^IMPORTED_LINK_DEPENDENT_LIBRARIES" AND value)
+        message(
+          STATUS
+          "C-only Bullet ABI validation cannot snapshot hidden dependent libraries"
+        )
+        return()
+      endif()
+      _dart_bullet_snapshot_value(value extra supported "${value}")
+      if(NOT supported)
+        message(
+          STATUS
+          "C-only Bullet ABI validation cannot snapshot target context in '${target}' property '${property}'"
+        )
+        return()
+      endif()
+      foreach(extra_target IN LISTS extra)
+        _dart_bullet_collect_graph("${config}" FALSE "${extra_target}")
+        if(_dart_bullet_unknown OR _dart_bullet_has_build_targets)
+          message(
+            STATUS
+            "C-only Bullet ABI validation cannot snapshot identity target '${extra_target}'"
+          )
+          return()
+        endif()
+        list(APPEND queue ${_dart_bullet_targets})
+      endforeach()
+      _dart_bullet_literal(quoted_property "${property}")
+      _dart_bullet_literal(quoted_value "${value}")
+      string(
+        APPEND properties
+        "set_property(TARGET ${quoted_target} PROPERTY ${quoted_property} ${quoted_value})\n"
+      )
+    endforeach()
+  endwhile()
+
+  set(
+    inputs
+    CMAKE_TOOLCHAIN_FILE
+    CMAKE_MODULE_PATH
+    CMAKE_PREFIX_PATH
+    CMAKE_PROGRAM_PATH
+    CMAKE_GENERATOR_INSTANCE
+    CMAKE_CXX_COMPILER
+    CMAKE_CXX_COMPILER_ARG1
+    CMAKE_CXX_COMPILER_TARGET
+    CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN
+    CMAKE_CXX_COMPILER_LAUNCHER
+    CMAKE_CXX_LINKER_LAUNCHER
+    CMAKE_LINKER
+    CMAKE_AR
+    CMAKE_RANLIB
+    CMAKE_CXX_COMPILER_AR
+    CMAKE_CXX_COMPILER_RANLIB
+    CMAKE_SYSROOT
+    CMAKE_SYSROOT_COMPILE
+    CMAKE_SYSROOT_LINK
+    CMAKE_FIND_ROOT_PATH
+    CMAKE_FIND_ROOT_PATH_MODE_PROGRAM
+    CMAKE_FIND_ROOT_PATH_MODE_LIBRARY
+    CMAKE_FIND_ROOT_PATH_MODE_INCLUDE
+    CMAKE_FIND_ROOT_PATH_MODE_PACKAGE
+    CMAKE_OSX_ARCHITECTURES
+    CMAKE_OSX_SYSROOT
+    CMAKE_OSX_DEPLOYMENT_TARGET
+    CMAKE_APPLE_SILICON_PROCESSOR
+    CMAKE_ANDROID_NDK
+    CMAKE_ANDROID_STANDALONE_TOOLCHAIN
+    CMAKE_ANDROID_ARCH_ABI
+    CMAKE_ANDROID_ARM_MODE
+    CMAKE_ANDROID_ARM_NEON
+    CMAKE_ANDROID_STL_TYPE
+    CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_INIT
+    CMAKE_EXE_LINKER_FLAGS
+    CMAKE_EXE_LINKER_FLAGS_INIT
+    CMAKE_CXX_STANDARD
+    CMAKE_CXX_STANDARD_REQUIRED
+    CMAKE_CXX_EXTENSIONS
+    CMAKE_CXX_SCAN_FOR_MODULES
+    CMAKE_POSITION_INDEPENDENT_CODE
+    CMAKE_MSVC_RUNTIME_LIBRARY
+    CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
+    CMAKE_ENABLE_EXPORTS
+    CMAKE_LINK_SEARCH_START_STATIC
+    CMAKE_LINK_SEARCH_END_STATIC
+    CMAKE_TRY_COMPILE_PLATFORM_VARIABLES
+    ${CMAKE_TRY_COMPILE_PLATFORM_VARIABLES}
+  )
+  if(NOT CMAKE_GENERATOR MATCHES "^(Xcode$|Green Hills MULTI$|Visual Studio)")
+    list(APPEND inputs CMAKE_MAKE_PROGRAM)
+  endif()
+  if(CMAKE_CROSSCOMPILING)
+    list(
+      APPEND inputs
+      CMAKE_SYSTEM_NAME
+      CMAKE_SYSTEM_VERSION
+      CMAKE_SYSTEM_PROCESSOR
+    )
+  endif()
+  foreach(prefix CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS)
+    list(APPEND inputs ${prefix}_${upper_config} ${prefix}_${upper_config}_INIT)
+  endforeach()
+  list(REMOVE_DUPLICATES inputs)
+  set(project "cmake_minimum_required(VERSION 3.28)\n")
+  foreach(policy CMP0091 CMP0141 CMP0156 CMP0179)
+    if(POLICY ${policy})
+      cmake_policy(GET ${policy} value)
+      # An unset parent policy uses OLD behavior, even when the child's minimum
+      # CMake version would otherwise select NEW behavior.
+      if(NOT value)
+        set(value OLD)
+      endif()
+      string(APPEND project "cmake_policy(SET ${policy} ${value})\n")
+    endif()
+  endforeach()
+  foreach(variable IN LISTS inputs)
+    if(NOT variable MATCHES "^[A-Za-z_][A-Za-z0-9_]*$")
+      message(
+        STATUS
+        "C-only Bullet ABI validation cannot snapshot platform variable '${variable}'"
+      )
+      return()
+    endif()
+    if(DEFINED ${variable})
+      set(value "${${variable}}")
+      if(
+        variable STREQUAL "CMAKE_TOOLCHAIN_FILE"
+        AND value
+        AND NOT IS_ABSOLUTE "${value}"
+      )
+        if(EXISTS "${CMAKE_BINARY_DIR}/${value}")
+          get_filename_component(
+            value
+            "${value}"
+            ABSOLUTE
+            BASE_DIR "${CMAKE_BINARY_DIR}"
+          )
+        else()
+          get_filename_component(
+            value
+            "${value}"
+            ABSOLUTE
+            BASE_DIR "${CMAKE_SOURCE_DIR}"
+          )
+        endif()
+      endif()
+      _dart_bullet_literal(value "${value}")
+      string(
+        APPEND project
+        "set(${variable} ${value} CACHE STRING \"Bullet ABI probe input\" FORCE)\n"
+      )
+    endif()
+  endforeach()
+  # Use ordinary CMake discovery, with the selected C compiler's directory as a
+  # program-search hint; do not invent a CXX compiler from its executable name.
+  if(NOT DEFINED CMAKE_CXX_COMPILER)
+    get_filename_component(compiler_directory "${CMAKE_C_COMPILER}" DIRECTORY)
+    _dart_bullet_literal(value "${compiler_directory};${CMAKE_PROGRAM_PATH}")
+    string(
+      APPEND project
+      "set(CMAKE_PROGRAM_PATH ${value} CACHE STRING \"Bullet compiler search\" FORCE)\n"
+    )
+  endif()
+  _dart_bullet_literal(value "${config}")
+  get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(multi_config)
+    string(
+      APPEND project
+      "set(CMAKE_CONFIGURATION_TYPES ${value} CACHE STRING \"Bullet probe configuration\" FORCE)\n"
+    )
+  else()
+    string(
+      APPEND project
+      "set(CMAKE_BUILD_TYPE ${value} CACHE STRING \"Bullet probe configuration\" FORCE)\n"
+    )
+  endif()
+  string(
+    APPEND project
+    "project(DARTBulletABI LANGUAGES CXX)\n${declarations}${properties}${aliases}"
+  )
+  _dart_bullet_literal(includes "${CMAKE_REQUIRED_INCLUDES}")
+  foreach(precision single double)
+    string(
+      APPEND project
+      "add_executable(_dart_bullet_${precision} EXCLUDE_FROM_ALL ${precision}.cpp)\ntarget_include_directories(_dart_bullet_${precision} PRIVATE ${includes})\ntarget_compile_options(_dart_bullet_${precision} PRIVATE -w)\ntarget_link_libraries(_dart_bullet_${precision} PRIVATE Bullet)\n"
+    )
+  endforeach()
+  string(RANDOM LENGTH 16 ALPHABET 0123456789abcdef nonce)
+  set(directory "${CMAKE_BINARY_DIR}/CMakeFiles/DARTBulletABI-${nonce}")
+  while(EXISTS "${directory}")
+    string(RANDOM LENGTH 16 ALPHABET 0123456789abcdef nonce)
+    set(directory "${CMAKE_BINARY_DIR}/CMakeFiles/DARTBulletABI-${nonce}")
+  endwhile()
+  file(MAKE_DIRECTORY "${directory}")
+  file(WRITE "${directory}/CMakeLists.txt" "${project}")
+  foreach(precision single double)
+    set(definition "#undef BT_USE_DOUBLE_PRECISION\n")
+    if(precision STREQUAL "double")
+      string(APPEND definition "#define BT_USE_DOUBLE_PRECISION\n")
+    endif()
+    file(WRITE "${directory}/${precision}.cpp" "${definition}${source}")
+  endforeach()
+  execute_process(
+    COMMAND
+      "${CMAKE_COMMAND}" -S "${directory}" -B "${directory}/build" -G
+      "${CMAKE_GENERATOR}" -A "${CMAKE_GENERATOR_PLATFORM}" -T
+      "${CMAKE_GENERATOR_TOOLSET}"
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE output
+    ERROR_VARIABLE error
+  )
+  file(WRITE "${directory}/configure.log" "${output}\n${error}")
+  if(NOT result STREQUAL "0")
+    message(
+      STATUS
+      "Bullet isolated CXX ABI probe could not configure; see ${directory}/configure.log"
+    )
+    return()
+  endif()
+  foreach(precision single double)
+    execute_process(
+      COMMAND
+        "${CMAKE_COMMAND}" --build "${directory}/build" --target
+        "_dart_bullet_${precision}" --config "${config}"
+      RESULT_VARIABLE result
+      OUTPUT_VARIABLE output
+      ERROR_VARIABLE error
+    )
+    file(WRITE "${directory}/${precision}.log" "${output}\n${error}")
+    if(result STREQUAL "0")
+      set(${precision}_out_value TRUE)
+    else()
+      set(${precision}_out_value FALSE)
+    endif()
+  endforeach()
+  set(${single_out} "${single_out_value}" PARENT_SCOPE)
+  set(${double_out} "${double_out_value}" PARENT_SCOPE)
+endfunction()
+
 # Verify scalar ABI independently of library names. Both Collision and LinearMath
 # expose scalar-dependent symbols; requiring both detects mixed unsuffixed pairs.
 function(_dart_bullet_probe_precision out)
@@ -999,7 +1449,7 @@ function(_dart_bullet_probe_precision out)
     if(_dart_bullet_built_precisions AND NOT imported_variant)
       continue()
     endif()
-    if(NOT CMAKE_CXX_COMPILER_LOADED)
+    if(NOT CMAKE_CXX_COMPILER_LOADED AND NOT CMAKE_C_COMPILER_LOADED)
       message(
         STATUS
         "Bullet scalar ABI validation requires an enabled CXX language"
@@ -1056,21 +1506,31 @@ function(_dart_bullet_probe_precision out)
         return()
       endif()
     endif()
-    foreach(precision single double)
-      set(definition "#undef BT_USE_DOUBLE_PRECISION")
-      if(precision STREQUAL "double")
-        string(APPEND definition "\n#define BT_USE_DOUBLE_PRECISION")
-      endif()
-      unset(_dart_bullet_probe_${precision} CACHE)
-      check_cxx_source_compiles(
-        "${definition}
-        #include <btBulletCollisionCommon.h>
+    if(NOT CMAKE_CXX_COMPILER_LOADED)
+      _dart_bullet_probe_child(_dart_bullet_probe_single _dart_bullet_probe_double
+        "${CMAKE_TRY_COMPILE_CONFIGURATION}"
+        "#include <btBulletCollisionCommon.h>
         #include <LinearMath/btConvexHullComputer.h>
         int main() { ${collision_probe} ${math_probe} return 0; }
         "
-        _dart_bullet_probe_${precision}
       )
-    endforeach()
+    else()
+      foreach(precision single double)
+        set(definition "#undef BT_USE_DOUBLE_PRECISION")
+        if(precision STREQUAL "double")
+          string(APPEND definition "\n#define BT_USE_DOUBLE_PRECISION")
+        endif()
+        unset(_dart_bullet_probe_${precision} CACHE)
+        check_cxx_source_compiles(
+          "${definition}
+          #include <btBulletCollisionCommon.h>
+          #include <LinearMath/btConvexHullComputer.h>
+          int main() { ${collision_probe} ${math_probe} return 0; }
+          "
+          _dart_bullet_probe_${precision}
+        )
+      endforeach()
+    endif()
     if(_dart_bullet_probe_single AND NOT _dart_bullet_probe_double)
       list(APPEND observed single)
     elseif(_dart_bullet_probe_double AND NOT _dart_bullet_probe_single)
