@@ -750,6 +750,160 @@ function(_dart_bullet_built_precision out unknown target config)
   set(${unknown} "${unverified}" PARENT_SCOPE)
 endfunction()
 
+# The bounded discovery walk visits targets once. Static link cycles instead
+# need complete component scans in dart.pc, just as CMake emits for a consumer.
+# Keep raw link tokens in encounter order and move only the component's archives
+# together, ahead of its outgoing dependencies.
+function(_dart_bullet_pc_graph out config order)
+  set(targets)
+  foreach(item IN LISTS order)
+    if(TARGET "${item}")
+      get_target_property(alias "${item}" ALIASED_TARGET)
+      if(alias)
+        set(item "${alias}")
+      endif()
+      if(NOT item IN_LIST targets)
+        list(APPEND targets "${item}")
+      endif()
+    endif()
+  endforeach()
+  foreach(target IN LISTS targets)
+    _dart_bullet_link_interface(links "${target}" "${config}")
+    _dart_bullet_evaluate_items(links unresolved "${config}" "${target}" TRUE ${links})
+    set(edges_${target})
+    foreach(item IN LISTS links)
+      if(TARGET "${item}")
+        get_target_property(alias "${item}" ALIASED_TARGET)
+        if(alias)
+          set(item "${alias}")
+        endif()
+        list(APPEND edges_${target} "${item}")
+      endif()
+    endforeach()
+  endforeach()
+  # Mutual reachability identifies each strongly connected component. Bullet
+  # graphs are small; this iterative walk stays bounded without recursive state.
+  foreach(target IN LISTS targets)
+    set(queue ${edges_${target}})
+    set(reachable_${target})
+    while(queue)
+      list(POP_FRONT queue item)
+      if(NOT item IN_LIST reachable_${target})
+        list(APPEND reachable_${target} "${item}")
+        list(APPEND queue ${edges_${item}})
+      endif()
+    endwhile()
+  endforeach()
+  foreach(target IN LISTS targets)
+    set(component_${target} "${target}")
+    get_target_property(type "${target}" TYPE)
+    if(type STREQUAL "STATIC_LIBRARY")
+      foreach(item IN LISTS targets)
+        get_target_property(type "${item}" TYPE)
+        if(
+          type STREQUAL "STATIC_LIBRARY"
+          AND item IN_LIST reachable_${target}
+          AND target IN_LIST reachable_${item}
+          AND NOT item STREQUAL target
+        )
+          list(APPEND component_${target} "${item}")
+        endif()
+      endforeach()
+    endif()
+  endforeach()
+  set(files)
+  set(emitted)
+  set(deferred)
+  set(queue ${order})
+  while(queue)
+    list(POP_FRONT queue item)
+    if(NOT TARGET "${item}")
+      list(APPEND files "${item}")
+      continue()
+    endif()
+    get_target_property(alias "${item}" ALIASED_TARGET)
+    if(alias)
+      set(item "${alias}")
+    endif()
+    if(item IN_LIST emitted)
+      continue()
+    endif()
+    # Strict predecessors order the component DAG, including ordinary chains.
+    # Keep deferred targets in encounter order until their predecessors emit.
+    set(blocked FALSE)
+    foreach(ancestor IN LISTS targets)
+      if(
+        item IN_LIST reachable_${ancestor}
+        AND NOT ancestor IN_LIST reachable_${item}
+        AND NOT ancestor IN_LIST emitted
+      )
+        set(blocked TRUE)
+      endif()
+    endforeach()
+    if(blocked)
+      list(APPEND deferred "${item}")
+      continue()
+    endif()
+    set(component ${component_${item}})
+    list(APPEND emitted ${component})
+    set(archives)
+    set(scans 2)
+    foreach(target IN LISTS component)
+      get_target_property(imported "${target}" IMPORTED)
+      if(NOT imported)
+        continue()
+      endif()
+      _dart_bullet_config_location(location "${target}" "${config}" suffix)
+      if(location)
+        list(APPEND archives "${location}")
+      endif()
+      get_property(
+        configured
+        TARGET "${target}"
+        PROPERTY IMPORTED_LINK_INTERFACE_MULTIPLICITY${suffix}
+        SET
+      )
+      get_target_property(
+        multiplicity
+        "${target}"
+        IMPORTED_LINK_INTERFACE_MULTIPLICITY${suffix}
+      )
+      if(NOT configured)
+        get_target_property(
+          multiplicity
+          "${target}"
+          IMPORTED_LINK_INTERFACE_MULTIPLICITY
+        )
+      endif()
+      if(multiplicity GREATER scans)
+        set(scans "${multiplicity}")
+      endif()
+    endforeach()
+    list(LENGTH component size)
+    if(size EQUAL 1)
+      set(scans 1)
+    endif()
+    foreach(scan RANGE 1 ${scans})
+      list(APPEND files ${archives})
+    endforeach()
+    if(deferred)
+      list(PREPEND queue ${deferred})
+      set(deferred)
+    endif()
+  endwhile()
+  # A partial ordering must use the caller's unverified-metadata path.
+  list(SORT targets)
+  list(SORT emitted)
+  set(complete TRUE)
+  if(deferred OR NOT emitted STREQUAL targets)
+    set(complete FALSE)
+  endif()
+  if(ARGC GREATER 3)
+    set(${ARGV3} "${complete}" PARENT_SCOPE)
+  endif()
+  set(${out} "${files}" PARENT_SCOPE)
+endfunction()
+
 # Use the same traversal for package metadata and each configuration's ABI probe.
 # Classification and probes use the same active configuration walks.
 function(_dart_bullet_collect_graph config all_configs)
@@ -790,6 +944,7 @@ function(_dart_bullet_collect_graph config all_configs)
     set(_dart_bullet_queue Bullet)
   endif()
   set(_dart_bullet_seen)
+  set(_dart_bullet_pc_order)
   set(_dart_bullet_files)
   set(_dart_bullet_pc_files)
   set(_dart_bullet_includes)
@@ -802,13 +957,14 @@ function(_dart_bullet_collect_graph config all_configs)
     list(REMOVE_AT _dart_bullet_queue 0)
     if(NOT TARGET "${_dart_bullet_item}")
       list(APPEND _dart_bullet_files "${_dart_bullet_item}")
-      list(APPEND _dart_bullet_pc_files "${_dart_bullet_item}")
+      list(APPEND _dart_bullet_pc_order "${_dart_bullet_item}")
       continue()
     endif()
     if(_dart_bullet_item IN_LIST _dart_bullet_seen)
       continue()
     endif()
     list(APPEND _dart_bullet_seen "${_dart_bullet_item}")
+    list(APPEND _dart_bullet_pc_order "${_dart_bullet_item}")
     _dart_bullet_link_interface(_dart_bullet_value "${_dart_bullet_item}" "${config}")
     _dart_bullet_evaluate_items(_dart_bullet_value _dart_bullet_unresolved
       "${config}" "${_dart_bullet_item}" TRUE ${_dart_bullet_value}
@@ -869,7 +1025,6 @@ function(_dart_bullet_collect_graph config all_configs)
       "${_dart_bullet_build_type}"
     )
     if(_dart_bullet_location)
-      list(APPEND _dart_bullet_pc_files "${_dart_bullet_location}")
       list(APPEND _dart_bullet_files "${_dart_bullet_location}")
     else()
       get_target_property(_dart_bullet_type "${_dart_bullet_item}" TYPE)
@@ -878,6 +1033,12 @@ function(_dart_bullet_collect_graph config all_configs)
       endif()
     endif()
   endwhile()
+  _dart_bullet_pc_graph(_dart_bullet_pc_files "${config}" "${_dart_bullet_pc_order}"
+    _dart_bullet_pc_complete
+  )
+  if(NOT _dart_bullet_pc_complete)
+    set(_dart_bullet_unknown TRUE)
+  endif()
   set(_dart_bullet_targets "${_dart_bullet_seen}")
   foreach(
     output

@@ -3025,6 +3025,285 @@ def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layo
     cmake_fixture_run(consumer / "build/consumer")
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "default",
+        "early-tail",
+        "early-next",
+        "acyclic",
+        "diamond",
+        "two-cycles",
+        "three",
+        "mapped",
+        "fallback",
+        "mapped-zero",
+        "legacy",
+        "max",
+        "reverse",
+        "transparent",
+        "inactive",
+    ],
+)
+def test_bullet_pkgconfig_static_cycles(tmp_path, mode):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", "STATIC")
+    scans = (
+        3
+        if mode in ("three", "mapped", "fallback", "legacy")
+        else 4 if mode == "max" else 2
+    )
+    needed = 3 if scans > 2 else 2
+    order = ["CycleB", "CycleA"] if mode == "reverse" else ["CycleA", "CycleB"]
+    chain = [order[i % 2] for i in range(2 * needed - 1)]
+    if mode == "inactive":
+        scans = 1
+        chain = order
+    if mode in ("acyclic", "diamond"):
+        scans = 1
+        chain = order if mode == "acyclic" else [order[0]]
+    fixture = tmp_path / "cycles"
+    fixture.mkdir()
+    sources = {"CycleA": [], "CycleB": [], "Tail": ["tail.cpp"]}
+    (fixture / "tail.cpp").write_text('extern "C" int cycle_tail() { return 0; }\n')
+    transitive_tail = mode in ("early-next", "acyclic", "diamond")
+    if transitive_tail:
+        sources["Next"] = ["next.cpp"]
+        (fixture / "tail.cpp").write_text(
+            'extern "C" int final_tail();\nextern "C" int cycle_tail() { return final_tail(); }\n'
+        )
+        (fixture / "next.cpp").write_text('extern "C" int final_tail() { return 0; }\n')
+    if mode == "diamond":
+        sources[order[1]] = ["diamond.cpp"]
+        (fixture / "diamond.cpp").write_text(
+            'extern "C" int cycle_tail();\nextern "C" int diamond_step() { return cycle_tail(); }\n'
+        )
+    for i, library in enumerate(chain):
+        name = f"step{i}.cpp"
+        following = f"cycle_step{i + 1}" if i + 1 < len(chain) else "cycle_tail"
+        (fixture / name).write_text(
+            f'extern "C" int {following}();\nextern "C" int cycle_step{i}() {{ return {following}(); }}\n'
+        )
+        sources[library].append(name)
+    if mode == "two-cycles":
+        sources.update(CycleC=["other0.cpp", "other2.cpp"], CycleD=["other1.cpp"])
+        for i in range(3):
+            following = f"other_step{i + 1}" if i < 2 else "cycle_tail"
+            (fixture / f"other{i}.cpp").write_text(
+                f'extern "C" int {following}();\nextern "C" int other_step{i}() {{ return {following}(); }}\n'
+            )
+    (fixture / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Cycles LANGUAGES CXX)\n"
+        + "".join(
+            f"add_library({name} STATIC {' '.join(files)})\n"
+            for name, files in sources.items()
+        )
+        + 'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/archives.txt" CONTENT "'
+        + "\\n".join(f"$<TARGET_FILE:{name}>" for name in sources)
+        + '\\n")\n'
+    )
+    cmake_fixture_run(
+        shutil.which("cmake"), "-G", "Ninja", "-S", fixture, "-B", fixture / "build"
+    )
+    cmake_fixture_run(shutil.which("cmake"), "--build", fixture / "build")
+    archives = dict(
+        zip(sources, (fixture / "build/archives.txt").read_text().splitlines())
+    )
+    graph = bullet_imports(prefix)
+    for name, archive in archives.items():
+        graph += f'add_library({name} STATIC IMPORTED)\nset_property(TARGET {name} PROPERTY IMPORTED_LOCATION "{Path(archive).as_posix()}")\n'
+    if mode == "two-cycles":
+        graph += "target_link_libraries(CycleC INTERFACE Tail CycleD)\ntarget_link_libraries(CycleD INTERFACE CycleC)\n"
+    first, second = order
+    graph += (
+        f"target_link_libraries({first} INTERFACE {second} Tail)\n"
+        if mode == "inactive"
+        else f"target_link_libraries({first} INTERFACE Tail {second})\n"
+    )
+    back = first if mode != "inactive" else f"$<$<CONFIG:Debug>:{first}>"
+    graph += f'target_link_libraries({second} INTERFACE "{back}")\n'
+    if transitive_tail:
+        graph += "target_link_libraries(Tail INTERFACE Next)\n"
+    if mode == "acyclic":
+        graph += f"set_property(TARGET {first} PROPERTY INTERFACE_LINK_LIBRARIES {second})\nset_property(TARGET {second} PROPERTY INTERFACE_LINK_LIBRARIES Tail)\n"
+    elif mode == "diamond":
+        graph += f"set_property(TARGET {first} PROPERTY INTERFACE_LINK_LIBRARIES Tail)\nset_property(TARGET {second} PROPERTY INTERFACE_LINK_LIBRARIES Tail)\n"
+    if mode == "transparent":
+        graph += (
+            "add_library(alias_a ALIAS CycleA)\nadd_library(alias_b ALIAS CycleB)\n"
+            "add_library(wrapper_a INTERFACE IMPORTED)\nadd_library(wrapper_b INTERFACE IMPORTED)\n"
+            "target_link_libraries(wrapper_a INTERFACE alias_a)\ntarget_link_libraries(wrapper_b INTERFACE alias_b)\n"
+            "set_property(TARGET CycleA PROPERTY INTERFACE_LINK_LIBRARIES Tail wrapper_b)\n"
+            "set_property(TARGET CycleB PROPERTY INTERFACE_LINK_LIBRARIES wrapper_a)\n"
+        )
+    if mode in ("three", "max"):
+        graph += "set_property(TARGET CycleA PROPERTY IMPORTED_LINK_INTERFACE_MULTIPLICITY 3)\n"
+    if mode == "max":
+        graph += "set_property(TARGET CycleB PROPERTY IMPORTED_LINK_INTERFACE_MULTIPLICITY 4)\n"
+    if mode in ("mapped", "fallback", "mapped-zero", "legacy"):
+        selected = (
+            ""
+            if mode == "fallback"
+            else f"IMPORTED_LINK_INTERFACE_MULTIPLICITY_DEBUG {0 if mode == 'mapped-zero' else 3} "
+        )
+        graph += (
+            f'set_target_properties(CycleA PROPERTIES IMPORTED_LOCATION_DEBUG "{Path(archives["CycleA"]).as_posix()}" '
+            "MAP_IMPORTED_CONFIG_RELEASE DEBUG "
+            + selected
+            + f"IMPORTED_LINK_INTERFACE_MULTIPLICITY_RELEASE 8 IMPORTED_LINK_INTERFACE_MULTIPLICITY {3 if mode == 'fallback' else 7})\n"
+            "set_property(TARGET CycleB PROPERTY IMPORTED_LINK_INTERFACE_MULTIPLICITY 2)\n"
+        )
+    if mode == "legacy":
+        graph += (
+            "set_property(TARGET CycleA PROPERTY INTERFACE_LINK_LIBRARIES)\n"
+            "set_property(TARGET CycleB PROPERTY INTERFACE_LINK_LIBRARIES)\n"
+            "set_property(TARGET CycleA PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES_DEBUG Tail CycleB)\n"
+            "set_property(TARGET CycleB PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES CycleA)\n"
+        )
+    before, after = (
+        ("-Wl,--no-as-needed", "-Wl,--as-needed")
+        if sys.platform == "linux"
+        else ("", "")
+    )
+    early = "Tail" if mode in ("early-tail", "two-cycles") else ""
+    extra = "CycleC" if mode == "two-cycles" else ""
+    if transitive_tail:
+        early = "Next"
+    if mode == "acyclic":
+        early += f" Tail {second}"
+    elif mode == "diamond":
+        early += " Tail"
+        extra = second
+    graph += f"target_link_libraries(Bullet INTERFACE {early} {before} {first} {extra} {after})\n"
+    source = tmp_path / "consumer.cpp"
+    source.write_text(
+        'extern "C" int cycle_step0();\n'
+        + BULLET_CONSUMER.replace(
+            "int main() {", "int main() { if (cycle_step0()) return 1;"
+        )
+    )
+    if mode == "two-cycles":
+        source.write_text(
+            'extern "C" int other_step0();\n'
+            + source.read_text().replace(
+                "int main() {", "int main() { if (other_step0()) return 1;"
+            )
+        )
+    if mode == "diamond":
+        source.write_text(
+            'extern "C" int diamond_step();\n'
+            + source.read_text().replace(
+                "int main() {", "int main() { if (diamond_step()) return 1;"
+            )
+        )
+    expected_order = order * scans + (
+        ["CycleC", "CycleD"] * 2 if mode == "two-cycles" else []
+    )
+    common = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + graph
+        + f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(control, common, cmake_args=("-DCMAKE_BUILD_TYPE=Release",))
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+    cmake_fixture_run(control / "build/consumer")
+    commands = cmake_fixture_run(
+        shutil.which("ninja"), "-C", control / "build", "-t", "commands"
+    ).stdout
+    # Establish CMake's complete component scans independently of the finder.
+    if sys.platform == "linux":
+        actual = re.findall(r"lib(Cycle[A-D])\.a", commands.splitlines()[-1])
+        assert actual == expected_order
+    bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        common + "include(DARTFindBullet)\n"
+        'if(NOT BULLET_FOUND OR _DART_BULLET_GRAPH_UNKNOWN)\nmessage(FATAL_ERROR "Incomplete target ordering")\nendif()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/bullet.pc" "Name: bullet\nDescription: static cycle\nVersion: 1\nLibs: ${DART_BULLET_PC_LIBS}\nCflags: ${DART_BULLET_PC_CFLAGS} -DBT_USE_DOUBLE_PRECISION\n")\n',
+        cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    env = {
+        **os.environ,
+        "PKG_CONFIG_PATH": str(tmp_path / "build"),
+        "PKG_CONFIG_LIBDIR": str(tmp_path / "build"),
+    }
+    env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+    options, flags = pkgconfig_consumer_options("bullet", static=True, env=env)
+    pc = tmp_path / "pc-consumer"
+    pc.mkdir()
+    result = configure(
+        pc,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n' + options,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", pc / "build")
+    cmake_fixture_run(pc / "build/consumer")
+    cycle_flags = [
+        flag for flag in flags if flag in [archives[name] for name in expected_order]
+    ]
+    assert cycle_flags == [archives[name] for name in expected_order]
+    assert flags.count(archives["Tail"]) == 1
+    assert flags.index(archives["Tail"]) > max(
+        i for i, flag in enumerate(flags) if flag in cycle_flags
+    )
+    if before:
+        assert flags.count(before) == flags.count(after) == 1
+        assert flags.index(before) < flags.index(cycle_flags[0])
+        assert flags.index(after) > flags.index(archives["Tail"])
+    if transitive_tail:
+        assert flags.count(archives["Next"]) == 1
+        assert flags.index(archives["Next"]) > flags.index(archives["Tail"])
+    # GNU archive scanning must fail with too few scans or an early dependency.
+    if sys.platform == "linux":
+        for missing in ("scan", "tail", *(["next"] if transitive_tail else [])):
+            broken = flags.copy()
+            if missing == "scan":
+                if mode == "inactive":
+                    continue
+                if mode in ("acyclic", "diamond"):
+                    continue
+                for name in order * (scans - needed + 1):
+                    broken.remove(archives[name])
+            elif missing == "next":
+                broken.remove(archives["Next"])
+                broken.insert(broken.index(archives["Tail"]), archives["Next"])
+            else:
+                broken.remove(archives["Tail"])
+                broken.insert(broken.index(cycle_flags[0]), archives["Tail"])
+            negative = tmp_path / f"missing-{missing}"
+            negative.mkdir()
+            links = " ".join(
+                f'"{flag}"' for flag in broken if not flag.startswith(("-I", "-D"))
+            )
+            result = configure(
+                negative,
+                "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+                f'add_executable(consumer "{source.as_posix()}")\n'
+                f'target_include_directories(consumer PRIVATE "{prefix.as_posix()}/include")\n'
+                "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+                f"target_link_libraries(consumer PRIVATE {links})\n",
+            )
+            assert result.returncode == 0, result.stdout + result.stderr
+            built = subprocess.run(
+                [shutil.which("cmake"), "--build", str(negative / "build")],
+                capture_output=True,
+                text=True,
+            )
+            assert built.returncode != 0, built.stdout + built.stderr
+            if missing == "next":
+                assert "final_tail" in built.stdout + built.stderr
+            else:
+                assert (
+                    "cycle_step" if missing == "scan" else "cycle_tail"
+                ) in built.stdout + built.stderr
+
+
 def test_bullet_pkgconfig_preserves_link_tokens(tmp_path):
     include = bullet_module(tmp_path)
     result = configure(
@@ -3469,7 +3748,12 @@ def test_bullet_c_only_transitive_usage_and_identity(tmp_path, identity):
             "add_library(DARTProbeAuxA STATIC first.cpp last.cpp)\nadd_library(DARTProbeAuxB STATIC second.cpp)\ninstall(TARGETS DARTProbeAuxA DARTProbeAuxB DESTINATION lib)\n"
         )
     cmake_fixture_run(shutil.which("cmake"), "--build", fixture / "build")
+    # Install compares rounded timestamps, so a same-second rebuild can leave
+    # the original archive behind. This prefix belongs only to this fixture.
+    shutil.rmtree(prefix)
     cmake_fixture_run(shutil.which("cmake"), "--install", fixture / "build")
+    for archive in (prefix / "lib").iterdir():
+        assert archive.read_bytes() == (fixture / "build" / archive.name).read_bytes()
     header = prefix / "include/btBulletCollisionCommon.h"
     header.write_text(
         header.read_text()
@@ -3528,6 +3812,37 @@ def test_bullet_c_only_transitive_usage_and_identity(tmp_path, identity):
     )
     assert result.returncode == 0, result.stdout + result.stderr
     cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+    # The positive link must actually need the second A scan and, on ELF, the
+    # required linker definition. Otherwise stale fixture archives hide losses.
+    for missing in ("order", "option") if sys.platform == "linux" else ():
+        negative = tmp_path / f"missing-{missing}"
+        negative.mkdir()
+        broken = (
+            graph.replace(
+                "DARTProbeAuxA DARTProbeAuxB DARTProbeAuxA",
+                "DARTProbeAuxA DARTProbeAuxB",
+            )
+            if missing == "order"
+            else graph + "set_property(TARGET usage PROPERTY INTERFACE_LINK_OPTIONS)\n"
+        )
+        result = configure(
+            negative,
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C CXX)\n"
+            + broken
+            + f'add_executable(consumer "{(tmp_path / "main.cpp").as_posix()}")\n'
+            "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+            "target_link_libraries(consumer PRIVATE Bullet)\n",
+            cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        built = subprocess.run(
+            [shutil.which("cmake"), "--build", str(negative / "build")],
+            capture_output=True,
+            text=True,
+        )
+        output = built.stdout + built.stderr
+        assert built.returncode != 0, output
+        assert ("dart_last" if missing == "order" else "dart_link_required") in output
     result = configure(
         tmp_path,
         "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C)\n"
