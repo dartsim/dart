@@ -722,8 +722,10 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "recorded",
         ),
+        # An unlisted Release-only location is valid only when Release is selected.
         (
             325,
+            "set(CMAKE_BUILD_TYPE Debug)\n"
             "add_library(collision64 UNKNOWN IMPORTED)\n"
             "set_target_properties(collision64 PROPERTIES IMPORTED_LOCATION_RELEASE\n"
             '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
@@ -731,6 +733,17 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
             True,
             "rejected",
+        ),
+        (
+            325,
+            "set(CMAKE_BUILD_TYPE Release)\n"
+            "add_library(collision64 UNKNOWN IMPORTED)\n"
+            "set_target_properties(collision64 PROPERTIES IMPORTED_LOCATION_RELEASE\n"
+            '  "${lib}/${prefix}BulletCollision-float64${ext}")\n'
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
+            True,
+            "recorded",
         ),
         (
             325,
@@ -2322,7 +2335,16 @@ def test_bullet_scalar_abi_ignores_header_warnings(tmp_path, precision, hybrid):
         "include(DARTFindBullet)\n"
         'if(BULLET_FOUND OR Bullet_FOUND)\nmessage(FATAL_ERROR "Wrong ABI accepted under strict flags")\nendif()\n',
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    configure_log = tmp_path / "build/CMakeFiles/CMakeConfigureLog.yaml"
+    assert result.returncode == 0, (
+        result.stdout
+        + result.stderr
+        + (
+            "\nCMake configure log:\n" + configure_log.read_text(errors="replace")
+            if configure_log.is_file()
+            else "\nCMake configure log was not produced.\n"
+        )
+    )
 
 
 @pytest.mark.parametrize(
