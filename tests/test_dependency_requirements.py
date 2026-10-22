@@ -783,6 +783,216 @@ def test_bullet_collision_libraries(tmp_path, installation, debug):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def bullet_fallback_source(tmp_path):
+    source = tmp_path / "bullet-source"
+    src = source / "src"
+    src.mkdir(parents=True)
+    for name in ("BulletCollision", "LinearMath", "BulletDynamics", "BulletSoftBody"):
+        (src / name).mkdir()
+        (src / name / "fixture.h").write_text(f"int fixture_{name}(void);\n")
+        (src / f"{name}.c").write_text(f"int fixture_{name}(void) {{ return 1; }}\n")
+    (src / "LinearMath/btScalar.h").write_text(
+        "#define BT_BULLET_VERSION 325\nint fixture_LinearMath(void);\n"
+    )
+    (src / "btBulletCollisionCommon.h").write_text(
+        "#include <LinearMath/btScalar.h>\nint fixture_BulletCollision(void);\n"
+    )
+    (src / "btBulletDynamicsCommon.h").write_text("/* Not part of the SDK. */\n")
+    (src / "CMakeLists.txt").write_text(
+        "foreach(name BulletCollision LinearMath BulletDynamics BulletSoftBody)\n"
+        'add_library(${name} SHARED "${name}.c")\n'
+        "set_target_properties(${name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)\n"
+        'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/${name}-link.txt" CONTENT "$<TARGET_LINKER_FILE:${name}>")\n'
+        "endforeach()\n"
+        "install(TARGETS BulletCollision LinearMath BulletDynamics BulletSoftBody\n"
+        "RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)\n"
+        "install(DIRECTORY BulletCollision LinearMath BulletDynamics BulletSoftBody\n"
+        'DESTINATION include/bullet FILES_MATCHING PATTERN "*.h")\n'
+        "install(FILES btBulletDynamicsCommon.h DESTINATION include/bullet)\n"
+    )
+    (source / "bullet.pc.cmake").write_text(
+        "prefix=@CMAKE_INSTALL_PREFIX@\nexec_prefix=${prefix}\n"
+        "libdir=${exec_prefix}/@LIB_DESTINATION@\n"
+        "includedir=${prefix}/@INCLUDE_INSTALL_DIR@\n"
+        "Name: bullet\nDescription: Fixture collision SDK\nVersion: 3.25\n"
+        "Libs: -L${libdir} -lBulletSoftBody -lBulletDynamics -lBulletCollision -lLinearMath\n"
+        "Cflags: -I${includedir} -I${prefix}/include\n"
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(BulletFixture C)\n"
+        'set(LIB_DESTINATION "lib" CACHE STRING "")\n'
+        "configure_file(bullet.pc.cmake bullet.pc @ONLY)\n"
+        'install(FILES "${CMAKE_CURRENT_BINARY_DIR}/bullet.pc" DESTINATION lib/pkgconfig)\n'
+        "add_subdirectory(src)\n"
+    )
+    return source
+
+
+def bullet_fallback_content():
+    begin = _DEPENDENCIES.index(
+        "if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)"
+    )
+    end = _DEPENDENCIES.index("# Misc. dependencies", begin)
+    return (
+        "include(DARTMacros)\ninclude(FetchContent)\ninclude(GNUInstallDirs)\n"
+        "set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})\n"
+        "set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})\n"
+        'set(DART_USE_SYSTEM_BULLET OFF)\nset(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)\n'
+        + _DEPENDENCIES[begin:end]
+        + 'if(BUILD_SHARED_LIBS)\nmessage(FATAL_ERROR "Caller shared-library state changed")\nendif()\n'
+    )
+
+
+def bullet_fixture_run(*args, env=None):
+    result = subprocess.run(
+        list(map(str, args)), capture_output=True, text=True, env=env, check=False
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    return result.stdout.strip()
+
+
+@pytest.mark.parametrize("libdir", ["lib", "lib64", "absolute"])
+def test_bullet_fetched_pkgconfig_libdir(tmp_path, monkeypatch, libdir):
+    source = bullet_fallback_source(tmp_path)
+    stage = tmp_path / "installed"
+    directory = tmp_path / "separate-libs" if libdir == "absolute" else Path(libdir)
+    result = configure(
+        tmp_path,
+        f'set(FETCHCONTENT_SOURCE_DIR_BULLET "{source.as_posix()}")\n'
+        + bullet_fallback_content(),
+        language="C",
+        cmake_args=(
+            f"-DCMAKE_INSTALL_PREFIX={stage.as_posix()}",
+            f"-DCMAKE_INSTALL_LIBDIR={directory.as_posix()}",
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    build = tmp_path / "build"
+    bullet_fixture_run(
+        CMAKE, "--build", build, "--target", "BulletCollision", "LinearMath"
+    )
+    bullet_fixture_run(CMAKE, "--install", build)
+    pc = stage / "lib/pkgconfig/bullet.pc"
+    pkgconfig = shutil.which("pkg-config")
+    assert pkgconfig
+    monkeypatch.setenv("PKG_CONFIG_PATH", str(pc.parent))
+    monkeypatch.setenv("PKG_CONFIG_LIBDIR", str(pc.parent))
+    monkeypatch.delenv("PKG_CONFIG_SYSROOT_DIR", raising=False)
+    actual = bullet_fixture_run(pkgconfig, "--variable=libdir", "bullet")
+    expected = directory if directory.is_absolute() else stage / directory
+    assert Path(actual) == expected
+    flags = bullet_fixture_run(pkgconfig, "--libs", "bullet")
+    assert "-lBulletCollision" in flags and "-lLinearMath" in flags
+    assert "BulletDynamics" not in flags and "BulletSoftBody" not in flags
+    assert (stage / "include/btBulletCollisionCommon.h").is_file()
+    assert (stage / "include/BulletCollision/btBulletCollisionCommon.h").is_file()
+    assert not (stage / "include/bullet/BulletDynamics").exists()
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    result = configure(
+        consumer,
+        "set(CMAKE_DISABLE_FIND_PACKAGE_PkgConfig FALSE)\n"
+        f'set(PKG_CONFIG_EXECUTABLE "{Path(pkgconfig).as_posix()}")\n'
+        "find_package(PkgConfig REQUIRED)\npkg_check_modules(BULLET REQUIRED IMPORTED_TARGET bullet)\n"
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\nint main(void) { return fixture_BulletCollision() + fixture_LinearMath() == 2 ? 0 : 1; }\\n")\n'
+        'add_executable(consumer "${CMAKE_CURRENT_BINARY_DIR}/main.c")\n'
+        "target_link_libraries(consumer PRIVATE PkgConfig::BULLET)\n",
+        language="C",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    bullet_fixture_run(CMAKE, "--build", consumer / "build")
+    env = {**os.environ, "PATH": str(stage / "bin") + os.pathsep + os.environ["PATH"]}
+    bullet_fixture_run(
+        consumer / "build" / ("consumer.exe" if os.name == "nt" else "consumer"),
+        env=env,
+    )
+    uninstall = tmp_path / "uninstall.cmake"
+    uninstall.write_text(
+        (ROOT / "cmake/uninstall_target.cmake.in")
+        .read_text()
+        .replace("@CMAKE_CURRENT_BINARY_DIR@", build.as_posix())
+    )
+    bullet_fixture_run(CMAKE, "-P", uninstall)
+    assert not pc.exists()
+    assert not (stage / "include/btBulletCollisionCommon.h").exists()
+
+
+@pytest.mark.parametrize(
+    "mode", ["no-source", "metadata-source", "no-collision", "no-math", "bad-headers"]
+)
+def test_bullet_provider_keeps_ownership(tmp_path, mode):
+    source = bullet_fallback_source(tmp_path)
+    sdk = tmp_path / "provider-build"
+    bullet_fixture_run(CMAKE, "-S", source, "-B", sdk, "-G", "Ninja")
+    bullet_fixture_run(
+        CMAKE, "--build", sdk, "--target", "BulletCollision", "LinearMath"
+    )
+    original_pc = (sdk / "bullet.pc").read_bytes()
+    provider = tmp_path / "provider.cmake"
+    targets = ""
+    for name, missing in [
+        ("BulletCollision", "no-collision"),
+        ("LinearMath", "no-math"),
+    ]:
+        if mode != missing:
+            library = (sdk / f"{name}-link.txt").read_text()
+            targets += (
+                f"add_library({name} UNKNOWN IMPORTED GLOBAL)\n"
+                f'set_target_properties({name} PROPERTIES IMPORTED_LOCATION "{library}")\n'
+            )
+    metadata = f'SOURCE_DIR "{source.as_posix()}"' if mode == "metadata-source" else ""
+    headers = tmp_path / "no-headers" if mode == "bad-headers" else source
+    provider.write_text(
+        "macro(bullet_provider method name)\n"
+        + targets
+        + f'set(BULLET_PHYSICS_SOURCE_DIR "{headers.as_posix()}" CACHE PATH "" FORCE)\n'
+        + f'FetchContent_SetPopulated(${{name}} {metadata} BINARY_DIR "{sdk.as_posix()}")\n'
+        + "endmacro()\n"
+        "cmake_language(SET_DEPENDENCY_PROVIDER bullet_provider SUPPORTED_METHODS FETCHCONTENT_MAKEAVAILABLE_SERIAL)\n"
+    )
+    case = tmp_path / "case"
+    case.mkdir()
+    accepted = mode not in ("no-collision", "no-math", "bad-headers")
+    result = configure(
+        case,
+        'set(DART_BULLET_SOURCE_DIR "/stale/fetched" CACHE INTERNAL "")\n'
+        'set(DART_BULLET_BINARY_DIR "/stale/build" CACHE INTERNAL "")\n'
+        "set(FETCHCONTENT_FULLY_DISCONNECTED ON)\n"
+        + bullet_fallback_content()
+        + "include(DARTFindBullet)\n"
+        + f'if({"NOT " if accepted else ""}BULLET_FOUND)\nmessage(FATAL_ERROR "Wrong provider acceptance")\nendif()\n'
+        + 'if(DEFINED CACHE{DART_BULLET_SOURCE_DIR} OR DEFINED CACHE{DART_BULLET_BINARY_DIR})\nmessage(FATAL_ERROR "Provider retained fetched-source metadata")\nendif()\n'
+        + (
+            'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\nint main(void) { return fixture_BulletCollision() + fixture_LinearMath() == 2 ? 0 : 1; }\\n")\n'
+            'add_executable(provider_consumer "${CMAKE_CURRENT_BINARY_DIR}/main.c")\n'
+            "target_link_libraries(provider_consumer PRIVATE Bullet)\n"
+            if accepted
+            else ""
+        ),
+        language="C",
+        cmake_args=(
+            f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={provider.as_posix()}",
+            f"-DCMAKE_INSTALL_PREFIX={(tmp_path / 'installed').as_posix()}",
+        ),
+    )
+    if mode in ("no-collision", "no-math"):
+        assert result.returncode != 0
+        return
+    assert result.returncode == 0, result.stdout + result.stderr
+    if accepted:
+        bullet_fixture_run(CMAKE, "--build", case / "build")
+        env = {**os.environ, "PATH": str(sdk / "src") + os.pathsep + os.environ["PATH"]}
+        bullet_fixture_run(
+            case
+            / "build"
+            / ("provider_consumer.exe" if os.name == "nt" else "provider_consumer"),
+            env=env,
+        )
+    bullet_fixture_run(CMAKE, "--install", case / "build")
+    assert not (tmp_path / "installed").exists()
+    assert (sdk / "bullet.pc").read_bytes() == original_pc
+
+
 @pytest.mark.parametrize(
     "package,minimum,header,defines,target",
     [

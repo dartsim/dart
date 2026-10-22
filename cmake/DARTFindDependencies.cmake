@@ -246,70 +246,99 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
   )
   dart_fetchcontent_makeavailable_legacy(bullet)
   dart_check_fetchcontent(bullet DART_USE_SYSTEM_BULLET)
-  # Skip upstream's src install rules, including the unused dynamics headers.
-  set_property(
-    DIRECTORY "${bullet_SOURCE_DIR}/src"
-    PROPERTY EXCLUDE_FROM_ALL TRUE
-  )
-  install(
-    TARGETS BulletCollision LinearMath
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
-    ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR}
-  )
-  install(
-    DIRECTORY
-      "${bullet_SOURCE_DIR}/src/BulletCollision"
-      "${bullet_SOURCE_DIR}/src/LinearMath"
-    DESTINATION ${INCLUDE_INSTALL_DIR}
-    FILES_MATCHING
-    PATTERN "*.h"
-  )
-  install(
-    FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
-    DESTINATION ${INCLUDE_INSTALL_DIR}
-  )
-  install(
-    FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
-    DESTINATION ${INCLUDE_INSTALL_DIR}/BulletCollision
-  )
-  if(EXISTS "${bullet_BINARY_DIR}/bullet.pc")
-    file(READ "${bullet_BINARY_DIR}/bullet.pc" _dart_bullet_pc)
-    if(NOT _dart_bullet_pc MATCHES "-lBulletSoftBody -lBulletDynamics ")
-      message(
-        WARNING
-        "Cannot narrow bullet.pc to the fetched collision libraries"
-      )
-    endif()
-    string(
-      REPLACE
-      "-lBulletSoftBody -lBulletDynamics "
-      ""
-      _dart_bullet_pc
-      "${_dart_bullet_pc}"
+  if(NOT TARGET BulletCollision OR NOT TARGET LinearMath)
+    message(
+      FATAL_ERROR
+      "Bullet must provide BulletCollision and LinearMath targets"
     )
-    string(
-      REPLACE
-      "libdir=\${exec_prefix}/${LIB_DESTINATION}"
-      "libdir=\${exec_prefix}/${LIBRARY_INSTALL_DIR}"
-      _dart_bullet_pc
-      "${_dart_bullet_pc}"
-    )
-    file(WRITE "${bullet_BINARY_DIR}/bullet.pc" "${_dart_bullet_pc}")
-    unset(_dart_bullet_pc)
   endif()
-  set(
-    DART_BULLET_SOURCE_DIR
-    "${bullet_SOURCE_DIR}"
-    CACHE INTERNAL
-    "Bullet source dir."
+  FetchContent_GetProperties(bullet SOURCE_DIR _dart_bullet_source_dir)
+  get_target_property(_dart_bullet_collision_imported BulletCollision IMPORTED)
+  get_target_property(_dart_bullet_math_imported LinearMath IMPORTED)
+  # Only source-built Bullet targets belong to this build's collision-only SDK.
+  if(
+    _dart_bullet_source_dir
+    AND NOT _dart_bullet_collision_imported
+    AND NOT _dart_bullet_math_imported
   )
-  set(
-    DART_BULLET_BINARY_DIR
-    "${bullet_BINARY_DIR}"
-    CACHE INTERNAL
-    "Bullet binary dir."
-  )
+    # Skip upstream's src install rules, including the unused dynamics headers.
+    set_property(
+      DIRECTORY "${bullet_SOURCE_DIR}/src"
+      PROPERTY EXCLUDE_FROM_ALL TRUE
+    )
+    install(
+      TARGETS BulletCollision LinearMath
+      RUNTIME DESTINATION bin
+      LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
+      ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR}
+    )
+    install(
+      DIRECTORY
+        "${bullet_SOURCE_DIR}/src/BulletCollision"
+        "${bullet_SOURCE_DIR}/src/LinearMath"
+      DESTINATION ${INCLUDE_INSTALL_DIR}
+      FILES_MATCHING
+      PATTERN "*.h"
+    )
+    install(
+      FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
+      DESTINATION ${INCLUDE_INSTALL_DIR}
+    )
+    install(
+      FILES "${bullet_SOURCE_DIR}/src/btBulletCollisionCommon.h"
+      DESTINATION ${INCLUDE_INSTALL_DIR}/BulletCollision
+    )
+    if(EXISTS "${bullet_BINARY_DIR}/bullet.pc")
+      file(READ "${bullet_BINARY_DIR}/bullet.pc" _dart_bullet_pc)
+      if(NOT _dart_bullet_pc MATCHES "-lBulletSoftBody -lBulletDynamics ")
+        message(
+          WARNING
+          "Cannot narrow bullet.pc to the fetched collision libraries"
+        )
+      endif()
+      string(
+        REPLACE
+        "-lBulletSoftBody -lBulletDynamics "
+        ""
+        _dart_bullet_pc
+        "${_dart_bullet_pc}"
+      )
+      if(IS_ABSOLUTE "${LIBRARY_INSTALL_DIR}")
+        set(_dart_bullet_pc_libdir "${LIBRARY_INSTALL_DIR}")
+      else()
+        set(_dart_bullet_pc_libdir "\${exec_prefix}/${LIBRARY_INSTALL_DIR}")
+      endif()
+      string(
+        REPLACE
+        "libdir=\${exec_prefix}/${LIB_DESTINATION}"
+        "libdir=${_dart_bullet_pc_libdir}"
+        _dart_bullet_pc
+        "${_dart_bullet_pc}"
+      )
+      unset(_dart_bullet_pc_libdir)
+      file(WRITE "${bullet_BINARY_DIR}/bullet.pc" "${_dart_bullet_pc}")
+      unset(_dart_bullet_pc)
+    endif()
+    set(
+      DART_BULLET_SOURCE_DIR
+      "${bullet_SOURCE_DIR}"
+      CACHE INTERNAL
+      "Bullet source dir."
+    )
+    set(
+      DART_BULLET_BINARY_DIR
+      "${bullet_BINARY_DIR}"
+      CACHE INTERNAL
+      "Bullet binary dir."
+    )
+  else()
+    # Do not retain an earlier fetched build's paths for a provider's targets.
+    unset(DART_BULLET_SOURCE_DIR CACHE)
+    unset(DART_BULLET_BINARY_DIR CACHE)
+  endif()
+  unset(_dart_bullet_source_dir)
+  unset(_dart_bullet_collision_imported)
+  unset(_dart_bullet_math_imported)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
