@@ -61,6 +61,24 @@ std::ostream& colorErr(
     unsigned int _line,
     int _color);
 
+/// Returns the stream a console macro writes to on the calling thread.
+using ConsoleStream = std::ostream& (*)();
+
+/// Redirects the console macros and the spdlog-free DART_WARN-style fallback.
+/// dtmsg, dtdbg, DART_INFO and below write to the stream \p out returns;
+/// dtwarn, dterr, DART_WARN and above write to the stream \p err returns. A
+/// provider runs on the logging thread and may hand each thread its own stream;
+/// one that returns a shared stream must serialize the writes itself. A null
+/// provider restores std::cout or std::cerr. Set the providers before other
+/// threads log; a returned stream must outlive its use.
+void setConsoleStreams(ConsoleStream out, ConsoleStream err);
+
+/// The stream dtmsg and dtdbg write to on this thread.
+std::ostream& consoleOut();
+
+/// The stream dtwarn and dterr write to on this thread.
+std::ostream& consoleErr();
+
 } // namespace common
 
 template <class T>
