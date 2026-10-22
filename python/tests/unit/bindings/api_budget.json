@@ -8,6 +8,7 @@
       "common",
       "constraint",
       "dynamics",
+      "errors",
       "experimental",
       "gui",
       "math",
@@ -243,7 +244,7 @@
     "functions": {
       "camel_case": 8,
       "get_set": 0,
-      "public": 18
+      "public": 19
     }
   },
   "dartpy.constraint": {
@@ -1505,6 +1506,65 @@
       "camel_case": 1,
       "get_set": 0,
       "public": 10
+    }
+  },
+  "dartpy.errors": {
+    "classes": {
+      "CheckpointMismatchError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "DartError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "ModelFrozenError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "NameConflictError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "NotFoundError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "OperationError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "ValidationError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      },
+      "WorldBusyError": {
+        "camel_case": 0,
+        "get_set": 0,
+        "public": 0
+      }
+    },
+    "containers": [
+      "CheckpointMismatchError",
+      "DartError",
+      "ModelFrozenError",
+      "NameConflictError",
+      "NotFoundError",
+      "OperationError",
+      "ValidationError",
+      "WorldBusyError"
+    ],
+    "functions": {
+      "camel_case": 0,
+      "get_set": 0,
+      "public": 0
     }
   },
   "dartpy.experimental": {

@@ -332,8 +332,11 @@ Harness builds also use fixed source, build, dependency and install aliases,
 because resource retrievers embed source and install data paths. Caller-owned
 build trees remain reusable. Harness builds disable RPATHs and rely on the
 measurement environment's `LD_LIBRARY_PATH`; their installs are intended to
-run only through the harness. Normalization is part of `harness_sha`, so earlier
-records have a different environment fingerprint and require new measurements.
+run only through the harness. The portable driver links with the dependency
+`lib` directory as an `rpath-link` path, mirroring the runtime
+`LD_LIBRARY_PATH`.
+Normalization is part of `harness_sha`, so earlier records have a different
+environment fingerprint and require new measurements.
 Comparisons require matching environment fingerprints. Exit status 1 means a
 policy failure; status 2 means an infrastructure error. When measuring an
 existing install with `scripts/perf_regression.py run`, supply `--commit` for
