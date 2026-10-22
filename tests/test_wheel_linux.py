@@ -138,6 +138,24 @@ def test_dependency_image_builds_sdformat_against_urdfdom_6():
     )
 
 
+def write_nanobind_package(package):
+    """Write a complete fake nanobind 3.1.x package at `package`."""
+    (package / "nanobindConfig.cmake").write_text(
+        f'set(NB_DIR "{package.as_posix()}")\n'
+    )
+    (package / "include/nanobind").mkdir(parents=True)
+    (package / "include/nanobind/nanobind.h").write_text(
+        "#define NB_VERSION_MAJOR 3\n"
+        "#define NB_VERSION_MINOR 1\n"
+        "#define NB_VERSION_PATCH 0\n"
+    )
+    (package / "src").mkdir()
+    (package / "src/nb_internals.h").write_text("#  define NB_INTERNALS_VERSION 22\n")
+    (package / "nanobindConfigVersion.cmake").write_text(
+        'set(PACKAGE_VERSION "3.1.0")\n' "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+    )
+
+
 @pytest.mark.parametrize("wheels", [True, False])
 @pytest.mark.parametrize("stable_abi", [True, False])
 def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_abi):
@@ -169,10 +187,7 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
     (tmp_path / "FindPython3.cmake").write_text(
         'message(FATAL_ERROR "Duplicate Python3 discovery")\n'
     )
-    (tmp_path / "nanobindConfig.cmake").write_text("")
-    (tmp_path / "nanobindConfigVersion.cmake").write_text(
-        "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
-    )
+    write_nanobind_package(tmp_path)
     (tmp_path / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.28)\n"
         "project(PythonComponents NONE)\n"
@@ -259,10 +274,7 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
 
 
 def test_builtin_findpython_primary_persists_across_configures(tmp_path):
-    (tmp_path / "nanobindConfig.cmake").write_text("")
-    (tmp_path / "nanobindConfigVersion.cmake").write_text(
-        "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
-    )
+    write_nanobind_package(tmp_path)
     (tmp_path / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.28)\n"
         "project(BuiltinFindPython NONE)\n"

@@ -61,7 +61,7 @@
     on a host with a graphics device.
     [#3696](https://github.com/dartsim/dart/pull/3696)
 
-  * dartpy now uses nanobind 3.1 or newer and requires Python 3.12 or newer.
+  * dartpy now uses nanobind 3.1.x and requires Python 3.12 or newer.
     NumPy 1.26.4 or newer is required; NumPy 2.x is supported. CMake discovers
     Python once through FindPython; `Python_EXECUTABLE` selects the interpreter.
     Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
@@ -516,7 +516,9 @@
     Atlas v5 and Unitree G1 model-viewing demos.
 
   * Add `DART_USE_SYSTEM_NANOBIND` (default `OFF`); the bundled build fetches
-    nanobind 3.1.0 and its robin_map submodule. With `ON`, CMake uses
+    nanobind 3.1.0 and its bundled robin_map from a hash-verified archive.
+    CMake rejects versions outside 3.1.x and incompatible internals at
+    configure time. With `ON`, CMake uses
     `nanobind_DIR` when set and otherwise asks the build's Python.
 
   * Add `DART_USE_SYSTEM_FILAMENT` (default `ON`) to build the GUI against an

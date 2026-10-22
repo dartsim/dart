@@ -74,14 +74,81 @@ if(DART_USE_SYSTEM_NANOBIND)
   find_package(nanobind 3.1 CONFIG REQUIRED HINTS "${nanobind_cmake_dir}")
 else()
   include(FetchContent)
+  # A bump updates the URL/hash, 3.1.x check, and internals version below;
+  # see docs/onboarding/python-bindings.md, "Nanobind binder". The Eigen probe
+  # in scripts/nanobind/eigen_probe repeats the version checks.
   FetchContent_Declare(
     nanobind
-    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
-    GIT_TAG v3.1.0
-    GIT_SHALLOW TRUE
-    GIT_SUBMODULES ext/robin_map
+    URL
+      https://files.pythonhosted.org/packages/c7/1f/e28fae715401e8f57400e72aeaff4fde12046d31828164f34f61f0816da8/nanobind-3.1.0.tar.gz
+    URL_HASH
+      SHA256=6661e3dc1434d78781ccf7913442d90361dab395c3424efadb63bbb6ddea7ea3
+    TLS_VERIFY ON
   )
   FetchContent_MakeAvailable(nanobind)
+endif()
+# Factory attachment and the patched Eigen caster depend on nanobind internals.
+if(
+  NOT NB_DIR
+  OR NOT EXISTS "${NB_DIR}/include/nanobind/nanobind.h"
+  OR NOT EXISTS "${NB_DIR}/src/nb_internals.h"
+)
+  message(
+    FATAL_ERROR
+    "dartpy requires a complete nanobind 3.1.x package: NB_DIR must contain "
+    "include/nanobind/nanobind.h and src/nb_internals.h. "
+    "Install the complete package or set DART_USE_SYSTEM_NANOBIND=OFF."
+  )
+endif()
+file(
+  STRINGS "${NB_DIR}/include/nanobind/nanobind.h"
+  dartpy_nanobind_version_header
+  REGEX "^# *define NB_VERSION_(MAJOR|MINOR|PATCH) "
+)
+foreach(part MAJOR MINOR PATCH)
+  # A failed match keeps the previous CMAKE_MATCH_1, so clear it first.
+  set(CMAKE_MATCH_1 "")
+  string(
+    REGEX MATCH
+    "NB_VERSION_${part} ([0-9]+)"
+    _
+    "${dartpy_nanobind_version_header}"
+  )
+  set(dartpy_nanobind_${part} "${CMAKE_MATCH_1}")
+endforeach()
+set(
+  dartpy_nanobind_version
+  "${dartpy_nanobind_MAJOR}.${dartpy_nanobind_MINOR}.${dartpy_nanobind_PATCH}"
+)
+if(DART_USE_SYSTEM_NANOBIND)
+  set(
+    dartpy_nanobind_hint
+    "Use a compatible system package or set DART_USE_SYSTEM_NANOBIND=OFF."
+  )
+else()
+  set(
+    dartpy_nanobind_hint
+    "The fetched nanobind does not match its pin; update the sdist URL, hash and checks together."
+  )
+endif()
+if(NOT dartpy_nanobind_version MATCHES "^3[.]1[.][0-9]+$")
+  message(
+    FATAL_ERROR
+    "dartpy requires nanobind 3.1.x (found ${dartpy_nanobind_version}). "
+    "${dartpy_nanobind_hint}"
+  )
+endif()
+file(
+  STRINGS "${NB_DIR}/src/nb_internals.h"
+  dartpy_nanobind_internals
+  REGEX "^# *define NB_INTERNALS_VERSION "
+)
+if(NOT dartpy_nanobind_internals MATCHES "NB_INTERNALS_VERSION 22([^0-9]|$)")
+  message(
+    FATAL_ERROR
+    "dartpy requires nanobind 3.1.x with NB_INTERNALS_VERSION=22. "
+    "Audit python/dartpy/detail/construction.cpp before changing nanobind."
+  )
 endif()
 add_subdirectory(dartpy)
 set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")
