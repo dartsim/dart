@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.28)
 project(nanobind_eigen_probe LANGUAGES CXX)
 
 find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)

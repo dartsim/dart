@@ -18,7 +18,7 @@ def configure(tmp_path, content, *, cmake_args=()):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(DependencyRequirements NONE)\n"
         f'set(CMAKE_MODULE_PATH "{(tmp_path / "modules").as_posix()}" "{(ROOT / "cmake").as_posix()}")\n'
         f'set(CMAKE_PREFIX_PATH "{(tmp_path / "prefix").as_posix()}")\n'

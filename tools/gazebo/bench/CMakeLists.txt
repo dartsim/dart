@@ -1,7 +1,7 @@
 # Gazebo benchmark and compatibility drivers for DART. They link one Gazebo
 # release's gz-physics, gz-sim and DART, so tools/gazebo/compat/lane.sh builds
 # them per lane (`lane.sh <lane> bench`); they are not part of the DART build.
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.28)
 project(dart_gazebo_bench LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)

@@ -50,7 +50,7 @@ Building from source
 
 The package requires Python 3.12 or newer and NumPy 1.21.5 or newer.
 ``pip install .`` builds it with scikit-build-core (``pyproject.toml``), which
-requires a matching C++ toolchain, CMake 3.26 or newer, Ninja, and the DART
+requires a matching C++ toolchain, CMake 3.28 or newer, Ninja, and the DART
 dependencies described in the
 :doc:`DART build guide </dart/developer_guide/build>`. Isolated ``pip`` builds
 install the tool requirements from ``pyproject.toml``.

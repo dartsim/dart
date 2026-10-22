@@ -119,6 +119,12 @@ the selected package and major and require that same major, so a consumer
 cannot silently link a different sdformat ABI. Core builds with IO disabled
 do not discover sdformat.
 
+Source builds using urdfdom below 5.1 should load only trusted URDF: those
+versions can interpret URDF text as a printf format string in parser error
+logging (fixed upstream in urdfdom 5.1.0, ros/urdfdom#243 and #244). Pixi
+builds use urdfdom 6 and are unaffected. Linux wheels bundle urdfdom 6.0.1
+and urdfdom_headers 3.0.1, with sdformat rebuilt against them.
+
 Set
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` for a headless core plus IO
 build.
