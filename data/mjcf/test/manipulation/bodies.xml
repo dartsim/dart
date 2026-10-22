@@ -1,4 +1,5 @@
-<!-- Copyright (c) 2026, The DART development contributors. BSD-2-Clause. -->
+<!-- Copyright (c) 2026, The DART development contributors. -->
+<!-- SPDX-License-Identifier: BSD-2-Clause -->
 <mujoco>
   <body name="arm" pos="-.5 0 .2">
     <joint name="shoulder"/>

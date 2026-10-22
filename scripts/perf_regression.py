@@ -3863,10 +3863,16 @@ def _build_arm(
             "infrastructure error: historical contact_benchmark uses the removed "
             "gui-osg component; use the release-6.20 harness for OSG-era comparisons"
         )
+    # Link-time only: finds transitive DSOs without a runtime RPATH.
+    linker_flags = (
+        "-DCMAKE_EXE_LINKER_FLAGS=-Xlinker -rpath-link -Xlinker "
+        + shlex.quote(str(dependency / "lib"))
+    )
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         "-DCMAKE_SKIP_RPATH=ON",
+        linker_flags,
         f"-DCMAKE_INSTALL_PREFIX={prefix}",
         f"-DCMAKE_PREFIX_PATH={dependency}",
         "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
@@ -3950,6 +3956,7 @@ def _build_arm(
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
             "-DCMAKE_SKIP_RPATH=ON",
             f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
+            linker_flags,
             "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
         ],
         env,

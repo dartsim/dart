@@ -333,10 +333,9 @@ License: BSD-3-Clause (nanobind / CMU text below).
 
 ------------------------------------------------------------------------
 Project: Dear ImGui
-Files: dart/gui/imgui/dart-compat.patch
+Files: none (compiled into DART binaries)
 Source: https://github.com/ocornut/imgui/tree/v1.92.8-docking
-DART's compatibility patch includes upstream context from Dear ImGui.
-Dear ImGui is also compiled into the dart-gui binary.
+Dear ImGui is compiled into the dart-gui binary.
 SPDX-License-Identifier: MIT
 The MIT License (MIT)
 
@@ -370,35 +369,13 @@ License: MPL-2.0 (full text below).
 Source (including the MPL-2.0-covered headers): https://gitlab.com/libeigen/eigen/-/tree/3.4.0
 
 ------------------------------------------------------------------------
-Project: OpenAI Gym model assets
-Files: data/mjcf/openai/*
-Source: https://github.com/openai/gym/blob/v0.10.5/LICENSE.md
-The MIT license applies only to material authored by OpenAI. Roboti-derived
-model material is attributed separately below; its license terms are not
-stated.
-SPDX-License-Identifier: MIT
-The MIT License
-
-Copyright (c) 2016 OpenAI (https://openai.com)
-License: MIT (full text below).
-
-------------------------------------------------------------------------
-Project: MuJoCo model assets (Roboti LLC)
-Files: data/mjcf/openai/*
-Source: https://github.com/openai/gym/blob/v0.10.5/LICENSE.md
-The tracked model notice contains the following historical attribution excerpt;
-it does not state a separate license grant for the Roboti model material.
-This work is derived from [MuJuCo models](http://www.mujoco.org/forum/index.php?resources/) used under the following license:
-```
-This file is part of MuJoCo.
-Copyright 2009-2015 Roboti LLC.
-Mujoco		:: Advanced physics simulation engine
-Source		: www.roboti.us
-Version		: 1.31
-Released 	: 23Apr16
-Author		:: Vikash Kumar
-Contacts 	: kumar@roboti.us
-```
+Project: DeepMind Control Suite model assets
+Files: data/mjcf/deepmind/*
+Source: https://github.com/google-deepmind/dm_control/tree/437b7a6a416715d9ed9e419cb40060c862de3ab0
+Copyright and attribution remain with the upstream authors.
+DART modifications are documented in each changed XML file and README.md.
+SPDX-License-Identifier: Apache-2.0
+License: Apache-2.0 (full text below).
 
 ------------------------------------------------------------------------
 Project: Gazebo benchmark world
