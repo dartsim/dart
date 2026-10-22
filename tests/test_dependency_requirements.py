@@ -1078,7 +1078,7 @@ def test_bullet_provider_source_targets_keep_ownership(tmp_path, mode):
     sdk = tmp_path / "provider-build"
     sdk.mkdir()
     stage = tmp_path / "installed"
-    owned = mode in ("upstream-source", "upstream-nested-source")
+    upstream = mode in ("upstream-source", "upstream-nested-source")
     target = "provider_${name}" if mode == "alias-source" else "${name}"
     targets = (
         "foreach(name BulletCollision LinearMath)\n"
@@ -1103,8 +1103,21 @@ def test_bullet_provider_source_targets_keep_ownership(tmp_path, mode):
         )
         (nested / "CMakeLists.txt").write_text(targets)
     directory = (
-        source if owned or mode in ("direct-root-source", "alias-source") else adapter
+        source
+        if upstream or mode in ("direct-root-source", "alias-source")
+        else adapter
     )
+    marker = source / "provider-owned.txt"
+    marker.write_text("Provider install rules remain active.\n")
+    install_directory = (
+        (nested if mode == "upstream-nested-source" else source / "src")
+        if upstream
+        else directory
+    )
+    with (install_directory / "CMakeLists.txt").open("a") as cmakelists:
+        cmakelists.write(
+            f'install(FILES "{marker.as_posix()}" DESTINATION share/provider-sdk)\n'
+        )
     original_pc = b"Name: provider-owned\nLibs: -lBulletSoftBody -lBulletDynamics -lBulletCollision -lLinearMath\n"
     (sdk / "bullet.pc").write_bytes(original_pc)
     metadata = (
@@ -1114,6 +1127,7 @@ def test_bullet_provider_source_targets_keep_ownership(tmp_path, mode):
     provider.write_text(
         "macro(bullet_provider method name)\n"
         f'add_subdirectory("{directory.as_posix()}" "{sdk.as_posix()}")\n'
+        f'configure_file("{sdk.as_posix()}/bullet.pc" "{tmp_path.as_posix()}/provider.pc.before" COPYONLY)\n'
         f'set(BULLET_PHYSICS_SOURCE_DIR "{source.as_posix()}" CACHE PATH "" FORCE)\n'
         f'FetchContent_SetPopulated(${{name}} {metadata} BINARY_DIR "{sdk.as_posix()}")\n'
         "endmacro()\n"
@@ -1129,11 +1143,7 @@ def test_bullet_provider_source_targets_keep_ownership(tmp_path, mode):
         + bullet_fallback_content()
         + "include(DARTFindBullet)\n"
         'if(NOT BULLET_FOUND)\nmessage(FATAL_ERROR "Valid source provider rejected")\nendif()\n'
-        + (
-            f'if(NOT DART_BULLET_SOURCE_DIR STREQUAL "{source.as_posix()}" OR NOT DART_BULLET_BINARY_DIR STREQUAL "{sdk.as_posix()}")\nmessage(FATAL_ERROR "Upstream source ownership lost")\nendif()\n'
-            if owned
-            else 'if(DEFINED CACHE{DART_BULLET_SOURCE_DIR} OR DEFINED CACHE{DART_BULLET_BINARY_DIR})\nmessage(FATAL_ERROR "Provider retained fetched-source metadata")\nendif()\n'
-        )
+        + 'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/fetched-cache.txt" "$CACHE{DART_BULLET_SOURCE_DIR};$CACHE{DART_BULLET_BINARY_DIR}")\n'
         + 'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\nint main(void) { return fixture_BulletCollision() + fixture_LinearMath() == 2 ? 0 : 1; }\\n")\n'
         'add_executable(provider_consumer "${CMAKE_CURRENT_BINARY_DIR}/main.c")\n'
         "target_link_libraries(provider_consumer PRIVATE Bullet)\n",
@@ -1154,12 +1164,14 @@ def test_bullet_provider_source_targets_keep_ownership(tmp_path, mode):
         env=env,
     )
     bullet_fixture_run(CMAKE, "--install", case / "build")
-    if owned:
-        assert (stage / "include/btBulletCollisionCommon.h").is_file()
-        assert not (stage / "include/bullet/BulletDynamics").exists()
-    else:
-        assert not stage.exists()
-        assert (sdk / "bullet.pc").read_bytes() == original_pc
+    installed_marker = stage / "share/provider-sdk/provider-owned.txt"
+    assert (
+        installed_marker.exists(),
+        (sdk / "bullet.pc").read_bytes()
+        == (tmp_path / "provider.pc.before").read_bytes(),
+    ) == (True, True)
+    assert installed_marker.read_bytes() == marker.read_bytes()
+    assert (case / "build/fetched-cache.txt").read_text() == ";"
 
 
 @pytest.mark.parametrize("mode", ["regular", "imported", "alias"])
@@ -1249,6 +1261,126 @@ def test_bullet_provider_current_source_metadata(tmp_path, mode, version):
     bullet_fixture_run(CMAKE, "--install", case / "build")
     assert not (tmp_path / "installed").exists()
     assert (sdk / "bullet.pc").read_bytes() == original_pc
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "fallback",
+        "decline",
+        "delegate",
+        "populate-only",
+        "parent-first",
+        "partial-collision",
+        "partial-math",
+        "no-source",
+    ],
+)
+def test_bullet_fallback_dispatch(tmp_path, mode):
+    source = bullet_fallback_source(tmp_path)
+    root_cmake = source / "CMakeLists.txt"
+    root_cmake.write_text(
+        root_cmake.read_text().replace("VERSION 3.28", "VERSION 2.4.3")
+        + 'file(APPEND "${CMAKE_BINARY_DIR}/sdk-configured.txt" "configured\\n")\n'
+    )
+    marker = source / "src/provider-owned.txt"
+    marker.write_text("Parent install rule.\n")
+    with (source / "src/CMakeLists.txt").open("a") as cmakelists:
+        cmakelists.write(
+            "install(FILES provider-owned.txt DESTINATION share/provider-sdk)\n"
+        )
+    archive = tmp_path / "bullet.tar.gz"
+    with tarfile.open(archive, "w:gz") as packed:
+        packed.add(source, arcname="bullet")
+    content = (
+        bullet_fallback_content()
+        .replace(
+            "https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz",
+            archive.as_uri(),
+        )
+        .replace(
+            "c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77",
+            hashlib.sha256(archive.read_bytes()).hexdigest(),
+        )
+    )
+    sdk = tmp_path / "provider-build"
+    provider = tmp_path / "provider.cmake"
+    args = [f"-DCMAKE_INSTALL_PREFIX={(tmp_path / 'installed').as_posix()}"]
+    if mode not in ("fallback", "parent-first"):
+        body = 'file(APPEND "${CMAKE_BINARY_DIR}/provider-called.txt" "called\\n")\n'
+        if mode == "delegate":
+            body += "FetchContent_MakeAvailable(bullet)\n"
+        elif mode != "decline":
+            if mode.startswith("partial-"):
+                name = (
+                    "BulletCollision" if mode == "partial-collision" else "LinearMath"
+                )
+                body += (
+                    f'add_library({name} STATIC "{source.as_posix()}/src/{name}.c")\n'
+                )
+            metadata = (
+                ""
+                if mode == "no-source"
+                else f'SOURCE_DIR "{source.as_posix()}" BINARY_DIR "{sdk.as_posix()}"'
+            )
+            body += f"FetchContent_SetPopulated(${{name}} {metadata})\n"
+        provider.write_text(
+            "macro(bullet_provider method name)\n" + body + "endmacro()\n"
+            "cmake_language(SET_DEPENDENCY_PROVIDER bullet_provider SUPPORTED_METHODS FETCHCONTENT_MAKEAVAILABLE_SERIAL)\n"
+        )
+        args.append(f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={provider.as_posix()}")
+    setup = 'include(FetchContent)\nset(CMAKE_POLICY_VERSION_MINIMUM "3.4")\n'
+    if mode == "parent-first":
+        setup += f'FetchContent_Declare(bullet SOURCE_DIR "{source.as_posix()}" BINARY_DIR "{sdk.as_posix()}")\n'
+    result = configure(
+        tmp_path,
+        setup
+        + content
+        + 'if(NOT CMAKE_POLICY_VERSION_MINIMUM STREQUAL "3.4")\nmessage(FATAL_ERROR "Caller policy minimum changed")\nendif()\n'
+        + "include(DARTFindBullet)\n"
+        'if(NOT BULLET_FOUND)\nmessage(FATAL_ERROR "Lost source headers")\nendif()\n'
+        'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\nint main(void) { return fixture_BulletCollision()+fixture_LinearMath()==2 ? 0 : 1; }\\n")\n'
+        'add_executable(consumer "${CMAKE_CURRENT_BINARY_DIR}/main.c")\n'
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/owned.txt" "$CACHE{DART_BULLET_SOURCE_DIR}")\n',
+        language="C",
+        cmake_args=args,
+    )
+    build = tmp_path / "build"
+    if mode.startswith("partial-") or mode == "no-source":
+        assert result.returncode != 0
+        assert (
+            "Bullet must provide"
+            if mode.startswith("partial-")
+            else "Bullet requires complete"
+        ) in result.stdout + result.stderr
+        assert not (build / "sdk-configured.txt").exists()
+        assert "already exists" not in result.stdout + result.stderr
+        return
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (build / "sdk-configured.txt").read_text() == "configured\n"
+    if provider.exists():
+        assert (build / "provider-called.txt").read_text() == "called\n"
+    owned = mode != "parent-first"
+    assert bool((build / "owned.txt").read_text()) == owned
+    bullet_fixture_run(CMAKE, "--build", build, "--target", "consumer")
+    if not owned:
+        bullet_fixture_run(
+            CMAKE, "--build", build, "--target", "BulletDynamics", "BulletSoftBody"
+        )
+    dll_dirs = sorted({str(path.parent) for path in tmp_path.rglob("*.dll")})
+    env = {**os.environ, "PATH": os.pathsep.join([*dll_dirs, os.environ["PATH"]])}
+    bullet_fixture_run(
+        build / ("consumer.exe" if os.name == "nt" else "consumer"), env=env
+    )
+    bullet_fixture_run(CMAKE, "--install", build)
+    stage = tmp_path / "installed"
+    assert (stage / "share/provider-sdk/provider-owned.txt").exists() != owned
+    pc = (stage / "lib/pkgconfig/bullet.pc").read_text()
+    assert ("BulletDynamics" not in pc) == owned
+    if owned:
+        assert (stage / "include/btBulletCollisionCommon.h").is_file()
+        assert not (stage / "include/bullet/BulletDynamics").exists()
 
 
 @pytest.mark.parametrize(

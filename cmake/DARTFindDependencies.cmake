@@ -243,59 +243,55 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
     URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
     URL_HASH
       SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
+    # Populate first so provider-created targets retain their install rules.
+    SOURCE_SUBDIR
+    dart-private-bullet-sdk
   )
   dart_fetchcontent_makeavailable_legacy(bullet)
   dart_check_fetchcontent(bullet DART_USE_SYSTEM_BULLET)
+  FetchContent_GetProperties(
+    bullet
+    SOURCE_DIR _dart_bullet_source_dir
+    BINARY_DIR _dart_bullet_binary_dir
+  )
+  set(_dart_bullet_source_owned FALSE)
+  if(NOT TARGET BulletCollision AND NOT TARGET LinearMath)
+    if(
+      NOT _dart_bullet_source_dir
+      OR NOT _dart_bullet_binary_dir
+      OR NOT EXISTS "${_dart_bullet_source_dir}/CMakeLists.txt"
+    )
+      message(
+        FATAL_ERROR
+        "Bullet requires complete provider targets or usable sources"
+      )
+    endif()
+    block(SCOPE_FOR VARIABLES)
+      if(
+        NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM
+        OR CMAKE_POLICY_VERSION_MINIMUM VERSION_LESS 3.5
+      )
+        set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+      endif()
+      add_subdirectory(
+        "${_dart_bullet_source_dir}"
+        "${_dart_bullet_binary_dir}"
+      )
+    endblock()
+    set(_dart_bullet_source_owned TRUE)
+  endif()
   if(NOT TARGET BulletCollision OR NOT TARGET LinearMath)
     message(
       FATAL_ERROR
       "Bullet must provide BulletCollision and LinearMath targets"
     )
   endif()
-  FetchContent_GetProperties(bullet SOURCE_DIR _dart_bullet_source_dir)
-  # Only concrete targets created under upstream src belong to our SDK.
-  set(_dart_bullet_source_owned FALSE)
-  if(_dart_bullet_source_dir)
+  if(_dart_bullet_source_owned)
     get_filename_component(
       _dart_bullet_expected_src
       "${_dart_bullet_source_dir}/src"
       ABSOLUTE
     )
-    set(_dart_bullet_source_owned TRUE)
-    foreach(_dart_bullet_target BulletCollision LinearMath)
-      get_target_property(_dart_bullet_imported ${_dart_bullet_target} IMPORTED)
-      get_target_property(
-        _dart_bullet_alias
-        ${_dart_bullet_target}
-        ALIASED_TARGET
-      )
-      if(_dart_bullet_imported OR _dart_bullet_alias)
-        set(_dart_bullet_source_owned FALSE)
-        break()
-      endif()
-      get_target_property(
-        _dart_bullet_target_dir
-        ${_dart_bullet_target}
-        SOURCE_DIR
-      )
-      # Start at a known processed directory, never probe a guessed path.
-      while(
-        _dart_bullet_target_dir
-        AND NOT _dart_bullet_target_dir STREQUAL "${_dart_bullet_expected_src}"
-      )
-        get_directory_property(
-          _dart_bullet_target_dir
-          DIRECTORY "${_dart_bullet_target_dir}"
-          PARENT_DIRECTORY
-        )
-      endwhile()
-      if(NOT _dart_bullet_target_dir)
-        set(_dart_bullet_source_owned FALSE)
-        break()
-      endif()
-    endforeach()
-  endif()
-  if(_dart_bullet_source_owned)
     # Skip upstream's src install rules, including the unused dynamics headers.
     set_property(
       DIRECTORY "${_dart_bullet_expected_src}"
@@ -398,12 +394,9 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
     endif()
   endif()
   unset(_dart_bullet_source_dir)
+  unset(_dart_bullet_binary_dir)
   unset(_dart_bullet_expected_src)
   unset(_dart_bullet_source_owned)
-  unset(_dart_bullet_target)
-  unset(_dart_bullet_imported)
-  unset(_dart_bullet_alias)
-  unset(_dart_bullet_target_dir)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
