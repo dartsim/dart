@@ -118,6 +118,26 @@ def test_dependency_image_fetches_archives_without_git_clones():
     assert "git clone" not in dockerfile
 
 
+def test_dependency_image_builds_sdformat_against_urdfdom_6():
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    headers = "ros/urdfdom_headers/archive/refs/tags/3.0.1.tar.gz"
+    parser = "ros/urdfdom/archive/refs/tags/6.0.1.tar.gz"
+    assert headers in dockerfile
+    assert parser in dockerfile
+    # The trailing newline skips the "# sdformat embeds ..." comment above gz-cmake.
+    sdformat = dockerfile.index("# sdformat\n")
+    assert (
+        dockerfile.index("# tinyxml2")
+        < dockerfile.index("# console_bridge")
+        < dockerfile.index(headers)
+        < dockerfile.index(parser)
+        < sdformat
+    )
+    assert (
+        "-DUSE_INTERNAL_URDF=OFF" in dockerfile[sdformat : dockerfile.index("# Bullet")]
+    )
+
+
 @pytest.mark.parametrize("wheels", [True, False])
 @pytest.mark.parametrize("stable_abi", [True, False])
 def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_abi):
@@ -154,7 +174,7 @@ def test_python_discovery_needs_no_embedding_library(tmp_path, wheels, stable_ab
         "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
     )
     (tmp_path / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.26)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(PythonComponents NONE)\n"
         "macro(dart_find_package)\nendmacro()\n"
         "macro(dart_check_required_package)\nendmacro()\n"
@@ -244,7 +264,7 @@ def test_builtin_findpython_primary_persists_across_configures(tmp_path):
         "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
     )
     (tmp_path / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.26)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(BuiltinFindPython NONE)\n"
         "function(add_subdirectory)\nendfunction()\n"
         "set(DART_BUILD_DARTPY ON)\n"
@@ -269,6 +289,7 @@ def test_builtin_findpython_primary_persists_across_configures(tmp_path):
         for line in (build / "CMakeCache.txt").read_text().splitlines():
             if line.startswith(f"{name}:"):
                 return line.split("=", 1)[1]
+        return None
 
     result = configure()
     assert result.returncode == 0, result.stdout + result.stderr
@@ -292,7 +313,7 @@ def test_dartpy_disabled_does_not_discover_python(tmp_path):
             f'message(FATAL_ERROR "Unexpected {name} discovery")\n'
         )
     (tmp_path / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.26)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(PythonDisabled NONE)\n"
         "macro(dart_find_package)\nendmacro()\n"
         "macro(dart_check_required_package)\nendmacro()\n"

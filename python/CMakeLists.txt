@@ -31,9 +31,6 @@ elseif(
 endif()
 set(dartpy_python_components Interpreter Development.Module)
 if(DART_DARTPY_STABLE_ABI)
-  if(CMAKE_VERSION VERSION_LESS 3.26)
-    message(FATAL_ERROR "DART_DARTPY_STABLE_ABI requires CMake 3.26 or newer")
-  endif()
   list(APPEND dartpy_python_components Development.SABIModule)
 endif()
 # All builds need extension headers, not libpython (unavailable on manylinux).
