@@ -256,6 +256,11 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
   # Only concrete targets created under upstream src belong to our SDK.
   set(_dart_bullet_source_owned FALSE)
   if(_dart_bullet_source_dir)
+    get_filename_component(
+      _dart_bullet_expected_src
+      "${_dart_bullet_source_dir}/src"
+      ABSOLUTE
+    )
     set(_dart_bullet_source_owned TRUE)
     foreach(_dart_bullet_target BulletCollision LinearMath)
       get_target_property(_dart_bullet_imported ${_dart_bullet_target} IMPORTED)
@@ -276,8 +281,7 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
       # Start at a known processed directory, never probe a guessed path.
       while(
         _dart_bullet_target_dir
-        AND
-          NOT _dart_bullet_target_dir STREQUAL "${_dart_bullet_source_dir}/src"
+        AND NOT _dart_bullet_target_dir STREQUAL "${_dart_bullet_expected_src}"
       )
         get_directory_property(
           _dart_bullet_target_dir
@@ -294,7 +298,7 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
   if(_dart_bullet_source_owned)
     # Skip upstream's src install rules, including the unused dynamics headers.
     set_property(
-      DIRECTORY "${bullet_SOURCE_DIR}/src"
+      DIRECTORY "${_dart_bullet_expected_src}"
       PROPERTY EXCLUDE_FROM_ALL TRUE
     )
     install(
@@ -385,10 +389,16 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
     )
   else()
     # Do not retain an earlier fetched build's paths for a provider's targets.
+    unset(DART_BULLET_SOURCE_DIR)
     unset(DART_BULLET_SOURCE_DIR CACHE)
     unset(DART_BULLET_BINARY_DIR CACHE)
+    # Current header provenance does not grant ownership of provider installs.
+    if(_dart_bullet_source_dir)
+      set(DART_BULLET_SOURCE_DIR "${_dart_bullet_source_dir}")
+    endif()
   endif()
   unset(_dart_bullet_source_dir)
+  unset(_dart_bullet_expected_src)
   unset(_dart_bullet_source_owned)
   unset(_dart_bullet_target)
   unset(_dart_bullet_imported)

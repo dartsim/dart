@@ -852,13 +852,15 @@ def bullet_fixture_run(*args, env=None):
 
 
 @pytest.mark.parametrize("libdir", ["lib", "lib64", "absolute"])
-def test_bullet_fetched_pkgconfig_libdir(tmp_path, monkeypatch, libdir):
+@pytest.mark.parametrize("source_suffix", ["", "/", "/.", "/sub/.."])
+def test_bullet_fetched_pkgconfig_libdir(tmp_path, monkeypatch, libdir, source_suffix):
     source = bullet_fallback_source(tmp_path)
+    (source / "sub").mkdir()
     stage = tmp_path / "installed"
     directory = tmp_path / "separate-libs" if libdir == "absolute" else Path(libdir)
     result = configure(
         tmp_path,
-        f'set(FETCHCONTENT_SOURCE_DIR_BULLET "{source.as_posix()}")\n'
+        f'set(FETCHCONTENT_SOURCE_DIR_BULLET "{source.as_posix()}{source_suffix}")\n'
         + bullet_fallback_content(),
         language="C",
         cmake_args=(
@@ -1158,6 +1160,95 @@ def test_bullet_provider_source_targets_keep_ownership(tmp_path, mode):
     else:
         assert not stage.exists()
         assert (sdk / "bullet.pc").read_bytes() == original_pc
+
+
+@pytest.mark.parametrize("mode", ["regular", "imported", "alias"])
+@pytest.mark.parametrize("version", [325, 304, None])
+def test_bullet_provider_current_source_metadata(tmp_path, mode, version):
+    source = bullet_fallback_source(tmp_path)
+    (source / "src/LinearMath/btScalar.h").write_text(
+        (f"#define BT_BULLET_VERSION {version}\n" if version else "")
+        + "#ifdef BT_USE_DOUBLE_PRECISION\ntypedef double btScalar;\n"
+        "#else\ntypedef float btScalar;\n#endif\n"
+        "int fixture_LinearMath(void);\n"
+    )
+    sdk = tmp_path / "provider-build"
+    sdk.mkdir()
+    original_pc = b"Name: provider-owned\nLibs: -lBulletCollision -lLinearMath\n"
+    if mode == "imported":
+        bullet_fixture_run(CMAKE, "-S", source, "-B", sdk, "-G", "Ninja")
+        bullet_fixture_run(
+            CMAKE, "--build", sdk, "--target", "BulletCollision", "LinearMath"
+        )
+    (sdk / "bullet.pc").write_bytes(original_pc)
+    targets = ""
+    for name in ("BulletCollision", "LinearMath"):
+        target = f"provider_{name}" if mode == "alias" else name
+        if mode == "imported":
+            library = (sdk / f"{name}-link.txt").read_text()
+            targets += (
+                f"add_library({target} UNKNOWN IMPORTED GLOBAL)\n"
+                f'set_target_properties({target} PROPERTIES IMPORTED_LOCATION "{library}")\n'
+            )
+        else:
+            targets += (
+                f'add_library({target} STATIC "{source.as_posix()}/src/{name}.c")\n'
+            )
+        visibility = "INTERFACE" if mode == "imported" else "PUBLIC"
+        targets += (
+            f'target_include_directories({target} {visibility} "{source.as_posix()}/src")\n'
+            f"target_compile_definitions({target} {visibility} BT_USE_DOUBLE_PRECISION)\n"
+        )
+        if mode == "alias":
+            targets += f"add_library({name} ALIAS {target})\n"
+    provider = tmp_path / "provider.cmake"
+    provider.write_text(
+        "macro(bullet_provider method name)\n"
+        + targets
+        + f'set(BULLET_PHYSICS_SOURCE_DIR "{source.as_posix()}")\n'
+        + f'FetchContent_SetPopulated(${{name}} SOURCE_DIR "{source.as_posix()}" BINARY_DIR "{sdk.as_posix()}")\n'
+        + "endmacro()\n"
+        "cmake_language(SET_DEPENDENCY_PROVIDER bullet_provider SUPPORTED_METHODS FETCHCONTENT_MAKEAVAILABLE_SERIAL)\n"
+    )
+    case = tmp_path / "case"
+    case.mkdir()
+    accepted = version == 325
+    result = configure(
+        case,
+        'set(DART_BULLET_SOURCE_DIR "/stale/fetched" CACHE INTERNAL "")\n'
+        'set(DART_BULLET_BINARY_DIR "/stale/build" CACHE INTERNAL "")\n'
+        "set(FETCHCONTENT_FULLY_DISCONNECTED ON)\n"
+        + bullet_fallback_content()
+        + "include(DARTFindBullet)\n"
+        + f'if({"NOT " if accepted else ""}BULLET_FOUND)\nmessage(FATAL_ERROR "Wrong provider header validation")\nendif()\n'
+        + 'if(DEFINED CACHE{DART_BULLET_SOURCE_DIR} OR DEFINED CACHE{DART_BULLET_BINARY_DIR} OR DEFINED CACHE{BULLET_PHYSICS_SOURCE_DIR})\nmessage(FATAL_ERROR "Provider metadata leaked into cache")\nendif()\n'
+        + (
+            'if(NOT BULLET_VERSION VERSION_EQUAL "3.25")\nmessage(FATAL_ERROR "Wrong provider version")\nendif()\n'
+            'file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/main.c" "#include <btBulletCollisionCommon.h>\\n_Static_assert(sizeof(btScalar) == sizeof(double), \\"Wrong precision\\");\\nint main(void) { return fixture_BulletCollision() + fixture_LinearMath() == 2 ? 0 : 1; }\\n")\n'
+            'add_executable(provider_consumer "${CMAKE_CURRENT_BINARY_DIR}/main.c")\n'
+            "target_link_libraries(provider_consumer PRIVATE Bullet)\n"
+            if accepted
+            else ""
+        ),
+        language="C",
+        cmake_args=(
+            f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={provider.as_posix()}",
+            f"-DCMAKE_INSTALL_PREFIX={(tmp_path / 'installed').as_posix()}",
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    if accepted:
+        bullet_fixture_run(CMAKE, "--build", case / "build")
+        env = {**os.environ, "PATH": str(sdk / "src") + os.pathsep + os.environ["PATH"]}
+        bullet_fixture_run(
+            case
+            / "build"
+            / ("provider_consumer.exe" if os.name == "nt" else "provider_consumer"),
+            env=env,
+        )
+    bullet_fixture_run(CMAKE, "--install", case / "build")
+    assert not (tmp_path / "installed").exists()
+    assert (sdk / "bullet.pc").read_bytes() == original_pc
 
 
 @pytest.mark.parametrize(
