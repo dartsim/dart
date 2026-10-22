@@ -41,6 +41,9 @@ bool allocationProbe = false;
 std::size_t allocationIndex = 0;
 std::size_t allocationFailAt = 0;
 bool allocationInjected = false;
+const char* allocationFormat = nullptr;
+std::size_t allocationFault = 0;
+int allocationMode = 0;
 } // namespace
 
 // Only this standalone test executable replaces allocation, never libdart.
@@ -87,9 +90,16 @@ void expectEq(
   ++checks;
   if (expected == actual)
     return;
-  if (failures++ < 32)
+  if (failures++ < 32) {
     std::cout << "MISMATCH " << what << ": expected [" << expected
-              << "] actual [" << actual << "]\n";
+              << "] actual [" << actual << "]";
+#ifdef DART_CHECK_LOGGING_FLOAT_ALLOCATION_FAILURES
+    if (allocationFormat)
+      std::cout << " format=[" << allocationFormat
+                << "] failAt=" << allocationFault << " mode=" << allocationMode;
+#endif
+    std::cout << "\n";
+  }
 }
 
 void expectTrue(bool condition, const char* what)
@@ -312,9 +322,18 @@ void allocationFailureCases()
     dart::common::info(format, 1.2345678901234567);
     allocationProbe = false;
     const std::size_t allocations = allocationIndex;
-    expectTrue(allocations != 0, "allocation sweep is nonempty");
+    allocationFormat = format;
+    allocationFault = std::numeric_limits<std::size_t>::max();
+    allocationMode = FE_TONEAREST;
+    // Short output may fit entirely in the implementation's small buffers.
+    // The high-precision case must still exercise real allocation failures.
+    if (std::strcmp(format, "{}") != 0)
+      expectTrue(
+          allocations != 0, "high-precision allocation sweep is nonempty");
     for (const int mode :
          {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO}) {
+      allocationMode = mode;
+      allocationFault = std::numeric_limits<std::size_t>::max();
       expectTrue(
           std::fesetround(mode) == 0, "set allocation-test rounding mode");
       for (std::size_t failAt = 0; failAt < allocations; ++failAt) {
@@ -329,12 +348,15 @@ void allocationFailureCases()
         allocationProbe = true;
         dart::common::info(format, 1.2345678901234567);
         allocationProbe = false;
+        const int returnedErrno = errno;
+        allocationFault = failAt;
+        allocationMode = mode;
         ++attempts;
         expectTrue(allocationInjected, "requested allocation fault occurred");
         expectTrue(std::fegetround() == mode, "fault restores rounding mode");
         expectTrue(
             std::fetestexcept(FE_ALL_EXCEPT) == flags, "fault restores flags");
-        expectTrue(errno == EDOM, "fault restores errno");
+        expectTrue(returnedErrno == EDOM, "fault restores errno");
         const bool diagnostic
             = captured.find("[log format error: number conversion failed]")
               == 0;
@@ -351,6 +373,8 @@ void allocationFailureCases()
       }
     }
   }
+  allocationFormat = nullptr;
+  expectTrue(attempts != 0, "allocation fault sweep is nonempty");
   expectTrue(
       diagnostics != 0, "failed output streams reach conversion diagnostic");
   std::fesetenv(&original);
