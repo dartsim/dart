@@ -158,7 +158,21 @@ macro(dart_check_optional_package variable component dependency)
   else()
     set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(NOT ${variable}_FOUND)
-      if(ARGV3) # version
+      if(DART_REQUIRE_OPTIONAL_DEPENDENCIES AND NOT DART_SKIP_${variable})
+        # Macro arguments are not variables, so test the count, not ARGV3.
+        set(_dart_optional_version "")
+        if(${ARGC} GREATER 3)
+          set(_dart_optional_version " (>= ${ARGV3})")
+        endif()
+        message(
+          FATAL_ERROR
+          "Looking for ${dependency}${_dart_optional_version} - NOT found, but "
+          "DART_REQUIRE_OPTIONAL_DEPENDENCIES is ON and ${component} needs it."
+          " Install ${dependency}, or set DART_SKIP_${variable}=ON to build"
+          " without ${component}."
+        )
+      endif()
+      if(${ARGC} GREATER 3) # version
         message(
           WARNING
           "Looking for ${dependency} - NOT found, to use"
