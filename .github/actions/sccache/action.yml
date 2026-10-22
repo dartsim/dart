@@ -35,7 +35,7 @@ runs:
         probe="$RUNNER_TEMP/sccache-compiler"
         mkdir -p "$probe"
         cat > "$probe/CMakeLists.txt" <<'CMAKE'
-        cmake_minimum_required(VERSION 3.22)
+        cmake_minimum_required(VERSION 3.28)
         project(CompilerVersion LANGUAGES CXX)
         file(WRITE "${CMAKE_BINARY_DIR}/version.txt" "${CMAKE_CXX_COMPILER_VERSION}")
         CMAKE

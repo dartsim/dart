@@ -384,7 +384,6 @@ def test_manual_constraint_registry(world):
     assert (free_body.world_transform @ np.zeros(3))[0] > anchor[0] + 0.01
 
 
-@pytest.mark.xfail(strict=True, reason="M5: native diagnostics forwarded to Python's dartpy logger are pending")
 def test_native_logging_bridge(caplog):
     sentinel = "dart7 acceptance native warning sentinel"
     # This existing binding invokes C++ common::warn directly; it does not
