@@ -469,6 +469,13 @@
     retained through DART 7.x.
     [#3854](https://github.com/dartsim/dart/pull/3854)
 
+  * The `dart` target no longer exports the `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS`
+    compile definition, and DART no longer declares a direct Boost development
+    dependency. The Gazebo environment still installs the `libboost` runtime
+    transitively through assimp. Projects that include Boost headers and relied
+    on the definition must define it themselves.
+    [#3851](https://github.com/dartsim/dart/pull/3851)
+
   * Ship third-party attribution in `NOTICE`, included in dartpy's license
     metadata and installed alongside `LICENSE` in `share/licenses/dart`.
     [#3857](https://github.com/dartsim/dart/pull/3857)
