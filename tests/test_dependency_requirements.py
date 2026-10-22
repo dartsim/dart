@@ -2606,6 +2606,62 @@ def test_bullet_active_unsupported_configuration_edge(tmp_path, configuration):
     assert "UNSUPPORTED:missing" in result.stderr
 
 
+@pytest.mark.parametrize(
+    "mapping", ["", ";DEBUG", "DEBUG;;RELWITHDEBINFO", "DEBUG;", "DEBUG"]
+)
+@pytest.mark.parametrize("configuration", ["Release", ""])
+@pytest.mark.parametrize("predicate", ["", "Debug"])
+def test_bullet_mapped_configuration_predicates_match_cmake(
+    tmp_path, mapping, configuration, predicate
+):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double")
+    bullet_module(tmp_path)
+    (tmp_path / "consumer.cpp").write_text(BULLET_CONSUMER)
+    graph = (
+        "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + bullet_imports(prefix)
+        + "target_compile_definitions(Bullet INTERFACE BT_USE_DOUBLE_PRECISION)\n"
+        "add_library(owner INTERFACE IMPORTED)\n"
+        "target_link_libraries(Bullet INTERFACE owner)\n"
+        f'set_property(TARGET owner PROPERTY MAP_IMPORTED_CONFIG_{configuration.upper()} "{mapping}")\n'
+        "add_library(broken INTERFACE IMPORTED)\n"
+        'target_link_libraries(broken INTERFACE "$<UNSUPPORTED:missing>")\n'
+        f'target_link_libraries(owner INTERFACE "$<$<CONFIG:{predicate}>:broken>")\n'
+    )
+    args = (f"-DCMAKE_BUILD_TYPE={configuration}", "-UCMAKE_CONFIGURATION_TYPES")
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(
+        control,
+        graph + f'add_executable(consumer "{tmp_path.as_posix()}/consumer.cpp")\n'
+        "target_link_libraries(consumer PRIVATE Bullet)\n",
+        cmake_args=args,
+    )
+    accepted = result.returncode == 0
+    if accepted:
+        cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+        executable = (
+            control / "build" / ("consumer.exe" if os.name == "nt" else "consumer")
+        )
+        env = {
+            **os.environ,
+            "PATH": os.pathsep.join([str(prefix / "lib"), os.environ.get("PATH", "")]),
+        }
+        cmake_fixture_run(executable, env=env)
+    else:
+        assert "UNSUPPORTED:missing" in result.stderr
+    result = configure(
+        tmp_path,
+        graph + "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/finder.txt" "${BULLET_FOUND};${_DART_BULLET_GRAPH_UNKNOWN}")\n',
+        cmake_args=args,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (tmp_path / "build/finder.txt").read_text() == (
+        "TRUE;FALSE" if accepted else "FALSE;TRUE"
+    )
+
+
 @pytest.mark.parametrize("debug_precision", ["single", "double"])
 @pytest.mark.parametrize("generator", ["Ninja", "Ninja Multi-Config"])
 def test_bullet_imported_configuration_abi(tmp_path, debug_precision, generator):

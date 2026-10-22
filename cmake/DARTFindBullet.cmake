@@ -542,7 +542,9 @@ function(_dart_bullet_collect_graph config all_configs)
           MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
         )
         string(TOUPPER "${_dart_bullet_mapped}" _dart_bullet_mapped)
-        string(REPLACE ";" ";_" _dart_bullet_mapped "_${_dart_bullet_mapped}")
+        # Empty mappings select a default location, not an empty CONFIG match.
+        list(FILTER _dart_bullet_mapped EXCLUDE REGEX "^$")
+        list(TRANSFORM _dart_bullet_mapped PREPEND "_")
         list(APPEND _dart_bullet_active_configs ${_dart_bullet_mapped})
       endif()
     endif()
