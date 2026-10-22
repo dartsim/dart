@@ -1,3 +1,4 @@
+import logging
 import math
 import platform
 import signal
@@ -432,7 +433,7 @@ def test_python_analytical_rejects_out_of_range_dof():
 
 
 @pytest.mark.parametrize("shift_dofs", [False, True])
-def test_python_analytical_copy_uses_jacobian_dls(shift_dofs, capfd):
+def test_python_analytical_copy_uses_jacobian_dls(shift_dofs, caplog):
     skel = dart.dynamics.Skeleton("original")
     joint, body = skel.createPrismaticJointAndBodyNodePair()
     joint.setAxis([1, 0, 0])
@@ -443,19 +444,27 @@ def test_python_analytical_copy_uses_jacobian_dls(shift_dofs, capfd):
     ik.getErrorMethod().setBounds(np.full(6, -1e-8), np.full(6, 1e-8))
     ik.getErrorMethod().setComputeFromCenter(False)
     ik.getSolver().setNumMaxIterations(100)
-    capfd.readouterr()
 
-    if shift_dofs:
-        copy = dart.dynamics.Skeleton("shifted")
-        base = copy.createPrismaticJointAndBodyNodePair()[1]
-        body.copyTo(copy, base)
-        copied_body = copy.getBodyNode(1)
-    else:
-        copy = body.copyAs("same")
-        copied_body = copy.getBodyNode(0)
-    warning = capfd.readouterr().err
-    assert warning.count("uses JacobianDLS") == 1
-    assert "Set the analytical solver up again for the copy." in warning
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        if shift_dofs:
+            copy = dart.dynamics.Skeleton("shifted")
+            base = copy.createPrismaticJointAndBodyNodePair()[1]
+            body.copyTo(copy, base)
+            copied_body = copy.getBodyNode(1)
+        else:
+            copy = body.copyAs("same")
+            copied_body = copy.getBodyNode(0)
+        dart.common.flush_logs()
+    warnings = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "dartpy" and record.levelno == logging.WARNING
+    ]
+    assert sum("uses JacobianDLS" in message for message in warnings) == 1
+    assert any(
+        "Set the analytical solver up again for the copy." in message
+        for message in warnings
+    )
 
     copied_ik = copied_body.getShapeNode(0).getIK()
     assert copied_ik.getDofs() == [int(shift_dofs)]

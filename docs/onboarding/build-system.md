@@ -150,6 +150,12 @@ the selected package and major and require that same major, so a consumer
 cannot silently link a different sdformat ABI. Core builds with IO disabled
 do not discover sdformat.
 
+Source builds using urdfdom below 5.1 should load only trusted URDF: those
+versions can interpret URDF text as a printf format string in parser error
+logging (fixed upstream in urdfdom 5.1.0, ros/urdfdom#243 and #244). Pixi
+builds use urdfdom 6 and are unaffected. Linux wheels bundle urdfdom 6.0.1
+and urdfdom_headers 3.0.1, with sdformat rebuilt against them.
+
 Set
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` for a headless core plus IO
 build.
@@ -179,9 +185,10 @@ default) requires Filament 1.77.3, GLFW 3.4, libpng, libjpeg, and Dear ImGui
 Filament SDK; `OFF` uses DART's pinned private SDK, which Linux builds from
 source with Clang 20 or newer and Ninja, and macOS arm64 and 64-bit Windows
 download as prebuilt archives. The bundled ImGui, the default, is the Dear
-ImGui v1.92.8 docking release, which configure fetches with Git; its installed
-`dart/external/imgui/` headers use the docking layout. For offline configures,
-pass a local checkout of that tag with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
+ImGui v1.92.8 docking release, which configure fetches as a SHA256-pinned
+tag archive, unpatched; its installed `dart/external/imgui/` headers use the
+docking layout. For offline configures, extract that archive and pass the
+folder that contains `imgui.h` with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
 `DART_USE_SYSTEM_IMGUI=ON` uses an installed ImGui instead; a vanilla system
 ImGui builds `dart-gui` without docking.
 
