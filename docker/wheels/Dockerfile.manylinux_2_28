@@ -5,7 +5,7 @@ ARG NUM_CORES=8
 
 # Build every native dependency with the manylinux toolchain: Conda libraries
 # require newer GLIBCXX/CXXABI symbols even when their glibc floor is 2.28.
-RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.22.1,<4.3.4" ninja
+RUN /opt/python/cp313-cp313/bin/pip install "cmake>=3.28,<4.3.4" ninja
 
 RUN yum install -y \
     clang \
@@ -51,8 +51,8 @@ RUN curl -fsSL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar
     && rm -rf eigen eigen.tar.gz
 
 # octomap
-RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.0.tar.gz -o octomap.tar.gz \
-    && echo "8da2576ec6a0993e8900db7f91083be8682d8397a7be0752c85d1b7dd1b8e992  octomap.tar.gz" | sha256sum -c - \
+RUN curl -fsSL https://github.com/OctoMap/octomap/archive/refs/tags/v1.10.1.tar.gz -o octomap.tar.gz \
+    && echo "b6b6c10c99ab15701dd105840e7d4cf18e226eb68714dd4bdfe049dede5cd489  octomap.tar.gz" | sha256sum -c - \
     && mkdir octomap && tar -xf octomap.tar.gz -C octomap --strip-components=1 \
     && mkdir -p octomap/build \
     && cmake octomap -B octomap/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_OCTOVIS_SUBPROJECT=OFF -DBUILD_DYNAMICETD3D_SUBPROJECT=OFF -DBUILD_TESTING=OFF \
@@ -97,9 +97,10 @@ RUN curl -fsSL https://github.com/ros/console_bridge/archive/refs/tags/1.0.2.tar
     && cmake --build console_bridge/build --target install -j${NUM_CORES} \
     && rm -rf console_bridge console_bridge.tar.gz
 
-# urdfdom_headers
-RUN curl -fsSL https://github.com/ros/urdfdom_headers/archive/refs/tags/1.1.1.tar.gz -o urdfdom_headers.tar.gz \
-    && echo "b2ee5bffa51eea4958f64479b4fa273881d82a3bfa1d98686a16f8d8ca6c2350  urdfdom_headers.tar.gz" | sha256sum -c - \
+# urdfdom 6.0.1 uses the .hpp headers introduced in urdfdom_headers 3.0.1;
+# keep 3.0.1 even though upstream urdfdom still declares a 3.0.0 floor.
+RUN curl -fsSL https://github.com/ros/urdfdom_headers/archive/refs/tags/3.0.1.tar.gz -o urdfdom_headers.tar.gz \
+    && echo "42d85a82d1dea2e1252596131e58997244ce6c59d12ae9ab852fe7c35d09f0ec  urdfdom_headers.tar.gz" | sha256sum -c - \
     && mkdir urdfdom_headers && tar -xf urdfdom_headers.tar.gz -C urdfdom_headers --strip-components=1 \
     && mkdir -p urdfdom_headers/build \
     && cmake urdfdom_headers -B urdfdom_headers/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
@@ -107,8 +108,8 @@ RUN curl -fsSL https://github.com/ros/urdfdom_headers/archive/refs/tags/1.1.1.ta
     && rm -rf urdfdom_headers urdfdom_headers.tar.gz
 
 # urdfdom
-RUN curl -fsSL https://github.com/ros/urdfdom/archive/refs/tags/4.0.1.tar.gz -o urdfdom.tar.gz \
-    && echo "46b122c922f44ec32674a56e16fd4b5d068b53265898cbea2c3e1939ecccc62a  urdfdom.tar.gz" | sha256sum -c - \
+RUN curl -fsSL https://github.com/ros/urdfdom/archive/refs/tags/6.0.1.tar.gz -o urdfdom.tar.gz \
+    && echo "f34c6b25512fe47a7e4e8806df2b94b166aed13dd19befd6056858be619b6a40  urdfdom.tar.gz" | sha256sum -c - \
     && mkdir urdfdom && tar -xf urdfdom.tar.gz -C urdfdom --strip-components=1 \
     && mkdir -p urdfdom/build \
     && cmake urdfdom -B urdfdom/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_TESTING=OFF \
