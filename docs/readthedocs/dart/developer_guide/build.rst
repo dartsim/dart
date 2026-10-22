@@ -150,7 +150,7 @@ Optional components remain optional.
      - 1.26.4
      - dartpy
    * - nanobind
-     - 3.1
+     - 3.1.x
      - dartpy (bundled by default)
    * - Tracy
      - 0.11.1
@@ -263,7 +263,7 @@ include:
        release. A vanilla system ImGui builds the GUI without docking.
    * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
-     - Use an installed nanobind 3.1 or newer instead of fetching nanobind
+     - Use an installed nanobind 3.1.x instead of fetching nanobind
        3.1.0. CMake uses ``nanobind_DIR`` when set, and otherwise
        ``python -m nanobind --cmake_dir``.
 
