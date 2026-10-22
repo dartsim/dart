@@ -32,7 +32,9 @@
 
 #include "LogCapture.hpp"
 
+#include <atomic>
 #include <iostream>
+#include <utility>
 
 namespace dart::gui::app {
 
@@ -61,13 +63,8 @@ std::string stripAnsi(const std::string& text)
 }
 
 //==============================================================================
-/// dtmsg/dtwarn/dterr (dart/common/Console.hpp) each open their line with a
-/// distinct SGR color code -- "\033[1;32m" (msg), "\033[1;33m" (warn),
-/// "\033[1;31m" (error); see colorMsg/colorErr in Console.cpp -- before any
-/// user text. The logging sink also uses 35 (fatal), 36 (debug) and 37 (trace).
-/// Sniff the sink's text prefix or console color to recover the severity DART
-/// assigned; lines from other code fall back to a per-stream
-/// guess (stdout -> Info, stderr -> Warning).
+/// Recover severity for other code that writes prefixes or ANSI colors to
+/// stdout/stderr. DART's own sink supplies its severity directly.
 CapturedLogLevel sniffSeverity(
     const std::string& raw, const std::string& text, CapturedLogLevel fallback)
 {
@@ -95,6 +92,14 @@ CapturedLogLevel sniffSeverity(
 } // namespace
 
 //==============================================================================
+struct LogCapture::SinkState
+{
+  std::shared_ptr<common::LogSink> previous;
+  LineSink panel;
+  std::atomic<bool> alive{true};
+};
+
+//==============================================================================
 /// Forwards every character to the stream's original buffer (so console
 /// output is byte-for-byte unaffected), while accumulating complete lines to
 /// hand to `mSink`. Never buffers internally beyond the current partial
@@ -111,10 +116,10 @@ public:
 protected:
   int_type overflow(int_type c) override
   {
-    if (mOriginal)
-      mOriginal->sputc(traits_type::to_char_type(c));
     if (traits_type::eq_int_type(c, traits_type::eof()))
       return traits_type::not_eof(c);
+    if (mOriginal)
+      mOriginal->sputc(traits_type::to_char_type(c));
 
     // Writes the sink makes are forwarded but never captured again.
     if (inLogCaptureSink)
@@ -173,17 +178,61 @@ private:
 //==============================================================================
 LogCapture::LogCapture(LineSink sink)
 {
+  mSinkState = std::make_shared<SinkState>();
+  mSinkState->panel = sink;
   mCoutBuf = std::make_unique<TeeBuf>(
       std::cout.rdbuf(), CapturedLogLevel::Info, sink);
   mCerrBuf = std::make_unique<TeeBuf>(
       std::cerr.rdbuf(), CapturedLogLevel::Warning, sink);
   mOldCoutBuf = std::cout.rdbuf(mCoutBuf.get());
   mOldCerrBuf = std::cerr.rdbuf(mCerrBuf.get());
+  try {
+    mInstalledSink = common::detail::wrapLogSink(
+        [state = mSinkState](std::shared_ptr<common::LogSink> previous) {
+          state->previous = std::move(previous);
+          return [state](common::LogLevel level, const std::string& message) {
+            const bool wasCapturing = inLogCaptureSink;
+            inLogCaptureSink = true;
+            try {
+              if (state->previous)
+                (*state->previous)(level, message);
+              else
+                common::detail::defaultLogSink(level, message);
+            } catch (...) {
+              // A failing chained sink must not hide the record from the panel.
+            }
+            if (!wasCapturing && state->alive) {
+              try {
+                if (state->panel) {
+                  const auto captured = level >= common::LogLevel::Error
+                                            ? CapturedLogLevel::Error
+                                        : level == common::LogLevel::Warn
+                                            ? CapturedLogLevel::Warning
+                                            : CapturedLogLevel::Info;
+                  state->panel(captured, stripAnsi(message));
+                }
+              } catch (...) {
+                // Restore recursion state even when the panel callback throws.
+              }
+            }
+            inLogCaptureSink = wasCapturing;
+          };
+        });
+  } catch (...) {
+    std::cout.rdbuf(mOldCoutBuf);
+    std::cerr.rdbuf(mOldCerrBuf);
+    throw;
+  }
 }
 
 //==============================================================================
 LogCapture::~LogCapture()
 {
+  mSinkState->alive = false;
+  try {
+    common::detail::restoreLogSinkIf(mInstalledSink, mSinkState->previous);
+  } catch (...) {
+  }
   std::cout.rdbuf(mOldCoutBuf);
   std::cerr.rdbuf(mOldCerrBuf);
 }

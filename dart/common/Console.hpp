@@ -36,7 +36,14 @@
 #include <ostream>
 #include <string>
 
-/// \brief Output a message
+/// \brief Output a message immediately to stdout by default.
+/// Custom sinks receive unfiltered lines on newline, flush, the next dt*
+/// statement on this thread, or thread exit. During console-record emission
+/// and after thread-local cleanup, dt* output goes straight to stdout/stderr.
+/// Prefix-only statements print the legacy prefix to the terminal under any
+/// sink. A nested dt* expression splits the enclosing custom-sink record.
+/// Unterminated output first used during static destruction can be lost if
+/// thread-local cleanup has already run.
 #define dtmsg (::dart::common::colorMsg("Msg", 32))
 
 /// \brief Output a debug message

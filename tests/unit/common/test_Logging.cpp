@@ -32,21 +32,26 @@
 
 #include <dart/config.hpp>
 
+#include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 #include <dart/common/detail/DeterministicExecutor.h>
 
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <chrono>
+#include <future>
 #include <iostream>
 #include <limits>
 #include <locale>
+#include <new>
 #include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
@@ -89,11 +94,14 @@ static_assert(
 struct LogAtShutdown
 {
   bool enabled = false;
+  bool consoleEnabled = false;
 
   ~LogAtShutdown()
   {
     if (enabled)
       warn("logging at static destruction {}", 42);
+    if (consoleEnabled)
+      dtwarn << "console logging at static destruction 100% {}";
   }
 } logAtShutdown;
 
@@ -584,6 +592,313 @@ TEST_F(LoggingTest, MalformedFormatsDoNotThrow)
 }
 
 //==============================================================================
+TEST(LoggingConsole, RequiresOrEnablesVirtualTerminalProcessing)
+{
+  for (const bool readable : {false, true}) {
+    for (const bool enabled : {false, true}) {
+      for (const bool writable : {false, true}) {
+        bool setCalled = false;
+        const auto result = detail::enableVirtualTerminal(
+            [&](unsigned long& mode) {
+              mode = 0x10 | (enabled ? 0x04 : 0);
+              return readable;
+            },
+            [&](unsigned long mode) {
+              setCalled = true;
+              EXPECT_EQ(0x14u, mode);
+              return writable;
+            });
+        EXPECT_EQ(readable && (enabled || writable), result);
+        EXPECT_EQ(readable && !enabled, setCalled);
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleTextIsLiteralAndRetainsItsPrefix)
+{
+  setLogLevel(LogLevel::Off);
+  const std::string text = "100% %s {} {broken} {{braces}}";
+  dtmsg << text << std::endl;
+  dtdbg << text << '\n';
+  const auto warningLine = __LINE__ + 1;
+  dtwarn << text << std::endl;
+  const auto errorLine = __LINE__ + 1;
+  dterr << text << std::endl;
+  EXPECT_EQ(
+      (std::vector<LogLevel>{
+          LogLevel::Info, LogLevel::Debug, LogLevel::Warn, LogLevel::Error}),
+      levels);
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "Msg " + text,
+          "Dbg " + text,
+          "Warning [test_Logging.cpp:" + std::to_string(warningLine) + "] "
+              + text,
+          "Error [test_Logging.cpp:" + std::to_string(errorLine) + "] "
+              + text}),
+      messages);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, PrefixOnlyStatementsDoNotEmitRecords)
+{
+  testing::internal::CaptureStdout();
+  dtmsg;
+  dtmsg << std::flush;
+  dtmsg << "text\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ((std::vector<std::string>{"Msg text"}), messages);
+  EXPECT_EQ("\033[1;32mMsg\033[0m \033[1;32mMsg\033[0m ", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, WrappedSinksRestoreTheirIdentityAndDefaultState)
+{
+  resetLogSink();
+  std::shared_ptr<LogSink> previousOuter;
+  auto outer = detail::wrapLogSink([&](std::shared_ptr<LogSink> previous) {
+    previousOuter = std::move(previous);
+    return [](LogLevel, const std::string&) {
+    };
+  });
+  std::shared_ptr<LogSink> previousInner;
+  auto inner = detail::wrapLogSink([&](std::shared_ptr<LogSink> previous) {
+    previousInner = std::move(previous);
+    return [](LogLevel, const std::string&) {
+    };
+  });
+  detail::restoreLogSinkIf(outer, previousOuter);
+  EXPECT_TRUE(detail::hasCustomLogSink());
+  detail::restoreLogSinkIf(inner, previousInner);
+  EXPECT_FALSE(detail::hasCustomLogSink());
+  detail::restoreLogSinkIf(nullptr, outer);
+  EXPECT_FALSE(detail::hasCustomLogSink());
+  std::weak_ptr<LogSink> retired = outer;
+  previousInner.reset();
+  outer.reset();
+  EXPECT_TRUE(retired.expired());
+  detail::wrapLogSink([](std::shared_ptr<LogSink>) { return LogSink{}; });
+  EXPECT_FALSE(detail::hasCustomLogSink());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, RetiredSinksUnwindAndReleaseTheirPredecessors)
+{
+  for (const bool abandon : {false, true}) {
+    auto token = std::make_shared<int>(0);
+    std::weak_ptr<int> released = token;
+    setLogSink([token](LogLevel, const std::string&) {});
+    token.reset();
+    std::vector<std::shared_ptr<LogSink>> wrappers;
+    std::vector<std::shared_ptr<LogSink>> predecessors;
+    for (int i = 0; i < 3; ++i) {
+      wrappers.push_back(
+          detail::wrapLogSink([&](std::shared_ptr<LogSink> previous) {
+            predecessors.push_back(previous);
+            return [previous](LogLevel level, const std::string& text) {
+              (*previous)(level, text);
+            };
+          }));
+    }
+    detail::restoreLogSinkIf(wrappers[0], predecessors[0]);
+    detail::restoreLogSinkIf(wrappers[1], predecessors[1]);
+    if (abandon)
+      resetLogSink();
+    else {
+      detail::restoreLogSinkIf(wrappers[2], predecessors[2]);
+      EXPECT_TRUE(detail::hasCustomLogSink());
+      detail::restoreLogSinkIf(predecessors[0], nullptr);
+      EXPECT_FALSE(detail::hasCustomLogSink());
+      resetLogSink();
+    }
+    wrappers.clear();
+    predecessors.clear();
+    EXPECT_TRUE(released.expired());
+    EXPECT_FALSE(detail::hasCustomLogSink());
+  }
+}
+
+//==============================================================================
+TEST_F(LoggingTest, DefaultConsoleDoesNotWaitForTheSinkMutex)
+{
+  std::thread worker;
+  std::promise<void> done;
+  auto finished = done.get_future();
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel, const std::string&) {
+    resetLogSink();
+    worker = std::thread([&] {
+      dtmsg << "default from another thread";
+      done.set_value();
+    });
+    EXPECT_EQ(
+        std::future_status::ready, finished.wait_for(std::chrono::seconds(2)));
+  });
+  info("hold the logging mutex");
+  worker.join();
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ("\033[1;32mMsg\033[0m default from another thread", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleFlushesPartialLinesAndSeparatesCompleteLines)
+{
+  dtmsg << "partial" << std::flush;
+  dtmsg << "first\n\nsecond\n";
+  dtmsg << "continued ";
+  dtmsg << "text\n";
+  EXPECT_EQ(
+      (std::vector<std::string>{
+          "Msg partial",
+          "Msg first",
+          "",
+          "second",
+          "Msg continued ",
+          "Msg text"}),
+      messages);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleSeparatesPartialLinesAcrossLevelsAndRecoversBadbit)
+{
+  auto& stream = dtwarn;
+  stream << "partial";
+  dtdbg << "next\n";
+  stream.setstate(std::ios::badbit);
+  dtwarn << "recovered\n";
+  ASSERT_EQ(3u, messages.size());
+  EXPECT_NE(std::string::npos, messages[0].find("] partial"));
+  EXPECT_EQ("Dbg next", messages[1]);
+  EXPECT_NE(std::string::npos, messages[2].find("] recovered"));
+  EXPECT_EQ(
+      (std::vector<LogLevel>{LogLevel::Warn, LogLevel::Debug, LogLevel::Warn}),
+      levels);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleSeparatesPartialLinesProducedBySinkCallbacks)
+{
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel, const std::string& text) {
+    messages.push_back(text);
+    if (text == "Msg partial")
+      dtmsg << "nested";
+  });
+  dtmsg << "partial";
+  dtmsg << "next\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ((std::vector<std::string>{"Msg partial", "Msg next"}), messages);
+  EXPECT_EQ("\033[1;32mMsg\033[0m nested", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, RecursiveConsoleLinesBypassTheSink)
+{
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel, const std::string& text) {
+    messages.push_back(text);
+    // Bound a regression so it fails without overflowing the stack.
+    if (messages.size() < 5)
+      dtmsg << "nested\n";
+  });
+  dtmsg << "outer\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ((std::vector<std::string>{"Msg outer"}), messages);
+  EXPECT_EQ("\033[1;32mMsg\033[0m nested\n", output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, SinkChangesLeavePartialLinesForTheNextFlush)
+{
+  dtmsg << "pending";
+  std::vector<std::string> replacement;
+  setLogSink(
+      [&](LogLevel, const std::string& text) { replacement.push_back(text); });
+  EXPECT_TRUE(messages.empty());
+  dtmsg << "next\n";
+  EXPECT_EQ((std::vector<std::string>{"Msg pending", "Msg next"}), replacement);
+  dtmsg << "default pending";
+  resetLogSink();
+  testing::internal::CaptureStdout();
+  dtmsg << "default next\n";
+  const auto output = testing::internal::GetCapturedStdout();
+  EXPECT_EQ(
+      "\033[1;32mMsg\033[0m default pending"
+      "\033[1;32mMsg\033[0m default next\n",
+      output);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleCanLogDuringThreadExitFlush)
+{
+  testing::internal::CaptureStdout();
+  setLogSink([&](LogLevel level, const std::string& text) {
+    levels.push_back(level);
+    messages.push_back(text);
+    if (text.find("partial") != std::string::npos)
+      dtmsg << "nested during cleanup";
+  });
+  std::thread worker([] { dterr << "partial"; });
+  worker.join();
+  const auto output = testing::internal::GetCapturedStdout();
+  ASSERT_EQ(1u, messages.size());
+  EXPECT_NE(std::string::npos, messages.front().find("] partial"));
+  EXPECT_EQ("\033[1;32mMsg\033[0m nested during cleanup", output);
+  EXPECT_EQ((std::vector<LogLevel>{LogLevel::Error}), levels);
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleThreadExitContainsSinkExceptions)
+{
+  setLogSink([](LogLevel, const std::string&) { throw std::bad_alloc(); });
+  std::thread worker([] { dtmsg << "partial"; });
+  worker.join();
+}
+
+//==============================================================================
+TEST_F(LoggingTest, DefaultConsoleIsImmediateUnfilteredAndKeepsLegacyColors)
+{
+  resetLogSink();
+  setLogLevel(LogLevel::Off);
+  std::ostringstream out;
+  std::ostringstream err;
+  auto* oldOut = std::cout.rdbuf(out.rdbuf());
+  auto* oldErr = std::cerr.rdbuf(err.rdbuf());
+  dtmsg << "partial";
+  EXPECT_EQ("\033[1;32mMsg\033[0m partial", out.str());
+  dtdbg << "debug\n";
+  const auto warningLine = __LINE__ + 1;
+  dtwarn << "warning";
+  const auto errorLine = __LINE__ + 1;
+  dterr << "error\n";
+  std::cout.rdbuf(oldOut);
+  std::cerr.rdbuf(oldErr);
+  EXPECT_EQ(
+      "\033[1;32mMsg\033[0m partial\033[1;36mDbg\033[0m debug\n", out.str());
+  EXPECT_EQ(
+      "\033[1;33mWarning [test_Logging.cpp:" + std::to_string(warningLine)
+          + "]\033[0m warning\033[1;31mError [test_Logging.cpp:"
+          + std::to_string(errorLine) + "]\033[0m error\n",
+      err.str());
+}
+
+//==============================================================================
+TEST_F(LoggingTest, ConsoleLinesFromExecutorWorkersAreNotInterleaved)
+{
+  detail::DeterministicExecutor executor;
+  executor.setWorkerCount(3);
+  executor.parallelFor(
+      128, 4, [](std::size_t i) { dtmsg << "worker " << i << " {} 100%\n"; });
+  ASSERT_EQ(128u, messages.size());
+  std::set<std::string> expected;
+  for (int i = 0; i < 128; ++i)
+    expected.insert("Msg worker " + std::to_string(i) + " {} 100%");
+  EXPECT_EQ(expected, std::set<std::string>(messages.begin(), messages.end()));
+}
+
+//==============================================================================
 TEST_F(LoggingTest, DefaultSinkUsesExpectedStreamsAndReset)
 {
   resetLogSink();
@@ -691,6 +1006,24 @@ TEST(LoggingLifetime, StaticDestruction)
       },
       ::testing::ExitedWithCode(0),
       "late sink: logging at static destruction 42");
+}
+
+//==============================================================================
+TEST(LoggingLifetime, ConsoleAfterThreadLocalDestruction)
+{
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        logAtShutdown.consoleEnabled = true;
+        setLogLevel(LogLevel::Trace);
+        setLogSink([](LogLevel, const std::string& text) {
+          std::cerr << "unexpected sink: " << text << '\n';
+        });
+        dtmsg << "initialize thread-local streams\n";
+        std::exit(0);
+      },
+      ::testing::ExitedWithCode(0),
+      "\\[0m console logging at static destruction 100%");
 }
 
 //==============================================================================

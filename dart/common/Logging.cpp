@@ -39,11 +39,14 @@
 #include <iostream>
 #include <limits>
 #include <locale>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include <cmath>
 #include <cstdint>
@@ -53,6 +56,13 @@
 
 #ifdef _WIN32
   #include <io.h>
+  #ifndef NOMINMAX
+    #define NOMINMAX
+  #endif
+  #ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+  #endif
+  #include <windows.h>
 #else
   #include <unistd.h>
 #endif
@@ -72,7 +82,22 @@ struct LoggingState
 {
   std::recursive_mutex mutex;
   std::shared_ptr<LogSink> sink;
+  std::map<
+      std::weak_ptr<LogSink>,
+      std::weak_ptr<LogSink>,
+      std::owner_less<std::weak_ptr<LogSink>>>
+      retired;
+  std::atomic<bool> hasSink{false};
 };
+
+struct ConsoleOrigin
+{
+  std::size_t prefixLength;
+  int color;
+  bool newline;
+};
+
+thread_local const ConsoleOrigin* consoleOrigin = nullptr;
 
 //==============================================================================
 LoggingState& loggingState()
@@ -89,14 +114,23 @@ bool useLogColor(std::FILE* stream)
   if (std::getenv("NO_COLOR") || (term && std::strcmp(term, "dumb") == 0))
     return false;
 #ifdef _WIN32
-  return _isatty(_fileno(stream)) != 0;
+  if (!_isatty(_fileno(stream)))
+    return false;
+  const auto handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(stream)));
+  return detail::enableVirtualTerminal(
+      [handle](unsigned long& mode) {
+        return GetConsoleMode(handle, &mode) != 0;
+      },
+      [handle](unsigned long mode) {
+        return SetConsoleMode(handle, mode) != 0;
+      });
 #else
   return isatty(fileno(stream)) != 0;
 #endif
 }
 
 //==============================================================================
-void defaultLogSink(LogLevel level, const std::string& message)
+void writeDefaultLog(LogLevel level, const std::string& message)
 {
   static std::ios_base::Init init;
   if (level < LogLevel::Trace || level >= LogLevel::Off)
@@ -109,6 +143,19 @@ void defaultLogSink(LogLevel level, const std::string& message)
   static const bool colorStderr = useLogColor(stderr);
   const auto index = static_cast<unsigned>(level);
   auto& stream = level >= LogLevel::Warn ? std::cerr : std::cout;
+  if (consoleOrigin) {
+    const auto prefix = consoleOrigin->prefixLength;
+    if (prefix)
+      stream << "\033[1;" << consoleOrigin->color << 'm';
+    stream.write(message.data(), prefix);
+    if (prefix)
+      stream << "\033[0m";
+    stream.write(message.data() + prefix, message.size() - prefix);
+    if (consoleOrigin->newline)
+      stream << '\n';
+    stream.flush();
+    return;
+  }
   const bool color = level >= LogLevel::Warn ? colorStderr : colorStdout;
   if (color)
     stream << "\033[1;" << colors[index] << 'm';
@@ -116,6 +163,32 @@ void defaultLogSink(LogLevel level, const std::string& message)
   if (color)
     stream << "\033[0m";
   stream << ' ' << message << std::endl;
+}
+
+//==============================================================================
+void dispatchLog(
+    LogLevel level,
+    const std::string& message,
+    const ConsoleOrigin* origin) noexcept
+{
+  const auto* previousOrigin = consoleOrigin;
+  consoleOrigin = origin;
+  try {
+    auto& state = loggingState();
+    std::lock_guard<std::recursive_mutex> lock(state.mutex);
+    // A callback may replace itself. Keep it alive until it returns.
+    auto sink = state.sink;
+    // Prefix-only statements retain terminal bytes without an empty record.
+    const bool prefixOnly = origin && !origin->newline && origin->prefixLength
+                            && message.size() == origin->prefixLength + 1;
+    if (sink && !prefixOnly)
+      (*sink)(level, message);
+    else
+      writeDefaultLog(level, message);
+  } catch (...) {
+    // Logging must not interrupt application error handling or thread cleanup.
+  }
+  consoleOrigin = previousOrigin;
 }
 
 //==============================================================================
@@ -354,13 +427,22 @@ LogSink setLogSink(LogSink sink)
   std::lock_guard<std::recursive_mutex> lock(state.mutex);
   auto previous = state.sink ? *state.sink : LogSink{};
   state.sink.swap(replacement);
+  state.retired.clear();
+  state.hasSink.store(static_cast<bool>(state.sink), std::memory_order_relaxed);
   return previous;
 }
 
 //==============================================================================
 void resetLogSink()
 {
-  setLogSink({});
+  std::shared_ptr<LogSink> previous;
+  auto& state = loggingState();
+  {
+    std::lock_guard<std::recursive_mutex> lock(state.mutex);
+    previous.swap(state.sink);
+    state.retired.clear();
+    state.hasSink.store(false, std::memory_order_relaxed);
+  }
 }
 
 //==============================================================================
@@ -376,6 +458,84 @@ LogLevel getLogLevel()
 }
 
 namespace detail {
+
+//==============================================================================
+std::shared_ptr<LogSink> wrapLogSink(
+    const std::function<LogSink(std::shared_ptr<LogSink>)>& wrap)
+{
+  std::shared_ptr<LogSink> replacement;
+  auto& state = loggingState();
+  std::lock_guard<std::recursive_mutex> lock(state.mutex);
+  auto sink = wrap(state.sink);
+  if (sink)
+    replacement = std::make_shared<LogSink>(std::move(sink));
+  state.sink.swap(replacement);
+  state.hasSink.store(static_cast<bool>(state.sink), std::memory_order_relaxed);
+  return state.sink;
+}
+
+//==============================================================================
+void restoreLogSinkIf(
+    std::shared_ptr<LogSink> installed, std::shared_ptr<LogSink> previous)
+{
+  if (!installed)
+    return;
+  std::vector<std::shared_ptr<LogSink>> removed;
+  auto& state = loggingState();
+  std::lock_guard<std::recursive_mutex> lock(state.mutex);
+  for (auto it = state.retired.begin(); it != state.retired.end();) {
+    if (it->first.expired())
+      it = state.retired.erase(it);
+    else
+      ++it;
+  }
+  if (state.sink == installed) {
+    state.sink.swap(previous);
+    while (state.sink) {
+      const auto retired = state.retired.find(state.sink);
+      if (retired == state.retired.end())
+        break;
+      // Keep the wrapper (and its predecessor) alive until after unlocking.
+      removed.push_back(std::move(state.sink));
+      state.sink = retired->second.lock();
+      state.retired.erase(retired);
+    }
+    state.hasSink.store(
+        static_cast<bool>(state.sink), std::memory_order_relaxed);
+  } else {
+    state.retired[installed] = previous;
+  }
+}
+
+//==============================================================================
+bool hasCustomLogSink()
+{
+  return loggingState().hasSink.load(std::memory_order_relaxed);
+}
+
+//==============================================================================
+void logRecord(LogLevel level, const std::string& message) noexcept
+{
+  dispatchLog(level, message, nullptr);
+}
+
+//==============================================================================
+void logConsoleRecord(
+    LogLevel level,
+    const std::string& message,
+    std::size_t prefixLength,
+    int color,
+    bool newline) noexcept
+{
+  const ConsoleOrigin origin{prefixLength, color, newline};
+  dispatchLog(level, message, &origin);
+}
+
+//==============================================================================
+void defaultLogSink(LogLevel level, const std::string& message)
+{
+  writeDefaultLog(level, message);
+}
 
 //==============================================================================
 LogArgument::LogArgument(const std::string& value)
@@ -447,18 +607,7 @@ void logMessage(
     message = "[log format error: " + std::string(error.what()) + "] " + format;
   }
 
-  auto& state = loggingState();
-  std::lock_guard<std::recursive_mutex> lock(state.mutex);
-  // A callback may replace itself. Keep it alive until this invocation returns.
-  auto sink = state.sink;
-  try {
-    if (sink)
-      (*sink)(level, message);
-    else
-      defaultLogSink(level, message);
-  } catch (...) {
-    // Logging must not interrupt application error handling.
-  }
+  logRecord(level, message);
 }
 
 } // namespace detail
