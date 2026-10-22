@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_DETAIL_LOGGING_IMPL_HPP_
 #define DART_COMMON_DETAIL_LOGGING_IMPL_HPP_
 
+#include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 
 #if DART_HAVE_spdlog
@@ -40,8 +41,10 @@
   #include <spdlog/spdlog.h>
 
   #include <exception>
+  #include <ostream>
+  #include <string>
 #else
-  #include <iostream>
+  #include <sstream>
   #include <string>
 #endif
 
@@ -51,8 +54,27 @@ namespace dart::common {
 namespace detail {
 
 //==============================================================================
-/// Logs a runtime-formatted message through spdlog without handing spdlog the
-/// format string. spdlog's variadic log() funnels the format string through
+inline spdlog::level::level_enum toSpdlogLevel(LogLevel level)
+{
+  switch (level) {
+    case LogLevel::Trace:
+      return spdlog::level::trace;
+    case LogLevel::Debug:
+      return spdlog::level::debug;
+    case LogLevel::Info:
+      return spdlog::level::info;
+    case LogLevel::Warn:
+      return spdlog::level::warn;
+    case LogLevel::Error:
+      return spdlog::level::err;
+    default:
+      return spdlog::level::critical;
+  }
+}
+
+//==============================================================================
+/// Formats a runtime-formatted message without handing spdlog the format
+/// string. spdlog's variadic log() funnels the format string through
 /// spdlog::details::to_string_view(), whose implicit fmt::format_string ->
 /// string_view conversion was deprecated in fmt 12.2.0 ("use
 /// format_string::get() instead"). Because DART's logging templates are
@@ -61,32 +83,60 @@ namespace detail {
 /// see https://github.com/gazebosim/gz-physics/issues/1018). Pre-formatting
 /// with fmt and handing spdlog a ready-made string sidesteps the deprecated
 /// conversion entirely.
+///
+/// A logging call must never throw, so a malformed format string (only caught
+/// at runtime, since the format is not a compile-time constant) falls back to
+/// the raw format string instead of propagating the fmt error. fmt::vformat
+/// takes a runtime format string directly, so it works across every fmt
+/// version DART supports (unlike fmt::runtime, which is fmt 8+ only) and
+/// independent of spdlog's formatting backend.
 template <typename S, typename... Args>
-void logToSpdlog(
-    spdlog::level::level_enum level, const S& format_str, Args&&... args)
+std::string formatMessage(const S& format_str, Args&&... args)
 {
-  auto* const logger = spdlog::default_logger_raw();
-
-  // Skip all work for a fully disabled message. should_backtrace() preserves
-  // the behaviour of the prior spdlog::*() calls, which still recorded
-  // below-level messages into spdlog's backtrace ring when one is enabled.
-  if (!logger->should_log(level) && !logger->should_backtrace()) {
-    return;
-  }
-
-  // A logging call must never throw, so a malformed format string (only caught
-  // at runtime, since the format is not a compile-time constant) falls back to
-  // logging the raw format string instead of propagating the fmt error.
-  // fmt::vformat takes a runtime format string directly, so it works across
-  // every fmt version DART supports (unlike fmt::runtime, which is fmt 8+ only)
-  // and independent of spdlog's formatting backend.
   try {
-    logger->log(
-        level, fmt::vformat(format_str, fmt::make_format_args(args...)));
+    return fmt::vformat(format_str, fmt::make_format_args(args...));
   } catch (const std::exception& e) {
-    logger->log(
-        level, fmt::format("[log format error: {}] {}", e.what(), format_str));
+    return fmt::format("[log format error: {}] {}", e.what(), format_str);
   }
+}
+
+//==============================================================================
+template <typename S, typename... Args>
+void logToSpdlog(LogLevel level, const S& format_str, Args&&... args)
+{
+  const spdlog::level::level_enum spdlogLevel = toSpdlogLevel(level);
+
+  // Skip all work for a message that spdlog would discard, unless a callback
+  // from setLogCallback() wants it: the callback receives every message
+  // regardless of spdlog's runtime level. should_backtrace() preserves the
+  // behaviour of the prior spdlog::*() calls, which still recorded
+  // below-level messages into spdlog's backtrace ring when one is enabled.
+  // spdlog::drop_all() leaves no default logger; such a message goes on.
+  if (!hasLogCallback()) {
+    auto* const logger = spdlog::default_logger_raw();
+    if (logger && !logger->should_log(spdlogLevel)
+        && !logger->should_backtrace()) {
+      return;
+    }
+  }
+
+  // Formatted once, then delivered in order: to the callback, which consults
+  // no spdlog registry and takes no spdlog lock, so it reaches the same
+  // callback from every library that instantiates it and works after
+  // spdlog::drop_all(); when the callback declines the message (it was
+  // removed meanwhile, this thread is inside it, or it threw), to spdlog's
+  // default logger, which applies its own runtime level; and with no default
+  // logger, to the console streams. A callback's first exception is reported
+  // separately through the error console stream, unfiltered by spdlog's level;
+  // the failed message still obeys the default output's runtime level.
+  const std::string message
+      = formatMessage(format_str, std::forward<Args>(args)...);
+  if (forwardToLogCallback(level, message.data(), message.size()))
+    return;
+  if (auto* const logger = spdlog::default_logger_raw())
+    logger->log(spdlogLevel, message);
+  else
+    (level < LogLevel::Warn ? consoleOut() : consoleErr()) << message << '\n';
 }
 
 } // namespace detail
@@ -96,28 +146,43 @@ void logToSpdlog(
 namespace detail {
 
 //==============================================================================
-template <typename S1, typename S2>
-void print(std::ostream& os, const S1& header, const S2& format_str, int color)
+template <typename S>
+void printMessage(std::ostream& os, const S& format_str)
 {
-  os << "\033[1;" << color << "m" << header << "\033[0m " << format_str
-     << std::endl;
+  os << format_str;
 }
 
 //==============================================================================
 template <typename S, typename Arg, typename... Args>
+void printMessage(
+    std::ostream& os, const S& format_str, Arg&& arg, Args&&... args)
+{
+  os << format_str << " [args]: " << std::forward<Arg>(arg);
+  ((os << ", " << std::forward<Args>(args)), ...);
+}
+
+//==============================================================================
+template <typename S, typename... Args>
 void print(
-    std::ostream& os,
-    const S& header,
-    std::string format_str,
+    LogLevel level,
+    ConsoleStream stream,
+    const char* header,
     int color,
-    Arg&& arg,
+    const S& format_str,
     Args&&... args)
 {
-  os << "\033[1;" << color << "m" << header << "\033[0m " << format_str
-     << " [args]: ";
-  os << std::forward<Arg>(arg);
-  ((os << ", " << std::forward<Args>(args)), ...);
-  os << std::endl;
+  // Formatted once, into a fresh stream so that neither a manipulator among
+  // the arguments nor an operator<< that logs can leak into another message,
+  // then delivered to a callback from setLogCallback() or, when it declines
+  // the message (it was removed meanwhile, this thread is inside it, or it
+  // threw), to the console stream.
+  std::ostringstream text;
+  printMessage(text, format_str, std::forward<Args>(args)...);
+  const std::string message = text.str();
+  if (forwardToLogCallback(level, message.data(), message.size()))
+    return;
+  stream() << "\033[1;" << color << "m" << header << "\033[0m " << message
+           << std::endl;
 }
 
 } // namespace detail
@@ -125,79 +190,103 @@ void print(
 
 //==============================================================================
 template <typename S, typename... Args>
-void trace(const S& format_str, [[maybe_unused]] Args&&... args)
+void trace(const S& format_str, Args&&... args)
 {
 #if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::trace, format_str, std::forward<Args>(args)...);
+  detail::logToSpdlog(LogLevel::Trace, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
-      std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
+      LogLevel::Trace,
+      &consoleOut,
+      "[trace]",
+      38,
+      format_str,
+      std::forward<Args>(args)...);
 #endif
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void debug(const S& format_str, [[maybe_unused]] Args&&... args)
+void debug(const S& format_str, Args&&... args)
 {
 #if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::debug, format_str, std::forward<Args>(args)...);
+  detail::logToSpdlog(LogLevel::Debug, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
-      std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
+      LogLevel::Debug,
+      &consoleOut,
+      "[debug]",
+      36,
+      format_str,
+      std::forward<Args>(args)...);
 #endif
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void info(const S& format_str, [[maybe_unused]] Args&&... args)
+void info(const S& format_str, Args&&... args)
 {
 #if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::info, format_str, std::forward<Args>(args)...);
+  detail::logToSpdlog(LogLevel::Info, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
-      std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
+      LogLevel::Info,
+      &consoleOut,
+      "[info]",
+      32,
+      format_str,
+      std::forward<Args>(args)...);
 #endif
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void warn(const S& format_str, [[maybe_unused]] Args&&... args)
+void warn(const S& format_str, Args&&... args)
 {
 #if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::warn, format_str, std::forward<Args>(args)...);
+  detail::logToSpdlog(LogLevel::Warn, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
-      std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
+      LogLevel::Warn,
+      &consoleErr,
+      "[warn]",
+      33,
+      format_str,
+      std::forward<Args>(args)...);
 #endif
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void error(const S& format_str, [[maybe_unused]] Args&&... args)
+void error(const S& format_str, Args&&... args)
 {
 #if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::err, format_str, std::forward<Args>(args)...);
+  detail::logToSpdlog(LogLevel::Error, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
-      std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
+      LogLevel::Error,
+      &consoleErr,
+      "[error]",
+      31,
+      format_str,
+      std::forward<Args>(args)...);
 #endif
 }
 
 //==============================================================================
 template <typename S, typename... Args>
-void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
+void fatal(const S& format_str, Args&&... args)
 {
 #if DART_HAVE_spdlog
-  detail::logToSpdlog(
-      spdlog::level::critical, format_str, std::forward<Args>(args)...);
+  detail::logToSpdlog(LogLevel::Fatal, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
-      std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);
+      LogLevel::Fatal,
+      &consoleErr,
+      "[fatal]",
+      35,
+      format_str,
+      std::forward<Args>(args)...);
 #endif
 }
 

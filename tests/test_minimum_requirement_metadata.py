@@ -1,7 +1,6 @@
 """Check package support boundaries and native baseline CI coverage."""
 
 import os
-import shlex
 import subprocess
 import sys
 import tomllib
@@ -66,8 +65,10 @@ def test_package_metadata_support_boundaries():
     assert "1.1.0" not in build["scikit-build-core"]
     assert "1.1.1" in build["scikit-build-core"]
     skbuild = project["tool"]["scikit-build"]
-    assert "3.25.9" not in SpecifierSet(skbuild["cmake"]["version"])
-    assert "3.26.0" in SpecifierSet(skbuild["cmake"]["version"])
+    cmake = SpecifierSet(skbuild["cmake"]["version"])
+    assert "3.26.0" not in cmake
+    assert "3.27.9" not in cmake
+    assert "3.28.0" in cmake
     assert "1.13.1" not in SpecifierSet(skbuild["ninja"]["version"])
     assert "1.13.2" in SpecifierSet(skbuild["ninja"]["version"])
     assert skbuild["wheel"]["py-api"] == "cp312"
@@ -86,16 +87,21 @@ def workflow_job(filename, job):
 def test_linux_matrix_covers_baseline_and_forward_compilers():
     job = workflow_job("ci_toolchain.yml", "toolchain")
     rows = job["strategy"]["matrix"]["include"]
-    baseline = [row for row in rows if row["runner"] == "ubuntu-22.04"]
+    baseline = [
+        row
+        for row in rows
+        if row["runner"] == "ubuntu-24.04"
+        and row["distribution"] == "true"
+        and "eigen" not in row
+    ]
     assert {(row["cc"], row["cxx"]) for row in baseline} == {
-        ("gcc-11", "g++-11"),
-        ("clang-13", "clang++-13"),
+        ("gcc-13", "g++-13"),
+        ("clang-18", "clang++-18"),
     }
-    assert all(row["distribution"] == "true" for row in baseline)
-    assert {row["name"] for row in rows if row["runner"] == "ubuntu-24.04"} == {
+    assert {row["runner"] for row in rows} == {"ubuntu-24.04"}
+    assert {row["name"] for row in rows if row["distribution"] == "false"} == {
         "gcc 16",
         "clang 19",
-        "Eigen 5 (gcc 13)",
     }
     # Packagers build against Eigen 5, which the lockfile does not cover.
     assert [row["eigen"] for row in rows if "eigen" in row] == ["5.*"]
@@ -111,47 +117,6 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     # GitHub rejects the workflow if job-level env uses the runner context.
     assert "runner." not in str(job.get("env", {}))
     assert "pixi run test-build-requirements" in build["run"]
-
-
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="The toolchain workflow runs on Linux"
-)
-def test_linux_toolchain_uses_pixi_runtime_only_for_baseline_compilers(tmp_path):
-    job = workflow_job("ci_toolchain.yml", "toolchain")
-    build = next(
-        step for step in job["steps"] if "pixi run build-tests" in step.get("run", "")
-    )
-    words = shlex.split(build["run"], comments=True)
-    shell = words.index("-euc")
-    assert words[shell - 4 : shell] == ["pixi", "run", "--", "bash"]
-    prefix = str(tmp_path / "active-pixi")
-    for row in job["strategy"]["matrix"]["include"]:
-        for inherited in ("", "-Wl,--as-needed"):
-            runtime = "/inherited/runtime" if inherited else ""
-            result = subprocess.run(
-                [
-                    "bash",
-                    "-euc",
-                    'pixi() { printf "%s|%s\\n" "${LDFLAGS-}" "${LD_LIBRARY_PATH-}"; }\n'
-                    "ctest() { pixi; }\n" + words[shell + 1],
-                ],
-                env={
-                    "PATH": os.defpath,
-                    "CC": row["cc"],
-                    "CONDA_PREFIX": prefix,
-                    "PIXI_ENVIRONMENT_NAME": "default",
-                    "LDFLAGS": inherited,
-                    "LD_LIBRARY_PATH": runtime,
-                },
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            expected = inherited
-            if row["runner"] == "ubuntu-22.04":
-                expected = f"-L{prefix}/lib" + (f" {inherited}" if inherited else "")
-                runtime = f"{prefix}/lib" + (f":{runtime}" if runtime else "")
-            assert result.stdout.splitlines() == [f"{expected}|{runtime}"] * 2
 
 
 def test_windows_matrix_preserves_required_checks_and_selects_vs2022():
@@ -174,3 +139,48 @@ def test_windows_matrix_preserves_required_checks_and_selects_vs2022():
     cache = next(step for step in job["steps"] if step["name"] == "Initialize sccache")
     assert "${{ matrix.part }}${{ matrix.vsversion }}" in cache["run"]
     assert len({(row["part"], row["vsversion"]) for row in rows.values()}) == len(rows)
+
+
+def test_eigen_dependency_boundaries_and_environment_baselines():
+    manifest = tomllib.loads((ROOT / "pixi.toml").read_text())
+    for dependencies in (
+        manifest["dependencies"],
+        manifest["feature"]["gazebo"]["dependencies"],
+        manifest["feature"]["gz-compat-base"]["dependencies"],
+    ):
+        assert dependencies["eigen"] == ">=3.4.0,<6"
+    for name, environment in manifest["environments"].items():
+        features = (
+            environment if isinstance(environment, list) else environment["features"]
+        )
+        assert "eigen34" in features, name
+    # The Eigen 5 toolchain lane rewrites this baseline before running tests.
+    assert manifest["feature"]["eigen34"]["dependencies"]["eigen"] in {
+        "==3.4.0",
+        "5.*",
+    }
+    eigen = ET.parse(ROOT / "package.xml").find("depend[.='eigen']")
+    assert eigen.attrib == {"version_gte": "3.4.0", "version_lt": "6"}
+    cmake = (ROOT / "CMakeLists.txt").read_text()
+    assert "eigen3 >= 3.4.0, eigen3 < 6" in cmake
+
+
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="The toolchain workflow runs on Linux"
+)
+def test_eigen_ci_replaces_only_baseline_pin(tmp_path):
+    manifest = (ROOT / "pixi.toml").read_text()
+    (tmp_path / "pixi.toml").write_text(manifest)
+    job = workflow_job("ci_toolchain.yml", "toolchain")
+    step = next(step for step in job["steps"] if step.get("if") == "matrix.eigen")
+    subprocess.run(
+        ["bash", "-euc", step["run"]],
+        cwd=tmp_path,
+        env={"PATH": os.defpath, "EIGEN": "5.*"},
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert (tmp_path / "pixi.toml").read_text() == manifest.replace(
+        'eigen = "==3.4.0"', 'eigen = "5.*"'
+    )
