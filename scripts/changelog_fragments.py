@@ -50,8 +50,8 @@ LINK_LINE = re.compile(
 SUBJECT_PR = re.compile(r".*\(#([1-9]\d*)\)")
 # Editor swap files, like `.draft.md.swp`; any other hidden file is validated.
 EDITOR_ARTIFACT = re.compile(r"\..+\.sw[a-p]")
-# A line holding only a reference link, at any indentation.
-LINK_ONLY = re.compile(r"\s*\[#[^\]]*\]\([^)]*\),?")
+# Recognize malformed reference-only lines too; LINK_LINE validates them.
+LINK_ONLY = re.compile(r"\s*\[#[^\]]*\]?(?:\([^)]*\)?|\[[^\]]*\]?)?,*")
 
 
 class Fragment(NamedTuple):

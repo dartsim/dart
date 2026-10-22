@@ -776,3 +776,25 @@ def test_accepts_link_led_prose_adjacent_to_reference(repo, capsys, command):
             "  * Earlier Python entry.\n\n" + "\n".join(body) + "\n",
         )
         assert not (repo / "changelog.d" / "prose.md").exists()
+
+
+@pytest.mark.parametrize("command", ("check", "assemble"))
+@pytest.mark.parametrize(
+    "reference",
+    (
+        "    [#3056](https://github.com/dartsim/dart/issues/3056),,",
+        "    [#3056](https://github.com/dartsim/dart/issues/3056",
+        "    [#3056][https://github.com/dartsim/dart/issues/3056],",
+        "    [#3056]",
+    ),
+)
+def test_rejects_malformed_reference_before_own_pr(repo, capsys, command, reference):
+    text = fragment("Python", "  * Entry.", reference, link(5))
+    write(repo, "malformed.md", text, 5)
+
+    code, output = run(repo, command, capsys)
+
+    assert code == 1
+    assert "changelog.d/malformed.md:4: write each link as" in output
+    assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
+    assert (repo / "changelog.d" / "malformed.md").read_text(encoding="utf-8") == text
