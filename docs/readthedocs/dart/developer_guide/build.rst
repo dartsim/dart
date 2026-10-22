@@ -58,24 +58,24 @@ The development branch requires C++17 and the following source-build baselines:
      - Compiler minimum
    * - Ubuntu
      - 24.04 LTS (the DART 6.20 maintenance line keeps 22.04 LTS)
-     - GCC 11.2 or upstream LLVM Clang 13
+     - GCC 13.2 or upstream LLVM Clang 18
    * - macOS
-     - 13 Ventura
-     - Apple Clang 14 from Xcode 14.1
+     - 15.2 Sequoia (the minimum host for Xcode 16.3)
+     - Apple Clang 17 from Xcode 16.3
    * - Windows
      - Windows Server 2022 CI baseline
-     - Visual Studio 2022, v143 toolset (``MSVC_VERSION >= 1930``)
+     - Visual Studio 2022, v143 toolset 17.2 (``MSVC_VERSION >= 1932``)
 
 Apple Clang and upstream LLVM Clang use different version numbers. The
 upstream Clang minimum also applies to clang-cl. The Windows CI runner
 baseline does not establish a minimum supported Windows desktop version.
 CMake checks the Xcode version when the Xcode generator reports it; other
-generators check the Apple Clang version. Use Xcode 14.1 or newer for the
+generators check the Apple Clang version. Use Xcode 16.3 or newer for the
 macOS source-build baseline.
-Hosted CI uses newer macOS runners because macOS 13 runners have been retired;
-the macOS 13/Xcode 14.1 source baseline has no current native CI lane.
+The ``release-6.20`` maintenance branch keeps its own, older baseline,
+including Ubuntu 22.04.
 
-Manual builds require CMake 3.22.1 or newer and pkg-config 0.29.2 or newer.
+Manual builds require CMake 3.28 or newer and pkg-config 0.29.2 or newer.
 Ninja is the Pixi default; other CMake generators can work. Pixi supplies
 newer tool and dependency versions than these minimum source requirements.
 Isolated Python package builds use ``setuptools >= 84.0.0``,
@@ -99,8 +99,8 @@ Optional components remain optional.
      - 5.3 (Ubuntu 24.04's 5.3.1 reports 5.3.0)
      - Core mesh loading
    * - Eigen
-     - 3.4.0
-     - Core mathematics
+     - 3.4.0 (supported range: >= 3.4.0, < 6)
+     - Core mathematics; consumers must use the major DART was built with
    * - FCL
      - 0.7.0
      - Core collision detection
@@ -155,6 +155,10 @@ Optional components remain optional.
    * - Tracy
      - 0.11.1
      - Optional profiling backend
+
+The installed CMake package enforces the same Eigen major for DART and its
+consumers; pkg-config consumers must match majors themselves. Eigen 3.4.90
+development snapshots are treated as Eigen 3.
 
 FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the

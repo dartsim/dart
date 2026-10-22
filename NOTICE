@@ -333,10 +333,9 @@ License: BSD-3-Clause (nanobind / CMU text below).
 
 ------------------------------------------------------------------------
 Project: Dear ImGui
-Files: dart/gui/imgui/dart-compat.patch
+Files: none (compiled into DART binaries)
 Source: https://github.com/ocornut/imgui/tree/v1.92.8-docking
-DART's compatibility patch includes upstream context from Dear ImGui.
-Dear ImGui is also compiled into the dart-gui binary.
+Dear ImGui is compiled into the dart-gui binary.
 SPDX-License-Identifier: MIT
 The MIT License (MIT)
 

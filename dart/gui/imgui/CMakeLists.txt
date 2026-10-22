@@ -111,129 +111,35 @@ else()
   # installed dart/external/imgui headers use the docking layout. A vanilla
   # system ImGui (DART_USE_SYSTEM_IMGUI=ON) still builds dart-gui.
   set(IMGUI_TARGET_VERSION "v1.92.8-docking")
-
-  # DART applies its compatibility patch directly inside the FetchContent
-  # checkout, which leaves that working tree dirty. If the requested tag changed
-  # since this build tree was last configured, FetchContent's in-place
-  # re-checkout to the new tag fails on the local patch hunks (configure stops
-  # until the cached source is deleted by hand). Detect a tag change via a stamp
-  # file and drop the cached download so the new tag is fetched from a clean
-  # state.
-  set(dart_imgui_src_dir "${DART_BINARY_DIR}/_deps/imgui-src")
-  set(dart_imgui_tag_stamp "${DART_BINARY_DIR}/_deps/dart_imgui_tag.txt")
-  set(dart_imgui_cached_tag "")
-  if(EXISTS "${dart_imgui_tag_stamp}")
-    file(READ "${dart_imgui_tag_stamp}" dart_imgui_cached_tag)
-    string(STRIP "${dart_imgui_cached_tag}" dart_imgui_cached_tag)
-  endif()
-  if(
-    EXISTS "${dart_imgui_src_dir}"
-    AND NOT dart_imgui_cached_tag STREQUAL IMGUI_TARGET_VERSION
+  set(
+    IMGUI_ARCHIVE_SHA256
+    ca0653454ed371b7a87e9b0bc29a5d15c9be7f7c0fbe778042fc48c71df1d3d8
   )
-    message(
-      STATUS
-      "Bundled ImGui tag changed to ${IMGUI_TARGET_VERSION}; refreshing cached download"
-    )
-    # The source uses a custom SOURCE_DIR (imgui-src); the FetchContent sub-build
-    # and build trees are named after the declared content (dart_imgui-*). Remove
-    # all of them so the next populate re-clones the new tag from scratch.
-    file(GLOB dart_imgui_fetch_dirs "${DART_BINARY_DIR}/_deps/dart_imgui-*")
-    file(REMOVE_RECURSE "${dart_imgui_src_dir}" ${dart_imgui_fetch_dirs})
+
+  # On CMake 3.24 and newer, extract with the current time so a changed
+  # archive rebuilds its objects. The hash-specific source path also rebuilds
+  # objects on CMake 3.22/3.23, which preserve archive timestamps.
+  set(dart_imgui_timestamp)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set(dart_imgui_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
   endif()
 
   message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
+  # Update IMGUI_ARCHIVE_SHA256 whenever IMGUI_TARGET_VERSION changes.
+  # A changed archive gets new source paths even when its timestamps are old.
   FetchContent_Declare(
     dart_imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG ${IMGUI_TARGET_VERSION}
-    GIT_SHALLOW TRUE
+    URL
+      "https://github.com/ocornut/imgui/archive/refs/tags/${IMGUI_TARGET_VERSION}.tar.gz"
+    URL_HASH SHA256=${IMGUI_ARCHIVE_SHA256}
     SOURCE_DIR
-    "${DART_BINARY_DIR}/_deps/imgui-src"
+    "${DART_BINARY_DIR}/_deps/dart_imgui-${IMGUI_ARCHIVE_SHA256}-src"
+    TLS_VERIFY ON
+    ${dart_imgui_timestamp}
   )
 
-  FetchContent_GetProperties(dart_imgui)
-  if(NOT dart_imgui_POPULATED)
-    FetchContent_MakeAvailable(dart_imgui)
-  endif()
-
-  find_package(Git REQUIRED)
-  set(imgui_patch_files "${CMAKE_CURRENT_LIST_DIR}/dart-compat.patch")
-  foreach(imgui_patch IN LISTS imgui_patch_files)
-    execute_process(
-      COMMAND
-        "${GIT_EXECUTABLE}" -C "${dart_imgui_SOURCE_DIR}" apply --check
-        "${imgui_patch}"
-      RESULT_VARIABLE imgui_patch_check_result
-      OUTPUT_QUIET
-      ERROR_QUIET
-    )
-    if(imgui_patch_check_result EQUAL 0)
-      message(STATUS "Applying DART ImGui compatibility patch: ${imgui_patch}")
-      execute_process(
-        COMMAND
-          "${GIT_EXECUTABLE}" -C "${dart_imgui_SOURCE_DIR}" apply
-          "${imgui_patch}"
-        RESULT_VARIABLE imgui_patch_result
-        OUTPUT_VARIABLE imgui_patch_output
-        ERROR_VARIABLE imgui_patch_error
-      )
-      if(NOT imgui_patch_result EQUAL 0)
-        message(
-          FATAL_ERROR
-          "Failed to apply ${imgui_patch}:\n${imgui_patch_output}\n${imgui_patch_error}"
-        )
-      endif()
-    else()
-      file(READ "${dart_imgui_SOURCE_DIR}/imgui_draw.cpp" imgui_draw_contents)
-      file(
-        READ "${dart_imgui_SOURCE_DIR}/imgui_internal.h"
-        imgui_internal_contents
-      )
-      file(
-        READ "${dart_imgui_SOURCE_DIR}/imgui_widgets.cpp"
-        imgui_widgets_contents
-      )
-      string(
-        FIND "${imgui_draw_contents}"
-        "Guard against null/empty input (issue #2516)"
-        imgui_draw_ttf_patch_marker
-      )
-      string(
-        FIND "${imgui_draw_contents}"
-        "Guard against null/empty input to prevent SEGV in stb_decompress (issue #2516)"
-        imgui_draw_compressed_ttf_patch_marker
-      )
-      string(
-        FIND "${imgui_draw_contents}"
-        "Guard against null input (issue #2516)"
-        imgui_draw_base85_patch_marker
-      )
-      string(
-        FIND "${imgui_internal_contents}"
-        "IMGUI_INTERNAL_FORMAT_API"
-        imgui_internal_patch_marker
-      )
-      string(
-        FIND "${imgui_widgets_contents}"
-        "issue #2668"
-        imgui_widgets_patch_marker
-      )
-      if(
-        imgui_draw_ttf_patch_marker EQUAL -1
-        OR imgui_draw_compressed_ttf_patch_marker EQUAL -1
-        OR imgui_draw_base85_patch_marker EQUAL -1
-        OR imgui_internal_patch_marker EQUAL -1
-        OR imgui_widgets_patch_marker EQUAL -1
-      )
-        message(FATAL_ERROR "DART ImGui patch is incompatible: ${imgui_patch}")
-      endif()
-    endif()
-  endforeach()
-
-  # Record the tag now that the matching ImGui sources are populated and patched
-  # so a later tag change can refresh the cached download (see above).
-  file(WRITE "${dart_imgui_tag_stamp}" "${IMGUI_TARGET_VERSION}\n")
+  FetchContent_MakeAvailable(dart_imgui)
 
   set(
     imgui_core_sources
