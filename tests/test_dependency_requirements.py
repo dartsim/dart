@@ -1989,6 +1989,64 @@ def test_bullet_installed_scalar_abi(tmp_path, precision, linkage, suffix):
     assert f'set(DART_BULLET_REQUIRE_PRECISION "{precision}")' in component.read_text()
 
 
+def pkgconfig_consumer_options(package, *, static=False, env=None):
+    flags = []
+    content = ""
+    for kind in ("--cflags", "--libs"):
+        result = cmake_fixture_run(
+            shutil.which("pkg-config"),
+            *(["--static"] if static else []),
+            kind,
+            package,
+            env=env,
+        )
+        selected = shlex.split(result.stdout)
+        flags.extend(selected)
+        for flag in selected:
+            if kind == "--cflags":
+                # Raw -I preserves literal Unix backslashes in serialization tests.
+                command = "target_compile_options"
+            elif flag.startswith("-L"):
+                command, flag = "target_link_directories", flag[2:]
+            else:
+                command = "target_link_libraries"
+                if flag.startswith("-l"):
+                    flag = flag[2:]
+            content += f"{command}(consumer PRIVATE [=[{flag}]=])\n"
+    return content, flags
+
+
+@pytest.mark.parametrize(
+    "cflags", ["/Zc:inline /DWIN32 /D_WINDOWS /EHsc", "-fno-strict-aliasing -pthread"]
+)
+def test_pkgconfig_consumer_preserves_flag_roles(tmp_path, cflags):
+    pcdir = tmp_path / "pkgconfig"
+    pcdir.mkdir()
+    (pcdir / "fixture.pc").write_text(
+        "Name: fixture\nDescription: compiler and linker flag roles\nVersion: 1\n"
+        f"Cflags: {cflags} -DFIXTURE_FLAG=1\nLibs: -L{tmp_path.as_posix()} -lfixture\n"
+    )
+    env = {**os.environ, "PKG_CONFIG_PATH": str(pcdir), "PKG_CONFIG_LIBDIR": str(pcdir)}
+    env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+    options, _ = pkgconfig_consumer_options("fixture", env=env)
+    source = tmp_path / "consumer.cpp"
+    source.write_text("int main() { return 0; }\n")
+    result = configure(
+        tmp_path,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n'
+        + options
+        + 'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/compile.txt" CONTENT "$<TARGET_PROPERTY:consumer,COMPILE_OPTIONS>")\n'
+        'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/link.txt" CONTENT "$<TARGET_PROPERTY:consumer,LINK_LIBRARIES>")\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    compile_flags = (tmp_path / "build/compile.txt").read_text().split(";")
+    link_flags = (tmp_path / "build/link.txt").read_text().split(";")
+    assert all(flag in compile_flags for flag in shlex.split(cflags))
+    assert all(flag not in link_flags for flag in shlex.split(cflags))
+    assert "fixture" in link_flags and "fixture" not in compile_flags
+
+
 @pytest.mark.parametrize("linkage", ["STATIC", "SHARED"])
 @pytest.mark.parametrize("layout", ["plain", "spaces", "sysroot", "backslash"])
 def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
@@ -2057,31 +2115,12 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
     consumer = tmp_path / "consumer"
     consumer.mkdir()
     for static in (False, True):
-        result = cmake_fixture_run(
-            shutil.which("pkg-config"),
-            *(["--static"] if static else []),
-            "--cflags",
-            "--libs",
-            "dart",
-            env=env,
-        )
-        flags = shlex.split(result.stdout)
+        options, flags = pkgconfig_consumer_options("dart", static=static, env=env)
         content = (
             "cmake_minimum_required(VERSION 3.22.1)\nproject(Consumer LANGUAGES CXX)\n"
             "set(CMAKE_CXX_STANDARD 17)\n"
-            f'add_executable(consumer "{source.as_posix()}")\n'
+            f'add_executable(consumer "{source.as_posix()}")\n' + options
         )
-        for flag in flags:
-            if flag.startswith(("-I", "-D")):
-                # Raw -I preserves literal Unix backslashes in this serialization test.
-                command = "target_compile_options"
-            elif flag.startswith("-L"):
-                command, flag = "target_link_directories", flag[2:]
-            else:
-                command = "target_link_libraries"
-                if flag.startswith("-l"):
-                    flag = flag[2:]
-            content += f"{command}(consumer PRIVATE [=[{flag}]=])\n"
         (consumer / "CMakeLists.txt").write_text(content)
         if relocatable_sysroot:
             assert all(str(builder) not in flag for flag in flags)
@@ -2385,6 +2424,98 @@ def test_bullet_hybrid_configuration_abi(tmp_path, debug_precision, imported_con
             cmake_fixture_run(
                 shutil.which("cmake"), "--build", tmp_path / "build", "--config", config
             )
+
+
+@pytest.mark.parametrize("debug_precision", ["single", "double"])
+@pytest.mark.parametrize(
+    "edge",
+    ["keywords", "raw-genex", "target-genex", "inactive-target", "mapped-target"],
+)
+def test_bullet_hybrid_conditional_graph_abi(tmp_path, debug_precision, edge):
+    release = build_bullet_abi_fixture(tmp_path / "release", "double")
+    debug = build_bullet_abi_fixture(tmp_path / "debug", debug_precision)
+    bullet_module(tmp_path)
+    (tmp_path / "consumer.cpp").write_text(BULLET_CONSUMER)
+    setup = ""
+    if edge == "keywords":
+        links = 'optimized "${release_math}" debug "${debug_math}"'
+    elif edge == "raw-genex":
+        links = '"$<$<NOT:$<CONFIG:Debug>>:${release_math}>" "$<$<CONFIG:Debug>:${debug_math}>"'
+    elif edge == "mapped-target":
+        setup = (
+            "add_library(mapped INTERFACE IMPORTED)\n"
+            "set_target_properties(mapped PROPERTIES MAP_IMPORTED_CONFIG_RELEASE RelWithDebInfo MAP_IMPORTED_CONFIG_DEBUG RelWithDebInfo)\n"
+            'target_link_libraries(mapped INTERFACE "$<$<CONFIG:RelWithDebInfo>:${debug_math}>" "$<$<NOT:$<CONFIG:RelWithDebInfo>>:${release_math}>")\n'
+        )
+        links = "mapped"
+    else:
+        setup = (
+            "add_library(release_math_target UNKNOWN IMPORTED)\n"
+            "add_library(debug_math_target UNKNOWN IMPORTED)\n"
+            'set_target_properties(release_math_target PROPERTIES IMPORTED_LOCATION "${release_math}")\n'
+            'set_target_properties(debug_math_target PROPERTIES IMPORTED_LOCATION "${debug_math}")\n'
+        )
+        links = '"$<$<NOT:$<CONFIG:Debug>>:release_math_target>" "$<$<CONFIG:Debug>:debug_math_target>"'
+        if edge == "inactive-target":
+            setup += (
+                "add_library(broken INTERFACE IMPORTED)\n"
+                'target_link_libraries(broken INTERFACE "$<UNSUPPORTED:missing>")\n'
+                'target_link_libraries(release_math_target INTERFACE "$<$<CONFIG:Debug>:broken>")\n'
+            )
+            links += ' "$<$<CONFIG:Unused>:broken>"'
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "set(CMAKE_CXX_STANDARD 17)\n"
+        f'add_library(BulletCollision STATIC "{tmp_path.as_posix()}/release/source/collision.cpp")\n'
+        f'target_include_directories(BulletCollision PUBLIC "{release.as_posix()}/include")\n'
+        "target_compile_definitions(BulletCollision PUBLIC BT_USE_DOUBLE_PRECISION)\n"
+        f'find_library(release_math NAMES LinearMath PATHS "{release.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        f'find_library(debug_math NAMES LinearMath PATHS "{debug.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        + setup
+        + f"target_link_libraries(BulletCollision PRIVATE {links})\n"
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{release.as_posix()}/include")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision)\n"
+        "set(CMAKE_TRY_COMPILE_CONFIGURATION Release)\n"
+        "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        f'if({"NOT " if debug_precision == "double" else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong conditional graph ABI acceptance")\nendif()\n'
+        'if(NOT CMAKE_TRY_COMPILE_CONFIGURATION STREQUAL "Release")\n'
+        'message(FATAL_ERROR "Probe changed caller configuration")\nendif()\n'
+        f'if(NOT DART_BULLET_PC_LIBS STREQUAL " ${{{"debug_math" if edge == "mapped-target" else "release_math"}}}")\n'
+        'message(FATAL_ERROR "Probe changed packaging libraries: ${DART_BULLET_PC_LIBS}")\nendif()\n'
+        f'add_executable(consumer "{tmp_path.as_posix()}/consumer.cpp")\n'
+        "target_link_libraries(consumer PRIVATE Bullet)\n",
+        cmake_args=(
+            "-G",
+            "Ninja Multi-Config",
+            "-DCMAKE_CONFIGURATION_TYPES=Release;Debug",
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    if debug_precision == "double":
+        for config in ("Release", "Debug"):
+            cmake_fixture_run(
+                shutil.which("cmake"), "--build", tmp_path / "build", "--config", config
+            )
+            executable = (
+                tmp_path
+                / "build"
+                / config
+                / ("consumer.exe" if os.name == "nt" else "consumer")
+            )
+            env = {
+                **os.environ,
+                "PATH": os.pathsep.join(
+                    [
+                        str(release / "lib"),
+                        str(debug / "lib"),
+                        os.environ.get("PATH", ""),
+                    ]
+                ),
+            }
+            cmake_fixture_run(executable, env=env)
 
 
 @pytest.mark.parametrize("debug_precision", ["single", "double"])
