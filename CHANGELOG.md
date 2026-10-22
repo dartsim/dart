@@ -283,6 +283,32 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Add `dartpy.errors`: the errors dartpy defines derive from `DartError`,
+    with `ValidationError` (`ValueError`), `NotFoundError` (`KeyError`) and
+    `OperationError` (`RuntimeError`) branches and the `WorldBusyError`,
+    `ModelFrozenError`, `CheckpointMismatchError` and `NameConflictError`
+    types that later DART 7 work raises. C++ `std::invalid_argument` and
+    `std::length_error` translate to `ValidationError`; `std::runtime_error`,
+    `std::logic_error` and any other `std::exception` translate to
+    `OperationError`; `dartpy.gui.RenderingUnavailableError` and
+    `dartpy.viewer.AssetsNotPrefetchedError` derive from `OperationError`.
+    Argument conversion failures still raise plain `TypeError`, and
+    `std::out_of_range`, `std::domain_error`, `std::range_error`,
+    `std::overflow_error` and `std::bad_alloc` keep their `IndexError`,
+    `ValueError`, `OverflowError` and `MemoryError` translations.
+    DART's C++ diagnostics (`dtwarn`, `dterr`, `DART_WARN` and the other
+    levels, with or without spdlog) now reach `logging.getLogger("dartpy")`
+    instead of the console, including from C++ worker threads; configure
+    that logger to silence or redirect them,
+    or call `dartpy.common.flush_logs()` to deliver queued records on the
+    calling thread. Without logging configuration, warnings and errors still
+    print to stderr and info messages stay quiet. C++ gains
+    `dart::common::setLogCallback()` to receive the `DART_WARN` family as
+    formatted messages in place of spdlog or the console, and
+    `dart::common::setConsoleStreams()` to redirect the console macros, per
+    thread if the caller wants.
+    [#3844](https://github.com/dartsim/dart/pull/3844)
+
   * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
     `World.restore_state(state)` for dynamic snapshots; state arrays are
     read-only NumPy copies and a structure mismatch raises `ValueError`.
