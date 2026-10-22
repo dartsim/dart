@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Adapted from Tomas Moller's 1997 triangle intersection routine; see NOTICE.
+
 #ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 #define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 

@@ -221,6 +221,7 @@ test-ai-infra = { cmd = [
   "tests/test_install_git_hooks.py",
   "tests/test_check_local_paths.py",
   "tests/test_lint_cmake.py",
+  "tests/test_third_party_notices.py",
   "-q",
 ] }
 
@@ -234,9 +235,18 @@ test-build-requirements = { cmd = [
   "tests/test_minimum_requirement_metadata.py",
   "tests/test_wheel_runtime_environment.py",
   "tests/test_wheel_filament_license.py",
+  "tests/test_third_party_notices.py",
   "tests/test_dartpy_backend.py",
   "tests/test_verify_wheel.py",
   "tests/test_wheel_linux.py",
+  "-q",
+] }
+
+test-third-party-notices = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_third_party_notices.py",
   "-q",
 ] }
 

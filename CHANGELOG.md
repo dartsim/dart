@@ -423,6 +423,10 @@
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
 
+  * Ship third-party attribution in `NOTICE`, included in dartpy's license
+    metadata and installed alongside `LICENSE` in `share/licenses/dart`.
+    [#3857](https://github.com/dartsim/dart/pull/3857)
+
   * Raise the minimum assimp version to 5.3 (Ubuntu 24.04's 5.3.1, which
     reports 5.3.0).
     [#3865](https://github.com/dartsim/dart/pull/3865)
