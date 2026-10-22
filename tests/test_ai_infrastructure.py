@@ -4602,26 +4602,23 @@ def test_cmake_semantic_graph_probe_accepts_explicit_inactive_source_policy(
     cmake.write_text(
         cmake.read_text(encoding="utf-8").replace(
             "add_subdirectory(tests)",
-            'set(DART_USE_SYSTEM_IMGUI ON CACHE BOOL "" FORCE)\n'
-            "add_library(dart-external-imgui INTERFACE)\n"
+            'set(DART_BUILD_UTILS_ASSETS OFF CACHE BOOL "" FORCE)\n'
             "add_subdirectory(tests)",
             1,
         ),
         encoding="utf-8",
     )
-    regression = tmp_path / "tests" / "regression" / "CMakeLists.txt"
-    regression.write_text(
-        regression.read_text(encoding="utf-8")
+    integration = tmp_path / "tests" / "integration" / "CMakeLists.txt"
+    integration.write_text(
+        integration.read_text(encoding="utf-8")
         + """
-if(TARGET dart-external-imgui)
-  if(NOT DART_USE_SYSTEM_IMGUI)
-    dart_add_test("regression" test_Issue2516)
-  endif()
+if(TARGET dart-utils-assets)
+  dart_add_test("integration" test_ModelResourceRetriever)
 endif()
 """,
         encoding="utf-8",
     )
-    (tmp_path / "tests" / "regression" / "test_Issue2516.cpp").write_text(
+    (tmp_path / "tests" / "integration" / "test_ModelResourceRetriever.cpp").write_text(
         "int main(void) { return 0; }\n",
         encoding="utf-8",
     )

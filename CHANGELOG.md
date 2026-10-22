@@ -111,6 +111,15 @@
     and `dart-external-imgui` target as CMake forwarding names. They no longer
     provide the OpenGL2 backend (`imgui_impl_opengl2.h`) or depend on OpenGL,
     and applications linked to the former ImGui shared library must rebuild.
+  * The bundled Dear ImGui is now the unpatched upstream v1.92.8-docking
+    release, so fetching it no longer needs Git. Third-party code that misuses
+    DART's re-exported ImGui (null or empty font data, ImGui calls without a
+    context) may now assert or crash, as upstream ImGui does, because the
+    6.16.8 guards for [#2516](https://github.com/dartsim/dart/issues/2516),
+    [#2668](https://github.com/dartsim/dart/issues/2668) and
+    [#2671](https://github.com/dartsim/dart/issues/2671) are reverted.
+    `ImFormatString` and `ImFormatStringV` are exported from `dart-gui` again.
+    [#3876](https://github.com/dartsim/dart/pull/3876)
 
 * API
 
