@@ -4,75 +4,29 @@
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
-dart_check_optional_package(BULLET "dart" "Bullet" "3.05")
-if(DART_BULLET_BUILT_PRECISION)
-  # DARTFindBullet read the precision of Bullet libraries that this project
-  # builds, which try_compile cannot link.
-  if(DART_BULLET_BUILT_PRECISION STREQUAL "double")
-    set(BT_USE_DOUBLE_PRECISION 1 CACHE INTERNAL "Test BT_USE_DOUBLE_PRECISION")
-  else()
-    set(
-      BT_USE_DOUBLE_PRECISION
-      ""
-      CACHE INTERNAL
-      "Test BT_USE_DOUBLE_PRECISION"
-    )
-  endif()
-elseif(DART_USE_SYSTEM_BULLET)
-  # Test whether Bullet was built with double precision. If so, we need to
-  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
-  # any Bullet headers. This is a workaround for the fact that Bullet does not
-  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-  include(CheckCXXSourceCompiles)
-  include(CMakePushCheckState)
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_FLAGS "-w")
-  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-  # Probe the libraries the Bullet target links. try_compile links only
-  # imported targets, and aliases of them only since CMake 3.29.
-  set(bullet_probe_target Bullet)
-  get_target_property(bullet_probe_alias Bullet ALIASED_TARGET)
-  if(bullet_probe_alias)
-    set(bullet_probe_target ${bullet_probe_alias})
-  endif()
-  get_target_property(bullet_probe_imported ${bullet_probe_target} IMPORTED)
-  if(bullet_probe_imported)
-    set(CMAKE_REQUIRED_LIBRARIES ${bullet_probe_target})
-  else()
-    get_target_property(
-      CMAKE_REQUIRED_LIBRARIES
-      ${bullet_probe_target}
-      INTERFACE_LINK_LIBRARIES
-    )
-  endif()
-  unset(BT_USE_DOUBLE_PRECISION CACHE)
-  check_cxx_source_compiles(
-    "
-      #include <btBulletCollisionCommon.h>
-      int main()
-      {
-        btVector3 v(0., 0., 1.);
-        btStaticPlaneShape planeShape(v, 0.);
-        return 0;
-      }
-    "
-    BT_USE_DOUBLE_PRECISION
+dart_check_optional_package(BULLET "dart-collision-bullet" "Bullet" "3.05")
+_dart_bullet_probe_precision(bullet_precision)
+if(NOT bullet_precision)
+  message(
+    FATAL_ERROR
+    "Cannot establish the selected Bullet scalar ABI: "
+    "single and double Collision/LinearMath link probes must identify exactly one precision."
   )
-  cmake_pop_check_state()
-  # Unsuffixed libraries built in double precision do not show their
-  # precision, so an installed DART cannot check the variant it finds.
-  if(BT_USE_DOUBLE_PRECISION AND DART_BULLET_USES_FLOAT64 STREQUAL "FALSE")
-    set(
-      DART_BULLET_USES_FLOAT64
-      ""
-      CACHE INTERNAL
-      "Whether DART links Bullet's -float64 libraries; empty when unknown"
-    )
-  endif()
-else()
-  # FetchContent builds Bullet with USE_DOUBLE_PRECISION=ON, so keep DART in sync.
-  set(BT_USE_DOUBLE_PRECISION TRUE)
+endif()
+set(
+  DART_BULLET_PRECISION
+  "${bullet_precision}"
+  CACHE INTERNAL
+  "Bullet scalar ABI"
+)
+set(BT_USE_DOUBLE_PRECISION FALSE CACHE INTERNAL "Bullet uses double precision")
+if(bullet_precision STREQUAL "double")
+  set(
+    BT_USE_DOUBLE_PRECISION
+    TRUE
+    CACHE INTERNAL
+    "Bullet uses double precision"
+  )
 endif()
 
 if(DART_VERBOSE)

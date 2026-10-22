@@ -43,6 +43,17 @@ Gazebo compatibility covers rebuilding released `gz-physics` and `gz-sim`
 without source changes. Existing binary plugins must be rebuilt against the
 new library layout.
 
+## Eigen Compatibility
+
+DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0
+through the `eigen34` feature; the toolchain CI lane rewrites that pin to build
+and test Eigen 5 with warnings as errors.
+The installed CMake package records the major used to build DART and rejects
+a consumer using a different major; pkg-config consumers must match majors
+themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
+Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
+same major or rebuild DART and its consumers.
+
 ## Package Version Compatibility
 
 The installed `DARTConfigVersion.cmake` accepts plain version requests from
@@ -83,21 +94,37 @@ components and targets forward to `dart` for rebuilt consumers; the former
 collision shared-library filenames are no longer installed. `DART_SKIP_BULLET`
 and `DART_SKIP_ODE` disable the respective backends, including bundled downloads.
 The FCL default and public detector classes remain unchanged.
+By default a missing optional dependency (Bullet, ODE) only warns and drops its
+backend. Gazebo-facing packagers, whose gz-physics needs both, should pass
+`-DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON` so configure fails instead; the error
+names the dependency and the component, and an explicit `DART_SKIP_<NAME>=ON`
+still disables one on purpose. The Gazebo pixi task (`config-dart-gz`) and
+the compat lanes set it.
 
 With system Bullet 3.17 or newer, `DART_BULLET_FLOAT64` (default `ON`) links
 the `-float64` libraries installed beside the single-precision ones, because
 single-precision Bullet's absolute GJK tolerances lose contacts of
 centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
-DART rejects Bullet libraries that mix the two variants, judging an existing
-`Bullet` target by its library files and those of the targets it links. The
-installed CMake components require the same variant without falling back to
-the other one, and Bullet 3.17 when DART was built against 3.17 or newer, whose
-heightfield constructor it calls; they also reject an existing target of the
-other variant and warn when it names no library files. Unsuffixed libraries
-that the build finds in double precision do not show their variant, so an
-installed DART does not check it. `dart.pc` requires `bullet-float64` when
-pkg-config finds that module and otherwise names the `-float64` libraries and
-Bullet's include directories directly. The two precisions
+DART rejects mixed library variants and conflicting scalar precision in linked
+project-built Bullet components. Filename variants and scalar ABI are recorded
+separately: unsuffixed libraries can use either precision. Imported libraries
+must pass exactly one of the single/double C++ link probes, covering both
+Collision and LinearMath; project-built components use their compile definitions.
+Installed CMake components verify the recorded scalar ABI and filename variant.
+Consumers of imported Bullet must enable CXX before loading those components;
+DART never enables a language implicitly. Unsupported potentially active target
+generator expressions, ambiguous or failed probes, and unknown linked-header
+versions fail dependency validation rather than claiming compatibility. Inactive
+install/platform branches and absent optional targets contribute nothing.
+The installed version floor comes from the linked target's headers: 3.17 when
+DART uses its newer heightfield constructor, otherwise 3.05.
+
+`dart.pc` requires `bullet-float64` when pkg-config finds that module and otherwise
+publishes the selected libraries and include directories in its public flags.
+Paths are escaped, and compile/link sysroots are removed at path boundaries.
+On Linux, sysroot library flags retain the exact selected filename using `-l:`;
+unsupported platform/sysroot library serialization reports an error.
+The two precisions
 share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
 even across `RTLD_LOCAL` plugins, so a process must load only one Bullet
 precision.
@@ -119,6 +146,12 @@ using versioned or unversioned package names. Installed IO components record
 the selected package and major and require that same major, so a consumer
 cannot silently link a different sdformat ABI. Core builds with IO disabled
 do not discover sdformat.
+
+Source builds using urdfdom below 5.1 should load only trusted URDF: those
+versions can interpret URDF text as a printf format string in parser error
+logging (fixed upstream in urdfdom 5.1.0, ros/urdfdom#243 and #244). Pixi
+builds use urdfdom 6 and are unaffected. Linux wheels bundle urdfdom 6.0.1
+and urdfdom_headers 3.0.1, with sdformat rebuilt against them.
 
 Set
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` for a headless core plus IO
@@ -149,9 +182,10 @@ default) requires Filament 1.77.3, GLFW 3.4, libpng, libjpeg, and Dear ImGui
 Filament SDK; `OFF` uses DART's pinned private SDK, which Linux builds from
 source with Clang 20 or newer and Ninja, and macOS arm64 and 64-bit Windows
 download as prebuilt archives. The bundled ImGui, the default, is the Dear
-ImGui v1.92.8 docking release, which configure fetches with Git; its installed
-`dart/external/imgui/` headers use the docking layout. For offline configures,
-pass a local checkout of that tag with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
+ImGui v1.92.8 docking release, which configure fetches as a SHA256-pinned
+tag archive, unpatched; its installed `dart/external/imgui/` headers use the
+docking layout. For offline configures, extract that archive and pass the
+folder that contains `imgui.h` with `FETCHCONTENT_SOURCE_DIR_DART_IMGUI`.
 `DART_USE_SYSTEM_IMGUI=ON` uses an installed ImGui instead; a vanilla system
 ImGui builds `dart-gui` without docking.
 

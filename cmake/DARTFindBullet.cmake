@@ -16,20 +16,27 @@
 # ones. A process must not load both precisions: building DART records the
 # variant it links, and an installed DART passes it back through
 # DART_BULLET_REQUIRE_FLOAT64 (TRUE, FALSE, or empty when unknown) together
-# with DART_BULLET_REQUIRE_VERSION. DART_BULLET_BUILT_PRECISION is double or
+# with DART_BULLET_REQUIRE_VERSION. DART_BULLET_REQUIRE_PRECISION independently
+# requires the recorded scalar ABI. DART_BULLET_BUILT_PRECISION is double or
 # single when an existing Bullet target links Bullet libraries that this
 # project builds, which the precision probe cannot link.
 include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 
 set(DART_BULLET_BUILT_PRECISION "")
+set(_DART_BULLET_GRAPH_UNKNOWN FALSE)
+set(_DART_BULLET_IMPORTED_FILES)
+set(_DART_BULLET_INCLUDES)
+set(_DART_BULLET_IMPORTED_VARIANT)
+set(_DART_BULLET_PROBE_CONFIGS)
+set(_DART_BULLET_HAS_BUILD_TARGETS FALSE)
 
 set(
   _dart_bullet_name_regex
   "^(lib)?(Bullet(Collision|Dynamics|Math|SoftBody)|LinearMath)"
 )
 
-# Sets <out> to float64, single or mixed for the Bullet library files among
-# the arguments, judged by file name, or to an empty string if there are none.
+# Sets <out> to float64, single (unsuffixed), or mixed by filename only.
+# The scalar ABI is checked separately; an empty result means no named files.
 # Targets, such as bundled Bullet's, are not files.
 function(_dart_bullet_variant out)
   set(float64 FALSE)
@@ -56,6 +63,32 @@ function(_dart_bullet_variant out)
     set(variant single)
   endif()
   set(${out} "${variant}" PARENT_SCOPE)
+endfunction()
+
+# pkg-config rewrites -I/-L paths using its consumer's sysroot, not the builder's.
+function(_dart_bullet_pc_path out path kind)
+  set(root "${CMAKE_SYSROOT}")
+  if(DEFINED CMAKE_SYSROOT_${kind})
+    set(root "${CMAKE_SYSROOT_${kind}}")
+  endif()
+  if(root AND IS_ABSOLUTE "${path}")
+    string(REGEX REPLACE "/+$" "" root "${root}")
+    string(FIND "${path}" "${root}/" offset)
+    if(path STREQUAL root)
+      set(path "/")
+    elseif(offset EQUAL 0)
+      string(LENGTH "${root}" length)
+      string(SUBSTRING "${path}" ${length} -1 path)
+    endif()
+  endif()
+  set(${out} "${path}" PARENT_SCOPE)
+endfunction()
+
+function(_dart_bullet_pc_escape out token)
+  string(REPLACE "\\" "\\\\" token "${token}")
+  string(REPLACE " " "\\ " token "${token}")
+  string(REPLACE "\t" "\\\t" token "${token}")
+  set(${out} "${token}" PARENT_SCOPE)
 endfunction()
 
 # Records the variant that DART links while building it, and pkg-config
@@ -91,10 +124,42 @@ function(_dart_bullet_record variant)
   set(includes ${arg_INCLUDES})
   list(REMOVE_DUPLICATES includes)
   list(REMOVE_DUPLICATES libraries)
-  list(TRANSFORM includes PREPEND " -I")
-  list(TRANSFORM libraries PREPEND " ")
-  string(JOIN "" cflags ${includes})
-  string(JOIN "" libs ${libraries})
+  set(cflags "")
+  foreach(include_dir IN LISTS includes)
+    _dart_bullet_pc_path(path "${include_dir}" COMPILE)
+    _dart_bullet_pc_escape(path "${path}")
+    string(APPEND cflags " -I${path}")
+  endforeach()
+  set(libs "")
+  set(error "")
+  foreach(library IN LISTS libraries)
+    _dart_bullet_pc_path(path "${library}" LINK)
+    if(NOT path STREQUAL library)
+      # GNU-compatible ELF linkers can preserve the exact selected archive/DSO.
+      # -l<stem> could silently substitute a shared library for a selected archive.
+      if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(
+          error
+          "Cannot serialize the selected Bullet library '${library}' for a relocatable sysroot on ${CMAKE_SYSTEM_NAME}"
+        )
+        break()
+      endif()
+      get_filename_component(directory "${path}" DIRECTORY)
+      get_filename_component(name "${path}" NAME)
+      _dart_bullet_pc_escape(directory "${directory}")
+      _dart_bullet_pc_escape(name "${name}")
+      string(APPEND libs " -L${directory} -l:${name}")
+    else()
+      _dart_bullet_pc_escape(path "${path}")
+      string(APPEND libs " ${path}")
+    endif()
+  endforeach()
+  set(
+    DART_BULLET_PC_ERROR
+    "${error}"
+    CACHE INTERNAL
+    "Unsupported Bullet pkg-config serialization"
+  )
   set(
     DART_BULLET_PC_CFLAGS
     "${cflags}"
@@ -167,16 +232,17 @@ if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
   endif()
 endif()
 
-if(BULLET_FOUND OR Bullet_FOUND)
-  unset(BULLET_VERSION)
+macro(_dart_bullet_check_version includes)
+  set(BULLET_VERSION "")
   dart_read_header_version(_bullet_header_version
-    LinearMath/btScalar.h BT_BULLET_VERSION ${BULLET_INCLUDE_DIRS}
+    LinearMath/btScalar.h BT_BULLET_VERSION ${includes}
   )
   if(_bullet_header_version MATCHES "^[0-9]+$")
     math(EXPR _bullet_major "${_bullet_header_version} / 100")
     math(EXPR _bullet_minor "${_bullet_header_version} % 100")
     set(BULLET_VERSION "${_bullet_major}.${_bullet_minor}")
   endif()
+  set(Bullet_VERSION "${BULLET_VERSION}")
   # Upstream Bullet 3.06 and 3.07 still report 305 (Ubuntu 22.04 ships 3.06).
   # DART built against Bullet 3.17 or newer uses API that 3.17 introduced.
   set(_dart_bullet_minimum 3.05)
@@ -200,6 +266,10 @@ if(BULLET_FOUND OR Bullet_FOUND)
   unset(_bullet_header_version)
   unset(_bullet_major)
   unset(_bullet_minor)
+endmacro()
+
+if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
+  _dart_bullet_check_version("${BULLET_INCLUDE_DIRS}")
 endif()
 
 if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
@@ -363,7 +433,9 @@ if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   unset(_dart_bullet_item)
   unset(_dart_bullet_libraries)
   unset(_dart_bullet_found)
-elseif(TARGET Bullet)
+endif()
+
+if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
   # A parent project or an earlier include created the Bullet target, which
   # DART links as is. Classify the Bullet library files of the target and of
   # every target it links, unwrapping generator expressions and including
@@ -383,6 +455,13 @@ elseif(TARGET Bullet)
   set(_dart_bullet_files)
   set(_dart_bullet_pc_files)
   set(_dart_bullet_includes)
+  set(_dart_bullet_unknown FALSE)
+  set(_dart_bullet_built_precisions)
+  set(
+    _dart_bullet_probe_configs
+    ${CMAKE_CONFIGURATION_TYPES}
+    ${CMAKE_BUILD_TYPE}
+  )
   while(_dart_bullet_queue OR _dart_bullet_other_queue)
     if(NOT _dart_bullet_queue)
       set(_dart_bullet_queue ${_dart_bullet_other_queue})
@@ -415,8 +494,7 @@ elseif(TARGET Bullet)
     # $<CONFIG:...> conditions, and queue the elements of a list payload.
     # Only shorter payloads are queued, so the walk ends. Skip payloads that
     # are empty in this build, such as $<INSTALL_INTERFACE:...> and $<0:...>,
-    # and those of conditions not evaluated here, which can leave the variant
-    # unknown but never mixed.
+    # and reject unevaluated potentially active expressions below.
     set(_dart_bullet_part "${_dart_bullet_item}")
     set(_dart_bullet_other FALSE)
     while(
@@ -425,7 +503,8 @@ elseif(TARGET Bullet)
         "^\\$<(\\$<([^<>]|\\$<[^<>]*>)*>|[A-Za-z0-9_]+):(.*)>$"
     )
       set(_dart_bullet_item "${CMAKE_MATCH_3}")
-      string(TOUPPER "${CMAKE_MATCH_1}" _dart_bullet_value)
+      set(_dart_bullet_expression "${CMAKE_MATCH_1}")
+      string(TOUPPER "${_dart_bullet_expression}" _dart_bullet_value)
       if(_dart_bullet_value MATCHES "^\\$<(NOT:\\$<)?CONFIG:([^<>]*)>")
         string(REPLACE "," ";" _dart_bullet_configs "${CMAKE_MATCH_2}")
         if(_dart_bullet_build_type IN_LIST _dart_bullet_configs)
@@ -444,16 +523,35 @@ elseif(TARGET Bullet)
           set(_dart_bullet_item "")
           break()
         endif()
+      elseif(_dart_bullet_expression MATCHES "^\\$<PLATFORM_ID:([^<>]*)>$")
+        string(REPLACE "," ";" _dart_bullet_platforms "${CMAKE_MATCH_1}")
+        if(NOT CMAKE_SYSTEM_NAME IN_LIST _dart_bullet_platforms)
+          set(_dart_bullet_item "")
+          break()
+        endif()
+      elseif(_dart_bullet_value STREQUAL "TARGET_NAME_IF_EXISTS")
+        if(NOT TARGET "${_dart_bullet_item}")
+          set(_dart_bullet_item "")
+          break()
+        endif()
+      elseif(_dart_bullet_value MATCHES "^(INSTALL_INTERFACE|0)$")
+        set(_dart_bullet_item "")
+        break()
       elseif(
         NOT
           _dart_bullet_value
             MATCHES
-            "^(LINK_ONLY|BUILD_INTERFACE|BUILD_LOCAL_INTERFACE|TARGET_NAME_IF_EXISTS|1)$"
+            "^(LINK_ONLY|BUILD_INTERFACE|BUILD_LOCAL_INTERFACE|1)$"
       )
+        set(_dart_bullet_unknown TRUE)
         set(_dart_bullet_item "")
         break()
       endif()
     endwhile()
+    if(_dart_bullet_item MATCHES "\\$<")
+      set(_dart_bullet_unknown TRUE)
+      continue()
+    endif()
     if(_dart_bullet_item STREQUAL "")
       continue()
     elseif(_dart_bullet_other AND _dart_bullet_pc)
@@ -464,7 +562,7 @@ elseif(TARGET Bullet)
       _dart_bullet_item MATCHES ";"
       AND NOT _dart_bullet_item STREQUAL _dart_bullet_part
     )
-      list(APPEND _dart_bullet_queue ${_dart_bullet_item})
+      list(PREPEND _dart_bullet_queue ${_dart_bullet_item})
       continue()
     endif()
     if(NOT TARGET "${_dart_bullet_item}")
@@ -484,7 +582,7 @@ elseif(TARGET Bullet)
       INTERFACE_LINK_LIBRARIES
     )
     if(_dart_bullet_value)
-      list(APPEND _dart_bullet_queue ${_dart_bullet_value})
+      list(PREPEND _dart_bullet_queue ${_dart_bullet_value})
     endif()
     get_target_property(
       _dart_bullet_value
@@ -492,12 +590,28 @@ elseif(TARGET Bullet)
       INTERFACE_INCLUDE_DIRECTORIES
     )
     foreach(_dart_bullet_dir IN LISTS _dart_bullet_value)
+      while(
+        _dart_bullet_dir
+          MATCHES
+          "^\\$<(BUILD_INTERFACE|BUILD_LOCAL_INTERFACE):(.+)>$"
+      )
+        set(_dart_bullet_dir "${CMAKE_MATCH_2}")
+      endwhile()
+      if(_dart_bullet_dir MATCHES "^\\$<INSTALL_INTERFACE:")
+        continue()
+      elseif(_dart_bullet_dir MATCHES "\\$<")
+        set(_dart_bullet_unknown TRUE)
+      endif()
       if(_dart_bullet_pc AND IS_ABSOLUTE "${_dart_bullet_dir}")
         list(APPEND _dart_bullet_includes "${_dart_bullet_dir}")
       endif()
     endforeach()
     get_target_property(_dart_bullet_imported "${_dart_bullet_item}" IMPORTED)
     if(NOT _dart_bullet_imported)
+      get_target_property(_dart_bullet_type "${_dart_bullet_item}" TYPE)
+      if(NOT _dart_bullet_type STREQUAL "INTERFACE_LIBRARY")
+        set(_DART_BULLET_HAS_BUILD_TARGETS TRUE)
+      endif()
       # try_compile cannot link Bullet libraries that this project builds;
       # Bullet's USE_DOUBLE_PRECISION option defines BT_USE_DOUBLE_PRECISION
       # for their directories instead.
@@ -513,26 +627,30 @@ elseif(TARGET Bullet)
           DIRECTORY "${_dart_bullet_dir}"
           COMPILE_DEFINITIONS
         )
-        foreach(
-          _dart_bullet_property
+        get_target_property(
+          _dart_bullet_dir
+          "${_dart_bullet_item}"
           COMPILE_DEFINITIONS
-          INTERFACE_COMPILE_DEFINITIONS
         )
-          get_target_property(
-            _dart_bullet_dir
-            "${_dart_bullet_item}"
-            ${_dart_bullet_property}
-          )
-          list(APPEND _dart_bullet_value "${_dart_bullet_dir}")
-        endforeach()
+        list(APPEND _dart_bullet_value "${_dart_bullet_dir}")
         if(
           _dart_bullet_value
             MATCHES
             "(^|;)BT_USE_DOUBLE_PRECISION(=[^;]*)?(;|$)"
         )
-          set(DART_BULLET_BUILT_PRECISION double)
-        elseif(NOT DART_BULLET_BUILT_PRECISION)
-          set(DART_BULLET_BUILT_PRECISION single)
+          list(APPEND _dart_bullet_built_precisions double)
+        elseif(_dart_bullet_value MATCHES "\\$<")
+          set(_dart_bullet_unknown TRUE)
+        else()
+          list(APPEND _dart_bullet_built_precisions single)
+          get_target_property(
+            _dart_bullet_dir
+            "${_dart_bullet_item}"
+            INTERFACE_COMPILE_DEFINITIONS
+          )
+          if(_dart_bullet_dir MATCHES "BT_USE_DOUBLE_PRECISION|\\$<")
+            set(_dart_bullet_unknown TRUE)
+          endif()
         endif()
       endif()
       continue()
@@ -545,39 +663,41 @@ elseif(TARGET Bullet)
     if(NOT _dart_bullet_configs)
       set(_dart_bullet_configs)
     endif()
+    list(APPEND _dart_bullet_probe_configs ${_dart_bullet_configs})
     # dart.pc names the location that CMake links for the build type: a
     # mapped or matching configuration, the default one, or a listed one.
     if(_dart_bullet_pc)
-      get_target_property(
-        _dart_bullet_value
-        "${_dart_bullet_item}"
-        MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
+      get_property(
+        _dart_bullet_mapped
+        TARGET "${_dart_bullet_item}"
+        PROPERTY MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
+        SET
       )
-      if(NOT _dart_bullet_value)
-        set(_dart_bullet_value ${_dart_bullet_build_type})
+      if(_dart_bullet_mapped)
+        get_target_property(
+          _dart_bullet_value
+          "${_dart_bullet_item}"
+          MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
+        )
+      else()
+        set(
+          _dart_bullet_value
+          "${_dart_bullet_build_type};;${_dart_bullet_configs}"
+        )
       endif()
+      # Preserve empty mapping entries: CMake uses the configuration-less file.
+      string(REPLACE ";" ";_" _dart_bullet_value "_${_dart_bullet_value}")
       set(_dart_bullet_location "")
       foreach(_dart_bullet_config IN LISTS _dart_bullet_value)
-        string(TOUPPER "_${_dart_bullet_config}" _dart_bullet_config)
-        if(NOT _dart_bullet_location)
-          _dart_bullet_location(
-            _dart_bullet_location
-            "${_dart_bullet_item}"
-            "${_dart_bullet_config}"
-          )
+        if(_dart_bullet_config STREQUAL "_")
+          set(_dart_bullet_config "")
         endif()
-      endforeach()
-      if(NOT _dart_bullet_location)
-        _dart_bullet_location(_dart_bullet_location "${_dart_bullet_item}" "")
-      endif()
-      foreach(_dart_bullet_config IN LISTS _dart_bullet_configs)
-        string(TOUPPER "_${_dart_bullet_config}" _dart_bullet_config)
-        if(NOT _dart_bullet_location)
-          _dart_bullet_location(
-            _dart_bullet_location
-            "${_dart_bullet_item}"
-            "${_dart_bullet_config}"
-          )
+        string(TOUPPER "${_dart_bullet_config}" _dart_bullet_config)
+        _dart_bullet_location(_dart_bullet_location "${_dart_bullet_item}"
+          "${_dart_bullet_config}"
+        )
+        if(_dart_bullet_location)
+          break()
         endif()
       endforeach()
       if(_dart_bullet_location)
@@ -608,6 +728,13 @@ elseif(TARGET Bullet)
       list(APPEND _dart_bullet_files ${_dart_bullet_value})
     endforeach()
   endwhile()
+  set(_DART_BULLET_INCLUDES "${_dart_bullet_includes}")
+  _dart_bullet_check_version("${_dart_bullet_includes}")
+  list(REMOVE_DUPLICATES _dart_bullet_built_precisions)
+  list(LENGTH _dart_bullet_built_precisions _dart_bullet_precision_count)
+  if(_dart_bullet_precision_count EQUAL 1)
+    set(DART_BULLET_BUILT_PRECISION "${_dart_bullet_built_precisions}")
+  endif()
   _dart_bullet_variant(_dart_bullet_found ${_dart_bullet_files})
   set(_dart_bullet_expected "")
   if(DART_BULLET_REQUIRE_FLOAT64 STREQUAL "TRUE")
@@ -615,11 +742,15 @@ elseif(TARGET Bullet)
   elseif(DART_BULLET_REQUIRE_FLOAT64 STREQUAL "FALSE")
     set(_dart_bullet_expected single)
   endif()
-  if(_dart_bullet_found STREQUAL "mixed")
+  if(
+    _dart_bullet_found STREQUAL "mixed"
+    OR _dart_bullet_precision_count GREATER 1
+    OR _dart_bullet_unknown
+  )
     message(
       WARNING
-      "The existing Bullet target links -float64 and single-precision Bullet "
-      "libraries; a process must not load both Bullet precisions."
+      "The existing Bullet target has mixed or unverified precision metadata; "
+      "a process must not load both Bullet precisions."
     )
     set(BULLET_FOUND FALSE)
     set(Bullet_FOUND FALSE)
@@ -651,6 +782,11 @@ elseif(TARGET Bullet)
       LIBRARIES ${_dart_bullet_pc_files}
     )
   endif()
+  set(_DART_BULLET_GRAPH_UNKNOWN "${_dart_bullet_unknown}")
+  set(_DART_BULLET_IMPORTED_FILES "${_dart_bullet_pc_files}")
+  _dart_bullet_variant(_DART_BULLET_IMPORTED_VARIANT ${_dart_bullet_pc_files})
+  list(REMOVE_DUPLICATES _dart_bullet_probe_configs)
+  set(_DART_BULLET_PROBE_CONFIGS "${_dart_bullet_probe_configs}")
   unset(_dart_bullet_build_type)
   unset(_dart_bullet_queue)
   unset(_dart_bullet_other_queue)
@@ -676,4 +812,141 @@ elseif(TARGET Bullet)
   unset(_dart_bullet_found)
   unset(_dart_bullet_expected)
 endif()
-unset(_dart_bullet_name_regex)
+
+# Verify scalar ABI independently of library names. Both Collision and LinearMath
+# expose scalar-dependent symbols; requiring both detects mixed unsuffixed pairs.
+function(_dart_bullet_probe_precision out)
+  set(${out} "" PARENT_SCOPE)
+  if(_DART_BULLET_GRAPH_UNKNOWN)
+    return()
+  endif()
+  if(DART_BULLET_BUILT_PRECISION AND NOT _DART_BULLET_IMPORTED_VARIANT)
+    set(${out} "${DART_BULLET_BUILT_PRECISION}" PARENT_SCOPE)
+    return()
+  endif()
+  if(NOT CMAKE_CXX_COMPILER_LOADED)
+    message(
+      STATUS
+      "Bullet scalar ABI validation requires an enabled CXX language"
+    )
+    return()
+  endif()
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state(RESET)
+  # Header warnings must not turn a valid scalar ABI into a failed link probe.
+  set(CMAKE_REQUIRED_FLAGS "-w")
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE EXECUTABLE)
+  set(CMAKE_REQUIRED_INCLUDES "${_DART_BULLET_INCLUDES}")
+  set(probe_target Bullet)
+  get_target_property(probe_alias Bullet ALIASED_TARGET)
+  if(probe_alias)
+    set(probe_target "${probe_alias}")
+  endif()
+  get_target_property(probe_imported "${probe_target}" IMPORTED)
+  if(_DART_BULLET_HAS_BUILD_TARGETS)
+    set(CMAKE_REQUIRED_LIBRARIES "${_DART_BULLET_IMPORTED_FILES}")
+  elseif(probe_imported)
+    set(CMAKE_REQUIRED_LIBRARIES "${probe_target}")
+  else()
+    get_target_property(
+      CMAKE_REQUIRED_LIBRARIES
+      "${probe_target}"
+      INTERFACE_LINK_LIBRARIES
+    )
+  endif()
+  set(
+    collision_probe
+    "btVector3 v(0., 0., 1.); btStaticPlaneShape plane(v, 0.);"
+  )
+  set(
+    math_probe
+    "btConvexHullComputer hull; hull.compute(static_cast<const float*>(nullptr), 0, 0, 0., 0.);"
+  )
+  if(DART_BULLET_BUILT_PRECISION)
+    # A try_compile cannot link project-built targets. Probe only the imported
+    # components, then compare with the project components' compile definitions.
+    set(CMAKE_REQUIRED_LIBRARIES "${_DART_BULLET_IMPORTED_FILES}")
+    set(imported_components)
+    foreach(library IN LISTS _DART_BULLET_IMPORTED_FILES)
+      get_filename_component(name "${library}" NAME)
+      if(
+        name
+          MATCHES
+          "^(lib)?(BulletCollision|LinearMath|BulletMath)(-float64)?(_Debug|_d|-dbg)?(\\.|$)"
+      )
+        list(APPEND imported_components "${CMAKE_MATCH_2}")
+      endif()
+    endforeach()
+    if(NOT "BulletCollision" IN_LIST imported_components)
+      set(collision_probe "")
+    endif()
+    if(
+      NOT "LinearMath" IN_LIST imported_components
+      AND NOT "BulletMath" IN_LIST imported_components
+    )
+      set(math_probe "")
+    endif()
+    if(NOT collision_probe AND NOT math_probe)
+      cmake_pop_check_state()
+      return()
+    endif()
+  endif()
+  set(configs "${_DART_BULLET_PROBE_CONFIGS}")
+  if(NOT configs)
+    set(configs "${CMAKE_TRY_COMPILE_CONFIGURATION}")
+  endif()
+  # An empty configuration is meaningful too; a sentinel keeps the loop alive.
+  if(NOT configs)
+    set(configs __default)
+  endif()
+  set(observed)
+  foreach(config IN LISTS configs)
+    if(NOT config STREQUAL "__default")
+      set(CMAKE_TRY_COMPILE_CONFIGURATION "${config}")
+    endif()
+    foreach(precision single double)
+      set(definition "#undef BT_USE_DOUBLE_PRECISION")
+      if(precision STREQUAL "double")
+        string(APPEND definition "\n#define BT_USE_DOUBLE_PRECISION")
+      endif()
+      unset(_dart_bullet_probe_${precision} CACHE)
+      check_cxx_source_compiles(
+        "${definition}
+        #include <btBulletCollisionCommon.h>
+        #include <LinearMath/btConvexHullComputer.h>
+        int main() { ${collision_probe} ${math_probe} return 0; }
+        "
+        _dart_bullet_probe_${precision}
+      )
+    endforeach()
+    if(_dart_bullet_probe_single AND NOT _dart_bullet_probe_double)
+      list(APPEND observed single)
+    elseif(_dart_bullet_probe_double AND NOT _dart_bullet_probe_single)
+      list(APPEND observed double)
+    else()
+      list(APPEND observed unknown)
+    endif()
+  endforeach()
+  if(DART_BULLET_BUILT_PRECISION)
+    list(APPEND observed "${DART_BULLET_BUILT_PRECISION}")
+  endif()
+  list(REMOVE_DUPLICATES observed)
+  if(observed STREQUAL "single" OR observed STREQUAL "double")
+    set(${out} "${observed}" PARENT_SCOPE)
+  endif()
+  cmake_pop_check_state()
+endfunction()
+
+if((BULLET_FOUND OR Bullet_FOUND) AND DART_BULLET_REQUIRE_PRECISION)
+  _dart_bullet_probe_precision(_dart_bullet_precision)
+  if(NOT _dart_bullet_precision STREQUAL DART_BULLET_REQUIRE_PRECISION)
+    message(
+      WARNING
+      "DART requires ${DART_BULLET_REQUIRE_PRECISION}-precision Bullet; "
+      "the selected libraries have '${_dart_bullet_precision}' scalar ABI (empty means unverified)."
+    )
+    set(BULLET_FOUND FALSE)
+    set(Bullet_FOUND FALSE)
+  endif()
+endif()

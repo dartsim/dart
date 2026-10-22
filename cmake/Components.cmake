@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.28)
 
 include(CMakeParseArguments)
 
@@ -266,6 +266,27 @@ function(install_component_exports package_name)
         message(FATAL_ERROR "Failed to find '${dart_find_pkg_path}'.")
       endif()
       list(APPEND external_dependencies ${dependent_package})
+      if(dependent_package STREQUAL "Eigen3")
+        # Public Eigen types must use the same major as the DART build.
+        string(REGEX MATCH "^[0-9]+" eigen_major "${Eigen3_VERSION}")
+        if(eigen_major STREQUAL "")
+          message(
+            FATAL_ERROR
+            "Cannot determine Eigen major from '${Eigen3_VERSION}'."
+          )
+        endif()
+        set_property(
+          DIRECTORY
+          APPEND
+          PROPERTY CMAKE_CONFIGURE_DEPENDS "${dart_find_pkg_path}"
+        )
+        file(READ "${dart_find_pkg_path}" eigen_finder)
+        set(dart_find_pkg_path "${output_prefix}/${dart_find_pkg_name}")
+        file(
+          WRITE "${dart_find_pkg_path}"
+          "set(DART_BUILD_EIGEN_MAJOR ${eigen_major})\n${eigen_finder}"
+        )
+      endif()
       install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
     endforeach()
 

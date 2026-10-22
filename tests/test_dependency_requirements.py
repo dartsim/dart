@@ -1,8 +1,13 @@
 """Exercise DART's installed dependency finders with isolated CMake packages."""
 
+import hashlib
 import os
+import re
+import shlex
 import shutil
 import subprocess
+import tarfile
+import time
 from pathlib import Path
 
 import pytest
@@ -14,7 +19,7 @@ def configure(tmp_path, content, *, cmake_args=()):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(DependencyRequirements NONE)\n"
         f'set(CMAKE_MODULE_PATH "{(tmp_path / "modules").as_posix()}" "{(ROOT / "cmake").as_posix()}")\n'
         f'set(CMAKE_PREFIX_PATH "{(tmp_path / "prefix").as_posix()}")\n'
@@ -64,7 +69,12 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     (directory / f"{package}Config.cmake").write_text(contents + extra)
 
 
-def test_component_exports_only_install_owned_dependency_finders(tmp_path):
+@pytest.mark.parametrize("build_version", ["3.4.0", "5.0.1"])
+@pytest.mark.parametrize("consumer_version", ["3.4.1", "3.4.90", "5.0.2", "6.0.0"])
+def test_component_exports_only_install_owned_dependency_finders(
+    tmp_path, build_version, consumer_version
+):
+    config_package(tmp_path, "Eigen3", build_version)
     modules = tmp_path / "modules"
     modules.mkdir()
     # Gazebo's FindEIGEN3 matches FindEigen3 on case-insensitive filesystems.
@@ -78,6 +88,7 @@ def test_component_exports_only_install_owned_dependency_finders(tmp_path):
         "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
         "set(LIBRARY_INSTALL_DIR lib)\n"
         "include(Components)\n"
+        "include(DARTFindEigen3)\n"
         "initialize_component_helpers(dart)\n"
         "add_component(dart fixture)\n"
         "add_library(fixture INTERFACE)\n"
@@ -103,17 +114,76 @@ def test_component_exports_only_install_owned_dependency_finders(tmp_path):
     installed = stage / "lib/cmake/DART"
     consumer = tmp_path / "consumer"
     consumer.mkdir()
-    config_package(consumer, "Eigen3", "3.4.0")
+    config_package(consumer, "Eigen3", consumer_version)
     result = configure(
         consumer,
         f'set(CMAKE_MODULE_PATH "{installed.as_posix()}")\n'
         "find_package(Eigen3 REQUIRED)\n"
         "include(DARTFindEigen3)\n",
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    build_major = build_version.split(".")[0]
+    same_major = build_major == consumer_version.split(".")[0]
+    assert (result.returncode == 0) == same_major, output
+    if consumer_version.startswith("6."):
+        assert "Eigen3 >= 3.4.0, < 6 is required" in output
+    elif not same_major:
+        assert f"DART was built with Eigen major {build_major}" in output
+        assert f"found Eigen {consumer_version}" in output
+        assert "rebuild DART" in output
+        assert "clear the cached Eigen3_DIR" in output
     assert not (installed / "FindEigen3.cmake").exists()
-    for name in ("DARTFindEigen3.cmake", "DARTFindODE.cmake", "FindODE.cmake"):
+    assert (installed / "DARTFindEigen3.cmake").read_text() == (
+        f"set(DART_BUILD_EIGEN_MAJOR {build_major})\n"
+        + (ROOT / "cmake/DARTFindEigen3.cmake").read_text()
+    )
+    for name in ("DARTFindODE.cmake", "FindODE.cmake"):
         assert (installed / name).read_text() == (ROOT / "cmake" / name).read_text()
+
+
+@pytest.mark.parametrize("build_version", ["", "unknown", "3.4.90"])
+def test_component_eigen_finder_generation(tmp_path, build_version):
+    modules = tmp_path / "modules"
+    modules.mkdir()
+    for name in ("Components.cmake", "DARTFindEigen3.cmake"):
+        shutil.copy2(ROOT / "cmake" / name, modules / name)
+    result = configure(
+        tmp_path,
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\n"
+        f'set(Eigen3_VERSION "{build_version}")\n'
+        "include(Components)\n"
+        "initialize_component_helpers(dart)\n"
+        "add_component(dart fixture)\n"
+        "add_library(fixture INTERFACE)\n"
+        "add_component_targets(dart fixture fixture)\n"
+        "add_component_dependency_packages(dart fixture Eigen3)\n"
+        "install_component_exports(dart)\n",
+    )
+    output = result.stdout + result.stderr
+    if build_version != "3.4.90":
+        assert result.returncode != 0, output
+        assert "Cannot determine Eigen major" in output
+        return
+    assert result.returncode == 0, output
+    finder = modules / "DARTFindEigen3.cmake"
+    # Windows file times advance in clock ticks of about 16 ms, so an edit made
+    # right after the configure can share build.ninja's time.
+    configured = (tmp_path / "build/build.ninja").stat().st_mtime_ns
+    while time.time_ns() < configured + 100_000_000:
+        time.sleep(0.01)
+    finder.write_text(finder.read_text() + "\n# Updated finder\n")
+    result = subprocess.run(
+        [shutil.which("cmake"), "--build", str(tmp_path / "build")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    generated = tmp_path / "build/lib/cmake/DART/DARTFindEigen3.cmake"
+    assert (
+        generated.read_text() == "set(DART_BUILD_EIGEN_MAJOR 3)\n" + finder.read_text()
+    )
 
 
 @pytest.mark.parametrize("skip", ["ON", "OFF"])
@@ -246,8 +316,8 @@ def test_urdfdom_without_cmake_version(tmp_path, monkeypatch, libdir, pcdir, met
         assert "urdfdom >= 3.0.0 is required" in output
 
 
-@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1"])
-def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
+@pytest.mark.parametrize("version", ["3.4.0", "3.4.1", "5.0.1", "6.0.0"])
+def test_eigen_supported_range_with_minor_scoped_version_files(tmp_path, version):
     # Eigen 5's version file accepts a requested single version only within
     # that minor release, so a 3.4.0 request rejects Eigen 5.
     config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
@@ -266,7 +336,24 @@ def test_eigen_accepts_minor_scoped_version_files(tmp_path, version):
         "include(DARTFindEigen3)\n"
         'if(NOT Eigen3_FOUND)\n  message(FATAL_ERROR "Rejected Eigen3")\nendif()\n',
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (major != "6"), output
+    if major == "6":
+        assert "Eigen3 >= 3.4.0, < 6 is required" in output
+
+
+@pytest.mark.parametrize("version", [None, "3.2.10", "3.3.0", "3.4.0", "5.0.1"])
+def test_nanobind_eigen_probe_version_floor(tmp_path, version):
+    config_package(tmp_path, "Eigen3", version, "Eigen3::Eigen")
+    source = (ROOT / "scripts/nanobind/eigen_probe/CMakeLists.txt").read_text()
+    discovery = source[
+        source.index("find_package(Eigen3") : source.index("get_filename_component(")
+    ]
+    result = configure(tmp_path, discovery)
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == (version not in {None, "3.2.10"}), output
+    if result.returncode:
+        assert "Eigen3 >= 3.3 is required" in output
 
 
 @pytest.mark.parametrize(
@@ -815,8 +902,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "rejected",
         ),
-        # Generator expressions that it cannot unwrap leave the precision
-        # unknown, and the walk still ends.
+        # Unsupported active expressions cannot prove a required ABI.
         (
             325,
             "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\n"
@@ -824,7 +910,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES\n"
             '  "$<$<AND:$<NOT:$<CONFIG:Debug>>,1>:collision64;math32>")',
             True,
-            "warned",
+            "rejected",
         ),
     ],
 )
@@ -900,10 +986,13 @@ def test_bullet_prefers_float64_libraries(
     elif expected == "built-none":
         check = 'NOT DART_BULLET_BUILT_PRECISION STREQUAL "" OR NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE'
     elif expected == "recorded-pc":
+        expected_cflags = " -I${lib}/include"
+        if "$<BUILD_INTERFACE:${lib}/build>" in settings:
+            expected_cflags += " -I${lib}/build"
         check = (
             "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
             ' OR NOT DART_BULLET_PC_LIBS STREQUAL " ${lib}/${prefix}BulletCollision-float64${ext}"'
-            ' OR NOT DART_BULLET_PC_CFLAGS STREQUAL " -I${lib}/include"'
+            f' OR NOT DART_BULLET_PC_CFLAGS STREQUAL "{expected_cflags}"'
         )
     elif expected == "recorded":
         check = "NOT DART_BULLET_USES_FLOAT64 STREQUAL TRUE"
@@ -941,6 +1030,15 @@ def test_bullet_prefers_float64_libraries(
         'set(collision "${lib}/${prefix}BulletCollision${ext}")\n'
         'set(math "${lib}/${prefix}LinearMath${ext}")\n'
         f"set(DART_USE_SYSTEM_BULLET ON)\n{settings}\n"
+        "if(TARGET Bullet)\n"
+        "  get_target_property(bt_target Bullet ALIASED_TARGET)\n"
+        "  if(NOT bt_target)\nset(bt_target Bullet)\nendif()\n"
+        "  get_target_property(bt_includes ${bt_target} INTERFACE_INCLUDE_DIRECTORIES)\n"
+        "  if(NOT bt_includes)\n"
+        f'    target_include_directories(${{bt_target}} INTERFACE "{include.as_posix()}")\n'
+        "  endif()\nendif()\n"
+        'file(MAKE_DIRECTORY "${lib}/include/LinearMath")\n'
+        f'file(WRITE "${{lib}}/include/LinearMath/btScalar.h" "#define BT_BULLET_VERSION {version}\\n")\n'
         "include(DARTFindBullet)\n"
         f'set(expected "${{lib}}/${{prefix}}BulletCollision{suffix}${{ext}}" '
         f'"${{lib}}/${{prefix}}LinearMath{suffix}${{ext}}")\n'
@@ -1500,3 +1598,927 @@ def test_installed_legacy_components_propagate_sdformat_failure(
         ),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def bullet_module(tmp_path, version=325):
+    include = tmp_path / "discovered"
+    (include / "LinearMath").mkdir(parents=True)
+    (include / "LinearMath/btScalar.h").write_text(
+        f"#define BT_BULLET_VERSION {version}\n"
+    )
+    modules = tmp_path / "modules"
+    modules.mkdir(exist_ok=True)
+    (modules / "FindBullet.cmake").write_text(
+        "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
+        f'set(BULLET_INCLUDE_DIRS "{include.as_posix()}")\n'
+    )
+    return include
+
+
+@pytest.mark.parametrize(
+    "edge,accepted",
+    [
+        ("$<TARGET_NAME_IF_EXISTS:BulletCollision>", True),
+        ("$<TARGET_NAME_IF_EXISTS:existing_single>", False),
+        ("$<$<PLATFORM_ID:Linux>:libLinearMath.so>", False),
+        ("$<$<PLATFORM_ID:Nowhere>:libLinearMath.so>", True),
+        ("$<$<PLATFORM_ID:LINUX>:libLinearMath.so>", True),
+        ("$<$<AND:$<BOOL:1>,$<BOOL:1>>:libLinearMath.so>", False),
+        ("$<TARGET_PROPERTY:unresolved,INTERFACE_LINK_LIBRARIES>", False),
+    ],
+)
+def test_bullet_active_graph(tmp_path, edge, accepted):
+    include = bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        "set(CMAKE_SYSTEM_NAME Linux)\n"
+        "add_library(existing_single INTERFACE IMPORTED)\n"
+        "target_link_libraries(existing_single INTERFACE libLinearMath.so)\n"
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        f'target_link_libraries(Bullet INTERFACE libBulletCollision-float64.so "{edge}")\n'
+        "set(DART_BULLET_REQUIRE_FLOAT64 TRUE)\ninclude(DARTFindBullet)\n"
+        f'if({"NOT " if accepted else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong graph acceptance")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "precisions",
+    [
+        ("double", "single"),
+        ("single", "double"),
+        ("double", "double"),
+        ("single", "single"),
+    ],
+)
+def test_bullet_built_graph_precision(tmp_path, precisions):
+    include = bullet_module(tmp_path)
+    source = tmp_path / "part.cpp"
+    source.write_text(
+        "#ifdef BT_USE_DOUBLE_PRECISION\nusing scalar = double;\n"
+        "#else\nusing scalar = float;\n#endif\nvoid fixture(scalar) {}\n"
+    )
+    setup = "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+    for name, precision in zip(("BulletCollision", "LinearMath"), precisions):
+        setup += f'add_library({name} STATIC "{source.as_posix()}")\n'
+        if precision == "double":
+            setup += f"target_compile_definitions({name} PRIVATE BT_USE_DOUBLE_PRECISION=0)\n"
+    result = configure(
+        tmp_path,
+        setup + "add_library(Bullet INTERFACE)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision LinearMath)\n"
+        "include(DARTFindBullet)\n"
+        f'if({"NOT " if precisions[0] == precisions[1] else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong built ABI acceptance")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+
+
+@pytest.mark.parametrize("mapping", [None, "", "MISSING;DEBUG", ";DEBUG"])
+def test_bullet_imported_default_configuration(tmp_path, mapping):
+    include = bullet_module(tmp_path)
+    settings = ""
+    if mapping is not None:
+        settings = f'set_property(TARGET collision PROPERTY MAP_IMPORTED_CONFIG_RELEASE "{mapping}")\n'
+    result = configure(
+        tmp_path,
+        "set(CMAKE_BUILD_TYPE Release)\n"
+        "add_library(collision SHARED IMPORTED)\n"
+        'set_target_properties(collision PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"\n'
+        'IMPORTED_LOCATION "/default/libBulletCollision-float64.so"\n'
+        'IMPORTED_LOCATION_RELEASE "/release/libBulletCollision-float64.so"\n'
+        'IMPORTED_LOCATION_DEBUG "/debug/libBulletCollision-float64.so")\n'
+        + settings
+        + "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        "target_link_libraries(Bullet INTERFACE collision)\ninclude(DARTFindBullet)\n"
+        'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/actual.txt" CONTENT "$<TARGET_LINKER_FILE:collision>")\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/selected.txt" "${DART_BULLET_PC_LIBS}")\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    actual = (tmp_path / "build/actual.txt").read_text()
+    selected = (tmp_path / "build/selected.txt").read_text()
+    assert actual in selected
+
+
+@pytest.mark.parametrize(
+    "discovered,selected,floor", [(305, 325, "3.17"), (325, 305, "3.05")]
+)
+def test_bullet_selected_header_floor(tmp_path, discovered, selected, floor):
+    bullet_module(tmp_path, discovered)
+    include = tmp_path / "selected"
+    (include / "LinearMath").mkdir(parents=True)
+    (include / "LinearMath/btScalar.h").write_text(
+        f"#define BT_BULLET_VERSION {selected}\n"
+    )
+    result = configure(
+        tmp_path,
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "$<BUILD_INTERFACE:{include.as_posix()}>")\n'
+        "target_link_libraries(Bullet INTERFACE libBulletCollision.so)\n"
+        "include(DARTFindBullet)\n"
+        f'if(NOT DART_BULLET_MINIMUM_VERSION STREQUAL "{floor}")\n'
+        'message(FATAL_ERROR "Wrong selected header floor: ${DART_BULLET_MINIMUM_VERSION}")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def cmake_fixture_run(*args, env=None):
+    result = subprocess.run(
+        [str(a) for a in args], capture_output=True, text=True, env=env
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    return result
+
+
+def build_bullet_abi_fixture(
+    tmp_path, precision, linkage="SHARED", suffix="", version=325
+):
+    """Real scalar-dependent Collision and LinearMath symbols, never touched files."""
+    source = tmp_path / "source"
+    source.mkdir(parents=True)
+    include = source / "include"
+    (include / "LinearMath").mkdir(parents=True)
+    (include / "LinearMath/btScalar.h").write_text(
+        f"#pragma once\n#define BT_BULLET_VERSION {version}\n"
+        "#ifdef BT_USE_DOUBLE_PRECISION\nusing btScalar = double;\n"
+        "#else\nusing btScalar = float;\n#endif\n"
+    )
+    (include / "btBulletCollisionCommon.h").write_text(
+        '#pragma once\n#include "LinearMath/btScalar.h"\n'
+        "struct btVector3 { btVector3(btScalar, btScalar, btScalar) {} };\n"
+        "struct btStaticPlaneShape { btStaticPlaneShape(const btVector3&, btScalar); };\n"
+    )
+    (include / "LinearMath/btConvexHullComputer.h").write_text(
+        '#pragma once\n#include "btScalar.h"\n'
+        "struct btConvexHullComputer { btScalar compute(const float*, int, int, btScalar, btScalar); };\n"
+    )
+    (source / "collision.cpp").write_text(
+        '#include "btBulletCollisionCommon.h"\n'
+        '#include "LinearMath/btConvexHullComputer.h"\n'
+        "btStaticPlaneShape::btStaticPlaneShape(const btVector3&, btScalar) {\n"
+        "btConvexHullComputer hull; hull.compute(static_cast<const float*>(nullptr), 0, 0, 0., 0.); }\n"
+    )
+    (source / "math.cpp").write_text(
+        '#include "LinearMath/btConvexHullComputer.h"\n'
+        "btScalar btConvexHullComputer::compute(const float*, int, int, btScalar, btScalar) { return 0; }\n"
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\nproject(BulletFixture LANGUAGES CXX)\n"
+        f"add_library(BulletCollision {linkage} collision.cpp)\n"
+        f"add_library(LinearMath {linkage} math.cpp)\n"
+        "foreach(t BulletCollision LinearMath)\n"
+        f'set_target_properties(${{t}} PROPERTIES OUTPUT_NAME "${{t}}{suffix}")\n'
+        "target_include_directories(${t} PRIVATE include)\n"
+        + (
+            "target_compile_definitions(${t} PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+            if precision == "double"
+            else ""
+        )
+        + "endforeach()\ntarget_link_libraries(BulletCollision PRIVATE LinearMath)\n"
+        "install(TARGETS BulletCollision LinearMath DESTINATION lib)\n"
+        "install(DIRECTORY include/ DESTINATION include)\n"
+    )
+    prefix = tmp_path / "install"
+    cmake_fixture_run(
+        shutil.which("cmake"),
+        "-G",
+        "Ninja",
+        "-S",
+        source,
+        "-B",
+        tmp_path / "build",
+        f"-DCMAKE_INSTALL_PREFIX={prefix}",
+    )
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+    cmake_fixture_run(shutil.which("cmake"), "--install", tmp_path / "build")
+    return prefix
+
+
+def bullet_imports(prefix, suffix="", math_prefix=None):
+    math_prefix = math_prefix or prefix
+    prefix_text = prefix.as_posix().replace("\\", "\\\\")
+    collision_file = next((prefix / "lib").glob(f"*BulletCollision{suffix}.*"))
+    math_file = next((math_prefix / "lib").glob(f"*LinearMath{suffix}.*"))
+    collision_text = collision_file.as_posix().replace("\\", "\\\\")
+    math_text = math_file.as_posix().replace("\\", "\\\\")
+    return (
+        "add_library(collision UNKNOWN IMPORTED)\nadd_library(math UNKNOWN IMPORTED)\n"
+        f'set(collision_file "{collision_text}")\n'
+        f'set(math_file "{math_text}")\n'
+        'set_target_properties(collision PROPERTIES IMPORTED_LOCATION "${collision_file}")\n'
+        'set_target_properties(math PROPERTIES IMPORTED_LOCATION "${math_file}")\n'
+        "add_library(collision_wrapper INTERFACE IMPORTED)\n"
+        "target_link_libraries(collision_wrapper INTERFACE collision)\n"
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        "target_link_libraries(Bullet INTERFACE collision_wrapper math)\n"
+        f'target_include_directories(Bullet INTERFACE "{prefix_text}/include")\n'
+    )
+
+
+BULLET_CONSUMER = """
+#include <btBulletCollisionCommon.h>
+#include <LinearMath/btConvexHullComputer.h>
+int main() {
+  btVector3 v(0., 0., 1.);
+  btStaticPlaneShape plane(v, 0.);
+  btConvexHullComputer hull;
+  return static_cast<int>(hull.compute(static_cast<const float*>(nullptr), 0, 0, 0., 0.));
+}
+"""
+
+
+def install_bullet_dart_fixture(
+    tmp_path, prefix, linkage="SHARED", suffix="", pc_settings="", discovery_version=305
+):
+    """Install the production component and probe output with a public dependency."""
+    source = tmp_path / "source"
+    source.mkdir(parents=True)
+    stage = tmp_path / "install"
+    (source / "core.cpp").write_text(
+        BULLET_CONSUMER.replace("int main()", "int dart_fixture()")
+    )
+    backend = (
+        (ROOT / "dart/collision/bullet/CMakeLists.txt")
+        .read_text()
+        .split("# Search all header and source files")[0]
+    )
+    (source / "backend.cmake").write_text(backend)
+    pc_block = (
+        (ROOT / "CMakeLists.txt")
+        .read_text()
+        .split("# Generate the DART pkg-config\n")[1]
+        .split("# Install a Catkin")[0]
+    )
+    (source / "pkgconfig.cmake").write_text(pc_block)
+    (source / "discovery/LinearMath").mkdir(parents=True)
+    (source / "discovery/LinearMath/btScalar.h").write_text(
+        f"#define BT_BULLET_VERSION {discovery_version}\n"
+    )
+    (source / "FindBullet.cmake").write_text(
+        "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
+        f'set(BULLET_INCLUDE_DIRS "{source.as_posix()}/discovery")\n'
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22.1)\nproject(dart LANGUAGES CXX)\n"
+        "set(CMAKE_CXX_STANDARD 17)\n"
+        f'set(CMAKE_MODULE_PATH "{source.as_posix()}" "{ROOT.as_posix()}/cmake")\n'
+        "set(DART_USE_SYSTEM_BULLET ON)\ninclude(DARTMacros)\n"
+        + bullet_imports(prefix, suffix)
+        + "include(backend.cmake)\n"
+        f"add_library(dart {linkage} core.cpp)\n"
+        'target_link_libraries(dart PUBLIC "$<BUILD_INTERFACE:Bullet>" "$<INSTALL_INTERFACE:$<1:Bullet>>")\n'
+        "if(BT_USE_DOUBLE_PRECISION)\ntarget_compile_definitions(dart PUBLIC BT_USE_DOUBLE_PRECISION)\nendif()\n"
+        "set(PROJECT_NAME_UPPERCASE DART)\n"
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(CONFIG_INSTALL_DIR lib/cmake/DART)\nset(LIBRARY_INSTALL_DIR lib)\n"
+        "include(Components)\ninitialize_component_helpers(dart)\n"
+        "add_component(dart dart)\nadd_component_targets(dart dart dart)\n"
+        "add_component_dependency_packages(dart dart Bullet)\ninstall_component_exports(dart)\n"
+        f'install(FILES "{ROOT.as_posix()}/cmake/DARTFindPackageVersion.cmake" DESTINATION lib/cmake/DART)\n'
+        + "set(CMAKE_INSTALL_LIBDIR lib)\ninclude(GNUInstallDirs)\nset(DART_BINARY_DIR ${CMAKE_BINARY_DIR})\n"
+        'set(DART_VERSION 7.0.0)\nset(DART_PKG_DESC "DART package fixture")\n'
+        "set(CMAKE_DISABLE_FIND_PACKAGE_PkgConfig TRUE)\n"
+        + pc_settings
+        + "include(pkgconfig.cmake)\n"
+    )
+    cmake_fixture_run(
+        shutil.which("cmake"),
+        "-G",
+        "Ninja",
+        "-S",
+        source,
+        "-B",
+        tmp_path / "build",
+        f"-DCMAKE_INSTALL_PREFIX={stage}",
+    )
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+    cmake_fixture_run(shutil.which("cmake"), "--install", tmp_path / "build")
+    return stage
+
+
+@pytest.mark.parametrize("precision", ["single", "double"])
+@pytest.mark.parametrize("linkage", ["STATIC", "SHARED"])
+@pytest.mark.parametrize("suffix", ["", "-float64"])
+def test_bullet_installed_scalar_abi(tmp_path, precision, linkage, suffix):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", precision, linkage, suffix)
+    other = build_bullet_abi_fixture(
+        tmp_path / "other",
+        "double" if precision == "single" else "single",
+        linkage,
+        suffix,
+    )
+    stage = install_bullet_dart_fixture(tmp_path / "dart", prefix, linkage, suffix)
+    component = stage / "lib/cmake/DART/dart_dartComponent.cmake"
+    for name, selected, math_prefix, language, accepted in [
+        ("same", prefix, prefix, "CXX", True),
+        ("other", other, other, "CXX", False),
+        ("mixed", prefix, other, "CXX", False),
+        ("no-language", prefix, prefix, "NONE", False),
+    ]:
+        source = tmp_path / ("consumer-" + name)
+        source.mkdir()
+        (source / "main.cpp").write_text(BULLET_CONSUMER)
+        (source / "FindBullet.cmake").write_text(
+            "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
+            f'set(BULLET_INCLUDE_DIRS "{selected.as_posix()}/include")\n'
+        )
+        (source / "CMakeLists.txt").write_text(
+            f"cmake_minimum_required(VERSION 3.22.1)\nproject(Consumer LANGUAGES {language})\n"
+            "set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)\n"
+            f'set(CMAKE_MODULE_PATH "{source.as_posix()}")\n'
+            + bullet_imports(selected, suffix, math_prefix=math_prefix)
+            + f'include("{component.as_posix()}")\n'
+            "get_property(found DIRECTORY PROPERTY DART_dart_FOUND)\n"
+            + (
+                'if(NOT found)\nmessage(FATAL_ERROR "Matching ABI rejected")\nendif()\n'
+                f'include("{stage.as_posix()}/lib/cmake/DART/dart_dartTargets.cmake")\n'
+                "add_executable(consumer main.cpp)\ntarget_link_libraries(consumer PRIVATE dart)\n"
+                if accepted
+                else 'if(found OR BULLET_FOUND OR Bullet_FOUND)\nmessage(FATAL_ERROR "Unverified or mismatching ABI accepted")\nendif()\n'
+            )
+        )
+        cmake_fixture_run(
+            shutil.which("cmake"), "-G", "Ninja", "-S", source, "-B", source / "build"
+        )
+        if accepted:
+            cmake_fixture_run(shutil.which("cmake"), "--build", source / "build")
+            cmake_fixture_run(source / "build/consumer")
+
+    assert f'set(DART_BULLET_REQUIRE_PRECISION "{precision}")' in component.read_text()
+
+
+@pytest.mark.parametrize("linkage", ["STATIC", "SHARED"])
+@pytest.mark.parametrize("layout", ["plain", "spaces", "sysroot", "backslash"])
+def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
+    folder = "bullet with spaces" if layout == "spaces" else "bullet"
+    prefix = build_bullet_abi_fixture(tmp_path / folder, "double", linkage, "-float64")
+    pc_settings = ""
+    if layout == "sysroot":
+        builder = tmp_path / "builder-sysroot"
+        sys_prefix = builder / "opt/bullet"
+        shutil.copytree(prefix, sys_prefix)
+        prefix = sys_prefix
+        pc_settings = (
+            f'set(CMAKE_SYSROOT_COMPILE "{builder.as_posix()}")\n'
+            f'set(CMAKE_SYSROOT_LINK "{builder.as_posix()}")\n'
+            "include(DARTFindBullet)\n"
+            "unset(CMAKE_SYSROOT_COMPILE)\nunset(CMAKE_SYSROOT_LINK)\n"
+        )
+    if layout == "backslash":
+        # CMake normalizes literal Unix backslashes in compiler include paths.
+        # Test this serialization boundary with the same compiled libraries.
+        literal = tmp_path / "bullet\\literal with spaces"
+        shutil.copytree(prefix, literal)
+        pc_settings = (
+            'get_filename_component(collision_name "${collision_file}" NAME)\n'
+            'get_filename_component(math_name "${math_file}" NAME)\n'
+            f"set(raw_prefix [=[{literal.as_posix()}]=])\n"
+            '_dart_bullet_record(float64 INCLUDES "${raw_prefix}/include" '
+            'LIBRARIES "${raw_prefix}/lib/${collision_name}" "${raw_prefix}/lib/${math_name}")\n'
+        )
+    stage = install_bullet_dart_fixture(
+        tmp_path / "dart", prefix, linkage, "-float64", pc_settings
+    )
+    pcfile = stage / "lib/pkgconfig/dart.pc"
+    text = pcfile.read_text()
+    assert "bullet-float64" not in text.split("Requires:")[1].splitlines()[0]
+    relocated = tmp_path / "relocated dart"
+    shutil.move(stage, relocated)
+    pcdir = relocated / "lib/pkgconfig"
+    env = {**os.environ, "PKG_CONFIG_PATH": str(pcdir), "PKG_CONFIG_LIBDIR": str(pcdir)}
+    env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+    if layout == "sysroot":
+        assert str(builder) not in text
+        consumer_root = tmp_path / "consumer-sysroot"
+        shutil.copytree(prefix, consumer_root / "opt/bullet")
+        # pkg-config applies the sysroot to the package itself as well.
+        shutil.copytree(relocated, consumer_root / str(relocated).lstrip("/"))
+        env["PKG_CONFIG_SYSROOT_DIR"] = str(consumer_root)
+    source = tmp_path / "consumer.cpp"
+    source.write_text(
+        BULLET_CONSUMER.split("  btConvexHullComputer hull;")[0] + "  return 0;\n}\n"
+    )
+    compiler = shlex.split(os.environ.get("CXX", "c++"))
+    for static in (False, True):
+        result = cmake_fixture_run(
+            shutil.which("pkg-config"),
+            *(["--static"] if static else []),
+            "--cflags",
+            "--libs",
+            "dart",
+            env=env,
+        )
+        flags = shlex.split(result.stdout)
+        if layout == "sysroot":
+            assert all(str(builder) not in flag for flag in flags)
+            assert "-I" + str(consumer_root / "opt/bullet/include") in flags
+            assert "-L" + str(consumer_root / "opt/bullet/lib") in flags
+        cmake_fixture_run(
+            *compiler,
+            "-std=c++17",
+            source,
+            "-o",
+            tmp_path / f"consumer-{static}",
+            *flags,
+        )
+        assert sum("BulletCollision" in flag for flag in flags) == 1
+        assert sum("LinearMath" in flag for flag in flags) == 1
+    assert "BulletCollision" in text.split("Libs:")[1].splitlines()[0]
+    assert "BulletCollision" not in text.split("Libs.private:")[1].splitlines()[0]
+
+
+def test_bullet_pkgconfig_sysroot_boundary(tmp_path):
+    include = bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        'set(CMAKE_SYSROOT "/builder/root")\n'
+        'set(CMAKE_SYSROOT_COMPILE "/compile/root")\n'
+        'set(CMAKE_SYSROOT_LINK "/link/root")\n'
+        "include(DARTFindBullet)\n"
+        '_dart_bullet_pc_path(path "/compile/root2/include" COMPILE)\n'
+        'if(NOT path STREQUAL "/compile/root2/include")\nmessage(FATAL_ERROR "Stripped a partial prefix")\nendif()\n'
+        '_dart_bullet_pc_path(path "/compile/root/include" COMPILE)\n'
+        'if(NOT path STREQUAL "/include")\nmessage(FATAL_ERROR "Wrong compile root")\nendif()\n'
+        '_dart_bullet_pc_path(path "/link/root/lib/libBulletCollision.a" LINK)\n'
+        'if(NOT path STREQUAL "/lib/libBulletCollision.a")\nmessage(FATAL_ERROR "Wrong link root")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("version,floor", [(305, "3.05"), (325, "3.17")])
+def test_bullet_installed_selected_version(tmp_path, version, floor):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "single", version=version)
+    # Unrelated discovery deliberately advertises the opposite header version.
+    stage = install_bullet_dart_fixture(
+        tmp_path / "dart", prefix, discovery_version=325 if version == 305 else 305
+    )
+    component = stage / "lib/cmake/DART/dart_dartComponent.cmake"
+    assert f'set(DART_BULLET_REQUIRE_VERSION "{floor}")' in component.read_text()
+    assert f"bullet >= {floor}" in (stage / "lib/pkgconfig/dart.pc").read_text()
+    for selected_version in (304, 305, 325):
+        consumer = tmp_path / f"consumer-{selected_version}"
+        consumer.mkdir()
+        include = bullet_module(consumer, 325 if selected_version == 305 else 305)
+        linked = consumer / "linked/LinearMath"
+        linked.mkdir(parents=True)
+        (linked / "btScalar.h").write_text(
+            f"#define BT_BULLET_VERSION {selected_version}\n"
+        )
+        result = configure(
+            consumer,
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            f'target_include_directories(Bullet INTERFACE "{linked.parent.as_posix()}")\n'
+            "target_link_libraries(Bullet INTERFACE libBulletCollision.so)\n"
+            f'set(DART_BULLET_REQUIRE_VERSION "{floor}")\n'
+            "set(Bullet_VERSION 99.0)\nset(BULLET_VERSION 99.0 CACHE STRING old)\n"
+            "include(DARTFindBullet)\n"
+            f'if({"NOT " if selected_version >= (317 if version >= 317 else 305) else ""}BULLET_FOUND)\n'
+            'message(FATAL_ERROR "Wrong installed version check")\nendif()\n',
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "built,imported",
+    [
+        ("double", "double"),
+        ("double", "single"),
+        ("single", "double"),
+        ("single", "single"),
+    ],
+)
+def test_bullet_hybrid_scalar_abi(tmp_path, built, imported):
+    prefix = build_bullet_abi_fixture(tmp_path / "imported", imported)
+    bullet_module(tmp_path)
+    source = tmp_path / "local.cpp"
+    source.write_text((tmp_path / "imported/source/collision.cpp").read_text())
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_library(BulletCollision STATIC "{source.as_posix()}")\n'
+        f'target_include_directories(BulletCollision PRIVATE "{prefix.as_posix()}/include")\n'
+        + (
+            "target_compile_definitions(BulletCollision PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+            if built == "double"
+            else ""
+        )
+        + "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")\n'
+        f'find_library(math_file NAMES LinearMath PATHS "{prefix.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        'target_link_libraries(Bullet INTERFACE BulletCollision "${math_file}")\n'
+        f"set(DART_BULLET_REQUIRE_PRECISION {built})\ninclude(DARTFindBullet)\n"
+        f'if({"NOT " if built == imported else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong hybrid ABI acceptance")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+
+
+@pytest.mark.parametrize("precision", ["single", "double"])
+@pytest.mark.parametrize("hybrid", [False, True])
+def test_bullet_scalar_abi_ignores_header_warnings(tmp_path, precision, hybrid):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", precision)
+    header = prefix / "include/btBulletCollisionCommon.h"
+    header.write_text(
+        header.read_text() + "inline int header_conversion(double x) { return x; }\n"
+    )
+    bullet_module(tmp_path)
+    setup = bullet_imports(prefix).replace(
+        "add_library(Bullet INTERFACE IMPORTED)", "add_library(Bullet INTERFACE)"
+    )
+    if hybrid:
+        source = tmp_path / "bullet/source/collision.cpp"
+        setup += (
+            f'add_library(BulletCollision STATIC "{source.as_posix()}")\n'
+            f'target_include_directories(BulletCollision PRIVATE "{prefix.as_posix()}/include")\n'
+            + (
+                "target_compile_definitions(BulletCollision PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+                if precision == "double"
+                else ""
+            )
+            + 'set_property(TARGET Bullet PROPERTY INTERFACE_LINK_LIBRARIES BulletCollision "${math_file}")\n'
+        )
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "if(MSVC)\nset(strict_flags /WX /W4 /we4244)\n"
+        "else()\nset(strict_flags -Werror -Wfloat-conversion)\nendif()\n"
+        'string(JOIN " " CMAKE_CXX_FLAGS ${strict_flags})\n'
+        + setup
+        + "include(CheckCXXSourceCompiles)\n"
+        f'set(CMAKE_REQUIRED_INCLUDES "{prefix.as_posix()}/include")\n'
+        'check_cxx_source_compiles("#include <btBulletCollisionCommon.h>\nint main() { return 0; }" strict_control)\n'
+        'if(strict_control)\nmessage(FATAL_ERROR "Header did not trigger strict warnings")\nendif()\n'
+        'set(CMAKE_REQUIRED_FLAGS "caller flags")\n'
+        "set(CMAKE_REQUIRED_DEFINITIONS -DCALLER_DEFINITION)\n"
+        "set(CMAKE_REQUIRED_LIBRARIES caller_library)\n"
+        "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)\n"
+        f"set(DART_BULLET_REQUIRE_PRECISION {precision})\ninclude(DARTFindBullet)\n"
+        'if(NOT BULLET_FOUND OR NOT Bullet_FOUND)\nmessage(FATAL_ERROR "Header warnings rejected valid ABI")\nendif()\n'
+        'if(NOT CMAKE_REQUIRED_FLAGS STREQUAL "caller flags"\n'
+        '   OR NOT CMAKE_REQUIRED_DEFINITIONS STREQUAL "-DCALLER_DEFINITION"\n'
+        '   OR NOT CMAKE_REQUIRED_LIBRARIES STREQUAL "caller_library"\n'
+        f'   OR NOT CMAKE_REQUIRED_INCLUDES STREQUAL "{prefix.as_posix()}/include"\n'
+        '   OR NOT CMAKE_TRY_COMPILE_TARGET_TYPE STREQUAL "STATIC_LIBRARY")\n'
+        'message(FATAL_ERROR "Probe leaked check state")\nendif()\n'
+        + f"set(DART_BULLET_REQUIRE_PRECISION {'single' if precision == 'double' else 'double'})\n"
+        "include(DARTFindBullet)\n"
+        'if(BULLET_FOUND OR Bullet_FOUND)\nmessage(FATAL_ERROR "Wrong ABI accepted under strict flags")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "stem",
+    [
+        "LinearMath",
+        "BulletMath",
+        "LinearMath_d",
+        "LinearMath_Debug",
+        "LinearMath-float64",
+        "LinearMath-float64-dbg",
+    ],
+)
+def test_bullet_hybrid_abi_uses_library_basename(tmp_path, stem):
+    prefix = build_bullet_abi_fixture(tmp_path / "imported", "double")
+    original = next((prefix / "lib").glob("*LinearMath.*"))
+    filename = original.name.replace("LinearMath", stem)
+    for directory in ("neutral", "BulletCollision-build"):
+        case = tmp_path / directory
+        case.mkdir()
+        library = case / filename
+        shutil.copy2(original, library)
+        assert library.read_bytes() == original.read_bytes()
+        bullet_module(case)
+        result = configure(
+            case,
+            "set(DART_USE_SYSTEM_BULLET ON)\n"
+            "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+            f'add_library(BulletCollision STATIC "{(tmp_path / "imported/source/collision.cpp").as_posix()}")\n'
+            f'target_include_directories(BulletCollision PRIVATE "{prefix.as_posix()}/include")\n'
+            "target_compile_definitions(BulletCollision PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+            "add_library(Bullet INTERFACE IMPORTED)\n"
+            f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")\n'
+            f'target_link_libraries(Bullet INTERFACE BulletCollision "{library.as_posix()}")\n'
+            "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+            'if(NOT BULLET_FOUND OR NOT _dart_bullet_precision STREQUAL "double")\n'
+            'message(FATAL_ERROR "Library ancestor changed hybrid ABI")\nendif()\n',
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        cmake_fixture_run(shutil.which("cmake"), "--build", case / "build")
+
+
+def test_bullet_bundled_inherited_directory_precision(tmp_path):
+    prefix = build_bullet_abi_fixture(tmp_path / "fixture", "double")
+    source = tmp_path / "source"
+    sub = source / "sub"
+    sub.mkdir(parents=True)
+    for name in ("collision.cpp", "math.cpp"):
+        (sub / name).write_text(
+            (tmp_path / "fixture/source" / name).read_text()
+            + "static_assert(sizeof(btScalar) == sizeof(double));\n"
+        )
+    (sub / "CMakeLists.txt").write_text(
+        "add_library(BulletCollision SHARED collision.cpp)\n"
+        "add_library(LinearMath SHARED math.cpp)\n"
+        "foreach(t BulletCollision LinearMath)\n"
+        f'target_include_directories(${{t}} PRIVATE "{prefix.as_posix()}/include")\n'
+        "endforeach()\ntarget_link_libraries(BulletCollision PRIVATE LinearMath)\n"
+    )
+    (source / "backend.cmake").write_text(
+        (ROOT / "dart/collision/bullet/CMakeLists.txt")
+        .read_text()
+        .split("# Search all header and source files")[0]
+    )
+    (source / "pkgconfig.cmake").write_text(
+        (ROOT / "CMakeLists.txt")
+        .read_text()
+        .split("# Generate the DART pkg-config\n")[1]
+        .split("# Install a Catkin")[0]
+    )
+    result = configure(
+        tmp_path,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "set(DART_USE_SYSTEM_BULLET OFF)\n"
+        f'set(DART_BULLET_SOURCE_DIR "{source.as_posix()}")\n'
+        "add_definitions(-DBT_USE_DOUBLE_PRECISION)\nadd_subdirectory(sub)\n"
+        "add_library(Bullet INTERFACE)\n"
+        f'target_include_directories(Bullet INTERFACE "{prefix.as_posix()}/include")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision LinearMath)\n"
+        "include(DARTMacros)\ninclude(backend.cmake)\n"
+        'if(NOT BULLET_FOUND OR NOT DART_BULLET_PRECISION STREQUAL "double"\n'
+        '   OR NOT DART_BULLET_BUILT_PRECISION STREQUAL "double" OR NOT BT_USE_DOUBLE_PRECISION)\n'
+        'message(FATAL_ERROR "Lost inherited bundled precision")\nendif()\n'
+        "set(external_dependencies Bullet)\n"
+        f'configure_file("{ROOT.as_posix()}/cmake/dart_Component.cmake.in" "${{CMAKE_BINARY_DIR}}/component.cmake" @ONLY)\n'
+        f'set(DART_SOURCE_DIR "{ROOT.as_posix()}")\n'
+        "set(DART_BINARY_DIR ${CMAKE_BINARY_DIR})\n"
+        "set(CMAKE_INSTALL_LIBDIR lib)\ninclude(GNUInstallDirs)\n"
+        "include(pkgconfig.cmake)\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+    component = (tmp_path / "build/component.cmake").read_text()
+    assert 'set(DART_BULLET_REQUIRE_PRECISION "double")' in component
+    pc = (tmp_path / "build/cmake/dart.pc").read_text()
+    assert "-DBT_USE_DOUBLE_PRECISION" in pc.split("Cflags:")[1].splitlines()[0]
+
+
+@pytest.mark.parametrize("debug_precision", ["single", "double"])
+def test_bullet_imported_configuration_abi(tmp_path, debug_precision):
+    release = build_bullet_abi_fixture(tmp_path / "release", "double")
+    debug = build_bullet_abi_fixture(tmp_path / "debug", debug_precision)
+    bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "set(CMAKE_BUILD_TYPE Release)\nadd_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{release.as_posix()}/include")\n'
+        "foreach(name BulletCollision LinearMath)\nadd_library(${name} UNKNOWN IMPORTED)\n"
+        f'find_library(release_${{name}} NAMES ${{name}} PATHS "{release.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        f'find_library(debug_${{name}} NAMES ${{name}} PATHS "{debug.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        'set_target_properties(${name} PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG" '
+        'IMPORTED_LOCATION_RELEASE "${release_${name}}" IMPORTED_LOCATION_DEBUG "${debug_${name}}")\n'
+        "target_link_libraries(Bullet INTERFACE ${name})\nendforeach()\n"
+        "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        f'if({"NOT " if debug_precision == "double" else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong per-configuration ABI acceptance")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("mode", ["ambiguous", "broken"])
+def test_bullet_scalar_abi_requires_unique_link_success(tmp_path, mode):
+    prefix = build_bullet_abi_fixture(tmp_path / "single", "single", "STATIC")
+    other = build_bullet_abi_fixture(tmp_path / "double", "double", "STATIC")
+    bullet_module(tmp_path)
+    extra = ""
+    if mode == "ambiguous":
+        extra = f'file(GLOB extra "{other.as_posix()}/lib/*")\ntarget_link_libraries(Bullet INTERFACE ${{extra}})\n'
+    else:
+        for library in (prefix / "lib").iterdir():
+            library.write_text("This is not a library.\n")
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + bullet_imports(prefix)
+        + extra
+        + "set(DART_BULLET_REQUIRE_PRECISION single)\ninclude(DARTFindBullet)\n"
+        'if(BULLET_FOUND OR Bullet_FOUND)\nmessage(FATAL_ERROR "Unproven ABI accepted")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "scalar ABI (empty means unverified)" in " ".join(result.stderr.split())
+
+
+def test_bullet_imported_abi_with_unrelated_built_helper(tmp_path):
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double")
+    bullet_module(tmp_path)
+    (tmp_path / "helper.cpp").write_text("void helper() {}\n")
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + bullet_imports(prefix)
+        + f'add_library(helper STATIC "{tmp_path.as_posix()}/helper.cpp")\n'
+        "target_link_libraries(Bullet INTERFACE helper)\n"
+        "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        'if(NOT BULLET_FOUND)\nmessage(FATAL_ERROR "Unrelated helper prevented ABI validation")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_bullet_interface_definition_is_not_built_abi(tmp_path):
+    include = bullet_module(tmp_path)
+    (tmp_path / "single.cpp").write_text(
+        "#ifdef BT_USE_DOUBLE_PRECISION\n#error This fixture is single precision\n#endif\nvoid single(float) {}\n"
+    )
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_library(BulletCollision STATIC "{tmp_path.as_posix()}/single.cpp")\n'
+        "target_compile_definitions(BulletCollision INTERFACE BT_USE_DOUBLE_PRECISION)\n"
+        "add_library(Bullet INTERFACE)\ntarget_link_libraries(Bullet INTERFACE BulletCollision)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        "include(DARTFindBullet)\n"
+        'if(BULLET_FOUND)\nmessage(FATAL_ERROR "Interface-only definition misclassified the implementation")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
+
+
+@pytest.mark.parametrize("fallback", [False, True])
+def test_bullet_pkgconfig_unsupported_sysroot_only_blocks_fallback(tmp_path, fallback):
+    include = bullet_module(tmp_path)
+    pc_block = (
+        (ROOT / "CMakeLists.txt")
+        .read_text()
+        .split("# Generate the DART pkg-config\n")[1]
+        .split("if(HAVE_ODE)")[0]
+    )
+    suffix = "-float64" if fallback else ""
+    result = configure(
+        tmp_path,
+        "set(CMAKE_SYSTEM_NAME Darwin)\nset(CMAKE_SYSROOT /builder/root)\n"
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        f'target_link_libraries(Bullet INTERFACE "/builder/root/lib/libBulletCollision{suffix}.dylib")\n'
+        "include(DARTFindBullet)\nset(HAVE_BULLET TRUE)\n" + pc_block,
+    )
+    assert (result.returncode != 0) == fallback, result.stdout + result.stderr
+    if fallback:
+        assert "Cannot serialize the selected Bullet library" in result.stderr
+
+
+def test_bullet_selected_headers_cannot_reuse_discovery_version(tmp_path):
+    bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        "target_link_libraries(Bullet INTERFACE libBulletCollision.so)\n"
+        "set(Bullet_VERSION 99.0)\nset(BULLET_VERSION 99.0 CACHE STRING old)\n"
+        "set(DART_BULLET_REQUIRE_VERSION 3.17)\ninclude(DARTFindBullet)\n"
+        'if(BULLET_FOUND OR Bullet_FOUND)\nmessage(FATAL_ERROR "Reused unrelated version metadata")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "inner,accepted",
+    [
+        ("$<INSTALL_INTERFACE:/unused>", True),
+        ("$<TARGET_PROPERTY:unknown,INTERFACE_INCLUDE_DIRECTORIES>", False),
+    ],
+)
+def test_bullet_nested_include_expression(tmp_path, inner, accepted):
+    include = bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}" "$<BUILD_INTERFACE:{inner}>")\n'
+        "target_link_libraries(Bullet INTERFACE libBulletCollision-float64.so)\n"
+        "include(DARTFindBullet)\n"
+        f'if({"NOT " if accepted else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong nested include acceptance")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
+    tmp_path = tmp_path / "archive fixture"
+    tmp_path.mkdir()
+    module = (
+        Path(__file__).resolve().parents[1] / "dart/gui/imgui/CMakeLists.txt"
+    ).read_text()
+    original_hash = re.search(r"\b[0-9a-f]{64}\b", module).group()
+    url = "https://github.com/ocornut/imgui/archive/refs/tags/${IMGUI_TARGET_VERSION}.tar.gz"
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "stub.cpp").write_text("// Parent target source.\n")
+    (source / "main.cpp").write_text(
+        "int archive_version(); int main() { return archive_version(); }\n"
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(dart LANGUAGES CXX)\n"
+        'set(DART_BINARY_DIR "${CMAKE_BINARY_DIR}")\n'
+        "set(DART_USE_SYSTEM_IMGUI OFF)\n"
+        "function(add_component_dependency_packages)\nendfunction()\n"
+        "add_library(dart-gui STATIC stub.cpp)\n"
+        'include("${CMAKE_CURRENT_SOURCE_DIR}/imgui.cmake")\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/fetched-path.txt" "${dart_imgui_SOURCE_DIR}")\n'
+        "add_executable(archive-probe main.cpp)\n"
+        "target_link_libraries(archive-probe PRIVATE dart-gui)\n"
+    )
+    build = tmp_path / "build"
+    for version in (1, 2):
+        payload = tmp_path / f"payload-{version}"
+        payload.mkdir()
+        for name in (
+            "imconfig.h",
+            "imgui.h",
+            "imgui_internal.h",
+            "imstb_rectpack.h",
+            "imstb_textedit.h",
+            "imstb_truetype.h",
+            "imgui_draw.cpp",
+            "imgui_tables.cpp",
+            "imgui_widgets.cpp",
+        ):
+            (payload / name).write_text("// Fixture.\n")
+        (payload / "imgui.cpp").write_text(
+            f"int archive_version() {{ return {version}; }}\n"
+        )
+        archive = tmp_path / f"imgui-{version}.tar.gz"
+        with tarfile.open(archive, "w:gz") as output:
+            output.add(payload, arcname="imgui")
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (source / "imgui.cmake").write_text(
+            module.replace(original_hash, digest).replace(url, archive.as_posix())
+        )
+        # Let pytest report complete CMake output on failure.
+        subprocess.run(
+            ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build)],
+            check=True,
+            text=True,
+        )
+        # Reproduce the extraction timestamps used by CMake 3.22/3.23 even
+        # when this regression runs with a newer CMake.
+        extracted = Path((build / "fetched-path.txt").read_text())
+        for path in extracted.iterdir():
+            os.utime(path, (1_000_000_000, 1_000_000_000))
+        subprocess.run(
+            ["cmake", "--build", str(build)],
+            check=True,
+            text=True,
+        )
+        executable = build / (
+            "archive-probe.exe" if os.name == "nt" else "archive-probe"
+        )
+        assert subprocess.run([str(executable)]).returncode == version
+
+
+@pytest.mark.parametrize(
+    "package,finder,component,dependency,version",
+    [
+        ("ODE", "ODE", "dart-collision-ode", "ode", "0.16.2"),
+        ("BULLET", "Bullet", "dart-collision-bullet", "Bullet", "3.05"),
+    ],
+)
+@pytest.mark.parametrize("require,skip", [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize("versioned", [True, False])
+def test_require_optional_dependencies(
+    tmp_path, package, finder, component, dependency, version, require, skip, versioned
+):
+    version_arg = f' "{version}"' if versioned else ""
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        f"set(DART_USE_SYSTEM_{package} ON)\n"
+        f"include(DARTFind{finder})\n"
+        f'dart_check_optional_package({package} "{component}" "{dependency}"{version_arg})\n',
+        cmake_args=(
+            f"-DDART_REQUIRE_OPTIONAL_DEPENDENCIES={'ON' if require else 'OFF'}",
+            f"-DDART_SKIP_{package}={'ON' if skip else 'OFF'}",
+        ),
+    )
+    output = " ".join((result.stdout + result.stderr).split())
+    assert "NOT found" in output
+    assert (f"(>= {version})" in output) == versioned
+    if require and not skip:
+        assert result.returncode != 0
+        for text in (
+            "DART_REQUIRE_OPTIONAL_DEPENDENCIES",
+            f"DART_SKIP_{package}=ON",
+            component,
+            dependency,
+        ):
+            assert text in output
+    else:
+        assert result.returncode == 0, output
