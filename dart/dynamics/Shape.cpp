@@ -44,6 +44,8 @@ namespace {
 
 thread_local const Shape* pendingVisualVersion = nullptr;
 thread_local const Shape* currentVisualVersion = nullptr;
+thread_local const Shape* pendingTopologyVersion = nullptr;
+thread_local const Shape* currentTopologyVersion = nullptr;
 
 class ScopedShapeVersion
 {
@@ -211,6 +213,9 @@ std::size_t Shape::incrementVersion()
   const ScopedShapeVersion current(
       currentVisualVersion, pendingVisualVersion == this ? this : nullptr);
   const ScopedShapeVersion pending(pendingVisualVersion, nullptr);
+  const ScopedShapeVersion currentTopology(
+      currentTopologyVersion, pendingTopologyVersion == this ? this : nullptr);
+  const ScopedShapeVersion pendingTopology(pendingTopologyVersion, nullptr);
   ++mVersion;
   mVersionChangedSignal.raise(this, mVersion);
 
@@ -231,6 +236,18 @@ std::atomic_int Shape::mCounter{PRIMITIVE_MAGIC_NUMBER};
 
 namespace common {
 namespace detail {
+
+std::size_t incrementShapeTopologyVersion(dynamics::Shape* shape)
+{
+  const dynamics::ScopedShapeVersion pending(
+      dynamics::pendingTopologyVersion, shape);
+  return shape->incrementVersion();
+}
+
+bool isTopologyShapeVersionUpdate(const dynamics::Shape* shape)
+{
+  return dynamics::currentTopologyVersion == shape;
+}
 
 bool isVisualShapeVersionUpdate(const dynamics::Shape* shape)
 {

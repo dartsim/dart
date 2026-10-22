@@ -32,6 +32,8 @@
 
 #include "dart/dynamics/VoxelGridShape.hpp"
 
+#include "dart/common/detail/ModelMutation.hpp"
+
 #if HAVE_OCTOMAP
 
   #include "dart/common/Console.hpp"
@@ -193,12 +195,13 @@ void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
   if (octree == mOctree)
     return;
 
+  common::detail::checkShapeTopologyMutation(this);
   mOctree = std::move(octree);
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 
-  incrementVersion();
+  common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================
@@ -217,10 +220,11 @@ std::shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& point, bool occupied)
 {
+  common::detail::checkShapeTopologyMutation(this);
   // OctoMap's double overload addresses the cell that getOccupancy() reads.
   mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
 
-  incrementVersion();
+  common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================
@@ -229,13 +233,16 @@ void VoxelGridShape::updateOccupancy(
 {
   const auto origin = toPoint3d(from);
   const auto end = toPoint3d(to);
-  if (rayFitsKeyBuffer(*mOctree, origin, end))
-    mOctree->insertRay(origin, end);
-  else
+  if (!rayFitsKeyBuffer(*mOctree, origin, end)) {
     dtwarn << "[VoxelGridShape] Skipping a ray that cannot be traced safely "
            << "in OctoMap's key buffer.\n";
+    incrementVersion();
+    return;
+  }
+  common::detail::checkShapeTopologyMutation(this);
+  mOctree->insertRay(origin, end);
 
-  incrementVersion();
+  common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================
@@ -245,8 +252,9 @@ void VoxelGridShape::updateOccupancy(
     const Frame* relativeTo)
 {
   if (relativeTo == Frame::World()) {
+    common::detail::checkShapeTopologyMutation(this);
     insertPointCloud(*mOctree, pointCloud, toPoint3d(sensorOrigin));
-    incrementVersion();
+    common::detail::incrementShapeTopologyVersion(this);
   } else {
     updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
   }
@@ -258,10 +266,11 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& sensorOrigin,
     const Eigen::Isometry3d& relativeTo)
 {
+  common::detail::checkShapeTopologyMutation(this);
   const auto pose = toPose6d(relativeTo);
   insertPointCloud(*mOctree, pointCloud, toPoint3d(sensorOrigin), &pose);
 
-  incrementVersion();
+  common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================

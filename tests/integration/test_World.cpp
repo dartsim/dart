@@ -59,7 +59,12 @@
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/WeldJointConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#if HAVE_OCTOMAP
+  #include "dart/dynamics/VoxelGridShape.hpp"
+#endif
 #include "dart/dynamics/FixedFrame.hpp"
 #include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -78,6 +83,7 @@
 #include "dart/utils/SkelParser.hpp"
 
 #include <Eigen/Core>
+#include <assimp/scene.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -1410,6 +1416,177 @@ TEST(World, SimulationThreadCount)
 
   world->setNumSimulationThreads(1u);
   EXPECT_EQ(world->getNumSimulationThreads(), 1u);
+}
+
+//==============================================================================
+namespace {
+
+struct UnexpectedStepTopologyMutation
+{
+};
+
+void expectStepRejectsChildCreation(
+    const SkeletonPtr& skeleton, BodyNode* parent)
+{
+  try {
+    skeleton->createJointAndBodyNodePair<WeldJoint>(parent);
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()).find("WorldBusyError: "), 0u);
+    return;
+  }
+  ADD_FAILURE() << "Topology changed during a simulation callback";
+  // Abort the step before its remaining stages consume stale model buffers.
+  throw UnexpectedStepTopologyMutation{};
+}
+
+} // namespace
+
+//==============================================================================
+TEST(World, LazyStepCallbacksKeepBusyGuardOnSimulationWorkers)
+{
+  for (const auto threads : {1u, 2u}) {
+    for (const bool deactivation : {false, true}) {
+      SCOPED_TRACE(threads);
+      SCOPED_TRACE(deactivation);
+      auto world = World::create();
+      world->setNumSimulationThreads(threads);
+      auto options = world->getDeactivationOptions();
+      options.mEnabled = deactivation;
+      world->setDeactivationOptions(options);
+      world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+      for (std::size_t i = 0; i < 128u; ++i) {
+        auto skeleton = Skeleton::create();
+        skeleton->createJointAndBodyNodePair<FreeJoint>();
+        world->addSkeleton(skeleton);
+      }
+      auto target = world->getSkeleton(127u);
+      auto* body = target->getBodyNode(0u);
+      // BodyNode does not emit its own velocity signal; its child Frame does.
+      auto frame = std::make_shared<SimpleFrame>(body);
+      world->enterSimulationMode();
+      body->getSpatialVelocity();
+      ASSERT_FALSE(world->isCompiled());
+      ASSERT_TRUE(world->isInSimulationMode());
+      const auto topology = world->getTopologyRevision();
+      const auto parameters = world->getParameterRevision();
+      const auto caller = std::this_thread::get_id();
+      std::size_t callerCallbacks = 0u;
+      std::size_t workerCallbacks = 0u;
+      auto connection = frame->onVelocityChanged.connect([&](const Entity*) {
+        if (std::this_thread::get_id() == caller)
+          ++callerCallbacks;
+        else
+          ++workerCallbacks;
+        expectStepRejectsChildCreation(target, body);
+      });
+      EXPECT_NO_THROW(world->step());
+      connection.disconnect();
+      // Velocity and position integration must both keep the guard.
+      if (threads == 2u) {
+        EXPECT_GE(workerCallbacks, 2u);
+        EXPECT_EQ(callerCallbacks, 0u);
+      } else {
+        EXPECT_GE(callerCallbacks, 2u);
+        EXPECT_EQ(workerCallbacks, 0u);
+      }
+      EXPECT_EQ(target->getNumBodyNodes(), 1u);
+      EXPECT_EQ(target->getNumDofs(), 6u);
+      std::size_t bodies = 0u;
+      for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
+        bodies += world->getSkeleton(i)->getNumBodyNodes();
+      EXPECT_EQ(bodies, 128u);
+      EXPECT_EQ(world->getTopologyRevision(), topology);
+      EXPECT_EQ(world->getParameterRevision(), parameters);
+      EXPECT_FALSE(world->isCompiled());
+      EXPECT_TRUE(world->isInSimulationMode());
+      EXPECT_NO_THROW(target->createJointAndBodyNodePair<WeldJoint>(body));
+      EXPECT_EQ(target->getNumBodyNodes(), 2u);
+    }
+  }
+}
+
+//==============================================================================
+TEST(World, NestedWorkerWorldStepsRestoreBusyGuardAfterExceptions)
+{
+  struct CallbackFailure
+  {
+  };
+  for (const bool deactivation : {false, true}) {
+    SCOPED_TRACE(deactivation);
+    auto outer = World::create();
+    outer->setNumSimulationThreads(2u);
+    auto inner = World::create();
+    auto options = outer->getDeactivationOptions();
+    options.mEnabled = deactivation;
+    outer->setDeactivationOptions(options);
+    inner->setDeactivationOptions(options);
+    for (std::size_t i = 0; i < 128u; ++i) {
+      auto skeleton = Skeleton::create();
+      skeleton->createJointAndBodyNodePair<FreeJoint>();
+      outer->addSkeleton(skeleton);
+    }
+    auto target = outer->getSkeleton(127u);
+    auto* body = target->getBodyNode(0u);
+    auto outerFrame = std::make_shared<SimpleFrame>(body);
+    auto nested = Skeleton::create();
+    auto* nestedBody = nested->createJointAndBodyNodePair<FreeJoint>().second;
+    inner->addSkeleton(nested);
+    auto innerFrame = std::make_shared<SimpleFrame>(nestedBody);
+    outer->enterSimulationMode();
+    inner->enterSimulationMode();
+    body->getSpatialVelocity();
+    nestedBody->getSpatialVelocity();
+    const auto caller = std::this_thread::get_id();
+    bool throwOnce = true;
+    std::size_t innerCallbacks = 0u;
+    std::size_t outerCallbacks = 0u;
+    auto innerConnection
+        = innerFrame->onVelocityChanged.connect([&](const Entity*) {
+            ++innerCallbacks;
+            EXPECT_NE(std::this_thread::get_id(), caller);
+            expectStepRejectsChildCreation(target, body);
+            expectStepRejectsChildCreation(nested, nestedBody);
+            if (std::exchange(throwOnce, false))
+              throw CallbackFailure{};
+          });
+    auto outerConnection
+        = outerFrame->onVelocityChanged.connect([&](const Entity*) {
+            ++outerCallbacks;
+            EXPECT_NE(std::this_thread::get_id(), caller);
+            try {
+              inner->step();
+            } catch (const CallbackFailure&) {
+              // The inner BusyScope must restore this worker's outer chain.
+              expectStepRejectsChildCreation(target, body);
+              throw;
+            }
+            expectStepRejectsChildCreation(target, body);
+          });
+    EXPECT_THROW(outer->step(), CallbackFailure);
+    EXPECT_GT(innerCallbacks, 0u);
+    EXPECT_GT(outerCallbacks, 0u);
+    EXPECT_EQ(target->getNumBodyNodes(), 1u);
+    EXPECT_EQ(nested->getNumBodyNodes(), 1u);
+    EXPECT_TRUE(outer->isInSimulationMode());
+    EXPECT_TRUE(inner->isInSimulationMode());
+    EXPECT_FALSE(outer->isCompiled());
+    EXPECT_FALSE(inner->isCompiled());
+    const auto previousInnerCallbacks = innerCallbacks;
+    const auto previousOuterCallbacks = outerCallbacks;
+    body->getSpatialVelocity();
+    nestedBody->getSpatialVelocity();
+    EXPECT_NO_THROW(outer->step());
+    EXPECT_GT(innerCallbacks, previousInnerCallbacks);
+    EXPECT_GT(outerCallbacks, previousOuterCallbacks);
+    EXPECT_EQ(target->getNumBodyNodes(), 1u);
+    EXPECT_EQ(nested->getNumBodyNodes(), 1u);
+    outerConnection.disconnect();
+    innerConnection.disconnect();
+    EXPECT_NO_THROW(target->createJointAndBodyNodePair<WeldJoint>(body));
+    EXPECT_NO_THROW(nested->createJointAndBodyNodePair<WeldJoint>(nestedBody));
+    EXPECT_EQ(target->getNumBodyNodes(), 2u);
+    EXPECT_EQ(nested->getNumBodyNodes(), 2u);
+  }
 }
 
 //==============================================================================
@@ -5430,3 +5607,876 @@ TEST(World, RawDetectorRejectionDoesNotLeak)
   DART_SUPPRESS_DEPRECATED_END
   EXPECT_EQ(destroyed, 1);
 }
+
+//==============================================================================
+TEST(World, FailedSourceSyncRetriesWithoutAnotherMutation)
+{
+  auto world = World::create();
+  auto view = Group::create();
+  auto robot = createBox(Eigen::Vector3d::Ones());
+  auto other = createBox(Eigen::Vector3d::Ones());
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->subscribeTo(view);
+  group->addShapeFramesOf(other.get());
+  world->compile();
+  {
+    auto edit = world->edit();
+    struct ResetFailure
+    {
+      ~ResetFailure()
+      {
+        dart::simulation::detail::failIndexAllocation(0u);
+      }
+    } reset;
+    view->addBodyNode(robot->getBodyNode(0));
+    dart::simulation::detail::failIndexAllocation(1u);
+    EXPECT_THROW(group->update(), std::bad_alloc);
+    dart::simulation::detail::failIndexAllocation(0u);
+    ASSERT_NO_THROW(group->update());
+    EXPECT_EQ(group->getNumShapeFrames(), 2u);
+    EXPECT_TRUE(group->hasShapeFrame(robot->getBodyNode(0)->getShapeNode(0)));
+    EXPECT_TRUE(group->collide());
+  }
+  EXPECT_NO_THROW(world->step());
+}
+
+namespace {
+class SubscriptionReentryDetector final : public collision::FCLCollisionDetector
+{
+public:
+  std::function<void()> mCallback;
+  std::unique_ptr<collision::CollisionObject> createCollisionObject(
+      const ShapeFrame* frame) override
+  {
+    if (mCallback)
+      mCallback();
+    return FCLCollisionDetector::createCollisionObject(frame);
+  }
+};
+} // namespace
+
+//==============================================================================
+TEST(World, NestedGroupUpdateFromDetectorIsRejected)
+{
+  for (const bool compiled : {false, true}) {
+    for (int query = 0; query < 4; ++query) {
+      SCOPED_TRACE(compiled);
+      SCOPED_TRACE(query);
+      auto world = World::create();
+      auto detector = std::make_shared<SubscriptionReentryDetector>();
+      world->setCollisionDetector(detector);
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      auto view = Group::create();
+      group->subscribeTo(view);
+      auto robot = createBox(Eigen::Vector3d::Ones());
+      view->addBodyNode(robot->getBodyNode(0));
+      bool entered = false;
+      bool rejected = false;
+      detector->mCallback = [&] {
+        if (std::exchange(entered, true))
+          return;
+        try {
+          if (query == 0)
+            group->update();
+          else if (query == 1)
+            group->collide();
+          else if (query == 2)
+            group->distance();
+          else
+            group->raycast(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+        } catch (const std::runtime_error& error) {
+          rejected = std::string(error.what()).find("WorldBusyError") == 0u;
+        }
+      };
+      if (compiled)
+        EXPECT_NO_THROW(world->compile());
+      else
+        EXPECT_NO_THROW(world->step());
+      detector->mCallback = nullptr;
+      EXPECT_TRUE(entered);
+      EXPECT_TRUE(rejected);
+      EXPECT_NO_THROW(group->update());
+      EXPECT_EQ(group->getNumShapeFrames(), 1u);
+      EXPECT_NO_THROW(world->step());
+    }
+  }
+}
+
+//==============================================================================
+TEST(World, DifferentGroupUpdatesNestButRejectCycles)
+{
+  auto firstDetector = std::make_shared<SubscriptionReentryDetector>();
+  auto secondDetector = std::make_shared<SubscriptionReentryDetector>();
+  auto first = firstDetector->createCollisionGroup();
+  auto second = secondDetector->createCollisionGroup();
+  auto firstView = Group::create();
+  auto secondView = Group::create();
+  first->subscribeTo(firstView);
+  second->subscribeTo(secondView);
+  auto firstBody = createBox(Eigen::Vector3d::Ones());
+  auto secondBody = createBox(Eigen::Vector3d::Ones());
+  firstView->addBodyNode(firstBody->getBodyNode(0));
+  secondView->addBodyNode(secondBody->getBodyNode(0));
+  bool nested = false;
+  secondDetector->mCallback = [&] {
+    nested = true;
+    EXPECT_THROW(first->update(), std::runtime_error);
+  };
+  firstDetector->mCallback = [&] {
+    EXPECT_NO_THROW(second->update());
+  };
+  EXPECT_NO_THROW(first->update());
+  EXPECT_TRUE(nested);
+  firstDetector->mCallback = nullptr;
+  secondDetector->mCallback = nullptr;
+  EXPECT_EQ(first->getNumShapeFrames(), 1u);
+  EXPECT_EQ(second->getNumShapeFrames(), 1u);
+  EXPECT_NO_THROW(first->update());
+  EXPECT_NO_THROW(second->update());
+}
+
+//==============================================================================
+TEST(World, SourceSyncFailureSweep)
+{
+  for (int sourceKind = 0; sourceKind < 3; ++sourceKind) {
+    bool completed = false;
+    for (std::size_t nth = 1; nth < 64; ++nth) {
+      SCOPED_TRACE(sourceKind);
+      SCOPED_TRACE(nth);
+      auto world = World::create();
+      auto robot = Skeleton::create();
+      auto* body = robot->createJointAndBodyNodePair<FreeJoint>().second;
+      auto view = Group::create();
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      if (sourceKind == 0)
+        group->subscribeTo(view);
+      else if (sourceKind == 1)
+        group->subscribeTo(robot);
+      else
+        group->subscribeTo(ConstBodyNodePtr(body));
+      world->compile();
+      bool failed = false;
+      {
+        auto edit = world->edit();
+        struct ResetFailure
+        {
+          ~ResetFailure()
+          {
+            dart::simulation::detail::failIndexAllocation(0u);
+          }
+        } reset;
+        body->createShapeNodeWith<CollisionAspect>(
+            std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+        body->createShapeNodeWith<CollisionAspect>(
+            std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+        if (sourceKind == 0)
+          view->addBodyNode(body);
+        dart::simulation::detail::failIndexAllocation(nth);
+        try {
+          group->update();
+        } catch (const std::bad_alloc&) {
+          failed = true;
+        }
+        dart::simulation::detail::failIndexAllocation(0u);
+        ASSERT_NO_THROW(group->update());
+        ASSERT_EQ(group->getNumShapeFrames(), 2u);
+        EXPECT_TRUE(group->hasShapeFrame(body->getShapeNode(0)));
+        EXPECT_TRUE(group->hasShapeFrame(body->getShapeNode(1)));
+        EXPECT_NO_THROW(group->collide());
+      }
+      EXPECT_NO_THROW(world->step());
+      EXPECT_THROW(
+          robot->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+      {
+        auto edit = world->edit();
+        group->removeAllShapeFrames();
+      }
+      EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
+      if (!failed) {
+        completed = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(completed);
+  }
+}
+
+//==============================================================================
+TEST(World, SubscribedViewChangesDuringStepAreRejected)
+{
+  for (const bool compiled : {false, true}) {
+    for (const bool native : {false, true}) {
+      auto world = World::create();
+      if (native)
+        world->setCollisionDetector(CollisionDetectorType::Dart);
+      DeactivationOptions options;
+      options.mEnabled = false;
+      world->setDeactivationOptions(options);
+      auto ground = createBox(Eigen::Vector3d(10, 10, 1));
+      ground->setMobile(false);
+      world->addSkeleton(ground);
+      world->addSkeleton(
+          createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0, 0, 0.95)));
+      auto loose
+          = createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(20, 0, 0));
+      auto shapeless = Skeleton::create();
+      auto* emptyBody
+          = shapeless->createJointAndBodyNodePair<FreeJoint>().second;
+      auto view = Group::create();
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      group->subscribeTo(view);
+      auto filter = std::make_shared<CallbackCollisionFilter>();
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = filter;
+      auto handler = std::make_shared<StepCallbackHandler>();
+      world->getConstraintSolver()->addContactSurfaceHandler(handler);
+      if (compiled)
+        world->compile();
+      ASSERT_NO_THROW(world->step());
+      for (auto* body : {loose->getBodyNode(0), emptyBody}) {
+        for (auto* callback : {&filter->mCallback, &handler->mCallback}) {
+          const auto count = group->getNumShapeFrames();
+          const auto version = group->getContentVersion();
+          expectStepRejectsEdit(*world, *callback, [&] {
+            view->addBodyNode(body);
+            group->update();
+          });
+          EXPECT_EQ(group->getNumShapeFrames(), count);
+          EXPECT_EQ(group->getContentVersion(), version);
+          view->removeBodyNode(body);
+          EXPECT_NO_THROW(world->step());
+          {
+            auto edit = world->edit();
+            view->addBodyNode(body);
+            group->update();
+          }
+          const auto addedCount = group->getNumShapeFrames();
+          const auto addedVersion = group->getContentVersion();
+          expectStepRejectsEdit(*world, *callback, [&] {
+            view->removeBodyNode(body);
+            group->update();
+          });
+          EXPECT_EQ(group->getNumShapeFrames(), addedCount);
+          EXPECT_EQ(group->getContentVersion(), addedVersion);
+          view->addBodyNode(body);
+          EXPECT_NO_THROW(world->step());
+          {
+            auto edit = world->edit();
+            view->removeBodyNode(body);
+            group->update();
+          }
+        }
+      }
+      handler->mCallback = [&] {
+        group->update();
+      };
+      EXPECT_NO_THROW(world->step());
+      handler->mCallback = nullptr;
+    }
+  }
+}
+
+namespace {
+class SharedSubscriptionSolver final
+  : public dart::constraint::BoxedLcpConstraintSolver
+{
+public:
+  explicit SharedSubscriptionSolver(const collision::CollisionGroupPtr& group)
+  {
+    mCollisionGroup = group;
+    mCollisionDetector = group->getCollisionDetector();
+  }
+  void setFromOtherConstraintSolver(
+      const dart::constraint::ConstraintSolver&) override
+  {
+  }
+};
+} // namespace
+
+//==============================================================================
+TEST(World, SourceBodyAddedRollbackAcrossOwners)
+{
+  for (const bool preexisting : {false, true}) {
+    bool completed = false;
+    for (std::size_t nth = 1; nth < 64; ++nth) {
+      SCOPED_TRACE(preexisting);
+      SCOPED_TRACE(nth);
+      auto first = World::create();
+      auto second = World::create();
+      auto group = first->getConstraintSolver()->getCollisionGroup();
+      second->setConstraintSolver(
+          std::make_unique<SharedSubscriptionSolver>(group));
+      ASSERT_EQ(second->getConstraintSolver()->getCollisionGroup(), group);
+      auto view = Group::create();
+      group->subscribeTo(view);
+      first->compile();
+      second->compile();
+      auto robot = createBox(Eigen::Vector3d::Ones());
+      auto* body = robot->getBodyNode(0);
+      auto* prior = robot->createJointAndBodyNodePair<FreeJoint>().second;
+      bool failed = false;
+      {
+        auto firstEdit = first->edit();
+        auto secondEdit = second->edit();
+        struct ResetFailure
+        {
+          ~ResetFailure()
+          {
+            dart::simulation::detail::failIndexAllocation(0u);
+          }
+        } reset;
+        group->subscribeTo(ConstBodyNodePtr(prior));
+        view->addBodyNode(body);
+        if (preexisting)
+          first->setConstraintSolver(
+              std::make_unique<SharedSubscriptionSolver>(group));
+        dart::simulation::detail::failIndexAllocation(nth);
+        try {
+          group->update();
+        } catch (const std::bad_alloc&) {
+          failed = true;
+        }
+        dart::simulation::detail::failIndexAllocation(0u);
+        const auto firstVersion = first->getParameterRevision();
+        const auto secondVersion = second->getParameterRevision();
+        prior->setCollidable(false);
+        EXPECT_GT(first->getParameterRevision(), firstVersion);
+        EXPECT_GT(second->getParameterRevision(), secondVersion);
+        EXPECT_NO_THROW(group->update());
+        EXPECT_EQ(group->getNumShapeFrames(), 1u);
+        view->removeBodyNode(body);
+        EXPECT_NO_THROW(group->update());
+        EXPECT_EQ(group->getNumShapeFrames(), 0u);
+        // Compilation rejects shared model ownership. Detach the second owner
+        // after checking both claims so the first can freeze its retained one.
+        second->setConstraintSolver(
+            std::make_unique<dart::constraint::BoxedLcpConstraintSolver>());
+      }
+      EXPECT_TRUE(first->isCompiled());
+      EXPECT_TRUE(second->isCompiled());
+      EXPECT_THROW(
+          robot->createJointAndBodyNodePair<FreeJoint>(), std::runtime_error);
+      {
+        auto firstEdit = first->edit();
+        auto secondEdit = second->edit();
+        group->unsubscribeFrom(prior);
+      }
+      EXPECT_NO_THROW(robot->createJointAndBodyNodePair<FreeJoint>());
+      EXPECT_NO_THROW(first->step());
+      EXPECT_NO_THROW(second->step());
+      if (!failed) {
+        completed = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(completed);
+  }
+}
+
+namespace {
+std::shared_ptr<dart::math::TriMeshd> subscriptionTetrahedron(double size)
+{
+  auto mesh = std::make_shared<dart::math::TriMeshd>();
+  mesh->addVertex(0, 0, 0);
+  mesh->addVertex(size, 0, 0);
+  mesh->addVertex(0, size, 0);
+  mesh->addVertex(0, 0, size);
+  mesh->addTriangle(0, 2, 1);
+  mesh->addTriangle(0, 1, 3);
+  mesh->addTriangle(0, 3, 2);
+  mesh->addTriangle(1, 2, 3);
+  return mesh;
+}
+} // namespace
+
+//==============================================================================
+TEST(World, FrozenGeometryStorageIsUnchanged)
+{
+  auto world = World::create();
+  auto frame = std::make_shared<SimpleFrame>();
+  auto convex = std::make_shared<ConvexMeshShape>(subscriptionTetrahedron(1));
+  frame->setShape(convex);
+  world->addSimpleFrame(frame);
+  world->compile();
+  const auto topology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  const auto version = convex->getVersion();
+  const auto frameVersion = frame->getVersion();
+  const auto storage = convex->getMesh();
+  int calls = 0;
+  auto connection
+      = convex->onVersionChanged.connect([&](Shape*, std::size_t) { ++calls; });
+  EXPECT_THROW(convex->setMesh(subscriptionTetrahedron(2)), std::runtime_error);
+  EXPECT_EQ(convex->getMesh(), storage);
+  EXPECT_EQ(convex->getVersion(), version);
+  EXPECT_EQ(frame->getVersion(), frameVersion);
+  EXPECT_EQ(world->getTopologyRevision(), topology);
+  EXPECT_EQ(world->getParameterRevision(), parameters);
+  EXPECT_EQ(calls, 0);
+  {
+    auto edit = world->edit();
+    convex->setMesh(subscriptionTetrahedron(2));
+    EXPECT_GT(world->getTopologyRevision(), topology);
+    EXPECT_EQ(world->getParameterRevision(), parameters);
+  }
+  EXPECT_DOUBLE_EQ(convex->getBoundingBox().getMax()[0], 2);
+  EXPECT_TRUE(world->isCompiled());
+  EXPECT_NO_THROW(world->step());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto scene = std::make_shared<aiScene>();
+  auto replacement = std::make_shared<aiScene>();
+  auto mesh = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), std::shared_ptr<const aiScene>(scene));
+  {
+    auto edit = world->edit();
+    frame->setShape(mesh);
+  }
+  const auto meshVersion = mesh->getVersion();
+  const auto meshTopology = world->getTopologyRevision();
+  const auto meshParameters = world->getParameterRevision();
+  for (const auto ownership :
+       {MeshShape::MeshOwnership::None,
+        MeshShape::MeshOwnership::Imported,
+        MeshShape::MeshOwnership::Copied,
+        MeshShape::MeshOwnership::Manual,
+        MeshShape::MeshOwnership::Custom}) {
+    EXPECT_THROW(
+        mesh->setMesh(replacement.get(), ownership, dart::common::Uri()),
+        std::runtime_error);
+    EXPECT_EQ(mesh->getMesh(), scene.get());
+    EXPECT_EQ(mesh->getVersion(), meshVersion);
+  }
+  const std::vector<std::function<void()>> mutations{
+      [&] {
+        mesh->setMesh(
+            replacement.get(),
+            MeshShape::MeshOwnership::None,
+            dart::common::Uri());
+      },
+      [&] { mesh->setMesh(std::shared_ptr<const aiScene>(replacement)); },
+      [&] { mesh->setMesh(nullptr, std::string()); },
+      [&] {
+        mesh->setMesh(nullptr, dart::common::Uri());
+      }};
+  for (const auto& mutate : mutations) {
+    EXPECT_THROW(mutate(), std::runtime_error);
+    EXPECT_EQ(mesh->getMesh(), scene.get());
+    EXPECT_EQ(mesh->getVersion(), meshVersion);
+    EXPECT_EQ(world->getTopologyRevision(), meshTopology);
+    EXPECT_EQ(world->getParameterRevision(), meshParameters);
+  }
+  EXPECT_NO_THROW(mesh->setMesh(std::shared_ptr<const aiScene>(scene)));
+  EXPECT_EQ(mesh->getVersion(), meshVersion);
+  EXPECT_NO_THROW(mesh->setMesh(
+      std::shared_ptr<const aiScene>(scene), dart::common::Uri("metadata")));
+  EXPECT_EQ(world->getTopologyRevision(), meshTopology);
+  EXPECT_GT(world->getParameterRevision(), meshParameters);
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+#if HAVE_OCTOMAP
+//==============================================================================
+TEST(World, FrozenVoxelOverloadsAndEditedCollision)
+{
+  auto world = World::create();
+  auto voxels = std::make_shared<VoxelGridShape>(0.1);
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(voxels);
+  world->addSimpleFrame(frame);
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  auto box = std::make_shared<SimpleFrame>();
+  box->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.05)));
+  box->setRelativeTranslation(Eigen::Vector3d::Constant(0.05));
+  voxels->updateOccupancy(Eigen::Vector3d::Constant(3));
+  group->addShapeFramesOf(frame.get(), box.get());
+  world->compile();
+  EXPECT_FALSE(group->collide());
+  const auto storage = voxels->getOctree();
+  const auto size = storage->size();
+  const auto version = voxels->getVersion();
+  const auto topology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  octomap::Pointcloud points;
+  points.push_back(0.05f, 0.05f, 0.05f);
+  SimpleFrame relative;
+  const std::vector<std::function<void()>> mutations{
+      [&] { voxels->setOctree(std::make_shared<octomap::OcTree>(0.2)); },
+      [&] { voxels->updateOccupancy(Eigen::Vector3d::Constant(0.05), true); },
+      [&] {
+        voxels->updateOccupancy(
+            Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(0.05));
+      },
+      [&] {
+        voxels->updateOccupancy(
+            points, Eigen::Vector3d::Zero(), Frame::World());
+      },
+      [&] {
+        voxels->updateOccupancy(points, Eigen::Vector3d::Zero(), &relative);
+      },
+      [&] {
+        voxels->updateOccupancy(
+            points, Eigen::Vector3d::Zero(), Eigen::Isometry3d::Identity());
+      }};
+  for (const auto& mutate : mutations) {
+    EXPECT_THROW(mutate(), std::runtime_error);
+    EXPECT_EQ(voxels->getOctree(), storage);
+    EXPECT_EQ(storage->size(), size);
+    EXPECT_EQ(voxels->getVersion(), version);
+    EXPECT_EQ(world->getTopologyRevision(), topology);
+    EXPECT_EQ(world->getParameterRevision(), parameters);
+  }
+  EXPECT_NO_THROW(voxels->setOctree(storage));
+  EXPECT_NO_THROW(voxels->setOctree(nullptr));
+  EXPECT_EQ(voxels->getVersion(), version);
+  {
+    auto edit = world->edit();
+    voxels->updateOccupancy(Eigen::Vector3d::Constant(0.05));
+    EXPECT_EQ(voxels->getVersion(), version + 1u);
+    EXPECT_GT(world->getTopologyRevision(), topology);
+    EXPECT_EQ(world->getParameterRevision(), parameters);
+  }
+  EXPECT_TRUE(group->collide());
+  EXPECT_NO_THROW(world->step());
+}
+#endif
+
+//==============================================================================
+TEST(World, NestedGroupUpdatesAllowDifferentGroupsButRejectCycles)
+{
+  auto detector = std::make_shared<SubscriptionReentryDetector>();
+  auto first = detector->createCollisionGroup();
+  auto second = detector->createCollisionGroup();
+  auto firstSource = Group::create();
+  auto secondSource = Group::create();
+  first->subscribeTo(firstSource);
+  second->subscribeTo(secondSource);
+  auto firstRobot = createBox(Eigen::Vector3d::Ones());
+  auto secondRobot = createBox(Eigen::Vector3d::Ones());
+  firstSource->addBodyNode(firstRobot->getBodyNode(0));
+  secondSource->addBodyNode(secondRobot->getBodyNode(0));
+  int depth = 0;
+  detector->mCallback = [&] {
+    if (++depth == 1)
+      second->update();
+    else
+      first->update();
+  };
+  EXPECT_THROW(first->update(), std::runtime_error);
+  EXPECT_EQ(first->getNumShapeFrames(), 0u);
+  EXPECT_EQ(second->getNumShapeFrames(), 0u);
+  depth = 0;
+  detector->mCallback = [&] {
+    if (++depth == 1)
+      second->update();
+  };
+  EXPECT_NO_THROW(first->update());
+  detector->mCallback = nullptr;
+  EXPECT_EQ(first->getNumShapeFrames(), 1u);
+  EXPECT_EQ(second->getNumShapeFrames(), 1u);
+}
+
+//==============================================================================
+TEST(World, SharedGeometryUsesCurrentListenerOwners)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto shape = std::make_shared<ConvexMeshShape>(subscriptionTetrahedron(1));
+  auto firstFrame = std::make_shared<SimpleFrame>();
+  auto secondFrame = std::make_shared<SimpleFrame>();
+  firstFrame->setShape(shape);
+  secondFrame->setShape(shape);
+  first->addSimpleFrame(firstFrame);
+  second->addSimpleFrame(secondFrame);
+  first->compile();
+  second->compile();
+  {
+    auto firstEdit = first->edit();
+    EXPECT_THROW(
+        shape->setMesh(subscriptionTetrahedron(2)), std::runtime_error);
+    {
+      auto secondEdit = second->edit();
+      EXPECT_NO_THROW(shape->setMesh(subscriptionTetrahedron(2)));
+      secondFrame->setShape(nullptr);
+    }
+    EXPECT_NO_THROW(shape->setMesh(subscriptionTetrahedron(3)));
+    firstFrame->setShape(nullptr);
+  }
+  EXPECT_NO_THROW(shape->setMesh(subscriptionTetrahedron(4)));
+  auto parent = std::make_shared<SimpleFrame>();
+  auto child = std::make_shared<SimpleFrame>(parent.get());
+  child->setShape(shape);
+  {
+    auto edit = first->edit();
+    first->addSimpleFrame(parent);
+  }
+  EXPECT_THROW(shape->setMesh(subscriptionTetrahedron(5)), std::runtime_error);
+  {
+    auto edit = first->edit();
+    child->setParentFrame(Frame::World());
+  }
+  EXPECT_NO_THROW(shape->setMesh(subscriptionTetrahedron(5)));
+  child.reset();
+  EXPECT_NO_THROW(shape->setMesh(subscriptionTetrahedron(6)));
+}
+
+//==============================================================================
+TEST(World, NestedTopologyShapeVersionsKeepTheirCategory)
+{
+  auto world = World::create();
+  auto shape = std::make_shared<ConvexMeshShape>(subscriptionTetrahedron(1));
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(shape);
+  auto other = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  auto otherFrame = std::make_shared<SimpleFrame>();
+  otherFrame->setShape(other);
+  world->addSimpleFrame(frame);
+  world->addSimpleFrame(otherFrame);
+  world->compile();
+  bool nested = false;
+  auto listener = shape->onVersionChanged.connect([&](Shape*, std::size_t) {
+    if (std::exchange(nested, true))
+      return;
+    shape->incrementVersion();
+    other->setSize(Eigen::Vector3d::Constant(2));
+  });
+  const auto topology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  const auto version = shape->getVersion();
+  {
+    auto edit = world->edit();
+    shape->setMesh(subscriptionTetrahedron(2));
+    EXPECT_EQ(world->getTopologyRevision(), topology + 1u);
+    EXPECT_EQ(world->getParameterRevision(), parameters + 2u);
+    EXPECT_EQ(shape->getVersion(), version + 2u);
+  }
+  EXPECT_TRUE(nested);
+}
+
+//==============================================================================
+TEST(World, EditedConvexStorageChangesCollision)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  auto shape = std::make_shared<ConvexMeshShape>(subscriptionTetrahedron(1));
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(shape);
+  auto box = std::make_shared<SimpleFrame>();
+  box->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.1)));
+  box->setRelativeTranslation(Eigen::Vector3d::Constant(0.8));
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->addShapeFramesOf(frame.get(), box.get());
+  world->compile();
+  EXPECT_FALSE(group->collide());
+  const auto topology = world->getTopologyRevision();
+  {
+    auto edit = world->edit();
+    shape->setMesh(subscriptionTetrahedron(3));
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
+  EXPECT_TRUE(group->collide());
+}
+
+//==============================================================================
+TEST(World, BetweenStepBorrowedViewChangesSynchronizeOnlyWhenAutomatic)
+{
+  for (const bool automatic : {false, true}) {
+    auto world = World::create();
+    auto view = Group::create();
+    auto group = world->getConstraintSolver()->getCollisionGroup();
+    group->subscribeTo(view);
+    group->setAutomaticUpdate(automatic);
+    auto robot = createBox(Eigen::Vector3d::Ones());
+    ASSERT_NO_THROW(world->step());
+    view->addBodyNode(robot->getBodyNode(0));
+    ASSERT_NO_THROW(world->step());
+    EXPECT_EQ(group->getNumShapeFrames(), automatic ? 1u : 0u);
+    EXPECT_FALSE(world->isCompiled());
+    if (automatic) {
+      view->removeBodyNode(robot->getBodyNode(0));
+      ASSERT_NO_THROW(world->step());
+      EXPECT_EQ(group->getNumShapeFrames(), 0u);
+    }
+  }
+}
+
+//==============================================================================
+TEST(World, ExpiredEmptySourceCannotSynchronizeInsideCallback)
+{
+  for (const bool compiled : {false, true}) {
+    auto world = World::create();
+    DeactivationOptions options;
+    options.mEnabled = false;
+    world->setDeactivationOptions(options);
+    auto ground = createBox(Eigen::Vector3d(10, 10, 1));
+    ground->setMobile(false);
+    world->addSkeleton(ground);
+    world->addSkeleton(
+        createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0, 0, 0.95)));
+    auto view = Group::create();
+    auto group = world->getConstraintSolver()->getCollisionGroup();
+    group->subscribeTo(view);
+    auto handler = std::make_shared<StepCallbackHandler>();
+    world->getConstraintSolver()->addContactSurfaceHandler(handler);
+    if (compiled)
+      world->compile();
+    const auto version = group->getContentVersion();
+    const auto count = group->getNumShapeFrames();
+    expectStepRejectsEdit(*world, handler->mCallback, [&] {
+      view.reset();
+      group->update();
+    });
+    EXPECT_EQ(group->getContentVersion(), version);
+    EXPECT_EQ(group->getNumShapeFrames(), count);
+    {
+      auto edit = world->edit();
+      EXPECT_NO_THROW(group->update());
+    }
+    EXPECT_NO_THROW(world->step());
+  }
+}
+
+//==============================================================================
+TEST(World, GeometryPreflightFollowsMovedBodyAndBusyLazyOwner)
+{
+  auto first = World::create();
+  auto second = World::create();
+  auto source = createBox(Eigen::Vector3d::Ones());
+  auto target = Skeleton::create();
+  auto* body = source->getBodyNode(0);
+  auto shape = std::make_shared<ConvexMeshShape>(subscriptionTetrahedron(1));
+  body->getShapeNode(0)->setShape(shape);
+  first->setCollisionDetector(CollisionDetectorType::Dart);
+  second->setCollisionDetector(CollisionDetectorType::Dart);
+  first->addSkeleton(source);
+  second->addSkeleton(target);
+  first->compile();
+  second->compile();
+  {
+    auto firstEdit = first->edit();
+    auto secondEdit = second->edit();
+    ASSERT_TRUE(body->moveTo(target, nullptr));
+    first->getConstraintSolver()->getCollisionGroup()->update();
+    second->getConstraintSolver()->getCollisionGroup()->update();
+  }
+  ASSERT_TRUE(first->isCompiled());
+  ASSERT_TRUE(second->isCompiled());
+  {
+    auto firstEdit = first->edit();
+    EXPECT_THROW(
+        shape->setMesh(subscriptionTetrahedron(2)), std::runtime_error);
+  }
+  {
+    auto secondEdit = second->edit();
+    EXPECT_NO_THROW(shape->setMesh(subscriptionTetrahedron(2)));
+  }
+  auto lazy = World::create();
+  auto ground = createBox(Eigen::Vector3d(10, 10, 1));
+  ground->setMobile(false);
+  lazy->addSkeleton(ground);
+  lazy->addSkeleton(
+      createBox(Eigen::Vector3d::Ones(), Eigen::Vector3d(0, 0, 0.95)));
+  auto frame = std::make_shared<SimpleFrame>();
+  auto looseShape
+      = std::make_shared<ConvexMeshShape>(subscriptionTetrahedron(1));
+  frame->setShape(looseShape);
+  lazy->addSimpleFrame(frame);
+  auto handler = std::make_shared<StepCallbackHandler>();
+  lazy->getConstraintSolver()->addContactSurfaceHandler(handler);
+  const auto storage = looseShape->getMesh();
+  const auto version = looseShape->getVersion();
+  expectStepRejectsEdit(*lazy, handler->mCallback, [&] {
+    looseShape->setMesh(subscriptionTetrahedron(2));
+  });
+  EXPECT_EQ(looseShape->getMesh(), storage);
+  EXPECT_EQ(looseShape->getVersion(), version);
+  EXPECT_FALSE(lazy->isCompiled());
+}
+
+namespace {
+std::shared_ptr<const aiScene> subscriptionMeshScene(float size)
+{
+  auto scene = std::make_shared<aiScene>();
+  scene->mNumMeshes = 1;
+  scene->mMeshes = new aiMesh* [1] {
+    new aiMesh
+  };
+  auto* mesh = scene->mMeshes[0];
+  mesh->mNumVertices = 4;
+  mesh->mVertices
+      = new aiVector3D[4]{{0, 0, 0}, {size, 0, 0}, {0, size, 0}, {0, 0, size}};
+  mesh->mNumFaces = 4;
+  mesh->mFaces = new aiFace[4];
+  const unsigned int faces[4][3]{{0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}};
+  for (int i = 0; i < 4; ++i) {
+    mesh->mFaces[i].mNumIndices = 3;
+    mesh->mFaces[i].mIndices
+        = new unsigned int[3]{faces[i][0], faces[i][1], faces[i][2]};
+  }
+  scene->mRootNode = new aiNode;
+  scene->mRootNode->mNumMeshes = 1;
+  scene->mRootNode->mMeshes = new unsigned int[1]{0};
+  return scene;
+}
+} // namespace
+
+//==============================================================================
+TEST(World, EditedMeshStorageChangesTopologyAndCollision)
+{
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto world = World::create();
+  auto shape = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), subscriptionMeshScene(1));
+  auto meshBody = createBox(Eigen::Vector3d::Ones());
+  meshBody->getBodyNode(0)->getShapeNode(0)->setShape(shape);
+  auto box = createBox(
+      Eigen::Vector3d::Constant(0.3), Eigen::Vector3d::Constant(0.7));
+  world->addSkeleton(meshBody);
+  world->addSkeleton(box);
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  world->compile();
+  EXPECT_FALSE(group->collide());
+  const auto topology = world->getTopologyRevision();
+  {
+    auto edit = world->edit();
+    shape->setMesh(subscriptionMeshScene(2));
+    EXPECT_GT(world->getTopologyRevision(), topology);
+  }
+  EXPECT_TRUE(world->isCompiled());
+  EXPECT_TRUE(group->collide());
+  const auto replacedTopology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  shape->setScale(1.1);
+  EXPECT_EQ(world->getTopologyRevision(), replacedTopology);
+  EXPECT_GT(world->getParameterRevision(), parameters);
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+#if HAVE_OCTOMAP
+//==============================================================================
+TEST(World, NestedTopologyToVisualVersionDoesNotNotifyParameters)
+{
+  auto world = World::create();
+  auto shape = std::make_shared<VoxelGridShape>(0.1);
+  auto frame = std::make_shared<SimpleFrame>();
+  frame->setShape(shape);
+  world->addSimpleFrame(frame);
+  world->compile();
+  bool nested = false;
+  auto connection = shape->onVersionChanged.connect([&](Shape*, std::size_t) {
+    if (!std::exchange(nested, true))
+      shape->notifyColorUpdated(Eigen::Vector4d::Ones());
+  });
+  const auto topology = world->getTopologyRevision();
+  const auto parameters = world->getParameterRevision();
+  const auto version = shape->getVersion();
+  {
+    auto edit = world->edit();
+    shape->updateOccupancy(Eigen::Vector3d::Zero());
+    EXPECT_EQ(world->getTopologyRevision(), topology + 1u);
+    EXPECT_EQ(world->getParameterRevision(), parameters);
+    EXPECT_EQ(shape->getVersion(), version + 2u);
+  }
+  EXPECT_TRUE(nested);
+}
+#endif

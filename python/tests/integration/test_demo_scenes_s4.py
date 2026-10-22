@@ -757,3 +757,20 @@ def test_point_cloud_inputs_match_cpp_steps(monkeypatch):
         "Major Line Width": (1, 2, 0, False),
         "Minor Line Width": (1, 2, 0, False),
     }
+
+
+def test_point_cloud_repeated_steps_keep_points_and_occupancy_live():
+    setup = _scene("point_cloud").factory()
+    world = setup.world
+    points = world.getSimpleFrame("point cloud").getShape()
+    voxels = world.getSimpleFrame("voxel").getShape()
+    dart.math.Random.setSeed(42)
+    _step(setup)
+    before = np.asarray(points.getPoints()).copy()
+    _step(setup, 12)
+    after = np.asarray(points.getPoints())
+    assert points.getNumPoints() == 500
+    assert np.isfinite(after).all()
+    assert not np.array_equal(before, after)
+    assert any(voxels.getOccupancy(point) > 0.5 for point in after)
+    assert world.getTime() == pytest.approx(13 * world.getTimeStep())

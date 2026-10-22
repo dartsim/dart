@@ -64,10 +64,12 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <vector>
 
 #include <cstddef>
+#include <cstring>
 
 using namespace dart::common;
 
@@ -1129,6 +1131,33 @@ TEST(Aspect, Construction)
   EXPECT_NE(comp.get<DoubleAspect>()->mState.val, s1);
   EXPECT_EQ(comp.get<DoubleAspect>()->mState.val, s2);
   EXPECT_EQ(comp.get<DoubleAspect>()->mProperties.val, p);
+}
+
+TEST(Aspect, VisualPropertiesInitializeAndCopyDefaultColor)
+{
+  using Properties = dart::dynamics::detail::VisualAspectProperties;
+  alignas(Properties) unsigned char storage[sizeof(Properties)];
+  std::memset(storage, 0x80, sizeof(storage));
+  auto* properties = new (storage) Properties;
+
+  EXPECT_FALSE(properties->mUseDefaultColor);
+  EXPECT_TRUE(properties->mRGBA.isApprox(Eigen::Vector4d(0.5, 0.5, 1.0, 1.0)));
+  EXPECT_FALSE(properties->mHidden);
+  EXPECT_TRUE(properties->mShadowed);
+
+  const Properties copied(*properties);
+  EXPECT_FALSE(copied.mUseDefaultColor);
+  properties->mUseDefaultColor = true;
+  const Properties copiedEnabled(*properties);
+  EXPECT_TRUE(copiedEnabled.mUseDefaultColor);
+
+  Properties assigned;
+  assigned = copied;
+  EXPECT_FALSE(assigned.mUseDefaultColor);
+  assigned = copiedEnabled;
+  EXPECT_TRUE(assigned.mUseDefaultColor);
+
+  properties->~Properties();
 }
 
 TEST(Aspect, Joints)

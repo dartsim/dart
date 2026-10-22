@@ -141,6 +141,15 @@ struct CompositeCollisionFilterAccessor
 
 struct CollisionGroupOwnershipAccessor
 {
+  static void update(CollisionGroup& group, const simulation::World* requester)
+  {
+    group.updateImpl(requester);
+  }
+  static bool hasPendingUpdates(const CollisionGroup& group)
+  {
+    return group.hasPendingSourceUpdates();
+  }
+
   static bool hasSources(const CollisionGroup& group)
   {
     return !group.mSkeletonSources.empty() || !group.mBodyNodeSources.empty();
@@ -2319,7 +2328,7 @@ void World::compile()
   }
   validateCompiledModel();
   const auto group = mConstraintSolver->getCollisionGroup();
-  group->update();
+  collision::detail::CollisionGroupOwnershipAccessor::update(*group, this);
   validateCompiledModel();
   std::vector<const constraint::ContactSurfaceHandler*> contactHandlers;
   for (auto handler = mConstraintSolver->getLastContactSurfaceHandler();
@@ -2685,7 +2694,20 @@ void parallelForIndexRange(
     return;
   }
 
-  threadPool->parallelFor(count, numThreads, std::forward<Func>(func));
+  // Lazy Worlds reject callback mutations through the calling thread's chain.
+  auto* steppingWorld = tlsSteppingWorld;
+  threadPool->parallelFor(count, numThreads, [&](std::size_t i) {
+    struct RestoreSteppingWorld
+    {
+      WorldDeactivationState* mPrevious;
+      ~RestoreSteppingWorld()
+      {
+        tlsSteppingWorld = mPrevious;
+      }
+    } restore{tlsSteppingWorld};
+    tlsSteppingWorld = steppingWorld;
+    func(i);
+  });
 }
 
 //==============================================================================
@@ -3020,6 +3042,13 @@ void World::step(bool _resetCommand)
     std::rethrow_exception(state.mPendingRecompileError);
   if (state.mCompiled)
     validateCompiledModel();
+  const auto group = mConstraintSolver->getCollisionGroup();
+  if (group && group->getAutomaticUpdate()
+      && collision::detail::CollisionGroupOwnershipAccessor::hasPendingUpdates(
+          *group)) {
+    engageSameThreadMarker(state);
+    collision::detail::CollisionGroupOwnershipAccessor::update(*group, this);
+  }
   StepContext context;
   context.resetCommand = _resetCommand;
   beginStep(context);
@@ -5647,9 +5676,21 @@ namespace detail {
 
 void checkWorldGroupMutation(const CollisionGroup* group)
 {
+  checkWorldGroupUpdate(group, nullptr);
+}
+
+void checkWorldGroupUpdate(
+    const CollisionGroup* group, const simulation::World* requester)
+{
   if (simulation::noGuardedWorlds())
     return;
-  simulation::throwRejection(simulation::lazyStepRejection(group));
+  for (const auto* state = simulation::tlsSteppingWorld; state;
+       state = state->mOuterSteppingWorld) {
+    if (!state->mIndexed && state->mWorld != requester
+        && simulation::steppingWorldOwnsSolverObject(
+            *state, simulation::SingleKey{group}))
+      simulation::throwRejection(simulation::Rejection::Busy);
+  }
   if (simulation::noIndexedWorlds())
     return;
   // Only a stepping owner rejects: an idle compiled World reports raw group
@@ -5659,7 +5700,9 @@ void checkWorldGroupMutation(const CollisionGroup* group)
     const auto lock = simulation::lockRegistry();
     simulation::forEachOwner(
         group, [&](const simulation::WorldDeactivationState& owner) {
-          busy = busy || owner.mStepping.load(std::memory_order_acquire);
+          busy = busy
+                 || (owner.mWorld != requester
+                     && owner.mStepping.load(std::memory_order_acquire));
         });
   }
   if (busy)
@@ -5754,14 +5797,44 @@ void notifyWorldGroupSourceBodyAdded(
     return;
   const void* skeleton = body->getSkeleton().get();
   const auto lock = simulation::lockRegistry();
-  simulation::forEachOwner(
-      group, [&](simulation::WorldDeactivationState& owner) {
-        const auto it = owner.mGroupSourceChains.find(source);
-        if (it == owner.mGroupSourceChains.end())
-          return;
-        it->second.emplace_back(body, skeleton);
-        simulation::addOwner(owner.mModelKeys, owner, skeleton);
-      });
+  simulation::OwnerSet targets;
+  const auto owners = simulation::modelOwners().mOwners.find(group);
+  if (owners == simulation::modelOwners().mOwners.end())
+    return;
+  for (auto* owner : owners->second) {
+    const auto sourceIt = owner->mGroupSourceChains.find(source);
+    if (sourceIt == owner->mGroupSourceChains.end())
+      continue;
+    const auto& entries = sourceIt->second;
+    if (std::none_of(entries.begin(), entries.end(), [body](const auto& entry) {
+          return entry.first == body;
+        }))
+      targets.insert(owner);
+  }
+  std::size_t added = 0u;
+  try {
+    targets.each([&](simulation::WorldDeactivationState& owner) {
+      auto& entries = owner.mGroupSourceChains.find(source)->second;
+      simulation::addOwner(owner.mModelKeys, owner, skeleton);
+      try {
+        simulation::indexAllocation();
+        entries.emplace_back(body, skeleton);
+      } catch (...) {
+        simulation::removeOwner(owner.mModelKeys, owner, skeleton);
+        throw;
+      }
+      ++added;
+    });
+  } catch (...) {
+    targets.each([&](simulation::WorldDeactivationState& owner) {
+      if (added == 0u)
+        return;
+      --added;
+      simulation::removeOwner(owner.mModelKeys, owner, skeleton);
+      owner.mGroupSourceChains.find(source)->second.pop_back();
+    });
+    throw;
+  }
 }
 
 void notifyWorldGroupSourceBodyRemoved(

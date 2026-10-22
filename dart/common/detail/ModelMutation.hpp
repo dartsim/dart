@@ -36,6 +36,9 @@
 #include <cstddef>
 
 namespace dart {
+namespace simulation {
+class World;
+}
 namespace dynamics {
 class BodyNode;
 class Frame;
@@ -81,6 +84,9 @@ bool hasTrackedModels();
 // Whether mutation guards can apply: a tracked World exists or one is stepping.
 bool hasGuardedModels();
 bool isVisualShapeVersionUpdate(const dynamics::Shape* shape);
+bool isTopologyShapeVersionUpdate(const dynamics::Shape* shape);
+void checkShapeTopologyMutation(const dynamics::Shape* shape);
+std::size_t incrementShapeTopologyVersion(dynamics::Shape* shape);
 
 } // namespace detail
 } // namespace common
@@ -94,6 +100,8 @@ namespace detail {
 // before changing anything; raw edits of an idle compiled World stay detected
 // at its next step() or compile().
 void checkWorldGroupMutation(const CollisionGroup* group);
+void checkWorldGroupUpdate(
+    const CollisionGroup* group, const simulation::World* requester);
 void notifyWorldGroupMutation(const CollisionGroup* group);
 // Membership changes of a World's collision group, keyed by the group.
 void notifyWorldGroupShapeFrameAdded(

@@ -40,12 +40,37 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 
 #include <cassert>
 #include <cstdint>
 
 namespace dart {
 namespace collision {
+
+namespace {
+struct ActiveGroupUpdate;
+thread_local const ActiveGroupUpdate* gActiveGroupUpdate = nullptr;
+struct ActiveGroupUpdate
+{
+  const CollisionGroup* mGroup;
+  const ActiveGroupUpdate* mOuter;
+  explicit ActiveGroupUpdate(const CollisionGroup* group)
+    : mGroup(group), mOuter(gActiveGroupUpdate)
+  {
+    for (auto* active = mOuter; active; active = active->mOuter) {
+      if (active->mGroup == group)
+        throw std::runtime_error(
+            "WorldBusyError: reentrant CollisionGroup::update()");
+    }
+    gActiveGroupUpdate = this;
+  }
+  ~ActiveGroupUpdate()
+  {
+    gActiveGroupUpdate = mOuter;
+  }
+};
+} // namespace
 
 //==============================================================================
 CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
@@ -313,6 +338,71 @@ bool CollisionGroup::getAutomaticUpdate() const
 //==============================================================================
 void CollisionGroup::update()
 {
+  updateImpl(nullptr);
+}
+
+//==============================================================================
+bool CollisionGroup::hasPendingSourceUpdates() const
+{
+  for (const auto& entry : mSkeletonSources) {
+    const auto source = entry.second.mSource.lock();
+    if (!source
+        || computeMetaSkeletonVersion(*source)
+               != entry.second.mLastKnownVersion)
+      return true;
+  }
+  for (const auto& entry : mBodyNodeSources) {
+    const auto source = entry.second.mSource.lock();
+    if (!source || source->getVersion() != entry.second.mLastKnownVersion)
+      return true;
+  }
+  return !mObserver.mDeletedFrames.empty();
+}
+
+//==============================================================================
+bool CollisionGroup::hasUncheckedSourceDelta() const
+{
+  for (const auto& entry : mSkeletonSources) {
+    const auto meta = entry.second.mSource.lock();
+    if (!meta)
+      return true;
+    // Skeleton membership already passes topology guards. Borrowed views do
+    // not.
+    if (dynamic_cast<const dynamics::Skeleton*>(meta.get())
+        || computeMetaSkeletonVersion(*meta) == entry.second.mLastKnownVersion)
+      continue;
+    const auto& children = entry.second.mChildren;
+    if (meta->getNumBodyNodes() != children.size())
+      return true;
+    for (std::size_t i = 0; i < meta->getNumBodyNodes(); ++i) {
+      const auto* body = meta->getBodyNode(i);
+      const auto child = children.find(body);
+      if (child == children.end())
+        return true;
+      std::size_t count = 0;
+      bool missing = false;
+      body->eachShapeNodeWith<dynamics::CollisionAspect>(
+          [&](const dynamics::ShapeNode* frame) {
+            ++count;
+            missing = missing || child->second.mFrames.count(frame) == 0u;
+          });
+      if (missing || count != child->second.mFrames.size())
+        return true;
+    }
+  }
+  for (const auto& entry : mBodyNodeSources) {
+    if (!entry.second.mSource.lock())
+      return true;
+  }
+  return false;
+}
+
+//==============================================================================
+void CollisionGroup::updateImpl(const simulation::World* requester)
+{
+  const ActiveGroupUpdate active(this);
+  if (hasUncheckedSourceDelta())
+    detail::checkWorldGroupUpdate(this, requester);
   removeDeletedShapeFrames();
 
   // Update each source. When a source's MetaSkeleton/BodyNode has been
@@ -320,37 +410,34 @@ void CollisionGroup::update()
   // collision objects; erase the now-stale source afterward so a later update()
   // does not re-enter the expired path and dereference the freed ObjectInfo
   // pointers still held in the source's mObjects (use-after-free).
-  mSubscriptionOrder.erase(
-      std::remove_if(
-          mSubscriptionOrder.begin(),
-          mSubscriptionOrder.end(),
-          [this](const Subscription& source) {
-            if (const auto* key
-                = std::get_if<const dynamics::MetaSkeleton*>(&source)) {
-              const auto skeleton = mSkeletonSources.find(*key);
-              DART_ASSERT(skeleton != mSkeletonSources.end());
-              updateSkeletonSource(*skeleton);
-              if (skeleton->second.mSource.lock())
-                return false;
-
-              mSkeletonSources.erase(skeleton);
-              detail::notifyWorldGroupUnsubscribed(this, *key);
-              return true;
-            }
-
-            const auto body = mBodyNodeSources.find(
-                std::get<const dynamics::BodyNode*>(source));
-            DART_ASSERT(body != mBodyNodeSources.end());
-            updateBodyNodeSource(*body);
-            if (body->second.mSource.lock())
-              return false;
-
-            mBodyNodeSources.erase(body);
-            detail::notifyWorldGroupUnsubscribed(
-                this, std::get<const dynamics::BodyNode*>(source));
-            return true;
-          }),
-      mSubscriptionOrder.end());
+  for (auto entry = mSubscriptionOrder.begin();
+       entry != mSubscriptionOrder.end();) {
+    bool expired = false;
+    if (const auto* key = std::get_if<const dynamics::MetaSkeleton*>(&*entry)) {
+      const auto source = mSkeletonSources.find(*key);
+      DART_ASSERT(source != mSkeletonSources.end());
+      updateSkeletonSource(*source);
+      expired = !source->second.mSource.lock();
+      if (expired) {
+        detail::notifyWorldGroupUnsubscribed(this, *key);
+        mSkeletonSources.erase(source);
+      }
+    } else {
+      const auto* bodyKey = std::get<const dynamics::BodyNode*>(*entry);
+      const auto source = mBodyNodeSources.find(bodyKey);
+      DART_ASSERT(source != mBodyNodeSources.end());
+      updateBodyNodeSource(*source);
+      expired = !source->second.mSource.lock();
+      if (expired) {
+        detail::notifyWorldGroupUnsubscribed(this, bodyKey);
+        mBodyNodeSources.erase(source);
+      }
+    }
+    if (expired)
+      entry = mSubscriptionOrder.erase(entry);
+    else
+      ++entry;
+  }
 }
 
 //==============================================================================
@@ -602,7 +689,6 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   if (currentSkeletonVersion == source.mLastKnownVersion)
     return false;
 
-  source.mLastKnownVersion = currentSkeletonVersion;
   bool updateNeeded = false;
 
   auto unusedChildren = source.mChildren;
@@ -616,36 +702,41 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
 
     unusedChildren.erase(bn);
 
-    // Attempt an insertion, in case this BodyNode was not already accounted for
-    auto insertion = source.mChildren.insert(
-        std::make_pair(bn, SkeletonSource::ChildInfo(currentVersion)));
-
-    const auto child = insertion.first;
-
-    if (insertion.second) {
-      // This child was newly introduced, so we need to add it to the
-      // CollisionGroup.
+    auto child = source.mChildren.find(bn);
+    if (child == source.mChildren.end()) {
+      // Publish the body claim last: no later frame allocation may undo a
+      // preexisting claim acquired by a World reindex.
+      SkeletonSource::ChildInfo staged(currentVersion);
+      std::vector<const dynamics::ShapeFrame*> addedFrames;
+      try {
+        bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+            [&](const dynamics::ShapeNode* frame) {
+              staged.mFrames.insert(frame);
+              auto object = source.mObjects.find(frame);
+              if (object != source.mObjects.end()) {
+                updateNeeded |= updateShapeFrame(object->second);
+                return;
+              }
+              addedFrames.push_back(frame);
+              auto insertion = source.mObjects.emplace(frame, nullptr);
+              insertion.first->second = addShapeFrameImpl(frame, meta.get());
+            });
+        child = source.mChildren.emplace(bn, std::move(staged)).first;
+        detail::notifyWorldGroupSourceBodyAdded(this, meta.get(), bn);
+      } catch (...) {
+        for (const auto* frame : addedFrames) {
+          removeShapeFrameInternal(frame, meta.get());
+          source.mObjects.erase(frame);
+        }
+        source.mChildren.erase(bn);
+        throw;
+      }
       updateNeeded = true;
-      detail::notifyWorldGroupSourceBodyAdded(this, meta.get(), bn);
-
-      bn->eachShapeNodeWith<dynamics::CollisionAspect>(
-          [&](const dynamics::ShapeNode* shapeNode) {
-            source.mObjects.insert(
-                {shapeNode, addShapeFrameImpl(shapeNode, meta.get())});
-            child->second.mFrames.insert(shapeNode);
-          });
-
-      // Skip the rest of the for-loop, because it's only for updating old
-      // children
       continue;
     }
 
-    // If the version of this BodyNode has not changed, then move on to the next
-    // one.
     if (child->second.mLastKnownVersion == currentVersion)
       continue;
-
-    child->second.mLastKnownVersion = currentVersion;
 
     std::unordered_set<const dynamics::ShapeFrame*> unusedFrames
         = child->second.mFrames;
@@ -654,20 +745,19 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
         [&](const dynamics::ShapeNode* shapeNode) {
           unusedFrames.erase(shapeNode);
 
-          auto frameInsertion
-              = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
-
-          const auto& it = frameInsertion.first;
+          auto frameInsertion = source.mObjects.emplace(shapeNode, nullptr);
+          const auto it = frameInsertion.first;
           if (frameInsertion.second) {
-            // If the insertion occurred, then this is a new ShapeFrame, and we
-            // need to create a collision object for it.
+            try {
+              child->second.mFrames.insert(shapeNode);
+              it->second = addShapeFrameImpl(shapeNode, meta.get());
+            } catch (...) {
+              child->second.mFrames.erase(shapeNode);
+              source.mObjects.erase(it);
+              throw;
+            }
             updateNeeded = true;
-
-            it->second = addShapeFrameImpl(shapeNode, meta.get());
-            child->second.mFrames.insert(shapeNode);
           } else {
-            // If the insertion did not occur, then this is an old ShapeFrame,
-            // and we should check if it needs an update.
             updateNeeded |= updateShapeFrame(it->second);
           }
         });
@@ -678,6 +768,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
       source.mObjects.erase(unused);
       child->second.mFrames.erase(unused);
     }
+    child->second.mLastKnownVersion = currentVersion;
   }
 
   // Remove from this group any BodyNodes that no longer belong to the meta
@@ -694,6 +785,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
     source.mChildren.erase(unusedChild.first);
   }
 
+  source.mLastKnownVersion = currentSkeletonVersion;
   return updateNeeded;
 }
 
@@ -719,7 +811,6 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
   if (currentBodyNodeVersion == source.mLastKnownVersion)
     return false;
 
-  source.mLastKnownVersion = currentBodyNodeVersion;
   bool updateNeeded = false;
 
   std::unordered_map<const dynamics::ShapeFrame*, ObjectInfo*> unusedFrames
@@ -737,7 +828,12 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
           updateNeeded = true;
           // If the insertion occurred, then this is a new ShapeFrame, and we
           // need to create a collision object for it.
-          it->second = addShapeFrameImpl(shapeNode, bn.get());
+          try {
+            it->second = addShapeFrameImpl(shapeNode, bn.get());
+          } catch (...) {
+            source.mObjects.erase(it);
+            throw;
+          }
         } else {
           // If the insertion did not occur, then this is an old ShapeFrame, and
           // we should check if it needs an update.
@@ -753,6 +849,7 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
     source.mObjects.erase(unusedFrame.first);
   }
 
+  source.mLastKnownVersion = currentBodyNodeVersion;
   return updateNeeded;
 }
 

@@ -195,6 +195,9 @@ void reserveBoxedLcpSolverScratch(
 void reserveMatrixFreeContactScratch(
     BoxedLcpThreadScratch& scratch, std::size_t numConstraints, std::size_t n)
 {
+  // Uncomputed identity-body LDLT objects must be destroyed before
+  // reallocation.
+  scratch.matrixFreeBodies.clear();
   reserveGeometric(scratch.matrixFreeContacts, numConstraints);
   reserveGeometric(scratch.matrixFreeOffsets, numConstraints);
   reserveGeometric(scratch.matrixFreeRows, n);
@@ -750,7 +753,6 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   contacts.clear();
   offsets.clear();
   rows.clear();
-  bodies.clear();
 
   x.resize(n);
   w.resize(n);
@@ -774,21 +776,26 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
       lookupIndex = (lookupIndex + 1u) & bodyLookupMask;
     }
 
-    MatrixFreeContactBodyScratch bodyScratch;
     const Eigen::Matrix6d& articulatedInertia = body->getArticulatedInertia();
+    const std::size_t index = bodies.size();
+    // Each contact adds at most two bodies, already reserved by the shared
+    // reset.
+    assert(index < bodies.capacity());
+    bodies.emplace_back();
+    auto& bodyScratch = bodies.back();
     static const Eigen::Matrix6d identityInertia = Eigen::Matrix6d::Identity();
     bodyScratch.identityInertia
         = articulatedInertia.cwiseEqual(identityInertia).all();
     if (!bodyScratch.identityInertia) {
       bodyScratch.inertiaDecomposition.compute(articulatedInertia);
-      if (bodyScratch.inertiaDecomposition.info() != Eigen::Success)
+      if (bodyScratch.inertiaDecomposition.info() != Eigen::Success) {
+        bodies.pop_back();
         return -1;
+      }
     }
 
-    const std::size_t index = bodies.size();
     bodyLookupKeys[lookupIndex] = body;
     bodyLookupValues[lookupIndex] = index;
-    bodies.push_back(std::move(bodyScratch));
     return static_cast<int>(index);
   };
 
