@@ -37,7 +37,171 @@ def test_repository_ai_infrastructure_is_valid():
     assert infra.run_checks(ROOT) == []
 
 
-def test_build_fetchcontent_calls_have_offline_guards():
+FETCHES = ("fetchcontent_makeavailable", "fetchcontent_populate")
+FMT_CALLER = "cmake/DARTFindDependencies.cmake"
+
+LEGACY_WRAPPER = "dart_fetchcontent_makeavailable_legacy"
+MACROS = "cmake/DARTMacros.cmake"
+
+
+def _is_wrapper(arguments):
+    tokens = infra.cmake_argument_tokens(arguments)
+    return [t.lower() for t in tokens[:1]] == [LEGACY_WRAPPER]
+
+
+def _verify_legacy_wrapper(commands):
+    """Return the wrapper's fetch record, or fail unless it forwards `name` only."""
+    openers = {c[2][0] for c in commands if c[2][:1] and c[2][0][0] == "function"}
+    openers = [o for o in openers if _is_wrapper(o[1])]
+    assert len(openers) == 1, f"{MACROS}: {LEGACY_WRAPPER} must be defined once"
+    scope = openers[0]
+    assert infra.cmake_argument_tokens(scope[1]) == [LEGACY_WRAPPER, "name"], scope
+    body = [c for c in commands if c[2][:1] == (scope,)]
+    fetches = [c for c in body if c[0] in FETCHES]
+    assert (
+        len(fetches) == 1
+        and fetches[0][0] == "fetchcontent_makeavailable"
+        and fetches[0][2] == (scope,)
+        and fetches[0][1].strip() == "${name}"
+    ), f"{MACROS}: {LEGACY_WRAPPER} must forward its name to exactly one fetch"
+    allowed_targets = {
+        "CMAKE_POLICY_VERSION_MINIMUM",
+        "${name}_SOURCE_DIR",
+        "${name}_BINARY_DIR",
+    }
+    for command, arguments, _, line in body:
+        if command in FETCHES:
+            continue
+        tokens = infra.cmake_argument_tokens(arguments)
+        assert (
+            command == "set" and tokens and tokens[0] in allowed_targets
+        ), f"{MACROS}:{line}: unexpected {command} in {LEGACY_WRAPPER}"
+    return fetches[0]
+
+
+def fetchcontent_postcheck_errors(sources):
+    """Report fetches not followed by their same-scope dart_check_fetchcontent."""
+    errors = []
+    scanned = {
+        path: infra.cmake_scoped_command_origin_details(text)
+        for path, text in sources.items()
+    }
+    definitions = [
+        (path, line)
+        for path, text in sources.items()
+        for command, arguments, line in infra.cmake_command_details(text)
+        if command in ("function", "macro") and _is_wrapper(arguments)
+    ]
+    calls = any(c[0] == LEGACY_WRAPPER for cmds in scanned.values() for c in cmds)
+    wrapper = None
+    if definitions or calls:
+        try:
+            assert len(definitions) == 1, f"{LEGACY_WRAPPER} definitions: {definitions}"
+            assert definitions[0][0] == MACROS, definitions
+            wrapper = _verify_legacy_wrapper(scanned[MACROS])
+        except AssertionError as error:
+            return [f"{LEGACY_WRAPPER}: invalid forwarder: {error}"]
+    for relative, commands in scanned.items():
+        for index, (command, arguments, scope, line) in enumerate(commands):
+            if command not in (*FETCHES, LEGACY_WRAPPER):
+                continue
+            if wrapper is not None and (relative, command, arguments, scope, line) == (
+                MACROS,
+                *wrapper[:4],
+            ):
+                continue  # The uniquely verified forwarder's callers are checked.
+            names = infra.cmake_argument_tokens(arguments)
+            if command == LEGACY_WRAPPER and len(names) != 1:
+                errors.append(
+                    f"{relative}:{line}: {LEGACY_WRAPPER} needs one literal name"
+                )
+                continue
+            if relative == "cmake/DARTFindfmt.cmake" and names == ["fmt"]:
+                errors.extend(fmt_postcheck_errors(sources.get(FMT_CALLER)))
+                continue
+            following = commands[index + 1 : index + 1 + len(names)]
+            for offset, name in enumerate(names):
+                where = f"{relative}:{line}: {name}"
+                if "$" in name:
+                    errors.append(f"{where} has a dynamic name")
+                    continue
+                if ";" in name:
+                    errors.append(f"{where} has a list-valued name")
+                    continue
+                check = following[offset] if offset < len(following) else None
+                if check is None or check[0] != "dart_check_fetchcontent":
+                    errors.append(f"{where} is not immediately post-checked")
+                elif check[2] != scope:
+                    errors.append(f"{where} is post-checked in another scope")
+                elif [t.lower() for t in infra.cmake_argument_tokens(check[1])[:1]] != [
+                    name.lower()
+                ]:
+                    errors.append(f"{where} is post-checked under another name")
+    return errors
+
+
+def fmt_postcheck_errors(caller):
+    """The installed fmt finder fetches; its build caller must post-check it."""
+    if caller is None:
+        return [f"{FMT_CALLER}: missing fmt caller"]
+    commands = infra.cmake_scoped_command_origin_details(caller)
+    find = next(
+        (
+            i
+            for i, (cmd, args, _, _) in enumerate(commands)
+            if cmd == "dart_find_package" and args == "fmt"
+        ),
+        None,
+    )
+    if find is None or find + 1 >= len(commands):
+        return [f"{FMT_CALLER}: fmt finder call has no post-check"]
+    cmd, args, scope, _ = commands[find + 1]
+    base = commands[find][2]
+    if (
+        cmd != "dart_check_fetchcontent"
+        or infra.cmake_argument_tokens(args)[:2] != ["fmt", "DART_USE_SYSTEM_FMT"]
+        or len(scope) != len(base) + 1
+        or scope[:-1] != base
+        or scope[-1][0] != "if"
+    ):
+        return [f"{FMT_CALLER}: fmt post-check is not directly after the finder"]
+    flag = scope[-1][1]
+    # The snapshot must be taken before the finder, under the finder's own
+    # fetch predicate, because fmt::fmt exists once the finder has run. The
+    # reset, the single-if snapshot, and the finder must be adjacent so nothing
+    # can disable or overwrite the flag in between.
+    predicate = (
+        "DEFINED DART_USE_SYSTEM_FMT AND NOT DART_USE_SYSTEM_FMT"
+        " AND NOT TARGET fmt::fmt"
+    ).split()
+    resets = [
+        i
+        for i, (c, a, s, _) in enumerate(commands[:find])
+        if c == "set" and a == f"{flag} FALSE" and s == base
+    ]
+    ok = len(resets) == 1 and re.fullmatch(r"_[a-z][a-z0-9_]*", flag) is not None
+    if ok:
+        # Only the fetch include may sit between reset and snapshot.
+        between = commands[resets[0] + 1 : find]
+        snap_scope = between[-1][2] if between else ()
+        ok = (
+            bool(between)
+            and between[-1][:2] == ("set", f"{flag} TRUE")
+            and len(snap_scope) == len(base) + 1
+            and snap_scope[:-1] == base
+            and snap_scope[-1][0] == "if"
+            and infra.cmake_argument_tokens(snap_scope[-1][1]) == predicate
+            and all(
+                c == "include" and a == "FetchContent" and s == snap_scope
+                for c, a, s, _ in between[:-1]
+            )
+        )
+    if not ok:
+        return [f"{FMT_CALLER}: fmt post-check lacks the saved fetch predicate"]
+    return []
+
+
+def tracked_cmake_sources():
     paths = subprocess.run(
         ["git", "ls-files", "-z"],
         cwd=ROOT,
@@ -45,53 +209,259 @@ def test_build_fetchcontent_calls_have_offline_guards():
         text=True,
         check=True,
     ).stdout.split("\0")
-    fetches = []
-    for relative in paths:
-        path = Path(relative)
-        if path.name != "CMakeLists.txt" and not path.name.endswith(
-            (".cmake", ".cmake.in")
-        ):
-            continue
-        commands = infra.cmake_scoped_command_details((ROOT / path).read_text())
-        for index, (command, arguments, scope, line) in enumerate(commands):
-            if command not in ("fetchcontent_makeavailable", "fetchcontent_populate"):
-                continue
-            for name in infra.cmake_argument_tokens(arguments):
-                fetches.append((relative, name))
-                if relative == "cmake/DARTFindfmt.cmake" and name == "fmt":
-                    # The installed fmt finder stays unchanged; its build caller guards it.
-                    caller = infra.cmake_scoped_command_details(
-                        (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
-                    )
-                    guard = next(
-                        (
-                            i
-                            for i, (cmd, args, _, _) in enumerate(caller)
-                            if cmd == "dart_check_fetchcontent"
-                            and infra.cmake_argument_tokens(args)
-                            == ["fmt", "DART_USE_SYSTEM_FMT"]
-                        ),
-                        None,
-                    )
-                    assert (
-                        guard is not None
-                    ), "cmake/DARTFindDependencies.cmake: fmt fetch has no offline guard"
-                    # The guard must run under the finder's fetch conditions.
-                    guard_scope = " ".join(str(part) for part in caller[guard][2])
-                    assert "NOT DART_USE_SYSTEM_FMT" in guard_scope, guard_scope
-                    assert "NOT TARGET fmt::fmt" in guard_scope, guard_scope
-                    assert any(
-                        cmd == "dart_find_package" and args == "fmt"
-                        for cmd, args, _, _ in caller[guard + 1 :]
-                    )
-                    continue
-                assert any(
-                    cmd == "dart_check_fetchcontent"
-                    and infra.cmake_argument_tokens(args)[0].lower() == name.lower()
-                    and scope[: len(guard_scope)] == guard_scope
-                    for cmd, args, guard_scope, _ in commands[:index]
-                ), f"{relative}:{line}: {name} has no offline guard on its path"
-    assert fetches
+    return {
+        relative: (ROOT / relative).read_text()
+        for relative in paths
+        if Path(relative).name == "CMakeLists.txt"
+        or relative.endswith((".cmake", ".cmake.in"))
+    }
+
+
+def test_build_fetchcontent_calls_have_offline_postchecks():
+    sources = tracked_cmake_sources()
+    check_fetchcontent_offline_guards(sources)
+    assert any("FetchContent_Make" in text for text in sources.values())
+
+
+FMT_FINDER = "FetchContent_MakeAvailable(fmt)\n"
+FMT_CALLER_OK = (
+    "set(_f FALSE)\n"
+    "if(DEFINED DART_USE_SYSTEM_FMT AND NOT DART_USE_SYSTEM_FMT AND NOT TARGET fmt::fmt)\n"
+    "  set(_f TRUE)\nendif()\n"
+    "dart_find_package(fmt)\n"
+    "if(_f)\n  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\nendif()\n"
+)
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("FetchContent_MakeAvailable(a)\ndart_check_fetchcontent(A OPT)\n", None),
+        (
+            "FetchContent_MakeAvailable(a b)\ndart_check_fetchcontent(a OPT)\ndart_check_fetchcontent(b OPT)\n",
+            None,
+        ),
+        (
+            "if(X)\n  FetchContent_Populate(a)\n  dart_check_fetchcontent(a OPT)\nendif()\n",
+            None,
+        ),
+        ("FetchContent_MakeAvailable(a)\n", "not immediately"),
+        (
+            "dart_check_fetchcontent(a OPT)\nFetchContent_MakeAvailable(a)\n",
+            "not immediately",
+        ),
+        (
+            "FetchContent_MakeAvailable(a)\ndart_check_fetchcontent(b OPT)\n",
+            "another name",
+        ),
+        (
+            "FetchContent_MakeAvailable(a)\nreturn()\ndart_check_fetchcontent(a OPT)\n",
+            "not immediately",
+        ),
+        (
+            "FetchContent_MakeAvailable(a)\nset(x 1)\ndart_check_fetchcontent(a OPT)\n",
+            "not immediately",
+        ),
+        (
+            "if(X)\n  FetchContent_MakeAvailable(a)\nelse()\n  dart_check_fetchcontent(a OPT)\nendif()\n",
+            "another scope",
+        ),
+        (
+            "if(X)\n  FetchContent_MakeAvailable(a)\nendif()\nif(X)\n  dart_check_fetchcontent(a OPT)\nendif()\n",
+            "another scope",
+        ),
+        (
+            "function(f)\n  FetchContent_MakeAvailable(a)\nendfunction()\nfunction(g)\n  dart_check_fetchcontent(a OPT)\nendfunction()\n",
+            "another scope",
+        ),
+        (
+            "FetchContent_MakeAvailable(${name})\ndart_check_fetchcontent(${name} OPT)\n",
+            "dynamic",
+        ),
+        (
+            "FetchContent_MakeAvailable(a b)\ndart_check_fetchcontent(a OPT)\n",
+            "not immediately",
+        ),
+    ],
+)
+def test_fetchcontent_postcheck_scanner_fixtures(text, expected):
+    errors = fetchcontent_postcheck_errors({"CMakeLists.txt": text})
+    if expected is None:
+        assert errors == []
+    else:
+        assert len(errors) == 1 and expected in errors[0], errors
+
+
+def fmt_flag_as(name):
+    return FMT_CALLER_OK.replace("set(_f ", f"set({name} ").replace(
+        "if(_f)", f"if({name})"
+    )
+
+
+@pytest.mark.parametrize(
+    "caller,expected",
+    [
+        (FMT_CALLER_OK, None),
+        (
+            FMT_CALLER_OK.replace(
+                "  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\n", ""
+            ),
+            "no post-check",
+        ),
+        (FMT_CALLER_OK.replace("(fmt DART", "(ode DART"), "not directly"),
+        (FMT_CALLER_OK.replace("AND NOT TARGET fmt::fmt", ""), "saved fetch predicate"),
+        (FMT_CALLER_OK.replace("set(_f FALSE)\n", ""), "saved fetch predicate"),
+        (
+            FMT_CALLER_OK.replace(
+                "  set(_f TRUE)\nendif()\n",
+                "  function(never_called)\n    set(_f TRUE)\n  endfunction()\nendif()\n",
+            ),
+            "saved fetch predicate",
+        ),
+        (
+            FMT_CALLER_OK.replace(
+                "NOT TARGET fmt::fmt)", "NOT TARGET fmt::fmt AND FALSE)"
+            ),
+            "saved fetch predicate",
+        ),
+        (
+            FMT_CALLER_OK.replace(
+                "endif()\ndart_find", "endif()\nset(_f FALSE)\ndart_find"
+            ),
+            "saved fetch predicate",
+        ),
+        (
+            FMT_CALLER_OK.replace("if(DEFINED", "if(X)\nif(DEFINED").replace(
+                "  set(_f TRUE)\nendif()", "  set(_f TRUE)\nendif()\nendif()"
+            ),
+            "saved fetch predicate",
+        ),
+        (fmt_flag_as("_dart_fmt_fetched"), None),
+        (fmt_flag_as("FALSE"), "saved fetch predicate"),
+        (fmt_flag_as("OFF"), "saved fetch predicate"),
+        (fmt_flag_as("0"), "saved fetch predicate"),
+        (FMT_CALLER_OK.replace("  set(_f TRUE)\n", ""), "saved fetch predicate"),
+        (
+            FMT_CALLER_OK.replace(
+                "dart_find_package(fmt)\nif(_f)",
+                "dart_find_package(fmt)\nset(x 1)\nif(_f)",
+            ),
+            "not directly",
+        ),
+        (
+            FMT_CALLER_OK.replace(
+                "if(_f)\n  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\nendif()\n",
+                "dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)\n",
+            ),
+            "not directly",
+        ),
+    ],
+)
+def test_fetchcontent_postcheck_scanner_fmt_fixtures(caller, expected):
+    errors = fetchcontent_postcheck_errors(
+        {"cmake/DARTFindfmt.cmake": FMT_FINDER, FMT_CALLER: caller}
+    )
+    if expected is None:
+        assert errors == []
+    else:
+        assert len(errors) == 1 and expected in errors[0], errors
+
+
+def check_fetchcontent_offline_guards(sources):
+    """Require postchecks and a uniquely verified transparent legacy wrapper."""
+    assert fetchcontent_postcheck_errors(sources) == []
+    assert any(
+        command == LEGACY_WRAPPER
+        for text in sources.values()
+        for command, _, _ in infra.cmake_command_details(text)
+    ), f"no {LEGACY_WRAPPER} caller scanned"
+
+
+_WRAPPER = (
+    f"function({LEGACY_WRAPPER} name)\n"
+    "  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)\n"
+    "  FetchContent_MakeAvailable(${name})\n"
+    '  set(${name}_SOURCE_DIR "${${name}_SOURCE_DIR}" PARENT_SCOPE)\n'
+    "endfunction()\n"
+)
+_GUARDED = (
+    "if(NOT DART_USE_SYSTEM_ODE)\n  {call}\n  dart_check_fetchcontent(ode X)\nendif()\n"
+)
+
+
+def _fixture(call=f"{LEGACY_WRAPPER}(ode)", wrapper=_WRAPPER, deps=None):
+    return {
+        MACROS: wrapper,
+        "cmake/DARTFindDependencies.cmake": deps or _GUARDED.format(call=call),
+    }
+
+
+@pytest.mark.parametrize("name", ["ode", "bullet"])
+def test_offline_scan_accepts_guarded_legacy_wrapper(name):
+    deps = _GUARDED.format(call=f"{LEGACY_WRAPPER}({name})").replace(
+        "ode X", f"{name} X"
+    )
+    check_fetchcontent_offline_guards(_fixture(deps=deps))
+
+
+@pytest.mark.parametrize("command", [*FETCHES, LEGACY_WRAPPER])
+def test_offline_scan_rejects_list_valued_fetch_names(command):
+    deps = f'{command}("ode;extra")\ndart_check_fetchcontent("ode;extra" X)\n'
+    errors = fetchcontent_postcheck_errors(_fixture(deps=deps))
+    assert len(errors) == 1 and "list-valued name" in errors[0], errors
+
+
+@pytest.mark.parametrize(
+    "deps",
+    [
+        f"{LEGACY_WRAPPER}(ode)\n",
+        f"{LEGACY_WRAPPER}()\ndart_check_fetchcontent(ode X)\n",
+        f"{LEGACY_WRAPPER}(ode extra)\ndart_check_fetchcontent(ode X)\n",
+        f"{LEGACY_WRAPPER}(ode)\nreturn()\ndart_check_fetchcontent(ode X)\n",
+        f"if(A)\n {LEGACY_WRAPPER}(ode)\nelse()\n dart_check_fetchcontent(ode X)\nendif()\n",
+        f"dart_check_fetchcontent(bullet X)\n{LEGACY_WRAPPER}(ode)\n",
+        f"dart_check_fetchcontent(ode X)\n{LEGACY_WRAPPER}(ode)\n",
+        f"if(A)\n dart_check_fetchcontent(ode X)\nelse()\n {LEGACY_WRAPPER}(ode)\nendif()\n",
+        "FetchContent_MakeAvailable(ode)\n",
+        f"if(A)\n dart_check_fetchcontent(ode X)\nelseif(B)\n {LEGACY_WRAPPER}(ode)\nelseif(B)\n {LEGACY_WRAPPER}(ode)\nendif()\n",
+        "function(f name)\n  FetchContent_Populate(${name})\nendfunction()\n",
+        f"function({LEGACY_WRAPPER} name)\nendfunction()\n{_GUARDED.format(call=f'{LEGACY_WRAPPER}(ode)')}",
+        "dart_check_fetchcontent(ode X)\n",
+        # A same-text `if` block is a distinct scope from the guarded one.
+        f"if(A)\n {LEGACY_WRAPPER}(ode)\nendif()\nif(A)\n dart_check_fetchcontent(ode X)\nendif()\n",
+        "if(A)\n FetchContent_MakeAvailable(ode)\nendif()\nif(A)\n dart_check_fetchcontent(ode X)\nendif()\n",
+    ],
+)
+def test_offline_scan_rejects_unguarded_fetches(deps):
+    with pytest.raises(AssertionError):
+        check_fetchcontent_offline_guards(_fixture(deps=deps))
+
+
+@pytest.mark.parametrize(
+    "wrapper",
+    [
+        _WRAPPER.replace("${name}", "${other}", 1),
+        _WRAPPER.replace(
+            "  FetchContent_Make", "  set(name other)\n  FetchContent_Make"
+        ),
+        _WRAPPER.replace("FetchContent_MakeAvailable", "FetchContent_Populate"),
+        _WRAPPER + f"FUNCTION({LEGACY_WRAPPER.upper()} name)\nENDFUNCTION()\n",
+        _WRAPPER.replace("endfunction", "  FetchContent_Populate(extra)\nendfunction"),
+        _WRAPPER.replace("endfunction", "  file(DOWNLOAD x y)\nendfunction"),
+        _WRAPPER.replace(
+            "  FetchContent_MakeAvailable(${name})\n",
+            "if(X)\n  FetchContent_MakeAvailable(${name})\nendif()\n",
+        ),
+        _WRAPPER.replace(" name)", " name other)", 1),
+        "",
+        _WRAPPER + f"function({LEGACY_WRAPPER} name)\nendfunction()\n",
+        _WRAPPER + f"function({LEGACY_WRAPPER} other)\nendfunction()\n",
+        _WRAPPER + f"macro({LEGACY_WRAPPER})\nendmacro()\n",
+    ],
+)
+def test_offline_scan_rejects_malformed_legacy_wrapper(wrapper):
+    with pytest.raises(AssertionError):
+        check_fetchcontent_offline_guards(_fixture(wrapper=wrapper))
 
 
 def test_repository_rejects_missing_release_target_row(monkeypatch):

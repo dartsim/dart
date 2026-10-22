@@ -58,7 +58,11 @@ For offline builds, set `FETCHCONTENT_FULLY_DISCONNECTED=ON` and either use
 installed dependencies through their system switches or pre-seed source
 trees with `FETCHCONTENT_SOURCE_DIR_<NAME>` (uppercase name). DART stops with
 an actionable error if a fetch needs a missing source tree, including with
-CMake older than 3.30; on 3.30 and newer it also enables CMP0170. Existing
+CMake older than 3.30; on 3.30 and newer it also enables CMP0170. The check
+runs right after each `FetchContent_MakeAvailable`, so a registered
+dependency provider (CMake 3.24+) can still fulfill a request without a source
+tree; source-consuming dependencies such as the Filament SDK keep enforcing
+their own SDK and license requirements. Existing
 populated source directories in the build tree are accepted. The stable
 FetchContent names are `googletest`, `benchmark`, `tracy`, `nanobind`,
 `dart_imgui`, `dart_filament_sdk`, `fmt`, `ode`, and `bullet`. The umbrella
@@ -66,6 +70,20 @@ does not select system nanobind, ImGui, Filament, or fmt; set those switches
 separately when needed. Pixi configure tasks use the umbrella;
 `pixi run -e profile config-tracy` selects the profile environment's Tracy.
 To fetch Tracy instead, override the umbrella with `DART_USE_SYSTEM_TRACY=OFF`.
+System Tracy must be 0.11.1 or newer when it reports a version (CMake
+variables, or the selected `Tracy::TracyClient` target's `common/TracyVersion.hpp`);
+upstream installs no version file, so a versionless package is accepted.
+
+## Eigen Compatibility
+
+DART supports Eigen >= 3.4.0 and < 6. Every Pixi environment pins Eigen 3.4.0
+through the `eigen34` feature; the toolchain CI lane rewrites that pin to build
+and test Eigen 5 with warnings as errors.
+The installed CMake package records the major used to build DART and rejects
+a consumer using a different major; pkg-config consumers must match majors
+themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
+Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
+same major or rebuild DART and its consumers.
 
 `DART_USE_SYSTEM_ODE=OFF` fetches ODE 0.16.6 from its GitHub release tag,
 builds a shared, double-precision library with system libccd and without the
@@ -126,6 +144,12 @@ components and targets forward to `dart` for rebuilt consumers; the former
 collision shared-library filenames are no longer installed. `DART_SKIP_BULLET`
 and `DART_SKIP_ODE` disable the respective backends, including bundled downloads.
 The FCL default and public detector classes remain unchanged.
+By default a missing optional dependency (Bullet, ODE) only warns and drops its
+backend. Gazebo-facing packagers, whose gz-physics needs both, should pass
+`-DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON` so configure fails instead; the error
+names the dependency and the component, and an explicit `DART_SKIP_<NAME>=ON`
+still disables one on purpose. The Gazebo pixi task (`config-dart-gz`) and
+the compat lanes set it.
 
 `DART_USE_SYSTEM_BULLET=OFF` fetches Bullet 3.25 and builds and installs only
 the shared `BulletCollision` and `LinearMath` libraries and their headers,
@@ -171,6 +195,8 @@ libraries must rebuild.
 `DART_BUILD_UTILS_ASSETS=ON` adds the optional online model retriever to
 `dart-io` and requires `DART_BUILD_IO=ON`, libcurl and OpenSSL. Its
 `utils-assets` component and `dart-utils-assets` target forward to `dart-io`.
+Shared installs link libcurl and OpenSSL privately; only static installs make
+consumers find them.
 
 ## GUI
 

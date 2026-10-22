@@ -8,6 +8,8 @@
 
 find_package(octomap 1.9.7 QUIET CONFIG)
 
+# Only octomap's installed config imports targets; the config it generates in
+# its build tree does not, so define the target from its variables.
 if(octomap_FOUND AND NOT TARGET octomap)
   add_library(octomap INTERFACE IMPORTED)
   set_target_properties(

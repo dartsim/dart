@@ -38,8 +38,8 @@ else()
     GIT_TAG v1.9.1
   )
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-  dart_check_fetchcontent(benchmark DART_USE_SYSTEM_GOOGLEBENCHMARK)
   FetchContent_MakeAvailable(benchmark)
+  dart_check_fetchcontent(benchmark DART_USE_SYSTEM_GOOGLEBENCHMARK)
 endif()
 
 add_subdirectory(unit)

@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import sys
 import tomllib
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -153,3 +154,48 @@ def test_windows_matrix_preserves_required_checks_and_selects_vs2022():
     cache = next(step for step in job["steps"] if step["name"] == "Initialize sccache")
     assert "${{ matrix.part }}${{ matrix.vsversion }}" in cache["run"]
     assert len({(row["part"], row["vsversion"]) for row in rows.values()}) == len(rows)
+
+
+def test_eigen_dependency_boundaries_and_environment_baselines():
+    manifest = tomllib.loads((ROOT / "pixi.toml").read_text())
+    for dependencies in (
+        manifest["dependencies"],
+        manifest["feature"]["gazebo"]["dependencies"],
+        manifest["feature"]["gz-compat-base"]["dependencies"],
+    ):
+        assert dependencies["eigen"] == ">=3.4.0,<6"
+    for name, environment in manifest["environments"].items():
+        features = (
+            environment if isinstance(environment, list) else environment["features"]
+        )
+        assert "eigen34" in features, name
+    # The Eigen 5 toolchain lane rewrites this baseline before running tests.
+    assert manifest["feature"]["eigen34"]["dependencies"]["eigen"] in {
+        "==3.4.0",
+        "5.*",
+    }
+    eigen = ET.parse(ROOT / "package.xml").find("depend[.='eigen']")
+    assert eigen.attrib == {"version_gte": "3.4.0", "version_lt": "6"}
+    cmake = (ROOT / "CMakeLists.txt").read_text()
+    assert "eigen3 >= 3.4.0, eigen3 < 6" in cmake
+
+
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="The toolchain workflow runs on Linux"
+)
+def test_eigen_ci_replaces_only_baseline_pin(tmp_path):
+    manifest = (ROOT / "pixi.toml").read_text()
+    (tmp_path / "pixi.toml").write_text(manifest)
+    job = workflow_job("ci_toolchain.yml", "toolchain")
+    step = next(step for step in job["steps"] if step.get("if") == "matrix.eigen")
+    subprocess.run(
+        ["bash", "-euc", step["run"]],
+        cwd=tmp_path,
+        env={"PATH": os.defpath, "EIGEN": "5.*"},
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert (tmp_path / "pixi.toml").read_text() == manifest.replace(
+        'eigen = "==3.4.0"', 'eigen = "5.*"'
+    )

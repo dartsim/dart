@@ -24,6 +24,55 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace {
 
+std::unique_ptr<aiScene> createCustomMeshScene()
+{
+  auto scene = std::make_unique<aiScene>();
+  scene->mRootNode = new aiNode;
+  scene->mRootNode->mNumMeshes = 2;
+  scene->mRootNode->mMeshes = new unsigned int[2]{0, 1};
+  scene->mNumMeshes = 2;
+  scene->mMeshes = new aiMesh* [2] {
+  };
+  for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+    auto* mesh = new aiMesh;
+    scene->mMeshes[i] = mesh;
+    mesh->mMaterialIndex = static_cast<unsigned int>(-1);
+    mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
+    mesh->mNumVertices = 3;
+    const auto z = static_cast<ai_real>(i);
+    mesh->mVertices = new aiVector3D[3]{{0, 0, z}, {2, 0, z}, {0, 3, z}};
+    mesh->mNormals = new aiVector3D[3]{{0, 0, 1}, {0, 0, 1}, {0, 0, 1}};
+    mesh->mNumFaces = 1;
+    mesh->mFaces = new aiFace[1];
+    mesh->mFaces[0].mNumIndices = 3;
+    mesh->mFaces[0].mIndices = new unsigned int[3]{0, 1, 2};
+  }
+  return scene;
+}
+
+// Mirror gz-physics' CustomMeshShape, including its protected mesh assignment.
+class CustomMeshShape final : public dynamics::MeshShape
+{
+public:
+  explicit CustomMeshShape(const Eigen::Vector3d& scale)
+    : MeshShape(scale, nullptr)
+  {
+    mMesh = createCustomMeshScene().release();
+    mIsBoundingBoxDirty = true;
+    mIsVolumeDirty = true;
+  }
+
+  void reassignMesh()
+  {
+    mMesh = mMesh.get();
+  }
+
+  MeshOwnership getMeshOwnership() const
+  {
+    return mMesh.getOwnership();
+  }
+};
+
 class AliasUriResourceRetriever final : public common::ResourceRetriever
 {
 public:
@@ -78,22 +127,13 @@ const aiScene* loadMeshWithOverrides(
       AI_CONFIG_PP_SBP_REMOVE,
       aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
-#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION
   aiSetImportPropertyInteger(
       propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, 1);
-#endif
 
-#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UNIT_SIZE
   if (ignoreUnitSize) {
     aiSetImportPropertyInteger(
         propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UNIT_SIZE, 1);
   }
-#else
-  if (ignoreUnitSize) {
-    aiReleasePropertyStore(propertyStore);
-    return nullptr;
-  }
-#endif
 
   dynamics::AssimpInputResourceRetrieverAdaptor systemIO(retriever);
   aiFileIO fileIO = dynamics::createFileIO(&systemIO);
@@ -152,6 +192,52 @@ double maxVertexZ(const math::TriMesh<double>& mesh)
 }
 
 } // namespace
+
+TEST(MeshShapeTest, CustomMeshShapeOwnsManuallyAllocatedScene)
+{
+  std::shared_ptr<dynamics::MeshShape> clone;
+  {
+    CustomMeshShape shape(Eigen::Vector3d(2, 3, 4));
+    EXPECT_EQ(
+        shape.getMeshOwnership(), dynamics::MeshShape::MeshOwnership::Imported);
+    shape.reassignMesh();
+    EXPECT_EQ(
+        shape.getMeshOwnership(), dynamics::MeshShape::MeshOwnership::Imported);
+    const auto mesh = shape.getTriMesh();
+    ASSERT_NE(mesh, nullptr);
+    ASSERT_EQ(mesh->getVertices().size(), 6u);
+    ASSERT_EQ(mesh->getTriangles().size(), 2u);
+    EXPECT_EQ(
+        mesh->getTriangles()[1], math::TriMesh<double>::Triangle(3, 4, 5));
+    EXPECT_TRUE(shape.getBoundingBox().computeFullExtents().isApprox(
+        Eigen::Vector3d(4, 9, 4), 1e-12));
+    EXPECT_EQ(shape.getMesh()->mNumMaterials, 0u);
+    clone = std::dynamic_pointer_cast<dynamics::MeshShape>(shape.clone());
+    ASSERT_NE(clone, nullptr);
+    EXPECT_NE(clone->getMesh(), shape.getMesh());
+  }
+  EXPECT_TRUE(clone->getBoundingBox().computeFullExtents().isApprox(
+      Eigen::Vector3d(4, 9, 4), 1e-12));
+  EXPECT_EQ(clone->getTriMesh()->getTriangles().size(), 2u);
+}
+
+TEST(MeshShapeTest, ExplicitNoneOwnershipPreservesBorrowedScene)
+{
+  auto scene = createCustomMeshScene();
+  {
+    dynamics::MeshShape shape(
+        Eigen::Vector3d::Ones(),
+        scene.get(),
+        "",
+        nullptr,
+        dynamics::MeshShape::MeshOwnership::None);
+    EXPECT_EQ(shape.getMesh(), scene.get());
+    ASSERT_NE(shape.getTriMesh(), nullptr);
+    EXPECT_EQ(shape.getTriMesh()->getTriangles().size(), 2u);
+  }
+  EXPECT_EQ(scene->mNumMeshes, 2u);
+  EXPECT_EQ(scene->mMeshes[0]->mFaces[0].mIndices[2], 2u);
+}
 
 TEST(MeshShapeTest, TriMeshConstructorUpdatesBoundsAndAssimpBridge)
 {
@@ -230,7 +316,7 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
 
 TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string filePath = DART_DATA_LOCAL_PATH "test/tetra_cm.dae";
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -245,9 +331,9 @@ TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
   // Reuse the SAME aiScene* but supply a different uri. The mesh pointer must
   // be kept (not freed/replaced), and the public metadata must still be
   // refreshed so a metadata-only update is not dropped.
-  const std::string otherUri
-      = common::Uri::createFromPath(DART_DATA_LOCAL_PATH "skel/kima/r-foot.dae")
-            .toString();
+  const std::string otherUri = common::Uri::createFromPath(
+                                   DART_DATA_LOCAL_PATH "test/tetra_cm_alt.dae")
+                                   .toString();
   ASSERT_FALSE(otherUri.empty());
   ASSERT_NE(otherUri, fileUri);
 
@@ -283,11 +369,7 @@ TEST(MeshShapeTest, ArrowShapeRefreshesTriMeshAfterPositionUpdates)
 
 TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 {
-#ifndef AI_CONFIG_IMPORT_COLLADA_IGNORE_UNIT_SIZE
-  GTEST_SKIP() << "Assimp build does not expose unit-size control property.";
-#endif
-
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string filePath = DART_DATA_LOCAL_PATH "test/tetra_cm.dae";
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -312,6 +394,11 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
   const double unitScale = readColladaUnitScale(filePath);
   ASSERT_GT(unitScale, 0.0);
 
+  // The fixture spans 10 x 20 x 30 cm; the file declares 0.01 m per unit.
+  EXPECT_NEAR(unitScale, 0.01, 1e-12);
+  EXPECT_TRUE(
+      extentsIgnoringUnits.isApprox(Eigen::Vector3d(10.0, 20.0, 30.0), 1e-6));
+  EXPECT_TRUE(extentsWithUnits.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-6));
   EXPECT_TRUE(extentsWithUnits.isApprox(extentsIgnoringUnits * unitScale, 1e-6))
       << "extentsWithUnits=" << extentsWithUnits.transpose()
       << ", extentsIgnoringUnits=" << extentsIgnoringUnits.transpose()
@@ -320,8 +407,8 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 
 TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
-  const std::string aliasUri = "collada-nodot://meshshape/lfoot";
+  const std::string filePath = DART_DATA_LOCAL_PATH "test/tetra_cm.dae";
+  const std::string aliasUri = "collada-nodot://meshshape/tetra";
 
   auto aliasRetriever
       = std::make_shared<AliasUriResourceRetriever>(aliasUri, filePath);
@@ -342,6 +429,7 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
   const Eigen::Vector3d canonicalExtents
       = canonicalShape->getBoundingBox().computeFullExtents();
 
+  EXPECT_TRUE(aliasExtents.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-6));
   EXPECT_TRUE(aliasExtents.isApprox(canonicalExtents, 1e-6))
       << "aliasExtents=" << aliasExtents.transpose()
       << ", canonicalExtents=" << canonicalExtents.transpose();

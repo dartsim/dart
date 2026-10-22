@@ -36,7 +36,10 @@
 
 #if HAVE_BULLET
   #include "dart/collision/CollisionOption.hpp"
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
   #include "dart/collision/bullet/detail/BulletContact.hpp"
+  #include "dart/dynamics/BoxShape.hpp"
+  #include "dart/dynamics/SimpleFrame.hpp"
 #endif
 
 using namespace dart;
@@ -44,6 +47,42 @@ using namespace dart::collision;
 
 #if HAVE_BULLET
 using dart::collision::bullet::detail::shouldReportContact;
+
+TEST(BulletCollisionDetector, ReleasesRetainedFilterGroup)
+{
+  for (int i = 0; i < 3; ++i) {
+    auto detector = BulletCollisionDetector::create();
+    std::weak_ptr<BulletCollisionDetector> weakDetector = detector;
+    dynamics::SimpleFrame frame1;
+    dynamics::SimpleFrame frame2;
+    auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+    frame1.setShape(shape);
+    frame2.setShape(shape);
+    auto group1 = detector->createCollisionGroup(&frame1);
+    auto group2 = detector->createCollisionGroup(&frame2);
+    CollisionOption option(true, 1u, nullptr);
+    CollisionResult result;
+
+    for (int query = 0; query < 2; ++query) {
+      ASSERT_TRUE(
+          detector->collide(group1.get(), group2.get(), option, &result));
+      ASSERT_GT(result.getNumContacts(), 0u);
+      const auto& contact = result.getContact(0);
+      EXPECT_TRUE(
+          (contact.getShapeFrame1() == &frame1
+           && contact.getShapeFrame2() == &frame2)
+          || (contact.getShapeFrame1() == &frame2
+              && contact.getShapeFrame2() == &frame1));
+    }
+
+    detector.reset();
+    EXPECT_FALSE(weakDetector.expired());
+    group1.reset();
+    EXPECT_FALSE(weakDetector.expired());
+    group2.reset();
+    EXPECT_TRUE(weakDetector.expired());
+  }
+}
 
 TEST(BulletContact, FiltersNegativePenetrationDepth)
 {
