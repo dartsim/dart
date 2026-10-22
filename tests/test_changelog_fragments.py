@@ -761,13 +761,36 @@ def test_check_accepts_prose_that_starts_a_line_with_a_link(repo, capsys):
 
 
 @pytest.mark.parametrize("command", ("check", "assemble"))
-def test_accepts_link_led_prose_adjacent_to_reference(repo, capsys, command):
+@pytest.mark.parametrize("continuation", ([], ["    Continued prose."]))
+@pytest.mark.parametrize(
+    "tail",
+    (
+        ".",
+        "!",
+        "?",
+        ", which fixes it.",
+        " resolves the issue.",
+        "; 修复问题。",
+        ": 3D objects work.",
+        "\tδιορθώθηκε.",
+        ". More prose.",
+        "! More prose.",
+        "? More prose.",
+        " also addresses [#6](https://github.com/dartsim/dart/issues/6).",
+    ),
+)
+def test_accepts_link_led_prose_before_references(
+    repo, capsys, command, continuation, tail
+):
     body = [
         "  * Fix the case reported in",
-        "    [#3056](https://github.com/dartsim/dart/issues/3056).",
+        "    [#3056](https://github.com/dartsim/dart/issues/3056)" + tail,
+        *continuation,
         link(5),
     ]
-    write(repo, "prose.md", fragment("Python", *body), 5)
+    text = fragment("Python", *body)
+    write(repo, "prose.md", text, 5)
+    readme = (repo / "changelog.d" / "README.md").read_bytes()
 
     assert run(repo, command, capsys)[0] == 0
     if command == "assemble":
@@ -776,25 +799,70 @@ def test_accepts_link_led_prose_adjacent_to_reference(repo, capsys, command):
             "  * Earlier Python entry.\n\n" + "\n".join(body) + "\n",
         )
         assert not (repo / "changelog.d" / "prose.md").exists()
+    else:
+        assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
+        assert (repo / "changelog.d" / "prose.md").read_bytes() == text.encode("utf-8")
+    assert (repo / "changelog.d" / "README.md").read_bytes() == readme
 
 
 @pytest.mark.parametrize("command", ("check", "assemble"))
+@pytest.mark.parametrize("continuation", ([], ["    Continued prose."]))
 @pytest.mark.parametrize(
     "reference",
-    (
-        "    [#3056](https://github.com/dartsim/dart/issues/3056),,",
-        "    [#3056](https://github.com/dartsim/dart/issues/3056",
-        "    [#3056][https://github.com/dartsim/dart/issues/3056],",
-        "    [#3056]",
-    ),
+    [
+        link(3056) + separator + link(3057).lstrip() + comma
+        for separator in ("", " ", "\t", ", ", ",,", " , ", ". ")
+        for comma in ("", ",")
+    ]
+    + [
+        link(3056) + tail
+        for tail in (
+            "",
+            " ",
+            "\t",
+            ",,",
+            " ,",
+            "\t,",
+            ";",
+            "..",
+            ")",
+            "]",
+            "),",
+            ").",
+            "] which fails.",
+            ") which fails.",
+            " ) which fails.",
+            " , which fails.",
+            " _",
+        )
+    ]
+    + [
+        prefix + tail
+        for prefix in (
+            link(3056).replace("](", "] ("),
+            link(3056).replace("](", "]\t("),
+            link(3056)[:-1],
+            link(3056).replace("[#3056]", "[#3057]"),
+            link(3056).replace("github.com", "example.org"),
+            link(3056).replace("](", "]["),
+            link(3056).replace("](", "][")[:-1] + "]",
+            "    [#3056]",
+            "    [#3056",
+        )
+        for tail in ("", " which fails.")
+    ]
+    + [" " * indent + link(3056, ",").lstrip() for indent in (0, 1, 2, 3, 5, 8)],
 )
-def test_rejects_malformed_reference_before_own_pr(repo, capsys, command, reference):
-    text = fragment("Python", "  * Entry.", reference, link(5))
+def test_rejects_malformed_reference_before_own_pr(
+    repo, capsys, command, continuation, reference
+):
+    text = fragment("Python", "  * Entry.", reference, *continuation, link(5))
     write(repo, "malformed.md", text, 5)
 
     code, output = run(repo, command, capsys)
 
     assert code == 1
-    assert "changelog.d/malformed.md:4: write each link as" in output
-    assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG
-    assert (repo / "changelog.d" / "malformed.md").read_text(encoding="utf-8") == text
+    diagnostic = "keep the links together" if continuation else "write each link as"
+    assert f"changelog.d/malformed.md:4: {diagnostic}" in output
+    assert (repo / "CHANGELOG.md").read_bytes() == CHANGELOG.encode("utf-8")
+    assert (repo / "changelog.d" / "malformed.md").read_bytes() == text.encode("utf-8")

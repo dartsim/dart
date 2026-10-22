@@ -50,8 +50,7 @@ LINK_LINE = re.compile(
 SUBJECT_PR = re.compile(r".*\(#([1-9]\d*)\)")
 # Editor swap files, like `.draft.md.swp`; any other hidden file is validated.
 EDITOR_ARTIFACT = re.compile(r"\..+\.sw[a-p]")
-# Recognize malformed reference-only lines too; LINK_LINE validates them.
-LINK_ONLY = re.compile(r"\s*\[#[^\]]*\]?(?:\([^)]*\)?|\[[^\]]*\]?)?,*")
+PROSE_TAIL = re.compile(r"(?:[.!?]|[,;:.!?]?\s+[^\W_].*)")
 
 
 class Fragment(NamedTuple):
@@ -59,6 +58,20 @@ class Fragment(NamedTuple):
     category: str
     body: list[str]
     prs: list[int]
+
+
+def reference_candidate(line: str) -> bool:
+    """Treat [#-led lines as references unless a canonical link starts prose."""
+    text = line.lstrip()
+    if not text.startswith("[#"):
+        return False
+    prefix, close, tail = text.partition(")")
+    if not close:
+        return True
+    link = LINK_LINE.fullmatch("    " + prefix + close)
+    if not link or link[1] != link[3]:
+        return True
+    return not PROSE_TAIL.fullmatch(tail)
 
 
 def parse_fragment(path: Path) -> tuple[Fragment | None, list[str]]:
@@ -100,12 +113,12 @@ def parse_fragment(path: Path) -> tuple[Fragment | None, list[str]]:
 
     # The entry ends with its reference links, one per line, comma-separated.
     first_link = len(body)
-    while first_link > 1 and LINK_ONLY.fullmatch(body[first_link - 1]):
+    while first_link > 1 and reference_candidate(body[first_link - 1]):
         first_link -= 1
     errors += [
         f"{name}:{index + 3}: keep the links together as the entry's last lines"
         for index in range(1, first_link)
-        if LINK_ONLY.fullmatch(body[index])
+        if reference_candidate(body[index])
     ]
     prs = []
     for index in range(first_link, len(body)):
