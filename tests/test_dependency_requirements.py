@@ -2197,7 +2197,7 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
 
 
 def test_bullet_pkgconfig_sysroot_boundary(tmp_path):
-    include = bullet_module(tmp_path)
+    bullet_module(tmp_path)
     result = configure(
         tmp_path,
         'set(CMAKE_SYSROOT "/builder/root")\n'
@@ -2227,7 +2227,7 @@ def test_bullet_installed_selected_version(tmp_path, version, floor):
     for selected_version in (304, 305, 325):
         consumer = tmp_path / f"consumer-{selected_version}"
         consumer.mkdir()
-        include = bullet_module(consumer, 325 if selected_version == 305 else 305)
+        bullet_module(consumer, 325 if selected_version == 305 else 305)
         linked = consumer / "linked/LinearMath"
         linked.mkdir(parents=True)
         (linked / "btScalar.h").write_text(
@@ -3023,6 +3023,154 @@ def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layo
     assert result.returncode == 0, result.stdout + result.stderr
     cmake_fixture_run(shutil.which("cmake"), "--build", consumer / "build")
     cmake_fixture_run(consumer / "build/consumer")
+
+
+@pytest.mark.parametrize(
+    "mode", ["bare", "flag", "absolute", "wrapper", "mapped", "whole"]
+)
+def test_bullet_pkgconfig_deferred_raw_dependency(tmp_path, mode):
+    if mode == "whole" and sys.platform != "linux":
+        pytest.skip("GNU whole-archive constructor control")
+    prefix = build_bullet_abi_fixture(tmp_path / "bullet", "double", "STATIC")
+    fixture = tmp_path / "archives"
+    fixture.mkdir()
+    (fixture / "a.cpp").write_text(
+        'extern "C" int raw_tail();\nextern "C" int raw_a() { return raw_tail(); }\n'
+    )
+    (fixture / "b.cpp").write_text(
+        'extern "C" int raw_a();\nextern "C" int raw_b() { return raw_a(); }\n'
+    )
+    (fixture / "tail.cpp").write_text('extern "C" int raw_tail() { return 0; }\n')
+    (fixture / "registration.cpp").write_text(
+        "extern int registered;\nnamespace { struct Registration {\n"
+        "Registration() { registered = 17; }\n} registration; }\n"
+    )
+    (fixture / "marker.cpp").write_text("int registered = 0;\n")
+    names = ("RawA", "RawB", "RawTail", "Registration", "Marker")
+    (fixture / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(RawArchives LANGUAGES CXX)\n"
+        "add_library(RawA STATIC a.cpp)\nadd_library(RawB STATIC b.cpp)\n"
+        "add_library(RawTail STATIC tail.cpp)\nadd_library(Registration STATIC registration.cpp)\n"
+        "add_library(Marker STATIC marker.cpp)\n"
+        'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/archives.txt" CONTENT "'
+        + "\\n".join(f"$<TARGET_FILE:{name}>" for name in names)
+        + '\\n")\n'
+    )
+    cmake_fixture_run(
+        shutil.which("cmake"), "-G", "Ninja", "-S", fixture, "-B", fixture / "build"
+    )
+    cmake_fixture_run(shutil.which("cmake"), "--build", fixture / "build")
+    archives = dict(
+        zip(names, (fixture / "build/archives.txt").read_text().splitlines())
+    )
+    raw = (
+        Path(archives["RawTail"]).as_posix()
+        if mode == "absolute"
+        else "-lRawTail" if mode == "flag" else "RawTail"
+    )
+    if mode == "whole":
+        raw += f' -Wl,--whole-archive "{Path(archives["Registration"]).as_posix()}" -Wl,--no-whole-archive'
+    graph = bullet_imports(prefix)
+    for name in ("RawA", "RawB", *(["Marker"] if mode == "whole" else [])):
+        graph += f'add_library({name} STATIC IMPORTED)\nset_property(TARGET {name} PROPERTY IMPORTED_LOCATION "{Path(archives[name]).as_posix()}")\n'
+    if mode == "wrapper":
+        graph += "add_library(raw_wrapper INTERFACE IMPORTED)\n"
+        graph += f"target_link_libraries(raw_wrapper INTERFACE {raw})\n"
+        raw = "raw_wrapper"
+    elif mode == "mapped":
+        raw = f'"$<$<CONFIG:Release>:{raw}>" "$<$<CONFIG:Debug>:missing_raw_tail>"'
+    graph += (
+        f"target_link_libraries(RawA INTERFACE {raw})\n"
+        "target_link_libraries(RawB INTERFACE RawA)\n"
+        "target_link_libraries(Bullet INTERFACE RawA RawB)\n"
+        f'target_link_directories(Bullet INTERFACE "{Path(archives["RawTail"]).parent.as_posix()}")\n'
+    )
+    if mode == "whole":
+        graph += "target_link_libraries(RawA INTERFACE Marker)\n"
+    source = tmp_path / "consumer.cpp"
+    source.write_text(
+        'extern "C" int raw_b();\n'
+        + ("extern int registered;\n" if mode == "whole" else "")
+        + BULLET_CONSUMER.replace(
+            "int main() {",
+            "int main() { if (raw_b()) return 2;"
+            + (" if (registered != 17) return 17;" if mode == "whole" else ""),
+        )
+    )
+    common = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        + graph
+        + f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(control, common, cmake_args=("-DCMAKE_BUILD_TYPE=Release",))
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", control / "build")
+    cmake_fixture_run(control / "build/consumer")
+    bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        common + "include(DARTFindBullet)\n_dart_bullet_probe_precision(precision)\n"
+        'if(NOT BULLET_FOUND OR NOT precision STREQUAL "double")\nmessage(FATAL_ERROR "Raw dependency failed ABI validation")\nendif()\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/bullet.pc" "Name: bullet\nDescription: raw dependency\nVersion: 1\nCflags: -DBT_USE_DOUBLE_PRECISION${DART_BULLET_PC_CFLAGS}\nLibs: ${DART_BULLET_PC_LIBS}\n")\n',
+        cmake_args=("-DCMAKE_BUILD_TYPE=Release",),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    env = {
+        **os.environ,
+        "PKG_CONFIG_PATH": str(tmp_path / "build"),
+        "PKG_CONFIG_LIBDIR": str(tmp_path / "build"),
+    }
+    env.pop("PKG_CONFIG_SYSROOT_DIR", None)
+    options, flags = pkgconfig_consumer_options("bullet", static=True, env=env)
+    consumer = tmp_path / "pc-consumer"
+    consumer.mkdir()
+    result = configure(
+        consumer,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        f'add_executable(consumer "{source.as_posix()}")\n' + options,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", consumer / "build")
+    cmake_fixture_run(consumer / "build/consumer")
+    if sys.platform == "linux":
+        # A flat native link ensures CMake cannot repair the emitted graph.
+        command = [
+            shutil.which("c++"),
+            str(source),
+            *flags,
+            "-o",
+            str(tmp_path / "native"),
+        ]
+        cmake_fixture_run(*command)
+        cmake_fixture_run(tmp_path / "native")
+        broken = flags.copy()
+        tail = archives["RawTail"] if mode == "absolute" else "-lRawTail"
+        broken.remove(tail)
+        broken.insert(broken.index(archives["RawB"]), tail)
+        negative = subprocess.run(
+            [*command[:2], *broken, "-o", str(tmp_path / "negative")],
+            capture_output=True,
+            text=True,
+        )
+        assert negative.returncode != 0, negative.stdout + negative.stderr
+        assert "raw_tail" in negative.stdout + negative.stderr
+        if mode == "whole":
+            broken = [
+                flag
+                for flag in flags
+                if flag not in ("-Wl,--whole-archive", "-Wl,--no-whole-archive")
+            ]
+            cmake_fixture_run(
+                *command[:2], *broken, "-o", tmp_path / "without-registration"
+            )
+            assert (
+                subprocess.run([str(tmp_path / "without-registration")]).returncode
+                == 17
+            )
 
 
 @pytest.mark.parametrize(
