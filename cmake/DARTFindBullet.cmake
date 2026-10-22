@@ -25,6 +25,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 set(DART_BULLET_BUILT_PRECISION "")
 set(_DART_BULLET_GRAPH_UNKNOWN FALSE)
 set(_DART_BULLET_IMPORTED_FILES)
+set(_DART_BULLET_IMPORTED_LIBRARIES)
 set(_DART_BULLET_INCLUDES)
 set(_DART_BULLET_IMPORTED_VARIANT)
 set(_DART_BULLET_PROBE_CONFIGS)
@@ -184,6 +185,40 @@ function(_dart_bullet_location out target suffix)
   if(NOT location)
     set(location "")
   endif()
+  set(${out} "${location}" PARENT_SCOPE)
+endfunction()
+
+# Resolve the file CMake links for a configuration, including explicit mappings.
+function(_dart_bullet_config_location out target config)
+  string(TOUPPER "${config}" config)
+  get_property(
+    mapped
+    TARGET "${target}"
+    PROPERTY MAP_IMPORTED_CONFIG_${config}
+    SET
+  )
+  if(mapped)
+    get_target_property(configs "${target}" MAP_IMPORTED_CONFIG_${config})
+  else()
+    get_target_property(configs "${target}" IMPORTED_CONFIGURATIONS)
+    if(NOT configs)
+      set(configs)
+    endif()
+    set(configs "${config};;${configs}")
+  endif()
+  # Preserve empty mapping entries: CMake uses the configuration-less file.
+  string(REPLACE ";" ";_" configs "_${configs}")
+  set(location "")
+  foreach(suffix IN LISTS configs)
+    if(suffix STREQUAL "_")
+      set(suffix "")
+    endif()
+    string(TOUPPER "${suffix}" suffix)
+    _dart_bullet_location(location "${target}" "${suffix}")
+    if(location)
+      break()
+    endif()
+  endforeach()
   set(${out} "${location}" PARENT_SCOPE)
 endfunction()
 
@@ -569,6 +604,7 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
       list(APPEND _dart_bullet_files "${_dart_bullet_item}")
       if(_dart_bullet_pc)
         list(APPEND _dart_bullet_pc_files "${_dart_bullet_item}")
+        list(APPEND _DART_BULLET_IMPORTED_LIBRARIES "${_dart_bullet_item}")
       endif()
       continue()
     endif()
@@ -667,41 +703,12 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
     # dart.pc names the location that CMake links for the build type: a
     # mapped or matching configuration, the default one, or a listed one.
     if(_dart_bullet_pc)
-      get_property(
-        _dart_bullet_mapped
-        TARGET "${_dart_bullet_item}"
-        PROPERTY MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
-        SET
+      _dart_bullet_config_location(_dart_bullet_location "${_dart_bullet_item}"
+        "${_dart_bullet_build_type}"
       )
-      if(_dart_bullet_mapped)
-        get_target_property(
-          _dart_bullet_value
-          "${_dart_bullet_item}"
-          MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
-        )
-      else()
-        set(
-          _dart_bullet_value
-          "${_dart_bullet_build_type};;${_dart_bullet_configs}"
-        )
-      endif()
-      # Preserve empty mapping entries: CMake uses the configuration-less file.
-      string(REPLACE ";" ";_" _dart_bullet_value "_${_dart_bullet_value}")
-      set(_dart_bullet_location "")
-      foreach(_dart_bullet_config IN LISTS _dart_bullet_value)
-        if(_dart_bullet_config STREQUAL "_")
-          set(_dart_bullet_config "")
-        endif()
-        string(TOUPPER "${_dart_bullet_config}" _dart_bullet_config)
-        _dart_bullet_location(_dart_bullet_location "${_dart_bullet_item}"
-          "${_dart_bullet_config}"
-        )
-        if(_dart_bullet_location)
-          break()
-        endif()
-      endforeach()
       if(_dart_bullet_location)
         list(APPEND _dart_bullet_pc_files "${_dart_bullet_location}")
+        list(APPEND _DART_BULLET_IMPORTED_LIBRARIES "${_dart_bullet_item}")
       endif()
     endif()
     # Classify what CMake links for every configuration: the import library
@@ -892,7 +899,11 @@ function(_dart_bullet_probe_precision out)
       return()
     endif()
   endif()
-  set(configs "${_DART_BULLET_PROBE_CONFIGS}")
+  # Multi-config generators require their actual configuration spelling.
+  set(configs "${CMAKE_CONFIGURATION_TYPES}")
+  if(NOT configs)
+    set(configs "${_DART_BULLET_PROBE_CONFIGS}")
+  endif()
   if(NOT configs)
     set(configs "${CMAKE_TRY_COMPILE_CONFIGURATION}")
   endif()
@@ -904,6 +915,19 @@ function(_dart_bullet_probe_precision out)
   foreach(config IN LISTS configs)
     if(NOT config STREQUAL "__default")
       set(CMAKE_TRY_COMPILE_CONFIGURATION "${config}")
+    endif()
+    if(_DART_BULLET_HAS_BUILD_TARGETS OR DART_BULLET_BUILT_PRECISION)
+      set(CMAKE_REQUIRED_LIBRARIES)
+      foreach(library IN LISTS _DART_BULLET_IMPORTED_LIBRARIES)
+        if(TARGET "${library}")
+          _dart_bullet_config_location(library "${library}" "${CMAKE_TRY_COMPILE_CONFIGURATION}")
+          if(NOT library)
+            cmake_pop_check_state()
+            return()
+          endif()
+        endif()
+        list(APPEND CMAKE_REQUIRED_LIBRARIES "${library}")
+      endforeach()
     endif()
     foreach(precision single double)
       set(definition "#undef BT_USE_DOUBLE_PRECISION")

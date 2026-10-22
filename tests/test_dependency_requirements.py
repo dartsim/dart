@@ -6,6 +6,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tarfile
 import time
 from pathlib import Path
@@ -1679,7 +1680,8 @@ def test_bullet_built_graph_precision(tmp_path, precisions):
 
 
 @pytest.mark.parametrize("mapping", [None, "", "MISSING;DEBUG", ";DEBUG"])
-def test_bullet_imported_default_configuration(tmp_path, mapping):
+@pytest.mark.parametrize("system", [None, "Windows"])
+def test_bullet_imported_default_configuration(tmp_path, mapping, system):
     include = bullet_module(tmp_path)
     settings = ""
     if mapping is not None:
@@ -1692,17 +1694,29 @@ def test_bullet_imported_default_configuration(tmp_path, mapping):
         'IMPORTED_LOCATION "/default/libBulletCollision-float64.so"\n'
         'IMPORTED_LOCATION_RELEASE "/release/libBulletCollision-float64.so"\n'
         'IMPORTED_LOCATION_DEBUG "/debug/libBulletCollision-float64.so")\n'
+        "if(WIN32)\n"
+        "set_target_properties(collision PROPERTIES\n"
+        'IMPORTED_LOCATION "/default/BulletCollision-float64.dll"\n'
+        'IMPORTED_LOCATION_RELEASE "/release/BulletCollision-float64.dll"\n'
+        'IMPORTED_LOCATION_DEBUG "/debug/BulletCollision-float64.dll"\n'
+        'IMPORTED_IMPLIB "/default/BulletCollision-float64.lib"\n'
+        'IMPORTED_IMPLIB_RELEASE "/release/BulletCollision-float64.lib"\n'
+        'IMPORTED_IMPLIB_DEBUG "/debug/BulletCollision-float64.lib")\nendif()\n'
         + settings
         + "add_library(Bullet INTERFACE IMPORTED)\n"
         f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
         "target_link_libraries(Bullet INTERFACE collision)\ninclude(DARTFindBullet)\n"
         'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/actual.txt" CONTENT "$<TARGET_LINKER_FILE:collision>")\n'
         'file(WRITE "${CMAKE_BINARY_DIR}/selected.txt" "${DART_BULLET_PC_LIBS}")\n',
+        cmake_args=(f"-DCMAKE_SYSTEM_NAME={system}",) if system else (),
     )
     assert result.returncode == 0, result.stdout + result.stderr
     actual = (tmp_path / "build/actual.txt").read_text()
     selected = (tmp_path / "build/selected.txt").read_text()
     assert actual in selected
+    if system == "Windows" or os.name == "nt":
+        assert actual.endswith(".lib")
+        assert ".dll" not in selected
 
 
 @pytest.mark.parametrize(
@@ -1769,6 +1783,7 @@ def build_bullet_abi_fixture(
     )
     (source / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.22.1)\nproject(BulletFixture LANGUAGES CXX)\n"
+        "set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)\n"
         f"add_library(BulletCollision {linkage} collision.cpp)\n"
         f"add_library(LinearMath {linkage} math.cpp)\n"
         "foreach(t BulletCollision LinearMath)\n"
@@ -1782,6 +1797,9 @@ def build_bullet_abi_fixture(
         + "endforeach()\ntarget_link_libraries(BulletCollision PRIVATE LinearMath)\n"
         "install(TARGETS BulletCollision LinearMath DESTINATION lib)\n"
         "install(DIRECTORY include/ DESTINATION include)\n"
+        'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/link-files.txt" CONTENT '
+        '"$<TARGET_LINKER_FILE_NAME:BulletCollision>\n$<TARGET_LINKER_FILE_NAME:LinearMath>\n")\n'
+        'install(FILES "${CMAKE_BINARY_DIR}/link-files.txt" DESTINATION .)\n'
     )
     prefix = tmp_path / "install"
     cmake_fixture_run(
@@ -1802,8 +1820,18 @@ def build_bullet_abi_fixture(
 def bullet_imports(prefix, suffix="", math_prefix=None):
     math_prefix = math_prefix or prefix
     prefix_text = prefix.as_posix().replace("\\", "\\\\")
-    collision_file = next((prefix / "lib").glob(f"*BulletCollision{suffix}.*"))
-    math_file = next((math_prefix / "lib").glob(f"*LinearMath{suffix}.*"))
+    collision_file = (
+        prefix / "lib" / (prefix / "link-files.txt").read_text().splitlines()[0]
+    )
+    math_file = (
+        math_prefix
+        / "lib"
+        / (math_prefix / "link-files.txt").read_text().splitlines()[1]
+    )
+    assert collision_file.is_file() and math_file.is_file()
+    assert not collision_file.name.endswith(".dll") and not math_file.name.endswith(
+        ".dll"
+    )
     collision_text = collision_file.as_posix().replace("\\", "\\\\")
     math_text = math_file.as_posix().replace("\\", "\\\\")
     return (
@@ -1865,7 +1893,7 @@ def install_bullet_dart_fixture(
     )
     (source / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.22.1)\nproject(dart LANGUAGES CXX)\n"
-        "set(CMAKE_CXX_STANDARD 17)\n"
+        "set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)\n"
         f'set(CMAKE_MODULE_PATH "{source.as_posix()}" "{ROOT.as_posix()}/cmake")\n'
         "set(DART_USE_SYSTEM_BULLET ON)\ninclude(DARTMacros)\n"
         + bullet_imports(prefix, suffix)
@@ -1947,7 +1975,16 @@ def test_bullet_installed_scalar_abi(tmp_path, precision, linkage, suffix):
         )
         if accepted:
             cmake_fixture_run(shutil.which("cmake"), "--build", source / "build")
-            cmake_fixture_run(source / "build/consumer")
+            cmake_fixture_run(
+                source
+                / ("build/consumer.exe" if os.name == "nt" else "build/consumer"),
+                env={
+                    **os.environ,
+                    "PATH": os.pathsep.join(
+                        (str(prefix / "lib"), str(stage / "bin"), os.environ["PATH"])
+                    ),
+                },
+            )
 
     assert f'set(DART_BULLET_REQUIRE_PRECISION "{precision}")' in component.read_text()
 
@@ -1981,6 +2018,20 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
             '_dart_bullet_record(float64 INCLUDES "${raw_prefix}/include" '
             'LIBRARIES "${raw_prefix}/lib/${collision_name}" "${raw_prefix}/lib/${math_name}")\n'
         )
+    relocatable_sysroot = layout == "sysroot" and sys.platform == "linux"
+    if layout == "sysroot" and not relocatable_sysroot:
+        # Non-ELF sysroots must reject serialization, then still build a native consumer.
+        with pytest.raises(
+            AssertionError, match="Cannot serialize the selected Bullet library"
+        ):
+            install_bullet_dart_fixture(
+                tmp_path / "unsupported-sysroot",
+                prefix,
+                linkage,
+                "-float64",
+                pc_settings,
+            )
+        pc_settings = ""
     stage = install_bullet_dart_fixture(
         tmp_path / "dart", prefix, linkage, "-float64", pc_settings
     )
@@ -1992,7 +2043,7 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
     pcdir = relocated / "lib/pkgconfig"
     env = {**os.environ, "PKG_CONFIG_PATH": str(pcdir), "PKG_CONFIG_LIBDIR": str(pcdir)}
     env.pop("PKG_CONFIG_SYSROOT_DIR", None)
-    if layout == "sysroot":
+    if relocatable_sysroot:
         assert str(builder) not in text
         consumer_root = tmp_path / "consumer-sysroot"
         shutil.copytree(prefix, consumer_root / "opt/bullet")
@@ -2003,7 +2054,8 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
     source.write_text(
         BULLET_CONSUMER.split("  btConvexHullComputer hull;")[0] + "  return 0;\n}\n"
     )
-    compiler = shlex.split(os.environ.get("CXX", "c++"))
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
     for static in (False, True):
         result = cmake_fixture_run(
             shutil.which("pkg-config"),
@@ -2014,17 +2066,39 @@ def test_bullet_pkgconfig_public_consumer(tmp_path, linkage, layout):
             env=env,
         )
         flags = shlex.split(result.stdout)
-        if layout == "sysroot":
+        content = (
+            "cmake_minimum_required(VERSION 3.22.1)\nproject(Consumer LANGUAGES CXX)\n"
+            "set(CMAKE_CXX_STANDARD 17)\n"
+            f'add_executable(consumer "{source.as_posix()}")\n'
+        )
+        for flag in flags:
+            if flag.startswith(("-I", "-D")):
+                # Raw -I preserves literal Unix backslashes in this serialization test.
+                command = "target_compile_options"
+            elif flag.startswith("-L"):
+                command, flag = "target_link_directories", flag[2:]
+            else:
+                command = "target_link_libraries"
+                if flag.startswith("-l"):
+                    flag = flag[2:]
+            content += f"{command}(consumer PRIVATE [=[{flag}]=])\n"
+        (consumer / "CMakeLists.txt").write_text(content)
+        if relocatable_sysroot:
             assert all(str(builder) not in flag for flag in flags)
             assert "-I" + str(consumer_root / "opt/bullet/include") in flags
             assert "-L" + str(consumer_root / "opt/bullet/lib") in flags
         cmake_fixture_run(
-            *compiler,
-            "-std=c++17",
-            source,
-            "-o",
-            tmp_path / f"consumer-{static}",
-            *flags,
+            shutil.which("cmake"),
+            "-G",
+            "Ninja",
+            "-S",
+            consumer,
+            "-B",
+            consumer / str(static),
+            env=env,
+        )
+        cmake_fixture_run(
+            shutil.which("cmake"), "--build", consumer / str(static), env=env
         )
         assert sum("BulletCollision" in flag for flag in flags) == 1
         assert sum("LinearMath" in flag for flag in flags) == 1
@@ -2187,7 +2261,7 @@ def test_bullet_scalar_abi_ignores_header_warnings(tmp_path, precision, hybrid):
 )
 def test_bullet_hybrid_abi_uses_library_basename(tmp_path, stem):
     prefix = build_bullet_abi_fixture(tmp_path / "imported", "double")
-    original = next((prefix / "lib").glob("*LinearMath.*"))
+    original = prefix / "lib" / (prefix / "link-files.txt").read_text().splitlines()[1]
     filename = original.name.replace("LinearMath", stem)
     for directory in ("neutral", "BulletCollision-build"):
         case = tmp_path / directory
@@ -2225,6 +2299,7 @@ def test_bullet_bundled_inherited_directory_precision(tmp_path):
             + "static_assert(sizeof(btScalar) == sizeof(double));\n"
         )
     (sub / "CMakeLists.txt").write_text(
+        "set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)\n"
         "add_library(BulletCollision SHARED collision.cpp)\n"
         "add_library(LinearMath SHARED math.cpp)\n"
         "foreach(t BulletCollision LinearMath)\n"
@@ -2271,7 +2346,50 @@ def test_bullet_bundled_inherited_directory_precision(tmp_path):
 
 
 @pytest.mark.parametrize("debug_precision", ["single", "double"])
-def test_bullet_imported_configuration_abi(tmp_path, debug_precision):
+@pytest.mark.parametrize("imported_configs", ["Release;Debug", "RELEASE;DEBUG"])
+def test_bullet_hybrid_configuration_abi(tmp_path, debug_precision, imported_configs):
+    release = build_bullet_abi_fixture(tmp_path / "release", "double")
+    debug = build_bullet_abi_fixture(tmp_path / "debug", debug_precision)
+    bullet_module(tmp_path)
+    (tmp_path / "consumer.cpp").write_text(BULLET_CONSUMER)
+    result = configure(
+        tmp_path,
+        "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "set(CMAKE_CXX_STANDARD 17)\n"
+        f'add_library(BulletCollision STATIC "{tmp_path.as_posix()}/release/source/collision.cpp")\n'
+        f'target_include_directories(BulletCollision PUBLIC "{release.as_posix()}/include")\n'
+        "target_compile_definitions(BulletCollision PUBLIC BT_USE_DOUBLE_PRECISION)\n"
+        "add_library(math UNKNOWN IMPORTED)\n"
+        f'find_library(release_math NAMES LinearMath PATHS "{release.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        f'find_library(debug_math NAMES LinearMath PATHS "{debug.as_posix()}/lib" NO_DEFAULT_PATH REQUIRED)\n'
+        f'set_target_properties(math PROPERTIES IMPORTED_CONFIGURATIONS "{imported_configs}" '
+        'IMPORTED_LOCATION_RELEASE "${release_math}" IMPORTED_LOCATION_DEBUG "${debug_math}")\n'
+        "target_link_libraries(BulletCollision PRIVATE math)\n"
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{release.as_posix()}/include")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision math)\n"
+        "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
+        f'if({"NOT " if debug_precision == "double" else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong hybrid per-configuration ABI acceptance")\nendif()\n'
+        f'add_executable(consumer "{tmp_path.as_posix()}/consumer.cpp")\n'
+        "target_link_libraries(consumer PRIVATE Bullet)\n",
+        cmake_args=(
+            "-G",
+            "Ninja Multi-Config",
+            "-DCMAKE_CONFIGURATION_TYPES=Release;Debug",
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    if debug_precision == "double":
+        for config in ("Release", "Debug"):
+            cmake_fixture_run(
+                shutil.which("cmake"), "--build", tmp_path / "build", "--config", config
+            )
+
+
+@pytest.mark.parametrize("debug_precision", ["single", "double"])
+@pytest.mark.parametrize("generator", ["Ninja", "Ninja Multi-Config"])
+def test_bullet_imported_configuration_abi(tmp_path, debug_precision, generator):
     release = build_bullet_abi_fixture(tmp_path / "release", "double")
     debug = build_bullet_abi_fixture(tmp_path / "debug", debug_precision)
     bullet_module(tmp_path)
@@ -2289,6 +2407,7 @@ def test_bullet_imported_configuration_abi(tmp_path, debug_precision):
         "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
         f'if({"NOT " if debug_precision == "double" else ""}BULLET_FOUND)\n'
         'message(FATAL_ERROR "Wrong per-configuration ABI acceptance")\nendif()\n',
+        cmake_args=("-G", generator, "-DCMAKE_CONFIGURATION_TYPES=Release;Debug"),
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
