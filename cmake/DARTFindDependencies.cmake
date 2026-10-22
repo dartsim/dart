@@ -253,14 +253,45 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
     )
   endif()
   FetchContent_GetProperties(bullet SOURCE_DIR _dart_bullet_source_dir)
-  get_target_property(_dart_bullet_collision_imported BulletCollision IMPORTED)
-  get_target_property(_dart_bullet_math_imported LinearMath IMPORTED)
-  # Only source-built Bullet targets belong to this build's collision-only SDK.
-  if(
-    _dart_bullet_source_dir
-    AND NOT _dart_bullet_collision_imported
-    AND NOT _dart_bullet_math_imported
-  )
+  # Only concrete targets created under upstream src belong to our SDK.
+  set(_dart_bullet_source_owned FALSE)
+  if(_dart_bullet_source_dir)
+    set(_dart_bullet_source_owned TRUE)
+    foreach(_dart_bullet_target BulletCollision LinearMath)
+      get_target_property(_dart_bullet_imported ${_dart_bullet_target} IMPORTED)
+      get_target_property(
+        _dart_bullet_alias
+        ${_dart_bullet_target}
+        ALIASED_TARGET
+      )
+      if(_dart_bullet_imported OR _dart_bullet_alias)
+        set(_dart_bullet_source_owned FALSE)
+        break()
+      endif()
+      get_target_property(
+        _dart_bullet_target_dir
+        ${_dart_bullet_target}
+        SOURCE_DIR
+      )
+      # Start at a known processed directory, never probe a guessed path.
+      while(
+        _dart_bullet_target_dir
+        AND
+          NOT _dart_bullet_target_dir STREQUAL "${_dart_bullet_source_dir}/src"
+      )
+        get_directory_property(
+          _dart_bullet_target_dir
+          DIRECTORY "${_dart_bullet_target_dir}"
+          PARENT_DIRECTORY
+        )
+      endwhile()
+      if(NOT _dart_bullet_target_dir)
+        set(_dart_bullet_source_owned FALSE)
+        break()
+      endif()
+    endforeach()
+  endif()
+  if(_dart_bullet_source_owned)
     # Skip upstream's src install rules, including the unused dynamics headers.
     set_property(
       DIRECTORY "${bullet_SOURCE_DIR}/src"
@@ -316,6 +347,27 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
         "${_dart_bullet_pc}"
       )
       unset(_dart_bullet_pc_libdir)
+      if(IS_ABSOLUTE "${INCLUDE_INSTALL_DIR}")
+        set(_dart_bullet_pc_includedir "${INCLUDE_INSTALL_DIR}")
+      else()
+        set(_dart_bullet_pc_includedir "\${prefix}/${INCLUDE_INSTALL_DIR}")
+      endif()
+      string(
+        REGEX REPLACE
+        "includedir=[^\r\n]*"
+        "includedir=${_dart_bullet_pc_includedir}"
+        _dart_bullet_pc
+        "${_dart_bullet_pc}"
+      )
+      unset(_dart_bullet_pc_includedir)
+      # All SDK headers live under includedir, including with an absolute root.
+      string(
+        REPLACE
+        " -I\${prefix}/include"
+        ""
+        _dart_bullet_pc
+        "${_dart_bullet_pc}"
+      )
       file(WRITE "${bullet_BINARY_DIR}/bullet.pc" "${_dart_bullet_pc}")
       unset(_dart_bullet_pc)
     endif()
@@ -337,8 +389,11 @@ if(NOT DART_USE_SYSTEM_BULLET AND NOT DART_SKIP_BULLET)
     unset(DART_BULLET_BINARY_DIR CACHE)
   endif()
   unset(_dart_bullet_source_dir)
-  unset(_dart_bullet_collision_imported)
-  unset(_dart_bullet_math_imported)
+  unset(_dart_bullet_source_owned)
+  unset(_dart_bullet_target)
+  unset(_dart_bullet_imported)
+  unset(_dart_bullet_alias)
+  unset(_dart_bullet_target_dir)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
