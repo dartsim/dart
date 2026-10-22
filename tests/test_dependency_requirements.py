@@ -1,8 +1,11 @@
 """Exercise DART's installed dependency finders with isolated CMake packages."""
 
+import hashlib
 import os
+import re
 import shutil
 import subprocess
+import tarfile
 import time
 from pathlib import Path, PureWindowsPath
 
@@ -19,7 +22,7 @@ def configure(tmp_path, content, *, cmake_args=()):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
     (source / "CMakeLists.txt").write_text(
-        "cmake_minimum_required(VERSION 3.22.1)\n"
+        "cmake_minimum_required(VERSION 3.28)\n"
         "project(DependencyRequirements NONE)\n"
         f'set(CMAKE_MODULE_PATH "{(tmp_path / "modules").as_posix()}" "{(ROOT / "cmake").as_posix()}")\n'
         f'set(CMAKE_PREFIX_PATH "{(tmp_path / "prefix").as_posix()}")\n'
@@ -1493,6 +1496,81 @@ def test_uninstall_manifest_preserves_spaces(tmp_path, staged, prefix_kind):
     assert unlisted.exists()
     assert relative.exists()
     assert not dangling.is_symlink()
+
+
+def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
+    tmp_path = tmp_path / "archive fixture"
+    tmp_path.mkdir()
+    module = (
+        Path(__file__).resolve().parents[1] / "dart/gui/imgui/CMakeLists.txt"
+    ).read_text()
+    original_hash = re.search(r"\b[0-9a-f]{64}\b", module).group()
+    url = "https://github.com/ocornut/imgui/archive/refs/tags/${IMGUI_TARGET_VERSION}.tar.gz"
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "stub.cpp").write_text("// Parent target source.\n")
+    (source / "main.cpp").write_text(
+        "int archive_version(); int main() { return archive_version(); }\n"
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(dart LANGUAGES CXX)\n"
+        'set(DART_BINARY_DIR "${CMAKE_BINARY_DIR}")\n'
+        "set(DART_USE_SYSTEM_IMGUI OFF)\n"
+        f'include("{(ROOT / "cmake/DARTMacros.cmake").as_posix()}")\n'
+        "function(add_component_dependency_packages)\nendfunction()\n"
+        "add_library(dart-gui STATIC stub.cpp)\n"
+        'include("${CMAKE_CURRENT_SOURCE_DIR}/imgui.cmake")\n'
+        'file(WRITE "${CMAKE_BINARY_DIR}/fetched-path.txt" "${dart_imgui_SOURCE_DIR}")\n'
+        "add_executable(archive-probe main.cpp)\n"
+        "target_link_libraries(archive-probe PRIVATE dart-gui)\n"
+    )
+    build = tmp_path / "build"
+    for version in (1, 2):
+        payload = tmp_path / f"payload-{version}"
+        payload.mkdir()
+        for name in (
+            "imconfig.h",
+            "imgui.h",
+            "imgui_internal.h",
+            "imstb_rectpack.h",
+            "imstb_textedit.h",
+            "imstb_truetype.h",
+            "imgui_draw.cpp",
+            "imgui_tables.cpp",
+            "imgui_widgets.cpp",
+        ):
+            (payload / name).write_text("// Fixture.\n")
+        (payload / "imgui.cpp").write_text(
+            f"int archive_version() {{ return {version}; }}\n"
+        )
+        archive = tmp_path / f"imgui-{version}.tar.gz"
+        with tarfile.open(archive, "w:gz") as output:
+            output.add(payload, arcname="imgui")
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (source / "imgui.cmake").write_text(
+            module.replace(original_hash, digest).replace(url, archive.as_posix())
+        )
+        # Let pytest report complete CMake output on failure.
+        subprocess.run(
+            ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build)],
+            check=True,
+            text=True,
+        )
+        # Reproduce the extraction timestamps used by CMake 3.22/3.23 even
+        # when this regression runs with a newer CMake.
+        extracted = Path((build / "fetched-path.txt").read_text())
+        for path in extracted.iterdir():
+            os.utime(path, (1_000_000_000, 1_000_000_000))
+        subprocess.run(
+            ["cmake", "--build", str(build)],
+            check=True,
+            text=True,
+        )
+        executable = build / (
+            "archive-probe.exe" if os.name == "nt" else "archive-probe"
+        )
+        assert subprocess.run([str(executable)]).returncode == version
 
 
 @pytest.mark.parametrize(
