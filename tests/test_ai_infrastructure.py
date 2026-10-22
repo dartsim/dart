@@ -46,7 +46,9 @@ MACROS = "cmake/DARTMacros.cmake"
 
 def _is_wrapper(arguments):
     tokens = infra.cmake_argument_tokens(arguments)
-    return [t.lower() for t in tokens[:1]] == [LEGACY_WRAPPER]
+    return [infra.cmake_unquote_bracket(t).lower() for t in tokens[:1]] == [
+        LEGACY_WRAPPER
+    ]
 
 
 def _verify_legacy_wrapper(commands):
@@ -462,6 +464,27 @@ def test_offline_scan_rejects_unguarded_fetches(deps):
 def test_offline_scan_rejects_malformed_legacy_wrapper(wrapper):
     with pytest.raises(AssertionError):
         check_fetchcontent_offline_guards(_fixture(wrapper=wrapper))
+
+
+@pytest.mark.parametrize("kind", ["function", "macro"])
+@pytest.mark.parametrize("delimiter", ["", "="])
+@pytest.mark.parametrize("same_file", [False, True])
+def test_offline_scan_rejects_bracket_quoted_wrapper_redefinition(
+    kind, delimiter, same_file
+):
+    name = f"[{delimiter}[{LEGACY_WRAPPER.upper()}]{delimiter}]"
+    replacement = (
+        f"{kind}({name} other)\n"
+        "  cmake_language(CALL FetchContent_MakeAvailable unguarded_extra)\n"
+        f"end{kind}()\n"
+    )
+    sources = _fixture()
+    if same_file:
+        sources[MACROS] += replacement
+    else:
+        sources["cmake/elsewhere.cmake"] = replacement
+    with pytest.raises(AssertionError, match="invalid forwarder"):
+        check_fetchcontent_offline_guards(sources)
 
 
 def test_repository_rejects_missing_release_target_row(monkeypatch):
