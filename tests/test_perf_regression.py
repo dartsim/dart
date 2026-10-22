@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -7374,6 +7375,9 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
     monkeypatch, tmp_path, gui, io_targets
 ):
     module = _load_runner()
+    staging_root = tmp_path / "staging root,comma"
+    staging_root.mkdir(mode=0o700)
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", staging_root)
     root = tmp_path / "harness"
     root.mkdir()
     (root / "pixi.lock").write_text("lock")
@@ -7411,6 +7415,18 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
             if configured.resolve() == build:
                 assert (build / ".cmake/api/v1/query/codemodel-v2").is_file()
                 assert not any("IPOPT" in option.upper() for option in command)
+            dependency = module.MEASUREMENT_ROOT / "arm/dependencies"
+            linker_flags = next(
+                option.split("=", 1)[1]
+                for option in command
+                if option.startswith("-DCMAKE_EXE_LINKER_FLAGS=")
+            )
+            assert shlex.split(linker_flags) == [
+                "-Xlinker",
+                "-rpath-link",
+                "-Xlinker",
+                str(dependency / "lib"),
+            ]
             configured.mkdir(exist_ok=True)
             configurations.append(configured.resolve())
         elif command[:2] == ["cmake", "--build"]:

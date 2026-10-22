@@ -6,6 +6,13 @@
 
 * Breaking Changes
 
+  * Source builds require the Ubuntu 24.04 LTS toolchain or newer: GCC 13.2,
+    LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
+    17.2) and CMake 3.28. Projects that use an installed DART through
+    `find_package(DART)` still need only CMake 3.22.1. `release-6.20` keeps the
+    Ubuntu 22.04 floor.
+    [#3850](https://github.com/dartsim/dart/pull/3850)
+
   * **Behavior change:** MJCF loading now enforces hinge and slide limits,
     including inherited defaults and MuJoCo 3.x automatic limits; applies
     declared mass, center of mass, and rotated inertia even without geoms;
@@ -102,6 +109,15 @@
     and `dart-external-imgui` target as CMake forwarding names. They no longer
     provide the OpenGL2 backend (`imgui_impl_opengl2.h`) or depend on OpenGL,
     and applications linked to the former ImGui shared library must rebuild.
+  * The bundled Dear ImGui is now the unpatched upstream v1.92.8-docking
+    release, so fetching it no longer needs Git. Third-party code that misuses
+    DART's re-exported ImGui (null or empty font data, ImGui calls without a
+    context) may now assert or crash, as upstream ImGui does, because the
+    6.16.8 guards for [#2516](https://github.com/dartsim/dart/issues/2516),
+    [#2668](https://github.com/dartsim/dart/issues/2668) and
+    [#2671](https://github.com/dartsim/dart/issues/2671) are reverted.
+    `ImFormatString` and `ImFormatStringV` are exported from `dart-gui` again.
+    [#3876](https://github.com/dartsim/dart/pull/3876)
 
 * API
 
@@ -283,6 +299,32 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Add `dartpy.errors`: the errors dartpy defines derive from `DartError`,
+    with `ValidationError` (`ValueError`), `NotFoundError` (`KeyError`) and
+    `OperationError` (`RuntimeError`) branches and the `WorldBusyError`,
+    `ModelFrozenError`, `CheckpointMismatchError` and `NameConflictError`
+    types that later DART 7 work raises. C++ `std::invalid_argument` and
+    `std::length_error` translate to `ValidationError`; `std::runtime_error`,
+    `std::logic_error` and any other `std::exception` translate to
+    `OperationError`; `dartpy.gui.RenderingUnavailableError` and
+    `dartpy.viewer.AssetsNotPrefetchedError` derive from `OperationError`.
+    Argument conversion failures still raise plain `TypeError`, and
+    `std::out_of_range`, `std::domain_error`, `std::range_error`,
+    `std::overflow_error` and `std::bad_alloc` keep their `IndexError`,
+    `ValueError`, `OverflowError` and `MemoryError` translations.
+    DART's C++ diagnostics (`dtwarn`, `dterr`, `DART_WARN` and the other
+    levels, with or without spdlog) now reach `logging.getLogger("dartpy")`
+    instead of the console, including from C++ worker threads; configure
+    that logger to silence or redirect them,
+    or call `dartpy.common.flush_logs()` to deliver queued records on the
+    calling thread. Without logging configuration, warnings and errors still
+    print to stderr and info messages stay quiet. C++ gains
+    `dart::common::setLogCallback()` to receive the `DART_WARN` family as
+    formatted messages in place of spdlog or the console, and
+    `dart::common::setConsoleStreams()` to redirect the console macros, per
+    thread if the caller wants.
+    [#3844](https://github.com/dartsim/dart/pull/3844)
+
   * Add `dartpy.simulation.WorldState` with `World.capture_state(out=None)` and
     `World.restore_state(state)` for dynamic snapshots; state arrays are
     read-only NumPy copies and a structure mismatch raises `ValueError`.
@@ -392,6 +434,10 @@
   * Fix `DART_USE_SYSTEM_TRACY=ON`, which rejected installed Tracy packages
     because they ship no CMake version file.
     [#3879](https://github.com/dartsim/dart/pull/3879)
+  * **Additive:** Linux wheels accept URDF 1.1 and 1.2 with urdfdom 6.0.1,
+    which also stops parser error logging from treating URDF text as a printf
+    format string. URDF 1.0 files load as before.
+    [#3887](https://github.com/dartsim/dart/pull/3887)
 
   * Shared installs with `DART_BUILD_UTILS_ASSETS=ON` no longer make consumers
     of `io`, `utils`, `utils-urdf` and `utils-assets` find libcurl and
@@ -403,6 +449,10 @@
     options and `eulerAngles()` call Eigen 5 deprecates, and the C++ tests
     pass against Eigen 5.
     [#3836](https://github.com/dartsim/dart/pull/3836)
+
+  * Ship third-party attribution in `NOTICE`, included in dartpy's license
+    metadata and installed alongside `LICENSE` in `share/licenses/dart`.
+    [#3857](https://github.com/dartsim/dart/pull/3857)
 
   * Raise the minimum assimp version to 5.3 (Ubuntu 24.04's 5.3.1, which
     reports 5.3.0).
