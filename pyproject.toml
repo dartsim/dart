@@ -19,7 +19,7 @@ description = "Python API of Dynamic Animation and Robotics Toolkit."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "BSD-2-Clause"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Jeongseok Lee", email = "jslee02@gmail.com" }]
 keywords = ["dartsim", "robotics"]
 classifiers = [

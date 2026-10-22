@@ -10,7 +10,16 @@ execute_process(
 )
 list(APPEND CMAKE_PREFIX_PATH "${nanobind_cmake_dir}")
 find_package(nanobind 3.1 CONFIG REQUIRED)
-find_package(Eigen3 3.3 CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
+if(NOT Eigen3_VERSION OR Eigen3_VERSION VERSION_LESS 3.3)
+  if(NOT Eigen3_VERSION)
+    set(Eigen3_VERSION "unknown")
+  endif()
+  message(
+    FATAL_ERROR
+    "Eigen3 >= 3.3 is required; found version ${Eigen3_VERSION}"
+  )
+endif()
 
 get_filename_component(
   DART_SOURCE_ROOT

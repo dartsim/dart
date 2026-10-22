@@ -118,6 +118,26 @@ def test_dependency_image_fetches_archives_without_git_clones():
     assert "git clone" not in dockerfile
 
 
+def test_dependency_image_builds_sdformat_against_urdfdom_6():
+    dockerfile = (ROOT / "docker/wheels/Dockerfile.manylinux_2_28").read_text()
+    headers = "ros/urdfdom_headers/archive/refs/tags/3.0.1.tar.gz"
+    parser = "ros/urdfdom/archive/refs/tags/6.0.1.tar.gz"
+    assert headers in dockerfile
+    assert parser in dockerfile
+    # The trailing newline skips the "# sdformat embeds ..." comment above gz-cmake.
+    sdformat = dockerfile.index("# sdformat\n")
+    assert (
+        dockerfile.index("# tinyxml2")
+        < dockerfile.index("# console_bridge")
+        < dockerfile.index(headers)
+        < dockerfile.index(parser)
+        < sdformat
+    )
+    assert (
+        "-DUSE_INTERNAL_URDF=OFF" in dockerfile[sdformat : dockerfile.index("# Bullet")]
+    )
+
+
 @pytest.mark.parametrize("wheels, succeeds", [(True, True), (False, False)])
 def test_wheels_do_not_require_python_embedding_library(tmp_path, wheels, succeeds):
     (tmp_path / "FindPython3.cmake").write_text(
