@@ -758,3 +758,21 @@ def test_check_accepts_prose_that_starts_a_line_with_a_link(repo, capsys):
     )
 
     assert run(repo, "check", capsys) == (0, "1 changelog fragment(s) OK\n")
+
+
+@pytest.mark.parametrize("command", ("check", "assemble"))
+def test_accepts_link_led_prose_adjacent_to_reference(repo, capsys, command):
+    body = [
+        "  * Fix the case reported in",
+        "    [#3056](https://github.com/dartsim/dart/issues/3056).",
+        link(5),
+    ]
+    write(repo, "prose.md", fragment("Python", *body), 5)
+
+    assert run(repo, command, capsys)[0] == 0
+    if command == "assemble":
+        assert (repo / "CHANGELOG.md").read_text(encoding="utf-8") == CHANGELOG.replace(
+            "  * Earlier Python entry.\n",
+            "  * Earlier Python entry.\n\n" + "\n".join(body) + "\n",
+        )
+        assert not (repo / "changelog.d" / "prose.md").exists()

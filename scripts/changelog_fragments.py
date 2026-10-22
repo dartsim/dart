@@ -100,7 +100,7 @@ def parse_fragment(path: Path) -> tuple[Fragment | None, list[str]]:
 
     # The entry ends with its reference links, one per line, comma-separated.
     first_link = len(body)
-    while first_link > 1 and body[first_link - 1].lstrip().startswith("[#"):
+    while first_link > 1 and LINK_ONLY.fullmatch(body[first_link - 1]):
         first_link -= 1
     errors += [
         f"{name}:{index + 3}: keep the links together as the entry's last lines"
