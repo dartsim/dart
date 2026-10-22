@@ -237,6 +237,10 @@ LogCapture::LogCapture(LineSink sink)
           current->enqueue(captured, message);
         }
       });
+  // Default native output uses these streams under the same dispatch lock.
+  // Publish both buffers and the wrapper as one change to those producers.
+  std::lock_guard<std::recursive_mutex> outputLock(
+      common::detail::logSinkMutex());
   mCoutBuf = std::make_unique<TeeBuf>(
       std::cout.rdbuf(), CapturedLogLevel::Info, enqueue);
   mCerrBuf = std::make_unique<TeeBuf>(
@@ -325,12 +329,16 @@ LogCapture::~LogCapture()
     mSinkState->records.clear();
   }
   common::detail::unregisterLogObserver(mSinkState->token);
+  std::lock_guard<std::recursive_mutex> outputLock(
+      common::detail::logSinkMutex());
   try {
     common::detail::restoreLogSinkIf(mInstalledSink, mSinkState->previous);
   } catch (...) {
   }
   std::cout.rdbuf(mOldCoutBuf);
   std::cerr.rdbuf(mOldCerrBuf);
+  mCoutBuf.reset();
+  mCerrBuf.reset();
 }
 
 } // namespace dart::gui::app

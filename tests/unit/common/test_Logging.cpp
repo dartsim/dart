@@ -1751,6 +1751,38 @@ TEST_F(LoggingDeathTest, NestedSinkCallbackCanExitItsThread)
       ::testing::ExitedWithCode(0),
       "");
 }
+
+//==============================================================================
+TEST_F(LoggingDeathTest, ConsoleSinkCanExitThreadAtEveryFlushBoundary)
+{
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  for (const auto* boundary : {"newline", "flush", "next", "cleanup"}) {
+    SCOPED_TRACE(boundary);
+    EXPECT_EXIT(
+        {
+          std::atomic<int> calls{0};
+          setLogSink([&](LogLevel, const std::string&) {
+            ++calls;
+            pthread_exit(nullptr);
+          });
+          std::thread([&] {
+            if (std::strcmp(boundary, "newline") == 0)
+              dtwarn << "exit from newline\n";
+            else if (std::strcmp(boundary, "flush") == 0)
+              dtwarn << "exit from explicit flush" << std::flush;
+            else if (std::strcmp(boundary, "next") == 0) {
+              dtwarn << "exit when the next statement flushes this line";
+              dtwarn << "unreachable";
+            } else
+              dtwarn << "exit from thread cleanup";
+          }).join();
+          resetLogSink();
+          std::_Exit(calls == 1 ? 0 : 1);
+        },
+        ::testing::ExitedWithCode(0),
+        "");
+  }
+}
 #endif
 
 //==============================================================================

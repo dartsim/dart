@@ -744,6 +744,11 @@ LogLevel getLogLevel()
 
 namespace detail {
 
+std::recursive_mutex& logSinkMutex()
+{
+  return loggingState().mutex;
+}
+
 LogObserver* registerLogObserver(const std::shared_ptr<LogSink>& observer)
 {
   auto* slot
@@ -862,7 +867,7 @@ void logConsoleRecord(
     const std::string& message,
     std::size_t prefixLength,
     int color,
-    bool newline) noexcept
+    bool newline)
 {
   const ConsoleOrigin origin{prefixLength, color, newline};
   dispatchLog(level, message, &origin);

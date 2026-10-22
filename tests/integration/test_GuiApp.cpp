@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -1871,6 +1872,45 @@ TEST(LogCapture, NativeLoggingCanRaceWithCaptureInstallationAndDestruction)
   producer.join();
   common::setLogSink(std::move(previous));
   EXPECT_EQ(2000, forwarded);
+}
+
+//==============================================================================
+TEST(LogCapture, DefaultNativeOutputCanRaceWithCaptureLifetime)
+{
+  auto previous = common::setLogSink({});
+  const auto oldLevel = common::getLogLevel();
+  common::setLogLevel(common::LogLevel::Info);
+  testing::internal::CaptureStdout();
+  std::atomic<bool> start{false};
+  std::vector<std::thread> producers;
+  for (int worker = 0; worker < 4; ++worker) {
+    producers.emplace_back([&, worker] {
+      while (!start.load())
+        std::this_thread::yield();
+      for (int i = 0; i < 2000; ++i)
+        common::info("default producer {}:{}", worker, i);
+    });
+  }
+  start = true;
+  for (int i = 0; i < 1000; ++i) {
+    LogCapture capture([](CapturedLogLevel, const std::string&) {});
+    capture.drain();
+  }
+  for (auto& producer : producers)
+    producer.join();
+  const auto output = testing::internal::GetCapturedStdout();
+  common::setLogSink(std::move(previous));
+  common::setLogLevel(oldLevel);
+  EXPECT_EQ(8000, std::count(output.begin(), output.end(), '\n'));
+  for (int worker = 0; worker < 4; ++worker) {
+    for (int i = 0; i < 2000; ++i) {
+      EXPECT_NE(
+          std::string::npos,
+          output.find(
+              "default producer " + std::to_string(worker) + ":"
+              + std::to_string(i) + "\n"));
+    }
+  }
 }
 
 //==============================================================================

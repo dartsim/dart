@@ -98,21 +98,23 @@ protected:
   }
 
 private:
-  void emit(bool newline) noexcept
+  void emit(bool newline)
   {
-    const bool wasEmitting = insideConsoleEmit;
+    struct EmitScope
+    {
+      const bool previous = insideConsoleEmit;
+      ~EmitScope()
+      {
+        insideConsoleEmit = previous;
+      }
+    } scope;
     insideConsoleEmit = true;
-    try {
-      auto text = std::move(mText);
-      mText.clear();
-      const auto prefix = mPrefixLength;
-      mPrefixLength = 0;
-      detail::logConsoleRecord(mLevel, text, prefix, mColor, newline);
-    } catch (...) {
-      mText.clear();
-      mPrefixLength = 0;
-    }
-    insideConsoleEmit = wasEmitting;
+    auto text = std::move(mText);
+    mText.clear();
+    const auto prefix = mPrefixLength;
+    mPrefixLength = 0;
+    // Dispatch contains ordinary exceptions and propagates forced unwind.
+    detail::logConsoleRecord(mLevel, text, prefix, mColor, newline);
   }
 
   LogLevel mLevel;
@@ -146,21 +148,32 @@ ConsoleTarget consoleStream(LogLevel level)
     Stream** streams;
     bool& cleaned;
 
-    ~Cleanup()
+    ~Cleanup() noexcept(false)
     {
       cleaned = true;
+      struct DeleteStreams
+      {
+        Stream** streams;
+        ~DeleteStreams()
+        {
+          for (int i = 0; i < 4; ++i) {
+            delete streams[i];
+            streams[i] = nullptr;
+          }
+        }
+      } destroy{streams};
       for (int i = 0; i < 4; ++i) {
         if (streams[i]) {
           try {
             streams[i]->stream.clear();
             streams[i]->stream.flush();
+#if defined(__GLIBCXX__)
+          } catch (const abi::__forced_unwind&) {
+            throw;
+#endif
           } catch (...) {
           }
         }
-      }
-      for (int i = 0; i < 4; ++i) {
-        delete streams[i];
-        streams[i] = nullptr;
       }
     }
   };
@@ -173,6 +186,10 @@ ConsoleTarget consoleStream(LogLevel level)
       try {
         stream->stream.clear();
         stream->stream.flush();
+#if defined(__GLIBCXX__)
+      } catch (const abi::__forced_unwind&) {
+        throw;
+#endif
       } catch (...) {
       }
     }

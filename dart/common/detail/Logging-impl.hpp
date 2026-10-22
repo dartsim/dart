@@ -37,6 +37,7 @@
 
 #include <array>
 #include <memory>
+#include <mutex>
 #include <type_traits>
 #include <utility>
 
@@ -52,6 +53,9 @@ namespace detail {
 
 /// Forward a record to the console without reentering the installed sink.
 void defaultLogSink(LogLevel level, const std::string& message);
+
+// Serialize capture stream-buffer changes with ordinary sink dispatch.
+std::recursive_mutex& logSinkMutex();
 
 // Capture the previous sink and publish its wrapper under the logging mutex.
 // The wrapper callback must be non-empty; an empty result resets to default.
@@ -75,7 +79,7 @@ void logConsoleRecord(
     const std::string& message,
     std::size_t prefixLength,
     int color,
-    bool newline) noexcept;
+    bool newline);
 
 // The Windows console API is injected so the color decision is testable
 // without changing the process console or requiring a Windows host.
