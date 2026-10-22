@@ -478,25 +478,32 @@ macro(_dart_bullet_enqueue queue position entries owner)
 endmacro()
 
 # Use the same traversal for package metadata and each configuration's ABI probe.
-# Probe walks select only active edges; classification also checks other configs.
+# Classification and probes use the same active configuration walks.
 function(_dart_bullet_collect_graph config all_configs)
-  if(all_configs AND CMAKE_CONFIGURATION_TYPES)
+  if(all_configs)
+    get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    set(configs "${CMAKE_BUILD_TYPE}")
+    if(multi_config)
+      set(configs "${CMAKE_CONFIGURATION_TYPES}")
+    endif()
+    # Prefix each list entry to preserve an empty configuration during transport.
+    string(REPLACE ";" ";_" configs "_${configs}")
     set(files)
     set(built_precisions)
-    set(probe_configs)
     set(unknown FALSE)
-    foreach(active_config IN LISTS CMAKE_CONFIGURATION_TYPES)
+    foreach(active_config IN LISTS configs)
+      string(SUBSTRING "${active_config}" 1 -1 active_config)
       _dart_bullet_collect_graph("${active_config}" FALSE)
       list(APPEND files ${_dart_bullet_files})
       list(APPEND built_precisions ${_dart_bullet_built_precisions})
-      list(APPEND probe_configs ${_dart_bullet_probe_configs})
       if(_dart_bullet_unknown)
         set(unknown TRUE)
       endif()
     endforeach()
     # Keep the packaging selection independent of the last configuration walked.
     _dart_bullet_collect_graph("${config}" FALSE)
-    foreach(output files built_precisions probe_configs unknown)
+    set(_dart_bullet_probe_configs "${configs}" PARENT_SCOPE)
+    foreach(output files built_precisions unknown)
       set(_dart_bullet_${output} "${${output}}" PARENT_SCOPE)
     endforeach()
     foreach(output pc_files includes)
@@ -507,9 +514,6 @@ function(_dart_bullet_collect_graph config all_configs)
   string(TOUPPER "${config}" _dart_bullet_build_type)
   set(_dart_bullet_queue Bullet)
   set(_dart_bullet_queue_owners Bullet)
-  set(_dart_bullet_other_queue)
-  set(_dart_bullet_other_queue_owners)
-  set(_dart_bullet_pc TRUE)
   set(_dart_bullet_seen)
   set(_dart_bullet_files)
   set(_dart_bullet_pc_files)
@@ -517,33 +521,30 @@ function(_dart_bullet_collect_graph config all_configs)
   set(_dart_bullet_unknown FALSE)
   set(_dart_bullet_built_precisions)
   set(_dart_bullet_has_build_targets FALSE)
-  set(
-    _dart_bullet_probe_configs
-    ${CMAKE_CONFIGURATION_TYPES}
-    ${CMAKE_BUILD_TYPE}
-  )
-  while(_dart_bullet_queue OR _dart_bullet_other_queue)
-    if(NOT _dart_bullet_queue)
-      set(_dart_bullet_queue ${_dart_bullet_other_queue})
-      set(_dart_bullet_queue_owners ${_dart_bullet_other_queue_owners})
-      set(_dart_bullet_other_queue)
-      set(_dart_bullet_other_queue_owners)
-      set(_dart_bullet_pc FALSE)
-    endif()
+  while(_dart_bullet_queue)
     list(GET _dart_bullet_queue 0 _dart_bullet_item)
     list(REMOVE_AT _dart_bullet_queue 0)
     list(GET _dart_bullet_queue_owners 0 _dart_bullet_owner)
     list(REMOVE_AT _dart_bullet_queue_owners 0)
-    set(_dart_bullet_active_configs "${_dart_bullet_build_type}")
+    set(_dart_bullet_active_configs "_${_dart_bullet_build_type}")
     get_target_property(_dart_bullet_imported "${_dart_bullet_owner}" IMPORTED)
     if(_dart_bullet_imported)
       get_property(
         _dart_bullet_mapped
         TARGET "${_dart_bullet_owner}"
         PROPERTY MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
+        SET
       )
-      string(TOUPPER "${_dart_bullet_mapped}" _dart_bullet_mapped)
-      list(APPEND _dart_bullet_active_configs ${_dart_bullet_mapped})
+      if(_dart_bullet_mapped)
+        get_target_property(
+          _dart_bullet_mapped
+          "${_dart_bullet_owner}"
+          MAP_IMPORTED_CONFIG_${_dart_bullet_build_type}
+        )
+        string(TOUPPER "${_dart_bullet_mapped}" _dart_bullet_mapped)
+        string(REPLACE ";" ";_" _dart_bullet_mapped "_${_dart_bullet_mapped}")
+        list(APPEND _dart_bullet_active_configs ${_dart_bullet_mapped})
+      endif()
     endif()
     # Rejoin generator expressions that list splitting cut at semicolons.
     set(_dart_bullet_part "${_dart_bullet_item}")
@@ -585,7 +586,16 @@ function(_dart_bullet_collect_graph config all_configs)
         string(REPLACE "," ";" _dart_bullet_configs "${CMAKE_MATCH_2}")
         set(_dart_bullet_matches_config FALSE)
         foreach(_dart_bullet_active_config IN LISTS _dart_bullet_active_configs)
-          if(_dart_bullet_active_config IN_LIST _dart_bullet_configs)
+          string(
+            SUBSTRING "${_dart_bullet_active_config}"
+            1
+            -1
+            _dart_bullet_active_config
+          )
+          if(
+            _dart_bullet_active_config STREQUAL _dart_bullet_configs
+            OR _dart_bullet_active_config IN_LIST _dart_bullet_configs
+          )
             set(_dart_bullet_matches_config TRUE)
           endif()
         endforeach()
@@ -596,7 +606,7 @@ function(_dart_bullet_collect_graph config all_configs)
         elseif(NOT _dart_bullet_value MATCHES "^\\$<NOT:")
           set(_dart_bullet_other TRUE)
         endif()
-        if(NOT all_configs AND _dart_bullet_other)
+        if(_dart_bullet_other)
           set(_dart_bullet_item "")
           break()
         endif()
@@ -640,9 +650,6 @@ function(_dart_bullet_collect_graph config all_configs)
     endif()
     if(_dart_bullet_item STREQUAL "")
       continue()
-    elseif(_dart_bullet_other AND _dart_bullet_pc)
-      _dart_bullet_enqueue(_dart_bullet_other_queue APPEND _dart_bullet_part "${_dart_bullet_owner}")
-      continue()
     endif()
     if(
       _dart_bullet_item MATCHES ";"
@@ -653,9 +660,7 @@ function(_dart_bullet_collect_graph config all_configs)
     endif()
     if(NOT TARGET "${_dart_bullet_item}")
       list(APPEND _dart_bullet_files "${_dart_bullet_item}")
-      if(_dart_bullet_pc)
-        list(APPEND _dart_bullet_pc_files "${_dart_bullet_item}")
-      endif()
+      list(APPEND _dart_bullet_pc_files "${_dart_bullet_item}")
       continue()
     endif()
     if(_dart_bullet_item IN_LIST _dart_bullet_seen)
@@ -688,7 +693,7 @@ function(_dart_bullet_collect_graph config all_configs)
       elseif(_dart_bullet_dir MATCHES "\\$<")
         set(_dart_bullet_unknown TRUE)
       endif()
-      if(_dart_bullet_pc AND IS_ABSOLUTE "${_dart_bullet_dir}")
+      if(IS_ABSOLUTE "${_dart_bullet_dir}")
         list(APPEND _dart_bullet_includes "${_dart_bullet_dir}")
       endif()
     endforeach()
@@ -741,57 +746,18 @@ function(_dart_bullet_collect_graph config all_configs)
       endif()
       continue()
     endif()
-    get_target_property(
-      _dart_bullet_configs
-      "${_dart_bullet_item}"
-      IMPORTED_CONFIGURATIONS
+    _dart_bullet_config_location(_dart_bullet_location "${_dart_bullet_item}"
+      "${_dart_bullet_build_type}"
     )
-    if(NOT _dart_bullet_configs)
-      set(_dart_bullet_configs)
-    endif()
-    list(APPEND _dart_bullet_probe_configs ${_dart_bullet_configs})
-    # dart.pc names the location that CMake links for the build type: a
-    # mapped or matching configuration, the default one, or a listed one.
-    if(_dart_bullet_pc)
-      _dart_bullet_config_location(_dart_bullet_location "${_dart_bullet_item}"
-        "${_dart_bullet_build_type}"
-      )
-      if(_dart_bullet_location)
-        list(APPEND _dart_bullet_pc_files "${_dart_bullet_location}")
-      elseif(NOT all_configs)
-        get_target_property(_dart_bullet_type "${_dart_bullet_item}" TYPE)
-        if(NOT _dart_bullet_type STREQUAL "INTERFACE_LIBRARY")
-          set(_dart_bullet_unknown TRUE)
-        endif()
+    if(_dart_bullet_location)
+      list(APPEND _dart_bullet_pc_files "${_dart_bullet_location}")
+      list(APPEND _dart_bullet_files "${_dart_bullet_location}")
+    else()
+      get_target_property(_dart_bullet_type "${_dart_bullet_item}" TYPE)
+      if(NOT _dart_bullet_type STREQUAL "INTERFACE_LIBRARY")
+        set(_dart_bullet_unknown TRUE)
       endif()
     endif()
-    if(NOT all_configs)
-      list(APPEND _dart_bullet_files "${_dart_bullet_location}")
-      continue()
-    endif()
-    # Classify what CMake links for every configuration: the import library
-    # when there is one. CMake also uses IMPORTED_LOCATION_<CONFIG> without a
-    # listed <CONFIG>.
-    _dart_bullet_location(_dart_bullet_value "${_dart_bullet_item}" "")
-    list(APPEND _dart_bullet_files ${_dart_bullet_value})
-    foreach(
-      _dart_bullet_config
-      ${_dart_bullet_configs}
-      ${CMAKE_BUILD_TYPE}
-      ${CMAKE_CONFIGURATION_TYPES}
-      Release
-      Debug
-      RelWithDebInfo
-      MinSizeRel
-    )
-      string(TOUPPER "_${_dart_bullet_config}" _dart_bullet_config)
-      _dart_bullet_location(
-        _dart_bullet_value
-        "${_dart_bullet_item}"
-        "${_dart_bullet_config}"
-      )
-      list(APPEND _dart_bullet_files ${_dart_bullet_value})
-    endforeach()
   endwhile()
   foreach(
     output
@@ -800,7 +766,6 @@ function(_dart_bullet_collect_graph config all_configs)
     includes
     unknown
     built_precisions
-    probe_configs
     has_build_targets
   )
     set(_dart_bullet_${output} "${_dart_bullet_${output}}" PARENT_SCOPE)
@@ -900,23 +865,11 @@ function(_dart_bullet_probe_precision out)
     set(probe_target "${probe_alias}")
   endif()
   get_target_property(probe_imported "${probe_target}" IMPORTED)
-  # Multi-config generators require their actual configuration spelling.
-  set(configs "${CMAKE_CONFIGURATION_TYPES}")
-  if(NOT configs)
-    set(configs "${_DART_BULLET_PROBE_CONFIGS}")
-  endif()
-  if(NOT configs)
-    set(configs "${CMAKE_TRY_COMPILE_CONFIGURATION}")
-  endif()
-  # An empty configuration is meaningful too; a sentinel keeps the loop alive.
-  if(NOT configs)
-    set(configs __default)
-  endif()
+  # Use exactly the configurations whose dependency graphs were classified.
+  set(configs "${_DART_BULLET_PROBE_CONFIGS}")
   set(observed)
   foreach(config IN LISTS configs)
-    if(NOT config STREQUAL "__default")
-      set(CMAKE_TRY_COMPILE_CONFIGURATION "${config}")
-    endif()
+    string(SUBSTRING "${config}" 1 -1 CMAKE_TRY_COMPILE_CONFIGURATION)
     _dart_bullet_collect_graph("${CMAKE_TRY_COMPILE_CONFIGURATION}" FALSE)
     if(_dart_bullet_unknown)
       cmake_pop_check_state()

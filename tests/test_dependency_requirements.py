@@ -730,7 +730,7 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             "add_library(Bullet INTERFACE IMPORTED)\n"
             "set_target_properties(Bullet PROPERTIES INTERFACE_LINK_LIBRARIES collision64)",
             True,
-            "recorded",
+            "rejected",
         ),
         (
             325,
@@ -1679,6 +1679,44 @@ def test_bullet_built_graph_precision(tmp_path, precisions):
     cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
 
 
+@pytest.mark.parametrize("configuration", ["", "Release"])
+def test_bullet_unlisted_imported_configuration_matches_cmake(tmp_path, configuration):
+    include = bullet_module(tmp_path)
+    library = (tmp_path / "libBulletCollision-float64.so").as_posix()
+    graph = (
+        "add_library(collision UNKNOWN IMPORTED)\n"
+        f'set_target_properties(collision PROPERTIES IMPORTED_LOCATION_RELEASE "{library}")\n'
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        "target_link_libraries(Bullet INTERFACE collision)\n"
+    )
+    args = (f"-DCMAKE_BUILD_TYPE={configuration}", "-UCMAKE_CONFIGURATION_TYPES")
+    result = configure(
+        tmp_path,
+        graph + "include(DARTFindBullet)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/found.txt" "${BULLET_FOUND}")\n',
+        cmake_args=args,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(
+        control,
+        graph
+        + 'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/selected.txt" CONTENT "$<TARGET_LINKER_FILE:collision>")\n',
+        cmake_args=args,
+    )
+    if configuration:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert (control / "build/selected.txt").read_text() == library
+    else:
+        assert result.returncode != 0
+        assert "IMPORTED_LOCATION not set" in result.stderr
+    assert (tmp_path / "build/found.txt").read_text() == (
+        "TRUE" if result.returncode == 0 else "FALSE"
+    )
+
+
 @pytest.mark.parametrize("mapping", [None, "", "MISSING;DEBUG", ";DEBUG"])
 @pytest.mark.parametrize("system", [None, "Windows"])
 def test_bullet_imported_default_configuration(tmp_path, mapping, system):
@@ -2426,12 +2464,15 @@ def test_bullet_hybrid_configuration_abi(tmp_path, debug_precision, imported_con
             )
 
 
+@pytest.mark.parametrize("configuration", ["multi", "Release", "Debug", ""])
 @pytest.mark.parametrize("debug_precision", ["single", "double"])
 @pytest.mark.parametrize(
     "edge",
     ["keywords", "raw-genex", "target-genex", "inactive-target", "mapped-target"],
 )
-def test_bullet_hybrid_conditional_graph_abi(tmp_path, debug_precision, edge):
+def test_bullet_hybrid_conditional_graph_abi(
+    tmp_path, debug_precision, edge, configuration
+):
     release = build_bullet_abi_fixture(tmp_path / "release", "double")
     debug = build_bullet_abi_fixture(tmp_path / "debug", debug_precision)
     bullet_module(tmp_path)
@@ -2463,6 +2504,22 @@ def test_bullet_hybrid_conditional_graph_abi(tmp_path, debug_precision, edge):
                 'target_link_libraries(release_math_target INTERFACE "$<$<CONFIG:Debug>:broken>")\n'
             )
             links += ' "$<$<CONFIG:Unused>:broken>"'
+    multi = configuration == "multi"
+    configs = ("Release", "Debug") if multi else (configuration,)
+    selected_debug = configuration == "Debug" or (
+        edge == "mapped-target" and configuration != ""
+    )
+    accepted = debug_precision == "double" or (not multi and not selected_debug)
+    pc_library = (
+        "debug_math"
+        if edge == "mapped-target" or configuration == "Debug"
+        else "release_math"
+    )
+    cmake_args = (
+        ("-G", "Ninja Multi-Config", "-DCMAKE_CONFIGURATION_TYPES=Release;Debug")
+        if multi
+        else (f"-DCMAKE_BUILD_TYPE={configuration}", "-UCMAKE_CONFIGURATION_TYPES")
+    )
     result = configure(
         tmp_path,
         "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
@@ -2479,30 +2536,26 @@ def test_bullet_hybrid_conditional_graph_abi(tmp_path, debug_precision, edge):
         "target_link_libraries(Bullet INTERFACE BulletCollision)\n"
         "set(CMAKE_TRY_COMPILE_CONFIGURATION Release)\n"
         "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
-        f'if({"NOT " if debug_precision == "double" else ""}BULLET_FOUND)\n'
+        f'if({"NOT " if accepted else ""}BULLET_FOUND)\n'
         'message(FATAL_ERROR "Wrong conditional graph ABI acceptance")\nendif()\n'
         'if(NOT CMAKE_TRY_COMPILE_CONFIGURATION STREQUAL "Release")\n'
         'message(FATAL_ERROR "Probe changed caller configuration")\nendif()\n'
-        f'if(NOT DART_BULLET_PC_LIBS STREQUAL " ${{{"debug_math" if edge == "mapped-target" else "release_math"}}}")\n'
+        f'if(NOT DART_BULLET_PC_LIBS STREQUAL " ${{{pc_library}}}")\n'
         'message(FATAL_ERROR "Probe changed packaging libraries: ${DART_BULLET_PC_LIBS}")\nendif()\n'
         f'add_executable(consumer "{tmp_path.as_posix()}/consumer.cpp")\n'
         "target_link_libraries(consumer PRIVATE Bullet)\n",
-        cmake_args=(
-            "-G",
-            "Ninja Multi-Config",
-            "-DCMAKE_CONFIGURATION_TYPES=Release;Debug",
-        ),
+        cmake_args=cmake_args,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    if debug_precision == "double":
-        for config in ("Release", "Debug"):
+    if accepted:
+        for config in configs:
             cmake_fixture_run(
                 shutil.which("cmake"), "--build", tmp_path / "build", "--config", config
             )
             executable = (
                 tmp_path
                 / "build"
-                / config
+                / (config if multi else "")
                 / ("consumer.exe" if os.name == "nt" else "consumer")
             )
             env = {
@@ -2518,12 +2571,50 @@ def test_bullet_hybrid_conditional_graph_abi(tmp_path, debug_precision, edge):
             cmake_fixture_run(executable, env=env)
 
 
+@pytest.mark.parametrize("configuration", ["multi", "Release", "Debug", ""])
+def test_bullet_active_unsupported_configuration_edge(tmp_path, configuration):
+    include = bullet_module(tmp_path)
+    active = "Release" if configuration == "multi" else configuration
+    args = (
+        ("-G", "Ninja Multi-Config", "-DCMAKE_CONFIGURATION_TYPES=Release;Debug")
+        if configuration == "multi"
+        else (f"-DCMAKE_BUILD_TYPE={configuration}", "-UCMAKE_CONFIGURATION_TYPES")
+    )
+    graph = (
+        "add_library(Bullet INTERFACE IMPORTED)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        f'target_link_libraries(Bullet INTERFACE "$<$<CONFIG:{active}>:$<UNSUPPORTED:missing>>")\n'
+    )
+    result = configure(
+        tmp_path,
+        graph + "include(DARTFindBullet)\n"
+        "if(BULLET_FOUND OR NOT _DART_BULLET_GRAPH_UNKNOWN)\n"
+        'message(FATAL_ERROR "Active unsupported edge was not rejected")\nendif()\n',
+        cmake_args=args,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    # CMake itself must evaluate the expression in this configuration too.
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(
+        control,
+        graph
+        + 'file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/active-$<CONFIG>.txt" CONTENT "$<TARGET_GENEX_EVAL:Bullet,$<TARGET_PROPERTY:Bullet,INTERFACE_LINK_LIBRARIES>>")\n',
+        cmake_args=args,
+    )
+    assert result.returncode != 0
+    assert "UNSUPPORTED:missing" in result.stderr
+
+
 @pytest.mark.parametrize("debug_precision", ["single", "double"])
 @pytest.mark.parametrize("generator", ["Ninja", "Ninja Multi-Config"])
 def test_bullet_imported_configuration_abi(tmp_path, debug_precision, generator):
     release = build_bullet_abi_fixture(tmp_path / "release", "double")
     debug = build_bullet_abi_fixture(tmp_path / "debug", debug_precision)
     bullet_module(tmp_path)
+    (tmp_path / "consumer.cpp").write_text(BULLET_CONSUMER)
+    # A decorative configuration list does not turn Ninja into a multi-config generator.
+    accepted = debug_precision == "double" or generator == "Ninja"
     result = configure(
         tmp_path,
         "set(DART_USE_SYSTEM_BULLET ON)\nset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
@@ -2535,12 +2626,41 @@ def test_bullet_imported_configuration_abi(tmp_path, debug_precision, generator)
         'set_target_properties(${name} PROPERTIES IMPORTED_CONFIGURATIONS "RELEASE;DEBUG" '
         'IMPORTED_LOCATION_RELEASE "${release_${name}}" IMPORTED_LOCATION_DEBUG "${debug_${name}}")\n'
         "target_link_libraries(Bullet INTERFACE ${name})\nendforeach()\n"
+        "target_compile_definitions(Bullet INTERFACE BT_USE_DOUBLE_PRECISION)\n"
         "set(DART_BULLET_REQUIRE_PRECISION double)\ninclude(DARTFindBullet)\n"
-        f'if({"NOT " if debug_precision == "double" else ""}BULLET_FOUND)\n'
-        'message(FATAL_ERROR "Wrong per-configuration ABI acceptance")\nendif()\n',
+        f'if({"NOT " if accepted else ""}BULLET_FOUND)\n'
+        'message(FATAL_ERROR "Wrong per-configuration ABI acceptance")\nendif()\n'
+        f'add_executable(consumer "{tmp_path.as_posix()}/consumer.cpp")\n'
+        "target_link_libraries(consumer PRIVATE Bullet)\n",
         cmake_args=("-G", generator, "-DCMAKE_CONFIGURATION_TYPES=Release;Debug"),
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+    if accepted:
+        configs = (
+            ("Release", "Debug") if generator == "Ninja Multi-Config" else ("Release",)
+        )
+        for config in configs:
+            cmake_fixture_run(
+                shutil.which("cmake"), "--build", tmp_path / "build", "--config", config
+            )
+            executable = (
+                tmp_path
+                / "build"
+                / (config if generator == "Ninja Multi-Config" else "")
+                / ("consumer.exe" if os.name == "nt" else "consumer")
+            )
+            env = {
+                **os.environ,
+                "PATH": os.pathsep.join(
+                    [
+                        str(release / "lib"),
+                        str(debug / "lib"),
+                        os.environ.get("PATH", ""),
+                    ]
+                ),
+            }
+            cmake_fixture_run(executable, env=env)
 
 
 @pytest.mark.parametrize("mode", ["ambiguous", "broken"])
