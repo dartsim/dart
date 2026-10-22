@@ -392,19 +392,19 @@ endfunction()
 #-------------------------------------------------------------------------------
 function(dart_check_compiler_version)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(required_version 11.2.0)
+    set(required_version 13.2.0)
     set(compiler_label "GCC")
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    if(DEFINED XCODE_VERSION AND XCODE_VERSION VERSION_LESS 14.1)
+    if(DEFINED XCODE_VERSION AND XCODE_VERSION VERSION_LESS 16.3)
       message(
         FATAL_ERROR
-        "DART requires Xcode 14.1 or greater; detected '${XCODE_VERSION}'."
+        "DART requires Xcode 16.3 or greater; detected '${XCODE_VERSION}'."
       )
     endif()
-    set(required_version 14.0.0)
+    set(required_version 17.0.0)
     set(compiler_label "Apple Clang")
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(required_version 13.0.0)
+    set(required_version 18.0.0)
     set(compiler_label "LLVM Clang")
   else()
     return()
