@@ -23,6 +23,7 @@ find_package(PkgConfig 0.29.2 QUIET)
 # Check to see if pkgconfig is installed.
 if(PkgConfig_FOUND)
   pkg_check_modules(PC_ODE ode QUIET)
+  set(ODE_DEFINITIONS ${PC_ODE_CFLAGS_OTHER})
 endif()
 
 # Include directories

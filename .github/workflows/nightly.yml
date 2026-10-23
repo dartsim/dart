@@ -58,6 +58,58 @@ jobs:
   toolchain:
     uses: ./.github/workflows/ci_toolchain.yml
 
+  collision-fetch:
+    name: CMake 4 ODE and Bullet fetch fallbacks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.11.0
+        with:
+          cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Build, test, install, and uninstall fetched collision libraries
+        run: |
+          pixi run bash -euc '
+            cmake --version
+            install_prefix=$(mktemp -d)
+            cmake -G Ninja -S . -B build/collision-fetch \
+              -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX="$install_prefix" \
+              -DDART_USE_SYSTEM_DEPENDENCIES=ON \
+              -DDART_USE_SYSTEM_ODE=OFF -DDART_USE_SYSTEM_BULLET=OFF \
+              -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF -DDART_BUILD_PROFILE=OFF
+            # Pixi has system packages too; prove these switches selected fetched sources.
+            grep -E "^DART_ODE_SOURCE_DIR:INTERNAL=.*_deps/ode-src$" build/collision-fetch/CMakeCache.txt
+            grep -E "^DART_BULLET_SOURCE_DIR:INTERNAL=.*_deps/bullet-src$" build/collision-fetch/CMakeCache.txt
+            cmake --build build/collision-fetch --target all tests -j 2
+            ninja -C build/collision-fetch -t commands dart > build/collision-fetch/commands.txt
+            grep " -o lib/libdart" build/collision-fetch/commands.txt > build/collision-fetch/link-commands.txt
+            grep -E "_deps/ode-build/.*libode" build/collision-fetch/link-commands.txt
+            grep -E "_deps/bullet-build/.*libBulletCollision" build/collision-fetch/link-commands.txt
+            grep -E "_deps/bullet-build/.*libLinearMath" build/collision-fetch/link-commands.txt
+            ctest --test-dir build/collision-fetch --output-on-failure -j 2
+            cmake --install build/collision-fetch
+            test ! -e "$install_prefix/include/btBulletDynamicsCommon.h"
+            cmake -G Ninja -S tools/package -B build/collision-fetch-consumer \
+              -DDART_DIR="$install_prefix/share/dart/cmake" \
+              -DCMAKE_PREFIX_PATH="$install_prefix;$CONDA_PREFIX" \
+              -DDART_TEST_COMPONENTS="collision-ode;collision-bullet"
+            cmake --build build/collision-fetch-consumer -j 2
+            export LD_LIBRARY_PATH="$install_prefix/lib:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            ctest --test-dir build/collision-fetch-consumer --output-on-failure -j 2
+            ldd build/collision-fetch-consumer/package_collision > build/collision-fetch-consumer/ldd.txt
+            for library in BulletCollision LinearMath ode; do
+              grep -F "=> $install_prefix/lib/lib${library}.so" build/collision-fetch-consumer/ldd.txt
+            done
+            cmake --build build/collision-fetch --target dart-uninstall -j 2
+            test -z "$(find "$install_prefix" \( -type f -o -type l \) -print -quit)"
+            rm -rf "$install_prefix"
+          '
+
   simd:
     uses: ./.github/workflows/ci_simd.yml
 
@@ -99,6 +151,7 @@ jobs:
       - windows
       - freebsd
       - toolchain
+      - collision-fetch
       - simd
       - gz-physics
       - api-doc
