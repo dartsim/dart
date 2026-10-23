@@ -47,7 +47,7 @@
         "docs/onboarding/contributing.md",
         "docs/ai/verification.md"
       ],
-      "permitted_scopes": ["dart/dynamics", "tests/unit", "CHANGELOG.md"],
+      "permitted_scopes": ["dart/dynamics", "tests/unit", "changelog.d"],
       "focused_gates": ["pixi run test"],
       "full_gates": ["pixi run lint", "pixi run test-all"],
       "recovery": "docs/onboarding/testing.md",

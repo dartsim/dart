@@ -147,6 +147,21 @@ def test_domino_pd_and_push_callbacks(scene):
     assert np.isfinite(manipulator.getPositions()).all()
 
 
+def test_six_axis_arm_push_topples_dominoes(scene):
+    _, node = scene
+    for _ in range(3):
+        press(node.handler, "w")
+    press(node.handler, " ")
+    press(node.handler, "r")
+    step(node, 2000)
+    dominoes = [node.handler.mFirstDomino, *node.handler.mDominoes]
+    assert len(dominoes) == 4
+    for domino in dominoes:
+        # A fallen domino's local vertical is nearly horizontal.
+        assert abs(domino.getBodyNode(0).getWorldTransform().rotation()[2, 2]) < 0.5
+    assert np.isfinite(node.controller.mManipulator.getPositions()).all()
+
+
 def test_domino_replay_while_paused_and_topology_change(scene):
     tutorial, node = scene
     handler = node.handler

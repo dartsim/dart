@@ -125,9 +125,6 @@ Optional components remain optional.
    * - urdfdom
      - 4.0.0
      - URDF parser
-   * - spdlog
-     - 1.9.2
-     - Logging support
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering
@@ -199,9 +196,7 @@ environment as the dependency prefix. Then configure and build:
        -DCMAKE_BUILD_TYPE=Release \
        -DDART_BUILD_DARTPY=ON \
        -DDART_BUILD_PROFILE=ON \
-       -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-       -DDART_USE_SYSTEM_GOOGLETEST=ON \
-       -DDART_USE_SYSTEM_TRACY=ON
+       -DDART_USE_SYSTEM_DEPENDENCIES=ON
    cmake --build build/default/cpp/Release -j
 
 Use ``-DCMAKE_PREFIX_PATH=<prefix>`` when dependencies are installed outside the

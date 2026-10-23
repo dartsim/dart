@@ -164,6 +164,7 @@ void Composite::copyCompositeStateTo(State& outgoingStates) const
 //==============================================================================
 void Composite::setCompositeProperties(const Properties& newProperties)
 {
+  detail::checkTopologyProperties(this, newProperties);
   setObjectsFromDataTypeMap<
       Aspect,
       Aspect::Properties,
@@ -202,6 +203,7 @@ void Composite::duplicateAspects(const Composite* fromComposite)
   if (this == fromComposite)
     return;
 
+  detail::checkTopologyMutation(this);
   const AspectMap& otherMap = fromComposite->mAspectMap;
 
   AspectMap::iterator receiving = mAspectMap.begin();
@@ -240,6 +242,7 @@ void Composite::matchAspects(const Composite* otherComposite)
     return;
   }
 
+  detail::checkTopologyMutation(this);
   for (auto& aspect : mAspectMap)
     _replaceAspect(aspect.second, nullptr);
 
@@ -264,14 +267,23 @@ void Composite::removeFromComposite(Aspect* aspect)
 void Composite::_replaceAspect(
     std::unique_ptr<Aspect>& slot, std::unique_ptr<Aspect> replacement)
 {
+  if (!slot && !replacement)
+    return;
+
+  detail::checkTopologyMutation(this);
   removeFromComposite(slot.get());
   slot = std::move(replacement);
   addToComposite(slot.get());
+  detail::notifyTopologyMutation(this);
 }
 
 //==============================================================================
 void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
+  // Clearing an absent aspect replaces nothing; _replaceAspect() checks a
+  // clear that removes one.
+  if (aspect)
+    detail::checkTopologyMutation(this);
   auto insertion = mAspectMap.insert(AspectMap::value_type(type_idx, nullptr));
   auto& slot = insertion.first->second;
   _replaceAspect(slot, aspect ? aspect->cloneAspect() : nullptr);
@@ -280,6 +292,8 @@ void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 //==============================================================================
 void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 {
+  if (aspect)
+    detail::checkTopologyMutation(this);
   auto insertion = mAspectMap.insert(AspectMap::value_type(type_idx, nullptr));
   auto& slot = insertion.first->second;
   _replaceAspect(slot, std::move(aspect));

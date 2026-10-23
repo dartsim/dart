@@ -35,6 +35,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -194,6 +195,9 @@ void reserveBoxedLcpSolverScratch(
 void reserveMatrixFreeContactScratch(
     BoxedLcpThreadScratch& scratch, std::size_t numConstraints, std::size_t n)
 {
+  // Uncomputed identity-body LDLT objects must be destroyed before
+  // reallocation.
+  scratch.matrixFreeBodies.clear();
   reserveGeometric(scratch.matrixFreeContacts, numConstraints);
   reserveGeometric(scratch.matrixFreeOffsets, numConstraints);
   reserveGeometric(scratch.matrixFreeRows, n);
@@ -548,9 +552,14 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
            << "solver, which is discouraged. Ignoring this request.\n";
   }
 
-  if (mBoxedLcpSolver != lcpSolver)
+  const bool changed = mBoxedLcpSolver != lcpSolver;
+  if (changed) {
+    detail::checkWorldTopologyMutation(this);
     detail::eraseContactWarmStartCache(this);
+  }
   mBoxedLcpSolver = std::move(lcpSolver);
+  if (changed)
+    detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -563,6 +572,9 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
     BoxedLcpSolverPtr lcpSolver)
 {
+  if (mSecondaryBoxedLcpSolver == lcpSolver)
+    return;
+  detail::checkWorldTopologyMutation(this);
   if (lcpSolver == mBoxedLcpSolver) {
     dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] Attempting to set "
            << "the secondary LCP solver that is identical to the primary LCP "
@@ -571,6 +583,7 @@ void BoxedLcpConstraintSolver::setSecondaryBoxedLcpSolver(
   }
 
   mSecondaryBoxedLcpSolver = std::move(lcpSolver);
+  detail::notifyWorldTopologyMutation(this);
 }
 
 //==============================================================================
@@ -585,8 +598,18 @@ void BoxedLcpConstraintSolver::setMatrixFreeContactSolverOptions(
     const MatrixFreeContactSolverOptions& options)
 {
   const auto sanitized = sanitizeMatrixFreeContactOptions(options);
+  const auto current = getMatrixFreeContactSolverOptions();
+  if (current.mEnabled == sanitized.mEnabled
+      && current.mMinRows == sanitized.mMinRows
+      && current.mMaxIterations == sanitized.mMaxIterations
+      && current.mSor == sanitized.mSor
+      && current.mDeltaTolerance == sanitized.mDeltaTolerance
+      && current.mRelativeDeltaTolerance == sanitized.mRelativeDeltaTolerance
+      && current.mEpsilonForDivision == sanitized.mEpsilonForDivision)
+    return;
   std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
   matrixFreeContactOptionsBySolver()[this] = sanitized;
+  detail::notifyWorldParameterMutation(this);
 }
 
 //==============================================================================
@@ -730,7 +753,6 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   contacts.clear();
   offsets.clear();
   rows.clear();
-  bodies.clear();
 
   x.resize(n);
   w.resize(n);
@@ -754,21 +776,26 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
       lookupIndex = (lookupIndex + 1u) & bodyLookupMask;
     }
 
-    MatrixFreeContactBodyScratch bodyScratch;
     const Eigen::Matrix6d& articulatedInertia = body->getArticulatedInertia();
+    const std::size_t index = bodies.size();
+    // Each contact adds at most two bodies, already reserved by the shared
+    // reset.
+    assert(index < bodies.capacity());
+    bodies.emplace_back();
+    auto& bodyScratch = bodies.back();
     static const Eigen::Matrix6d identityInertia = Eigen::Matrix6d::Identity();
     bodyScratch.identityInertia
         = articulatedInertia.cwiseEqual(identityInertia).all();
     if (!bodyScratch.identityInertia) {
       bodyScratch.inertiaDecomposition.compute(articulatedInertia);
-      if (bodyScratch.inertiaDecomposition.info() != Eigen::Success)
+      if (bodyScratch.inertiaDecomposition.info() != Eigen::Success) {
+        bodies.pop_back();
         return -1;
+      }
     }
 
-    const std::size_t index = bodies.size();
     bodyLookupKeys[lookupIndex] = body;
     bodyLookupValues[lookupIndex] = index;
-    bodies.push_back(std::move(bodyScratch));
     return static_cast<int>(index);
   };
 

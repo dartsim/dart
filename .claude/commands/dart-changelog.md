@@ -1,6 +1,6 @@
 ---
-description: decide, draft, finalize, or audit DART changelog entries
-argument-hint: "[decide|draft|finalize|audit] [pr-number|release]"
+description: decide, draft, finalize, audit, or assemble DART changelog entries
+argument-hint: "[decide|draft|finalize|audit|assemble] [pr-number|release]"
 agent: build
 ---
 
@@ -12,16 +12,21 @@ Maintain DART changelog entries: $ARGUMENTS
 usually invoked by other DART workflows when they reach a changelog decision,
 not directly by users.
 
-Use it to decide whether `CHANGELOG.md` needs an entry, draft an entry at the
-right level of detail, add a PR link after publication, or audit a release
-section for missing or over-detailed entries. Keep style, placement, evidence,
-and release-note density aligned with `docs/onboarding/changelog.md`.
+Use it to decide whether a change needs a changelog entry, draft an entry at
+the right level of detail, add a PR link after publication, audit pending
+fragments or a release section for missing or over-detailed entries, or
+assemble `main`'s fragments at a checkpoint. On `main`, an entry is a
+`changelog.d/` fragment and only checkpoint assembly adds entries to
+`CHANGELOG.md`;
+`release-*` branches edit `CHANGELOG.md` directly. Keep style, placement,
+evidence, and release-note density aligned with `docs/onboarding/changelog.md`.
 
 ## Required Reading
 
 @AGENTS.md
 @docs/onboarding/changelog.md
 @docs/onboarding/release-management.md
+@changelog.d/README.md
 
 ## Modes
 
@@ -29,14 +34,23 @@ Interpret `$ARGUMENTS` as one of these modes when present:
 
 - `decide`: determine whether the current change needs a changelog entry and
   record the reason in author/task notes when no entry is needed.
-- `draft`: write or revise the entry before a PR number exists.
-- `finalize`: add the PR link or adjust the entry after a PR exists, keeping the
-  follow-up local until explicit maintainer/user approval permits a push.
-- `audit`: scan a release section or PR set for missing, duplicate,
-  over-detailed, misplaced, or stale entries.
+- `draft`: write or revise the entry before a PR number exists: a
+  `changelog.d/<topic>.md` fragment on `main`, a `CHANGELOG.md` entry on a
+  `release-*` branch.
+- `finalize`: add the PR link line to the fragment (or release-branch entry) or
+  adjust the entry after a PR exists, keeping the follow-up local until explicit
+  maintainer/user approval permits a push.
+- `audit`: scan pending `changelog.d/` fragments, a `CHANGELOG.md` release
+  section, or a PR set for missing, duplicate, over-detailed, misplaced, or
+  stale entries.
 - `release-audit`: alias for `audit` when the caller is finalizing a release
   section as part of release packaging (see
   `docs/onboarding/release-management.md`).
+- `assemble`: at a checkpoint (each milestone exit, before a release candidate,
+  tag, or release-branch cut from `main`, or when the maintainer asks), run
+  `pixi run changelog-assemble` on a topic branch from fresh `origin/main`,
+  then `release-audit` the assembled section. Its PR still needs explicit
+  maintainer/user approval before it is opened.
 
 If no mode is given, infer the smallest mode that satisfies the caller's need.
 
@@ -49,11 +63,11 @@ contributor owner rather than copying this decision log:
 ```markdown
 Changelog decision:
 
-- Mode: decide | draft | finalize | audit | release-audit
+- Mode: decide | draft | finalize | audit | release-audit | assemble
 - Base evidence: <base ref or PR/release inspected>
 - Scope evidence: <diff, PR, issue, or release section inspected>
 - Decision: entry required | no entry required | entry deferred | audit only
-- Target section: <release/category, or N/A>
+- Target section: <fragment path and category, release/category, or N/A>
 - Entry text: <final or draft bullet, or N/A>
 - Decision reason: <evidence-backed reason or required follow-up>
 - Follow-up: <PR link, maintainer approval, release audit, or none>
@@ -62,7 +76,8 @@ Changelog decision:
 For `no entry required`, the decision note must name the evidence-backed reason
 rather than just saying "not needed." For `entry deferred`, say exactly what is
 missing, usually the PR number or release target. For `finalize`, confirm the
-entry still matches nearby `CHANGELOG.md` style after adding the PR link.
+entry still matches nearby `CHANGELOG.md` style after adding the PR link. For
+`assemble`, list where each fragment moved.
 
 ## Workflow
 
@@ -92,9 +107,10 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
    Use the base comparison or PR diff even when the worktree is clean. If a PR,
    issue, release, or target branch is named, inspect that live object before
    writing and prefer its base over the `main` fallback.
-2. Read `docs/onboarding/changelog.md` and the relevant `CHANGELOG.md` release
-   section. Compare nearby bullets before drafting so wording, section choice,
-   and level of detail match the current file.
+2. Read `docs/onboarding/changelog.md`, the relevant `CHANGELOG.md` release
+   section and, on `main`, the pending `changelog.d/` fragments. Compare nearby
+   bullets before drafting so wording, section choice, and level of detail
+   match the current file.
 3. Decide whether an entry is required using the guide. `CHANGELOG.md` is
    written for users of the released library and packages:
    - public API, behavior, packaging, dependency, platform, simulation
@@ -103,9 +119,10 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
      unless they change a command or workflow that users of the release run;
      typo-only, formatting-only, generated-only, and tiny internal refactors
      never do.
-4. Record the decision with the Output Contract before modifying
-   `CHANGELOG.md` or telling a caller to skip it. The decision must cite the
-   diff, PR, issue, release section, or target branch that was inspected.
+4. Record the decision with the Output Contract before writing a fragment,
+   modifying `CHANGELOG.md`, or telling a caller to skip it. The decision must
+   cite the diff, PR, issue, release section, or target branch that was
+   inspected.
 5. When writing, start with the reader-visible outcome, not the implementation
    chore. Use one concise bullet, combine closely related changes, avoid author
    credits, and avoid one-bullet-per-PR diary style. Keep the entry to what the
@@ -114,9 +131,12 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
    behavior or API conditions for any downstream, without naming a specific
    downstream project in entry descriptions; keep bug-report issue links as
    references. PR descriptions may still cite downstream evidence.
-6. Place the entry under the target branch's release section and nearest
-   existing category. Do not create a new category for one PR unless the release
-   shape genuinely needs it.
+6. On `main`, write the entry as `changelog.d/<topic>.md` in the
+   `changelog.d/README.md` format, naming the nearest existing category under
+   the unreleased release heading; on a `release-*` branch, place it under that
+   branch's release section in `CHANGELOG.md` and delete any cherry-picked
+   `changelog.d/` fragment. Do not add a category for a single entry unless the
+   release shape genuinely needs it.
 7. Add the best evidence link, matching this branch's established style
    (`*` bullets; the bare `[#1234](https://github.com/dartsim/dart/pull/1234)`
    link on its own line at the end of the entry):
@@ -124,10 +144,14 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
      local until explicit approval permits another push or PR update.
 8. For release audits, consolidate noisy implementation ledgers, confirm
    breaking/removal/deprecation bullets name a migration or support lane, and
-   preserve human-readable release notes over exhaustive history.
-9. Validate with the gate appropriate to the caller. For changelog-only edits,
-   run the docs-only checks from `docs/ai/verification.md`; before any commit,
-   run `pixi run lint`.
+   preserve human-readable release notes over exhaustive history. For
+   `assemble`, every fragment needs its PR link first; review the assembled
+   section with these release-audit rules and commit `CHANGELOG.md` together
+   with the deleted fragments.
+9. Validate with the gate appropriate to the caller. After writing or
+   finalizing a fragment, run `pixi run check-changelog-fragments`. For
+   changelog-only edits, run the docs-only checks from
+   `docs/ai/verification.md`; before any commit, run `pixi run lint`.
 
 ## Caller Contract
 
@@ -143,6 +167,8 @@ outcome.
 Report:
 
 - the changelog decision note in the Output Contract shape above;
-- the drafted or finalized entry text and its `CHANGELOG.md` placement;
-- gates run (`pixi run lint`, docs-only checks) and their results;
+- the drafted or finalized entry text and its fragment path or `CHANGELOG.md`
+  placement;
+- gates run (`pixi run check-changelog-fragments`, `pixi run lint`, docs-only
+  checks) and their results;
 - any follow-up left local pending explicit maintainer/user approval.

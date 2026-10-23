@@ -1,11 +1,22 @@
 # DART Changelog
 
+<!-- On main, add entries as changelog.d/ fragments (see changelog.d/README.md); release-* branches edit this file directly. -->
+
 ## DART 7
 
 ### [DART 7.0.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
 * Breaking Changes
 
+  * DART no longer uses spdlog, and fmt is no longer part of its public
+    interface. Messages print as `[level] message`, with warnings and errors on
+    stderr and colors only on terminals (`NO_COLOR` disables them). spdlog's
+    logger settings no longer affect DART; use `dart::common::setLogLevel` and
+    `dart::common::setLogSink` instead. `DART_*` logging arguments must be
+    integers, floating-point values, strings, pointers or enums; convert other
+    types to strings first. Projects that used fmt through `find_package(DART)`
+    must find it themselves, and `DART_SKIP_spdlog` no longer has any effect.
+    [#3853](https://github.com/dartsim/dart/pull/3853)
   * Source builds require the Ubuntu 24.04 LTS toolchain or newer: GCC 13.2,
     LLVM Clang 18, Apple Clang 17 (Xcode 16.3), MSVC 19.32 (Visual Studio 2022
     17.2) and CMake 3.28. Projects that use an installed DART through
@@ -32,16 +43,8 @@
     release.
     [#3877](https://github.com/dartsim/dart/pull/3877)
 
-  * Remove the installed `dart/utils/urdf/IncludeUrdf.hpp` and
-    `dart/utils/urdf/urdf_world_parser.hpp` headers, including
-    `dart::utils::urdf_parsing::parseWorldURDF`. Use
-    `dart::utils::DartLoader::parseWorld` or `parseWorldString` instead.
-    Shared DART consumers no longer need urdfdom development packages;
-    static consumers and DART builds still require urdfdom.
-    [#3888](https://github.com/dartsim/dart/pull/3888)
-
-  * `dart/utils/urdf/urdf.hpp` no longer includes
-    `BackwardCompatibility.hpp`. Code using its
+  * `dart/utils/urdf/urdf.hpp`, through `urdf_world_parser.hpp`, no longer
+    includes `BackwardCompatibility.hpp`. Code using its
     `URDFDOM_HEADERS_VERSION_*` macros must include
     `dart/utils/urdf/BackwardCompatibility.hpp` directly.
     [#3863](https://github.com/dartsim/dart/pull/3863)
@@ -85,6 +88,13 @@
     options and the pybind11 binder. Remove these options from configurations;
     a legacy `DART_DARTPY_BINDER=pybind11` value fails configure.
 
+  * Remove the installed `dart://sample/urdf/KR5/` sample resources, whose
+    license declaration was incomplete and whose CAD mesh redistribution terms
+    were unknown. Examples, tutorials, and tests now use the DART-authored
+    `dart://sample/urdf/six_axis_arm/six_axis_arm.urdf`; code that loaded KR5
+    must supply its own copy.
+    [#3878](https://github.com/dartsim/dart/pull/3878)
+
   * Remove the `hubo_puppet` demo and installed
     `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
     retired; its model remains available for parser regression coverage.
@@ -104,10 +114,7 @@
     must rebuild.
   * Combine `dart-utils` and `dart-utils-urdf` into `dart-io`, retaining their
     legacy CMake names and public `dart::utils` headers for rebuilt consumers.
-    Enabling IO now requires tinyxml2, urdfdom 4.0.0, and sdformat 14.8 or
-    newer. Ubuntu 22.04's apt urdfdom (3.0), vcpkg's (3.1) and FreeBSD's
-    ports (3.0) are below that floor: install urdfdom 4 or newer, use Pixi,
-    or set `DART_BUILD_IO=OFF`.
+    Enabling IO now requires tinyxml2, urdfdom, and sdformat 14.8 or newer.
   * SDF loading uses canonical sdformat validation, version conversion and
     frame semantics, including authored world gravity and joint effort and
     velocity limits that the old parser ignored. Parse, resource and
@@ -132,6 +139,11 @@
 
 * API
 
+  * Add `dart::common::setLogSink`, `resetLogSink`, `setLogLevel` and
+    `getLogLevel` to route DART's log messages to an application and filter
+    them at run time.
+    [#3853](https://github.com/dartsim/dart/pull/3853)
+
   * URDF world loading returns `nullptr` when an include is missing its
     filename or model name, or an entity is missing its model, instead of
     constructing strings from null attributes.
@@ -140,6 +152,21 @@
   * The GUI rejects textures of more than 67,108,864 pixels (8192 x 8192), or
     256 MiB of decoded RGBA data, before allocating them.
     [#3860](https://github.com/dartsim/dart/pull/3860)
+
+  * Add opt-in C++ `World::compile()` and scoped `World::edit()` to freeze
+    and recompile model topology, with per-World topology and parameter
+    revisions. Worlds that are never compiled retain lazy runtime editing
+    and shared model membership; `edit()` on such a World leaves it lazy.
+    Scope exit never throws: when the recompile fails, the next `step()` or
+    `compile()` throws that error.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Worlds that are never compiled keep DART 6 behavior, including version
+    propagation and shared model membership, with one labeled change: a
+    re-entrant `World::step()` and a topology edit of the stepping World's
+    model from its own step callbacks now throw `std::runtime_error` instead
+    of corrupting the step. Ownership tracking starts at `compile()`.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
@@ -170,6 +197,18 @@
     [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Collision
+
+  * A throwing Shape override or allocation failure during collision-group
+    subscription no longer leaves partial collision objects or a stale
+    FCL/Bullet detector shape entry; debug builds no longer assert when the
+    detector is destroyed.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Editing a `CompositeCollisionFilter` during its own query, from one of its
+    filters, now throws `std::runtime_error` instead of invalidating the query
+    when the edit removes the filter being queried, clears the composite or
+    adds a filter that rehashes its set; other edits still apply.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Fix a memory leak where a Bullet collision detector used for a collision
     check between two groups was never destroyed.
@@ -310,6 +349,20 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Add the immutable `dartpy.Transform` and `dartpy.Rotation` values
+    (canonical module `dartpy.math`): keyword-only constructors with at
+    most one rotation form (`rotation=`, `wxyz=`, `xyzw=`, `rpy=` as
+    extrinsic X-Y-Z; none means identity) plus `translation=` for a
+    `Transform`, or an exclusive `Transform(matrix=...)` that already
+    contains translation; batches from arrays with a leading axis,
+    validation with `ValueError` and an opt-in `normalize=True` projection,
+    `@` for composition and point application, read-only array properties,
+    bit-exact `==` and
+    pickling, and explicit
+    `Transform.from_isometry()`/`to_isometry()` conversion with
+    `dartpy.math.Isometry3`.
+    [#3845](https://github.com/dartsim/dart/pull/3845)
+
   * Add `dartpy.errors`: the errors dartpy defines derive from `DartError`,
     with `ValidationError` (`ValueError`), `NotFoundError` (`KeyError`) and
     `OperationError` (`RuntimeError`) branches and the `WorldBusyError`,
@@ -427,6 +480,15 @@
     availability.
     [#3886](https://github.com/dartsim/dart/pull/3886)
 
+  * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
+    GoogleBenchmark and Tracy default to installed packages, and explicit
+    per-dependency switches still win. Offline configures now report missing
+    fetched sources with the source override and system-package switch to use.
+    [#3879](https://github.com/dartsim/dart/pull/3879)
+
+  * Fix `DART_USE_SYSTEM_TRACY=ON`, which rejected installed Tracy packages
+    because they ship no CMake version file.
+    [#3879](https://github.com/dartsim/dart/pull/3879)
   * **Additive:** Linux wheels accept URDF 1.1 and 1.2 with urdfdom 6.0.1,
     which also stops parser error logging from treating URDF text as a printf
     format string. URDF 1.0 files load as before.
@@ -500,6 +562,11 @@
   * Allow C++-only projects to find the installed CMake package with the
     `collision-ode` component without enabling C.
     [#3756](https://github.com/dartsim/dart/pull/3756)
+
+  * Restore URDF support and `dart-io` builds with urdfdom 3.x installations
+    that ship no CMake version file, such as Ubuntu 22.04 and FreeBSD packages.
+    The minimum urdfdom is now 3.0.0, because upstream 3.0.1 reports itself as
+    3.0.0.
 
   * The installed CMake package accepts version requests from 6.0 up to the
     installed version, so `find_package(DART 6.10)` finds DART 7. `EXACT`

@@ -39,6 +39,7 @@ else()
   )
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(benchmark)
+  dart_check_fetchcontent(benchmark DART_USE_SYSTEM_GOOGLEBENCHMARK)
 endif()
 
 add_subdirectory(unit)
