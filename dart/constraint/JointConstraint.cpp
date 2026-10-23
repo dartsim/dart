@@ -35,6 +35,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -92,7 +93,10 @@ void JointConstraint::setErrorAllowance(double allowance)
     allowance = 0.0;
   }
 
-  mErrorAllowance = allowance;
+  if (mErrorAllowance != allowance) {
+    mErrorAllowance = allowance;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -116,7 +120,10 @@ void JointConstraint::setErrorReductionParameter(double erp)
     erp = 1.0;
   }
 
-  mErrorReductionParameter = erp;
+  if (mErrorReductionParameter != erp) {
+    mErrorReductionParameter = erp;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -136,7 +143,10 @@ void JointConstraint::setMaxErrorReductionVelocity(double erv)
     erv = 0.0;
   }
 
-  mMaxErrorReductionVelocity = erv;
+  if (mMaxErrorReductionVelocity != erv) {
+    mMaxErrorReductionVelocity = erv;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -156,7 +166,10 @@ void JointConstraint::setConstraintForceMixing(double cfm)
     cfm = 1e-9;
   }
 
-  mConstraintForceMixing = cfm;
+  if (mConstraintForceMixing != cfm) {
+    mConstraintForceMixing = cfm;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================

@@ -186,8 +186,9 @@ Every mutator belongs to exactly one class:
 | State and control | Yes | positions, velocities, commands, external forces, actuator targets | No model revision; caches invalidate and sleeping bodies wake as today |
 | Cosmetic | Yes | appearance, material, visibility, shadows, segmentation id | None |
 
-Revisions are tracked per World, not process-wide. Parameter setters stop
-bumping the process-wide structural version, and changing a joint's actuator
+Revisions are tracked per World, not process-wide, and only for compiled
+Worlds. Version counters keep their DART 6 propagation, so a parameter setter
+still bumps the process-wide structural version. Changing a joint's actuator
 kind bumps a revision, because articulated-body dynamics branch on it.
 
 Strict enforcement has two tiers:
@@ -202,6 +203,17 @@ Strict enforcement has two tiers:
    `step()` or `compile()`, which raises. This tier is documented as detected
    late. Never-compiled Worlds do not track such writes; `compile()` validates
    the model when it begins.
+
+Ownership is resolved from a registry index that a World joins at its first
+`compile()` and that its membership changes then maintain (adding or removing
+multibodies, frames, collision-group members and subscriptions, and detector
+or solver replacement), never by reading another World's containers. Lazy
+Worlds have no registry entry: their setters take no lock, their revisions do
+not track model objects, and a lazy World that shares a model with a World
+being compiled is not detected. A body that reaches a World only through a subscribed view
+(`Group`, `Linkage`) belongs to it once the collision group synchronizes with
+the view, at `update()`, `compile()` or `step()`; editing the view before that
+is a raw write of tier 2.
 
 Python exposes typed setters instead of raw references. Tests cover every
 mutation path downstream simulators use: re-parenting, adding and removing
@@ -316,7 +328,10 @@ c = h·D + h²·K
 ### Concurrency
 
 - A World has one stepping owner. Re-entrant stepping and concurrent mutation
-  raise.
+  raise; for lazy Worlds only re-entrant stepping and same-thread topology
+  edits from step callbacks are detected. Independent Worlds step and edit
+  their own models on separate threads without reading each other's
+  containers.
 - While a World steps, any access from another thread raises
   `WorldBusyError`. Reads count, because getters fill lazy caches. The busy flag
   is set before the GIL is released.
@@ -374,17 +389,31 @@ Batch arrays use the World's degree-of-freedom order, shaped `(count, ...)`.
 batched, backed by the same rigid-transform storage the C++ API uses, with a
 scalar fast path.
 
-- `@` composes transforms and applies them to `(..., 3)` points. `*` is not
-  defined.
-- Constructors are keyword-only and accept exactly one rotation form, such as
+- `@` composes transforms. Scalar values apply to `(..., 3)` point arrays
+  of any rank; batched values accept a broadcast `(3,)` point or pairwise
+  `(N, 3)` points. `*` is not defined.
+- Constructors are keyword-only and accept at most one rotation form (none
+  means identity), such as
   `rotation=` or `wxyz=`/`xyzw=`. Roll-pitch-yaw construction is extrinsic
-  X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The complete
-  constructor set is settled in M5's transform PR.
+  X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The
+  constructor set is `rotation=` (a 3x3 or a `Rotation`), `wxyz=`, `xyzw=`,
+  `rpy=` and, for `Transform`, `translation=`. Alternatively,
+  `Transform(matrix=...)` includes translation and excludes other constructor
+  forms; arrays with a leading axis build batches.
 - Inputs are validated (finite values, `‖RᵀR − I‖_F`, `|det R − 1|`, the
-  homogeneous row) and raise `ValueError`. The default tolerance is calibrated
-  in M5, and the error suggests `normalize=True`. That option projects onto the
-  nearest rotation; reflections and shear still raise. Composition never
-  normalizes silently, and drift is documented.
+  homogeneous row) and raise `ValueError`. The default tolerance is `1e-5`,
+  calibrated as `docs/onboarding/python-bindings.md` records, and the error
+  suggests `normalize=True`. That option projects onto the nearest rotation when
+  every singular value lies within `1e-2` of 1 and their relative spread
+  `(max - min) / max` is at most `1e-3`; reflections, and shear or non-uniform
+  scale beyond that spread, still raise. Composition and `inverse()` never
+  project silently. Each output rotation must stay within that same envelope
+  (with positive determinant); otherwise they raise `ValueError` suggesting
+  `normalize=True`, naming the first failing index for a batch. Every returned
+  value therefore pickles and unpickles with its exact bits preserved.
+  `inverse()` inverts the stored rotation as stored rather than transposing
+  it, so `T @ T.inverse()` is the identity to floating-point precision even for
+  a rotation accepted within the tolerance or drifted by composition.
 - **Quaternion order is always named.** Inputs use `wxyz=`/`xyzw=`; outputs use
   `.wxyz`/`.xyzw`. No API accepts or returns an unnamed 4-vector. `wxyz` is the
   canonical display order.

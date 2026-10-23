@@ -47,12 +47,12 @@ void Logging(nb::module_& m)
 {
   dartnb::installLogBridge();
 
-  m.def("trace", [](const std::string& log) { common::trace(log); });
-  m.def("debug", [](const std::string& log) { common::debug(log); });
-  m.def("info", [](const std::string& log) { common::info(log); });
-  m.def("warn", [](const std::string& log) { common::warn(log); });
-  m.def("error", [](const std::string& log) { common::error(log); });
-  m.def("fatal", [](const std::string& log) { common::fatal(log); });
+  m.def("trace", [](const std::string& log) { common::trace("{}", log); });
+  m.def("debug", [](const std::string& log) { common::debug("{}", log); });
+  m.def("info", [](const std::string& log) { common::info("{}", log); });
+  m.def("warn", [](const std::string& log) { common::warn("{}", log); });
+  m.def("error", [](const std::string& log) { common::error("{}", log); });
+  m.def("fatal", [](const std::string& log) { common::fatal("{}", log); });
   m.def(
       "flush_logs",
       [] { return dartnb::flushLogs(); },

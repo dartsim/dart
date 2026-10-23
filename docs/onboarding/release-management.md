@@ -47,8 +47,10 @@ The version sources serve different purposes:
 - **Source/package version:** `package.xml`, also exposed as Sphinx `release`;
   `pixi.toml` matches it during packaging. These may retain a previously
   published version while new changes accumulate.
-- **Planned release:** this branch's row above; put new changelog entries under
-  its release section. Preserve earlier sections when advancing the target.
+- **Planned release:** this branch's row above. New changelog entries belong
+  under its release section; on `main`, checkpoint assembly moves them there
+  from `changelog.d/` fragments. Preserve earlier sections when advancing the
+  target.
 - **Published releases and milestone state:** live GitHub
   [releases](https://github.com/dartsim/dart/releases) and
   [milestones](https://github.com/dartsim/dart/milestones).
@@ -99,6 +101,15 @@ squash commit is the release candidate: once the gates below pass, tag it
 `DART X.Y.Z`. Write its notes with each paragraph and list item on one line:
 GitHub renders every newline in release notes as a line break, so text copied
 from the hard-wrapped changelog breaks mid-sentence.
+
+Pending entries on `main` live in `changelog.d/` fragments
+([Changelog](changelog.md)). Before finalizing a release section on `main`,
+before any release candidate or tag from `main`, and before cutting
+`release-X.Y` from it, merge a PR that runs `pixi run changelog-assemble`, so
+the release section is complete and the new branch starts without fragments.
+Confirm that `changelog.d/` holds only `README.md` at the candidate or cut
+commit. If a fragment landed after the assembly PR, assemble it before the
+heading is dated: in the Packaging PR, assemble first, then date the heading.
 
 Before tagging any DART X.Y.Z release, record passing compatibility evidence on
 the exact candidate SHA for the forced optional-dependency-off gate and

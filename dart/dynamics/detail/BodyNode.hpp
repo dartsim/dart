@@ -36,6 +36,8 @@
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/common/detail/ModelMutation.hpp>
+
 #include <utility>
 
 namespace dart {
@@ -139,6 +141,7 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
 template <class NodeType, typename... Args>
 NodeType* BodyNode::createNode(Args&&... args)
 {
+  common::detail::checkTopologyMutation(this);
   NodeType* node = new NodeType(this, std::forward<Args>(args)...);
   node->attach();
 

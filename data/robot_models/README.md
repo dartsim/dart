@@ -97,7 +97,7 @@ Windows/macOS runtime qualification remains for platform CI.
 | Atlas v3 | Retained for the existing puppet and SIMBICON controllers, plus parser/regression fixtures. Those controllers depend on its joints and geometry. Apache-2.0 attribution and DART changes are recorded [beside the model](../sdf/atlas/README.md). |
 | DRC-Hubo | Puppet scene and unused `data/urdf/drchubo/` assets removed. Recent HuboLab research concerns new hardware; no maintained replacement for this full-body description was established. |
 | Fetch | Demo removed following the research platform's official discontinuation. The OpenAI Gym MJCF assets remain as parser fixtures. |
-| KR5 | Retained as actively consumed manipulation, IK, tutorial, and regression assets. |
+| Six-axis arm | DART-authored cylinder-link model (box collision) for manipulation demos, tutorials, and parser/kinematics tests. Replaces KR5, whose license declaration was incomplete and CAD mesh redistribution terms were unknown. See `../urdf/six_axis_arm/README.md`. |
 | WAM | Retained for manipulation and analytical IK using only the BSD-3-Clause URDF and STL meshes. The GPL COLLADA meshes and JPEG textures were removed; see [provenance and changes](../urdf/wam/README.md). |
 | Synthetic worlds and historical MJCF fixtures | Retained for behavior and parser coverage rather than promoted as supported current hardware. |
 

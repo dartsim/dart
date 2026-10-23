@@ -51,6 +51,7 @@ else()
     GIT_SUBMODULES ext/robin_map
   )
   FetchContent_MakeAvailable(nanobind)
+  dart_check_fetchcontent(nanobind DART_USE_SYSTEM_NANOBIND)
 endif()
 add_subdirectory(dartpy)
 set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")

@@ -45,6 +45,7 @@ else()
   set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
+  dart_check_fetchcontent(googletest DART_USE_SYSTEM_GOOGLETEST)
 endif()
 
 #===============================================================================

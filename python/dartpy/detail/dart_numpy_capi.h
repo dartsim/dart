@@ -66,12 +66,12 @@ inline PyObject *from_data(int ndim, const size_t *shape,
                            const int64_t *element_strides, void *data,
                            PyObject *owner, bool writable = true) noexcept {
     static_assert(sizeof(double) == 8, "This export requires float64 doubles");
-    if (ndim < 1 || ndim > 2 || !owner) {
+    if (ndim < 1 || ndim > 3 || !owner) {
         PyErr_SetString(PyExc_ValueError,
-                        "Eigen C API export requires 1/2 dimensions and an owner");
+                        "Eigen C API export requires 1-3 dimensions and an owner");
         return nullptr;
     }
-    Py_ssize_t dims[2], strides[2];
+    Py_ssize_t dims[3], strides[3];
     bool empty = false;
     for (int i = 0; i < ndim; ++i) {
         if (shape[i] > (size_t) PY_SSIZE_T_MAX ||
