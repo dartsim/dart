@@ -313,6 +313,20 @@
     transform, velocity and acceleration; `None` skips a motion and its frames.
     [#3841](https://github.com/dartsim/dart/pull/3841)
 
+  * Add the immutable `dartpy.Transform` and `dartpy.Rotation` values
+    (canonical module `dartpy.math`): keyword-only constructors with at
+    most one rotation form (`rotation=`, `wxyz=`, `xyzw=`, `rpy=` as
+    extrinsic X-Y-Z; none means identity) plus `translation=` for a
+    `Transform`, or an exclusive `Transform(matrix=...)` that already
+    contains translation; batches from arrays with a leading axis,
+    validation with `ValueError` and an opt-in `normalize=True` projection,
+    `@` for composition and point application, read-only array properties,
+    bit-exact `==` and
+    pickling, and explicit
+    `Transform.from_isometry()`/`to_isometry()` conversion with
+    `dartpy.math.Isometry3`.
+    [#3845](https://github.com/dartsim/dart/pull/3845)
+
   * Add `dartpy.errors`: the errors dartpy defines derive from `DartError`,
     with `ValidationError` (`ValueError`), `NotFoundError` (`KeyError`) and
     `OperationError` (`RuntimeError`) branches and the `WorldBusyError`,
