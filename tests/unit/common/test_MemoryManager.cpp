@@ -38,8 +38,35 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
+
+#include <cstddef>
+
 using namespace dart;
 using namespace common;
+
+namespace {
+
+// Registered before tests first request the default allocator. Retain the
+// manager until process exit to cover destruction after function-local
+// static objects.
+std::unique_ptr<MemoryManager> gLateDestroyedMemoryManager;
+
+} // namespace
+
+//==============================================================================
+TEST(MemoryManagerTest, LateGlobalDestructionKeepsDefaultAllocatorAlive)
+{
+  gLateDestroyedMemoryManager = std::make_unique<MemoryManager>();
+  auto& manager = *gLateDestroyedMemoryManager;
+  EXPECT_EQ(&manager.getBaseAllocator(), &MemoryAllocator::GetDefault());
+
+  constexpr std::size_t bytes = 32u;
+  void* sample = manager.allocateUsingFree(bytes);
+  ASSERT_NE(sample, nullptr);
+  manager.deallocateUsingFree(sample, bytes);
+  // The executable's exit status also checks the retained manager's destructor.
+}
 
 //==============================================================================
 TEST(MemoryManagerTest, BaseAllocator)
