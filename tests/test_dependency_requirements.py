@@ -3789,6 +3789,12 @@ def test_bullet_transitive_built_precision(tmp_path, mode, carrier):
         ("false-private-definition", "double", "double"),
         ("false-source-definition", "double", "unverified"),
         ("false-interface-definition", "single", "unverified"),
+        ("target-name-OFF", "double", "double"),
+        ("target-name-FALSE", "double", "double"),
+        ("target-name-NOTFOUND", "double", "double"),
+        ("target-name-value-NOTFOUND", "double", "double"),
+        ("target-name-links-NOTFOUND", "double", "double"),
+        ("ambient-cache", "double", "double"),
     ],
 )
 def test_bullet_built_compile_context(tmp_path, mode, actual, expected):
@@ -3826,6 +3832,21 @@ def test_bullet_built_compile_context(tmp_path, mode, actual, expected):
         graph += 'set(CMAKE_CXX_FLAGS_DEBUG "${define}BT_USE_DOUBLE_PRECISION")\n'
     elif mode == "response-define":
         graph += f'file(WRITE "{response.as_posix()}" "${{define}}BT_USE_DOUBLE_PRECISION\\n")\n'
+    if mode.startswith("target-name-"):
+        helper = mode.removeprefix("target-name-")
+        graph += (
+            f"add_library({helper} INTERFACE)\n"
+            f'target_compile_options({helper} INTERFACE "${{define}}BT_USE_DOUBLE_PRECISION")\n'
+            "add_library(precision_chain INTERFACE)\n"
+            f"target_link_libraries(precision_chain INTERFACE {helper})\n"
+        )
+    if mode == "ambient-cache":
+        graph += (
+            "add_library(cache_link_poison INTERFACE)\n"
+            'target_compile_options(cache_link_poison INTERFACE "${undef}BT_USE_DOUBLE_PRECISION")\n'
+            'set(value cache_link_poison CACHE STRING "" FORCE)\n'
+            'set(links cache_link_poison CACHE STRING "" FORCE)\n'
+        )
     options = {
         "split-define": '"${define}" "BT_USE_DOUBLE_PRECISION"',
         "shell-define": '"SHELL:${define} BT_USE_DOUBLE_PRECISION"',
@@ -3856,6 +3877,15 @@ def test_bullet_built_compile_context(tmp_path, mode, actual, expected):
             graph += f'set_property(TARGET {target} PROPERTY COMPILE_FLAGS "${{define}}BT_USE_DOUBLE_PRECISION")\n'
         elif mode == "false-private-definition":
             graph += f"target_compile_definitions({target} PRIVATE OFF)\n"
+        elif mode.startswith("target-name-"):
+            # Exercise both direct and chained false-like link properties.
+            usage = "precision_chain" if target == "BulletCollision" else helper
+            graph += f"target_link_libraries({target} PRIVATE {usage})\n"
+        elif mode == "ambient-cache":
+            graph += (
+                f'target_compile_options({target} PRIVATE "${{define}}BT_USE_DOUBLE_PRECISION")\n'
+                f'set_source_files_properties("{source.as_posix()}" PROPERTIES COMPILE_OPTIONS "")\n'
+            )
         elif mode == "false-source-definition":
             graph += f'set_source_files_properties("{source.as_posix()}" PROPERTIES COMPILE_DEFINITIONS OFF)\n'
         elif mode == "false-interface-definition" and target == "BulletCollision":
