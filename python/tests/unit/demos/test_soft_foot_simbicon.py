@@ -12,7 +12,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from examples.demos.models import soft_foot_simbicon as soft_foot
 
+requires_sdf = pytest.mark.skipif(
+    not hasattr(dart.utils.SdfParser, "Options"), reason="SDF loading is disabled"
+)
 
+
+@requires_sdf
 @pytest.mark.parametrize("feet_name", ["RIGID", "SOFT"])
 def test_soft_foot_construction_push_steps_and_determinism(feet_name):
     feet = getattr(soft_foot.Feet, feet_name)
@@ -56,6 +61,7 @@ def test_soft_foot_construction_push_steps_and_determinism(feet_name):
     np.testing.assert_array_equal(soft_foot.state_vector(lhs), initial_state)
 
 
+@requires_sdf
 @pytest.mark.parametrize("property_name", ["pelvis", "left_foot", "right_foot"])
 def test_soft_foot_borrowed_child_keeps_skeleton_alive(property_name):
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
@@ -78,6 +84,7 @@ def test_soft_foot_borrowed_child_keeps_skeleton_alive(property_name):
     assert reference() is None
 
 
+@requires_sdf
 @pytest.mark.parametrize("force, steps", [([np.nan, 0, 0], 10), ([1, 0, 0], -1)])
 def test_apply_push_rejects_invalid_input(force, steps):
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
@@ -138,6 +145,7 @@ def stands():
     return outcomes
 
 
+@requires_sdf
 def test_both_feet_stand_repeat_exactly_and_soft_contacts_exceed_rigid(stands):
     rigid, soft = stands[soft_foot.Feet.RIGID], stands[soft_foot.Feet.SOFT]
     assert soft.sum() >= rigid.sum()
@@ -195,6 +203,7 @@ def _observed_com(model):
     return weighted / mass
 
 
+@requires_sdf
 def test_rigid_and_soft_mass_live_surfaces_tessellation_inertia_and_controller_com_match():
     rigid = soft_foot.create_model(soft_foot.Feet.RIGID)
     soft = soft_foot.create_model(soft_foot.Feet.SOFT)
@@ -269,6 +278,7 @@ def _ground_manifold(model):
     return np.array(sorted(points, key=lambda row: tuple(row)))
 
 
+@requires_sdf
 def test_undeformed_ground_manifold_matches_one_to_one():
     rigid = _ground_manifold(soft_foot.create_model(soft_foot.Feet.RIGID))
     soft = _ground_manifold(soft_foot.create_model(soft_foot.Feet.SOFT))
@@ -282,6 +292,7 @@ def test_undeformed_ground_manifold_matches_one_to_one():
         used[index] = True
 
 
+@requires_sdf
 def test_reset_clears_stale_soft_contacts_and_matches_fresh_for_300_steps():
     fresh = soft_foot.create_model(soft_foot.Feet.SOFT)
     model = soft_foot.create_model(soft_foot.Feet.SOFT)
@@ -326,6 +337,7 @@ def test_reset_clears_stale_soft_contacts_and_matches_fresh_for_300_steps():
 # from. Its former 18000 N maximum was an isolated recovery (#3431) that Eigen
 # 5's contact-solve summation order removes (#3834). Report every trial and
 # assert the sweep brackets both arms, rather than comparing their maxima.
+@requires_sdf
 def test_full_push_sweep_measures_every_nonmonotonic_trial(monkeypatch):
     create, advance, apply = (
         soft_foot.create_model,
@@ -399,11 +411,13 @@ def test_create_model_rejects_invalid_feet(feet):
         soft_foot.create_model(feet)
 
 
+@requires_sdf
 @pytest.mark.parametrize("value", [np.int64(1), True])
 def test_create_model_accepts_native_integral_feet(value):
     assert soft_foot.create_model(value).feet is soft_foot.Feet.SOFT
 
 
+@requires_sdf
 def test_push_returns_owned_force_copy_and_zero_duration_applies_no_force():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     soft_foot.apply_push(model, [1, 2, 3], 0)
@@ -414,6 +428,7 @@ def test_push_returns_owned_force_copy_and_zero_duration_applies_no_force():
     assert model.force_duration == 0
 
 
+@requires_sdf
 @pytest.mark.parametrize(
     "field",
     [
@@ -442,6 +457,7 @@ def test_finite_guard_detects_independent_state_components(field):
     assert not soft_foot.is_finite(model)
 
 
+@requires_sdf
 @pytest.mark.parametrize("error", [ValueError, KeyboardInterrupt, SystemExit])
 def test_integer_protocol_failures_match_native_type_errors(error):
     class Index:
@@ -470,6 +486,7 @@ def test_model_argument_uses_actual_type_and_rejects_class_spoofing():
             method(Object())
 
 
+@requires_sdf
 @pytest.mark.parametrize("feet", [soft_foot.Feet.RIGID, soft_foot.Feet.SOFT])
 def test_cached_body_handles_survive_renames_and_drive_contact_diagnostics(feet):
     model = soft_foot.create_model(feet)

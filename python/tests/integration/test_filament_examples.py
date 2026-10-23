@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "python"))
 
 viewer = getattr(dart, "viewer", None)
 HUMANOID_IDS = {"atlas_v5", "unitree_g1"}
+SDF_SCENE_IDS = {"atlas_simbicon", "soft_foot_simbicon"}
 
 
 requires_app_host = pytest.mark.skipif(
@@ -46,6 +47,8 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
     ids = [scene.id for scene in scenes]
     assert ids and len(ids) == len(set(ids))
     expected = CATALOG_IDS.copy()
+    if not hasattr(dart.utils.SdfParser, "Options"):
+        expected.difference_update(SDF_SCENE_IDS)
     if not hasattr(dart.utils, "ModelResourceRetriever"):
         expected.difference_update(HUMANOID_IDS)
     if not hasattr(dart.dynamics, "VoxelGridShape"):
@@ -63,9 +66,27 @@ def test_demo_catalog_does_not_require_a_renderer(capfd):
 
 
 @requires_app_host
+@pytest.mark.parametrize("sdf_enabled", [False, True])
+def test_demo_catalog_omits_only_unavailable_sdf_scenes(sdf_enabled, monkeypatch):
+    monkeypatch.setattr(dart.utils.SdfParser, "Options", object(), raising=False)
+    enabled_ids = [scene.id for scene in _demo_scenes()]
+    assert SDF_SCENE_IDS <= set(enabled_ids)
+    if not sdf_enabled:
+        monkeypatch.delattr(dart.utils.SdfParser, "Options")
+    assert [scene.id for scene in _demo_scenes()] == [
+        scene_id
+        for scene_id in enabled_ids
+        if sdf_enabled or scene_id not in SDF_SCENE_IDS
+    ]
+
+
+@requires_app_host
 def test_demo_catalog_cycles_without_a_renderer(capfd):
     assert (
-        viewer.run(_demo_scenes(), ["examples.demos", "--cycle-scenes", "--frames", "2"])
+        viewer.run(
+            _demo_scenes(),
+            ["examples.demos", "--cycle-scenes", "--frames", "2"],
+        )
         == 0
     )
     assert "OK" in capfd.readouterr().out
@@ -91,7 +112,9 @@ def test_demo_catalog_skips_missing_humanoid_assets(raises, monkeypatch, capfd):
             with pytest.raises(viewer.AssetsNotPrefetchedError, match="Prefetch with"):
                 scene.factory()
     assert (
-        viewer.run(scenes, ["examples.demos", "--cycle-scenes", "--frames", "2"]) == 0
+        viewer.run(
+            scenes, ["examples.demos", "--cycle-scenes", "--frames", "2"]
+        ) == 0
     )
     output = capfd.readouterr().out
     for scene_id in HUMANOID_IDS:

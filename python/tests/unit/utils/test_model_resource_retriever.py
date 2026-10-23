@@ -335,6 +335,8 @@ def cold_access_worker(connection, directory, operation):
     ],
 )
 def test_cold_cpp_callers_release_gil_for_https(tmp_path, operation):
+    if operation.startswith("sdf_") and not hasattr(dart.utils.SdfParser, "Options"):
+        pytest.skip("SDF loading is disabled")
     # A separate process bounds failures when a C++ call prevents server threads running.
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe(duplex=False)
