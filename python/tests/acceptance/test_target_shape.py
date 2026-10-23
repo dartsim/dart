@@ -793,7 +793,6 @@ def test_gravity_is_read_only_copy(world):
     np.testing.assert_array_equal(world.gravity, -expected)
 
 
-@pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
 def test_transform_composition():
     transform = dart.Transform
     # A quarter turn about x keeps the composition order observable.
@@ -827,7 +826,6 @@ def test_transform_composition():
     np.testing.assert_allclose(projected @ np.eye(3), np.eye(3), rtol=0, atol=1e-12)
 
 
-@pytest.mark.xfail(strict=True, reason="M5: immutable Rotation values and point application are pending")
 def test_rotation_value():
     half = np.pi / 4
     # Construction spelling is provisional M5; the rotation convention and

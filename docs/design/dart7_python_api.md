@@ -374,17 +374,31 @@ Batch arrays use the World's degree-of-freedom order, shaped `(count, ...)`.
 batched, backed by the same rigid-transform storage the C++ API uses, with a
 scalar fast path.
 
-- `@` composes transforms and applies them to `(..., 3)` points. `*` is not
-  defined.
-- Constructors are keyword-only and accept exactly one rotation form, such as
+- `@` composes transforms. Scalar values apply to `(..., 3)` point arrays
+  of any rank; batched values accept a broadcast `(3,)` point or pairwise
+  `(N, 3)` points. `*` is not defined.
+- Constructors are keyword-only and accept at most one rotation form (none
+  means identity), such as
   `rotation=` or `wxyz=`/`xyzw=`. Roll-pitch-yaw construction is extrinsic
-  X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The complete
-  constructor set is settled in M5's transform PR.
+  X-Y-Z, i.e. `Rz(yaw) Ry(pitch) Rx(roll)`, matching URDF and SDF. The
+  constructor set is `rotation=` (a 3x3 or a `Rotation`), `wxyz=`, `xyzw=`,
+  `rpy=` and, for `Transform`, `translation=`. Alternatively,
+  `Transform(matrix=...)` includes translation and excludes other constructor
+  forms; arrays with a leading axis build batches.
 - Inputs are validated (finite values, `‖RᵀR − I‖_F`, `|det R − 1|`, the
-  homogeneous row) and raise `ValueError`. The default tolerance is calibrated
-  in M5, and the error suggests `normalize=True`. That option projects onto the
-  nearest rotation; reflections and shear still raise. Composition never
-  normalizes silently, and drift is documented.
+  homogeneous row) and raise `ValueError`. The default tolerance is `1e-5`,
+  calibrated as `docs/onboarding/python-bindings.md` records, and the error
+  suggests `normalize=True`. That option projects onto the nearest rotation when
+  every singular value lies within `1e-2` of 1 and their relative spread
+  `(max - min) / max` is at most `1e-3`; reflections, and shear or non-uniform
+  scale beyond that spread, still raise. Composition and `inverse()` never
+  project silently. Each output rotation must stay within that same envelope
+  (with positive determinant); otherwise they raise `ValueError` suggesting
+  `normalize=True`, naming the first failing index for a batch. Every returned
+  value therefore pickles and unpickles with its exact bits preserved.
+  `inverse()` inverts the stored rotation as stored rather than transposing
+  it, so `T @ T.inverse()` is the identity to floating-point precision even for
+  a rotation accepted within the tolerance or drifted by composition.
 - **Quaternion order is always named.** Inputs use `wxyz=`/`xyzw=`; outputs use
   `.wxyz`/`.xyzw`. No API accepts or returns an unnamed 4-vector. `wxyz` is the
   canonical display order.
