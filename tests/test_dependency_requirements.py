@@ -1289,14 +1289,14 @@ def test_bullet_fallback_dispatch(tmp_path, mode):
         cmakelists.write(
             "install(FILES provider-owned.txt DESTINATION share/provider-sdk)\n"
         )
-    archive = tmp_path / "bullet.tar.gz"
+    archive = tmp_path / "bullet fixture.tar.gz"
     with tarfile.open(archive, "w:gz") as packed:
         packed.add(source, arcname="bullet")
     content = (
         bullet_fallback_content()
         .replace(
             "https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz",
-            archive.as_posix(),
+            f'"{archive.as_posix()}"',
         )
         .replace(
             "c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77",
