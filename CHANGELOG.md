@@ -473,6 +473,15 @@
     availability.
     [#3886](https://github.com/dartsim/dart/pull/3886)
 
+  * Add `DART_USE_SYSTEM_DEPENDENCIES` (default `OFF`); when `ON`, GoogleTest,
+    GoogleBenchmark and Tracy default to installed packages, and explicit
+    per-dependency switches still win. Offline configures now report missing
+    fetched sources with the source override and system-package switch to use.
+    [#3879](https://github.com/dartsim/dart/pull/3879)
+
+  * Fix `DART_USE_SYSTEM_TRACY=ON`, which rejected installed Tracy packages
+    because they ship no CMake version file.
+    [#3879](https://github.com/dartsim/dart/pull/3879)
   * **Additive:** Linux wheels accept URDF 1.1 and 1.2 with urdfdom 6.0.1,
     which also stops parser error logging from treating URDF text as a printf
     format string. URDF 1.0 files load as before.

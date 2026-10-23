@@ -21,6 +21,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # (CMP0155 is NEW at CMake 3.28).
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+# Require populated sources for fully disconnected FetchContent configures.
+if(POLICY CMP0170)
+  cmake_policy(SET CMP0170 NEW)
+endif()
+
 # Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
 # case that DART is built as a sub-project in another project.
 set(DART_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -274,6 +279,11 @@ dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF
 )
 dart_option(
+  DART_USE_SYSTEM_DEPENDENCIES
+  "Default to system packages for GoogleTest, GoogleBenchmark, and Tracy"
+  OFF
+)
+dart_option(
   DART_USE_SYSTEM_FMT
   "Use system-installed fmt instead of building it from source (set OFF only when system fmt is unavailable or broken)"
   ON
@@ -289,15 +299,21 @@ if(DEFINED DART_IMGUI_DOCKING)
   )
   unset(DART_IMGUI_DOCKING CACHE)
 endif()
-dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
-dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
+dart_option(
+  DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" ${DART_USE_SYSTEM_DEPENDENCIES}
+)
+dart_option(
+  DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" ${DART_USE_SYSTEM_DEPENDENCIES}
+)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind >= 3.1" OFF)
 dart_option(
   DART_DARTPY_STABLE_ABI
   "Build the nanobind dartpy for the CPython 3.12+ stable ABI (abi3)"
   OFF
 )
-dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
+dart_option(
+  DART_USE_SYSTEM_TRACY "Use system Tracy" ${DART_USE_SYSTEM_DEPENDENCIES}
+)
 dart_option(
   DART_REQUIRE_OPTIONAL_DEPENDENCIES
   "Fail configure when an optional component's dependency is missing"
