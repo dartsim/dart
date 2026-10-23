@@ -131,7 +131,7 @@ and is applied at the top of the first domino.
 
 ## Lesson 2: Loading and controlling a robotic manipulator
 
-Replace the disembodied push with a six-axis KR5 manipulator. A controller
+Replace the disembodied push with DART's six-axis arm sample. A controller
 first holds the robot's initial configuration against gravity, then reaches
 and pushes using operational-space control.
 
@@ -141,9 +141,9 @@ and pushes using operational-space control.
 
 ```python
 loader = dart.utils.DartLoader()
-manipulator = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+manipulator = loader.parseSkeleton("dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
 if manipulator is None:
-    raise RuntimeError("Could not load the KR5 manipulator sample URDF.")
+    raise RuntimeError("Could not load the six-axis arm manipulator sample URDF.")
 manipulator.setName("manipulator")
 ```
 
@@ -155,10 +155,11 @@ Position the base and set a useful configuration:
 
 ```python
 tf = dart.math.Isometry3()
-tf.set_translation([-0.65, 0.0, 0.0])
+tf.set_translation([-0.57, 0.0, 0.0])
 manipulator.getJoint(0).setTransformFromParentBodyNode(tf)
-manipulator.getDof(1).setPosition(math.radians(140.0))
-manipulator.getDof(2).setPosition(math.radians(-140.0))
+manipulator.getDof(1).setPosition(0.7)
+manipulator.getDof(2).setPosition(-0.35)
+manipulator.getDof(4).setPosition(-0.35)
 ```
 
 Return this loaded skeleton. Without control it will fall under gravity.

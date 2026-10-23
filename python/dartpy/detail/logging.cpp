@@ -377,7 +377,7 @@ int pythonLevel(dart::common::LogLevel level)
 // dart::common::LogCallback: the DART_WARN family from libdart and from this
 // extension, on the logging thread. The only lock on this path is the queue's,
 // which the fork handlers cover. Every compile-time-enabled message arrives
-// here, whatever spdlog's runtime level, and Python's logger filters it. No
+// here, whatever the sink's runtime level, and Python's logger filters it. No
 // level check happens before the queue: logging offers no hook that fires when
 // a level changes, so a cached threshold could go stale and silently drop the
 // messages a user just enabled, and DART formats the message before this call

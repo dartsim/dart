@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/ShapeNode.hpp"
 
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -86,6 +87,7 @@ void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
   const Eigen::Isometry3d oldTransform = getRelativeTransform();
 
   FixedFrame::setRelativeTransform(transform);
+  common::detail::notifyParameterMutation(this);
   dirtyJacobian();
   dirtyJacobianDeriv();
 
@@ -232,6 +234,7 @@ void ShapeNode::stageForRemoval()
   // listeners of the same removal more than once; Node::stageForRemoval() is a
   // no-op once the node is already detached.
   if (!isRemoved()) {
+    common::detail::checkTopologyMutation(getBodyNode());
     bool wasCollidable = false;
     if (has<CollisionAspect>()) {
       const auto* collision = get<CollisionAspect>();

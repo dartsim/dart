@@ -43,6 +43,9 @@
 
 namespace dart::test {
 
+/// Fail the nth throwing operator-new allocation on this thread; 0 disarms.
+void failHeapAllocation(std::size_t nth) noexcept;
+
 struct HeapAllocationSnapshot
 {
   std::size_t allocationCount{0u};

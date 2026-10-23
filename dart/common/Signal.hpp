@@ -43,6 +43,11 @@
 
 namespace dart {
 namespace common {
+namespace signal {
+namespace detail {
+struct SlotSnapshotAccess;
+}
+} // namespace signal
 
 /// class Connection
 class Connection
@@ -221,6 +226,8 @@ public:
   void operator()(Args&&... args);
 
 private:
+  friend struct signal::detail::SlotSnapshotAccess;
+
   /// Connection set
   ConnectionSetType mConnectionBodies;
 
@@ -245,6 +252,8 @@ public:
   Connection connect(const SlotType& slot);
 
 private:
+  friend struct signal::detail::SlotSnapshotAccess;
+
   /// Signal
   SignalType& mSignal;
 };

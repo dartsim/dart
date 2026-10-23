@@ -46,6 +46,9 @@
 
 namespace dart {
 namespace dynamics {
+namespace detail {
+struct ShapeFrameShapeVersionListener;
+}
 
 //==============================================================================
 class VisualAspect final : public common::AspectWithVersionedProperties<
@@ -216,6 +219,7 @@ class alignas(Frame) ShapeFrame : public virtual common::VersionCounter,
 {
 public:
   friend class BodyNode;
+  friend struct detail::ShapeFrameShapeVersionListener;
 
   using ShapeUpdatedSignal = common::Signal<void(
       const ShapeFrame* thisShapeFrame,
@@ -275,6 +279,9 @@ public:
   /// This should be preferred over performing a dynamic_cast when you want to
   /// cast a ShapeFrame into a ShapeNode, because this method costs less.
   virtual const ShapeNode* asShapeNode() const;
+
+private:
+  void handleShapeVersionChange(Shape* shape);
 
 protected:
   /// Constructor

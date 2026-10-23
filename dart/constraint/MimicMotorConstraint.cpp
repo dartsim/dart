@@ -35,6 +35,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -183,7 +184,10 @@ void MimicMotorConstraint::setConstraintForceMixing(double cfm)
     clamped = 1e-9;
   }
 
-  mConstraintForceMixing = clamped;
+  if (mConstraintForceMixing != clamped) {
+    mConstraintForceMixing = clamped;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -208,7 +212,10 @@ void MimicMotorConstraint::setErrorReductionParameter(double erp)
     clamped = 1.0;
   }
 
-  mErrorReductionParameter = clamped;
+  if (mErrorReductionParameter != clamped) {
+    mErrorReductionParameter = clamped;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================

@@ -5,17 +5,17 @@ def main():
     world = dart.simulation.World()
 
     urdfParser = dart.utils.DartLoader()
-    kr5 = urdfParser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-    ground = urdfParser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
-    world.addSkeleton(kr5)
+    arm = urdfParser.parseSkeleton("dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
+    ground = urdfParser.parseSkeleton("dart://sample/urdf/six_axis_arm/ground.urdf")
+    world.addSkeleton(arm)
     world.addSkeleton(ground)
-    print("Robot {} is loaded".format(kr5.getName()))
+    print("Robot {} is loaded".format(arm.getName()))
 
     for i in range(100):
         if i % 10 == 0:
             print(
                 "[{}] joint position: {}".format(
-                    world.getSimFrames(), kr5.getPositions()
+                    world.getSimFrames(), arm.getPositions()
                 )
             )
         world.step()

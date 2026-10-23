@@ -165,7 +165,7 @@ def test_compile_rejects_unsupported_shape(world, robot):
     strict=True, reason="M5: dart.data, io.load_model and World.add are pending"
 )
 def test_load_model_and_add(world):
-    path = dart.data.path("urdf/KR5/KR5 sixx R650.urdf")
+    path = dart.data.path("urdf/six_axis_arm/six_axis_arm.urdf")
     robot = world.add(dart.io.load_model(path))
     assert world.multibodies[robot.name] is robot
     assert robot.num_dofs == 6
@@ -793,7 +793,6 @@ def test_gravity_is_read_only_copy(world):
     np.testing.assert_array_equal(world.gravity, -expected)
 
 
-@pytest.mark.xfail(strict=True, reason="M5: immutable Transform composition is pending")
 def test_transform_composition():
     transform = dart.Transform
     # A quarter turn about x keeps the composition order observable.
@@ -827,7 +826,6 @@ def test_transform_composition():
     np.testing.assert_allclose(projected @ np.eye(3), np.eye(3), rtol=0, atol=1e-12)
 
 
-@pytest.mark.xfail(strict=True, reason="M5: immutable Rotation values and point application are pending")
 def test_rotation_value():
     half = np.pi / 4
     # Construction spelling is provisional M5; the rotation convention and

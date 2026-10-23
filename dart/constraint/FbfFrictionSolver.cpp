@@ -35,6 +35,8 @@
 
 #include <dart/lcpsolver/dantzig/DantzigCommon.hpp>
 
+#include <dart/common/detail/ModelMutation.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -523,7 +525,15 @@ bool FbfFrictionSolver::solve(
 //==============================================================================
 void FbfFrictionSolver::setOptions(const Options& options)
 {
+  if (mOptions.boxForAnisotropic == options.boxForAnisotropic
+      && mOptions.maxOuterIterations == options.maxOuterIterations
+      && mOptions.tolerance == options.tolerance
+      && mOptions.stepScale == options.stepScale
+      && mOptions.maxInnerSweeps == options.maxInnerSweeps
+      && mOptions.innerToleranceFactor == options.innerToleranceFactor)
+    return;
   mOptions = options;
+  detail::notifyBoxedSolverParameterMutation(this);
 }
 
 //==============================================================================
