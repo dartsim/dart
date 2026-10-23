@@ -34,15 +34,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/sdf/SdfParser.hpp>
+#include <dart/config.hpp>
 
-#include <dart/simulation/World.hpp>
+#if HAVE_SDFORMAT
+  #include <dart/utils/sdf/SdfParser.hpp>
 
-#include <dart/dynamics/Skeleton.hpp>
+  #include <dart/simulation/World.hpp>
 
-#include <dart/common/Macros.hpp>
-#include <dart/common/ResourceRetriever.hpp>
-#include <dart/common/Uri.hpp>
+  #include <dart/dynamics/Skeleton.hpp>
+
+  #include <dart/common/Macros.hpp>
+  #include <dart/common/ResourceRetriever.hpp>
+  #include <dart/common/Uri.hpp>
 
 namespace dart {
 namespace python {
@@ -116,3 +119,27 @@ void SdfParser(nb::module_& m)
 
 } // namespace python
 } // namespace dart
+
+#else
+
+  #include <stdexcept>
+
+namespace dart {
+namespace python {
+
+void SdfParser(nb::module_& m)
+{
+  auto sm = m.def_submodule("SdfParser");
+  auto unavailable = [](nb::args, nb::kwargs) {
+    throw std::runtime_error(
+        "SDF loading is unavailable: DART was built without sdformat support. "
+        "Install sdformat and rebuild with DART_SKIP_SDFORMAT=OFF.");
+  };
+  sm.def("readWorld", unavailable);
+  sm.def("readSkeleton", unavailable);
+}
+
+} // namespace python
+} // namespace dart
+
+#endif

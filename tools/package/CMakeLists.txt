@@ -17,12 +17,20 @@ add_test(NAME package_factory COMMAND package_factory)
 
 if(
   io IN_LIST DART_TEST_COMPONENTS
+  OR io-sdf IN_LIST DART_TEST_COMPONENTS
   OR utils IN_LIST DART_TEST_COMPONENTS
   OR utils-urdf IN_LIST DART_TEST_COMPONENTS
   OR utils-assets IN_LIST DART_TEST_COMPONENTS
 )
   add_executable(package_io io.cpp)
-  foreach(io_component io utils-assets utils-urdf utils)
+  foreach(
+    io_component
+    io
+    io-sdf
+    utils-assets
+    utils-urdf
+    utils
+  )
     if(io_component IN_LIST DART_TEST_COMPONENTS)
       target_link_libraries(package_io PRIVATE dart-${io_component})
       break()
@@ -41,4 +49,16 @@ if(
   add_executable(package_gui gui.cpp)
   target_link_libraries(package_gui PRIVATE dart-gui)
   add_test(NAME package_gui COMMAND package_gui)
+endif()
+
+if(
+  collision-ode IN_LIST DART_TEST_COMPONENTS
+  AND collision-bullet IN_LIST DART_TEST_COMPONENTS
+)
+  add_executable(package_collision collision.cpp)
+  target_link_libraries(
+    package_collision
+    PRIVATE dart-collision-ode dart-collision-bullet
+  )
+  add_test(NAME package_collision COMMAND package_collision)
 endif()

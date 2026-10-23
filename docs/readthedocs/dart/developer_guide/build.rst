@@ -120,7 +120,7 @@ Optional components remain optional.
      - 14.8 (supported majors: 14, 15, 16)
      - SDF parser
    * - urdfdom
-     - 3.0.0
+     - 4.0.0
      - URDF parser
    * - Filament
      - 1.77.3 (pinned SDK)
@@ -157,6 +157,11 @@ development snapshots are treated as Eigen 3.
 FCL's libccd dependency must be built in double precision
 (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
 build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
+
+Single-precision Bullet loses contacts of centimeter-scale shapes, so with
+Bullet 3.17 or newer DART links the double-precision ``-float64`` libraries
+that Ubuntu and conda-forge install beside the single-precision ones.
+``-DDART_BULLET_FLOAT64=OFF`` keeps single precision.
 
 Touching convex pairs in FCL 0.7.0's libccd GJK distance can abort with
 assertions (as on Ubuntu 24.04), or return -1 and zero nearest points. DART's

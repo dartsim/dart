@@ -5615,10 +5615,16 @@ TEST(World, FailedSourceSyncRetriesWithoutAnotherMutation)
   auto view = Group::create();
   auto robot = createBox(Eigen::Vector3d::Ones());
   auto other = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  world->addSkeleton(other);
   auto group = world->getConstraintSolver()->getCollisionGroup();
+  // Keep the source edit responsible for introducing the robot's shape.
+  group->removeAllShapeFrames();
   group->subscribeTo(view);
   group->addShapeFramesOf(other.get());
   world->compile();
+  ASSERT_EQ(group->getNumShapeFrames(), 1u);
+  ASSERT_FALSE(group->hasShapeFrame(robot->getBodyNode(0)->getShapeNode(0)));
   {
     auto edit = world->edit();
     struct ResetFailure
@@ -6026,8 +6032,8 @@ TEST(World, FrozenGeometryStorageIsUnchanged)
   DART_SUPPRESS_DEPRECATED_BEGIN
   auto scene = std::make_shared<aiScene>();
   auto replacement = std::make_shared<aiScene>();
-  auto mesh = std::make_shared<MeshShape>(
-      Eigen::Vector3d::Ones(), std::shared_ptr<const aiScene>(scene));
+  auto mesh = std::shared_ptr<MeshShape>(new MeshShape(
+      Eigen::Vector3d::Ones(), std::shared_ptr<const aiScene>(scene)));
   {
     auto edit = world->edit();
     frame->setShape(mesh);
@@ -6425,8 +6431,8 @@ TEST(World, EditedMeshStorageChangesTopologyAndCollision)
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
   auto world = World::create();
-  auto shape = std::make_shared<MeshShape>(
-      Eigen::Vector3d::Ones(), subscriptionMeshScene(1));
+  auto shape = std::shared_ptr<MeshShape>(
+      new MeshShape(Eigen::Vector3d::Ones(), subscriptionMeshScene(1)));
   auto meshBody = createBox(Eigen::Vector3d::Ones());
   meshBody->getBodyNode(0)->getShapeNode(0)->setShape(shape);
   auto box = createBox(

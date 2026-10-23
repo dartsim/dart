@@ -290,6 +290,10 @@ dart_option(
 )
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
+dart_option(DART_BULLET_FLOAT64
+  "Link system Bullet's double-precision (-float64) libraries when installed"
+  ON
+)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
 # The bundled ImGui is always the docking release; drop the removed option.
 if(DEFINED DART_IMGUI_DOCKING)
@@ -676,6 +680,7 @@ set(DART_PKG_CFLAGS "${CMAKE_CXX_FLAGS}")
 if(THREADS_HAVE_PTHREAD_ARG)
   string(APPEND DART_PKG_CFLAGS " -pthread")
 endif()
+set(DART_PKG_PUBLIC_LIBS)
 set(DART_PKG_PRIVATE_LIBS)
 foreach(library ${CMAKE_DL_LIBS})
   string(APPEND DART_PKG_PRIVATE_LIBS " -l${library}")
@@ -687,15 +692,37 @@ if(HAVE_BULLET)
   set(bullet_pc bullet)
   if(BT_USE_DOUBLE_PRECISION)
     string(APPEND DART_PKG_CFLAGS " -DBT_USE_DOUBLE_PRECISION")
+  endif()
+  # Name the module of the libraries that DART links: bullet.pc describes the
+  # unsuffixed ones, which may also be double precision.
+  if(DART_BULLET_USES_FLOAT64)
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
       pkg_check_modules(BULLET_FLOAT64 QUIET bullet-float64)
-      if(BULLET_FLOAT64_FOUND)
-        set(bullet_pc bullet-float64)
+    endif()
+    if(BULLET_FLOAT64_FOUND)
+      set(bullet_pc bullet-float64)
+    else()
+      # bullet.pc would add the single-precision libraries; name the -float64
+      # ones directly.
+      set(bullet_pc)
+      if(DART_BULLET_PC_ERROR)
+        message(FATAL_ERROR "${DART_BULLET_PC_ERROR}")
       endif()
+      string(APPEND DART_PKG_CFLAGS "${DART_BULLET_PC_CFLAGS}")
+      string(APPEND DART_PKG_PUBLIC_LIBS "${DART_BULLET_PC_LIBS}")
     endif()
   endif()
-  string(APPEND DART_PKG_EXTERNAL_DEPS ", ${bullet_pc} >= 3.05")
+  if(bullet_pc)
+    set(bullet_pc_minimum 3.05)
+    if(DART_BULLET_MINIMUM_VERSION)
+      set(bullet_pc_minimum ${DART_BULLET_MINIMUM_VERSION})
+    endif()
+    string(
+      APPEND DART_PKG_EXTERNAL_DEPS
+      ", ${bullet_pc} >= ${bullet_pc_minimum}"
+    )
+  endif()
 endif()
 if(HAVE_ODE)
   string(APPEND DART_PKG_EXTERNAL_DEPS ", ode >= 0.16.2")
@@ -780,10 +807,14 @@ configure_file(
   @ONLY
 )
 add_custom_target(
-  uninstall
+  dart-uninstall
   "${CMAKE_COMMAND}" -P
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
 )
+# Fetched ODE owns its unguarded uninstall target; DART's remains available.
+if(NOT TARGET uninstall)
+  add_custom_target(uninstall DEPENDS dart-uninstall)
+endif()
 
 #===============================================================================
 # Code Formatting

@@ -60,6 +60,7 @@ foreach(_dart_sdf_package IN LISTS _dart_sdf_packages)
         set(DART_SDFORMAT_PACKAGE "${_dart_sdf_candidate}")
         set(DART_SDFORMAT_MAJOR "${_dart_sdf_major}")
         set(sdformat_VERSION "${_dart_sdf_version}")
+        set(SDFORMAT_VERSION "${_dart_sdf_version}")
         set(_dart_sdf_accepted TRUE)
         break()
       endif()
@@ -75,8 +76,10 @@ endforeach()
 set(sdformat_FOUND ${_dart_sdf_accepted})
 set(SDFORMAT_FOUND ${_dart_sdf_accepted})
 if(NOT _dart_sdf_accepted)
+  set(sdformat_VERSION "")
+  set(SDFORMAT_VERSION "")
   message(
     STATUS
-    "sdformat 14 (>= 14.8), 15 or 16 with a matching CMake target is required"
+    "sdformat 14 (>= 14.8), 15 or 16 with a matching CMake target was not found"
   )
 endif()

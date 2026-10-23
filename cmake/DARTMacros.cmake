@@ -40,6 +40,20 @@ function(dart_check_fetchcontent name system_option)
   endif()
 endfunction()
 
+# Keep compatibility with old dependency projects local to their configure.
+function(dart_fetchcontent_makeavailable_legacy name)
+  if(
+    NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM
+    OR CMAKE_POLICY_VERSION_MINIMUM VERSION_LESS 3.5
+  )
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+  endif()
+  FetchContent_MakeAvailable(${name})
+  # Only <name>_SOURCE_DIR and <name>_BINARY_DIR reach the caller.
+  set(${name}_SOURCE_DIR "${${name}_SOURCE_DIR}" PARENT_SCOPE)
+  set(${name}_BINARY_DIR "${${name}_BINARY_DIR}" PARENT_SCOPE)
+endfunction()
+
 #===============================================================================
 # Appends items to a cached list.
 # Usage:

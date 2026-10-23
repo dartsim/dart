@@ -49,9 +49,9 @@
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
+#include "dart/utils/urdf/detail/IncludeUrdf.hpp"
 #include "dart/utils/urdf/detail/JointXmlElementMetadata.hpp"
-#include "dart/utils/urdf/urdf_world_parser.hpp"
+#include "dart/utils/urdf/detail/urdf_world_parser.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -940,8 +940,8 @@ dynamics::ShapePtr DartLoader::createShape(
 
       const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
       DART_SUPPRESS_DEPRECATED_BEGIN
-      shape = std::make_shared<dynamics::MeshShape>(
-          scale, scene, resolvedUri, _resourceRetriever);
+      shape = std::shared_ptr<dynamics::MeshShape>(new dynamics::MeshShape(
+          scale, scene, resolvedUri, _resourceRetriever));
       DART_SUPPRESS_DEPRECATED_END
       break;
     }

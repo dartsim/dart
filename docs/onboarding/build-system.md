@@ -29,7 +29,8 @@ primary C++ libraries:
 | Component | Target | Contents |
 | --------- | ------ | -------- |
 | `dart` | `dart` | Headless core and enabled collision backends |
-| `io` | `dart-io` | SKEL, SDF, MJCF and URDF loading |
+| `io` | `dart-io` | SKEL, MJCF, URDF and optional SDF loading |
+| `io-sdf` | `dart-io-sdf` | Forwarding component requiring SDF support in `dart-io` |
 | `gui` | `dart-gui` | Filament GUI and ImGui integration |
 
 The nanobind `dartpy` module includes all three libraries. See
@@ -107,6 +108,25 @@ themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
 Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
 same major or rebuild DART and its consumers.
 
+`DART_USE_SYSTEM_ODE=OFF` fetches ODE 0.16.6 from its GitHub release tag,
+builds a shared, double-precision library with system libccd and without the
+libccd box-cylinder collider, and installs ODE's headers, library and CMake
+package alongside DART. Installed `collision-ode` consumers must include that
+prefix in `CMAKE_PREFIX_PATH`; libccd remains a system dependency. System ODE
+must also use double precision; configuration rejects single-precision packages.
+For a nonstandard prefix on Linux, include its library directory in
+`LD_LIBRARY_PATH` or configure an install RPATH.
+The compatibility policy minimum needed by ODE under CMake 4 is scoped to the
+dependency's configure, without changing DART's policy settings.
+
+`cmake --build <build-directory> --target dart-uninstall` removes files listed
+in DART's install manifest, including dependencies installed by that build.
+With system dependencies, `uninstall` forwards to `dart-uninstall`. Fetched
+ODE defines its own `uninstall` target, which retains ODE's upstream behavior;
+it expects an ODE sub-build install manifest and does not uninstall DART.
+Use `dart-uninstall` to remove the complete DART installation in that case.
+Uninstall uses the prefix recorded by the last installation and honors `DESTDIR`.
+
 ## Package Version Compatibility
 
 The installed `DARTConfigVersion.cmake` accepts plain version requests from
@@ -154,6 +174,60 @@ names the dependency and the component, and an explicit `DART_SKIP_<NAME>=ON`
 still disables one on purpose. The Gazebo pixi task (`config-dart-gz`) and
 the compat lanes set it.
 
+With system Bullet 3.17 or newer, `DART_BULLET_FLOAT64` (default `ON`) links
+the `-float64` libraries installed beside the single-precision ones, because
+single-precision Bullet's absolute GJK tolerances lose contacts of
+centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
+DART rejects mixed library variants and conflicting scalar precision in linked
+project-built Bullet components. Filename variants and scalar ABI are recorded
+separately: unsuffixed libraries can use either precision. Imported libraries
+must pass exactly one of the single/double C++ link probes, covering both
+Collision and LinearMath; project-built components use their compile definitions.
+Installed CMake components verify the recorded scalar ABI and filename variant.
+C-only consumers use an isolated CXX probe without enabling CXX in the parent;
+unsupported toolchain or target contexts remain unverified. Cross-directory
+link scopes also remain unverified because their target names can bind to
+directory-local imports or aliases; the finder rejects them before probe export
+and fallback metadata serialization. Unsupported potentially active target
+generator expressions, ambiguous or failed probes, and unknown linked-header
+versions fail dependency validation rather than claiming compatibility. Inactive
+install/platform branches and absent optional targets contribute nothing.
+The installed version floor comes from the linked target's headers: 3.17 when
+DART uses its newer heightfield constructor, otherwise 3.05.
+
+Empty single-config builds keep their empty configuration when selecting
+`dart.pc` libraries and use CMake's `NOCONFIG` imported-file mappings.
+
+`dart.pc` requires `bullet-float64` when pkg-config finds that module and otherwise
+publishes the selected libraries and include directories in its public flags.
+Paths are escaped, and compile/link sysroots are removed at path boundaries.
+Absolute library search paths from interface link options precede ordinary link
+directories, matching CMake's ordering. The fallback accepts joined `-L` and
+MSVC `LIBPATH` search options; unsupported interface options report an error
+instead of publishing incomplete flags. A matching `bullet-float64.pc` module
+supplies its own link flags and bypasses that fallback.
+On Linux, sysroot library flags retain the exact selected filename using `-l:`;
+unsupported platform/sysroot library serialization reports an error.
+Scalar ABI checks retain normal interface targets and mapped link options in an
+isolated target graph, independently of pkg-config serialization.
+The two precisions
+share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
+even across `RTLD_LOCAL` plugins, so a process must load only one Bullet
+precision.
+
+`DART_USE_SYSTEM_BULLET=OFF` fetches Bullet 3.25 and builds and installs only
+the shared `BulletCollision` and `LinearMath` libraries and their headers,
+with double precision enabled. DART installs the headers directly under
+`<prefix>/include`, not upstream's `include/bullet`. Bullet 3, extras, demos, Python bindings and
+upstream unit tests are disabled. The CMake 4 policy minimum is scoped to
+Bullet's configure. This is a collision-only SDK; the installed pkg-config
+file lists only these two libraries, and upstream's full Bullet CMake package
+is not installed.
+
+The installed DART finder requires only Bullet's headers, `BulletCollision`
+and `LinearMath`, so this collision-only SDK also supports DART consumers
+without BulletDynamics or BulletSoftBody installed.
+
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the
 [package checks](../../tools/package/README.md) for static builds, legacy
@@ -163,15 +237,19 @@ components, and parent-project embedding.
 
 `dart-io` contains the SKEL, SDF, MJCF and URDF loaders. Enable it with
 `DART_BUILD_IO=ON` (the default); it requires tinyxml2 10.0.0 or newer (the
-Ubuntu 24.04 LTS floor), urdfdom and sdformat 14 (at least 14.8), 15 or 16.
-Pixi uses sdformat 16.1 or newer within major 16 and urdfdom 6 by default.
+Ubuntu 24.04 LTS floor) and urdfdom. SDF
+support is optional and uses the environment's sdformat 14 (at least 14.8),
+15 or 16. Missing sdformat warns and builds IO without SDF; set
+`DART_SKIP_SDFORMAT=ON` to disable SDF deliberately. Standalone builds do not
+fetch sdformat. Pixi and package-manager builds continue using the installed
+library; Pixi uses sdformat 16.1 or newer within major 16 and urdfdom 6.
 SDF loading uses sdformat's validation, schema conversion and frame resolution;
 tinyxml2 remains required by the other XML loaders.
 CMake selects major 16, then 15, then 14 when several SDKs are available,
-using versioned or unversioned package names. Installed IO components record
-the selected package and major and require that same major, so a consumer
-cannot silently link a different sdformat ABI. Core builds with IO disabled
-do not discover sdformat.
+using versioned or unversioned package names. Shared `dart-io` links sdformat
+privately, so installed consumers do not need its development package. Static
+IO exports the selected package and major as a dependency and requires that
+same major. Core builds with IO disabled do not discover sdformat.
 
 Source builds using urdfdom below 5.1 should load only trusted URDF: those
 versions can interpret URDF text as a printf format string in parser error
@@ -184,7 +262,11 @@ Set
 build.
 
 Use `find_package(DART CONFIG REQUIRED COMPONENTS io)` and link `dart-io`.
-The `dart::utils` namespace and `dart/utils/...` header paths are preserved.
+Consumers requiring SDF should request `COMPONENTS io-sdf` and link
+`dart-io-sdf`, which forwards to `dart-io`. An SDF-off installation reports
+that component as not found. `HAVE_SDFORMAT` in `dart/config.hpp` records
+whether SDF is enabled; the SDF headers and parser symbols are installed only
+when enabled. The other `dart::utils` APIs and header paths are preserved.
 Legacy `utils` / `utils-urdf` components and `dart-utils` / `dart-utils-urdf`
 targets forward to `dart-io`; applications linked to their former shared
 libraries must rebuild.
