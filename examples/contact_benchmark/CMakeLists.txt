@@ -4,11 +4,22 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components collision-bullet collision-ode utils)
-set(required_libraries dart dart-collision-bullet dart-collision-ode dart-utils)
+set(required_components collision-bullet collision-ode utils io-sdf)
+set(
+  required_libraries
+  dart
+  dart-collision-bullet
+  dart-collision-ode
+  dart-utils
+  dart-io-sdf
+)
 
 # The headless benchmark needs no GUI; --gui and --gui-capture need dart-gui.
 if(DART_IN_SOURCE_BUILD)
+  if(NOT HAVE_SDFORMAT)
+    message(STATUS "Skipping contact_benchmark: SDF support is disabled")
+    return()
+  endif()
   set(has_gui 0)
   if(TARGET dart-gui)
     list(APPEND required_libraries dart-gui)
@@ -33,6 +44,13 @@ find_package(
   OPTIONAL_COMPONENTS gui
   CONFIG
 )
+include("${DART_DIR}/DARTFindsdformat.cmake")
+if(NOT SDFORMAT_FOUND)
+  message(
+    FATAL_ERROR
+    "contact_benchmark requires sdformat 14 (>= 14.8), 15 or 16"
+  )
+endif()
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} PUBLIC ${required_libraries})

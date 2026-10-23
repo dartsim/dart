@@ -31,6 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
@@ -42,7 +43,10 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/MathTypes.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
+
+#if HAVE_SDFORMAT
+  #include "dart/utils/sdf/SdfParser.hpp"
+#endif
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -54,7 +58,6 @@ using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
 
 //==============================================================================
 TEST(Issue1193, AngularVelAdd)
@@ -263,9 +266,10 @@ TEST(Issue1193, WithFixedJoint)
 }
 
 //==============================================================================
+#if HAVE_SDFORMAT
 TEST(Issue1193, WithRevoluteJoint)
 {
-  auto world = SdfParser::readWorld(
+  auto world = dart::utils::SdfParser::readWorld(
       "dart://sample/sdf/test/issue1193_revolute_test.sdf");
   ASSERT_TRUE(world != nullptr);
   const double dt = 0.001;
@@ -296,7 +300,7 @@ TEST(Issue1193, WithRevoluteJoint)
 //==============================================================================
 TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
 {
-  auto world = SdfParser::readWorld(
+  auto world = dart::utils::SdfParser::readWorld(
       "dart://sample/sdf/test/issue1193_revolute_with_offset_test.sdf");
   ASSERT_TRUE(world != nullptr);
   const double dt = 0.0001;
@@ -324,3 +328,5 @@ TEST(Issue1193, ConservationOfMomentumWithRevoluteJointWithOffset)
 
   EXPECT_NEAR(0.0, maxAngMomentumChange.norm(), tol * 10);
 }
+
+#endif

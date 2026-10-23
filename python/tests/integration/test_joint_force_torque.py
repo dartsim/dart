@@ -5,6 +5,11 @@ import numpy as np
 import pytest
 
 
+pytestmark = pytest.mark.skipif(
+    not hasattr(dart.utils.SdfParser, "Options"), reason="SDF loading is disabled"
+)
+
+
 def read_world(uri: dart.common.Uri):
     options = dart.utils.SdfParser.Options()
     options.mDefaultRootJointType = dart.utils.SdfParser.RootJointType.FIXED

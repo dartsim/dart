@@ -77,6 +77,9 @@ def make_demo_scenes():
         soft_cubes,
         soft_open_chain,
     ]
+    if not hasattr(dart.utils.SdfParser, "Options"):
+        modules.remove(atlas_simbicon)
+        modules.remove(soft_foot_simbicon)
     if hasattr(dart.utils, "ModelResourceRetriever"):
         modules.extend([atlas_v5, unitree_g1])
     modules.extend([vehicle, heightmap])

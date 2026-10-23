@@ -8,14 +8,15 @@ import numpy as np
 import pytest
 from examples.demos.models import simbicon, soft_foot_simbicon as soft_foot
 
-pytestmark = pytest.mark.skipif(
+requires_sdf = pytest.mark.skipif(
     not hasattr(dart, "utils")
-    or not hasattr(dart.utils, "SdfParser")
+    or not hasattr(dart.utils.SdfParser, "Options")
     or not hasattr(dart.utils, "DartLoader"),
-    reason="dart-io SDF and URDF loaders are unavailable",
+    reason="SDF or URDF loaders are unavailable",
 )
 
 
+@requires_sdf
 def test_controller_state_changes_harnesses_and_reset():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     controller = simbicon.Controller(model.atlas, model.world)
@@ -43,6 +44,7 @@ def test_controller_state_changes_harnesses_and_reset():
     assert isinstance(controller.is_allowing_control(), bool)
 
 
+@requires_sdf
 def test_unknown_state_machine_raises_value_error():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     controller = model.controller
@@ -54,6 +56,7 @@ def test_unknown_state_machine_raises_value_error():
         controller.change_state_machine(4, 0.0)
 
 
+@requires_sdf
 @pytest.mark.parametrize("missing_argument", ["atlas", "world"])
 def test_controller_rejects_null_inputs(missing_argument):
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
@@ -63,6 +66,7 @@ def test_controller_rejects_null_inputs(missing_argument):
         simbicon.Controller(**arguments)
 
 
+@requires_sdf
 @pytest.mark.parametrize("wrong_argument", ["atlas", "world"])
 def test_controller_rejects_wrong_input_types(wrong_argument):
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
@@ -77,6 +81,7 @@ def test_controller_rejects_empty_skeleton():
         simbicon.Controller(dart.dynamics.Skeleton(), dart.simulation.World())
 
 
+@requires_sdf
 @pytest.mark.parametrize(
     "kind,name",
     [
@@ -108,6 +113,7 @@ def test_controller_reports_missing_required_part(kind, name):
         simbicon.Controller(atlas, model.world)
 
 
+@requires_sdf
 def test_controller_keeps_world_alive_after_gc():
     class World(dart.simulation.World):
         pass
@@ -132,6 +138,7 @@ def test_controller_keeps_world_alive_after_gc():
     assert reference() is None
 
 
+@requires_sdf
 def test_model_controller_survives_dropping_model():
     model = soft_foot.create_model(soft_foot.Feet.SOFT)
     controller = model.controller
@@ -144,6 +151,7 @@ def test_model_controller_survives_dropping_model():
     assert np.isfinite(controller.atlas.getPositions()).all()
 
 
+@requires_sdf
 def test_controller_world_python_backref_cycle_collects():
     class World(dart.simulation.World):
         pass
@@ -165,6 +173,7 @@ def test_controller_world_python_backref_cycle_collects():
     assert collected, "Controller's retained World edge was invisible to GC"
 
 
+@requires_sdf
 def test_dropping_a_controller_removes_its_pelvis_harness():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     solver = model.world.getConstraintSolver()
@@ -181,6 +190,7 @@ def test_dropping_a_controller_removes_its_pelvis_harness():
     assert solver.getNumConstraints() == original_count + 1
 
 
+@requires_sdf
 def test_dropping_a_model_unharnesses_its_controller_in_a_surviving_world():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     world = model.world
@@ -196,6 +206,7 @@ def test_dropping_a_model_unharnesses_its_controller_in_a_surviving_world():
     world.step()
 
 
+@requires_sdf
 @pytest.mark.parametrize(
     "name", [-1, 0, 3, 4, 2**31 - 1, 2**31, 2**32 - 1, 2**63 - 1, 2**64 - 1]
 )
@@ -208,6 +219,7 @@ def test_name_only_controller_rejects_numeric_indices_and_integer_limits(name):
     assert (controller.current_state_machine, controller.current_state) == previous
 
 
+@requires_sdf
 @pytest.mark.parametrize("argument", ["atlas", "world"])
 def test_controller_rejects_spoofed_native_owner_types(argument):
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
@@ -224,6 +236,7 @@ def test_controller_rejects_spoofed_native_owner_types(argument):
         simbicon.Controller(**arguments)
 
 
+@requires_sdf
 @pytest.mark.parametrize("exception", [RuntimeError, KeyboardInterrupt, SystemExit])
 @pytest.mark.parametrize("protocol", ["__float__", "__index__"])
 def test_time_protocol_failures_are_type_errors_before_unknown_gait_lookup(
@@ -240,6 +253,7 @@ def test_time_protocol_failures_are_type_errors_before_unknown_gait_lookup(
     assert controller.current_state_machine == "walking in place"
 
 
+@requires_sdf
 @pytest.mark.parametrize("time", [np.nan, np.inf, -np.inf, -1.0])
 def test_gait_change_accepts_native_nonfinite_and_negative_begin_times(time):
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
@@ -249,6 +263,7 @@ def test_gait_change_accepts_native_nonfinite_and_negative_begin_times(time):
     assert np.isfinite(model.atlas.getForces()).all()
 
 
+@requires_sdf
 def test_string_and_float_subclasses_use_stored_values():
     class Name(str):
         def __str__(self):
@@ -264,6 +279,7 @@ def test_string_and_float_subclasses_use_stored_values():
     assert model.controller._current.begin_time == 0.125
 
 
+@requires_sdf
 def test_running_timer_is_strict_and_returning_to_gait_keeps_state_clock():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     controller = model.controller
@@ -285,6 +301,7 @@ def test_running_timer_is_strict_and_returning_to_gait_keeps_state_clock():
     assert controller.current_state == "0"
 
 
+@requires_sdf
 def test_controller_reset_only_restores_q_dq_and_retains_forces_gait_clock_harness():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     controller = model.controller
@@ -305,6 +322,7 @@ def test_controller_reset_only_restores_q_dq_and_retains_forces_gait_clock_harne
     assert model.world.getConstraintSolver().getNumConstraints() == 1
 
 
+@requires_sdf
 def test_reset_restores_captured_dof_indices_and_leaves_new_dof_state():
     model = soft_foot.create_model(soft_foot.Feet.RIGID)
     atlas, controller = model.atlas, model.controller
@@ -330,6 +348,7 @@ def test_reset_restores_captured_dof_indices_and_leaves_new_dof_state():
         np.testing.assert_array_equal(before, after)
 
 
+@requires_sdf
 @pytest.mark.parametrize(
     "height,allows",
     [
@@ -351,6 +370,7 @@ def test_height_cutoff_boundaries_and_nan_match_native(height, allows):
         np.testing.assert_array_equal(model.atlas.getForces(), forces)
 
 
+@requires_sdf
 def test_harnessed_controller_world_cycle_collects_without_retaining_solver_wrapper():
     class World(dart.simulation.World):
         pass
