@@ -174,6 +174,47 @@ names the dependency and the component, and an explicit `DART_SKIP_<NAME>=ON`
 still disables one on purpose. The Gazebo pixi task (`config-dart-gz`) and
 the compat lanes set it.
 
+With system Bullet 3.17 or newer, `DART_BULLET_FLOAT64` (default `ON`) links
+the `-float64` libraries installed beside the single-precision ones, because
+single-precision Bullet's absolute GJK tolerances lose contacts of
+centimeter-scale shapes ([gz-physics#1117](https://github.com/gazebosim/gz-physics/issues/1117)).
+DART rejects mixed library variants and conflicting scalar precision in linked
+project-built Bullet components. Filename variants and scalar ABI are recorded
+separately: unsuffixed libraries can use either precision. Imported libraries
+must pass exactly one of the single/double C++ link probes, covering both
+Collision and LinearMath; project-built components use their compile definitions.
+Installed CMake components verify the recorded scalar ABI and filename variant.
+C-only consumers use an isolated CXX probe without enabling CXX in the parent;
+unsupported toolchain or target contexts remain unverified. Cross-directory
+link scopes also remain unverified because their target names can bind to
+directory-local imports or aliases; the finder rejects them before probe export
+and fallback metadata serialization. Unsupported potentially active target
+generator expressions, ambiguous or failed probes, and unknown linked-header
+versions fail dependency validation rather than claiming compatibility. Inactive
+install/platform branches and absent optional targets contribute nothing.
+The installed version floor comes from the linked target's headers: 3.17 when
+DART uses its newer heightfield constructor, otherwise 3.05.
+
+Empty single-config builds keep their empty configuration when selecting
+`dart.pc` libraries and use CMake's `NOCONFIG` imported-file mappings.
+
+`dart.pc` requires `bullet-float64` when pkg-config finds that module and otherwise
+publishes the selected libraries and include directories in its public flags.
+Paths are escaped, and compile/link sysroots are removed at path boundaries.
+Absolute library search paths from interface link options precede ordinary link
+directories, matching CMake's ordering. The fallback accepts joined `-L` and
+MSVC `LIBPATH` search options; unsupported interface options report an error
+instead of publishing incomplete flags. A matching `bullet-float64.pc` module
+supplies its own link flags and bypasses that fallback.
+On Linux, sysroot library flags retain the exact selected filename using `-l:`;
+unsupported platform/sysroot library serialization reports an error.
+Scalar ABI checks retain normal interface targets and mapped link options in an
+isolated target graph, independently of pkg-config serialization.
+The two precisions
+share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
+even across `RTLD_LOCAL` plugins, so a process must load only one Bullet
+precision.
+
 `DART_USE_SYSTEM_BULLET=OFF` fetches Bullet 3.25 and builds and installs only
 the shared `BulletCollision` and `LinearMath` libraries and their headers,
 with double precision enabled. DART installs the headers directly under

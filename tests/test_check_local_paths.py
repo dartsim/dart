@@ -1,6 +1,7 @@
 """Publication-path policy, CLI modes, and staged hook regression tests."""
 
 import importlib.util
+import json
 import os
 import subprocess
 import sys
@@ -869,6 +870,136 @@ def test_json_escaped_paths_are_reported_in_every_mode(
     assert result.stdout.splitlines() == [
         f"{location}: {reported_path}" for location in locations
     ]
+
+
+def blobless_clone(repo):
+    _git(repo, "config", "uploadpack.allowFilter", "true")
+    _git(repo, "config", "uploadpack.allowReachableSHA1InWant", "true")
+    clone = repo / "partial-clone"
+    _git(
+        repo, "clone", "--filter=blob:none", "--no-checkout", repo.as_uri(), str(clone)
+    )
+    return clone
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-16"])
+def test_commit_range_prefetches_both_blob_sides_without_losing_removed_leaks(
+    repo, monkeypatch, encoding
+):
+    (repo / "notes.md").write_text("Public base\n")
+    base = _commit(repo)
+    before = _git(repo, "rev-parse", f"{base}:notes.md").stdout.strip()
+    (repo / "notes.md").write_text("Public update\n")
+    (repo / "leak.dat").write_bytes(
+        "Public summary\n/home/example/private.md\n".encode(encoding)
+    )
+    leaked = _commit(repo)
+    (repo / "leak.dat").unlink()
+    (repo / "notes.md").write_text("Public head\n")
+    # The scanner must never try to hydrate a gitlink's missing commit as a blob.
+    _git(repo, "update-index", "--add", "--cacheinfo", f"160000,{'1' * 40},module")
+    head = _commit(repo)
+    after = _git(repo, "rev-parse", f"{head}:notes.md").stdout.strip()
+    clone = blobless_clone(repo)
+    available = _git(
+        clone, "cat-file", "--batch-all-objects", "--batch-check=%(objectname)"
+    ).stdout.splitlines()
+    assert before not in available and after not in available
+    trace = repo / "scan-trace.jsonl"
+    monkeypatch.setenv("GIT_TRACE2_EVENT", str(trace))
+    result = _cli("--commit-range", f"{base}..{head}", cwd=clone)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"{leaked}:leak.dat:2: /home/example/private.md\n"
+    events = [json.loads(line) for line in trace.read_text().splitlines()]
+    assert not any(event.get("key") == "fetch_count" for event in events)
+    fetches = [
+        event
+        for event in events
+        if event.get("event") == "start" and "fetch" in event.get("argv", [])
+    ]
+    assert len(fetches) == 1
+    available = _git(
+        clone, "cat-file", "--batch-all-objects", "--batch-check=%(objectname)"
+    ).stdout.splitlines()
+    assert before in available and after in available
+
+
+def test_commit_range_prefetch_failure_stays_closed(repo):
+    (repo / "notes.md").write_text("Public base\n")
+    base = _commit(repo)
+    (repo / "notes.md").write_text("Public head\n")
+    head = _commit(repo)
+    clone = blobless_clone(repo)
+    _git(clone, "remote", "set-url", "origin", (repo / "unavailable").as_uri())
+    result = _cli("--commit-range", f"{base}..{head}", cwd=clone)
+    assert result.returncode == 2
+    assert "Local path check failed:" in result.stderr
+
+
+def test_partial_commit_range_keeps_merge_messages_without_extra_blob_fetches(
+    repo, monkeypatch
+):
+    (repo / "notes.md").write_text("Public base\n")
+    base = _commit(repo)
+    _git(repo, "checkout", "-qb", "side")
+    (repo / "notes.md").write_text("Public side edit\n")
+    (repo / "side.md").write_text("Public side\n")
+    side = _commit(repo)
+    _git(repo, "checkout", "-qb", "topic", base)
+    (repo / "notes.md").write_text("Public topic edit\n")
+    (repo / "topic.md").write_text("Public topic\n")
+    topic = _commit(repo)
+    with pytest.raises(subprocess.CalledProcessError) as conflict:
+        _git(
+            repo,
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            "merge",
+            "--no-commit",
+            "--no-ff",
+            "side",
+        )
+    assert conflict.value.returncode == 1
+    assert _git(repo, "diff", "--name-only", "--diff-filter=U").stdout == "notes.md\n"
+    (repo / "notes.md").write_text("Public resolution\n")
+    (repo / "resolution.md").write_text("/home/example/resolution.md\n")
+    merged = _commit(repo, "Merge public side\n\nPreserve the entire message.")
+    clone = blobless_clone(repo)
+    trace = repo / "scan-trace.jsonl"
+    monkeypatch.setenv("GIT_TRACE2_EVENT", str(trace))
+    result = _cli("--commit-range", f"{topic}..{merged}", f"^{side}", cwd=clone)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"{merged}:resolution.md:1: /home/example/resolution.md\n"
+    events = [json.loads(line) for line in trace.read_text().splitlines()]
+    assert not any(event.get("key") == "fetch_count" for event in events)
+
+
+@pytest.mark.parametrize("registration", ["filter", "true-then-false", "legacy"])
+def test_commit_range_keeps_native_multiple_promisor_fallback(
+    repo, monkeypatch, registration
+):
+    (repo / "notes.md").write_text("Public base\n")
+    base = _commit(repo)
+    (repo / "notes.md").write_text("Public head\n")
+    head = _commit(repo)
+    clone = blobless_clone(repo)
+    _git(clone, "config", "remote.Cache.url", repo.as_uri())
+    if registration == "filter":
+        _git(clone, "config", "remote.Cache.partialclonefilter", "blob:none")
+    elif registration == "true-then-false":
+        _git(clone, "config", "--add", "remote.Cache.promisor", "true")
+        _git(clone, "config", "--add", "remote.Cache.promisor", "false")
+    else:
+        _git(clone, "config", "extensions.partialclone", "Cache")
+    trace = repo / "scan-trace.jsonl"
+    monkeypatch.setenv("GIT_TRACE2_EVENT", str(trace))
+    result = _cli("--commit-range", f"{base}..{head}", cwd=clone)
+    assert result.returncode == 0, result.stderr
+    events = [json.loads(line) for line in trace.read_text().splitlines()]
+    assert any(event.get("key") == "fetch_count" for event in events)
+    assert "Prefetching" not in result.stderr
 
 
 def test_commit_range_reports_leak_removed_before_tip(repo):

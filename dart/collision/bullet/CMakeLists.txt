@@ -5,35 +5,28 @@
 # with Bullet, which uses relative paths and may break transitive dependencies.
 dart_find_package(Bullet)
 dart_check_optional_package(BULLET "dart-collision-bullet" "Bullet" "3.05")
-if(DART_USE_SYSTEM_BULLET)
-  # Test whether Bullet was built with double precision. If so, we need to
-  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
-  # any Bullet headers. This is a workaround for the fact that Bullet does not
-  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
-  include(CheckCXXSourceCompiles)
-  include(CMakePushCheckState)
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_FLAGS "-w")
-  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
-  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
-  unset(BT_USE_DOUBLE_PRECISION CACHE)
-  check_cxx_source_compiles(
-    "
-      #include <btBulletCollisionCommon.h>
-      int main()
-      {
-        btVector3 v(0., 0., 1.);
-        btStaticPlaneShape planeShape(v, 0.);
-        return 0;
-      }
-    "
-    BT_USE_DOUBLE_PRECISION
+_dart_bullet_probe_precision(bullet_precision)
+if(NOT bullet_precision)
+  message(
+    FATAL_ERROR
+    "Cannot establish the selected Bullet scalar ABI: "
+    "single and double Collision/LinearMath link probes must identify exactly one precision."
   )
-  cmake_pop_check_state()
-else()
-  # FetchContent builds Bullet with USE_DOUBLE_PRECISION=ON, so keep DART in sync.
-  set(BT_USE_DOUBLE_PRECISION TRUE)
+endif()
+set(
+  DART_BULLET_PRECISION
+  "${bullet_precision}"
+  CACHE INTERNAL
+  "Bullet scalar ABI"
+)
+set(BT_USE_DOUBLE_PRECISION FALSE CACHE INTERNAL "Bullet uses double precision")
+if(bullet_precision STREQUAL "double")
+  set(
+    BT_USE_DOUBLE_PRECISION
+    TRUE
+    CACHE INTERNAL
+    "Bullet uses double precision"
+  )
 endif()
 
 if(DART_VERBOSE)
