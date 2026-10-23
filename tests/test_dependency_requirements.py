@@ -842,19 +842,24 @@ def test_bullet_header_floor(tmp_path, bundled, version):
             True,
             "accepted",
         ),
-        # Bullet libraries that this project builds cannot be linked by the
-        # precision probe; their directories show the precision instead.
+        # The compile-only probe must use inherited definitions when this
+        # project builds the C++ Bullet library itself.
         (
             325,
-            'file(WRITE "${CMAKE_BINARY_DIR}/bt/dummy.c" "int bt_dummy;\\n")\n'
+            'file(WRITE "${CMAKE_BINARY_DIR}/bt/dummy.cpp" '
+            '"#include <LinearMath/btScalar.h>\\n'
+            'static_assert(sizeof(btScalar) == sizeof(double));\\nint bt_dummy;\\n")\n'
             'file(WRITE "${CMAKE_BINARY_DIR}/bt/CMakeLists.txt"\n'
             '  "add_definitions(-DBT_USE_DOUBLE_PRECISION)\\n'
-            "add_library(BulletCollision STATIC dummy.c)\\n"
-            'add_library(helper STATIC dummy.c)\\n")\n'
+            "add_library(BulletCollision STATIC dummy.cpp)\\n"
+            'add_library(helper STATIC dummy.cpp)\\n")\n'
             "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\n"
-            "enable_language(C)\n"
+            "enable_language(CXX)\n"
             "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
             'add_subdirectory("${CMAKE_BINARY_DIR}/bt" bt-build)\n'
+            "foreach(t BulletCollision helper)\n"
+            'target_include_directories(${t} PRIVATE "${lib}/../src")\n'
+            "endforeach()\n"
             "add_library(Bullet INTERFACE)\n"
             "target_link_libraries(Bullet INTERFACE helper BulletCollision)",
             True,
@@ -935,6 +940,12 @@ def test_bullet_prefers_float64_libraries(
     header = include / "LinearMath" / "btScalar.h"
     header.parent.mkdir(parents=True)
     header.write_text(f"#define BT_BULLET_VERSION {version}\n")
+    if expected == "built-double":
+        header.write_text(
+            header.read_text()
+            + "#ifdef BT_USE_DOUBLE_PRECISION\nusing btScalar = double;\n"
+            "#else\nusing btScalar = float;\n#endif\n"
+        )
     modules = tmp_path / "modules"
     modules.mkdir()
     (modules / "FindBullet.cmake").write_text(
@@ -1068,6 +1079,8 @@ def test_bullet_prefers_float64_libraries(
     # CMake wraps warning text, so compare whitespace-normalized output.
     warning = "must not load both Bullet precisions" in " ".join(result.stderr.split())
     assert warning == (expected in ("warned", "rejected")), result.stderr
+    if expected == "built-double":
+        cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
 
 
 @pytest.mark.parametrize(
@@ -3611,7 +3624,8 @@ def test_bullet_legacy_imported_interface_consumer(tmp_path, mode):
         "definition-inactive",
     ],
 )
-def test_bullet_transitive_built_precision(tmp_path, mode):
+@pytest.mark.parametrize("carrier", ["definition", "option"])
+def test_bullet_transitive_built_precision(tmp_path, mode, carrier):
     configuration = (
         "Debug" if mode in ("config-active", "definition-active") else "Release"
     )
@@ -3648,8 +3662,17 @@ def test_bullet_transitive_built_precision(tmp_path, mode):
         "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
         "set(DART_USE_SYSTEM_BULLET ON)\n"
         f"add_library(precision_options INTERFACE{imported})\n"
-        f'target_compile_definitions(precision_options INTERFACE "{definition}")\n'
     )
+    if carrier == "option":
+        graph += "if(MSVC)\nset(define /D)\nelse()\nset(define -D)\nendif()\n"
+        option = definition.replace(
+            "BT_USE_DOUBLE_PRECISION", "${define}BT_USE_DOUBLE_PRECISION"
+        )
+        graph += f'target_compile_options(precision_options INTERFACE "{option}")\n'
+    else:
+        graph += (
+            f'target_compile_definitions(precision_options INTERFACE "{definition}")\n'
+        )
     if imported:
         graph += f'set_property(TARGET precision_options PROPERTY MAP_IMPORTED_CONFIG_RELEASE "{"DEBUG" if mode == "mapped" else ""}")\n'
     edge = "precision_options"
@@ -3735,6 +3758,216 @@ def test_bullet_transitive_built_precision(tmp_path, mode):
                     'message(FATAL_ERROR "Wrong installed transitive precision")\nendif()\n',
                 )
                 assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "mode,actual,expected",
+    [
+        ("plain-single", "single", "single"),
+        ("split-define", "double", "double"),
+        ("shell-define", "double", "double"),
+        ("global-define", "double", "double"),
+        ("config-global-define", "double", "double"),
+        ("undef-only", "single", "single"),
+        ("define-undef", "single", "single"),
+        ("undef-define", "double", "double"),
+        ("global-define-target-undef", "single", "single"),
+        ("private-define-undef", "single", "single"),
+        ("private-undef-define", "double", "double"),
+        ("header-define", "double", "double"),
+        ("forced-define", "double", "unverified"),
+        ("response-define", "double", "unverified"),
+        ("source-definition", "double", "unverified"),
+        ("source-option", "double", "unverified"),
+        ("interface-only", "single", "unverified"),
+        ("mixed", "double", "unverified"),
+        ("empty-config-debug-define", "single", "single"),
+        ("empty-config-legacy-define", "double", "double"),
+        ("competing-headers", "single", "unverified"),
+        ("private-header-double", "double", "double"),
+        ("target-pch", "double", "unverified"),
+        ("false-private-definition", "double", "double"),
+        ("false-source-definition", "double", "unverified"),
+        ("false-interface-definition", "single", "unverified"),
+    ],
+)
+def test_bullet_built_compile_context(tmp_path, mode, actual, expected):
+    prefix = build_bullet_abi_fixture(tmp_path / "fixture", actual, "STATIC")
+    alternate = None
+    if mode in ("competing-headers", "private-header-double"):
+        alternate = tmp_path / "alternate"
+        shutil.copytree(prefix / "include", alternate / "include")
+    define_header = (
+        "#ifndef BT_USE_DOUBLE_PRECISION\n#define BT_USE_DOUBLE_PRECISION\n#endif\n"
+    )
+    if mode in ("header-define", "private-header-double"):
+        header = prefix / "include/LinearMath/btScalar.h"
+        header.write_text(define_header + header.read_text())
+    if mode.startswith("false-"):
+        header = prefix / "include/LinearMath/btScalar.h"
+        header.write_text(
+            "#if defined(OFF) && !defined(BT_USE_DOUBLE_PRECISION)\n"
+            "#define BT_USE_DOUBLE_PRECISION\n#endif\n" + header.read_text()
+        )
+    forced = tmp_path / "precision.h"
+    forced.write_text(define_header)
+    response = tmp_path / "precision.rsp"
+    graph = (
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        "if(MSVC)\nset(define /D)\nset(undef /U)\nset(force_include /FI)\n"
+        "else()\nset(define -D)\nset(undef -U)\nset(force_include -include)\nendif()\n"
+    )
+    if mode in ("global-define", "global-define-target-undef"):
+        graph += 'set(CMAKE_CXX_FLAGS "${define}BT_USE_DOUBLE_PRECISION")\n'
+    elif mode == "config-global-define":
+        graph += 'set(CMAKE_CXX_FLAGS_RELEASE "${define}BT_USE_DOUBLE_PRECISION")\n'
+    elif mode == "empty-config-debug-define":
+        graph += 'set(CMAKE_CXX_FLAGS_DEBUG "${define}BT_USE_DOUBLE_PRECISION")\n'
+    elif mode == "response-define":
+        graph += f'file(WRITE "{response.as_posix()}" "${{define}}BT_USE_DOUBLE_PRECISION\\n")\n'
+    options = {
+        "split-define": '"${define}" "BT_USE_DOUBLE_PRECISION"',
+        "shell-define": '"SHELL:${define} BT_USE_DOUBLE_PRECISION"',
+        "undef-only": '"${undef}BT_USE_DOUBLE_PRECISION"',
+        "define-undef": '"${define}BT_USE_DOUBLE_PRECISION" "${undef}BT_USE_DOUBLE_PRECISION"',
+        "undef-define": '"${undef}BT_USE_DOUBLE_PRECISION" "${define}BT_USE_DOUBLE_PRECISION"',
+        "global-define-target-undef": '"${undef}BT_USE_DOUBLE_PRECISION"',
+        "forced-define": f'"${{force_include}}" "{forced.as_posix()}"',
+        "response-define": f'"@{response.as_posix()}"',
+    }
+    for target, name in (("BulletCollision", "collision"), ("LinearMath", "math")):
+        precision = "single" if mode == "mixed" and name == "math" else actual
+        source = tmp_path / f"{name}.cpp"
+        scalar = "double" if precision == "double" else "float"
+        source.write_text(
+            (tmp_path / f"fixture/source/{name}.cpp").read_text()
+            + f"static_assert(sizeof(btScalar) == sizeof({scalar}));\n"
+        )
+        graph += (
+            f'add_library({target} STATIC "{source.as_posix()}")\n'
+            f'target_include_directories({target} PRIVATE "{prefix.as_posix()}/include")\n'
+        )
+        if mode in options:
+            graph += f"target_compile_options({target} PUBLIC {options[mode]})\n"
+        elif mode.startswith("private-") and mode != "private-header-double":
+            graph += f"target_compile_options({target} PRIVATE {options[mode.removeprefix('private-')]})\n"
+        elif mode == "empty-config-legacy-define":
+            graph += f'set_property(TARGET {target} PROPERTY COMPILE_FLAGS "${{define}}BT_USE_DOUBLE_PRECISION")\n'
+        elif mode == "false-private-definition":
+            graph += f"target_compile_definitions({target} PRIVATE OFF)\n"
+        elif mode == "false-source-definition":
+            graph += f'set_source_files_properties("{source.as_posix()}" PROPERTIES COMPILE_DEFINITIONS OFF)\n'
+        elif mode == "false-interface-definition" and target == "BulletCollision":
+            graph += f"target_compile_definitions({target} INTERFACE OFF)\n"
+        elif mode == "source-definition":
+            graph += f'set_source_files_properties("{source.as_posix()}" PROPERTIES COMPILE_DEFINITIONS BT_USE_DOUBLE_PRECISION)\n'
+        elif mode == "source-option":
+            graph += f'set_source_files_properties("{source.as_posix()}" PROPERTIES COMPILE_OPTIONS "${{define}}BT_USE_DOUBLE_PRECISION")\n'
+        elif mode == "mixed" and precision == "double":
+            graph += f'target_compile_options({target} PRIVATE "${{define}}BT_USE_DOUBLE_PRECISION")\n'
+        elif mode == "interface-only" and target == "BulletCollision":
+            graph += f'target_compile_options({target} INTERFACE "${{define}}BT_USE_DOUBLE_PRECISION")\n'
+        elif mode == "competing-headers":
+            graph += f'target_include_directories({target} PRIVATE "{alternate.as_posix()}/include")\n'
+        elif mode == "target-pch":
+            graph += (
+                f'target_precompile_headers({target} PRIVATE "{forced.as_posix()}")\n'
+            )
+    selected = alternate if mode == "private-header-double" else prefix
+    graph += (
+        "target_link_libraries(BulletCollision PRIVATE LinearMath)\n"
+        "add_library(Bullet INTERFACE)\n"
+        f'target_include_directories(Bullet INTERFACE "{selected.as_posix()}/include")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision LinearMath)\n"
+    )
+    source = tmp_path / "consumer.cpp"
+    source.write_text(BULLET_CONSUMER)
+    consumer = (
+        f'add_executable(consumer "{source.as_posix()}")\n'
+        "target_link_libraries(consumer PRIVATE Bullet)\n"
+    )
+    if actual == "double":
+        consumer += (
+            "target_compile_definitions(consumer PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        )
+    configuration = "" if mode.startswith("empty-config-") else "Release"
+    args = (f"-DCMAKE_BUILD_TYPE={configuration}",)
+    # Verify the implementation independently, including precise mixed-ABI link failures.
+    control = tmp_path / "control"
+    control.mkdir()
+    result = configure(control, graph + consumer, cmake_args=args)
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(
+        shutil.which("cmake"),
+        "--build",
+        control / "build",
+        "--target",
+        "BulletCollision",
+        "LinearMath",
+    )
+    result = subprocess.run(
+        [
+            shutil.which("cmake"),
+            "--build",
+            str(control / "build"),
+            "--target",
+            "consumer",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    output = result.stdout + result.stderr
+    (control / "consumer-build.log").write_text(output)
+    if mode in ("mixed", "interface-only", "false-interface-definition"):
+        assert result.returncode != 0, output
+        assert (
+            "btConvexHullComputer" if mode == "mixed" else "btStaticPlaneShape"
+        ) in output
+    else:
+        assert result.returncode == 0, output
+        cmake_fixture_run(control / "build/consumer")
+    bullet_module(tmp_path)
+    result = configure(
+        tmp_path,
+        graph + "include(DARTFindBullet)\n_dart_bullet_probe_precision(observed)\n"
+        'file(WRITE "${CMAKE_BINARY_DIR}/precision.txt" "${BULLET_FOUND}\\n${DART_BULLET_BUILT_PRECISION}\\n${observed}\\n")\n',
+        cmake_args=args,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    found, built, observed = (tmp_path / "build/precision.txt").read_text().splitlines()
+    if expected == "unverified":
+        assert (found, built, observed) == ("FALSE", "", "")
+    else:
+        assert (found, built, observed) == ("TRUE", expected, expected)
+
+
+def test_bullet_c_only_built_precision_is_unverified(tmp_path):
+    include = bullet_module(tmp_path)
+    source = tmp_path / "part.c"
+    source.write_text(
+        "#ifndef BT_USE_DOUBLE_PRECISION\n#error Missing fixture definition\n"
+        "#endif\nint bt_dummy;\n"
+    )
+    result = configure(
+        tmp_path,
+        "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(C)\n"
+        "set(DART_USE_SYSTEM_BULLET ON)\n"
+        f'add_library(BulletCollision STATIC "{source.as_posix()}")\n'
+        "target_compile_definitions(BulletCollision PRIVATE BT_USE_DOUBLE_PRECISION)\n"
+        "add_library(Bullet INTERFACE)\n"
+        f'target_include_directories(Bullet INTERFACE "{include.as_posix()}")\n'
+        "target_link_libraries(Bullet INTERFACE BulletCollision)\n"
+        "get_property(before GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        "include(DARTFindBullet)\n_dart_bullet_probe_precision(observed)\n"
+        "get_property(after GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
+        'if(NOT before STREQUAL after OR "CXX" IN_LIST after)\n'
+        'message(FATAL_ERROR "Built target probe enabled CXX")\nendif()\n'
+        "if(BULLET_FOUND OR Bullet_FOUND OR DART_BULLET_BUILT_PRECISION OR observed)\n"
+        'message(FATAL_ERROR "C-only target claimed a C++ Bullet ABI")\nendif()\n',
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cmake_fixture_run(shutil.which("cmake"), "--build", tmp_path / "build")
 
 
 @pytest.mark.parametrize("scope", ["direct", "function"])

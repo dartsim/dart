@@ -542,7 +542,7 @@ function(
   set(_dart_bullet_queue ${ARGN})
   set(_dart_bullet_unknown FALSE)
   set(result)
-  while(_dart_bullet_queue)
+  while(NOT "${_dart_bullet_queue}" STREQUAL "")
     list(GET _dart_bullet_queue 0 _dart_bullet_item)
     list(REMOVE_AT _dart_bullet_queue 0)
     set(_dart_bullet_active_configs "_${_dart_bullet_build_type}")
@@ -687,67 +687,264 @@ function(
   set(${unknown} "${_dart_bullet_unknown}" PARENT_SCOPE)
 endfunction()
 
-# Project-built libraries cannot be linked by try_compile. Inspect their actual
-# compile definitions, including usage inherited from private/public dependencies.
+# A compile-only probe can inspect project-built targets without linking them.
+# Reproduce supported compile usage; leave opaque or source-local inputs unverified.
 function(_dart_bullet_built_precision out unknown target config)
+  set(${out} "" PARENT_SCOPE)
+  set(${unknown} TRUE PARENT_SCOPE)
+  if(NOT CMAKE_CXX_COMPILER_LOADED)
+    return()
+  endif()
+  get_target_property(directory "${target}" SOURCE_DIR)
+  string(TOUPPER "${config}" upper_config)
+  foreach(variable CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_${upper_config})
+    get_directory_property(
+      value
+      DIRECTORY "${directory}"
+      DEFINITION "${variable}"
+    )
+    set(${variable} "${value}")
+  endforeach()
+  get_target_property(value "${target}" COMPILE_FLAGS)
+  if(NOT "${value}" STREQUAL "value-NOTFOUND" AND NOT "${value}" STREQUAL "")
+    if(config STREQUAL "")
+      string(APPEND CMAKE_CXX_FLAGS " ${value}")
+    else()
+      string(APPEND CMAKE_CXX_FLAGS_${upper_config} " ${value}")
+    endif()
+  endif()
+  foreach(property STANDARD STANDARD_REQUIRED EXTENSIONS)
+    get_target_property(value "${target}" CXX_${property})
+    if(NOT value MATCHES "-NOTFOUND$")
+      set(CMAKE_CXX_${property} "${value}")
+    endif()
+  endforeach()
+  get_target_property(value "${target}" POSITION_INDEPENDENT_CODE)
+  if(NOT value MATCHES "-NOTFOUND$")
+    set(CMAKE_POSITION_INDEPENDENT_CODE "${value}")
+  endif()
+  get_target_property(sources "${target}" SOURCES)
+  foreach(source IN LISTS sources)
+    if(source MATCHES "\\$<")
+      return()
+    endif()
+    foreach(
+      property
+      COMPILE_DEFINITIONS
+      COMPILE_DEFINITIONS_${upper_config}
+      COMPILE_OPTIONS
+      COMPILE_FLAGS
+      INCLUDE_DIRECTORIES
+    )
+      get_property(
+        value
+        SOURCE "${source}"
+        TARGET_DIRECTORY "${target}"
+        PROPERTY "${property}"
+      )
+      if(NOT "${value}" STREQUAL "")
+        return()
+      endif()
+    endforeach()
+  endforeach()
   set(queue "${target}")
   set(seen)
   set(definitions)
-  set(unverified FALSE)
+  set(options)
+  set(includes)
+  set(features)
   while(queue)
     list(POP_FRONT queue item)
     if(NOT TARGET "${item}" OR item IN_LIST seen)
       continue()
     endif()
     list(APPEND seen "${item}")
-    set(value)
+    set(prefix INTERFACE_)
     if(item STREQUAL target)
-      get_target_property(directory "${item}" SOURCE_DIR)
-      get_directory_property(value DIRECTORY "${directory}" COMPILE_DEFINITIONS)
-      get_target_property(local "${item}" COMPILE_DEFINITIONS)
-      if(local)
-        list(APPEND value ${local})
-      endif()
+      set(prefix)
       get_target_property(links "${item}" LINK_LIBRARIES)
-      if(NOT links)
-        set(links)
+      get_directory_property(value DIRECTORY "${directory}" COMPILE_DEFINITIONS)
+      _dart_bullet_evaluate_items(active unresolved "${config}" "${item}" FALSE ${value})
+      list(APPEND definitions ${active})
+      if(unresolved)
+        return()
       endif()
     else()
-      get_target_property(value "${item}" INTERFACE_COMPILE_DEFINITIONS)
-      if(NOT value)
-        set(value)
-      endif()
       _dart_bullet_link_interface(links "${item}" "${config}")
     endif()
-    _dart_bullet_evaluate_items(active unresolved "${config}" "${item}" FALSE ${value})
-    list(APPEND definitions ${active})
-    if(unresolved)
-      set(unverified TRUE)
+    foreach(property PRECOMPILE_HEADERS SYSTEM_INCLUDE_DIRECTORIES)
+      get_target_property(value "${item}" ${prefix}${property})
+      if(
+        NOT "${value}" STREQUAL "value-NOTFOUND"
+        AND NOT "${value}" STREQUAL ""
+      )
+        return()
+      endif()
+    endforeach()
+    # Mixed normal/system include precedence is outside this bounded snapshot.
+    if(NOT item STREQUAL target)
+      get_target_property(system "${item}" SYSTEM)
+      get_target_property(value "${item}" INTERFACE_INCLUDE_DIRECTORIES)
+      if(system AND value)
+        return()
+      endif()
+    endif()
+    foreach(
+      property
+      COMPILE_DEFINITIONS
+      COMPILE_OPTIONS
+      INCLUDE_DIRECTORIES
+      COMPILE_FEATURES
+    )
+      get_target_property(value "${item}" ${prefix}${property})
+      if("${value}" STREQUAL "value-NOTFOUND" OR "${value}" STREQUAL "")
+        continue()
+      endif()
+      _dart_bullet_evaluate_items(active unresolved "${config}" "${item}" FALSE ${value})
+      if(unresolved)
+        return()
+      endif()
+      if(property STREQUAL "COMPILE_DEFINITIONS")
+        list(APPEND definitions ${active})
+      elseif(property STREQUAL "COMPILE_OPTIONS")
+        list(APPEND options ${active})
+      elseif(property STREQUAL "INCLUDE_DIRECTORIES")
+        list(APPEND includes ${active})
+      else()
+        list(APPEND features ${active})
+      endif()
+    endforeach()
+    if(NOT links)
+      set(links)
     endif()
     _dart_bullet_evaluate_items(active unresolved "${config}" "${item}" FALSE ${links})
-    list(APPEND queue ${active})
     if(unresolved)
-      set(unverified TRUE)
+      return()
     endif()
+    list(PREPEND queue ${active})
   endwhile()
-  set(precision single)
-  if(definitions MATCHES "(^|;)BT_USE_DOUBLE_PRECISION(=[^;]*)?(;|$)")
+  # The scratch directory must not change relative preprocessor inputs.
+  set(raw "${options};${CMAKE_CXX_FLAGS};${CMAKE_CXX_FLAGS_${upper_config}}")
+  string(REPLACE "SHELL:" "" raw "${raw}")
+  if(
+    raw
+      MATCHES
+      "(^|[ ;])(@|(-|--)(include|imacros|config|specs)|-Wp,|-Xpreprocessor|-fplugin|/FI|-I|-isystem|-iquote|-idirafter|-iframework|/I|/external:I)"
+  )
+    return()
+  endif()
+  list(REMOVE_DUPLICATES includes)
+  set(scalar_headers)
+  foreach(path IN LISTS includes)
+    if(NOT IS_ABSOLUTE "${path}" OR NOT IS_DIRECTORY "${path}")
+      return()
+    endif()
+    if(EXISTS "${path}/LinearMath/btScalar.h")
+      list(APPEND scalar_headers "${path}/LinearMath/btScalar.h")
+    endif()
+  endforeach()
+  list(LENGTH scalar_headers header_count)
+  if(header_count GREATER 1)
+    return()
+  endif()
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_QUIET TRUE)
+  set(CMAKE_REQUIRED_INCLUDES "${includes}")
+  set(CMAKE_TRY_COMPILE_CONFIGURATION "${config}")
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+  string(SHA256 key "${target};${config}")
+  set(context_target "_dart_bullet_built_${key}")
+  if(NOT TARGET "${context_target}")
+    add_library("${context_target}" INTERFACE IMPORTED)
+  endif()
+  set_target_properties(
+    "${context_target}"
+    PROPERTIES
+      INTERFACE_COMPILE_DEFINITIONS "${definitions}"
+      INTERFACE_COMPILE_OPTIONS "${options}"
+      INTERFACE_COMPILE_FEATURES "${features}"
+  )
+  set(CMAKE_REQUIRED_LIBRARIES "${context_target}")
+  foreach(precision single double)
+    set(type float)
+    set(condition "defined(BT_USE_DOUBLE_PRECISION)")
+    if(precision STREQUAL "double")
+      set(type double)
+      set(condition "!defined(BT_USE_DOUBLE_PRECISION)")
+    endif()
+    set(
+      source
+      "#if __has_include(<LinearMath/btScalar.h>)\n#include <LinearMath/btScalar.h>\nstatic_assert(sizeof(btScalar) == sizeof(${type}), \"Bullet scalar ABI\");\n#else\n#if ${condition}\n#error Bullet scalar definition differs\n#endif\n#endif\n"
+    )
+    set(source_${precision} "${source}")
+    unset(_dart_bullet_built_${precision} CACHE)
+    check_cxx_source_compiles("${source}" _dart_bullet_built_${precision})
+  endforeach()
+  cmake_pop_check_state()
+  set(precision)
+  if(_dart_bullet_built_single AND NOT _dart_bullet_built_double)
+    set(precision single)
+  elseif(_dart_bullet_built_double AND NOT _dart_bullet_built_single)
     set(precision double)
   else()
-    # A public-only scalar definition disagrees with this library's own build.
-    get_target_property(value "${target}" INTERFACE_COMPILE_DEFINITIONS)
-    if(value)
+    return()
+  endif()
+  # An explicit public-only setting must not contradict the library's scalar ABI.
+  set(public_definitions)
+  set(public_options)
+  foreach(property COMPILE_DEFINITIONS COMPILE_OPTIONS)
+    get_target_property(value "${target}" INTERFACE_${property})
+    if(NOT "${value}" STREQUAL "value-NOTFOUND" AND NOT "${value}" STREQUAL "")
       _dart_bullet_evaluate_items(active unresolved "${config}" "${target}" FALSE ${value})
-      if(
-        unresolved
-        OR active MATCHES "(^|;)BT_USE_DOUBLE_PRECISION(=[^;]*)?(;|$)"
-      )
-        set(unverified TRUE)
+      if(unresolved)
+        return()
       endif()
+      if(property STREQUAL "COMPILE_DEFINITIONS")
+        set(public_definitions "${active}")
+      else()
+        set(public_options "${active}")
+      endif()
+    endif()
+  endforeach()
+  if(
+    NOT "${public_definitions}" STREQUAL ""
+    OR NOT "${public_options}" STREQUAL ""
+  )
+    string(REPLACE "SHELL:" "" raw "${public_options}")
+    if(
+      raw
+        MATCHES
+        "(^|[ ;])(@|(-|--)(include|imacros|config|specs)|-Wp,|-Xpreprocessor|-fplugin|/FI|-I|-isystem|-iquote|-idirafter|-iframework|/I|/external:I)"
+    )
+      return()
+    endif()
+    if(precision STREQUAL "double")
+      list(APPEND public_definitions BT_USE_DOUBLE_PRECISION)
+    endif()
+    cmake_push_check_state(RESET)
+    set(CMAKE_REQUIRED_QUIET TRUE)
+    set(CMAKE_REQUIRED_INCLUDES "${includes}")
+    set_target_properties(
+      "${context_target}"
+      PROPERTIES
+        INTERFACE_COMPILE_DEFINITIONS "${public_definitions}"
+        INTERFACE_COMPILE_OPTIONS "${public_options}"
+    )
+    set(CMAKE_REQUIRED_LIBRARIES "${context_target}")
+    unset(_dart_bullet_built_public CACHE)
+    check_cxx_source_compiles(
+      "${source_${precision}}"
+      _dart_bullet_built_public
+    )
+    cmake_pop_check_state()
+    if(NOT _dart_bullet_built_public)
+      return()
     endif()
   endif()
   set(${out} "${precision}" PARENT_SCOPE)
-  set(${unknown} "${unverified}" PARENT_SCOPE)
+  set(${unknown} FALSE PARENT_SCOPE)
 endfunction()
 
 # The bounded discovery walk visits targets once. Static link cycles instead
@@ -1102,7 +1299,7 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
   _dart_bullet_check_version("${_dart_bullet_includes}")
   list(REMOVE_DUPLICATES _dart_bullet_built_precisions)
   list(LENGTH _dart_bullet_built_precisions _dart_bullet_precision_count)
-  if(_dart_bullet_precision_count EQUAL 1)
+  if(_dart_bullet_precision_count EQUAL 1 AND NOT _dart_bullet_unknown)
     set(DART_BULLET_BUILT_PRECISION "${_dart_bullet_built_precisions}")
   endif()
   _dart_bullet_variant(_dart_bullet_found ${_dart_bullet_files})
