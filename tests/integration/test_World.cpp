@@ -5615,10 +5615,16 @@ TEST(World, FailedSourceSyncRetriesWithoutAnotherMutation)
   auto view = Group::create();
   auto robot = createBox(Eigen::Vector3d::Ones());
   auto other = createBox(Eigen::Vector3d::Ones());
+  world->addSkeleton(robot);
+  world->addSkeleton(other);
   auto group = world->getConstraintSolver()->getCollisionGroup();
+  // Keep the source edit responsible for introducing the robot's shape.
+  group->removeAllShapeFrames();
   group->subscribeTo(view);
   group->addShapeFramesOf(other.get());
   world->compile();
+  ASSERT_EQ(group->getNumShapeFrames(), 1u);
+  ASSERT_FALSE(group->hasShapeFrame(robot->getBodyNode(0)->getShapeNode(0)));
   {
     auto edit = world->edit();
     struct ResetFailure

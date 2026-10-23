@@ -123,8 +123,8 @@ dynamics::MeshShapePtr Mesh::createMeshShape() const
   }
 
   DART_SUPPRESS_DEPRECATED_BEGIN
-  auto shape = std::make_shared<dynamics::MeshShape>(
-      mScale, model, mMeshUri, mRetriever);
+  auto shape = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(mScale, model, mMeshUri, mRetriever));
   DART_SUPPRESS_DEPRECATED_END
   shape->setColorMode(dynamics::MeshShape::ColorMode::MATERIAL_COLOR);
   return shape;
