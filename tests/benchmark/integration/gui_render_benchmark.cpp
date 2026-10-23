@@ -266,10 +266,10 @@ dart::simulation::WorldPtr buildScene(const Options& o)
   ShapePtr mesh;
   if (o.scene == "mesh") {
     DART_SUPPRESS_DEPRECATED_BEGIN
-    mesh = std::make_shared<MeshShape>(
+    mesh = std::shared_ptr<MeshShape>(new MeshShape(
         Eigen::Vector3d::Constant(objectSize),
         meshScene(),
-        "renderer-benchmark.obj");
+        "renderer-benchmark.obj"));
     DART_SUPPRESS_DEPRECATED_END
   }
   for (std::size_t i = 0; i < o.count; ++i) {

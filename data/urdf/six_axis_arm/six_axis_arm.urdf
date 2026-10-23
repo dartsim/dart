@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<!-- DART-authored sample, distributed under the repository BSD-2-Clause license. -->
+<robot name="six_axis_arm">
+  <material name="blue"><color rgba="0.2 0.45 0.7 1" /></material>
+  <material name="graphite"><color rgba="0.25 0.28 0.32 1" /></material>
+  <link name="world" />
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0.06" />
+      <mass value="2.0" />
+      <inertia ixx="0.0056" iyy="0.0056" izz="0.0064"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.06" />
+      <geometry><mesh filename="meshes/base.obj" /></geometry>
+      <material name="graphite" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.06" />
+      <geometry><box size="0.16 0.16 0.12" /></geometry>
+    </collision>
+  </link>
+  <link name="shoulder">
+    <inertial>
+      <origin xyz="0 0 0.03" />
+      <mass value="1.0" />
+      <inertia ixx="0.00080625" iyy="0.00080625" izz="0.0010125"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.03" />
+      <geometry><mesh filename="meshes/shoulder.obj" /></geometry>
+      <material name="blue" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.03" />
+      <geometry><box size="0.09 0.09 0.06" /></geometry>
+    </collision>
+  </link>
+  <link name="upper_arm">
+    <inertial>
+      <origin xyz="0 0 0.14" />
+      <mass value="0.8" />
+      <inertia ixx="0.0054379166666667" iyy="0.0054379166666667" izz="0.0004225"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.14" />
+      <geometry><mesh filename="meshes/upper_arm.obj" /></geometry>
+      <material name="blue" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.14" />
+      <geometry><box size="0.065 0.065 0.28" /></geometry>
+    </collision>
+  </link>
+  <link name="elbow">
+    <inertial>
+      <origin xyz="0.115 0 0" />
+      <mass value="0.6" />
+      <inertia ixx="0.000226875" iyy="0.0027584375" izz="0.0027584375"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.115 0 0" />
+      <geometry><mesh filename="meshes/elbow.obj" /></geometry>
+      <material name="blue" />
+    </visual>
+    <collision>
+      <origin xyz="0.115 0 0" />
+      <geometry><box size="0.23 0.055 0.055" /></geometry>
+    </collision>
+  </link>
+  <link name="forearm">
+    <inertial>
+      <origin xyz="0.03 0 0" />
+      <mass value="0.25" />
+      <inertia ixx="7.8125e-05" iyy="0.0001140625" izz="0.0001140625"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.03 0 0" />
+      <geometry><mesh filename="meshes/forearm.obj" /></geometry>
+      <material name="graphite" />
+    </visual>
+    <collision>
+      <origin xyz="0.03 0 0" />
+      <geometry><box size="0.06 0.05 0.05" /></geometry>
+    </collision>
+  </link>
+  <link name="wrist">
+    <inertial>
+      <origin xyz="0.025 0 0" />
+      <mass value="0.18" />
+      <inertia ixx="4.55625e-05" iyy="6.028125e-05" izz="6.028125e-05"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.025 0 0" />
+      <geometry><mesh filename="meshes/wrist.obj" /></geometry>
+      <material name="blue" />
+    </visual>
+    <collision>
+      <origin xyz="0.025 0 0" />
+      <geometry><box size="0.05 0.045 0.045" /></geometry>
+    </collision>
+  </link>
+  <link name="tool">
+    <inertial>
+      <origin xyz="0.02 0 0" />
+      <mass value="0.12" />
+      <inertia ixx="1.8375e-05" iyy="2.51875e-05" izz="2.51875e-05"
+               ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.02 0 0" />
+      <geometry><mesh filename="meshes/tool.obj" /></geometry>
+      <material name="graphite" />
+    </visual>
+    <collision>
+      <origin xyz="0.02 0 0" />
+      <geometry><box size="0.04 0.035 0.035" /></geometry>
+    </collision>
+  </link>
+  <joint name="world_joint" type="fixed">
+    <parent link="world" />
+    <child link="base" />
+  </joint>
+  <joint name="base_yaw" type="revolute">
+    <parent link="base" />
+    <child link="shoulder" />
+    <origin xyz="0 0 0.12" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14" upper="3.14" effort="40" velocity="2" />
+  </joint>
+  <joint name="shoulder_pitch" type="revolute">
+    <parent link="shoulder" />
+    <child link="upper_arm" />
+    <origin xyz="0 0 0.06" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.6" upper="2.6" effort="40" velocity="2" />
+  </joint>
+  <joint name="elbow_pitch" type="revolute">
+    <parent link="upper_arm" />
+    <child link="elbow" />
+    <origin xyz="0 0 0.28" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.6" upper="2.6" effort="25" velocity="2" />
+  </joint>
+  <joint name="wrist_roll" type="revolute">
+    <parent link="elbow" />
+    <child link="forearm" />
+    <origin xyz="0.23 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="8" velocity="2" />
+  </joint>
+  <joint name="wrist_pitch" type="revolute">
+    <parent link="forearm" />
+    <child link="wrist" />
+    <origin xyz="0.06 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.6" upper="2.6" effort="8" velocity="2" />
+  </joint>
+  <joint name="tool_roll" type="revolute">
+    <parent link="wrist" />
+    <child link="tool" />
+    <origin xyz="0.05 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="5" velocity="2" />
+  </joint>
+</robot>

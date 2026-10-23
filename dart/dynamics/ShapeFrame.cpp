@@ -33,6 +33,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 
@@ -41,10 +42,20 @@ namespace dynamics {
 
 namespace detail {
 
+// This exact slot type is the attachment roster used by geometry preflight.
+struct ShapeFrameShapeVersionListener
+{
+  ShapeFrame* mFrame;
+  void operator()(Shape* shape, std::size_t) const
+  {
+    mFrame->handleShapeVersionChange(shape);
+  }
+};
+
 //==============================================================================
 VisualAspectProperties::VisualAspectProperties(
     const Eigen::Vector4d& color, const bool hidden, const bool shadowed)
-  : mRGBA(color), mHidden(hidden), mShadowed(shadowed)
+  : mRGBA(color), mUseDefaultColor(false), mHidden(hidden), mShadowed(shadowed)
 {
   // Do nothing
 }
@@ -319,15 +330,13 @@ const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const
 void DynamicsAspect::notifyContactDynamicsPropertiesUpdated()
 {
   // Contact materials are read whenever contact constraints are built, so an
-  // edit only needs to wake resting bodies. It deliberately does not bump the
-  // ShapeFrame version: that version propagates to the Skeleton's structural
-  // version, which makes World prepare for simulation again on the next step,
-  // and gz-sim's WheelSlip system sets slip compliance every iteration. The
-  // solver's only version-keyed cache of them lasts one constraint update.
+  // edit only needs to wake resting bodies and stamp parameters. Avoid a
+  // ShapeFrame version change: gz-sim's WheelSlip sets slip every iteration.
   auto* shapeFrame = getComposite();
   if (shapeFrame == nullptr)
     return;
 
+  common::detail::notifyParameterMutation(shapeFrame);
   auto* shapeNode = shapeFrame->asShapeNode();
   if (shapeNode == nullptr)
     return;
@@ -372,6 +381,7 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   if (shape == ShapeFrame::mAspectProperties.mShape)
     return;
 
+  common::detail::checkTopologyMutation(this);
   ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
   ShapeNode* shapeNode = asShapeNode();
   BodyNode* bodyNode
@@ -381,25 +391,16 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   const bool notifyCollisionChange = bodyNode != nullptr && collision != nullptr
                                      && collision->getCollidable();
 
+  common::Connection replacement;
+  if (shape)
+    replacement = shape->onVersionChanged.connect(
+        detail::ShapeFrameShapeVersionListener{this});
+  auto oldConnection = mConnectionForShapeVersionChange;
   ShapeFrame::mAspectProperties.mShape = shape;
+  mConnectionForShapeVersionChange = std::move(replacement);
+  oldConnection.disconnect();
+  common::detail::notifyTopologyMutation(this);
   incrementVersion();
-
-  mConnectionForShapeVersionChange.disconnect();
-
-  if (shape) {
-    mConnectionForShapeVersionChange
-        = shape->onVersionChanged.connect([this](Shape* shape, std::size_t) {
-            DART_ASSERT(
-                shape == this->ShapeFrame::mAspectProperties.mShape.get());
-            DART_UNUSED(shape);
-            this->incrementVersion();
-
-            if (auto* shapeNode = this->asShapeNode()) {
-              if (auto* bodyNode = shapeNode->getBodyNodePtr().get())
-                bodyNode->handleCollisionShapeGeometryUpdated(shapeNode);
-            }
-          });
-  }
 
   if (notifyCollisionChange) {
     bodyNode->handleCollisionShapeUpdated(
@@ -408,6 +409,23 @@ void ShapeFrame::setShape(const ShapePtr& shape)
 
   mShapeUpdatedSignal.raise(
       this, oldShape, ShapeFrame::mAspectProperties.mShape);
+}
+
+//==============================================================================
+void ShapeFrame::handleShapeVersionChange(Shape* shape)
+{
+  DART_ASSERT(shape == ShapeFrame::mAspectProperties.mShape.get());
+  incrementVersion();
+  if (common::detail::isVisualShapeVersionUpdate(shape))
+    return;
+  if (common::detail::isTopologyShapeVersionUpdate(shape))
+    common::detail::notifyTopologyMutation(this);
+  else
+    common::detail::notifyParameterMutation(this);
+  if (auto* shapeNode = asShapeNode()) {
+    if (auto* bodyNode = shapeNode->getBodyNodePtr().get())
+      bodyNode->handleCollisionShapeGeometryUpdated(shapeNode);
+  }
 }
 
 //==============================================================================
@@ -493,3 +511,52 @@ ShapeFrame::ShapeFrame(const std::tuple<Frame*, Properties>& args)
 
 } // namespace dynamics
 } // namespace dart
+
+namespace dart::common::signal::detail {
+struct SlotSnapshotAccess
+{
+  static void checkShape(const dynamics::Shape* shape)
+  {
+    using SignalType = dynamics::Shape::VersionChangedSignal;
+    auto& signal = shape->onVersionChanged.mSignal;
+    std::shared_ptr<SignalType::ConnectionBodyType> single;
+    std::vector<std::shared_ptr<SignalType::ConnectionBodyType>> connections;
+    {
+      std::lock_guard<std::mutex> lock(signal.mConnectionMutex);
+      if (signal.mConnectionBodies.empty())
+        return;
+      if (signal.mConnectionBodies.size() == 1u)
+        single = *signal.mConnectionBodies.begin();
+      else
+        connections.assign(
+            signal.mConnectionBodies.begin(), signal.mConnectionBodies.end());
+    }
+    // Never hold the signal mutex while inspecting frames or locking World
+    // ownership.
+    const auto check = [](const auto& connection) {
+      if (!connection->isConnected())
+        return;
+      const auto* listener
+          = connection->getSlot()
+                .template target<
+                    dynamics::detail::ShapeFrameShapeVersionListener>();
+      if (listener)
+        common::detail::checkTopologyMutation(listener->mFrame);
+    };
+    if (single)
+      check(single);
+    else
+      for (const auto& connection : connections)
+        check(connection);
+  }
+};
+} // namespace dart::common::signal::detail
+
+namespace dart::common::detail {
+void checkShapeTopologyMutation(const dynamics::Shape* shape)
+{
+  if (!shape || !hasGuardedModels())
+    return;
+  signal::detail::SlotSnapshotAccess::checkShape(shape);
+}
+} // namespace dart::common::detail

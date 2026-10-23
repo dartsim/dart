@@ -83,14 +83,14 @@ import dartpy as dart
 
 world = dart.World(time_step=1e-3, gravity=(0, 0, -9.81))
 with world.edit():
-    robot = world.add(dart.io.load_model(dart.data.path("urdf/KR5/KR5 sixx R650.urdf")))
-    robot.joints["shoulder_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    robot = world.add(dart.io.load_model(dart.data.path("urdf/six_axis_arm/six_axis_arm.urdf")))
+    robot.joints["base_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
     imu = world.sensors.add(dart.sensors.IMUSensor(link=robot.links["wrist"]))
 world.compile()                                          # simulation mode, no allocation
 
 robot.dofs.position_targets = np.zeros(robot.num_dofs)   # persistent target channel
 world.step(20)                                           # releases the GIL
-X_WP = robot.links["palm"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
+X_WP = robot.links["tool"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
 state = world.capture_state()                            # dynamic snapshot
 world.step(5)
 world.restore_state(state)
@@ -499,7 +499,7 @@ not run on a Windows host; hosted CI runs the catalog through Python directly.
 M6b still owns `dart.render`, the final viewer API, and migration of the
 interim `dartpy.gui` primitives (InteractiveFrame, drag and drop, GridVisual,
 SupportPolygonVisual, DebugOverlay, and GUIEventHandler). Pre-existing host
-gaps also remain: LogCapture misses spdlog and Python output and is not
+gaps also remain: LogCapture misses Python output and is not
 thread-safe, Copy does not reach the system clipboard, and `GuiScaleTheme`
 duplicates Viewer scaling. A native host loop releases the GIL; until the
 program's World-busy guard lands, other Python threads can still touch its
