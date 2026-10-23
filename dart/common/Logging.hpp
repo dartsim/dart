@@ -33,6 +33,13 @@
 #ifndef DART_COMMON_LOGGING_HPP_
 #define DART_COMMON_LOGGING_HPP_
 
+#include <dart/config.hpp>
+
+#include <functional>
+#include <string>
+
+#include <cstddef>
+
 // clang-format off
 #define DART_LOG_LEVEL_TRACE 0
 #define DART_LOG_LEVEL_DEBUG 1
@@ -43,11 +50,8 @@
 #define DART_LOG_LEVEL_OFF   6
 // clang-format on
 
-// Default active log level
-#if !defined(DART_ACTIVE_LOG_LEVEL)
-  #define DART_ACTIVE_LOG_LEVEL DART_LOG_LEVEL_INFO
-#endif
-
+// Defining DART_ACTIVE_LOG_LEVEL in a consumer changes only which DART_* macros
+// compile. Use setLogLevel() to change the library's runtime threshold.
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
   #define DART_TRACE(...) ::dart::common::trace(__VA_ARGS__)
 #else
@@ -84,20 +88,55 @@
   #define DART_FATAL(...) (void)0
 #endif
 
-#include <cstddef>
+namespace dart {
+namespace common {
 
-namespace dart::common {
-
-/// Severity of a message from trace() through fatal().
+/// Logging severity, ordered from most verbose to disabled.
 enum class LogLevel
 {
-  Trace,
-  Debug,
-  Info,
-  Warn,
-  Error,
-  Fatal
+  Trace = DART_LOG_LEVEL_TRACE,
+  Debug = DART_LOG_LEVEL_DEBUG,
+  Info = DART_LOG_LEVEL_INFO,
+  Warn = DART_LOG_LEVEL_WARN,
+  Error = DART_LOG_LEVEL_ERROR,
+  Fatal = DART_LOG_LEVEL_FATAL,
+  Off = DART_LOG_LEVEL_OFF
 };
+
+using LogSink = std::function<void(LogLevel, const std::string&)>;
+
+/// Replace the process-wide sink. An empty sink restores the default sink.
+/// Return a copy of the previous sink for restoration, or empty for the
+/// default. Callbacks run synchronously and are serialized, including across
+/// threads. They may log or replace the sink; a message logged from inside a
+/// callback that reaches the same running sink uses default output instead.
+/// Ordinary exceptions are ignored; forced thread unwinding propagates.
+/// The message reference is valid only
+/// for the duration of the callback. Captured resources must remain alive until
+/// the sink is replaced or reset.
+/// Pending dt* partial lines use the sink installed when they are flushed;
+/// replacing or resetting the sink does not flush them.
+/// With a custom sink (including the GUI App), an unterminated dt* line waits
+/// for an explicit flush, the next dt* statement on that thread, or thread
+/// exit.
+LogSink setLogSink(LogSink sink);
+
+/// Restore console output: warn and above to stderr, others to stdout. Color
+/// requires a terminal, NO_COLOR unset and TERM other than "dumb"; this is
+/// checked once per stream. Windows also requires virtual terminal processing,
+/// which is enabled when supported and remains enabled in that console.
+void resetLogSink();
+
+/// Set the runtime threshold, initially the more restrictive of Info and the
+/// library's DART_ACTIVE_LOG_LEVEL. Lower it to enable debug or trace messages.
+/// Off disables sink output; an installed LogCallback still receives messages.
+/// Compile-time disabled DART_* macros cannot be enabled at runtime.
+/// Legacy dt* streams are unfiltered.
+void setLogLevel(LogLevel level);
+
+/// Return the runtime threshold without allocating; lock-free on typical
+/// platforms.
+LogLevel getLogLevel();
 
 /// Receives one formatted message from trace() through fatal(). It runs on the
 /// logging thread, so it must be thread-safe. \p message holds \p length
@@ -105,32 +144,28 @@ enum class LogLevel
 /// message logged from inside the callback goes to the default output instead
 /// of re-entering it. An ordinary exception thrown by the callback is
 /// swallowed: DART reports the first one through the error console stream,
-/// unfiltered by spdlog's runtime level. The failed message goes to the default
-/// output, which still applies its own runtime level. Forced thread unwinding
-/// propagates. Do not fork() from inside the callback: the child would inherit
-/// the forking thread's re-entry state.
+/// unfiltered by the sink's runtime level. The failed message goes to the
+/// selected sink or default output, which still applies its own runtime level.
+/// Forced thread unwinding propagates. Do not fork() from inside the callback:
+/// the child would inherit the forking thread's re-entry state.
 using LogCallback = void (*)(
     LogLevel level, const char* message, std::size_t length, void* userData);
 
-/// Routes every message from trace() through fatal() to \p callback instead of
-/// spdlog, or of the console streams in a build without spdlog, whichever
-/// library instantiated the logging call. Messages below the compile-time
-/// DART_ACTIVE_LOG_LEVEL are still compiled out. The callback receives every
-/// remaining message regardless of spdlog's runtime level, so the receiver
-/// filters by level itself.
+/// Routes every message from trace() through fatal() to \p callback before the
+/// selected sink. Compile-time disabled DART_* macros remain disabled. The
+/// callback receives messages regardless of setLogLevel(), including Off, so
+/// the receiver filters by level itself.
 ///
-/// Each message is formatted once and offered first to the callback, which
-/// consults no spdlog registry and takes no lock, so it works after
-/// spdlog::drop_all() and in the child of a fork() taken from a
-/// single-threaded process. A message the callback declines goes to spdlog's
-/// default logger if one exists, or else to the console streams. Each call
-/// publishes an immutable
+/// Each message is formatted once and offered first to the callback, before
+/// acquiring or initializing sink state, so the successful callback path works
+/// in the child of a fork() taken from a single-threaded process. A message
+/// the callback declines goes to the selected sink or console streams, subject
+/// to the runtime threshold. Each call publishes an immutable
 /// {callback, userData} pair through one atomic pointer; a logging thread
-/// loads that pointer once per message, which adds one acquire load to the
-/// path without a callback. Old pairs are never freed, so \p userData must
-/// outlive every in-flight call: unset the callback only while no thread
-/// logs, or keep \p userData alive for the rest of the process. A null
-/// callback restores the default output. Call setLogCallback() from one
+/// loads that pointer once per delivery attempt. Old pairs are never freed, so
+/// \p userData must outlive every in-flight call: unset the callback only while
+/// no thread logs, or keep \p userData alive for the rest of the process. A
+/// null callback restores the default output. Call setLogCallback() from one
 /// thread at a time.
 void setLogCallback(LogCallback callback, void* userData = nullptr);
 
@@ -138,7 +173,7 @@ namespace detail {
 
 /// Whether setLogCallback() installed a callback. The answer can be stale by
 /// the time the caller acts on it, so a caller must not drop a message on its
-/// account; it only decides whether to format a message that spdlog's runtime
+/// account; it only decides whether to format a message that the sink's runtime
 /// level would otherwise discard.
 bool hasLogCallback();
 
@@ -171,10 +206,11 @@ void debug(const S& format_str, Args&&... args);
 ///
 /// Logs for useful information from normal operations.
 ///
-/// You can use a Python like formatting API as
-/// \code
-/// dart::common::info("Hello {}!", "World");  // logged as "Hello World!"
-/// \endcode
+/// Format strings support {}, {:.Ne}, {:.Nf}, {:.Ng} (decimal precision N for
+/// floating-point values, from 0 to 1000), and escaped braces {{ and }}.
+/// Invalid formats or argument counts log a format-error marker followed by the
+/// raw format string. For example: \code dart::common::info("Hello {}!",
+/// "World");  // logged as "Hello World!" \endcode
 template <typename S, typename... Args>
 void info(const S& format_str, Args&&... args);
 
@@ -204,7 +240,8 @@ void error(const S& format_str, Args&&... args);
 template <typename S, typename... Args>
 void fatal(const S& format_str, Args&&... args);
 
-} // namespace dart::common
+} // namespace common
+} // namespace dart
 
 #include <dart/common/detail/Logging-impl.hpp>
 

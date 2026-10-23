@@ -88,8 +88,6 @@ FreeListAllocator::~FreeListAllocator()
         << "Forcefully deallocated memory " << mTotalAllocatedSize
         << " of byte(s) that is not deallocated before destructing this memory "
         << "allocator.\n";
-    // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-    // destructor is resolved.
 
     return;
   }

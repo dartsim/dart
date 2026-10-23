@@ -159,7 +159,13 @@ public:
   virtual ~World();
 
   /// Create a clone of this World. All Skeletons and SimpleFrames that are held
-  /// by this World will be copied over.
+  /// by this World will be copied over. A compiled World attaches the cloned
+  /// SimpleFrames to the clones of their parents (its SimpleFrames and its
+  /// Skeletons' frames), so its clone shares no frame with it. If a
+  /// SimpleFrame's parent is any other frame except the World frame, it
+  /// throws std::runtime_error, inside edit() too: sharing that parent would
+  /// attach the clone to this World's model at scope-exit compilation, so
+  /// destroying the clone afterward would invalidate this World's model.
   std::shared_ptr<World> clone() const;
 
   /// Capture owning dynamic channels and time, excluding parameters/history.
@@ -352,6 +358,39 @@ public:
   /// Prepare one-time simulation caches and allocator reservations for the
   /// current world shape. Calling this is optional; step() does it lazily.
   void enterSimulationMode();
+
+  /// Prepare the model and opt into topology freezing. Legacy lazy Worlds
+  /// continue to permit runtime model edits until compile() is called. As in
+  /// step(), callbacks that compile() runs may not compile, edit or step this
+  /// World or change its model's topology; those throw std::runtime_error.
+  void compile();
+
+  /// Whether explicit compilation is current and no edit scope is active.
+  bool isCompiled() const;
+
+  class EditScope
+  {
+  public:
+    explicit EditScope(World& world);
+    ~EditScope();
+    EditScope(const EditScope&) = delete;
+    EditScope& operator=(const EditScope&) = delete;
+
+  private:
+    World& mWorld;
+    int mUncaughtExceptions;
+    bool mRecompile;
+  };
+
+  /// Permit topology changes until the returned scope exits. A World that was
+  /// compiled when the scope opened recompiles at scope exit; a lazy World
+  /// stays lazy. Scope exit never throws: when the recompile fails, the World
+  /// stays uncompiled and the next step() or compile() throws that error. The
+  /// World must outlive the scope.
+  [[nodiscard]] EditScope edit();
+
+  std::size_t getTopologyRevision() const;
+  std::size_t getParameterRevision() const;
 
   /// Returns true if simulation preparation is current for the world shape.
   /// It may synchronize the constraint solver's collision group, so do not call
@@ -757,6 +796,8 @@ public:
 
 private:
   friend struct WorldTestAccess;
+
+  void validateCompiledModel() const;
 
   /// Whether solver support motion is covered by World's skeleton snapshots.
   bool ownsSolverSkeletons();

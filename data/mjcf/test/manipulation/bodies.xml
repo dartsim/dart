@@ -1,0 +1,34 @@
+<!-- Copyright (c) 2026, The DART development contributors. -->
+<!-- SPDX-License-Identifier: BSD-2-Clause -->
+<mujoco>
+  <body name="arm" pos="-.5 0 .2">
+    <joint name="shoulder"/>
+    <geom/>
+    <body name="wrist" pos=".2 0 0">
+      <joint name="wrist"/>
+      <geom contype="1" conaffinity="1" friction=".9 .1 .1"/>
+      <body name="tip" pos=".2 0 0">
+        <geom contype="1" conaffinity="1"/>
+      </body>
+    </body>
+  </body>
+  <body name="object" pos=".5 0 .2">
+    <inertial pos=".01 .01 .01" mass="1" fullinertia=".00012 .00012 .00012 .00002 .00002 .00002"/>
+    <joint name="object_x" type="slide" axis="1 0 0"/>
+    <joint name="object_y" type="slide" axis="0 1 0"/>
+    <geom type="mesh" mesh="tetrahedron" contype="1" conaffinity="1"/>
+  </body>
+  <body name="goal">
+    <joint name="goal_x" type="slide" axis="1 0 0"/>
+    <joint name="goal_y" type="slide" axis="0 1 0"/>
+    <geom/>
+    <body name="marker">
+      <!-- A heavy visual marker overlaps the table but must never contact it. -->
+      <geom type="cylinder" size=".1 .01" density="1000000"/>
+    </body>
+  </body>
+  <body name="ball" pos=".5 .5 .3">
+    <joint name="ball_root" type="free"/>
+    <geom contype="1" conaffinity="1"/>
+  </body>
+</mujoco>

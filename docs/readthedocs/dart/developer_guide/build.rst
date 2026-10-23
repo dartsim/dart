@@ -104,9 +104,6 @@ Optional components remain optional.
    * - FCL
      - 0.7.0
      - Core collision detection
-   * - fmt
-     - 8.1.1
-     - Core formatting
    * - Bullet
      - 3.05
      - Bullet collision backend
@@ -117,7 +114,7 @@ Optional components remain optional.
      - 0.16.2
      - ODE collision backend
    * - tinyxml2
-     - 9.0.0
+     - 10.0.0
      - XML parsers
    * - sdformat
      - 14.8 (supported majors: 14, 15, 16)
@@ -125,9 +122,6 @@ Optional components remain optional.
    * - urdfdom
      - 3.0.0
      - URDF parser
-   * - spdlog
-     - 1.9.2
-     - Logging support
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering
@@ -144,13 +138,13 @@ Optional components remain optional.
      - 1.92.8
      - GUI controls (bundled by default)
    * - Python
-     - 3.10
+     - 3.12
      - dartpy
    * - NumPy
-     - 1.21.5
+     - 1.26.4
      - dartpy
    * - nanobind
-     - 3.1
+     - 3.1.x
      - dartpy (bundled by default)
    * - Tracy
      - 0.11.1
@@ -199,9 +193,7 @@ environment as the dependency prefix. Then configure and build:
        -DCMAKE_BUILD_TYPE=Release \
        -DDART_BUILD_DARTPY=ON \
        -DDART_BUILD_PROFILE=ON \
-       -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-       -DDART_USE_SYSTEM_GOOGLETEST=ON \
-       -DDART_USE_SYSTEM_TRACY=ON
+       -DDART_USE_SYSTEM_DEPENDENCIES=ON
    cmake --build build/default/cpp/Release -j
 
 Use ``-DCMAKE_PREFIX_PATH=<prefix>`` when dependencies are installed outside the
@@ -267,7 +259,7 @@ include:
        release. A vanilla system ImGui builds the GUI without docking.
    * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
-     - Use an installed nanobind 3.1 or newer instead of fetching nanobind
+     - Use an installed nanobind 3.1.x instead of fetching nanobind
        3.1.0. CMake uses ``nanobind_DIR`` when set, and otherwise
        ``python -m nanobind --cmake_dir``.
 

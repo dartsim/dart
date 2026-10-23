@@ -18,20 +18,6 @@ RUN yum install -y \
     libjpeg-turbo-devel \
     libpng-devel
 
-# fmt
-RUN curl -fsSL https://github.com/fmtlib/fmt/archive/refs/tags/11.1.4.tar.gz -o fmt.tar.gz \
-    && echo "ac366b7b4c2e9f0dde63a59b3feb5ee59b67974b14ee5dc9ea8ad78aa2c1ee1e  fmt.tar.gz" | sha256sum -c - \
-    && mkdir fmt && tar -xf fmt.tar.gz -C fmt --strip-components=1 \
-    && mkdir -p fmt/build \
-    && cmake fmt -B fmt/build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    -DFMT_TEST=OFF \
-    -DCMAKE_C_FLAGS="-fPIC" \
-    -DCMAKE_CXX_FLAGS="-fPIC" \
-    && cmake --build fmt/build --target install -j${NUM_CORES} \
-    && rm -rf fmt fmt.tar.gz
-
 # assimp
 RUN curl -fsSL https://github.com/assimp/assimp/archive/refs/tags/v6.0.5.tar.gz -o assimp.tar.gz \
     && echo "edf3749559c2b7d1f758ffb66fc5bec62186221e623b7f2e8969f17ee46ecb6f  assimp.tar.gz" | sha256sum -c - \
@@ -190,15 +176,6 @@ RUN curl -fsSL https://github.com/glfw/glfw/archive/refs/tags/3.4.tar.gz -o glfw
     -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF \
     && cmake --build glfw/build --target install -j${NUM_CORES} \
     && rm -rf glfw glfw.tar.gz
-
-# Match the existing external fmt configuration.
-RUN curl -fsSL https://github.com/gabime/spdlog/archive/refs/tags/v1.15.3.tar.gz -o spdlog.tar.gz \
-    && echo "15a04e69c222eb6c01094b5c7ff8a249b36bb22788d72519646fb85feb267e67  spdlog.tar.gz" | sha256sum -c - \
-    && mkdir spdlog && tar -xf spdlog.tar.gz -C spdlog --strip-components=1 \
-    && cmake spdlog -B spdlog/build -DCMAKE_BUILD_TYPE=Release \
-    -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_TESTS=OFF \
-    && cmake --build spdlog/build --target install -j${NUM_CORES} \
-    && rm -rf spdlog spdlog.tar.gz
 
 # Match DART's source-build ODE settings and retain the ODE collision bindings.
 RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o ode.tar.gz \

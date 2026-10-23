@@ -43,13 +43,19 @@
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionGroup.hpp"
+#include "dart/collision/dart/detail/NativeShapeConversion.hpp"
+#include "dart/collision/dart/shapes/Shape.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionGroup.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/String.hpp"
 #include "dart/common/detail/DeterministicExecutor.h"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -59,23 +65,62 @@
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/detail/SkeletonMembershipVersion.h"
+#include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+  #include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+  #include "dart/collision/ode/OdeCollisionGroup.hpp"
+#endif
 
 #include <algorithm>
 #include <atomic>
+#include <exception>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <new>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <typeinfo>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -84,6 +129,68 @@
 #include <cstdlib>
 
 namespace dart {
+namespace collision {
+namespace detail {
+struct CompositeCollisionFilterAccessor
+{
+  static const auto& filters(const CompositeCollisionFilter& filter)
+  {
+    return filter.mFilters;
+  }
+};
+
+struct CollisionGroupOwnershipAccessor
+{
+  static void update(CollisionGroup& group, const simulation::World* requester)
+  {
+    group.updateImpl(requester);
+  }
+  static bool hasPendingUpdates(const CollisionGroup& group)
+  {
+    return group.hasPendingSourceUpdates();
+  }
+
+  static bool hasSources(const CollisionGroup& group)
+  {
+    return !group.mSkeletonSources.empty() || !group.mBodyNodeSources.empty();
+  }
+
+  template <class Visit>
+  static void forEachSource(const CollisionGroup& group, Visit visit)
+  {
+    for (const auto& entry : group.mSkeletonSources)
+      visit(entry.second.mSource);
+  }
+
+  template <class Visit>
+  static void forEachBodySource(const CollisionGroup& group, Visit visit)
+  {
+    for (const auto& entry : group.mBodyNodeSources)
+      visit(entry.second.mSource);
+  }
+
+  template <class Visit>
+  static void forEachSkeleton(const CollisionGroup& group, Visit visit)
+  {
+    for (const auto& entry : group.mSkeletonSources) {
+      const auto source = entry.second.mSource.lock();
+      if (!source)
+        continue;
+      if (const auto* skeleton
+          = dynamic_cast<const dynamics::Skeleton*>(source.get()))
+        visit(skeleton);
+      for (std::size_t i = 0u; i < source->getNumBodyNodes(); ++i)
+        visit(source->getBodyNode(i)->getSkeleton().get());
+    }
+    for (const auto& entry : group.mBodyNodeSources) {
+      const auto source = entry.second.mSource.lock();
+      if (source)
+        visit(source->getSkeleton().get());
+    }
+  }
+};
+} // namespace detail
+} // namespace collision
 namespace simulation {
 
 namespace {
@@ -511,10 +618,85 @@ common::MemoryManager::Options makeWorldMemoryManagerOptions(
 class WorldDeactivationState
 {
 public:
-  explicit WorldDeactivationState(bool customFilterSleeping)
-    : mCustomFilterSleeping(customFilterSleeping)
+  explicit WorldDeactivationState(World* world, bool customFilterSleeping)
+    : mWorld(world), mCustomFilterSleeping(customFilterSleeping)
   {
   }
+
+  World* mWorld;
+  // Registry index bookkeeping, guarded by the registry mutex (ModelOwners
+  // below). Model keys take part in compile() ownership conflicts; World keys
+  // only route solver-level hooks.
+  std::unordered_map<const void*, std::size_t> mModelKeys;
+  std::unordered_map<const void*, std::size_t> mWorldKeys;
+  std::unordered_map<const dynamics::Frame*, std::vector<const void*>>
+      mSimpleFrameChains;
+  std::unordered_map<const dynamics::Frame*, std::vector<const void*>>
+      mGroupFrameChains;
+  std::unordered_map<
+      const void*,
+      std::vector<std::pair<const void*, const void*>>>
+      mGroupSourceChains;
+  std::vector<const void*> mSolverSkeletonKeys;
+  std::vector<const void*> mSolverKeys;
+  std::vector<const void*> mHandlerKeys;
+  // Hooks on other threads read these under the registry mutex; the World's
+  // own thread writes them. mStepping is set while step() or compile() runs.
+  std::atomic<bool> mCompiled{false};
+  std::atomic<std::size_t> mEditDepth{0u};
+  std::atomic<bool> mTopologyDirty{false};
+  std::atomic<std::size_t> mTopologyRevision{0u};
+  std::size_t mCompiledTopologyRevision = 0u;
+  std::atomic<std::size_t> mParameterRevision{0u};
+  std::atomic<bool> mStepping{false};
+  // Set by compile() and cleared at destruction or a failed rebuild. Only
+  // indexed Worlds have registry entries, model-object hooks and revisions.
+  bool mIndexed = false;
+  // Pending work retains this token, so leaving and rejoining never reuses it.
+  std::shared_ptr<const char> mRegistryIdentity;
+  // Worlds stepping on this thread form a chain through this pointer.
+  WorldDeactivationState* mOuterSteppingWorld = nullptr;
+  // Set lazily before callbacks, so an unchanged resting step avoids TLS.
+  WorldDeactivationState** mSteppingSlot = nullptr;
+  // A recompile that failed at World::edit() scope exit, reported by the next
+  // step() or compile().
+  std::exception_ptr mPendingRecompileError;
+  collision::CollisionOption mCompiledCollisionOption;
+  const collision::CollisionGroup* mCompiledCollisionGroup = nullptr;
+  bool mCompiledGroupAutomaticUpdate = true;
+  std::vector<const dynamics::Skeleton*> mCompiledSolverSkeletons;
+  std::vector<const constraint::ConstraintBase*> mCompiledConstraints;
+  std::vector<const constraint::ContactSurfaceHandler*>
+      mCompiledContactHandlers;
+  std::size_t mCompiledFilterRevision = 0u;
+  std::atomic<bool> mRawGroupMutation{false};
+  struct CompiledCompositeFilter
+  {
+    const collision::CompositeCollisionFilter* mFilter;
+    std::vector<const collision::CollisionFilter*> mChildren;
+  };
+  std::vector<CompiledCompositeFilter> mCompiledCompositeFilters;
+  std::vector<std::pair<const collision::CollisionFilter*, std::size_t>>
+      mCompiledFilterRevisions;
+  struct CompiledSubscription
+  {
+    std::weak_ptr<const dynamics::MetaSkeleton> mSource;
+    std::vector<const dynamics::BodyNode*> mBodies;
+  };
+  std::vector<CompiledSubscription> mCompiledSubscriptions;
+  std::vector<dynamics::WeakConstBodyNodePtr> mCompiledBodySubscriptions;
+  struct CompiledFrameAncestors
+  {
+    const dynamics::Frame* mFrame;
+    std::vector<const dynamics::Frame*> mAncestors;
+  };
+  std::vector<CompiledFrameAncestors> mCompiledFrameAncestors;
+  struct CompiledFrameChildren
+  {
+    const dynamics::Frame* mFrame;
+    std::vector<const dynamics::Frame*> mChildren;
+  };
+  std::vector<CompiledFrameChildren> mCompiledFrameChildren;
 
   // Whether World replays the decisions of collision filters it cannot track
   // by revision (DART_CUSTOM_FILTER_SLEEPING, read at construction).
@@ -588,6 +770,988 @@ public:
 };
 
 namespace {
+
+// Ownership registry of indexed Worlds: those with a valid compile index. Lazy
+// Worlds never appear here and never take mMutex. ModelOwners::mMutex guards
+// every structure here and the per-World index bookkeeping in
+// WorldDeactivationState. Mutation hooks resolve ownership from this index
+// alone: while holding the mutex they never read another World's containers,
+// call user-overridable virtuals, lock weak pointers or release a model object.
+struct ModelOwners
+{
+  std::mutex mMutex;
+  std::vector<WorldDeactivationState*> mWorlds;
+  // Model object -> indexed Worlds that reference it, each listed once.
+  std::unordered_map<const void*, std::vector<WorldDeactivationState*>> mOwners;
+  // Lookup scratch, reserved for every indexed World when it joins, so owner
+  // deduplication never allocates under mMutex.
+  std::vector<WorldDeactivationState*> mScratch;
+  bool mScratchInUse = false;
+};
+
+ModelOwners& modelOwners()
+{
+  // Worlds may be held by globals initialized before main. Their destruction
+  // can follow function-local static objects, so this bounded registry lives
+  // until process exit without running a destructor before those Worlds.
+  static auto* owners = new ModelOwners;
+  return *owners;
+}
+
+// Lock-free gates. Every hook returns before any registry work while no World
+// is indexed; the check hooks also run while a World is inside step().
+std::atomic<std::size_t> gIndexedWorlds{0u};
+std::atomic<std::size_t> gGuardedWorlds{0u};
+// Registry lock acquisitions, read by tests to prove lazy paths take none.
+std::atomic<std::size_t> gRegistryLocks{0u};
+// Innermost World stepping on this thread. Its own callbacks may not change
+// its model's topology, whether or not it is indexed. A step engages it before
+// running user extension points: collision filters, detectors and contact
+// handlers, constraint and solver hooks, and Joint and BodyNode dynamics
+// overrides. Overrides of introspection getters (versions, counts, frame
+// casts) are not extension points and may run before it.
+thread_local WorldDeactivationState* tlsSteppingWorld = nullptr;
+
+void engageSameThreadMarker(WorldDeactivationState& state)
+{
+  if (state.mSteppingSlot)
+    return;
+  state.mSteppingSlot = &tlsSteppingWorld;
+  state.mOuterSteppingWorld = *state.mSteppingSlot;
+  *state.mSteppingSlot = &state;
+  gGuardedWorlds.fetch_add(1u, std::memory_order_release);
+}
+
+// Ends a step() or compile() that set mStepping: releases the same-thread
+// marker if a callback stage engaged it, then the flag, also on exceptions.
+struct BusyScope
+{
+  WorldDeactivationState& mState;
+  ~BusyScope()
+  {
+    if (mState.mSteppingSlot) {
+      // Every callback stage engages first, so markers unwind in LIFO order.
+      DART_ASSERT(*mState.mSteppingSlot == &mState);
+      gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
+      *mState.mSteppingSlot = mState.mOuterSteppingWorld;
+      mState.mOuterSteppingWorld = nullptr;
+      mState.mSteppingSlot = nullptr;
+    }
+    mState.mStepping.store(false, std::memory_order_release);
+  }
+};
+
+inline bool noIndexedWorlds()
+{
+  return gIndexedWorlds.load(std::memory_order_acquire) == 0u;
+}
+
+inline bool noGuardedWorlds()
+{
+  return gGuardedWorlds.load(std::memory_order_acquire) == 0u;
+}
+
+// Slow paths stay out of line so a gated hook costs a load and a branch.
+#if defined(_MSC_VER)
+  #define DART_REGISTRY_NOINLINE __declspec(noinline)
+#else
+  #define DART_REGISTRY_NOINLINE __attribute__((noinline))
+#endif
+
+std::unique_lock<std::mutex> lockRegistry()
+{
+  gRegistryLocks.fetch_add(1u, std::memory_order_relaxed);
+  return std::unique_lock<std::mutex>(modelOwners().mMutex);
+}
+
+// Keys identifying an object's ownership: the object, its frame ancestors and
+// the Skeletons of the BodyNodes among them. Collected from the caller's own
+// object before the registry mutex is taken.
+class ModelKeys
+{
+public:
+  void add(const void* key)
+  {
+    if (!key)
+      return;
+    if (mSize < kInline)
+      mInline[mSize++] = key;
+    else
+      mOverflow.push_back(key);
+  }
+
+  template <class Visit>
+  void each(Visit visit) const
+  {
+    for (std::size_t i = 0u; i < mSize; ++i)
+      visit(mInline[i]);
+    for (const void* key : mOverflow)
+      visit(key);
+  }
+
+  bool empty() const
+  {
+    return mSize == 0u;
+  }
+
+  std::vector<const void*> toVector() const
+  {
+    std::vector<const void*> keys;
+    keys.reserve(mSize + mOverflow.size());
+    each([&](const void* key) { keys.push_back(key); });
+    return keys;
+  }
+
+private:
+  static constexpr std::size_t kInline = 32u;
+  const void* mInline[kInline];
+  std::size_t mSize = 0u;
+  std::vector<const void*> mOverflow;
+};
+
+// Member chains also record BodyNode ancestors so a moved body can find the
+// members below it; lookups only need those bodies' Skeletons. dynamic_cast
+// through DART's virtual hierarchies is expensive, so bodies are walked
+// through getParentBodyNode() and typed entry points avoid cross-casts.
+void collectFrameKeys(
+    const dynamics::Frame* frame, ModelKeys& keys, bool bodyKeys);
+
+void collectBodyKeys(
+    const dynamics::BodyNode* body, ModelKeys& keys, bool bodyKeys)
+{
+  const dynamics::Skeleton* lastSkeleton = nullptr;
+  for (const auto* current = body; current;) {
+    // Frame keys are always the Frame subobject: with virtual inheritance a
+    // BodyNode* or ShapeFrame* to the same object has a different address.
+    if (bodyKeys)
+      keys.add(static_cast<const dynamics::Frame*>(current));
+    const auto* skeleton = current->getSkeletonRawPtr();
+    if (skeleton != lastSkeleton) {
+      keys.add(skeleton);
+      lastSkeleton = skeleton;
+    }
+    const auto* parent = current->getParentBodyNode();
+    const auto* parentFrame = current->getParentFrame();
+    if (parent && parentFrame == parent) {
+      current = parent;
+      continue;
+    }
+    // Attached to something other than its parent body: generic walk.
+    collectFrameKeys(parentFrame, keys, bodyKeys);
+    return;
+  }
+}
+
+void collectFrameKeys(
+    const dynamics::Frame* frame, ModelKeys& keys, bool bodyKeys)
+{
+  for (const auto* current = frame; current && !current->isWorld();
+       current = current->getParentFrame()) {
+    if (const auto* body = dynamic_cast<const dynamics::BodyNode*>(current)) {
+      collectBodyKeys(body, keys, bodyKeys);
+      return;
+    }
+    keys.add(current);
+  }
+}
+
+void collectModelKeys(const dynamics::Skeleton* skeleton, ModelKeys& keys)
+{
+  keys.add(skeleton);
+}
+
+void collectModelKeys(const dynamics::BodyNode* body, ModelKeys& keys)
+{
+  collectBodyKeys(body, keys, false);
+}
+
+void collectModelKeys(const dynamics::ShapeFrame* frame, ModelKeys& keys)
+{
+  if (!frame)
+    return;
+  keys.add(static_cast<const dynamics::Frame*>(frame));
+  if (const auto* node = frame->asShapeNode()) {
+    if (const auto* body = node->getBodyNode()) {
+      collectBodyKeys(body, keys, false);
+      return;
+    }
+  }
+  collectFrameKeys(frame->getParentFrame(), keys, false);
+}
+
+void collectModelKeys(const dynamics::Joint* joint, ModelKeys& keys)
+{
+  if (joint)
+    collectBodyKeys(joint->getChildBodyNode(), keys, false);
+}
+
+void collectModelKeys(const common::Composite* object, ModelKeys& keys)
+{
+  if (!object)
+    return;
+  if (const auto* frame = dynamic_cast<const dynamics::Frame*>(object)) {
+    collectFrameKeys(frame, keys, false);
+    return;
+  }
+  if (const auto* skeleton = dynamic_cast<const dynamics::Skeleton*>(object)) {
+    keys.add(skeleton);
+    return;
+  }
+  if (const auto* node = dynamic_cast<const dynamics::Node*>(object)) {
+    collectBodyKeys(node->getBodyNode(), keys, false);
+    return;
+  }
+  if (const auto* joint = dynamic_cast<const dynamics::Joint*>(object))
+    collectBodyKeys(joint->getChildBodyNode(), keys, false);
+}
+
+// Requires the registry mutex. Deduplicates into the registry scratch, whose
+// capacity covers every indexed World, so a lookup never allocates.
+class OwnerSet
+{
+public:
+  OwnerSet() : mOwners(modelOwners().mScratch)
+  {
+    DART_ASSERT(!modelOwners().mScratchInUse);
+    modelOwners().mScratchInUse = true;
+    mOwners.clear();
+  }
+
+  ~OwnerSet()
+  {
+    modelOwners().mScratchInUse = false;
+  }
+
+  bool insert(WorldDeactivationState* owner)
+  {
+    if (std::find(mOwners.begin(), mOwners.end(), owner) != mOwners.end())
+      return false;
+    DART_ASSERT(mOwners.size() < mOwners.capacity());
+    mOwners.push_back(owner);
+    return true;
+  }
+
+  template <class Visit>
+  void each(Visit visit) const
+  {
+    for (auto* owner : mOwners)
+      visit(*owner);
+  }
+
+private:
+  std::vector<WorldDeactivationState*>& mOwners;
+};
+
+// Requires the registry mutex. Visitors may update the index, so the owners
+// are gathered first.
+template <class Visit>
+void forEachOwner(const void* key, Visit visit)
+{
+  const auto& owners = modelOwners().mOwners;
+  const auto it = owners.find(key);
+  if (it == owners.end())
+    return;
+  OwnerSet seen;
+  for (auto* owner : it->second)
+    seen.insert(owner);
+  seen.each(visit);
+}
+
+// Requires the registry mutex.
+template <class Visit>
+void forEachOwner(const ModelKeys& keys, Visit visit)
+{
+  const auto& owners = modelOwners().mOwners;
+  if (owners.empty())
+    return;
+  OwnerSet seen;
+  keys.each([&](const void* key) {
+    const auto it = owners.find(key);
+    if (it == owners.end())
+      return;
+    for (auto* owner : it->second)
+      seen.insert(owner);
+  });
+  seen.each(visit);
+}
+
+using KeyCounts = std::unordered_map<const void*, std::size_t>;
+
+// Test hook: the n-th index allocation from now throws std::bad_alloc.
+std::size_t gFailIndexAllocationIn = 0u;
+// One-shot test hook between the two rechain locks.
+std::function<void()> gRechainUnlockedHook;
+
+// Called before each step of index building that may allocate.
+void indexAllocation()
+{
+  if (gFailIndexAllocationIn != 0u && --gFailIndexAllocationIn == 0u)
+    throw std::bad_alloc();
+}
+
+// Requires the registry mutex. A failed allocation leaves the index as it was.
+void addOwner(KeyCounts& counts, WorldDeactivationState& state, const void* key)
+{
+  if (!key)
+    return;
+  indexAllocation();
+  auto& count = counts[key];
+  if (count == 0u) {
+    auto& owners = modelOwners().mOwners;
+    try {
+      owners[key].push_back(&state);
+    } catch (...) {
+      const auto found = owners.find(key);
+      if (found != owners.end() && found->second.empty())
+        owners.erase(found);
+      counts.erase(key);
+      throw;
+    }
+  }
+  ++count;
+}
+
+// Requires the registry mutex. Purged keys may already be gone.
+void removeOwner(
+    KeyCounts& counts, WorldDeactivationState& state, const void* key)
+{
+  const auto it = counts.find(key);
+  if (it == counts.end())
+    return;
+  if (--it->second)
+    return;
+  counts.erase(it);
+  auto& owners = modelOwners().mOwners;
+  const auto found = owners.find(key);
+  if (found == owners.end())
+    return;
+  auto& list = found->second;
+  list.erase(std::remove(list.begin(), list.end(), &state), list.end());
+  if (list.empty())
+    owners.erase(found);
+}
+
+using FrameChains
+    = std::unordered_map<const dynamics::Frame*, std::vector<const void*>>;
+
+// Requires the registry mutex. A failed allocation leaves the chain as it was.
+void registerChain(
+    FrameChains& chains,
+    WorldDeactivationState& state,
+    const dynamics::Frame* member,
+    const ModelKeys& keys)
+{
+  auto chain = keys.toVector();
+  std::size_t added = 0u;
+  try {
+    for (; added < chain.size(); ++added)
+      addOwner(state.mModelKeys, state, chain[added]);
+    auto& registered = chains[member];
+    for (const void* key : registered)
+      removeOwner(state.mModelKeys, state, key);
+    registered = std::move(chain);
+  } catch (...) {
+    while (added != 0u)
+      removeOwner(state.mModelKeys, state, chain[--added]);
+    throw;
+  }
+}
+
+// Requires the registry mutex.
+void unregisterChain(
+    FrameChains& chains,
+    WorldDeactivationState& state,
+    const dynamics::Frame* member)
+{
+  const auto it = chains.find(member);
+  if (it == chains.end())
+    return;
+  for (const void* key : it->second)
+    removeOwner(state.mModelKeys, state, key);
+  chains.erase(it);
+}
+
+// Requires the registry mutex.
+void unregisterAllChains(FrameChains& chains, WorldDeactivationState& state)
+{
+  for (const auto& entry : chains) {
+    for (const void* key : entry.second)
+      removeOwner(state.mModelKeys, state, key);
+  }
+  chains.clear();
+}
+
+// Subscription source -> (body, Skeleton) pairs it contributes.
+using SourceChains = std::unordered_map<
+    const void*,
+    std::vector<std::pair<const void*, const void*>>>;
+
+// Requires the registry mutex.
+void registerSource(
+    WorldDeactivationState& state,
+    const void* source,
+    const std::vector<std::pair<const void*, const void*>>& entries)
+{
+  auto chain = entries;
+  std::size_t added = 0u;
+  try {
+    for (; added < chain.size(); ++added)
+      addOwner(state.mModelKeys, state, chain[added].second);
+    auto& registered = state.mGroupSourceChains[source];
+    for (const auto& entry : registered)
+      removeOwner(state.mModelKeys, state, entry.second);
+    registered = std::move(chain);
+  } catch (...) {
+    while (added != 0u)
+      removeOwner(state.mModelKeys, state, chain[--added].second);
+    throw;
+  }
+}
+
+// Requires the registry mutex.
+void unregisterSource(WorldDeactivationState& state, const void* source)
+{
+  const auto it = state.mGroupSourceChains.find(source);
+  if (it == state.mGroupSourceChains.end())
+    return;
+  for (const auto& entry : it->second)
+    removeOwner(state.mModelKeys, state, entry.second);
+  state.mGroupSourceChains.erase(it);
+}
+
+// Requires the registry mutex.
+void unregisterAllSources(WorldDeactivationState& state)
+{
+  for (const auto& source : state.mGroupSourceChains) {
+    for (const auto& entry : source.second)
+      removeOwner(state.mModelKeys, state, entry.second);
+  }
+  state.mGroupSourceChains.clear();
+}
+
+std::vector<std::pair<const void*, const void*>> sourceEntries(
+    const dynamics::MetaSkeleton* source)
+{
+  std::vector<std::pair<const void*, const void*>> entries;
+  if (!source)
+    return entries;
+  if (const auto* skeleton = dynamic_cast<const dynamics::Skeleton*>(source))
+    entries.emplace_back(nullptr, skeleton);
+  for (std::size_t i = 0u; i < source->getNumBodyNodes(); ++i) {
+    const auto* body = source->getBodyNode(i);
+    entries.emplace_back(body, body->getSkeleton().get());
+  }
+  return entries;
+}
+
+// Objects the World's solver currently refers to, apart from its contact
+// handlers. They only route World-level hooks.
+std::vector<const void*> collectSolverKeys(const World& world)
+{
+  std::vector<const void*> keys;
+  const auto* solver = world.getConstraintSolver();
+  keys.push_back(solver);
+  keys.push_back(solver->getCollisionDetector().get());
+  keys.push_back(solver->getCollisionGroup().get());
+  if (const auto* boxed
+      = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(solver)) {
+    keys.push_back(boxed->getBoxedLcpSolver().get());
+    keys.push_back(boxed->getSecondaryBoxedLcpSolver().get());
+  }
+  for (std::size_t i = 0u; i < solver->getNumConstraints(); ++i)
+    keys.push_back(solver->getConstraint(i).get());
+  return keys;
+}
+
+// The solver's contact handler chain. Handlers are model keys and take part in
+// compile() conflicts. They are collected only while some World is compiled,
+// by the hooks of operations on the chain (adding, removing, copying or
+// reparenting handlers); constraint and skeleton changes never read it. Like
+// the step's contact handling, these reads are unsynchronized: reparenting a
+// handler that a World uses while another thread operates on that World is a
+// data race, as any concurrent mutation of one World's model is.
+std::vector<const void*> collectHandlerKeys(const World& world)
+{
+  std::vector<const void*> keys;
+  const auto* solver = world.getConstraintSolver();
+  for (auto handler = solver->getLastContactSurfaceHandler(); handler;
+       handler = handler->getParent()) {
+    if (std::find(keys.begin(), keys.end(), handler.get()) != keys.end())
+      break;
+    keys.push_back(handler.get());
+  }
+  return keys;
+}
+
+// Requires the registry mutex; reads only the owner's own solver, not its
+// handler chain.
+void refreshSolverKeys(WorldDeactivationState& state)
+{
+  auto worldKeys = collectSolverKeys(*state.mWorld);
+  for (const void* key : state.mSolverKeys)
+    removeOwner(state.mWorldKeys, state, key);
+  for (const void* key : worldKeys)
+    addOwner(state.mWorldKeys, state, key);
+  state.mSolverKeys = std::move(worldKeys);
+}
+
+// Requires the registry mutex; walks the owner's own handler chain.
+void refreshHandlerKeys(WorldDeactivationState& state)
+{
+  auto handlerKeys = collectHandlerKeys(*state.mWorld);
+  for (const void* key : state.mHandlerKeys)
+    removeOwner(state.mModelKeys, state, key);
+  for (const void* key : handlerKeys)
+    addOwner(state.mModelKeys, state, key);
+  state.mHandlerKeys = std::move(handlerKeys);
+}
+
+// Everything a World owns, collected from its own containers without the
+// registry mutex so no user-overridable virtual runs under it.
+struct IndexSnapshot
+{
+  std::vector<std::pair<const dynamics::Frame*, ModelKeys>> mSimpleFrames;
+  std::vector<std::pair<const dynamics::Frame*, ModelKeys>> mGroupFrames;
+  std::vector<
+      std::pair<const void*, std::vector<std::pair<const void*, const void*>>>>
+      mSources;
+  std::vector<const void*> mSkeletons;
+  std::vector<const void*> mSolverSkeletons;
+};
+
+IndexSnapshot collectIndex(const World& world)
+{
+  IndexSnapshot snapshot;
+  for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i)
+    snapshot.mSkeletons.push_back(world.getSkeleton(i).get());
+  snapshot.mSimpleFrames.reserve(world.getNumSimpleFrames());
+  for (std::size_t i = 0u; i < world.getNumSimpleFrames(); ++i) {
+    snapshot.mSimpleFrames.emplace_back(
+        world.getSimpleFrame(i).get(), ModelKeys());
+    collectFrameKeys(
+        snapshot.mSimpleFrames.back().first,
+        snapshot.mSimpleFrames.back().second,
+        true);
+  }
+  const auto* solver = world.getConstraintSolver();
+  const auto group = solver->getCollisionGroup();
+  snapshot.mGroupFrames.reserve(group->getNumShapeFrames());
+  for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
+    snapshot.mGroupFrames.emplace_back(group->getShapeFrame(i), ModelKeys());
+    collectFrameKeys(
+        snapshot.mGroupFrames.back().first,
+        snapshot.mGroupFrames.back().second,
+        true);
+  }
+  collision::detail::CollisionGroupOwnershipAccessor::forEachSource(
+      *group, [&](const auto& weakSource) {
+        if (const auto source = weakSource.lock()) {
+          snapshot.mSources.emplace_back(
+              source.get(), sourceEntries(source.get()));
+        }
+      });
+  collision::detail::CollisionGroupOwnershipAccessor::forEachBodySource(
+      *group, [&](const auto& weakSource) {
+        if (const auto body = weakSource.lock()) {
+          snapshot.mSources.emplace_back(
+              body.get(),
+              std::vector<std::pair<const void*, const void*>>{
+                  {body.get(), body->getSkeleton().get()}});
+        }
+      });
+  for (const auto& skeleton : solver->getSkeletons())
+    snapshot.mSolverSkeletons.push_back(skeleton.get());
+  return snapshot;
+}
+
+// Requires the registry mutex. Drops every entry of the World but keeps it
+// indexed.
+void unregisterWorld(WorldDeactivationState& state);
+
+// Requires the registry mutex.
+void applyIndex(WorldDeactivationState& state, const IndexSnapshot& snapshot)
+{
+  unregisterWorld(state);
+  for (const void* key : snapshot.mSkeletons)
+    addOwner(state.mModelKeys, state, key);
+  for (const auto& frame : snapshot.mSimpleFrames)
+    registerChain(state.mSimpleFrameChains, state, frame.first, frame.second);
+  for (const auto& frame : snapshot.mGroupFrames)
+    registerChain(state.mGroupFrameChains, state, frame.first, frame.second);
+  for (const auto& source : snapshot.mSources)
+    registerSource(state, source.first, source.second);
+  for (const void* key : snapshot.mSolverSkeletons) {
+    state.mSolverSkeletonKeys.push_back(key);
+    addOwner(state.mModelKeys, state, key);
+  }
+  refreshSolverKeys(state);
+  refreshHandlerKeys(state);
+}
+
+// Requires the registry mutex. Drops the World from the registry; the counters
+// were published when it joined.
+void leaveRegistry(WorldDeactivationState& state) noexcept
+{
+  auto& worlds = modelOwners().mWorlds;
+  worlds.erase(std::remove(worlds.begin(), worlds.end(), &state), worlds.end());
+  state.mIndexed = false;
+  state.mRegistryIdentity.reset();
+  gIndexedWorlds.fetch_sub(1u, std::memory_order_release);
+  gGuardedWorlds.fetch_sub(1u, std::memory_order_release);
+}
+
+// Rebuilds the World's index from its own containers, joining the registry on
+// the first call. This is where index memory is allocated. A failure leaves
+// no entry behind: the World becomes lazy until a successful compile().
+void reindexWorld(WorldDeactivationState& state)
+{
+  const IndexSnapshot snapshot = collectIndex(*state.mWorld);
+  const auto lock = lockRegistry();
+  auto& owners = modelOwners();
+  const bool joining = !state.mIndexed;
+  if (joining) {
+    // Reserve before publishing anything: each step below either completes
+    // or leaves the registry as it was.
+    indexAllocation();
+    auto identity = std::make_shared<const char>();
+    owners.mScratch.reserve(owners.mWorlds.size() + 1u);
+    owners.mWorlds.push_back(&state);
+    state.mRegistryIdentity = std::move(identity);
+    state.mIndexed = true;
+    gIndexedWorlds.fetch_add(1u, std::memory_order_release);
+    gGuardedWorlds.fetch_add(1u, std::memory_order_release);
+  }
+  try {
+    applyIndex(state, snapshot);
+  } catch (...) {
+    unregisterWorld(state);
+    leaveRegistry(state);
+    state.mCompiled.store(false, std::memory_order_relaxed);
+    throw;
+  }
+}
+
+// Leaves the registry; a no-op for lazy Worlds.
+void unindexWorld(WorldDeactivationState& state)
+{
+  if (!state.mIndexed)
+    return;
+  const auto lock = lockRegistry();
+  unregisterWorld(state);
+  leaveRegistry(state);
+}
+
+// Requires the registry mutex.
+void unregisterWorld(WorldDeactivationState& state)
+{
+  auto& owners = modelOwners().mOwners;
+  const auto drop = [&](const KeyCounts& counts) {
+    for (const auto& entry : counts) {
+      const auto found = owners.find(entry.first);
+      if (found == owners.end())
+        continue;
+      auto& list = found->second;
+      list.erase(std::remove(list.begin(), list.end(), &state), list.end());
+      if (list.empty())
+        owners.erase(found);
+    }
+  };
+  drop(state.mModelKeys);
+  drop(state.mWorldKeys);
+  state.mModelKeys.clear();
+  state.mWorldKeys.clear();
+  state.mSimpleFrameChains.clear();
+  state.mGroupFrameChains.clear();
+  state.mGroupSourceChains.clear();
+  state.mSolverSkeletonKeys.clear();
+  state.mSolverKeys.clear();
+  state.mHandlerKeys.clear();
+}
+
+// A frame moved: members below it record new ancestors. Members are found and
+// swapped under the mutex; their ancestry is walked between the two locks.
+void rechainMembersUnder(const dynamics::Frame* frame)
+{
+  struct Pending
+  {
+    std::shared_ptr<const char> mIdentity;
+    bool mGroup;
+    const dynamics::Frame* mMember;
+    ModelKeys mKeys;
+  };
+  std::vector<Pending> pending;
+  {
+    const auto lock = lockRegistry();
+    const auto& owners = modelOwners().mOwners;
+    const auto it = owners.find(frame);
+    if (it == owners.end())
+      return;
+    for (auto* state : it->second) {
+      for (auto* chains :
+           {&state->mSimpleFrameChains, &state->mGroupFrameChains}) {
+        for (const auto& entry : *chains) {
+          if (std::find(entry.second.begin(), entry.second.end(), frame)
+              != entry.second.end())
+            pending.push_back(
+                {state->mRegistryIdentity,
+                 chains == &state->mGroupFrameChains,
+                 entry.first,
+                 ModelKeys()});
+        }
+      }
+    }
+  }
+  if (pending.empty())
+    return;
+  for (auto& entry : pending)
+    collectFrameKeys(entry.mMember, entry.mKeys, true);
+  if (gRechainUnlockedHook)
+    std::exchange(gRechainUnlockedHook, {})();
+  const auto lock = lockRegistry();
+  const auto& worlds = modelOwners().mWorlds;
+  for (auto& entry : pending) {
+    const auto found
+        = std::find_if(worlds.begin(), worlds.end(), [&](const auto* state) {
+            return state->mRegistryIdentity == entry.mIdentity;
+          });
+    if (found == worlds.end())
+      continue;
+    auto& state = **found;
+    auto& chains
+        = entry.mGroup ? state.mGroupFrameChains : state.mSimpleFrameChains;
+    if (chains.find(entry.mMember) == chains.end())
+      continue;
+    registerChain(chains, state, entry.mMember, entry.mKeys);
+  }
+}
+
+// A Skeleton that only weak references (group subscriptions) still name is
+// being destroyed: forget its address everywhere so a later object reusing it
+// is not mistaken for an owned model.
+void purgeModelKey(const void* key)
+{
+  const auto lock = lockRegistry();
+  auto& owners = modelOwners().mOwners;
+  const auto it = owners.find(key);
+  if (it == owners.end())
+    return;
+  const auto states = it->second;
+  owners.erase(it);
+  for (auto* state : states) {
+    state->mModelKeys.erase(key);
+    state->mWorldKeys.erase(key);
+    for (auto* chains :
+         {&state->mSimpleFrameChains, &state->mGroupFrameChains}) {
+      for (auto& entry : *chains) {
+        entry.second.erase(
+            std::remove(entry.second.begin(), entry.second.end(), key),
+            entry.second.end());
+      }
+    }
+    for (auto& source : state->mGroupSourceChains) {
+      auto& entries = source.second;
+      entries.erase(
+          std::remove_if(
+              entries.begin(),
+              entries.end(),
+              [key](const auto& entry) { return entry.second == key; }),
+          entries.end());
+    }
+    state->mSolverSkeletonKeys.erase(
+        std::remove(
+            state->mSolverSkeletonKeys.begin(),
+            state->mSolverSkeletonKeys.end(),
+            key),
+        state->mSolverSkeletonKeys.end());
+  }
+}
+
+// Why a World rejects a model mutation. Decided under the registry mutex and
+// thrown after releasing it, so the check paths allocate nothing while it is
+// held.
+enum class Rejection
+{
+  None,
+  Busy,
+  Frozen,
+  Shared
+};
+
+Rejection rejection(const WorldDeactivationState& state)
+{
+  if (state.mStepping.load(std::memory_order_acquire))
+    return Rejection::Busy;
+  if (state.mCompiled.load(std::memory_order_relaxed)
+      && state.mEditDepth.load(std::memory_order_relaxed) == 0u)
+    return Rejection::Frozen;
+  return Rejection::None;
+}
+
+void throwRejection(Rejection reason)
+{
+  switch (reason) {
+    case Rejection::None:
+      return;
+    case Rejection::Busy:
+      throw std::runtime_error("WorldBusyError: model mutation during step");
+    case Rejection::Frozen:
+      throw std::runtime_error(
+          "ModelFrozenError: use World::edit() for topology changes");
+    case Rejection::Shared:
+      throw std::runtime_error(
+          "ModelFrozenError: model belongs to another World");
+  }
+}
+
+void checkModelMutation(const WorldDeactivationState& state)
+{
+  throwRejection(rejection(state));
+}
+
+// Same-thread guard of a lazy World inside step(): reads only that World's own
+// containers, which no other thread may touch while it steps. Members are
+// matched through the same ancestry as the compiled index records: a frame,
+// its frame ancestors and the Skeletons of the BodyNodes among them.
+template <class Keys>
+bool steppingWorldOwnsModel(
+    const WorldDeactivationState& state, const Keys& keys)
+{
+  bool owned = false;
+  const auto match = [&](const void* candidate) {
+    keys.each([&](const void* key) { owned = owned || key == candidate; });
+  };
+  const auto matchChain = [&](const dynamics::Frame* member) {
+    ModelKeys chain;
+    collectFrameKeys(member, chain, true);
+    chain.each(match);
+  };
+  const World& world = *state.mWorld;
+  for (std::size_t i = 0u; !owned && i < world.getNumSkeletons(); ++i)
+    match(world.getSkeleton(i).get());
+  for (std::size_t i = 0u; !owned && i < world.getNumSimpleFrames(); ++i)
+    matchChain(world.getSimpleFrame(i).get());
+  const auto* solver = world.getConstraintSolver();
+  for (const auto& skeleton : solver->getSkeletons()) {
+    if (owned)
+      break;
+    match(skeleton.get());
+  }
+  const auto group = solver->getCollisionGroup();
+  for (std::size_t i = 0u; !owned && i < group->getNumShapeFrames(); ++i)
+    matchChain(group->getShapeFrame(i));
+  collision::detail::CollisionGroupOwnershipAccessor::forEachSource(
+      *group, [&](const auto& weakSource) {
+        const auto source = weakSource.lock();
+        if (!source || owned)
+          return;
+        match(source.get());
+        for (std::size_t i = 0u; !owned && i < source->getNumBodyNodes(); ++i)
+          match(source->getBodyNode(i)->getSkeleton().get());
+      });
+  collision::detail::CollisionGroupOwnershipAccessor::forEachBodySource(
+      *group, [&](const auto& weakSource) {
+        if (owned)
+          return;
+        if (const auto body = weakSource.lock())
+          match(body->getSkeleton().get());
+      });
+  return owned;
+}
+
+template <class Keys>
+bool steppingWorldOwnsSolverObject(
+    const WorldDeactivationState& state, const Keys& keys)
+{
+  bool owned = false;
+  const auto match = [&](const void* candidate) {
+    keys.each([&](const void* key) { owned = owned || key == candidate; });
+  };
+  const auto* solver = state.mWorld->getConstraintSolver();
+  match(solver);
+  match(solver->getCollisionDetector().get());
+  match(solver->getCollisionGroup().get());
+  if (const auto* boxed
+      = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(solver)) {
+    match(boxed->getBoxedLcpSolver().get());
+    match(boxed->getSecondaryBoxedLcpSolver().get());
+  }
+  for (std::size_t i = 0u; !owned && i < solver->getNumConstraints(); ++i)
+    match(solver->getConstraint(i).get());
+  if (owned)
+    return true;
+  // The same walk as collectHandlerKeys(): a repeated handler ends the chain.
+  ModelKeys seen;
+  for (auto handler = solver->getLastContactSurfaceHandler(); handler;
+       handler = handler->getParent()) {
+    match(handler.get());
+    if (owned)
+      return true;
+    bool repeated = false;
+    seen.each(
+        [&](const void* key) { repeated = repeated || key == handler.get(); });
+    if (repeated)
+      break;
+    seen.add(handler.get());
+  }
+  return false;
+}
+
+// Rejection by the lazy Worlds stepping on this thread. Indexed ones answer
+// through the registry instead.
+template <class Owns, class Keys>
+Rejection lazyStepRejection(Owns owns, const Keys& keys)
+{
+  for (const auto* state = tlsSteppingWorld; state;
+       state = state->mOuterSteppingWorld) {
+    if (state->mIndexed)
+      continue;
+    if (owns(*state, keys))
+      return Rejection::Busy;
+  }
+  return Rejection::None;
+}
+
+struct SingleKey
+{
+  const void* mKey;
+  template <class Visit>
+  void each(Visit visit) const
+  {
+    visit(mKey);
+  }
+};
+
+Rejection lazyStepRejection(const ModelKeys& keys)
+{
+  return lazyStepRejection(steppingWorldOwnsModel<ModelKeys>, keys);
+}
+
+Rejection lazyStepRejection(const void* solverObject)
+{
+  return lazyStepRejection(
+      steppingWorldOwnsSolverObject<SingleKey>, SingleKey{solverObject});
+}
+
+// Records the first rejection among visited owners.
+struct RejectionCollector
+{
+  Rejection mReason = Rejection::None;
+  void operator()(const WorldDeactivationState& owner)
+  {
+    if (mReason == Rejection::None)
+      mReason = rejection(owner);
+  }
+};
+
+void notifyModelTopology(WorldDeactivationState& state)
+{
+  if (state.mEditDepth.load(std::memory_order_relaxed)) {
+    if (!state.mTopologyDirty.exchange(true, std::memory_order_relaxed))
+      state.mTopologyRevision.fetch_add(1u, std::memory_order_relaxed);
+  } else {
+    state.mTopologyRevision.fetch_add(1u, std::memory_order_relaxed);
+  }
+}
 
 //==============================================================================
 // Custom body filters can sleep through revision tracking or decision replay.
@@ -684,8 +1848,7 @@ void finishRecord(
 // World's version and snapshot checks, so the pairs the last query asked about
 // are all the pairs that can produce contacts.
 bool replayRecord(
-    const WorldDeactivationState& state,
-    const constraint::ConstraintSolver& solver)
+    WorldDeactivationState& state, const constraint::ConstraintSolver& solver)
 {
   const auto* filter = solver.getCollisionOption().collisionFilter.get();
   if (!state.mRecordValid || filter != state.mRecordedFilter)
@@ -699,6 +1862,7 @@ bool replayRecord(
   }
 
   for (const auto& decision : state.mRecorder->mDecisions) {
+    engageSameThreadMarker(state);
     if (filter->ignoresCollision(decision.object1, decision.object2)
         != decision.ignored) {
       return false;
@@ -1034,6 +2198,376 @@ void World::enterSimulationMode()
 }
 
 //==============================================================================
+void World::validateCompiledModel() const
+{
+  const auto& state = *mDeactivationState;
+  if (!state.mCompiled || state.mEditDepth)
+    return;
+
+  const auto group = mConstraintSolver->getCollisionGroup();
+  const auto& options = mConstraintSolver->getCollisionOption();
+  const auto& saved = state.mCompiledCollisionOption;
+  bool changed
+      = state.mTopologyRevision != state.mCompiledTopologyRevision
+        || group.get() != state.mCompiledCollisionGroup
+        || state.mRawGroupMutation
+        || group->getAutomaticUpdate() != state.mCompiledGroupAutomaticUpdate
+        || options.enableContact != saved.enableContact
+        || options.maxNumContacts != saved.maxNumContacts
+        || options.maxNumContactsPerPair != saved.maxNumContactsPerPair
+        || options.allowNegativePenetrationDepthContacts
+               != saved.allowNegativePenetrationDepthContacts
+        || options.collisionFilter != saved.collisionFilter;
+  changed = changed
+            || getCollisionFilterSnapshotRevision(options.collisionFilter.get())
+                   != state.mCompiledFilterRevision;
+  for (const auto& snapshot : state.mCompiledCompositeFilters) {
+    if (changed)
+      break;
+    const auto& children
+        = collision::detail::CompositeCollisionFilterAccessor::filters(
+            *snapshot.mFilter);
+    changed = children.size() != snapshot.mChildren.size();
+    for (const auto* child : snapshot.mChildren)
+      changed = changed || children.find(child) == children.end();
+  }
+  for (const auto& snapshot : state.mCompiledFilterRevisions) {
+    if (changed)
+      break;
+    changed
+        = getCollisionFilterSnapshotRevision(snapshot.first) != snapshot.second;
+  }
+  for (const auto& subscription : state.mCompiledSubscriptions) {
+    if (changed)
+      break;
+    const auto source = subscription.mSource.lock();
+    // A raw pointer keeps typeid's operand free of side effects.
+    const auto* meta = source.get();
+    if (meta && typeid(*meta) != typeid(dynamics::Skeleton)
+        && state.mStepping.load(std::memory_order_acquire))
+      engageSameThreadMarker(*mDeactivationState);
+    changed
+        = !source || source->getNumBodyNodes() != subscription.mBodies.size();
+    for (std::size_t i = 0u; !changed && i < subscription.mBodies.size(); ++i)
+      changed = source->getBodyNode(i) != subscription.mBodies[i];
+  }
+  for (const auto& subscription : state.mCompiledBodySubscriptions) {
+    if (changed)
+      break;
+    changed = !subscription.lock();
+  }
+  for (const auto& snapshot : state.mCompiledFrameAncestors) {
+    if (changed)
+      break;
+    const auto* parent = snapshot.mFrame->getParentFrame();
+    for (const auto* ancestor : snapshot.mAncestors) {
+      if (parent != ancestor) {
+        changed = true;
+        break;
+      }
+      parent = parent->getParentFrame();
+    }
+    changed = changed || (parent && !parent->isWorld());
+  }
+  // Parents precede children. A removed/replaced child is detected before an
+  // old child pointer can be dereferenced, including borrowed descendants.
+  for (const auto& snapshot : state.mCompiledFrameChildren) {
+    if (changed)
+      break;
+    // The legacy const overload allocates a copied set; this overload only
+    // reads the existing child container.
+    const auto& children
+        = const_cast<dynamics::Frame*>(snapshot.mFrame)->getChildFrames();
+    changed = children.size() != snapshot.mChildren.size()
+              || !std::equal(
+                  children.begin(), children.end(), snapshot.mChildren.begin());
+  }
+  const auto& skeletons = mConstraintSolver->getSkeletons();
+  changed
+      = changed || skeletons.size() != state.mCompiledSolverSkeletons.size();
+  for (std::size_t i = 0u; !changed && i < skeletons.size(); ++i)
+    changed = skeletons[i].get() != state.mCompiledSolverSkeletons[i];
+  changed = changed
+            || mConstraintSolver->getNumConstraints()
+                   != state.mCompiledConstraints.size();
+  for (std::size_t i = 0u; !changed && i < state.mCompiledConstraints.size();
+       ++i)
+    changed = mConstraintSolver->getConstraint(i).get()
+              != state.mCompiledConstraints[i];
+  auto handler = mConstraintSolver->getLastContactSurfaceHandler();
+  for (const auto* savedHandler : state.mCompiledContactHandlers) {
+    if (changed)
+      break;
+    changed = handler.get() != savedHandler;
+    if (handler)
+      handler = handler->getParent();
+  }
+  changed = changed || handler != nullptr;
+  if (changed)
+    throw std::runtime_error(
+        "ModelFrozenError: raw model configuration changed; use World::edit()");
+}
+
+//==============================================================================
+void World::compile()
+{
+  auto& state = *mDeactivationState;
+  // Compilation runs user extension points (collision filters and detectors,
+  // solver and dynamics overrides), so it is busy as a step is: its callbacks
+  // may not compile, edit or step this World or change its model's topology.
+  if (state.mStepping.exchange(true, std::memory_order_acq_rel))
+    throw std::runtime_error("WorldBusyError: compile during step or compile");
+  const BusyScope busy{state};
+  engageSameThreadMarker(state);
+  if (state.mEditDepth)
+    throw std::runtime_error("Cannot compile inside a World::edit() scope");
+  if (state.mPendingRecompileError) {
+    // Report the failed scope-exit recompile once; the next call compiles.
+    const auto error = std::exchange(state.mPendingRecompileError, nullptr);
+    std::rethrow_exception(error);
+  }
+  validateCompiledModel();
+  const auto group = mConstraintSolver->getCollisionGroup();
+  collision::detail::CollisionGroupOwnershipAccessor::update(*group, this);
+  validateCompiledModel();
+  std::vector<const constraint::ContactSurfaceHandler*> contactHandlers;
+  for (auto handler = mConstraintSolver->getLastContactSurfaceHandler();
+       handler;
+       handler = handler->getParent()) {
+    if (std::find(contactHandlers.begin(), contactHandlers.end(), handler.get())
+        != contactHandlers.end())
+      throw std::runtime_error(
+          "Cyclic contact handler chain at World::compile()");
+    contactHandlers.push_back(handler.get());
+  }
+
+  // The first compile joins the registry; a failed one leaves it again.
+  const bool wasIndexed = state.mIndexed;
+  reindexWorld(state);
+  struct IndexRollback
+  {
+    WorldDeactivationState& mState;
+    bool mArmed;
+    ~IndexRollback()
+    {
+      if (mArmed)
+        unindexWorld(mState);
+    }
+  } rollback{state, !wasIndexed};
+
+  // A strict World cannot freeze a model another indexed World still edits.
+  {
+    Rejection reason = Rejection::None;
+    {
+      const auto lock = lockRegistry();
+      const auto& owners = modelOwners().mOwners;
+      for (const auto& entry : state.mModelKeys) {
+        const auto it = owners.find(entry.first);
+        if (it != owners.end() && it->second.size() > 1u) {
+          reason = Rejection::Shared;
+          break;
+        }
+      }
+    }
+    throwRejection(reason);
+  }
+
+  if (mConstraintSolver->getCollisionDetector()->getType() == "dart") {
+    for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i) {
+      const auto& shape = group->getShapeFrame(i)->getShape();
+      if (shape && shape->getType() != dynamics::SoftMeshShape::getStaticType()
+          && !collision::detail::NativeShapeConversion::create(*shape)) {
+        throw std::runtime_error(
+            "Unsupported collision shape at World::compile(): "
+            + shape->getType());
+      }
+    }
+  }
+
+  enterSimulationMode();
+  // The snapshots are rebuilt in place: if that throws, the World stays
+  // uncompiled, as after a failed scope-exit recompile.
+  const bool wasCompiled
+      = state.mCompiled.exchange(false, std::memory_order_relaxed);
+  state.mCompiledCollisionOption = mConstraintSolver->getCollisionOption();
+  state.mCompiledFilterRevision = getCollisionFilterSnapshotRevision(
+      state.mCompiledCollisionOption.collisionFilter.get());
+  state.mCompiledCompositeFilters.clear();
+  state.mCompiledFilterRevisions.clear();
+  const auto rememberFilter =
+      [&](const auto& self, const collision::CollisionFilter* filter) -> void {
+    if (!filter
+        || std::any_of(
+            state.mCompiledFilterRevisions.begin(),
+            state.mCompiledFilterRevisions.end(),
+            [filter](const auto& saved) { return saved.first == filter; }))
+      return;
+    state.mCompiledFilterRevisions.emplace_back(
+        filter, getCollisionFilterSnapshotRevision(filter));
+    if (const auto* composite
+        = dynamic_cast<const collision::CompositeCollisionFilter*>(filter)) {
+      const auto& children
+          = collision::detail::CompositeCollisionFilterAccessor::filters(
+              *composite);
+      state.mCompiledCompositeFilters.push_back(
+          {composite, {children.begin(), children.end()}});
+      for (const auto* child : children)
+        self(self, child);
+    }
+  };
+  rememberFilter(
+      rememberFilter, state.mCompiledCollisionOption.collisionFilter.get());
+  state.mCompiledSubscriptions.clear();
+  collision::detail::CollisionGroupOwnershipAccessor::forEachSource(
+      *group, [&](const auto& weakSource) {
+        const auto source = weakSource.lock();
+        if (!source)
+          return;
+        WorldDeactivationState::CompiledSubscription snapshot{source, {}};
+        snapshot.mBodies.reserve(source->getNumBodyNodes());
+        for (std::size_t i = 0u; i < source->getNumBodyNodes(); ++i)
+          snapshot.mBodies.push_back(source->getBodyNode(i));
+        state.mCompiledSubscriptions.push_back(std::move(snapshot));
+      });
+  state.mCompiledBodySubscriptions.clear();
+  collision::detail::CollisionGroupOwnershipAccessor::forEachBodySource(
+      *group, [&](const auto& source) {
+        state.mCompiledBodySubscriptions.push_back(source);
+      });
+  state.mCompiledFrameAncestors.clear();
+  const auto rememberAncestors = [&](const dynamics::Frame* frame) {
+    WorldDeactivationState::CompiledFrameAncestors snapshot{frame, {}};
+    for (const auto* parent = frame->getParentFrame();
+         parent && !parent->isWorld();
+         parent = parent->getParentFrame())
+      snapshot.mAncestors.push_back(parent);
+    state.mCompiledFrameAncestors.push_back(std::move(snapshot));
+  };
+  for (std::size_t i = 0u; i < group->getNumShapeFrames(); ++i)
+    rememberAncestors(group->getShapeFrame(i));
+  for (const auto& frame : mSimpleFrames)
+    rememberAncestors(frame.get());
+  std::vector<const dynamics::Skeleton*> rememberedSkeletons;
+  const auto rememberSkeletonFrames = [&](const dynamics::Skeleton* skeleton) {
+    if (!skeleton
+        || std::find(
+               rememberedSkeletons.begin(), rememberedSkeletons.end(), skeleton)
+               != rememberedSkeletons.end())
+      return;
+    rememberedSkeletons.push_back(skeleton);
+    for (std::size_t i = 0u; i < skeleton->getNumTrees(); ++i)
+      rememberAncestors(skeleton->getRootBodyNode(i));
+  };
+  for (const auto& skeleton : mSkeletons)
+    rememberSkeletonFrames(skeleton.get());
+  for (const auto& skeleton : mConstraintSolver->getSkeletons())
+    rememberSkeletonFrames(skeleton.get());
+  collision::detail::CollisionGroupOwnershipAccessor::forEachSkeleton(
+      *group, rememberSkeletonFrames);
+  state.mCompiledFrameChildren.clear();
+  const auto rememberChildren
+      = [&](const auto& self, const dynamics::Frame* frame) -> void {
+    if (std::any_of(
+            state.mCompiledFrameChildren.begin(),
+            state.mCompiledFrameChildren.end(),
+            [frame](const auto& saved) { return saved.mFrame == frame; }))
+      return;
+    const auto& children = frame->getChildFrames();
+    state.mCompiledFrameChildren.push_back(
+        {frame, {children.begin(), children.end()}});
+    for (const auto* child : children)
+      self(self, child);
+  };
+  for (const auto& snapshot : state.mCompiledFrameAncestors) {
+    const auto* root = snapshot.mAncestors.empty() ? snapshot.mFrame
+                                                   : snapshot.mAncestors.back();
+    rememberChildren(rememberChildren, root);
+  }
+  state.mCompiledCollisionGroup = group.get();
+  state.mRawGroupMutation = false;
+  state.mCompiledGroupAutomaticUpdate = group->getAutomaticUpdate();
+  state.mCompiledSolverSkeletons.clear();
+  for (const auto& skeleton : mConstraintSolver->getSkeletons())
+    state.mCompiledSolverSkeletons.push_back(skeleton.get());
+  state.mCompiledConstraints.clear();
+  for (std::size_t i = 0u; i < mConstraintSolver->getNumConstraints(); ++i)
+    state.mCompiledConstraints.push_back(
+        mConstraintSolver->getConstraint(i).get());
+  state.mCompiledContactHandlers = std::move(contactHandlers);
+  if (!wasCompiled && !state.mTopologyDirty)
+    ++state.mTopologyRevision;
+  state.mTopologyDirty = false;
+  state.mCompiledTopologyRevision = state.mTopologyRevision;
+  state.mCompiled = true;
+  rollback.mArmed = false;
+}
+
+//==============================================================================
+bool World::isCompiled() const
+{
+  return mDeactivationState->mCompiled && mDeactivationState->mEditDepth == 0u;
+}
+
+//==============================================================================
+World::EditScope::EditScope(World& world)
+  : mWorld(world), mUncaughtExceptions(std::uncaught_exceptions())
+{
+  auto& state = *mWorld.mDeactivationState;
+  if (state.mStepping.load(std::memory_order_acquire))
+    throw std::runtime_error("WorldBusyError: edit during step or compile");
+  // Lazy Worlds stay lazy. Compiled ones, and ones whose last recompile
+  // failed, recompile at scope exit.
+  mRecompile = state.mCompiled.load(std::memory_order_relaxed)
+               || state.mPendingRecompileError != nullptr;
+  state.mEditDepth.fetch_add(1u, std::memory_order_relaxed);
+}
+
+//==============================================================================
+World::EditScope::~EditScope()
+{
+  auto& state = *mWorld.mDeactivationState;
+  if (state.mEditDepth.fetch_sub(1u, std::memory_order_relaxed) != 1u)
+    return;
+  if (!mRecompile) {
+    mWorld.invalidateSimulationMode();
+    return;
+  }
+  state.mCompiled.store(false, std::memory_order_relaxed);
+  mWorld.invalidateSimulationMode();
+  // A failed edit remains editable; do not replace an exception while
+  // unwinding.
+  if (std::uncaught_exceptions() != mUncaughtExceptions)
+    return;
+  // This edit may have repaired the failure: compile afresh instead of
+  // rethrowing it.
+  state.mPendingRecompileError = nullptr;
+  try {
+    mWorld.compile();
+  } catch (...) {
+    // Scope exit never throws; the next step() or compile() reports this.
+    state.mPendingRecompileError = std::current_exception();
+  }
+}
+
+//==============================================================================
+World::EditScope World::edit()
+{
+  return EditScope(*this);
+}
+
+//==============================================================================
+std::size_t World::getTopologyRevision() const
+{
+  return mDeactivationState->mTopologyRevision;
+}
+
+//==============================================================================
+std::size_t World::getParameterRevision() const
+{
+  return mDeactivationState->mParameterRevision;
+}
+
+//==============================================================================
 bool World::isInSimulationMode() const
 {
   if (!mSimulationMode || !mConstraintSolver)
@@ -1092,6 +2626,8 @@ bool World::isInSimulationMode() const
     // Synchronize subscriptions before trusting their contents, including an
     // external subscription that had no collision shapes at preparation.
     if (collisionGroup && collisionGroup->getAutomaticUpdate()) {
+      if (state.mStepping.load(std::memory_order_acquire))
+        engageSameThreadMarker(state);
       collisionGroup->update();
       if (collisionGroup->getContentVersion()
           != mSimulationModeCollisionGroupVersion) {
@@ -1158,7 +2694,20 @@ void parallelForIndexRange(
     return;
   }
 
-  threadPool->parallelFor(count, numThreads, std::forward<Func>(func));
+  // Lazy Worlds reject callback mutations through the calling thread's chain.
+  auto* steppingWorld = tlsSteppingWorld;
+  threadPool->parallelFor(count, numThreads, [&](std::size_t i) {
+    struct RestoreSteppingWorld
+    {
+      WorldDeactivationState* mPrevious;
+      ~RestoreSteppingWorld()
+      {
+        tlsSteppingWorld = mPrevious;
+      }
+    } restore{tlsSteppingWorld};
+    tlsSteppingWorld = steppingWorld;
+    func(i);
+  });
 }
 
 //==============================================================================
@@ -1191,7 +2740,7 @@ World::World(const WorldConfig& config)
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal),
     mDeactivationState(std::make_unique<WorldDeactivationState>(
-        readCustomFilterSleepingSwitch()))
+        this, readCustomFilterSleepingSwitch()))
 {
   mIndices.push_back(0);
 
@@ -1208,6 +2757,7 @@ World::World(const WorldConfig& config)
 //==============================================================================
 World::~World()
 {
+  unindexWorld(*mDeactivationState);
   delete mRecording;
 
   for (common::Connection& connection : mNameConnectionsForSkeletons)
@@ -1271,6 +2821,79 @@ WorldPtr World::clone() const
     worldClone->addSkeleton(mSkeletons[i]->cloneSkeleton());
   }
 
+  // A compiled World's frames are frozen, so its SimpleFrame clones start at
+  // the World frame with their sources' poses, then move to the clones of
+  // parents this World holds: its SimpleFrames and its Skeletons' frames.
+  // Any other parent throws, inside edit() too: sharing it would put the
+  // clone's frame in this World's model at the next recompile, so dropping
+  // the clone would change that model.
+  if (mDeactivationState->mCompiled.load(std::memory_order_relaxed)) {
+    std::unordered_map<const dynamics::Frame*, dynamics::Frame*> clones;
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+      const dynamics::Skeleton& source = *mSkeletons[i];
+      const auto skeleton = worldClone->getSkeleton(i);
+      // cloneSkeleton() keeps the indices of BodyNodes and, per node type, of
+      // their Nodes, so each BodyNode's Node lists pair up by position.
+      for (std::size_t j = 0; j < source.getNumBodyNodes(); ++j) {
+        auto* sourceBody = source.getBodyNode(j);
+        auto* cloneBody = skeleton->getBodyNode(j);
+        clones[sourceBody] = cloneBody;
+        const auto sourceNodes = sourceBody->getNodes();
+        const auto cloneNodes = cloneBody->getNodes();
+        if (sourceNodes.size() != cloneNodes.size()) {
+          throw std::runtime_error(
+              "Cannot clone a compiled World: the clone of BodyNode '"
+              + sourceBody->getName() + "' has a different set of Nodes");
+        }
+        for (std::size_t k = 0; k < sourceNodes.size(); ++k) {
+          const auto* sourceFrame
+              = dynamic_cast<const dynamics::Frame*>(sourceNodes[k]);
+          auto* cloneFrame = dynamic_cast<dynamics::Frame*>(cloneNodes[k]);
+          if (sourceFrame && cloneFrame)
+            clones[sourceFrame] = cloneFrame;
+        }
+      }
+    }
+    // Check every parent before cloning: clone() reads the source's World
+    // pose, which walks the whole ancestor chain and crashes on a detached one.
+    // A detached frame has no World pose to clone from, and an external parent
+    // (held by neither this World nor its Skeletons) is not supported.
+    for (const auto& frame : mSimpleFrames)
+      clones[frame.get()] = nullptr;
+    for (const auto& frame : mSimpleFrames) {
+      const auto* parent = frame->getParentFrame();
+      if (parent == nullptr) {
+        throw std::runtime_error(
+            "Cannot clone a compiled World: SimpleFrame '" + frame->getName()
+            + "' has no parent frame");
+      }
+      if (!parent->isWorld() && clones.find(parent) == clones.end()) {
+        throw std::runtime_error(
+            "Cannot clone a compiled World: the parent '" + parent->getName()
+            + "' of SimpleFrame '" + frame->getName()
+            + "' is not a frame this World holds");
+      }
+    }
+    for (const auto& frame : mSimpleFrames) {
+      auto clone = frame->clone(dynamics::Frame::World());
+      clones[frame.get()] = clone.get();
+      worldClone->addSimpleFrame(clone);
+    }
+    for (std::size_t i = 0; i < mSimpleFrames.size(); ++i) {
+      auto* parent = mSimpleFrames[i]->getParentFrame();
+      const auto it = clones.find(parent);
+      const auto& clone = worldClone->getSimpleFrame(i);
+      clone->setParentFrame(
+          parent->isWorld() ? dynamics::Frame::World() : it->second);
+      clone->setRelativeTransform(mSimpleFrames[i]->getRelativeTransform());
+      clone->setRelativeSpatialVelocity(
+          mSimpleFrames[i]->getRelativeSpatialVelocity());
+      clone->setRelativeSpatialAcceleration(
+          mSimpleFrames[i]->getRelativeSpatialAcceleration());
+    }
+    return worldClone;
+  }
+
   // Clone and add each SimpleFrame
   for (std::size_t i = 0; i < mSimpleFrames.size(); ++i) {
     worldClone->addSimpleFrame(
@@ -1310,6 +2933,8 @@ void World::setTimeStep(double _timeStep)
           mConstraintSolver->getCollisionOption().collisionFilter.get())) {
     wakeRestingSkeletonsForWorldChange();
   }
+  if (_timeStep != mTimeStep)
+    ++mDeactivationState->mParameterRevision;
   mTimeStep = _timeStep;
   DART_ASSERT(mConstraintSolver);
   mConstraintSolver->setTimeStep(_timeStep);
@@ -1334,11 +2959,24 @@ void World::setNumSimulationThreads(std::size_t numThreads)
   }
 
   const auto previousNumSimulationThreads = mNumSimulationThreads;
+  if (std::max<std::size_t>(1u, numThreads) != previousNumSimulationThreads)
+    checkModelMutation(*mDeactivationState);
+  if (mConstraintSolver) {
+    const auto* detector
+        = dynamic_cast<const collision::DARTCollisionDetector*>(
+            mConstraintSolver->getCollisionDetector().get());
+    if (detector
+        && detector->getNumCollisionThreads()
+               != std::max<std::size_t>(1u, numThreads))
+      collision::detail::checkWorldDetectorTopologyMutation(detector);
+  }
   mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
   if (mConstraintSolver)
     mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
-  if (mNumSimulationThreads != previousNumSimulationThreads)
+  if (mNumSimulationThreads != previousNumSimulationThreads) {
     invalidateSimulationMode();
+    notifyModelTopology(*mDeactivationState);
+  }
 
   if (mNumSimulationThreads <= 1u) {
     mSimulationThreadPool.reset();
@@ -1393,12 +3031,32 @@ struct World::StepContext
 //==============================================================================
 void World::step(bool _resetCommand)
 {
+  auto& state = *mDeactivationState;
+  if (state.mStepping.exchange(true, std::memory_order_acq_rel))
+    throw std::runtime_error("WorldBusyError: reentrant World::step()");
+  // Callback stages engage the marker lazily.
+  const BusyScope busy{state};
+  if (state.mEditDepth)
+    throw std::runtime_error("Cannot step inside a World::edit() scope");
+  if (state.mPendingRecompileError)
+    std::rethrow_exception(state.mPendingRecompileError);
+  if (state.mCompiled)
+    validateCompiledModel();
+  const auto group = mConstraintSolver->getCollisionGroup();
+  if (group && group->getAutomaticUpdate()
+      && collision::detail::CollisionGroupOwnershipAccessor::hasPendingUpdates(
+          *group)) {
+    engageSameThreadMarker(state);
+    collision::detail::CollisionGroupOwnershipAccessor::update(*group, this);
+  }
   StepContext context;
   context.resetCommand = _resetCommand;
   beginStep(context);
   if (!context.deactivationEnabled) {
+    engageSameThreadMarker(state);
     stepWithoutDeactivation(context);
   } else if (!tryAllRestingFastPath(context)) {
+    engageSameThreadMarker(state);
     advanceVelocities(context);
     solveConstraints(context);
     advancePositions(context);
@@ -1409,8 +3067,10 @@ void World::step(bool _resetCommand)
 //==============================================================================
 inline void World::beginStep(StepContext& context)
 {
-  if (!isInSimulationMode())
+  if (!isInSimulationMode()) {
+    engageSameThreadMarker(*mDeactivationState);
     enterSimulationMode();
+  }
   getMemoryManager().getFrameAllocator().reset();
 
   const bool deactivationEnabled = mDeactivationOptions.mEnabled;
@@ -1507,8 +3167,10 @@ inline bool World::tryAllRestingFastPath(StepContext& context)
   if (lastStepHadNoContacts && allRestingFastPathReady) {
     if (customFilterSleeping) {
       for (const auto& skel : mSkeletons) {
-        if (skel->isMobile() && skel->isResting())
+        if (skel->isMobile() && skel->isResting()) {
+          engageSameThreadMarker(*mDeactivationState);
           clearRestingAccelerations(*skel);
+        }
       }
     }
     mTime += mTimeStep;
@@ -2414,7 +4076,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
-  if (!isCollisionFilterSnapshotTrackable(collisionFilter)
+  const bool nativeFilter
+      = collisionFilter == nullptr
+        || typeid(*collisionFilter)
+               == typeid(collision::BodyNodeCollisionFilter);
+  if (!nativeFilter && !isCollisionFilterSnapshotTrackable(collisionFilter)
       && !(
           isReplayed(*mDeactivationState, collisionFilter)
           && mDeactivationState->mReplayVerified)) {
@@ -2423,7 +4089,13 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
   }
 
   const auto collisionFilterRevision
-      = getCollisionFilterSnapshotRevision(collisionFilter);
+      = nativeFilter
+            ? (collisionFilter
+                   ? static_cast<const collision::BodyNodeCollisionFilter*>(
+                         collisionFilter)
+                         ->getBodyNodePairBlackListRevision()
+                   : 0u)
+            : getCollisionFilterSnapshotRevision(collisionFilter);
   const bool collisionFilterUnchanged
       = mAllRestingSnapshotCollisionFilter == collisionFilter
         && mAllRestingSnapshotCollisionFilterRevision
@@ -2471,6 +4143,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       && collisionDetectorUnchanged && collisionFilterUnchanged
       && collisionOptionScalarsUnchanged) {
     if (_resetCommand && !mAllRestingSnapshotResetCommand) {
+      // Resetting forces and commands reads and resets custom Joint overrides.
+      engageSameThreadMarker(*mDeactivationState);
       for (const auto& skel : mSkeletons) {
         if (!skel->isMobile())
           continue;
@@ -2497,6 +4171,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
+  // Slow pose validation can evaluate custom Joint kinematics.
+  engageSameThreadMarker(*mDeactivationState);
   bool hasMobileSkeleton = false;
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
@@ -2649,8 +4325,11 @@ std::size_t World::getCollisionFilterSnapshotRevision(
   const auto* snapshotTracker
       = dynamic_cast<const collision::detail::CollisionFilterSnapshotTracker*>(
           filter);
-  if (snapshotTracker != nullptr)
+  if (snapshotTracker != nullptr) {
+    if (mDeactivationState->mStepping.load(std::memory_order_acquire))
+      engageSameThreadMarker(*mDeactivationState);
     return snapshotTracker->getCollisionFilterSnapshotRevision();
+  }
 
   const auto* bodyNodeFilter
       = dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter);
@@ -2729,10 +4408,11 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   const auto* collisionFilter = collisionOption.collisionFilter.get();
   // Classify once per step. The default filter needs only the same exact-type
   // check as snapshot tracking; World::step reuses the custom-filter decision.
-  bool collisionFilterTrackable
+  const bool nativeFilter
       = collisionFilter == nullptr
         || typeid(*collisionFilter)
                == typeid(collision::BodyNodeCollisionFilter);
+  bool collisionFilterTrackable = nativeFilter;
   bool collisionFilterReplayed = false;
   deactivationState.mStepCustomBodyFilter = false;
   if (!collisionFilterTrackable) {
@@ -2820,7 +4500,14 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
                == collisionOption.allowNegativePenetrationDepthContacts
         && mLastStepRestingWorldStateCollisionFilter == collisionFilter
         && mLastStepRestingWorldStateCollisionFilterRevision
-               == getCollisionFilterSnapshotRevision(collisionFilter);
+               == (nativeFilter
+                       ? (collisionFilter
+                              ? static_cast<
+                                    const collision::BodyNodeCollisionFilter*>(
+                                    collisionFilter)
+                                    ->getBodyNodePairBlackListRevision()
+                              : 0u)
+                       : getCollisionFilterSnapshotRevision(collisionFilter));
 
   if (recordedStateUnchanged && collisionFilterReplayed
       && !mLastStepRestingWorldSkeletonStates.empty()
@@ -3042,6 +4729,7 @@ void World::setGravity(const Eigen::Vector3d& _gravity)
   if (!changed)
     return;
 
+  ++mDeactivationState->mParameterRevision;
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
 }
@@ -3096,7 +4784,38 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
     return _skeleton->getName();
   }
 
-  mSkeletons.push_back(_skeleton);
+  checkModelMutation(*mDeactivationState);
+  common::detail::checkTopologyMutation(_skeleton.get());
+  if (!mDeactivationState->mIndexed) {
+    mSkeletons.push_back(_skeleton);
+  } else {
+    auto& state = *mDeactivationState;
+    Rejection reason = Rejection::None;
+    {
+      const auto lock = lockRegistry();
+      if (state.mCompiled || state.mEditDepth) {
+        const auto& owners = modelOwners().mOwners;
+        const auto it = owners.find(_skeleton.get());
+        if (it != owners.end()
+            && std::any_of(
+                it->second.begin(), it->second.end(), [&](const auto* owner) {
+                  return owner != &state;
+                }))
+          reason = Rejection::Shared;
+      }
+      if (reason == Rejection::None) {
+        // Index first, so a failed allocation leaves the World unchanged.
+        addOwner(state.mModelKeys, state, _skeleton.get());
+        try {
+          mSkeletons.push_back(_skeleton);
+        } catch (...) {
+          removeOwner(state.mModelKeys, state, _skeleton.get());
+          throw;
+        }
+      }
+    }
+    throwRejection(reason);
+  }
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
   mMapForSkeletons[_skeleton] = _skeleton;
 
@@ -3121,6 +4840,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
 
+  notifyModelTopology(*mDeactivationState);
   return _skeleton->getName();
 }
 
@@ -3153,14 +4873,24 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Remove _skeleton from constraint handler.
+  checkModelMutation(*mDeactivationState);
   mConstraintSolver->removeSkeleton(_skeleton);
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
 
   // Remove _skeleton from mSkeletons
-  mSkeletons.erase(
-      remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
-      mSkeletons.end());
+  if (!mDeactivationState->mIndexed) {
+    mSkeletons.erase(
+        remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+        mSkeletons.end());
+  } else {
+    const auto lock = lockRegistry();
+    mSkeletons.erase(
+        remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+        mSkeletons.end());
+    removeOwner(
+        mDeactivationState->mModelKeys, *mDeactivationState, _skeleton.get());
+  }
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
   refreshSkeletonDofIndices();
   invalidateSimulationMode();
@@ -3178,6 +4908,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   // Remove from the pointer map
   mMapForSkeletons.erase(_skeleton);
+  notifyModelTopology(*mDeactivationState);
 }
 
 //==============================================================================
@@ -3268,7 +4999,24 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
     return _frame->getName();
   }
 
-  mSimpleFrames.push_back(_frame);
+  checkModelMutation(*mDeactivationState);
+  common::detail::checkTopologyMutation(_frame.get());
+  if (!mDeactivationState->mIndexed) {
+    mSimpleFrames.push_back(_frame);
+  } else {
+    ModelKeys keys;
+    collectFrameKeys(_frame.get(), keys, true);
+    auto& state = *mDeactivationState;
+    const auto lock = lockRegistry();
+    // Index first, so a failed allocation leaves the World unchanged.
+    registerChain(state.mSimpleFrameChains, state, _frame.get(), keys);
+    try {
+      mSimpleFrames.push_back(_frame);
+    } catch (...) {
+      unregisterChain(state.mSimpleFrameChains, state, _frame.get());
+      throw;
+    }
+  }
   mSimpleFrameToShared[_frame.get()] = _frame;
 
   mNameConnectionsForSimpleFrames.push_back(_frame->onNameChanged.connect(
@@ -3282,6 +5030,7 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 
   invalidateSimulationMode();
 
+  notifyModelTopology(*mDeactivationState);
   return _frame->getName();
 }
 
@@ -3304,7 +5053,17 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   std::size_t index = it - mSimpleFrames.begin();
 
   // Remove the frame
-  mSimpleFrames.erase(mSimpleFrames.begin() + index);
+  checkModelMutation(*mDeactivationState);
+  if (!mDeactivationState->mIndexed) {
+    mSimpleFrames.erase(mSimpleFrames.begin() + index);
+  } else {
+    const auto lock = lockRegistry();
+    mSimpleFrames.erase(mSimpleFrames.begin() + index);
+    unregisterChain(
+        mDeactivationState->mSimpleFrameChains,
+        *mDeactivationState,
+        _frame.get());
+  }
 
   // Disconnect the name change monitor
   mNameConnectionsForSimpleFrames[index].disconnect();
@@ -3318,6 +5077,7 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   mSimpleFrameToShared.erase(_frame.get());
 
   invalidateSimulationMode();
+  notifyModelTopology(*mDeactivationState);
 }
 
 //==============================================================================
@@ -3397,9 +5157,13 @@ void World::setCollisionDetector(
 
   const auto* previousCollisionGroup
       = mConstraintSolver->getCollisionGroup().get();
+  if (mConstraintSolver->getCollisionDetector() != collisionDetector)
+    checkModelMutation(*mDeactivationState);
   mConstraintSolver->setCollisionDetector(collisionDetector);
-  if (mConstraintSolver->getCollisionGroup().get() != previousCollisionGroup)
+  if (mConstraintSolver->getCollisionGroup().get() != previousCollisionGroup) {
     invalidateSimulationMode();
+    notifyModelTopology(*mDeactivationState);
+  }
 }
 
 //==============================================================================
@@ -3492,16 +5256,24 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
     return;
   }
 
+  checkModelMutation(*mDeactivationState);
+  const auto* incoming = dynamic_cast<const collision::DARTCollisionDetector*>(
+      solver->getCollisionDetector().get());
+  if (incoming && incoming->getNumCollisionThreads() != mNumSimulationThreads)
+    collision::detail::checkWorldDetectorTopologyMutation(incoming);
   if (mConstraintSolver)
     solver->setFromOtherConstraintSolver(*mConstraintSolver);
 
+  solver->setTimeStep(mTimeStep);
+  solver->setNumSimulationThreads(mNumSimulationThreads);
   mConstraintSolver = std::move(solver);
+  if (mDeactivationState->mIndexed)
+    reindexWorld(*mDeactivationState);
   mDeactivationState->mSolverSkeletonOwnershipValid = false;
-  mConstraintSolver->setTimeStep(mTimeStep);
-  mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
   invalidateSimulationMode();
+  notifyModelTopology(*mDeactivationState);
 }
 
 //==============================================================================
@@ -3531,6 +5303,7 @@ void World::setDeactivationOptions(const DeactivationOptions& options)
   }
 
   mDeactivationOptions = options;
+  ++mDeactivationState->mParameterRevision;
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
 
@@ -3675,3 +5448,673 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 
 } // namespace simulation
 } // namespace dart
+
+namespace dart {
+namespace common {
+namespace detail {
+
+namespace {
+
+template <class Object>
+DART_REGISTRY_NOINLINE void checkTopologySlow(const Object* object)
+{
+  simulation::ModelKeys keys;
+  simulation::collectModelKeys(object, keys);
+  if (keys.empty())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(keys));
+  if (simulation::noIndexedWorlds())
+    return;
+  simulation::RejectionCollector rejection;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(keys, std::ref(rejection));
+  }
+  simulation::throwRejection(rejection.mReason);
+}
+
+template <class Object>
+DART_REGISTRY_NOINLINE void notifyTopologySlow(const Object* object)
+{
+  simulation::ModelKeys keys;
+  simulation::collectModelKeys(object, keys);
+  if (keys.empty())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
+    simulation::notifyModelTopology(owner);
+  });
+}
+
+template <class Object>
+DART_REGISTRY_NOINLINE void notifyParameterSlow(const Object* object)
+{
+  simulation::ModelKeys keys;
+  simulation::collectModelKeys(object, keys);
+  if (keys.empty())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
+    owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
+  });
+}
+
+// Requires the registry mutex.
+void stampParameter(simulation::WorldDeactivationState& owner)
+{
+  owner.mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
+}
+
+template <class Object>
+inline void checkTopology(const Object* object)
+{
+  if (!simulation::noGuardedWorlds())
+    checkTopologySlow(object);
+}
+
+template <class Object>
+inline void notifyTopology(const Object* object)
+{
+  if (!simulation::noIndexedWorlds())
+    notifyTopologySlow(object);
+}
+
+template <class Object>
+inline void notifyParameter(const Object* object)
+{
+  if (!simulation::noIndexedWorlds())
+    notifyParameterSlow(object);
+}
+
+DART_REGISTRY_NOINLINE void checkFrameTopologySlow(const dynamics::Frame* frame)
+{
+  simulation::ModelKeys keys;
+  simulation::collectFrameKeys(frame, keys, false);
+  simulation::throwRejection(simulation::lazyStepRejection(keys));
+  if (simulation::noIndexedWorlds())
+    return;
+  simulation::RejectionCollector rejection;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(keys, std::ref(rejection));
+  }
+  simulation::throwRejection(rejection.mReason);
+}
+
+DART_REGISTRY_NOINLINE void notifyFrameTopologySlow(
+    const dynamics::Frame* frame)
+{
+  // ShapeFrame's Subject observer runs after its virtual Frame base. During
+  // that teardown, its group entry must not be converted through old bases.
+  if (frame->isShapeFrame() && !dynamic_cast<const Composite*>(frame))
+    return;
+  simulation::ModelKeys keys;
+  simulation::collectFrameKeys(frame, keys, false);
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(keys, [](simulation::WorldDeactivationState& owner) {
+    simulation::notifyModelTopology(owner);
+  });
+}
+
+} // namespace
+
+bool hasTrackedModels()
+{
+  return !simulation::noIndexedWorlds();
+}
+
+bool hasGuardedModels()
+{
+  return !simulation::noGuardedWorlds();
+}
+
+void checkTopologyMutation(const Composite* object)
+{
+  checkTopology(object);
+}
+
+void checkTopologyMutation(const dynamics::BodyNode* object)
+{
+  checkTopology(object);
+}
+
+void checkTopologyMutation(const dynamics::ShapeFrame* object)
+{
+  checkTopology(object);
+}
+
+void checkTopologyMutation(const dynamics::Skeleton* object)
+{
+  checkTopology(object);
+}
+
+void checkTopologyMutation(const dynamics::Joint* object)
+{
+  checkTopology(object);
+}
+
+void notifyTopologyMutation(const Composite* object)
+{
+  notifyTopology(object);
+}
+
+void notifyTopologyMutation(const dynamics::BodyNode* object)
+{
+  notifyTopology(object);
+}
+
+void notifyTopologyMutation(const dynamics::ShapeFrame* object)
+{
+  notifyTopology(object);
+}
+
+void notifyTopologyMutation(const dynamics::Skeleton* object)
+{
+  notifyTopology(object);
+}
+
+void notifyTopologyMutation(const dynamics::Joint* object)
+{
+  notifyTopology(object);
+}
+
+void notifyParameterMutation(const Composite* object)
+{
+  notifyParameter(object);
+}
+
+void notifyParameterMutation(const dynamics::BodyNode* object)
+{
+  notifyParameter(object);
+}
+
+void notifyParameterMutation(const dynamics::ShapeFrame* object)
+{
+  notifyParameter(object);
+}
+
+void notifyParameterMutation(const dynamics::Skeleton* object)
+{
+  notifyParameter(object);
+}
+
+void notifyParameterMutation(const dynamics::Joint* object)
+{
+  notifyParameter(object);
+}
+
+void checkFrameTopologyMutation(const dynamics::Frame* frame)
+{
+  if (simulation::noGuardedWorlds() || !frame || frame->isWorld())
+    return;
+  checkFrameTopologySlow(frame);
+}
+
+void notifyFrameTopologyMutation(const dynamics::Frame* frame)
+{
+  if (simulation::noIndexedWorlds() || !frame || frame->isWorld())
+    return;
+  notifyFrameTopologySlow(frame);
+}
+
+void notifyFrameParentChanged(const dynamics::Frame* frame)
+{
+  if (simulation::noIndexedWorlds() || !frame || frame->isWorld())
+    return;
+  simulation::rechainMembersUnder(frame);
+}
+
+void notifyModelDestruction(const dynamics::Skeleton* skeleton)
+{
+  if (simulation::noIndexedWorlds() || !skeleton)
+    return;
+  simulation::purgeModelKey(skeleton);
+}
+
+} // namespace detail
+} // namespace common
+namespace collision {
+namespace detail {
+
+void checkWorldGroupMutation(const CollisionGroup* group)
+{
+  checkWorldGroupUpdate(group, nullptr);
+}
+
+void checkWorldGroupUpdate(
+    const CollisionGroup* group, const simulation::World* requester)
+{
+  if (simulation::noGuardedWorlds())
+    return;
+  for (const auto* state = simulation::tlsSteppingWorld; state;
+       state = state->mOuterSteppingWorld) {
+    if (!state->mIndexed && state->mWorld != requester
+        && simulation::steppingWorldOwnsSolverObject(
+            *state, simulation::SingleKey{group}))
+      simulation::throwRejection(simulation::Rejection::Busy);
+  }
+  if (simulation::noIndexedWorlds())
+    return;
+  // Only a stepping owner rejects: an idle compiled World reports raw group
+  // edits at its next step() or compile().
+  bool busy = false;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(
+        group, [&](const simulation::WorldDeactivationState& owner) {
+          busy = busy
+                 || (owner.mWorld != requester
+                     && owner.mStepping.load(std::memory_order_acquire));
+        });
+  }
+  if (busy)
+    simulation::throwRejection(simulation::Rejection::Busy);
+}
+
+void notifyWorldGroupMutation(const CollisionGroup* group)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [](simulation::WorldDeactivationState& owner) {
+        if (owner.mCompiled.load(std::memory_order_relaxed)
+            && owner.mEditDepth.load(std::memory_order_relaxed) == 0u)
+          owner.mRawGroupMutation.store(true, std::memory_order_relaxed);
+        simulation::notifyModelTopology(owner);
+      });
+}
+
+void notifyWorldGroupShapeFrameAdded(
+    const CollisionGroup* group, const dynamics::ShapeFrame* frame)
+{
+  if (simulation::noIndexedWorlds() || !frame)
+    return;
+  simulation::ModelKeys keys;
+  simulation::collectFrameKeys(frame, keys, true);
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [&](simulation::WorldDeactivationState& owner) {
+        simulation::registerChain(owner.mGroupFrameChains, owner, frame, keys);
+      });
+}
+
+void notifyWorldGroupShapeFrameRemoved(
+    const CollisionGroup* group, const dynamics::ShapeFrame* frame)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [&](simulation::WorldDeactivationState& owner) {
+        simulation::unregisterChain(owner.mGroupFrameChains, owner, frame);
+      });
+}
+
+void notifyWorldGroupSubscribed(
+    const CollisionGroup* group, const dynamics::MetaSkeleton* source)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto entries = simulation::sourceEntries(source);
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [&](simulation::WorldDeactivationState& owner) {
+        simulation::registerSource(owner, source, entries);
+      });
+}
+
+void notifyWorldGroupSubscribed(
+    const CollisionGroup* group, const dynamics::BodyNode* source)
+{
+  if (simulation::noIndexedWorlds() || !source)
+    return;
+  const std::vector<std::pair<const void*, const void*>> entries{
+      {source, source->getSkeleton().get()}};
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [&](simulation::WorldDeactivationState& owner) {
+        simulation::registerSource(owner, source, entries);
+      });
+}
+
+void notifyWorldGroupUnsubscribed(
+    const CollisionGroup* group, const void* source)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [&](simulation::WorldDeactivationState& owner) {
+        simulation::unregisterSource(owner, source);
+      });
+}
+
+void notifyWorldGroupSourceBodyAdded(
+    const CollisionGroup* group,
+    const void* source,
+    const dynamics::BodyNode* body)
+{
+  if (simulation::noIndexedWorlds() || !body)
+    return;
+  const void* skeleton = body->getSkeleton().get();
+  const auto lock = simulation::lockRegistry();
+  simulation::OwnerSet targets;
+  const auto owners = simulation::modelOwners().mOwners.find(group);
+  if (owners == simulation::modelOwners().mOwners.end())
+    return;
+  for (auto* owner : owners->second) {
+    const auto sourceIt = owner->mGroupSourceChains.find(source);
+    if (sourceIt == owner->mGroupSourceChains.end())
+      continue;
+    const auto& entries = sourceIt->second;
+    if (std::none_of(entries.begin(), entries.end(), [body](const auto& entry) {
+          return entry.first == body;
+        }))
+      targets.insert(owner);
+  }
+  std::size_t added = 0u;
+  try {
+    targets.each([&](simulation::WorldDeactivationState& owner) {
+      auto& entries = owner.mGroupSourceChains.find(source)->second;
+      simulation::addOwner(owner.mModelKeys, owner, skeleton);
+      try {
+        simulation::indexAllocation();
+        entries.emplace_back(body, skeleton);
+      } catch (...) {
+        simulation::removeOwner(owner.mModelKeys, owner, skeleton);
+        throw;
+      }
+      ++added;
+    });
+  } catch (...) {
+    targets.each([&](simulation::WorldDeactivationState& owner) {
+      if (added == 0u)
+        return;
+      --added;
+      simulation::removeOwner(owner.mModelKeys, owner, skeleton);
+      owner.mGroupSourceChains.find(source)->second.pop_back();
+    });
+    throw;
+  }
+}
+
+void notifyWorldGroupSourceBodyRemoved(
+    const CollisionGroup* group, const void* source, const void* body)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [&](simulation::WorldDeactivationState& owner) {
+        const auto it = owner.mGroupSourceChains.find(source);
+        if (it == owner.mGroupSourceChains.end())
+          return;
+        auto& entries = it->second;
+        const auto entry = std::find_if(
+            entries.begin(), entries.end(), [body](const auto& candidate) {
+              return candidate.first == body;
+            });
+        if (entry == entries.end())
+          return;
+        simulation::removeOwner(owner.mModelKeys, owner, entry->second);
+        entries.erase(entry);
+      });
+}
+
+void notifyWorldGroupCleared(const CollisionGroup* group)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      group, [](simulation::WorldDeactivationState& owner) {
+        simulation::unregisterAllChains(owner.mGroupFrameChains, owner);
+        simulation::unregisterAllSources(owner);
+      });
+}
+
+void checkWorldDetectorTopologyMutation(const CollisionDetector* detector)
+{
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(detector));
+  if (simulation::noIndexedWorlds())
+    return;
+  simulation::RejectionCollector rejection;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(detector, std::ref(rejection));
+  }
+  simulation::throwRejection(rejection.mReason);
+}
+
+void notifyWorldDetectorTopologyMutation(const CollisionDetector* detector)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      detector, [](simulation::WorldDeactivationState& owner) {
+        simulation::notifyModelTopology(owner);
+      });
+}
+
+void notifyWorldDetectorParameterMutation(const CollisionDetector* detector)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(detector, common::detail::stampParameter);
+}
+
+} // namespace detail
+} // namespace collision
+namespace constraint {
+namespace detail {
+
+void notifyWorldCollisionGroupReplaced(const ConstraintSolver* solver)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      solver, [](simulation::WorldDeactivationState& owner) {
+        simulation::unregisterAllChains(owner.mGroupFrameChains, owner);
+        simulation::unregisterAllSources(owner);
+        simulation::refreshSolverKeys(owner);
+      });
+}
+
+void notifyWorldSolverSkeletonAdded(
+    const ConstraintSolver* solver, const dynamics::Skeleton* skeleton)
+{
+  if (simulation::noIndexedWorlds() || !skeleton)
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      solver, [&](simulation::WorldDeactivationState& owner) {
+        owner.mSolverSkeletonKeys.push_back(skeleton);
+        simulation::addOwner(owner.mModelKeys, owner, skeleton);
+      });
+}
+
+void notifyWorldSolverSkeletonRemoved(
+    const ConstraintSolver* solver, const dynamics::Skeleton* skeleton)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      solver, [&](simulation::WorldDeactivationState& owner) {
+        auto& keys = owner.mSolverSkeletonKeys;
+        const auto it = std::find(keys.begin(), keys.end(), skeleton);
+        if (it == keys.end())
+          return;
+        keys.erase(it);
+        simulation::removeOwner(owner.mModelKeys, owner, skeleton);
+      });
+}
+
+void checkWorldTopologyMutation(const ConstraintSolver* solver)
+{
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(solver));
+  if (simulation::noIndexedWorlds())
+    return;
+  simulation::RejectionCollector rejection;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(solver, std::ref(rejection));
+  }
+  simulation::throwRejection(rejection.mReason);
+}
+
+void notifyWorldTopologyMutation(const ConstraintSolver* solver)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      solver, [](simulation::WorldDeactivationState& owner) {
+        simulation::refreshSolverKeys(owner);
+        simulation::notifyModelTopology(owner);
+      });
+}
+
+void notifyWorldContactHandlersChanged(const ConstraintSolver* solver)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      solver, [](simulation::WorldDeactivationState& owner) {
+        simulation::refreshSolverKeys(owner);
+        simulation::refreshHandlerKeys(owner);
+        simulation::notifyModelTopology(owner);
+      });
+}
+
+void notifyWorldParameterMutation(const ConstraintSolver* solver)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(solver, common::detail::stampParameter);
+}
+
+void notifyBoxedSolverParameterMutation(const BoxedLcpSolver* solver)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(solver, common::detail::stampParameter);
+}
+
+void notifyConstraintParameterMutation(const ConstraintBase* constraint)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(constraint, common::detail::stampParameter);
+}
+
+void notifyGlobalConstraintParameterMutation()
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  const auto lock = simulation::lockRegistry();
+  for (auto* owner : simulation::modelOwners().mWorlds)
+    owner->mParameterRevision.fetch_add(1u, std::memory_order_relaxed);
+}
+
+bool contactSurfaceChecksActive()
+{
+  return !simulation::noIndexedWorlds()
+         || simulation::tlsSteppingWorld != nullptr;
+}
+
+void checkContactSurfaceMutation(const ContactSurfaceHandler* handler)
+{
+  if (simulation::noGuardedWorlds())
+    return;
+  simulation::throwRejection(simulation::lazyStepRejection(handler));
+  if (simulation::noIndexedWorlds())
+    return;
+  simulation::RejectionCollector rejection;
+  {
+    const auto lock = simulation::lockRegistry();
+    simulation::forEachOwner(handler, std::ref(rejection));
+  }
+  simulation::throwRejection(rejection.mReason);
+}
+
+void notifyContactSurfaceMutation(const ContactSurfaceHandler* handler)
+{
+  if (simulation::noIndexedWorlds())
+    return;
+  // The handler's new chain comes from the caller's own object before locking.
+  // Owners splice it below the changed handler; none of their solvers is read.
+  std::vector<const void*> parents;
+  for (auto parent = const_cast<ContactSurfaceHandler*>(handler)->getParent();
+       parent;
+       parent = parent->getParent()) {
+    if (parent.get() == handler
+        || std::find(parents.begin(), parents.end(), parent.get())
+               != parents.end())
+      break;
+    parents.push_back(parent.get());
+  }
+  const auto lock = simulation::lockRegistry();
+  simulation::forEachOwner(
+      handler, [&](simulation::WorldDeactivationState& owner) {
+        auto& keys = owner.mHandlerKeys;
+        const auto it = std::find(keys.begin(), keys.end(), handler);
+        if (it == keys.end())
+          return;
+        std::vector<const void*> chain(keys.begin(), std::next(it));
+        for (const void* parent : parents) {
+          if (std::find(chain.begin(), chain.end(), parent) == chain.end())
+            chain.push_back(parent);
+        }
+        for (const void* key : keys)
+          simulation::removeOwner(owner.mModelKeys, owner, key);
+        for (const void* key : chain)
+          simulation::addOwner(owner.mModelKeys, owner, key);
+        keys = std::move(chain);
+        simulation::notifyModelTopology(owner);
+      });
+}
+
+} // namespace detail
+} // namespace constraint
+
+namespace simulation {
+namespace detail {
+
+std::size_t getIndexedWorldCount()
+{
+  return gIndexedWorlds.load(std::memory_order_acquire);
+}
+
+void failIndexAllocation(std::size_t nth)
+{
+  gFailIndexAllocationIn = nth;
+}
+
+void setRechainUnlockedHook(std::function<void()> hook)
+{
+  gRechainUnlockedHook = std::move(hook);
+}
+
+std::size_t getRegistryLockCount()
+{
+  return gRegistryLocks.load(std::memory_order_relaxed);
+}
+
+} // namespace detail
+} // namespace simulation
+} // namespace dart
+
+#undef DART_REGISTRY_NOINLINE

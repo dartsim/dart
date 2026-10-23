@@ -3,7 +3,7 @@ dart_find_package(tinyxml2)
 if(NOT TINYXML2_FOUND OR DART_SKIP_TINYXML2)
   message(
     FATAL_ERROR
-    "dart-io requires tinyxml2 >= 9.0.0; install it or set DART_BUILD_IO=OFF."
+    "dart-io requires tinyxml2 >= 10.0.0; install it or set DART_BUILD_IO=OFF."
   )
 endif()
 dart_find_package(urdfdom)

@@ -36,6 +36,7 @@
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 
@@ -657,6 +658,7 @@ void MeshShape::setMesh(
     return;
 
   if (!sameMesh) {
+    common::detail::checkShapeTopologyMutation(this);
     const bool meshIsCached = mesh && mesh == mCachedAiScene;
     const MeshOwnership effectiveOwnership
         = meshIsCached ? MeshOwnership::Imported : ownership;
@@ -681,7 +683,10 @@ void MeshShape::setMesh(
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
-  incrementVersion();
+  if (sameMesh)
+    incrementVersion();
+  else
+    common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================
@@ -698,6 +703,7 @@ void MeshShape::setMesh(
     return;
 
   if (!sameMesh) {
+    common::detail::checkShapeTopologyMutation(this);
     if (mCachedAiScene) {
       if (mesh && mesh.get() == mCachedAiScene)
         mCachedAiScene = nullptr;
@@ -718,7 +724,10 @@ void MeshShape::setMesh(
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
-  incrementVersion();
+  if (sameMesh)
+    incrementVersion();
+  else
+    common::detail::incrementShapeTopologyVersion(this);
 }
 
 //==============================================================================

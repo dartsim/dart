@@ -3,3 +3,6 @@ pixi.lock linguist-language=YAML
 
 # This historical owner uses CRLF; treat its carriage returns as line endings.
 tests/CMakeLists.txt whitespace=cr-at-eol
+
+# Verbatim upstream model copies keep their original bytes.
+data/mjcf/deepmind/** -text -whitespace

@@ -83,14 +83,14 @@ import dartpy as dart
 
 world = dart.World(time_step=1e-3, gravity=(0, 0, -9.81))
 with world.edit():
-    robot = world.add(dart.io.load_model(dart.data.path("urdf/KR5/KR5 sixx R650.urdf")))
-    robot.joints["shoulder_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
+    robot = world.add(dart.io.load_model(dart.data.path("urdf/six_axis_arm/six_axis_arm.urdf")))
+    robot.joints["base_yaw"].actuator = dart.PositionServo(kp=400, kd=40, effort_limit=80)
     imu = world.sensors.add(dart.sensors.IMUSensor(link=robot.links["wrist"]))
 world.compile()                                          # simulation mode, no allocation
 
 robot.dofs.position_targets = np.zeros(robot.num_dofs)   # persistent target channel
 world.step(20)                                           # releases the GIL
-X_WP = robot.links["palm"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
+X_WP = robot.links["tool"].world_transform @ dart.Transform(translation=(0, 0, 0.1))
 state = world.capture_state()                            # dynamic snapshot
 world.step(5)
 world.restore_state(state)
@@ -439,13 +439,15 @@ M6a merged in [#3696](https://github.com/dartsim/dart/pull/3696) on 2026-10-11
 
 M6a closed on 2026-10-18. Its task folder is retired, and the
 [closeout evidence](verification.md#m6a-closeout) is in the program record.
-The Nightly `dartpy-wheels` rows build, repair, verify and test all eight
-Filament wheels: Linux x86_64 and aarch64 for CPython 3.10, 3.11 and the 3.12
-stable ABI, plus the Windows and macOS stable-ABI wheels. The stable-ABI
-wheels also pass `abi3audit`, and both Linux stable-ABI rows pass the
-slim-container headless import. The slowest row finishes in under an hour of
-its 120-minute limit, so the image keeps building the pinned SDK during the
-wheel build; the separately cached SDK stage that M6a planned is unnecessary.
+At M6a closeout, the Nightly `dartpy-wheels` rows built, repaired, verified and
+tested all eight Filament wheels: Linux x86_64 and aarch64 for CPython 3.10,
+3.11 and the 3.12 stable ABI, plus the Windows and macOS stable-ABI wheels.
+Current wheels require Python 3.12 or newer and use the 3.12 stable ABI on
+every platform. The stable-ABI wheels also passed `abi3audit`, and both Linux
+stable-ABI rows passed the slim-container headless import. The slowest row
+finished in under an hour of its 120-minute limit, so the image keeps building
+the pinned SDK during the wheel build; the separately cached SDK stage that
+M6a planned is unnecessary.
 M6a's two open release gates, quiet-host renderer performance and the final
 renderer reviews, are part of [C2](#release-train-and-checkpoints).
 
@@ -499,7 +501,7 @@ not run on a Windows host; hosted CI runs the catalog through Python directly.
 M6b still owns `dart.render`, the final viewer API, and migration of the
 interim `dartpy.gui` primitives (InteractiveFrame, drag and drop, GridVisual,
 SupportPolygonVisual, DebugOverlay, and GUIEventHandler). Pre-existing host
-gaps also remain: LogCapture misses spdlog and Python output and is not
+gaps also remain: LogCapture misses Python output and is not
 thread-safe, Copy does not reach the system clipboard, and `GuiScaleTheme`
 duplicates Viewer scaling. A native host loop releases the GIL; until the
 program's World-busy guard lands, other Python threads can still touch its

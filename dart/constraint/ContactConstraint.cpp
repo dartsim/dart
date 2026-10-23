@@ -38,6 +38,7 @@
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -547,7 +548,10 @@ void ContactConstraint::setErrorAllowance(double allowance)
     allowance = 0.0;
   }
 
-  mErrorAllowance = allowance;
+  if (mErrorAllowance != allowance) {
+    mErrorAllowance = allowance;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -571,7 +575,10 @@ void ContactConstraint::setErrorReductionParameter(double erp)
     erp = 1.0;
   }
 
-  mErrorReductionParameter = erp;
+  if (mErrorReductionParameter != erp) {
+    mErrorReductionParameter = erp;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -588,20 +595,38 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
     dtwarn << "Maximum error reduction velocity[" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mMaxErrorReductionVelocity = 0.0;
-    mMaxErrorReductionVelocityUserConfigured = true;
+    if (mMaxErrorReductionVelocity != 0.0) {
+      mMaxErrorReductionVelocity = 0.0;
+      detail::notifyGlobalConstraintParameterMutation();
+    }
+    if (mMaxErrorReductionVelocityUserConfigured != true) {
+      mMaxErrorReductionVelocityUserConfigured = true;
+      detail::notifyGlobalConstraintParameterMutation();
+    }
     return;
   }
 
-  mMaxErrorReductionVelocity = erv;
-  mMaxErrorReductionVelocityUserConfigured = true;
+  if (mMaxErrorReductionVelocity != erv) {
+    mMaxErrorReductionVelocity = erv;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
+  if (mMaxErrorReductionVelocityUserConfigured != true) {
+    mMaxErrorReductionVelocityUserConfigured = true;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
 void ContactConstraint::resetMaxErrorReductionVelocity()
 {
-  mMaxErrorReductionVelocity = DART_MAX_ERV;
-  mMaxErrorReductionVelocityUserConfigured = false;
+  if (mMaxErrorReductionVelocity != DART_MAX_ERV) {
+    mMaxErrorReductionVelocity = DART_MAX_ERV;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
+  if (mMaxErrorReductionVelocityUserConfigured != false) {
+    mMaxErrorReductionVelocityUserConfigured = false;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -621,7 +646,10 @@ void ContactConstraint::setConstraintForceMixing(double cfm)
     cfm = 1e-9;
   }
 
-  mConstraintForceMixing = cfm;
+  if (mConstraintForceMixing != cfm) {
+    mConstraintForceMixing = cfm;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================
@@ -633,7 +661,11 @@ double ContactConstraint::getConstraintForceMixing()
 //==============================================================================
 void ContactConstraint::setFrictionDirection(const Eigen::Vector3d& dir)
 {
-  mFirstFrictionalDirection = dir.normalized();
+  const Eigen::Vector3d direction = dir.normalized();
+  if (mFirstFrictionalDirection == direction)
+    return;
+  mFirstFrictionalDirection = direction;
+  detail::notifyConstraintParameterMutation(this);
 }
 
 //==============================================================================
@@ -1429,7 +1461,10 @@ double ContactConstraint::getPrimarySlipCompliance() const
 //==============================================================================
 void ContactConstraint::setPrimarySlipCompliance(double slip)
 {
+  if (mPrimarySlipCompliance == slip)
+    return;
   mPrimarySlipCompliance = slip;
+  detail::notifyConstraintParameterMutation(this);
 }
 
 //==============================================================================
@@ -1441,7 +1476,10 @@ double ContactConstraint::getSecondarySlipCompliance() const
 //==============================================================================
 void ContactConstraint::setSecondarySlipCompliance(double slip)
 {
+  if (mSecondarySlipCompliance == slip)
+    return;
   mSecondarySlipCompliance = slip;
+  detail::notifyConstraintParameterMutation(this);
 }
 
 //==============================================================================

@@ -21,10 +21,10 @@ STRUCTURES = {
         ("fullbody1", 20, 0, 0, 37),
     ],
     "operational_space_control": [
-        ("KR5sixxR650WP_description", 7, 0, 0, 6),
+        ("six_axis_arm", 7, 0, 0, 6),
         ("ground_skeleton", 1, 0, 0, 0),
     ],
-    "point_cloud": [("KR5", 7, 0, 0, 6), ("ground_skeleton", 1, 0, 0, 0)],
+    "point_cloud": [("six_axis_arm", 7, 0, 0, 6), ("ground_skeleton", 1, 0, 0, 0)],
 }
 METADATA = {
     "biped_stand": (
@@ -40,7 +40,7 @@ METADATA = {
     "operational_space_control": (
         "Operational Space Control",
         "Control & IK",
-        "KR5 arm chasing a draggable target with task-space control.",
+        "Six-axis arm chasing a draggable target with task-space control.",
     ),
     "point_cloud": (
         "Point Cloud",
@@ -191,8 +191,8 @@ for _ in range(4):
 world = setup.world
 shape = world.getSimpleFrame("point cloud").getShape()
 np.savez(sys.argv[1],
-         positions=world.getSkeleton("KR5").getPositions(),
-         velocities=world.getSkeleton("KR5").getVelocities(),
+         positions=world.getSkeleton("six_axis_arm").getPositions(),
+         velocities=world.getSkeleton("six_axis_arm").getVelocities(),
          points=np.asarray(shape.getPoints()),
          colors=np.asarray(shape.getColors()),
          sensor=world.getSimpleFrame("sensor").getWorldTransform().translation())
@@ -513,13 +513,27 @@ def test_s4_operational_space_controls_keys_and_target(controls, monkeypatch):
         teardown()
 
 
+@pytest.mark.parametrize("displacement", [[-0.04, 0, 0], [0, 0.05, 0], [0, 0, 0.04]])
+def test_six_axis_arm_reaches_dragged_target(displacement):
+    setup = _scene("operational_space_control").factory()
+    robot = setup.world.getSkeleton("six_axis_arm")
+    target = setup.world.getSimpleFrame("target")
+    transform = target.getWorldTransform()
+    transform.pretranslate(displacement)
+    target.setTransform(transform)
+    _step(setup, 2000)
+    end = robot.getBodyNode("tool").getWorldTransform().multiply([0.05, 0, 0])
+    assert np.linalg.norm(end - target.getWorldTransform().translation()) < 0.01
+    assert np.isfinite(robot.getVelocities()).all()
+
+
 @pytest.mark.skipif(
     not hasattr(dart.dynamics, "VoxelGridShape"), reason="OctoMap unavailable"
 )
 def test_point_cloud_sensor_panel_and_visibility(controls):
     setup = _scene("point_cloud").factory()
     world = setup.world
-    robot = world.getSkeleton("KR5")
+    robot = world.getSkeleton("six_axis_arm")
     point_frame = world.getSimpleFrame("point cloud")
     voxel_frame = world.getSimpleFrame("voxel")
     sensor_frame = world.getSimpleFrame("sensor")
@@ -565,7 +579,9 @@ def test_point_cloud_sensor_panel_and_visibility(controls):
     assert np.max(np.abs(points.getPoints())) <= 0.5
     _edit(controls["Sampling Mode"], 0)
     setup.pre_step()
-    assert np.max(np.abs(points.getPoints())) > 0.5
+    sampled = np.asarray(points.getPoints())
+    assert sampled[:, 2].min() > -0.01
+    assert np.ptp(sampled[:, 2]) > 0.45
     np.testing.assert_allclose(
         sensor_frame.getWorldTransform().translation(),
         [np.sin(0.002), np.cos(0.002), 0.5 + 0.25 * np.sin(0.004)],
@@ -757,3 +773,20 @@ def test_point_cloud_inputs_match_cpp_steps(monkeypatch):
         "Major Line Width": (1, 2, 0, False),
         "Minor Line Width": (1, 2, 0, False),
     }
+
+
+def test_point_cloud_repeated_steps_keep_points_and_occupancy_live():
+    setup = _scene("point_cloud").factory()
+    world = setup.world
+    points = world.getSimpleFrame("point cloud").getShape()
+    voxels = world.getSimpleFrame("voxel").getShape()
+    dart.math.Random.setSeed(42)
+    _step(setup)
+    before = np.asarray(points.getPoints()).copy()
+    _step(setup, 12)
+    after = np.asarray(points.getPoints())
+    assert points.getNumPoints() == 500
+    assert np.isfinite(after).all()
+    assert not np.array_equal(before, after)
+    assert any(voxels.getOccupancy(point) > 0.5 for point in after)
+    assert world.getTime() == pytest.approx(13 * world.getTimeStep())

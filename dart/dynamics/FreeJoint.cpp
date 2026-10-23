@@ -125,7 +125,7 @@ void FreeJoint::setCoordinateChart(CoordinateChart chart)
 
   setPositionsStatic(convertToPositions(transform, chart));
   updateRelativeJacobian(true);
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================

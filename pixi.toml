@@ -16,6 +16,7 @@ gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
 isort = ">=6.0.1,<7"
 markdown-it-py = ">=3,<5"
+nanobind = "3.1.*"
 ninja = ">=1.13.2,<2"
 packaging = ">=24,<27"
 pip = ">=25.1.1,<26"
@@ -32,14 +33,12 @@ bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<6"
 fcl = ">=0.7.0,<0.8"
-fmt = ">=11.1.4,<12"
 libcurl = ">=7.85.0,<9"
 libode = ">=0.16.5,<0.17"
 libsdformat = ">=16.1.0,<17"
-numpy = ">=2.2.5,<3"
+numpy = ">=1.26.4,<3"
 octomap = ">=1.10.1,<2"
 openssl = ">=1.1.1,<4"
-spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=6.0.0,<7"
 
@@ -49,6 +48,7 @@ config-core = { cmd = """
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
         -DCMAKE_INSTALL_RPATH="$CONDA_PREFIX/lib" \
         -DCMAKE_INSTALL_PREFIX="$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/package-core" \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DBUILD_TESTING=OFF -DDART_BUILD_IO=OFF -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF \
         -DCMAKE_DISABLE_FIND_PACKAGE_OpenGL=ON \
         -DCMAKE_DISABLE_FIND_PACKAGE_imgui=ON -DCMAKE_DISABLE_FIND_PACKAGE_tinyxml2=ON \
@@ -87,10 +87,8 @@ config = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
@@ -187,11 +185,17 @@ check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+# Changelog fragments on main (changelog.d/README.md): validate them, or move
+# them into CHANGELOG.md at a checkpoint.
+check-changelog-fragments = { cmd = "python scripts/changelog_fragments.py check" }
+changelog-assemble = { cmd = "python scripts/changelog_fragments.py assemble" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-cmake",
   "check-lint-py",
   "check-lint-spell",
+  "check-changelog-fragments",
   "check-ai-commands",
   "check-ai-infra",
 ] }
@@ -220,6 +224,7 @@ test-ai-infra = { cmd = [
   "tests/test_install_git_hooks.py",
   "tests/test_check_local_paths.py",
   "tests/test_lint_cmake.py",
+  "tests/test_changelog_fragments.py",
   "tests/test_third_party_notices.py",
   "-q",
 ] }
@@ -366,10 +371,8 @@ config-py = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
@@ -655,10 +658,8 @@ config = { cmd = """
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF" } }
 
@@ -694,6 +695,7 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 check-lint = { depends-on = [
   "check-lint-spell",
   "check-lint-py",
+  "check-changelog-fragments",
   "check-ai-infra",
 ] }
 
@@ -744,10 +746,8 @@ config-py = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
 
@@ -822,6 +822,7 @@ config-dart-gz = { cmd = """
         -DCMAKE_BUILD_TYPE=Release \
         -DDART_BUILD_GUI=OFF \
         -DDART_BUILD_DARTPY=OFF -DDART_BUILD_PROFILE=OFF \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_REQUIRE_OPTIONAL_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON
@@ -963,7 +964,7 @@ gz-compat-ionic = { cmd = "bash tools/gazebo/compat/lane.sh ionic" }
 #=============================================
 # Features: unpatched Gazebo compatibility lanes
 #=============================================
-# Harmonic and Jetty pin newer urdfdom/fmt/spdlog than the default feature, so
+# Harmonic and Jetty pin newer urdfdom than the default feature, so
 # their environments skip the default feature and take DART's build
 # dependencies from `gz-compat-base` instead.
 
@@ -981,14 +982,12 @@ console_bridge = "*"
 cxx-compiler = "*"
 eigen = ">=3.4.0,<6"
 fcl = ">=0.7.0,<0.8"
-fmt = "*"
 git = ">=1"
 libode = ">=0.16.2"
 ninja = ">=1.13.2,<2"
 octomap = "*"
 pkg-config = "*"
 python = ">=3.10"
-spdlog = ">=1.15.3,<2"
 tinyxml2 = "*"
 urdfdom = "*"
 
@@ -1065,10 +1064,8 @@ config-tracy = { cmd = """
         -DDART_BUILD_PROFILE=ON \
         -DDART_PROFILE_BUILTIN=ON \
         -DDART_PROFILE_TRACY=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 tracy = { cmd = "tracy-profiler" }
@@ -1089,10 +1086,8 @@ config-py-profile = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 build-py-dev-profile = { cmd = """
@@ -1117,10 +1112,8 @@ config-py-profile = { cmd = """
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
 build-py-dev-profile = { cmd = """
@@ -1185,10 +1178,8 @@ config-coverage = { cmd = """
         -DDART_BUILD_PROFILE=OFF \
         -DDART_BUILD_GUI=OFF \
         -DDART_CODECOV=ON \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
 
@@ -1258,8 +1249,7 @@ config-asan = { cmd = """
         -DDART_BUILD_GUI=OFF \
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "asan" } }
@@ -1296,10 +1286,8 @@ config-install = { cmd = """
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_BUILD_GUI=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
@@ -1322,10 +1310,8 @@ config-install = { cmd = """
         -DDART_BUILD_UTILS_ASSETS=ON \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_BUILD_GUI=OFF \
-        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_DEPENDENCIES=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
