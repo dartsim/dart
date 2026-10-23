@@ -39,7 +39,6 @@ libsdformat = ">=16.1.0,<17"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.1,<2"
 openssl = ">=1.1.1,<4"
-spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=6.0.0,<7"
 
@@ -186,11 +185,17 @@ check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
+# Changelog fragments on main (changelog.d/README.md): validate them, or move
+# them into CHANGELOG.md at a checkpoint.
+check-changelog-fragments = { cmd = "python scripts/changelog_fragments.py check" }
+changelog-assemble = { cmd = "python scripts/changelog_fragments.py assemble" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-cmake",
   "check-lint-py",
   "check-lint-spell",
+  "check-changelog-fragments",
   "check-ai-commands",
   "check-ai-infra",
 ] }
@@ -219,6 +224,7 @@ test-ai-infra = { cmd = [
   "tests/test_install_git_hooks.py",
   "tests/test_check_local_paths.py",
   "tests/test_lint_cmake.py",
+  "tests/test_changelog_fragments.py",
   "tests/test_third_party_notices.py",
   "-q",
 ] }
@@ -689,6 +695,7 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 check-lint = { depends-on = [
   "check-lint-spell",
   "check-lint-py",
+  "check-changelog-fragments",
   "check-ai-infra",
 ] }
 
@@ -957,7 +964,7 @@ gz-compat-ionic = { cmd = "bash tools/gazebo/compat/lane.sh ionic" }
 #=============================================
 # Features: unpatched Gazebo compatibility lanes
 #=============================================
-# Harmonic and Jetty pin newer urdfdom/fmt/spdlog than the default feature, so
+# Harmonic and Jetty pin newer urdfdom/fmt than the default feature, so
 # their environments skip the default feature and take DART's build
 # dependencies from `gz-compat-base` instead.
 
@@ -982,7 +989,6 @@ ninja = ">=1.13.2,<2"
 octomap = "*"
 pkg-config = "*"
 python = ">=3.10"
-spdlog = ">=1.15.3,<2"
 tinyxml2 = "*"
 urdfdom = "*"
 

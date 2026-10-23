@@ -34,7 +34,7 @@ Update documentation: $ARGUMENTS
    instead of duplicating procedures.
 6. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
    gate set, then run `pixi run lint` before committing
-7. Record the `CHANGELOG.md` decision using `docs/onboarding/changelog.md`.
+7. Record the changelog decision using `docs/onboarding/changelog.md`.
 8. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, push with the same local and remote topic-branch name, use
    `.github/PULL_REQUEST_TEMPLATE.md`, and set the proper milestone.

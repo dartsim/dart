@@ -63,15 +63,11 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
       totalSize += size;
       dtdbg << "Found potential memory leak at " << pointer << " (" << size
             << " bytes).\n";
-      // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-      // destructor is resolved.
     }
 
     dtdbg << "Found potential memory leak of total " << totalSize
           << " bytes. The internal allocator will try to forcefully "
           << "deallocate it but it's is not guaranteed.\n";
-    // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
-    // destructor is resolved.
   }
 }
 

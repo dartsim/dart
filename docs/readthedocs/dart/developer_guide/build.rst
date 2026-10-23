@@ -125,9 +125,6 @@ Optional components remain optional.
    * - urdfdom
      - 3.0.0
      - URDF parser
-   * - spdlog
-     - 1.9.2
-     - Logging support
    * - Filament
      - 1.77.3 (pinned SDK)
      - GUI rendering

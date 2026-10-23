@@ -32,8 +32,10 @@
 
 #include "dart/dynamics/Frame.hpp"
 
+#include "dart/common/Composite.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -572,6 +574,9 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       }
     }
   }
+
+  if (_newParentFrame)
+    common::detail::checkFrameTopologyMutation(_newParentFrame);
 
   if (mParentFrame && !mParentFrame->isWorld()) {
     FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);

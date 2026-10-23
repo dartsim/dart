@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -101,7 +102,10 @@ void ServoMotorConstraint::setConstraintForceMixing(double cfm)
     cfm = 1e-9;
   }
 
-  mConstraintForceMixing = cfm;
+  if (mConstraintForceMixing != cfm) {
+    mConstraintForceMixing = cfm;
+    detail::notifyGlobalConstraintParameterMutation();
+  }
 }
 
 //==============================================================================

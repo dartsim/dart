@@ -55,6 +55,8 @@ surface affects shared behavior.
   calls.
 
 - For ordinary docs-only changes on this development branch, run `pixi run lint`.
+- For changelog fragments in `changelog.d/`, also run
+  `pixi run check-changelog-fragments`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source
   changes, also run `pixi run check-ai-commands`; run
   `pixi run sync-ai-commands` first when `.claude/` sources changed.

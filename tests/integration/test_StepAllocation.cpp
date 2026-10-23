@@ -42,6 +42,7 @@
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Signal.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
@@ -56,6 +57,7 @@
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
+#include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -1360,6 +1362,64 @@ TEST(StepAllocation, FirstSingleConnectionSignalRaiseDoesNotAllocate)
   if (!measurement.rawHeap.skipped) {
     EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
   }
+}
+
+TEST(StepAllocation, NativeCompiledFirstStepHasNoAllocation)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  auto world = createCountedStackedBoxesWorld(
+      "compiled", dart::collision::DARTCollisionDetector::create(), allocator);
+  world->compile();
+  ASSERT_TRUE(world->isCompiled());
+  const auto measurement = measureWorldStepsNow(world, allocator, 1);
+  reportMeasurement("native_compiled_first_step", measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable("compiled", measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+  if (measurement.rawHeap.skipped)
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+TEST(StepAllocation, LazyContactHandlerGuardDoesNotAllocate)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  auto world = createCountedStackedBoxesWorld(
+      "lazy_handler_guard",
+      dart::collision::DARTCollisionDetector::create(),
+      allocator);
+  auto handler = std::make_shared<AllocationGateCallbackHandler>();
+  auto unrelated = std::make_shared<dart::constraint::ContactSurfaceHandler>();
+  std::size_t checks = 0u;
+  std::size_t allocations = 0u;
+  handler->mCallback = [&](auto&) {
+    dart::test::ScopedHeapAllocationCounter counter;
+    dart::constraint::detail::checkContactSurfaceMutation(unrelated.get());
+    counter.stop();
+    allocations += counter.allocationCount();
+    ++checks;
+  };
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  world->step();
+  EXPECT_GT(checks, 0u);
+  EXPECT_EQ(allocations, 0u);
+}
+
+TEST(StepAllocation, NativeCompiledSoftFirstStepHasNoAllocation)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  auto world
+      = createCountedNativeSoftBoxOnGroundWorld("compiled_soft", allocator);
+  world->compile();
+  ASSERT_TRUE(world->isCompiled());
+  const auto measurement = measureWorldStepsNow(world, allocator, 1);
+  reportMeasurement("native_compiled_soft_first_step", measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable("compiled_soft", measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+  if (measurement.rawHeap.skipped)
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
 }
 
 TEST(StepAllocation, ScopedHeapAllocationCounterDetectsOperatorNew)
@@ -3287,4 +3347,234 @@ TEST(StepAllocation, GzLikeFilterAndHandlerSteadyState)
           measurement);
     }
   }
+}
+
+//==============================================================================
+TEST(CollisionSubscription, AllocationFailuresRollBackObjectsAndClaims)
+{
+  using namespace dart::collision;
+  using namespace dart::dynamics;
+  for (const bool bullet : {false, true}) {
+#if !HAVE_BULLET
+    if (bullet)
+      continue;
+#endif
+    for (const bool bodySubscription : {false, true}) {
+      bool completed = false;
+      for (std::size_t nth = 1u; nth < 512u; ++nth) {
+        SCOPED_TRACE(nth);
+        SCOPED_TRACE(bullet ? "Bullet" : "FCL");
+        SCOPED_TRACE(bodySubscription ? "BodyNode" : "Skeleton");
+        CollisionDetectorPtr detector = FCLCollisionDetector::create();
+#if HAVE_BULLET
+        if (bullet)
+          detector = BulletCollisionDetector::create();
+#endif
+        auto skeleton = Skeleton::create();
+        auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+        auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+        body->createShapeNodeWith<CollisionAspect>(shape);
+        body->createShapeNodeWith<CollisionAspect>(shape);
+        auto group = detector->createCollisionGroup();
+        auto existing = std::make_shared<SimpleFrame>();
+        existing->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+        group->addShapeFrame(existing.get());
+        const auto subscribe = [&] {
+          if (bodySubscription)
+            group->subscribeTo(ConstBodyNodePtr(body));
+          else
+            group->subscribeTo(skeleton);
+        };
+        bool failed = false;
+        dart::test::failHeapAllocation(nth);
+        try {
+          subscribe();
+        } catch (const std::bad_alloc&) {
+          failed = true;
+        }
+        dart::test::failHeapAllocation(0u);
+        if (!failed) {
+          completed = true;
+          break;
+        }
+        EXPECT_EQ(group->getNumShapeFrames(), 1u);
+        EXPECT_TRUE(group->hasShapeFrame(existing.get()));
+        EXPECT_FALSE(group->isSubscribedTo(body));
+        EXPECT_FALSE(group->isSubscribedTo(skeleton.get()));
+        // A retry must work with the same detector and group.
+        ASSERT_NO_THROW(subscribe());
+        EXPECT_EQ(group->getNumShapeFrames(), 3u);
+        EXPECT_NO_THROW(group->collide());
+        group->removeAllShapeFrames();
+        const std::weak_ptr<Shape> released = shape;
+        shape.reset();
+        skeleton.reset();
+        EXPECT_TRUE(released.expired());
+      }
+      EXPECT_TRUE(completed);
+    }
+  }
+}
+
+//==============================================================================
+TEST(CollisionSubscription, FailedUpdatesRetryWithoutAnotherMutation)
+{
+  using namespace dart::dynamics;
+  for (int sourceKind = 0; sourceKind < 3; ++sourceKind) {
+    bool completed = false;
+    for (std::size_t nth = 1; nth < 256; ++nth) {
+      SCOPED_TRACE(sourceKind);
+      SCOPED_TRACE(nth);
+      auto world = dart::simulation::World::create();
+      auto robot = Skeleton::create();
+      auto* body = robot->createJointAndBodyNodePair<FreeJoint>().second;
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      auto view = Group::create();
+      if (sourceKind == 0)
+        group->subscribeTo(view);
+      else if (sourceKind == 1)
+        group->subscribeTo(robot);
+      else
+        group->subscribeTo(ConstBodyNodePtr(body));
+      world->compile();
+      bool failed = false;
+      {
+        auto edit = world->edit();
+        struct ResetFailure
+        {
+          ~ResetFailure()
+          {
+            dart::test::failHeapAllocation(0u);
+          }
+        } reset;
+        auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+        body->createShapeNodeWith<CollisionAspect>(shape);
+        body->createShapeNodeWith<CollisionAspect>(shape);
+        if (sourceKind == 0)
+          view->addBodyNode(body);
+        dart::test::failHeapAllocation(nth);
+        try {
+          group->update();
+        } catch (const std::bad_alloc&) {
+          failed = true;
+        }
+        dart::test::failHeapAllocation(0u);
+        ASSERT_NO_THROW(group->update());
+        ASSERT_EQ(group->getNumShapeFrames(), 2u);
+        EXPECT_TRUE(group->hasShapeFrame(body->getShapeNode(0)));
+        EXPECT_TRUE(group->hasShapeFrame(body->getShapeNode(1)));
+        EXPECT_NO_THROW(group->collide());
+      }
+      EXPECT_NO_THROW(world->step());
+      if (!failed) {
+        completed = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(completed);
+  }
+}
+
+namespace dart::simulation::detail {
+std::size_t getRegistryLockCount();
+}
+
+//==============================================================================
+TEST(CollisionSubscription, UnchangedSkeletonSourceDoesNotAllocateOrLock)
+{
+  auto world = dart::simulation::World::create();
+  auto skeleton = dart::dynamics::Skeleton::create();
+  auto* body = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+                   .second;
+  body->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  world->addSkeleton(skeleton);
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  world->compile();
+  group->update();
+  const auto locks = dart::simulation::detail::getRegistryLockCount();
+  dart::test::ScopedHeapAllocationCounter counter;
+  for (int i = 0; i < 100; ++i)
+    group->update();
+  counter.stop();
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(dart::simulation::detail::getRegistryLockCount(), locks);
+}
+
+//==============================================================================
+TEST(ShapeOwnership, ConnectionAllocationFailurePreservesOldShape)
+{
+  using namespace dart::dynamics;
+  bool completed = false;
+  for (std::size_t nth = 1; nth < 16; ++nth) {
+    SCOPED_TRACE(nth);
+    auto world = dart::simulation::World::create();
+    auto oldShape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+    auto newShape = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(2));
+    auto frame = std::make_shared<SimpleFrame>();
+    frame->setShape(oldShape);
+    world->addSimpleFrame(frame);
+    world->compile();
+    {
+      auto edit = world->edit();
+      struct ResetFailure
+      {
+        ~ResetFailure()
+        {
+          dart::test::failHeapAllocation(0u);
+        }
+      } reset;
+      const auto version = frame->getVersion();
+      const auto topology = world->getTopologyRevision();
+      const auto parameters = world->getParameterRevision();
+      bool failed = false;
+      dart::test::failHeapAllocation(nth);
+      try {
+        frame->setShape(newShape);
+      } catch (const std::bad_alloc&) {
+        failed = true;
+      }
+      dart::test::failHeapAllocation(0u);
+      if (!failed) {
+        completed = true;
+        break;
+      }
+      EXPECT_EQ(frame->getShape(), oldShape);
+      EXPECT_EQ(frame->getVersion(), version);
+      EXPECT_EQ(world->getTopologyRevision(), topology);
+      EXPECT_EQ(world->getParameterRevision(), parameters);
+      oldShape->setSize(Eigen::Vector3d::Constant(3));
+      EXPECT_EQ(frame->getVersion(), version + 1u);
+      EXPECT_NO_THROW(frame->setShape(newShape));
+      const auto replacedVersion = frame->getVersion();
+      oldShape->setSize(Eigen::Vector3d::Ones());
+      EXPECT_EQ(frame->getVersion(), replacedVersion);
+      newShape->setSize(Eigen::Vector3d::Constant(4));
+      EXPECT_EQ(frame->getVersion(), replacedVersion + 1u);
+    }
+  }
+  EXPECT_TRUE(completed);
+}
+
+//==============================================================================
+TEST(ShapeOwnership, UnguardedStorageChangeOnlyAllocatesForSignalDelivery)
+{
+  using namespace dart::dynamics;
+  ASSERT_FALSE(dart::common::detail::hasGuardedModels());
+  auto mesh = std::make_shared<dart::math::TriMeshd>();
+  auto replacement = std::make_shared<dart::math::TriMeshd>();
+  auto shape = std::make_shared<ConvexMeshShape>(mesh);
+  SimpleFrame first;
+  SimpleFrame second;
+  first.setShape(shape);
+  second.setShape(shape);
+  dart::test::ScopedHeapAllocationCounter delivery;
+  shape->incrementVersion();
+  delivery.stop();
+  const auto locks = dart::simulation::detail::getRegistryLockCount();
+  dart::test::ScopedHeapAllocationCounter mutation;
+  shape->setMesh(replacement);
+  mutation.stop();
+  EXPECT_EQ(mutation.allocationCount(), delivery.allocationCount());
+  EXPECT_EQ(dart::simulation::detail::getRegistryLockCount(), locks);
 }
