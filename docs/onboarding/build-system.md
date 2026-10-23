@@ -107,6 +107,25 @@ themselves. Eigen 3.4.90 development snapshots are treated as Eigen 3.
 Eigen 3 and 5 are ABI-incompatible for DART's public Eigen types: select the
 same major or rebuild DART and its consumers.
 
+`DART_USE_SYSTEM_ODE=OFF` fetches ODE 0.16.6 from its GitHub release tag,
+builds a shared, double-precision library with system libccd and without the
+libccd box-cylinder collider, and installs ODE's headers, library and CMake
+package alongside DART. Installed `collision-ode` consumers must include that
+prefix in `CMAKE_PREFIX_PATH`; libccd remains a system dependency. System ODE
+must also use double precision; configuration rejects single-precision packages.
+For a nonstandard prefix on Linux, include its library directory in
+`LD_LIBRARY_PATH` or configure an install RPATH.
+The compatibility policy minimum needed by ODE under CMake 4 is scoped to the
+dependency's configure, without changing DART's policy settings.
+
+`cmake --build <build-directory> --target dart-uninstall` removes files listed
+in DART's install manifest, including dependencies installed by that build.
+With system dependencies, `uninstall` forwards to `dart-uninstall`. Fetched
+ODE defines its own `uninstall` target, which retains ODE's upstream behavior;
+it expects an ODE sub-build install manifest and does not uninstall DART.
+Use `dart-uninstall` to remove the complete DART installation in that case.
+Uninstall uses the prefix recorded by the last installation and honors `DESTDIR`.
+
 ## Package Version Compatibility
 
 The installed `DARTConfigVersion.cmake` accepts plain version requests from
@@ -164,13 +183,19 @@ separately: unsuffixed libraries can use either precision. Imported libraries
 must pass exactly one of the single/double C++ link probes, covering both
 Collision and LinearMath; project-built components use their compile definitions.
 Installed CMake components verify the recorded scalar ABI and filename variant.
-Consumers of imported Bullet must enable CXX before loading those components;
-DART never enables a language implicitly. Unsupported potentially active target
+C-only consumers use an isolated CXX probe without enabling CXX in the parent;
+unsupported toolchain or target contexts remain unverified. Cross-directory
+link scopes also remain unverified because their target names can bind to
+directory-local imports or aliases; the finder rejects them before probe export
+and fallback metadata serialization. Unsupported potentially active target
 generator expressions, ambiguous or failed probes, and unknown linked-header
 versions fail dependency validation rather than claiming compatibility. Inactive
 install/platform branches and absent optional targets contribute nothing.
 The installed version floor comes from the linked target's headers: 3.17 when
 DART uses its newer heightfield constructor, otherwise 3.05.
+
+Empty single-config builds keep their empty configuration when selecting
+`dart.pc` libraries and use CMake's `NOCONFIG` imported-file mappings.
 
 `dart.pc` requires `bullet-float64` when pkg-config finds that module and otherwise
 publishes the selected libraries and include directories in its public flags.
@@ -188,6 +213,19 @@ The two precisions
 share GNU unique symbols, such as the static in `btTransform::getIdentity()`,
 even across `RTLD_LOCAL` plugins, so a process must load only one Bullet
 precision.
+
+`DART_USE_SYSTEM_BULLET=OFF` fetches Bullet 3.25 and builds and installs only
+the shared `BulletCollision` and `LinearMath` libraries and their headers,
+with double precision enabled. DART installs the headers directly under
+`<prefix>/include`, not upstream's `include/bullet`. Bullet 3, extras, demos, Python bindings and
+upstream unit tests are disabled. The CMake 4 policy minimum is scoped to
+Bullet's configure. This is a collision-only SDK; the installed pkg-config
+file lists only these two libraries, and upstream's full Bullet CMake package
+is not installed.
+
+The installed DART finder requires only Bullet's headers, `BulletCollision`
+and `LinearMath`, so this collision-only SDK also supports DART consumers
+without BulletDynamics or BulletSoftBody installed.
 
 Run `pixi run test-package-core` for a core-only build, isolated installation,
 and external world/factory consumers. See the

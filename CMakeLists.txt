@@ -807,10 +807,14 @@ configure_file(
   @ONLY
 )
 add_custom_target(
-  uninstall
+  dart-uninstall
   "${CMAKE_COMMAND}" -P
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall_target.cmake"
 )
+# Fetched ODE owns its unguarded uninstall target; DART's remains available.
+if(NOT TARGET uninstall)
+  add_custom_target(uninstall DEPENDS dart-uninstall)
+endif()
 
 #===============================================================================
 # Code Formatting

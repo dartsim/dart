@@ -26,7 +26,7 @@
   <depend>bullet</depend>
   <depend version_gte="3.4.0" version_lt="6">eigen</depend>
   <depend>libfcl-dev</depend>
-  <depend>liburdfdom-dev</depend>
+  <depend version_gte="4.0.0">liburdfdom-dev</depend>
   <depend version_gte="10.0.0">tinyxml2</depend>
   <depend>sdformat</depend>
 

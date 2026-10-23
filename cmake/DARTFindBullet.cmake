@@ -218,6 +218,10 @@ endfunction()
 # Resolve the file CMake links for a configuration, including explicit mappings.
 function(_dart_bullet_config_location out target config)
   string(TOUPPER "${config}" config)
+  # CMake uses NOCONFIG for imported files, while $<CONFIG:> stays empty.
+  if("${config}" STREQUAL "")
+    set(config NOCONFIG)
+  endif()
   get_property(
     mapped
     TARGET "${target}"
@@ -299,11 +303,14 @@ if(NOT DART_USE_SYSTEM_BULLET)
 endif()
 
 if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
-  # CMake's FindBullet ignores COMPONENTS and always returns all four
-  # libraries. DART's collision backend uses only Collision and LinearMath,
-  # so narrow BULLET_LIBRARIES to those two after discovery.
+  # CMake's FindBullet requires all four libraries, but DART only needs two.
   find_package(Bullet MODULE QUIET)
-  if(BULLET_FOUND OR Bullet_FOUND)
+  set(BULLET_FOUND FALSE)
+  set(Bullet_FOUND FALSE)
+  if(BULLET_INCLUDE_DIR AND BULLET_COLLISION_LIBRARY AND BULLET_MATH_LIBRARY)
+    set(BULLET_FOUND TRUE)
+    set(Bullet_FOUND TRUE)
+    set(BULLET_INCLUDE_DIRS "${BULLET_INCLUDE_DIR}")
     set(_bullet_narrowed_libraries "")
     foreach(_bullet_lib_var BULLET_COLLISION_LIBRARY BULLET_MATH_LIBRARY)
       if(${_bullet_lib_var}_DEBUG)
@@ -539,6 +546,17 @@ function(
   owner
   link_only
 )
+  # shortcut: opaque directory IDs cannot be resolved here; require a native
+  # ownership-aware snapshot before supporting cross-directory link scopes.
+  if("${ARGN}" MATCHES "(^|;)::@")
+    message(
+      STATUS
+      "Bullet target '${owner}' has unsupported directory-scoped usage"
+    )
+    set(${out} "" PARENT_SCOPE)
+    set(${unknown} TRUE PARENT_SCOPE)
+    return()
+  endif()
   string(TOUPPER "${config}" _dart_bullet_build_type)
   set(_dart_bullet_owner "${owner}")
   set(_dart_bullet_queue ${ARGN})
@@ -1230,6 +1248,10 @@ function(_dart_bullet_collect_graph config all_configs)
     endforeach()
     if(_dart_bullet_unresolved)
       set(_dart_bullet_unknown TRUE)
+      set(
+        _dart_bullet_pc_error
+        "Cannot serialize unsupported Bullet link interface for '${_dart_bullet_item}' in '${config}'"
+      )
     endif()
     foreach(property INCLUDE_DIRECTORIES LINK_DIRECTORIES)
       get_target_property(
@@ -1381,9 +1403,15 @@ function(_dart_bullet_collect_graph config all_configs)
 endfunction()
 
 if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
-  # dart.pc describes the chosen build type, defaulting to Release.
+  # A single-config empty build uses its configuration-less imported files.
+  # Multi-config packaging keeps its existing default selection of Release.
   set(_dart_bullet_build_type "${CMAKE_BUILD_TYPE}")
-  if(NOT _dart_bullet_build_type)
+  get_property(
+    _dart_bullet_multi_config
+    GLOBAL
+    PROPERTY GENERATOR_IS_MULTI_CONFIG
+  )
+  if(_dart_bullet_multi_config AND "${_dart_bullet_build_type}" STREQUAL "")
     set(_dart_bullet_build_type Release)
   endif()
   _dart_bullet_collect_graph("${_dart_bullet_build_type}" TRUE)
@@ -1457,6 +1485,7 @@ if(TARGET Bullet AND (BULLET_FOUND OR Bullet_FOUND))
   list(REMOVE_DUPLICATES _dart_bullet_probe_configs)
   set(_DART_BULLET_PROBE_CONFIGS "${_dart_bullet_probe_configs}")
   unset(_dart_bullet_build_type)
+  unset(_dart_bullet_multi_config)
   unset(_dart_bullet_files)
   unset(_dart_bullet_pc_files)
   unset(_dart_bullet_includes)
@@ -1640,6 +1669,26 @@ function(_dart_bullet_probe_child single_out double_out config source)
         set(mapped)
       endif()
       list(APPEND configs "${upper_config}" ${mapped})
+      if("${upper_config}" STREQUAL "")
+        # Preserve the empty generator-expression context and its distinct
+        # imported-file mapping and properties in the isolated project.
+        list(APPEND configs NOCONFIG)
+        list(APPEND names MAP_IMPORTED_CONFIG_NOCONFIG)
+        get_property(
+          has_mapping
+          TARGET "${target}"
+          PROPERTY MAP_IMPORTED_CONFIG_NOCONFIG
+          SET
+        )
+        if(has_mapping)
+          get_property(
+            mapped
+            TARGET "${target}"
+            PROPERTY MAP_IMPORTED_CONFIG_NOCONFIG
+          )
+          list(APPEND configs ${mapped})
+        endif()
+      endif()
       list(REMOVE_DUPLICATES configs)
       list(
         APPEND names

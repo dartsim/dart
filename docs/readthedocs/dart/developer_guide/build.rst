@@ -120,7 +120,7 @@ Optional components remain optional.
      - 14.8 (supported majors: 14, 15, 16)
      - SDF parser
    * - urdfdom
-     - 3.0.0
+     - 4.0.0
      - URDF parser
    * - Filament
      - 1.77.3 (pinned SDK)

@@ -228,7 +228,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------
 Project: Willow Garage URDF world parser
-Files: dart/utils/urdf/urdf_world_parser.*
+Files: dart/utils/urdf/detail/urdf_world_parser.*
 Source: https://github.com/ros/urdfdom/blob/0.2.10/urdf_parser/src/pose.cpp
 Adapted URDF parsing utilities. The pinned upstream header states:
 Copyright (c) 2008, Willow Garage, Inc.
@@ -367,6 +367,66 @@ Copyright Eigen contributors; additional notices are retained in its sources.
 SPDX-License-Identifier: MPL-2.0
 License: MPL-2.0 (full text below).
 Source (including the MPL-2.0-covered headers): https://gitlab.com/libeigen/eigen/-/tree/3.4.0
+
+------------------------------------------------------------------------
+Project: Atlas v3 sample model and retained Atlas textures
+Files: data/sdf/atlas/atlas_v3*
+Files: data/sdf/atlas/*.dae
+Files: data/sdf/atlas/*.stl
+Files: data/sdf/materials/textures/*.jpg
+Source: https://github.com/osrf/drcsim/tree/24db7f7b2aa5dee1240c81a73eed8e29cbde6eb3/atlas_description
+Source: https://github.com/Hurisa/drcsim/tree/a2a606ae475e682df1d5214e54de2cbd4f9b016f/atlas_description
+The upstream package.xml declares Apache 2.0 and names John Hsu of the
+Open Source Robotics Foundation (OSRF) as author and maintainer.
+Atlas is a Boston Dynamics robot.
+DART renamed meshes without changing their contents, relocated description
+mesh references, removed the head in variants, converted URDF to SDF, and
+added and calibrated soft-foot variants. DART's texture copies were added
+in PR #985: drc_extremities_diffuse.jpg and drc_torso_head_diffuse.jpg were
+edited with GIMP in November 2016; extremities_diffuse_unplugged.jpg and
+torso_diffuse_unplugged.jpg also differ from the pinned upstream copies.
+The other three textures are upstream-exact. See data/sdf/atlas/README.md.
+The pinned upstream package contains no NOTICE file.
+SPDX-License-Identifier: Apache-2.0
+License: Apache-2.0 (full text below and in data/sdf/atlas/LICENSE).
+
+------------------------------------------------------------------------
+Project: WAM sample model (herb_description BSD files)
+Files: data/urdf/wam/*
+Source: https://github.com/personalrobotics/herb_description/tree/177eff2f6eb22fe3b396e681cf755bc36f7a457e
+The upstream README assigns the URDF packaging and STL meshes to LICENSE.bsd.
+DART expanded the xacro, added a fixed world joint, changed /j1 limits to
+[-2.6, 2.6], and replaced COLLADA visuals with the supplied visual STLs.
+The eight GPL COLLADA meshes and six GPL JPEG textures are not distributed.
+SPDX-License-Identifier: BSD-3-Clause
+License: data/urdf/wam/LICENSE.bsd (upstream text reproduced below).
+
+Copyright (c) 2013, Carnegie Mellon University
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+- Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+- Neither the name of Carnegie Mellon University nor the names of its
+  contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------
 Project: DeepMind Control Suite model assets

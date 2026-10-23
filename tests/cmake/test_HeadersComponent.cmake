@@ -27,6 +27,17 @@ file(
 set(include_regex "^[ \t]*#[ \t]*include[ \t]*[<\"](dart/[^>\"]+)[>\"]")
 set(missing)
 foreach(header IN LISTS headers)
+  if(header MATCHES "/(IncludeUrdf|urdf_world_parser)\\.hpp$")
+    message(FATAL_ERROR "Private URDF header installed: ${header}")
+  endif()
+  file(
+    STRINGS "${header}"
+    urdf_includes
+    REGEX "^[ \t]*#[ \t]*include[ \t]*[<\"]urdf[^>\"]*[>\"]"
+  )
+  if(urdf_includes)
+    message(FATAL_ERROR "Installed header includes urdfdom: ${header}")
+  endif()
   file(STRINGS "${header}" includes REGEX "${include_regex}")
   foreach(line IN LISTS includes)
     string(REGEX REPLACE "${include_regex}.*" "\\1" path "${line}")

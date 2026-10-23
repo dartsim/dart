@@ -45,9 +45,12 @@ endif()
 
 foreach(has_macro 0 1)
   if(has_macro)
-    file(WRITE "${ode_dir}/include/ode/odeconfig.h" "#define dLIBCCD_BOX_CYL\n")
+    file(
+      WRITE "${ode_dir}/include/ode/odeconfig.h"
+      "#define dLIBCCD_BOX_CYL\n#define dDOUBLE\n"
+    )
   else()
-    file(WRITE "${ode_dir}/include/ode/odeconfig.h" "/* libccd disabled */\n")
+    file(WRITE "${ode_dir}/include/ode/odeconfig.h" "#define dDOUBLE\n")
   endif()
   foreach(languages C CXX "C;CXX")
     string(REPLACE ";" "-" case_name "${languages}-${has_macro}")
