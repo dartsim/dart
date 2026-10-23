@@ -19,6 +19,25 @@ def _load_runner():
     return module
 
 
+@pytest.mark.parametrize("version", [(3, 12, 0), (3, 13, 0)])
+def test_wheel_smoke_numpy_floor_and_current(monkeypatch, tmp_path, version):
+    module = _load_runner()
+    wheel = tmp_path / "dartpy.whl"
+    wheel.touch()
+    calls = []
+    monkeypatch.setattr(module.sys, "version_info", version)
+    monkeypatch.setattr(
+        module, "run_command", lambda cmd, **kwargs: calls.append((cmd, kwargs))
+    )
+    module.test_wheel(wheel)
+    install, _ = next(
+        call for call in calls if call[1]["stage"] == "wheel installation"
+    )
+    assert ("numpy==1.26.4" in install) == (version[:2] == (3, 12))
+    assert str(wheel) in install
+    assert calls[-1][0][-1] == module.SMOKE_TEST
+
+
 def test_smoke_environment_drops_conda_libraries_and_graphics_overrides(
     tmp_path, monkeypatch
 ):

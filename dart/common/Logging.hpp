@@ -114,17 +114,24 @@ using LogSink = std::function<void(LogLevel, const std::string&)>;
 /// The message reference is valid only
 /// for the duration of the callback. Captured resources must remain alive until
 /// the sink is replaced or reset.
+/// Pending dt* partial lines use the sink installed when they are flushed;
+/// replacing or resetting the sink does not flush them.
+/// With a custom sink (including the GUI App), an unterminated dt* line waits
+/// for an explicit flush, the next dt* statement on that thread, or thread
+/// exit.
 LogSink setLogSink(LogSink sink);
 
 /// Restore console output: warn and above to stderr, others to stdout. Color
 /// requires a terminal, NO_COLOR unset and TERM other than "dumb"; this is
-/// checked once per stream.
+/// checked once per stream. Windows also requires virtual terminal processing,
+/// which is enabled when supported and remains enabled in that console.
 void resetLogSink();
 
 /// Set the runtime threshold, initially the more restrictive of Info and the
 /// library's DART_ACTIVE_LOG_LEVEL. Lower it to enable debug or trace messages.
 /// Off disables sink output; an installed LogCallback still receives messages.
 /// Compile-time disabled DART_* macros cannot be enabled at runtime.
+/// Legacy dt* streams are unfiltered.
 void setLogLevel(LogLevel level);
 
 /// Return the runtime threshold without allocating; lock-free on typical
@@ -199,10 +206,11 @@ void debug(const S& format_str, Args&&... args);
 ///
 /// Logs for useful information from normal operations.
 ///
-/// You can use a Python like formatting API as
-/// \code
-/// dart::common::info("Hello {}!", "World");  // logged as "Hello World!"
-/// \endcode
+/// Format strings support {}, {:.Ne}, {:.Nf}, {:.Ng} (decimal precision N for
+/// floating-point values, from 0 to 1000), and escaped braces {{ and }}.
+/// Invalid formats or argument counts log a format-error marker followed by the
+/// raw format string. For example: \code dart::common::info("Hello {}!",
+/// "World");  // logged as "Hello World!" \endcode
 template <typename S, typename... Args>
 void info(const S& format_str, Args&&... args);
 

@@ -7,6 +7,10 @@
 #include <dart/common/Console.hpp>
 #include <dart/common/Logging.hpp>
 
+#ifdef DARTPY_HAS_VIEWER
+  #include <dart/gui/app/LogCapture.hpp>
+#endif
+
 #include <exception>
 #include <iomanip>
 #include <new>
@@ -22,6 +26,19 @@ void dart_testing(nb::module_& m)
 {
   auto sm = m.def_submodule(
       "_testing", "Hooks for dartpy's own tests; not part of the API.");
+
+#ifdef DARTPY_HAS_VIEWER
+  sm.def("capture_logs", [](const nb::callable& produce) {
+    nb::list records;
+    gui::app::LogCapture capture(
+        [&](gui::app::CapturedLogLevel level, const std::string& text) {
+          records.append(nb::make_tuple(static_cast<int>(level), text));
+        });
+    produce();
+    capture.drain();
+    return records;
+  });
+#endif
 
   sm.def(
       "log_console",

@@ -10,6 +10,8 @@ import time
 import dartpy as dart
 import pytest
 
+from ..bindings._support import run_isolated
+
 QUEUE_CAPACITY = 1024  # dartnb::Queue::kCapacity
 RECORDS_PER_MESSAGE = 3  # _testing.log_from_threads: spdlog, native, console
 CONSOLE_PREFIX = re.compile(r"^\[module\.cpp:\d+\] ")
@@ -52,7 +54,7 @@ def test_arguments():
 
 @pytest.mark.parametrize("level", ["info", "warn", "error", "fatal"])
 def test_user_text_is_literal(level, caplog):
-    text = "literal {} {broken} {{braces}}"
+    text = "literal 100% %s {} {broken} {{braces}}"
     with caplog.at_level(logging.DEBUG, logger="dartpy"):
         getattr(dart.common, level)(text)
         dart.common.flush_logs()
@@ -516,3 +518,179 @@ def test_child_of_a_fork_can_log_and_flush(caplog):
 
 if __name__ == "__main__":
     pytest.main()
+
+
+@pytest.mark.parametrize("threads", [1, 4])
+def test_native_step_workers_deliver_once_in_per_worker_order(threads):
+    # A subprocess bounds deadlocks if a sink incorrectly tries to acquire the GIL.
+    run_isolated(
+        f"""
+        import logging
+        import threading
+
+        records = []
+        class Handler(logging.Handler):
+            def emit(self, record):
+                assert threading.current_thread() is threading.main_thread()
+                records.append(record)
+
+        logger = logging.getLogger("dartpy")
+        logger.setLevel(logging.INFO)
+        logger.addHandler(Handler())
+        world = dart.simulation.World()
+        world.setNumSimulationThreads({threads})
+        # World uses its native executor at 128 skeletons and above.
+        for i in range(128):
+            skel = dart.dynamics.Skeleton(f"worker-{{i}}")
+            joint, _ = skel.createRevoluteJointAndBodyNodePair()
+            joint.setName(f"joint-{{i}}")
+            # Infinite stiffness is supported and exercises the existing
+            # non-finite acceleration diagnostic during forward dynamics.
+            joint.setSpringStiffness(0, float("inf"))
+            world.addSkeleton(skel)
+        for step in range(3):
+            dart.common.info(f"begin {{step}}")
+            world.step()
+            dart.common.info(f"end {{step}}")
+        dart.common.flush_logs()
+        assert len(records) == 3 * (128 + 2)
+        messages = [record.getMessage() for record in records]
+        for step in range(3):
+            block = messages[step * 130:(step + 1) * 130]
+            assert block[0] == f"begin {{step}}"
+            assert block[-1] == f"end {{step}}"
+            warnings = block[1:-1]
+            assert all("updateAccelerationDynamic" in text for text in warnings)
+            indices = [
+                int(text.split("joint [joint-")[1].split("]")[0])
+                for text in warnings
+            ]
+            assert set(indices) == set(range(128))
+            # Each native executor participant traverses one ascending chunk.
+            chunk_size = 128 // {threads}
+            for first in range(0, 128, chunk_size):
+                expected = list(range(first, first + chunk_size))
+                assert [i for i in indices if first <= i < first + chunk_size] == expected
+            assert all(record.levelno == logging.WARNING
+                       for record in records[step * 130 + 1:(step + 1) * 130 - 1])
+        assert dart.common.flush_logs() == 0
+        """
+    )
+
+
+
+def test_automatic_bridge_has_no_manual_controls():
+    assert not hasattr(dart.common, "enable_logging")
+    assert not hasattr(dart.common, "disable_logging")
+
+
+def test_automatic_levels_and_literal_text(caplog):
+    names = ["trace", "debug", "info", "warn", "error", "fatal"]
+    with caplog.at_level(5, logger="dartpy"):
+        for name in names:
+            getattr(dart.common, name)(f"{name} 100% %s {{}} {{broken}}")
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert [r.levelno for r in records] == [5, 10, 20, 30, 40, 50]
+    assert [r.getMessage() for r in records] == [
+        f"{name} 100% %s {{}} {{broken}}" for name in names
+    ]
+
+
+def test_concurrent_python_producers_preserve_per_thread_order(caplog):
+    with caplog.at_level(logging.INFO, logger="dartpy"):
+        def produce(worker):
+            for i in range(100):
+                dart.common.info(f"worker {worker}:{i}")
+        threads = [threading.Thread(target=produce, args=(i,)) for i in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10)
+            assert not thread.is_alive()
+        dart.common.flush_logs()
+    messages = [r.getMessage() for r in _records(caplog)]
+    assert len(messages) == len(set(messages)) == 400
+    for worker in range(4):
+        assert [m for m in messages if m.startswith(f"worker {worker}:")] == [
+            f"worker {worker}:{i}" for i in range(100)
+        ]
+
+
+@needs_testing_hooks
+@pytest.mark.skipif(not hasattr(dart, "viewer"), reason="GUI app host is unavailable")
+def test_native_and_console_records_reach_python_and_gui_once(caplog, capfd):
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        panel = _testing.capture_logs(
+            lambda: _testing.log_from_threads(threads=2, messages=3, hold_gil=True)
+        )
+        dart.common.flush_logs()
+    records = _records(caplog)
+    assert len(records) == len(panel) == 18
+    assert all(level == 1 for level, text in panel)  # GUI Warning
+    python_text = [CONSOLE_PREFIX.sub("", r.getMessage()) for r in records]
+    panel_text = [re.sub(r"^Warning \[module\.cpp:\d+\] ", "", text)
+                  for level, text in panel]
+    assert sorted(python_text) == sorted(panel_text)
+    assert capfd.readouterr() == ("", "")
+    # The scoped capture has gone; the same automatic bridge keeps working.
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="dartpy"):
+        dart.common.warn("after capture")
+        dart.common.flush_logs()
+    assert [r.getMessage() for r in _records(caplog)] == ["after capture"]
+
+
+@pytest.mark.skipif(not hasattr(dart, "viewer"), reason="GUI app host is unavailable")
+def test_automatic_bridge_outlives_app_capture():
+    run_isolated(
+        """
+        import logging
+        messages = []
+        handler = logging.Handler()
+        handler.emit = lambda record: messages.append(record.getMessage())
+        logger = logging.getLogger("dartpy")
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        created = []
+        def build():
+            token = f"inside App {len(created)}"
+            created.append(token)
+            dart.common.info(token)
+            return dart.viewer.SceneSetup(dart.simulation.World())
+        scene = dart.viewer.Scene("logs", title="Logs", category="Tests", factory=build)
+        assert dart.viewer.run([scene], ["test", "--cycle-scenes", "--frames", "1"]) == 0
+        assert not dart._probe.has_custom_log_sink()
+        dart.common.info("after App")
+        dart.common.flush_logs()
+        assert len(created) == 2  # The catalog cycles every scene twice.
+        assert all(messages.count(token) == 1 for token in created)
+        assert messages.count("after App") == 1
+        """
+    )
+
+
+def test_handler_can_log_flush_and_join_producer():
+    run_isolated(
+        """
+        import logging
+        import threading
+        messages = []
+        class Handler(logging.Handler):
+            def emit(self, record):
+                messages.append(record.getMessage())
+                if record.getMessage() == "outer":
+                    dart.common.info("nested")
+                    dart.common.flush_logs()
+                    worker = threading.Thread(target=lambda: dart.common.info("handler worker"))
+                    worker.start()
+                    worker.join(timeout=5)
+                    assert not worker.is_alive()
+        logger = logging.getLogger("dartpy")
+        logger.setLevel(logging.INFO)
+        logger.addHandler(Handler())
+        dart.common.info("outer")
+        dart.common.flush_logs()
+        assert sorted(messages) == ["handler worker", "nested", "outer"], messages
+        """
+    )
