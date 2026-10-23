@@ -93,6 +93,10 @@ scene.
 The WAM scene uses ssik's closed-form analytical IK through
 `setPythonAnalytical`. Like `ssik_ik_gui`, it is an optional-ssik scene that
 skips when ssik is unavailable.
+Its [bundled WAM model](../data/urdf/wam/README.md) uses BSD-3-Clause STL
+visuals without textures; the former GPL COLLADA meshes and JPEGs are removed.
+Atlas puppet and SIMBICON scenes retain their tuned
+[Apache-2.0 Atlas v3 assets](../data/sdf/atlas/README.md) with attribution.
 The unbuilt TinyDNN-only `human_joint_limits` scene and the duplicate
 `hello_world_gui` and `contacts_pointcloud` selectors are retired.
 

@@ -1,3 +1,4 @@
+<!-- Modified by DART: adapted Atlas v3 description; see README.md. -->
 <robot name="drc_skeleton">
     <link name="l_clav">
         <inertial>
