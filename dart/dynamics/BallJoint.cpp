@@ -135,7 +135,7 @@ void BallJoint::setCoordinateChart(CoordinateChart chart)
 
   setPositionsStatic(convertToPositions(rotation, chart));
   updateRelativeJacobian(true);
-  Joint::incrementVersion();
+  Joint::incrementParameterVersion();
 }
 
 //==============================================================================

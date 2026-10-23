@@ -64,21 +64,30 @@ std::string stripAnsi(const std::string& text)
 /// dtmsg/dtwarn/dterr (dart/common/Console.hpp) each open their line with a
 /// distinct SGR color code -- "\033[1;32m" (msg), "\033[1;33m" (warn),
 /// "\033[1;31m" (error); see colorMsg/colorErr in Console.cpp -- before any
-/// user text. Sniff that prefix to recover the severity DART itself
-/// assigned; uncolored lines from other code fall back to a per-stream
+/// user text. The logging sink also uses 35 (fatal), 36 (debug) and 37 (trace).
+/// Sniff the sink's text prefix or console color to recover the severity DART
+/// assigned; lines from other code fall back to a per-stream
 /// guess (stdout -> Info, stderr -> Warning).
 CapturedLogLevel sniffSeverity(
-    const std::string& raw, CapturedLogLevel fallback)
+    const std::string& raw, const std::string& text, CapturedLogLevel fallback)
 {
+  if (text.compare(0, 7, "[error]") == 0 || text.compare(0, 7, "[fatal]") == 0)
+    return CapturedLogLevel::Error;
+  if (text.compare(0, 6, "[warn]") == 0)
+    return CapturedLogLevel::Warning;
+  if (text.compare(0, 7, "[trace]") == 0 || text.compare(0, 7, "[debug]") == 0
+      || text.compare(0, 6, "[info]") == 0)
+    return CapturedLogLevel::Info;
+
   const std::size_t pos = raw.find("\033[1;");
   if (pos == std::string::npos || pos + 6 > raw.size())
     return fallback;
   const std::string code = raw.substr(pos + 4, 2);
-  if (code == "31")
+  if (code == "31" || code == "35")
     return CapturedLogLevel::Error;
   if (code == "33")
     return CapturedLogLevel::Warning;
-  if (code == "32")
+  if (code == "32" || code == "36" || code == "37")
     return CapturedLogLevel::Info;
   return fallback;
 }
@@ -143,8 +152,10 @@ private:
     inLogCaptureSink = true;
     try {
       if (mSink) {
-        const CapturedLogLevel level = sniffSeverity(mLineBuf, mFallbackLevel);
-        mSink(level, stripAnsi(mLineBuf));
+        const auto text = stripAnsi(mLineBuf);
+        const CapturedLogLevel level
+            = sniffSeverity(mLineBuf, text, mFallbackLevel);
+        mSink(level, text);
       }
     } catch (...) {
       // The log console must never crash the app, even if the sink throws.

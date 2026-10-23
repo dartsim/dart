@@ -388,17 +388,18 @@ def createFloor():
 
 
 def createManipulator():
-    """Lesson 2a: load and position the six-axis KR5 manipulator."""
+    """Lesson 2a: load and position the six-axis arm manipulator."""
     loader = dart.utils.DartLoader()
-    manipulator = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    manipulator = loader.parseSkeleton("dart://sample/urdf/six_axis_arm/six_axis_arm.urdf")
     if manipulator is None:
-        raise RuntimeError("Could not load the KR5 manipulator sample URDF.")
+        raise RuntimeError("Could not load the six-axis arm manipulator sample URDF.")
     manipulator.setName("manipulator")
     tf = dart.math.Isometry3()
-    tf.set_translation([-0.65, 0.0, 0.0])
+    tf.set_translation([-0.57, 0.0, 0.0])
     manipulator.getJoint(0).setTransformFromParentBodyNode(tf)
-    manipulator.getDof(1).setPosition(math.radians(140.0))
-    manipulator.getDof(2).setPosition(math.radians(-140.0))
+    manipulator.getDof(1).setPosition(0.7)
+    manipulator.getDof(2).setPosition(-0.35)
+    manipulator.getDof(4).setPosition(-0.35)
     return manipulator
 
 

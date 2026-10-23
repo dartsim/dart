@@ -1,8 +1,8 @@
 <world name="testWorld">
 
-    <include filename="../KR5/KR5 sixx R650.urdf" model_name="KR5sixxR650WP_description"/>
+    <include filename="../six_axis_arm/six_axis_arm.urdf" model_name="six_axis_arm"/>
 
-    <entity model="KR5sixxR650WP_description" name="KR5sixxR650WP_description">
+    <entity model="six_axis_arm" name="six_axis_arm">
         <origin xyz="5.0 0.0 0.0" rpy="0 0 0"/>
     </entity>
 

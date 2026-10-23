@@ -185,6 +185,9 @@ public:
   virtual ShapePtr clone() const = 0;
 
 protected:
+  /// Increment the version and emit a visual-only update to subscribers.
+  std::size_t incrementVisualVersion();
+
   /// Updates volume
   virtual void updateVolume() const = 0;
 

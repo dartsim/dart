@@ -51,10 +51,19 @@
 #include <vector>
 
 namespace dart {
+namespace simulation {
+class World;
+}
 namespace collision {
+
+namespace detail {
+struct CollisionGroupOwnershipAccessor;
+} // namespace detail
 
 class CollisionGroup
 {
+  friend struct detail::CollisionGroupOwnershipAccessor;
+
 public:
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
@@ -408,6 +417,10 @@ protected:
   // (e.g., by world cloning).
 
 private:
+  void updateImpl(const simulation::World* requester);
+  bool hasUncheckedSourceDelta() const;
+  bool hasPendingSourceUpdates() const;
+
   /// This class watches when ShapeFrames get deleted so that they can be safely
   /// removes from the CollisionGroup. We cannot have a weak_ptr to a ShapeFrame
   /// because some are managed by std::shared_ptr while others are managed by

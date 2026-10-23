@@ -94,8 +94,8 @@ std::shared_ptr<dynamics::MeshShape> meshShape(
     const std::shared_ptr<aiScene>& scene)
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
-  auto shape
-      = std::make_shared<dynamics::MeshShape>(Eigen::Vector3d::Ones(), scene);
+  auto shape = std::shared_ptr<dynamics::MeshShape>(
+      new dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
   DART_SUPPRESS_DEPRECATED_END
   return shape;
 }

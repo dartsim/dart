@@ -126,7 +126,7 @@ list(GET DART_VERSION_PARTS 2 DART_PATCH_VERSION)
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.3.0, ccd, eigen3 >= 3.4.0, eigen3 < 6, fcl >= 0.7.0, fmt >= 8.1.1"
+  "assimp >= 5.3.0, ccd, eigen3 >= 3.4.0, eigen3 < 6, fcl >= 0.7.0"
 )
 
 #===============================================================================
@@ -450,6 +450,25 @@ set_property(
   PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF
 )
 
+set(
+  dart_log_levels
+  TRACE
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+  OFF
+)
+list(
+  FIND dart_log_levels
+  "${DART_ACTIVE_LOG_LEVEL}"
+  DART_ACTIVE_LOG_LEVEL_VALUE
+)
+if(DART_ACTIVE_LOG_LEVEL_VALUE EQUAL -1)
+  message(FATAL_ERROR "Invalid active log level: ${DART_ACTIVE_LOG_LEVEL}")
+endif()
+
 if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 else()
@@ -644,6 +663,8 @@ install(
     ${DART_CONFIG_OUT}
     ${DART_VERSION_OUT}
     "${DART_SOURCE_DIR}/cmake/DARTFindPackageVersion.cmake"
+    # Deprecated no-op finder retained for older consumer configurations.
+    "${DART_SOURCE_DIR}/cmake/DARTFindspdlog.cmake"
     # Removed-component stub that reports the OSG GUI migration.
     "${DART_SOURCE_DIR}/cmake/dart_gui-osgComponent.cmake"
     "${DART_SOURCE_DIR}/cmake/dart_gui-osgTargets.cmake"
@@ -652,15 +673,15 @@ install(
 
 # Generate the DART pkg-config
 set(DART_PKG_CFLAGS "${CMAKE_CXX_FLAGS}")
+if(THREADS_HAVE_PTHREAD_ARG)
+  string(APPEND DART_PKG_CFLAGS " -pthread")
+endif()
 set(DART_PKG_PRIVATE_LIBS)
 foreach(library ${CMAKE_DL_LIBS})
   string(APPEND DART_PKG_PRIVATE_LIBS " -l${library}")
 endforeach()
 if(HAVE_OCTOMAP)
   string(APPEND DART_PKG_EXTERNAL_DEPS ", octomap >= 1.9.7")
-endif()
-if(spdlog_FOUND)
-  string(APPEND DART_PKG_EXTERNAL_DEPS ", spdlog >= 1.9.2")
 endif()
 if(HAVE_BULLET)
   set(bullet_pc bullet)
