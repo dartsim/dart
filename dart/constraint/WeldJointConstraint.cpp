@@ -33,6 +33,7 @@
 #include "dart/constraint/WeldJointConstraint.hpp"
 
 #include "dart/common/Macros.hpp"
+#include "dart/common/detail/ModelMutation.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
@@ -91,7 +92,10 @@ WeldJointConstraint::WeldJointConstraint(
 //==============================================================================
 void WeldJointConstraint::setRelativeTransform(const Eigen::Isometry3d& _tf)
 {
+  if (mRelativeTransform.matrix() == _tf.matrix())
+    return;
   mRelativeTransform = _tf;
+  detail::notifyConstraintParameterMutation(this);
 }
 
 //==============================================================================

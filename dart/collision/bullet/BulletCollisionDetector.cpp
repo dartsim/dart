@@ -534,9 +534,18 @@ BulletCollisionDetector::claimBulletCollisionShape(
     return bulletCollShape;
   }
 
-  auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
-      createBulletCollisionShape(shape).release(),
-      BulletCollisionShapeDeleter(this, shape));
+  std::shared_ptr<BulletCollisionShape> newBulletCollisionShape;
+  try {
+    newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
+        createBulletCollisionShape(shape).release(),
+        BulletCollisionShapeDeleter(this, shape));
+  } catch (...) {
+    // Only a shape's deleter erases its entry, so drop the one inserted for a
+    // shape that was never created (a throwing Shape override).
+    if (inserted)
+      mShapeMap.erase(shape);
+    throw;
+  }
   info.mShape = newBulletCollisionShape;
   info.mLastKnownVersion = currentVersion;
 

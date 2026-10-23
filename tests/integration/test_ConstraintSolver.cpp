@@ -3204,6 +3204,135 @@ TEST(ConstraintSolver, MatrixFreeContactScratchRetainsPreparedGroup)
   EXPECT_EQ(counter.allocationBytes(), 0u);
 }
 
+namespace {
+
+void checkMatrixFreeScratchGrowth(bool prepare, bool frictionless)
+{
+  // Each invocation starts with empty thread-local storage.
+  std::thread thread([=] {
+    std::vector<dynamics::SkeletonPtr> skeletons;
+    auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+    FakeCollisionDetector detector;
+    constexpr std::size_t numContacts = 17u;
+    std::vector<std::unique_ptr<FakeCollisionObject>> objects;
+    std::vector<collision::Contact> contacts;
+    contacts.reserve(numContacts);
+    constraint::ConstrainedGroup smallGroup;
+    constraint::ConstrainedGroup largeGroup;
+    constraint::ContactSurfaceParams params;
+    if (frictionless) {
+      params.mPrimaryFrictionCoeff = 0.0;
+      params.mSecondaryFrictionCoeff = 0.0;
+    }
+    for (std::size_t i = 0; i < 2u * numContacts; ++i) {
+      auto* body = createFreeBody(std::to_string(i), true, skeletons);
+      if (i >= 2u && i % 2u == 1u) {
+        body->setMass(2.0);
+        body->setMomentOfInertia(2.0, 3.0, 4.0);
+      }
+      EXPECT_EQ(
+          i < 2u || i % 2u == 0u,
+          body->getArticulatedInertia()
+              .cwiseEqual(Eigen::Matrix6d::Identity())
+              .all());
+      auto* node = body->createShapeNodeWith<
+          dynamics::CollisionAspect,
+          dynamics::DynamicsAspect>(shape);
+      objects.push_back(std::make_unique<FakeCollisionObject>(&detector, node));
+      if (i % 2u == 0u)
+        continue;
+      contacts.push_back(
+          createContact(objects[i - 1u].get(), objects[i].get()));
+      contacts.back().penetrationDepth = 0.01;
+      auto contact = std::make_shared<constraint::ContactConstraint>(
+          contacts.back(), 0.001, params);
+      static_cast<constraint::ConstraintBase&>(*contact).update();
+      ASSERT_EQ(frictionless ? 1u : 3u, contact->getDimension());
+      largeGroup.addConstraint(contact);
+      if (i == 1u)
+        smallGroup.addConstraint(contact);
+    }
+
+    auto backend = std::make_shared<CountingDantzigBoxedLcpSolver>();
+    ExposedBoxedLcpConstraintSolver solver(backend, nullptr);
+    auto options = solver.getMatrixFreeContactSolverOptions();
+    options.mEnabled = true;
+    options.mMinRows = 1u;
+    options.mMaxIterations = 5;
+    options.mSor = 1.0;
+    solver.setMatrixFreeContactSolverOptions(options);
+
+    solver.solveGroupForTest(smallGroup);
+    ASSERT_EQ(0u, backend->getNumSolves());
+    if (prepare)
+      solver.reserveGroupScratchForTest(largeGroup);
+    solver.solveGroupForTest(largeGroup);
+    ASSERT_EQ(0u, backend->getNumSolves());
+
+    dart::test::ScopedHeapAllocationCounter heapCounter;
+    dart::test::ScopedRawHeapAllocationCounter rawCounter;
+    solver.solveGroupForTest(smallGroup);
+    solver.solveGroupForTest(largeGroup);
+    heapCounter.stop();
+    rawCounter.stop();
+    EXPECT_EQ(0u, heapCounter.allocationCount());
+    if (dart::test::ScopedRawHeapAllocationCounter::isAvailable()) {
+      EXPECT_EQ(0u, rawCounter.allocationCount());
+    }
+    ASSERT_EQ(0u, backend->getNumSolves());
+
+    std::vector<Eigen::Vector3d> matrixFreeForces;
+    for (const auto& contact : contacts) {
+      ASSERT_TRUE(contact.force.allFinite());
+      ASSERT_GT(contact.force.norm(), 0.0);
+      matrixFreeForces.push_back(contact.force);
+    }
+    options.mEnabled = false;
+    solver.setMatrixFreeContactSolverOptions(options);
+    solver.solveGroupForTest(largeGroup);
+    ASSERT_EQ(1u, backend->getNumSolves());
+    for (std::size_t i = 0; i < numContacts; ++i)
+      EXPECT_TRUE(contacts[i].force.isApprox(matrixFreeForces[i], 1e-12));
+
+    // Force LDLT's zero-pivot failure without changing the body's valid
+    // inertia.
+    auto& inertia = const_cast<Eigen::Matrix6d&>(
+        skeletons.front()->getBodyNode(0)->getArticulatedInertia());
+    const Eigen::Matrix6d savedInertia = inertia;
+    inertia.setIdentity();
+    inertia(0, 0) = inertia(1, 1) = 0.0;
+    inertia(0, 1) = inertia(1, 0) = 1.0;
+    Eigen::LDLT<Eigen::Matrix6d> failedFactor(inertia);
+    ASSERT_NE(Eigen::Success, failedFactor.info());
+    options.mEnabled = true;
+    solver.setMatrixFreeContactSolverOptions(options);
+    solver.solveGroupForTest(smallGroup);
+    EXPECT_EQ(2u, backend->getNumSolves());
+    inertia = savedInertia;
+    solver.solveGroupForTest(largeGroup);
+    EXPECT_EQ(2u, backend->getNumSolves());
+    for (std::size_t i = 0; i < numContacts; ++i)
+      EXPECT_TRUE(contacts[i].force.isApprox(matrixFreeForces[i], 1e-12));
+  });
+  thread.join();
+}
+
+} // namespace
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactScratchGrowsDuringSolve)
+{
+  for (bool frictionless : {false, true})
+    checkMatrixFreeScratchGrowth(false, frictionless);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactScratchGrowsDuringPreparation)
+{
+  for (bool frictionless : {false, true})
+    checkMatrixFreeScratchGrowth(true, frictionless);
+}
+
 //==============================================================================
 TEST(ConstraintSolver, MatrixFreeContactSolverSeedsCachedImpulseResidual)
 {

@@ -144,6 +144,21 @@
     256 MiB of decoded RGBA data, before allocating them.
     [#3860](https://github.com/dartsim/dart/pull/3860)
 
+  * Add opt-in C++ `World::compile()` and scoped `World::edit()` to freeze
+    and recompile model topology, with per-World topology and parameter
+    revisions. Worlds that are never compiled retain lazy runtime editing
+    and shared model membership; `edit()` on such a World leaves it lazy.
+    Scope exit never throws: when the recompile fails, the next `step()` or
+    `compile()` throws that error.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Worlds that are never compiled keep DART 6 behavior, including version
+    propagation and shared model membership, with one labeled change: a
+    re-entrant `World::step()` and a topology edit of the stepping World's
+    model from its own step callbacks now throw `std::runtime_error` instead
+    of corrupting the step. Ownership tracking starts at `compile()`.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
   * Add `optimizer::Problem::clearObjective()` and
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
@@ -173,6 +188,18 @@
     [#3750](https://github.com/dartsim/dart/pull/3750)
 
 * Collision
+
+  * A throwing Shape override or allocation failure during collision-group
+    subscription no longer leaves partial collision objects or a stale
+    FCL/Bullet detector shape entry; debug builds no longer assert when the
+    detector is destroyed.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
+
+  * Editing a `CompositeCollisionFilter` during its own query, from one of its
+    filters, now throws `std::runtime_error` instead of invalidating the query
+    when the edit removes the filter being queried, clears the composite or
+    adds a filter that rehashes its set; other edits still apply.
+    [#3869](https://github.com/dartsim/dart/pull/3869)
 
   * Fix a memory leak where a Bullet collision detector used for a collision
     check between two groups was never destroyed.

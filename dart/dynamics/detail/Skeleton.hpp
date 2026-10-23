@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/common/detail/ModelMutation.hpp>
+
 namespace dart {
 namespace dynamics {
 
@@ -46,6 +48,9 @@ JointType* Skeleton::moveBodyNodeTree(
     BodyNode* _parentNode,
     const typename JointType::Properties& _joint)
 {
+  common::detail::checkTopologyMutation(this);
+  common::detail::checkTopologyMutation(_newSkeleton.get());
+  common::detail::checkTopologyMutation(_parentNode);
   JointType* parentJoint = new JointType(_joint);
 
   if (moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
@@ -66,6 +71,8 @@ std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
     const typename JointType::Properties& _joint,
     bool _recursive) const
 {
+  common::detail::checkTopologyMutation(_newSkeleton.get());
+  common::detail::checkTopologyMutation(_parentNode);
   JointType* parentJoint = new JointType(_joint);
   std::pair<Joint*, BodyNode*> root = cloneBodyNodeTree(
       parentJoint, _bodyNode, _newSkeleton, _parentNode, _recursive);
@@ -79,6 +86,8 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
     const typename JointType::Properties& _jointProperties,
     const typename NodeType::Properties& _bodyProperties)
 {
+  common::detail::checkTopologyMutation(this);
+  common::detail::checkTopologyMutation(_parent);
   JointType* joint = new JointType(_jointProperties);
   NodeType* node = new NodeType(_parent, joint, _bodyProperties);
   registerBodyNode(node);
