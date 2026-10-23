@@ -456,10 +456,8 @@ def git_output(root: Path, *args: str) -> bytes:
     ).stdout
 
 
-def scan_changes(
-    root: Path, revisions: tuple[str, ...], commit: str | None = None
-) -> bool:
-    paths = git_output(
+def changed_paths(root: Path, revisions: tuple[str, ...]) -> bytes:
+    return git_output(
         root,
         *revisions,
         "--no-renames",
@@ -468,9 +466,102 @@ def scan_changes(
         "--no-textconv",
         "--no-color",
         "--raw",
+        "--no-abbrev",
         "-z",
         "--diff-filter=ACMRT",
     )
+
+
+def prefetch_changed_blobs(root: Path, commits: list[list[str]]) -> None:
+    if not commits:
+        return
+
+    def config(*args: str) -> bytes:
+        result = subprocess.run(
+            ["git", "config", "--null", *args], cwd=root, capture_output=True
+        )
+        if result.returncode == 1:
+            return b""
+        result.check_returncode()
+        return result.stdout
+
+    remotes = set()
+    for entry in config("--bool", "--get-regexp", r"^remote\..*\.promisor$").split(
+        b"\0"
+    ):
+        if entry:
+            key, value = entry.rsplit(b"\n", 1)
+            if value == b"true":
+                remotes.add(os.fsdecode(key[len(b"remote.") : -len(b".promisor")]))
+    if not remotes:
+        return
+    # Keep Git's multi-remote fallback unchanged outside the CI clone shape.
+    for key in config(
+        "--name-only", "--get-regexp", r"^remote\..*\.partialclonefilter$"
+    ).split(b"\0"):
+        if key:
+            remotes.add(
+                os.fsdecode(key[len(b"remote.") : -len(b".partialclonefilter")])
+            )
+    legacy = config("--get", "extensions.partialclone").removesuffix(b"\0")
+    if legacy:
+        remotes.add(os.fsdecode(legacy))
+    if len(remotes) != 1:
+        return
+    required = set()
+    for commit, *parents in commits:
+        revisions = (
+            ("diff", parents[0], commit)
+            if parents
+            else ("diff-tree", "--root", "--no-commit-id", "-r", commit)
+        )
+        paths = changed_paths(root, revisions).split(b"\0")
+        for metadata in paths[::2]:
+            if not metadata:
+                continue
+            old_mode, new_mode, old_oid, new_oid, _ = metadata.split()
+            if new_mode == b"160000":
+                continue
+            for mode, oid in ((old_mode[1:], old_oid), (new_mode, new_oid)):
+                if mode in (b"100644", b"100755", b"120000") and oid.strip(b"0"):
+                    required.add(oid)
+    if not required:
+        return
+    # An objectname-only inventory reads local stores without lazy fetching.
+    available = set(
+        git_output(
+            root, "cat-file", "--batch-all-objects", "--batch-check=%(objectname)"
+        ).splitlines()
+    )
+    missing = sorted(required - available)
+    if missing:
+        print(f"Prefetching {len(missing)} Git blobs for commit scan", file=sys.stderr)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "fetch.negotiationAlgorithm=noop",
+                "fetch",
+                "--quiet",
+                "--no-tags",
+                "--no-write-fetch-head",
+                "--recurse-submodules=no",
+                "--filter=blob:none",
+                "--stdin",
+                "--",
+                next(iter(remotes)),
+            ],
+            cwd=root,
+            input=b"\n".join(missing) + b"\n",
+            check=True,
+            capture_output=True,
+        )
+
+
+def scan_changes(
+    root: Path, revisions: tuple[str, ...], commit: str | None = None
+) -> bool:
+    paths = changed_paths(root, revisions)
     found = False
     entries = paths.split(b"\0")
     for metadata, encoded in zip(entries[::2], entries[1::2]):
@@ -533,9 +624,13 @@ def scan_commit_range(root: Path, *revisions: str) -> bool:
         *revisions,
         "--",
     )
-    for entry in commits.decode("ascii").splitlines():
-        commit, *parents = entry.split()
-        message = git_output(root, "show", "-s", "--format=%B", commit)
+    entries = [entry.split() for entry in commits.decode("ascii").splitlines()]
+    prefetch_changed_blobs(root, entries)
+    for commit, *parents in entries:
+        # Reading merge messages must not hydrate unrelated parent blobs.
+        message = git_output(
+            root, "log", "-1", "--no-patch", "--format=%B", commit, "--"
+        )
         for text in content_decodings(message):
             found |= scan_text(text, commit=commit)
         # First-parent diffs include merge resolutions; side commits are scanned too.
