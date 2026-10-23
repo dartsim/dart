@@ -1387,8 +1387,8 @@ dynamics::ShapePtr readShape(
     DART_SUPPRESS_DEPRECATED_END
     if (model) {
       DART_SUPPRESS_DEPRECATED_BEGIN
-      newShape = std::make_shared<dynamics::MeshShape>(
-          scale, model, meshUri, retriever);
+      newShape = std::shared_ptr<dynamics::MeshShape>(
+          new dynamics::MeshShape(scale, model, meshUri, retriever));
       DART_SUPPRESS_DEPRECATED_END
     } else {
       dterr << "Fail to load model[" << filename << "]." << std::endl;
