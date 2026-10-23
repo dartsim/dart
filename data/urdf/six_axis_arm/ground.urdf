@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- DART-authored sample, distributed under the repository BSD-2-Clause license. -->
+<robot name="ground_skeleton">
+  <link name="world" />
+  <link name="ground_link">
+    <visual>
+      <origin xyz="0 0 -0.025" />
+      <geometry><box size="2 2 0.05" /></geometry>
+      <material name="ground"><color rgba="0.65 0.65 0.65 1" /></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.025" />
+      <geometry><box size="2 2 0.05" /></geometry>
+    </collision>
+  </link>
+  <joint name="ground_joint" type="fixed">
+    <parent link="world" />
+    <child link="ground_link" />
+  </joint>
+</robot>

@@ -162,9 +162,9 @@ description:
 
 - [ ] Resolve and confirm the open release milestone from the fetched target's
   [Release Management](release-management.md#release-target); set it on the PR.
-- [ ] Decide whether `CHANGELOG.md` needs an entry using
-  [Changelog](changelog.md); prepare any required entry and finalize its PR link
-  after publication.
+- [ ] Decide whether the change needs a changelog entry using
+  [Changelog](changelog.md); on `main`, add it as a `changelog.d/` fragment, and
+  finalize its PR link after publication.
 - [ ] Add or update meaningful tests for new functionality or changed behavior,
   and run the required validation for the touched surface.
 - [ ] Document new methods/classes and any changed user workflow.

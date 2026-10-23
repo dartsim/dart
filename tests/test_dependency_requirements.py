@@ -14,6 +14,10 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+# DART_TEST_CMAKE pins an exact CMake build (pixi's own bin dir wins on PATH).
+CMAKE = os.environ.get("DART_TEST_CMAKE") or shutil.which("cmake")
+
+
 def configure(tmp_path, content, *, cmake_args=()):
     source = tmp_path / "source"
     source.mkdir(exist_ok=True)
@@ -31,7 +35,7 @@ def configure(tmp_path, content, *, cmake_args=()):
     )
     return subprocess.run(
         [
-            shutil.which("cmake"),
+            CMAKE,
             "-G",
             "Ninja",
             f"-DCMAKE_MAKE_PROGRAM={shutil.which('ninja')}",
@@ -66,6 +70,264 @@ def config_package(tmp_path, package, version, target=None, extra=""):
     if target:
         contents += f"add_library({target} INTERFACE IMPORTED)\n"
     (directory / f"{package}Config.cmake").write_text(contents + extra)
+
+
+@pytest.mark.parametrize(
+    "source_kind",
+    [
+        "missing",
+        "override",
+        "default",
+        "custom",
+        "invalid_override",
+        "empty_default",
+        "empty_override",
+        "file_override",
+        "connected",
+    ],
+)
+def test_fetchcontent_disconnected_sources(tmp_path, source_kind):
+    source = tmp_path / (
+        "build/_deps/fixture-src"
+        if source_kind in ("default", "invalid_override", "empty_default")
+        else "seed"
+    )
+    if source_kind == "file_override":
+        source.write_text("not a directory")
+    else:
+        source.mkdir(parents=True)
+        if not source_kind.startswith("empty_"):
+            (source / "CMakeLists.txt").write_text(
+                'message(STATUS "Pre-seeded fixture reached")\n'
+            )
+    settings = "set(FETCHCONTENT_FULLY_DISCONNECTED ON)\n"
+    custom = ""
+    if source_kind in ("override", "empty_override", "file_override"):
+        settings += f'set(FETCHCONTENT_SOURCE_DIR_FIXTURE "{source.as_posix()}")\n'
+    elif source_kind in ("default", "invalid_override"):
+        if source_kind == "invalid_override":
+            settings += f'set(FETCHCONTENT_SOURCE_DIR_FIXTURE "{(tmp_path / "missing").as_posix()}")\n'
+    elif source_kind == "custom":
+        custom = f' "{source.as_posix()}"'
+    elif source_kind == "connected":
+        settings = "set(FETCHCONTENT_FULLY_DISCONNECTED OFF)\n"
+    declare = (
+        f'SOURCE_DIR "{source.as_posix()}"'
+        if source_kind in ("override", "default", "custom", "connected")
+        else "URL https://invalid.example/fixture.tar.gz"
+    )
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\ninclude(FetchContent)\n"
+        + settings
+        + f"FetchContent_Declare(fixture {declare})\nFetchContent_MakeAvailable(fixture)\n"
+        + f"dart_check_fetchcontent(FiXtUrE DART_USE_SYSTEM_FIXTURE{custom})\n",
+    )
+    output = result.stdout + result.stderr
+    if source_kind in (
+        "missing",
+        "invalid_override",
+        "empty_default",
+        "empty_override",
+        "file_override",
+    ):
+        assert result.returncode != 0
+        assert "FETCHCONTENT_SOURCE_DIR_FIXTURE" in output
+        # CMake itself rejects a missing override before the postcheck runs.
+        if source_kind != "invalid_override":
+            assert "Cannot fetch FiXtUrE" in output
+            assert "DART_USE_SYSTEM_FIXTURE=ON" in output
+    else:
+        assert result.returncode == 0, output
+        if source_kind != "connected":
+            assert "Pre-seeded fixture reached" in output
+
+
+@pytest.mark.parametrize("umbrella", [None, "OFF", "ON"])
+@pytest.mark.parametrize("explicit", [None, "OFF", "ON"])
+def test_system_dependency_defaults_are_seeded_once(tmp_path, umbrella, explicit):
+    source = (ROOT / "CMakeLists.txt").read_text()
+    options = source[
+        source.index("dart_option(\n  DART_USE_SYSTEM_DEPENDENCIES") : source.index(
+            "dart_option(\n  DART_ALLOW_SINGLE_PRECISION_LIBCCD"
+        )
+    ]
+    content = "include(dart_defs)\n" + options
+    switches = ("GOOGLETEST", "GOOGLEBENCHMARK", "TRACY")
+    args = [] if umbrella is None else [f"-DDART_USE_SYSTEM_DEPENDENCIES={umbrella}"]
+    if explicit is not None:
+        args.extend(f"-DDART_USE_SYSTEM_{name}={explicit}" for name in switches)
+    expected = explicit or umbrella or "OFF"
+    for configure_args in (
+        args,
+        [f"-DDART_USE_SYSTEM_DEPENDENCIES={'OFF' if umbrella == 'ON' else 'ON'}"],
+    ):
+        result = configure(tmp_path, content, cmake_args=configure_args)
+        assert result.returncode == 0, result.stdout + result.stderr
+        cache = (tmp_path / "build" / "CMakeCache.txt").read_text()
+        for name in switches:
+            assert f"DART_USE_SYSTEM_{name}:BOOL={expected}" in cache
+
+
+_DEPENDENCIES = (ROOT / "cmake/DARTFindDependencies.cmake").read_text()
+TRACY_FIXTURE = (
+    "set(DART_BUILD_PROFILE ON)\nset(DART_PROFILE_TRACY ON)\n"
+    "set(DART_USE_SYSTEM_TRACY ON)\n"
+    + _DEPENDENCIES[
+        _DEPENDENCIES.index(
+            "if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)"
+        ) : _DEPENDENCIES.index("if(DART_BUILD_DARTPY AND Python_EXECUTABLE)")
+    ]
+    + 'if(NOT TARGET Tracy::TracyClient)\nmessage(FATAL_ERROR "no TracyClient")\nendif()\n'
+)
+
+
+def cmake_version():
+    out = subprocess.run([CMAKE, "--version"], capture_output=True, text=True).stdout
+    return tuple(int(part) for part in out.split()[2].split("-")[0].split("."))
+
+
+PROVIDER = """\
+macro(fixture_provider method name)
+  file(APPEND "{log}" "${{name}}\\n")
+  if(NOT "${{name}}" STREQUAL "{fulfills}")
+    return()
+  endif()
+  if(NOT TARGET fixture::fixture)
+    add_library(fixture::fixture INTERFACE IMPORTED GLOBAL)
+  endif()
+  FetchContent_SetPopulated(${{name}})
+endmacro()
+cmake_language(
+  SET_DEPENDENCY_PROVIDER fixture_provider
+  SUPPORTED_METHODS FETCHCONTENT_MAKEAVAILABLE_SERIAL
+)
+"""
+
+
+@pytest.mark.skipif(cmake_version() < (3, 24), reason="dependency providers need 3.24")
+@pytest.mark.parametrize(
+    "state",
+    [
+        "fulfilled",
+        "declined",
+        "none",
+        "unrelated",
+        "fulfilled_other_missing",
+        "fulfilled_invalid_override",
+    ],
+)
+def test_fetchcontent_dependency_provider_fulfillment(tmp_path, state):
+    log = tmp_path / "provider.log"
+    fulfills = {"declined": "", "unrelated": "other"}.get(state, "fixture")
+    args = []
+    if state != "none":
+        (tmp_path / "provider.cmake").write_text(
+            PROVIDER.format(log=log.as_posix(), fulfills=fulfills)
+        )
+        args.append(
+            f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={(tmp_path / 'provider.cmake').as_posix()}"
+        )
+    content = "include(DARTMacros)\ninclude(FetchContent)\n"
+    content += "set(FETCHCONTENT_FULLY_DISCONNECTED ON)\n"
+    if state == "fulfilled_invalid_override":
+        content += f'set(FETCHCONTENT_SOURCE_DIR_FIXTURE "{(tmp_path / "missing").as_posix()}")\n'
+    for name in (
+        ("fixture", "second") if state == "fulfilled_other_missing" else ("fixture",)
+    ):
+        content += (
+            f"FetchContent_Declare({name} URL https://invalid.example/{name}.tar.gz)\n"
+            f"FetchContent_MakeAvailable({name})\n"
+            f"dart_check_fetchcontent({name} DART_USE_SYSTEM_FIXTURE)\n"
+        )
+    content += 'if(NOT TARGET fixture::fixture)\nmessage(FATAL_ERROR "target missing")\nendif()\n'
+    result = configure(tmp_path, content, cmake_args=args)
+    output = result.stdout + result.stderr
+    calls = log.read_text().split() if log.exists() else []
+    assert not (tmp_path / "build/_deps/fixture-src").exists()
+    if state in ("fulfilled", "fulfilled_other_missing", "fulfilled_invalid_override"):
+        assert calls.count("fixture") == (0 if state.endswith("override") else 1), calls
+    if state == "fulfilled":
+        assert result.returncode == 0, output
+        assert calls == ["fixture"]
+    else:
+        assert result.returncode != 0
+        assert "Cannot fetch" in output or "FETCHCONTENT_SOURCE_DIR" in output, output
+        if state == "fulfilled_other_missing":
+            assert "Cannot fetch second" in output
+
+
+@pytest.mark.parametrize(
+    "version,accepted",
+    [
+        ("0.10.0", False),
+        ("0.11.0", False),
+        ("0.11.1", True),
+        ("0.12.0", True),
+        (None, True),
+    ],
+)
+def test_system_tracy_minimum_version(tmp_path, version, accepted):
+    # Installed Tracy packages ship TracyConfig.cmake without a version file.
+    config_package(tmp_path, "Tracy", version, "Tracy::TracyClient")
+    result = configure(tmp_path, TRACY_FIXTURE)
+    output = result.stdout + result.stderr
+    assert (result.returncode == 0) == accepted, output
+    if not accepted:
+        assert "Tracy >= 0.11.1" in output
+
+
+TRACY_ENUM = "namespace tracy {{ namespace Version {{ enum {{ {parts} }}; }} }}\n"
+
+
+@pytest.mark.parametrize(
+    "header,accepted",
+    [
+        ("Major = 0, Minor = 10, Patch = 0", False),
+        ("Major = 0, Minor = 11, Patch = 0", False),
+        ("Major = 0, Minor = 11, Patch = 1", True),
+        ("Major = 0,\n Minor = 12,\n Patch = 0", True),
+        ("Major = 0, Minor = 11", False),
+        (None, True),
+    ],
+)
+def test_system_tracy_target_header_version(tmp_path, header, accepted):
+    include = tmp_path / "prefix/include/tracy"
+    (include / "common").mkdir(parents=True)
+    if header is not None:
+        (include / "common/TracyVersion.hpp").write_text(
+            TRACY_ENUM.format(parts=header)
+        )
+    config_package(
+        tmp_path,
+        "Tracy",
+        None,
+        "Tracy::TracyClient",
+        extra=(
+            "set_target_properties(Tracy::TracyClient PROPERTIES "
+            f'INTERFACE_INCLUDE_DIRECTORIES "$<BUILD_INTERFACE:{include.as_posix()}>")\n'
+        ),
+    )
+    result = configure(tmp_path, TRACY_FIXTURE)
+    output = result.stdout + result.stderr
+    # A header with a missing component is malformed, not versionless.
+    assert (result.returncode == 0) == accepted, output
+    if not accepted:
+        assert "Tracy" in output and "0.11.1" in output
+
+
+def test_system_tracy_ignores_host_header_decoy(tmp_path):
+    decoy = tmp_path / "host/common"
+    decoy.mkdir(parents=True)
+    (decoy / "TracyVersion.hpp").write_text(
+        TRACY_ENUM.format(parts="Major = 0, Minor = 1, Patch = 0")
+    )
+    config_package(tmp_path, "Tracy", None, "Tracy::TracyClient")
+    result = configure(
+        tmp_path,
+        f'set(CMAKE_INCLUDE_PATH "{(tmp_path / "host").as_posix()}")\n' + TRACY_FIXTURE,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 @pytest.mark.parametrize("build_version", ["3.4.0", "5.0.1"])
@@ -251,7 +513,6 @@ def test_io_rejects_tinyxml2_9_with_minimum_version_message(tmp_path, lookup):
         ("Eigen3", "3.4.0", "Eigen3::Eigen", True),
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
-        ("spdlog", "1.9.2", "spdlog::spdlog", False),
         ("tinyxml2", "10.0.0", "tinyxml2::tinyxml2", False),
         ("urdfdom", "3.0.0", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
@@ -1043,6 +1304,22 @@ def test_installed_legacy_components_propagate_sdformat_failure(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_spdlog_finder_is_a_compatibility_noop(tmp_path):
+    result = configure(
+        tmp_path,
+        "set(CMAKE_DISABLE_FIND_PACKAGE_spdlog TRUE)\n"
+        "include(DARTFindspdlog)\n"
+        "if(NOT spdlog_FOUND)\n"
+        'message(FATAL_ERROR "Deprecated dependency should be satisfied")\n'
+        "endif()\n"
+        "if(TARGET spdlog::spdlog OR TARGET spdlog::spdlog_header_only)\n"
+        'message(FATAL_ERROR "Deprecated finder created a dependency")\n'
+        "endif()\n",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "DARTFindspdlog is deprecated" in result.stderr
+
+
 def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
     tmp_path = tmp_path / "archive fixture"
     tmp_path.mkdir()
@@ -1062,6 +1339,7 @@ def test_imgui_archive_upgrade_rebuilds_with_preserved_timestamps(tmp_path):
         "project(dart LANGUAGES CXX)\n"
         'set(DART_BINARY_DIR "${CMAKE_BINARY_DIR}")\n'
         "set(DART_USE_SYSTEM_IMGUI OFF)\n"
+        f'include("{(ROOT / "cmake/DARTMacros.cmake").as_posix()}")\n'
         "function(add_component_dependency_packages)\nendfunction()\n"
         "add_library(dart-gui STATIC stub.cpp)\n"
         'include("${CMAKE_CURRENT_SOURCE_DIR}/imgui.cmake")\n'

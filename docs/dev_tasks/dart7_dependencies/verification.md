@@ -265,6 +265,25 @@ quieter host.
   `find_package(DART)`, and a `setLogSink` recipe for spdlog users). Muse's
   two cosmetic nits (an rvalue-string constructor, one `FMT_HEADER_ONLY`
   definition site) move to DEP-15, which reworks the same files.
+- CI on #3853 (2026-10-19): macOS arm64 failed in `test_FilamentBackend`
+  (`-std=gnu++20`) because libc++ builds the object inside `construct_at`,
+  so AppleClang reports the deprecated Assimp `MeshShape` constructor outside
+  the call site's suppression. The fix calls `new` directly at 17 test and
+  binding sites (writer Codex; reviews Muse and the orchestrator). Muse's
+  claim that four parser sites also fail was refuted by the same CI log: the
+  `dart-utils` parsers compiled as C++17 before the failure. After merging
+  `main`, eight affected test targets pass.
+- Perf A/B on #3853: every row is behaviour-change because removing spdlog
+  changes the benchmark compile commands. `pend/dart` rose 2.56% and `dyn`
+  0.95% Ir under GCC 13.3; a local reproduction attributes nearly all of it
+  to Eigen's `allFinite()` reduction, which GCC 13 no longer inlines into
+  `GenericJoint<R1>`'s articulated-inertia updates (208 instructions per
+  call; 9,152 of `pend/dart`'s 9,173 extra instructions per step). GCC 15.2
+  on the same revision pair (`d46dc795e` to `3819534246`) measures -0.06%
+  and -0.07%. All default-environment package resolutions match across the
+  CI revisions.
+  The PR body carries `Rebaseline-Rationale` lines; the fix
+  (`array().isFinite().all()`) touches `GenericJoint` and waits for M1d.
 
 ### Wave 1 Gazebo integration lanes (2026-10-19)
 
@@ -410,10 +429,164 @@ tests.
   report matches.
 - Exposure: FCL-backed distance queries between ellipsoids or spheres at
   exact tangency, from C++ and from dartpy, on stock Ubuntu 24.04.
-- Recommendation: fix upstream in FCL with a regression test, link Debian
-  and Ubuntu reports, and document the stock-noble limitation; keep DART's
-  ellipsoid coverage (no jitter or skip). The noble apt lane (DEP-12(b))
-  records `test_Distance` as an expected external failure tied to the
-  upstream report. The opt-in `MESH` primitive mode gives correct results
-  but changes approximation and speed, so it is not a default change.
-  Filing upstream reports needs maintainer approval.
+- Superseded recommendation (historical, kept with its reproducer): fix
+  upstream in FCL with a regression test, link Debian and Ubuntu reports, and
+  document the stock-noble limitation; keep DART's ellipsoid coverage (no
+  jitter or skip). **DD-18 supersedes the reporting part:** the maintainer
+  said not to report, but to fix it internally with a clear note and patch
+  file (DEP-35). The exact internal patch policy is unchanged: DART carries
+  the patch where it builds FCL itself, system FCL stays unpatched, and the
+  noble apt lane (DEP-12(b)) records `test_Distance` as an expected external
+  failure pointing at the note. No upstream report or external message is
+  authorized. The opt-in `MESH` primitive mode gives correct results but
+  changes approximation and speed, so it is not a default change.
+
+### Wave 3 (2026-10-19)
+
+> **Unverified historical notes (Waves 3 to 5 and the tinyxml2 prototype
+> below).** The quantitative assertions in these sections (test counts,
+> byte counts, hashes, "N of N" results) were summarized from PR bodies and
+> reviewer reports. This file does not record the tested revision or exact
+> command for them, and the PR heads they cite moved. They are not accepted
+> evidence and no acceptance decision rests on them. A PR's acceptance
+> evidence is its own CI and review state at its merged head, recorded by
+> the PR itself. A claim returns to accepted evidence only after it is
+> re-run and recorded with its revision, command, date and scope.
+
+Each packet below passed two clean reviews from engines other than its
+writer; the PR bodies carry the user-facing evidence.
+
+- DEP-37 (#3875, Codex; Muse and orchestrator): the new
+  `ReleasesRetainedFilterGroup` test leaked 13,242,765 bytes under ASan
+  before the fix; after it, the randomized convex case is leak-free;
+  186/186, gz-physics 203 tests, gz-sim integration.
+- DEP-30 (#3876, Claude Sonnet; Codex and Muse, two rounds): round 1 found
+  that archive timestamps could keep objects compiled from the patched Git
+  checkout; the fix extracts with current timestamps and moves ImGui to
+  FetchContent's default source directory. Hash re-verified independently;
+  `nm` shows `ImFormatString` exported again; test-gui 496; 184/184.
+- DEP-36 (#3877, Codex; Claude and Muse, three rounds): semantics checked
+  against MuJoCo's `user_objects.cc`; 32 MJCF tests, 55 Python MJCF tests,
+  186/186, 2,078 Python tests.
+- DEP-33(b) (#3878, Codex; Claude and Muse): the orchestrator's capture
+  review sent the arm back for an upright zero pose and rounded meshes;
+  oracles: target error about 1e-17 m, four dominoes toppled, point-cloud
+  height 0.49 m.
+- DEP-25 (#3879, Codex; Claude and Muse, two rounds): installed Tracy
+  packages carry no version file or `TracyVersion.hpp`, so the system lookup
+  now takes no version (the profile environment configures and builds
+  against its own Tracy); default cache unchanged except the new option;
+  installed CMake files byte-identical.
+- DEP-33(a) (#3880, Claude Sonnet; Codex and Muse): the COLLADA fixture is
+  schema-valid and its absolute extents catch ignored units and unwanted
+  up-axis conversion.
+- DEP-34 (#3881, Codex; Claude and Muse): replaces the 14 top-level OpenAI
+  models (the six Fetch scenes are DD-19's separate removal scope); all 14
+  pinned DeepMind files
+  hash-checked against upstream at `437b7a6a`; expectations re-derived from
+  the XML by both reviewers; the weld regression test crashed (SIGSEGV)
+  without its fix.
+- DEP-33(c) (#3882, Codex; Claude, Muse and Claude Sonnet after a Muse run
+  hung): both licenses byte-identical to their pins; WAM's STLs are the
+  original visual meshes; captures before and after inspected.
+- CI after these pushes: the macOS and Windows Python jobs fail only on
+  `test_api_surface_budget` (`dartpy.experimental` imported earlier), on
+  every PR that merged current `main`; open PR #3872 fixes it.
+
+### Wave 4 (2026-10-20)
+
+- DEP-2 (#3883, Claude Sonnet; Codex and Muse): a shared assets-on
+  install's `io;utils;utils-urdf` consumer configures with curl and OpenSSL
+  discovery disabled; a static configure still exports both; gz-physics 199.
+- DEP-17 PR1 (#3884, Codex; Claude and Muse): Ubuntu 24.04's
+  `liburdfdom-dev` 4.0.0 ships `urdfdom-configVersion.cmake` (container
+  check), so the floor works with the distribution package;
+  `pixi install --locked` still passes.
+- DEP-8(f) (#3885, Claude Sonnet; Codex and Muse): 17 archive hashes
+  reproduced by the image build; 15 trees identical to their clones (assimp
+  and GLFW differ only by export-ignored dotfiles);
+  `scripts/wheel_linux.py cp312` builds, repairs and smoke-tests the wheel.
+- DEP-4(e) (#3886, Claude Sonnet; Codex and Muse, two rounds): a default
+  configure's cache differs from `main` only by the new option and the
+  removed Doxygen entries; gz-physics 199 with the switch on.
+- DEP-17 PR3 (#3887, Codex; Claude and Muse): the PR body's 14-row table
+  (11 files under `data/urdf/` plus the 3 Atlas files under `data/sdf/atlas/`)
+  reports the same load results and skeleton, body and joint counts with
+  urdfdom 4.0.1 and 6.0.1: `atlas_v3.urdf` is rejected by both (its `head`
+  link is missing; see [RESUME.md](RESUME.md)), while `atlas_v3_no_head.urdf`
+  and `ground.urdf` load with both; URDF 1.1 and 1.2 load only with 6.0.1; the
+  wheel builds, repairs and smoke-tests on Python 3.12 and 3.13. This is
+  quarantined historical reported evidence: the mutable PR body records no
+  tested commit, command or date. The current tree holds 14 files under
+  `data/urdf/` plus the 3 Atlas files (17 paths), which is a different set from
+  the 14 table rows (the missing-entity and missing-include fixtures are not in
+  the table), and no new run is claimed.
+- DEP-17 PR4 (#3888, Codex; Claude and Muse): a shared consumer configures,
+  builds and runs with urdfdom package discovery disabled (the runtime
+  library remains required); 450 installed headers carry no urdfdom include;
+  the API inventory is unchanged.
+
+### Wave 5 (2026-10-20)
+
+- DEP-18 (#3889, Codex; Claude Opus and Muse, two rounds): an SDF-off build
+  runs 2,073 Python tests, skipping SDF tests one by one; SDF-on builds keep
+  the same 21 `SdfParser` exports; 442 installed headers compile
+  standalone; a shared `io` consumer configures without sdformat, a static
+  one requires it, and `COMPONENTS io-sdf` fails cleanly on an SDF-off
+  install; gz lanes.
+- DEP-7 (#3890, Muse; Codex and Claude Sonnet): the default environment
+  shrinks from 1.9 GB to 1.6 GB; every task resolves to one environment; the
+  AI infrastructure suite (5,085) and `test-all` pass, apart from #3872's
+  known failure.
+- DEP-5 remainder (#3891, Codex; Claude Sonnet and Muse): 186 of 186 tests
+  on Eigen 3.4.0 and on 5.0.1; the overalignment suite (175); a consumer
+  built against the other Eigen major fails at configure with the
+  installed finder's message; 253 requirement tests; gz lanes.
+- DEP-9 (#3892, Codex; Claude Sonnet and Muse): a Python 3.11 configure
+  fails clearly; the abi3 smoke test passes on Python 3.12, 3.13 and 3.14;
+  NumPy 1.26.4 passes on 3.12; 244 requirement tests.
+- DEP-6 (#3893, Codex; Claude Sonnet and Muse): fetched GoogleTest 1.17.0
+  and Benchmark 1.10.0 pass 176 of 176 tests, and so do Ubuntu 24.04's
+  GoogleTest 1.14 and Benchmark 1.8.3 in a container; a configure on a host
+  without Git works.
+- DEP-10 (#3894, Codex; Claude Sonnet and Muse): a system nanobind 3.2.0
+  fails at configure with the new message; fetched and conda-forge 3.1.0
+  builds both pass; 24 configure cases and 269 requirement tests.
+- DEP-4(c) (orchestrator): `GCC_VERSION` is never set, so the deleted
+  branch never ran; with `DART_ENABLE_SIMD=ON`, `build.ninja` and every
+  generated export file are byte-identical before and after.
+- DEP-12(b) tinyxml2 (#3896, Codex; two Claude Sonnet passes): both lookup
+  paths reject a tinyxml2 9.0.0 package with the minimum-version message
+  and accept 10.0.0; 186 of 186; 239 requirement tests.
+- Perf harness (#3897, Codex; two Claude Sonnet passes): the unmodified
+  harness reproduces #3889's driver link failure (`libsdformat.so.16 ...
+  not found`); with the driver linked through an `rpath-link` path, an A/B
+  from `main` to #3889's head builds both drivers and measures every row with
+  equal instruction counts, allocations and guards; compile commands and
+  workload hashes are unchanged.
+- DEP-4(a) (#3898, Claude Sonnet; two Codex passes plus two confirmations):
+  the first reviews showed the octomap target shim is reachable (octomap's
+  build-tree config imports no targets), so it stays; 186 of 186 with
+  octomap 1.10.1; the wheel builds, repairs and smoke-tests.
+- DEP-16 (#3899, Codex; Claude Opus and Sonnet, five rounds): default
+  console output is byte-identical to `main` in 12 terminal and 12 GUI-App
+  cases; a ThreadSanitizer build of the logging tests passes 55 of 55; both
+  teardown orders of the GUI panel and the Python bridge end on the default
+  sink; 186 of 186, 2,130 Python and 496 GUI Python tests; gz-physics 199
+  plus 4 and gz-sim 1 of 1.
+
+### tinyxml2 fetch prototype (2026-10-20)
+
+The same unverified-historical-notes caveat applies; the prototype branch is
+local and unpublished, and this section records no revision for it.
+
+Codex fetched tinyxml2 11.0.0 as a shared library installed next to DART,
+with an ELF check that urdfdom's and sdformat's tinyxml2 has the same SONAME:
+176 of 176 tests in both fetched configurations and a working installed
+consumer, for 410 added lines (178 in two new CMake modules). Two reviews
+(Claude Opus and Sonnet) showed the fetch can only pass where a system
+tinyxml2 of the same ABI is already loaded, because `dart-io` requires
+urdfdom (and sdformat with SDF on), and both link a shared tinyxml2. As the
+standalone default it would fail on Ubuntu 24.04 (apt urdfdom 4 and OSRF
+sdformat 14 link tinyxml2 10) and on macOS, Windows, FreeBSD and cross
+builds. The branch stays local; the maintainer decides how DD-10 applies.

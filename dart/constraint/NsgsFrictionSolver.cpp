@@ -36,6 +36,8 @@
 
 #include <dart/lcpsolver/dantzig/DantzigCommon.hpp>
 
+#include <dart/common/detail/ModelMutation.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -357,7 +359,13 @@ bool NsgsFrictionSolver::solve(
 //==============================================================================
 void NsgsFrictionSolver::setOptions(const Options& options)
 {
+  if (mOptions.law == options.law
+      && mOptions.boxForAnisotropic == options.boxForAnisotropic
+      && mOptions.maxSweeps == options.maxSweeps
+      && mOptions.tolerance == options.tolerance)
+    return;
   mOptions = options;
+  detail::notifyBoxedSolverParameterMutation(this);
 }
 
 //==============================================================================

@@ -1,4 +1,4 @@
-"""Damped-pseudoinverse task-space control for the KR5 demo."""
+"""Damped-pseudoinverse task-space control for the six-axis arm demo."""
 
 import dartpy as dart
 import numpy as np
