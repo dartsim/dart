@@ -12,25 +12,6 @@ endif()
 # Threads
 dart_find_package(Threads)
 
-# fmt
-# Keep the installed fmt finder unchanged; only DART builds opt into fetching.
-# Snapshot the finder's fetch predicate: the target exists once it has run.
-set(_dart_fmt_fetched FALSE)
-if(
-  DEFINED DART_USE_SYSTEM_FMT
-  AND NOT DART_USE_SYSTEM_FMT
-  AND NOT TARGET fmt::fmt
-)
-  include(FetchContent)
-  set(_dart_fmt_fetched TRUE)
-endif()
-dart_find_package(fmt)
-if(_dart_fmt_fetched)
-  dart_check_fetchcontent(fmt DART_USE_SYSTEM_FMT)
-endif()
-unset(_dart_fmt_fetched)
-dart_check_required_package(fmt "libfmt")
-
 # Eigen
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
@@ -156,25 +137,6 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
       target_compile_options(TracyClient PRIVATE -w)
     endif()
   endif()
-endif()
-
-if(DART_BUILD_DARTPY AND Python_EXECUTABLE)
-  # Share nanobind's selected interpreter with tests, examples, and tutorials.
-  set(
-    Python3_EXECUTABLE
-    "${Python_EXECUTABLE}"
-    CACHE FILEPATH
-    "Python interpreter shared with nanobind"
-    FORCE
-  )
-endif()
-if(DART_BUILD_DARTPY AND DART_BUILD_WHEELS)
-  # manylinux provides extension headers, but deliberately omits libpython.
-  find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
-elseif(DART_BUILD_DARTPY)
-  find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development)
-else()
-  find_package(Python3 3.12 COMPONENTS Interpreter Development)
 endif()
 
 # Deprecated compatibility option; DART owns its logging implementation.

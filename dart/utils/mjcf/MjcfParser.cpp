@@ -1037,6 +1037,8 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   }
 
   auto world = createWorld(mujoco, options);
+  if (!world)
+    return nullptr;
 
   // Parse <equality> element
   const detail::Equality& equality = mujoco.getEquality();

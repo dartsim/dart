@@ -33,6 +33,8 @@
 #ifndef DART_GUI_APP_LOGCAPTURE_HPP_
 #define DART_GUI_APP_LOGCAPTURE_HPP_
 
+#include <dart/common/Logging.hpp>
+
 #include <functional>
 #include <memory>
 #include <streambuf>
@@ -49,17 +51,15 @@ enum class CapturedLogLevel
 };
 
 //==============================================================================
-/// RAII redirect of std::cout/std::cerr into a line sink. Every character is
-/// forwarded to the original stream buffer unchanged (so console output is
-/// completely unaffected), while complete lines -- with ANSI color escapes
-/// stripped -- are also collected and handed to `sink`. This is how
-/// the app host captures dart::common's dtmsg/dtwarn/dterr output into its log
-/// console without any dart/ changes: those macros
-/// (dart/common/Console.hpp) write straight to std::cout/std::cerr with an
-/// SGR color prefix (see colorMsg/colorErr in dart/common/Console.cpp), which
-/// this class also uses to recover the severity DART itself assigned.
-/// Restores the original stream buffers on destruction; construct at most
-/// one instance for the process lifetime.
+/// Observes callback-consumed DART records, wraps sink output and tees other
+/// stdout/stderr lines. Restores stream buffers on destruction and the previous
+/// sink only if this capture's wrapper is still installed. Stream buffers
+/// require reverse construction order among captures; other sink wrappers may
+/// be disabled in either order. Construction, drain and destruction belong to
+/// one owner thread; direct stdout/stderr writers must be quiescent during
+/// stream-buffer installation/removal. Native record producers may keep
+/// running. The newest 2000 records wait for drain; output forwarding is
+/// immediate.
 class LogCapture
 {
 public:
@@ -68,11 +68,20 @@ public:
   explicit LogCapture(LineSink sink);
   ~LogCapture();
 
+  /// Deliver the queued snapshot on the owner thread. Panel callbacks may log,
+  /// throw, or destroy this capture; queued records are discarded on
+  /// destruction.
+  void drain();
+
   LogCapture(const LogCapture&) = delete;
   LogCapture& operator=(const LogCapture&) = delete;
 
 private:
   class TeeBuf;
+  struct SinkState;
+
+  std::shared_ptr<SinkState> mSinkState;
+  std::shared_ptr<common::LogSink> mInstalledSink;
 
   std::unique_ptr<TeeBuf> mCoutBuf;
   std::unique_ptr<TeeBuf> mCerrBuf;

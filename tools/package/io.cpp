@@ -60,10 +60,10 @@ int main(int argc, char* argv[])
       dart::utils::SkelParser::readWorld(
           data + "/skel/test/single_pendulum.skel"),
       dart::utils::MjcfParser::readWorld(
-          data + "/mjcf/openai/inverted_pendulum.xml")};
+          data + "/mjcf/deepmind/cartpole.xml")};
   if (!worlds[0] || worlds[0]->getNumSkeletons() != 1
       || worlds[0]->getSkeleton(0)->getNumBodyNodes() != 1 || !worlds[1]
-      || worlds[1]->getNumSkeletons() != 2 || !worlds[1]->getSkeleton("cart")
+      || worlds[1]->getNumSkeletons() != 4 || !worlds[1]->getSkeleton("cart")
       || worlds[1]->getSkeleton("cart")->getNumBodyNodes() != 2)
     return 1;
 
