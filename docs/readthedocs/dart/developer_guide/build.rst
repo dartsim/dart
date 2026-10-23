@@ -114,7 +114,7 @@ Optional components remain optional.
      - 0.16.2
      - ODE collision backend
    * - tinyxml2
-     - 9.0.0
+     - 10.0.0
      - XML parsers
    * - sdformat
      - 14.8 (supported majors: 14, 15, 16)

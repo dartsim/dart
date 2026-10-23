@@ -466,7 +466,7 @@ def test_optional_package_with_undefined_found_flag(tmp_path, skip):
 @pytest.mark.parametrize("missing", ["tinyxml2", "urdfdom", "sdformat"])
 def test_io_requires_all_parser_dependencies(tmp_path, missing):
     if missing != "tinyxml2":
-        config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
+        config_package(tmp_path, "tinyxml2", "10.0.0", "tinyxml2::tinyxml2")
     if missing == "sdformat":
         config_package(tmp_path, "urdfdom", "3.0.0", "urdfdom")
     result = configure(
@@ -480,13 +480,42 @@ def test_io_requires_all_parser_dependencies(tmp_path, missing):
     assert "DART_BUILD_IO=OFF" in result.stdout + result.stderr
 
 
+@pytest.mark.parametrize("lookup", ["config", "module"])
+def test_io_rejects_tinyxml2_9_with_minimum_version_message(tmp_path, lookup):
+    variables = ""
+    if lookup == "config":
+        config_package(tmp_path, "tinyxml2", "9.0.0", "tinyxml2::tinyxml2")
+    else:
+        include = tmp_path / "include"
+        include.mkdir()
+        (include / "tinyxml2.h").write_text(
+            "#define TINYXML2_MAJOR_VERSION 9\n"
+            "#define TINYXML2_MINOR_VERSION 0\n"
+            "#define TINYXML2_PATCH_VERSION 0\n"
+        )
+        library = tmp_path / "library"
+        library.touch()
+        variables = (
+            f'set(TINYXML2_INCLUDE_DIRS "{include.as_posix()}")\n'
+            f'set(TINYXML2_LIBRARIES "{library.as_posix()}")\n'
+        )
+    result = configure(
+        tmp_path,
+        "include(DARTMacros)\n"
+        + variables
+        + f'include("{(ROOT / "dart/utils/CMakeLists.txt").as_posix()}")\n',
+    )
+    assert result.returncode != 0
+    assert "dart-io requires tinyxml2 >= 10.0.0" in result.stdout + result.stderr
+
+
 @pytest.mark.parametrize(
     "package,minimum,target,required",
     [
         ("Eigen3", "3.4.0", "Eigen3::Eigen", True),
         ("fcl", "0.7.0", "fcl", True),
         ("octomap", "1.9.7", "octomap", False),
-        ("tinyxml2", "9.0.0", "tinyxml2::tinyxml2", False),
+        ("tinyxml2", "10.0.0", "tinyxml2::tinyxml2", False),
         ("urdfdom", "3.0.0", "urdfdom", False),
         ("ODE", "0.16.2", "ODE::ODE", False),
         ("imgui", "1.92.8", "imgui::imgui", True),
@@ -502,7 +531,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
         "newer": f"{major}.{minor + 1}.0",
     }
     if package == "tinyxml2" and version_kind == "older":
-        versions["older"] = "8.0.0"
+        versions["older"] = "9.0.0"
     if package == "urdfdom" and version_kind == "older":
         versions["older"] = "2.3.5"
     if package in ("tinyxml2", "urdfdom") and version_kind == "newer":
@@ -732,9 +761,9 @@ def test_bullet_header_floor(tmp_path, bundled, version):
     [
         (
             "tinyxml2",
-            "9.0.0",
+            "10.0.0",
             "tinyxml2.h",
-            "#define TINYXML2_MAJOR_VERSION 9\n#define TINYXML2_MINOR_VERSION 0\n#define TINYXML2_PATCH_VERSION 0\n",
+            "#define TINYXML2_MAJOR_VERSION 10\n#define TINYXML2_MINOR_VERSION 0\n#define TINYXML2_PATCH_VERSION 0\n",
             "tinyxml2::tinyxml2",
         ),
         (
@@ -784,7 +813,7 @@ def test_config_header_version_fallback(
     [
         ("assimp", "5.3.0", "ASSIMP", "assimp/scene.h", None),
         ("fcl", "0.7.0", "FCL", "fcl/config.h", "FCL_VERSION"),
-        ("tinyxml2", "9.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
+        ("tinyxml2", "10.0.0", "TINYXML2", "tinyxml2.h", "TINYXML2"),
         ("ODE", "0.16.2", "ODE", "ode/version.h", "dODE_VERSION"),
         ("imgui", "1.92.8", "imgui", "imgui.h", "IMGUI_VERSION"),
     ],
@@ -797,6 +826,8 @@ def test_module_floors(
     path = include / header
     path.parent.mkdir(parents=True)
     version = minimum if version_kind == "minimum" else "0.1.0"
+    if package == "tinyxml2" and version_kind == "older":
+        version = "9.0.0"
     content = ""
     if version_kind != "unknown" and definition:
         if package == "tinyxml2":
@@ -821,7 +852,11 @@ def test_module_floors(
     result = configure(
         tmp_path,
         variables
-        + f"find_package({package} {minimum} QUIET MODULE)\n"
+        + (
+            "include(DARTFindtinyxml2)\n"
+            if package == "tinyxml2"
+            else f"find_package({package} {minimum} QUIET MODULE)\n"
+        )
         + f"if({package}_FOUND OR {prefix}_FOUND)\n"
         + ("" if accepted else 'message(FATAL_ERROR "Accepted unsupported version")\n')
         + "else()\n"
