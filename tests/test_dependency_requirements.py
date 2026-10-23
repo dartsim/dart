@@ -2585,7 +2585,8 @@ def test_bullet_scalar_abi_ignores_header_warnings(tmp_path, precision, hybrid):
         tmp_path,
         "set(DART_USE_SYSTEM_BULLET ON)\n"
         "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)\nenable_language(CXX)\n"
-        "if(MSVC)\nset(strict_flags /WX /W4 /we4244)\n"
+        # Per-code forced errors override warning suppression; exercise ordinary warnings.
+        "if(MSVC)\nset(strict_flags /WX /W4)\n"
         "else()\nset(strict_flags -Werror -Wfloat-conversion)\nendif()\n"
         'string(JOIN " " CMAKE_CXX_FLAGS ${strict_flags})\n'
         + setup
@@ -3302,7 +3303,7 @@ def test_bullet_named_libraries_pkgconfig_consumer(tmp_path, configuration, layo
     options, flags = pkgconfig_consumer_options("bullet", env=env)
     assert "-lBulletCollision-float64" in flags
     assert "-lLinearMath-float64" in flags
-    assert "-L" + str(prefix / "lib") in flags
+    assert "-L" + (prefix / "lib").as_posix() in flags
     assert all("/missing/bullet" not in flag for flag in flags)
     consumer = tmp_path / "pc-consumer"
     consumer.mkdir()
@@ -3357,11 +3358,16 @@ def test_bullet_pkgconfig_deferred_raw_dependency(tmp_path, mode):
     raw = (
         Path(archives["RawTail"]).as_posix()
         if mode == "absolute"
-        else "-lRawTail" if mode == "flag" else "RawTail"
+        else "${raw_tail_flag}" if mode == "flag" else "RawTail"
     )
     if mode == "whole":
         raw += f' -Wl,--whole-archive "{Path(archives["Registration"]).as_posix()}" -Wl,--no-whole-archive'
     graph = bullet_imports(prefix)
+    if mode == "flag":
+        graph += (
+            "if(MSVC)\nset(raw_tail_flag -DEFAULTLIB:RawTail.lib)\n"
+            "else()\nset(raw_tail_flag -lRawTail)\nendif()\n"
+        )
     for name in ("RawA", "RawB", *(["Marker"] if mode == "whole" else [])):
         graph += f'add_library({name} STATIC IMPORTED)\nset_property(TARGET {name} PROPERTY IMPORTED_LOCATION "{Path(archives[name]).as_posix()}")\n'
     if mode == "wrapper":
@@ -4331,13 +4337,18 @@ def test_bullet_c_only_installed_discovery(tmp_path, scope, abi):
         "get_property(before_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
         + discovery
         + "get_property(after_languages GLOBAL PROPERTY ENABLED_LANGUAGES)\n"
-        'if(NOT after_languages STREQUAL before_languages OR NOT after_languages STREQUAL "C"\n'
+        'if(NOT after_languages STREQUAL before_languages OR "CXX" IN_LIST after_languages\n'
         ' OR NOT CMAKE_C_COMPILER STREQUAL before_c OR NOT "${CMAKE_CXX_COMPILER}" STREQUAL before_cxx\n'
         ' OR NOT "${CMAKE_CXX_COMPILER_LOADED}" STREQUAL before_cxx_loaded\n'
         ' OR NOT CMAKE_TRY_COMPILE_TARGET_TYPE STREQUAL "STATIC_LIBRARY"\n'
         ' OR NOT CMAKE_REQUIRED_FLAGS STREQUAL "caller-flags"\n'
         ' OR NOT CMAKE_REQUIRED_LIBRARIES STREQUAL "caller-library")\n'
-        'message(FATAL_ERROR "C-only discovery leaked caller state")\nendif()\n'
+        'message(FATAL_ERROR "C-only discovery leaked caller state: '
+        "languages=${before_languages}->${after_languages}; "
+        "C=${before_c}->${CMAKE_C_COMPILER}; CXX=${before_cxx}->${CMAKE_CXX_COMPILER}; "
+        "CXX-loaded=${before_cxx_loaded}->${CMAKE_CXX_COMPILER_LOADED}; "
+        "try-compile=${CMAKE_TRY_COMPILE_TARGET_TYPE}; "
+        'required-flags=${CMAKE_REQUIRED_FLAGS}; required-libraries=${CMAKE_REQUIRED_LIBRARIES}")\nendif()\n'
         "add_executable(consumer main.c)\n",
     )
     cmake_fixture_run(
