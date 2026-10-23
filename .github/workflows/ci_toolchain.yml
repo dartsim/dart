@@ -88,6 +88,7 @@ jobs:
             cxx: g++-13
             distribution: true
             eigen: "5.*"
+            system_nanobind: true
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -146,6 +147,10 @@ jobs:
           set -euo pipefail
           "${CC}" --version
           pixi run test-build-requirements
+          if [ "${{ matrix.system_nanobind }}" = "true" ]; then
+            pixi run config -- -DDART_USE_SYSTEM_NANOBIND=ON
+            grep -qxF "DART_USE_SYSTEM_NANOBIND:BOOL=ON" build/default/cpp/Release/CMakeCache.txt
+          fi
           # CC/CXX are honored by the `config` task that `build-tests` runs
           # first (it does not pin a compiler), so the whole tree is compiled
           # with the selected toolchain.

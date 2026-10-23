@@ -305,7 +305,7 @@ dart_option(
 dart_option(
   DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" ${DART_USE_SYSTEM_DEPENDENCIES}
 )
-dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind >= 3.1" OFF)
+dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind 3.1.x" OFF)
 dart_option(
   DART_DARTPY_STABLE_ABI
   "Build the nanobind dartpy for the CPython 3.12+ stable ABI (abi3)"
